@@ -1,194 +1,230 @@
+import { useCallback, useEffect, useRef } from 'react';
 import { NoAccessPage } from '../../../components/PageShell';
 import { ErpPageTemplate } from '../../../templates/ErpPageTemplate';
-import { ZHBtn, ZHField } from '../../../components/zh/ZHForm';
+import { ZHBtn } from '../../../components/zh/ZHForm';
 import { ZHPageNotice } from '../../../components/zh/ZHPageNotice';
-import { useNavigate } from 'react-router-dom';
+import { useI18n } from '../../../i18n/i18n';
 import { useMasterDataCustomersPage } from './useMasterDataCustomersPage';
-import { MasterDataBpFormModal } from './MasterDataBpFormModal';
 import { MasterDataCompanySettingsModal } from './MasterDataCompanySettingsModal';
 import { MasterDataCustomerNotesModal } from './MasterDataCustomerNotesModal';
+import { MasterDataPartnerWizard } from '../components/MasterDataPartnerWizard';
+import { MasterDataPartnerResumenTab } from '../components/MasterDataPartnerResumenTab';
+import { MasterDataPartnerListTab } from '../components/MasterDataPartnerListTab';
+import { MasterDataPartnerToast } from '../components/MasterDataPartnerToast';
+import { useMasterDataCustomersUiStore } from '../store/masterDataPartnerUiStore';
+import type { CreateBusinessPartnerBody, UpdateBusinessPartnerBody } from '../types/businessPartner.types';
+import '../../../pages/ProductsPage.css';
 import './masterdata-pages.css';
 
+const TABS = [
+  { id: 'resumen' as const, labelKey: 'masterdata.customers.tabs.resumen', labelFb: 'Resumen', icon: 'bar_chart_4_bars' },
+  { id: 'listado' as const, labelKey: 'masterdata.customers.tabs.listado', labelFb: 'Listado', icon: 'view_list' },
+  { id: 'nuevo' as const, labelKey: 'masterdata.customers.tabs.nuevo', labelFb: 'Nuevo cliente', icon: 'add_box' },
+] as const;
+
+const DRAFT_KEY = 'erp.masterdata.customers.draft';
+
 export function MasterDataCustomersPage() {
+  const { t } = useI18n();
   const page = useMasterDataCustomersPage();
-  const navigate = useNavigate();
+  const ui = useMasterDataCustomersUiStore;
+
+  const activeTab = ui((s) => s.activeTab);
+  const editingPartner = ui((s) => s.editingPartner);
+  const setActiveTab = ui((s) => s.setActiveTab);
+  const cancelEdit = ui((s) => s.cancelEdit);
+  const showToast = ui((s) => s.showToast);
+  const addActivity = ui((s) => s.addActivity);
+  const reset = ui((s) => s.reset);
+
+  const searchRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    reset();
+    return () => reset();
+  }, [reset]);
+
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+        e.preventDefault();
+        setActiveTab('listado');
+        setTimeout(() => searchRef.current?.focus(), 80);
+      }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [setActiveTab]);
+
+  const handleCreate = useCallback(
+    async (body: CreateBusinessPartnerBody) => {
+      const ok = await page.createCustomer(body);
+      if (!ok) return false;
+      addActivity(body.legalName, 'created');
+      showToast(t('masterdata.customers.created.success', 'Cliente creado correctamente.'), 'success');
+      setActiveTab('listado');
+      return true;
+    },
+    [page, addActivity, showToast, setActiveTab, t],
+  );
+
+  const handleUpdate = useCallback(
+    async (body: UpdateBusinessPartnerBody) => {
+      if (!editingPartner) return false;
+      const ok = await page.updateCustomer(editingPartner.id, body);
+      if (!ok) return false;
+      addActivity(body.legalName, 'updated');
+      showToast(t('masterdata.customers.updated.success', 'Cliente actualizado correctamente.'), 'success');
+      cancelEdit();
+      return true;
+    },
+    [editingPartner, page, addActivity, showToast, cancelEdit, t],
+  );
+
+  const handleAssign = useCallback(
+    async (id: string) => {
+      const ok = await page.assignAsCustomer(id);
+      if (!ok) return false;
+      const bp = page.customers.find((c) => c.id === id);
+      addActivity(bp?.legalName ?? id, 'assigned');
+      showToast(t('masterdata.customers.assigned.success', 'Rol de cliente asignado correctamente.'), 'success');
+      setActiveTab('listado');
+      return true;
+    },
+    [page, addActivity, showToast, setActiveTab, t],
+  );
+
+  const handleDisable = useCallback(
+    async (id: string) => {
+      await page.disableCustomer(id);
+      const bp = page.customers.find((c) => c.id === id);
+      if (bp) {
+        addActivity(bp.legalName, 'disabled');
+        showToast(t('masterdata.customers.disabled.success', 'Cliente desactivado.'), 'info');
+      }
+    },
+    [page, addActivity, showToast, t],
+  );
+
+  const handleActivate = useCallback(
+    async (id: string) => {
+      await page.activateCustomer(id);
+      const bp = page.customers.find((c) => c.id === id);
+      if (bp) {
+        addActivity(bp.legalName, 'enabled');
+        showToast(t('masterdata.customers.enabled.success', 'Cliente activado.'), 'info');
+      }
+    },
+    [page, addActivity, showToast, t],
+  );
 
   if (!page.canView) {
-    return <NoAccessPage title="Clientes (MasterData)" />;
+    return <NoAccessPage title={t('masterdata.customers.title')} />;
   }
+
+  const nuevoLabel = editingPartner
+    ? t('masterdata.customers.tabs.edit', 'Editar cliente')
+    : t('masterdata.customers.tabs.nuevo', 'Nuevo cliente');
+  const nuevoIcon = editingPartner ? 'edit' : 'add_box';
 
   return (
     <ErpPageTemplate
       kicker="MasterData"
-      title="Clientes"
-      subtitle="Gestión de clientes — fuente canónica BusinessPartner."
+      title={t('masterdata.customers.title')}
+      subtitle={t('masterdata.customers.subtitle')}
       action={
         page.canCreate ? (
-          <ZHBtn variant="primary" onClick={page.openCreate}>
-            Nuevo cliente MD
+          <ZHBtn
+            variant="primary"
+            size="md"
+            type="button"
+            onClick={() => {
+              cancelEdit();
+              setActiveTab('nuevo');
+            }}
+          >
+            <span className="material-symbols-outlined">add</span>
+            {t('masterdata.customers.primaryCreate')}
           </ZHBtn>
-        ) : undefined
+        ) : null
       }
     >
-      {/* Errores de carga de lista y acciones inline (disable/activate) */}
-      {page.listError   && <ZHPageNotice variant="error" message="Error al cargar"   detail={page.listError}   />}
-      {page.inlineError && <ZHPageNotice variant="error" message="Error en la acción" detail={page.inlineError} />}
+      {page.listError && <ZHPageNotice variant="error" message={t('common.errorPrefix')} detail={page.listError} />}
+      {page.inlineError && <ZHPageNotice variant="error" message={t('common.errorPrefix')} detail={page.inlineError} />}
 
-      <div className="md-page-toolbar">
-        <ZHField label="Buscar">
-          <input
-            className="zh-input"
-            value={page.search}
-            onChange={(e) => page.setSearch(e.target.value)}
-            placeholder="Nombre o identificación…"
-          />
-        </ZHField>
-        <label className="md-page-check">
-          <input
-            type="checkbox"
-            checked={page.showInactive}
-            onChange={(e) => page.setShowInactive(e.target.checked)}
-          />
-          Incluir inactivos
-        </label>
+      <div className="prd-tabs" role="tablist" aria-label={t('masterdata.customers.tabs.aria', 'Secciones de clientes')}>
+        {TABS.map((tab) => {
+          const label = tab.id === 'nuevo' ? nuevoLabel : t(tab.labelKey, tab.labelFb);
+          const icon = tab.id === 'nuevo' ? nuevoIcon : tab.icon;
+          const active = activeTab === tab.id;
+          return (
+            <button
+              key={tab.id}
+              type="button"
+              role="tab"
+              aria-selected={active}
+              className={`prd-tab-btn ${active ? 'prd-tab-btn--active' : ''}`}
+              onClick={() => setActiveTab(tab.id)}
+            >
+              <span className="material-symbols-outlined prd-tab-icon">{icon}</span>
+              {label}
+              {tab.id === 'nuevo' && editingPartner && <span className="prd-tab-edit-badge" aria-hidden>●</span>}
+            </button>
+          );
+        })}
       </div>
 
-      <div className="md-table-wrap">
-        <table className="md-table">
-          <thead>
-            <tr>
-              <th>Identificación</th>
-              <th>Razón social</th>
-              <th>Legacy Customer</th>
-              <th>Estado</th>
-              <th />
-            </tr>
-          </thead>
-          <tbody>
-            {page.loading && (
-              <tr><td colSpan={5}>Cargando…</td></tr>
-            )}
-            {!page.loading && page.customers.length === 0 && (
-              <tr><td colSpan={5}>Sin registros.</td></tr>
-            )}
-            {page.customers.map((bp) => (
-              <tr key={bp.id}>
-                <td className="mono">{bp.identificationNumber}</td>
-                <td>{bp.tradeName?.trim() || bp.legalName}</td>
-                <td>
-                  {bp.legacyCustomerId ? (
-                    <span className="md-badge md-badge--ok">Vinculado</span>
-                  ) : (
-                    <span className="md-badge md-badge--warn" title="No seleccionable en facturas hasta dual-write">
-                      Sin vínculo
-                    </span>
-                  )}
-                </td>
-                <td>{bp.isActive ? 'Activo' : 'Inactivo'}</td>
-                <td className="md-actions">
-                  <ZHBtn variant="ghost" size="sm" onClick={() => navigate(`/masterdata/business-partners/${bp.id}`)}>
-                    Ver
-                  </ZHBtn>
-                  {page.canUpdate && (
-                    <ZHBtn variant="ghost" size="sm" onClick={() => page.openEdit(bp)}>
-                      Editar
-                    </ZHBtn>
-                  )}
-                  {page.canUpdate && (
-                    <ZHBtn variant="ghost" size="sm" onClick={() => page.openNotes(bp)}>
-                      Notas
-                    </ZHBtn>
-                  )}
-                  {page.canConfigure && (
-                    <ZHBtn variant="ghost" size="sm" onClick={() => void page.openSettings(bp)}>
-                      Empresa
-                    </ZHBtn>
-                  )}
-                  {page.canUpdate && !bp.isActive && (
-                    <ZHBtn
-                      variant="ghost"
-                      size="sm"
-                      disabled={page.saving}
-                      onClick={() => void page.activateCustomer(bp.id)}
-                    >
-                      Activar
-                    </ZHBtn>
-                  )}
-                  {page.canUpdate && !bp.isSupplier && (
-                    <ZHBtn
-                      variant="ghost"
-                      size="sm"
-                      disabled={page.saving}
-                      onClick={() => void page.addAsSupplier(bp.id)}
-                      title="Agregar también como proveedor"
-                    >
-                      + Proveedor
-                    </ZHBtn>
-                  )}
-                  {page.canDisable && bp.isActive && (
-                    <ZHBtn
-                      variant="ghost"
-                      size="sm"
-                      disabled={page.saving}
-                      onClick={() => void page.disableCustomer(bp.id)}
-                    >
-                      Desactivar
-                    </ZHBtn>
-                  )}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+      <div className="prd-tab-content">
+        {activeTab === 'resumen' && (
+          <MasterDataPartnerResumenTab
+            role="customer"
+            partners={page.customers}
+            totalCount={page.totalCount}
+            store={ui}
+          />
+        )}
+        {activeTab === 'listado' && (
+          <MasterDataPartnerListTab
+            role="customer"
+            store={ui}
+            canCreate={page.canCreate}
+            canUpdate={page.canUpdate}
+            canDisable={page.canDisable}
+            canConfigure={page.canConfigure}
+            loading={page.loading}
+            saving={page.saving}
+            partners={page.customers}
+            totalCount={page.totalCount}
+            search={page.search}
+            setSearch={page.setSearch}
+            showInactive={page.showInactive}
+            setShowInactive={page.setShowInactive}
+            page={page.page}
+            totalPages={page.totalPages}
+            setPage={page.setPage}
+            searchInputRef={searchRef}
+            onNotes={page.openNotes}
+            onSettings={page.openSettings}
+            onAddAsSupplier={page.addAsSupplier}
+            onActivate={handleActivate}
+            onDisable={handleDisable}
+          />
+        )}
+        {activeTab === 'nuevo' && (page.canCreate || editingPartner) && (
+          <MasterDataPartnerWizard
+            key={editingPartner?.id ?? 'create'}
+            role="customer"
+            draftKey={DRAFT_KEY}
+            submitting={page.saving}
+            wizardError={page.modalError}
+            editingPartner={editingPartner}
+            onSubmitCreate={handleCreate}
+            onSubmitUpdate={handleUpdate}
+            onAssignRole={handleAssign}
+            onCancel={cancelEdit}
+          />
+        )}
       </div>
-
-      {page.totalPages > 1 && (
-        <div className="md-pagination">
-          <ZHBtn variant="ghost" size="sm" disabled={page.page <= 1} onClick={() => page.setPage(page.page - 1)}>
-            ‹ Anterior
-          </ZHBtn>
-          <span className="md-pagination-info">
-            Pág. {page.page} / {page.totalPages} ({page.totalCount} registros)
-          </span>
-          <ZHBtn variant="ghost" size="sm" disabled={page.page >= page.totalPages} onClick={() => page.setPage(page.page + 1)}>
-            Siguiente ›
-          </ZHBtn>
-        </div>
-      )}
-
-
-      {page.modalOpen && (
-        <MasterDataBpFormModal
-          title="Nuevo cliente"
-          saving={page.saving}
-          error={page.modalError}
-          roleToAssign="customer"
-          onClose={page.closeCreate}
-          onSubmit={(body) => void page.createCustomer(body)}
-          onAssignRole={(id) => page.assignAsCustomer(id)}
-        />
-      )}
-
-      {page.editBp && (
-        <MasterDataBpFormModal
-          mode="edit"
-          title="Editar BusinessPartner"
-          saving={page.saving}
-          error={page.modalError}
-          initialValues={{
-            identificationType:   page.editBp.identificationType,
-            identificationNumber: page.editBp.identificationNumber,
-            legalName:            page.editBp.legalName,
-            tradeName:            page.editBp.tradeName,
-            email:                page.editBp.email,
-            phone:                page.editBp.phone,
-          }}
-          currentIsCustomer={page.editBp.isCustomer}
-          currentIsSupplier={page.editBp.isSupplier}
-          onClose={page.closeEdit}
-          onUpdate={(body) => void page.updateCustomer(page.editBp!.id, body)}
-        />
-      )}
 
       {page.notesBp && (
         <MasterDataCustomerNotesModal
@@ -210,6 +246,8 @@ export function MasterDataCustomersPage() {
           onSave={(payload) => void page.saveCompanySettings(page.settingsBp!.id, payload)}
         />
       )}
+
+      <MasterDataPartnerToast store={ui} />
     </ErpPageTemplate>
   );
 }

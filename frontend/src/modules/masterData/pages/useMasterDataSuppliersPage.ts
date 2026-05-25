@@ -108,29 +108,33 @@ export function useMasterDataSuppliersPage() {
     clearModalError();
   }, []);
 
-  const createSupplier = async (body: CreateBusinessPartnerBody) => {
+  const createSupplier = async (body: CreateBusinessPartnerBody): Promise<boolean> => {
     setSaving(true);
     clearModalError();
     try {
       await businessPartnerFacade.createBusinessPartner({ ...body, asCustomer: false, asSupplier: true });
       setModalOpen(false);
       listState.refetch();
+      return true;
     } catch (err) {
       setModalError(formatApiError(err));
+      return false;
     } finally {
       setSaving(false);
     }
   };
 
-  const updateSupplier = async (id: string, body: UpdateBusinessPartnerBody) => {
+  const updateSupplier = async (id: string, body: UpdateBusinessPartnerBody): Promise<boolean> => {
     setSaving(true);
     clearModalError();
     try {
       await businessPartnerFacade.updateBusinessPartner(id, body);
       setEditBp(null);
       listState.refetch();
+      return true;
     } catch (err) {
       setModalError(formatApiError(err));
+      return false;
     } finally {
       setSaving(false);
     }
@@ -193,15 +197,17 @@ export function useMasterDataSuppliersPage() {
     }
   };
 
-  const assignAsSupplier = async (id: string) => {
+  const assignAsSupplier = async (id: string): Promise<boolean> => {
     setSaving(true);
     clearModalError();
     try {
       await businessPartnerFacade.addRole(id, false, true);
       setModalOpen(false);
       listState.refetch();
+      return true;
     } catch (err) {
       setModalError(formatApiError(err));
+      return false;
     } finally {
       setSaving(false);
     }

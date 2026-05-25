@@ -3,8 +3,7 @@ import { ZHBtn, ZHField } from '../../../components/zh/ZHForm';
 import { ZHPageNotice } from '../../../components/zh/ZHPageNotice';
 import { businessPartnerSchema } from '../../../schemas/masterData/businessPartnerSchema';
 import { businessPartnerService } from '../api/businessPartnerService';
-import type { BusinessPartner } from '../api/businessPartnerService';
-import type { CreateBusinessPartnerBody, UpdateBusinessPartnerBody } from '../types/businessPartner.types';
+import type { BusinessPartnerDto, CreateBusinessPartnerBody, UpdateBusinessPartnerBody } from '../types/businessPartner.types';
 
 type Step = 'search' | 'results' | 'create';
 
@@ -42,7 +41,7 @@ const ROLE_LABEL: Record<'customer' | 'supplier', string> = {
   supplier: 'Proveedor',
 };
 
-function alreadyHasRole(bp: BusinessPartner, role: 'customer' | 'supplier'): boolean {
+function alreadyHasRole(bp: BusinessPartnerDto, role: 'customer' | 'supplier'): boolean {
   return role === 'customer' ? bp.isCustomer : bp.isSupplier;
 }
 
@@ -54,7 +53,7 @@ export function MasterDataBpFormModal(props: Props) {
   const [query, setQuery]             = useState('');
   const [searching, setSearching]     = useState(false);
   const [searchError, setSearchError] = useState('');
-  const [results, setResults]         = useState<BusinessPartner[]>([]);
+  const [results, setResults]         = useState<BusinessPartnerDto[]>([]);
   const [assigning, setAssigning]     = useState<string | null>(null);
 
   // ── Form state (create + edit) ─────────────────────────────────────────────
@@ -98,7 +97,7 @@ export function MasterDataBpFormModal(props: Props) {
     }
   };
 
-  const handleAssign = async (bp: BusinessPartner) => {
+  const handleAssign = async (bp: BusinessPartnerDto) => {
     if (!props.onAssignRole) return;
     setAssigning(bp.id);
     try {

@@ -1,191 +1,230 @@
-import { useNavigate } from 'react-router-dom';
+import { useCallback, useEffect, useRef } from 'react';
 import { NoAccessPage } from '../../../components/PageShell';
 import { ErpPageTemplate } from '../../../templates/ErpPageTemplate';
-import { ZHBtn, ZHField } from '../../../components/zh/ZHForm';
+import { ZHBtn } from '../../../components/zh/ZHForm';
 import { ZHPageNotice } from '../../../components/zh/ZHPageNotice';
+import { useI18n } from '../../../i18n/i18n';
 import { useMasterDataSuppliersPage } from './useMasterDataSuppliersPage';
-import { MasterDataBpFormModal } from './MasterDataBpFormModal';
 import { MasterDataCompanySettingsModal } from './MasterDataCompanySettingsModal';
 import { MasterDataSupplierProfileModal } from './MasterDataSupplierProfileModal';
+import { MasterDataPartnerWizard } from '../components/MasterDataPartnerWizard';
+import { MasterDataPartnerResumenTab } from '../components/MasterDataPartnerResumenTab';
+import { MasterDataPartnerListTab } from '../components/MasterDataPartnerListTab';
+import { MasterDataPartnerToast } from '../components/MasterDataPartnerToast';
+import { useMasterDataSuppliersUiStore } from '../store/masterDataPartnerUiStore';
+import type { CreateBusinessPartnerBody, UpdateBusinessPartnerBody } from '../types/businessPartner.types';
+import '../../../pages/ProductsPage.css';
 import './masterdata-pages.css';
 
+const TABS = [
+  { id: 'resumen' as const, labelKey: 'masterdata.suppliers.tabs.resumen', labelFb: 'Resumen', icon: 'bar_chart_4_bars' },
+  { id: 'listado' as const, labelKey: 'masterdata.suppliers.tabs.listado', labelFb: 'Listado', icon: 'view_list' },
+  { id: 'nuevo' as const, labelKey: 'masterdata.suppliers.tabs.nuevo', labelFb: 'Nuevo proveedor', icon: 'add_box' },
+] as const;
+
+const DRAFT_KEY = 'erp.masterdata.suppliers.draft';
+
 export function MasterDataSuppliersPage() {
+  const { t } = useI18n();
   const page = useMasterDataSuppliersPage();
-  const navigate = useNavigate();
+  const ui = useMasterDataSuppliersUiStore;
+
+  const activeTab = ui((s) => s.activeTab);
+  const editingPartner = ui((s) => s.editingPartner);
+  const setActiveTab = ui((s) => s.setActiveTab);
+  const cancelEdit = ui((s) => s.cancelEdit);
+  const showToast = ui((s) => s.showToast);
+  const addActivity = ui((s) => s.addActivity);
+  const reset = ui((s) => s.reset);
+
+  const searchRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    reset();
+    return () => reset();
+  }, [reset]);
+
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+        e.preventDefault();
+        setActiveTab('listado');
+        setTimeout(() => searchRef.current?.focus(), 80);
+      }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [setActiveTab]);
+
+  const handleCreate = useCallback(
+    async (body: CreateBusinessPartnerBody) => {
+      const ok = await page.createSupplier(body);
+      if (!ok) return false;
+      addActivity(body.legalName, 'created');
+      showToast(t('masterdata.suppliers.created.success', 'Proveedor creado correctamente.'), 'success');
+      setActiveTab('listado');
+      return true;
+    },
+    [page, addActivity, showToast, setActiveTab, t],
+  );
+
+  const handleUpdate = useCallback(
+    async (body: UpdateBusinessPartnerBody) => {
+      if (!editingPartner) return false;
+      const ok = await page.updateSupplier(editingPartner.id, body);
+      if (!ok) return false;
+      addActivity(body.legalName, 'updated');
+      showToast(t('masterdata.suppliers.updated.success', 'Proveedor actualizado correctamente.'), 'success');
+      cancelEdit();
+      return true;
+    },
+    [editingPartner, page, addActivity, showToast, cancelEdit, t],
+  );
+
+  const handleAssign = useCallback(
+    async (id: string) => {
+      const ok = await page.assignAsSupplier(id);
+      if (!ok) return false;
+      const bp = page.suppliers.find((s) => s.id === id);
+      addActivity(bp?.legalName ?? id, 'assigned');
+      showToast(t('masterdata.suppliers.assigned.success', 'Rol de proveedor asignado correctamente.'), 'success');
+      setActiveTab('listado');
+      return true;
+    },
+    [page, addActivity, showToast, setActiveTab, t],
+  );
+
+  const handleDisable = useCallback(
+    async (id: string) => {
+      await page.disableSupplier(id);
+      const bp = page.suppliers.find((s) => s.id === id);
+      if (bp) {
+        addActivity(bp.legalName, 'disabled');
+        showToast(t('masterdata.suppliers.disabled.success', 'Proveedor desactivado.'), 'info');
+      }
+    },
+    [page, addActivity, showToast, t],
+  );
+
+  const handleActivate = useCallback(
+    async (id: string) => {
+      await page.activateSupplier(id);
+      const bp = page.suppliers.find((s) => s.id === id);
+      if (bp) {
+        addActivity(bp.legalName, 'enabled');
+        showToast(t('masterdata.suppliers.enabled.success', 'Proveedor activado.'), 'info');
+      }
+    },
+    [page, addActivity, showToast, t],
+  );
 
   if (!page.canView) {
-    return <NoAccessPage title="Proveedores (MasterData)" />;
+    return <NoAccessPage title={t('masterdata.suppliers.title')} />;
   }
+
+  const nuevoLabel = editingPartner
+    ? t('masterdata.suppliers.tabs.edit', 'Editar proveedor')
+    : t('masterdata.suppliers.tabs.nuevo', 'Nuevo proveedor');
+  const nuevoIcon = editingPartner ? 'edit' : 'add_box';
 
   return (
     <ErpPageTemplate
       kicker="MasterData"
-      title="Proveedores"
-      subtitle="Gestión de proveedores — fuente canónica BusinessPartner."
+      title={t('masterdata.suppliers.title')}
+      subtitle={t('masterdata.suppliers.subtitle')}
       action={
         page.canCreate ? (
-          <ZHBtn variant="primary" onClick={page.openCreate}>
-            Nuevo proveedor MD
+          <ZHBtn
+            variant="primary"
+            size="md"
+            type="button"
+            onClick={() => {
+              cancelEdit();
+              setActiveTab('nuevo');
+            }}
+          >
+            <span className="material-symbols-outlined">add</span>
+            {t('masterdata.suppliers.primaryCreate')}
           </ZHBtn>
-        ) : undefined
+        ) : null
       }
     >
-      {page.listError   && <ZHPageNotice variant="error" message="Error al cargar"    detail={page.listError}   />}
-      {page.inlineError && <ZHPageNotice variant="error" message="Error en la acción" detail={page.inlineError} />}
+      {page.listError && <ZHPageNotice variant="error" message={t('common.errorPrefix')} detail={page.listError} />}
+      {page.inlineError && <ZHPageNotice variant="error" message={t('common.errorPrefix')} detail={page.inlineError} />}
 
-      <div className="md-page-toolbar">
-        <ZHField label="Buscar">
-          <input
-            className="zh-input"
-            value={page.search}
-            onChange={(e) => page.setSearch(e.target.value)}
-            placeholder="Nombre o RUC…"
-          />
-        </ZHField>
-        <label className="md-page-check">
-          <input
-            type="checkbox"
-            checked={page.showInactive}
-            onChange={(e) => page.setShowInactive(e.target.checked)}
-          />
-          Incluir inactivos
-        </label>
+      <div className="prd-tabs" role="tablist" aria-label={t('masterdata.suppliers.tabs.aria', 'Secciones de proveedores')}>
+        {TABS.map((tab) => {
+          const label = tab.id === 'nuevo' ? nuevoLabel : t(tab.labelKey, tab.labelFb);
+          const icon = tab.id === 'nuevo' ? nuevoIcon : tab.icon;
+          const active = activeTab === tab.id;
+          return (
+            <button
+              key={tab.id}
+              type="button"
+              role="tab"
+              aria-selected={active}
+              className={`prd-tab-btn ${active ? 'prd-tab-btn--active' : ''}`}
+              onClick={() => setActiveTab(tab.id)}
+            >
+              <span className="material-symbols-outlined prd-tab-icon">{icon}</span>
+              {label}
+              {tab.id === 'nuevo' && editingPartner && <span className="prd-tab-edit-badge" aria-hidden>●</span>}
+            </button>
+          );
+        })}
       </div>
 
-      <div className="md-table-wrap">
-        <table className="md-table">
-          <thead>
-            <tr>
-              <th>RUC / ID</th>
-              <th>Razón social</th>
-              <th>Legacy Supplier</th>
-              <th>Estado</th>
-              <th />
-            </tr>
-          </thead>
-          <tbody>
-            {page.loading && (
-              <tr><td colSpan={5}>Cargando…</td></tr>
-            )}
-            {!page.loading && page.suppliers.length === 0 && (
-              <tr><td colSpan={5}>Sin registros.</td></tr>
-            )}
-            {page.suppliers.map((bp) => (
-              <tr key={bp.id}>
-                <td className="mono">{bp.identificationNumber}</td>
-                <td>{bp.tradeName?.trim() || bp.legalName}</td>
-                <td>
-                  {bp.legacySupplierId ? (
-                    <span className="md-badge md-badge--ok">Vinculado</span>
-                  ) : (
-                    <span className="md-badge md-badge--warn">Sin vínculo</span>
-                  )}
-                </td>
-                <td>{bp.isActive ? 'Activo' : 'Inactivo'}</td>
-                <td className="md-actions">
-                  <ZHBtn variant="ghost" size="sm" onClick={() => navigate(`/masterdata/business-partners/${bp.id}`)}>
-                    Ver
-                  </ZHBtn>
-                  {page.canUpdate && (
-                    <ZHBtn variant="ghost" size="sm" onClick={() => page.openEdit(bp)}>
-                      Editar
-                    </ZHBtn>
-                  )}
-                  {page.canUpdate && bp.isSupplier && (
-                    <ZHBtn variant="ghost" size="sm" onClick={() => page.openSupplierProfile(bp)}>
-                      SRI
-                    </ZHBtn>
-                  )}
-                  {page.canConfigure && (
-                    <ZHBtn variant="ghost" size="sm" onClick={() => void page.openSettings(bp)}>
-                      Empresa
-                    </ZHBtn>
-                  )}
-                  {page.canUpdate && !bp.isActive && (
-                    <ZHBtn
-                      variant="ghost"
-                      size="sm"
-                      disabled={page.saving}
-                      onClick={() => void page.activateSupplier(bp.id)}
-                    >
-                      Activar
-                    </ZHBtn>
-                  )}
-                  {page.canUpdate && !bp.isCustomer && (
-                    <ZHBtn
-                      variant="ghost"
-                      size="sm"
-                      disabled={page.saving}
-                      onClick={() => void page.addAsCustomer(bp.id)}
-                      title="Agregar también como cliente"
-                    >
-                      + Cliente
-                    </ZHBtn>
-                  )}
-                  {page.canDisable && bp.isActive && (
-                    <ZHBtn
-                      variant="ghost"
-                      size="sm"
-                      disabled={page.saving}
-                      onClick={() => void page.disableSupplier(bp.id)}
-                    >
-                      Desactivar
-                    </ZHBtn>
-                  )}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+      <div className="prd-tab-content">
+        {activeTab === 'resumen' && (
+          <MasterDataPartnerResumenTab
+            role="supplier"
+            partners={page.suppliers}
+            totalCount={page.totalCount}
+            store={ui}
+          />
+        )}
+        {activeTab === 'listado' && (
+          <MasterDataPartnerListTab
+            role="supplier"
+            store={ui}
+            canCreate={page.canCreate}
+            canUpdate={page.canUpdate}
+            canDisable={page.canDisable}
+            canConfigure={page.canConfigure}
+            loading={page.loading}
+            saving={page.saving}
+            partners={page.suppliers}
+            totalCount={page.totalCount}
+            search={page.search}
+            setSearch={page.setSearch}
+            showInactive={page.showInactive}
+            setShowInactive={page.setShowInactive}
+            page={page.page}
+            totalPages={page.totalPages}
+            setPage={page.setPage}
+            searchInputRef={searchRef}
+            onSettings={page.openSettings}
+            onSupplierProfile={page.openSupplierProfile}
+            onAddAsCustomer={page.addAsCustomer}
+            onActivate={handleActivate}
+            onDisable={handleDisable}
+          />
+        )}
+        {activeTab === 'nuevo' && (page.canCreate || editingPartner) && (
+          <MasterDataPartnerWizard
+            key={editingPartner?.id ?? 'create'}
+            role="supplier"
+            draftKey={DRAFT_KEY}
+            submitting={page.saving}
+            wizardError={page.modalError}
+            editingPartner={editingPartner}
+            onSubmitCreate={handleCreate}
+            onSubmitUpdate={handleUpdate}
+            onAssignRole={handleAssign}
+            onCancel={cancelEdit}
+          />
+        )}
       </div>
-
-      {page.totalPages > 1 && (
-        <div className="md-pagination">
-          <ZHBtn variant="ghost" size="sm" disabled={page.page <= 1} onClick={() => page.setPage(page.page - 1)}>
-            ‹ Anterior
-          </ZHBtn>
-          <span className="md-pagination-info">
-            Pág. {page.page} / {page.totalPages} ({page.totalCount} registros)
-          </span>
-          <ZHBtn variant="ghost" size="sm" disabled={page.page >= page.totalPages} onClick={() => page.setPage(page.page + 1)}>
-            Siguiente ›
-          </ZHBtn>
-        </div>
-      )}
-
-
-      {page.modalOpen && (
-        <MasterDataBpFormModal
-          title="Nuevo proveedor"
-          saving={page.saving}
-          error={page.modalError}
-          roleToAssign="supplier"
-          onClose={page.closeCreate}
-          onSubmit={(body) => void page.createSupplier(body)}
-          onAssignRole={(id) => page.assignAsSupplier(id)}
-        />
-      )}
-
-      {page.editBp && (
-        <MasterDataBpFormModal
-          mode="edit"
-          title="Editar BusinessPartner"
-          saving={page.saving}
-          error={page.modalError}
-          initialValues={{
-            identificationType:   page.editBp.identificationType,
-            identificationNumber: page.editBp.identificationNumber,
-            legalName:            page.editBp.legalName,
-            tradeName:            page.editBp.tradeName,
-            email:                page.editBp.email,
-            phone:                page.editBp.phone,
-          }}
-          currentIsCustomer={page.editBp.isCustomer}
-          currentIsSupplier={page.editBp.isSupplier}
-          onClose={page.closeEdit}
-          onUpdate={(body) => void page.updateSupplier(page.editBp!.id, body)}
-        />
-      )}
 
       {page.settingsBp && page.canConfigure && (
         <MasterDataCompanySettingsModal
@@ -207,6 +246,8 @@ export function MasterDataSuppliersPage() {
           onSave={(body) => void page.saveSupplierProfile(page.supplierProfileBp!.id, body)}
         />
       )}
+
+      <MasterDataPartnerToast store={ui} />
     </ErpPageTemplate>
   );
 }
