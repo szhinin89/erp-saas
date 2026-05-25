@@ -9,9 +9,8 @@ export const PUBLIC_AUTH_PATHS = [
   '/api/auth/refresh',
   '/api/auth/switch-subscriber',
   '/api/admin/iam/bootstrap-login',
-  '/api/admin/iam/switch-subscriber',
+  '/api/admin/iam/bootstrap-switch-subscriber',
   '/api/admin/iam/subscriber/company_user_memberships',
-  '/api/admin/iam/register-subscriber',
 ] as const;
 
 export function isPublicAuthPath(url: string): boolean {

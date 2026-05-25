@@ -21,7 +21,6 @@ namespace ERP.API.Controllers;
 [AppFeature("Bodegas", "perm:inventory.warehouses.view", "ðŸ“¦", "/inventory/warehouses", "perm:inventory.products.view", 40)]
 [ApiController]
 [Route("api/inventory/warehouses")]
-[Route("api/inventory/warehouses-legacy")]
 [Authorize]
 [Produces("application/json")]
 public sealed class WarehousesController : ControllerBase

@@ -3,7 +3,7 @@ import { PlatformLayout } from '../layouts/PlatformLayout';
 import { lazyNamedPage } from './lazyPage';
 
 const PlatformSubscribersPage = lazyNamedPage(
-  () => import('../pages/Platform/PlatformSubscribersPage'),
+  () => import('../modules/platform/pages/PlatformSubscribersPage'),
   'PlatformSubscribersPage',
 );
 
@@ -13,12 +13,12 @@ const PlatformSubscriberDetailPage = lazyNamedPage(
 );
 
 const PlatformOverviewPage = lazyNamedPage(
-  () => import('../pages/Platform/PlatformOverviewPage'),
+  () => import('../modules/platform/pages/PlatformOverviewPage'),
   'PlatformOverviewPage',
 );
 
 const PlatformPlansPage = lazyNamedPage(
-  () => import('../pages/Platform/PlatformPlansPage'),
+  () => import('../modules/platform/pages/PlatformPlansPage'),
   'PlatformPlansPage',
 );
 

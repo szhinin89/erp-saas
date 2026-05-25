@@ -82,13 +82,39 @@ Se eliminó código legacy, duplicado y sin referencias que coexistía con la ar
 
 ## Riesgos / pendientes
 
-Todos los ítems identificados en el barrido inicial fueron resueltos en el mismo ciclo (2026-05-25):
+### Resueltos (2026-05-25, fase 1)
 
 - **AR/AP writes:** restaurados handlers CQRS + `ArApController` (`POST /api/accounting/ar-ap/*`).
 - **i18n platform detail:** claves `platform.subscriberDetail.*` en es/en/qu.
 - **EF naming:** archivos renombrados a `PurchaseInvoiceDetail*`, `WithholdingCertificate*`.
 - **Docs drift:** `PAGE-AUDIT.md` actualizado.
 - **`_tenant` en Application:** renombrado a `_subscriber` en toda la capa Application.
+
+### Consolidación arquitectónica global (2026-05-25, fase 2)
+
+**Backend — una sola forma oficial:**
+
+| Antes (legacy/coexistencia) | Canónico |
+|----------------------------|----------|
+| `POST /api/admin/iam/register-subscriber` | `POST /api/platform/subscribers` |
+| `POST /api/admin/iam/switch-subscriber` + `SwitchSubscriberCommand` (Access) | `POST /api/admin/iam/bootstrap-switch-subscriber` + `BootstrapSwitchSubscriberCommand` |
+| `POST /api/auth/switch-subscriber` + `SwitchSubscriberCommand` (Auth) | Impersonación platform (sin cambio de ruta) |
+| `GET /api/admin/iam/me/menu` | `GET /api/me/menu` |
+| `[Route("api/inventory/warehouses-legacy")]` | `api/inventory/warehouses` |
+
+**Frontend — una sola capa de páginas:**
+
+- Rutas lazy-importan **solo** desde `modules/*/pages/` (eliminados 25 wrappers `pages/*.tsx`).
+- Nav y dashboard apuntan a `/inventory/products` y `/finance/accounts` (no `/products` ni `/accounting`).
+- Eliminados aliases `@deprecated` `Bodega*` en `warehouseService.ts`.
+- `accessService.bootstrapSwitchSubscriber` → endpoint IAM renombrado.
+
+**Pendiente P1 (migración de datos, PR dedicado):**
+
+- `DocumentSchemaOptions.UseUnifiedSchema` — dual-path repos hasta cutover SQL (`scripts/db/sql/002_unified_documents_*.sql`).
+- CQRS español en Application (`CrearCompra`, `CrearVenta`, …) → rename inglés.
+- Merge `AuthSessionController` → `AuthController` (casing `api/Auth` vs `api/auth`).
+- CSS compartido aún en `frontend/src/pages/*.css` — mover a `modules/` o `styles/shared/`.
 
 ---
 
@@ -97,7 +123,10 @@ Todos los ítems identificados en el barrido inicial fueron resueltos en el mism
 | Dominio | Canónico |
 |---------|----------|
 | Alta suscriptor + admin | `PlatformCreateSubscriberWithAdminCommand` → `POST /api/platform/subscribers` |
+| Bootstrap switch subscriber | `BootstrapSwitchSubscriberCommand` → `POST /api/admin/iam/bootstrap-switch-subscriber` |
+| Impersonación platform | `SwitchSubscriberCommand` (Auth) → `POST /api/auth/switch-subscriber` |
 | Cambio de plan | `ChangePlatformSubscriberPlanCommand` → `PATCH /api/platform/subscribers/{id}/plan` |
+| Menú sesión runtime | `GetSessionMenuQuery` → `GET /api/me/menu` |
 | Estructura catálogo | `CatalogStructurePage` → `/inventory/catalog-structure` |
 | Tarifas inventario | `TariffsCatalogPage` → `/inventory/tariffs` |
 | Marcas/tipos/unidades | `BrandsPage`, `ProductTypesPage`, `UnitsPage` en `modules/catalog/pages/` |

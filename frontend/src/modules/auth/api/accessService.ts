@@ -15,8 +15,8 @@ export const accessService = {
     return data.responseObject;
   },
 
-  async switchSubscriber(bootstrapToken: string, req: SwitchSubscriberRequest) {
-    const { data } = await api.post<ApiResponse<SessionResponse>>('/api/admin/iam/switch-subscriber', req, {
+  async bootstrapSwitchSubscriber(bootstrapToken: string, req: SwitchSubscriberRequest) {
+    const { data } = await api.post<ApiResponse<SessionResponse>>('/api/admin/iam/bootstrap-switch-subscriber', req, {
       headers: { Authorization: `Bearer ${bootstrapToken}` },
     });
     return data.responseObject;

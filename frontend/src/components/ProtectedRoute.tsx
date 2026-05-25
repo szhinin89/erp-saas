@@ -29,7 +29,7 @@ function requiresCompanyContext(path: string): boolean {
     '/ventas/',
     '/inventory/',
     '/inventario/',
-    '/products',
+    '/inventory/products',
     '/finance/',
     '/accounting',
     '/contabilidad',

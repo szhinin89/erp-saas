@@ -3,7 +3,7 @@ using ERP.API.Contracts;
 using ERP.API.Extensions;
 using ERP.Application.Access.DTOs;
 using ERP.Application.Access.UseCases.BootstrapLogin;
-using ERP.Application.Access.UseCases.SwitchSubscriber;
+using ERP.Application.Access.UseCases.BootstrapSwitchSubscriber;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -34,10 +34,10 @@ public class AccessController : ControllerBase
         return this.ToOkOrUnauthorized(result);
     }
 
-    [HttpPost("switch-subscriber")]
+    [HttpPost("bootstrap-switch-subscriber")]
     [Authorize(Policy = "Bootstrap")]
     [ProducesResponseType(typeof(ApiResponse<SessionResponseDto?>), StatusCodes.Status200OK)]
-    public async Task<IActionResult> SwitchSubscriber([FromBody] SwitchSubscriberCommand command, CancellationToken ct)
+    public async Task<IActionResult> BootstrapSwitchSubscriber([FromBody] BootstrapSwitchSubscriberCommand command, CancellationToken ct)
     {
         var result = await _mediator.Send(command, ct);
         return this.ToOkOrBadRequest(result);

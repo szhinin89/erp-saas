@@ -7,16 +7,14 @@ using ERP.Domain.Access.Interfaces;
 using ERP.Domain.Modules.Company.Interfaces;
 using ERP.Domain.Subscribers.Interfaces;
 
-namespace ERP.Application.Access.UseCases.SwitchSubscriber;
+namespace ERP.Application.Access.UseCases.BootstrapSwitchSubscriber;
 
 /// <summary>
 /// Paso 2 del login ERP: bootstrap token + subscriberId → session token.
-/// Contexto: Company Admin y operador platform impersonando un subscriber ERP.
-/// Retorna <c>SessionResponseDto</c> (API de acceso legacy, usado por el frontend actual).
-/// No confundir con <see cref="ERP.Application.Auth.UseCases.SwitchSubscriber.SwitchSubscriberHandler"/>
-/// que sirve el flujo Platform (operador platform global, retorna AuthResponseDto con refresh token).
+/// Canónico: <c>POST /api/admin/iam/bootstrap-switch-subscriber</c>.
+/// Impersonación platform: <see cref="ERP.Application.Auth.UseCases.SwitchSubscriber.SwitchSubscriberHandler"/>.
 /// </summary>
-public class SwitchSubscriberHandler : IRequestHandler<SwitchSubscriberCommand, Result<SessionResponseDto>>
+public class BootstrapSwitchSubscriberHandler : IRequestHandler<BootstrapSwitchSubscriberCommand, Result<SessionResponseDto>>
 {
     private readonly IAccessRepository _accessRepository;
     private readonly IAccessTokenService _tokenService;
@@ -27,7 +25,7 @@ public class SwitchSubscriberHandler : IRequestHandler<SwitchSubscriberCommand, 
     private readonly ISessionModulesResolver _sessionModules;
     private readonly ICompanyProvisioningService _companyProvisioning;
 
-    public SwitchSubscriberHandler(
+    public BootstrapSwitchSubscriberHandler(
         IAccessRepository accessRepository,
         IAccessTokenService tokenService,
         ICurrentUser currentUser,
@@ -47,10 +45,7 @@ public class SwitchSubscriberHandler : IRequestHandler<SwitchSubscriberCommand, 
         _companyProvisioning = companyProvisioning;
     }
 
-    public Task<Result<SessionResponseDto>> HandleAsync(SwitchSubscriberCommand command, CancellationToken ct = default)
-        => Handle(command, ct);
-
-    public async Task<Result<SessionResponseDto>> Handle(SwitchSubscriberCommand command, CancellationToken ct)
+    public async Task<Result<SessionResponseDto>> Handle(BootstrapSwitchSubscriberCommand command, CancellationToken ct)
     {
         if (!_currentUser.IsAuthenticated)
             return Result<SessionResponseDto>.Failure("Unauthorized");
@@ -60,51 +55,7 @@ public class SwitchSubscriberHandler : IRequestHandler<SwitchSubscriberCommand, 
             return Result<SessionResponseDto>.Failure("Unauthorized");
 
         var user = await _accessRepository.GetUserByIdAsync(userId, ct);
-        if (user is null)
-        {
-            var role = _currentUser.Role;
-            var email = _currentUser.Email;
-            var fullName = _currentUser.FullName;
-
-            if (!string.Equals(role, PlatformAuthConstants.JwtPlatformOperatorRole, StringComparison.OrdinalIgnoreCase)
-                || string.IsNullOrWhiteSpace(email)
-                || string.IsNullOrWhiteSpace(fullName))
-                return Result<SessionResponseDto>.Failure("Unauthorized");
-
-            if (command.SubscriberId == Guid.Empty)
-            {
-                var superSessionGlobal = _tokenService.GenerateSessionToken(userId, email, fullName, Guid.Empty, PlatformAuthConstants.JwtPlatformOperatorRole);
-                return Result<SessionResponseDto>.Success(new SessionResponseDto(
-                    UserId: userId,
-                    FullName: fullName,
-                    Email: email,
-                    SubscriberId: Guid.Empty,
-                    Role: PlatformAuthConstants.JwtPlatformOperatorRole,
-                    Token: superSessionGlobal,
-                    PlanCode: null,
-                    EnabledModules: SubscriberSubscriptionCatalog.AllModuleKeys));
-            }
-
-            var tenantSa = await _subscriberRepository.GetByIdAsync(command.SubscriberId, ct);
-            if (tenantSa is null || !tenantSa.IsActive)
-                return Result<SessionResponseDto>.Failure("Unauthorized");
-
-            var superSessionSubscriber = _tokenService.GenerateSessionToken(userId, email, fullName, command.SubscriberId, PlatformAuthConstants.JwtPlatformOperatorRole);
-            await _configService.WarmupTenantAsync(command.SubscriberId, ct);
-            var superModules = await _sessionModules.GetEnabledModuleKeysAsync(command.SubscriberId, ct);
-
-            return Result<SessionResponseDto>.Success(new SessionResponseDto(
-                UserId: userId,
-                FullName: fullName,
-                Email: email,
-                SubscriberId: command.SubscriberId,
-                Role: PlatformAuthConstants.JwtPlatformOperatorRole,
-                Token: superSessionSubscriber,
-                tenantSa.PlanCode,
-                superModules));
-        }
-
-        if (!user.IsActive)
+        if (user is null || !user.IsActive)
             return Result<SessionResponseDto>.Failure("Unauthorized");
 
         var tenant = await _subscriberRepository.GetByIdAsync(command.SubscriberId, ct);

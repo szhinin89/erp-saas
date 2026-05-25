@@ -70,10 +70,10 @@ export function sortNavGroupsForMainBar(groups: NavGroup[]): NavGroup[] {
 
 /** Alias BD/legacy → rutas definidas en `App.tsx` (<Routes>). Sin coincidencia, `*` envía al dashboard. */
 const MENU_ROUTE_ALIASES: Record<string, string> = {
-  '/dashboard/products': '/products',
-  '/inventory/products': '/products',
-  '/catalog/products': '/products',
-  '/product': '/products',
+  '/dashboard/products': '/inventory/products',
+  '/catalog/products': '/inventory/products',
+  '/product': '/inventory/products',
+  '/products': '/inventory/products',
   '/finance/accounts': '/finance/accounts',
   '/finance/config': '/finance/accounts?tab=config',
   '/contabilidad/configuracion': '/finance/accounts?tab=config',

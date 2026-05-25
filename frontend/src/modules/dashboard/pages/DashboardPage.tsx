@@ -211,14 +211,14 @@ export function DashboardPage() {
                   <p className="dsh-quick-sub">Iniciar pipeline comercial</p>
                 </div>
               </button>
-              <button type="button" className="dsh-quick-btn" onClick={() => navigate('/products')}>
+              <button type="button" className="dsh-quick-btn" onClick={() => navigate('/inventory/products')}>
                 <span className="material-symbols-outlined dsh-quick-icon">inventory</span>
                 <div>
                   <p className="dsh-quick-label">{t('dashboard.quickAccess.addItem')}</p>
                   <p className="dsh-quick-sub">{t('dashboard.quickAccess.addItem.sub')}</p>
                 </div>
               </button>
-              <button type="button" className="dsh-quick-btn" onClick={() => navigate('/accounting')}>
+              <button type="button" className="dsh-quick-btn" onClick={() => navigate('/finance/accounts')}>
                 <span className="material-symbols-outlined dsh-quick-icon">analytics</span>
                 <div>
                   <p className="dsh-quick-label">{t('dashboard.quickAccess.viewReports')}</p>

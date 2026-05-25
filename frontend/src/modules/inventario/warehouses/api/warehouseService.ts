@@ -40,13 +40,6 @@ export type WarehousePayload = {
   dailyDispatchGoal?: number | null;
 };
 
-/** @deprecated Use WarehouseDto */
-export type BodegaDto = WarehouseDto;
-/** @deprecated Use WarehouseDetailDto */
-export type BodegaDetailDto = WarehouseDetailDto;
-/** @deprecated Use WarehousePayload */
-export type BodegaPayload = WarehousePayload;
-
 function listQuery(activeStatus: CatalogActiveStatus, search?: string, branchId?: string) {
   const q = new URLSearchParams();
   q.set('activeStatus', activeStatus);

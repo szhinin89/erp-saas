@@ -2,7 +2,6 @@ using ERP.API.Controllers.Platform;
 using ERP.API.Contracts;
 using ERP.API.Extensions;
 using ERP.Application.Access.DTOs;
-using ERP.Application.Access.UseCases.PlatformSubscribers;
 using ERP.Application.Access.UseCases.RevokeCompanyUserMembership;
 using ERP.Application.Access.UseCases.SubscriberAccess;
 using ERP.Application.Access.UseCases.UpsertCompanyUserMembership;
@@ -20,16 +19,6 @@ public sealed class AccessMembershipsController : ControllerBase
     private readonly IMediator _mediator;
 
     public AccessMembershipsController(IMediator mediator) => _mediator = mediator;
-
-    [HttpPost("register-subscriber")]
-    [Authorize(Roles = PlatformAuthorizationRoles.PlatformOperator)]
-    [ApiExplorerSettings(IgnoreApi = true)]
-    [ProducesResponseType(typeof(ApiResponse<SessionResponseDto?>), StatusCodes.Status201Created)]
-    public async Task<IActionResult> RegisterSubscriber([FromBody] PlatformCreateSubscriberWithAdminCommand command, CancellationToken ct)
-    {
-        var result = await _mediator.Send(command, ct);
-        return this.ToCreatedOrBadRequest(result, "Creado");
-    }
 
     [HttpPost("company_user_memberships/grant")]
     [Authorize(Roles = PlatformAuthorizationRoles.PlatformOperator)]

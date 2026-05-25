@@ -9,8 +9,8 @@ const CompanyManagementFormPage = lazyNamedPage<{ mode: 'create' | 'edit' }>(
   () => import('../modules/company-management/pages/CompanyManagementFormPage'),
   'CompanyManagementFormPage',
 );
-const SaasOverviewPage = lazyNamedPage(() => import('../pages/saas/SaasOverviewPage'), 'SaasOverviewPage');
-const SaasBillingPage = lazyNamedPage(() => import('../pages/saas/SaasBillingPage'), 'SaasBillingPage');
+const SaasOverviewPage = lazyNamedPage(() => import('../modules/saas/pages/SaasOverviewPage'), 'SaasOverviewPage');
+const SaasBillingPage = lazyNamedPage(() => import('../modules/saas/pages/SaasBillingPage'), 'SaasBillingPage');
 
 export const companyManagementRoutes = [
   <Route key="saas-overview" path="/saas/overview" element={<SaasOverviewPage />} />,

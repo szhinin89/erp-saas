@@ -147,7 +147,7 @@ export function LoginPage() {
 
       /* Single subscriber → enter directly */
       if (bootstrap.subscribers.length === 1) {
-        const session = await accessService.switchSubscriber(bootstrap.bootstrapToken, {
+        const session = await accessService.bootstrapSwitchSubscriber(bootstrap.bootstrapToken, {
           subscriberId: bootstrap.subscribers[0].subscriberId,
         });
         const auth: AuthResponse = {

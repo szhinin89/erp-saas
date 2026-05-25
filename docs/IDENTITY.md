@@ -50,9 +50,11 @@ Factories: `CreateCompanyUser`, `CreatePlatformOperator` (tipo dominio; producto
 | POST | `/api/auth/reset-password` | Completar reset |
 | POST | `/api/setup/platform-operator` | First-run operador platform (script `Crear-PlatformOperator.ps1`) |
 | POST | `/api/auth/switch-company` | Cambiar empresa activa |
-| POST | `/api/admin/iam/switch-subscriber` | Elegir subscriber (alias legacy) |
+| POST | `/api/auth/switch-subscriber` | Impersonación platform (operador global) |
+| POST | `/api/admin/iam/bootstrap-switch-subscriber` | Paso 2 login ERP (bootstrap token → sesión) |
 
-Aliases `[Obsolete]` delegan a handlers canónicos.
+Sesión runtime: menú `GET /api/me/menu`; permisos `GET /api/admin/iam/me/permissions`.
+Alta suscriptor platform: `POST /api/platform/subscribers` (único endpoint).
 
 Servicios: `IAccessTokenService`, `IRefreshTokenService`, `IPasswordHasher` (BCrypt).
 

@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-05-25T23:37:33.916Z",
+  "generatedAt": "2026-05-25T23:45:13.525Z",
   "summary": {
-    "total": 77,
-    "allowed": 77,
+    "total": 76,
+    "allowed": 76,
     "legacyViolations": 0,
     "allowlistViolations": 0
   },
@@ -41,6 +41,15 @@
       "allowed": true
     },
     {
+      "endpoint": "/api/admin/iam/bootstrap-switch-subscriber",
+      "files": [
+        "frontend/src/modules/auth/api/accessService.ts",
+        "frontend/src/modules/lib/authRefreshPolicy.ts"
+      ],
+      "legacy": false,
+      "allowed": true
+    },
+    {
       "endpoint": "/api/admin/iam/me/permissions",
       "files": [
         "frontend/src/access/usePermissionsUi.ts",
@@ -58,26 +67,9 @@
       "allowed": true
     },
     {
-      "endpoint": "/api/admin/iam/register-subscriber",
-      "files": [
-        "frontend/src/modules/lib/authRefreshPolicy.ts"
-      ],
-      "legacy": false,
-      "allowed": true
-    },
-    {
       "endpoint": "/api/admin/iam/subscriber/company_user_memberships",
       "files": [
         "frontend/src/modules/access/api/subscriberAccessService.ts",
-        "frontend/src/modules/lib/authRefreshPolicy.ts"
-      ],
-      "legacy": false,
-      "allowed": true
-    },
-    {
-      "endpoint": "/api/admin/iam/switch-subscriber",
-      "files": [
-        "frontend/src/modules/auth/api/accessService.ts",
         "frontend/src/modules/lib/authRefreshPolicy.ts"
       ],
       "legacy": false,

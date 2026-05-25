@@ -60,7 +60,7 @@ export function SubscriberSelectPage() {
     setError('');
     setLoading(true);
     try {
-      const session = await accessService.switchSubscriber(bootstrapToken, { subscriberId });
+      const session = await accessService.bootstrapSwitchSubscriber(bootstrapToken, { subscriberId });
       const auth: AuthResponse = {
         userId: session.userId,
         fullName: session.fullName,

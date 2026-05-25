@@ -9,9 +9,9 @@ const CatalogStructurePage = lazyNamedPage(
   () => import('../modules/catalog/pages/CatalogPages'),
   'CatalogStructurePage',
 );
-const BrandsPage = lazyNamedPage(() => import('../pages/BrandsPage'), 'BrandsPage');
-const ProductTypesPage = lazyNamedPage(() => import('../pages/ProductTypesPage'), 'ProductTypesPage');
-const UnitsPage = lazyNamedPage(() => import('../pages/UnitsPage'), 'UnitsPage');
+const BrandsPage = lazyNamedPage(() => import('../modules/catalog/pages/BrandsPage'), 'BrandsPage');
+const ProductTypesPage = lazyNamedPage(() => import('../modules/catalog/pages/ProductTypesPage'), 'ProductTypesPage');
+const UnitsPage = lazyNamedPage(() => import('../modules/catalog/pages/UnitsPage'), 'UnitsPage');
 const TransferenciasListPage = lazyNamedPage(
   () => import('../modules/inventario/transferencias/pages/TransferenciasListPage'),
   'TransferenciasListPage',
@@ -84,7 +84,7 @@ const WithholdingIssuedPage = lazyNamedPage(
   () => import('../modules/compras/withholding-issued/pages/WithholdingIssuedPage'),
   'WithholdingIssuedPage',
 );
-const BodegasPage = lazyNamedPage(() => import('../pages/BodegasPage'), 'BodegasPage');
+const BodegasPage = lazyNamedPage(() => import('../modules/inventario/warehouses/pages/BodegasPage'), 'BodegasPage');
 const CarriersPage = lazyNamedPage(
   () => import('../modules/logistica/transportistas/pages/CarriersPage'),
   'CarriersPage',

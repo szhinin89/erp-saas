@@ -16,10 +16,10 @@ const ModulePlaceholderPage = lazyNamedPage<{ variant: 'purchases' | 'hr' }>(
   'ModulePlaceholderPage',
 );
 
-const DashboardPage = lazyNamedPage(() => import('../pages/DashboardPage'), 'DashboardPage');
-const ProductsPage = lazyNamedPage(() => import('../pages/ProductsPage'), 'ProductsPage');
-const AccountingPage = lazyNamedPage(() => import('../pages/AccountingPage'), 'AccountingPage');
-const VentasFacturasPage = lazyNamedPage(() => import('../pages/VentasFacturasPage'), 'VentasFacturasPage');
+const DashboardPage = lazyNamedPage(() => import('../modules/dashboard/pages/DashboardPage'), 'DashboardPage');
+const ProductsPage = lazyNamedPage(() => import('../modules/products/pages/ProductPage'), 'ProductPage');
+const AccountingPage = lazyNamedPage(() => import('../modules/accounting/pages/AccountingPage'), 'AccountingPage');
+const VentasFacturasPage = lazyNamedPage(() => import('../modules/ventas/pages/VentasFacturasPage'), 'VentasFacturasPage');
 const CreateInvoicePage = lazyNamedPage(
   () => import('../modules/ventas/pages/CreateInvoicePage'),
   'CreateInvoicePage',
@@ -52,8 +52,8 @@ const QuoteDetailPage = lazyNamedPage(
   () => import('../modules/ventas/cotizaciones/pages/QuoteDetailPage'),
   'QuoteDetailPage',
 );
-const BranchesPage = lazyNamedPage(() => import('../pages/BranchesPage'), 'BranchesPage');
-const SalesReportPage = lazyNamedPage(() => import('../pages/SalesReportPage'), 'SalesReportPage');
+const BranchesPage = lazyNamedPage(() => import('../modules/branches/pages/BranchesPage'), 'BranchesPage');
+const SalesReportPage = lazyNamedPage(() => import('../modules/reportes/pages/SalesReportPage'), 'SalesReportPage');
 const MasterDataCustomersPage = lazyNamedPage(
   () => import('../modules/masterData/pages/MasterDataCustomersPage'),
   'MasterDataCustomersPage',

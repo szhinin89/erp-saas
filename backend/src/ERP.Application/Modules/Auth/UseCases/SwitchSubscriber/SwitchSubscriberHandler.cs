@@ -13,7 +13,7 @@ namespace ERP.Application.Auth.UseCases.SwitchSubscriber;
 /// Flujo Platform: operador platform global selecciona un subscriber para impersonar.
 /// Solo accesible con token Platform (IsPrimaryPlatformOperator = true).
 /// Retorna <c>AuthResponseDto</c> con refresh token completo.
-/// No confundir con <see cref="ERP.Application.Access.UseCases.SwitchSubscriber.SwitchSubscriberHandler"/>
+/// No confundir con <see cref="ERP.Application.Access.UseCases.BootstrapSwitchSubscriber.BootstrapSwitchSubscriberHandler"/>
 /// que sirve el flujo ERP (Company Admin, bootstrap → session, retorna SessionResponseDto).
 /// </summary>
 public class SwitchSubscriberHandler : IRequestHandler<SwitchSubscriberCommand, Result<AuthResponseDto>>
