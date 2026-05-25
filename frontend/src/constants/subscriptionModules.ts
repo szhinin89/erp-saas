@@ -31,9 +31,3 @@ export function moduleKeysMatch(apiKey: string, canonicalKey: string): boolean {
 }
 
 export type SubscriberModuleKey = (typeof SUBSCRIBER_MODULE_KEYS)[number];
-
-/** @deprecated Use SUBSCRIBER_MODULE_KEYS */
-export const TENANT_MODULE_KEYS = SUBSCRIBER_MODULE_KEYS;
-
-/** @deprecated Use SubscriberModuleKey */
-export type SubscriberModuleKey = SubscriberModuleKey;

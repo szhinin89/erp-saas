@@ -77,8 +77,9 @@ Constantes: `PLATFORM_UI` en `frontend/src/modules/platform/api/platformApiPaths
 - Imports `modules/superadmin`, `pages/SuperAdmin`
 - Script `Crear-SuperAdmin.ps1` (eliminado)
 - Literal `'SuperAdmin'` en cualquier capa del producto
+- Identificadores `Tenant*`, `TENANT_*`, `tenantId`, `variant="tenant"`, `shell-content-frame--tenant` en `frontend/src` (canónico: **Subscriber**)
 
-Guards: `tools/ci/platform-guard-config.json`, `tools/architecture/check-platform-legacy-surface.mjs`, `PlatformControlPlaneGuardTests.cs`.
+Guards: `tools/ci/platform-guard-config.json`, `tools/architecture/check-platform-legacy-surface.mjs`, `tools/architecture/check-frontend-subscriber-naming.mjs`, `PlatformControlPlaneGuardTests.cs`.
 
 ---
 
@@ -96,7 +97,7 @@ Guards: `tools/ci/platform-guard-config.json`, `tools/architecture/check-platfor
 |------|--------------|-------|
 | **Platform control plane** | `user_type=Platform`, rol `PlatformOperator`, sin ERP operativo global | `/platform/*`, `/api/platform/*` |
 | **ERP runtime** | `subscriber_id` + `company_id`, permisos por plan | `/sales`, `/masterdata`, … |
-| **Impersonación** | Platform elige tenant → banner + `/saas/*` | `POST /api/auth/switch-subscriber` |
+| **Impersonación** | Platform elige suscriptor → banner + `/saas/*` | `POST /api/auth/switch-subscriber` |
 
 ---
 

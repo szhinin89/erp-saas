@@ -267,7 +267,7 @@ export function buildGlobalPlatformNavGroups(
 
 /**
  * Enlaces del panel platform: siempre estáticos (navConfig), no filas de <c>ui_nav_items</c>,
- * para no mezclar la plataforma con el menú por-tenant/empresa en BD.
+ * para no mezclar la plataforma con el menú por-suscriptor/empresa en BD.
  */
 export function getPlatformPanelNavExtras(
   t: TranslateFn,

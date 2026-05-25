@@ -4,7 +4,7 @@ export const AUTH_PROFILE_STORAGE_KEY = 'auth-profile';
 /** @deprecated Migración: clave legacy en localStorage; fullLogout la elimina. */
 export const AUTH_STORAGE_KEY = 'auth-storage';
 
-/** Zustand persist — permisos y snapshot SaaS del tenant activo (sessionStorage). */
+/** Zustand persist — permisos y snapshot SaaS del suscriptor activo (sessionStorage). */
 export const PERMISSIONS_STORAGE_KEY = 'permissions-storage';
 
 /** Zustand persist — bootstrap IAM multi-subscriber (sessionStorage). */

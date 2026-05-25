@@ -20,7 +20,7 @@
    4. Campos (.zh-field)
    5. Alertas / Notices (.zh-form-alert)
    6. Form Header / Body / Section
-   7. Tenant Header
+   7. Subscriber Header
    8. Toggle
    9. Cards (.card, .table-card)
    10. Tablas (.table)
@@ -1361,7 +1361,7 @@ input[type="date"] { appearance: none; }
 }
 
 /* ── 25. GLOBAL TOPBAR ───────────────────────────────────── */
-/* Primary blue bar pattern (AppLayout header, ZHAppTenantHeader) */
+/* Primary blue bar pattern (AppLayout header, ZHAppSubscriberHeader) */
 
 /* Icon buttons inside primary headers */
 .zh-app-subscriberIconBtn {

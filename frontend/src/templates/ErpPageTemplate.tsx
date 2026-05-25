@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 import { PageShell } from '../components/PageShell';
 
 /**
- * Plantilla estándar para pantallas ERP (tenant) dentro de AppLayout + LayoutFrame.
+ * Plantilla estándar para pantallas ERP (suscriptor) dentro de AppLayout + LayoutFrame.
  * No incluye navegación ni LayoutFrame (ya los provee el shell).
  *
  * @see docs/frontend-layout-conventions.md

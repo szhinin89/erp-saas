@@ -118,7 +118,7 @@ export function PlatformSubscriberDetailPage() {
         clearPermissions,
       });
     } catch (e) {
-      setActionError(formatApiRequestError(e, { generic: 'No se pudo entrar al tenant.' }));
+      setActionError(formatApiRequestError(e, { generic: 'No se pudo entrar al suscriptor.' }));
     } finally {
       setActionBusy(false);
     }
@@ -185,7 +185,7 @@ export function PlatformSubscriberDetailPage() {
             </div>
           </div>
           <div className="sa-detail-card">
-            <h3 className="sa-detail-card-title">Entrar al tenant</h3>
+            <h3 className="sa-detail-card-title">Entrar al suscriptor</h3>
             <p className="subtle sa-detail-impersonation-hint">
               Abre el runtime del suscriptor. Al salir podrás volver a esta ficha desde el banner superior.
             </p>
@@ -197,7 +197,7 @@ export function PlatformSubscriberDetailPage() {
                 title={!subscriber.isActive ? 'El suscriptor está inactivo.' : undefined}
                 onClick={() => void handleImpersonate('/saas/overview')}
               >
-                Resumen del tenant
+                Resumen del suscriptor
               </ZHBtn>
               <ZHBtn
                 variant="ghost"
@@ -213,7 +213,7 @@ export function PlatformSubscriberDetailPage() {
                 disabled={actionBusy || !subscriber.isActive}
                 onClick={() => void handleImpersonate('/saas/billing')}
               >
-                Facturación del tenant
+                Facturación del suscriptor
               </ZHBtn>
             </div>
           </div>

@@ -1,7 +1,7 @@
 import { api } from '../../lib/api';
 import type { ApiResponse } from '../../../types/api';
 
-/** ERP Runtime — tenant self-service (Admin). Not Platform Control Plane. */
+/** ERP Runtime — self-service del suscriptor (Admin). Not Platform Control Plane. */
 export const RUNTIME_SUBSCRIBER_API = '/api/subscribers' as const;
 
 const runtimeSubscriber = (subscriberId: string) =>

@@ -62,10 +62,10 @@
 
 .sa-overviewHubCardAction { margin-top: auto; width: fit-content; }
 
-/* ── Tenant search ───────────────────────────────────────── */
+/* ── Subscriber search ───────────────────────────────────────── */
 .sa-search-row { margin-bottom: var(--space-4); }
 
-/* ── Tenant list ─────────────────────────────────────────── */
+/* ── Subscriber list ─────────────────────────────────────────── */
 .sa-subscriberList {
   display: flex;
   flex-direction: column;

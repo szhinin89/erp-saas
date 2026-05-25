@@ -50,9 +50,9 @@ export function ZHFormHeader(props: {
   );
 }
 
-export type ZHTenantHeaderModuleCrumb = { label: string; icon?: React.ReactNode; active?: boolean };
+export type ZHSubscriberHeaderModuleCrumb = { label: string; icon?: React.ReactNode; active?: boolean };
 
-export function ZHMultiTenantHeader(props: {
+export function ZHSubscriberShellHeader(props: {
   subscriberName: string;
   subscriberMeta?: string[]; // e.g. ["Quito, Ecuador", "RUC 179001...", "Plan Empresarial"]
   subscriberBadge?: string | null; // e.g. Plan
@@ -60,7 +60,7 @@ export function ZHMultiTenantHeader(props: {
   subscriberLogoUrl?: string | null;
   subscriberColor?: string | null; // used when no logo image
   fiscalYear?: string | number | null;
-  modules?: ZHTenantHeaderModuleCrumb[];
+  modules?: ZHSubscriberHeaderModuleCrumb[];
   statusText?: string | null; // e.g. "Sistema operativo · Subscriber #TEN-0014"
   zhLogoSrc?: string | null; // defaults to /zh-logo.svg (public)
   right?: React.ReactNode;

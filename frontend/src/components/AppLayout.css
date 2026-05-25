@@ -1,6 +1,6 @@
 /* AppLayout — main app shell, nav menu, platform impersonation banner */
 
-/* ── Tenant header wrapper ────────────────────────────────── */
+/* ── Subscriber header wrapper ────────────────────────────────── */
 .app-subscriberHeaderWrap {
   position: sticky;
   top: 0;
@@ -8,7 +8,7 @@
 }
 
 /* ── Platform impersonation banner ─────────────────────────── */
-/* Shown when a platform operator has entered a tenant dashboard */
+/* Shown when a platform operator has entered a subscriber dashboard */
 .platform-impersonation-banner {
   background: var(--color-secondary-container);
   color: var(--color-on-secondary-container);
@@ -128,7 +128,7 @@
 .platform-impersonation-banner-btn:disabled { opacity: 0.6; cursor: not-allowed; }
 
 /* ── Main menu — horizontal nav bar ──────────────────────── */
-/* Renders as bottomLeft inside ZHAppTenantHeader → zh-subscriber-status */
+/* Renders as bottomLeft inside ZHAppSubscriberHeader → zh-subscriber-status */
 .app-mainmenu {
   display: flex;
   align-items: center;

@@ -108,7 +108,7 @@ export function PlatformSubscribersPage() {
         <div>
           <h2 className="sa-subscribers-title">Suscriptores</h2>
           <p className="sa-subscribers-sub">
-            Abre la ficha de un suscriptor para administrarlo o entrar a su tenant.
+            Abre la ficha de un suscriptor para administrarlo o entrar a su runtime ERP.
           </p>
         </div>
         <div className="sa-subscribers-header-actions">

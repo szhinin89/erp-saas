@@ -146,7 +146,7 @@ export function useAppLayoutNavigation() {
       try {
         if (!cancelled) await syncSessionEntitlements();
       } catch {
-        // si falla, el menú seguirá ocultando items hasta re-login/switch tenant
+        // si falla, el menú seguirá ocultando items hasta re-login/switch suscriptor
       }
     });
 

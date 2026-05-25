@@ -21,8 +21,8 @@ function normalizeUuid(uuid: string): string {
   return uuid.replace(/-/g, '').toLowerCase();
 }
 
-/** Errores definitivos del login tenant: no intentar bootstrap. */
-function isDefinitiveTenantLoginError(err: unknown): boolean {
+/** Errores definitivos del login suscriptor: no intentar bootstrap. */
+function isDefinitiveSubscriberLoginError(err: unknown): boolean {
   const message = readApiErrorMessage(err)?.toLowerCase() ?? '';
   if (!message) return false;
   return (
@@ -88,7 +88,7 @@ export function LoginPage() {
     };
 
     try {
-      /* ── 1. Login tenant/empresa (caso habitual: Admin, operadores) ── */
+      /* ── 1. Login suscriptor/empresa (caso habitual: Admin, operadores) ── */
       try {
         const payload = await authService.loginUser(credentials);
 
@@ -116,7 +116,7 @@ export function LoginPage() {
           return;
         }
       } catch (err) {
-        if (isDefinitiveTenantLoginError(err)) {
+        if (isDefinitiveSubscriberLoginError(err)) {
           throw err;
         }
       }
@@ -130,7 +130,7 @@ export function LoginPage() {
             return;
           }
         } catch (platformErr) {
-          if (isDefinitiveTenantLoginError(platformErr)) {
+          if (isDefinitiveSubscriberLoginError(platformErr)) {
             throw platformErr;
           }
         }

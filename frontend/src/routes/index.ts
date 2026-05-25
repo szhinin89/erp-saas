@@ -9,7 +9,7 @@ export interface AppRoutesConfig {
 }
 
 /**
- * Compone rutas ERP runtime + SaaS tenant (sin platform shell — ver `platformRoutes.tsx`).
+ * Compone rutas ERP runtime + SaaS suscriptor (sin platform shell — ver `platformRoutes.tsx`).
  */
 export function getAppRoutes(config: AppRoutesConfig) {
   void config;

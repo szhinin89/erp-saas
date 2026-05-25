@@ -311,7 +311,7 @@
 .sap-plans-summary-stat-value { font-size: var(--text-label-md-size); font-weight: 700; color: var(--color-text-primary); margin: 0; }
 .sap-plans-summary-stat-value--success { color: var(--color-success); }
 
-/* ── Tenant section ──────────────────────────────────────── */
+/* ── Subscriber section ──────────────────────────────────────── */
 .sap-subscriber-toolbar {
   display: flex;
   gap: var(--space-3);

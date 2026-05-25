@@ -81,7 +81,7 @@ function validateValueByType(value: string, dataType: ConfigDataType): string | 
 export function ConfigManagementPanel(props: ConfigManagementPanelProps) {
   const { subscriberId, canManage, title = 'Configuración jerárquica', subtitle } = props;
   const config = useConfig();
-  const sameTenantAsContext = normalize(config.subscriberId) === normalize(subscriberId);
+  const sameSubscriberAsContext = normalize(config.subscriberId) === normalize(subscriberId);
 
   const [localEntries, setLocalEntries] = useState<ConfigEntry[]>([]);
   const [loading, setLoading] = useState(false);
@@ -104,7 +104,7 @@ export function ConfigManagementPanel(props: ConfigManagementPanelProps) {
   const selectedDataType = watch('dataType');
 
   const entries = useMemo(() => {
-    const source = sameTenantAsContext ? config.entries : localEntries;
+    const source = sameSubscriberAsContext ? config.entries : localEntries;
     const sorted = sortEntries(source);
     const query = normalize(search);
     return sorted.filter((entry) => {
@@ -113,14 +113,14 @@ export function ConfigManagementPanel(props: ConfigManagementPanelProps) {
       const haystack = `${entry.scope} ${entry.module ?? ''} ${entry.feature ?? ''} ${entry.key} ${entry.value} ${entry.dataType}`.toLowerCase();
       return haystack.includes(query);
     });
-  }, [sameTenantAsContext, config.entries, localEntries, scopeFilter, search]);
+  }, [sameSubscriberAsContext, config.entries, localEntries, scopeFilter, search]);
 
   const refresh = async () => {
     setError('');
     setOk('');
     setLoading(true);
     try {
-      if (sameTenantAsContext) {
+      if (sameSubscriberAsContext) {
         await config.refresh();
       } else {
         const loaded = await configService.loadSubscriberConfig(subscriberId);
@@ -169,7 +169,7 @@ export function ConfigManagementPanel(props: ConfigManagementPanelProps) {
         value: values.value,
       } as const;
 
-      if (sameTenantAsContext) {
+      if (sameSubscriberAsContext) {
         await config.upsertConfig(payload);
       } else {
         const saved = await configService.upsertConfig(subscriberId, payload);
@@ -209,7 +209,7 @@ export function ConfigManagementPanel(props: ConfigManagementPanelProps) {
         module: entry.module,
         feature: entry.feature,
       } as const;
-      if (sameTenantAsContext) {
+      if (sameSubscriberAsContext) {
         await config.deleteConfig(payload);
       } else {
         await configService.deleteConfig(subscriberId, payload);
@@ -273,7 +273,7 @@ export function ConfigManagementPanel(props: ConfigManagementPanelProps) {
 
       {ok ? <ZHPageNotice variant="success" message={ok} /> : null}
       {error ? <ZHPageNotice variant="error" message="Error" detail={error} /> : null}
-      {config.error && sameTenantAsContext ? <ZHPageNotice variant="warning" message={config.error} /> : null}
+      {config.error && sameSubscriberAsContext ? <ZHPageNotice variant="warning" message={config.error} /> : null}
 
       {canManage ? (
         <form onSubmit={saveConfig} className="companies-config-form">

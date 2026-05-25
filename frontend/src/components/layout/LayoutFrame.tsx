@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import './LayoutFrame.css';
 
-export type LayoutFrameVariant = 'tenant' | 'platform';
+export type LayoutFrameVariant = 'subscriber' | 'platform';
 
 export type LayoutFrameProps = {
   children: ReactNode;
@@ -14,7 +14,7 @@ export type LayoutFrameProps = {
 };
 
 /**
- * Shared content-area frame for tenant and platform shells.
+ * Shared content-area frame for subscriber ERP and platform shells.
  * Navigation, sidebars and auth stay in AppLayout / PlatformLayout.
  *
  * @architecture Do not import from route pages — only AppLayout / PlatformLayout.
@@ -24,7 +24,7 @@ export function LayoutFrame({
   children,
   banner,
   topUtilities,
-  variant = 'tenant',
+  variant = 'subscriber',
   className,
 }: LayoutFrameProps) {
   const rootClass = [

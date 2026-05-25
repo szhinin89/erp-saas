@@ -134,7 +134,7 @@ export function AppLayout() {
   return (
     <div className="layout app-layout">
       <LayoutFrame
-        variant="tenant"
+        variant="subscriber"
         className="app-layout__frame"
         banner={
           showImpersonationBanner ? (

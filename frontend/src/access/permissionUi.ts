@@ -42,7 +42,7 @@ export function canShowPermissionKey(
   return false;
 }
 
-/** Nav-only: tenant admins see full menu groups when backend envió wildcard. */
+/** Nav-only: subscriber admins see full menu groups when backend envió wildcard. */
 export function shouldUseNavAdminBypass(role?: string | null): boolean {
   const { permissions } = usePermissionsStore.getState();
   return hasUnrestrictedPermissionSnapshot(permissions) && isSubscriberAdminRole(role);

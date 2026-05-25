@@ -33,8 +33,8 @@
   gap: var(--shell-content-gap);
 }
 
-/* Tenant shell: full viewport column inside .layout */
-.shell-content-frame--tenant {
+/* Subscriber ERP shell: full viewport column inside .layout */
+.shell-content-frame--subscriber {
   min-height: 100vh;
 }
 

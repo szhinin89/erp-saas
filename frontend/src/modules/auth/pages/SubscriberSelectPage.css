@@ -1,4 +1,4 @@
-/* TenantSelectPage — page-specific styles */
+/* SubscriberSelectPage — page-specific styles */
 
 /* Wider wrapper than default 440px */
 .ts-wrapper { max-width: 500px; }
@@ -54,7 +54,7 @@
   background-position: left 10px center;
 }
 
-/* ── Tenant list ──────────────────────────────────────────── */
+/* ── Subscriber list ──────────────────────────────────────────── */
 .ts-list {
   display: flex;
   flex-direction: column;
