@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
@@ -32,8 +33,16 @@ export const EMPTY_ACCOUNT_FORM: CreateAccountFormValues = {
   parentId: '',
 };
 
+const VALID_TABS: AccountingTab[] = ['accounts', 'journal', 'mayor', 'balance', 'config'];
+
+function parseTabParam(raw: string | null): AccountingTab | null {
+  if (!raw) return null;
+  return VALID_TABS.includes(raw as AccountingTab) ? (raw as AccountingTab) : null;
+}
+
 export function useAccountingPage() {
   const { t } = useI18n();
+  const [searchParams, setSearchParams] = useSearchParams();
   const subscriberId = useAuthStore((s) => s.user?.subscriberId ?? '');
   const {
     canShow,
@@ -49,7 +58,17 @@ export function useAccountingPage() {
   const canViewConfig = canShow('finance.config.view');
   const canEditConfig = canShow('finance.config.edit');
 
-  const [tab, setTab] = useState<AccountingTab>('accounts');
+  const initialTab: AccountingTab = parseTabParam(searchParams.get('tab')) ?? 'accounts';
+  const [tab, setTabState] = useState<AccountingTab>(initialTab);
+
+  const setTab = useCallback((next: AccountingTab) => {
+    setTabState(next);
+    if (next === 'accounts') {
+      setSearchParams({}, { replace: true });
+    } else {
+      setSearchParams({ tab: next }, { replace: true });
+    }
+  }, [setSearchParams]);
   const [showJournal, setShowJournal] = useState(false);
 
   const [jDesde, setJDesde] = useState(YEAR_START);

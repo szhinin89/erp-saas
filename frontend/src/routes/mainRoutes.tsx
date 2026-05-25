@@ -125,11 +125,11 @@ export const mainRoutes = [
 
   // ── Finance / Contabilidad ─────────────────────────────────────────────────
   <Route key="finance-accounts" path="/finance/accounts" element={<AccountingPage />} />,
-  <Route key="finance-config" path="/finance/config" element={<AccountingPage />} />,
   // Legacy redirects
+  <Route key="finance-config" path="/finance/config" element={<Navigate to="/finance/accounts?tab=config" replace />} />,
   <Route key="accounting-legacy" path="/accounting" element={<Navigate to="/finance/accounts" replace />} />,
   <Route key="contabilidad-legacy" path="/contabilidad" element={<Navigate to="/finance/accounts" replace />} />,
-  <Route key="contabilidad-config" path="/contabilidad/configuracion" element={<Navigate to="/finance/config" replace />} />,
+  <Route key="contabilidad-config" path="/contabilidad/configuracion" element={<Navigate to="/finance/accounts?tab=config" replace />} />,
 
   // ── Purchases / Compras ────────────────────────────────────────────────────
   <Route key="purchases-invoices" path="/purchases/invoices" element={<ComprasListPage />} />,
