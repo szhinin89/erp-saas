@@ -44,7 +44,13 @@ export function SecuritySettingsPage() {
   const [savingKey, setSavingKey] = useState<string | null>(null);
   const [error, setError] = useState('');
 
+  const isPlatformOperator = isJwtPlatformOperatorRole(user?.role);
+
   useEffect(() => {
+    if (!isPlatformOperator) {
+      setLoading(false);
+      return;
+    }
     let cancelled = false;
     (async () => {
       try {
@@ -64,9 +70,7 @@ export function SecuritySettingsPage() {
     return () => {
       cancelled = true;
     };
-  }, []);
-
-  const isPlatformOperator = isJwtPlatformOperatorRole(user?.role);
+  }, [isPlatformOperator]);
 
   const rows = useMemo(() => {
     if (!matrix) return [];
