@@ -32,6 +32,6 @@ public sealed class InvoiceAuthorizedEvent : BaseDomainEvent
         BranchId = branchId;
         InvoiceNumber = invoiceNumber;
         StockLines = stockLines;
-        TenantId = subscriberId;
+        SubscriberId = subscriberId;
     }
 }

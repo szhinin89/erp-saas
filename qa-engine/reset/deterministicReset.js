@@ -89,20 +89,20 @@ export async function runDeterministicReset(apiBase, opts = {}) {
     removedSuperAdmins: resetData?.removedSuperAdmins ?? resetData?.RemovedSuperAdmins,
   });
 
-  const claim = await request('POST', `${apiBase}/api/setup/superadmin`, {
+  const claim = await request('POST', `${apiBase}/api/setup/platform-operator`, {
     body: {
       setupToken,
-      firstName: SEED_MANIFEST.superAdmin.firstName,
-      lastName: SEED_MANIFEST.superAdmin.lastName,
-      email: SEED_MANIFEST.superAdmin.email,
-      password: SEED_MANIFEST.superAdmin.password,
+      firstName: SEED_MANIFEST.platformOperator.firstName,
+      lastName: SEED_MANIFEST.platformOperator.lastName,
+      email: SEED_MANIFEST.platformOperator.email,
+      password: SEED_MANIFEST.platformOperator.password,
     },
   });
   if (!claim.ok) {
-    throw new Error(`claim superadmin failed: ${claim.status} ${claim.text}`);
+    throw new Error(`claim platform-operator failed: ${claim.status} ${claim.text}`);
   }
 
-  steps.push({ step: 'identity.claim-superadmin', status: 'ok' });
+  steps.push({ step: 'identity.claim-platform-operator', status: 'ok' });
 
   if (!opts.skipRedisFlush) {
     await resetCacheProbeState(apiBase, logger);

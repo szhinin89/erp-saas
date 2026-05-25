@@ -226,7 +226,7 @@ export function usePlatformMenuBuilderActions(params: PlatformMenuBuilderActions
     }
   };
 
-  const loadTenantResolved = async () => {
+  const loadSubscriberResolved = async () => {
     if (!subscriberId) return;
     setErr('');
     try {
@@ -262,7 +262,7 @@ export function usePlatformMenuBuilderActions(params: PlatformMenuBuilderActions
         }
       }
       await platformService.putSubscriberCustomMenu(subscriberId, json);
-      await loadTenantResolved();
+      await loadSubscriberResolved();
     } catch (e) {
       setErr(
         formatApiRequestError(e, {
@@ -281,7 +281,7 @@ export function usePlatformMenuBuilderActions(params: PlatformMenuBuilderActions
     setErr('');
     try {
       await platformService.deleteSubscriberCustomMenu(subscriberId);
-      await loadTenantResolved();
+      await loadSubscriberResolved();
     } catch (e) {
       setErr(
         formatApiRequestError(e, {
@@ -365,7 +365,7 @@ export function usePlatformMenuBuilderActions(params: PlatformMenuBuilderActions
     loadPlanSaved,
     savePlan,
     clearPlan,
-    loadTenantResolved,
+    loadSubscriberResolved,
     saveSubscriber,
     resetSubscriber,
     runCopyFromPlan,

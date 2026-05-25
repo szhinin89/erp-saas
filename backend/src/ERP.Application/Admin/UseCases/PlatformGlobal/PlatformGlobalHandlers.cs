@@ -93,7 +93,7 @@ public sealed class UpdateInstanceQuotaHandler : IRequestHandler<UpdateInstanceQ
             (!body.MaxActiveSubscribers.HasValue || body.MaxActiveSubscribers <= 0))
         {
             return Task.FromResult(Result<bool>.Failure(
-                "En instancia dedicada debe indicar maxActiveTenants (máximo de empresas/RUC) mayor que cero."));
+                "En instancia dedicada debe indicar maxActiveSubscribers (máximo de empresas/RUC) mayor que cero."));
         }
 
         _persistence.Save(body);

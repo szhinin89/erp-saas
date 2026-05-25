@@ -1,12 +1,12 @@
 /** Deterministic QA seed manifest — fixed credentials for reproducible CI runs. */
 export const SEED_MANIFEST = {
-  superAdmin: {
+  platformOperator: {
     firstName: 'Super',
     lastName: 'Admin',
     email: 'superadmin@qa-engine.local',
     password: 'QaEngineSuperAdmin123!',
   },
-  tenantA: {
+  subscriberA: {
     subscriberName: 'Subscriber Demo',
     subscriberSlug: 'subscriber-demo',
     adminFirstName: 'Admin',
@@ -15,11 +15,11 @@ export const SEED_MANIFEST = {
     adminPassword: 'Admin123!',
     planCode: 'starter',
   },
-  tenantB: {
-    subscriberName: 'Tenant B QA',
-    subscriberSlug: 'tenant-b-qa',
+  subscriberB: {
+    subscriberName: 'Subscriber B QA',
+    subscriberSlug: 'subscriber-b-qa',
     adminFirstName: 'Admin',
-    adminLastName: 'TenantB',
+    adminLastName: 'SubscriberB',
     adminEmail: 'admin-b@qa-engine.local',
     adminPassword: 'QaEngineAdmin123!',
     planCode: 'starter',

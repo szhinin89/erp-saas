@@ -11,7 +11,7 @@ Relacionado: [ARCHITECTURE.md](./ARCHITECTURE.md), [SAAS-COMMERCIAL.md](./SAAS-C
 | Columna | Descripción |
 |---------|-------------|
 | `user_type` | `Platform` \| `Company` \| `Subscriber` (future) |
-| `platform_role` | `PlatformOperator` (canónico; lectura legacy vía `PlatformAuthConstants.LegacyPlatformOperatorWireRole`) \| `Support` \| `BillingAdmin` (nullable) |
+| `platform_role` | `PlatformOperator` \| `Support` \| `BillingAdmin` (nullable) |
 | `subscriber_id` | Hint opcional; **Platform debe ser NULL** |
 | `email_normalized` | Índice único |
 | `security_stamp` | Revocación de sesiones |

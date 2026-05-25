@@ -39,7 +39,7 @@ internal static class UnifiedIntegrationTestSeed
         await ctx.Database.ExecuteSqlRawAsync(
             """
             INSERT INTO subscribers (id, name, slug, is_active, password_reset_mode, display_order, priority, electronic_billing_trial_enabled, created_at, created_by)
-            VALUES ({0}, 'Test Tenant', 'test-tenant', true, 0, 0, 0, false, {1}, {2})
+            VALUES ({0}, 'Test Subscriber', 'test-subscriber', true, 0, 0, 0, false, {1}, {2})
             ON CONFLICT (id) DO NOTHING;
             INSERT INTO company (id, subscriber_id, ruc, legal_name, main_address, country_code, created_at, updated_at)
             VALUES ({3}, {0}, '1799999999001', 'Test Company', 'Quito', 'ECU', {1}, {1})

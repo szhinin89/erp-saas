@@ -252,12 +252,12 @@ public class GetPlatformSubscribersHandler : IRequestHandler<GetPlatformSubscrib
 
     public GetPlatformSubscribersHandler(
         ISubscriberRepository subscriberRepository,
-        ISubscriberMenuAdminService tenantMenuAdmin,
+        ISubscriberMenuAdminService subscriberMenuAdmin,
         ISessionModulesResolver sessionModules,
         IAccessRepository accessRepository)
     {
         _subscriberRepository = subscriberRepository;
-        _subscriberMenuAdmin = tenantMenuAdmin;
+        _subscriberMenuAdmin = subscriberMenuAdmin;
         _sessionModules = sessionModules;
         _accessRepository = accessRepository;
     }

@@ -49,7 +49,7 @@ export function PlatformMenuBuilderLegacyPanel(props: PlatformMenuBuilderLegacyP
     loadPlanSaved,
     savePlan,
     clearPlan,
-    loadTenantResolved,
+    loadSubscriberResolved,
     saveSubscriber,
     resetSubscriber,
     runCopyFromPlan,
@@ -244,7 +244,7 @@ export function PlatformMenuBuilderLegacyPanel(props: PlatformMenuBuilderLegacyP
             </>
           ) : (
             <>
-              <ZHBtn variant="ghost" size="md" type="button" onClick={() => void loadTenantResolved()} disabled={busy || !subscriberId}>
+              <ZHBtn variant="ghost" size="md" type="button" onClick={() => void loadSubscriberResolved()} disabled={busy || !subscriberId}>
                 {t('platform.menuBuilder.loadResolvedSubscriber')}
               </ZHBtn>
               <ZHBtn variant="ghost" size="md" type="button" onClick={() => void resetSubscriber()} disabled={busy || !subscriberId}>

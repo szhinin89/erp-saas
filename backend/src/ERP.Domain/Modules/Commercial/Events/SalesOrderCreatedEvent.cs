@@ -25,6 +25,6 @@ public sealed class SalesOrderCreatedEvent : BaseDomainEvent
         BranchId = branchId;
         WarehouseId = warehouseId;
         UserId = userId;
-        TenantId = subscriberId;
+        SubscriberId = subscriberId;
     }
 }

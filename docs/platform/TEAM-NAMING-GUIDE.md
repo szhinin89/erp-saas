@@ -2,17 +2,17 @@
 
 **Para todo el equipo.** Evita confusión entre nombres legacy y el producto actual.
 
-**Última sync:** 2026-05-23
+**Última sync:** 2026-05-25
 
 ---
 
 ## Regla de oro
 
-| Usar en código, docs operativos, PRs, scripts | No usar nunca en nombres nuevos |
-|------------------------------------------------|----------------------------------|
+| Usar en código, docs operativos, PRs, scripts | No usar nunca |
+|------------------------------------------------|---------------|
 | **platform**, **operador platform**, **PlatformOperator** | `SuperAdmin`, `superadmin`, `superAdmin*`, `isSuperAdmin`, `SuperAdminController` |
 
-Los valores wire legacy (`SuperAdmin` en JWT antiguo, keys JSON antiguas, URL `/superadmin/*` como redirect) existen **solo** en los archivos listados abajo — no copiar esos literales en código nuevo.
+**Zero legacy en código (2026-05-25):** no hay aliases wire, redirects `/superadmin/*` ni `/companies/*`, ni lectura de JWT `SuperAdmin`. Migración BD: `20260525223540_RemoveLegacySuperAdminWireValues`.
 
 ---
 
@@ -72,29 +72,13 @@ Constantes: `PLATFORM_UI` en `frontend/src/modules/platform/api/platformApiPaths
 
 ---
 
-## Legacy permitido (solo lectura / compat)
-
-No crear identificadores con estos nombres; solo parsear datos viejos o redirects.
-
-| Wire legacy | Dónde está centralizado | Uso |
-|-------------|-------------------------|-----|
-| JWT `"SuperAdmin"` | `PlatformAuthConstants.LegacyPlatformOperatorWireRole`, `platformAuth.ts` → `LEGACY_WIRE.jwtRole` | Tokens/BD antiguos |
-| JSON `superAdminPanelEnabled` | `platformAuth.ts` → `LEGACY_WIRE` | GET deployment antiguo |
-| JSON `requireSuperAdminPanel` | `platformAuth.ts` → `LEGACY_WIRE` | Menú API antiguo |
-| URL `/superadmin/*` | `platformRoutes.tsx` | Redirect → `/platform/*` |
-| Config `Deployment:SuperAdminPanelEnabled` | `DeploymentFeatureFlags.cs` | Env legacy (preferir `Deployment:PlatformPanelEnabled`) |
-
-**Esquema BD (2026-05-23, pre-producción):** columnas canónicas `is_platform_only_feature`, `require_platform_panel`. Tras este cambio, recrear BD local (`dotnet ef database drop` + `dotnet ef database update`).
-
----
-
 ## Prohibido (CI falla si reaparece)
 
 - Rutas `/api/superadmin/*`, `superadmin-login`, `/api/admin/iam/superadmin/*`
 - Archivos/clases `*SuperAdmin*`, `SuperAdminService`, `useSuperAdmin`, `isSuperAdmin`
 - Imports `modules/superadmin`, `pages/SuperAdmin`
 - Script `Crear-SuperAdmin.ps1` (eliminado)
-- Literal `'SuperAdmin'` en frontend fuera de `constants/platformAuth.ts`
+- Literal `'SuperAdmin'` en cualquier capa del producto
 
 Guards: `tools/ci/platform-guard-config.json`, `tools/architecture/check-platform-legacy-surface.mjs`, `PlatformControlPlaneGuardTests.cs`.
 
@@ -120,8 +104,8 @@ Guards: `tools/ci/platform-guard-config.json`, `tools/architecture/check-platfor
 
 ## Checklist PR (platform)
 
-- [ ] Sin `SuperAdmin` / `superadmin` en nombres de archivos, funciones, props, rutas nuevas
-- [ ] UI platform bajo `/platform/*` (redirect legacy OK solo en `platformRoutes.tsx`)
+- [ ] Sin `SuperAdmin` / `superadmin` en nombres de archivos, funciones, props, rutas
+- [ ] UI platform bajo `/platform/*` (sin redirects legacy)
 - [ ] API control plane bajo `/api/platform/*`
 - [ ] Rol/menú: `PlatformOperator` o helpers de `platformAuth.ts`
 - [ ] Docs operativos enlazan a este archivo o `CANONICAL-ROUTES.md`

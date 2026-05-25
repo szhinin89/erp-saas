@@ -74,7 +74,7 @@ public sealed class UnifiedDocumentSyncIntegrationTests
         services.AddSingleton<ICurrentSubscriber>(tenant.Object);
         services.AddSingleton<ICurrentCompany>(CreateTestCompany());
         services.AddSingleton(Mock.Of<IPublisher>());
-        services.Configure<SaasEntitlementsOptions>(_ => { });
+        services.Configure<SubscriberEntitlementsOptions>(_ => { });
         services.AddScoped<IPlatformQueryAccessor, PlatformQueryAccessor>();
         services.AddDbContext<ErpDbContext>((_, o) =>
             o.UseNpgsql(ConnectionString, b => b.MigrationsAssembly(typeof(ErpDbContext).Assembly.FullName)));

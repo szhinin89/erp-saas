@@ -114,7 +114,7 @@ public sealed class SubscriberProvisioningOrchestrator : ISubscriberProvisioning
                     adminUser.FullName,
                     module: "subscribers",
                     action: "tenant.create",
-                    entityType: "Tenant",
+                    entityType: "Subscriber",
                     entityId: subscriber.Id,
                     description: request.AuditDescription), ct);
             }

@@ -41,8 +41,8 @@ export async function runPermissionsSuite(runner, api, ctx) {
   await runner.run('permissions.bootstrap.bypass', 'Bootstrap token cannot access business API', 'permissions', true, async ({ recordBehavior }) => {
     const boot = await request('POST', `${api}/api/admin/iam/bootstrap-login`, {
       body: {
-        email: SEED_MANIFEST.tenantA.adminEmail,
-        password: SEED_MANIFEST.tenantA.adminPassword,
+        email: SEED_MANIFEST.subscriberA.adminEmail,
+        password: SEED_MANIFEST.subscriberA.adminPassword,
       },
     });
     if (!boot.ok) throw new Error(`bootstrap login failed: ${boot.status}`);

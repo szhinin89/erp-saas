@@ -57,7 +57,7 @@ public class UpsertCompanyUserMembershipHandler : IRequestHandler<UpsertCompanyU
         var existing = await _accessRepository.GetCompanyUserMembershipAsync(company.Id, user.Id, ct);
         if (existing is null)
         {
-            var cap = await DeploymentQuota.GetBlockingReasonIfAtTenantCompanyUserMembershipUserCapAsync(
+            var cap = await DeploymentQuota.GetBlockingReasonIfAtSubscriberCompanyUserMembershipUserCapAsync(
                 _deployment, _accessRepository, command.SubscriberId, ct);
             if (cap is not null)
                 return Result<object>.Failure(cap);
@@ -69,7 +69,7 @@ public class UpsertCompanyUserMembershipHandler : IRequestHandler<UpsertCompanyU
         {
             if (!existing.IsActive)
             {
-                var capRe = await DeploymentQuota.GetBlockingReasonIfAtTenantCompanyUserMembershipUserCapAsync(
+                var capRe = await DeploymentQuota.GetBlockingReasonIfAtSubscriberCompanyUserMembershipUserCapAsync(
                     _deployment, _accessRepository, command.SubscriberId, ct);
                 if (capRe is not null)
                     return Result<object>.Failure(capRe);

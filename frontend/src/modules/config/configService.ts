@@ -46,7 +46,7 @@ export const configService = {
   },
 
   /** Config de un tenant concreto vía panel platform (JWT global). */
-  async loadTenantConfig(subscriberId: string): Promise<ConfigEntry[]> {
+  async loadSubscriberConfig(subscriberId: string): Promise<ConfigEntry[]> {
     const fallbackGlobal = await safeGet<unknown[]>(
       `${platformConfigBase(subscriberId)}/global`,
     );

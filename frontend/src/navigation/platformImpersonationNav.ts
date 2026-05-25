@@ -8,7 +8,7 @@ import { PLATFORM_UI } from '../modules/platform/api/platformApiPaths';
 import { platformService } from '../modules/platform/api/platformService';
 import { storeImpersonationSubscriberName } from '../modules/platform/platformPanelUtils';
 import type { AuthResponse } from '../types/auth';
-import { persistCompaniesDetailSubscriberId } from './platformSubscriberDetailNav';
+import { persistPlatformDetailSubscriberId } from './platformSubscriberDetailNav';
 
 /** Ruta platform a restaurar al salir de impersonación (sessionStorage). */
 export const PLATFORM_IMPERSONATION_RETURN_PATH_KEY = 'erp.platform.impersonationReturnPath';
@@ -81,7 +81,7 @@ export async function startPlatformImpersonation(
 
   await ensureAccessToken();
   persistPlatformImpersonationReturnPath(options.returnPath);
-  persistCompaniesDetailSubscriberId(subscriberId);
+  persistPlatformDetailSubscriberId(subscriberId);
 
   const auth = await platformService.switchSubscriber(subscriberId);
   storeImpersonationSubscriberName(options.subscriberName);

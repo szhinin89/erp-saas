@@ -126,7 +126,7 @@ public sealed class PlatformControlPlaneGuardTests
     public void Runtime_subscriber_entitlements_endpoint_must_remain_on_api_subscribers()
     {
         var backendRoot = ResolveBackendSrcRoot();
-        var file = Path.Combine(backendRoot, "ERP.API", "Controllers", "SaasEntitlementsController.cs");
+        var file = Path.Combine(backendRoot, "ERP.API", "Controllers", "SubscriberEntitlementsController.cs");
         if (!File.Exists(file))
             return;
 

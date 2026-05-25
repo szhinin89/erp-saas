@@ -36,4 +36,4 @@ export type SubscriberModuleKey = (typeof SUBSCRIBER_MODULE_KEYS)[number];
 export const TENANT_MODULE_KEYS = SUBSCRIBER_MODULE_KEYS;
 
 /** @deprecated Use SubscriberModuleKey */
-export type TenantModuleKey = SubscriberModuleKey;
+export type SubscriberModuleKey = SubscriberModuleKey;

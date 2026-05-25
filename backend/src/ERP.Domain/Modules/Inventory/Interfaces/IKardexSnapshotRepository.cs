@@ -16,5 +16,5 @@ public interface IKardexSnapshotRepository
     Task<IReadOnlyList<(Guid ProductId, Guid WarehouseId)>> GetDistinctProductWarehouseAsync(
         Guid subscriberId, CancellationToken ct = default);
 
-    Task<IReadOnlyList<Guid>> GetTenantsWithMovementsAsync(CancellationToken ct = default);
+    Task<IReadOnlyList<Guid>> GetSubscribersWithMovementsAsync(CancellationToken ct = default);
 }

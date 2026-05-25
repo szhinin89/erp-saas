@@ -72,13 +72,13 @@ public class AccessRepository : IAccessRepository
 
     public async Task<IReadOnlyList<CompanyUserMembership>> GetActiveCompanyUserMembershipsForUserSystemAsync(
         Guid identityUserId, CancellationToken ct = default)
-        => await _platform.Unfiltered(_db.CompanyUserMemberships, PlatformQueryReason.CrossTenantSystem)
+        => await _platform.Unfiltered(_db.CompanyUserMemberships, PlatformQueryReason.CrossSubscriberSystem)
             .Where(m => m.IdentityUserId == identityUserId && m.IsActive)
             .ToListAsync(ct);
 
     public Task<CompanyUserMembership?> GetCompanyUserMembershipAsync(
         Guid companyId, Guid identityUserId, CancellationToken ct = default)
-        => _platform.Unfiltered(_db.CompanyUserMemberships, PlatformQueryReason.CrossTenantSystem)
+        => _platform.Unfiltered(_db.CompanyUserMemberships, PlatformQueryReason.CrossSubscriberSystem)
             .FirstOrDefaultAsync(m => m.CompanyId == companyId && m.IdentityUserId == identityUserId, ct);
 
     public Task AddCompanyUserMembershipAsync(CompanyUserMembership membership, CancellationToken ct = default)
@@ -87,7 +87,7 @@ public class AccessRepository : IAccessRepository
     public async Task<IReadOnlyList<CompanyUserMembership>> GetCompanyUserMembershipsByCompanyAsync(
         Guid companyId, bool onlyActive = true, CancellationToken ct = default)
     {
-        var q = _platform.Unfiltered(_db.CompanyUserMemberships, PlatformQueryReason.TenantScopedExplicit)
+        var q = _platform.Unfiltered(_db.CompanyUserMemberships, PlatformQueryReason.SubscriberScopedExplicit)
             .Where(m => m.CompanyId == companyId);
         if (onlyActive) q = q.Where(m => m.IsActive);
         return await q.OrderBy(m => m.IdentityUserId).ToListAsync(ct);
@@ -97,7 +97,7 @@ public class AccessRepository : IAccessRepository
         Guid subscriberId, bool onlyActive = true, CancellationToken ct = default)
     {
         var q =
-            from m in _platform.Unfiltered(_db.CompanyUserMemberships, PlatformQueryReason.TenantScopedExplicit)
+            from m in _platform.Unfiltered(_db.CompanyUserMemberships, PlatformQueryReason.SubscriberScopedExplicit)
             join c in _db.Companies on m.CompanyId equals c.Id
             where c.SubscriberId == subscriberId
             select m;
@@ -109,18 +109,18 @@ public class AccessRepository : IAccessRepository
     }
 
     public Task<int> CountActiveCompanyUserMembershipsByCompanyAsync(Guid companyId, CancellationToken ct = default)
-        => _platform.Unfiltered(_db.CompanyUserMemberships, PlatformQueryReason.TenantScopedExplicit)
+        => _platform.Unfiltered(_db.CompanyUserMemberships, PlatformQueryReason.SubscriberScopedExplicit)
             .CountAsync(m => m.CompanyId == companyId && m.IsActive, ct);
 
     public Task<int> CountActiveCompanyUserMembershipsBySubscriberAsync(Guid subscriberId, CancellationToken ct = default)
         => (
-            from m in _platform.Unfiltered(_db.CompanyUserMemberships, PlatformQueryReason.TenantScopedExplicit)
+            from m in _platform.Unfiltered(_db.CompanyUserMemberships, PlatformQueryReason.SubscriberScopedExplicit)
             join c in _db.Companies on m.CompanyId equals c.Id
             where c.SubscriberId == subscriberId && m.IsActive
             select m
         ).CountAsync(ct);
 
-    public async Task<IReadOnlyList<AccessProfile>> GetProfilesByTenantAsync(Guid subscriberId, bool onlyActive = true, CancellationToken ct = default)
+    public async Task<IReadOnlyList<AccessProfile>> GetProfilesBySubscriberAsync(Guid subscriberId, bool onlyActive = true, CancellationToken ct = default)
     {
         var q = _db.AccessProfiles.Where(p => p.SubscriberId == subscriberId);
         if (onlyActive) q = q.Where(p => p.IsActive);
@@ -152,7 +152,7 @@ public class AccessRepository : IAccessRepository
         Guid subscriberId, CancellationToken ct = default)
     {
         var userIds = await (
-            from m in _platform.Unfiltered(_db.CompanyUserMemberships, PlatformQueryReason.TenantScopedExplicit)
+            from m in _platform.Unfiltered(_db.CompanyUserMemberships, PlatformQueryReason.SubscriberScopedExplicit)
             join c in _db.Companies on m.CompanyId equals c.Id
             where c.SubscriberId == subscriberId
             select m.IdentityUserId
@@ -167,7 +167,7 @@ public class AccessRepository : IAccessRepository
             .ToListAsync(ct);
 
         var activeMembershipUserIds = await (
-            from m in _platform.Unfiltered(_db.CompanyUserMemberships, PlatformQueryReason.TenantScopedExplicit)
+            from m in _platform.Unfiltered(_db.CompanyUserMemberships, PlatformQueryReason.SubscriberScopedExplicit)
             join c in _db.Companies on m.CompanyId equals c.Id
             where c.SubscriberId == subscriberId && m.IsActive
             select m.IdentityUserId
@@ -182,7 +182,7 @@ public class AccessRepository : IAccessRepository
         Guid subscriberId, CancellationToken ct = default)
     {
         var userIds = await (
-            from m in _platform.Unfiltered(_db.CompanyUserMemberships, PlatformQueryReason.TenantScopedExplicit)
+            from m in _platform.Unfiltered(_db.CompanyUserMemberships, PlatformQueryReason.SubscriberScopedExplicit)
             join c in _db.Companies on m.CompanyId equals c.Id
             where c.SubscriberId == subscriberId && m.IsActive
             select m.IdentityUserId

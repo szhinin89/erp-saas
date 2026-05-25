@@ -1,10 +1,10 @@
 namespace ERP.Application.Common;
 
-/// <summary>Motivo documentado para consultar sin el filtro global de tenant.</summary>
+/// <summary>Motivo documentado para consultar sin el filtro global de suscriptor.</summary>
 public enum PlatformQueryReason
 {
-    TenantScopedExplicit,
-    CrossTenantSystem,
+    SubscriberScopedExplicit,
+    CrossSubscriberSystem,
     PlatformMetrics,
     BackgroundJob,
     Seeding,

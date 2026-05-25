@@ -5,6 +5,7 @@ import { platformService, type CreateSubscriberWithAdminBody, type PlatformPlanC
 import { usePlatformGate } from '../../hooks/usePlatformGate';
 import { useI18n } from '../../i18n/i18n';
 import { formatApiRequestError } from '../lib/apiError';
+import { PLATFORM_UI } from './api/platformApiPaths';
 import { goToSubscriberDetail } from '../../navigation/platformSubscriberDetailNav';
 import type { SessionResponse } from '../../types/access';
 import {
@@ -37,8 +38,8 @@ export function usePlatformPanelPage({ embeddedTab, shellLayout }: UsePlatformPa
       if (shellLayout) {
         if (tab === 'overview') void navigate('/platform/overview');
         else if (tab === 'companies') void navigate('/platform/subscribers');
-        else if (tab === 'plans') void navigate('/platform/menu-plans?tab=plans');
-        else if (tab === 'menus') void navigate('/platform/menu-plans?tab=menu');
+        else if (tab === 'plans') void navigate(`${PLATFORM_UI.plans}?tab=plans`);
+        else if (tab === 'menus') void navigate(`${PLATFORM_UI.plans}?tab=menu`);
         return;
       }
       if (tab === 'overview') setSearchParams({}, { replace: true });

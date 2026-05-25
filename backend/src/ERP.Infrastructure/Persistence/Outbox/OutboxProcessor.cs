@@ -46,8 +46,8 @@ internal sealed class OutboxProcessor : IOutboxProcessor
                 message.MarkProcessed();
 
                 _logger.LogDebug(
-                    "Outbox: processed {EventName} v{Version} (Id={Id}, Tenant={TenantId})",
-                    message.EventName, message.EventVersion, message.Id, message.TenantId);
+                    "Outbox: processed {EventName} v{Version} (Id={Id}, Subscriber={SubscriberId})",
+                    message.EventName, message.EventVersion, message.Id, message.SubscriberId);
             }
             catch (Exception ex)
             {

@@ -25,6 +25,3 @@ export const PLATFORM_UI = {
   observability: '/platform/observability',
   audit: '/platform/audit',
 } as const;
-
-/** Legacy bookmark prefix (redirect only — do not link in UI). */
-export { PLATFORM_UI_LEGACY_PATH_PREFIX as PLATFORM_UI_LEGACY_PREFIX } from '../../../constants/platformAuth';

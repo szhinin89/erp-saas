@@ -47,7 +47,7 @@ export const PLATFORM_API = {
 ┌──────────────────────────────────────┐
 │  ERP Session / Tenant Admin UI       │
 │  entitlementsService                 │
-│  tenantSubscriberService             │
+│  runtimeSubscriberService             │
 └──────────────┬───────────────────────┘
                │
     /api/subscribers/entitlements/me
@@ -56,7 +56,7 @@ export const PLATFORM_API = {
     /api/public/plans
 ```
 
-**Regla:** ningún código bajo `modules/platform/` debe importar `tenantSubscriberService` ni llamar `/api/subscribers` excepto vía auth helpers whitelisted.
+**Regla:** ningún código bajo `modules/platform/` debe importar `runtimeSubscriberService` ni llamar `/api/subscribers` excepto vía auth helpers whitelisted.
 
 ## Backend SoT
 

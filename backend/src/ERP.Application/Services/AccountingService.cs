@@ -61,7 +61,7 @@ public sealed class AccountingService : IAccountingService
         }
         else
         {
-            var cuentas = await _accountingRepo.GetAllByTenantAsync(subscriberId, ct);
+            var cuentas = await _accountingRepo.GetAllBySubscriberAsync(subscriberId, ct);
             var cuentaGasto = cuentas.FirstOrDefault(c =>
                 c.IsActive && c.AllowsMovements && c.Type == AccountType.Expense && c.Nature == AccountNature.Debit);
             var cuentaPagar = cuentas.FirstOrDefault(c =>
@@ -124,7 +124,7 @@ public sealed class AccountingService : IAccountingService
         }
         else
         {
-            var cuentas = await _accountingRepo.GetAllByTenantAsync(subscriberId, ct);
+            var cuentas = await _accountingRepo.GetAllBySubscriberAsync(subscriberId, ct);
             var cuentaCobrar = cuentas.FirstOrDefault(c =>
                 c.IsActive && c.AllowsMovements && c.Type == AccountType.Asset && c.Nature == AccountNature.Debit);
             var cuentaVentas = cuentas.FirstOrDefault(c =>
@@ -168,7 +168,7 @@ public sealed class AccountingService : IAccountingService
         CancellationToken ct)
     {
         var subscriberId = _tenant.SubscriberId;
-        var cuentas  = await _accountingRepo.GetAllByTenantAsync(subscriberId, ct);
+        var cuentas  = await _accountingRepo.GetAllBySubscriberAsync(subscriberId, ct);
 
         var debitoGasto = await _cuentaContable.ObtenerCuentaParaGastoAsync(subscriberId, category, ct);
         if (!debitoGasto.IsSuccess)
@@ -264,7 +264,7 @@ public sealed class AccountingService : IAccountingService
         }
         else
         {
-            var cuentas = await _accountingRepo.GetAllByTenantAsync(subscriberId, ct);
+            var cuentas = await _accountingRepo.GetAllBySubscriberAsync(subscriberId, ct);
             var cuentaCobrar = cuentas.FirstOrDefault(c =>
                 c.IsActive && c.AllowsMovements && c.Type == AccountType.Asset && c.Nature == AccountNature.Debit);
             var cuentaVentas = cuentas.FirstOrDefault(c =>
@@ -316,7 +316,7 @@ public sealed class AccountingService : IAccountingService
         }
         else
         {
-            var cuentas = await _accountingRepo.GetAllByTenantAsync(subscriberId, ct);
+            var cuentas = await _accountingRepo.GetAllBySubscriberAsync(subscriberId, ct);
             var cuentaCobrar = cuentas.FirstOrDefault(c =>
                 c.IsActive && c.AllowsMovements && c.Type == AccountType.Asset && c.Nature == AccountNature.Debit);
             var cuentaVentas = cuentas.FirstOrDefault(c =>
@@ -347,7 +347,7 @@ public sealed class AccountingService : IAccountingService
         CancellationToken ct)
     {
         var subscriberId = _tenant.SubscriberId;
-        var cuentas  = await _accountingRepo.GetAllByTenantAsync(subscriberId, ct);
+        var cuentas  = await _accountingRepo.GetAllBySubscriberAsync(subscriberId, ct);
         var pasivos = cuentas.Where(c =>
                 c.IsActive && c.AllowsMovements && c.Type == AccountType.Liability && c.Nature == AccountNature.Credit)
             .ToList();
@@ -388,7 +388,7 @@ public sealed class AccountingService : IAccountingService
         CancellationToken ct)
     {
         var subscriberId = _tenant.SubscriberId;
-        var cuentas  = await _accountingRepo.GetAllByTenantAsync(subscriberId, ct);
+        var cuentas  = await _accountingRepo.GetAllBySubscriberAsync(subscriberId, ct);
 
         var ivaPasivo = cuentas.FirstOrDefault(c =>
             c.IsActive && c.AllowsMovements && c.Type == AccountType.Liability && c.Nature == AccountNature.Credit
@@ -450,7 +450,7 @@ public sealed class AccountingService : IAccountingService
         }
         else
         {
-            var cuentas = await _accountingRepo.GetAllByTenantAsync(subscriberId, ct);
+            var cuentas = await _accountingRepo.GetAllBySubscriberAsync(subscriberId, ct);
             var cuentaGasto = cuentas.FirstOrDefault(c =>
                 c.IsActive && c.AllowsMovements && c.Type == AccountType.Expense && c.Nature == AccountNature.Debit);
             var cuentaPagar = cuentas.FirstOrDefault(c =>
@@ -503,7 +503,7 @@ public sealed class AccountingService : IAccountingService
         }
         else
         {
-            var cuentas = await _accountingRepo.GetAllByTenantAsync(subscriberId, ct);
+            var cuentas = await _accountingRepo.GetAllBySubscriberAsync(subscriberId, ct);
             var cuentaGasto = cuentas.FirstOrDefault(c =>
                 c.IsActive && c.AllowsMovements && c.Type == AccountType.Expense && c.Nature == AccountNature.Debit);
             var cuentaPagar = cuentas.FirstOrDefault(c =>
@@ -536,7 +536,7 @@ public sealed class AccountingService : IAccountingService
         CancellationToken ct)
     {
         var subscriberId = _tenant.SubscriberId;
-        var cuentas  = await _accountingRepo.GetAllByTenantAsync(subscriberId, ct);
+        var cuentas  = await _accountingRepo.GetAllBySubscriberAsync(subscriberId, ct);
 
         var pasivos = cuentas.Where(c =>
                 c.IsActive && c.AllowsMovements && c.Type == AccountType.Liability && c.Nature == AccountNature.Credit)
@@ -594,7 +594,7 @@ public sealed class AccountingService : IAccountingService
         CancellationToken ct)
     {
         var subscriberId = _tenant.SubscriberId;
-        var cuentas  = await _accountingRepo.GetAllByTenantAsync(subscriberId, ct);
+        var cuentas  = await _accountingRepo.GetAllBySubscriberAsync(subscriberId, ct);
 
         var pasivos = cuentas.Where(c =>
                 c.IsActive && c.AllowsMovements && c.Type == AccountType.Liability && c.Nature == AccountNature.Credit)

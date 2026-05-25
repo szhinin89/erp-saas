@@ -38,13 +38,15 @@ internal sealed class OutboxMessageConfiguration : IEntityTypeConfiguration<Outb
         builder.Property(x => x.Error)
             .HasMaxLength(2000);
 
+        builder.Property(x => x.SubscriberId);
+
         // Efficient polling: pending messages ordered by occurrence time
         builder.HasIndex(x => new { x.ProcessedOnUtc, x.OccurredOnUtc })
             .HasDatabaseName("IX_OutboxMessages_Pending");
 
-        // Tenant-scoped analytics queries
-        builder.HasIndex(x => new { x.TenantId, x.OccurredOnUtc })
-            .HasDatabaseName("IX_OutboxMessages_Tenant");
+        // Subscriber-scoped analytics queries
+        builder.HasIndex(x => new { x.SubscriberId, x.OccurredOnUtc })
+            .HasDatabaseName("IX_OutboxMessages_Subscriber");
 
         // EventName-based routing / analytics / catalog lookups
         builder.HasIndex(x => new { x.EventName, x.OccurredOnUtc })

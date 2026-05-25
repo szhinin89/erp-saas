@@ -53,7 +53,7 @@ Domain Entity  →  DB table (snake_case plural)  →  API root  →  frontend m
 
 | # | Acción | Estado |
 |---|--------|--------|
-| 1 | Renombrar archivos dominio `SaasPlan.cs` → `CommercialPlan.cs`, etc. | ⏳ backlog cosmético |
+| 1 | Renombrar archivos dominio `SaasPlan.cs` → `CommercialPlan.cs`, etc. | ✅ (2026-05-25) |
 | 2 | Deprecar `SubscribersController` para operadores globales | ✅ runtime-only |
 | 3 | Consolidar `companyService` → `platformService` | ✅ |
 | 4 | i18n `platform.*` | ✅ (2026-05-23) |

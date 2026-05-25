@@ -40,7 +40,7 @@ public sealed class SubscriberIntegrityRepairService : ISubscriberIntegrityRepai
         var repaired = 0;
 
         var subscribersWithoutCompany = await _platform
-            .Unfiltered(_db.Subscribers, PlatformQueryReason.CrossTenantSystem)
+            .Unfiltered(_db.Subscribers, PlatformQueryReason.CrossSubscriberSystem)
             .Select(s => s.Id)
             .ToListAsync(ct);
 
@@ -94,7 +94,7 @@ public sealed class SubscriberIntegrityRepairService : ISubscriberIntegrityRepai
     private async Task<IReadOnlyList<EnterpriseIntegrityIssue>> ScanSubscribersWithoutCompanyAsync(CancellationToken ct)
     {
         var subscriberIds = await _platform
-            .Unfiltered(_db.Subscribers, PlatformQueryReason.CrossTenantSystem)
+            .Unfiltered(_db.Subscribers, PlatformQueryReason.CrossSubscriberSystem)
             .Select(s => new { s.Id, s.Slug })
             .ToListAsync(ct);
 
@@ -142,7 +142,7 @@ public sealed class SubscriberIntegrityRepairService : ISubscriberIntegrityRepai
     private async Task<IReadOnlyList<EnterpriseIntegrityIssue>> ScanSubscribersWithoutBillingAsync(CancellationToken ct)
     {
         var subscriberIds = await _platform
-            .Unfiltered(_db.Subscribers, PlatformQueryReason.CrossTenantSystem)
+            .Unfiltered(_db.Subscribers, PlatformQueryReason.CrossSubscriberSystem)
             .Select(s => new { s.Id, s.Slug })
             .ToListAsync(ct);
 

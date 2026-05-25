@@ -31,7 +31,7 @@ export function useSubscriberDetailPage(subscriberId: string | undefined) {
   const [subscriber, setSubscriber] = useState<PlatformSubscriber | null>(null);
   const [detail, setDetail] = useState<PlatformSubscriberDetailDto | null>(null);
   const [entitlements, setEntitlements] = useState<SubscriberEntitlementsSnapshot | null>(null);
-  const [tenantUsers, setTenantUsers] = useState<Array<{ id: string; email: string; firstName: string; lastName: string; isActive: boolean; userType: string }>>([]);
+  const [subscriberUsers, setSubscriberUsers] = useState<Array<{ id: string; email: string; firstName: string; lastName: string; isActive: boolean; userType: string }>>([]);
   const [loading, setLoading] = useState(true);
   const [detailLoading, setDetailLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -102,10 +102,10 @@ export function useSubscriberDetailPage(subscriberId: string | undefined) {
     setEntitlements(snap ?? null);
   }, [subscriberId]);
 
-  const loadTenantUsers = useCallback(async () => {
+  const loadSubscriberUsers = useCallback(async () => {
     if (!subscriberId) return;
-    const rows = await platformService.getSubscriberTenantUsers(subscriberId);
-    setTenantUsers(rows);
+    const rows = await platformService.getSubscriberUsers(subscriberId);
+    setSubscriberUsers(rows);
   }, [subscriberId]);
 
   const saveCompanyProfile = form.handleSubmit(async (values) => {
@@ -163,7 +163,7 @@ export function useSubscriberDetailPage(subscriberId: string | undefined) {
     subscriber,
     detail,
     entitlements,
-    tenantUsers,
+    subscriberUsers,
     loading,
     detailLoading,
     error,
@@ -178,7 +178,7 @@ export function useSubscriberDetailPage(subscriberId: string | undefined) {
     reloadSummary,
     reloadDetail,
     loadEntitlements,
-    loadTenantUsers,
+    loadSubscriberUsers,
     saveCompanyProfile,
     saveGlobalParameters,
     resetCustomMenu,

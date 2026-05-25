@@ -57,7 +57,7 @@ El Platform Control Plane queda como **una única superficie API** sin duplicida
 |---------|---------|-----|
 | `platformService` | Control plane general | `/api/platform/*` |
 | `subscriberService` | Detalle/config suscriptor (SuperAdmin UI) | `/api/platform/subscribers` + `/api/platform/config` |
-| `tenantSubscriberService` | Config empresa tenant Admin | `/api/subscribers/*` (runtime) |
+| `runtimeSubscriberService` | Config empresa tenant Admin | `/api/subscribers/*` (runtime) |
 | `entitlementsService` | Snapshot sesión | `/api/subscribers/entitlements/me` |
 
 ## CI guards

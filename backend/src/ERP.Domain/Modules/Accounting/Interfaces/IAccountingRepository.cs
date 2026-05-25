@@ -7,7 +7,7 @@ public interface IAccountingRepository
 {
     Task<Account?> GetByIdAsync(Guid id, Guid subscriberId, CancellationToken ct = default);
     Task<Account?> GetByCodeAsync(string code, Guid subscriberId, CancellationToken ct = default);
-    Task<IReadOnlyList<Account>> GetAllByTenantAsync(Guid subscriberId, CancellationToken ct = default);
+    Task<IReadOnlyList<Account>> GetAllBySubscriberAsync(Guid subscriberId, CancellationToken ct = default);
     Task<(IReadOnlyList<Account> Items, int TotalCount)> GetAccountsPageAsync(Guid subscriberId, int pageNumber, int pageSize, CancellationToken ct = default);
     Task<bool> ExistsAsync(string code, Guid subscriberId, CancellationToken ct = default);
     Task AddAsync(Account account, CancellationToken ct = default);

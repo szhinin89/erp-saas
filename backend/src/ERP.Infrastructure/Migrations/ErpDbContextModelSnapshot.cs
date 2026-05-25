@@ -13467,7 +13467,7 @@ namespace ERP.Infrastructure.Migrations
                     b.Property<DateTime?>("ProcessedOnUtc")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<Guid?>("TenantId")
+                    b.Property<Guid?>("SubscriberId")
                         .HasColumnType("uuid");
 
                     b.Property<string>("Type")
@@ -13483,8 +13483,8 @@ namespace ERP.Infrastructure.Migrations
                     b.HasIndex("ProcessedOnUtc", "OccurredOnUtc")
                         .HasDatabaseName("IX_OutboxMessages_Pending");
 
-                    b.HasIndex("TenantId", "OccurredOnUtc")
-                        .HasDatabaseName("IX_OutboxMessages_Tenant");
+                    b.HasIndex("SubscriberId", "OccurredOnUtc")
+                        .HasDatabaseName("IX_OutboxMessages_Subscriber");
 
                     b.ToTable("OutboxMessages", (string)null);
                 });

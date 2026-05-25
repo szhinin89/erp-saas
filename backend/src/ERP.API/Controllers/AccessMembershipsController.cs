@@ -22,12 +22,10 @@ public sealed class AccessMembershipsController : ControllerBase
     public AccessMembershipsController(IMediator mediator) => _mediator = mediator;
 
     [HttpPost("register-subscriber")]
-    [Obsolete("Legacy IAM route register-tenant. Prefer register-subscriber.")]
-    [HttpPost("register-tenant")]
     [Authorize(Roles = PlatformAuthorizationRoles.PlatformOperator)]
     [ApiExplorerSettings(IgnoreApi = true)]
     [ProducesResponseType(typeof(ApiResponse<SessionResponseDto?>), StatusCodes.Status201Created)]
-    public async Task<IActionResult> RegisterTenant([FromBody] PlatformCreateSubscriberWithAdminCommand command, CancellationToken ct)
+    public async Task<IActionResult> RegisterSubscriber([FromBody] PlatformCreateSubscriberWithAdminCommand command, CancellationToken ct)
     {
         var result = await _mediator.Send(command, ct);
         return this.ToCreatedOrBadRequest(result, "Creado");
@@ -52,8 +50,6 @@ public sealed class AccessMembershipsController : ControllerBase
     }
 
     [HttpGet("subscriber/company_user_memberships")]
-    [Obsolete("Legacy IAM route segment 'tenant'. Prefer subscriber/company_user_memberships.")]
-    [HttpGet("tenant/company_user_memberships")]
     [Authorize(Policy = "Session")]
     [Authorize(Policy = "perm:access.company_user_memberships.view")]
     [ProducesResponseType(typeof(ApiResponse<IReadOnlyList<SubscriberCompanyUserMembershipItemDto>>), StatusCodes.Status200OK)]
@@ -64,24 +60,20 @@ public sealed class AccessMembershipsController : ControllerBase
     }
 
     [HttpPost("subscriber/company_user_memberships")]
-    [Obsolete("Legacy IAM route segment 'tenant'. Prefer subscriber/company_user_memberships.")]
-    [HttpPost("tenant/company_user_memberships")]
     [Authorize(Policy = "Session")]
     [Authorize(Policy = "perm:access.company_user_memberships.view")]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
-    public async Task<IActionResult> UpsertTenantCompanyUserMembership([FromBody] SubscriberUpsertCompanyUserMembershipCommand command, CancellationToken ct)
+    public async Task<IActionResult> UpsertSubscriberCompanyUserMembership([FromBody] SubscriberUpsertCompanyUserMembershipCommand command, CancellationToken ct)
     {
         var result = await _mediator.Send(command, ct);
         return this.ToOkOrBadRequest(result, "OK", () => new { });
     }
 
     [HttpPost("subscriber/company_user_memberships/revoke")]
-    [Obsolete("Legacy IAM route segment 'tenant'. Prefer subscriber/company_user_memberships/revoke.")]
-    [HttpPost("tenant/company_user_memberships/revoke")]
     [Authorize(Policy = "Session")]
     [Authorize(Policy = "perm:access.company_user_memberships.view")]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
-    public async Task<IActionResult> RevokeTenantCompanyUserMembership([FromBody] SubscriberRevokeCompanyUserMembershipCommand command, CancellationToken ct)
+    public async Task<IActionResult> RevokeSubscriberCompanyUserMembership([FromBody] SubscriberRevokeCompanyUserMembershipCommand command, CancellationToken ct)
     {
         var result = await _mediator.Send(command, ct);
         return this.ToOkOrBadRequest(result, "OK", () => new { });

@@ -17,6 +17,6 @@ public sealed class InvoiceCreatedEvent : BaseDomainEvent
         SubscriberId = subscriberId;
         BranchId = branchId;
         UserId = userId;
-        TenantId = subscriberId;
+        SubscriberId = subscriberId;
     }
 }

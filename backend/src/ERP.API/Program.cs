@@ -190,7 +190,7 @@ if (hangfireEnabled)
     builder.Services.AddHangfire(configuration =>
         configuration.UsePostgreSqlStorage(options =>
             options.UseNpgsqlConnection(hangfireConn)));
-    GlobalJobFilters.Filters.Add(new HangfireTenantContextFilter());
+    GlobalJobFilters.Filters.Add(new HangfireSubscriberContextFilter());
     builder.Services.AddHangfireServer();
     builder.Services.AddScoped<ISriRetryJob, SriRetryJob>();
     builder.Services.AddScoped<IProcessOutboxJob, ProcessOutboxJob>();
@@ -207,8 +207,8 @@ builder.Services.Configure<ERP.Application.Common.Config.PasswordResetOptions>(
     builder.Configuration.GetSection(ERP.Application.Common.Config.PasswordResetOptions.SectionName));
 builder.Services.Configure<ERP.Application.Common.Config.AuthOptions>(
     builder.Configuration.GetSection(ERP.Application.Common.Config.AuthOptions.Section));
-builder.Services.Configure<ERP.Application.Common.Config.SaasEntitlementsOptions>(
-    builder.Configuration.GetSection(ERP.Application.Common.Config.SaasEntitlementsOptions.Section));
+builder.Services.Configure<ERP.Application.Common.Config.SubscriberEntitlementsOptions>(
+    builder.Configuration.GetSection(ERP.Application.Common.Config.SubscriberEntitlementsOptions.Section));
 builder.Services.AddSingleton(sp =>
     kardexSection.Get<ERP.Application.Common.Config.KardexOptions>()
     ?? new ERP.Application.Common.Config.KardexOptions());
@@ -271,7 +271,7 @@ if (!app.Environment.IsEnvironment("Testing")
 
 // Datos demo (subscriber-demo + admin) solo si se activa explícitamente — ver appsettings.Development → Development:SeedDemoSubscriber.
 if (app.Environment.IsDevelopment() &&
-    app.Configuration.GetValue("Development:SeedDemoTenant", false))
+    app.Configuration.GetValue("Development:SeedDemoSubscriber", false))
 {
     await DevDatabaseSeeder.SeedMinimumAsync(app.Services);
 }

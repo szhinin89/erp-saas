@@ -23,7 +23,7 @@ public class AccountingRepository : IAccountingRepository
         => await _context.Accounts
             .FirstOrDefaultAsync(a => a.Code == new AccountCode(code), ct);
 
-    public async Task<IReadOnlyList<Account>> GetAllByTenantAsync(Guid subscriberId, CancellationToken ct = default)
+    public async Task<IReadOnlyList<Account>> GetAllBySubscriberAsync(Guid subscriberId, CancellationToken ct = default)
         => await _context.Accounts
             .OrderBy(a => a.CreatedAt)
             .ThenBy(a => a.Id)

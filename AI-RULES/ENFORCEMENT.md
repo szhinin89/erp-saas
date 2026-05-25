@@ -115,7 +115,7 @@ Fuente: [`tools/architecture/README.md`](../tools/architecture/README.md)
 | `backend-layering` | B-layering | Referencias de proyecto/paquetes por capa (.csproj) |
 | `backend-clean-architecture` | B-domain / B-application | `using` prohibidos en Domain/Application |
 | `backend-controller-thin` | B-controller | Líneas máx., patrones EF/SQL inline (error); líneas > umbral warning |
-| `backend-tenant-rules` | B-tenant | `IgnoreQueryFilters()` fuera de allowlist; entidades sin `TenantId`/marker |
+| `backend-subscriber-rules` | B-subscriber | `IgnoreQueryFilters()` fuera de allowlist; entidades sin `TenantId`/marker |
 
 Umbrales y allowlists: `tools/architecture/config/architecture-rules.json` → `backend`.
 

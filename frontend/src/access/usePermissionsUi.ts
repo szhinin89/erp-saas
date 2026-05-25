@@ -4,7 +4,7 @@ import { usePermissionsStore } from '../store/permissionsStore';
 import {
   canShowPermissionKey,
   hasUnrestrictedPermissionSnapshot,
-  isTenantAdminRole,
+  isSubscriberAdminRole,
 } from './permissionUi';
 
 /**
@@ -32,7 +32,7 @@ export function usePermissionsUi() {
   );
 
   const hasUnrestrictedAccess = hasUnrestrictedPermissionSnapshot(permissions);
-  const isTenantAdmin = isTenantAdminRole(role);
+  const isSubscriberAdmin = isSubscriberAdminRole(role);
 
   /** Muestra loading gate hasta hidratar permisos o terminar sync (sin fallback Admin). */
   const skipPermissionHydrationWait = hasUnrestrictedAccess;
@@ -51,7 +51,7 @@ export function usePermissionsUi() {
     planName,
     role,
     hasUnrestrictedAccess,
-    isTenantAdmin,
+    isSubscriberAdmin,
     skipPermissionHydrationWait,
   };
 }

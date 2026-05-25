@@ -652,7 +652,7 @@
     {
       "endpoint": "/api/subscribers",
       "files": [
-        "frontend/src/modules/subscribers/api/tenantSubscriberService.ts"
+        "frontend/src/modules/subscribers/api/runtimeSubscriberService.ts"
       ],
       "legacy": false,
       "allowed": true
@@ -660,7 +660,7 @@
     {
       "endpoint": "/api/subscribers/*",
       "files": [
-        "frontend/src/modules/subscribers/api/tenantSubscriberService.ts"
+        "frontend/src/modules/subscribers/api/runtimeSubscriberService.ts"
       ],
       "legacy": false,
       "allowed": true

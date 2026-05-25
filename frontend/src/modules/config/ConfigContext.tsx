@@ -194,7 +194,7 @@ export function ConfigProvider({ children }: { children: React.ReactNode }) {
   /** Tras F5 el perfil hidrata antes que el access token (cookie refresh en SessionBootstrap). */
   const sessionReady = hasHydrated && (!isAuthenticated || getAccessToken() !== null);
 
-  const loadTenantConfig = useCallback(async () => {
+  const loadSubscriberConfig = useCallback(async () => {
     if (!sessionReady) return;
 
     if (!shouldLoad) {
@@ -227,8 +227,8 @@ export function ConfigProvider({ children }: { children: React.ReactNode }) {
   }, [sessionReady, shouldLoad, subscriberId]);
 
   useEffect(() => {
-    void loadTenantConfig();
-  }, [loadTenantConfig]);
+    void loadSubscriberConfig();
+  }, [loadSubscriberConfig]);
 
   const getResolved = useCallback(
     <T = unknown>(key: string, module?: string | null, feature?: string | null): ConfigResolvedValue<T> | null => {
@@ -311,13 +311,13 @@ export function ConfigProvider({ children }: { children: React.ReactNode }) {
       error: state.error,
       subscriberId: state.subscriberId,
       entries: state.entries,
-      refresh: loadTenantConfig,
+      refresh: loadSubscriberConfig,
       getResolved,
       getValue,
       upsertConfig,
       deleteConfig,
     }),
-    [state, loadTenantConfig, getResolved, getValue, upsertConfig, deleteConfig],
+    [state, loadSubscriberConfig, getResolved, getValue, upsertConfig, deleteConfig],
   );
 
   return <ConfigContext.Provider value={value}>{children}</ConfigContext.Provider>;

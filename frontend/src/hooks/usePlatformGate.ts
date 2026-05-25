@@ -14,10 +14,10 @@ export function usePlatformGate() {
   return useMemo(() => {
     const isPlatformUser =
       user?.userType === 'Platform' && user?.platformRole === JWT_PLATFORM_OPERATOR_ROLE;
-    const isLegacyPlatformOperator =
+    const isGlobalPlatformOperator =
       isJwtPlatformOperatorRole(user?.role) &&
       normalizeUuid(user?.subscriberId ?? '') === normalizeUuid(GLOBAL_SUBSCRIBER_ID);
-    const isPlatformOperator = isPlatformUser || isLegacyPlatformOperator;
+    const isPlatformOperator = isPlatformUser || isGlobalPlatformOperator;
     const subscriberId = user?.subscriberId ?? '';
     const hasSelectedSubscriber = Boolean(subscriberId && subscriberId !== GLOBAL_SUBSCRIBER_ID);
     return {

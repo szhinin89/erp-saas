@@ -5,7 +5,7 @@ import {
   platformService,
   type CommercialPlanAdmin,
   type CreateCommercialPlanBody,
-  type SaasPublicPlan,
+  type PublicCommercialPlan,
   type PlatformOverviewMetrics,
   type PlatformSubscriber,
   type UpdateCommercialPlanBody,
@@ -25,7 +25,7 @@ export function usePlatformPlansSection() {
   const { isPlatformOperator } = usePlatformGate();
 
   const [plans, setPlans] = useState<CommercialPlanAdmin[]>([]);
-  const [publicPlans, setPublicPlans] = useState<SaasPublicPlan[]>([]);
+  const [publicPlans, setPublicPlans] = useState<PublicCommercialPlan[]>([]);
   const [subscribers, setSubscribers] = useState<PlatformSubscriber[]>([]);
   const [metrics, setMetrics] = useState<PlatformOverviewMetrics | null>(null);
   const [subscriberSearch, setSubscriberSearch] = useState('');
@@ -44,7 +44,7 @@ export function usePlatformPlansSection() {
   const loadAll = useCallback(async () => {
     const [p, pub, tns, met] = await Promise.all([
       platformService.listCommercialPlansAdmin(),
-      platformService.getPublicPlans().catch(() => [] as SaasPublicPlan[]),
+      platformService.getPublicPlans().catch(() => [] as PublicCommercialPlan[]),
       platformService.getSubscribers().catch(() => [] as PlatformSubscriber[]),
       platformService.getMetrics().catch(() => null),
     ]);
@@ -86,7 +86,7 @@ export function usePlatformPlansSection() {
     return sum;
   }, [subscribers, planByCode]);
 
-  const filteredTenantsForTable = useMemo(() => {
+  const filteredSubscribersForTable = useMemo(() => {
     let r = subscribers;
     const pf = subscriberPlanFilter.trim().toLowerCase();
     if (pf) r = r.filter((tn) => (tn.planCode ?? '').trim().toLowerCase() === pf);
@@ -97,7 +97,7 @@ export function usePlatformPlansSection() {
     return r;
   }, [subscribers, subscriberPlanFilter, subscriberSearch, subscriberStatusFilter]);
 
-  const exportTenantsCsv = useCallback(() => {
+  const exportSubscribersCsv = useCallback(() => {
     const headers = [
       'id',
       'name',
@@ -109,7 +109,7 @@ export function usePlatformPlansSection() {
       'mrrApprox',
     ];
     const lines = [headers.join(',')];
-    for (const tn of filteredTenantsForTable) {
+    for (const tn of filteredSubscribersForTable) {
       const pc = (tn.planCode ?? '').trim().toLowerCase();
       const p = pc ? planByCode.get(pc) : undefined;
       const mrr = p?.isActive ? monthlyEquivalentPrice(p) : 0;
@@ -133,7 +133,7 @@ export function usePlatformPlansSection() {
     a.download = `saas-subscribers-${new Date().toISOString().slice(0, 10)}.csv`;
     a.click();
     URL.revokeObjectURL(url);
-  }, [filteredTenantsForTable, planByCode]);
+  }, [filteredSubscribersForTable, planByCode]);
 
   useEffect(() => {
     if (!isPlatformOperator) return;
@@ -328,8 +328,8 @@ export function usePlatformPlansSection() {
     planSubscriberStats,
     planByCode,
     approxMrr,
-    filteredTenantsForTable,
-    exportTenantsCsv,
+    filteredSubscribersForTable,
+    exportSubscribersCsv,
     loadAll,
     openCreatePlan,
     openEditPlan,

@@ -69,7 +69,7 @@ Ejemplo anotación GitHub:
 | `check-backend-layering.mjs` | B-layering | `.csproj` — refs de proyecto/paquete por capa |
 | `check-backend-clean-architecture.mjs` | B-domain/app | `using` prohibidos en Domain/Application |
 | `check-backend-controller-thin.mjs` | B-controller | Líneas máx.; EF/SQL inline = error; líneas altas = warning |
-| `check-backend-tenant-rules.mjs` | B-tenant | `IgnoreQueryFilters()` allowlist; entidades tenant |
+| `check-backend-subscriber-rules.mjs` | B-subscriber | `IgnoreQueryFilters()` allowlist; entidades tenant |
 
 ## Architecture score
 

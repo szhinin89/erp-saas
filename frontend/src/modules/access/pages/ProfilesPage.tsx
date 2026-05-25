@@ -127,7 +127,7 @@ function handleColumnToggle(
 export function ProfilesPage() {
   const { t } = useI18n();
   const user = useAuthStore((s) => s.user);
-  const { canShow, isTenantAdmin } = usePermissionsUi();
+  const { canShow, isSubscriberAdmin } = usePermissionsUi();
   const canManage = canShow('admin.roles.view');
 
   /* list state */
@@ -251,7 +251,7 @@ export function ProfilesPage() {
   const progressPct = Math.round((modulesWithPerms / MODULE_PERM_GROUPS.length) * 100);
   const modulesWithoutPerms = MODULE_PERM_GROUPS.length - modulesWithPerms;
 
-  if (!user || (!isTenantAdmin && !canManage)) {
+  if (!user || (!isSubscriberAdmin && !canManage)) {
     return <NoAccessPage title={t('profiles.title')} />;
   }
 

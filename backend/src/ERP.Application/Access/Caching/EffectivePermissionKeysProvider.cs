@@ -85,7 +85,7 @@ public sealed class EffectivePermissionKeysProvider : IEffectivePermissionKeysPr
         var allowed = new List<string>();
         foreach (var key in candidateKeys)
         {
-            if (await SubscriberSubscriptionCatalog.TenantAllowsPermissionAsync(
+            if (await SubscriberSubscriptionCatalog.SubscriberAllowsPermissionAsync(
                     subscriberId, _entitlements, key, ct))
                 allowed.Add(key);
         }

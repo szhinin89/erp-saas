@@ -12,11 +12,11 @@ public sealed class DistributedSubscriberEntitlementsSnapshotCache :
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
 
     private readonly IDistributedCache _cache;
-    private readonly SaasEntitlementsCacheOptions _options;
+    private readonly SubscriberEntitlementsCacheOptions _options;
 
     public DistributedSubscriberEntitlementsSnapshotCache(
         IDistributedCache cache,
-        IOptions<SaasEntitlementsCacheOptions> options)
+        IOptions<SubscriberEntitlementsCacheOptions> options)
     {
         _cache = cache;
         _options = options.Value;

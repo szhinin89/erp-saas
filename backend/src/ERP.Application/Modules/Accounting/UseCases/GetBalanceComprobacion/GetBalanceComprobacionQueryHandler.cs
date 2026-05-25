@@ -21,7 +21,7 @@ public sealed class GetBalanceComprobacionQueryHandler
     {
         var subscriberId = _tenant.SubscriberId;
 
-        var accounts = await _repo.GetAllByTenantAsync(subscriberId, ct);
+        var accounts = await _repo.GetAllBySubscriberAsync(subscriberId, ct);
         var totals   = await _repo.GetBalanceComprobacionAsync(subscriberId, query.Desde, query.Hasta, ct);
 
         var accountMap = accounts.ToDictionary(a => a.Id);

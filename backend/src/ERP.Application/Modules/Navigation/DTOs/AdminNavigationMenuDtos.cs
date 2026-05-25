@@ -13,11 +13,7 @@ public sealed record AdminNavGroupRowDto(
     IReadOnlyList<string>? Roles,
     bool RequirePlatformPanel,
     bool IsActive,
-    IReadOnlyList<AdminNavItemRowDto> RootItems)
-{
-    /// <summary>Alias JSON canónico — mismo valor que <see cref="RequirePlatformPanel"/>.</summary>
-    public bool RequirePlatformPanel => RequirePlatformPanel;
-}
+    IReadOnlyList<AdminNavItemRowDto> RootItems);
 
 public sealed record AdminNavItemRowDto(
     Guid Id,

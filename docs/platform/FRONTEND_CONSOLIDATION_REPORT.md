@@ -14,7 +14,7 @@
 | Archivo | Responsabilidad |
 |---------|-----------------|
 | `frontend/src/modules/platform/api/subscriberService.ts` | CRUD perfil + config global suscriptor (SuperAdmin) |
-| `frontend/src/modules/subscribers/api/tenantSubscriberService.ts` | Perfil operativo tenant Admin (runtime) |
+| `frontend/src/modules/subscribers/api/runtimeSubscriberService.ts` | Perfil operativo tenant Admin (runtime) |
 
 ### Eliminados
 
@@ -27,7 +27,7 @@
 | Consumidor | Antes | Después |
 |------------|-------|---------|
 | `useSubscriberDetailPage.ts` | `companyService` | `subscriberService` + `platformService` |
-| `CompanyConfigPage.tsx` | `companyService` (paths platform incorrectos para Admin) | `tenantSubscriberService` (runtime `/api/subscribers`) |
+| `CompanyConfigPage.tsx` | `companyService` (paths platform incorrectos para Admin) | `runtimeSubscriberService` (runtime `/api/subscribers`) |
 | `CompanyModuleChips.tsx` | tipo `CompanyItem` | `PlatformSubscriber` |
 
 ### Barrel deprecado
@@ -44,7 +44,7 @@
 | Entitlements admin | `platformService.getSubscriberEntitlements` | `GET /api/platform/subscribers/{id}/entitlements` |
 | Menú suscriptor | `platformService.*Menu*` | `/api/platform/subscribers/{id}/menu` |
 | Config global trial | `subscriberService.resolveSubscriberConfig` | `/api/platform/config/{id}/resolve` |
-| Config empresa (Admin ERP) | `tenantSubscriberService.*` | `/api/subscribers/{id}/*` |
+| Config empresa (Admin ERP) | `runtimeSubscriberService.*` | `/api/subscribers/{id}/*` |
 | Gating módulos sesión | `entitlementsService` | `GET /api/subscribers/entitlements/me` |
 | Switch tenant | `platformService.switchSubscriber` | `POST /api/auth/switch-subscriber` |
 | Planes públicos | `platformService.getPublicPlans` | `GET /api/public/plans` |
@@ -54,7 +54,7 @@
 Nuevo check `validate-subscriber-api-surface.mjs`:
 
 - Falla si `/api/subscribers` aparece fuera de whitelist runtime
-- Whitelist: `entitlementsService`, `tenantSubscriberService`, `PasswordResetPage`, e2e helpers
+- Whitelist: `entitlementsService`, `runtimeSubscriberService`, `PasswordResetPage`, e2e helpers
 
 Forbidden patterns:
 

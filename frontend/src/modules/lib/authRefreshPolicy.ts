@@ -11,7 +11,6 @@ export const PUBLIC_AUTH_PATHS = [
   '/api/admin/iam/bootstrap-login',
   '/api/admin/iam/switch-subscriber',
   '/api/admin/iam/subscriber/company_user_memberships',
-  '/api/admin/iam/register-tenant',
   '/api/admin/iam/register-subscriber',
 ] as const;
 

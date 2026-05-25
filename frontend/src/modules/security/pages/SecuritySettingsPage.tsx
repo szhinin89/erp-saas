@@ -4,7 +4,7 @@ import { ZHCard } from '../../../components/zh/ZHCard';
 import { ZHPageNotice } from '../../../components/zh/ZHPageNotice';
 import { useAuthStore } from '../../../store/authStore';
 import { securityService, type SecurityAdminMatrix, type SecurityUser } from '../api/securityService';
-import { isTenantAdminRole } from '../../../access/permissionUi';
+import { isSubscriberAdminRole } from '../../../access/permissionUi';
 import { formatApiError } from '../../lib/formatApiError';
 import { useI18n } from '../../../i18n/i18n';
 import './SecuritySettingsPage.css';
@@ -44,7 +44,7 @@ export function SecuritySettingsPage() {
   const [savingKey, setSavingKey] = useState<string | null>(null);
   const [error, setError] = useState('');
 
-  const isAdminUser = isTenantAdminRole(user?.role);
+  const isAdminUser = isSubscriberAdminRole(user?.role);
 
   useEffect(() => {
     if (!isAdminUser) {

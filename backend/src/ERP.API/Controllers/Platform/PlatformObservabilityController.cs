@@ -56,14 +56,14 @@ public sealed class PlatformObservabilityController : ControllerBase
             }
         }
 
-        var activeTenants = all.Count(s =>
+        var activeSubscribers = all.Count(s =>
             s.LifecycleStatus is SubscriberLifecycleStatus.Active or SubscriberLifecycleStatus.Trial);
 
         return this.ApiOk(new
         {
-            activeTenants,
-            suspendedTenants = all.Count(s => s.LifecycleStatus == SubscriberLifecycleStatus.Suspended),
-            graceTenants = all.Count(s => s.LifecycleStatus == SubscriberLifecycleStatus.GracePeriod),
+            activeSubscribers,
+            suspendedSubscribers = all.Count(s => s.LifecycleStatus == SubscriberLifecycleStatus.Suspended),
+            graceSubscribers = all.Count(s => s.LifecycleStatus == SubscriberLifecycleStatus.GracePeriod),
             overdueAccounts = pastDueAccounts,
             metrics = metricsResult.IsSuccess ? metricsResult.Value : null,
             prometheus = _config.GetValue("Observability:EnablePrometheus", true) ? "/metrics" : null,

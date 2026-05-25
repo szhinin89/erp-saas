@@ -86,6 +86,7 @@ export function MasterDataPartnerWizard({
   const [results, setResults] = useState<BusinessPartnerDto[]>([]);
   const [assigning, setAssigning] = useState<string | null>(null);
   const [hasSearched, setHasSearched] = useState(false);
+  const [notFoundQuery, setNotFoundQuery] = useState<string | null>(null);
 
   const [identificationType, setIdentificationType] = useState(
     editingPartner?.identificationType ?? 'RUC',
@@ -165,6 +166,11 @@ export function MasterDataPartnerWizard({
       const rows = await businessPartnerService.search({ q, take: 10 });
       setResults(rows);
       setHasSearched(true);
+      if (rows.length === 0) {
+        prefillFromQuery(q);
+        setNotFoundQuery(q);
+        setStep(2);
+      }
     } catch {
       setSearchError(t('masterdata.wizard.search.error', 'Error al buscar. Intente de nuevo.'));
     } finally {
@@ -377,6 +383,16 @@ export function MasterDataPartnerWizard({
 
         {step === 2 && (
           <div className="prd-wiz-panel">
+            {notFoundQuery && !isEdit && (
+              <div className="prd-wiz-notfound-banner" role="status">
+                <span className="material-symbols-outlined">search_off</span>
+                <span>
+                  {t('masterdata.wizard.search.notFound', 'No se encontró')}{' '}
+                  <strong>"{notFoundQuery}"</strong>{' '}
+                  {t('masterdata.wizard.search.notFoundHint', `— completa los datos para crear un nuevo ${roleLabel}.`)}
+                </span>
+              </div>
+            )}
             <h3 className="prd-wiz-panel__title">
               {isEdit
                 ? t('masterdata.wizard.identity.editTitle', 'Datos de identificación')
@@ -504,7 +520,12 @@ export function MasterDataPartnerWizard({
               </button>
             )}
             {step < 4 ? (
-              <button type="button" className="zh-btn zh-btn--primary zh-btn--md" onClick={goNext}>
+              <button
+                type="button"
+                className="zh-btn zh-btn--primary zh-btn--md"
+                onClick={goNext}
+                disabled={step === 1 && !hasSearched}
+              >
                 {t('masterdata.wizard.btn.next', 'Siguiente')}
                 <span className="material-symbols-outlined" style={{ fontSize: 16 }}>arrow_forward</span>
               </button>

@@ -76,7 +76,7 @@ export function PlatformSubscriberDetailPage() {
   }, [tab, subscriberId, page.entitlements, page.loadEntitlements]);
 
   useEffect(() => {
-    if (tab === 'users' && subscriberId) void page.loadTenantUsers();
+    if (tab === 'users' && subscriberId) void page.loadSubscriberUsers();
   }, [tab, subscriberId, page]);
 
   useEffect(() => {
@@ -281,7 +281,7 @@ export function PlatformSubscriberDetailPage() {
           <table className="table">
             <thead><tr><th>Email</th><th>Nombre</th><th>Tipo</th><th>Estado</th></tr></thead>
             <tbody>
-              {page.tenantUsers.map((u) => (
+              {page.subscriberUsers.map((u) => (
                 <tr key={u.id}>
                   <td>{u.email}</td>
                   <td>{u.firstName} {u.lastName}</td>
@@ -291,7 +291,7 @@ export function PlatformSubscriberDetailPage() {
               ))}
             </tbody>
           </table>
-          {page.tenantUsers.length === 0 && <p className="subtle">Sin usuarios tenant.</p>}
+          {page.subscriberUsers.length === 0 && <p className="subtle">Sin usuarios suscriptor.</p>}
         </div>
       )}
 

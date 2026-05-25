@@ -27,7 +27,7 @@ public record SubscriberDto(
     string? InvoicePrefix,
     int DefaultCreditDays)
 {
-    public static SubscriberDto FromTenant(Subscriber tenant, IReadOnlyCollection<string>? enabledModules = null) =>
+    public static SubscriberDto FromSubscriber(Subscriber tenant, IReadOnlyCollection<string>? enabledModules = null) =>
         new(
             tenant.Id,
             tenant.Name,

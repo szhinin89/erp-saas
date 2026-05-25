@@ -63,12 +63,12 @@ public sealed class PlatformSubscribersController : ControllerBase
             return this.ApiNotFound("Suscriptor no encontrado.");
 
         var modules = await _sessionModules.GetEnabledModuleKeysAsync(subscriberId, ct);
-        return this.ApiOk(SubscriberDto.FromTenant(tenant, modules));
+        return this.ApiOk(SubscriberDto.FromSubscriber(tenant, modules));
     }
 
     [HttpGet("{subscriberId:guid}/users")]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
-    public async Task<IActionResult> ListTenantUsers(Guid subscriberId, CancellationToken ct)
+    public async Task<IActionResult> ListSubscriberUsers(Guid subscriberId, CancellationToken ct)
     {
         var users = await _access.GetActiveIdentityUsersForSubscriberAsync(subscriberId, ct);
         return this.ApiOk(new

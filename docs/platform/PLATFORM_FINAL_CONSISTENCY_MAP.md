@@ -195,7 +195,7 @@ No dedicated Zustand store for Platform — session via `authStore`, panel state
 | `POST /api/subscribers` (operador platform create) | `POST /api/platform/subscribers` |
 | `PATCH /api/subscribers/{id}/global-parameters` | `PATCH /api/platform/subscribers/{id}/global-parameters` |
 | `PATCH /api/subscribers/{id}/subscription` | `PATCH /api/platform/subscribers/{id}/plan` |
-| `companyService.ts` | `platformService` + `tenantSubscriberService` (runtime) |
+| `companyService.ts` | `platformService` + `runtimeSubscriberService` (runtime) |
 | `subscriberService.ts` | `platformService` |
 | `menuService.ts` | `platformService` |
 | `SuperAdminController` / `/api/superadmin/*` | `Platform*Controller` / `/api/platform/*` |

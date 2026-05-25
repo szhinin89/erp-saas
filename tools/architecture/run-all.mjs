@@ -10,7 +10,7 @@ import { runCheckPlatformLegacySurface } from './check-platform-legacy-surface.m
 import { runCheckBackendLayering } from './check-backend-layering.mjs';
 import { runCheckBackendCleanArchitecture } from './check-backend-clean-architecture.mjs';
 import { runCheckBackendControllerThin } from './check-backend-controller-thin.mjs';
-import { runCheckBackendTenantRules } from './check-backend-tenant-rules.mjs';
+import { runCheckBackendSubscriberRules } from './check-backend-subscriber-rules.mjs';
 import { runCheckPermissionsAuthorizationRules } from './check-permissions-authorization-rules.mjs';
 import { runCheckFrontendPermissionsRules } from './check-frontend-permissions-rules.mjs';
 import { calculateArchitectureScore } from './calculate-score.mjs';
@@ -28,7 +28,7 @@ export const CHECKS = [
   { name: 'backend-layering', run: runCheckBackendLayering },
   { name: 'backend-clean-architecture', run: runCheckBackendCleanArchitecture },
   { name: 'backend-controller-thin', run: runCheckBackendControllerThin },
-  { name: 'backend-tenant-rules', run: runCheckBackendTenantRules },
+  { name: 'backend-subscriber-rules', run: runCheckBackendSubscriberRules },
   { name: 'permissions-authorization-rules', run: runCheckPermissionsAuthorizationRules },
   { name: 'frontend-permissions-rules', run: runCheckFrontendPermissionsRules },
 ];

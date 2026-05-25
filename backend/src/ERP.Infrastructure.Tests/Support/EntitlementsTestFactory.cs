@@ -22,6 +22,6 @@ internal static class EntitlementsTestFactory
             platform,
             planLimits,
             billingGov.Object,
-            Microsoft.Extensions.Options.Options.Create(new SaasEntitlementsCacheOptions { Enabled = false }));
+            Microsoft.Extensions.Options.Options.Create(new SubscriberEntitlementsCacheOptions { Enabled = false }));
     }
 }

@@ -126,19 +126,6 @@ export function MasterDataPartnerListTab({
         </div>
       </div>
 
-      {canCreate && (
-        <div className="prd-list-toolbar">
-          <button
-            type="button"
-            className="zh-btn zh-btn--primary zh-btn--md"
-            onClick={() => setActiveTab('nuevo')}
-          >
-            <span className="material-symbols-outlined">add</span>
-            {t(`${prefix}.list.newAction`)}
-          </button>
-        </div>
-      )}
-
       {loading ? (
         <div className="pg-pad-40"><LoadingState /></div>
       ) : partners.length === 0 ? (
@@ -150,11 +137,6 @@ export function MasterDataPartnerListTab({
               ? t('masterdata.list.empty.withQuery', 'No hay registros para tu búsqueda.')
               : t('common.noData')}
           </p>
-          {canCreate && (
-            <button type="button" className="zh-btn zh-btn--primary zh-btn--md" onClick={() => setActiveTab('nuevo')}>
-              {t(`${prefix}.primaryCreate`)}
-            </button>
-          )}
         </div>
       ) : (
         <>

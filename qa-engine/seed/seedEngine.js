@@ -6,7 +6,7 @@ import { findSubscriberBySlug, loginTenantSession } from './session.js';
 /**
  * @param {string} apiBase
  * @param {string} platformToken
- * @param {typeof SEED_MANIFEST.tenantA} spec
+ * @param {typeof SEED_MANIFEST.subscriberA} spec
  */
 async function ensureSubscriber(apiBase, platformToken, spec) {
   const list = await request('GET', `${apiBase}/api/platform/subscribers`, {
@@ -77,8 +77,8 @@ export async function runSeedEngine(apiBase, opts = {}) {
 
   const platformLogin = await request('POST', `${apiBase}/api/platform/auth/login`, {
     body: {
-      email: SEED_MANIFEST.superAdmin.email,
-      password: SEED_MANIFEST.superAdmin.password,
+      email: SEED_MANIFEST.platformOperator.email,
+      password: SEED_MANIFEST.platformOperator.password,
     },
   });
   if (!platformLogin.ok) {
@@ -88,23 +88,23 @@ export async function runSeedEngine(apiBase, opts = {}) {
   const platformToken = platformData?.token ?? platformData?.Token;
   if (!platformToken) throw new Error('platform login missing token');
 
-  const tenantA = await ensureSubscriber(apiBase, platformToken, SEED_MANIFEST.tenantA);
-  const tenantB = await ensureSubscriber(apiBase, platformToken, SEED_MANIFEST.tenantB);
+  const tenantA = await ensureSubscriber(apiBase, platformToken, SEED_MANIFEST.subscriberA);
+  const tenantB = await ensureSubscriber(apiBase, platformToken, SEED_MANIFEST.subscriberB);
 
   if (!tenantA.token || !tenantB.token) throw new Error('seed missing session tokens');
   if (!tenantA.companyId || !tenantB.companyId) throw new Error('seed missing company ids');
 
   logger?.info('Seed complete', {
-    tenantA: SEED_MANIFEST.tenantA.subscriberSlug,
-    tenantB: SEED_MANIFEST.tenantB.subscriberSlug,
+    subscriberA: SEED_MANIFEST.subscriberA.subscriberSlug,
+    subscriberB: SEED_MANIFEST.subscriberB.subscriberSlug,
   });
 
   return Object.freeze({
     platformToken,
     tenantAToken: tenantA.token,
     tenantBToken: tenantB.token,
-    tenantACompanyId: tenantA.companyId,
-    tenantBCompanyId: tenantB.companyId,
+    subscriberACompanyId: tenantA.companyId,
+    subscriberBCompanyId: tenantB.companyId,
     tenantASubscriberId: tenantA.subscriberId,
     tenantBSubscriberId: tenantB.subscriberId,
     tenantARefreshToken: tenantA.refreshToken,

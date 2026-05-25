@@ -22,7 +22,7 @@ public sealed class PlatformSubscriberMenuController : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetMenu(Guid subscriberId, CancellationToken ct)
     {
-        var r = await _subscriberMenuAdmin.GetResolvedMenuForTenantAsync(subscriberId, ct);
+        var r = await _subscriberMenuAdmin.GetResolvedMenuForSubscriberAsync(subscriberId, ct);
         if (!r.IsSuccess)
             return this.ApiBadRequest(r.Error ?? "Error");
         var v = r.Value!;

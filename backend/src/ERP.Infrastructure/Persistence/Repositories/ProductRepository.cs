@@ -37,7 +37,7 @@ public class ProductRepository : IProductRepository
             .Include(p => p.CustomFields)
             .FirstOrDefaultAsync(p => p.Id == id, ct);
 
-    public async Task<IReadOnlyList<Product>> GetAllByTenantAsync(Guid subscriberId, CancellationToken ct = default)
+    public async Task<IReadOnlyList<Product>> GetAllBySubscriberAsync(Guid subscriberId, CancellationToken ct = default)
         => await Scoped(subscriberId)
             .Where(p => p.IsActive)
             .OrderBy(p => p.SaleCode)

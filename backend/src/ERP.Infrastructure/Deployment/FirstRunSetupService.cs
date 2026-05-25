@@ -26,7 +26,7 @@ public sealed class FirstRunSetupService : IFirstRunSetupService
         var state = await GetOrCreateStateAsync(ct);
 
         var hasPlatformOperator = await _platform
-            .Unfiltered(_db.IdentityUsers, PlatformQueryReason.CrossTenantSystem)
+            .Unfiltered(_db.IdentityUsers, PlatformQueryReason.CrossSubscriberSystem)
             .AnyAsync(
                 u => u.UserType == IdentityUserType.Platform && u.PlatformRole == PlatformRole.PlatformOperator,
                 ct);
@@ -86,7 +86,7 @@ public sealed class FirstRunSetupService : IFirstRunSetupService
     public async Task<FirstRunResetResult> ResetForDevelopmentAsync(CancellationToken ct = default)
     {
         var platformOperators = await _platform
-            .Unfiltered(_db.IdentityUsers, PlatformQueryReason.CrossTenantSystem)
+            .Unfiltered(_db.IdentityUsers, PlatformQueryReason.CrossSubscriberSystem)
             .Where(u => u.UserType == IdentityUserType.Platform && u.PlatformRole == PlatformRole.PlatformOperator)
             .ToListAsync(ct);
         var platformOperatorIds = platformOperators.Select(x => x.Id).ToArray();

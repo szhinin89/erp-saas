@@ -215,15 +215,15 @@ public static class DependencyInjection
             sp.GetRequiredService<SubscriberEntitlementsPermissionsCacheInvalidator>());
         services.AddScoped<IEntitlementsCacheService, EntitlementsCacheService>();
         services.AddSingleton<IPermissionsCacheDiagnostics, PermissionsCacheDiagnostics>();
-        services.Configure<SaasEntitlementsCacheOptions>(
-            configuration.GetSection(SaasEntitlementsCacheOptions.SectionName));
+        services.Configure<SubscriberEntitlementsCacheOptions>(
+            configuration.GetSection(SubscriberEntitlementsCacheOptions.SectionName));
         services.AddScoped<ISubscriberEntitlementsService, SubscriberEntitlementsService>();
         services.AddScoped<ERP.Application.Platform.Audit.IPlatformAuditLogger, ERP.Infrastructure.Platform.Audit.PlatformAuditLogger>();
         services.AddScoped<ERP.Application.Platform.Audit.IPlatformAuditReader, ERP.Infrastructure.Platform.Audit.PlatformAuditReader>();
         services.AddScoped<ERP.Application.Platform.Users.IPlatformUsersReader, ERP.Infrastructure.Platform.Users.PlatformUsersReader>();
         services.AddScoped<CommercialCatalogQuery>();
         services.AddScoped<ICommercialCatalogQuery>(sp => sp.GetRequiredService<CommercialCatalogQuery>());
-        services.AddScoped<ISaasPublicPlansQuery>(sp => sp.GetRequiredService<CommercialCatalogQuery>());
+        services.AddScoped<IPublicCommercialPlansQuery>(sp => sp.GetRequiredService<CommercialCatalogQuery>());
         services.AddScoped<ICommercialPlansAdminService, CommercialPlansAdminService>();
         services.AddScoped<IConfigService, ConfigService>();
         services.AddScoped<INavigationMenuReader, NavigationMenuReader>();

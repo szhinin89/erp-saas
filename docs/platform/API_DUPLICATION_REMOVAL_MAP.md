@@ -35,7 +35,7 @@
 
 `SubscribersController.GetById` y `UpdateCompany` son **dual-role**:
 
-- **Admin** → runtime legítimo (`tenantSubscriberService` en frontend)
+- **Admin** → runtime legítimo (`runtimeSubscriberService` en frontend)
 - **SuperAdmin** → duplicado funcional de platform; frontend **no** debe usar `/api/subscribers` para control plane — usar `subscriberService` → `/api/platform/subscribers`
 
 No se eliminaron estos métodos del controller runtime para no romper Tenant Admin.
@@ -65,7 +65,7 @@ Link: </api/platform/subscribers/...>; rel="successor-version"
 | `companyService.getSubscriber` (platform paths) | `subscriberService.getSubscriber` |
 | `companyService.updateSubscriberCompany` (platform UI) | `subscriberService.updateSubscriberCompany` |
 | `companyService.*` config global | `subscriberService.*` |
-| `companyService.*` (CompanyConfigPage Admin) | `tenantSubscriberService.*` → `/api/subscribers` |
+| `companyService.*` (CompanyConfigPage Admin) | `runtimeSubscriberService.*` → `/api/subscribers` |
 | `platformService.getSubscribers` | sin cambio (ya canónico) |
 
 ## Eliminaciones

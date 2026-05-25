@@ -1,7 +1,7 @@
 export {
   normalizePolicyPermissionKey,
-  TENANT_ADMIN_ROLES,
-  isTenantAdminRole,
+  SUBSCRIBER_ADMIN_ROLES,
+  isSubscriberAdminRole,
   hasUnrestrictedPermissionSnapshot,
   canShowPermissionKey,
   shouldUseNavAdminBypass,

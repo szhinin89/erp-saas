@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useRef } from 'react';
 import { NoAccessPage } from '../../../components/PageShell';
 import { ErpPageTemplate } from '../../../templates/ErpPageTemplate';
-import { ZHBtn } from '../../../components/zh/ZHForm';
 import { ZHPageNotice } from '../../../components/zh/ZHPageNotice';
 import { useI18n } from '../../../i18n/i18n';
 import { useMasterDataSuppliersPage } from './useMasterDataSuppliersPage';
@@ -122,40 +121,17 @@ export function MasterDataSuppliersPage() {
     return <NoAccessPage title={t('masterdata.suppliers.title')} />;
   }
 
-  const nuevoLabel = editingPartner
-    ? t('masterdata.suppliers.tabs.edit', 'Editar proveedor')
-    : t('masterdata.suppliers.tabs.nuevo', 'Nuevo proveedor');
-  const nuevoIcon = editingPartner ? 'edit' : 'add_box';
-
   return (
     <ErpPageTemplate
       kicker="MasterData"
       title={t('masterdata.suppliers.title')}
       subtitle={t('masterdata.suppliers.subtitle')}
-      action={
-        page.canCreate ? (
-          <ZHBtn
-            variant="primary"
-            size="md"
-            type="button"
-            onClick={() => {
-              cancelEdit();
-              setActiveTab('nuevo');
-            }}
-          >
-            <span className="material-symbols-outlined">add</span>
-            {t('masterdata.suppliers.primaryCreate')}
-          </ZHBtn>
-        ) : null
-      }
     >
       {page.listError && <ZHPageNotice variant="error" message={t('common.errorPrefix')} detail={page.listError} />}
       {page.inlineError && <ZHPageNotice variant="error" message={t('common.errorPrefix')} detail={page.inlineError} />}
 
       <div className="prd-tabs" role="tablist" aria-label={t('masterdata.suppliers.tabs.aria', 'Secciones de proveedores')}>
         {TABS.map((tab) => {
-          const label = tab.id === 'nuevo' ? nuevoLabel : t(tab.labelKey, tab.labelFb);
-          const icon = tab.id === 'nuevo' ? nuevoIcon : tab.icon;
           const active = activeTab === tab.id;
           return (
             <button
@@ -166,9 +142,8 @@ export function MasterDataSuppliersPage() {
               className={`prd-tab-btn ${active ? 'prd-tab-btn--active' : ''}`}
               onClick={() => setActiveTab(tab.id)}
             >
-              <span className="material-symbols-outlined prd-tab-icon">{icon}</span>
-              {label}
-              {tab.id === 'nuevo' && editingPartner && <span className="prd-tab-edit-badge" aria-hidden>●</span>}
+              <span className="material-symbols-outlined prd-tab-icon">{tab.icon}</span>
+              {t(tab.labelKey, tab.labelFb)}
             </button>
           );
         })}

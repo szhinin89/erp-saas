@@ -174,7 +174,7 @@ public sealed class CommercialPlanLimitService : ICommercialPlanLimitService
         CancellationToken ct)
     {
         var subscription = await _platform
-            .Unfiltered(_db.SubscriberSubscriptions.AsNoTracking(), PlatformQueryReason.TenantScopedExplicit)
+            .Unfiltered(_db.SubscriberSubscriptions.AsNoTracking(), PlatformQueryReason.SubscriberScopedExplicit)
             .Where(s => s.SubscriberId == subscriberId && s.Status == SubscriptionStatus.Active)
             .OrderByDescending(s => s.StartedAtUtc)
             .FirstOrDefaultAsync(ct);

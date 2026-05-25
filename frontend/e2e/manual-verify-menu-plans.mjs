@@ -26,7 +26,7 @@ async function run() {
     await page.fill('#password', USER_PASSWORD);
     await page.getByRole('button', { name: /Iniciar sesi[oó]n/i }).click();
     await page.waitForLoadState('networkidle');
-    await page.goto(`${BASE_URL}/platform/menu-plans`, { waitUntil: 'domcontentloaded' });
+    await page.goto(`${BASE_URL}/platform/plans?tab=menu`, { waitUntil: 'domcontentloaded' });
     await page.waitForLoadState('networkidle');
     const openBuilderTab = async () => {
       await page.getByRole('tab', { name: /Constructor de Men[uú]s/i }).click();

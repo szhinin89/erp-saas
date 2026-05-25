@@ -12,7 +12,7 @@ import {
   companyManagementRoutes,
   accessRoutes,
 } from './routes';
-import { platformShellRoutes, platformBookmarkRedirectRoutes, platformLegacyUiRedirectRoutes } from './routes/platformRoutes';
+import { platformShellRoutes } from './routes/platformRoutes';
 import { SessionBootstrap } from './components/SessionBootstrap';
 
 function AppRoutes() {
@@ -25,8 +25,6 @@ function AppRoutes() {
 
         <Route element={<ProtectedRoute />}>
           {platformPanelEnabled ? platformShellRoutes() : null}
-          {platformPanelEnabled ? platformLegacyUiRedirectRoutes() : null}
-          {platformPanelEnabled ? platformBookmarkRedirectRoutes() : null}
           <Route element={<AppLayout />}>
             <Route index element={<HomeRedirect />} />
             {mainRoutes}

@@ -7,7 +7,7 @@ namespace ERP.Application.Common.Interfaces;
 public interface IKardexSnapshotCalculator
 {
     /// <summary>Recalcula snapshots para un tenant, con filtros opcionales.</summary>
-    Task<int> RecalcularTenantAsync(
+    Task<int> RecalcularSubscriberAsync(
         Guid      subscriberId,
         Guid?     productoId,
         Guid?     bodegaId,

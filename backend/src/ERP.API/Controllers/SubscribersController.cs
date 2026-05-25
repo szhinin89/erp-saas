@@ -5,7 +5,7 @@ using ERP.API.Attributes;
 using ERP.API.Contracts;
 using ERP.API.Contracts.Subscribers;
 using ERP.API.Extensions;
-using ERP.Application.Subscribers.UseCases.UpdateSubscriberSaasProfile;
+using ERP.Application.Subscribers.UseCases.UpdateSubscriberCommercialProfile;
 using ERP.Application.Subscribers.UseCases.UpdateSubscriberOperationalSettings;
 using ERP.Application.Common;
 using ERP.Application.Subscriptions;
@@ -16,7 +16,7 @@ using System.Security.Claims;
 namespace ERP.API.Controllers;
 
 [ApiController]
-[AppFeature("Tenants API", "perm:subscribers.api", "🧩", null, null, 990, IsVisibleInMenu = false)]
+[AppFeature("Subscribers API", "perm:subscribers.api", "🧩", null, null, 990, IsVisibleInMenu = false)]
 [Route("api/[controller]")]
 [Authorize(Policy = "Session")]
 [Produces("application/json")]
@@ -51,7 +51,7 @@ public class SubscribersController : ControllerBase
             return this.ApiNotFound("Empresa no encontrada.");
 
         var modules = await _sessionModules.GetEnabledModuleKeysAsync(id, ct);
-        return this.ApiOk(SubscriberDto.FromTenant(tenant, modules));
+        return this.ApiOk(SubscriberDto.FromSubscriber(tenant, modules));
     }
 
     [HttpPatch("{id:guid}/company")]
@@ -61,7 +61,7 @@ public class SubscribersController : ControllerBase
         if (!CanAccessOwnSubscriber(id))
             return Forbid();
 
-        var command = new UpdateSubscriberSaasProfileCommand(
+        var command = new UpdateSubscriberCommercialProfileCommand(
             id, body.Name, body.Slug, body.Ruc, body.ShortName,
             body.TradeName, body.Dinardap, body.LogoUrl, body.DisplayOrder, body.Priority);
 

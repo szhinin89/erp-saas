@@ -22,6 +22,6 @@ public sealed class QuoteCreatedEvent : BaseDomainEvent
         SubscriberId = subscriberId;
         BranchId = branchId;
         UserId = userId;
-        TenantId = subscriberId;
+        SubscriberId = subscriberId;
     }
 }

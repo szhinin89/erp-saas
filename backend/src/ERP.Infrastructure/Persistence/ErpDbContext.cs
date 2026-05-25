@@ -47,7 +47,7 @@ namespace ERP.Infrastructure.Persistence;
 /// - Contabilidad: Account, JournalEntry, JournalEntryLine
 /// - Productos: Product, ProductLine, ProductCategory, ProductSubcategory, Brand, ProductType, TaxRate, UnitOfMeasure, Tariff
 /// - Autenticación: IdentityUser, CompanyUserMembership
-/// - Tenants: Tenant
+/// - Subscribers: Subscriber
 /// - Seguridad: AccessProfile, AccessProfilePermission, SecurityAdminScopeAssignment
 /// - Geografía: SriCountry (países), GeoProvince, GeoCanton, GeoParish
 /// - Auditoría: UserActivity

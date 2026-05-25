@@ -155,7 +155,7 @@ export type UpdateSubscriberSubscriptionBody = {
   enabledModules?: string[] | null;
 };
 
-export type SaasPublicPlan = {
+export type PublicCommercialPlan = {
   id: string;
   code: string;
   name: string;
@@ -734,7 +734,7 @@ export const platformService = {
       )
       .then(() => undefined),
 
-  getSubscriberTenantUsers: (subscriberId: string) =>
+  getSubscriberUsers: (subscriberId: string) =>
     api
       .get<ApiResponse<{ users: Array<{ id: string; email: string; firstName: string; lastName: string; isActive: boolean; userType: string }> }>>(
         `${PLATFORM_API.subscribers}/${encodeURIComponent(subscriberId)}/users`,
@@ -797,7 +797,7 @@ export const platformService = {
       .then((r) => r.data),
 
   getPublicPlans: () =>
-    api.get<ApiResponse<{ plans: SaasPublicPlan[] }>>('/api/public/plans').then((r) => r.data.responseObject.plans),
+    api.get<ApiResponse<{ plans: PublicCommercialPlan[] }>>('/api/public/plans').then((r) => r.data.responseObject.plans),
 
   switchSubscriber: async (subscriberId: string) => {
     const trimmed = subscriberId.trim();

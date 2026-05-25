@@ -49,7 +49,7 @@ describe('fullLogout', () => {
     sessionStorage.setItem(ACCESS_BOOTSTRAP_STORAGE_KEY, '{}');
     localStorage.setItem(AUTH_STORAGE_KEY, '{}');
     localStorage.setItem(PLATFORM_IMPERSONATION_NAME_KEY, 'Acme');
-    sessionStorage.setItem('erp.saas.companies.detailSubscriberId', 'uuid');
+    sessionStorage.setItem('erp.saas.platform.detailSubscriberId', 'uuid');
     sessionStorage.setItem('erp.saas.other', 'x');
     sessionStorage.setItem('unrelated', 'keep');
 
@@ -60,7 +60,7 @@ describe('fullLogout', () => {
     expect(sessionStorage.getItem(ACCESS_BOOTSTRAP_STORAGE_KEY)).toBeNull();
     expect(localStorage.getItem(AUTH_STORAGE_KEY)).toBeNull();
     expect(localStorage.getItem(PLATFORM_IMPERSONATION_NAME_KEY)).toBeNull();
-    expect(sessionStorage.getItem('erp.saas.companies.detailSubscriberId')).toBeNull();
+    expect(sessionStorage.getItem('erp.saas.platform.detailSubscriberId')).toBeNull();
     expect(sessionStorage.getItem('erp.saas.other')).toBeNull();
     expect(sessionStorage.getItem('unrelated')).toBe('keep');
   });
@@ -75,7 +75,7 @@ describe('fullLogout', () => {
         role: 'Admin',
         subscriberId: 's1',
         companyId: 'c1',
-        userType: 'Tenant',
+        userType: 'Subscriber',
       },
       token: 'access',
       isAuthenticated: true,

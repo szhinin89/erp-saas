@@ -11,5 +11,5 @@ public interface IDefaultProfileSeeder
     /// Creates the three default profiles and their permissions for <paramref name="subscriberId"/>.
     /// Idempotent — safe to call on a tenant that already has the profiles.
     /// </summary>
-    Task SeedForTenantAsync(Guid subscriberId, Guid actorId, CancellationToken ct = default);
+    Task SeedForSubscriberAsync(Guid subscriberId, Guid actorId, CancellationToken ct = default);
 }

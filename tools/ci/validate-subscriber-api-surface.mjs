@@ -43,7 +43,7 @@ export function runValidateSubscriberApiSurface() {
         const hasRuntimeBase =
           line.includes("RUNTIME_SUBSCRIBER_API") ||
           line.includes('runtimeSubscriber(') ||
-          line.includes('tenantSubscriberService') ||
+          line.includes('runtimeSubscriberService') ||
           line.includes('/public-settings');
         if (hasAllowedLiteral || hasRuntimeBase) return;
       }
@@ -54,7 +54,7 @@ export function runValidateSubscriberApiSurface() {
         file: rel,
         line: idx + 1,
         message:
-          'Use /api/platform/* for Platform Control Plane. Runtime whitelist: entitlements/me, public-settings, tenantSubscriberService only.',
+          'Use /api/platform/* for Platform Control Plane. Runtime whitelist: entitlements/me, public-settings, runtimeSubscriberService only.',
       });
     });
   }

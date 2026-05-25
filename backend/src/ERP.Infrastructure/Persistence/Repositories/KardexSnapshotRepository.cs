@@ -60,7 +60,7 @@ public sealed class KardexSnapshotRepository : IKardexSnapshotRepository
         return rows.Select(r => (r.ProductId, r.WarehouseId)).ToList();
     }
 
-    public async Task<IReadOnlyList<Guid>> GetTenantsWithMovementsAsync(CancellationToken ct = default)
+    public async Task<IReadOnlyList<Guid>> GetSubscribersWithMovementsAsync(CancellationToken ct = default)
     {
         return await _context.StockMovements
             .Select(m => m.SubscriberId)

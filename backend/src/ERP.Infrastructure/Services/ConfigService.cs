@@ -135,7 +135,7 @@ public sealed class ConfigService : IConfigService
 
     public async Task<IReadOnlyList<ConfigEntryDto>> ListGlobalAsync(Guid subscriberId, CancellationToken ct = default)
     {
-        var rows = await _platform.Unfiltered(_db.ConfigGlobals, PlatformQueryReason.TenantScopedExplicit).AsNoTracking()
+        var rows = await _platform.Unfiltered(_db.ConfigGlobals, PlatformQueryReason.SubscriberScopedExplicit).AsNoTracking()
             .Where(x => x.SubscriberId == subscriberId)
             .OrderBy(x => x.Key)
             .ToListAsync(ct);
@@ -145,7 +145,7 @@ public sealed class ConfigService : IConfigService
     public async Task<IReadOnlyList<ConfigEntryDto>> ListModuleAsync(Guid subscriberId, string module, CancellationToken ct = default)
     {
         var normalizedModule = NormalizeScope(module);
-        var rows = await _platform.Unfiltered(_db.ConfigModules, PlatformQueryReason.TenantScopedExplicit).AsNoTracking()
+        var rows = await _platform.Unfiltered(_db.ConfigModules, PlatformQueryReason.SubscriberScopedExplicit).AsNoTracking()
             .Where(x => x.SubscriberId == subscriberId && x.Module == normalizedModule)
             .OrderBy(x => x.Key)
             .ToListAsync(ct);
@@ -155,7 +155,7 @@ public sealed class ConfigService : IConfigService
     public async Task<IReadOnlyList<ConfigEntryDto>> ListFeatureAsync(Guid subscriberId, string feature, CancellationToken ct = default)
     {
         var normalizedFeature = NormalizeScope(feature);
-        var rows = await _platform.Unfiltered(_db.ConfigFeatures, PlatformQueryReason.TenantScopedExplicit).AsNoTracking()
+        var rows = await _platform.Unfiltered(_db.ConfigFeatures, PlatformQueryReason.SubscriberScopedExplicit).AsNoTracking()
             .Where(x => x.SubscriberId == subscriberId && x.Feature == normalizedFeature)
             .OrderBy(x => x.Key)
             .ToListAsync(ct);
@@ -168,7 +168,7 @@ public sealed class ConfigService : IConfigService
         var normalizedType = NormalizeDataType(dataType);
         ValidateDataType(value, normalizedType);
 
-        var row = await _platform.Unfiltered(_db.ConfigGlobals, PlatformQueryReason.TenantScopedExplicit)
+        var row = await _platform.Unfiltered(_db.ConfigGlobals, PlatformQueryReason.SubscriberScopedExplicit)
             .FirstOrDefaultAsync(x => x.SubscriberId == subscriberId && x.Key == normalizedKey, ct);
         if (row is null)
         {
@@ -192,7 +192,7 @@ public sealed class ConfigService : IConfigService
         var normalizedType = NormalizeDataType(dataType);
         ValidateDataType(value, normalizedType);
 
-        var row = await _platform.Unfiltered(_db.ConfigModules, PlatformQueryReason.TenantScopedExplicit)
+        var row = await _platform.Unfiltered(_db.ConfigModules, PlatformQueryReason.SubscriberScopedExplicit)
             .FirstOrDefaultAsync(x => x.SubscriberId == subscriberId && x.Module == normalizedModule && x.Key == normalizedKey, ct);
         if (row is null)
         {
@@ -216,7 +216,7 @@ public sealed class ConfigService : IConfigService
         var normalizedType = NormalizeDataType(dataType);
         ValidateDataType(value, normalizedType);
 
-        var row = await _platform.Unfiltered(_db.ConfigFeatures, PlatformQueryReason.TenantScopedExplicit)
+        var row = await _platform.Unfiltered(_db.ConfigFeatures, PlatformQueryReason.SubscriberScopedExplicit)
             .FirstOrDefaultAsync(x => x.SubscriberId == subscriberId && x.Feature == normalizedFeature && x.Key == normalizedKey, ct);
         if (row is null)
         {
@@ -236,7 +236,7 @@ public sealed class ConfigService : IConfigService
     public async Task<bool> DeleteGlobalAsync(Guid subscriberId, string key, CancellationToken ct = default)
     {
         var normalizedKey = NormalizeKey(key);
-        var row = await _platform.Unfiltered(_db.ConfigGlobals, PlatformQueryReason.TenantScopedExplicit)
+        var row = await _platform.Unfiltered(_db.ConfigGlobals, PlatformQueryReason.SubscriberScopedExplicit)
             .FirstOrDefaultAsync(x => x.SubscriberId == subscriberId && x.Key == normalizedKey, ct);
         if (row is null) return false;
 
@@ -250,7 +250,7 @@ public sealed class ConfigService : IConfigService
     {
         var normalizedModule = NormalizeScope(module);
         var normalizedKey = NormalizeKey(key);
-        var row = await _platform.Unfiltered(_db.ConfigModules, PlatformQueryReason.TenantScopedExplicit)
+        var row = await _platform.Unfiltered(_db.ConfigModules, PlatformQueryReason.SubscriberScopedExplicit)
             .FirstOrDefaultAsync(x => x.SubscriberId == subscriberId && x.Module == normalizedModule && x.Key == normalizedKey, ct);
         if (row is null) return false;
 
@@ -264,7 +264,7 @@ public sealed class ConfigService : IConfigService
     {
         var normalizedFeature = NormalizeScope(feature);
         var normalizedKey = NormalizeKey(key);
-        var row = await _platform.Unfiltered(_db.ConfigFeatures, PlatformQueryReason.TenantScopedExplicit)
+        var row = await _platform.Unfiltered(_db.ConfigFeatures, PlatformQueryReason.SubscriberScopedExplicit)
             .FirstOrDefaultAsync(x => x.SubscriberId == subscriberId && x.Feature == normalizedFeature && x.Key == normalizedKey, ct);
         if (row is null) return false;
 
@@ -289,13 +289,13 @@ public sealed class ConfigService : IConfigService
         if (_cacheDiagnostics.LogConfigSnapshot)
             _logger?.LogInformation("CACHE MISS category=config-snapshot key={Key}", cacheKey);
 
-        var globals = await _platform.Unfiltered(_db.ConfigGlobals, PlatformQueryReason.TenantScopedExplicit).AsNoTracking()
+        var globals = await _platform.Unfiltered(_db.ConfigGlobals, PlatformQueryReason.SubscriberScopedExplicit).AsNoTracking()
             .Where(x => x.SubscriberId == subscriberId)
             .ToListAsync(ct);
-        var modules = await _platform.Unfiltered(_db.ConfigModules, PlatformQueryReason.TenantScopedExplicit).AsNoTracking()
+        var modules = await _platform.Unfiltered(_db.ConfigModules, PlatformQueryReason.SubscriberScopedExplicit).AsNoTracking()
             .Where(x => x.SubscriberId == subscriberId)
             .ToListAsync(ct);
-        var features = await _platform.Unfiltered(_db.ConfigFeatures, PlatformQueryReason.TenantScopedExplicit).AsNoTracking()
+        var features = await _platform.Unfiltered(_db.ConfigFeatures, PlatformQueryReason.SubscriberScopedExplicit).AsNoTracking()
             .Where(x => x.SubscriberId == subscriberId)
             .ToListAsync(ct);
 

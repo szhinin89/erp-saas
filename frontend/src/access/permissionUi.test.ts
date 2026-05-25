@@ -3,17 +3,17 @@ import { JWT_PLATFORM_OPERATOR_ROLE } from '../constants/platformAuth';
 import {
   canShowPermissionKey,
   hasUnrestrictedPermissionSnapshot,
-  isTenantAdminRole,
+  isSubscriberAdminRole,
 } from './permissionUi';
 
 describe('permissionUi', () => {
   const has = (keys: string[]) => (key: string) =>
     keys.includes('*') || keys.some((p) => p === key);
 
-  it('isTenantAdminRole recognizes Admin and platform operator JWT role', () => {
-    expect(isTenantAdminRole('Admin')).toBe(true);
-    expect(isTenantAdminRole(JWT_PLATFORM_OPERATOR_ROLE)).toBe(true);
-    expect(isTenantAdminRole('User')).toBe(false);
+  it('isSubscriberAdminRole recognizes Admin and platform operator JWT role', () => {
+    expect(isSubscriberAdminRole('Admin')).toBe(true);
+    expect(isSubscriberAdminRole(JWT_PLATFORM_OPERATOR_ROLE)).toBe(true);
+    expect(isSubscriberAdminRole('User')).toBe(false);
   });
 
   it('hasUnrestrictedPermissionSnapshot detects wildcard from backend', () => {

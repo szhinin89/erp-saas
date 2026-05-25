@@ -17,7 +17,7 @@ public static class DeploymentQuota
         if (flags.IsDedicatedSingleClientInstance && flags.MaxActiveSubscribers is null)
         {
             return "Instancia dedicada (un cliente / servidor propio): defina un tope de empresas (RUC). " +
-                   "No se permite ilimitado. Use Deployment:MaxActiveSubscribers o el archivo App_Data/instance-quota.json (maxActiveTenants).";
+                   "No se permite ilimitado. Use Deployment:MaxActiveSubscribers o el archivo App_Data/instance-quota.json (maxActiveSubscribers).";
         }
 
         var max = flags.MaxActiveSubscribers;
@@ -36,7 +36,7 @@ public static class DeploymentQuota
     }
 
     /// <summary>Tope de usuarios Identity con membresía activa por empresa (tenant).</summary>
-    public static async Task<string?> GetBlockingReasonIfAtTenantCompanyUserMembershipUserCapAsync(
+    public static async Task<string?> GetBlockingReasonIfAtSubscriberCompanyUserMembershipUserCapAsync(
         IDeploymentFeatureFlags flags,
         IAccessRepository access,
         Guid subscriberId,

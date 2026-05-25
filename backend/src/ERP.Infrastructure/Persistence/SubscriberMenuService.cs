@@ -48,7 +48,7 @@ public sealed class SubscriberMenuService : ISubscriberSessionMenuResolver, ISub
         return SubscriberIamMenuMerger.EnsureCompanyIamGroup(global);
     }
 
-    public async Task<Result<SubscriberMenuResolvedDto>> GetResolvedMenuForTenantAsync(Guid subscriberId, CancellationToken ct = default)
+    public async Task<Result<SubscriberMenuResolvedDto>> GetResolvedMenuForSubscriberAsync(Guid subscriberId, CancellationToken ct = default)
     {
         if (subscriberId == Guid.Empty)
             return Result<SubscriberMenuResolvedDto>.Failure("Subscriber inválido.");

@@ -42,7 +42,7 @@ internal sealed class SecurityTestWebAppFactory : WebApplicationFactory<Program>
         builder.UseSetting("HealthChecks:SriProbeUrl", "");
         builder.UseSetting("Hangfire:Enabled",       "false");
         builder.UseSetting("InstallData:Enabled",    "false");
-        builder.UseSetting("Development:SeedDemoTenant",              "false");
+        builder.UseSetting("Development:SeedDemoSubscriber",              "false");
         builder.UseSetting("Development:SyncFuncionalidadesOnStartup","false");
         builder.UseSetting("Testing:SkipFirstRunSetup",               "true");
         builder.UseSetting("Testing:SkipCommercialPlansBootstrap",    "true");
@@ -62,7 +62,7 @@ internal sealed class SecurityTestWebAppFactory : WebApplicationFactory<Program>
                 ["Jwt:ExpirationMinutes"]               = "60",
                 ["Hangfire:Enabled"]                    = "false",
                 ["InstallData:Enabled"]                 = "false",
-                ["Development:SeedDemoTenant"]          = "false",
+                ["Development:SeedDemoSubscriber"]          = "false",
                 ["Development:SyncFuncionalidadesOnStartup"] = "false",
                 ["Testing:SkipFirstRunSetup"]            = "true",
                 ["Testing:SkipCommercialPlansBootstrap"] = "true",

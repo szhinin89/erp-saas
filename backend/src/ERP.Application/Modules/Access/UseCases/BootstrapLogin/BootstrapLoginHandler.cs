@@ -50,11 +50,11 @@ public class BootstrapLoginHandler : IRequestHandler<BootstrapLoginCommand, Resu
         if (user.IsPrimaryPlatformOperator)
         {
             var subscribersAll = await _subscriberRepository.GetAllAsync(ct);
-            var activeTenants = subscribersAll.Where(t => t.IsActive).ToList();
-            var superSubscriberIds = activeTenants.Select(t => t.Id).ToList();
+            var activeSubscribers = subscribersAll.Where(t => t.IsActive).ToList();
+            var superSubscriberIds = activeSubscribers.Select(t => t.Id).ToList();
 
             var superBootstrapToken = _tokenService.GenerateBootstrapToken(user, superSubscriberIds);
-            var superAccessible = activeTenants
+            var superAccessible = activeSubscribers
                 .OrderBy(t => t.Name)
                 .Select(t => new AccessibleSubscriberDto(t.Id, t.Name, t.Slug, PlatformAuthConstants.JwtPlatformOperatorRole))
                 .ToList();

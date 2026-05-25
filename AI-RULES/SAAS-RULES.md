@@ -4,20 +4,19 @@ Producto multi-tenant comercial. Detalle billing: `docs/SAAS-COMMERCIAL.md`. Nam
 
 ---
 
-## IDs de tenant fuera de la URL
+## IDs de suscriptor fuera de la URL
 
-**Regla de producto:** no colocar UUID de tenant (ni tokens) en `location.search` ni enlaces compartibles.
+**Regla de producto:** no colocar UUID de suscriptor (ni tokens) en `location.search` ni enlaces compartibles.
 
 ### Implementación de referencia
 
-`frontend/src/navigation/companiesTenantDetailNav.ts`:
+`frontend/src/navigation/platformSubscriberDetailNav.ts`:
 
 | Clave sessionStorage | Uso |
 |---------------------|-----|
-| `erp.saas.companies.detailTenantId` | Ficha Datos empresa (operador platform) |
-| `erp.saas.companies.subscriptionTenantId` | Pestaña Plan y módulos |
+| `erp.saas.platform.detailSubscriberId` | Contexto de ficha suscriptor (operador platform) |
 
-Funciones: `goToCompaniesTenantDetail`, `goToCompaniesTenantSubscription` → `navigate('/companies')` sin query.
+Función: `goToSubscriberDetail(navigate, id)` → `navigate('/platform/subscribers/:id')` sin query.
 
 ### Al extender el producto
 

@@ -27,4 +27,4 @@ export { catalogRoutes } from './catalogRoutes';
 export { companyManagementRoutes } from './companyManagementRoutes';
 export { accessRoutes } from './accessRoutes';
 export { mainRoutes } from './mainRoutes';
-export { platformShellRoutes, platformBookmarkRedirectRoutes } from './platformRoutes';
+export { platformShellRoutes } from './platformRoutes';

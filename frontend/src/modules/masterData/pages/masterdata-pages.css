@@ -247,6 +247,96 @@
   flex-wrap: wrap;
 }
 
+/* ── Wizard: banner "no encontrado" ──────────────────────── */
+.prd-wiz-notfound-banner {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.65rem 0.9rem;
+  margin-bottom: 1rem;
+  background: #fef9c3;
+  border: 1px solid #fde047;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  color: #713f12;
+}
+.prd-wiz-notfound-banner .material-symbols-outlined {
+  font-size: 18px;
+  flex-shrink: 0;
+  color: #ca8a04;
+}
+
+/* ── Resumen tab: override KPI grid a 4 columnas ─────────── */
+.prd-resumen .prd-kpi-grid {
+  grid-template-columns: repeat(4, 1fr);
+}
+@media (max-width: 1024px) { .prd-resumen .prd-kpi-grid { grid-template-columns: 1fr 1fr; } }
+@media (max-width: 580px)  { .prd-resumen .prd-kpi-grid { grid-template-columns: 1fr; } }
+
+/* ── Resumen tab: sección inferior (actividad + acciones rápidas) ── */
+.prd-resumen__bottom {
+  display: grid;
+  grid-template-columns: 1fr 280px;
+  gap: var(--space-4, 1rem);
+  align-items: start;
+}
+@media (max-width: 900px) { .prd-resumen__bottom { grid-template-columns: 1fr; } }
+
+.prd-activity-card,
+.prd-quick-card {
+  background: var(--zh-surface, #fff);
+  border: 1px solid var(--zh-border, #e5e7eb);
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.prd-activity-card__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid var(--zh-border, #e5e7eb);
+}
+
+.prd-activity-card__head h3,
+.prd-quick-card h3 {
+  margin: 0;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--zh-text-primary, #111827);
+}
+
+.prd-quick-card h3 {
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid var(--zh-border, #e5e7eb);
+}
+
+.prd-activity-empty {
+  padding: 1.25rem 1rem;
+  font-size: 0.8125rem;
+  color: var(--zh-muted, #6b7280);
+  text-align: center;
+}
+
+.prd-quick-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  padding: 0.65rem 1rem;
+  background: none;
+  border: none;
+  border-bottom: 1px solid var(--zh-border-light, #f3f4f6);
+  cursor: pointer;
+  font-size: 0.875rem;
+  color: var(--zh-text-primary, #111827);
+  text-align: left;
+  transition: background 0.12s;
+}
+.prd-quick-btn:last-child { border-bottom: none; }
+.prd-quick-btn:hover { background: var(--zh-surface-secondary, #f9fafb); }
+.prd-quick-btn .material-symbols-outlined { font-size: 18px; color: var(--zh-primary, #4f46e5); }
+
 /* ── BP "Buscar o Crear" search flow ─────────────────────── */
 .md-search-hint {
   margin: 0 0 0.75rem;

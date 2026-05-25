@@ -23,7 +23,7 @@ public class GetProfilesHandler : IRequestHandler<GetProfilesQuery, Result<IRead
     public async Task<Result<IReadOnlyList<ProfileDto>>> Handle(GetProfilesQuery request, CancellationToken ct)
     {
         var subscriberId = _tenant.SubscriberId;
-        var items = await _repo.GetProfilesByTenantAsync(subscriberId, request.OnlyActive, ct);
+        var items = await _repo.GetProfilesBySubscriberAsync(subscriberId, request.OnlyActive, ct);
         return Result<IReadOnlyList<ProfileDto>>.Success(items
             .Select(p => new ProfileDto(p.Id, p.Name, p.Description, p.IsActive))
             .ToList());

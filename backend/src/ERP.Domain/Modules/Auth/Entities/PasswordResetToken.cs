@@ -8,8 +8,6 @@ public sealed class PasswordResetToken
 {
     public const string KindPlatform = "Platform";
     public const string KindPlatformOperator = "PlatformOperator";
-    /// <summary>Alias legacy persistido en BD.</summary>
-    public const string KindLegacyPlatformOperator = "SuperAdmin"; // wire BD legacy — ver PlatformAuthConstants.LegacyPlatformOperatorWireRole
     public const string KindIdentity = "Identity";
     public const string KindLegacy = "Legacy";
 

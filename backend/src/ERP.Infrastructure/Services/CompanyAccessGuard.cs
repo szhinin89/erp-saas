@@ -74,13 +74,13 @@ public sealed class CompanyAccessGuard : ICompanyAccessGuard
 
         if (string.Equals(_currentUser.Role, PlatformAuthConstants.JwtPlatformOperatorRole, StringComparison.OrdinalIgnoreCase))
         {
-            var tenantSubscriber = await _subscribers.GetByIdAsync(subscriberId, ct);
+            var platformSubscriber = await _subscribers.GetByIdAsync(subscriberId, ct);
             return Result<CompanyAccessContext>.Success(new CompanyAccessContext(
                 _currentUser.UserId,
                 subscriberId,
                 companyId,
                 PlatformAuthConstants.JwtPlatformOperatorRole,
-                tenantSubscriber?.IsActive ?? false,
+                platformSubscriber?.IsActive ?? false,
                 company.IsActive));
         }
 

@@ -23,13 +23,9 @@ public sealed class DeploymentFeatureFlags : IDeploymentFeatureFlags
         get
         {
             var platform = _configuration["Deployment:PlatformPanelEnabled"];
-            if (!string.IsNullOrWhiteSpace(platform) && bool.TryParse(platform, out var platformParsed))
-                return platformParsed;
-
-            var legacy = _configuration["Deployment:SuperAdminPanelEnabled"];
-            if (string.IsNullOrWhiteSpace(legacy))
+            if (string.IsNullOrWhiteSpace(platform))
                 return true;
-            return bool.TryParse(legacy, out var legacyParsed) && legacyParsed;
+            return bool.TryParse(platform, out var platformParsed) && platformParsed;
         }
     }
 
@@ -54,7 +50,7 @@ public sealed class DeploymentFeatureFlags : IDeploymentFeatureFlags
 
     public int? MaxUsersPerSubscriber => MergePositiveInt(
         _instanceQuotaFile.Read()?.MaxUsersPerSubscriber,
-        ReadPositiveCap("Deployment:MaxUsersPerTenant"));
+        ReadPositiveCap("Deployment:MaxUsersPerSubscriber"));
 
     /// <inheritdoc />
     public bool AuthorizeInitialPlatformOperatorSetup(string? submittedToken)

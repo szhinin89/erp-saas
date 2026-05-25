@@ -3,7 +3,7 @@
  * Never used for security enforcement — API is authoritative.
  */
 
-import { TENANT_ADMIN_JWT_ROLES } from '../constants/platformAuth';
+import { SUBSCRIBER_ADMIN_JWT_ROLES } from '../constants/platformAuth';
 import { useAuthStore } from '../store/authStore';
 import { usePermissionsStore, normalizePolicyPermissionKey } from '../store/permissionsStore';
 
@@ -12,11 +12,11 @@ export { normalizePolicyPermissionKey };
 export { JWT_PLATFORM_OPERATOR_ROLE } from '../constants/platformAuth';
 
 /** Roles that receive wildcard permissions from backend (`*`). */
-export const TENANT_ADMIN_ROLES = TENANT_ADMIN_JWT_ROLES;
+export const SUBSCRIBER_ADMIN_ROLES = SUBSCRIBER_ADMIN_JWT_ROLES;
 
-export function isTenantAdminRole(role?: string | null): boolean {
+export function isSubscriberAdminRole(role?: string | null): boolean {
   if (!role) return false;
-  return TENANT_ADMIN_ROLES.includes(role as (typeof TENANT_ADMIN_ROLES)[number]);
+  return SUBSCRIBER_ADMIN_ROLES.includes(role as (typeof SUBSCRIBER_ADMIN_ROLES)[number]);
 }
 
 /** True when backend sent unrestricted UI snapshot (`permissions` includes `*`). */
@@ -45,7 +45,7 @@ export function canShowPermissionKey(
 /** Nav-only: tenant admins see full menu groups when backend envió wildcard. */
 export function shouldUseNavAdminBypass(role?: string | null): boolean {
   const { permissions } = usePermissionsStore.getState();
-  return hasUnrestrictedPermissionSnapshot(permissions) && isTenantAdminRole(role);
+  return hasUnrestrictedPermissionSnapshot(permissions) && isSubscriberAdminRole(role);
 }
 
 export function readPermissionUiSnapshot() {
@@ -62,6 +62,6 @@ export function readPermissionUiSnapshot() {
     role,
     permissionsSyncing,
     hasUnrestrictedAccess: hasUnrestrictedPermissionSnapshot(permissions),
-    isTenantAdmin: isTenantAdminRole(role),
+    isSubscriberAdmin: isSubscriberAdminRole(role),
   };
 }

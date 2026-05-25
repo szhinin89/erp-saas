@@ -4,7 +4,7 @@ using ERP.API.Extensions;
 using ERP.Application.Subscribers.DTOs;
 using ERP.Application.Subscribers.UseCases.UpdateSubscriberGlobalParameters;
 using ERP.Application.Subscribers.UseCases.UpdateSubscriberOperationalSettings;
-using ERP.Application.Subscribers.UseCases.UpdateSubscriberSaasProfile;
+using ERP.Application.Subscribers.UseCases.UpdateSubscriberCommercialProfile;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -25,7 +25,7 @@ public sealed class PlatformSubscriberSettingsController : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<SubscriberDto?>), StatusCodes.Status200OK)]
     public async Task<IActionResult> UpdateCompany(Guid subscriberId, [FromBody] UpdatePlatformSubscriberCompanyBody body, CancellationToken ct)
     {
-        var command = new UpdateSubscriberSaasProfileCommand(
+        var command = new UpdateSubscriberCommercialProfileCommand(
             subscriberId, body.Name, body.Slug, body.Ruc, body.ShortName,
             body.TradeName, body.Dinardap, body.LogoUrl, body.DisplayOrder, body.Priority);
         return this.ToOkOrBadRequest(await _mediator.Send(command, ct));

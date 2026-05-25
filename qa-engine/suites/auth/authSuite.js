@@ -6,7 +6,7 @@ export async function runAuthSuite(runner, api, ctx) {
   await runner.run('auth.login.tenantA', 'Tenant A login', 'auth', true, async ({ trace, recordBehavior }) => {
     trace.push({ step: 'POST /api/auth/login', at: new Date().toISOString() });
     const r = await request('POST', `${api}/api/auth/login`, {
-      body: { email: SEED_MANIFEST.tenantA.adminEmail, password: SEED_MANIFEST.tenantA.adminPassword },
+      body: { email: SEED_MANIFEST.subscriberA.adminEmail, password: SEED_MANIFEST.subscriberA.adminPassword },
     });
     if (!r.ok) throw new Error(`status=${r.status}`);
     const data = unwrapEnvelope(r.text);
@@ -25,8 +25,8 @@ export async function runAuthSuite(runner, api, ctx) {
       trace.push({ step: 're-login for refresh token', at: new Date().toISOString() });
       const login = await request('POST', `${api}/api/auth/login`, {
         body: {
-          email: SEED_MANIFEST.tenantA.adminEmail,
-          password: SEED_MANIFEST.tenantA.adminPassword,
+          email: SEED_MANIFEST.subscriberA.adminEmail,
+          password: SEED_MANIFEST.subscriberA.adminPassword,
         },
       });
       const data = unwrapEnvelope(login.text);

@@ -1,7 +1,4 @@
-import {
-  clearCompaniesDetailSubscriberId,
-  clearCompaniesSubscriptionSubscriberId,
-} from '../../navigation/platformSubscriberDetailNav';
+import { clearPlatformDetailSubscriberId } from '../../navigation/platformSubscriberDetailNav';
 import { clearPlatformImpersonationReturnPath } from '../../navigation/platformImpersonationNav';
 import {
   resetRefreshSessionFlight,
@@ -40,8 +37,7 @@ export function clearPersistedSessionArtifacts(): void {
     /* storage disabled */
   }
 
-  clearCompaniesDetailSubscriberId();
-  clearCompaniesSubscriptionSubscriberId();
+  clearPlatformDetailSubscriberId();
   clearPlatformImpersonationReturnPath();
 
   try {

@@ -5,7 +5,7 @@ namespace ERP.Domain.Products.Interfaces;
 public interface IProductRepository
 {
     Task<Product?> GetByIdAsync(Guid id, Guid subscriberId, CancellationToken ct = default);
-    Task<IReadOnlyList<Product>> GetAllByTenantAsync(Guid subscriberId, CancellationToken ct = default);
+    Task<IReadOnlyList<Product>> GetAllBySubscriberAsync(Guid subscriberId, CancellationToken ct = default);
     Task<IReadOnlyList<Product>> GetReportAsync(Guid subscriberId, ProductReportFilter filter, CancellationToken ct = default);
     Task<(IReadOnlyList<Product> Items, int TotalCount)> GetReportPageAsync(
         Guid subscriberId,

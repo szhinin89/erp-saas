@@ -10,7 +10,7 @@ import { formatPlanMoney, monthlyEquivalentPrice, planVisualTier } from './platf
 type Props = {
   plans: CommercialPlanAdmin[];
   planByCode: Map<string, CommercialPlanAdmin>;
-  filteredTenants: PlatformSubscriber[];
+  filteredSubscribers: PlatformSubscriber[];
   subscriberSearch: string;
   setSubscriberSearch: (value: string) => void;
   subscriberPlanFilter: string;
@@ -23,7 +23,7 @@ type Props = {
 export function PlatformPlansSectionSubscribers({
   plans,
   planByCode,
-  filteredTenants,
+  filteredSubscribers,
   subscriberSearch,
   setSubscriberSearch,
   subscriberPlanFilter,
@@ -70,7 +70,7 @@ export function PlatformPlansSectionSubscribers({
             <option value="inactive">{t('platform.plansDashboard.statusInactive')}</option>
           </select>
         </div>
-        {filteredTenants.length === 0 ? (
+        {filteredSubscribers.length === 0 ? (
           <EmptyState message={t('platform.plansDashboard.subscribersEmpty')} />
         ) : (
           <div className="sap-subscriber-tableWrap">
@@ -87,7 +87,7 @@ export function PlatformPlansSectionSubscribers({
                 </tr>
               </thead>
               <tbody>
-                {filteredTenants.map((tn) => {
+                {filteredSubscribers.map((tn) => {
                   const pc = (tn.planCode ?? '').trim().toLowerCase();
                   const p = pc ? planByCode.get(pc) : undefined;
                   const tier = planVisualTier(pc || 'default');

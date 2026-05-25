@@ -49,7 +49,7 @@ public sealed class CompanyRepository : ICompanyRepository
 
     public async Task<IReadOnlyList<Company>> GetActiveBySubscriberIdAsync(Guid subscriberId, CancellationToken ct = default)
         => await _platform
-            .Unfiltered(_db.Companies.AsNoTracking(), PlatformQueryReason.TenantScopedExplicit)
+            .Unfiltered(_db.Companies.AsNoTracking(), PlatformQueryReason.SubscriberScopedExplicit)
             .Where(c => c.SubscriberId == subscriberId && c.IsActive)
             .OrderBy(c => c.LegalName)
             .ToListAsync(ct);
@@ -59,7 +59,7 @@ public sealed class CompanyRepository : ICompanyRepository
 
     public Task<Company?> GetByIdForSubscriberAsync(Guid companyId, Guid subscriberId, CancellationToken ct = default)
         => _platform
-            .Unfiltered(_db.Companies.AsNoTracking(), PlatformQueryReason.TenantScopedExplicit)
+            .Unfiltered(_db.Companies.AsNoTracking(), PlatformQueryReason.SubscriberScopedExplicit)
             .FirstOrDefaultAsync(c => c.Id == companyId && c.SubscriberId == subscriberId && c.IsActive, ct);
 
     public async Task<IReadOnlyList<Company>> GetByIdsAsync(IReadOnlyCollection<Guid> companyIds, CancellationToken ct = default)
@@ -69,7 +69,7 @@ public sealed class CompanyRepository : ICompanyRepository
 
         // Auth/bootstrap/refresh resuelven IDs desde membresías sin contexto HTTP de tenant.
         return await _platform
-            .Unfiltered(_db.Companies.AsNoTracking(), PlatformQueryReason.CrossTenantSystem)
+            .Unfiltered(_db.Companies.AsNoTracking(), PlatformQueryReason.CrossSubscriberSystem)
             .Where(c => companyIds.Contains(c.Id) && c.IsActive)
             .ToListAsync(ct);
     }

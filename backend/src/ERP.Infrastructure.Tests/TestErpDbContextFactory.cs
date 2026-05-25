@@ -19,7 +19,7 @@ internal static class TestErpDbContextFactory
     {
         var platform = new PlatformQueryAccessor(
             NullLogger<PlatformQueryAccessor>.Instance,
-            Microsoft.Extensions.Options.Options.Create(new SaasEntitlementsOptions()));
+            Microsoft.Extensions.Options.Options.Create(new SubscriberEntitlementsOptions()));
         company ??= new TestCurrentCompany();
         return new ErpDbContext(options, tenant, publisher, platform, company);
     }

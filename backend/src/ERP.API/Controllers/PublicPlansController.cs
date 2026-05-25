@@ -15,9 +15,9 @@ namespace ERP.API.Controllers;
 [Produces("application/json")]
 public sealed class PublicPlansController : ControllerBase
 {
-    private readonly ISaasPublicPlansQuery _query;
+    private readonly IPublicCommercialPlansQuery _query;
 
-    public PublicPlansController(ISaasPublicPlansQuery query) => _query = query;
+    public PublicPlansController(IPublicCommercialPlansQuery query) => _query = query;
 
     /// <summary>Planes activos y marcados como visibles públicamente, con features incluidas.</summary>
     [HttpGet("plans")]

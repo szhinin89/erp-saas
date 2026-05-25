@@ -26,8 +26,8 @@ export function PlatformPlansSection() {
               variant="ghost"
               size="md"
               type="button"
-              onClick={s.exportTenantsCsv}
-              disabled={s.busy || s.filteredTenantsForTable.length === 0}
+              onClick={s.exportSubscribersCsv}
+              disabled={s.busy || s.filteredSubscribersForTable.length === 0}
             >
               {s.t('platform.plansDashboard.exportCsv')}
             </ZHBtn>
@@ -108,7 +108,7 @@ export function PlatformPlansSection() {
           <PlatformPlansSectionSubscribers
             plans={s.plans}
             planByCode={s.planByCode}
-            filteredTenants={s.filteredTenantsForTable}
+            filteredSubscribers={s.filteredSubscribersForTable}
             subscriberSearch={s.subscriberSearch}
             setSubscriberSearch={s.setSubscriberSearch}
             subscriberPlanFilter={s.subscriberPlanFilter}

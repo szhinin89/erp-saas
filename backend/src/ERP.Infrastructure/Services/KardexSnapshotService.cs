@@ -34,13 +34,13 @@ public sealed class KardexSnapshotService : IKardexSnapshotCalculator
     /// </summary>
     public async Task<int> RecalcularTodosAsync(DateTime hastaFecha, CancellationToken ct)
     {
-        var subscribers = await _snapRepo.GetTenantsWithMovementsAsync(ct);
+        var subscribers = await _snapRepo.GetSubscribersWithMovementsAsync(ct);
         var total   = 0;
 
         foreach (var subscriberId in subscribers)
         {
             if (ct.IsCancellationRequested) break;
-            total += await RecalcularTenantAsync(subscriberId, null, null, hastaFecha, ct);
+            total += await RecalcularSubscriberAsync(subscriberId, null, null, hastaFecha, ct);
         }
 
         return total;
@@ -49,7 +49,7 @@ public sealed class KardexSnapshotService : IKardexSnapshotCalculator
     /// <summary>
     /// Recalcula snapshots para un tenant específico, con filtros opcionales.
     /// </summary>
-    public async Task<int> RecalcularTenantAsync(
+    public async Task<int> RecalcularSubscriberAsync(
         Guid      subscriberId,
         Guid?     productoId,
         Guid?     WarehouseId,

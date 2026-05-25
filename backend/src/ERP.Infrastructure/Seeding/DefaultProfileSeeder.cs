@@ -27,7 +27,7 @@ public sealed class DefaultProfileSeeder : IDefaultProfileSeeder
         _logger   = logger;
     }
 
-    public async Task SeedForTenantAsync(Guid subscriberId, Guid actorId, CancellationToken ct = default)
+    public async Task SeedForSubscriberAsync(Guid subscriberId, Guid actorId, CancellationToken ct = default)
     {
         var bundles = new[]
         {

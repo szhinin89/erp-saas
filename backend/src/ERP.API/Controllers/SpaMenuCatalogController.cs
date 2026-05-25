@@ -6,7 +6,7 @@ namespace ERP.API.Controllers;
 
 /// <summary>
 /// Marcadores HTTP solo para que <see cref="ERP.API.Services.ModuloDiscoveryService"/> registre
-/// pantallas SPA que no tienen un controlador CRUD dedicado (perfiles, acceso tenant, etc.).
+/// pantallas SPA que no tienen un controlador CRUD dedicado (perfiles, acceso suscriptor, etc.).
 /// Las rutas reales las sirve el frontend; aquí no hay lógica de negocio.
 /// </summary>
 [ApiController]
@@ -19,7 +19,7 @@ public sealed class SpaMenuCatalogController : ControllerBase
     [AppFeature("Perfiles (Roles)", "perm:admin.roles.view", "👥", "/admin/roles", null, 86)]
     public IActionResult ProfilesCatalogMarker() => NotFound();
 
-    [HttpGet("tenant-access")]
+    [HttpGet("subscriber-access")]
     [AppFeature("Acceso usuarios", "perm:admin.users.view", "👤", "/admin/users", null, 87)]
     public IActionResult SubscriberAccessCatalogMarker() => NotFound();
 

@@ -11,7 +11,7 @@
     { "id": "legacy-superadmin", "pattern": "LEGACY_SUPERADMIN", "hint": "Remove LEGACY_SUPERADMIN_* constants" },
     { "id": "superadmin-service-camel", "pattern": "superAdminService", "hint": "Use platformService from modules/platform/api" },
     { "id": "iam-superadmin-api", "pattern": "/api/admin/iam/superadmin", "hint": "Use /api/platform/subscribers" },
-    { "id": "company-service", "pattern": "companyService", "hint": "Use subscriberService (platform) or tenantSubscriberService (runtime)", "scanRoots": ["frontend"] },
+    { "id": "company-service", "pattern": "companyService", "hint": "Use subscriberService (platform) or runtimeSubscriberService (runtime)", "scanRoots": ["frontend"] },
     { "id": "company-service-get-subscribers", "pattern": "companyService.getSubscribers", "hint": "Use platformService.getSubscribers", "scanRoots": ["frontend"] },
     { "id": "subscribers-controller-frontend", "pattern": "SubscribersController", "hint": "Use platformService — no direct controller refs in frontend", "scanRoots": ["frontend"] },
     { "id": "subscriber-service-wrapper", "pattern": "export const subscriberService", "hint": "Use platformService only for Platform Control Plane", "scanRoots": ["frontend"] },
@@ -56,7 +56,7 @@
   ],
   "subscriberRuntimeApiAllowFiles": [
     "frontend/src/modules/auth/api/entitlementsService.ts",
-    "frontend/src/modules/subscribers/api/tenantSubscriberService.ts",
+    "frontend/src/modules/subscribers/api/runtimeSubscriberService.ts",
     "frontend/src/modules/auth/pages/PasswordResetPage.tsx",
     "frontend/src/access/README.md",
     "frontend/src/modules/masterData/README.md",
@@ -68,7 +68,6 @@
   ],
   "allowedUiRoutePrefixes": [
     "/platform",
-    "/superadmin",
     "/saas",
     "/login",
     "/register",

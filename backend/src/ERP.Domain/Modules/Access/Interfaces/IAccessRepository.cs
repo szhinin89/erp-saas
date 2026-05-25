@@ -36,7 +36,7 @@ public interface IAccessRepository
 
     Task<int> CountActiveCompanyUserMembershipsBySubscriberAsync(Guid subscriberId, CancellationToken ct = default);
 
-    Task<IReadOnlyList<AccessProfile>> GetProfilesByTenantAsync(Guid subscriberId, bool onlyActive = true, CancellationToken ct = default);
+    Task<IReadOnlyList<AccessProfile>> GetProfilesBySubscriberAsync(Guid subscriberId, bool onlyActive = true, CancellationToken ct = default);
     Task<AccessProfile?> GetProfileByIdAsync(Guid subscriberId, Guid profileId, CancellationToken ct = default);
     Task AddProfileAsync(AccessProfile profile, CancellationToken ct = default);
 

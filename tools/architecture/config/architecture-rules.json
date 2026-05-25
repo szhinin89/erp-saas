@@ -191,7 +191,7 @@
         "SaveChangesAsync"
       ]
     },
-    "tenant": {
+    "subscriber": {
       "scanPath": "backend/src",
       "entityScanPath": "backend/src/ERP.Domain",
       "scopedMarker": "ISubscriberScopedEntity",

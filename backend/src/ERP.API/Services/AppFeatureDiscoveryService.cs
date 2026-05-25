@@ -94,8 +94,7 @@ public sealed class AppFeatureDiscoveryService
     private static bool ShouldExclude(string permission)
     {
         var p = (permission ?? string.Empty).Trim();
-        return p.StartsWith(PlatformAuthConstants.JwtPlatformOperatorRole, StringComparison.OrdinalIgnoreCase)
-            || p.StartsWith(PlatformAuthConstants.LegacyPlatformOperatorWireRole, StringComparison.OrdinalIgnoreCase);
+        return p.StartsWith(PlatformAuthConstants.JwtPlatformOperatorRole, StringComparison.OrdinalIgnoreCase);
     }
 
     private static DiscoveryRow ToRow(AppFeatureAttribute a, string? parentPermissionExplicit)

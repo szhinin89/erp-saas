@@ -123,7 +123,7 @@ export function ConfigManagementPanel(props: ConfigManagementPanelProps) {
       if (sameTenantAsContext) {
         await config.refresh();
       } else {
-        const loaded = await configService.loadTenantConfig(subscriberId);
+        const loaded = await configService.loadSubscriberConfig(subscriberId);
         setLocalEntries(loaded);
       }
     } catch (e) {

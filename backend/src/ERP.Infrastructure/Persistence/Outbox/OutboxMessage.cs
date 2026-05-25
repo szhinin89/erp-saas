@@ -55,8 +55,8 @@ public sealed class OutboxMessage
     /// <summary>Last processing error message. Null while pending or after success.</summary>
     public string? Error { get; private set; }
 
-    /// <summary>Tenant that raised the event — denormalized for efficient cross-tenant outbox queries.</summary>
-    public Guid? TenantId { get; private set; }
+    /// <summary>Subscriber that raised the event — denormalized for efficient cross-tenant outbox queries.</summary>
+    public Guid? SubscriberId { get; private set; }
 
     /// <summary>Links this event to the originating HTTP request or workflow.</summary>
     public Guid? CorrelationId { get; private set; }
@@ -66,7 +66,7 @@ public sealed class OutboxMessage
     public static OutboxMessage From(IDomainEvent domainEvent, string? metadataJson = null)
     {
         var eventType  = domainEvent.GetType();
-        var tenantId   = domainEvent is BaseDomainEvent b  ? b.TenantId      : null;
+        var subscriberId = domainEvent is BaseDomainEvent b ? b.SubscriberId : null;
         var correlation = domainEvent is BaseDomainEvent b2 ? b2.CorrelationId : null;
 
         return new OutboxMessage
@@ -78,7 +78,7 @@ public sealed class OutboxMessage
             Payload       = JsonSerializer.Serialize(domainEvent, eventType, SerializerOptions),
             MetadataJson  = metadataJson,
             OccurredOnUtc = domainEvent.OccurredOn,
-            TenantId      = tenantId,
+            SubscriberId  = subscriberId,
             CorrelationId = correlation,
         };
     }

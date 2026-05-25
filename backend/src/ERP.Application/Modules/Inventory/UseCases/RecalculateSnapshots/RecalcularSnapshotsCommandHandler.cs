@@ -34,7 +34,7 @@ public sealed class RecalcularSnapshotsCommandHandler
 
         try
         {
-            var count = await _calculator.RecalcularTenantAsync(
+            var count = await _calculator.RecalcularSubscriberAsync(
                 subscriberId, command.ProductId, command.WarehouseId, untilDate, ct);
 
             _logger.LogInformation("RecalcularSnapshots: {Count} snapshots generados.", count);

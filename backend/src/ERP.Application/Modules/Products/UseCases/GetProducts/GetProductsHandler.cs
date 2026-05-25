@@ -22,7 +22,7 @@ public class GetProductsHandler : IRequestHandler<GetProductsQuery, Result<IRead
     public async Task<Result<IReadOnlyList<ProductDto>>> Handle(GetProductsQuery request, CancellationToken ct)
     {
         var subscriberId = _currentSubscriber.SubscriberId;
-        var products = await _repository.GetAllByTenantAsync(subscriberId, ct);
+        var products = await _repository.GetAllBySubscriberAsync(subscriberId, ct);
 
         var dtos = products.Select(p => new ProductDto(
             p.Id, p.SaleCode, p.PurchaseCode, p.ShortName, p.Description,

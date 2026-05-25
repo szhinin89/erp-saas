@@ -55,7 +55,7 @@ public class ProductHandlersIntegrationTests
         result.Value.Should().NotBeNull();
         result.Value!.SaleCode.Should().Be("P-001");
 
-        var persisted = await productRepo.GetAllByTenantAsync(subscriberId, CancellationToken.None);
+        var persisted = await productRepo.GetAllBySubscriberAsync(subscriberId, CancellationToken.None);
         persisted.Should().HaveCount(1);
         persisted[0].SubscriberId.Should().Be(subscriberId);
         persisted[0].CreatedBy.Should().Be(userId);
@@ -185,7 +185,7 @@ public class ProductHandlersIntegrationTests
         public Task<Product?> GetByIdWithDetailsAsync(Guid id, Guid subscriberId, CancellationToken ct = default)
             => Task.FromResult(_products.FirstOrDefault(p => p.Id == id && p.SubscriberId == subscriberId));
 
-        public Task<IReadOnlyList<Product>> GetAllByTenantAsync(Guid subscriberId, CancellationToken ct = default)
+        public Task<IReadOnlyList<Product>> GetAllBySubscriberAsync(Guid subscriberId, CancellationToken ct = default)
             => Task.FromResult<IReadOnlyList<Product>>(
                 _products.Where(p => p.SubscriberId == subscriberId && p.IsActive).ToList());
 

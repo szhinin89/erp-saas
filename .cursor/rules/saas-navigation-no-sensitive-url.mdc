@@ -1,31 +1,27 @@
 ---
 description: >-
-  No poner UUID de tenant ni tokens en la query de la URL; usar sessionStorage
-  + helpers en companiesTenantDetailNav; migrar enlaces legacy (?data=, ?subscription=).
+  No poner UUID de suscriptor ni tokens en la query de la URL; usar sessionStorage
+  + helpers en platformSubscriberDetailNav.
 alwaysApply: true
 ---
 
 # Navegación SaaS: sin IDs sensibles en la URL
 
-**Canónico:** [`AI-RULES/SAAS-RULES.md`](../../AI-RULES/SAAS-RULES.md#ids-de-tenant-fuera-de-la-url)
+**Canónico:** [`AI-RULES/SAAS-RULES.md`](../../AI-RULES/SAAS-RULES.md#ids-de-suscriptor-fuera-de-la-url)
 
 ## Objetivo
 
-Evitar que **GUID de tenant**, tokens u otros identificadores sensibles aparezcan en `location.search` o en enlaces compartibles (historial, capturas, referrers). La ruta canónica sigue siendo limpia (p. ej. `/companies`).
+Evitar que **GUID de suscriptor**, tokens u otros identificadores sensibles aparezcan en `location.search` o en enlaces compartibles (historial, capturas, referrers). La ruta canónica del panel platform es `/platform/subscribers/:id`.
 
 ## Patrón obligatorio (referencia implementada)
 
-- **Módulo:** `frontend/src/navigation/companiesTenantDetailNav.ts`
-- **Claves `sessionStorage` (prefijo estable `erp.saas.`):**
-  - `erp.saas.companies.detailTenantId` — ficha **Datos** de una empresa (Super Admin).
-  - `erp.saas.companies.subscriptionTenantId` — pestaña **Plan y módulos** para un tenant.
-- **Navegación desde otras pantallas:** usar `goToCompaniesTenantDetail(navigate, id)` o `goToCompaniesTenantSubscription(navigate, id)` (persisten en storage y hacen `navigate('/companies')` sin query).
-- **Dentro de Empresas:** actualizar storage + estado de pestaña sin añadir query.
-- **Compatibilidad:** si existe URL legacy (`?data=`, `?subscription=`), migrar a `sessionStorage`, quitar el parámetro con `replace` y continuar el flujo.
+- **Módulo:** `frontend/src/navigation/platformSubscriberDetailNav.ts`
+- **Clave `sessionStorage`:** `erp.saas.platform.detailSubscriberId` — contexto de ficha suscriptor (operador platform).
+- **Navegación desde otras pantallas:** usar `goToSubscriberDetail(navigate, id)` (persiste en storage y navega a `/platform/subscribers/:id` sin query).
 
 ## Al añadir pantallas o enlaces nuevos
 
-1. **No** construir `to={\`/ruta?tenantId=${id}\`}` ni equivalentes con UUID.
+1. **No** construir `to={\`/ruta?subscriberId=${id}\`}` ni equivalentes con UUID.
 2. Si hace falta contexto entre rutas: **nueva clave** en `sessionStorage` (documentar en el mismo archivo de helpers o en un `*Nav.ts` colocado junto al feature), o estado global ya existente (stores), o **idempotente** query solo con valores no sensibles (p. ej. `?plan=starter`).
 3. Revisar enlaces viejos en `NavLink`, emails y documentación; al tocarlos, aplicar el mismo patrón.
 
@@ -33,5 +29,5 @@ Evitar que **GUID de tenant**, tokens u otros identificadores sensibles aparezca
 
 | Evitar | Preferir |
 |--------|----------|
-| `?data=<uuid>`, `?subscription=<uuid>`, `?tenantId=` | Claves `erp.saas.*` + ruta corta |
+| `?data=<uuid>`, `?subscription=<uuid>`, `?subscriberId=` | Claves `erp.saas.*` + ruta corta |
 | “Encriptar” el id solo en cliente en la URL | No exponerlo en la URL |

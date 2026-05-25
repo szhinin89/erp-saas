@@ -22,7 +22,7 @@ export function SubscriberAccessPage() {
   const { t } = useI18n();
   const user = useAuthStore((s) => s.user);
   const subscriberId = useAuthStore((s) => s.user?.subscriberId ?? '');
-  const { canShow, isTenantAdmin } = usePermissionsUi();
+  const { canShow, isSubscriberAdmin } = usePermissionsUi();
   const canManageCompanyUserMemberships = canShow('admin.users.view');
 
   const [items, setItems] = useState<SubscriberCompanyUserMembershipItem[]>([]);
@@ -120,7 +120,7 @@ export function SubscriberAccessPage() {
     }
   };
 
-  if (!user || (!isTenantAdmin && !canManageCompanyUserMemberships)) {
+  if (!user || (!isSubscriberAdmin && !canManageCompanyUserMemberships)) {
     return <NoAccessPage title={t('subscriberAccess.title')} />;
   }
 

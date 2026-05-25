@@ -1,5 +1,5 @@
 import type { SessionMenuGroupDto, SessionMenuItemDto } from '../types/access';
-import { NAV_PLATFORM_OPERATOR_ROLE, readsRequirePlatformPanel, TENANT_ADMIN_JWT_ROLES } from '../constants/platformAuth';
+import { NAV_PLATFORM_OPERATOR_ROLE, readsRequirePlatformPanel, SUBSCRIBER_ADMIN_JWT_ROLES } from '../constants/platformAuth';
 import { normalizePolicyPermissionKey } from '../store/permissionsStore';
 
 export type NavItem = {
@@ -407,7 +407,7 @@ export function buildNavGroups(
           label: t('app.nav.branches'),
           moduleKey: 'saas',
           permissionKey: 'settings.branches.view',
-          roles: [...TENANT_ADMIN_JWT_ROLES],
+          roles: [...SUBSCRIBER_ADMIN_JWT_ROLES],
         },
       ],
     },
@@ -456,7 +456,7 @@ export function flattenAccessIntoSecurity(groups: NavGroup[]): NavGroup[] {
   const security = groups.find((g) => g.id === 'security');
   const liftRoles = access.roles?.filter(Boolean).length
     ? [...(access.roles ?? [])]
-    : [...TENANT_ADMIN_JWT_ROLES];
+    : [...SUBSCRIBER_ADMIN_JWT_ROLES];
   const lifted: NavItem[] = access.items.map((it) => ({
     ...it,
     roles: it.roles?.length ? [...new Set([...it.roles, ...liftRoles])] : [...liftRoles],

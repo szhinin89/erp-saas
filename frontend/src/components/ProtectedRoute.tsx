@@ -71,10 +71,7 @@ export function ProtectedRoute() {
     normalizeUuid(user?.subscriberId ?? '') === normalizeUuid(GLOBAL_SUBSCRIBER_ID);
 
   if (platformPanelEnabled && isGlobalPlatform) {
-    const allowed =
-      path.startsWith('/platform') ||
-      path === '/companies' ||
-      path.startsWith('/companies/');
+    const allowed = path.startsWith('/platform');
     return allowed ? <Outlet /> : <Navigate to="/platform/overview" replace />;
   }
 

@@ -10,11 +10,11 @@ namespace ERP.Infrastructure.Persistence;
 public sealed class PlatformQueryAccessor : IPlatformQueryAccessor
 {
     private readonly ILogger<PlatformQueryAccessor> _logger;
-    private readonly SaasEntitlementsOptions _options;
+    private readonly SubscriberEntitlementsOptions _options;
 
     public PlatformQueryAccessor(
         ILogger<PlatformQueryAccessor> logger,
-        IOptions<SaasEntitlementsOptions> options)
+        IOptions<SubscriberEntitlementsOptions> options)
     {
         _logger = logger;
         _options = options.Value;

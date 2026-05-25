@@ -21,7 +21,7 @@ import { runEndpointsSuite } from './suites/endpoints/endpointsSuite.js';
 import { runInfraSuite } from './suites/infra/infraSuite.js';
 import { runPermissionsSuite } from './suites/permissions/permissionsSuite.js';
 import { runSecuritySuite } from './suites/security/securitySuite.js';
-import { runTenantSuite } from './suites/tenant/tenantSuite.js';
+import { runSubscriberSuite } from './suites/subscriber/subscriberSuite.js';
 
 /** @param {ReturnType<typeof loadConfig>} config */
 export async function runQaEngine(config) {
@@ -53,8 +53,8 @@ export async function runQaEngine(config) {
     logger: logger.child('seed'),
   });
   mark('seed.complete', {
-    tenantACompanyId: seed.tenantACompanyId,
-    tenantBCompanyId: seed.tenantBCompanyId,
+    subscriberACompanyId: seed.subscriberACompanyId,
+    subscriberBCompanyId: seed.subscriberBCompanyId,
   });
 
   const runner = new QaRunner({
@@ -76,7 +76,7 @@ export async function runQaEngine(config) {
 
   await runSuite('infra', () => runInfraSuite(runner, config.api, config.frontend, seed));
   await runSuite('auth', () => runAuthSuite(runner, config.api, seed));
-  await runSuite('tenant', () => runTenantSuite(runner, config.api, seed));
+  await runSuite('tenant', () => runSubscriberSuite(runner, config.api, seed));
   await runSuite('permissions', () => runPermissionsSuite(runner, config.api, seed));
   await runSuite('cache', () => runCacheSuite(runner, config.api, seed));
   await runSuite('security', () => runSecuritySuite(runner, config.api, seed));

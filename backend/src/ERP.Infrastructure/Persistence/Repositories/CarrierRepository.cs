@@ -18,7 +18,7 @@ public class CarrierRepository : ICarrierRepository
 
     public async Task<List<Carrier>> GetAllAsync(Guid subscriberId, string? search, bool? isActive, CancellationToken ct = default)
     {
-        var query = _platform.Unfiltered(_context.Carriers, PlatformQueryReason.TenantScopedExplicit)
+        var query = _platform.Unfiltered(_context.Carriers, PlatformQueryReason.SubscriberScopedExplicit)
             .Where(c => c.SubscriberId == subscriberId);
 
         if (isActive.HasValue)
@@ -37,12 +37,12 @@ public class CarrierRepository : ICarrierRepository
     }
 
     public Task<Carrier?> GetByIdAsync(Guid id, CancellationToken ct = default) =>
-        _platform.Unfiltered(_context.Carriers, PlatformQueryReason.TenantScopedExplicit)
+        _platform.Unfiltered(_context.Carriers, PlatformQueryReason.SubscriberScopedExplicit)
             .FirstOrDefaultAsync(c => c.Id == id, ct);
 
     public Task<bool> ExistsIdentificationAsync(Guid subscriberId, string identificationNumber, Guid? excludeId, CancellationToken ct = default)
     {
-        var query = _platform.Unfiltered(_context.Carriers, PlatformQueryReason.TenantScopedExplicit)
+        var query = _platform.Unfiltered(_context.Carriers, PlatformQueryReason.SubscriberScopedExplicit)
             .Where(c => c.SubscriberId == subscriberId && c.IdentificationNumber == identificationNumber);
 
         if (excludeId.HasValue)

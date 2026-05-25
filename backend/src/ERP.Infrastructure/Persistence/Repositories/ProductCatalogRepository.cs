@@ -33,7 +33,7 @@ public class ProductCatalogRepository : IProductCatalogRepository
         => _context.Brands.AddAsync(brand, ct).AsTask();
 
     public Task<Brand?> GetBrandByIdAsync(Guid id, CancellationToken ct = default)
-        => _platform.Unfiltered(_context.Brands, PlatformQueryReason.TenantScopedExplicit)
+        => _platform.Unfiltered(_context.Brands, PlatformQueryReason.SubscriberScopedExplicit)
             .FirstOrDefaultAsync(x => x.Id == id, ct);
 
     public async Task<IReadOnlyList<Brand>> GetBrandsAsync(Guid subscriberId, bool onlyActive = true, CancellationToken ct = default)
@@ -48,7 +48,7 @@ public class ProductCatalogRepository : IProductCatalogRepository
         => _context.ProductTypes.AddAsync(type, ct).AsTask();
 
     public Task<ProductType?> GetProductTypeByIdAsync(Guid id, CancellationToken ct = default)
-        => _platform.Unfiltered(_context.ProductTypes, PlatformQueryReason.TenantScopedExplicit)
+        => _platform.Unfiltered(_context.ProductTypes, PlatformQueryReason.SubscriberScopedExplicit)
             .FirstOrDefaultAsync(x => x.Id == id, ct);
 
     public async Task<IReadOnlyList<ProductType>> GetProductTypesAsync(Guid subscriberId, bool onlyActive = true, CancellationToken ct = default)
@@ -63,7 +63,7 @@ public class ProductCatalogRepository : IProductCatalogRepository
         => _context.UnitsOfMeasure.AddAsync(unit, ct).AsTask();
 
     public Task<UnitOfMeasure?> GetUnitOfMeasureByIdAsync(Guid id, CancellationToken ct = default)
-        => _platform.Unfiltered(_context.UnitsOfMeasure, PlatformQueryReason.TenantScopedExplicit)
+        => _platform.Unfiltered(_context.UnitsOfMeasure, PlatformQueryReason.SubscriberScopedExplicit)
             .FirstOrDefaultAsync(x => x.Id == id, ct);
 
     public async Task<IReadOnlyList<UnitOfMeasure>> GetUnitsOfMeasureAsync(Guid subscriberId, bool onlyActive = true, CancellationToken ct = default)

@@ -44,7 +44,7 @@ public sealed class SubscriptionService : ISubscriptionService
 
         var period = MonthlyPeriodKey(DateTime.UtcNow);
         var used = await _platform
-            .Unfiltered(_db.SubscriptionUsages.AsNoTracking(), PlatformQueryReason.TenantScopedExplicit)
+            .Unfiltered(_db.SubscriptionUsages.AsNoTracking(), PlatformQueryReason.SubscriberScopedExplicit)
             .Where(u => u.SubscriberId == subscriberId && u.FeatureId == feature.Id && u.PeriodKey == period)
             .Select(u => u.Quantity)
             .FirstOrDefaultAsync(ct);
@@ -68,7 +68,7 @@ public sealed class SubscriptionService : ISubscriptionService
 
     private async Task<SubscriberSubscription?> GetActiveSubscriptionRowAsync(Guid subscriberId, CancellationToken ct) =>
         await _platform
-            .Unfiltered(_db.SubscriberSubscriptions.AsNoTracking(), PlatformQueryReason.TenantScopedExplicit)
+            .Unfiltered(_db.SubscriberSubscriptions.AsNoTracking(), PlatformQueryReason.SubscriberScopedExplicit)
             .Where(s => s.SubscriberId == subscriberId && s.Status == SubscriptionStatus.Active)
             .OrderByDescending(s => s.StartedAtUtc)
             .FirstOrDefaultAsync(ct);
@@ -81,7 +81,7 @@ public sealed class SubscriptionService : ISubscriptionService
         if (subscriptionId is not null)
         {
             var ov = await _platform
-                .Unfiltered(_db.SubscriptionFeatureOverrides.AsNoTracking(), PlatformQueryReason.TenantScopedExplicit)
+                .Unfiltered(_db.SubscriptionFeatureOverrides.AsNoTracking(), PlatformQueryReason.SubscriberScopedExplicit)
                 .FirstOrDefaultAsync(
                     o => o.SubscriberId == subscriberId && o.SubscriptionId == subscriptionId.Value && o.FeatureId == featureId,
                     ct);

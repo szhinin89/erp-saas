@@ -25,7 +25,7 @@ internal sealed class ErpDbContextFactory : IDesignTimeDbContextFactory<ErpDbCon
 
         var platform = new PlatformQueryAccessor(
             NullLogger<PlatformQueryAccessor>.Instance,
-            Microsoft.Extensions.Options.Options.Create(new SaasEntitlementsOptions()));
+            Microsoft.Extensions.Options.Options.Create(new SubscriberEntitlementsOptions()));
         return new ErpDbContext(options, new DesignTimeSubscriber(), new NoOpPublisher(), platform, new DesignTimeCompany());
     }
 
