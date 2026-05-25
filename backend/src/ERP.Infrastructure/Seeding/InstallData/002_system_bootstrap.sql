@@ -147,7 +147,7 @@ CROSS JOIN (VALUES
   ('/sales/invoices',             'app.nav.sales.invoices',                  'Facturas',              10, 'sales', 'sales.invoices.view'),
   ('/sales/quotes',               'app.nav.sales.quotes',                    'Cotizaciones',          15, 'sales', 'sales.quotes.view'),
   ('/sales/orders',               'app.nav.sales.orders',                    'Pedidos',               17, 'sales', 'sales.orders.view'),
-  ('/sales/customers',            'app.nav.catalog.customers',               'Clientes',              20, 'sales', 'sales.customers.view'),
+  ('/masterdata/customers',       'app.nav.catalog.customers',               'Clientes',              20, 'sales', 'masterdata.businesspartners.view'),
   ('/sales/credit-notes',         'app.nav.item.sales.credit-notes',         'Notas de crédito',      30, 'sales', 'sales.credit-notes.view'),
   ('/sales/withholding-received', 'app.nav.item.sales.withholding-received', 'Retenciones recibidas', 40, 'sales', 'sales.withholding-received.view')
 ) AS v(route_path, label_key, display_label, sort_order, module_key, permission_key)
@@ -160,7 +160,7 @@ SELECT gen_random_uuid(), g."Id", v.route_path, v.label_key, v.display_label, v.
 FROM ui_nav_groups g
 CROSS JOIN (VALUES
   ('/purchases/invoices',           'app.nav.item.purchases.invoices',          'Facturas de compra',      10, 'purchases', 'purchases.invoices.view'),
-  ('/purchases/suppliers',          'app.nav.item.purchases.suppliers',         'Proveedores',             20, 'purchases', 'purchases.suppliers.view'),
+  ('/masterdata/suppliers',         'app.nav.item.purchases.suppliers',         'Proveedores',             20, 'purchases', 'masterdata.businesspartners.view'),
   ('/purchases/orders',             'app.nav.item.purchases.orders',            'Órdenes de compra',       30, 'purchases', 'purchases.orders.view'),
   ('/purchases/credit-notes',       'app.nav.item.purchases.credit-notes',      'Notas crédito proveedor', 40, 'purchases', 'purchases.credit-notes.view'),
   ('/purchases/withholding-issued', 'app.nav.item.purchases.withholding-issued','Retenciones emitidas',    50, 'purchases', 'purchases.withholding-issued.view')

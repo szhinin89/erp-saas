@@ -68,11 +68,14 @@ public static class CommercialPlansBootstrap
 
             // Plan ya existe: inyectar MenuConfigJson si:
             //   a) está vacío/null, o
-            //   b) tiene estructura "plan-custom" plana (JSON de migración incorrecto).
-            // No sobreescribir JSON personalizado guardado por el operador platform.
-            var hasPlanCustom = existing.MenuConfigJson?.Contains("plan-custom") == true;
+            //   b) tiene estructura "plan-custom" plana (JSON de migración incorrecto), o
+            //   c) contiene rutas legacy de BP (/sales/customers, /purchases/suppliers)
+            //      que apuntan a páginas eliminadas tras la unificación BusinessPartner.
+            var hasPlanCustom   = existing.MenuConfigJson?.Contains("plan-custom") == true;
+            var hasLegacyBpRoutes = existing.MenuConfigJson?.Contains("/sales/customers") == true
+                                  || existing.MenuConfigJson?.Contains("/purchases/suppliers") == true;
             if (seed.MenuConfigJson is not null &&
-                (string.IsNullOrWhiteSpace(existing.MenuConfigJson) || hasPlanCustom))
+                (string.IsNullOrWhiteSpace(existing.MenuConfigJson) || hasPlanCustom || hasLegacyBpRoutes))
             {
                 existing.SetMenuConfigJson(seed.MenuConfigJson);
                 changed = true;
@@ -96,10 +99,12 @@ public static class CommercialPlansBootstrap
             "sortOrder": 10, "moduleKey": "sales", "roles": null,
             "requirePlatformPanel": false, "menuBarLayout": null,
             "items": [
-              {"routePath": "/sales/invoices",             "labelKey": "app.nav.sales.invoices",                  "displayLabel": "Facturas",              "sortOrder": 10, "moduleKey": "sales", "permissionKey": "perm:sales.invoices.view",             "permissionKeysAny": null, "itemRoles": null, "children": null, "icon": "🧾"},
-              {"routePath": "/sales/customers",            "labelKey": "app.nav.catalog.customers",               "displayLabel": "Clientes",              "sortOrder": 20, "moduleKey": "sales", "permissionKey": "perm:sales.customers.view",            "permissionKeysAny": null, "itemRoles": null, "children": null, "icon": "👤"},
-              {"routePath": "/sales/credit-notes",         "labelKey": "app.nav.item.sales.credit-notes",         "displayLabel": "Notas de crédito",      "sortOrder": 30, "moduleKey": "sales", "permissionKey": "perm:sales.credit-notes.view",         "permissionKeysAny": null, "itemRoles": null, "children": null, "icon": "📄"},
-              {"routePath": "/sales/withholding-received", "labelKey": "app.nav.item.sales.withholding-received", "displayLabel": "Retenciones recibidas", "sortOrder": 40, "moduleKey": "sales", "permissionKey": "perm:sales.withholding-received.view", "permissionKeysAny": null, "itemRoles": null, "children": null, "icon": "📋"},
+              {"routePath": "/sales/invoices",             "labelKey": "app.nav.sales.invoices",                  "displayLabel": "Facturas",              "sortOrder": 10, "moduleKey": "sales", "permissionKey": "perm:sales.invoices.view",                    "permissionKeysAny": null, "itemRoles": null, "children": null, "icon": "🧾"},
+              {"routePath": "/sales/quotes",               "labelKey": "app.nav.sales.quotes",                    "displayLabel": "Cotizaciones",          "sortOrder": 15, "moduleKey": "sales", "permissionKey": "perm:sales.quotes.view",                      "permissionKeysAny": null, "itemRoles": null, "children": null, "icon": "📝"},
+              {"routePath": "/sales/orders",               "labelKey": "app.nav.sales.orders",                    "displayLabel": "Pedidos",               "sortOrder": 17, "moduleKey": "sales", "permissionKey": "perm:sales.orders.view",                      "permissionKeysAny": null, "itemRoles": null, "children": null, "icon": "📋"},
+              {"routePath": "/masterdata/customers",       "labelKey": "app.nav.catalog.customers",               "displayLabel": "Clientes",              "sortOrder": 20, "moduleKey": "sales", "permissionKey": "perm:masterdata.businesspartners.view",       "permissionKeysAny": null, "itemRoles": null, "children": null, "icon": "👤"},
+              {"routePath": "/sales/credit-notes",         "labelKey": "app.nav.item.sales.credit-notes",         "displayLabel": "Notas de crédito",      "sortOrder": 30, "moduleKey": "sales", "permissionKey": "perm:sales.credit-notes.view",               "permissionKeysAny": null, "itemRoles": null, "children": null, "icon": "📄"},
+              {"routePath": "/sales/withholding-received", "labelKey": "app.nav.item.sales.withholding-received", "displayLabel": "Retenciones recibidas", "sortOrder": 40, "moduleKey": "sales", "permissionKey": "perm:sales.withholding-received.view",        "permissionKeysAny": null, "itemRoles": null, "children": null, "icon": "📋"},
               {"routePath": "", "labelKey": "app.nav.item.sales.reports", "displayLabel": "Reportes", "sortOrder": 50, "moduleKey": "sales", "permissionKey": null, "permissionKeysAny": null, "itemRoles": null, "icon": "bar_chart",
                 "children": [
                   {"routePath": "/reportes/ventas", "labelKey": "app.nav.item.sales.report-ventas", "displayLabel": "Reporte de ventas", "sortOrder": 10, "moduleKey": "sales", "permissionKey": "perm:sales.invoices.view", "permissionKeysAny": null, "itemRoles": null, "children": null, "icon": "receipt_long"}
@@ -111,11 +116,11 @@ public static class CommercialPlansBootstrap
             "sortOrder": 20, "moduleKey": "purchases", "roles": null,
             "requirePlatformPanel": false, "menuBarLayout": null,
             "items": [
-              {"routePath": "/purchases/invoices",           "labelKey": "app.nav.item.purchases.invoices",           "displayLabel": "Facturas de compra",      "sortOrder": 10, "moduleKey": "purchases", "permissionKey": "perm:purchases.invoices.view",           "permissionKeysAny": null, "itemRoles": null, "children": null, "icon": "🧾"},
-              {"routePath": "/purchases/suppliers",          "labelKey": "app.nav.item.purchases.suppliers",          "displayLabel": "Proveedores",             "sortOrder": 20, "moduleKey": "purchases", "permissionKey": "perm:purchases.suppliers.view",          "permissionKeysAny": null, "itemRoles": null, "children": null, "icon": "🏭"},
-              {"routePath": "/purchases/orders",             "labelKey": "app.nav.item.purchases.orders",             "displayLabel": "Órdenes de compra",       "sortOrder": 30, "moduleKey": "purchases", "permissionKey": "perm:purchases.orders.view",             "permissionKeysAny": null, "itemRoles": null, "children": null, "icon": "📋"},
-              {"routePath": "/purchases/credit-notes",       "labelKey": "app.nav.item.purchases.credit-notes",       "displayLabel": "Notas crédito proveedor", "sortOrder": 40, "moduleKey": "purchases", "permissionKey": "perm:purchases.credit-notes.view",       "permissionKeysAny": null, "itemRoles": null, "children": null, "icon": "📄"},
-              {"routePath": "/purchases/withholding-issued", "labelKey": "app.nav.item.purchases.withholding-issued", "displayLabel": "Retenciones emitidas",    "sortOrder": 50, "moduleKey": "purchases", "permissionKey": "perm:purchases.withholding-issued.view", "permissionKeysAny": null, "itemRoles": null, "children": null, "icon": "📋"}
+              {"routePath": "/purchases/invoices",           "labelKey": "app.nav.item.purchases.invoices",           "displayLabel": "Facturas de compra",      "sortOrder": 10, "moduleKey": "purchases", "permissionKey": "perm:purchases.invoices.view",                  "permissionKeysAny": null, "itemRoles": null, "children": null, "icon": "🧾"},
+              {"routePath": "/masterdata/suppliers",         "labelKey": "app.nav.item.purchases.suppliers",          "displayLabel": "Proveedores",             "sortOrder": 20, "moduleKey": "purchases", "permissionKey": "perm:masterdata.businesspartners.view",         "permissionKeysAny": null, "itemRoles": null, "children": null, "icon": "🏭"},
+              {"routePath": "/purchases/orders",             "labelKey": "app.nav.item.purchases.orders",             "displayLabel": "Órdenes de compra",       "sortOrder": 30, "moduleKey": "purchases", "permissionKey": "perm:purchases.orders.view",                    "permissionKeysAny": null, "itemRoles": null, "children": null, "icon": "📋"},
+              {"routePath": "/purchases/credit-notes",       "labelKey": "app.nav.item.purchases.credit-notes",       "displayLabel": "Notas crédito proveedor", "sortOrder": 40, "moduleKey": "purchases", "permissionKey": "perm:purchases.credit-notes.view",              "permissionKeysAny": null, "itemRoles": null, "children": null, "icon": "📄"},
+              {"routePath": "/purchases/withholding-issued", "labelKey": "app.nav.item.purchases.withholding-issued", "displayLabel": "Retenciones emitidas",    "sortOrder": 50, "moduleKey": "purchases", "permissionKey": "perm:purchases.withholding-issued.view",        "permissionKeysAny": null, "itemRoles": null, "children": null, "icon": "📋"}
             ]
           },
           {
