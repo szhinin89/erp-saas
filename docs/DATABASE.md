@@ -98,7 +98,7 @@ Políticas `rls_{table}_enterprise`, `FORCE ROW LEVEL SECURITY`.
 | Tabla | Lógica |
 |-------|--------|
 | `products`, `warehouse`, `stock_movement`, `current_stock`, `stock_transfer`, `stock_adjustment`, `sales_bill`, `sales_document` | admin OR (`subscriber_id` + `company_id` opcional) |
-| `customers` | admin OR subscriber + company opcional |
+| `master_business_partners` | admin OR `subscriber_id` |
 | `sales_invoice` | admin OR `company_id` |
 
 SQL en `EnterpriseBaselineRowLevelSecurity.Apply()` al final de `InitialEnterpriseBaseline.Up()`.
@@ -141,7 +141,7 @@ Ver [SAAS-COMMERCIAL.md](./SAAS-COMMERCIAL.md): `commercial_plans*`, `subscriber
 
 | Área | Tablas (ej.) | Scope hoy | Target |
 |------|--------------|-----------|--------|
-| Ventas | `customers`, `sales_bill`, `sales_invoice`, `sales_note` | `subscriber_id` + RLS | `company_id` |
+| Ventas | `master_business_partners`, `sales_bill`, `sales_invoice`, `sales_note` | `subscriber_id` + RLS | `company_id` |
 | Compras | `purchase_order`, `purch_bill`, `suppliers` | `subscriber_id` | `company_id` |
 | Inventario Wave 1 | `products`, `warehouse`, `stock_*` | subscriber + nullable `company_id` | `company_id` |
 | Contabilidad / caja | `accounts`, `journal_entries`, `bank_account` | `subscriber_id` | `company_id` |

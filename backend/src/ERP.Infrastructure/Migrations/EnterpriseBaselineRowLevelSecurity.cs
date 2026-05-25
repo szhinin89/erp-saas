@@ -37,14 +37,19 @@ internal static class EnterpriseBaselineRowLevelSecurity
                 """);
         }
 
+        const string subscriberOnlyPolicy = """
+            COALESCE(current_setting('app.is_platform_admin', true), '') = 'true'
+            OR subscriber_id::text = NULLIF(current_setting('app.subscriber_id', true), '')
+            """;
+
         migrationBuilder.Sql($"""
-            ALTER TABLE customers ENABLE ROW LEVEL SECURITY;
-            ALTER TABLE customers FORCE ROW LEVEL SECURITY;
-            DROP POLICY IF EXISTS rls_customers_enterprise ON customers;
-            CREATE POLICY rls_customers_enterprise ON customers
+            ALTER TABLE master_business_partners ENABLE ROW LEVEL SECURITY;
+            ALTER TABLE master_business_partners FORCE ROW LEVEL SECURITY;
+            DROP POLICY IF EXISTS rls_master_business_partners_enterprise ON master_business_partners;
+            CREATE POLICY rls_master_business_partners_enterprise ON master_business_partners
                 FOR ALL
-                USING ({policyBody})
-                WITH CHECK ({policyBody});
+                USING ({subscriberOnlyPolicy})
+                WITH CHECK ({subscriberOnlyPolicy});
             """);
 
         const string companyOnlyPolicy = """
@@ -69,7 +74,7 @@ internal static class EnterpriseBaselineRowLevelSecurity
                  {
                      "products", "warehouse", "stock_movement", "current_stock",
                      "stock_transfer", "stock_adjustment", "sales_bill", "sales_document",
-                     "customers", "sales_invoice"
+                     "master_business_partners", "sales_invoice"
                  })
         {
             migrationBuilder.Sql($"""
