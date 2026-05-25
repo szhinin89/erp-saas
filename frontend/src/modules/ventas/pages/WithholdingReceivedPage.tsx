@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { EmptyState, LoadingState, NoAccessPage } from '../../../components/PageShell';
 import { ErpPageTemplate } from '../../../templates/ErpPageTemplate';
 import { ZHPageNotice } from '../../../components/zh/ZHPageNotice';
@@ -9,7 +10,9 @@ import { usePermissionsUi } from '../../../access/usePermissionsUi';
 export function WithholdingReceivedPage() {
   const { t } = useI18n();
   const { canShow } = usePermissionsUi();
-  const canView = canShow('sales.withholding-received.view');
+  const navigate = useNavigate();
+  const canView   = canShow('sales.withholding-received.view');
+  const canCreate = canShow('sales.withholding-received.create');
 
   const [rows,    setRows]    = useState<WithholdingReceivedItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -45,10 +48,18 @@ export function WithholdingReceivedPage() {
       title={t('app.nav.item.sales.withholding-received')}
       subtitle="Retenciones en la fuente recibidas de clientes sobre facturas de venta."
       action={
-        <button className="zh-btn zh-btn--secondary" type="button" disabled={loading} onClick={() => void load()}>
-          <span className="material-symbols-outlined">refresh</span>
-          Actualizar
-        </button>
+        <div style={{ display: 'flex', gap: '8px' }}>
+          {canCreate && (
+            <button className="zh-btn zh-btn--primary" type="button" onClick={() => navigate('/sales/withholding-received/new')}>
+              <span className="material-symbols-outlined">add</span>
+              Nueva retención
+            </button>
+          )}
+          <button className="zh-btn zh-btn--secondary" type="button" disabled={loading} onClick={() => void load()}>
+            <span className="material-symbols-outlined">refresh</span>
+            Actualizar
+          </button>
+        </div>
       }
     >
       {error && <ZHPageNotice variant="error" message="Error al cargar" detail={error} />}

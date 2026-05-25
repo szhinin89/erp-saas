@@ -72,6 +72,10 @@ const WithholdingReceivedPage = lazyNamedPage(
   () => import('../modules/ventas/pages/WithholdingReceivedPage'),
   'WithholdingReceivedPage',
 );
+const WithholdingReceivedNewPage = lazyNamedPage(
+  () => import('../modules/ventas/pages/WithholdingReceivedNewPage'),
+  'WithholdingReceivedNewPage',
+);
 const PurchaseCreditNotesPage = lazyNamedPage(
   () => import('../modules/compras/credit-notes/pages/PurchaseCreditNotesPage'),
   'PurchaseCreditNotesPage',
@@ -160,6 +164,7 @@ export const catalogRoutes = [
   <Route key="sales-credit-notes" path="/sales/credit-notes" element={<CreditNotesPage />} />,
   <Route key="sales-credit-notes-new" path="/sales/credit-notes/new" element={<CreateCreditNotePage />} />,
   <Route key="sales-withholding-received" path="/sales/withholding-received" element={<WithholdingReceivedPage />} />,
+  <Route key="sales-withholding-received-new" path="/sales/withholding-received/new" element={<WithholdingReceivedNewPage />} />,
   <Route key="ventas-notas-legacy" path="/ventas/notas" element={<Navigate to="/sales/credit-notes" replace />} />,
   <Route key="ventas-ret-rec-legacy" path="/ventas/retenciones-recibidas" element={<Navigate to="/sales/withholding-received" replace />} />,
 
