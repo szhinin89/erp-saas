@@ -71,11 +71,12 @@ public static class CommercialPlansBootstrap
             //   b) tiene estructura "plan-custom" plana (JSON de migración incorrecto), o
             //   c) contiene rutas legacy de BP (/sales/customers, /purchases/suppliers)
             //      que apuntan a páginas eliminadas tras la unificación BusinessPartner.
-            var hasPlanCustom   = existing.MenuConfigJson?.Contains("plan-custom") == true;
-            var hasLegacyBpRoutes = existing.MenuConfigJson?.Contains("/sales/customers") == true
-                                  || existing.MenuConfigJson?.Contains("/purchases/suppliers") == true;
+            var hasPlanCustom      = existing.MenuConfigJson?.Contains("plan-custom") == true;
+            var hasLegacyBpRoutes  = existing.MenuConfigJson?.Contains("/sales/customers") == true
+                                   || existing.MenuConfigJson?.Contains("/purchases/suppliers") == true;
+            var hasFinanceConfigNav = existing.MenuConfigJson?.Contains("\"/finance/config\"") == true;
             if (seed.MenuConfigJson is not null &&
-                (string.IsNullOrWhiteSpace(existing.MenuConfigJson) || hasPlanCustom || hasLegacyBpRoutes))
+                (string.IsNullOrWhiteSpace(existing.MenuConfigJson) || hasPlanCustom || hasLegacyBpRoutes || hasFinanceConfigNav))
             {
                 existing.SetMenuConfigJson(seed.MenuConfigJson);
                 changed = true;
@@ -162,8 +163,7 @@ public static class CommercialPlansBootstrap
             "sortOrder": 60, "moduleKey": "finance", "roles": null,
             "requirePlatformPanel": false, "menuBarLayout": null,
             "items": [
-              {"routePath": "/finance/accounts", "labelKey": "app.nav.item.finance.accounts", "displayLabel": "Contabilidad",     "sortOrder": 10, "moduleKey": "finance", "permissionKey": "perm:finance.accounts.view", "permissionKeysAny": null, "itemRoles": null, "children": null, "icon": "📒"},
-              {"routePath": "/finance/config",   "labelKey": "app.nav.item.finance.config",   "displayLabel": "Config. contable", "sortOrder": 20, "moduleKey": "finance", "permissionKey": "perm:finance.config.view",   "permissionKeysAny": null, "itemRoles": null, "children": null, "icon": "⚙️"}
+              {"routePath": "/finance/accounts", "labelKey": "app.nav.item.finance.accounts", "displayLabel": "Contabilidad", "sortOrder": 10, "moduleKey": "finance", "permissionKey": "perm:finance.accounts.view", "permissionKeysAny": null, "itemRoles": null, "children": null, "icon": "📒"}
             ]
           },
           {
