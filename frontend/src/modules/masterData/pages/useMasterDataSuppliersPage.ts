@@ -193,6 +193,20 @@ export function useMasterDataSuppliersPage() {
     }
   };
 
+  const assignAsSupplier = async (id: string) => {
+    setSaving(true);
+    clearModalError();
+    try {
+      await businessPartnerFacade.addRole(id, false, true);
+      setModalOpen(false);
+      listState.refetch();
+    } catch (err) {
+      setModalError(formatApiError(err));
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const saveSupplierProfile = async (id: string, body: UpdateSupplierProfileBody) => {
     setSaving(true);
     clearModalError();
@@ -241,6 +255,7 @@ export function useMasterDataSuppliersPage() {
     openSettings,
     closeSettings,
     addAsCustomer,
+    assignAsSupplier,
     supplierProfileBp,
     openSupplierProfile,
     closeSupplierProfile,

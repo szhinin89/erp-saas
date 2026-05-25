@@ -168,6 +168,20 @@ export function useMasterDataCustomersPage() {
     }
   };
 
+  const assignAsCustomer = async (id: string) => {
+    setSaving(true);
+    clearModalError();
+    try {
+      await businessPartnerFacade.addRole(id, true, false);
+      setModalOpen(false);
+      listState.refetch();
+    } catch (err) {
+      setModalError(formatApiError(err));
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const openNotes = (bp: BusinessPartnerDto) => {
     clearModalError();
     setInlineError(null);
@@ -244,6 +258,7 @@ export function useMasterDataCustomersPage() {
     saveCompanySettings,
     closeSettings,
     addAsSupplier,
+    assignAsCustomer,
     notesBp,
     openNotes,
     closeNotes,

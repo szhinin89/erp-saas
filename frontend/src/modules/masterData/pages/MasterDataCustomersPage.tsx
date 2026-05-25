@@ -159,12 +159,13 @@ export function MasterDataCustomersPage() {
 
       {page.modalOpen && (
         <MasterDataBpFormModal
-          title="Nuevo BusinessPartner"
+          title="Nuevo cliente"
           saving={page.saving}
           error={page.modalError}
-          defaultAsCustomer
+          roleToAssign="customer"
           onClose={page.closeCreate}
           onSubmit={(body) => void page.createCustomer(body)}
+          onAssignRole={(id) => page.assignAsCustomer(id)}
         />
       )}
 

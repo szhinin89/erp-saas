@@ -156,12 +156,13 @@ export function MasterDataSuppliersPage() {
 
       {page.modalOpen && (
         <MasterDataBpFormModal
-          title="Nuevo BusinessPartner"
+          title="Nuevo proveedor"
           saving={page.saving}
           error={page.modalError}
-          defaultAsSupplier
+          roleToAssign="supplier"
           onClose={page.closeCreate}
           onSubmit={(body) => void page.createSupplier(body)}
+          onAssignRole={(id) => page.assignAsSupplier(id)}
         />
       )}
 
