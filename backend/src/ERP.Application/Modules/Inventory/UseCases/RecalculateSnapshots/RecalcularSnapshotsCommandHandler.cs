@@ -9,23 +9,23 @@ public sealed class RecalcularSnapshotsCommandHandler
     : IRequestHandler<RecalcularSnapshotsCommand, Result<int>>
 {
     private readonly IKardexSnapshotCalculator                     _calculator;
-    private readonly ICurrentSubscriber                                _tenant;
+    private readonly ICurrentSubscriber                                _subscriber;
     private readonly ILogger<RecalcularSnapshotsCommandHandler>    _logger;
 
     public RecalcularSnapshotsCommandHandler(
         IKardexSnapshotCalculator                    calculator,
-        ICurrentSubscriber                               tenant,
+        ICurrentSubscriber subscriber,
         ILogger<RecalcularSnapshotsCommandHandler>   logger)
     {
         _calculator = calculator;
-        _tenant     = tenant;
+        _subscriber = subscriber;
         _logger     = logger;
     }
 
     public async Task<Result<int>> Handle(
         RecalcularSnapshotsCommand command, CancellationToken ct)
     {
-        var subscriberId   = _tenant.SubscriberId;
+        var subscriberId   = _subscriber.SubscriberId;
         var untilDate = command.DateTo?.Date ?? DateTime.UtcNow.Date.AddDays(-1);
 
         _logger.LogInformation(

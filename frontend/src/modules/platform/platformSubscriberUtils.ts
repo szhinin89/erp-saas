@@ -1,7 +1,5 @@
 import { SUBSCRIBER_MODULE_KEYS } from '../../constants/subscriptionModules';
 
-export type PlatformHomeTab = 'overview' | 'companies' | 'plans' | 'menus';
-
 export function defaultModuleChecksAllOn(): Record<string, boolean> {
   const o: Record<string, boolean> = {};
   for (const k of SUBSCRIBER_MODULE_KEYS) o[k] = true;

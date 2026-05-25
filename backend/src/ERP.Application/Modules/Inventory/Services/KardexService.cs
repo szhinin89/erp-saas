@@ -24,7 +24,7 @@ public sealed class KardexService : IKardexService
     private readonly IKardexSnapshotRepository _snapshots;
     private readonly IProductRepository _productos;
     private readonly IWarehouseRepository _bodegas;
-    private readonly ICurrentSubscriber _tenant;
+    private readonly ICurrentSubscriber _subscriber;
     private readonly KardexOptions _opts;
     private readonly IKardexMaterializedDailySummariesReader _mvReader;
 
@@ -33,7 +33,7 @@ public sealed class KardexService : IKardexService
         IKardexSnapshotRepository snapshots,
         IProductRepository productos,
         IWarehouseRepository bodegas,
-        ICurrentSubscriber tenant,
+        ICurrentSubscriber subscriber,
         IOptions<KardexOptions> options,
         IKardexMaterializedDailySummariesReader mvReader)
     {
@@ -41,14 +41,14 @@ public sealed class KardexService : IKardexService
         _snapshots  = snapshots;
         _productos  = productos;
         _bodegas    = bodegas;
-        _tenant     = tenant;
+        _subscriber = subscriber;
         _opts       = options?.Value ?? new KardexOptions();
         _mvReader   = mvReader;
     }
 
     public Task<Result<KardexResponse>> GenerarKardexEscalableAsync(
         GetKardexQuery query, CancellationToken cancellationToken = default)
-        => GenerarInternalAsync(_tenant.SubscriberId, query, cancellationToken);
+        => GenerarInternalAsync(_subscriber.SubscriberId, query, cancellationToken);
 
     public Task<Result<KardexResponse>> GenerarKardexEscalableAsync(
         Guid subscriberId, GetKardexQuery query, CancellationToken cancellationToken = default)

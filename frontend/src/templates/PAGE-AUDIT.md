@@ -2,7 +2,7 @@
 
 Actualizar al migrar pantallas. Convenciones: [`docs/frontend-layout-conventions.md`](../../docs/frontend-layout-conventions.md).
 
-**Última actualización:** 2026-05-21 — baseline sellado (Frontend Governance v1.0, QA-ready).
+**Última actualización:** 2026-05-25 — legacy sweep (platform shell, catálogo duplicado, CQRS huérfano).
 
 ## Leyenda
 
@@ -25,10 +25,10 @@ Actualizar al migrar pantallas. Convenciones: [`docs/frontend-layout-conventions
 - `modules/security/pages/SecuritySettingsPage.tsx`
 - `modules/company-management/pages/CompanyManagementListPage.tsx`
 - `modules/company-management/pages/CompanyManagementFormPage.tsx`
-- `modules/shared/pages/FeaturePlaceholderPage.tsx`, `ModulePlaceholderPage.tsx`
+- `modules/shared/pages/ModulePlaceholderPage.tsx`
 - `modules/reportes/pages/SalesReportPage.tsx` (`ReportPageTemplate`)
 - `modules/catalog/pages/CatalogSimplePage.tsx`
-- `modules/catalog/pages/CategoriesCatalogPage.tsx`, `SubcategoriesCatalogPage.tsx`, `LinesCatalogPage.tsx` (`PageShell`)
+- `modules/catalog/pages/CatalogStructurePage.tsx` (líneas / categorías / subcategorías en cascada)
 
 ### Lote alta (2026-05-21)
 - `modules/dashboard/pages/DashboardPage.tsx`
@@ -86,11 +86,11 @@ Actualizar al migrar pantallas. Convenciones: [`docs/frontend-layout-conventions
 - `pages/saas/SaasBillingPage.tsx`
 
 ### Platform (control plane)
-- `modules/platform/pages/PlatformPanelPage.tsx`
+- `modules/platform/pages/PlatformOverviewPage.tsx`
+- `modules/platform/pages/PlatformSubscribersPage.tsx`
+- `modules/platform/pages/PlatformSubscriberDetailPage.tsx`
 - `pages/Platform/PlatformOverviewPage.tsx`
 - `pages/Platform/PlatformPlansPage.tsx`
-- `pages/Platform/PlatformMenuPlansHubPage.tsx`
-- `pages/Platform/PlatformCompaniesShellPage.tsx`
 
 ## B — Pendiente (sin `pg-header-row` en páginas de producto)
 

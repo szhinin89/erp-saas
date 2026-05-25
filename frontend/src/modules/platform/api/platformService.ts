@@ -150,11 +150,6 @@ export type CreateSubscriberWithAdminBody = {
   enabledModules?: string[] | null;
 };
 
-export type UpdateSubscriberSubscriptionBody = {
-  planCode?: string | null;
-  enabledModules?: string[] | null;
-};
-
 export type PublicCommercialPlan = {
   id: string;
   code: string;
@@ -383,9 +378,6 @@ export type PlatformSubscriberDetailDto = {
   defaultCreditDays: number;
 };
 
-/** @deprecated Use PlatformSubscriberDetailDto */
-export type SubscriberDetailDto = PlatformSubscriberDetailDto;
-
 export type UpdatePlatformSubscriberCompanyBody = {
   name: string;
   slug: string;
@@ -531,15 +523,6 @@ export const platformService = {
         { newPlanCode, ...(notes ? { notes } : {}) },
       )
       .then((r) => r.data),
-
-  /** @deprecated Usar changePlan — módulos pendientes de endpoint platform. */
-  updateSubscriberSubscription: async (subscriberId: string, body: UpdateSubscriberSubscriptionBody) => {
-    if (body.planCode?.trim()) {
-      await api.patch(`${PLATFORM_API.subscribers}/${encodeURIComponent(subscriberId)}/plan`, {
-        newPlanCode: body.planCode.trim(),
-      });
-    }
-  },
 
   /** Overview KPIs derivados de platform metrics + listado suscriptores. */
   getMetrics: async (): Promise<PlatformOverviewMetrics> => {

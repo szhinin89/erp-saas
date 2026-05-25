@@ -9,18 +9,18 @@ public sealed class GetPurchaseByIdQueryHandler
     : IRequestHandler<GetPurchaseByIdQuery, Result<PurchBillDetailDto?>>
 {
     private readonly IPurchBillRepository _repo;
-    private readonly ICurrentSubscriber    _tenant;
+    private readonly ICurrentSubscriber    _subscriber;
 
-    public GetPurchaseByIdQueryHandler(IPurchBillRepository repo, ICurrentSubscriber tenant)
+    public GetPurchaseByIdQueryHandler(IPurchBillRepository repo, ICurrentSubscriber subscriber)
     {
         _repo   = repo;
-        _tenant = tenant;
+        _subscriber = subscriber;
     }
 
     public async Task<Result<PurchBillDetailDto?>> Handle(
         GetPurchaseByIdQuery query, CancellationToken ct)
     {
-        var c = await _repo.GetByIdAsync(_tenant.SubscriberId, query.Id, ct);
+        var c = await _repo.GetByIdAsync(_subscriber.SubscriberId, query.Id, ct);
         if (c is null) return Result<PurchBillDetailDto?>.Success(null);
 
         var detalles = c.Lines.Select(d => new PurchaseBillLineDto(

@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import { NavLink } from 'react-router-dom';
 import { EmptyState, PageShell } from '../PageShell';
-import { Card } from '../ui';
+import { Card } from '../Card';
 import { useI18n } from '../../i18n/i18n';
 import { usePlatformGate } from '../../hooks/usePlatformGate';
 

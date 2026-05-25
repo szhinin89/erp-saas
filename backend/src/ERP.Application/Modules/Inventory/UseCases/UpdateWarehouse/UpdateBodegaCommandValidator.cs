@@ -9,7 +9,7 @@ public sealed class UpdateWarehouseCommandValidator : AbstractValidator<UpdateWa
 {
     public UpdateWarehouseCommandValidator(
         IWarehouseRepository repo,
-        ICurrentSubscriber tenant)
+        ICurrentSubscriber subscriber)
     {
         RuleFor(x => x.Id)
             .NotEmpty().WithMessage("El ID de la Warehouse es obligatorio.");
@@ -22,8 +22,8 @@ public sealed class UpdateWarehouseCommandValidator : AbstractValidator<UpdateWa
             .MaximumLength(Warehouse.NameMaxLen)
             .WithMessage($"El nombre no puede exceder {Warehouse.NameMaxLen} caracteres.")
             .MustAsync(async (command, nombre, ct) =>
-                !await repo.ExistsNameAsync(tenant.SubscriberId, nombre, command.Id, ct))
-            .WithMessage("Ya existe otra Warehouse con ese nombre en el tenant.");
+                !await repo.ExistsNameAsync(subscriber.SubscriberId, nombre, command.Id, ct))
+            .WithMessage("Ya existe otra Warehouse con ese nombre en el suscriptor.");
 
         RuleFor(x => x.Address)
             .MaximumLength(Warehouse.AddressMaxLen)

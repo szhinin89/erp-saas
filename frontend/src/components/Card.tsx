@@ -8,7 +8,7 @@ interface CardProps {
   children: ReactNode;
 }
 
-/** @deprecated Preferir `ZHCard`. Misma estructura `.card` de `zh-ui.css`. */
+/** Contenedor `.card` de `zh-ui.css`. */
 export function Card({ title, actions, className = '', bodyClassName = '', children }: CardProps) {
   const cardClassName = `card ${className}`.trim();
   const cardBodyClassName = `card-body ${bodyClassName}`.trim();

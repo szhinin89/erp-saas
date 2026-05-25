@@ -6,7 +6,6 @@ using Microsoft.AspNetCore.Mvc;
 using ERP.API.Attributes;
 using ERP.API.Contracts;
 using ERP.API.Extensions;
-using ERP.API.Filters;
 using ERP.Application.Auth.UseCases.Register;
 using ERP.Application.Auth.UseCases.Login;
 using ERP.Application.Auth.UseCases.Logout;

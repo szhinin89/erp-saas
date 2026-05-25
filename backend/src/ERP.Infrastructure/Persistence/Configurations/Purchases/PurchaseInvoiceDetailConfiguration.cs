@@ -4,7 +4,7 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace ERP.Infrastructure.Persistence.Configurations.Purchases;
 
-public class PurchInvDetailConfiguration : IEntityTypeConfiguration<PurchaseInvoiceDetail>
+public class PurchaseInvoiceDetailConfiguration : IEntityTypeConfiguration<PurchaseInvoiceDetail>
 {
     public void Configure(EntityTypeBuilder<PurchaseInvoiceDetail> builder)
     {

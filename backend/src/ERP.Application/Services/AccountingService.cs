@@ -16,18 +16,18 @@ public sealed class AccountingService : IAccountingService
     private readonly IMediator              _mediator;
     private readonly IAccountingRepository  _accountingRepo;
     private readonly ICuentaContableService _cuentaContable;
-    private readonly ICurrentSubscriber         _tenant;
+    private readonly ICurrentSubscriber         _subscriber;
 
     public AccountingService(
         IMediator mediator,
         IAccountingRepository accountingRepo,
         ICuentaContableService cuentaContable,
-        ICurrentSubscriber tenant)
+        ICurrentSubscriber subscriber)
     {
         _mediator       = mediator;
         _accountingRepo = accountingRepo;
         _cuentaContable = cuentaContable;
-        _tenant         = tenant;
+        _subscriber = subscriber;
     }
 
     public async Task<Result<Guid>> CrearAsientoCompraAsync(
@@ -40,7 +40,7 @@ public sealed class AccountingService : IAccountingService
         string   description,
         CancellationToken ct)
     {
-        var subscriberId = _tenant.SubscriberId;
+        var subscriberId = _subscriber.SubscriberId;
 
         var mapping = await _cuentaContable.ObtenerCuentasParaCompraAsync(subscriberId, subtotal, vatTotal, ct);
         if (!mapping.IsSuccess)
@@ -103,7 +103,7 @@ public sealed class AccountingService : IAccountingService
         string   description,
         CancellationToken ct)
     {
-        var subscriberId = _tenant.SubscriberId;
+        var subscriberId = _subscriber.SubscriberId;
 
         var mapping = await _cuentaContable.ObtenerCuentasParaVentaAsync(subscriberId, subtotal, vatTotal, ct);
         if (!mapping.IsSuccess)
@@ -167,7 +167,7 @@ public sealed class AccountingService : IAccountingService
         string   description,
         CancellationToken ct)
     {
-        var subscriberId = _tenant.SubscriberId;
+        var subscriberId = _subscriber.SubscriberId;
         var cuentas  = await _accountingRepo.GetAllBySubscriberAsync(subscriberId, ct);
 
         var debitoGasto = await _cuentaContable.ObtenerCuentaParaGastoAsync(subscriberId, category, ct);
@@ -244,7 +244,7 @@ public sealed class AccountingService : IAccountingService
         string   description,
         CancellationToken ct)
     {
-        var subscriberId = _tenant.SubscriberId;
+        var subscriberId = _subscriber.SubscriberId;
         var mapping    = await _cuentaContable.ObtenerCuentasParaVentaAsync(subscriberId, subtotal, vatTotal, ct);
         if (!mapping.IsSuccess)
             return Result<Guid>.Failure(mapping.Error ?? "Error al resolver cuentas.");
@@ -296,7 +296,7 @@ public sealed class AccountingService : IAccountingService
         string   description,
         CancellationToken ct)
     {
-        var subscriberId = _tenant.SubscriberId;
+        var subscriberId = _subscriber.SubscriberId;
         var mapping    = await _cuentaContable.ObtenerCuentasParaVentaAsync(subscriberId, subtotal, vatTotal, ct);
         if (!mapping.IsSuccess)
             return Result<Guid>.Failure(mapping.Error ?? "Error al resolver cuentas.");
@@ -346,7 +346,7 @@ public sealed class AccountingService : IAccountingService
         string   description,
         CancellationToken ct)
     {
-        var subscriberId = _tenant.SubscriberId;
+        var subscriberId = _subscriber.SubscriberId;
         var cuentas  = await _accountingRepo.GetAllBySubscriberAsync(subscriberId, ct);
         var pasivos = cuentas.Where(c =>
                 c.IsActive && c.AllowsMovements && c.Type == AccountType.Liability && c.Nature == AccountNature.Credit)
@@ -387,7 +387,7 @@ public sealed class AccountingService : IAccountingService
         string   description,
         CancellationToken ct)
     {
-        var subscriberId = _tenant.SubscriberId;
+        var subscriberId = _subscriber.SubscriberId;
         var cuentas  = await _accountingRepo.GetAllBySubscriberAsync(subscriberId, ct);
 
         var ivaPasivo = cuentas.FirstOrDefault(c =>
@@ -430,7 +430,7 @@ public sealed class AccountingService : IAccountingService
         string   description,
         CancellationToken ct)
     {
-        var subscriberId = _tenant.SubscriberId;
+        var subscriberId = _subscriber.SubscriberId;
         var mapping  = await _cuentaContable.ObtenerCuentasParaCompraAsync(subscriberId, subtotal, vatTotal, ct);
         if (!mapping.IsSuccess)
             return Result<Guid>.Failure(mapping.Error ?? "Error al resolver cuentas de compra.");
@@ -483,7 +483,7 @@ public sealed class AccountingService : IAccountingService
         string   description,
         CancellationToken ct)
     {
-        var subscriberId = _tenant.SubscriberId;
+        var subscriberId = _subscriber.SubscriberId;
         var mapping  = await _cuentaContable.ObtenerCuentasParaCompraAsync(subscriberId, subtotal, vatTotal, ct);
         if (!mapping.IsSuccess)
             return Result<Guid>.Failure(mapping.Error ?? "Error al resolver cuentas de compra.");
@@ -535,7 +535,7 @@ public sealed class AccountingService : IAccountingService
         string   description,
         CancellationToken ct)
     {
-        var subscriberId = _tenant.SubscriberId;
+        var subscriberId = _subscriber.SubscriberId;
         var cuentas  = await _accountingRepo.GetAllBySubscriberAsync(subscriberId, ct);
 
         var pasivos = cuentas.Where(c =>
@@ -593,7 +593,7 @@ public sealed class AccountingService : IAccountingService
         string   description,
         CancellationToken ct)
     {
-        var subscriberId = _tenant.SubscriberId;
+        var subscriberId = _subscriber.SubscriberId;
         var cuentas  = await _accountingRepo.GetAllBySubscriberAsync(subscriberId, ct);
 
         var pasivos = cuentas.Where(c =>

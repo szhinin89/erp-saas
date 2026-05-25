@@ -12,18 +12,18 @@ public sealed class CreateExpenseCategoryCommandHandler
 {
     private readonly IAccountingSetupRepository _configRepo;
     private readonly IAccountingRepository      _accounts;
-    private readonly ICurrentSubscriber             _tenant;
+    private readonly ICurrentSubscriber             _subscriber;
     private readonly ICurrentUser               _user;
 
     public CreateExpenseCategoryCommandHandler(
         IAccountingSetupRepository configRepo,
         IAccountingRepository accounts,
-        ICurrentSubscriber tenant,
+        ICurrentSubscriber subscriber,
         ICurrentUser user)
     {
         _configRepo = configRepo;
         _accounts   = accounts;
-        _tenant     = tenant;
+        _subscriber = subscriber;
         _user       = user;
     }
 
@@ -31,7 +31,7 @@ public sealed class CreateExpenseCategoryCommandHandler
         CreateExpenseCategoryCommand command,
         CancellationToken ct)
     {
-        var subscriberId = _tenant.SubscriberId;
+        var subscriberId = _subscriber.SubscriberId;
         var dup      = await _configRepo.GetExpenseCategoryByCategoryAsync(command.Category, ct);
         if (dup is not null)
             return Result<ExpenseCategoryDto>.Failure("Ya existe un mapeo para esa categoría.");

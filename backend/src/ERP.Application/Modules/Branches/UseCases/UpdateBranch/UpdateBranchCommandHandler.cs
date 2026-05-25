@@ -13,26 +13,26 @@ public sealed class UpdateBranchCommandHandler : IRequestHandler<UpdateBranchCom
     private readonly IBranchRepository _repo;
     private readonly IGeographyReadRepository _geo;
     private readonly IUserActivityRepository _activity;
-    private readonly ICurrentSubscriber _tenant;
+    private readonly ICurrentSubscriber _subscriber;
     private readonly ICurrentUser _user;
 
     public UpdateBranchCommandHandler(
         IBranchRepository repo,
         IGeographyReadRepository geo,
         IUserActivityRepository activity,
-        ICurrentSubscriber tenant,
+        ICurrentSubscriber subscriber,
         ICurrentUser user)
     {
         _repo = repo;
         _geo = geo;
         _activity = activity;
-        _tenant = tenant;
+        _subscriber = subscriber;
         _user = user;
     }
 
     public async Task<Result<BranchDto>> Handle(UpdateBranchCommand command, CancellationToken ct)
     {
-        var subscriberId = _tenant.SubscriberId;
+        var subscriberId = _subscriber.SubscriberId;
         var userId = _user.UserId;
 
         var entity = await _repo.GetByIdAsync(subscriberId, command.Id, ct);

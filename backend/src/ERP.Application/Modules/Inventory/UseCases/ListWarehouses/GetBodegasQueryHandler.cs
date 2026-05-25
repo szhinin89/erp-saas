@@ -9,19 +9,19 @@ public sealed class GetWarehousesQueryHandler
     : IRequestHandler<GetWarehousesQuery, Result<IReadOnlyList<WarehouseDto>>>
 {
     private readonly IWarehouseRepository _repo;
-    private readonly ICurrentSubscriber    _tenant;
+    private readonly ICurrentSubscriber    _subscriber;
 
-    public GetWarehousesQueryHandler(IWarehouseRepository repo, ICurrentSubscriber tenant)
+    public GetWarehousesQueryHandler(IWarehouseRepository repo, ICurrentSubscriber subscriber)
     {
         _repo   = repo;
-        _tenant = tenant;
+        _subscriber = subscriber;
     }
 
     public async Task<Result<IReadOnlyList<WarehouseDto>>> Handle(
         GetWarehousesQuery query, CancellationToken ct)
     {
         var list = await _repo.GetAsync(
-            _tenant.SubscriberId, query.ActiveFilter, query.Search, query.BranchId, ct);
+            _subscriber.SubscriberId, query.ActiveFilter, query.Search, query.BranchId, ct);
 
         var dtos = list.Select(b => new WarehouseDto(
             b.Id, b.BranchId, b.Name, b.Code, b.StorageType,

@@ -10,17 +10,17 @@ public sealed class GetExpenseByIdQueryHandler
     : IRequestHandler<GetExpenseByIdQuery, Result<ExpenseInvoiceDto?>>
 {
     private readonly IExpenseInvoiceRepository _repo;
-    private readonly ICurrentSubscriber        _tenant;
+    private readonly ICurrentSubscriber        _subscriber;
 
-    public GetExpenseByIdQueryHandler(IExpenseInvoiceRepository repo, ICurrentSubscriber tenant)
+    public GetExpenseByIdQueryHandler(IExpenseInvoiceRepository repo, ICurrentSubscriber subscriber)
     {
         _repo   = repo;
-        _tenant = tenant;
+        _subscriber = subscriber;
     }
 
     public async Task<Result<ExpenseInvoiceDto?>> Handle(GetExpenseByIdQuery query, CancellationToken ct)
     {
-        var g = await _repo.GetByIdAsync(_tenant.SubscriberId, query.Id, ct);
+        var g = await _repo.GetByIdAsync(_subscriber.SubscriberId, query.Id, ct);
         if (g is null)
             return Result<ExpenseInvoiceDto?>.Success(null);
 

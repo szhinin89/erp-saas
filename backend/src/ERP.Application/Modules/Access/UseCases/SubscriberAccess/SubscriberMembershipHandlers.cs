@@ -11,12 +11,12 @@ namespace ERP.Application.Access.UseCases.SubscriberAccess;
 public class GetSubscriberCompanyUserMembershipsHandler : IRequestHandler<GetSubscriberCompanyUserMembershipsQuery, Result<IReadOnlyList<SubscriberCompanyUserMembershipItemDto>>>
 {
     private readonly IAccessRepository _repo;
-    private readonly ICurrentSubscriber _tenant;
+    private readonly ICurrentSubscriber _subscriber;
 
-    public GetSubscriberCompanyUserMembershipsHandler(IAccessRepository repo, ICurrentSubscriber tenant)
+    public GetSubscriberCompanyUserMembershipsHandler(IAccessRepository repo, ICurrentSubscriber subscriber)
     {
         _repo = repo;
-        _tenant = tenant;
+        _subscriber = subscriber;
     }
 
     public Task<Result<IReadOnlyList<SubscriberCompanyUserMembershipItemDto>>> HandleAsync(bool onlyActive, CancellationToken ct = default)
@@ -24,7 +24,7 @@ public class GetSubscriberCompanyUserMembershipsHandler : IRequestHandler<GetSub
 
     public async Task<Result<IReadOnlyList<SubscriberCompanyUserMembershipItemDto>>> Handle(GetSubscriberCompanyUserMembershipsQuery request, CancellationToken ct)
     {
-        var subscriberId = _tenant.SubscriberId;
+        var subscriberId = _subscriber.SubscriberId;
         var company_user_memberships = await _repo.GetCompanyUserMembershipsBySubscriberAsync(subscriberId, request.OnlyActive, ct);
 
         // En este MVP, solo retornamos company_user_memberships. Los detalles del usuario se leen por Id (sin joins complejos).
@@ -57,7 +57,7 @@ public class GetSubscriberCompanyUserMembershipsHandler : IRequestHandler<GetSub
 public class SubscriberUpsertCompanyUserMembershipHandler : IRequestHandler<SubscriberUpsertCompanyUserMembershipCommand, Result<object>>
 {
     private readonly IAccessRepository _repo;
-    private readonly ICurrentSubscriber _tenant;
+    private readonly ICurrentSubscriber _subscriber;
     private readonly ICurrentUser _currentUser;
     private readonly IDeploymentFeatureFlags _deployment;
     private readonly IPasswordHasher _passwordHasher;
@@ -67,7 +67,7 @@ public class SubscriberUpsertCompanyUserMembershipHandler : IRequestHandler<Subs
 
     public SubscriberUpsertCompanyUserMembershipHandler(
         IAccessRepository repo,
-        ICurrentSubscriber tenant,
+        ICurrentSubscriber subscriber,
         ICurrentUser currentUser,
         IDeploymentFeatureFlags deployment,
         IPasswordHasher passwordHasher,
@@ -76,7 +76,7 @@ public class SubscriberUpsertCompanyUserMembershipHandler : IRequestHandler<Subs
         IPermissionsCacheInvalidator permissionsCache)
     {
         _repo = repo;
-        _tenant = tenant;
+        _subscriber = subscriber;
         _currentUser = currentUser;
         _deployment = deployment;
         _passwordHasher = passwordHasher;
@@ -90,7 +90,7 @@ public class SubscriberUpsertCompanyUserMembershipHandler : IRequestHandler<Subs
 
     public async Task<Result<object>> Handle(SubscriberUpsertCompanyUserMembershipCommand cmd, CancellationToken ct)
     {
-        var subscriberId = _tenant.SubscriberId;
+        var subscriberId = _subscriber.SubscriberId;
         if (subscriberId == Guid.Empty)
             return Result<object>.Failure("Subscriber inválido.");
 
@@ -158,7 +158,7 @@ public class SubscriberUpsertCompanyUserMembershipHandler : IRequestHandler<Subs
 public class SubscriberRevokeCompanyUserMembershipHandler : IRequestHandler<SubscriberRevokeCompanyUserMembershipCommand, Result<object>>
 {
     private readonly IAccessRepository _repo;
-    private readonly ICurrentSubscriber _tenant;
+    private readonly ICurrentSubscriber _subscriber;
     private readonly ICurrentUser _currentUser;
     private readonly ICompanyProvisioningService _companyProvisioning;
     private readonly ISubscriberRepository _subscriberRepository;
@@ -166,14 +166,14 @@ public class SubscriberRevokeCompanyUserMembershipHandler : IRequestHandler<Subs
 
     public SubscriberRevokeCompanyUserMembershipHandler(
         IAccessRepository repo,
-        ICurrentSubscriber tenant,
+        ICurrentSubscriber subscriber,
         ICurrentUser currentUser,
         ICompanyProvisioningService companyProvisioning,
         ISubscriberRepository subscriberRepository,
         IPermissionsCacheInvalidator permissionsCache)
     {
         _repo = repo;
-        _tenant = tenant;
+        _subscriber = subscriber;
         _currentUser = currentUser;
         _companyProvisioning = companyProvisioning;
         _subscriberRepository = subscriberRepository;
@@ -185,7 +185,7 @@ public class SubscriberRevokeCompanyUserMembershipHandler : IRequestHandler<Subs
 
     public async Task<Result<object>> Handle(SubscriberRevokeCompanyUserMembershipCommand cmd, CancellationToken ct)
     {
-        var subscriberId = _tenant.SubscriberId;
+        var subscriberId = _subscriber.SubscriberId;
         var email = cmd.Email.Trim().ToLowerInvariant();
         var user = await _repo.GetUserByEmailAsync(email, ct);
         if (user is null)

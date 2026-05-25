@@ -6,7 +6,7 @@ import { clearPlatformImpersonationName } from '../lib/session/sessionStorageKey
 import { syncSessionEntitlements } from '../lib/syncSessionEntitlements';
 import { PLATFORM_UI } from '../modules/platform/api/platformApiPaths';
 import { platformService } from '../modules/platform/api/platformService';
-import { storeImpersonationSubscriberName } from '../modules/platform/platformPanelUtils';
+import { storeImpersonationSubscriberName } from '../modules/platform/platformSubscriberUtils';
 import type { AuthResponse } from '../types/auth';
 import { persistPlatformDetailSubscriberId } from './platformSubscriberDetailNav';
 

@@ -70,6 +70,3 @@ export const warehouseService = {
 
   enable: (id: string) => apiPatch<WarehouseDto>(`/api/inventory/warehouses/${id}/enable`),
 };
-
-/** @deprecated Alias legacy — preferir `warehouseService`. */
-export const bodegaService = warehouseService;

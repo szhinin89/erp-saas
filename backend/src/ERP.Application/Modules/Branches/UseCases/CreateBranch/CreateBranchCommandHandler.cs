@@ -14,20 +14,20 @@ public sealed class CreateBranchCommandHandler : IRequestHandler<CreateBranchCom
     private readonly IBranchRepository _repo;
     private readonly IGeographyReadRepository _geo;
     private readonly IUserActivityRepository _activity;
-    private readonly ICurrentSubscriber _tenant;
+    private readonly ICurrentSubscriber _subscriber;
     private readonly ICurrentUser _user;
 
     public CreateBranchCommandHandler(
         IBranchRepository repo,
         IGeographyReadRepository geo,
         IUserActivityRepository activity,
-        ICurrentSubscriber tenant,
+        ICurrentSubscriber subscriber,
         ICurrentUser user)
     {
         _repo = repo;
         _geo = geo;
         _activity = activity;
-        _tenant = tenant;
+        _subscriber = subscriber;
         _user = user;
     }
 
@@ -43,7 +43,7 @@ public sealed class CreateBranchCommandHandler : IRequestHandler<CreateBranchCom
         if (locErr is not null)
             return Result<BranchDto>.Failure(locErr);
 
-        var subscriberId = _tenant.SubscriberId;
+        var subscriberId = _subscriber.SubscriberId;
         var userId = _user.UserId;
 
         if (command.IsMainBranch)

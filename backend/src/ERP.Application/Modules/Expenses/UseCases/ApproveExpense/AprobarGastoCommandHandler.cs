@@ -17,7 +17,7 @@ public sealed class ApproveExpenseCommandHandler
     private readonly IExpenseInvoiceRepository   _repo;
     private readonly IAccountingService      _accounting;
     private readonly IUserActivityRepository _activity;
-    private readonly ICurrentSubscriber          _tenant;
+    private readonly ICurrentSubscriber          _subscriber;
     private readonly ICurrentUser            _user;
     private readonly IUnitOfWork             _unitOfWork;
     private readonly ILogger<ApproveExpenseCommandHandler> _logger;
@@ -26,7 +26,7 @@ public sealed class ApproveExpenseCommandHandler
         IExpenseInvoiceRepository repo,
         IAccountingService accounting,
         IUserActivityRepository activity,
-        ICurrentSubscriber tenant,
+        ICurrentSubscriber subscriber,
         ICurrentUser user,
         IUnitOfWork unitOfWork,
         ILogger<ApproveExpenseCommandHandler> logger)
@@ -34,7 +34,7 @@ public sealed class ApproveExpenseCommandHandler
         _repo       = repo;
         _accounting = accounting;
         _activity   = activity;
-        _tenant     = tenant;
+        _subscriber = subscriber;
         _user       = user;
         _unitOfWork = unitOfWork;
         _logger     = logger;
@@ -42,7 +42,7 @@ public sealed class ApproveExpenseCommandHandler
 
     public async Task<Result<ExpenseInvoiceDto>> Handle(ApproveExpenseCommand command, CancellationToken ct)
     {
-        var subscriberId = _tenant.SubscriberId;
+        var subscriberId = _subscriber.SubscriberId;
         var userId   = _user.UserId;
 
         var gasto = await _repo.GetByIdAsync(subscriberId, command.ExpenseInvoiceId, ct);

@@ -23,7 +23,7 @@ public sealed class ImportPurchaseSupplierNoteCommandHandler
     private readonly IXmlFacturaParser       _parser;
     private readonly IFileStorage             _storage;
     private readonly IUserActivityRepository  _activity;
-    private readonly ICurrentSubscriber             _tenant;
+    private readonly ICurrentSubscriber             _subscriber;
     private readonly ICurrentUser             _user;
     private readonly IUnitOfWork              _unitOfWork;
     private readonly ILogger<ImportPurchaseSupplierNoteCommandHandler> _logger;
@@ -35,7 +35,7 @@ public sealed class ImportPurchaseSupplierNoteCommandHandler
         IXmlFacturaParser parser,
         IFileStorage storage,
         IUserActivityRepository activity,
-        ICurrentSubscriber tenant,
+        ICurrentSubscriber subscriber,
         ICurrentUser user,
         IUnitOfWork unitOfWork,
         ILogger<ImportPurchaseSupplierNoteCommandHandler> logger)
@@ -46,7 +46,7 @@ public sealed class ImportPurchaseSupplierNoteCommandHandler
         _parser        = parser;
         _storage       = storage;
         _activity      = activity;
-        _tenant        = tenant;
+        _subscriber = subscriber;
         _user          = user;
         _unitOfWork    = unitOfWork;
         _logger        = logger;
@@ -56,7 +56,7 @@ public sealed class ImportPurchaseSupplierNoteCommandHandler
         ImportPurchaseSupplierNoteCommand command,
         CancellationToken ct)
     {
-        var subscriberId = _tenant.SubscriberId;
+        var subscriberId = _subscriber.SubscriberId;
         var userId   = _user.UserId;
 
         if (command.PurchBillId.HasValue && command.ExpenseInvoiceId.HasValue)

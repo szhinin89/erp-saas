@@ -1,7 +1,7 @@
 import './PageShell.css';
 import { useI18n } from '../i18n/i18n';
 import { ZHScreenHeading } from './zh/ZHLayout';
-import { Card } from './ui';
+import { Card } from './Card';
 
 interface Props {
   title: string;

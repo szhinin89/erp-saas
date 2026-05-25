@@ -20,11 +20,3 @@ public class PurchaseInvoiceDetail
 
     public PurchaseInvoice Invoice { get; set; } = null!;
 }
-
-/// <summary>
-/// Alias legado para compatibilidad temporal. Use <see cref="PurchaseInvoiceDetail"/>.
-/// </summary>
-[Obsolete("Use PurchaseInvoiceDetail instead.")]
-public class PurchInvDetail : PurchaseInvoiceDetail
-{
-}

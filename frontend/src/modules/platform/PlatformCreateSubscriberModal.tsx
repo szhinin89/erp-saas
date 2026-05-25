@@ -1,69 +1,72 @@
+import type { Dispatch, SetStateAction } from 'react';
 import { Modal } from '../../components/Modal';
 import { ZHModalHeader } from '../../components/zh/ZHModalHeader';
 import { ZHPageNotice } from '../../components/zh/ZHPageNotice';
 import { SUBSCRIBER_MODULE_KEYS } from '../../constants/subscriptionModules';
 import { ZHBtn, ZHField } from '../../components/zh/ZHForm';
 import { ZHGridRow, ZHInlineRowRight } from '../../components/zh/ZHLayout';
-import { defaultModuleChecksAllOn } from './platformPanelUtils';
-import type { PlatformPanelPageState } from './usePlatformPanelPage';
+import { defaultModuleChecksAllOn } from './platformSubscriberUtils';
+import type { CreateSubscriberWithAdminBody, PlatformPlanCatalogEntry } from './api/platformService';
 
-type Props = Pick<
-  PlatformPanelPageState,
-  | 't'
-  | 'createSubscriberOpen'
-  | 'setCreateSubscriberOpen'
-  | 'createBusy'
-  | 'createError'
-  | 'createForm'
-  | 'setCreateForm'
-  | 'createPlanCode'
-  | 'setCreatePlanCode'
-  | 'createRestrictModules'
-  | 'setCreateRestrictModules'
-  | 'createModuleChecks'
-  | 'setCreateModuleChecks'
-  | 'activePlans'
-  | 'moduleLabel'
-  | 'saveCreateSubscriber'
-  | 'slugify'
->;
+export type PlatformCreateSubscriberModalProps = {
+  t: (key: string, fallback?: string) => string;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  busy: boolean;
+  error: string;
+  form: CreateSubscriberWithAdminBody;
+  setForm: Dispatch<SetStateAction<CreateSubscriberWithAdminBody>>;
+  planCode: string;
+  setPlanCode: (value: string) => void;
+  restrictModules: boolean;
+  setRestrictModules: (value: boolean) => void;
+  moduleChecks: Record<string, boolean>;
+  setModuleChecks: Dispatch<SetStateAction<Record<string, boolean>>>;
+  activePlans: PlatformPlanCatalogEntry[];
+  moduleLabel: (key: string) => string;
+  onSave: () => void | Promise<void>;
+  slugify: (name: string) => string;
+};
 
-export function PlatformPanelCreateSubscriberModal({
+export function PlatformCreateSubscriberModal({
   t,
-  createSubscriberOpen,
-  setCreateSubscriberOpen,
-  createBusy,
-  createError,
-  createForm,
-  setCreateForm,
-  createPlanCode,
-  setCreatePlanCode,
-  createRestrictModules,
-  setCreateRestrictModules,
-  createModuleChecks,
-  setCreateModuleChecks,
+  open,
+  onOpenChange,
+  busy,
+  error,
+  form,
+  setForm,
+  planCode,
+  setPlanCode,
+  restrictModules,
+  setRestrictModules,
+  moduleChecks,
+  setModuleChecks,
   activePlans,
   moduleLabel,
-  saveCreateSubscriber,
+  onSave,
   slugify,
-}: Props) {
-  if (!createSubscriberOpen) return null;
+}: PlatformCreateSubscriberModalProps) {
+  if (!open) return null;
+
+  const close = () => {
+    if (!busy) onOpenChange(false);
+  };
 
   return (
     <Modal
-      onClose={() => (createBusy ? undefined : setCreateSubscriberOpen(false))}
+      onClose={close}
       size="lg"
       header={
         <ZHModalHeader
           title={t('platform.createSubscriber')}
           subtitle={t('platform.createSubscriberSubtitle')}
-          onClose={() => (createBusy ? undefined : setCreateSubscriberOpen(false))}
+          onClose={close}
         />
       }
     >
-      {createError ? <ZHPageNotice variant="error" message={t('common.errorPrefix')} detail={createError} /> : null}
+      {error ? <ZHPageNotice variant="error" message={t('common.errorPrefix')} detail={error} /> : null}
 
-      {/* ── Sección 1: Datos del suscriptor ── */}
       <div className="sa-form-section">
         <p className="sa-form-section__title">{t('platform.createSubscriber.section.subscriber')}</p>
         <p className="sa-form-section__hint">{t('platform.createSubscriber.section.subscriberHint')}</p>
@@ -73,25 +76,25 @@ export function PlatformPanelCreateSubscriberModal({
         <ZHField label={t('platform.createSubscriber.field.name')} required>
           <input
             className="zh-input"
-            value={createForm.subscriberName}
+            value={form.subscriberName}
             onChange={(e) =>
-              setCreateForm((s) => {
+              setForm((s) => {
                 const name = e.target.value;
                 const nextSlug = s.subscriberSlug.trim() ? s.subscriberSlug : slugify(name);
                 return { ...s, subscriberName: name, subscriberSlug: nextSlug };
               })
             }
             placeholder="Ej: Distribuidora XYZ S.A."
-            disabled={createBusy}
+            disabled={busy}
           />
         </ZHField>
         <ZHField label={t('platform.createSubscriber.field.slug')} hint={t('platform.createSubscriber.field.slugHint')}>
           <input
             className="zh-input"
-            value={createForm.subscriberSlug}
-            onChange={(e) => setCreateForm((s) => ({ ...s, subscriberSlug: e.target.value }))}
+            value={form.subscriberSlug}
+            onChange={(e) => setForm((s) => ({ ...s, subscriberSlug: e.target.value }))}
             placeholder="Ej: distribuidora-xyz"
-            disabled={createBusy}
+            disabled={busy}
           />
         </ZHField>
       </ZHGridRow>
@@ -99,26 +102,26 @@ export function PlatformPanelCreateSubscriberModal({
         <ZHField label={t('platform.createSubscriber.field.ruc')}>
           <input
             className="zh-input"
-            value={createForm.ruc ?? ''}
-            onChange={(e) => setCreateForm((s) => ({ ...s, ruc: e.target.value }))}
+            value={form.ruc ?? ''}
+            onChange={(e) => setForm((s) => ({ ...s, ruc: e.target.value }))}
             placeholder={t('platform.createSubscriber.field.rucPlaceholder')}
-            disabled={createBusy}
+            disabled={busy}
           />
         </ZHField>
         <ZHField label={t('platform.createSubscriber.field.countryCode')}>
           <input
             className="zh-input"
-            value={createForm.countryCode ?? 'ECU'}
-            onChange={(e) => setCreateForm((s) => ({ ...s, countryCode: e.target.value }))}
-            disabled={createBusy}
+            value={form.countryCode ?? 'ECU'}
+            onChange={(e) => setForm((s) => ({ ...s, countryCode: e.target.value }))}
+            disabled={busy}
           />
         </ZHField>
         <ZHField label={t('platform.createSubscriber.field.timezone')}>
           <input
             className="zh-input"
-            value={createForm.timezone ?? 'America/Guayaquil'}
-            onChange={(e) => setCreateForm((s) => ({ ...s, timezone: e.target.value }))}
-            disabled={createBusy}
+            value={form.timezone ?? 'America/Guayaquil'}
+            onChange={(e) => setForm((s) => ({ ...s, timezone: e.target.value }))}
+            disabled={busy}
           />
         </ZHField>
       </ZHGridRow>
@@ -126,9 +129,9 @@ export function PlatformPanelCreateSubscriberModal({
         <ZHField label={t('platform.createSubscriber.field.planCode')} required>
           <select
             className="zh-input"
-            value={createPlanCode}
-            onChange={(e) => setCreatePlanCode(e.target.value)}
-            disabled={createBusy || activePlans.length === 0}
+            value={planCode}
+            onChange={(e) => setPlanCode(e.target.value)}
+            disabled={busy || activePlans.length === 0}
             required
           >
             <option value="">
@@ -148,40 +151,40 @@ export function PlatformPanelCreateSubscriberModal({
       <label className="zh-inline-check">
         <input
           type="checkbox"
-          checked={createRestrictModules}
+          checked={restrictModules}
           onChange={(e) => {
             const on = e.target.checked;
-            setCreateRestrictModules(on);
-            if (on) setCreateModuleChecks(defaultModuleChecksAllOn());
+            setRestrictModules(on);
+            if (on) setModuleChecks(defaultModuleChecksAllOn());
           }}
-          disabled={createBusy}
+          disabled={busy}
         />
         {t('platform.createSubscriber.field.restrictModules')}
       </label>
-      {createRestrictModules ? (
+      {restrictModules ? (
         <p className="subtle sa-modules-hint">{t('platform.createSubscriber.modulesHint')}</p>
       ) : null}
-      {createRestrictModules ? (
+      {restrictModules ? (
         <div className="sa-moduleChecks">
           {SUBSCRIBER_MODULE_KEYS.map((k) => (
             <label key={k} className="zh-inline-check sa-moduleCheck">
               <input
                 type="checkbox"
-                checked={!!createModuleChecks[k]}
+                checked={!!moduleChecks[k]}
                 onChange={() =>
-                  setCreateModuleChecks((s) => ({
+                  setModuleChecks((s) => ({
                     ...s,
                     [k]: !s[k],
                   }))
                 }
-                disabled={createBusy}
+                disabled={busy}
               />
               {moduleLabel(k)}
             </label>
           ))}
         </div>
       ) : null}
-      {/* ── Sección 2: Administrador inicial ── */}
+
       <div className="sa-form-section">
         <p className="sa-form-section__title">{t('platform.createSubscriber.section.admin')}</p>
         <p className="sa-form-section__hint">{t('platform.createSubscriber.section.adminHint')}</p>
@@ -191,17 +194,17 @@ export function PlatformPanelCreateSubscriberModal({
         <ZHField label={t('platform.createSubscriber.field.adminFirstName')} required>
           <input
             className="zh-input"
-            value={createForm.adminFirstName}
-            onChange={(e) => setCreateForm((s) => ({ ...s, adminFirstName: e.target.value }))}
-            disabled={createBusy}
+            value={form.adminFirstName}
+            onChange={(e) => setForm((s) => ({ ...s, adminFirstName: e.target.value }))}
+            disabled={busy}
           />
         </ZHField>
         <ZHField label={t('platform.createSubscriber.field.adminLastName')}>
           <input
             className="zh-input"
-            value={createForm.adminLastName}
-            onChange={(e) => setCreateForm((s) => ({ ...s, adminLastName: e.target.value }))}
-            disabled={createBusy}
+            value={form.adminLastName}
+            onChange={(e) => setForm((s) => ({ ...s, adminLastName: e.target.value }))}
+            disabled={busy}
           />
         </ZHField>
       </ZHGridRow>
@@ -209,17 +212,17 @@ export function PlatformPanelCreateSubscriberModal({
         <ZHField label={t('platform.createSubscriber.field.adminEmail')}>
           <input
             className="zh-input"
-            value={createForm.adminEmail}
-            onChange={(e) => setCreateForm((s) => ({ ...s, adminEmail: e.target.value }))}
-            disabled={createBusy}
+            value={form.adminEmail}
+            onChange={(e) => setForm((s) => ({ ...s, adminEmail: e.target.value }))}
+            disabled={busy}
           />
         </ZHField>
         <ZHField label={t('platform.createSubscriber.field.passwordResetMode')}>
           <select
             className="zh-input"
-            value={String(createForm.passwordResetMode ?? 0)}
-            onChange={(e) => setCreateForm((s) => ({ ...s, passwordResetMode: Number(e.target.value) }))}
-            disabled={createBusy}
+            value={String(form.passwordResetMode ?? 0)}
+            onChange={(e) => setForm((s) => ({ ...s, passwordResetMode: Number(e.target.value) }))}
+            disabled={busy}
           >
             <option value={0}>{t('platform.createSubscriber.passwordResetMode.disabled')}</option>
             <option value={2}>{t('platform.createSubscriber.passwordResetMode.email')}</option>
@@ -230,28 +233,28 @@ export function PlatformPanelCreateSubscriberModal({
       <label className="zh-inline-check">
         <input
           type="checkbox"
-          checked={!!createForm.linkExistingAdmin}
-          onChange={(e) => setCreateForm((s) => ({ ...s, linkExistingAdmin: e.target.checked }))}
-          disabled={createBusy}
+          checked={!!form.linkExistingAdmin}
+          onChange={(e) => setForm((s) => ({ ...s, linkExistingAdmin: e.target.checked }))}
+          disabled={busy}
         />
         {t('platform.createSubscriber.field.linkExistingAdmin')}
       </label>
-      {!createForm.linkExistingAdmin ? (
+      {!form.linkExistingAdmin ? (
         <ZHField label={t('platform.createSubscriber.field.adminPassword')}>
           <input
             className="zh-input"
             type="password"
-            value={createForm.adminPassword}
-            onChange={(e) => setCreateForm((s) => ({ ...s, adminPassword: e.target.value }))}
-            disabled={createBusy}
+            value={form.adminPassword}
+            onChange={(e) => setForm((s) => ({ ...s, adminPassword: e.target.value }))}
+            disabled={busy}
           />
         </ZHField>
       ) : null}
       <ZHInlineRowRight>
-        <ZHBtn variant="secondary" size="sm" onClick={() => setCreateSubscriberOpen(false)} disabled={createBusy}>
+        <ZHBtn variant="secondary" size="sm" onClick={close} disabled={busy}>
           {t('common.cancel')}
         </ZHBtn>
-        <ZHBtn variant="primary" size="sm" onClick={() => void saveCreateSubscriber()} disabled={createBusy}>
+        <ZHBtn variant="primary" size="sm" onClick={() => void onSave()} disabled={busy}>
           {t('common.save')}
         </ZHBtn>
       </ZHInlineRowRight>

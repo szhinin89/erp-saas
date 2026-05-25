@@ -8,17 +8,17 @@ namespace ERP.Application.Modules.Branches.UseCases.GetBranchById;
 public sealed class GetBranchByIdQueryHandler : IRequestHandler<GetBranchByIdQuery, Result<BranchDetailDto>>
 {
     private readonly IBranchRepository _repo;
-    private readonly ICurrentSubscriber _tenant;
+    private readonly ICurrentSubscriber _subscriber;
 
-    public GetBranchByIdQueryHandler(IBranchRepository repo, ICurrentSubscriber tenant)
+    public GetBranchByIdQueryHandler(IBranchRepository repo, ICurrentSubscriber subscriber)
     {
         _repo = repo;
-        _tenant = tenant;
+        _subscriber = subscriber;
     }
 
     public async Task<Result<BranchDetailDto>> Handle(GetBranchByIdQuery request, CancellationToken ct)
     {
-        var x = await _repo.GetByIdAsync(_tenant.SubscriberId, request.Id, ct);
+        var x = await _repo.GetByIdAsync(_subscriber.SubscriberId, request.Id, ct);
         if (x is null)
             return Result<BranchDetailDto>.Failure("Sucursal no encontrada.");
 

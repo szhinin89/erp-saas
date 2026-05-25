@@ -9,19 +9,19 @@ public sealed class GetPurchasesQueryHandler
     : IRequestHandler<GetPurchasesQuery, Result<IReadOnlyList<PurchBillDto>>>
 {
     private readonly IPurchBillRepository _repo;
-    private readonly ICurrentSubscriber    _tenant;
+    private readonly ICurrentSubscriber    _subscriber;
 
-    public GetPurchasesQueryHandler(IPurchBillRepository repo, ICurrentSubscriber tenant)
+    public GetPurchasesQueryHandler(IPurchBillRepository repo, ICurrentSubscriber subscriber)
     {
         _repo   = repo;
-        _tenant = tenant;
+        _subscriber = subscriber;
     }
 
     public async Task<Result<IReadOnlyList<PurchBillDto>>> Handle(
         GetPurchasesQuery query, CancellationToken ct)
     {
         var list = await _repo.GetAsync(
-            _tenant.SubscriberId, query.Status, query.BusinessPartnerId,
+            _subscriber.SubscriberId, query.Status, query.BusinessPartnerId,
             query.DateFrom, query.DateTo, query.Search, ct);
 
         var dtos = list.Select(ToDto).ToList();

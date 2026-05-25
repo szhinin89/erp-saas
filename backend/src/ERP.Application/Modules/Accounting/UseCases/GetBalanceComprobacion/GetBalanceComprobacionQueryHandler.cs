@@ -8,18 +8,18 @@ public sealed class GetBalanceComprobacionQueryHandler
     : IRequestHandler<GetBalanceComprobacionQuery, Result<IReadOnlyList<BalanceComprobacionLineDto>>>
 {
     private readonly IAccountingRepository _repo;
-    private readonly ICurrentSubscriber        _tenant;
+    private readonly ICurrentSubscriber        _subscriber;
 
-    public GetBalanceComprobacionQueryHandler(IAccountingRepository repo, ICurrentSubscriber tenant)
+    public GetBalanceComprobacionQueryHandler(IAccountingRepository repo, ICurrentSubscriber subscriber)
     {
         _repo   = repo;
-        _tenant = tenant;
+        _subscriber = subscriber;
     }
 
     public async Task<Result<IReadOnlyList<BalanceComprobacionLineDto>>> Handle(
         GetBalanceComprobacionQuery query, CancellationToken ct)
     {
-        var subscriberId = _tenant.SubscriberId;
+        var subscriberId = _subscriber.SubscriberId;
 
         var accounts = await _repo.GetAllBySubscriberAsync(subscriberId, ct);
         var totals   = await _repo.GetBalanceComprobacionAsync(subscriberId, query.Desde, query.Hasta, ct);

@@ -1,4 +1,4 @@
-import { Card } from '../ui';
+import { Card } from '../Card';
 import { ZHGrid } from './ZHForm';
 import { ZHCardSection, ZHSection, ZHStack } from './ZHLayout';
 import './ZHDashboard.css';

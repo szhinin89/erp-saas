@@ -3,42 +3,7 @@ import { formatApiError } from '../../lib/formatApiError';
 import {
   ventasFacturasService,
   type VentasFacturaDetailDto,
-  type VentasFacturasFilter,
-  type VentasPagedResult,
 } from '../api/ventasFacturasService';
-
-export function useVentasFacturasList(filter: VentasFacturasFilter = {}) {
-  const [result, setResult] = useState<VentasPagedResult | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [tick, setTick] = useState(0);
-  const filterKey = JSON.stringify(filter);
-
-  useEffect(() => {
-    let cancelled = false;
-    setLoading(true);
-    setError(null);
-    ventasFacturasService
-      .list(filter)
-      .then((data) => {
-        if (!cancelled) {
-          setResult(data);
-          setLoading(false);
-        }
-      })
-      .catch((e) => {
-        if (!cancelled) {
-          setError(formatApiError(e));
-          setLoading(false);
-        }
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [filterKey, tick]);
-
-  return { result, loading, error, refetch: () => setTick((t) => t + 1) };
-}
 
 export function useVentasFacturaDetail(id: string | null) {
   const [data, setData] = useState<VentasFacturaDetailDto | null>(null);

@@ -16,7 +16,7 @@ public sealed class ValidateExpenseCommandHandler
     private readonly IExpenseInvoiceRepository   _repo;
     private readonly IBusinessPartnerRepository  _bpRepo;
     private readonly IUserActivityRepository   _activity;
-    private readonly ICurrentSubscriber            _tenant;
+    private readonly ICurrentSubscriber            _subscriber;
     private readonly ICurrentUser              _user;
     private readonly IUnitOfWork               _unitOfWork;
 
@@ -24,21 +24,21 @@ public sealed class ValidateExpenseCommandHandler
         IExpenseInvoiceRepository repo,
         IBusinessPartnerRepository bpRepo,
         IUserActivityRepository activity,
-        ICurrentSubscriber tenant,
+        ICurrentSubscriber subscriber,
         ICurrentUser user,
         IUnitOfWork unitOfWork)
     {
         _repo   = repo;
         _bpRepo = bpRepo;
         _activity      = activity;
-        _tenant        = tenant;
+        _subscriber = subscriber;
         _user          = user;
         _unitOfWork    = unitOfWork;
     }
 
     public async Task<Result<ExpenseInvoiceDto>> Handle(ValidateExpenseCommand command, CancellationToken ct)
     {
-        var subscriberId = _tenant.SubscriberId;
+        var subscriberId = _subscriber.SubscriberId;
         var userId   = _user.UserId;
 
         var gasto = await _repo.GetByIdAsync(subscriberId, command.ExpenseInvoiceId, ct);

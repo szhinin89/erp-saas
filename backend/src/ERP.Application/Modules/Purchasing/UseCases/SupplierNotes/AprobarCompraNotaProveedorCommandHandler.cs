@@ -21,7 +21,7 @@ public sealed class ApprovePurchaseSupplierNoteCommandHandler
     private readonly IExpenseInvoiceRepository _gastoRepo;
     private readonly IAccountingService     _accounting;
     private readonly IUserActivityRepository _activity;
-    private readonly ICurrentSubscriber          _tenant;
+    private readonly ICurrentSubscriber          _subscriber;
     private readonly ICurrentUser            _user;
     private readonly IUnitOfWork           _unitOfWork;
     private readonly ILogger<ApprovePurchaseSupplierNoteCommandHandler> _logger;
@@ -31,7 +31,7 @@ public sealed class ApprovePurchaseSupplierNoteCommandHandler
         IExpenseInvoiceRepository gastoRepo,
         IAccountingService accounting,
         IUserActivityRepository activity,
-        ICurrentSubscriber tenant,
+        ICurrentSubscriber subscriber,
         ICurrentUser user,
         IUnitOfWork unitOfWork,
         ILogger<ApprovePurchaseSupplierNoteCommandHandler> logger)
@@ -40,7 +40,7 @@ public sealed class ApprovePurchaseSupplierNoteCommandHandler
         _gastoRepo    = gastoRepo;
         _accounting   = accounting;
         _activity     = activity;
-        _tenant       = tenant;
+        _subscriber = subscriber;
         _user         = user;
         _unitOfWork   = unitOfWork;
         _logger       = logger;
@@ -50,7 +50,7 @@ public sealed class ApprovePurchaseSupplierNoteCommandHandler
         ApprovePurchaseSupplierNoteCommand command,
         CancellationToken ct)
     {
-        var subscriberId = _tenant.SubscriberId;
+        var subscriberId = _subscriber.SubscriberId;
         var userId   = _user.UserId;
 
         var nota = await _compraRepo.GetPurchNoteByIdWithLinesAsync(subscriberId, command.NotaId, ct);

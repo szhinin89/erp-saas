@@ -11,7 +11,7 @@ import {
   Line,
 } from 'recharts';
 import { EmptyState, LoadingState } from '../PageShell';
-import { Card } from '../ui';
+import { Card } from '../Card';
 import { useI18n } from '../../i18n/i18n';
 import { ZHBtn, ZHField } from '../zh/ZHForm';
 import { ZHCardSection, ZHGridRow, ZHInlineRowRight } from '../zh/ZHLayout';

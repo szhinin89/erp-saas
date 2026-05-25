@@ -8,18 +8,18 @@ public sealed class GetMayorGeneralQueryHandler
     : IRequestHandler<GetMayorGeneralQuery, Result<IReadOnlyList<MayorGeneralLineDto>>>
 {
     private readonly IAccountingRepository _repo;
-    private readonly ICurrentSubscriber        _tenant;
+    private readonly ICurrentSubscriber        _subscriber;
 
-    public GetMayorGeneralQueryHandler(IAccountingRepository repo, ICurrentSubscriber tenant)
+    public GetMayorGeneralQueryHandler(IAccountingRepository repo, ICurrentSubscriber subscriber)
     {
         _repo   = repo;
-        _tenant = tenant;
+        _subscriber = subscriber;
     }
 
     public async Task<Result<IReadOnlyList<MayorGeneralLineDto>>> Handle(
         GetMayorGeneralQuery query, CancellationToken ct)
     {
-        var subscriberId = _tenant.SubscriberId;
+        var subscriberId = _subscriber.SubscriberId;
 
         var lines = await _repo.GetMayorGeneralLinesAsync(
             subscriberId, query.AccountId, query.Desde, query.Hasta, ct);

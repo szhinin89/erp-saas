@@ -3,7 +3,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useI18n } from '../../../../i18n/i18n';
 import { branchService, type BranchDto } from '../../../branches/api/branchService';
-import { bodegaService, type WarehouseDto } from '../api/warehouseService';
+import { warehouseService, type WarehouseDto } from '../api/warehouseService';
 import { usePermissionsUi } from '../../../../access/usePermissionsUi';
 import {
   warehouseSchema,
@@ -59,7 +59,7 @@ export function useBodegasPage() {
     setError('');
     setLoading(true);
     try {
-      setItems((await bodegaService.list('all')) ?? []);
+      setItems((await warehouseService.list('all')) ?? []);
     } catch {
       setError(t('common.errorPrefix'));
     } finally {
@@ -110,7 +110,7 @@ export function useBodegasPage() {
   const openEditModal = async (id: string) => {
     setSaveError('');
     try {
-      const d = await bodegaService.getById(id);
+      const d = await warehouseService.getById(id);
       if (!d) return;
       setEditingId(id);
       setEditCode(d.code);
@@ -146,9 +146,9 @@ export function useBodegasPage() {
         dailyDispatchGoal: formValues.dailyDispatchGoal ?? null,
       };
       if (editingId) {
-        await bodegaService.update(editingId, { id: editingId, ...payload });
+        await warehouseService.update(editingId, { id: editingId, ...payload });
       } else {
-        await bodegaService.create(payload);
+        await warehouseService.create(payload);
       }
       await fetchList();
       closeModal();
@@ -166,10 +166,10 @@ export function useBodegasPage() {
     try {
       if (row.isActive) {
         if (!canDelete) return;
-        await bodegaService.disable(row.id);
+        await warehouseService.disable(row.id);
       } else {
         if (!canUpdate) return;
-        await bodegaService.enable(row.id);
+        await warehouseService.enable(row.id);
       }
       await fetchList();
     } catch {

@@ -13,27 +13,27 @@ public sealed class CreateWarehouseCommandHandler
 {
     private readonly IWarehouseRepository       _repo;
     private readonly IUserActivityRepository _activity;
-    private readonly ICurrentSubscriber          _tenant;
+    private readonly ICurrentSubscriber          _subscriber;
     private readonly ICurrentCompany           _company;
     private readonly ICurrentUser            _user;
 
     public CreateWarehouseCommandHandler(
         IWarehouseRepository repo,
         IUserActivityRepository activity,
-        ICurrentSubscriber tenant,
+        ICurrentSubscriber subscriber,
         ICurrentCompany company,
         ICurrentUser user)
     {
         _repo     = repo;
         _activity = activity;
-        _tenant   = tenant;
+        _subscriber = subscriber;
         _company  = company;
         _user     = user;
     }
 
     public async Task<Result<WarehouseDto>> Handle(CreateWarehouseCommand command, CancellationToken ct)
     {
-        var subscriberId = _tenant.SubscriberId;
+        var subscriberId = _subscriber.SubscriberId;
         var userId   = _user.UserId;
 
         if (await _repo.ExistsNameAsync(subscriberId, command.Name, null, ct))

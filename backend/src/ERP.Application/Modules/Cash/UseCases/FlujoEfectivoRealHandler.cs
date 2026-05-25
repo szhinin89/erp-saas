@@ -15,16 +15,16 @@ public sealed class GetFlujoEfectivoRealQueryHandler
 {
     private readonly ICashRepository _caja;
     private readonly IAccountingRepository _accounting;
-    private readonly ICurrentSubscriber _tenant;
+    private readonly ICurrentSubscriber _subscriber;
 
     public GetFlujoEfectivoRealQueryHandler(
         ICashRepository caja,
         IAccountingRepository accounting,
-        ICurrentSubscriber tenant)
+        ICurrentSubscriber subscriber)
     {
         _caja        = caja;
         _accounting = accounting;
-        _tenant     = tenant;
+        _subscriber = subscriber;
     }
 
     public async Task<Result<IReadOnlyList<DailyCashFlowDto>>> Handle(
@@ -52,7 +52,7 @@ public sealed class GetFlujoEfectivoRealQueryHandler
         }
 
         var lines = await _accounting.GetPostedLineAmountsByAccountsAsync(
-            _tenant.SubscriberId,
+            _subscriber.SubscriberId,
             ids.ToList(),
             request.DateFrom,
             request.DateTo,

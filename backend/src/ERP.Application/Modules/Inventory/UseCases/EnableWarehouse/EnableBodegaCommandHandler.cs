@@ -13,24 +13,24 @@ public sealed class EnableWarehouseCommandHandler
 {
     private readonly IWarehouseRepository       _repo;
     private readonly IUserActivityRepository _activity;
-    private readonly ICurrentSubscriber          _tenant;
+    private readonly ICurrentSubscriber          _subscriber;
     private readonly ICurrentUser            _user;
 
     public EnableWarehouseCommandHandler(
         IWarehouseRepository repo,
         IUserActivityRepository activity,
-        ICurrentSubscriber tenant,
+        ICurrentSubscriber subscriber,
         ICurrentUser user)
     {
         _repo     = repo;
         _activity = activity;
-        _tenant   = tenant;
+        _subscriber = subscriber;
         _user     = user;
     }
 
     public async Task<Result<WarehouseDto>> Handle(EnableWarehouseCommand command, CancellationToken ct)
     {
-        var subscriberId = _tenant.SubscriberId;
+        var subscriberId = _subscriber.SubscriberId;
         var userId   = _user.UserId;
 
         var Warehouse = await _repo.GetByIdAsync(subscriberId, command.Id, ct);

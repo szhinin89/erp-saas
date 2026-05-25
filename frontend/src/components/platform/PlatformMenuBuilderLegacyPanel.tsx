@@ -1,4 +1,4 @@
-import { Card } from '../ui';
+import { Card } from '../Card';
 import { ZHBtn, ZHField } from '../zh/ZHForm';
 import { ZHCardSection, ZHGridRow, ZHInlineRowRight } from '../zh/ZHLayout';
 import { ZHPageNotice } from '../zh/ZHPageNotice';

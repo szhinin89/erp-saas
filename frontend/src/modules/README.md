@@ -17,7 +17,7 @@ modules/{domain}/
 | Dominio | API | Pages | Notas |
 |---------|-----|-------|-------|
 | `catalog` | `api/catalogService.ts` | `pages/*` (marcas, unidades, estructura) | |
-| `inventario/warehouses` | `api/warehouseService.ts` | `pages/BodegasPage.tsx` | alias `bodegaService` |
+| `inventario/warehouses` | `api/warehouseService.ts` | `pages/BodegasPage.tsx` | |
 | `auth` | `api/authService.ts`, `accessService.ts` | login, select-subscriber/company | |
 | `branches` | `api/branchService.ts` | `pages/BranchesPage.tsx` | wrapper en `pages/BranchesPage.tsx` |
 | `accounting` | `api/accountingService.ts`, `accountingConfigService.ts` | `pages/AccountingPage.tsx` | |

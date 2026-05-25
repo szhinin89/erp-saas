@@ -23,7 +23,7 @@ public sealed class CreatePurchaseCommandHandler
     private readonly IXmlFacturaParser       _parser;
     private readonly IFileStorage            _storage;
     private readonly IUserActivityRepository _activity;
-    private readonly ICurrentSubscriber          _tenant;
+    private readonly ICurrentSubscriber          _subscriber;
     private readonly ICurrentUser            _user;
     private readonly IUnitOfWork             _unitOfWork;
     private readonly ILogger<CreatePurchaseCommandHandler> _logger;
@@ -35,7 +35,7 @@ public sealed class CreatePurchaseCommandHandler
         IXmlFacturaParser parser,
         IFileStorage storage,
         IUserActivityRepository activity,
-        ICurrentSubscriber tenant,
+        ICurrentSubscriber subscriber,
         ICurrentUser user,
         IUnitOfWork unitOfWork,
         ILogger<CreatePurchaseCommandHandler> logger)
@@ -46,7 +46,7 @@ public sealed class CreatePurchaseCommandHandler
         _parser        = parser;
         _storage       = storage;
         _activity      = activity;
-        _tenant        = tenant;
+        _subscriber = subscriber;
         _user          = user;
         _unitOfWork    = unitOfWork;
         _logger        = logger;
@@ -65,7 +65,7 @@ public sealed class CreatePurchaseCommandHandler
     private async Task<Result<PurchBillDto>> HandleXml(
         CreatePurchaseCommand command, CancellationToken ct)
     {
-        var subscriberId = _tenant.SubscriberId;
+        var subscriberId = _subscriber.SubscriberId;
         var userId   = _user.UserId;
 
         // 1. Parsear XML
@@ -176,7 +176,7 @@ public sealed class CreatePurchaseCommandHandler
     private async Task<Result<PurchBillDto>> HandleManual(
         CreatePurchaseCommand command, CancellationToken ct)
     {
-        var subscriberId = _tenant.SubscriberId;
+        var subscriberId = _subscriber.SubscriberId;
         var userId   = _user.UserId;
 
         var bp = await _bpRepo.GetByIdAsync(command.BusinessPartnerId!.Value, ct);

@@ -16,24 +16,24 @@ public sealed class SubscriptionGateBehavior<TRequest, TResponse> : IPipelineBeh
 {
     private readonly ISubscriptionService _subscriptions;
     private readonly ISubscriberEntitlementsService _entitlements;
-    private readonly ICurrentSubscriber _tenant;
+    private readonly ICurrentSubscriber _subscriber;
     private readonly IUnitOfWork _unitOfWork;
 
     public SubscriptionGateBehavior(
         ISubscriptionService subscriptions,
         ISubscriberEntitlementsService entitlements,
-        ICurrentSubscriber tenant,
+        ICurrentSubscriber subscriber,
         IUnitOfWork unitOfWork)
     {
         _subscriptions = subscriptions;
         _entitlements = entitlements;
-        _tenant = tenant;
+        _subscriber = subscriber;
         _unitOfWork = unitOfWork;
     }
 
     public async Task<TResponse> Handle(TRequest request, RequestHandlerDelegate<TResponse> next, CancellationToken ct)
     {
-        var subscriberId = _tenant.SubscriberId;
+        var subscriberId = _subscriber.SubscriberId;
         if (subscriberId == Guid.Empty)
             return await next();
 

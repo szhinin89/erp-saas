@@ -326,7 +326,7 @@ export function buildNavGroups(
       moduleKey: 'inventario',
       sortOrder: defaultBarRank('inventario') * 10,
       items: [
-        { to: '/products', label: t('app.nav.products'), permissionKey: 'inventory.products.view' },
+        { to: '/inventory/products', label: t('app.nav.products'), permissionKey: 'inventory.products.view' },
         { to: '/inventory/adjustments',         label: t('app.nav.catalog.ajustes'),        permissionKey: 'inventory.adjustments.view' },
         { to: '/inventory/transfers', label: t('app.nav.catalog.transferencias'), permissionKey: 'inventory.transfers.view' },
         { to: '/inventory/brands', label: t('app.nav.catalog.brands'), permissionKey: 'inventory.brands.view' },
@@ -547,25 +547,5 @@ export function ensureSalesNextToInventory(
   }
 
   return sortNavGroupsForMainBar(groups);
-}
-
-/** Grupos solo en menú estático (p. ej. Compras / RRHH) que la API de sesión aún no define. */
-const GROUPS_FILL_FROM_STATIC: readonly string[] = ['purchases', 'hr', 'configuracion'];
-
-/** @deprecated Subscriber sidebar uses only GET /api/me/menu; do not merge static groups into session nav. Kept for legacy callers until removed. */
-export function mergeMissingStaticNavGroups(
-  groups: NavGroup[],
-  t: TranslateFn,
-  options?: { platformPanelEnabled?: boolean },
-): NavGroup[] {
-  const staticFull = buildNavGroups(t, options);
-  let out = [...groups];
-  for (const id of GROUPS_FILL_FROM_STATIC) {
-    if (!out.some((g) => g.id === id)) {
-      const add = staticFull.find((g) => g.id === id);
-      if (add) out = [...out, add];
-    }
-  }
-  return sortNavGroupsForMainBar(out);
 }
 

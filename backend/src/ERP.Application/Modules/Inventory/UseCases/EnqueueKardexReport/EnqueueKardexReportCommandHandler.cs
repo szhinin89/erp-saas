@@ -8,14 +8,14 @@ namespace ERP.Application.Inventory.UseCases.EnqueueKardexReport;
 public sealed class EnqueueKardexReportCommandHandler
     : IRequestHandler<EnqueueKardexReportCommand, Result<EnqueueKardexReportResult>>
 {
-    private readonly ICurrentSubscriber _tenant;
+    private readonly ICurrentSubscriber _subscriber;
     private readonly IKardexReportEnqueueService _enqueue;
 
     public EnqueueKardexReportCommandHandler(
-        ICurrentSubscriber tenant,
+        ICurrentSubscriber subscriber,
         IKardexReportEnqueueService enqueue)
     {
-        _tenant  = tenant;
+        _subscriber = subscriber;
         _enqueue = enqueue;
     }
 
@@ -24,7 +24,7 @@ public sealed class EnqueueKardexReportCommandHandler
         CancellationToken ct)
     {
         var jobId = await _enqueue.EnqueueAsync(
-            _tenant.SubscriberId,
+            _subscriber.SubscriberId,
             command.ProductId,
             command.WarehouseId,
             command.StartDate,

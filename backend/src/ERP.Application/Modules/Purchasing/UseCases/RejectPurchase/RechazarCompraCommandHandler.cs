@@ -13,20 +13,20 @@ public sealed class RejectPurchaseCommandHandler
 {
     private readonly IPurchBillRepository       _repo;
     private readonly IUserActivityRepository _activity;
-    private readonly ICurrentSubscriber          _tenant;
+    private readonly ICurrentSubscriber          _subscriber;
     private readonly ICurrentUser            _user;
     private readonly IUnitOfWork             _unitOfWork;
 
     public RejectPurchaseCommandHandler(
         IPurchBillRepository repo,
         IUserActivityRepository activity,
-        ICurrentSubscriber tenant,
+        ICurrentSubscriber subscriber,
         ICurrentUser user,
         IUnitOfWork unitOfWork)
     {
         _repo       = repo;
         _activity   = activity;
-        _tenant     = tenant;
+        _subscriber = subscriber;
         _user       = user;
         _unitOfWork = unitOfWork;
     }
@@ -34,7 +34,7 @@ public sealed class RejectPurchaseCommandHandler
     public async Task<Result<PurchBillDto>> Handle(
         RejectPurchaseCommand command, CancellationToken ct)
     {
-        var subscriberId = _tenant.SubscriberId;
+        var subscriberId = _subscriber.SubscriberId;
         var userId   = _user.UserId;
 
         var compra = await _repo.GetByIdAsync(subscriberId, command.PurchBillId, ct);

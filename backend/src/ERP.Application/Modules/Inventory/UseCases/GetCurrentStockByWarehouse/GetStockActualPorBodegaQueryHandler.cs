@@ -11,23 +11,23 @@ public sealed class GetCurrentStockPorWarehouseQueryHandler
 {
     private readonly IStockRepository _stock;
     private readonly IWarehouseRepository          _bodegas;
-    private readonly ICurrentSubscriber             _tenant;
+    private readonly ICurrentSubscriber             _subscriber;
 
     public GetCurrentStockPorWarehouseQueryHandler(
         IStockRepository stock,
         IWarehouseRepository bodegas,
-        ICurrentSubscriber tenant)
+        ICurrentSubscriber subscriber)
     {
         _stock   = stock;
         _bodegas = bodegas;
-        _tenant  = tenant;
+        _subscriber = subscriber;
     }
 
     public async Task<Result<IReadOnlyList<CurrentStockListItemDto>>> Handle(
         GetCurrentStockPorWarehouseQuery query,
         CancellationToken ct)
     {
-        var subscriberId = _tenant.SubscriberId;
+        var subscriberId = _subscriber.SubscriberId;
         var Warehouse   = await _bodegas.GetByIdAsync(subscriberId, query.WarehouseId, ct);
         if (Warehouse is null)
             return Result<IReadOnlyList<CurrentStockListItemDto>>.Failure("Warehouse no encontrada.");

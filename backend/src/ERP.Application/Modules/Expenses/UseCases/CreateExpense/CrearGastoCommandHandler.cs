@@ -20,7 +20,7 @@ public sealed class CreateExpenseCommandHandler
     private readonly IXmlFacturaParser       _parser;
     private readonly IFileStorage            _storage;
     private readonly IUserActivityRepository _activity;
-    private readonly ICurrentSubscriber          _tenant;
+    private readonly ICurrentSubscriber          _subscriber;
     private readonly ICurrentUser            _user;
     private readonly IUnitOfWork             _unitOfWork;
     private readonly ILogger<CreateExpenseCommandHandler> _logger;
@@ -31,7 +31,7 @@ public sealed class CreateExpenseCommandHandler
         IXmlFacturaParser parser,
         IFileStorage storage,
         IUserActivityRepository activity,
-        ICurrentSubscriber tenant,
+        ICurrentSubscriber subscriber,
         ICurrentUser user,
         IUnitOfWork unitOfWork,
         ILogger<CreateExpenseCommandHandler> logger)
@@ -41,7 +41,7 @@ public sealed class CreateExpenseCommandHandler
         _parser        = parser;
         _storage       = storage;
         _activity      = activity;
-        _tenant        = tenant;
+        _subscriber = subscriber;
         _user          = user;
         _unitOfWork    = unitOfWork;
         _logger        = logger;
@@ -54,7 +54,7 @@ public sealed class CreateExpenseCommandHandler
 
     private async Task<Result<ExpenseInvoiceDto>> HandleXml(CreateExpenseCommand command, CancellationToken ct)
     {
-        var subscriberId = _tenant.SubscriberId;
+        var subscriberId = _subscriber.SubscriberId;
         var userId   = _user.UserId;
 
         FacturaParseResult parsed;
@@ -145,7 +145,7 @@ public sealed class CreateExpenseCommandHandler
 
     private async Task<Result<ExpenseInvoiceDto>> HandleManual(CreateExpenseCommand command, CancellationToken ct)
     {
-        var subscriberId = _tenant.SubscriberId;
+        var subscriberId = _subscriber.SubscriberId;
         var userId   = _user.UserId;
 
         if (command.Total!.Value > ExpenseInvoice.RequiresXmlThreshold)

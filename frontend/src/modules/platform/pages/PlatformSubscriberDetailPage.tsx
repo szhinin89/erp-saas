@@ -15,6 +15,7 @@ import { ZHFormSection, ZHGrid, ZHField, ZHBtn } from '../../../components/zh/ZH
 import { ConfigManagementPanel } from '../../../components/config/ConfigManagementPanel';
 import { EntityAuditPanel } from '../../../components/EntityAuditPanel';
 import { usePlatformGate } from '../../../hooks/usePlatformGate';
+import { useI18n } from '../../../i18n/i18n';
 import { ELECTRONIC_BILLING_TRIAL_KEY, useSubscriberDetailPage } from './subscriber-detail/useSubscriberDetailPage';
 import './PlatformSubscriberDetailPage.css';
 
@@ -29,21 +30,21 @@ type TabId =
   | 'audit'
   | 'metrics';
 
-const TABS: { id: TabId; label: string; icon: string }[] = [
-  { id: 'overview', label: 'Overview', icon: 'info' },
-  { id: 'subscription', label: 'Subscription', icon: 'subscriptions' },
-  { id: 'entitlements', label: 'Entitlements', icon: 'verified' },
-  { id: 'companies', label: 'Companies', icon: 'domain' },
-  { id: 'users', label: 'Users', icon: 'group' },
-  { id: 'configuration', label: 'Configuration', icon: 'tune' },
-  { id: 'menu', label: 'Menu Overrides', icon: 'menu_book' },
-  { id: 'audit', label: 'Audit', icon: 'history' },
-  { id: 'metrics', label: 'Usage', icon: 'monitoring' },
+const TAB_DEFS: { id: TabId; labelKey: string; icon: string }[] = [
+  { id: 'overview', labelKey: 'platform.subscriberDetail.tab.overview', icon: 'info' },
+  { id: 'subscription', labelKey: 'platform.subscriberDetail.tab.subscription', icon: 'subscriptions' },
+  { id: 'entitlements', labelKey: 'platform.subscriberDetail.tab.entitlements', icon: 'verified' },
+  { id: 'companies', labelKey: 'platform.subscriberDetail.tab.companies', icon: 'domain' },
+  { id: 'users', labelKey: 'platform.subscriberDetail.tab.users', icon: 'group' },
+  { id: 'configuration', labelKey: 'platform.subscriberDetail.tab.configuration', icon: 'tune' },
+  { id: 'menu', labelKey: 'platform.subscriberDetail.tab.menu', icon: 'menu_book' },
+  { id: 'audit', labelKey: 'platform.subscriberDetail.tab.audit', icon: 'history' },
+  { id: 'metrics', labelKey: 'platform.subscriberDetail.tab.metrics', icon: 'monitoring' },
 ];
 
 function parseTab(raw: string | null): TabId {
   const v = (raw ?? 'overview').trim().toLowerCase();
-  return (TABS.find((t) => t.id === v)?.id ?? 'overview') as TabId;
+  return (TAB_DEFS.find((t) => t.id === v)?.id ?? 'overview') as TabId;
 }
 
 export function PlatformSubscriberDetailPage() {
@@ -51,6 +52,11 @@ export function PlatformSubscriberDetailPage() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const tab = useMemo(() => parseTab(searchParams.get('tab')), [searchParams]);
+  const { t } = useI18n();
+  const tabs = useMemo(
+    () => TAB_DEFS.map((def) => ({ ...def, label: t(def.labelKey) })),
+    [t],
+  );
   const { isPlatformOperator } = usePlatformGate();
   const { login } = useAuthStore();
   const clearPermissions = usePermissionsStore((s) => s.clearPermissions);
@@ -97,7 +103,7 @@ export function PlatformSubscriberDetailPage() {
       setActionMsg(successMsg);
       await page.reloadSummary();
     } catch (e) {
-      setActionError(formatApiRequestError(e, { generic: 'Error al ejecutar la acción.' }));
+      setActionError(formatApiRequestError(e, { generic: t('platform.subscriberDetail.actionError') }));
     } finally {
       setActionBusy(false);
     }
@@ -118,7 +124,7 @@ export function PlatformSubscriberDetailPage() {
         clearPermissions,
       });
     } catch (e) {
-      setActionError(formatApiRequestError(e, { generic: 'No se pudo entrar al suscriptor.' }));
+      setActionError(formatApiRequestError(e, { generic: t('platform.subscriberDetail.impersonateError') }));
     } finally {
       setActionBusy(false);
     }
@@ -131,8 +137,8 @@ export function PlatformSubscriberDetailPage() {
   if (!subscriber || !subscriberId) {
     return (
       <div className="sa-detail-page">
-        <ZHPageNotice variant="error" message={error ?? 'Suscriptor no encontrado.'} />
-        <ZHBtn variant="ghost" size="md" onClick={() => navigate('/platform/subscribers')}>Volver</ZHBtn>
+        <ZHPageNotice variant="error" message={error ?? t('platform.subscriberDetail.notFound')} />
+        <ZHBtn variant="ghost" size="md" onClick={() => navigate('/platform/subscribers')}>{t('platform.subscriberDetail.back')}</ZHBtn>
       </div>
     );
   }
@@ -145,7 +151,7 @@ export function PlatformSubscriberDetailPage() {
       <div className="sa-detail-header">
         <button type="button" className="zh-btn zh-btn--ghost zh-btn--sm sa-detail-back" onClick={() => navigate('/platform/subscribers')}>
           <span className="material-symbols-outlined">arrow_back</span>
-          Suscriptores
+          {t('platform.subscriberDetail.back')}
         </button>
         <div className="sa-detail-title-row">
           <div className="sa-detail-avatar">{subscriber.name.charAt(0).toUpperCase()}</div>
@@ -155,7 +161,7 @@ export function PlatformSubscriberDetailPage() {
           </div>
           <div className="sa-detail-status-chips">
             <span className={subscriber.isActive ? 'zh-status zh-status--active' : 'zh-status zh-status--inactive'}>
-              {subscriber.isActive ? 'Activo' : 'Inactivo'}
+              {subscriber.isActive ? t('platform.subscriberDetail.status.active') : t('platform.subscriberDetail.status.inactive')}
             </span>
             {subscriber.planCode && <span className="badge badge--blue badge--md badge--upper">{subscriber.planCode}</span>}
           </div>
@@ -163,41 +169,39 @@ export function PlatformSubscriberDetailPage() {
       </div>
 
       <div className="sa-detail-tabs sa-detail-tabs--scroll">
-        {TABS.map((t) => (
-          <button key={t.id} type="button" className={`sa-detail-tab${tab === t.id ? ' is-active' : ''}`} onClick={() => setTab(t.id)}>
-            <span className="material-symbols-outlined">{t.icon}</span>
-            {t.label}
+        {tabs.map((item) => (
+          <button key={item.id} type="button" className={`sa-detail-tab${tab === item.id ? ' is-active' : ''}`} onClick={() => setTab(item.id)}>
+            <span className="material-symbols-outlined">{item.icon}</span>
+            {item.label}
           </button>
         ))}
       </div>
 
       {showNotice && <ZHPageNotice variant="error" message={showNotice} />}
-      {showSuccess && <ZHPageNotice variant="success" message={typeof showSuccess === 'string' ? showSuccess : 'Guardado.'} />}
+      {showSuccess && <ZHPageNotice variant="success" message={typeof showSuccess === 'string' ? showSuccess : t('platform.subscriberDetail.saved')} />}
 
       {tab === 'overview' && (
         <div className="sa-detail-body">
           <div className="sa-detail-card">
-            <h3 className="sa-detail-card-title">Resumen</h3>
+            <h3 className="sa-detail-card-title">{t('platform.subscriberDetail.overview.summary')}</h3>
             <div className="sa-detail-grid">
-              <div className="sa-detail-field"><span className="sa-detail-label">ID</span><span className="mono">{subscriber.id}</span></div>
-              <div className="sa-detail-field"><span className="sa-detail-label">Usuarios</span><span className="mono">{subscriber.activeUsers}/{subscriber.totalUsers}</span></div>
-              <div className="sa-detail-field"><span className="sa-detail-label">Menú custom</span><span>{subscriber.hasCustomMenu ? 'Sí' : 'No'}</span></div>
+              <div className="sa-detail-field"><span className="sa-detail-label">{t('platform.subscriberDetail.overview.id')}</span><span className="mono">{subscriber.id}</span></div>
+              <div className="sa-detail-field"><span className="sa-detail-label">{t('platform.subscriberDetail.overview.users')}</span><span className="mono">{subscriber.activeUsers}/{subscriber.totalUsers}</span></div>
+              <div className="sa-detail-field"><span className="sa-detail-label">{t('platform.subscriberDetail.overview.customMenu')}</span><span>{subscriber.hasCustomMenu ? t('platform.subscriberDetail.yes') : t('platform.subscriberDetail.no')}</span></div>
             </div>
           </div>
           <div className="sa-detail-card">
-            <h3 className="sa-detail-card-title">Entrar al suscriptor</h3>
-            <p className="subtle sa-detail-impersonation-hint">
-              Abre el runtime del suscriptor. Al salir podrás volver a esta ficha desde el banner superior.
-            </p>
+            <h3 className="sa-detail-card-title">{t('platform.subscriberDetail.impersonate.title')}</h3>
+            <p className="subtle sa-detail-impersonation-hint">{t('platform.subscriberDetail.impersonate.hint')}</p>
             <div className="sa-detail-impersonation-btns">
               <ZHBtn
                 variant="primary"
                 size="md"
                 disabled={actionBusy || !subscriber.isActive}
-                title={!subscriber.isActive ? 'El suscriptor está inactivo.' : undefined}
+                title={!subscriber.isActive ? t('platform.subscriberDetail.impersonate.inactiveTitle') : undefined}
                 onClick={() => void handleImpersonate('/saas/overview')}
               >
-                Resumen del suscriptor
+                {t('platform.subscriberDetail.impersonate.overview')}
               </ZHBtn>
               <ZHBtn
                 variant="ghost"
@@ -205,7 +209,7 @@ export function PlatformSubscriberDetailPage() {
                 disabled={actionBusy || !subscriber.isActive}
                 onClick={() => void handleImpersonate('/saas/companies')}
               >
-                Empresas ERP
+                {t('platform.subscriberDetail.impersonate.companies')}
               </ZHBtn>
               <ZHBtn
                 variant="ghost"
@@ -213,7 +217,7 @@ export function PlatformSubscriberDetailPage() {
                 disabled={actionBusy || !subscriber.isActive}
                 onClick={() => void handleImpersonate('/saas/billing')}
               >
-                Facturación del suscriptor
+                {t('platform.subscriberDetail.impersonate.billing')}
               </ZHBtn>
             </div>
           </div>
@@ -223,17 +227,17 @@ export function PlatformSubscriberDetailPage() {
       {tab === 'subscription' && (
         <div className="sa-detail-body">
           <div className="sa-detail-card">
-            <h3 className="sa-detail-card-title">Lifecycle</h3>
+            <h3 className="sa-detail-card-title">{t('platform.subscriberDetail.subscription.lifecycle')}</h3>
             <div className="sa-detail-action-row">
-              <ZHBtn variant="primary" size="md" disabled={actionBusy || subscriber.isActive} onClick={() => void doAction(() => platformService.activateSubscriber(subscriber.id), 'Activado.')}>Activar</ZHBtn>
-              <ZHBtn variant="ghost" size="md" disabled={actionBusy || !subscriber.isActive} onClick={() => void doAction(() => platformService.suspendSubscriber(subscriber.id), 'Suspendido.')}>Suspender</ZHBtn>
+              <ZHBtn variant="primary" size="md" disabled={actionBusy || subscriber.isActive} onClick={() => void doAction(() => platformService.activateSubscriber(subscriber.id), t('platform.subscriberDetail.subscription.activated'))}>{t('platform.subscriberDetail.subscription.activate')}</ZHBtn>
+              <ZHBtn variant="ghost" size="md" disabled={actionBusy || !subscriber.isActive} onClick={() => void doAction(() => platformService.suspendSubscriber(subscriber.id), t('platform.subscriberDetail.subscription.suspended'))}>{t('platform.subscriberDetail.subscription.suspend')}</ZHBtn>
             </div>
           </div>
           <div className="sa-detail-card">
-            <h3 className="sa-detail-card-title">Plan comercial</h3>
+            <h3 className="sa-detail-card-title">{t('platform.subscriberDetail.subscription.planTitle')}</h3>
             <div className="sa-detail-action-row">
-              <input className="zh-input" value={changePlanInput} onChange={(e) => setChangePlanInput(e.target.value)} placeholder="Código plan" />
-              <ZHBtn variant="primary" size="md" disabled={actionBusy || !changePlanInput.trim()} onClick={() => void doAction(() => platformService.changePlan(subscriber.id, changePlanInput.trim()), 'Plan actualizado.')}>Cambiar</ZHBtn>
+              <input className="zh-input" value={changePlanInput} onChange={(e) => setChangePlanInput(e.target.value)} placeholder={t('platform.subscriberDetail.subscription.planPlaceholder')} />
+              <ZHBtn variant="primary" size="md" disabled={actionBusy || !changePlanInput.trim()} onClick={() => void doAction(() => platformService.changePlan(subscriber.id, changePlanInput.trim()), t('platform.subscriberDetail.subscription.planUpdated'))}>{t('platform.subscriberDetail.subscription.changePlan')}</ZHBtn>
             </div>
           </div>
         </div>
@@ -243,11 +247,11 @@ export function PlatformSubscriberDetailPage() {
         <div className="sa-detail-body">
           {entLoading || page.detailLoading ? <LoadingState /> : page.entitlements ? (
             <>
-              <p className="subtle">Plan: {page.entitlements.planName ?? page.entitlements.planCode ?? '—'} · Billing: {page.entitlements.billingAccountStatus ?? '—'}</p>
-              <p>Módulos: {page.entitlements.enabledModules.join(', ') || '—'}</p>
-              <p>Features: {page.entitlements.enabledFeatures.join(', ') || '—'}</p>
+              <p className="subtle">{t('platform.subscriberDetail.entitlements.plan')}: {page.entitlements.planName ?? page.entitlements.planCode ?? '—'} · {t('platform.subscriberDetail.entitlements.billing')}: {page.entitlements.billingAccountStatus ?? '—'}</p>
+              <p>{t('platform.subscriberDetail.entitlements.modules')}: {page.entitlements.enabledModules.join(', ') || '—'}</p>
+              <p>{t('platform.subscriberDetail.entitlements.features')}: {page.entitlements.enabledFeatures.join(', ') || '—'}</p>
             </>
-          ) : <p className="subtle">Sin entitlements.</p>}
+          ) : <p className="subtle">{t('platform.subscriberDetail.entitlements.empty')}</p>}
         </div>
       )}
 
@@ -255,21 +259,21 @@ export function PlatformSubscriberDetailPage() {
         <div className="sa-detail-body">
           {page.detailLoading ? <LoadingState /> : (
             <form onSubmit={(e) => { e.preventDefault(); void page.saveCompanyProfile(); }}>
-              <ZHFormSection title="Perfil comercial / legal">
+              <ZHFormSection title={t('platform.subscriberDetail.companies.profileTitle')}>
                 <ZHGrid cols={2}>
-                  <ZHField label="Nombre"><input className="zh-input" {...page.form.register('subscriberName')} /></ZHField>
-                  <ZHField label="Slug"><input className="zh-input" {...page.form.register('subscriberSlug')} /></ZHField>
-                  <ZHField label="RUC"><input className="zh-input" {...page.form.register('ruc')} /></ZHField>
-                  <ZHField label="Nombre corto"><input className="zh-input" {...page.form.register('shortName')} /></ZHField>
+                  <ZHField label={t('platform.subscriberDetail.companies.name')}><input className="zh-input" {...page.form.register('subscriberName')} /></ZHField>
+                  <ZHField label={t('platform.subscriberDetail.companies.slug')}><input className="zh-input" {...page.form.register('subscriberSlug')} /></ZHField>
+                  <ZHField label={t('platform.subscriberDetail.companies.ruc')}><input className="zh-input" {...page.form.register('ruc')} /></ZHField>
+                  <ZHField label={t('platform.subscriberDetail.companies.shortName')}><input className="zh-input" {...page.form.register('shortName')} /></ZHField>
                 </ZHGrid>
               </ZHFormSection>
               {page.detail && (
-                <ZHFormSection title="Operacional">
+                <ZHFormSection title={t('platform.subscriberDetail.companies.operational')}>
                   <p className="subtle mono">{page.detail.currency} · {page.detail.timezone} · {page.detail.language}</p>
                 </ZHFormSection>
               )}
               <div className="zh-form-actions-row zh-form-actions-row--end">
-                <ZHBtn variant="primary" size="md" type="submit" disabled={page.saving}>Guardar perfil</ZHBtn>
+                <ZHBtn variant="primary" size="md" type="submit" disabled={page.saving}>{t('platform.subscriberDetail.companies.saveProfile')}</ZHBtn>
               </div>
             </form>
           )}
@@ -279,19 +283,19 @@ export function PlatformSubscriberDetailPage() {
       {tab === 'users' && (
         <div className="sa-detail-body sa-detail-card">
           <table className="table">
-            <thead><tr><th>Email</th><th>Nombre</th><th>Tipo</th><th>Estado</th></tr></thead>
+            <thead><tr><th>{t('platform.subscriberDetail.users.email')}</th><th>{t('platform.subscriberDetail.users.name')}</th><th>{t('platform.subscriberDetail.users.type')}</th><th>{t('platform.subscriberDetail.users.status')}</th></tr></thead>
             <tbody>
               {page.subscriberUsers.map((u) => (
                 <tr key={u.id}>
                   <td>{u.email}</td>
                   <td>{u.firstName} {u.lastName}</td>
                   <td className="mono subtle">{u.userType}</td>
-                  <td>{u.isActive ? 'Activo' : 'Inactivo'}</td>
+                  <td>{u.isActive ? t('platform.subscriberDetail.status.active') : t('platform.subscriberDetail.status.inactive')}</td>
                 </tr>
               ))}
             </tbody>
           </table>
-          {page.subscriberUsers.length === 0 && <p className="subtle">Sin usuarios suscriptor.</p>}
+          {page.subscriberUsers.length === 0 && <p className="subtle">{t('platform.subscriberDetail.users.empty')}</p>}
         </div>
       )}
 
@@ -300,28 +304,28 @@ export function PlatformSubscriberDetailPage() {
           <div className="sa-detail-card">
             <label className="companies-checkbox-label">
               <input type="checkbox" checked={page.electronicBillingTrialEnabled} onChange={(e) => page.setElectronicBillingTrialEnabled(e.target.checked)} />
-              Trial facturación electrónica ({ELECTRONIC_BILLING_TRIAL_KEY})
+              {t('platform.subscriberDetail.config.trial', { key: ELECTRONIC_BILLING_TRIAL_KEY })}
             </label>
-            <ZHBtn variant="primary" size="sm" className="pg-mt-sm" disabled={page.saving} onClick={() => void page.saveGlobalParameters()}>Guardar parámetros</ZHBtn>
-            <p className="subtle">Claves globales: {page.globalConfigCount}</p>
+            <ZHBtn variant="primary" size="sm" className="pg-mt-sm" disabled={page.saving} onClick={() => void page.saveGlobalParameters()}>{t('platform.subscriberDetail.config.saveParams')}</ZHBtn>
+            <p className="subtle">{t('platform.subscriberDetail.config.globalKeys')}: {page.globalConfigCount}</p>
           </div>
-          <ConfigManagementPanel subscriberId={subscriberId} canManage={isPlatformOperator} title="Config por alcance" subtitle="Global / module / feature" />
+          <ConfigManagementPanel subscriberId={subscriberId} canManage={isPlatformOperator} title={t('platform.subscriberDetail.config.panelTitle')} subtitle={t('platform.subscriberDetail.config.panelSubtitle')} />
         </div>
       )}
 
       {tab === 'menu' && (
         <div className="sa-detail-body sa-detail-card">
-          <p>Menú personalizado: {page.menuFlags?.hasCustomMenu ? 'Sí' : 'No'} · Plan menu: {page.menuFlags?.usedPlanMenu ? 'Sí' : 'No'}</p>
-          <ZHBtn variant="ghost" size="md" onClick={() => void page.resetCustomMenu()}>Restablecer menú custom</ZHBtn>
-          <p className="subtle pg-mt-md">Editor global: <a className="zh-link" href="/platform/plans?tab=menu">Plans → Menu builder</a></p>
+          <p>{t('platform.subscriberDetail.menu.custom')}: {page.menuFlags?.hasCustomMenu ? t('platform.subscriberDetail.yes') : t('platform.subscriberDetail.no')} · {t('platform.subscriberDetail.menu.planMenu')}: {page.menuFlags?.usedPlanMenu ? t('platform.subscriberDetail.yes') : t('platform.subscriberDetail.no')}</p>
+          <ZHBtn variant="ghost" size="md" onClick={() => void page.resetCustomMenu()}>{t('platform.subscriberDetail.menu.reset')}</ZHBtn>
+          <p className="subtle pg-mt-md">{t('platform.subscriberDetail.menu.editorLink')} <a className="zh-link" href="/platform/plans?tab=menu">{t('platform.subscriberDetail.menu.editorHref')}</a></p>
         </div>
       )}
 
       {tab === 'audit' && subscriberId && (
         <div className="sa-detail-body">
           <div className="sa-detail-card">
-            <h3 className="sa-detail-card-title">Platform audit</h3>
-            {platformAudit.length === 0 ? <p className="subtle">Sin eventos platform.</p> : (
+            <h3 className="sa-detail-card-title">{t('platform.subscriberDetail.audit.platformTitle')}</h3>
+            {platformAudit.length === 0 ? <p className="subtle">{t('platform.subscriberDetail.audit.platformEmpty')}</p> : (
               <ul className="subtle">{platformAudit.map((e) => <li key={e.id}>{e.action} — {e.createdAtUtc}</li>)}</ul>
             )}
           </div>
@@ -331,9 +335,9 @@ export function PlatformSubscriberDetailPage() {
 
       {tab === 'metrics' && (
         <div className="sa-detail-body sa-detail-card">
-          <p>Usuarios activos: {subscriber.activeUsers} / {subscriber.totalUsers}</p>
-          <p>Módulos: {subscriber.hasModuleRestrictions ? subscriber.enabledModules?.join(', ') : 'Sin restricción'}</p>
-          <ZHBtn variant="ghost" size="sm" onClick={() => navigate('/platform/observability')}>Ver observability global</ZHBtn>
+          <p>{t('platform.subscriberDetail.metrics.activeUsers')}: {subscriber.activeUsers} / {subscriber.totalUsers}</p>
+          <p>{t('platform.subscriberDetail.metrics.modules')}: {subscriber.hasModuleRestrictions ? subscriber.enabledModules?.join(', ') : t('platform.subscriberDetail.metrics.noRestriction')}</p>
+          <ZHBtn variant="ghost" size="sm" onClick={() => navigate('/platform/observability')}>{t('platform.subscriberDetail.metrics.observability')}</ZHBtn>
         </div>
       )}
     </div>

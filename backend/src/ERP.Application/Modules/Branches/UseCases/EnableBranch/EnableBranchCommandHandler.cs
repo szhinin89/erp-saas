@@ -11,30 +11,30 @@ public sealed class EnableBranchCommandHandler : IRequestHandler<EnableBranchCom
 {
     private readonly IBranchRepository _repo;
     private readonly IUserActivityRepository _activity;
-    private readonly ICurrentSubscriber _tenant;
+    private readonly ICurrentSubscriber _subscriber;
     private readonly ICurrentUser _user;
 
     public EnableBranchCommandHandler(
         IBranchRepository repo,
         IUserActivityRepository activity,
-        ICurrentSubscriber tenant,
+        ICurrentSubscriber subscriber,
         ICurrentUser user)
     {
         _repo = repo;
         _activity = activity;
-        _tenant = tenant;
+        _subscriber = subscriber;
         _user = user;
     }
 
     public async Task<Result<BranchDto>> Handle(EnableBranchCommand request, CancellationToken ct)
     {
-        var entity = await _repo.GetByIdAsync(_tenant.SubscriberId, request.Id, ct);
+        var entity = await _repo.GetByIdAsync(_subscriber.SubscriberId, request.Id, ct);
         if (entity is null)
             return Result<BranchDto>.Failure("Sucursal no encontrada.");
 
         entity.Enable(_user.UserId);
         await _activity.AddAsync(UserActivity.Create(
-            _tenant.SubscriberId,
+            _subscriber.SubscriberId,
             _user.UserId,
             _user.Email,
             _user.FullName,

@@ -10,12 +10,12 @@ public sealed class GetPurchasesNotesSupplierQueryHandler
     : IRequestHandler<GetPurchaseSupplierNotesQuery, Result<IReadOnlyList<SupplierPurchaseNoteDto>>>
 {
     private readonly IPurchBillRepository _repo;
-    private readonly ICurrentSubscriber    _tenant;
+    private readonly ICurrentSubscriber    _subscriber;
 
-    public GetPurchasesNotesSupplierQueryHandler(IPurchBillRepository repo, ICurrentSubscriber tenant)
+    public GetPurchasesNotesSupplierQueryHandler(IPurchBillRepository repo, ICurrentSubscriber subscriber)
     {
         _repo   = repo;
-        _tenant = tenant;
+        _subscriber = subscriber;
     }
 
     public async Task<Result<IReadOnlyList<SupplierPurchaseNoteDto>>> Handle(
@@ -23,7 +23,7 @@ public sealed class GetPurchasesNotesSupplierQueryHandler
         CancellationToken ct)
     {
         var list = await _repo.GetPurchNotesAsync(
-            _tenant.SubscriberId,
+            _subscriber.SubscriberId,
             query.BusinessPartnerId,
             query.PurchBillId,
             query.ExpenseInvoiceId,

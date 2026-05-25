@@ -10,12 +10,12 @@ public sealed class GetExpensesQueryHandler
     : IRequestHandler<GetExpensesQuery, Result<IReadOnlyList<ExpenseInvoiceDto>>>
 {
     private readonly IExpenseInvoiceRepository _repo;
-    private readonly ICurrentSubscriber        _tenant;
+    private readonly ICurrentSubscriber        _subscriber;
 
-    public GetExpensesQueryHandler(IExpenseInvoiceRepository repo, ICurrentSubscriber tenant)
+    public GetExpensesQueryHandler(IExpenseInvoiceRepository repo, ICurrentSubscriber subscriber)
     {
         _repo   = repo;
-        _tenant = tenant;
+        _subscriber = subscriber;
     }
 
     public async Task<Result<IReadOnlyList<ExpenseInvoiceDto>>> Handle(
@@ -23,7 +23,7 @@ public sealed class GetExpensesQueryHandler
         CancellationToken ct)
     {
         var list = await _repo.GetAsync(
-            _tenant.SubscriberId,
+            _subscriber.SubscriberId,
             query.Status,
             query.BusinessPartnerId,
             query.DateFrom,

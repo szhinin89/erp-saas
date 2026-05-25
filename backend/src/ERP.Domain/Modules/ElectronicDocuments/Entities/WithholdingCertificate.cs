@@ -18,11 +18,3 @@ public class WithholdingCertificate
     public ElectronicDoc                  ElectronicDoc { get; set; } = null!;
     public ICollection<WithholdingDetail> Details       { get; set; } = [];
 }
-
-/// <summary>
-/// Alias legado para compatibilidad temporal. Use <see cref="WithholdingCertificate"/>.
-/// </summary>
-[Obsolete("Use WithholdingCertificate instead.")]
-public class WithholdingCert : WithholdingCertificate
-{
-}

@@ -17,11 +17,11 @@ export interface ZHSortOption {
 export interface ZHSearchBarProps {
   placeholder?: string;
   onSearch: (query: string) => void;
-  /** Valor actual del texto de búsqueda (controlado; p. ej. `query` de `useZHSearch`). */
+  /** Valor actual del texto de búsqueda (controlado). */
   searchQuery: string;
   filters?: ZHFilter[];
   onFilterChange?: (filterId: string, value: string) => void;
-  /** Valores actuales de filtros (mismo shape que `filters` en `useZHSearch`). */
+  /** Valores actuales de filtros. */
   filterValues?: Record<string, string>;
   resultCount: number;
   entityLabel: string;
@@ -33,7 +33,7 @@ export interface ZHSearchBarProps {
   showExport?: boolean;
   onExport?: () => void;
   loading?: boolean;
-  /** Si se pasa, el botón de limpiar delega aquí (p. ej. `clearAll` de `useZHSearch`). */
+  /** Si se pasa, el botón de limpiar delega aquí. */
   onClearAll?: () => void;
   /** Controles extra a la derecha (p. ej. «Actualizar») antes del botón de acción principal. */
   extraActions?: ReactNode;

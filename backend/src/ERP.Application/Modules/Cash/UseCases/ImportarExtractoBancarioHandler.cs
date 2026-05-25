@@ -20,18 +20,18 @@ public sealed class ImportarBankStatementCommandHandler
     : IRequestHandler<ImportarBankStatementCommand, Result<BankStatementDto>>
 {
     private readonly ICashRepository _caja;
-    private readonly ICurrentSubscriber _tenant;
+    private readonly ICurrentSubscriber _subscriber;
     private readonly ICurrentUser _user;
     private readonly IUnitOfWork _uow;
 
     public ImportarBankStatementCommandHandler(
         ICashRepository caja,
-        ICurrentSubscriber tenant,
+        ICurrentSubscriber subscriber,
         ICurrentUser user,
         IUnitOfWork uow)
     {
         _caja   = caja;
-        _tenant = tenant;
+        _subscriber = subscriber;
         _user   = user;
         _uow    = uow;
     }
@@ -64,7 +64,7 @@ public sealed class ImportarBankStatementCommandHandler
         }
 
         var extracto = BankStatement.Create(
-            _tenant.SubscriberId,
+            _subscriber.SubscriberId,
             cmd.BankAccountId,
             cmd.PeriodFrom,
             cmd.PeriodTo,

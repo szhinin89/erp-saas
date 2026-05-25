@@ -9,18 +9,18 @@ public sealed class GetWarehouseByIdQueryHandler
     : IRequestHandler<GetWarehouseByIdQuery, Result<WarehouseDetailDto?>>
 {
     private readonly IWarehouseRepository _repo;
-    private readonly ICurrentSubscriber    _tenant;
+    private readonly ICurrentSubscriber    _subscriber;
 
-    public GetWarehouseByIdQueryHandler(IWarehouseRepository repo, ICurrentSubscriber tenant)
+    public GetWarehouseByIdQueryHandler(IWarehouseRepository repo, ICurrentSubscriber subscriber)
     {
         _repo   = repo;
-        _tenant = tenant;
+        _subscriber = subscriber;
     }
 
     public async Task<Result<WarehouseDetailDto?>> Handle(
         GetWarehouseByIdQuery query, CancellationToken ct)
     {
-        var b = await _repo.GetByIdAsync(_tenant.SubscriberId, query.Id, ct);
+        var b = await _repo.GetByIdAsync(_subscriber.SubscriberId, query.Id, ct);
         if (b is null) return Result<WarehouseDetailDto?>.Success(null);
 
         return Result<WarehouseDetailDto?>.Success(new WarehouseDetailDto(

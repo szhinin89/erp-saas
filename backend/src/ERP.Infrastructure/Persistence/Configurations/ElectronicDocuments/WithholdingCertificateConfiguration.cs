@@ -4,7 +4,7 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace ERP.Infrastructure.Persistence.Configurations.ElectronicDocuments;
 
-public class WithholdingCertConfiguration : IEntityTypeConfiguration<WithholdingCertificate>
+public class WithholdingCertificateConfiguration : IEntityTypeConfiguration<WithholdingCertificate>
 {
     public void Configure(EntityTypeBuilder<WithholdingCertificate> builder)
     {

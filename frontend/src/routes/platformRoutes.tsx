@@ -1,7 +1,6 @@
 import { Navigate, Route } from 'react-router-dom';
 import { PlatformLayout } from '../layouts/PlatformLayout';
 import { lazyNamedPage } from './lazyPage';
-import { PLATFORM_UI } from '../modules/platform/api/platformApiPaths';
 
 const PlatformSubscribersPage = lazyNamedPage(
   () => import('../pages/Platform/PlatformSubscribersPage'),

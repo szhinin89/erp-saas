@@ -17,7 +17,7 @@ public sealed class ApprovePurchaseCommandHandler
     private readonly IPurchBillRepository          _repo;
     private readonly IAccountingService         _accounting;
     private readonly IUserActivityRepository    _activity;
-    private readonly ICurrentSubscriber             _tenant;
+    private readonly ICurrentSubscriber             _subscriber;
     private readonly ICurrentUser               _user;
     private readonly IUnitOfWork                _unitOfWork;
     private readonly ILogger<ApprovePurchaseCommandHandler> _logger;
@@ -26,7 +26,7 @@ public sealed class ApprovePurchaseCommandHandler
         IPurchBillRepository repo,
         IAccountingService accounting,
         IUserActivityRepository activity,
-        ICurrentSubscriber tenant,
+        ICurrentSubscriber subscriber,
         ICurrentUser user,
         IUnitOfWork unitOfWork,
         ILogger<ApprovePurchaseCommandHandler> logger)
@@ -34,7 +34,7 @@ public sealed class ApprovePurchaseCommandHandler
         _repo       = repo;
         _accounting = accounting;
         _activity   = activity;
-        _tenant     = tenant;
+        _subscriber = subscriber;
         _user       = user;
         _unitOfWork = unitOfWork;
         _logger     = logger;
@@ -44,7 +44,7 @@ public sealed class ApprovePurchaseCommandHandler
         ApprovePurchaseCommand command,
         CancellationToken ct)
     {
-        var subscriberId = _tenant.SubscriberId;
+        var subscriberId = _subscriber.SubscriberId;
         var userId   = _user.UserId;
 
         var compra = await _repo.GetByIdAsync(subscriberId, command.PurchBillId, ct);

@@ -1,6 +1,6 @@
 import { forwardRef } from 'react';
 import { ZHFormBody, ZHFormHeader } from './ZHForm';
-import { Card } from '../ui';
+import { Card } from '../Card';
 
 export type ZHFormCardProps = {
   title: string;

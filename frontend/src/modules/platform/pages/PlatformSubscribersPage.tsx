@@ -5,8 +5,8 @@ import { goToSubscriberDetail } from '../../../navigation/platformSubscriberDeta
 import { LoadingState, EmptyState } from '../../../components/PageShell';
 import { ZHPageNotice } from '../../../components/zh/ZHPageNotice';
 import { ZHBtn } from '../../../components/zh/ZHForm';
-import { PlatformPanelCreateSubscriberModal } from '../PlatformPanelCreateSubscriberModal';
-import { defaultModuleChecksAllOn, slugifySubscriberName, normalizeEnabledModulesForApi } from '../platformPanelUtils';
+import { PlatformCreateSubscriberModal } from '../PlatformCreateSubscriberModal';
+import { defaultModuleChecksAllOn, slugifySubscriberName, normalizeEnabledModulesForApi } from '../platformSubscriberUtils';
 import { SUBSCRIBER_MODULE_KEYS } from '../../../constants/subscriptionModules';
 import { formatApiRequestError } from '../../lib/apiError';
 import { useI18n } from '../../../i18n/i18n';
@@ -212,23 +212,23 @@ export function PlatformSubscribersPage() {
         {filtered.length} de {items.length} suscriptores
       </div>
 
-      <PlatformPanelCreateSubscriberModal
+      <PlatformCreateSubscriberModal
         t={t}
-        createSubscriberOpen={createOpen}
-        setCreateSubscriberOpen={setCreateOpen}
-        createBusy={createBusy}
-        createError={createError}
-        createForm={createForm}
-        setCreateForm={setCreateForm}
-        createPlanCode={createPlanCode}
-        setCreatePlanCode={setCreatePlanCode}
-        createRestrictModules={createRestrictModules}
-        setCreateRestrictModules={setCreateRestrictModules}
-        createModuleChecks={createModuleChecks}
-        setCreateModuleChecks={setCreateModuleChecks}
+        open={createOpen}
+        onOpenChange={setCreateOpen}
+        busy={createBusy}
+        error={createError}
+        form={createForm}
+        setForm={setCreateForm}
+        planCode={createPlanCode}
+        setPlanCode={setCreatePlanCode}
+        restrictModules={createRestrictModules}
+        setRestrictModules={setCreateRestrictModules}
+        moduleChecks={createModuleChecks}
+        setModuleChecks={setCreateModuleChecks}
         activePlans={activePlans}
         moduleLabel={moduleLabel}
-        saveCreateSubscriber={saveCreate}
+        onSave={saveCreate}
         slugify={slugifySubscriberName}
       />
     </div>

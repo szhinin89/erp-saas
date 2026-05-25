@@ -1,11 +1,9 @@
 namespace ERP.Application.Common.Interfaces;
 
 /// <summary>
-/// Orchestrates all default data creation when a new tenant/company is registered.
+/// Orchestrates all default data creation when a new subscriber/company is registered.
 ///
-/// Called automatically by:
-///   - <c>PlatformCreateSubscriberWithAdminHandler</c>
-///   - <c>RegisterSubscriberWithAdminHandler</c>
+/// Called automatically by <c>PlatformCreateSubscriberWithAdminHandler</c>.
 ///
 /// Add new onboarding steps by adding a private method to
 /// <c>ERP.Infrastructure.Seeding.SubscriberOnboardingService</c>
@@ -21,7 +19,7 @@ public interface ISubscriberOnboardingService
 {
     /// <summary>
     /// Runs all onboarding steps for <paramref name="subscriberId"/>.
-    /// Every step is idempotent — safe to call on an already-onboarded tenant.
+    /// Every step is idempotent — safe to call on an already-onboarded subscriber.
     /// </summary>
     Task OnboardAsync(Guid subscriberId, Guid actorId, CancellationToken ct = default);
 }

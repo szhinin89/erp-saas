@@ -47,18 +47,18 @@ public sealed class CrearBankAccountCommandHandler
     : IRequestHandler<CrearBankAccountCommand, Result<BankAccountDto>>
 {
     private readonly ICashRepository _caja;
-    private readonly ICurrentSubscriber _tenant;
+    private readonly ICurrentSubscriber _subscriber;
     private readonly ICurrentUser _user;
     private readonly IUnitOfWork _uow;
 
     public CrearBankAccountCommandHandler(
         ICashRepository caja,
-        ICurrentSubscriber tenant,
+        ICurrentSubscriber subscriber,
         ICurrentUser user,
         IUnitOfWork uow)
     {
         _caja   = caja;
-        _tenant = tenant;
+        _subscriber = subscriber;
         _user   = user;
         _uow    = uow;
     }
@@ -66,7 +66,7 @@ public sealed class CrearBankAccountCommandHandler
     public async Task<Result<BankAccountDto>> Handle(CrearBankAccountCommand cmd, CancellationToken ct)
     {
         var entity = BankAccount.Create(
-            _tenant.SubscriberId,
+            _subscriber.SubscriberId,
             cmd.Name,
             cmd.AccountNumber,
             cmd.AccountType,

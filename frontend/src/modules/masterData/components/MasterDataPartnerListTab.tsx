@@ -41,7 +41,7 @@ export interface MasterDataPartnerListTabProps {
 export function MasterDataPartnerListTab({
   role,
   store,
-  canCreate,
+  canCreate: _canCreate,
   canUpdate,
   canDisable,
   canConfigure,
@@ -68,7 +68,6 @@ export function MasterDataPartnerListTab({
   const { t } = useI18n();
   const navigate = useNavigate();
   const startEdit = store((s) => s.startEdit);
-  const setActiveTab = store((s) => s.setActiveTab);
 
   const prefix = role === 'customer' ? 'masterdata.customers' : 'masterdata.suppliers';
 
