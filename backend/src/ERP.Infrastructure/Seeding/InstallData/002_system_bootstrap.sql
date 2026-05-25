@@ -209,13 +209,12 @@ CROSS JOIN (VALUES
 WHERE g.code = 'cash'
   AND NOT EXISTS (SELECT 1 FROM ui_nav_items i WHERE i.group_id = g."Id" AND i.route_path = v.route_path);
 
--- ── Finanzas (2 ítems) ───────────────────────────────────────────────────────
+-- ── Finanzas (1 ítem — config es tab dentro de /finance/accounts) ────────────
 INSERT INTO ui_nav_items ("Id", group_id, route_path, label_key, display_label, sort_order, module_key, permission_key, is_active)
 SELECT gen_random_uuid(), g."Id", v.route_path, v.label_key, v.display_label, v.sort_order::int, v.module_key, v.permission_key, true
 FROM ui_nav_groups g
 CROSS JOIN (VALUES
-  ('/finance/accounts', 'app.nav.item.finance.accounts', 'Contabilidad',     10, 'finance', 'finance.accounts.view'),
-  ('/finance/config',   'app.nav.item.finance.config',   'Config. contable', 20, 'finance', 'finance.config.view')
+  ('/finance/accounts', 'app.nav.item.finance.accounts', 'Contabilidad', 10, 'finance', 'finance.accounts.view')
 ) AS v(route_path, label_key, display_label, sort_order, module_key, permission_key)
 WHERE g.code = 'finance'
   AND NOT EXISTS (SELECT 1 FROM ui_nav_items i WHERE i.group_id = g."Id" AND i.route_path = v.route_path);

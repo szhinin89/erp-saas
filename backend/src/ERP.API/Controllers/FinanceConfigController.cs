@@ -10,7 +10,7 @@ using ERP.API.Attributes;
 namespace ERP.API.Controllers;
 
 /// <summary>Configuración de cuentas por defecto por tenant (compras, ventas, IVA, caja, mapeo de gastos).</summary>
-[AppFeature("Config. contable", "perm:finance.config.view", "⚙️", "/finance/accounts?tab=config", "perm:finance.accounts.view", 25)]
+[AppFeature("Config. contable", "perm:finance.config.view", "⚙️", null, "perm:finance.accounts.view", 25, IsVisibleInMenu = false)]
 [ApiController]
 [Route("api/finance/config")]
 [Authorize]
