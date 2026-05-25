@@ -56,6 +56,8 @@ public static class Permissions
         public const string Create = "sales.debit-notes.create";
     }
 
+    /// <remarks>Legacy: superseded by <see cref="MasterDataBusinessPartner"/>. Keys kept for backward-compat with existing DB rows.</remarks>
+    [Obsolete("Use MasterDataBusinessPartner instead. These keys map to the legacy sales.customers.* scope.")]
     public static class SalesCustomer
     {
         public const string View   = "sales.customers.view";
@@ -111,6 +113,8 @@ public static class Permissions
         public const string Cancel  = "purchases.orders.cancel";
     }
 
+    /// <remarks>Legacy: superseded by <see cref="MasterDataBusinessPartner"/>. Keys kept for backward-compat with existing DB rows.</remarks>
+    [Obsolete("Use MasterDataBusinessPartner instead. These keys map to the legacy purchases.suppliers.* scope.")]
     public static class PurchaseSupplier
     {
         public const string View   = "purchases.suppliers.view";
@@ -189,9 +193,10 @@ public static class Permissions
         SalesCreditNote.View,
         SalesCreditNote.Create,
         SalesCreditNote.Send,
-        SalesCustomer.View,
-        SalesCustomer.Create,
-        SalesCustomer.Update,
+        MasterDataBusinessPartner.View,
+        MasterDataBusinessPartner.Create,
+        MasterDataBusinessPartner.Update,
+        MasterDataBusinessPartner.Disable,
         InventoryProduct.View,
     ];
 

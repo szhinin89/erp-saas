@@ -72,7 +72,7 @@ export async function listCustomers(
   request: APIRequestContext,
   token: string,
 ): Promise<Array<{ id: string }>> {
-  const res = await request.get(`${API_BASE}/api/sales/customers`, {
+  const res = await request.get(`${API_BASE}/api/master/business-partners?type=customer&pageSize=100`, {
     headers: { Authorization: `Bearer ${token}` },
   });
   if (!res.ok()) {

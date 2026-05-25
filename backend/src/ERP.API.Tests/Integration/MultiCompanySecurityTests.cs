@@ -86,7 +86,7 @@ public sealed class MultiCompanySecurityTests : IAsyncLifetime
         var token = TestJwtFactory.CreateSessionJwt(subscriberId, userId, companyId: null);
         using var client = _factory.CreateAuthenticatedClient(token);
 
-        var res = await client.GetAsync("/api/sales/customers?take=100");
+        var res = await client.GetAsync("/api/master/business-partners?pageSize=100");
 
         // El endpoint requiere company scope: retorna 0 rows o 403
         // Con fail-closed query filter: 0 rows si la policy permite pasar, o 403 si la policy bloquea
@@ -126,7 +126,7 @@ public sealed class MultiCompanySecurityTests : IAsyncLifetime
         var token = TestJwtFactory.CreatePlatformOperatorJwt(platformOperatorId);
         using var client = _factory.CreateAuthenticatedClient(token);
 
-        var res = await client.GetAsync("/api/sales/customers?take=100");
+        var res = await client.GetAsync("/api/master/business-partners?pageSize=100");
 
         // subscriber_id=Empty â†’ fail-closed filter â†’ 0 rows o acceso denegado
         res.StatusCode.Should().BeOneOf(
@@ -172,7 +172,7 @@ public sealed class MultiCompanySecurityTests : IAsyncLifetime
         var tokenA = TestJwtFactory.CreateSessionJwt(subAId, userAId, companyId: compAId);
         using var clientA = _factory.CreateAuthenticatedClient(tokenA);
 
-        var res = await clientA.GetAsync("/api/sales/customers?take=100");
+        var res = await clientA.GetAsync("/api/master/business-partners?pageSize=100");
 
         if (res.IsSuccessStatusCode)
         {
@@ -195,7 +195,7 @@ public sealed class MultiCompanySecurityTests : IAsyncLifetime
         var token = TestJwtFactory.CreateSessionJwt(Guid.Empty, userId, companyId: Guid.NewGuid());
         using var client = _factory.CreateAuthenticatedClient(token);
 
-        var res = await client.GetAsync("/api/sales/customers?take=100");
+        var res = await client.GetAsync("/api/master/business-partners?pageSize=100");
 
         // subscriber_id=Empty â†’ fail-closed â†’ 0 rows o error
         res.StatusCode.Should().BeOneOf(

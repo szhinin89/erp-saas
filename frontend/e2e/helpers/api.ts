@@ -139,11 +139,11 @@ export async function searchBusinessPartners(
 }
 
 export async function listLegacyCustomers(request: APIRequestContext, token: string) {
-  const res = await request.get(`${API_BASE}/api/sales/customers?activeStatus=all`, {
+  const res = await request.get(`${API_BASE}/api/master/business-partners?type=customer&pageSize=200`, {
     headers: { Authorization: `Bearer ${token}` },
   });
   if (!res.ok()) {
-    throw new Error(`legacy customers failed: ${res.status()}`);
+    throw new Error(`customers failed: ${res.status()}`);
   }
   const body = await res.json();
   const data = body.data ?? body.Data ?? body.responseObject ?? body.ResponseObject;

@@ -66,9 +66,10 @@ BEGIN
         'sales.credit-notes.view',
         'sales.credit-notes.create',
         'sales.credit-notes.send',
-        'sales.customers.view',
-        'sales.customers.create',
-        'sales.customers.update',
+        'masterdata.businesspartners.view',
+        'masterdata.businesspartners.create',
+        'masterdata.businesspartners.update',
+        'masterdata.businesspartners.disable',
         'inventory.products.view'
     ]) AS t(key)
     ON CONFLICT (tenant_id, profile_id, permission_key) DO NOTHING;

@@ -130,25 +130,16 @@ export type CrmLocalPlan = {
 
 export const DEFAULT_CRM_TREE_SEED: EditorMenuItem[] = [
   {
-    uid: 'seed-inventario',
-    nombre: 'Inventario',
-    icono: '📦',
-    ruta: '',
-    permiso: '',
-    children: [
-      { uid: 'seed-inventario-productos', nombre: 'Productos', icono: '📦', ruta: '/inventario/productos', permiso: 'inventory.products.view', children: [] },
-      { uid: 'seed-inventario-kardex', nombre: 'Kardex', icono: '📊', ruta: '/inventario/kardex', permiso: 'inventory.kardex.view', children: [] },
-    ],
-  },
-  {
     uid: 'seed-ventas',
     nombre: 'Ventas',
     icono: '🧾',
     ruta: '',
     permiso: '',
     children: [
-      { uid: 'seed-ventas-facturas', nombre: 'Facturas', icono: '🧾', ruta: '/ventas/facturas', permiso: 'sales.invoices.view', children: [] },
-      { uid: 'seed-ventas-clientes', nombre: 'Clientes', icono: '👥', ruta: '/ventas/clientes', permiso: 'sales.customers.view', children: [] },
+      { uid: 'seed-ventas-facturas',     nombre: 'Facturas',     icono: '🧾', ruta: '/sales/invoices',         permiso: 'sales.invoices.view',                  children: [] },
+      { uid: 'seed-ventas-cotizaciones', nombre: 'Cotizaciones', icono: '📝', ruta: '/sales/quotes',           permiso: 'sales.quotes.view',                    children: [] },
+      { uid: 'seed-ventas-pedidos',      nombre: 'Pedidos',      icono: '📋', ruta: '/sales/orders',           permiso: 'sales.orders.view',                    children: [] },
+      { uid: 'seed-ventas-clientes',     nombre: 'Clientes',     icono: '👥', ruta: '/masterdata/customers',   permiso: 'masterdata.businesspartners.view',     children: [] },
     ],
   },
   {
@@ -158,8 +149,21 @@ export const DEFAULT_CRM_TREE_SEED: EditorMenuItem[] = [
     ruta: '',
     permiso: '',
     children: [
-      { uid: 'seed-compras-ordenes', nombre: 'Órdenes de compra', icono: '📑', ruta: '/compras/ordenes', permiso: 'purchases.orders.view', children: [] },
-      { uid: 'seed-compras-proveedores', nombre: 'Proveedores', icono: '🏬', ruta: '/compras/proveedores', permiso: 'purchases.suppliers.view', children: [] },
+      { uid: 'seed-compras-facturas',    nombre: 'Facturas compra',    icono: '🧾', ruta: '/purchases/invoices', permiso: 'purchases.invoices.view', children: [] },
+      { uid: 'seed-compras-ordenes',     nombre: 'Órdenes de compra',  icono: '📑', ruta: '/purchases/orders',   permiso: 'purchases.orders.view',  children: [] },
+      { uid: 'seed-compras-proveedores', nombre: 'Proveedores',        icono: '🏬', ruta: '/masterdata/suppliers', permiso: 'masterdata.businesspartners.view', children: [] },
+    ],
+  },
+  {
+    uid: 'seed-inventario',
+    nombre: 'Inventario',
+    icono: '📦',
+    ruta: '',
+    permiso: '',
+    children: [
+      { uid: 'seed-inventario-productos', nombre: 'Productos',     icono: '📦', ruta: '/inventory/products', permiso: 'inventory.products.view', children: [] },
+      { uid: 'seed-inventario-stock',     nombre: 'Stock',         icono: '🏪', ruta: '/inventory/stock',    permiso: 'inventory.stock.view',    children: [] },
+      { uid: 'seed-inventario-kardex',    nombre: 'Kardex',        icono: '📊', ruta: '/inventory/kardex',   permiso: 'inventory.kardex.view',   children: [] },
     ],
   },
 ];

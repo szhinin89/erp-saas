@@ -57,7 +57,7 @@ test.describe('Enterprise company UI isolation', () => {
       await page.waitForURL(/\/dashboard/, { timeout: 45_000 });
     }
 
-    await page.goto('/sales/customers');
+    await page.goto('/masterdata/customers');
     await page.waitForLoadState('networkidle');
 
     const switcher = page.locator('.company-switcher-select');
@@ -74,7 +74,7 @@ test.describe('Enterprise company UI isolation', () => {
     await switcher.selectOption(other!);
     await page.waitForURL(/\/dashboard/, { timeout: 30_000 });
 
-    await page.goto('/sales/customers');
+    await page.goto('/masterdata/customers');
     await page.waitForLoadState('networkidle');
 
     const afterCount = await page.locator('.zh-entity-item-name').count();
