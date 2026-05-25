@@ -90,6 +90,51 @@
   color: var(--zh-muted, #6b7280);
 }
 
+.md-modal-roles {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+  margin-top: 0.75rem;
+  padding: 0.75rem 1rem;
+  background: var(--zh-surface-secondary, #f8f9fa);
+  border: 1px solid var(--zh-border, #dee2e6);
+  border-radius: 6px;
+}
+
+.md-modal-roles-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--zh-text-muted, #6c757d);
+  min-width: 2.5rem;
+}
+
+.md-role-check {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.875rem;
+  cursor: pointer;
+  user-select: none;
+}
+
+.md-role-check input[type="checkbox"] {
+  width: 1rem;
+  height: 1rem;
+  cursor: pointer;
+}
+
+.md-role-check input[type="checkbox"]:disabled {
+  cursor: default;
+  opacity: 0.6;
+}
+
+.md-role-active {
+  font-size: 0.7rem;
+  color: var(--zh-text-muted, #6c757d);
+}
+
 .md-modal-actions {
   display: flex;
   justify-content: flex-end;

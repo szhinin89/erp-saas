@@ -159,7 +159,7 @@ export function MasterDataCustomersPage() {
 
       {page.modalOpen && (
         <MasterDataBpFormModal
-          title="Nuevo BusinessPartner (cliente)"
+          title="Nuevo BusinessPartner"
           saving={page.saving}
           error={page.modalError}
           defaultAsCustomer
@@ -182,6 +182,8 @@ export function MasterDataCustomersPage() {
             email:                page.editBp.email,
             phone:                page.editBp.phone,
           }}
+          currentIsCustomer={page.editBp.isCustomer}
+          currentIsSupplier={page.editBp.isSupplier}
           onClose={page.closeEdit}
           onUpdate={(body) => void page.updateCustomer(page.editBp!.id, body)}
         />

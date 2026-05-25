@@ -11,6 +11,8 @@ type CreateMode = {
   onSubmit: (body: CreateBusinessPartnerBody) => void;
   onUpdate?: never;
   initialValues?: never;
+  currentIsCustomer?: never;
+  currentIsSupplier?: never;
 };
 
 type EditMode = {
@@ -20,6 +22,8 @@ type EditMode = {
   onSubmit?: never;
   onUpdate: (body: UpdateBusinessPartnerBody) => void;
   initialValues: UpdateBusinessPartnerBody;
+  currentIsCustomer?: boolean;
+  currentIsSupplier?: boolean;
 };
 
 type Props = (CreateMode | EditMode) & {
@@ -43,11 +47,18 @@ export function MasterDataBpFormModal(props: Props) {
   const [email, setEmail]             = useState(props.initialValues?.email ?? '');
   const [phone, setPhone]             = useState(props.initialValues?.phone ?? '');
   const [countryCode, setCountryCode] = useState(props.initialValues?.countryCode ?? 'EC');
+  const [asCustomer, setAsCustomer]   = useState(!isEdit ? (props.defaultAsCustomer ?? false) : false);
+  const [asSupplier, setAsSupplier]   = useState(!isEdit ? (props.defaultAsSupplier ?? false) : false);
 
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (!isEdit && !asCustomer && !asSupplier) {
+      setFieldErrors((p) => ({ ...p, roles: 'Debe seleccionar al menos un rol: Cliente o Proveedor.' }));
+      return;
+    }
 
     const parsed = businessPartnerSchema.safeParse({
       identificationType,
@@ -81,11 +92,7 @@ export function MasterDataBpFormModal(props: Props) {
     if (isEdit) {
       props.onUpdate(body);
     } else {
-      props.onSubmit!({
-        ...body,
-        asCustomer: props.defaultAsCustomer ?? false,
-        asSupplier: props.defaultAsSupplier ?? false,
-      });
+      props.onSubmit!({ ...body, asCustomer, asSupplier });
     }
   };
 
@@ -168,6 +175,31 @@ export function MasterDataBpFormModal(props: Props) {
               maxLength={2}
             />
           </ZHField>
+        </div>
+
+        <div className="md-modal-roles">
+          <span className="md-modal-roles-label">Rol</span>
+          <label className="md-role-check">
+            <input
+              type="checkbox"
+              checked={isEdit ? (props.currentIsCustomer ?? false) : asCustomer}
+              disabled={props.saving || (isEdit && props.currentIsCustomer)}
+              onChange={isEdit ? undefined : (e) => { setAsCustomer(e.target.checked); setFieldErrors((p) => ({ ...p, roles: '' })); }}
+            />
+            Cliente
+            {isEdit && props.currentIsCustomer && <span className="md-role-active">(activo)</span>}
+          </label>
+          <label className="md-role-check">
+            <input
+              type="checkbox"
+              checked={isEdit ? (props.currentIsSupplier ?? false) : asSupplier}
+              disabled={props.saving || (isEdit && props.currentIsSupplier)}
+              onChange={isEdit ? undefined : (e) => { setAsSupplier(e.target.checked); setFieldErrors((p) => ({ ...p, roles: '' })); }}
+            />
+            Proveedor
+            {isEdit && props.currentIsSupplier && <span className="md-role-active">(activo)</span>}
+          </label>
+          {fieldErrors.roles && <span className="md-field-error">{fieldErrors.roles}</span>}
         </div>
 
         <div className="md-modal-actions">

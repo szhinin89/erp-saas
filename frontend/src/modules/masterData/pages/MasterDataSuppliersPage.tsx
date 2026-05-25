@@ -156,7 +156,7 @@ export function MasterDataSuppliersPage() {
 
       {page.modalOpen && (
         <MasterDataBpFormModal
-          title="Nuevo BusinessPartner (proveedor)"
+          title="Nuevo BusinessPartner"
           saving={page.saving}
           error={page.modalError}
           defaultAsSupplier
@@ -179,6 +179,8 @@ export function MasterDataSuppliersPage() {
             email:                page.editBp.email,
             phone:                page.editBp.phone,
           }}
+          currentIsCustomer={page.editBp.isCustomer}
+          currentIsSupplier={page.editBp.isSupplier}
           onClose={page.closeEdit}
           onUpdate={(body) => void page.updateSupplier(page.editBp!.id, body)}
         />
