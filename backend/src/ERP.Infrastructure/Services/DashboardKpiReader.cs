@@ -27,8 +27,8 @@ public sealed class DashboardKpiReader : IDashboardKpiReader
 
         // ── Sales MTD / YTD ───────────────────────────────────────────────
         // Global filter already applies subscriber_id; filter company explicitly
-        // SalesBill.Status is a string: "Borrador", "Validado", "Autorizado", "Anulado", etc.
-        var salesMtd = await _db.SalesBills
+        // Fiscal invoice (greenfield): Status "Borrador", "Validado", "Autorizado", "Anulado", etc.
+        var salesMtd = await _db.FiscalInvoices
             .Where(b => b.CompanyId == companyId
                      && b.Status != "Anulado"
                      && b.IssueDate >= monthStart
@@ -37,7 +37,7 @@ public sealed class DashboardKpiReader : IDashboardKpiReader
             .Select(g => new { Total = g.Sum(b => b.Total), Count = g.Count() })
             .FirstOrDefaultAsync(ct);
 
-        var salesYtd = await _db.SalesBills
+        var salesYtd = await _db.FiscalInvoices
             .Where(b => b.CompanyId == companyId
                      && b.Status != "Anulado"
                      && b.IssueDate >= yearStart

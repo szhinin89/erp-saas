@@ -2,22 +2,31 @@ using MediatR;
 using Microsoft.Extensions.Logging;
 using ERP.Application.Common;
 using ERP.Application.Sales.Helpers;
+using ERP.Domain.Common;
 using ERP.Domain.Audit.Entities;
 using ERP.Domain.Audit.Interfaces;
 using ERP.Domain.Modules.Inventory.Interfaces;
 using ERP.Domain.Configuration.Entities;
 using ERP.Domain.Configuration.Interfaces;
 using ERP.Domain.MasterData.Interfaces;
-using ERP.Domain.Modules.Sales.Interfaces;
+using ERP.Domain.MasterData.ValueObjects;
+using ERP.Domain.Modules.Fiscal.Entities;
+using ERP.Domain.Modules.Fiscal.Interfaces;
+using ERP.Domain.Modules.Commercial.Entities;
+using ERP.Domain.Modules.Commercial.Interfaces;
+using ERP.Domain.Modules.Integration.Constants;
+using ERP.Domain.Modules.Integration.Entities;
+using ERP.Domain.Modules.Integration.Interfaces;
 using ERP.Domain.Products.Interfaces;
-using ERP.Domain.Modules.Sales.Entities;
-using ERP.Domain.Modules.Sales.Interfaces;
 
 namespace ERP.Application.Sales.UseCases.CrearVenta;
 
 public sealed class CreateSaleCommandHandler : IRequestHandler<CreateSaleCommand, Result<Guid>>
 {
-    private readonly ISalesRepository _ventasRepository;
+    private readonly IInvoiceRepository _invoiceRepository;
+    private readonly ISalesOrderRepository _salesOrderRepository;
+    private readonly IDocumentRelationRepository _documentRelationRepository;
+    private readonly ISnowflakeIdGenerator _idGenerator;
     private readonly ISriSettingsRepository _configSriRepository;
     private readonly IStockRepository _stockRepository;
     private readonly IBusinessPartnerRepository _bpRepository;
@@ -32,7 +41,10 @@ public sealed class CreateSaleCommandHandler : IRequestHandler<CreateSaleCommand
     private readonly ILogger<CreateSaleCommandHandler> _logger;
 
     public CreateSaleCommandHandler(
-        ISalesRepository ventasRepository,
+        IInvoiceRepository invoiceRepository,
+        ISalesOrderRepository salesOrderRepository,
+        IDocumentRelationRepository documentRelationRepository,
+        ISnowflakeIdGenerator idGenerator,
         ISriSettingsRepository configSriRepository,
         IStockRepository stockRepository,
         IBusinessPartnerRepository bpRepository,
@@ -46,7 +58,10 @@ public sealed class CreateSaleCommandHandler : IRequestHandler<CreateSaleCommand
         IUnitOfWork unitOfWork,
         ILogger<CreateSaleCommandHandler> logger)
     {
-        _ventasRepository    = ventasRepository;
+        _invoiceRepository = invoiceRepository;
+        _salesOrderRepository = salesOrderRepository;
+        _documentRelationRepository = documentRelationRepository;
+        _idGenerator = idGenerator;
         _configSriRepository = configSriRepository;
         _stockRepository     = stockRepository;
         _bpRepository        = bpRepository;
@@ -72,10 +87,16 @@ public sealed class CreateSaleCommandHandler : IRequestHandler<CreateSaleCommand
         var companyId = _currentCompany.CompanyId;
 
         _logger.LogInformation(
-            "Creando venta: tenant={SubscriberId}, bp={BusinessPartnerId}, Warehouse={BodegaId}, ítems={ItemCount}",
-            subscriberId, command.BusinessPartnerId, command.WarehouseId, command.Items.Count);
+            "Creando venta: tenant={SubscriberId}, bp={BusinessPartnerId}, Warehouse={BodegaId}, ítems={ItemCount}, salesOrder={SalesOrderPublicId}",
+            subscriberId, command.BusinessPartnerId, command.WarehouseId, command.Items.Count, command.SalesOrderPublicId);
 
-        var preflight = await ValidateSalePreflightAsync(command, subscriberId, companyId, ct);
+        var resolveResult = await ResolveCommandFromSalesOrderAsync(command, subscriberId, companyId, ct);
+        if (!resolveResult.IsSuccess)
+            return Result<Guid>.Failure(resolveResult.Error!);
+
+        var effectiveCommand = resolveResult.Value;
+
+        var preflight = await ValidateSalePreflightAsync(effectiveCommand, subscriberId, companyId, ct);
         if (!preflight.IsSuccess)
             return Result<Guid>.Failure(preflight.Error!);
 
@@ -85,7 +106,7 @@ public sealed class CreateSaleCommandHandler : IRequestHandler<CreateSaleCommand
         try
         {
             return await PersistSaleAsync(
-                command, subscriberId, companyId, userId, productos, configSri, ct);
+                effectiveCommand, subscriberId, companyId, userId, productos, configSri, ct);
         }
         catch (Exception ex)
         {
@@ -93,6 +114,66 @@ public sealed class CreateSaleCommandHandler : IRequestHandler<CreateSaleCommand
             _logger.LogError(ex, "Error al crear venta tenant={SubscriberId}", subscriberId);
             return Result<Guid>.Failure($"No se pudo crear la venta: {ex.Message}");
         }
+    }
+
+    private async Task<Result<CreateSaleCommand>> ResolveCommandFromSalesOrderAsync(
+        CreateSaleCommand command,
+        Guid subscriberId,
+        Guid companyId,
+        CancellationToken ct)
+    {
+        if (command.SalesOrderPublicId is null)
+            return Result<CreateSaleCommand>.Success(command);
+
+        var order = await _salesOrderRepository.GetByPublicIdReadOnlyAsync(command.SalesOrderPublicId.Value, ct);
+        if (order is null)
+            return Result<CreateSaleCommand>.Failure("Sales order not found.");
+
+        if (order.SubscriberId != subscriberId)
+            return Result<CreateSaleCommand>.Failure("Sales order not found.");
+
+        if (order.BranchId != companyId)
+            return Result<CreateSaleCommand>.Failure("Sales order does not belong to the active company.");
+
+        var alreadyInvoiced = await _documentRelationRepository.ExistsSourceRelationAsync(
+            subscriberId,
+            DocumentModules.CommercialSalesOrder,
+            order.Id,
+            DocumentRelationTypes.OrderToInvoice,
+            ct);
+
+        if (alreadyInvoiced || order.Status == SalesOrder.Statuses.Invoiced)
+            return Result<CreateSaleCommand>.Failure("Sales order was already invoiced.");
+
+        if (order.Status is not (SalesOrder.Statuses.Confirmed or SalesOrder.Statuses.PartiallyInvoiced))
+            return Result<CreateSaleCommand>.Failure(
+                $"Sales order must be confirmed before invoicing (current: {order.Status}).");
+
+        if (order.Lines.Count == 0)
+            return Result<CreateSaleCommand>.Failure("Sales order has no lines.");
+
+        if (command.BusinessPartnerId != Guid.Empty && command.BusinessPartnerId != order.BusinessPartnerId)
+            return Result<CreateSaleCommand>.Failure("BusinessPartnerId does not match the sales order.");
+
+        if (command.WarehouseId != Guid.Empty && command.WarehouseId != order.WarehouseId)
+            return Result<CreateSaleCommand>.Failure("WarehouseId does not match the sales order.");
+
+        var items = order.Lines
+            .OrderBy(l => l.LineNo)
+            .Select(l => new SaleItemDto(l.ProductId, l.Quantity, l.UnitPrice, DiscountAmount: 0))
+            .ToList();
+
+        var effectiveCommand = command with
+        {
+            BusinessPartnerId = order.BusinessPartnerId,
+            WarehouseId = order.WarehouseId,
+            BranchId = order.BranchId,
+            Items = items,
+            PaymentDays = command.PaymentDays > 0 ? command.PaymentDays : order.PaymentTermDays,
+            Notes = string.IsNullOrWhiteSpace(command.Notes) ? order.Notes : command.Notes,
+        };
+
+        return Result<CreateSaleCommand>.Success(effectiveCommand);
     }
 
     private async Task<Result<(Dictionary<Guid, ERP.Domain.Products.Entities.Product> Productos, SriSettings ConfigSri)>>
@@ -193,6 +274,10 @@ public sealed class CreateSaleCommandHandler : IRequestHandler<CreateSaleCommand
         SriSettings configSri,
         CancellationToken ct)
     {
+        var cliente = await _bpRepository.GetByIdAsync(command.BusinessPartnerId, ct);
+        if (cliente is null)
+            return Result<Guid>.Failure("Cliente no encontrado.");
+
         var secuencial = CapturarSecuencialComoString(configSri);
         await _configSriRepository.UpdateAsync(configSri, ct);
 
@@ -201,16 +286,87 @@ public sealed class CreateSaleCommandHandler : IRequestHandler<CreateSaleCommand
             configSri.Ruc, configSri.Environment, configSri.EstabCode,
             configSri.EmPointCode, configSri.EmissionType, secuencial, issueDate);
 
-        var (detalles, subtotal, totalVat) = await BuildBillLinesAsync(
-            command, productos, subscriberId, userId, ct);
+        var publicId = Guid.NewGuid();
+        var invoiceId = _idGenerator.NextId();
+        var issueDateOnly = DateOnly.FromDateTime(issueDate);
 
-        var factura = CreateBill(
-            command, subscriberId, companyId, userId, configSri,
-            secuencial, accessKey, issueDate, detalles, subtotal, totalVat);
+        var invoice = Invoice.Create(
+            invoiceId,
+            publicId,
+            subscriberId,
+            companyId,
+            command.BusinessPartnerId,
+            command.WarehouseId,
+            "01",
+            configSri.EstabCode,
+            configSri.EmPointCode,
+            secuencial,
+            accessKey,
+            issueDate,
+            MapBuyerIdType(cliente.Identification.Type),
+            cliente.Identification.Number,
+            cliente.LegalName,
+            null,
+            command.PaymentMethodCode,
+            command.PaymentDays,
+            command.Notes,
+            userId);
 
-        await _ventasRepository.AddBillAsync(factura, ct);
+        short lineNo = 1;
+        foreach (var item in command.Items)
+        {
+            var producto = productos[item.ProductId];
+            var brutoItem = item.Quantity * item.UnitPrice;
+            var descItem = item.DiscountAmount < 0 ? 0 : item.DiscountAmount;
+            var subtotalItem = brutoItem - descItem;
 
-        var numeroFactura = $"{factura.EstabCode}-{factura.EmPointCode}-{factura.Sequential}";
+            decimal impuestoItem = 0;
+            string vatCode = "0";
+            decimal vatPct = 0m;
+
+            if (producto.AppliesVatOnSale && producto.SaleTaxId.HasValue)
+            {
+                var taxRate = await _taxRateRepository.GetByIdAsync(producto.SaleTaxId.Value, subscriberId, ct);
+                if (taxRate is not null)
+                {
+                    vatPct = taxRate.Percentage;
+                    vatCode = SriVatCodeFromPercentage(vatPct);
+                    impuestoItem = subtotalItem * vatPct / 100;
+                }
+            }
+
+            invoice.AddLine(InvoiceDetail.Create(
+                _idGenerator.NextId(),
+                invoice.Id,
+                subscriberId,
+                companyId,
+                lineNo++,
+                item.ProductId,
+                producto.ShortName,
+                producto.SaleCode,
+                "UND",
+                producto.Description,
+                item.Quantity,
+                item.UnitPrice,
+                item.DiscountAmount,
+                vatCode,
+                vatPct,
+                impuestoItem,
+                issueDateOnly));
+        }
+
+        var electronic = InvoiceElectronic.CreatePending(
+            _idGenerator.NextId(),
+            invoice.Id,
+            subscriberId,
+            companyId,
+            issueDateOnly);
+        invoice.AttachElectronic(electronic);
+        invoice.AssignSnowflakeChildIds(_idGenerator);
+
+        await _invoiceRepository.AddAsync(invoice, ct);
+
+        var numeroFactura = invoice.InvoiceNumber;
         await _activity.AddAsync(UserActivity.Create(
             subscriberId: subscriberId,
             userId: userId,
@@ -218,125 +374,107 @@ public sealed class CreateSaleCommandHandler : IRequestHandler<CreateSaleCommand
             userFullName: _currentUser.FullName,
             module: "Ventas",
             action: "CrearVenta",
-            entityType: "SalesBill",
-            entityId: factura.Id,
+            entityType: "Invoice",
+            entityId: invoice.PublicId,
             description: $"Factura creada: {numeroFactura}"
         ), ct);
 
         await _unitOfWork.SaveChangesAsync(ct);
         await _unitOfWork.CommitAsync(ct);
 
-        _logger.LogInformation(
-            "Venta creada: factura={FacturaId}, secuencial={Secuencial}, total={Total}, tenant={SubscriberId}",
-            factura.Id, factura.Sequential, factura.Total, subscriberId);
-
-        return Result<Guid>.Success(factura.Id);
-    }
-
-    private async Task<(List<SalesBillLine> Detalles, decimal Subtotal, decimal TotalVat)> BuildBillLinesAsync(
-        CreateSaleCommand command,
-        Dictionary<Guid, ERP.Domain.Products.Entities.Product> productos,
-        Guid subscriberId,
-        Guid userId,
-        CancellationToken ct)
-    {
-        decimal subtotal = 0;
-        decimal totalVat = 0;
-        var detalles = new List<SalesBillLine>();
-
-        foreach (var item in command.Items)
+        if (command.SalesOrderPublicId is not null)
         {
-            var producto      = productos[item.ProductId];
-            var brutoItem     = item.Quantity * item.UnitPrice;
-            var descItem      = item.DiscountAmount < 0 ? 0 : item.DiscountAmount;
-            var subtotalItem  = brutoItem - descItem;
+            _unitOfWork.ClearChangeTracker();
 
-            decimal impuestoItem = 0;
-            string  vatCode      = "0";
-            decimal vatPct       = 0m;
-
-            if (producto.AppliesVatOnSale && producto.SaleTaxId.HasValue)
+            try
             {
-                var taxRate = await _taxRateRepository.GetByIdAsync(producto.SaleTaxId.Value, subscriberId, ct);
-                if (taxRate is not null)
+                var linkResult = await LinkInvoiceToSalesOrderAsync(
+                    command.SalesOrderPublicId.Value,
+                    invoice.Id,
+                    subscriberId,
+                    companyId,
+                    userId,
+                    ct);
+
+                if (!linkResult.IsSuccess)
                 {
-                    vatPct       = taxRate.Percentage;
-                    vatCode      = SriVatCodeFromPercentage(vatPct);
-                    impuestoItem = subtotalItem * vatPct / 100;
+                    _logger.LogWarning(
+                        "Factura {PublicId} creada pero no se pudo vincular al pedido {SalesOrderPublicId}: {Error}",
+                        invoice.PublicId,
+                        command.SalesOrderPublicId,
+                        linkResult.Error);
+                    return Result<Guid>.Failure(linkResult.Error!);
                 }
             }
-
-            subtotal += subtotalItem;
-            totalVat += impuestoItem;
-
-            detalles.Add(SalesBillLine.Create(
-                subscriberId:       subscriberId,
-                productId:      item.ProductId,
-                productCode:    producto.SaleCode,
-                quantity:       item.Quantity,
-                unitPrice:      item.UnitPrice,
-                discountAmount: item.DiscountAmount,
-                vatCode:        vatCode,
-                vatPercentage:  vatPct,
-                vatTotal:       impuestoItem,
-                description:    producto.Description,
-                createdBy:      userId
-            ));
+            catch (Exception linkEx)
+            {
+                _logger.LogError(linkEx, "Link pedido→factura falló tras crear factura {PublicId}", invoice.PublicId);
+                return Result<Guid>.Failure($"Invoice created but order link failed: {linkEx.Message}");
+            }
         }
 
-        return (detalles, subtotal, totalVat);
+        _logger.LogInformation(
+            "Venta creada: factura={PublicId}, secuencial={Secuencial}, total={Total}, tenant={SubscriberId}",
+            invoice.PublicId, invoice.Sequential, invoice.Total, subscriberId);
+
+        return Result<Guid>.Success(invoice.PublicId);
     }
 
-    private static SalesBill CreateBill(
-        CreateSaleCommand command,
+    private async Task<Result<bool>> LinkInvoiceToSalesOrderAsync(
+        Guid salesOrderPublicId,
+        long invoiceId,
         Guid subscriberId,
         Guid companyId,
         Guid userId,
-        SriSettings configSri,
-        string secuencial,
-        string accessKey,
-        DateTime issueDate,
-        List<SalesBillLine> detalles,
-        decimal subtotal,
-        decimal totalVat)
+        CancellationToken ct)
     {
-        var total = subtotal + totalVat;
-        var totalDiscount = detalles.Sum(d => d.DiscountAmount);
-        var factura = SalesBill.Create(
-            subscriberId:          subscriberId,
-            branchId:              command.BranchId,
-            businessPartnerId:     command.BusinessPartnerId,
-            warehouseId:       command.WarehouseId,
-            docType:           "01",
-            estabCode:         configSri.EstabCode,
-            emPointCode:       configSri.EmPointCode,
-            sequential:        secuencial,
-            accessKey:         accessKey,
-            issueDate:         issueDate,
-            subtotal:          subtotal,
-            vatTotal:          totalVat,
-            total:             total,
-            totalDiscount:     totalDiscount,
-            paymentMethodCode: command.PaymentMethodCode,
-            paymentDays:       command.PaymentDays,
-            notes:             command.Notes,
-            xmlSignedPath:     null,
-            xmlAuthPath:       null,
-            authNumber:        null,
-            authDate:          null,
-            errorMessage:      null,
-            createdBy:         userId,
-            companyId:         companyId
-        );
+        var linkedOrder = await _salesOrderRepository.GetByPublicIdHeaderReadOnlyAsync(salesOrderPublicId, ct);
+        if (linkedOrder is null)
+            return Result<bool>.Failure("Sales order not found.");
 
-        foreach (var detalle in detalles)
-        {
-            detalle.AssignBillId(factura.Id);
-            factura.AddLine(detalle);
-        }
+        var alreadyInvoiced = await _documentRelationRepository.ExistsSourceRelationAsync(
+            subscriberId,
+            DocumentModules.CommercialSalesOrder,
+            linkedOrder.Id,
+            DocumentRelationTypes.OrderToInvoice,
+            ct);
 
-        return factura;
+        if (alreadyInvoiced)
+            return Result<bool>.Failure("Sales order was already invoiced.");
+
+        var relation = DocumentRelation.Create(
+            _idGenerator.NextId(),
+            Guid.NewGuid(),
+            subscriberId,
+            companyId,
+            DocumentModules.CommercialSalesOrder,
+            linkedOrder.Id,
+            DocumentModules.FiscalInvoice,
+            invoiceId,
+            DocumentRelationTypes.OrderToInvoice,
+            userId);
+
+        await _documentRelationRepository.AddAsync(relation, ct);
+        await _documentRelationRepository.SaveChangesAsync(ct);
+
+        await _salesOrderRepository.MarkInvoicedAsync(
+            linkedOrder.Id,
+            subscriberId,
+            userId,
+            _idGenerator,
+            ct);
+        await _salesOrderRepository.SaveChangesAsync(ct);
+
+        return Result<bool>.Success(true);
     }
+
+    private static string MapBuyerIdType(string identificationType) => identificationType switch
+    {
+        TaxIdentification.TypeRuc => "04",
+        TaxIdentification.TypeCi => "05",
+        TaxIdentification.TypePassport => "06",
+        _ => "07",
+    };
 
     private static string CapturarSecuencialComoString(SriSettings config)
     {

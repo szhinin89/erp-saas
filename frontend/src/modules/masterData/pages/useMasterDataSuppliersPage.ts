@@ -32,7 +32,6 @@ export function useMasterDataSuppliersPage() {
   const [supplierProfileBp, setSupplierProfileBp]   = useState<BusinessPartnerDto | null>(null);
   const [saving, setSaving]                         = useState(false);
 
-  const [listError, setListError]     = useState<string | null>(null);
   const [inlineError, setInlineError] = useState<string | null>(null);
   const [modalError, setModalError]   = useState<string | null>(null);
 
@@ -224,7 +223,7 @@ export function useMasterDataSuppliersPage() {
     totalPages,
     suppliers,
     loading:     listState.loading,
-    listError:   listState.error ?? listError,
+    listError:   listState.error,
     inlineError,
     modalError,
     modalOpen,

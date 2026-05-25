@@ -6,6 +6,7 @@ using QuestPDF.Infrastructure;
 using ERP.Application.Common.Interfaces;
 using ERP.Domain.Configuration.Entities;
 using ERP.Domain.MasterData.Entities;
+using ERP.Domain.Modules.Fiscal.Entities;
 using ERP.Domain.Modules.Sales.Entities;
 using ERP.Infrastructure.Persistence;
 
@@ -43,10 +44,11 @@ public sealed class RideGeneratorService : IRideGeneratorService
 
     public async Task<byte[]> GenerateFacturaPdfAsync(Guid salesBillId, CancellationToken ct = default)
     {
-        var factura = await _db.Set<SalesBill>()
+        var factura = await _db.FiscalInvoices
             .AsNoTracking()
             .Include(f => f.Lines)
-            .FirstOrDefaultAsync(f => f.Id == salesBillId, ct)
+            .Include(f => f.Electronic)
+            .FirstOrDefaultAsync(f => f.PublicId == salesBillId, ct)
             ?? throw new KeyNotFoundException($"Factura {salesBillId} no encontrada.");
 
         var buyer = await _db.Set<BusinessPartner>()
@@ -55,10 +57,11 @@ public sealed class RideGeneratorService : IRideGeneratorService
 
         var cfg      = await LoadBillingSettings(factura.SubscriberId, ct);
         var esPrueba = IsAmbientePrueba(factura.AccessKey);
+        var snapshot = ToRideSnapshot(factura);
 
-        _logger.LogDebug("[RIDE] Generando PDF factura {Id} ({Doc})", factura.Id, factura.AccessKey);
+        _logger.LogDebug("[RIDE] Generando PDF factura {Id} ({Doc})", factura.PublicId, factura.AccessKey);
 
-        return BuildFacturaPdf(factura, buyer, cfg, esPrueba);
+        return BuildFacturaPdf(snapshot, buyer, cfg, esPrueba);
     }
 
     public async Task<byte[]> GenerateNotaPdfAsync(Guid salesNoteId, CancellationToken ct = default)
@@ -87,7 +90,7 @@ public sealed class RideGeneratorService : IRideGeneratorService
 
     // ── Generadores QuestPDF ──────────────────────────────────────────────────
 
-    private byte[] BuildFacturaPdf(SalesBill f, BusinessPartner? buyer, BillingSettings cfg, bool esPrueba)
+    private byte[] BuildFacturaPdf(RideFacturaSnapshot f, BusinessPartner? buyer, BillingSettings cfg, bool esPrueba)
     {
         var lines   = f.Lines.ToList();
         var numDoc  = $"{f.EstabCode}-{f.EmPointCode}-{f.Sequential.PadLeft(9, '0')}";
@@ -238,7 +241,7 @@ public sealed class RideGeneratorService : IRideGeneratorService
                         CellText(table, bg, l.Description,               false, 7.5f);
                         CellText(table, bg, $"{l.Quantity:N4}",          true,  7.5f);
                         CellText(table, bg, $"{l.UnitPrice:N4}",         true,  7.5f);
-                        CellText(table, bg, "0.00",                      true,  7.5f);
+                        CellText(table, bg, $"{l.DiscountAmount:N2}",    true,  7.5f);
                         CellText(table, bg, $"{vatPct:N0}%",             true,  7.5f);
                         CellText(table, bg, $"{l.Total:N2}",             true,  7.5f);
                     }
@@ -509,4 +512,51 @@ public sealed class RideGeneratorService : IRideGeneratorService
 
         return cfg ?? BillingSettings.CreateDefault(subscriberId, Guid.Empty);
     }
+
+    private static RideFacturaSnapshot ToRideSnapshot(Invoice invoice) =>
+        new(
+            invoice.PublicId,
+            invoice.EstabCode,
+            invoice.EmPointCode,
+            invoice.Sequential,
+            invoice.AccessKey,
+            invoice.IssueDate,
+            invoice.Electronic?.AuthorizationNumber,
+            invoice.Electronic?.AuthorizationDate,
+            invoice.Subtotal,
+            invoice.TaxTotal,
+            invoice.Total,
+            invoice.Lines.Select(l => new RideFacturaLine(
+                l.ProductId,
+                l.DescriptionSnapshot,
+                l.Quantity,
+                l.UnitPriceSnapshot,
+                l.DiscountAmount,
+                l.LineSubtotal,
+                l.LineTax,
+                l.LineTotal)).ToList());
+
+    private sealed record RideFacturaSnapshot(
+        Guid PublicId,
+        string EstabCode,
+        string EmPointCode,
+        string Sequential,
+        string AccessKey,
+        DateTime IssueDate,
+        string? AuthNumber,
+        DateTime? AuthDate,
+        decimal Subtotal,
+        decimal VatTotal,
+        decimal Total,
+        IReadOnlyList<RideFacturaLine> Lines);
+
+    private sealed record RideFacturaLine(
+        Guid ProductId,
+        string Description,
+        decimal Quantity,
+        decimal UnitPrice,
+        decimal DiscountAmount,
+        decimal Subtotal,
+        decimal VatTotal,
+        decimal Total);
 }

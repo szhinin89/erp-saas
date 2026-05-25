@@ -1,29 +1,29 @@
 using MediatR;
 using ERP.Application.Common;
+using ERP.Application.Modules.Fiscal.Mapping;
 using ERP.Application.Sales.DTOs;
-using ERP.Domain.Modules.Sales.Entities;
-using ERP.Domain.Modules.Sales.Interfaces;
+using ERP.Domain.Modules.Fiscal.Interfaces;
 
 namespace ERP.Application.Sales.UseCases.GetVentasList;
 
 public sealed class GetSalesListQueryHandler
     : IRequestHandler<GetSalesListQuery, Result<SalesPagedResult>>
 {
-    private readonly ISalesRepository _ventasRepository;
-    private readonly ICurrentSubscriber    _currentSubscriber;
+    private readonly IInvoiceRepository _invoiceRepository;
+    private readonly ICurrentSubscriber _currentSubscriber;
 
-    public GetSalesListQueryHandler(ISalesRepository ventasRepository, ICurrentSubscriber currentSubscriber)
+    public GetSalesListQueryHandler(IInvoiceRepository invoiceRepository, ICurrentSubscriber currentSubscriber)
     {
-        _ventasRepository = ventasRepository;
-        _currentSubscriber    = currentSubscriber;
+        _invoiceRepository = invoiceRepository;
+        _currentSubscriber = currentSubscriber;
     }
 
     public async Task<Result<SalesPagedResult>> Handle(GetSalesListQuery query, CancellationToken ct)
     {
         var pageNumber = Math.Max(1, query.PageNumber);
-        var pageSize   = Math.Clamp(query.PageSize, 1, 100);
+        var pageSize = Math.Clamp(query.PageSize, 1, 100);
 
-        var (items, totalCount) = await _ventasRepository.GetBillsPagedAsync(
+        var (items, totalCount) = await _invoiceRepository.GetPagedAsync(
             _currentSubscriber.SubscriberId,
             pageNumber,
             pageSize,
@@ -34,28 +34,7 @@ public sealed class GetSalesListQueryHandler
             query.Search,
             ct);
 
-        var dtos = items.Select(ToDto).ToList();
+        var dtos = items.Select(i => InvoiceDtoMapper.ToListDto(i)).ToList();
         return Result<SalesPagedResult>.Success(new SalesPagedResult(dtos, totalCount, pageNumber, pageSize));
     }
-
-    private static SalesBillDto ToDto(SalesBill f) => new(
-        f.Id,
-        f.BusinessPartnerId,
-        f.BusinessPartnerId.ToString(),
-        f.WarehouseId,
-        f.BranchId,
-        f.EstabCode,
-        f.EmPointCode,
-        f.Sequential,
-        f.AccessKey,
-        f.IssueDate,
-        f.Subtotal,
-        f.VatTotal,
-        f.Total,
-        f.Status,
-        f.AuthNumber,
-        f.AuthDate,
-        f.ErrorMessage,
-        f.JournalEntryId,
-        f.CreatedAt);
 }

@@ -55,7 +55,7 @@ export const businessPartnerSchema = z
       .string()
       .optional()
       .refine(
-        (v) => !v || /^[0-9\s\+\-\(\)]{7,20}$/.test(v),
+        (v) => !v || /^[0-9\s+\-()]{7,20}$/.test(v),
         'Teléfono inválido (7–20 dígitos).',
       ),
   })

@@ -1,5 +1,6 @@
 using FluentAssertions;
 using MediatR;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using ERP.API.Tests.Support;
 using ERP.Application.Sales.UseCases.AnularFactura;
@@ -7,6 +8,7 @@ using ERP.Application.Sales.UseCases.CrearVenta;
 using ERP.Application.Sales.UseCases.EmitirFacturaElectronica;
 using ERP.Application.Sales.UseCases.GetVentaById;
 using ERP.Application.Sales.UseCases.ValidarVenta;
+using ERP.Domain.Modules.Fiscal.Entities;
 using ERP.Domain.Modules.Inventory.Enums;
 using ERP.Infrastructure.Persistence;
 
@@ -51,25 +53,25 @@ public sealed class VentasEndToEndTests
         crear.IsSuccess.Should().BeTrue(crear.Error);
 
         var ventaId = crear.Value;
-        var facturaInicial = db.SalesBills.Find(ventaId)!;
-        facturaInicial.Status.Should().Be("Borrador");
+        var facturaInicial = VentasEndToEndHelpers.RequireInvoice(db, ventaId);
+        facturaInicial.Status.Should().Be(Invoice.Statuses.Draft);
         facturaInicial.AccessKey.Should().HaveLength(49);
         facturaInicial.Sequential.Should().Be("000000001");
 
         // 2. Validar
         var validar = await mediator.Send(new ValidateSaleCommand(ventaId), CancellationToken.None);
         validar.IsSuccess.Should().BeTrue(validar.Error);
-        db.SalesBills.Find(ventaId)!.Status.Should().Be("Validado");
+        VentasEndToEndHelpers.RequireInvoice(db, ventaId).Status.Should().Be(Invoice.Statuses.Validated);
 
         // 3. Emitir al SRI (simulado)
         var emitir = await mediator.Send(new IssueElectronicInvoiceCommand(ventaId), CancellationToken.None);
         emitir.IsSuccess.Should().BeTrue(emitir.Error);
 
-        db.Entry(db.SalesBills.Find(ventaId)!).Reload();
-        var factura = db.SalesBills.Find(ventaId)!;
-        factura.Status.Should().Be("Autorizado");
-        factura.AuthNumber.Should().NotBeNullOrEmpty();
-        factura.AuthDate.Should().NotBeNull();
+        db.ChangeTracker.Clear();
+        var factura = VentasEndToEndHelpers.RequireInvoice(db, ventaId);
+        factura.Status.Should().Be(Invoice.Statuses.Authorized);
+        factura.Electronic!.AuthorizationNumber.Should().NotBeNullOrEmpty();
+        factura.Electronic.AuthorizationDate.Should().NotBeNull();
         factura.JournalEntryId.Should().NotBeNull("el asiento contable debe haberse creado");
 
         // 4. Consultar detalle via query
@@ -142,7 +144,7 @@ public sealed class VentasEndToEndTests
 
         var anular = await mediator.Send(new VoidInvoiceCommand(crear.Value), CancellationToken.None);
         anular.IsSuccess.Should().BeTrue(anular.Error);
-        db.SalesBills.Find(crear.Value)!.Status.Should().Be("Anulado");
+        VentasEndToEndHelpers.RequireInvoice(db, crear.Value).Status.Should().Be(Invoice.Statuses.Voided);
 
         // Doble anulaciÃ³n debe fallar
         var anular2 = await mediator.Send(new VoidInvoiceCommand(crear.Value), CancellationToken.None);

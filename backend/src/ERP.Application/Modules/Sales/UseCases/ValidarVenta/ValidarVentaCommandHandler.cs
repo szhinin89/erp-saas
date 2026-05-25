@@ -3,79 +3,75 @@ using Microsoft.Extensions.Logging;
 using ERP.Application.Common;
 using ERP.Domain.Audit.Entities;
 using ERP.Domain.Audit.Interfaces;
-using ERP.Domain.Modules.Sales.Interfaces;
+using ERP.Domain.Modules.Fiscal.Entities;
+using ERP.Domain.Modules.Fiscal.Interfaces;
 
 namespace ERP.Application.Sales.UseCases.ValidarVenta;
 
 public sealed class ValidateSaleCommandHandler : IRequestHandler<ValidateSaleCommand, Result<Guid>>
 {
-    private readonly ISalesRepository    _ventasRepository;
+    private readonly IInvoiceRepository _invoiceRepository;
     private readonly IUserActivityRepository _activity;
-    private readonly ICurrentSubscriber          _currentSubscriber;
-    private readonly ICurrentUser            _currentUser;
-    private readonly IUnitOfWork             _unitOfWork;
+    private readonly ICurrentSubscriber _currentSubscriber;
+    private readonly ICurrentUser _currentUser;
+    private readonly IUnitOfWork _unitOfWork;
     private readonly ILogger<ValidateSaleCommandHandler> _logger;
 
     public ValidateSaleCommandHandler(
-        ISalesRepository ventasRepository,
+        IInvoiceRepository invoiceRepository,
         IUserActivityRepository activity,
         ICurrentSubscriber currentSubscriber,
         ICurrentUser currentUser,
         IUnitOfWork unitOfWork,
         ILogger<ValidateSaleCommandHandler> logger)
     {
-        _ventasRepository = ventasRepository;
-        _activity         = activity;
-        _currentSubscriber    = currentSubscriber;
-        _currentUser      = currentUser;
-        _unitOfWork       = unitOfWork;
-        _logger           = logger;
+        _invoiceRepository = invoiceRepository;
+        _activity = activity;
+        _currentSubscriber = currentSubscriber;
+        _currentUser = currentUser;
+        _unitOfWork = unitOfWork;
+        _logger = logger;
     }
 
     public async Task<Result<Guid>> Handle(ValidateSaleCommand command, CancellationToken ct)
     {
         var subscriberId = _currentSubscriber.SubscriberId;
-        var userId   = _currentUser.UserId;
+        var userId = _currentUser.UserId;
 
         _logger.LogInformation("Validando factura {FacturaId} (tenant={SubscriberId})", command.VentaId, subscriberId);
 
-        var factura = await _ventasRepository.GetBillByIdAsync(subscriberId, command.VentaId, ct);
-        if (factura is null)
+        var invoice = await _invoiceRepository.GetByPublicIdAsync(command.VentaId, ct);
+        if (invoice is null)
             return Result<Guid>.Failure("Factura de venta no encontrada.");
 
-        if (factura.Status != "Borrador")
+        if (invoice.Status != Invoice.Statuses.Draft)
             return Result<Guid>.Failure(
-                $"Solo se puede validar una factura en Borrador (estado actual: {factura.Status}).");
+                $"Solo se puede validar una factura en Borrador (estado actual: {invoice.Status}).");
 
-        if (factura.Lines.Count == 0)
+        if (invoice.Lines.Count == 0)
             return Result<Guid>.Failure("La factura debe tener al menos un detalle.");
 
-        // Verificar consistencia de totales (tolerancia 0.01)
-        var totalCalculado = factura.Subtotal + factura.VatTotal;
-        if (Math.Abs(totalCalculado - factura.Total) > 0.01m)
+        var totalCalculado = invoice.Subtotal + invoice.TaxTotal;
+        if (Math.Abs(totalCalculado - invoice.Total) > 0.01m)
             return Result<Guid>.Failure(
-                $"Los totales no cuadran: Subtotal({factura.Subtotal:F2}) + IVA({factura.VatTotal:F2}) = " +
-                $"{totalCalculado:F2}, pero Total es {factura.Total:F2}.");
+                $"Los totales no cuadran: Subtotal({invoice.Subtotal:F2}) + IVA({invoice.TaxTotal:F2}) = " +
+                $"{totalCalculado:F2}, pero Total es {invoice.Total:F2}.");
 
         await _unitOfWork.BeginTransactionAsync(ct);
         try
         {
-            factura.Validate(userId);
-
-            _logger.LogInformation(
-                "Factura {FacturaId} validada: secuencial={Secuencial}, total={Total}",
-                factura.Id, factura.Sequential, factura.Total);
+            invoice.Validate(userId);
 
             await _activity.AddAsync(UserActivity.Create(
                 subscriberId, userId, _currentUser.Email, _currentUser.FullName,
                 module: "ventas", action: "venta.validar",
-                entityType: "SalesBill", entityId: factura.Id,
-                description: $"{factura.EstabCode}-{factura.EmPointCode}-{factura.Sequential}"), ct);
+                entityType: "Invoice", entityId: invoice.PublicId,
+                description: invoice.InvoiceNumber), ct);
 
             await _unitOfWork.SaveChangesAsync(ct);
             await _unitOfWork.CommitAsync(ct);
 
-            return Result<Guid>.Success(factura.Id);
+            return Result<Guid>.Success(invoice.PublicId);
         }
         catch (Exception ex)
         {

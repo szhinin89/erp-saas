@@ -14,12 +14,14 @@ using ERP.Domain.Access.Entities;
 using ERP.Domain.Branches.Entities;
 using ERP.Domain.Geography.Entities;
 using ERP.Domain.Audit.Entities;
+using ERP.Domain.Modules.Commercial.Entities;
+using ERP.Domain.Modules.Fiscal.Entities;
+using ERP.Domain.Modules.Integration.Entities;
 using ERP.Domain.Modules.Sales.Entities;
 using ERP.Domain.Subscriptions.Entities;
 using ERP.Domain.Modules.Menu.Entities;
 using ERP.Domain.Navigation.Entities;
 using ERP.Domain.Configuration.Entities;
-using ERP.Domain.Modules.Sales.Entities;
 using ERP.Domain.Modules.Inventory.Entities;
 using ERP.Domain.Modules.Purchasing.Entities;
 using ERP.Domain.Modules.Expenses.Entities;
@@ -32,6 +34,7 @@ using ERP.Domain.Modules.Auxiliary.Entities;
 using ERP.Application.Common;
 using ERP.Domain.MasterData.Entities;
 using ERP.Domain.Platform.Audit.Entities;
+using FiscalInvoiceDetail = ERP.Domain.Modules.Fiscal.Entities.InvoiceDetail;
 
 namespace ERP.Infrastructure.Persistence;
 
@@ -283,6 +286,23 @@ public class ErpDbContext : DbContext
     public DbSet<SalesWithholding>     SalesWithholdings     => Set<SalesWithholding>();
     public DbSet<SalesWithholdingLine> SalesWithholdingLines => Set<SalesWithholdingLine>();
 
+    // ── Commercial (greenfield) ───────────────────────────────────────────
+    public DbSet<Quote>               Quotes              => Set<Quote>();
+    public DbSet<QuoteDetail>         QuoteDetails        => Set<QuoteDetail>();
+    public DbSet<QuoteStatusHistory>  QuoteStatusHistories => Set<QuoteStatusHistory>();
+    public DbSet<SalesOrder>          SalesOrders         => Set<SalesOrder>();
+    public DbSet<SalesOrderDetail>    SalesOrderDetails   => Set<SalesOrderDetail>();
+    public DbSet<SalesOrderStatusHistory> SalesOrderStatusHistories => Set<SalesOrderStatusHistory>();
+
+    // ── Integration (greenfield) ────────────────────────────────────────────
+    public DbSet<DocumentRelation>    DocumentRelations   => Set<DocumentRelation>();
+
+    // ── Fiscal (greenfield) ─────────────────────────────────────────────────
+    public DbSet<Invoice>             FiscalInvoices            => Set<Invoice>();
+    public DbSet<FiscalInvoiceDetail> FiscalInvoiceDetails      => Set<FiscalInvoiceDetail>();
+    public DbSet<InvoiceStatusHistory> FiscalInvoiceStatusHistories => Set<InvoiceStatusHistory>();
+    public DbSet<InvoiceElectronic>   FiscalInvoiceElectronics  => Set<InvoiceElectronic>();
+
     // ── Configuration ─────────────────────────────────────────────────────
     public DbSet<SriSettings>       SriSettings       => Set<SriSettings>();
     public DbSet<RetentionSettings> RetentionSettings => Set<RetentionSettings>();
@@ -391,7 +411,7 @@ public class ErpDbContext : DbContext
     public DbSet<DeliveryGuide>       DeliveryGuides       => Set<DeliveryGuide>();
     public DbSet<WithholdingCertificate> WithholdingCertificates => Set<WithholdingCertificate>();
     public DbSet<PurchaseSettlement>  PurchaseSettlements  => Set<PurchaseSettlement>();
-    public DbSet<InvoiceDetail>       InvoiceDetails       => Set<InvoiceDetail>();
+    public DbSet<ERP.Domain.Modules.ElectronicDocuments.Entities.InvoiceDetail> InvoiceDetails => Set<ERP.Domain.Modules.ElectronicDocuments.Entities.InvoiceDetail>();
     public DbSet<NoteDetail>          NoteDetails          => Set<NoteDetail>();
     public DbSet<DeliveryDetail>      DeliveryDetails      => Set<DeliveryDetail>();
     public DbSet<WithholdingDetail>   WithholdingDetails   => Set<WithholdingDetail>();

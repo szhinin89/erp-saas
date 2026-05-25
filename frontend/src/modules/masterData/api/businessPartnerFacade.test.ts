@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { mapBusinessPartnerToLegacyCustomer } from '../adapters/businessPartnerCustomerAdapter';
+import { mapBusinessPartnerToCustomerPickerRow } from '../adapters/businessPartnerCustomerAdapter';
 import type { BusinessPartnerDto } from '../types/businessPartner.types';
 
 describe('businessPartnerCustomerAdapter', () => {
-  it('uses legacy customer id when provided', () => {
+  it('maps business partner to customer picker row', () => {
     const bp: BusinessPartnerDto = {
       id: 'bp-1',
       legalName: 'ACME',
@@ -13,8 +13,8 @@ describe('businessPartnerCustomerAdapter', () => {
       isSupplier: false,
       isActive: true,
     };
-    const mapped = mapBusinessPartnerToLegacyCustomer(bp, 'legacy-99');
-    expect(mapped.id).toBe('legacy-99');
+    const mapped = mapBusinessPartnerToCustomerPickerRow(bp);
+    expect(mapped.id).toBe('bp-1');
     expect(mapped.fullName).toBe('ACME');
   });
 });

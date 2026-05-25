@@ -12,7 +12,8 @@ public record CreateSaleCommand(
     List<SaleItemDto> Items,
     string           PaymentMethodCode = "01",
     short            PaymentDays       = 0,
-    string?          Notes             = null
+    string?          Notes             = null,
+    Guid?            SalesOrderPublicId = null
 ) : IRequest<Result<Guid>>, ICompanyScopedRequest;
 
 public record SaleItemDto(

@@ -30,6 +30,7 @@ export function CreditNotesPage() {
   const navigate  = useNavigate();
   const canView   = canShow('sales.credit-notes.view');
   const canCreate = canShow('sales.credit-notes.create');
+  const canSend   = canShow('sales.credit-notes.send');
 
   const [rows,      setRows]      = useState<SalesNoteDto[]>([]);
   const [loading,   setLoading]   = useState(true);
@@ -76,7 +77,7 @@ export function CreditNotesPage() {
       await creditNotesService.send(id);
       await load();
     } catch (e) {
-      setSendError(e instanceof Error ? e.message : 'Error al enviar al SRI');
+      setSendError(e instanceof Error ? e.message : t('ventas.notas.sendError'));
     } finally {
       setSendingId(null);
     }
@@ -88,7 +89,7 @@ export function CreditNotesPage() {
     <ErpPageTemplate
       kicker={t('app.nav.group.sales')}
       title={t('ventas.notas.title')}
-      subtitle="Notas de crédito y débito emitidas sobre facturas autorizadas."
+      subtitle={t('ventas.notas.subtitle')}
       action={
         <>
           <button
@@ -98,7 +99,7 @@ export function CreditNotesPage() {
             onClick={() => void load()}
           >
             <span className="material-symbols-outlined">refresh</span>
-            Actualizar
+            {t('ventas.notas.refresh')}
           </button>
           {canCreate && (
             <button
@@ -113,27 +114,24 @@ export function CreditNotesPage() {
         </>
       }
     >
-      {/* ── Alerts ── */}
-      {error     && <ZHPageNotice variant="error" message="Error al cargar" detail={error} />}
-      {sendError && <ZHPageNotice variant="error" message="Error al enviar" detail={sendError} />}
+      {error     && <ZHPageNotice variant="error" message={t('ventas.notas.loadError')} detail={error} />}
+      {sendError && <ZHPageNotice variant="error" message={t('ventas.notas.sendError')} detail={sendError} />}
 
-      {/* ── Table Card ── */}
       <div className="pg-section">
         <div className="pg-section-header">
           <div className="pg-section-header-left">
             <span className="material-symbols-outlined pg-section-icon">description</span>
-            <span className="pg-section-label">Comprobantes emitidos</span>
+            <span className="pg-section-label">{t('ventas.notas.sectionTitle')}</span>
           </div>
         </div>
 
-        {/* Controls */}
         <div className="pg-table-controls">
           <div className="pg-table-controls-left">
             <div className="pg-search">
               <span className="material-symbols-outlined">search</span>
               <input
                 type="text"
-                placeholder="Buscar por clave de acceso..."
+                placeholder={t('ventas.notas.searchPlaceholder')}
                 value={q}
                 onChange={(e) => setQ(e.target.value)}
                 disabled={loading}
@@ -143,41 +141,45 @@ export function CreditNotesPage() {
               className={`zh-btn zh-btn--ghost zh-btn--sm${typeFilter === 'all' ? ' is-active' : ''}`}
               type="button"
               onClick={() => setTypeFilter('all')}
-            >Todos</button>
+            >
+              {t('ventas.notas.filter.all')}
+            </button>
             <button
               className={`zh-btn zh-btn--ghost zh-btn--sm${typeFilter === 'CREDITO' ? ' is-active' : ''}`}
               type="button"
               onClick={() => setTypeFilter('CREDITO')}
-            >Crédito</button>
+            >
+              {t('ventas.notas.filter.credit')}
+            </button>
             <button
               className={`zh-btn zh-btn--ghost zh-btn--sm${typeFilter === 'DEBITO' ? ' is-active' : ''}`}
               type="button"
               onClick={() => setTypeFilter('DEBITO')}
-            >Débito</button>
+            >
+              {t('ventas.notas.filter.debit')}
+            </button>
           </div>
           <div className="pg-table-controls-right">
-            <span>Mostrando {filtered.length} de {rows.length}</span>
+            <span>{t('ventas.notas.showing', { shown: filtered.length, total: rows.length })}</span>
           </div>
         </div>
 
-        {/* Table */}
         {loading ? (
           <div className="pg-pad-40"><LoadingState /></div>
         ) : rows.length === 0 ? (
-          <div className="pg-pad-40"><EmptyState message="No hay notas emitidas." /></div>
+          <div className="pg-pad-40"><EmptyState message={t('ventas.notas.empty')} /></div>
         ) : filtered.length === 0 ? (
-          <div className="pg-pad-40"><EmptyState message="Sin resultados para los filtros aplicados." /></div>
+          <div className="pg-pad-40"><EmptyState message={t('ventas.notas.noMatch')} /></div>
         ) : (
           <div className="pg-overflow-x">
             <table className="table">
               <thead>
                 <tr>
-                  <th>Tipo</th>
-                  <th>Clave de acceso</th>
-                  <th>Estado</th>
-                  <th className="cn-col-right">Total</th>
-                  <th>Fecha</th>
-                  <th>Acciones</th>
+                  <th>{t('ventas.notas.col.type')}</th>
+                  <th>{t('ventas.notas.col.accessKey')}</th>
+                  <th>{t('ventas.notas.col.status')}</th>
+                  <th className="cn-col-right">{t('ventas.notas.col.total')}</th>
+                  <th className="cn-col-right">{t('ventas.notas.col.actions')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -185,23 +187,19 @@ export function CreditNotesPage() {
                   const isBorrador = row.status.toLowerCase() === 'borrador';
                   return (
                     <tr key={row.id}>
-                      <td className="cn-col-type">{noteTypeLabel(row.noteType, t)}</td>
-                      <td className="cn-col-key" title={row.accessKey}>{row.accessKey || '—'}</td>
-                      <td>
-                        <span className={getStatusBadge(row.status)}>{row.status}</span>
-                      </td>
-                      <td className="cn-col-total">${row.total.toFixed(2)}</td>
-                      <td>{new Date(row.issueDate).toLocaleDateString('es')}</td>
-                      <td className="cn-cell-actions">
-                        {isBorrador && (
+                      <td>{noteTypeLabel(row.noteType, t)}</td>
+                      <td className="mono">{row.accessKey || '—'}</td>
+                      <td><span className={getStatusBadge(row.status)}>{row.status}</span></td>
+                      <td className="cn-col-right">${row.total.toFixed(2)}</td>
+                      <td className="cn-col-right">
+                        {isBorrador && canSend && (
                           <button
-                            className="zh-btn zh-btn--primary zh-btn--sm"
+                            className="zh-btn zh-btn--ghost zh-btn--sm"
                             type="button"
                             disabled={sendingId === row.id}
                             onClick={() => void onSend(row.id)}
                           >
-                            <span className="material-symbols-outlined">send</span>
-                            {sendingId === row.id ? 'Enviando...' : t('ventas.notas.send')}
+                            {t('ventas.notas.send')}
                           </button>
                         )}
                       </td>

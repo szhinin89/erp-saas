@@ -8,7 +8,7 @@ public class InvoiceDetailConfiguration : IEntityTypeConfiguration<InvoiceDetail
 {
     public void Configure(EntityTypeBuilder<InvoiceDetail> builder)
     {
-        builder.ToTable("invoice_detail");
+        builder.ToTable("edoc_invoice_detail");
         builder.HasKey(x => x.Id);
         builder.Property(x => x.Id).HasColumnName("id").HasDefaultValueSql("gen_random_uuid()");
         builder.Property(x => x.DocId).HasColumnName("doc_id").IsRequired();

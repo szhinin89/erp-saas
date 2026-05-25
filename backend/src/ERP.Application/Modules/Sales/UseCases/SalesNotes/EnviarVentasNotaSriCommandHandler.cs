@@ -1,6 +1,7 @@
 using System.Text;
 using MediatR;
 using Microsoft.Extensions.Logging;
+using ERP.Application.Modules.Fiscal.Integration;
 using ERP.Application.Common;
 using ERP.Application.Common.Exceptions;
 using ERP.Application.Common.Interfaces;
@@ -16,6 +17,7 @@ namespace ERP.Application.Sales.UseCases.Notas;
 public sealed class EnviarSalesNotesriCommandHandler : IRequestHandler<SendSalesNoteSriCommand, Result<Guid>>
 {
     private readonly ISalesRepository             _ventasRepository;
+    private readonly ISalesOriginalBillResolver   _originalBillResolver;
     private readonly ISriSettingsRepository _configSriRepository;
     private readonly ISriFacturaElectronicaService _sriService;
     private readonly IFileStorage                _fileStorage;
@@ -30,6 +32,7 @@ public sealed class EnviarSalesNotesriCommandHandler : IRequestHandler<SendSales
 
     public EnviarSalesNotesriCommandHandler(
         ISalesRepository ventasRepository,
+        ISalesOriginalBillResolver originalBillResolver,
         ISriSettingsRepository configSriRepository,
         ISriFacturaElectronicaService sriService,
         IFileStorage fileStorage,
@@ -43,6 +46,7 @@ public sealed class EnviarSalesNotesriCommandHandler : IRequestHandler<SendSales
         ILogger<EnviarSalesNotesriCommandHandler> logger)
     {
         _ventasRepository    = ventasRepository;
+        _originalBillResolver  = originalBillResolver;
         _configSriRepository = configSriRepository;
         _sriService          = sriService;
         _fileStorage         = fileStorage;
@@ -107,7 +111,11 @@ public sealed class EnviarSalesNotesriCommandHandler : IRequestHandler<SendSales
             return Result<(ERP.Domain.Modules.Sales.Entities.SalesNote, ERP.Domain.Modules.Sales.Entities.SalesBill, ERP.Domain.Configuration.Entities.SriSettings, List<ERP.Domain.Modules.Sales.Entities.SalesNoteLine>)>.Failure(
                 $"La nota debe estar Validated para enviar (estado: {nota.Status}).");
 
-        var facturaOriginal = nota.OriginalBill;
+        var facturaOriginal = await _originalBillResolver.ResolveAsync(subscriberId, nota.OriginalBillId, ct);
+        if (facturaOriginal is null)
+            return Result<(ERP.Domain.Modules.Sales.Entities.SalesNote, ERP.Domain.Modules.Sales.Entities.SalesBill, ERP.Domain.Configuration.Entities.SriSettings, List<ERP.Domain.Modules.Sales.Entities.SalesNoteLine>)>.Failure(
+                "Factura original no encontrada.");
+
         if (facturaOriginal.Status != "Autorizado")
             return Result<(ERP.Domain.Modules.Sales.Entities.SalesNote, ERP.Domain.Modules.Sales.Entities.SalesBill, ERP.Domain.Configuration.Entities.SriSettings, List<ERP.Domain.Modules.Sales.Entities.SalesNoteLine>)>.Failure(
                 "La factura original debe permanecer autorizada.");

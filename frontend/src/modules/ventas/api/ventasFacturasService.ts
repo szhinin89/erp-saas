@@ -1,5 +1,9 @@
 import { api } from '../../lib/api';
 import type { ApiResponse } from '../../../types/api';
+import {
+  mapSalesBillDetailToVentasFactura,
+  mapSalesPagedResult,
+} from './ventasFacturasMapper';
 
 export interface VentasFacturaDto {
   id: string;
@@ -24,11 +28,39 @@ export interface VentasFacturaDto {
   createdAt: string;
 }
 
+export interface VentasFacturaLineDto {
+  id: string;
+  productId: string;
+  description: string;
+  quantity: number;
+  unitPrice: number;
+  subtotal: number;
+  vatTotal: number;
+  total: number;
+}
+
+export interface VentasFacturaDetailDto extends VentasFacturaDto {
+  docType: string;
+  xmlSignedPath: string | null;
+  xmlAuthPath: string | null;
+  lines: VentasFacturaLineDto[];
+}
+
 export interface VentasPagedResult {
   items: VentasFacturaDto[];
   totalCount: number;
   pageNumber: number;
   pageSize: number;
+}
+
+export interface VentasFacturasFilter {
+  pageNumber?: number;
+  pageSize?: number;
+  clienteId?: string;
+  desde?: string;
+  hasta?: string;
+  estado?: string;
+  search?: string;
 }
 
 export interface CreateSaleItemDto {
@@ -54,6 +86,7 @@ export interface StockDisponibleDto {
 }
 
 function readId(body: unknown): string {
+  if (typeof body === 'string') return body;
   if (body && typeof body === 'object') {
     const o = body as Record<string, unknown>;
     if ('responseObject' in o && typeof o.responseObject === 'string') return o.responseObject;
@@ -63,14 +96,37 @@ function readId(body: unknown): string {
 }
 
 export const ventasFacturasService = {
-  async list(params: { pageNumber?: number; pageSize?: number } = {}): Promise<VentasPagedResult> {
+  async list(params: VentasFacturasFilter = {}): Promise<VentasPagedResult> {
     const pageNumber = params.pageNumber ?? 1;
     const pageSize = params.pageSize ?? 50;
     const q = new URLSearchParams();
     q.set('pageNumber', String(pageNumber));
     q.set('pageSize', String(pageSize));
-    const res = await api.get<ApiResponse<VentasPagedResult>>(`/api/sales/invoices?${q.toString()}`);
-    return res.data.responseObject ?? { items: [], totalCount: 0, pageNumber, pageSize };
+    if (params.clienteId) q.set('clienteId', params.clienteId);
+    if (params.desde) q.set('desde', params.desde);
+    if (params.hasta) q.set('hasta', params.hasta);
+    if (params.estado) q.set('estado', params.estado);
+    if (params.search) q.set('search', params.search);
+
+    const res = await api.get<ApiResponse<{ items: unknown[]; totalCount: number; pageNumber: number; pageSize: number }>>(
+      `/api/sales/invoices?${q.toString()}`
+    );
+    const raw = res.data.responseObject;
+    return raw
+      ? mapSalesPagedResult(raw as Parameters<typeof mapSalesPagedResult>[0])
+      : { items: [], totalCount: 0, pageNumber, pageSize };
+  },
+
+  async getById(id: string): Promise<VentasFacturaDetailDto | null> {
+    const res = await api.get<ApiResponse<Record<string, unknown> | null>>(
+      `/api/sales/invoices/${id}`
+    );
+    const raw = res.data.responseObject;
+    return raw
+      ? mapSalesBillDetailToVentasFactura(
+          raw as unknown as Parameters<typeof mapSalesBillDetailToVentasFactura>[0],
+        )
+      : null;
   },
 
   async create(payload: CreateSaleRequest): Promise<string> {

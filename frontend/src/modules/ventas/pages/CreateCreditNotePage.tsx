@@ -45,11 +45,11 @@ export function CreateCreditNotePage() {
   const [saving,    setSaving]      = useState(false);
   const [error,     setError]       = useState<string | null>(null);
 
-  const invoicesState  = useAsync(() => ventasFacturasService.list({ pageSize: 200 }));
+  const invoicesState  = useAsync(() => ventasFacturasService.list({ pageSize: 500, estado: 'Autorizado' }));
   const productsState  = useAsync(() => productService.getAll() as Promise<Product[]>);
 
   const authorizedInvoices = useMemo(
-    () => (invoicesState.data?.items ?? []).filter((i) => i.estado.toLowerCase() === 'autorizado'),
+    () => invoicesState.data?.items ?? [],
     [invoicesState.data],
   );
 

@@ -37,7 +37,7 @@ public sealed class SalesNoteConfiguration : IEntityTypeConfiguration<SalesNote>
         builder.Property(e => e.CreatedBy).HasColumnName("created_by");
         builder.Property(e => e.UpdatedBy).HasColumnName("updated_by");
 
-        builder.HasOne(e => e.OriginalBill).WithMany().HasForeignKey(e => e.OriginalBillId).OnDelete(DeleteBehavior.Restrict);
+        builder.Ignore(e => e.OriginalBill);
         builder.HasMany(e => e.Lines).WithOne().HasForeignKey(d => d.SalesNoteId).OnDelete(DeleteBehavior.Cascade);
 
         builder.HasIndex(e => new { e.SubscriberId, e.EstabCode, e.EmPointCode, e.Sequential }).IsUnique().HasDatabaseName("uq_sales_note_seq");

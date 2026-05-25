@@ -3,8 +3,8 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using ERP.API.Attributes;
 using ERP.API.Contracts;
+using ERP.API.Contracts.Subscribers;
 using ERP.API.Extensions;
-using ERP.Application.Subscribers.UseCases.UpdatePasswordResetMode;
 using ERP.Application.Subscribers.UseCases.UpdateSubscriberSaasProfile;
 using ERP.Application.Subscribers.UseCases.UpdateSubscriberOperationalSettings;
 using ERP.Application.Common;
@@ -15,10 +15,6 @@ using System.Security.Claims;
 
 namespace ERP.API.Controllers;
 
-/// <summary>
-/// ERP Runtime — tenant Admin y endpoints públicos del suscriptor.
-/// Control plane SaaS (operador platform): exclusivamente <c>/api/platform/subscribers</c>.
-/// </summary>
 [ApiController]
 [AppFeature("Tenants API", "perm:subscribers.api", "🧩", null, null, 990, IsVisibleInMenu = false)]
 [Route("api/[controller]")]
@@ -43,12 +39,8 @@ public class SubscribersController : ControllerBase
         _currentSubscriber = currentSubscriber;
     }
 
-    /// <summary>Obtiene el detalle del suscriptor (Admin de la propia cuenta).</summary>
     [HttpGet("{id:guid}")]
-    [Authorize(Policy = "Session")]
     [ProducesResponseType(typeof(ApiResponse<SubscriberDto?>), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status403Forbidden)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetById([FromRoute] Guid id, CancellationToken ct)
     {
         if (!CanAccessOwnSubscriber(id))
@@ -62,17 +54,9 @@ public class SubscribersController : ControllerBase
         return this.ApiOk(SubscriberDto.FromTenant(tenant, modules));
     }
 
-    /// <summary>Actualiza datos comerciales/legales (Admin de la propia cuenta).</summary>
     [HttpPatch("{id:guid}/company")]
-    [Authorize(Policy = "Session")]
     [ProducesResponseType(typeof(ApiResponse<SubscriberDto?>), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(StatusCodes.Status403Forbidden)]
-    [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
-    public async Task<IActionResult> UpdateCompany(
-        [FromRoute] Guid id,
-        [FromBody] UpdateSubscriberCompanyRequest body,
-        CancellationToken ct)
+    public async Task<IActionResult> UpdateCompany([FromRoute] Guid id, [FromBody] UpdateSubscriberCompanyRequest body, CancellationToken ct)
     {
         if (!CanAccessOwnSubscriber(id))
             return Forbid();
@@ -85,53 +69,8 @@ public class SubscribersController : ControllerBase
         return this.ToOkOrBadRequest(result);
     }
 
-    /// <summary>Retorna configuración pública mínima del tenant (sin datos sensibles).</summary>
-    [HttpGet("{id:guid}/public-settings")]
-    [AllowAnonymous]
-    [ProducesResponseType(typeof(ApiResponse<SubscriberPublicSettingsDto?>), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> GetPublicSettings([FromRoute] Guid id, CancellationToken ct)
-    {
-        var tenant = await _subscriberRepository.GetByIdAsync(id, ct);
-        if (tenant is null || !tenant.IsActive)
-            return this.ApiNotFound("Empresa no encontrada.");
-
-        return this.ApiOk(new SubscriberPublicSettingsDto(tenant.Id, (int)tenant.PasswordResetMode));
-    }
-
-    /// <summary>Actualiza el modo de recuperación de contraseña del tenant.</summary>
-    [HttpPatch("{id:guid}/password-reset-mode")]
-    [Authorize(Roles = "Admin")]
-    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    [ProducesResponseType(StatusCodes.Status403Forbidden)]
-    [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
-    public async Task<IActionResult> UpdatePasswordResetMode(
-        [FromRoute] Guid id,
-        [FromBody] UpdateSubscriberPasswordResetModeCommand command,
-        CancellationToken ct)
-    {
-        if (id != command.SubscriberId)
-            return this.ApiBadRequest("SubscriberId no coincide con la ruta.");
-
-        var result = await _mediator.Send(command, ct);
-        return result.IsSuccess
-            ? this.ApiOk(new { })
-            : this.ApiBadRequest(result.Error ?? "Error");
-    }
-
-    /// <summary>
-    /// Actualiza parámetros operativos: moneda, idioma, zona horaria, prefijo de factura y días de crédito.
-    /// Accesible por el Admin de la propia cuenta.
-    /// </summary>
     [HttpPatch("{id:guid}/operational-settings")]
-    [Authorize(Policy = "Session")]
     [ProducesResponseType(typeof(ApiResponse<SubscriberDto?>), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    [ProducesResponseType(StatusCodes.Status403Forbidden)]
-    [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
     public async Task<IActionResult> UpdateOperationalSettings(
         [FromRoute] Guid id,
         [FromBody] UpdateSubscriberOperationalSettingsRequest body,
@@ -160,26 +99,4 @@ public class SubscribersController : ControllerBase
 
         return _currentSubscriber.SubscriberId == subscriberId;
     }
-}
-
-public sealed class UpdateSubscriberCompanyRequest
-{
-    public string Name { get; set; } = "";
-    public string Slug { get; set; } = "";
-    public string? Ruc { get; set; }
-    public string? ShortName { get; set; }
-    public string? TradeName { get; set; }
-    public string? Dinardap { get; set; }
-    public string? LogoUrl { get; set; }
-    public int DisplayOrder { get; set; }
-    public int Priority { get; set; }
-}
-
-public sealed class UpdateSubscriberOperationalSettingsRequest
-{
-    public string Currency          { get; set; } = "USD";
-    public string Language          { get; set; } = "es";
-    public string Timezone          { get; set; } = "America/Guayaquil";
-    public string? InvoicePrefix    { get; set; }
-    public int DefaultCreditDays    { get; set; } = 30;
 }

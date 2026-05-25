@@ -47,12 +47,18 @@ export function readPlatformPanelEnabled(obj: Record<string, unknown> | undefine
   return true;
 }
 
-export function readsRequirePlatformPanel(group: Record<string, unknown> | undefined): boolean {
+interface PlatformPanelNavGroup {
+  requirePlatformPanel?: boolean;
+  requireSuperAdminPanel?: boolean;
+}
+
+export function readsRequirePlatformPanel(group: PlatformPanelNavGroup | undefined): boolean {
   if (!group) return false;
-  if (typeof group[NAV_API_PLATFORM_PANEL_FLAG] === 'boolean') {
-    return group[NAV_API_PLATFORM_PANEL_FLAG] as boolean;
+  if (typeof group.requirePlatformPanel === 'boolean') {
+    return group.requirePlatformPanel;
   }
-  const legacy = group[LEGACY_WIRE.navRequirePanelFlag];
-  if (typeof legacy === 'boolean') return legacy;
+  if (typeof group.requireSuperAdminPanel === 'boolean') {
+    return group.requireSuperAdminPanel;
+  }
   return false;
 }

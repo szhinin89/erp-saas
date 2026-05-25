@@ -1,5 +1,4 @@
-﻿using System.Globalization;
-using MediatR;
+﻿using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using ERP.API.Contracts;
@@ -10,21 +9,11 @@ using ERP.Application.Modules.Accounting.UseCases.EnableAccount;
 using ERP.Application.Modules.Accounting.UseCases.GetAccounts;
 using ERP.Application.Modules.Accounting.UseCases.GetAccountById;
 using ERP.Application.Modules.Accounting.UseCases.UpdateAccount;
-using ERP.Application.Modules.Accounting.UseCases.VoidJournalEntry;
-using CreateJournalEntryCommand = ERP.Application.Modules.Accounting.UseCases.CreateJournalEntry.CreateJournalEntryCommand;
-using ERP.Application.Modules.Accounting.UseCases.GetJournalEntries;
-using ERP.Application.Modules.Accounting.UseCases.GetJournalEntryById;
 using ERP.Application.Modules.Accounting.DTOs;
 using ERP.API.Attributes;
-using ERP.Application.Modules.Accounting.UseCases.GetMayorGeneral;
-using ERP.Application.Modules.Accounting.UseCases.GetBalanceComprobacion;
 
 namespace ERP.API.Controllers;
 
-/// <summary>
-/// Módulo de contabilidad: plan de cuentas y asientos contables del tenant autenticado.
-/// Todos los endpoints filtran automáticamente por el tenant del JWT.
-/// </summary>
 [AppFeature("Contabilidad", "perm:finance.accounts.view", "📒", "/finance/accounts", null, 20)]
 [ApiController]
 [Route("api/finance/accounts")]
@@ -34,20 +23,11 @@ public class AccountsController : ControllerBase
 {
     private readonly IMediator _mediator;
 
-    public AccountsController(IMediator mediator)
-    {
-        _mediator = mediator;
-    }
+    public AccountsController(IMediator mediator) => _mediator = mediator;
 
-    // ── Plan de cuentas ────────────────────────────────────────────
-
-    /// <summary>Retorna el plan de cuentas completo del tenant, ordenado por código.</summary>
-    /// <response code="200">Lista de cuentas contables (puede ser vacía).</response>
-    /// <response code="401">Token JWT ausente o inválido.</response>
     [HttpGet]
     [Authorize(Policy = "perm:finance.accounts.view")]
     [ProducesResponseType(typeof(ApiResponse<PagedResponse<AccountDto>>), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> GetAll([FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 50, CancellationToken ct = default)
     {
         var result = await _mediator.Send(new GetAccountsQuery(pageNumber, pageSize), ct);
@@ -57,38 +37,24 @@ public class AccountsController : ControllerBase
             return this.ApiUnprocessableEntity("Respuesta de paginación inválida.");
 
         return this.ApiOk(new PagedResponse<AccountDto>(
-                Items: result.Value.Items,
-                PageNumber: result.Value.PageNumber,
-                PageSize: result.Value.PageSize,
-                TotalCount: result.Value.TotalCount));
+            Items: result.Value.Items,
+            PageNumber: result.Value.PageNumber,
+            PageSize: result.Value.PageSize,
+            TotalCount: result.Value.TotalCount));
     }
 
-    /// <summary>Retorna una cuenta contable por su ID.</summary>
-    /// <param name="id">ID de la cuenta (GUID).</param>
-    /// <param name="ct">Token de cancelación.</param>
-    /// <response code="200">Cuenta encontrada.</response>
-    /// <response code="404">La cuenta no existe o no pertenece al tenant.</response>
     [HttpGet("{id:guid}")]
     [Authorize(Policy = "perm:finance.accounts.view")]
     [ProducesResponseType(typeof(ApiResponse<AccountDto?>), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
-    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> GetById(Guid id, CancellationToken ct)
     {
         var result = await _mediator.Send(new GetAccountByIdQuery(id), ct);
         return this.ToOkOrNotFound(result);
     }
 
-    /// <summary>Actualiza una cuenta contable existente.</summary>
-    /// <param name="id">ID de la cuenta (GUID).</param>
-    /// <response code="200">Cuenta actualizada correctamente.</response>
-    /// <response code="400">Datos inválidos o cuenta no encontrada.</response>
     [HttpPut("{id:guid}")]
     [Authorize(Policy = "perm:finance.accounts.edit")]
     [ProducesResponseType(typeof(ApiResponse<AccountDto>), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
     public async Task<IActionResult> Update(Guid id, [FromBody] UpdateAccountCommand command, CancellationToken ct)
     {
         if (id != command.Id)
@@ -98,202 +64,30 @@ public class AccountsController : ControllerBase
         return this.ToOkOrBadRequest(result);
     }
 
-    /// <summary>Deshabilita una cuenta contable (no la elimina).</summary>
-    /// <response code="200">Cuenta deshabilitada.</response>
-    /// <response code="400">La cuenta ya está deshabilitada o no existe.</response>
     [HttpPatch("{id:guid}/disable")]
     [Authorize(Policy = "perm:finance.accounts.edit")]
     [ProducesResponseType(typeof(ApiResponse<AccountDto>), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> DisableAccount(Guid id, CancellationToken ct)
     {
         var result = await _mediator.Send(new DisableAccountCommand(id), ct);
         return this.ToOkOrBadRequest(result, "Deshabilitada");
     }
 
-    /// <summary>Habilita una cuenta contable previamente deshabilitada.</summary>
-    /// <response code="200">Cuenta habilitada.</response>
-    /// <response code="400">La cuenta ya está activa o no existe.</response>
     [HttpPatch("{id:guid}/enable")]
     [Authorize(Policy = "perm:finance.accounts.edit")]
     [ProducesResponseType(typeof(ApiResponse<AccountDto>), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> EnableAccount(Guid id, CancellationToken ct)
     {
         var result = await _mediator.Send(new EnableAccountCommand(id), ct);
         return this.ToOkOrBadRequest(result, "Habilitada");
     }
 
-    /// <summary>Crea una nueva cuenta en el plan de cuentas del tenant.</summary>
-    /// <remarks>
-    /// El código de cuenta debe ser único por tenant.
-    /// Los valores válidos para `type`: 0=IsActive, 1=Pasivo, 2=Patrimonio, 3=Ingreso, 4=Gasto.
-    /// Los valores válidos para `nature`: 0=Débito, 1=Crédito.
-    /// </remarks>
-    /// <response code="201">Cuenta creada correctamente.</response>
-    /// <response code="400">El código ya existe en el tenant.</response>
     [HttpPost]
     [Authorize(Policy = "perm:finance.accounts.create")]
     [ProducesResponseType(typeof(ApiResponse<AccountDto?>), StatusCodes.Status201Created)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
-    public async Task<IActionResult> Create(
-        [FromBody] CreateAccountCommand command,
-        CancellationToken ct)
+    public async Task<IActionResult> Create([FromBody] CreateAccountCommand command, CancellationToken ct)
     {
         var result = await _mediator.Send(command, ct);
         return this.ToCreatedOrBadRequest(result, "Creado");
-    }
-
-    // ── Asientos contables ─────────────────────────────────────────
-
-    /// <summary>Retorna todos los asientos contables del tenant, ordenados por fecha descendente.</summary>
-    /// <response code="200">Lista de asientos contables con sus líneas.</response>
-    /// <response code="401">Token JWT ausente o inválido.</response>
-    [HttpGet("journal-entries")]
-    [Authorize(Policy = "perm:finance.journal.view")]
-    [ProducesResponseType(typeof(ApiResponse<PagedResponse<JournalEntryDto>>), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    public async Task<IActionResult> GetJournalEntries([FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 50, CancellationToken ct = default)
-    {
-        var result = await _mediator.Send(new GetJournalEntriesQuery(pageNumber, pageSize), ct);
-        if (!result.IsSuccess)
-            return this.ApiBadRequest(result.Error ?? "Error");
-        if (result.Value is null)
-            return this.ApiUnprocessableEntity("Respuesta de paginación inválida.");
-
-        return this.ApiOk(new PagedResponse<JournalEntryDto>(
-                Items: result.Value.Items,
-                PageNumber: result.Value.PageNumber,
-                PageSize: result.Value.PageSize,
-                TotalCount: result.Value.TotalCount));
-    }
-
-    /// <summary>Retorna un asiento contable con todas sus líneas.</summary>
-    /// <param name="id">ID del asiento (GUID).</param>
-    /// <param name="ct">Token de cancelación.</param>
-    /// <response code="200">Asiento encontrado con líneas de débito/crédito.</response>
-    /// <response code="404">El asiento no existe o no pertenece al tenant.</response>
-    [HttpGet("journal-entries/{id:guid}")]
-    [Authorize(Policy = "perm:finance.journal.view")]
-    [ProducesResponseType(typeof(ApiResponse<JournalEntryDto?>), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
-    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    public async Task<IActionResult> GetJournalEntryById(Guid id, CancellationToken ct)
-    {
-        var result = await _mediator.Send(new GetJournalEntryByIdQuery(id), ct);
-        return this.ToOkOrNotFound(result);
-    }
-
-    /// <summary>Anula un asiento contable (Draft o Posted). No se puede revertir.</summary>
-    /// <param name="id">ID del asiento (GUID).</param>
-    /// <response code="200">Asiento anulado correctamente.</response>
-    /// <response code="400">El asiento ya está anulado, no existe, o motivo vacío.</response>
-    [HttpPatch("journal-entries/{id:guid}/void")]
-    [Authorize(Policy = "perm:finance.journal.edit")]
-    [ProducesResponseType(typeof(ApiResponse<JournalEntryDto>), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
-    public async Task<IActionResult> VoidJournalEntry(Guid id, [FromBody] VoidJournalEntryCommand command, CancellationToken ct)
-    {
-        if (id != command.Id)
-            return this.ApiBadRequest("El ID de la ruta no coincide con el ID del comando.");
-
-        var result = await _mediator.Send(command, ct);
-        return this.ToOkOrBadRequest(result, "Anulado");
-    }
-
-    /// <summary>Crea un nuevo asiento contable.</summary>
-    /// <remarks>
-    /// El asiento debe estar cuadrado: la suma de débitos debe ser igual a la suma de créditos.
-    /// El estado inicial es siempre `Draft` (0). Para contabilizarlo se requerirá un endpoint adicional.
-    /// </remarks>
-    /// <response code="201">Asiento creado en estado Borrador.</response>
-    /// <response code="400">El asiento no está cuadrado u otro error de validación.</response>
-    [HttpPost("journal-entries")]
-    [Authorize(Policy = "perm:finance.journal.create")]
-    [ProducesResponseType(typeof(ApiResponse<JournalEntryDto?>), StatusCodes.Status201Created)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
-    public async Task<IActionResult> CreateJournalEntry(
-        [FromBody] CreateJournalEntryCommand command,
-        CancellationToken ct)
-    {
-        var result = await _mediator.Send(command, ct);
-        return this.ToCreatedOrBadRequest(result, "Creado");
-    }
-
-    // ── Reportes contables ─────────────────────────────────────────
-
-    /// <summary>
-    /// Mayor General de una cuenta — movimientos contabilizados en el rango de fechas
-    /// con saldo acumulado. Parámetros: desde (YYYY-MM-DD), hasta (YYYY-MM-DD).
-    /// </summary>
-    [HttpGet("{id:guid}/mayor")]
-    [Authorize(Policy = "perm:finance.journal.view")]
-    [ProducesResponseType(typeof(ApiResponse<IReadOnlyList<MayorGeneralLineDto>>), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<IActionResult> GetMayorGeneral(
-        Guid   id,
-        [FromQuery] string desde,
-        [FromQuery] string hasta,
-        CancellationToken ct = default)
-    {
-        if (!TryParseReportDateRange(desde, hasta, out var d, out var h))
-            return this.ApiBadRequest("Parámetros 'desde' y 'hasta' requeridos en formato YYYY-MM-DD.");
-
-        var result = await _mediator.Send(
-            new GetMayorGeneralQuery(id, d, h), ct);
-        return this.ToOkOrBadRequest(result, "OK", () => Array.Empty<MayorGeneralLineDto>());
-    }
-
-    /// <summary>
-    /// Balance de Comprobación — totales débito/crédito por cuenta en el período.
-    /// Parámetros: desde (YYYY-MM-DD), hasta (YYYY-MM-DD).
-    /// </summary>
-    [HttpGet("balance-comprobacion")]
-    [Authorize(Policy = "perm:finance.journal.view")]
-    [ProducesResponseType(typeof(ApiResponse<IReadOnlyList<BalanceComprobacionLineDto>>), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<IActionResult> GetBalanceComprobacion(
-        [FromQuery] string desde,
-        [FromQuery] string hasta,
-        CancellationToken ct = default)
-    {
-        if (!TryParseReportDateRange(desde, hasta, out var d, out var h))
-            return this.ApiBadRequest("Parámetros 'desde' y 'hasta' requeridos en formato YYYY-MM-DD.");
-
-        var result = await _mediator.Send(
-            new GetBalanceComprobacionQuery(d, h), ct);
-        return this.ToOkOrBadRequest(result, "OK", () => Array.Empty<BalanceComprobacionLineDto>());
-    }
-
-    private static bool TryParseReportDateRange(
-        string? desde,
-        string? hasta,
-        out DateTime rangeStart,
-        out DateTime rangeEndInclusive)
-    {
-        rangeStart = default;
-        rangeEndInclusive = default;
-
-        if (string.IsNullOrWhiteSpace(desde) || string.IsNullOrWhiteSpace(hasta))
-            return false;
-
-        if (!DateOnly.TryParseExact(desde.Trim(), "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out var from)
-            || !DateOnly.TryParseExact(hasta.Trim(), "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out var to))
-            return false;
-
-        if (to < from)
-            return false;
-
-        rangeStart = DateTime.SpecifyKind(from.ToDateTime(TimeOnly.MinValue), DateTimeKind.Utc);
-        rangeEndInclusive = DateTime.SpecifyKind(to.ToDateTime(TimeOnly.MaxValue), DateTimeKind.Utc);
-        return true;
     }
 }

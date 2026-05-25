@@ -25,6 +25,12 @@
   margin: 4px 0 0;
 }
 
+.sa-subscribers-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
 .sa-subscribers-search {
   display: flex;
   align-items: center;

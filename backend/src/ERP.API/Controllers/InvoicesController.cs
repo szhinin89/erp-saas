@@ -1,9 +1,6 @@
-using MediatR;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Mvc;
+using ERP.API.Attributes;
 using ERP.API.Contracts;
 using ERP.API.Extensions;
-using ERP.Application.Common.Interfaces;
 using ERP.Application.Sales.DTOs;
 using ERP.Application.Sales.UseCases.AnularFactura;
 using ERP.Application.Sales.UseCases.CrearVenta;
@@ -13,14 +10,13 @@ using ERP.Application.Sales.UseCases.GetVentaById;
 using ERP.Application.Sales.UseCases.GetVentasList;
 using ERP.Application.Sales.UseCases.ReintentarEnvio;
 using ERP.Application.Sales.UseCases.ValidarVenta;
-using ERP.API.Attributes;
+using MediatR;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 
 namespace ERP.API.Controllers;
 
-/// <summary>
-/// Gestión del módulo de Ventas — Facturación Electrónica SRI Ecuador.
-/// Flujo: Borrador → Validado → Autorizado | Rechazado | ErrorEnvio.
-/// </summary>
+/// <summary>Facturación electrónica SRI — Borrador → Validado → Autorizado.</summary>
 [AppFeature("Ventas", "perm:sales.invoices.view", "🧾", "/sales/invoices", null, 50)]
 [ApiController]
 [Route("api/sales/invoices")]
@@ -28,51 +24,28 @@ namespace ERP.API.Controllers;
 [Produces("application/json")]
 public sealed class InvoicesController : ControllerBase
 {
-    private readonly IMediator              _mediator;
-    private readonly ITirillaFacturaService _tirillaFacturaService;
-    private readonly IRideGeneratorService  _rideGenerator;
+    private readonly IMediator _mediator;
 
-    public InvoicesController(
-        IMediator              mediator,
-        ITirillaFacturaService tirillaFacturaService,
-        IRideGeneratorService  rideGenerator)
-    {
-        _mediator              = mediator;
-        _tirillaFacturaService = tirillaFacturaService;
-        _rideGenerator         = rideGenerator;
-    }
+    public InvoicesController(IMediator mediator) => _mediator = mediator;
 
-    // ── Queries ───────────────────────────────────────────────────────────────────────────────────────────────────────
-
-    /// <summary>Lista facturas de venta paginadas con filtros opcionales.</summary>
-    /// <remarks>Query params: pageNumber, pageSize, customerId, desde (YYYY-MM-DD), hasta, estado, search.</remarks>
     [HttpGet]
     [Authorize(Policy = "perm:sales.invoices.view")]
     [ProducesResponseType(typeof(ApiResponse<SalesPagedResult>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetAll(CancellationToken ct = default)
     {
-        int pageNumber = 1, pageSize = 20;
-        if (Request.Query.TryGetValue("pageNumber", out var pnv) && int.TryParse(pnv, out var pni)) pageNumber = pni;
-        if (Request.Query.TryGetValue("pageSize",   out var psv) && int.TryParse(psv, out var psi)) pageSize   = psi;
-
-        Guid? customerId = null;
-        if (Request.Query.TryGetValue("clienteId", out var cv) && Guid.TryParse(cv, out var cid)) customerId = cid;
-
-        DateTime? desde = null, hasta = null;
-        if (Request.Query.TryGetValue("desde", out var dv) && DateTime.TryParse(dv, out var d)) desde = d;
-        if (Request.Query.TryGetValue("hasta", out var hv) && DateTime.TryParse(hv, out var h)) hasta = h;
-
-        var status = Request.Query.TryGetValue("estado", out var ev) ? ev.ToString() : null;
+        var (pageNumber, pageSize) = ListQueryParameters.ParsePaged(Request.Query);
+        var customerId = ListQueryParameters.ParseOptionalGuid(Request.Query, "clienteId");
+        var (desde, hasta) = ListQueryParameters.ParseDateTimeRange(Request.Query);
+        var status = ListQueryParameters.ParseOptionalString(Request.Query, "estado");
         var search = CatalogQueryParameters.ParseSearch(Request.Query);
 
         var result = await _mediator.Send(
-            new GetSalesListQuery(pageNumber, pageSize, customerId, desde, hasta, status, search), ct);
+            new GetSalesListQuery(pageNumber, pageSize, customerId, desde, hasta, status, search),
+            ct);
 
         return this.ToOkOrBadRequest(result, "OK");
     }
 
-    /// <summary>Retorna el detalle completo de una factura de venta (con líneas).</summary>
-    /// <response code="404">La factura no existe o no pertenece al tenant.</response>
     [HttpGet("{id:guid}")]
     [Authorize(Policy = "perm:sales.invoices.view")]
     [ProducesResponseType(typeof(ApiResponse<SalesBillDetailDto?>), StatusCodes.Status200OK)]
@@ -83,8 +56,6 @@ public sealed class InvoicesController : ControllerBase
         return this.ToOkOrNotFound(result);
     }
 
-    /// <summary>Consulta el stock disponible de un producto en una bodega.</summary>
-    /// <remarks>Query params requeridos: productoId, bodegaId.</remarks>
     [HttpGet("stock")]
     [Authorize(Policy = "perm:ventas.stock.view")]
     [ProducesResponseType(typeof(ApiResponse<StockDisponibleDto>), StatusCodes.Status200OK)]
@@ -93,151 +64,56 @@ public sealed class InvoicesController : ControllerBase
     {
         if (!Request.Query.TryGetValue("productoId", out var pv) || !Guid.TryParse(pv, out var productoId))
             return this.ApiBadRequest("El parámetro productoId es requerido y debe ser un GUID válido.");
-        if (!Request.Query.TryGetValue("bodegaId",   out var bv) || !Guid.TryParse(bv, out var bodegaId))
+        if (!Request.Query.TryGetValue("bodegaId", out var bv) || !Guid.TryParse(bv, out var bodegaId))
             return this.ApiBadRequest("El parámetro bodegaId es requerido y debe ser un GUID válido.");
 
         var result = await _mediator.Send(new GetAvailableStockForSaleQuery(productoId, bodegaId), ct);
         return this.ToOkOrBadRequest(result, "OK");
     }
 
-    // ── Crear ─────────────────────────────────────────────────────────────────────────────────────────────────────────
-
-    /// <summary>Crea una nueva factura de venta en estado Borrador.</summary>
-    /// <response code="201">Factura creada. Retorna el ID.</response>
-    /// <response code="400">Stock insuficiente, cliente o bodega inválida.</response>
     [HttpPost]
     [Authorize(Policy = "perm:sales.invoices.create")]
     [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<IActionResult> Create(
-        [FromBody] CreateSaleCommand command, CancellationToken ct = default)
+    public async Task<IActionResult> Create([FromBody] CreateSaleCommand command, CancellationToken ct = default)
     {
         var result = await _mediator.Send(command, ct);
         return this.ToCreatedOrBadRequest(result, "Creado");
     }
 
-    // ── Transiciones de estado ────────────────────────────────────────────────────────────────────────────────────────
-
-    /// <summary>
-    /// Valida una factura en Borrador: verifica totales y detalles.
-    /// Cambia estado a Validado.
-    /// </summary>
     [HttpPatch("{id:guid}/validar")]
-    [Authorize(Policy = "perm:ventas.facturas.validate")]
+    [Authorize(Policy = "perm:sales.invoices.update")]
     [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> Validate(Guid id, CancellationToken ct = default)
     {
         var result = await _mediator.Send(new ValidateSaleCommand(id), ct);
         return this.ToOkOrBadRequest(result, "Validado");
     }
 
-    /// <summary>
-    /// Emite la factura al SRI Ecuador: genera XML, firma y envía.
-    /// Si es autorizada, descuenta inventario y crea asiento contable.
-    /// Estado resultante: Autorizado | Rechazado | ErrorEnvio.
-    /// </summary>
     [HttpPatch("{id:guid}/emitir")]
-    [Authorize(Policy = "perm:ventas.facturas.emit")]
+    [Authorize(Policy = "perm:sales.invoices.update")]
     [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> Emit(Guid id, CancellationToken ct = default)
     {
         var result = await _mediator.Send(new IssueElectronicInvoiceCommand(id), ct);
         return this.ToOkOrBadRequest(result, "Emitido");
     }
 
-    /// <summary>
-    /// Reintenta el envío al SRI para facturas en ErrorEnvio o Rechazado.
-    /// Resetea el estado y ejecuta el flujo de emisión completo.
-    /// </summary>
     [HttpPatch("{id:guid}/reintentar")]
-    [Authorize(Policy = "perm:ventas.facturas.emit")]
+    [Authorize(Policy = "perm:sales.invoices.update")]
     [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> Retry(Guid id, CancellationToken ct = default)
     {
         var result = await _mediator.Send(new RetrySubmissionCommand(id), ct);
         return this.ToOkOrBadRequest(result, "Reintentado");
     }
 
-    /// <summary>
-    /// Anula la factura. Solo posible en estados Borrador, Validado, Rechazado o ErrorEnvio.
-    /// Las facturas ya autorizadas por el SRI no pueden anularse directamente.
-    /// </summary>
     [HttpPatch("{id:guid}/anular")]
-    [Authorize(Policy = "perm:ventas.facturas.cancel")]
+    [Authorize(Policy = "perm:sales.invoices.void")]
     [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> Void(Guid id, CancellationToken ct = default)
     {
         var result = await _mediator.Send(new VoidInvoiceCommand(id), ct);
         return this.ToOkOrBadRequest(result, "Anulado");
     }
-
-    /// <summary>
-    /// Genera el HTML de impresión de la factura en formato de ticket térmico 80mm.
-    /// </summary>
-    [HttpGet("{id:guid}/imprimir")]
-    [Authorize(Policy = "perm:sales.invoices.view")]
-    [Produces("text/html")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> Print(Guid id, CancellationToken ct = default)
-    {
-        try
-        {
-            var html = await _tirillaFacturaService.GenerarHtmlFacturaAsync(id, ct);
-            return Content(html, "text/html; charset=utf-8");
-        }
-        catch (KeyNotFoundException)
-        {
-            return NotFound();
-        }
-    }
-
-    /// <summary>
-    /// Genera el RIDE (Representación Impresa del Documento Electrónico) en PDF — A4.
-    /// Reutilizable desde cualquier contexto: el servicio no depende de HTTP.
-    /// </summary>
-    [HttpGet("{id:guid}/ride")]
-    [Authorize(Policy = "perm:sales.invoices.view")]
-    [Produces("application/pdf")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> GetRide(Guid id, CancellationToken ct = default)
-    {
-        try
-        {
-            var pdfBytes = await _rideGenerator.GenerateFacturaPdfAsync(id, ct);
-            return File(pdfBytes, "application/pdf", $"RIDE_{id}.pdf");
-        }
-        catch (KeyNotFoundException)
-        {
-            return NotFound();
-        }
-    }
-
-    /// <summary>
-    /// Genera el RIDE en PDF de una nota de crédito o débito.
-    /// </summary>
-    [HttpGet("notas/{id:guid}/ride")]
-    [Authorize(Policy = "perm:sales.invoices.view")]
-    [Produces("application/pdf")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> GetNotaRide(Guid id, CancellationToken ct = default)
-    {
-        try
-        {
-            var pdfBytes = await _rideGenerator.GenerateNotaPdfAsync(id, ct);
-            return File(pdfBytes, "application/pdf", $"RIDE_NOTA_{id}.pdf");
-        }
-        catch (KeyNotFoundException)
-        {
-            return NotFound();
-        }
-    }
 }
-
-

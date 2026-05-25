@@ -1,6 +1,6 @@
 # Platform Control Plane — CI Guard Report
 
-**Generated:** 2026-05-23T18:17:51.675Z
+**Generated:** 2026-05-25T11:39:13.783Z
 **Status:** PASS
 **Violations:** 0
 
@@ -21,8 +21,8 @@ _No violations detected._
 
 ```json
 {
-  "total": 77,
-  "allowed": 77,
+  "total": 78,
+  "allowed": 78,
   "legacyViolations": 0,
   "allowlistViolations": 0
 }
@@ -31,6 +31,6 @@ _No violations detected._
 ## Design
 
 - Preventive, mandatory, fail-fast guard for Platform Control Plane.
-- Legacy platform API surface must not reappear.
+- Legacy SuperAdmin API surface must not reappear.
 - Config: `tools/ci/platform-guard-config.json`
 

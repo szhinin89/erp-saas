@@ -1,6 +1,7 @@
 using MediatR;
 using Microsoft.Extensions.Logging;
 using ERP.Application.Common;
+using ERP.Application.Modules.Fiscal.Integration;
 using ERP.Application.Sales.Helpers;
 using ERP.Domain.Audit.Entities;
 using ERP.Domain.Audit.Interfaces;
@@ -15,6 +16,7 @@ public sealed class CrearSalesNoteCommandHandler
     : IRequestHandler<CreateSalesNoteCommand, Result<Guid>>
 {
     private readonly ISalesRepository           _ventasRepository;
+    private readonly ISalesOriginalBillResolver _originalBillResolver;
     private readonly ISriSettingsRepository _configSriRepository;
     private readonly IProductRepository          _productRepository;
     private readonly ITaxRateRepository          _taxRateRepository;
@@ -26,6 +28,7 @@ public sealed class CrearSalesNoteCommandHandler
 
     public CrearSalesNoteCommandHandler(
         ISalesRepository ventasRepository,
+        ISalesOriginalBillResolver originalBillResolver,
         ISriSettingsRepository configSriRepository,
         IProductRepository productRepository,
         ITaxRateRepository taxRateRepository,
@@ -36,6 +39,7 @@ public sealed class CrearSalesNoteCommandHandler
         ILogger<CrearSalesNoteCommandHandler> logger)
     {
         _ventasRepository    = ventasRepository;
+        _originalBillResolver = originalBillResolver;
         _configSriRepository = configSriRepository;
         _productRepository   = productRepository;
         _taxRateRepository   = taxRateRepository;
@@ -54,7 +58,7 @@ public sealed class CrearSalesNoteCommandHandler
         if (command.Items.Count == 0)
             return Result<Guid>.Failure("La nota debe tener al menos un detalle.");
 
-        var factura = await _ventasRepository.GetBillByIdAsync(subscriberId, command.OriginalBillId, ct);
+        var factura = await _originalBillResolver.ResolveAsync(subscriberId, command.OriginalBillId, ct);
         if (factura is null)
             return Result<Guid>.Failure("Factura original no encontrada.");
         if (factura.Status != "Autorizado")

@@ -1,4 +1,3 @@
-using System.Text;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
@@ -35,11 +34,12 @@ public sealed class TirillaFacturaService : ITirillaFacturaService
             .Build();
     }
 
-    public async Task<string> GenerarHtmlFacturaAsync(Guid     salesBillId, CancellationToken ct = default)
+    public async Task<string> GenerarHtmlFacturaAsync(Guid salesBillId, CancellationToken ct = default)
     {
-        var venta = await _dbContext.Set<ERP.Domain.Modules.Sales.Entities.SalesBill>()
+        var venta = await _dbContext.FiscalInvoices
             .Include(v => v.Lines)
-            .FirstOrDefaultAsync(v => v.Id == salesBillId && v.Status == "Autorizado", ct);
+            .Include(v => v.Electronic)
+            .FirstOrDefaultAsync(v => v.PublicId == salesBillId && v.Status == "Autorizado", ct);
 
         if (venta is null)
             throw new KeyNotFoundException("Factura no encontrada o no autorizada.");
@@ -58,13 +58,12 @@ public sealed class TirillaFacturaService : ITirillaFacturaService
 
         var model = new FacturaTirillaModel
         {
-            Venta = venta,
+            Venta = FacturaTirillaDocument.FromInvoice(venta),
             Buyer = buyer,
             Configuracion = config,
-            EsPrueba = string.IsNullOrWhiteSpace(venta.AccessKey) || !venta.AccessKey.StartsWith("1")
+            EsPrueba = string.IsNullOrWhiteSpace(venta.AccessKey) || !venta.AccessKey.StartsWith('1')
         };
 
-        var html = await _razorEngine.CompileRenderAsync(TemplateFileName, model);
-        return html;
+        return await _razorEngine.CompileRenderAsync(TemplateFileName, model);
     }
 }

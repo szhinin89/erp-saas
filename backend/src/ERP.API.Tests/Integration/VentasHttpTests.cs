@@ -6,7 +6,6 @@ using Microsoft.Extensions.DependencyInjection;
 using ERP.API.Tests.Support;
 using ERP.Application.Sales.DTOs;
 using ERP.Domain.Configuration.Entities;
-using ERP.Domain.Modules.Sales.Entities;
 using ERP.Infrastructure.Persistence;
 
 namespace ERP.API.Tests.Integration;
@@ -109,7 +108,7 @@ public sealed class VentasHttpTests
 
         var payload = new
         {
-            customerId = clienteId,
+            businessPartnerId = clienteId,
             warehouseId = seed.WarehouseId,
             branchId = sucursalId,
             items = new[] { new { productId = seed.ProductId, quantity = 1m, unitPrice = 10.0m } }
@@ -255,59 +254,19 @@ public sealed class VentasHttpTests
 
         db.BillingSettings.Add(config);
 
-        var factura = SalesBill.Create(
-            seed.SubscriberId,
-            branchId,
+        var facturaId = await VentasEndToEndHelpers.SeedAuthorizedInvoiceAsync(
+            db,
+            seed,
             clienteId,
-            seed.WarehouseId,
-            docType: "01",
-            estabCode: "001",
-            emPointCode: "001",
-            sequential: "000000001",
-            accessKey: new string('1', 48),
-            issueDate: DateTime.UtcNow,
+            seed.CompanyId,
             subtotal: 100m,
-            vatTotal: 12m,
+            taxTotal: 12m,
             total: 112m,
-            totalDiscount: 0m,
-            paymentMethodCode: "01",
-            paymentDays: 0,
-            notes: null,
-            xmlSignedPath: null,
-            xmlAuthPath: null,
-            authNumber: null,
-            authDate: null,
-            errorMessage: null,
-            createdBy: seed.UserId,
-            companyId: seed.CompanyId);
+            sequential: "000000001",
+            lineDescription: "Producto de prueba",
+            ct: CancellationToken.None);
 
-        var detalle = SalesBillLine.Create(
-            seed.SubscriberId,
-            seed.ProductId,
-            "SKU-INT",
-            1m,
-            100m,
-            0m,
-            "2",
-            12m,
-            12m,
-            "Producto de prueba",
-            seed.UserId);
-        detalle.AssignBillId(factura.Id);
-        factura.AddLine(detalle);
-        factura.Validate(seed.UserId);
-        factura.Authorize(
-            seed.UserId,
-            authNumber: "AUTH-123",
-            authDate: DateTime.UtcNow,
-            xmlSignedPath: null,
-            xmlAuthPath: null,
-            journalEntryId: Guid.NewGuid());
-
-        db.SalesBills.Add(factura);
-        await db.SaveChangesAsync(CancellationToken.None);
-
-        var res = await client.GetAsync($"/api/sales/invoices/{factura.Id}/imprimir");
+        var res = await client.GetAsync($"/api/sales/invoices/{facturaId}/imprimir");
 
         res.StatusCode.Should().Be(HttpStatusCode.OK);
         res.Content.Headers.ContentType!.MediaType.Should().Be("text/html");
@@ -333,59 +292,19 @@ public sealed class VentasHttpTests
         var clienteId = db.BusinessPartners.First(c => c.SubscriberId == seed.SubscriberId).Id;
         var branchId = db.Branches.First(b => b.SubscriberId == seed.SubscriberId).Id;
 
-        var factura = SalesBill.Create(
-            seed.SubscriberId,
-            branchId,
+        var facturaId = await VentasEndToEndHelpers.SeedAuthorizedInvoiceAsync(
+            db,
+            seed,
             clienteId,
-            seed.WarehouseId,
-            docType: "01",
-            estabCode: "001",
-            emPointCode: "001",
-            sequential: "000000002",
-            accessKey: new string('1', 48),
-            issueDate: DateTime.UtcNow,
+            seed.CompanyId,
             subtotal: 50m,
-            vatTotal: 6m,
+            taxTotal: 6m,
             total: 56m,
-            totalDiscount: 0m,
-            paymentMethodCode: "01",
-            paymentDays: 0,
-            notes: null,
-            xmlSignedPath: null,
-            xmlAuthPath: null,
-            authNumber: null,
-            authDate: null,
-            errorMessage: null,
-            createdBy: seed.UserId,
-            companyId: seed.CompanyId);
+            sequential: "000000002",
+            lineDescription: "Item default",
+            ct: CancellationToken.None);
 
-        var detalle = SalesBillLine.Create(
-            seed.SubscriberId,
-            seed.ProductId,
-            "SKU-INT",
-            1m,
-            50m,
-            0m,
-            "2",
-            12m,
-            6m,
-            "Item default",
-            seed.UserId);
-        detalle.AssignBillId(factura.Id);
-        factura.AddLine(detalle);
-        factura.Validate(seed.UserId);
-        factura.Authorize(
-            seed.UserId,
-            authNumber: "AUTH-456",
-            authDate: DateTime.UtcNow,
-            xmlSignedPath: null,
-            xmlAuthPath: null,
-            journalEntryId: Guid.NewGuid());
-
-        db.SalesBills.Add(factura);
-        await db.SaveChangesAsync(CancellationToken.None);
-
-        var res = await client.GetAsync($"/api/sales/invoices/{factura.Id}/imprimir");
+        var res = await client.GetAsync($"/api/sales/invoices/{facturaId}/imprimir");
 
         res.StatusCode.Should().Be(HttpStatusCode.OK);
         var html = await res.Content.ReadAsStringAsync();

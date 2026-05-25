@@ -17,6 +17,20 @@ namespace ERP.Application.Common;
 public static class Permissions
 {
     // ── Sales ───────────────────────────────────────────────────────────────────
+    public static class SalesQuote
+    {
+        public const string View   = "sales.quotes.view";
+        public const string Create = "sales.quotes.create";
+        public const string Update = "sales.quotes.update";
+    }
+
+    public static class SalesOrder
+    {
+        public const string View   = "sales.orders.view";
+        public const string Create = "sales.orders.create";
+        public const string Update = "sales.orders.update";
+    }
+
     public static class SalesInvoice
     {
         public const string View   = "sales.invoices.view";
@@ -32,6 +46,7 @@ public static class Permissions
     {
         public const string View   = "sales.credit-notes.view";
         public const string Create = "sales.credit-notes.create";
+        public const string Send   = "sales.credit-notes.send";
         public const string Void   = "sales.credit-notes.void";
     }
 
@@ -161,12 +176,19 @@ public static class Permissions
     /// <summary>All permissions granted to a "Facturador" (billing operator).</summary>
     public static IReadOnlyList<string> FacilitadorProfile =>
     [
+        SalesQuote.View,
+        SalesQuote.Create,
+        SalesQuote.Update,
+        SalesOrder.View,
+        SalesOrder.Create,
+        SalesOrder.Update,
         SalesInvoice.View,
         SalesInvoice.Create,
         SalesInvoice.Update,
         SalesInvoice.Void,
         SalesCreditNote.View,
         SalesCreditNote.Create,
+        SalesCreditNote.Send,
         SalesCustomer.View,
         SalesCustomer.Create,
         SalesCustomer.Update,

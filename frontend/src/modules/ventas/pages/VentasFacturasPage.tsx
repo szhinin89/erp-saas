@@ -5,6 +5,7 @@ import { ZHPageNotice } from '../../../components/zh/ZHPageNotice';
 import { ErpPageTemplate } from '../../../templates/ErpPageTemplate';
 import { useI18n } from '../../../i18n/i18n';
 import { ventasFacturasService, type VentasFacturaDto } from '../api/ventasFacturasService';
+import { invoiceNumber } from '../api/ventasFacturasMapper';
 import { openVentasFacturaPrint } from '../utils/openVentasFacturaPrint';
 import './ventas-facturas-page.css';
 import { usePermissionsUi } from '../../../access/usePermissionsUi';
@@ -25,8 +26,12 @@ export function VentasFacturasPage() {
   const { t } = useI18n();
   const navigate = useNavigate();
   const canView  = canShow('sales.invoices.view');
+  const canCreate = canShow('sales.invoices.create');
 
   const [rows,       setRows]       = useState<VentasFacturaDto[]>([]);
+  const [totalCount, setTotalCount] = useState(0);
+  const [pageNumber, setPageNumber] = useState(1);
+  const pageSize = 20;
   const [loading,    setLoading]    = useState(true);
   const [error,      setError]      = useState<string | null>(null);
   const [printError,  setPrintError]  = useState<string | null>(null);
@@ -35,32 +40,39 @@ export function VentasFacturasPage() {
   const [retryingId,  setRetryingId]  = useState<string | null>(null);
   const [retryMsg,    setRetryMsg]    = useState<string | null>(null);
   const [q,           setQ]           = useState('');
+  const [statusFilter, setStatusFilter] = useState('');
 
   const load = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const page = await ventasFacturasService.list({ pageNumber: 1, pageSize: 100 });
-      setRows(page.items);
+      const pageResult = await ventasFacturasService.list({
+        pageNumber,
+        pageSize,
+        estado: statusFilter || undefined,
+        search: q.trim() || undefined,
+      });
+      setRows(pageResult.items);
+      setTotalCount(pageResult.totalCount);
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
       setRows([]);
+      setTotalCount(0);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [pageNumber, statusFilter, q, pageSize]);
 
   useEffect(() => { if (canView) void load(); }, [canView, load]);
 
-  const filtered = useMemo(() => {
-    const query = q.trim().toLowerCase();
-    if (!query) return rows;
-    return rows.filter((r) =>
-      r.clienteNombre.toLowerCase().includes(query) ||
-      `${r.establecimiento}-${r.puntoEmision}-${r.secuencial}`.includes(query) ||
-      r.estado.toLowerCase().includes(query),
-    );
-  }, [rows, q]);
+  const applyFilters = () => {
+    if (pageNumber === 1) void load();
+    else setPageNumber(1);
+  };
+
+  const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
+
+  const filtered = rows;
 
   const stats = useMemo(() => {
     const total       = rows.length;
@@ -135,14 +147,16 @@ export function VentasFacturasPage() {
             <span className="material-symbols-outlined">refresh</span>
             {t('ventas.facturas.refresh')}
           </button>
-          <button
-            className="zh-btn zh-btn--primary"
-            type="button"
-            onClick={() => navigate('/ventas/facturas/nueva')}
-          >
-            <span className="material-symbols-outlined">add</span>
-            {t('ventas.facturas.newInvoice')}
-          </button>
+          {canCreate && (
+            <button
+              className="zh-btn zh-btn--primary"
+              type="button"
+              onClick={() => navigate('/sales/invoices/new')}
+            >
+              <span className="material-symbols-outlined">add</span>
+              {t('ventas.facturas.newInvoice')}
+            </button>
+          )}
         </>
       }
     >
@@ -249,29 +263,56 @@ export function VentasFacturasPage() {
               <span className="material-symbols-outlined">search</span>
               <input
                 type="text"
-                placeholder="Filtrar por número, cliente o estado..."
+                placeholder={t('ventas.facturas.searchPlaceholder')}
                 value={q}
                 onChange={(e) => setQ(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') applyFilters();
+                }}
                 disabled={loading}
               />
             </div>
-            <button className="zh-btn zh-btn--ghost zh-btn--md" type="button">
+            <select
+              className="zh-input"
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+            >
+              <option value="">{t('ventas.facturas.filter.allStatuses')}</option>
+              <option value="Borrador">{t('ventas.facturas.status.borrador')}</option>
+              <option value="Validado">{t('ventas.facturas.status.validado')}</option>
+              <option value="Autorizado">{t('ventas.facturas.status.autorizado')}</option>
+              <option value="Rechazado">{t('ventas.facturas.status.rechazado')}</option>
+              <option value="ErrorEnvio">{t('ventas.facturas.status.errorenvio')}</option>
+              <option value="Anulado">{t('ventas.facturas.status.anulado')}</option>
+            </select>
+            <button className="zh-btn zh-btn--ghost zh-btn--md" type="button" onClick={applyFilters}>
               <span className="material-symbols-outlined">filter_list</span>
-              Filtros
+              {t('ventas.facturas.applyFilters')}
             </button>
           </div>
           <div className="pg-table-controls-right">
-            <span>
-              Mostrando {filtered.length} de {rows.length}
-            </span>
-            <div className="pg-pagination-controls">
-              <button className="pg-pagination-btn" type="button" disabled>
-                <span className="material-symbols-outlined">chevron_left</span>
-              </button>
-              <button className="pg-pagination-btn" type="button">
-                <span className="material-symbols-outlined">chevron_right</span>
-              </button>
-            </div>
+            <span>{t('ventas.facturas.records', { count: totalCount })}</span>
+            {totalCount > pageSize && (
+              <div className="pg-pagination-controls">
+                <button
+                  className="pg-pagination-btn"
+                  type="button"
+                  disabled={pageNumber <= 1 || loading}
+                  onClick={() => setPageNumber((p) => Math.max(1, p - 1))}
+                >
+                  <span className="material-symbols-outlined">chevron_left</span>
+                </button>
+                <span>{t('ventas.facturas.page', { page: pageNumber, total: totalPages })}</span>
+                <button
+                  className="pg-pagination-btn"
+                  type="button"
+                  disabled={pageNumber >= totalPages || loading}
+                  onClick={() => setPageNumber((p) => p + 1)}
+                >
+                  <span className="material-symbols-outlined">chevron_right</span>
+                </button>
+              </div>
+            )}
           </div>
         </div>
 
@@ -299,13 +340,17 @@ export function VentasFacturasPage() {
               </thead>
               <tbody>
                 {filtered.map((row) => {
-                  const numero      = `${row.establecimiento}-${row.puntoEmision}-${row.secuencial}`;
+                  const numero      = invoiceNumber(row);
                   const estado      = row.estado.toLowerCase();
                   const isAuth      = estado === 'autorizado';
                   const isError     = estado === 'errorenvio' || estado === 'rechazado';
                   const badge       = getStatusBadge(row.estado);
                   return (
-                    <tr key={row.id}>
+                    <tr
+                      key={row.id}
+                      className="pg-row-clickable"
+                      onClick={() => navigate(`/sales/invoices/${row.id}`)}
+                    >
                       <td data-label="Nº Factura" className="vf-col-numero">{numero}</td>
                       <td data-label={t('ventas.facturas.col.customer')}>{row.clienteNombre}</td>
                       <td data-label={t('ventas.facturas.col.date')} className="vf-col-date">
@@ -327,6 +372,16 @@ export function VentasFacturasPage() {
                         )}
                       </td>
                       <td data-label={t('ventas.facturas.col.actions')} className="vf-cell-actions">
+                        <button
+                          className="zh-btn zh-btn--ghost zh-btn--sm"
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            navigate(`/sales/invoices/${row.id}`);
+                          }}
+                        >
+                          {t('common.view')}
+                        </button>
                         {isAuth && (
                           <>
                             <button

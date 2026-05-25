@@ -57,8 +57,15 @@ BEGIN
         'sales.invoices.create',
         'sales.invoices.update',
         'sales.invoices.void',
+        'sales.quotes.view',
+        'sales.quotes.create',
+        'sales.quotes.update',
+        'sales.orders.view',
+        'sales.orders.create',
+        'sales.orders.update',
         'sales.credit-notes.view',
         'sales.credit-notes.create',
+        'sales.credit-notes.send',
         'sales.customers.view',
         'sales.customers.create',
         'sales.customers.update',
@@ -138,6 +145,8 @@ SELECT gen_random_uuid(), g."Id", v.route_path, v.label_key, v.display_label, v.
 FROM ui_nav_groups g
 CROSS JOIN (VALUES
   ('/sales/invoices',             'app.nav.sales.invoices',                  'Facturas',              10, 'sales', 'sales.invoices.view'),
+  ('/sales/quotes',               'app.nav.sales.quotes',                    'Cotizaciones',          15, 'sales', 'sales.quotes.view'),
+  ('/sales/orders',               'app.nav.sales.orders',                    'Pedidos',               17, 'sales', 'sales.orders.view'),
   ('/sales/customers',            'app.nav.catalog.customers',               'Clientes',              20, 'sales', 'sales.customers.view'),
   ('/sales/credit-notes',         'app.nav.item.sales.credit-notes',         'Notas de crédito',      30, 'sales', 'sales.credit-notes.view'),
   ('/sales/withholding-received', 'app.nav.item.sales.withholding-received', 'Retenciones recibidas', 40, 'sales', 'sales.withholding-received.view')

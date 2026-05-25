@@ -31,8 +31,6 @@ export function useMasterDataCustomersPage() {
   const [saving, setSaving]             = useState(false);
   const [notesBp, setNotesBp]           = useState<BusinessPartnerDto | null>(null);
 
-  // Errores de carga de lista — banner en la página
-  const [listError, setListError]   = useState<string | null>(null);
   // Errores de acciones inline (disable/activate) — banner en la página
   const [inlineError, setInlineError] = useState<string | null>(null);
   // Errores de guardado en modal — banner DENTRO del modal activo
@@ -227,7 +225,7 @@ export function useMasterDataCustomersPage() {
     totalPages,
     customers,
     loading:     listState.loading,
-    listError:   listState.error ?? listError,
+    listError:   listState.error,
     inlineError,
     modalError,
     modalOpen,

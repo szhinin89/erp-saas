@@ -2,9 +2,11 @@ using ERP.Domain.Modules.Accounting.Entities;
 using ERP.Domain.Modules.Accounting.Enums;
 using ERP.Domain.Configuration.Entities;
 using ERP.Domain.MasterData.Entities;
+using ERP.Domain.Modules.Fiscal.Entities;
 using ERP.Domain.Modules.Inventory.Entities;
 using ERP.Domain.Modules.Inventory.Enums;
 using ERP.Infrastructure.Persistence;
+using Microsoft.EntityFrameworkCore;
 
 namespace ERP.API.Tests.Support;
 
@@ -13,6 +15,103 @@ namespace ERP.API.Tests.Support;
 /// </summary>
 internal static class VentasEndToEndHelpers
 {
+    private static long _nextSnowflakeId = 9_000;
+
+    private static long NextSnowflakeId() => Interlocked.Increment(ref _nextSnowflakeId);
+
+    internal static Invoice RequireInvoice(ErpDbContext db, Guid publicId) =>
+        db.FiscalInvoices
+            .Include(i => i.Electronic)
+            .Include(i => i.Lines)
+            .First(i => i.PublicId == publicId);
+
+    /// <summary>
+    /// Crea una factura fiscal autorizada (greenfield) para tests de impresión/RIDE.
+    /// </summary>
+    internal static async Task<Guid> SeedAuthorizedInvoiceAsync(
+        ErpDbContext db,
+        IntegrationSeedData.SeedResult seed,
+        Guid businessPartnerId,
+        Guid companyId,
+        decimal subtotal,
+        decimal taxTotal,
+        decimal total,
+        string sequential,
+        string lineDescription,
+        CancellationToken ct = default)
+    {
+        var publicId = Guid.NewGuid();
+        var invoiceId = NextSnowflakeId();
+        var issueDate = DateTime.UtcNow;
+        var accessKey = new string('1', 49);
+
+        var invoice = Invoice.Create(
+            invoiceId,
+            publicId,
+            seed.SubscriberId,
+            companyId,
+            businessPartnerId,
+            seed.WarehouseId,
+            docType: "01",
+            estabCode: "001",
+            emPointCode: "001",
+            sequential: sequential,
+            accessKey: accessKey,
+            issueDate: issueDate,
+            buyerIdType: "04",
+            buyerIdNumber: "9999999999001",
+            buyerNameSnapshot: "Cliente Test S.A.",
+            buyerAddressSnapshot: null,
+            paymentMethodCode: "01",
+            paymentTermDays: 0,
+            notes: null,
+            createdBy: seed.UserId);
+
+        var lineId = NextSnowflakeId();
+        var line = InvoiceDetail.Create(
+            lineId,
+            invoiceId,
+            seed.SubscriberId,
+            companyId,
+            lineNo: 1,
+            seed.ProductId,
+            productName: "Producto de prueba",
+            sku: "SKU-INT",
+            unitName: "UND",
+            description: lineDescription,
+            quantity: 1m,
+            unitPrice: subtotal,
+            discountAmount: 0m,
+            taxCode: "2",
+            taxRate: 12m,
+            lineTax: taxTotal,
+            issueDate: DateOnly.FromDateTime(issueDate));
+        invoice.AddLine(line);
+
+        var electronicId = NextSnowflakeId();
+        var electronic = InvoiceElectronic.CreatePending(
+            electronicId,
+            invoiceId,
+            seed.SubscriberId,
+            companyId,
+            DateOnly.FromDateTime(issueDate));
+        invoice.AttachElectronic(electronic);
+
+        invoice.Validate(seed.UserId);
+        invoice.Authorize(
+            seed.UserId,
+            authNumber: sequential == "000000001" ? "AUTH-123" : "AUTH-456",
+            authDate: issueDate,
+            journalEntryId: Guid.NewGuid());
+        electronic.MarkAuthorized(
+            sequential == "000000001" ? "AUTH-123" : "AUTH-456",
+            issueDate,
+            xmlAuthPath: null);
+
+        db.FiscalInvoices.Add(invoice);
+        await db.SaveChangesAsync(ct);
+        return publicId;
+    }
     /// <summary>
     /// Siembra los prerequisitos para tests de ventas:
     /// cuenta Revenue, cliente activo, SriSettings y opcionalmente stock inicial.

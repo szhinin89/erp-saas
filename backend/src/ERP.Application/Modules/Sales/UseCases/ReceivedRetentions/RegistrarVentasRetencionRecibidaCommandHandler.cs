@@ -3,6 +3,7 @@ using MediatR;
 using Microsoft.Extensions.Logging;
 using ERP.Application.Common;
 using ERP.Application.Common.Interfaces;
+using ERP.Application.Modules.Fiscal.Integration;
 using ERP.Application.Sales.Services;
 using ERP.Domain.Audit.Entities;
 using ERP.Domain.Audit.Interfaces;
@@ -15,6 +16,7 @@ public sealed class RegistrarSalesRetentionCommandHandler
     : IRequestHandler<RegisterSalesRetentionCommand, Result<Guid>>
 {
     private readonly ISalesRepository     _ventasRepository;
+    private readonly ISalesOriginalBillResolver _originalBillResolver;
     private readonly IFileStorage        _fileStorage;
     private readonly IAccountingService  _accounting;
     private readonly IUserActivityRepository _activity;
@@ -25,6 +27,7 @@ public sealed class RegistrarSalesRetentionCommandHandler
 
     public RegistrarSalesRetentionCommandHandler(
         ISalesRepository ventasRepository,
+        ISalesOriginalBillResolver originalBillResolver,
         IFileStorage fileStorage,
         IAccountingService accounting,
         IUserActivityRepository activity,
@@ -34,6 +37,7 @@ public sealed class RegistrarSalesRetentionCommandHandler
         ILogger<RegistrarSalesRetentionCommandHandler> logger)
     {
         _ventasRepository = ventasRepository;
+        _originalBillResolver = originalBillResolver;
         _fileStorage      = fileStorage;
         _accounting       = accounting;
         _activity         = activity;
@@ -58,7 +62,7 @@ public sealed class RegistrarSalesRetentionCommandHandler
         if (existe)
             return Result<Guid>.Failure("Ya existe una retención recibida con la misma clave de acceso.");
 
-        var factura = await _ventasRepository.GetBillByIdAsync(subscriberId, command.SalesBillId, ct);
+        var factura = await _originalBillResolver.ResolveAsync(subscriberId, command.SalesBillId, ct);
         if (factura is null)
             return Result<Guid>.Failure("Factura de venta no encontrada.");
         if (factura.Status != "Autorizado")

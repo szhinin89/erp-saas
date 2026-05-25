@@ -194,8 +194,7 @@ public sealed class SalesRepository : ISalesRepository
         }
 
         return await _context.SalesNotes
-            .Include(n => n.OriginalBill)
-                .Include(n => n.Lines)
+            .Include(n => n.Lines)
             .FirstOrDefaultAsync(n => n.SubscriberId == subscriberId && n.Id == id, ct);
     }
 

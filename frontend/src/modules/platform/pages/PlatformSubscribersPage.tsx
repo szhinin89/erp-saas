@@ -111,7 +111,7 @@ export function PlatformSubscribersPage() {
             Abre la ficha de un suscriptor para administrarlo o entrar a su tenant.
           </p>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+        <div className="sa-subscribers-header-actions">
           <div className="sa-subscribers-search">
             <span className="material-symbols-outlined">search</span>
             <input

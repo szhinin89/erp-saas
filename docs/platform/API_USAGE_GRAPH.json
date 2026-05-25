@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-05-23T18:17:51.570Z",
+  "generatedAt": "2026-05-25T11:39:13.687Z",
   "summary": {
-    "total": 77,
-    "allowed": 77,
+    "total": 78,
+    "allowed": 78,
     "legacyViolations": 0,
     "allowlistViolations": 0
   },
@@ -300,7 +300,9 @@
         "frontend/src/modules/inventario/kardex/pages/KardexPage.tsx",
         "frontend/src/modules/inventario/stock/pages/StockPage.tsx",
         "frontend/src/modules/inventario/transferencias/pages/CrearTransferenciaPage.tsx",
-        "frontend/src/modules/products/api/productService.ts"
+        "frontend/src/modules/products/api/productService.ts",
+        "frontend/src/modules/ventas/cotizaciones/pages/CreateQuotePage.tsx",
+        "frontend/src/modules/ventas/ordenes/pages/CreateSalesOrderPage.tsx"
       ],
       "legacy": false,
       "allowed": true
@@ -527,15 +529,6 @@
       "allowed": true
     },
     {
-      "endpoint": "/api/purchases/suppliers",
-      "files": [
-        "frontend/src/modules/compras/suppliers/api/supplierService.ts",
-        "frontend/src/modules/masterData/api/businessPartnerFacade.ts"
-      ],
-      "legacy": false,
-      "allowed": true
-    },
-    {
       "endpoint": "/api/saas/billing/account",
       "files": [
         "frontend/src/modules/saas/billing/api/saasBillingService.ts"
@@ -560,20 +553,34 @@
       "allowed": true
     },
     {
-      "endpoint": "/api/sales/customers",
+      "endpoint": "/api/sales/invoices",
       "files": [
-        "frontend/src/modules/customers/api/customerCatalogService.ts",
-        "frontend/src/modules/customers/api/customerService.ts",
-        "frontend/src/modules/masterData/api/businessPartnerFacade.ts"
+        "frontend/src/modules/lib/authRefreshPolicy.test.ts",
+        "frontend/src/modules/ventas/api/ventasFacturasService.ts"
       ],
       "legacy": false,
       "allowed": true
     },
     {
-      "endpoint": "/api/sales/invoices",
+      "endpoint": "/api/sales/orders",
       "files": [
-        "frontend/src/modules/lib/authRefreshPolicy.test.ts",
-        "frontend/src/modules/ventas/api/ventasFacturasService.ts"
+        "frontend/src/modules/ventas/ordenes/api/salesOrderService.ts"
+      ],
+      "legacy": false,
+      "allowed": true
+    },
+    {
+      "endpoint": "/api/sales/orders/from-quote",
+      "files": [
+        "frontend/src/modules/ventas/cotizaciones/api/quoteService.ts"
+      ],
+      "legacy": false,
+      "allowed": true
+    },
+    {
+      "endpoint": "/api/sales/quotes",
+      "files": [
+        "frontend/src/modules/ventas/cotizaciones/api/quoteService.ts"
       ],
       "legacy": false,
       "allowed": true

@@ -195,9 +195,7 @@ public sealed class VentasControllerContractTests
     [Fact]
     public async Task Imprimir_WhenSuccess_ReturnsHtmlContent()
     {
-        var ctrl = CreateController(
-            new StubMediator(_ => Result<Guid>.Success(Guid.NewGuid())),
-            new StubTirillaFacturaService());
+        var ctrl = CreateDocumentsController(new StubTirillaFacturaService());
 
         var result = await ctrl.Print(Guid.NewGuid(), CancellationToken.None);
 
@@ -210,7 +208,7 @@ public sealed class VentasControllerContractTests
     public async Task Imprimir_WhenNotFound_Returns404()
     {
         var service = new StubTirillaFacturaService(failNotFound: true);
-        var ctrl = CreateController(new StubMediator(_ => Result<Guid>.Success(Guid.NewGuid())), service);
+        var ctrl = CreateDocumentsController(service);
 
         var result = await ctrl.Print(Guid.NewGuid(), CancellationToken.None);
         result.Should().BeOfType<NotFoundResult>();
@@ -232,13 +230,15 @@ public sealed class VentasControllerContractTests
         // (ver VentasHttpTests.Ventas_GetStock_SinParametros_Retorna400)
         await Task.CompletedTask; // placeholder — la cobertura real está en VentasHttpTests
     }
-    private static InvoicesController CreateController(IMediator mediator, ITirillaFacturaService? service = null)
-    {
-        return new InvoicesController(
-            mediator,
+    private static InvoicesController CreateController(IMediator mediator)
+        => new(mediator);
+
+    private static InvoiceDocumentsController CreateDocumentsController(
+        ITirillaFacturaService? service = null,
+        IRideGeneratorService? ride = null)
+        => new(
             service ?? new StubTirillaFacturaService(),
-            new StubRideGeneratorService());
-    }
+            ride ?? new StubRideGeneratorService());
 
     private sealed class StubRideGeneratorService : IRideGeneratorService
     {

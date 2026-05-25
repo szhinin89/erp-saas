@@ -152,7 +152,7 @@ export function CreateInvoicePage() {
       }
       await ventasFacturasService.validate(id);
       await ventasFacturasService.issue(id);
-      navigate('/ventas/facturas');
+      navigate(`/sales/invoices/${id}`);
     } catch (err) {
       setError(formatApiError(err));
     } finally {
@@ -467,7 +467,7 @@ export function CreateInvoicePage() {
             size="md"
             type="button"
             disabled={saving}
-            onClick={() => navigate('/ventas/facturas')}
+            onClick={() => navigate('/sales/invoices')}
           >
             Cancelar
           </ZHBtn>

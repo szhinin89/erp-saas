@@ -1,6 +1,6 @@
 # Project Status
 
-**Single source of truth** for delivery state. Updated: **2026-05-23**.
+**Single source of truth** for delivery state. Updated: **2026-05-24**.
 
 ## Documentation map (canonical — `AI-RULES/` + 7 files in `docs/` + índices)
 
@@ -38,7 +38,7 @@ Consolidated 2026-05-21: former `MULTITENANCY`, `SCOPES`, `SECURITY`, `BILLING`,
 | PostgreSQL RLS (enterprise tables) | ✅ (in baseline) |
 | Rate limit per subscriber (600/min) | ✅ |
 | Architecture guardrails CI (scripts + NetArchTest) | ✅ (2026-05-21) |
-| **Frontend architecture checks (Node ESM)** | ✅ (2026-05-21) |
+| **Frontend architecture checks (Node ESM)** | ✅ 12/12, score 100/100 (2026-05-24) — controllers backend ≤150 líneas |
 | **Architecture governance v2** (ADRs, backend Node checks, score, PR annotations) | ✅ (2026-05-21) |
 | Architecture baseline v1.0 remediation (lint, E2E smoke, legacy platform controller, SYSTEM_TRUTH) | ✅ (2026-05-21) |
 | Post-audit remediation (session SEC, Sales unify, Kardex CQRS, Cash validators) | ✅ (2026-05-21) |
@@ -142,6 +142,7 @@ Details: [ARCHITECTURE.md](./ARCHITECTURE.md), [DATABASE.md](./DATABASE.md).
 | Inventory, transfers, adjustments, kardex | ✅ |
 | Purchases (OC, bills, expenses) | ✅ |
 | Sales + electronic invoice (SRI code) | ✅ code / 🟡 real SRI validation pending |
+| **Sales commercial pipeline** (quote → order → invoice, `DocumentRelation`) | ✅ API + UI + E2E (2026-05-24) |
 | Accounting, cash | ✅ |
 | Retenciones / guía remisión | 🟡 partial / placeholder UI |
 
@@ -161,6 +162,7 @@ Details: [ARCHITECTURE.md](./ARCHITECTURE.md), [DATABASE.md](./DATABASE.md).
 |------|--------|
 | Auth, subscriber select, company select | ✅ |
 | Core ERP modules (sales, purchases, inventory, settings) | ✅ |
+| **Ventas pipeline UI** (`/sales/quotes`, `/sales/orders`, `/sales/invoices`, credit notes) | ✅ (2026-05-24) |
 | **`fullLogout()` centralizado** (stores + localStorage + `erp.saas.*`) | ✅ |
 | **Products/customers — fuente única en `modules/*`** (`apiEnvelope`, adapters `@deprecated`) | ✅ |
 | **Consolidación modular P3** (auth, branches, accounting, dashboard, platform API + pages) | ✅ |
@@ -219,6 +221,21 @@ Details: [ARCHITECTURE.md](./ARCHITECTURE.md), [DATABASE.md](./DATABASE.md).
 | Frontend build | ✅ |
 | Playwright smoke | ✅ PASS |
 | Playwright enterprise E2E | 🟡 requiere API local; skip controlado sin backend |
+
+### Sales commercial pipeline greenfield (2026-05-24)
+
+| Item | Estado |
+|------|--------|
+| API: quotes (list/detail/create/approve/cancel), orders (list/detail/create/confirm/cancel/invoice) | ✅ |
+| API: invoices (list/detail/validar/emitir/reintentar/anular) + permisos `sales.invoices.*` | ✅ |
+| API: `DocumentRelation` (`QUOTE_TO_ORDER`, `ORDER_TO_INVOICE`) en detalle | ✅ |
+| UI: `/sales/quotes`, `/sales/orders`, `/sales/invoices` + legacy redirects | ✅ |
+| UI: trazabilidad cotización↔pedido↔factura; factura directa walk-in | ✅ |
+| UI: filtros servidor en listado facturas; permiso `sales.credit-notes.send` | ✅ |
+| E2E: `SalesCommercialPipelineEndToEndTests`, `SalesOrderInvoiceEndToEndTests`, `SalesCommercialCancelEndToEndTests` | ✅ |
+| Tenants con perfil Facturador anterior al seed | 🟡 re-seed o migración manual de permisos `sales.quotes.*`, `sales.orders.*` |
+
+Flujo canónico: **Cotización → Aprobar → Pedido → Confirmar → Factura → Validar/Emitir SRI**.
 
 ## MVP commercial (~85–90%)
 

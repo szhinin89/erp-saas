@@ -343,6 +343,9 @@ export function buildNavGroups(
       sortOrder: defaultBarRank('sales') * 10,
       items: [
         { to: '/sales/invoices', label: t('app.nav.sales.invoices'), permissionKey: 'sales.invoices.view' },
+        { to: '/sales/quotes', label: t('app.nav.sales.quotes'), permissionKey: 'sales.quotes.view' },
+        { to: '/sales/orders', label: t('app.nav.sales.orders'), permissionKey: 'sales.orders.view' },
+        { to: '/sales/credit-notes', label: t('app.nav.item.sales.credit-notes'), permissionKey: 'sales.credit-notes.view' },
       ],
     },
     {
@@ -533,9 +536,10 @@ export function flattenSaaSIntoHome(groups: NavGroup[]): NavGroup[] {
  */
 export function ensureSalesNextToInventory(
   groups: NavGroup[],
-  t: TranslateFn,
+  _t: TranslateFn,
   _options?: { platformPanelEnabled?: boolean },
 ): NavGroup[] {
+  void _t;
   void _options;
   if (groups.some((g) => g.id === 'sales')) {
     return sortNavGroupsForMainBar(groups);
