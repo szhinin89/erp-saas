@@ -48,9 +48,11 @@ Conexión: `ConnectionStrings:DefaultConnection`. En Development, `Database.Migr
 
 ## Migraciones
 
-### Cadena EF (desarrollo)
+### Baseline EF (desarrollo)
 
-Forward-only desde `20260521034018_InitialEnterpriseBaseline`. Lista completa: [`backend/src/ERP.Infrastructure/Migrations/README.md`](../backend/src/ERP.Infrastructure/Migrations/README.md).
+Una sola migración: `20260525224928_InitialEnterpriseBaseline`. Detalle: [`backend/src/ERP.Infrastructure/Migrations/README.md`](../backend/src/ERP.Infrastructure/Migrations/README.md).
+
+Cambios de schema posteriores: solo migraciones forward con `dotnet ef migrations add`.
 
 Reset local recomendado:
 

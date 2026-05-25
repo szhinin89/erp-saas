@@ -28,7 +28,7 @@ Consolidated 2026-05-21: former `MULTITENANCY`, `SCOPES`, `SECURITY`, `BILLING`,
 | Area | State |
 |------|--------|
 | Modular monolith (Clean + CQRS) | ✅ |
-| Single EF baseline `20260521034018_InitialEnterpriseBaseline` | ✅ |
+| Single EF baseline `20260525224928_InitialEnterpriseBaseline` | ✅ |
 | Subscriber / Company / Membership model | ✅ |
 | SaaS billing domain (isolated tables) | ✅ |
 | Commercial plan limits service | ✅ |
