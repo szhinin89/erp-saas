@@ -77,7 +77,7 @@ describe('syncSessionEntitlements', () => {
     }>((resolve) => {
       resolvePerms = () =>
         resolve({
-          permissions: ['sales.customers.view'],
+          permissions: ['masterdata.businesspartners.view'],
           planCode: null,
           enabledModules: [],
         });

@@ -20,8 +20,8 @@ export function MasterDataCustomersPage() {
   return (
     <ErpPageTemplate
       kicker="MasterData"
-      title="Clientes (MasterData)"
-      subtitle="Fuente canónica BusinessPartner + CustomerProfile. CRUD operacional legacy sigue en Ventas → Clientes."
+      title="Clientes"
+      subtitle="Gestión de clientes — fuente canónica BusinessPartner."
       action={
         page.canCreate ? (
           <ZHBtn variant="primary" onClick={page.openCreate}>
@@ -156,9 +156,6 @@ export function MasterDataCustomersPage() {
         </div>
       )}
 
-      <p className="md-legacy-hint">
-        Listado legacy sin cambios: <a href="/sales/customers">/sales/customers</a>
-      </p>
 
       {page.modalOpen && (
         <MasterDataBpFormModal

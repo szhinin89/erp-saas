@@ -101,6 +101,7 @@ public static class SubscriberSubscriptionCatalog
             ["accounting"] = "accounting",
             ["access"] = "access",
             ["settings"] = "access",
+            ["masterdata"] = "sales",
             ["saas"] = "saas",
         };
 

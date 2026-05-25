@@ -20,8 +20,8 @@ export function MasterDataSuppliersPage() {
   return (
     <ErpPageTemplate
       kicker="MasterData"
-      title="Proveedores (MasterData)"
-      subtitle="Fuente canónica BusinessPartner + SupplierProfile. CRUD operacional legacy sigue en Compras → Proveedores."
+      title="Proveedores"
+      subtitle="Gestión de proveedores — fuente canónica BusinessPartner."
       action={
         page.canCreate ? (
           <ZHBtn variant="primary" onClick={page.openCreate}>
@@ -153,9 +153,6 @@ export function MasterDataSuppliersPage() {
         </div>
       )}
 
-      <p className="md-legacy-hint">
-        Listado legacy: <a href="/purchases/suppliers">/purchases/suppliers</a>
-      </p>
 
       {page.modalOpen && (
         <MasterDataBpFormModal

@@ -113,7 +113,10 @@ public sealed class SubscriberSubscriptionCatalogTests
             subscriberId, entitlements.Object, "ventas.customers.view")).Should().BeTrue();
 
         (await SubscriberSubscriptionCatalog.TenantAllowsPermissionAsync(
-            subscriberId, entitlements.Object, "sales.customers.view")).Should().BeTrue();
+            subscriberId, entitlements.Object, "sales.invoices.view")).Should().BeTrue();
+
+        (await SubscriberSubscriptionCatalog.TenantAllowsPermissionAsync(
+            subscriberId, entitlements.Object, "masterdata.businesspartners.view")).Should().BeTrue();
     }
 
     [Fact]
