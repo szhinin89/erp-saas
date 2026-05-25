@@ -48,57 +48,24 @@ Conexión: `ConnectionStrings:DefaultConnection`. En Development, `Database.Migr
 
 ## Migraciones
 
-### Cadena actual
+### Cadena EF (desarrollo)
 
-| Migración | Propósito |
-|-----------|-----------|
-| `20260521034018_InitialEnterpriseBaseline` | Schema enterprise completo + RLS SQL |
+Forward-only desde `20260521034018_InitialEnterpriseBaseline`. Lista completa: [`backend/src/ERP.Infrastructure/Migrations/README.md`](../backend/src/ERP.Infrastructure/Migrations/README.md).
 
-Helper (no migración): `EnterpriseBaselineRowLevelSecurity.cs`.
+Reset local recomendado:
 
-Referencia rápida infra: `backend/src/ERP.Infrastructure/Migrations/README.md`.
-
-### Checklist dev
-
-```bash
-cd backend/src/ERP.Infrastructure
-dotnet ef migrations has-pending-model-changes --startup-project ../ERP.API/ERP.API.csproj
-dotnet ef database update --startup-project ../ERP.API/ERP.API.csproj
+```powershell
+.\scripts\db\dev-greenfield-reset.ps1
 ```
-
-Esperado: una fila en `__EFMigrationsHistory`; tablas `identity_users`, `subscribers`, `company`; **no** `users`.
-
-### Añadir migración
-
-```bash
-dotnet ef migrations add <DescriptiveName> --startup-project ../ERP.API/ERP.API.csproj
-```
-
-Genera `.cs`, `.Designer.cs`, actualiza snapshot. **Nunca** archivos a mano.
-
-### Reset dev
-
-```bash
-dotnet ef database drop --force --startup-project ../ERP.API/ERP.API.csproj
-dotnet ef database update --startup-project ../ERP.API/ERP.API.csproj
-```
-
-### Producción
-
-- Solo `database update` forward
-- Backup antes de aplicar
-- Nunca `DROP SCHEMA` en shared
-- Backfills idempotentes en `Up()`
 
 ### SQL fuera de EF (mapa único)
 
-| Ubicación | Rol | Duplicados |
-|-----------|-----|------------|
-| `Migrations/*.cs` | Schema oficial | Una cadena activa (`InitialEnterpriseBaseline`) |
-| `Seeding/InstallData/001_*.sql` | Geografía INEC inmutable | Una versión; regenerar vía `import_inec_ecuador_geography.ps1` |
-| `Seeding/InstallData/002_*.sql` | Menú global EN + `erp_seed_tenant_default_profiles` | Una versión |
-| `scripts/db/sql/002_unified_documents_*.sql` | Migración opcional documentos | Una versión; flag `Documents:UseUnifiedSchema` |
-| `scripts/db/sql/legacy_pre_baseline_nav_permissions_rename.sql` | Upgrade legacy ES→EN | **Única** (reemplaza `refactor_rename*.sql`) |
+| Ubicación | Rol |
+|-----------|-----|
+| `Migrations/*.cs` | Schema oficial |
+| `Seeding/InstallData/001_*.sql` | Geografía INEC inmutable |
+| `Seeding/InstallData/002_*.sql` | Perfiles default + menú global EN |
+| `scripts/db/sql/002_unified_documents_*.sql` | Migración opcional documentos (`Documents:UseUnifiedSchema`) |
 
 Detalle operativo: [`scripts/db/sql/README.md`](../scripts/db/sql/README.md).
 

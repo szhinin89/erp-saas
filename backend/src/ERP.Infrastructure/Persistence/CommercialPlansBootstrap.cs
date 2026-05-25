@@ -24,9 +24,9 @@ public static class CommercialPlansBootstrap
     private static readonly DefaultPlanSeed[] DefaultPlans =
     [
         new("starter",      "Starter",      "STARTER",      49m,  true, false, 0, StarterMenuConfigJson),
-        new("business",     "Business",     "BUSINESS",     99m,  true, true,  1),
-        new("professional", "Professional", "PROFESSIONAL", 179m, true, false, 2),
-        new("enterprise",   "Enterprise",   "ENTERPRISE",   299m, true, false, 3),
+        new("business",     "Business",     "BUSINESS",     99m,  true, true,  1, StarterMenuConfigJson),
+        new("professional", "Professional", "PROFESSIONAL", 179m, true, false, 2, StarterMenuConfigJson),
+        new("enterprise",   "Enterprise",   "ENTERPRISE",   299m, true, false, 3, StarterMenuConfigJson),
     ];
 
     public static async Task EnsureDefaultsAsync(ErpDbContext db, CancellationToken ct = default)

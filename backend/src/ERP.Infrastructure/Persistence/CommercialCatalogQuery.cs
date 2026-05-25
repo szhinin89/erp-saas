@@ -2,7 +2,7 @@ using ERP.Application.Subscriptions;
 using ERP.Domain.Subscriptions;
 using Microsoft.EntityFrameworkCore;
 
-namespace ERP.Infrastructure.Persistence.Saas;
+namespace ERP.Infrastructure.Persistence;
 
 public sealed class CommercialCatalogQuery : ICommercialCatalogQuery, IPublicCommercialPlansQuery
 {

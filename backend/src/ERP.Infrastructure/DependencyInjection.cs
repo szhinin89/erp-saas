@@ -41,7 +41,7 @@ using ERP.Infrastructure.BackgroundServices;
 using ERP.Infrastructure.Deployment;
 using ERP.Infrastructure.Persistence;
 using ERP.Infrastructure.Persistence.Repositories;
-using ERP.Infrastructure.Persistence.Saas;
+using ERP.Infrastructure.Persistence;
 using ERP.Infrastructure.Security;
 using ERP.Application.Billing.Governance;
 using ERP.Application.Billing.PaymentProviders;

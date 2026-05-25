@@ -1,24 +1,25 @@
 # SQL auxiliar (`scripts/db/sql/`)
 
-No es código de aplicación. Política de datos versionados: [`docs/DATABASE.md`](../../docs/DATABASE.md) e [`InstallData/`](../../backend/src/ERP.Infrastructure/Seeding/InstallData/).
+Política de datos versionados: [`docs/DATABASE.md`](../../docs/DATABASE.md) e [`InstallData/`](../../backend/src/ERP.Infrastructure/Seeding/InstallData/).
 
-## Mapa canónico (una sola versión por caso)
+## Mapa canónico
 
-| Caso | Archivo único | Cuándo usar |
-|------|---------------|-------------|
-| Schema EF + RLS | `backend/.../Migrations/20260521034018_InitialEnterpriseBaseline.cs` | Siempre (arranque / `dotnet ef database update`) |
-| Geografía INEC + país EC | `InstallData/001_initdata_immutable_bootstrap.sql` | Automático al arrancar API (InstallData) |
-| Perfiles default + menú global EN | `InstallData/002_system_bootstrap.sql` | Automático al arrancar API (InstallData) |
-| Esquema documentos unificados (opcional) | `002_unified_documents_schema_and_migration.sql` | Solo si `Documents:UseUnifiedSchema` (`DocumentSchemaOptions.cs`) |
-| Rename nav/permisos legacy ES→EN | `legacy_pre_baseline_nav_permissions_rename.sql` | **Solo** BDs anteriores al baseline enterprise; no en instalaciones nuevas |
+| Caso | Ubicación | Cuándo |
+|------|-----------|--------|
+| Schema EF + RLS | `backend/.../Migrations/*.cs` | `dotnet ef database update` o `dev-greenfield-reset.ps1` |
+| Geografía INEC + país EC | `InstallData/001_initdata_immutable_bootstrap.sql` | Automático al arrancar API |
+| Perfiles default + menú global | `InstallData/002_system_bootstrap.sql` | Automático al arrancar API |
+| Esquema documentos unificados (opcional) | `002_unified_documents_schema_and_migration.sql` | Solo si `Documents:UseUnifiedSchema` |
 
-## First-run / reset
+## Reset greenfield (desarrollo)
 
-Usar **`POST /api/dev/reset-first-run`** (Development) o [`Crear-PlatformOperator.ps1`](../../setup/Crear-PlatformOperator.ps1). No mantener SQL manual contra tablas legacy `users`.
+```powershell
+.\scripts\db\dev-greenfield-reset.ps1
+```
 
 ## Geografía INEC (regenerar 001)
 
 1. `scripts/db/import_inec_ecuador_geography.ps1 -OutputFile .\geo.sql`
-2. Reemplazar contenido de `001_initdata_immutable_bootstrap.sql` (o crear `003_...` si 001 ya está aplicado en prod — ver README InstallData).
+2. Reemplazar contenido de `001_initdata_immutable_bootstrap.sql` (solo si 001 aún no está aplicado en prod).
 
 No añadir `.sql` aquí sin documentar en este README y en `docs/DATABASE.md`.

@@ -5,25 +5,27 @@
 -- No usar BEGIN/COMMIT: el servicio ya ejecuta dentro de una transacción propia.
 --
 -- Secciones:
---   § 1  Función erp_seed_tenant_default_profiles()  — perfiles por tenant
+--   § 1  Función erp_seed_subscriber_default_profiles() — perfiles por suscriptor
 --   § 2  Grupos de navegación global (ui_nav_groups)  — 9 grupos
 --   § 3  Ítems de navegación global  (ui_nav_items)   — 33 ítems
 -- ============================================================================
 
 
 -- ============================================================================
--- § 1  FUNCIÓN: erp_seed_tenant_default_profiles
+-- § 1  FUNCIÓN: erp_seed_subscriber_default_profiles
 -- ----------------------------------------------------------------------------
--- Crea perfiles Facturador / Bodeguero / Contador para un tenant.
--- Uso principal: DefaultProfileSeeder.cs (EF Core) llama a SeedForTenantAsync()
+-- Crea perfiles Facturador / Bodeguero / Contador para un suscriptor.
+-- Uso principal: DefaultProfileSeeder.cs (EF Core) llama a SeedForSubscriberAsync()
 -- en cada onboarding. Esta función existe como herramienta de emergencia/psql.
 --
 -- Claves de permisos: inglés (sales.* / inventory.* / purchases.* / finance.*),
--- alineadas con Permissions.cs tras el refactor de renombrado de módulos.
+-- alineadas con Permissions.cs.
 -- ============================================================================
 
-CREATE OR REPLACE FUNCTION erp_seed_tenant_default_profiles(
-    p_tenant_id UUID,
+DROP FUNCTION IF EXISTS erp_seed_tenant_default_profiles(UUID, UUID);
+
+CREATE OR REPLACE FUNCTION erp_seed_subscriber_default_profiles(
+    p_subscriber_id UUID,
     p_actor_id  UUID
 )
 RETURNS void
@@ -37,21 +39,21 @@ BEGIN
 
     -- 1a. Crear perfiles (idempotente) ----------------------------------------
     INSERT INTO access_profiles
-        (id, tenant_id, name, description, is_active, created_at, created_by)
+        (id, subscriber_id, name, description, is_active, created_at, created_by)
     VALUES
-        (gen_random_uuid(), p_tenant_id, 'Facturador', 'Billing operator — can create and void invoices.',  TRUE, NOW(), p_actor_id),
-        (gen_random_uuid(), p_tenant_id, 'Bodeguero',  'Warehouse operator — manages stock and transfers.', TRUE, NOW(), p_actor_id),
-        (gen_random_uuid(), p_tenant_id, 'Contador',   'Accountant — read-only access to accounting data.', TRUE, NOW(), p_actor_id)
-    ON CONFLICT (tenant_id, name) DO NOTHING;
+        (gen_random_uuid(), p_subscriber_id, 'Facturador', 'Billing operator — can create and void invoices.',  TRUE, NOW(), p_actor_id),
+        (gen_random_uuid(), p_subscriber_id, 'Bodeguero',  'Warehouse operator — manages stock and transfers.', TRUE, NOW(), p_actor_id),
+        (gen_random_uuid(), p_subscriber_id, 'Contador',   'Accountant — read-only access to accounting data.', TRUE, NOW(), p_actor_id)
+    ON CONFLICT (subscriber_id, name) DO NOTHING;
 
-    SELECT id INTO v_facturador_id FROM access_profiles WHERE tenant_id = p_tenant_id AND name = 'Facturador';
-    SELECT id INTO v_bodeguero_id  FROM access_profiles WHERE tenant_id = p_tenant_id AND name = 'Bodeguero';
-    SELECT id INTO v_contador_id   FROM access_profiles WHERE tenant_id = p_tenant_id AND name = 'Contador';
+    SELECT id INTO v_facturador_id FROM access_profiles WHERE subscriber_id = p_subscriber_id AND name = 'Facturador';
+    SELECT id INTO v_bodeguero_id  FROM access_profiles WHERE subscriber_id = p_subscriber_id AND name = 'Bodeguero';
+    SELECT id INTO v_contador_id   FROM access_profiles WHERE subscriber_id = p_subscriber_id AND name = 'Contador';
 
     -- 1b. Permisos Facturador -------------------------------------------------
     INSERT INTO access_profile_permissions
-        (id, tenant_id, profile_id, permission_key, is_allowed, created_at, created_by)
-    SELECT gen_random_uuid(), p_tenant_id, v_facturador_id, key, TRUE, NOW(), p_actor_id
+        (id, subscriber_id, profile_id, permission_key, is_allowed, created_at, created_by)
+    SELECT gen_random_uuid(), p_subscriber_id, v_facturador_id, key, TRUE, NOW(), p_actor_id
     FROM unnest(ARRAY[
         'sales.invoices.view',
         'sales.invoices.create',
@@ -72,12 +74,12 @@ BEGIN
         'masterdata.businesspartners.disable',
         'inventory.products.view'
     ]) AS t(key)
-    ON CONFLICT (tenant_id, profile_id, permission_key) DO NOTHING;
+    ON CONFLICT (subscriber_id, profile_id, permission_key) DO NOTHING;
 
     -- 1c. Permisos Bodeguero --------------------------------------------------
     INSERT INTO access_profile_permissions
-        (id, tenant_id, profile_id, permission_key, is_allowed, created_at, created_by)
-    SELECT gen_random_uuid(), p_tenant_id, v_bodeguero_id, key, TRUE, NOW(), p_actor_id
+        (id, subscriber_id, profile_id, permission_key, is_allowed, created_at, created_by)
+    SELECT gen_random_uuid(), p_subscriber_id, v_bodeguero_id, key, TRUE, NOW(), p_actor_id
     FROM unnest(ARRAY[
         'inventory.products.view',
         'inventory.warehouses.view',
@@ -87,12 +89,12 @@ BEGIN
         'inventory.adjustments.create',
         'purchases.orders.view'
     ]) AS t(key)
-    ON CONFLICT (tenant_id, profile_id, permission_key) DO NOTHING;
+    ON CONFLICT (subscriber_id, profile_id, permission_key) DO NOTHING;
 
     -- 1d. Permisos Contador ---------------------------------------------------
     INSERT INTO access_profile_permissions
-        (id, tenant_id, profile_id, permission_key, is_allowed, created_at, created_by)
-    SELECT gen_random_uuid(), p_tenant_id, v_contador_id, key, TRUE, NOW(), p_actor_id
+        (id, subscriber_id, profile_id, permission_key, is_allowed, created_at, created_by)
+    SELECT gen_random_uuid(), p_subscriber_id, v_contador_id, key, TRUE, NOW(), p_actor_id
     FROM unnest(ARRAY[
         'finance.config.view',
         'finance.accounts.view',
@@ -102,13 +104,13 @@ BEGIN
         'sales.invoices.view',
         'purchases.orders.view'
     ]) AS t(key)
-    ON CONFLICT (tenant_id, profile_id, permission_key) DO NOTHING;
+    ON CONFLICT (subscriber_id, profile_id, permission_key) DO NOTHING;
 
 END;
 $$;
 
-COMMENT ON FUNCTION erp_seed_tenant_default_profiles(UUID, UUID) IS
-    'Seeds Facturador / Bodeguero / Contador access profiles for a given tenant. Idempotent. Emergency/psql tool — primary path: DefaultProfileSeeder.cs.';
+COMMENT ON FUNCTION erp_seed_subscriber_default_profiles(UUID, UUID) IS
+    'Seeds Facturador / Bodeguero / Contador access profiles for a given subscriber. Idempotent. Emergency/psql tool — primary path: DefaultProfileSeeder.cs.';
 
 
 -- ============================================================================
@@ -250,7 +252,8 @@ FROM ui_nav_groups g
 CROSS JOIN (VALUES
   ('/admin/roles',    'app.nav.item.admin.roles',    'Perfiles (Roles)', 10, 'admin', 'admin.roles.view'),
   ('/admin/users',    'app.nav.item.admin.users',    'Acceso usuarios',  20, 'admin', 'admin.users.view'),
-  ('/admin/activity', 'app.nav.item.admin.activity', 'Actividad',        30, 'admin', 'admin.activity.view')
+  ('/admin/activity', 'app.nav.item.admin.activity', 'Actividad',        30, 'admin', 'admin.activity.view'),
+  ('/admin/security', 'app.nav.item.admin.security', 'Seguridad',        40, 'admin', null)
 ) AS v(route_path, label_key, display_label, sort_order, module_key, permission_key)
 WHERE g.code = 'admin'
   AND NOT EXISTS (SELECT 1 FROM ui_nav_items i WHERE i.group_id = g."Id" AND i.route_path = v.route_path);
