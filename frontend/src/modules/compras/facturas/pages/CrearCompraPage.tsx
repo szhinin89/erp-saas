@@ -4,7 +4,7 @@ import { NoAccessPage } from '../../../../components/PageShell';
 import { ErpPageTemplate } from '../../../../templates/ErpPageTemplate';
 import { ZHPageNotice } from '../../../../components/zh/ZHPageNotice';
 import { ZHBtn, ZHField } from '../../../../components/zh/ZHForm';
-import { ZhDecimalInput } from '../../../../components/zh/inputs';
+import { ZhDecimalInput, ZhDateInput } from '../../../../components/zh/inputs';
 import { useCompanyScopedAsync } from '../../../../hooks/useCompanyScopedAsync';
 import { businessPartnerFacade } from '../../../masterData/api/businessPartnerFacade';
 import { comprasService, type CompraLineaInput } from '../api/comprasService';
@@ -177,11 +177,11 @@ export function CrearCompraPage() {
             </ZHField>
 
             <ZHField label="Fecha de Emisión" required>
-              <input className="zh-input" type="date" value={invoiceDate} onChange={(e) => setInvoiceDate(e.target.value)} />
+              <ZhDateInput value={invoiceDate} onChange={(e) => setInvoiceDate(e.target.value)} />
             </ZHField>
 
             <ZHField label="Fecha de Vencimiento">
-              <input className="zh-input" type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} />
+              <ZhDateInput value={dueDate} onChange={(e) => setDueDate(e.target.value)} />
             </ZHField>
 
             <ZHField label="Condiciones de Pago">

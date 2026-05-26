@@ -11,6 +11,7 @@ import {
   type BankTransaction,
   type PettyCash,
 } from '../api/cashBankService';
+import { formatDate } from '../../../../lib/formatters/dateFormatters';
 
 function money(value: number, currency = 'USD'): string {
   return value.toLocaleString('es-EC', { style: 'currency', currency, minimumFractionDigits: 2 });
@@ -182,7 +183,7 @@ export function CashBankPage() {
                         <option value="">Extracto…</option>
                         {statements.map((s) => (
                           <option key={s.id} value={s.id}>
-                            {new Date(s.periodFrom).toLocaleDateString('es')} – {new Date(s.periodTo).toLocaleDateString('es')}
+                            {formatDate(s.periodFrom)} – {formatDate(s.periodTo)}
                             {s.isReconciled ? ' (conciliado)' : ''}
                           </option>
                         ))}
@@ -214,7 +215,7 @@ export function CashBankPage() {
                         <tbody>
                           {movements.map((m) => (
                             <tr key={m.id}>
-                              <td>{new Date(m.fecha).toLocaleDateString('es')}</td>
+                              <td>{formatDate(m.fecha)}</td>
                               <td>{m.description}</td>
                               <td className="mono">{m.referencia || '—'}</td>
                               <td className="pg-td-right">{money(m.monto, selectedAccount.currency)}</td>

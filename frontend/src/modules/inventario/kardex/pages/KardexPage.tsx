@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { EmptyState, LoadingState, NoAccessPage } from '../../../../components/PageShell';
 import { ErpPageTemplate } from '../../../../templates/ErpPageTemplate';
 import { ZHBtn } from '../../../../components/zh/ZHForm';
+import { ZhDateInput } from '../../../../components/zh/inputs';
 import { ZHPageNotice } from '../../../../components/zh/ZHPageNotice';
 import { useAsync } from '../../../../hooks/useAsync';
 import { useI18n } from '../../../../i18n/i18n';
@@ -128,16 +129,12 @@ export function KardexPage() {
                 <option key={p.id} value={p.id}>{p.shortName}</option>
               ))}
             </select>
-            <input
-              className="zh-input"
-              type="date"
+            <ZhDateInput
               value={fechaInicio}
               disabled={loading}
               onChange={(e) => setFechaInicio(e.target.value)}
             />
-            <input
-              className="zh-input"
-              type="date"
+            <ZhDateInput
               value={fechaFin}
               disabled={loading}
               onChange={(e) => setFechaFin(e.target.value)}

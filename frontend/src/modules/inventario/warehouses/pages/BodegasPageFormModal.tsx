@@ -3,6 +3,7 @@ import { ZHPageNotice } from '../../../../components/zh/ZHPageNotice';
 import { ZHBtn, ZHField } from '../../../../components/zh/ZHForm';
 import type { BranchDto } from '../../../branches/api/branchService';
 import { STORAGE_TYPES, type WarehouseFormValues } from '../../../../schemas/inventory/warehouseSchema';
+import { formatDate, todayIso } from '../../../../lib/formatters/dateFormatters';
 
 type BodegasPageFormModalProps = {
   t: (key: string) => string;
@@ -195,7 +196,7 @@ export function BodegasPageFormModal({
                     </div>
                     <div className="bod-meta-row">
                       <span className="bod-meta-label">Fecha</span>
-                      <span className="bod-meta-value">{new Date().toLocaleDateString('es')}</span>
+                      <span className="bod-meta-value">{formatDate(todayIso())}</span>
                     </div>
                   </div>
                 </div>

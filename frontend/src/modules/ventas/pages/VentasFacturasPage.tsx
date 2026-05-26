@@ -9,6 +9,7 @@ import { invoiceNumber } from '../api/ventasFacturasMapper';
 import { openVentasFacturaPrint } from '../utils/openVentasFacturaPrint';
 import './ventas-facturas-page.css';
 import { usePermissionsUi } from '../../../access/usePermissionsUi';
+import { formatDate } from '../../../lib/formatters/dateFormatters';
 
 type BadgeInfo = { cls: string; label: string };
 
@@ -354,7 +355,7 @@ export function VentasFacturasPage() {
                       <td data-label="Nº Factura" className="vf-col-numero">{numero}</td>
                       <td data-label={t('ventas.facturas.col.customer')}>{row.clienteNombre}</td>
                       <td data-label={t('ventas.facturas.col.date')} className="vf-col-date">
-                        {new Date(row.fechaEmision).toLocaleDateString('es')}
+                        {formatDate(row.fechaEmision)}
                       </td>
                       <td data-label="Subtotal">${row.subtotal.toFixed(2)}</td>
                       <td data-label="Impuesto">${row.impuesto.toFixed(2)}</td>
@@ -486,7 +487,7 @@ export function VentasFacturasPage() {
                           ${row.total.toFixed(2)}
                         </span>
                         <span className="pg-activity-time">
-                          {new Date(row.fechaEmision).toLocaleDateString('es')}
+                          {formatDate(row.fechaEmision)}
                         </span>
                       </div>
                     </div>

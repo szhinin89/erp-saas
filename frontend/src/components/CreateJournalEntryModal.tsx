@@ -8,7 +8,7 @@ import './CreateJournalEntryModal.css';
 import { useI18n } from '../i18n/i18n';
 import { useAuthStore } from '../store/authStore';
 import { ZHFormBody, ZHFormSection, ZHGrid, ZHField, ZHFormActions, ZHBtn } from './zh/ZHForm';
-import { ZhDecimalInput } from './zh/inputs';
+import { ZhDecimalInput, ZhDateInput } from './zh/inputs';
 import { ZHPageNotice } from './zh/ZHPageNotice';
 import { ZHColSpan } from './zh/ZHLayout';
 import { ZHModalHeader } from './zh/ZHModalHeader';
@@ -127,7 +127,7 @@ export function CreateJournalEntryModal({ accounts, onClose, onCreated }: Props)
                   />
                 </ZHField>
                 <ZHField label={t('finance.journal.form.date')} required fieldError={errors.date?.message}>
-                  <input id="date" type="date" disabled={isSubmitting} {...register('date')} />
+                  <ZhDateInput id="date" disabled={isSubmitting} {...register('date')} />
                 </ZHField>
                 <ZHColSpan span={2}>
                   <ZHField label={t('finance.journal.form.description')} required fieldError={errors.description?.message}>

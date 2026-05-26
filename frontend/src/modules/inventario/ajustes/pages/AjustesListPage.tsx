@@ -4,10 +4,12 @@ import { EmptyState, LoadingState, NoAccessPage } from '../../../../components/P
 import { ErpPageTemplate } from '../../../../templates/ErpPageTemplate';
 import { ZHBtn } from '../../../../components/zh/ZHForm';
 import { ZHPageNotice } from '../../../../components/zh/ZHPageNotice';
+import { ZhDateInput } from '../../../../components/zh/inputs';
 import { AjusteEstadoBadge, AjusteTipoBadge } from '../components/AjusteEstadoBadge';
 import { useAjustesList } from '../hooks/useAjustes';
 import type { AjustesFilter, EstadoAjuste } from '../api/ajusteService';
 import { usePermissionsUi } from '../../../../access/usePermissionsUi';
+import { formatDate } from '../../../../lib/formatters/dateFormatters';
 
 export function AjustesListPage() {
   const { canShow } = usePermissionsUi();
@@ -60,15 +62,11 @@ export function AjustesListPage() {
               <option value="Ejecutado">Ejecutado</option>
               <option value="Cancelado">Cancelado</option>
             </select>
-            <input
-              className="zh-input"
-              type="date"
+            <ZhDateInput
               value={filter.fechaDesde ?? ''}
               onChange={(e) => setFilter((f) => ({ ...f, fechaDesde: e.target.value || undefined, pageNumber: 1 }))}
             />
-            <input
-              className="zh-input"
-              type="date"
+            <ZhDateInput
               value={filter.fechaHasta ?? ''}
               onChange={(e) => setFilter((f) => ({ ...f, fechaHasta: e.target.value || undefined, pageNumber: 1 }))}
             />
@@ -106,7 +104,7 @@ export function AjustesListPage() {
                     <td>{a.warehouseName}</td>
                     <td><AjusteTipoBadge tipo={a.adjustmentType} cantidad={Math.abs(a.adjustmentQuantity)} /></td>
                     <td>{a.reason}</td>
-                    <td>{new Date(a.adjustmentDate).toLocaleDateString('es')}</td>
+                    <td>{formatDate(a.adjustmentDate)}</td>
                     <td><AjusteEstadoBadge estado={a.status} /></td>
                     <td className="pg-td-right">
                       <ZHBtn variant="ghost" size="sm" onClick={(e) => {

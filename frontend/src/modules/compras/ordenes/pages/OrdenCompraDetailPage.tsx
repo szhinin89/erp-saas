@@ -8,6 +8,7 @@ import { useOrdenCompraDetalle, useOrdenCompraAcciones } from '../hooks/useOrden
 import type { EstadoOrdenCompra } from '../api/ordenCompraService';
 import './orden-compra-page.css';
 import { usePermissionsUi } from '../../../../access/usePermissionsUi';
+import { formatDate } from '../../../../lib/formatters/dateFormatters';
 
 function estadoBadgeClass(estado: EstadoOrdenCompra): string {
   const map: Record<string, string> = {
@@ -87,8 +88,8 @@ export function OrdenCompraDetailPage() {
                   <span className={estadoBadgeClass(data.estado)}>{data.estado}</span>
                 </InfoItem>
                 <InfoItem label="Proveedor">{data.proveedorNombre}</InfoItem>
-                <InfoItem label="Fecha emisión">{new Date(data.fechaEmision).toLocaleDateString('es')}</InfoItem>
-                <InfoItem label="Fecha requerida">{new Date(data.fechaRequerida).toLocaleDateString('es')}</InfoItem>
+                <InfoItem label="Fecha emisión">{formatDate(data.fechaEmision)}</InfoItem>
+                <InfoItem label="Fecha requerida">{formatDate(data.fechaRequerida)}</InfoItem>
                 <InfoItem label="Total">
                   <span className="mono pg-doc-hero-mono">
                     ${data.total.toFixed(2)}
@@ -165,7 +166,7 @@ export function OrdenCompraDetailPage() {
                     {data.facturasVinculadas.map((fv) => (
                       <tr key={fv.compraFacturaId}>
                         <td><strong>{fv.numeroFactura}</strong></td>
-                        <td>{new Date(fv.fechaVinculacion).toLocaleDateString('es')}</td>
+                        <td>{formatDate(fv.fechaVinculacion)}</td>
                       </tr>
                     ))}
                   </tbody>

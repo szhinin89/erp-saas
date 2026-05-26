@@ -1,5 +1,6 @@
 import { EmptyState, LoadingState } from '../../../components/PageShell';
 import { ZHBtn, ZHField } from '../../../components/zh/ZHForm';
+import { ZhDateInput } from '../../../components/zh/inputs';
 import { ZHPageNotice } from '../../../components/zh/ZHPageNotice';
 import type { AccountingPageContext } from '../hooks/useAccountingPage';
 
@@ -35,10 +36,10 @@ export function AccountingBalanceTab({
       </div>
       <div className="pg-section-body acc-tab-filters">
         <ZHField label="Desde">
-          <input className="zh-input" type="date" value={balDesde} onChange={(e) => setBalDesde(e.target.value)} />
+          <ZhDateInput value={balDesde} onChange={(e) => setBalDesde(e.target.value)} />
         </ZHField>
         <ZHField label="Hasta">
-          <input className="zh-input" type="date" value={balHasta} onChange={(e) => setBalHasta(e.target.value)} />
+          <ZhDateInput value={balHasta} onChange={(e) => setBalHasta(e.target.value)} />
         </ZHField>
         <ZHBtn variant="primary" size="md" onClick={() => void fetchBalance()} disabled={balLoading}>
           {balLoading ? 'Cargando...' : 'Generar'}

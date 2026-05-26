@@ -1,5 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import { EmptyState } from '../PageShell';
+import { formatDate } from '../../lib/formatters/dateFormatters';
 import { ZHCard } from '../zh/ZHCard';
 import { ZHBtn } from '../zh/ZHForm';
 import { ZHCardSection } from '../zh/ZHLayout';
@@ -108,7 +109,7 @@ export function PlatformPlansSectionSubscribers({
                         {tn.activeUsers}/{tn.totalUsers}
                       </td>
                       <td className="sap-subscriber-dates">
-                        <div>{new Date(tn.createdAt).toLocaleDateString()}</div>
+                        <div>{formatDate(tn.createdAt)}</div>
                         <div className="subtle">{t('platform.plansDashboard.expiresNotTracked')}</div>
                       </td>
                       <td className="mono">{showMrr && p ? formatPlanMoney(mrrVal, p.currency) : '—'}</td>

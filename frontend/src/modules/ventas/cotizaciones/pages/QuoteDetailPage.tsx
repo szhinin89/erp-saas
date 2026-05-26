@@ -4,6 +4,7 @@ import { EmptyState, LoadingState, NoAccessPage } from '../../../../components/P
 import { ErpPageTemplate } from '../../../../templates/ErpPageTemplate';
 import { ZHBtn, ZHField } from '../../../../components/zh/ZHForm';
 import { ZHPageNotice } from '../../../../components/zh/ZHPageNotice';
+import { ZhDateInput } from '../../../../components/zh/inputs';
 import { useI18n } from '../../../../i18n/i18n';
 import { useAuthStore } from '../../../../store/authStore';
 import { usePermissionsUi } from '../../../../access/usePermissionsUi';
@@ -237,9 +238,7 @@ export function QuoteDetailPage() {
                     </select>
                   </ZHField>
                   <ZHField label={t('ventas.cotizaciones.form.requiredDate')}>
-                    <input
-                      className="zh-input"
-                      type="date"
+                    <ZhDateInput
                       value={requiredDate}
                       onChange={(e) => setRequiredDate(e.target.value)}
                     />

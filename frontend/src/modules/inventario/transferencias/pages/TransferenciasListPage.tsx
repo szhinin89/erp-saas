@@ -4,10 +4,12 @@ import { EmptyState, LoadingState, NoAccessPage } from '../../../../components/P
 import { ErpPageTemplate } from '../../../../templates/ErpPageTemplate';
 import { ZHBtn } from '../../../../components/zh/ZHForm';
 import { ZHPageNotice } from '../../../../components/zh/ZHPageNotice';
+import { ZhDateInput } from '../../../../components/zh/inputs';
 import { TransferenciaEstadoBadge } from '../components/TransferenciaEstadoBadge';
 import { useBodegas, useTransferenciasList } from '../hooks/useTransferencias';
 import type { EstadoTransferencia, TransferenciasFilter } from '../api/transferenciaService';
 import { usePermissionsUi } from '../../../../access/usePermissionsUi';
+import { formatDate } from '../../../../lib/formatters/dateFormatters';
 
 export function TransferenciasListPage() {
   const { canShow } = usePermissionsUi();
@@ -81,9 +83,9 @@ export function TransferenciasListPage() {
               <option value="">Todas las bodegas destino</option>
               {(bodegas ?? []).map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
             </select>
-            <input className="zh-input" type="date" value={filter.fechaDesde ?? ''}
+            <ZhDateInput value={filter.fechaDesde ?? ''}
               onChange={(e) => setFilter((f) => ({ ...f, fechaDesde: e.target.value || undefined, pageNumber: 1 }))} />
-            <input className="zh-input" type="date" value={filter.fechaHasta ?? ''}
+            <ZhDateInput value={filter.fechaHasta ?? ''}
               onChange={(e) => setFilter((f) => ({ ...f, fechaHasta: e.target.value || undefined, pageNumber: 1 }))} />
           </div>
           <div className="pg-table-controls-right">
@@ -115,7 +117,7 @@ export function TransferenciasListPage() {
                     <td><strong className="mono">{t.transferNumber}</strong></td>
                     <td>{t.sourceWarehouseName}</td>
                     <td>{t.destinationWarehouseName}</td>
-                    <td>{new Date(t.transferDate).toLocaleDateString('es')}</td>
+                    <td>{formatDate(t.transferDate)}</td>
                     <td><TransferenciaEstadoBadge estado={t.status} /></td>
                     <td className="pg-td-right">
                       <ZHBtn variant="ghost" size="sm" onClick={(e) => {

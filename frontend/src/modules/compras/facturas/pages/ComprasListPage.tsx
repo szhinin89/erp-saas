@@ -7,6 +7,7 @@ import { businessPartnerService } from '../../../masterData/api/businessPartnerS
 import { comprasService, type CompraDto, type EstadoCompra } from '../api/comprasService';
 import './compras-facturas-page.css';
 import { usePermissionsUi } from '../../../../access/usePermissionsUi';
+import { formatDate } from '../../../../lib/formatters/dateFormatters';
 
 type BadgeInfo = { cls: string; label: string };
 
@@ -210,7 +211,7 @@ export function ComprasListPage() {
                     <tr key={row.id}>
                       <td className="cf-col-numero">{row.invoiceNumber}</td>
                       <td>{prov}</td>
-                      <td className="cf-col-date">{new Date(row.invoiceDate).toLocaleDateString('es')}</td>
+                      <td className="cf-col-date">{formatDate(row.invoiceDate)}</td>
                       <td>${row.subtotal.toFixed(2)}</td>
                       <td>${row.vatTotal.toFixed(2)}</td>
                       <td className="cf-cell-right pg-cell-strong">${row.total.toFixed(2)}</td>

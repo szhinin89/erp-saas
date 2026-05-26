@@ -4,6 +4,7 @@ import { EmptyState, LoadingState, NoAccessPage } from '../../../../components/P
 import { ErpPageTemplate } from '../../../../templates/ErpPageTemplate';
 import { ZHBtn } from '../../../../components/zh/ZHForm';
 import { ZHPageNotice } from '../../../../components/zh/ZHPageNotice';
+import { ZhDateInput } from '../../../../components/zh/inputs';
 import { useI18n } from '../../../../i18n/i18n';
 import { usePermissionsUi } from '../../../../access/usePermissionsUi';
 import { useSalesOrdersList } from '../hooks/useSalesOrders';
@@ -81,17 +82,13 @@ export function SalesOrdersListPage() {
               <option value="Invoiced">{statusLabel('Invoiced')}</option>
               <option value="Cancelled">{statusLabel('Cancelled')}</option>
             </select>
-            <input
-              className="zh-input"
-              type="date"
+            <ZhDateInput
               value={filter.dateFrom ?? ''}
               onChange={(e) =>
                 setFilter((f) => ({ ...f, dateFrom: e.target.value || undefined, pageNumber: 1 }))
               }
             />
-            <input
-              className="zh-input"
-              type="date"
+            <ZhDateInput
               value={filter.dateTo ?? ''}
               onChange={(e) =>
                 setFilter((f) => ({ ...f, dateTo: e.target.value || undefined, pageNumber: 1 }))

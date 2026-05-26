@@ -8,6 +8,7 @@ import type { ProductCatalogs } from '../hooks/useProducts';
 import { useProductUiStore } from '../store/productUiStore';
 import { ConfirmModal } from './ConfirmModal';
 import { LoadingState } from '../../../components/PageShell';
+import { formatDate } from '../../../lib/formatters/dateFormatters';
 
 interface Props {
   products: Product[];
@@ -191,7 +192,7 @@ export function ListadoTab({
                       </span>
                     </td>
                     <td className="subtle mono prd-date-cell">
-                      {new Date(p.createdAt).toLocaleDateString()}
+                      {formatDate(p.createdAt)}
                     </td>
                     <td className="pg-th-right">
                       <div className="prd-actions-cell">

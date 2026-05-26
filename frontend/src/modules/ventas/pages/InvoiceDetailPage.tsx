@@ -9,6 +9,7 @@ import { invoiceNumber } from '../api/ventasFacturasMapper';
 import { ventasFacturasService } from '../api/ventasFacturasService';
 import { openVentasFacturaPrint } from '../utils/openVentasFacturaPrint';
 import { useVentasFacturaActions, useVentasFacturaDetail } from '../hooks/useVentasFacturas';
+import { formatDate } from '../../../lib/formatters/dateFormatters';
 
 function statusBadgeClass(estado: string): string {
   const e = estado.toLowerCase();
@@ -128,7 +129,7 @@ export function InvoiceDetailPage() {
                 </InfoItem>
                 <InfoItem label={t('ventas.facturas.col.customer')}>{data.clienteNombre}</InfoItem>
                 <InfoItem label={t('ventas.facturas.col.date')}>
-                  {new Date(data.fechaEmision).toLocaleDateString('es')}
+                  {formatDate(data.fechaEmision)}
                 </InfoItem>
                 <InfoItem label={t('ventas.facturas.col.total')}>
                   <span className="mono pg-doc-hero-mono">${data.total.toFixed(2)}</span>

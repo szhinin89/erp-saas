@@ -1,7 +1,9 @@
 import { EmptyState, LoadingState } from '../../../components/PageShell';
 import { ZHBtn, ZHField } from '../../../components/zh/ZHForm';
+import { ZhDateInput } from '../../../components/zh/inputs';
 import { ZHPageNotice } from '../../../components/zh/ZHPageNotice';
 import type { AccountingPageContext } from '../hooks/useAccountingPage';
+import { formatDate } from '../../../lib/formatters/dateFormatters';
 
 type Props = Pick<
   AccountingPageContext,
@@ -60,17 +62,13 @@ export function AccountingMayorTab({
           </ZHField>
         </div>
         <ZHField label="Desde">
-          <input
-            className="zh-input"
-            type="date"
+          <ZhDateInput
             value={mayorDesde}
             onChange={(e) => setMayorDesde(e.target.value)}
           />
         </ZHField>
         <ZHField label="Hasta">
-          <input
-            className="zh-input"
-            type="date"
+          <ZhDateInput
             value={mayorHasta}
             onChange={(e) => setMayorHasta(e.target.value)}
           />
@@ -113,7 +111,7 @@ export function AccountingMayorTab({
               {mayorData.map((l, i) => (
                 <tr key={i}>
                   <td className="pg-cell-muted">
-                    {new Date(l.date).toLocaleDateString('es-EC')}
+                    {formatDate(l.date)}
                   </td>
                   <td>
                     <span className="mono">{l.reference}</span>

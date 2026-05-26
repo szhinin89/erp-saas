@@ -4,7 +4,7 @@ import { NoAccessPage } from '../../../components/PageShell';
 import { ErpPageTemplate } from '../../../templates/ErpPageTemplate';
 import { ZHPageNotice } from '../../../components/zh/ZHPageNotice';
 import { ZHBtn, ZHField } from '../../../components/zh/ZHForm';
-import { ZhDecimalInput } from '../../../components/zh/inputs';
+import { ZhDecimalInput, ZhDateInput } from '../../../components/zh/inputs';
 import { useI18n } from '../../../i18n/i18n';
 import { useCompanyScopedAsync } from '../../../hooks/useCompanyScopedAsync';
 import { businessPartnerFacade } from '../../masterData/api/businessPartnerFacade';
@@ -182,9 +182,7 @@ export function CreateInvoicePage() {
         </div>
         <div className="pg-header-field">
           <label className="pg-header-field-label">Fecha de Emisión</label>
-          <input
-            className="zh-input"
-            type="date"
+          <ZhDateInput
             value={issueDate}
             onChange={(e) => setIssueDate(e.target.value)}
           />

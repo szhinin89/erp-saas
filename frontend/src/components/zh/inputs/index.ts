@@ -5,3 +5,4 @@ export { ZhNumberInput } from './ZhNumberInput';
 export { ZhDecimalInput } from './ZhDecimalInput';
 export { ZhCurrencyInput } from './ZhCurrencyInput';
 export { ZhPhoneInput } from './ZhPhoneInput';
+export { ZhDateInput } from './ZhDateInput';

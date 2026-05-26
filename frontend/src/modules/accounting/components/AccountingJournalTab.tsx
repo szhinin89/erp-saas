@@ -1,8 +1,10 @@
 import { documentStatusLabel, DocumentStatus } from '../../../types/accounting';
 import { EmptyState, LoadingState } from '../../../components/PageShell';
 import { ZHBtn, ZHField } from '../../../components/zh/ZHForm';
+import { ZhDateInput } from '../../../components/zh/inputs';
 import { ZHPageNotice } from '../../../components/zh/ZHPageNotice';
 import type { AccountingPageContext } from '../hooks/useAccountingPage';
+import { formatDate } from '../../../lib/formatters/dateFormatters';
 
 const statusBadgeClass: Record<DocumentStatus, string> = {
   [DocumentStatus.Draft]: 'badge badge--gray badge--md',
@@ -56,10 +58,10 @@ export function AccountingJournalTab({
       </div>
       <div className="pg-section-body acc-tab-filters acc-tab-filters--tight">
         <ZHField label="Desde">
-          <input className="zh-input" type="date" value={jDesde} onChange={(e) => setJDesde(e.target.value)} />
+          <ZhDateInput value={jDesde} onChange={(e) => setJDesde(e.target.value)} />
         </ZHField>
         <ZHField label="Hasta">
-          <input className="zh-input" type="date" value={jHasta} onChange={(e) => setJHasta(e.target.value)} />
+          <ZhDateInput value={jHasta} onChange={(e) => setJHasta(e.target.value)} />
         </ZHField>
         <span className="acc-tab-count-hint">
           {filteredJournal.length} asientos
@@ -115,7 +117,7 @@ export function AccountingJournalTab({
                     <td>
                       <span className="mono">{e.reference}</span>
                     </td>
-                    <td>{new Date(e.date).toLocaleDateString('es-EC')}</td>
+                    <td>{formatDate(e.date)}</td>
                     <td className="subtle">{e.description}</td>
                     <td className="pg-td-right pg-cell-strong">${totalDebit.toFixed(2)}</td>
                     <td className="pg-td-right pg-cell-strong">${totalCredit.toFixed(2)}</td>

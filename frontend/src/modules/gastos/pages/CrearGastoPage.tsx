@@ -4,7 +4,7 @@ import { NoAccessPage } from '../../../components/PageShell';
 import { ErpPageTemplate } from '../../../templates/ErpPageTemplate';
 import { ZHPageNotice } from '../../../components/zh/ZHPageNotice';
 import { ZHBtn, ZHField } from '../../../components/zh/ZHForm';
-import { ZhDecimalInput } from '../../../components/zh/inputs';
+import { ZhDecimalInput, ZhDateInput } from '../../../components/zh/inputs';
 import { useCompanyScopedAsync } from '../../../hooks/useCompanyScopedAsync';
 import { businessPartnerFacade } from '../../masterData/api/businessPartnerFacade';
 import { gastosService, type ExpenseCategoryDto } from '../api/gastosService';
@@ -102,7 +102,7 @@ export function CrearGastoPage() {
           <div className="pg-form-grid pg-form-grid--3">
 
             <ZHField label="Fecha" required>
-              <input className="zh-input" type="date" value={issueDate} onChange={(e) => setIssueDate(e.target.value)} />
+              <ZhDateInput value={issueDate} onChange={(e) => setIssueDate(e.target.value)} />
             </ZHField>
 
             <ZHField label="Categoría de Gasto" required>

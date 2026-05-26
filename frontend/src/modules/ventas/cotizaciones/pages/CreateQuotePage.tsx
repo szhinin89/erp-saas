@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { NoAccessPage } from '../../../../components/PageShell';
 import { ErpPageTemplate } from '../../../../templates/ErpPageTemplate';
 import { ZHBtn, ZHField } from '../../../../components/zh/ZHForm';
-import { ZhNumberInput, ZhDecimalInput } from '../../../../components/zh/inputs';
+import { ZhNumberInput, ZhDecimalInput, ZhDateInput } from '../../../../components/zh/inputs';
 import { ZHPageNotice } from '../../../../components/zh/ZHPageNotice';
 import { useI18n } from '../../../../i18n/i18n';
 import { useAuthStore } from '../../../../store/authStore';
@@ -156,9 +156,7 @@ export function CreateQuotePage() {
                 </select>
               </ZHField>
               <ZHField label={t('ventas.cotizaciones.form.validUntil')} required>
-                <input
-                  className="zh-input"
-                  type="date"
+                <ZhDateInput
                   value={validUntil}
                   onChange={(e) => setValidUntil(e.target.value)}
                   required

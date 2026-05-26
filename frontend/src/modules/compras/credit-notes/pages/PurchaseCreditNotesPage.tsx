@@ -8,6 +8,7 @@ import {
   purchaseCreditNotesService,
   type PurchaseCreditNote,
 } from '../api/purchaseCreditNotesService';
+import { formatDate } from '../../../../lib/formatters/dateFormatters';
 
 function statusBadge(status: string): string {
   const s = status.toLowerCase();
@@ -181,7 +182,7 @@ export function PurchaseCreditNotesPage() {
                       <td className="mono" title={row.accessKey}>{row.accessKey || '—'}</td>
                       <td><span className={statusBadge(row.status)}>{row.status}</span></td>
                       <td className="pg-td-right">${row.total.toFixed(2)}</td>
-                      <td>{new Date(row.issueDate).toLocaleDateString('es')}</td>
+                      <td>{formatDate(row.issueDate)}</td>
                       <td>
                         {pending && canApprove && (
                           <button

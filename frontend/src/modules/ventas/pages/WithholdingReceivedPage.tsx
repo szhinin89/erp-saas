@@ -6,6 +6,7 @@ import { ZHPageNotice } from '../../../components/zh/ZHPageNotice';
 import { useI18n } from '../../../i18n/i18n';
 import { withholdingReceivedService, type WithholdingReceivedItem } from '../api/withholdingReceivedService';
 import { usePermissionsUi } from '../../../access/usePermissionsUi';
+import { formatDate } from '../../../lib/formatters/dateFormatters';
 
 export function WithholdingReceivedPage() {
   const { t } = useI18n();
@@ -104,7 +105,7 @@ export function WithholdingReceivedPage() {
                 {filtered.map((row) => (
                   <tr key={row.id}>
                     <td className="mono" title={row.accessKey}>{row.accessKey || '—'}</td>
-                    <td>{new Date(row.issueDate).toLocaleDateString('es')}</td>
+                    <td>{formatDate(row.issueDate)}</td>
                     <td className="pg-td-right">${row.retainedAmount.toFixed(2)}</td>
                     <td className="mono">{row.salesBillId ?? '—'}</td>
                   </tr>

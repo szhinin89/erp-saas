@@ -4,9 +4,11 @@ import { EmptyState, LoadingState, NoAccessPage } from '../../../../components/P
 import { ErpPageTemplate } from '../../../../templates/ErpPageTemplate';
 import { ZHBtn } from '../../../../components/zh/ZHForm';
 import { ZHPageNotice } from '../../../../components/zh/ZHPageNotice';
+import { ZhDateInput } from '../../../../components/zh/inputs';
 import { useOrdenesCompraList } from '../hooks/useOrdenesCompra';
 import type { EstadoOrdenCompra, OrdenesCompraFilter } from '../api/ordenCompraService';
 import { usePermissionsUi } from '../../../../access/usePermissionsUi';
+import { formatDate } from '../../../../lib/formatters/dateFormatters';
 
 function estadoBadgeClass(estado: EstadoOrdenCompra): string {
   const map: Record<string, string> = {
@@ -70,15 +72,11 @@ export function OrdenesCompraListPage() {
               <option value="Cerrada">Cerrada</option>
               <option value="Cancelada">Cancelada</option>
             </select>
-            <input
-              className="zh-input"
-              type="date"
+            <ZhDateInput
               value={filter.fechaDesde ?? ''}
               onChange={(e) => setFilter((f) => ({ ...f, fechaDesde: e.target.value || undefined, pageNumber: 1 }))}
             />
-            <input
-              className="zh-input"
-              type="date"
+            <ZhDateInput
               value={filter.fechaHasta ?? ''}
               onChange={(e) => setFilter((f) => ({ ...f, fechaHasta: e.target.value || undefined, pageNumber: 1 }))}
             />
@@ -112,8 +110,8 @@ export function OrdenesCompraListPage() {
                     onClick={() => navigate(`/compras/ordenes/${oc.id}`)}>
                     <td><strong className="mono">{oc.numeroOrden}</strong></td>
                     <td>{oc.proveedorNombre}</td>
-                    <td>{new Date(oc.fechaEmision).toLocaleDateString('es')}</td>
-                    <td>{new Date(oc.fechaRequerida).toLocaleDateString('es')}</td>
+                    <td>{formatDate(oc.fechaEmision)}</td>
+                    <td>{formatDate(oc.fechaRequerida)}</td>
                     <td className="mono pg-td-right">${oc.total.toFixed(2)}</td>
                     <td><span className={estadoBadgeClass(oc.estado)}>{oc.estado}</span></td>
                     <td className="pg-td-right">

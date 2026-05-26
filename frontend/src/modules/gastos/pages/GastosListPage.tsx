@@ -7,6 +7,7 @@ import { businessPartnerService } from '../../masterData/api/businessPartnerServ
 import { gastosService, type GastoDto, type EstadoGasto } from '../api/gastosService';
 import './gastos-page.css';
 import { usePermissionsUi } from '../../../access/usePermissionsUi';
+import { formatDate } from '../../../lib/formatters/dateFormatters';
 
 type BadgeInfo = { cls: string; label: string };
 
@@ -203,7 +204,7 @@ export function GastosListPage() {
                   const prov   = row.supplierId ? (supplierMap.get(row.supplierId) ?? '—') : '—';
                   return (
                     <tr key={row.id}>
-                      <td className="gst-col-date">{new Date(row.issueDate).toLocaleDateString('es')}</td>
+                      <td className="gst-col-date">{formatDate(row.issueDate)}</td>
                       <td><span className="badge badge--gray">{row.expenseCategory}</span></td>
                       <td>{row.description}</td>
                       <td className="pg-cell-muted">{prov}</td>

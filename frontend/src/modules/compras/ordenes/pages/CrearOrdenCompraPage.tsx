@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { NoAccessPage } from '../../../../components/PageShell';
 import { ErpPageTemplate } from '../../../../templates/ErpPageTemplate';
 import { ZHBtn, ZHField } from '../../../../components/zh/ZHForm';
-import { ZhDecimalInput } from '../../../../components/zh/inputs';
+import { ZhDecimalInput, ZhDateInput } from '../../../../components/zh/inputs';
 import { ZHPageNotice } from '../../../../components/zh/ZHPageNotice';
 import { useOrdenCompraAcciones } from '../hooks/useOrdenesCompra';
 import { useAuthStore } from '../../../../store/authStore';
@@ -137,7 +137,7 @@ export function CrearOrdenCompraPage() {
               </ZHField>
 
               <ZHField label="Fecha requerida" required>
-                <input className="zh-input" type="date" value={fechaRequerida}
+                <ZhDateInput value={fechaRequerida}
                   onChange={(e) => setFechaRequerida(e.target.value)} required />
               </ZHField>
 

@@ -8,6 +8,7 @@ import { RuntimeModeBadge } from '../../../components/RuntimeModeBadge';
 import { saasBillingService, type SaasBillingInvoiceDto, type SubscriberBillingAccountDto } from '../billing/api/saasBillingService';
 import { formatApiRequestError } from '../../../modules/lib/apiError';
 import { useI18n } from '../../../i18n/i18n';
+import { formatDate } from '../../../lib/formatters/dateFormatters';
 
 export function SaasBillingPage() {
   const { t } = useI18n();
@@ -97,7 +98,7 @@ export function SaasBillingPage() {
                         <td>{inv.invoiceNumber}</td>
                         <td>{inv.status}</td>
                         <td>{inv.totalAmount} {inv.currencyCode}</td>
-                        <td>{new Date(inv.issuedAtUtc).toLocaleDateString()}</td>
+                        <td>{formatDate(inv.issuedAtUtc)}</td>
                       </tr>
                     ))}
                   </tbody>

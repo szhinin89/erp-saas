@@ -6,6 +6,7 @@ import { ZHPageNotice } from '../../../../components/zh/ZHPageNotice';
 import { ZhPhoneInput, ZhDecimalInput, ZhNumberInput } from '../../../../components/zh/inputs';
 import type { BranchDto } from '../../../branches/api/branchService';
 import { STORAGE_TYPES, type WarehouseFormValues } from '../../../../schemas/inventory/warehouseSchema';
+import { formatDate, todayIso } from '../../../../lib/formatters/dateFormatters';
 
 interface Props {
   editingId: string | null;
@@ -223,7 +224,7 @@ export function WarehouseFormTab({
             </div>
             <div className="bod-meta-row">
               <span className="bod-meta-label">{t('warehouses.form.date.label', 'Fecha')}</span>
-              <span className="bod-meta-value">{new Date().toLocaleDateString('es')}</span>
+              <span className="bod-meta-value">{formatDate(todayIso())}</span>
             </div>
           </div>
         </div>

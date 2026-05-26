@@ -14,6 +14,7 @@ import { EmptyState, LoadingState } from '../PageShell';
 import { Card } from '../Card';
 import { useI18n } from '../../i18n/i18n';
 import { ZHBtn, ZHField } from '../zh/ZHForm';
+import { ZhDateInput } from '../zh/inputs';
 import { ZHCardSection, ZHGridRow, ZHInlineRowRight } from '../zh/ZHLayout';
 import { ZHPageNotice } from '../zh/ZHPageNotice';
 import {
@@ -110,10 +111,10 @@ export function PlatformGrowthSection() {
           <p className="subtle sag-hint">{t('platform.growth.defaultRangeHint')}</p>
           <ZHGridRow cols={2}>
             <ZHField label={t('platform.growth.from')}>
-              <input type="date" value={from} onChange={(e) => setFrom(e.target.value)} disabled={loading} />
+              <ZhDateInput value={from} onChange={(e) => setFrom(e.target.value)} disabled={loading} />
             </ZHField>
             <ZHField label={t('platform.growth.to')}>
-              <input type="date" value={to} onChange={(e) => setTo(e.target.value)} disabled={loading} />
+              <ZhDateInput value={to} onChange={(e) => setTo(e.target.value)} disabled={loading} />
             </ZHField>
           </ZHGridRow>
           <ZHGridRow cols={2}>

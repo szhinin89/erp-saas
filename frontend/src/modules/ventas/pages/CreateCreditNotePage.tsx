@@ -14,6 +14,7 @@ import { productService } from '../../products/api/productService';
 import type { Product } from '../../../types/product';
 import './credit-notes-page.css';
 import { usePermissionsUi } from '../../../access/usePermissionsUi';
+import { formatDate } from '../../../lib/formatters/dateFormatters';
 
 interface NoteLine {
   localId: string;
@@ -194,7 +195,7 @@ export function CreateCreditNotePage() {
                 <div className="pg-summary-box">
                   <span><strong>Cliente:</strong> {selectedInvoice.clienteNombre}</span>
                   <span><strong>Total factura:</strong> ${selectedInvoice.total.toFixed(2)}</span>
-                  <span><strong>Fecha:</strong> {new Date(selectedInvoice.fechaEmision).toLocaleDateString('es')}</span>
+                  <span><strong>Fecha:</strong> {formatDate(selectedInvoice.fechaEmision)}</span>
                 </div>
               </div>
             )}
