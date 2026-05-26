@@ -1,0 +1,36 @@
+<Project>
+  <!-- Propiedades compartidas por todos los proyectos .NET del repo -->
+  <PropertyGroup>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <LangVersion>latest</LangVersion>
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+    <!-- Activar análisis estático Roslyn en modo Recommended -->
+    <AnalysisMode>Recommended</AnalysisMode>
+    <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+    <!-- Activar análisis de seguridad de tipos nullables en build -->
+    <EnableNETAnalyzers>true</EnableNETAnalyzers>
+    <AnalysisLevel>latest-recommended</AnalysisLevel>
+  </PropertyGroup>
+
+  <!-- Severidades explícitas — adaptar si un rule es muy ruidoso -->
+  <PropertyGroup>
+    <!-- Detectar métodos async sin await (CS1998) como warning -->
+    <NoWarn>$(NoWarn)</NoWarn>
+    <!-- Prohibir string.Format cuando hay interpolación disponible -->
+    <!-- CA1305, CA1310 se cubren con AnalysisMode=Recommended    -->
+  </PropertyGroup>
+
+  <!-- Reglas extra: solo aplican fuera de proyectos de test -->
+  <ItemGroup Condition="!$(MSBuildProjectName.EndsWith('.Tests'))">
+    <!-- CA2007: siempre ConfigureAwait — desactivado para ASP.NET Core (contexto no importa) -->
+    <EditorConfigFiles Remove="$(MSBuildThisFileDirectory).editorconfig" />
+  </ItemGroup>
+
+  <!-- Suprimir análisis en migraciones EF Core (código generado) -->
+  <ItemGroup>
+    <Compile Update="**/Migrations/**">
+      <ExcludeFromStyleCop>true</ExcludeFromStyleCop>
+    </Compile>
+  </ItemGroup>
+</Project>

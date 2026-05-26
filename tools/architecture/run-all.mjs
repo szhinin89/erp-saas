@@ -14,6 +14,9 @@ import { runCheckBackendControllerThin } from './check-backend-controller-thin.m
 import { runCheckBackendSubscriberRules } from './check-backend-subscriber-rules.mjs';
 import { runCheckPermissionsAuthorizationRules } from './check-permissions-authorization-rules.mjs';
 import { runCheckFrontendPermissionsRules } from './check-frontend-permissions-rules.mjs';
+import { runCheckDuplicateServices } from './check-duplicate-services.mjs';
+import { runCheckNamingConventions } from './check-naming-conventions.mjs';
+import { runCheckI18nKeys } from './check-i18n-keys.mjs';
 import { calculateArchitectureScore } from './calculate-score.mjs';
 import { emitGithubAnnotations } from './github-annotations.mjs';
 import { toJsonReport, writeJsonReport } from './shared/report-utils.mjs';
@@ -33,6 +36,9 @@ export const CHECKS = [
   { name: 'backend-subscriber-rules', run: runCheckBackendSubscriberRules },
   { name: 'permissions-authorization-rules', run: runCheckPermissionsAuthorizationRules },
   { name: 'frontend-permissions-rules', run: runCheckFrontendPermissionsRules },
+  { name: 'duplicate-services', run: runCheckDuplicateServices },
+  { name: 'naming-conventions', run: runCheckNamingConventions },
+  { name: 'i18n-keys', run: runCheckI18nKeys },
 ];
 
 /**

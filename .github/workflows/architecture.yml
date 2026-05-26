@@ -56,3 +56,12 @@ jobs:
         working-directory: frontend
         run: npm run architecture:check
         # Emite ::error/::warning annotations cuando GITHUB_ACTIONS=true (run-all.mjs)
+      - name: i18n key consistency (F-i18n)
+        working-directory: frontend
+        run: npm run architecture:i18n
+      - name: Duplicate DI service detection (B-duplicate-di)
+        working-directory: frontend
+        run: npm run architecture:duplicates
+      - name: Naming conventions (B/F-naming)
+        working-directory: frontend
+        run: npm run architecture:naming
