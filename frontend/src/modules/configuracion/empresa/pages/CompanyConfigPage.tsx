@@ -5,6 +5,7 @@ import { LoadingState, NoAccessPage } from '../../../../components/PageShell';
 import { ErpPageTemplate } from '../../../../templates/ErpPageTemplate';
 import { ZHPageNotice } from '../../../../components/zh/ZHPageNotice';
 import { ZHBtn, ZHField } from '../../../../components/zh/ZHForm';
+import { ZhNumberInput } from '../../../../components/zh/inputs';
 import { useI18n } from '../../../../i18n/i18n';
 import { useAsync } from '../../../../hooks/useAsync';
 import { runtimeSubscriberService } from '../../../subscribers/api/runtimeSubscriberService';
@@ -246,21 +247,19 @@ export function CompanyConfigPage() {
               </ZHField>
 
               <ZHField label="Folio Inicial" error={errors.initialFolio?.message}>
-                <input
-                  className="zh-input"
-                  type="number"
-                  min={1}
+                <ZhNumberInput
+                  positiveOnly
                   disabled={saving || !canEdit}
+                  placeholder="1001"
                   {...register('initialFolio')}
                 />
               </ZHField>
 
               <ZHField label="Días de Crédito por Defecto" error={errors.defaultCreditDays?.message}>
-                <input
-                  className="zh-input"
-                  type="number"
-                  min={0}
+                <ZhNumberInput
+                  positiveOnly
                   disabled={saving || !canEdit}
+                  placeholder="30"
                   {...register('defaultCreditDays')}
                 />
               </ZHField>

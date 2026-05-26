@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { NoAccessPage } from '../../../../components/PageShell';
 import { ErpPageTemplate } from '../../../../templates/ErpPageTemplate';
 import { ZHBtn, ZHField } from '../../../../components/zh/ZHForm';
+import { ZhDecimalInput } from '../../../../components/zh/inputs';
 import { ZHPageNotice } from '../../../../components/zh/ZHPageNotice';
 import { useAjusteAcciones } from '../hooks/useAjustes';
 import { useBodegas } from '../../transferencias/hooks/useTransferencias';
@@ -142,8 +143,8 @@ export function CrearAjustePage() {
               </ZHField>
 
               <ZHField label="Cantidad" required>
-                <input className={`zh-input${stockInsuficiente ? ' zh-input--error' : ''}`}
-                  type="number" min={0.001} step={0.001}
+                <ZhDecimalInput className={`zh-input${stockInsuficiente ? ' zh-input--error' : ''}`}
+                  decimals={4} positiveOnly
                   value={cantidad} disabled={loading}
                   onChange={(e) => setCantidad(e.target.value)} placeholder="0" />
               </ZHField>

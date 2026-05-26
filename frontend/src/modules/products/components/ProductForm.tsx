@@ -3,6 +3,7 @@ import { useEffect } from 'react';
 import { useFieldArray, useForm, type Resolver } from 'react-hook-form';
 import type { CatalogItem } from '../../catalog/api/catalogService';
 import { ZHBtn, ZHField, ZHFormSection, ZHGrid } from '../../../components/zh/ZHForm';
+import { ZhDecimalInput } from '../../../components/zh/inputs';
 import { defaultProductValues, productSchema, type ProductFormValues } from '../schemas/productSchema';
 import type { Product } from '../../../types/product';
 
@@ -345,14 +346,13 @@ export function ProductForm({ t, catalogs, loading, onSubmit, editMode = false, 
         </ZHGrid>
         <ZHGrid cols={1}>
           <ZHField label={t('products.form.maxItemDiscountPercent')} fieldError={showFieldError(errors.maxItemDiscountPercent?.message)}>
-            <input
+            <ZhDecimalInput
               id="maxItemDiscountPercent"
-              type="number"
-              min="0"
-              max="100"
-              step="0.01"
+              decimals={2}
+              positiveOnly
               disabled={loading}
-              {...register('maxItemDiscountPercent', { valueAsNumber: true })}
+              placeholder="0.00"
+              {...register('maxItemDiscountPercent')}
             />
           </ZHField>
         </ZHGrid>

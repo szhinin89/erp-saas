@@ -4,6 +4,7 @@ import { NoAccessPage } from '../../../components/PageShell';
 import { ErpPageTemplate } from '../../../templates/ErpPageTemplate';
 import { ZHPageNotice } from '../../../components/zh/ZHPageNotice';
 import { ZHBtn, ZHField } from '../../../components/zh/ZHForm';
+import { ZhDecimalInput } from '../../../components/zh/inputs';
 import { useCompanyScopedAsync } from '../../../hooks/useCompanyScopedAsync';
 import { businessPartnerFacade } from '../../masterData/api/businessPartnerFacade';
 import { gastosService, type ExpenseCategoryDto } from '../api/gastosService';
@@ -171,11 +172,10 @@ export function CrearGastoPage() {
             <div className="pg-form-grid pg-form-grid--3 gst-totals-grid">
 
               <ZHField label="Subtotal (sin IVA)" required>
-                <input
+                <ZhDecimalInput
                   className="zh-input"
-                  type="number"
-                  min="0"
-                  step="0.01"
+                  decimals={2}
+                  positiveOnly
                   value={subtotal}
                   onChange={(e) => setSubtotal(e.target.value)}
                   placeholder="0.00"
@@ -183,22 +183,20 @@ export function CrearGastoPage() {
               </ZHField>
 
               <ZHField label="IVA">
-                <input
+                <ZhDecimalInput
                   className="zh-input"
-                  type="number"
-                  min="0"
-                  step="0.01"
+                  decimals={2}
+                  positiveOnly
                   value={vatTotal}
                   onChange={(e) => setVatTotal(e.target.value)}
                 />
               </ZHField>
 
               <ZHField label="Total">
-                <input
+                <ZhDecimalInput
                   className="zh-input gst-total-input"
-                  type="number"
-                  min="0"
-                  step="0.01"
+                  decimals={2}
+                  positiveOnly
                   value={total}
                   onChange={(e) => setTotal(e.target.value)}
                 />

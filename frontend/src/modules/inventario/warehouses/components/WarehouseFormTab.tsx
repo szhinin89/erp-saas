@@ -1,7 +1,9 @@
-import type { FieldErrors, UseFormRegister } from 'react-hook-form';
+import type { Control, FieldErrors, UseFormRegister } from 'react-hook-form';
+import { Controller } from 'react-hook-form';
 import { useI18n } from '../../../../i18n/i18n';
 import { ZHBtn, ZHField } from '../../../../components/zh/ZHForm';
 import { ZHPageNotice } from '../../../../components/zh/ZHPageNotice';
+import { ZhPhoneInput, ZhDecimalInput, ZhNumberInput } from '../../../../components/zh/inputs';
 import type { BranchDto } from '../../../branches/api/branchService';
 import { STORAGE_TYPES, type WarehouseFormValues } from '../../../../schemas/inventory/warehouseSchema';
 
@@ -12,6 +14,7 @@ interface Props {
   saveError: string;
   branches: BranchDto[];
   register: UseFormRegister<WarehouseFormValues>;
+  control: Control<WarehouseFormValues>;
   errors: FieldErrors<WarehouseFormValues>;
   onSave: () => void;
   onCancel: () => void;
@@ -19,7 +22,7 @@ interface Props {
 
 export function WarehouseFormTab({
   editingId, editCode, saving, saveError,
-  branches, register, errors,
+  branches, register, control, errors,
   onSave, onCancel,
 }: Props) {
   const { t } = useI18n();
@@ -156,7 +159,13 @@ export function WarehouseFormTab({
             <div className="bod-form-section__body">
               <div className="pg-form-grid pg-form-grid--2">
                 <ZHField label={t('warehouses.form.field.phone', 'Teléfono Directo')} error={errors.phone?.message}>
-                  <input className="zh-input" type="tel" placeholder="+593 99 999 9999" disabled={saving} {...register('phone')} />
+                  <Controller
+                    name="phone"
+                    control={control}
+                    render={({ field }) => (
+                      <ZhPhoneInput {...field} disabled={saving} />
+                    )}
+                  />
                 </ZHField>
                 <ZHField label={t('warehouses.form.field.email', 'Correo Electrónico')} error={errors.email?.message}>
                   <input className="zh-input" type="email" placeholder="bodega@empresa.com" disabled={saving} {...register('email')} />
@@ -184,10 +193,10 @@ export function WarehouseFormTab({
               </div>
               <div className="pg-form-grid pg-form-grid--2">
                 <ZHField label={t('warehouses.form.field.capacity', 'Capacidad Total (m³)')} error={errors.capacity?.message}>
-                  <input className="zh-input" type="number" min={0} step={0.01} placeholder="0" disabled={saving} {...register('capacity')} />
+                  <ZhDecimalInput decimals={2} positiveOnly placeholder="0" disabled={saving} {...register('capacity')} />
                 </ZHField>
                 <ZHField label={t('warehouses.form.field.dailyGoal', 'Meta Despacho Diario')} error={errors.dailyDispatchGoal?.message}>
-                  <input className="zh-input" type="number" min={0} step={1} placeholder="0" disabled={saving} {...register('dailyDispatchGoal')} />
+                  <ZhNumberInput positiveOnly placeholder="0" disabled={saving} {...register('dailyDispatchGoal')} />
                 </ZHField>
               </div>
             </div>

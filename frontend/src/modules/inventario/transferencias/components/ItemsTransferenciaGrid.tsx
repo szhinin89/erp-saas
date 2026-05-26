@@ -1,5 +1,6 @@
 ﻿import { transferenciaService } from '../api/transferenciaService';
 import type { ItemTransferenciaRequest } from '../api/transferenciaService';
+import { ZhDecimalInput } from '../../../../components/zh/inputs';
 import './items-transferencia-grid.css';
 
 export interface ItemRow {
@@ -126,10 +127,9 @@ function ItemRowComponent({ row, idx, productos, disabled, onUpdate, onRemove }:
         </select>
       </td>
       <td>
-        <input
-          type="number"
-          min={0.001}
-          step={0.001}
+        <ZhDecimalInput
+          decimals={4}
+          positiveOnly
           value={row.cantidad}
           disabled={disabled}
           onChange={(e) => void onUpdate(idx, 'cantidad', parseFloat(e.target.value) || 0)}

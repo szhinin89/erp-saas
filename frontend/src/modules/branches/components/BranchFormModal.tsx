@@ -1,6 +1,7 @@
 import { Controller } from 'react-hook-form';
 import { ZHPageNotice } from '../../../components/zh/ZHPageNotice';
 import { ZHBtn, ZHField, ZHToggle } from '../../../components/zh/ZHForm';
+import { ZhPhoneInput, ZhDecimalInput } from '../../../components/zh/inputs';
 import { BRANCH_TYPES, type BranchesPageContext } from '../hooks/useBranchesPage';
 
 type Props = Pick<
@@ -242,11 +243,12 @@ export function BranchFormModal({
                 <div className="pg-section-body">
                   <div className="pg-flex-col-3">
                     <ZHField label="Teléfono" error={errors.phones?.message}>
-                      <input
-                        className="zh-input"
-                        placeholder="+593 99 999 9999"
-                        disabled={saving}
-                        {...register('phones')}
+                      <Controller
+                        name="phones"
+                        control={control}
+                        render={({ field }) => (
+                          <ZhPhoneInput {...field} disabled={saving} />
+                        )}
                       />
                     </ZHField>
                     <ZHField label="Correo Electrónico" error={errors.email?.message}>
@@ -280,26 +282,10 @@ export function BranchFormModal({
                       />
                     </ZHField>
                     <ZHField label="Capacidad de Almacén (m²)" error={errors.storageCapacity?.message}>
-                      <input
-                        className="zh-input"
-                        type="number"
-                        min={0}
-                        step={0.01}
-                        placeholder="0"
-                        disabled={saving}
-                        {...register('storageCapacity')}
-                      />
+                      <ZhDecimalInput decimals={2} positiveOnly placeholder="0" disabled={saving} {...register('storageCapacity')} />
                     </ZHField>
                     <ZHField label="Meta de Venta Diaria ($)" error={errors.dailySalesGoal?.message}>
-                      <input
-                        className="zh-input"
-                        type="number"
-                        min={0}
-                        step={0.01}
-                        placeholder="0.00"
-                        disabled={saving}
-                        {...register('dailySalesGoal')}
-                      />
+                      <ZhDecimalInput decimals={2} positiveOnly placeholder="0.00" disabled={saving} {...register('dailySalesGoal')} />
                     </ZHField>
                   </div>
                 </div>

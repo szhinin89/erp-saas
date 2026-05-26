@@ -4,6 +4,7 @@ import { NoAccessPage } from '../../../components/PageShell';
 import { ErpPageTemplate } from '../../../templates/ErpPageTemplate';
 import { ZHPageNotice } from '../../../components/zh/ZHPageNotice';
 import { ZHBtn, ZHField } from '../../../components/zh/ZHForm';
+import { ZhDecimalInput } from '../../../components/zh/inputs';
 import { useI18n } from '../../../i18n/i18n';
 import { useAsync } from '../../../hooks/useAsync';
 import { formatApiError } from '../../lib/formatApiError';
@@ -244,21 +245,19 @@ export function CreateCreditNotePage() {
                         </select>
                       </td>
                       <td>
-                        <input
+                        <ZhDecimalInput
                           className="zh-input"
-                          type="number"
-                          min={0.01}
-                          step={0.01}
+                          decimals={4}
+                          positiveOnly
                           value={line.quantity}
                           onChange={(e) => updateLine(line.localId, 'quantity', parseFloat(e.target.value) || 0)}
                         />
                       </td>
                       <td>
-                        <input
+                        <ZhDecimalInput
                           className="zh-input"
-                          type="number"
-                          min={0}
-                          step={0.01}
+                          decimals={4}
+                          positiveOnly
                           value={line.unitPrice}
                           onChange={(e) => updateLine(line.localId, 'unitPrice', parseFloat(e.target.value) || 0)}
                         />

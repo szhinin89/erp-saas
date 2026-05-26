@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useI18n } from '../../../i18n/i18n';
@@ -13,6 +13,7 @@ import { ZHBtn } from '../../../components/zh/ZHForm';
 import { ZHCard } from '../../../components/zh/ZHCard';
 import { ZHFormSection, ZHGrid, ZHField } from '../../../components/zh/ZHForm';
 import { ZHPageNotice } from '../../../components/zh/ZHPageNotice';
+import { ZhPhoneInput } from '../../../components/zh/inputs';
 import { formatApiRequestError } from '../../lib/apiError';
 
 const defaults = (): CompanyManagementFormValues => ({
@@ -41,6 +42,7 @@ export function CompanyManagementFormPage({ mode }: { mode: 'create' | 'edit' })
     register,
     handleSubmit,
     reset,
+    control,
     formState: { errors },
   } = useForm<CompanyManagementFormValues>({
     resolver: zodResolver(companyManagementFormSchema),
@@ -155,7 +157,13 @@ export function CompanyManagementFormPage({ mode }: { mode: 'create' | 'edit' })
           <ZHFormSection title={t('companyManagement.sectionContact')}>
             <ZHGrid cols={2}>
               <ZHField label={t('companyManagement.phone')} fieldError={errors.phone?.message}>
-                <input disabled={saving} {...register('phone')} />
+                <Controller
+                  name="phone"
+                  control={control}
+                  render={({ field }) => (
+                    <ZhPhoneInput {...field} disabled={saving} />
+                  )}
+                />
               </ZHField>
               <ZHField label={t('companyManagement.email')} fieldError={errors.email?.message}>
                 <input type="email" disabled={saving} {...register('email')} />

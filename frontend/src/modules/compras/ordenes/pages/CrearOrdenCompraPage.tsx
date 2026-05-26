@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { NoAccessPage } from '../../../../components/PageShell';
 import { ErpPageTemplate } from '../../../../templates/ErpPageTemplate';
 import { ZHBtn, ZHField } from '../../../../components/zh/ZHForm';
+import { ZhDecimalInput } from '../../../../components/zh/inputs';
 import { ZHPageNotice } from '../../../../components/zh/ZHPageNotice';
 import { useOrdenCompraAcciones } from '../hooks/useOrdenesCompra';
 import { useAuthStore } from '../../../../store/authStore';
@@ -192,14 +193,14 @@ export function CrearOrdenCompraPage() {
                         </select>
                       </td>
                       <td>
-                        <input className="pg-editable-input pg-editable-input--right"
-                          type="number" min="0.001" step="0.001"
+                        <ZhDecimalInput className="pg-editable-input pg-editable-input--right"
+                          decimals={4} positiveOnly
                           value={it.cantidad}
                           onChange={(e) => updateItem(idx, 'cantidad', e.target.value)} />
                       </td>
                       <td>
-                        <input className="pg-editable-input pg-editable-input--right"
-                          type="number" min="0" step="0.01"
+                        <ZhDecimalInput className="pg-editable-input pg-editable-input--right"
+                          decimals={4} positiveOnly
                           value={it.precioUnitario}
                           onChange={(e) => updateItem(idx, 'precioUnitario', e.target.value)} />
                       </td>

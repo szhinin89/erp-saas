@@ -169,6 +169,7 @@ export function BodegasPage() {
             saveError={page.saveError}
             branches={page.branches}
             register={page.form.register}
+            control={page.form.control}
             errors={page.errors}
             onSave={() => void page.save()}
             onCancel={handleCancel}

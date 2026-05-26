@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { NoAccessPage } from '../../../../components/PageShell';
 import { ErpPageTemplate } from '../../../../templates/ErpPageTemplate';
 import { ZHBtn, ZHField } from '../../../../components/zh/ZHForm';
+import { ZhNumberInput, ZhDecimalInput } from '../../../../components/zh/inputs';
 import { ZHPageNotice } from '../../../../components/zh/ZHPageNotice';
 import { useI18n } from '../../../../i18n/i18n';
 import { useAuthStore } from '../../../../store/authStore';
@@ -164,10 +165,9 @@ export function CreateQuotePage() {
                 />
               </ZHField>
               <ZHField label={t('ventas.cotizaciones.form.paymentTermDays')}>
-                <input
+                <ZhNumberInput
                   className="zh-input"
-                  type="number"
-                  min={0}
+                  positiveOnly
                   value={paymentTermDays}
                   onChange={(e) => setPaymentTermDays(e.target.value)}
                 />
@@ -226,33 +226,30 @@ export function CreateQuotePage() {
                       </select>
                     </td>
                     <td>
-                      <input
+                      <ZhDecimalInput
                         className="zh-input pg-input-right"
-                        type="number"
-                        min="0.0001"
-                        step="any"
+                        decimals={4}
+                        positiveOnly
                         value={line.quantity}
                         onChange={(e) => updateLine(idx, 'quantity', e.target.value)}
                         required
                       />
                     </td>
                     <td>
-                      <input
+                      <ZhDecimalInput
                         className="zh-input pg-input-right"
-                        type="number"
-                        min="0"
-                        step="any"
+                        decimals={4}
+                        positiveOnly
                         value={line.unitPrice}
                         onChange={(e) => updateLine(idx, 'unitPrice', e.target.value)}
                         required
                       />
                     </td>
                     <td>
-                      <input
+                      <ZhDecimalInput
                         className="zh-input pg-input-right"
-                        type="number"
-                        min="0"
-                        step="any"
+                        decimals={4}
+                        positiveOnly
                         value={line.taxRatePct}
                         onChange={(e) => updateLine(idx, 'taxRatePct', e.target.value)}
                       />

@@ -4,6 +4,7 @@ import { NoAccessPage } from '../../../../components/PageShell';
 import { ErpPageTemplate } from '../../../../templates/ErpPageTemplate';
 import { ZHPageNotice } from '../../../../components/zh/ZHPageNotice';
 import { ZHBtn, ZHField } from '../../../../components/zh/ZHForm';
+import { ZhDecimalInput } from '../../../../components/zh/inputs';
 import { useCompanyScopedAsync } from '../../../../hooks/useCompanyScopedAsync';
 import { businessPartnerFacade } from '../../../masterData/api/businessPartnerFacade';
 import { comprasService, type CompraLineaInput } from '../api/comprasService';
@@ -237,13 +238,13 @@ export function CrearCompraPage() {
                       />
                     </td>
                     <td className="cf-td-num">
-                      <input className="zh-input" type="number" min="0.001" step="any" value={l.quantity} onChange={(e) => updateLinea(l._key, 'quantity', e.target.value)} />
+                      <ZhDecimalInput className="zh-input" decimals={4} positiveOnly value={l.quantity} onChange={(e) => updateLinea(l._key, 'quantity', e.target.value)} />
                     </td>
                     <td className="cf-td-num">
-                      <input className="zh-input" type="number" min="0" step="0.01" value={l.unitPrice} onChange={(e) => updateLinea(l._key, 'unitPrice', e.target.value)} />
+                      <ZhDecimalInput className="zh-input" decimals={4} positiveOnly value={l.unitPrice} onChange={(e) => updateLinea(l._key, 'unitPrice', e.target.value)} />
                     </td>
                     <td className="cf-td-num">
-                      <input className="zh-input" type="number" min="0" max="100" step="any" value={l.discountPct} onChange={(e) => updateLinea(l._key, 'discountPct', e.target.value)} />
+                      <ZhDecimalInput className="zh-input" decimals={2} positiveOnly value={l.discountPct} onChange={(e) => updateLinea(l._key, 'discountPct', e.target.value)} />
                     </td>
                     <td className="cf-td-num">
                       <select className="zh-input" value={l.vatPct} onChange={(e) => updateLinea(l._key, 'vatPct', e.target.value)}>

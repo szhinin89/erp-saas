@@ -8,6 +8,7 @@ import './CreateJournalEntryModal.css';
 import { useI18n } from '../i18n/i18n';
 import { useAuthStore } from '../store/authStore';
 import { ZHFormBody, ZHFormSection, ZHGrid, ZHField, ZHFormActions, ZHBtn } from './zh/ZHForm';
+import { ZhDecimalInput } from './zh/inputs';
 import { ZHPageNotice } from './zh/ZHPageNotice';
 import { ZHColSpan } from './zh/ZHLayout';
 import { ZHModalHeader } from './zh/ZHModalHeader';
@@ -166,22 +167,20 @@ export function CreateJournalEntryModal({ accounts, onClose, onCreated }: Props)
                     ) : null}
                   </div>
 
-                  <input
-                    type="number"
-                    min="0"
-                    step="0.01"
+                  <ZhDecimalInput
+                    decimals={2}
+                    positiveOnly
                     placeholder={t('common.amount.placeholder')}
                     disabled={isSubmitting}
-                    {...register(`lines.${i}.debitAmount` as const, { valueAsNumber: true })}
+                    {...register(`lines.${i}.debitAmount` as const)}
                   />
 
-                  <input
-                    type="number"
-                    min="0"
-                    step="0.01"
+                  <ZhDecimalInput
+                    decimals={2}
+                    positiveOnly
                     placeholder={t('common.amount.placeholder')}
                     disabled={isSubmitting}
-                    {...register(`lines.${i}.creditAmount` as const, { valueAsNumber: true })}
+                    {...register(`lines.${i}.creditAmount` as const)}
                   />
 
                   <input

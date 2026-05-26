@@ -5,6 +5,7 @@ import { LoadingState, NoAccessPage } from '../../../../components/PageShell';
 import { ErpPageTemplate } from '../../../../templates/ErpPageTemplate';
 import { ZHPageNotice } from '../../../../components/zh/ZHPageNotice';
 import { ZHBtn, ZHField } from '../../../../components/zh/ZHForm';
+import { ZhPhoneInput } from '../../../../components/zh/inputs';
 import { useAsync } from '../../../../hooks/useAsync';
 import { billingSettingsService } from '../api/billingSettingsService';
 import { formatApiError } from '../../../lib/formatApiError';
@@ -214,11 +215,12 @@ export function BillingSettingsPage() {
               </ZHField>
 
               <ZHField label="Teléfono" required error={errors.phone?.message}>
-                <input
-                  className="zh-input"
-                  placeholder="+593 2 000-0000"
-                  disabled={saving || !canEdit}
-                  {...register('phone')}
+                <Controller
+                  name="phone"
+                  control={control}
+                  render={({ field }) => (
+                    <ZhPhoneInput {...field} disabled={saving || !canEdit} />
+                  )}
                 />
               </ZHField>
 

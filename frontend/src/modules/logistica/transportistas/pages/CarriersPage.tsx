@@ -1,10 +1,11 @@
 import { useMemo, useState } from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { EmptyState, LoadingState, NoAccessPage } from '../../../../components/PageShell';
 import { ErpPageTemplate } from '../../../../templates/ErpPageTemplate';
 import { ZHPageNotice } from '../../../../components/zh/ZHPageNotice';
 import { ZHBtn, ZHField } from '../../../../components/zh/ZHForm';
+import { ZhPhoneInput, ZhTextInput } from '../../../../components/zh/inputs';
 import { useI18n } from '../../../../i18n/i18n';
 import type { Carrier } from '../api/carrierService';
 import { useCarriers } from '../hooks/useCarriers';
@@ -30,7 +31,7 @@ export function CarriersPage() {
   /* ── Data ── */
   const { carriers, loading, error, saving, saveError, createCarrier, updateCarrier, toggleCarrierStatus } = useCarriers();
 
-  const { register, handleSubmit, reset, setValue, formState: { errors } } = useForm<CarrierFormValues>({
+  const { register, handleSubmit, reset, setValue, control, formState: { errors } } = useForm<CarrierFormValues>({
     resolver: zodResolver(carrierSchema),
     defaultValues: defaultCarrierValues,
   });
@@ -316,20 +317,20 @@ export function CarriersPage() {
                     required
                     error={errors.licensePlate?.message ? t(errors.licensePlate.message) : undefined}
                   >
-                    <input
-                      className="zh-input"
+                    <ZhTextInput
+                      mode="uppercase"
                       placeholder={t('carriers.modal.licensePlatePlaceholder')}
                       disabled={saving}
                       {...register('licensePlate')}
                     />
                   </ZHField>
-                  <ZHField label={t('carriers.modal.phone')}>
-                    <input
-                      className="zh-input"
-                      type="tel"
-                      placeholder={t('carriers.modal.phonePlaceholder')}
-                      disabled={saving}
-                      {...register('phone')}
+                  <ZHField label={t('carriers.modal.phone')} error={errors.phone?.message}>
+                    <Controller
+                      name="phone"
+                      control={control}
+                      render={({ field }) => (
+                        <ZhPhoneInput {...field} disabled={saving} />
+                      )}
                     />
                   </ZHField>
                 </div>
