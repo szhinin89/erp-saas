@@ -41,15 +41,16 @@ public sealed class CreateWarehouseCommandHandler
 
         var code = $"WH-{DateTime.UtcNow.Year}-{Guid.NewGuid():N}"[..13];
 
-        var companyId = _company.HasCompanyContext ? _company.CompanyId : (Guid?)null;
+        if (!_company.HasCompanyContext)
+            return Result<WarehouseDto>.Failure("Se requiere contexto de empresa para crear una bodega.");
+
         var wh = Warehouse.Create(
             subscriberId, command.BranchId, command.Name,
             code, command.StorageType,
             command.Address, command.Phone, command.Email, command.Manager,
             command.Latitude, command.Longitude,
             command.Capacity, command.DailyDispatchGoal, userId,
-            establishmentId: null,
-            companyId: companyId);
+            companyId: _company.CompanyId);
 
         await _repo.AddAsync(wh, ct);
         await _activity.AddAsync(UserActivity.Create(

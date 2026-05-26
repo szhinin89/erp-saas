@@ -11,8 +11,6 @@ public record UpsertSriConfigurationCommand(
     string  MainAddress,
     bool    RequiresAccounting,
     string? SpecialTaxpayer,
-    string  EstabCode,
-    string  EmPointCode,
     string  CertP12Path,
     string  CertPassword,
     int     Environment,

@@ -10,8 +10,13 @@ public sealed class SriSettingsRepository : ISriSettingsRepository
 
     public SriSettingsRepository(ErpDbContext context) => _context = context;
 
-    public Task<SriSettings?> GetBySubscriberIdAsync(Guid subscriberId, CancellationToken ct = default)
-        => _context.SriSettings.FirstOrDefaultAsync(c => c.SubscriberId == subscriberId, ct);
+    public Task<SriSettings?> GetByCompanyIdAsync(Guid companyId, CancellationToken ct = default)
+        => _context.SriSettings.FirstOrDefaultAsync(c => c.CompanyId == companyId, ct);
+
+    public Task<SriSettings?> GetByCompanyIdForUpdateAsync(Guid companyId, CancellationToken ct = default)
+        => _context.SriSettings
+            .FromSqlRaw("SELECT * FROM sri_settings WHERE company_id = {0} FOR UPDATE", companyId)
+            .FirstOrDefaultAsync(ct);
 
     public Task AddAsync(SriSettings config, CancellationToken ct = default)
         => _context.SriSettings.AddAsync(config, ct).AsTask();

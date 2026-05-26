@@ -28,6 +28,7 @@ public sealed class IssueElectronicInvoiceCommandHandler
     private readonly IUnitOfWork _unitOfWork;
     private readonly ISecretProtector _secretProtector;
     private readonly ICurrentSubscriber _currentSubscriber;
+    private readonly ICurrentCompany    _currentCompany;
     private readonly ICurrentUser _currentUser;
     private readonly ILogger<IssueElectronicInvoiceCommandHandler> _logger;
 
@@ -42,21 +43,23 @@ public sealed class IssueElectronicInvoiceCommandHandler
         IUnitOfWork unitOfWork,
         ISecretProtector secretProtector,
         ICurrentSubscriber currentSubscriber,
+        ICurrentCompany currentCompany,
         ICurrentUser currentUser,
         ILogger<IssueElectronicInvoiceCommandHandler> logger)
     {
-        _invoiceRepository = invoiceRepository;
+        _invoiceRepository   = invoiceRepository;
         _configSriRepository = configSriRepository;
-        _sriService = sriService;
-        _fileStorage = fileStorage;
-        _accounting = accounting;
-        _productRepository = productRepository;
-        _activity = activity;
-        _unitOfWork = unitOfWork;
-        _secretProtector = secretProtector;
-        _currentSubscriber = currentSubscriber;
-        _currentUser = currentUser;
-        _logger = logger;
+        _sriService          = sriService;
+        _fileStorage         = fileStorage;
+        _accounting          = accounting;
+        _productRepository   = productRepository;
+        _activity            = activity;
+        _unitOfWork          = unitOfWork;
+        _secretProtector     = secretProtector;
+        _currentSubscriber   = currentSubscriber;
+        _currentCompany      = currentCompany;
+        _currentUser         = currentUser;
+        _logger              = logger;
     }
 
     public async Task<Result<Guid>> Handle(IssueElectronicInvoiceCommand command, CancellationToken ct)
@@ -111,10 +114,10 @@ public sealed class IssueElectronicInvoiceCommandHandler
             return Result<(Invoice, SriSettings)>.Failure(
                 $"Solo se puede emitir una factura Validada (estado actual: {invoice.Status}).");
 
-        var configSri = await _configSriRepository.GetBySubscriberIdAsync(subscriberId, ct);
+        var configSri = await _configSriRepository.GetByCompanyIdAsync(_currentCompany.CompanyId, ct);
         if (configSri is null)
             return Result<(Invoice, SriSettings)>.Failure(
-                "La configuración SRI no está configurada para este tenant.");
+                "La configuración SRI no está configurada para esta empresa.");
 
         return Result<(Invoice, SriSettings)>.Success((invoice, configSri));
     }

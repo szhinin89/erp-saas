@@ -25,7 +25,7 @@ public sealed class PurchaseWarehouseAllocationRulesTests
 
         var bodegas = new Mock<IWarehouseRepository>();
         bodegas.Setup(x => x.GetByIdAsync(It.IsAny<Guid>(), b1, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Warehouse.Create(Guid.NewGuid(), Guid.NewGuid(), "B1", "B1", null, null, null, null, null, null, null, null, null, Guid.NewGuid()));
+            .ReturnsAsync(Warehouse.Create(Guid.NewGuid(), Guid.NewGuid(), "B1", "B1", null, null, null, null, null, null, null, null, null, Guid.NewGuid(), Guid.NewGuid()));
 
         var err = await PurchaseAsignacionWarehousesRules.ValidateAsync(
             detalles, asignaciones, Guid.NewGuid(), bodegas.Object, CancellationToken.None);
@@ -57,9 +57,9 @@ public sealed class PurchaseWarehouseAllocationRulesTests
 
         var bodegas = new Mock<IWarehouseRepository>();
         bodegas.Setup(x => x.GetByIdAsync(subscriberId, b1, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Warehouse.Create(subscriberId, Guid.NewGuid(), "B1", "B1", null, null, null, null, null, null, null, null, null, Guid.NewGuid()));
+            .ReturnsAsync(Warehouse.Create(subscriberId, Guid.NewGuid(), "B1", "B1", null, null, null, null, null, null, null, null, null, Guid.NewGuid(), Guid.NewGuid()));
         bodegas.Setup(x => x.GetByIdAsync(subscriberId, b2, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Warehouse.Create(subscriberId, Guid.NewGuid(), "B2", "B2", null, null, null, null, null, null, null, null, null, Guid.NewGuid()));
+            .ReturnsAsync(Warehouse.Create(subscriberId, Guid.NewGuid(), "B2", "B2", null, null, null, null, null, null, null, null, null, Guid.NewGuid(), Guid.NewGuid()));
 
         var err = await PurchaseAsignacionWarehousesRules.ValidateAsync(
             detalles, asignaciones, subscriberId, bodegas.Object, CancellationToken.None);

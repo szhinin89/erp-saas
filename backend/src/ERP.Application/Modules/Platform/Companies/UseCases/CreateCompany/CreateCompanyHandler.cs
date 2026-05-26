@@ -1,4 +1,5 @@
 using ERP.Application.Common;
+using ERP.Application.Common.Interfaces;
 using ERP.Application.Modules.Platform.Companies.DTOs;
 using ERP.Domain.Subscriptions.Exceptions;
 using MediatR;
@@ -7,18 +8,21 @@ namespace ERP.Application.Modules.Platform.Companies.UseCases.CreateCompany;
 
 public sealed class CreateCompanyHandler : IRequestHandler<CreateCompanyCommand, Result<CompanyDetailDto>>
 {
-    private readonly ICompanyAccessGuard _accessGuard;
+    private readonly ICompanyAccessGuard         _accessGuard;
     private readonly ICompanyProvisioningService _provisioning;
-    private readonly ICurrentUser _currentUser;
+    private readonly ICompanyBootstrapService    _bootstrap;
+    private readonly ICurrentUser                _currentUser;
 
     public CreateCompanyHandler(
         ICompanyAccessGuard accessGuard,
         ICompanyProvisioningService provisioning,
+        ICompanyBootstrapService bootstrap,
         ICurrentUser currentUser)
     {
-        _accessGuard = accessGuard;
+        _accessGuard  = accessGuard;
         _provisioning = provisioning;
-        _currentUser = currentUser;
+        _bootstrap    = bootstrap;
+        _currentUser  = currentUser;
     }
 
     public async Task<Result<CompanyDetailDto>> Handle(CreateCompanyCommand command, CancellationToken ct)
@@ -45,6 +49,8 @@ public sealed class CreateCompanyHandler : IRequestHandler<CreateCompanyCommand,
                 command.LogoUrl,
                 command.BrandingJson,
                 ct);
+
+            await _bootstrap.BootstrapCompanyAsync(company.SubscriberId, company.Id, _currentUser.UserId, ct);
 
             return Result<CompanyDetailDto>.Success(CompanyDetailDto.FromEntity(company));
         }

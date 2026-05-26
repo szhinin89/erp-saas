@@ -145,6 +145,7 @@ internal static class VentasEndToEndHelpers
         // SriSettings (Environment 1 = pruebas)
         var sri = SriSettings.Create(
             subscriberId:              subscriberId,
+            companyId:                 seed.CompanyId,
             ruc:            "9999999999999",
             legalName:           "Empresa Test SRL",
             tradeName:       null,

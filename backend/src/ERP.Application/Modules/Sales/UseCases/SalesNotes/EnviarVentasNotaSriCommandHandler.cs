@@ -18,16 +18,17 @@ public sealed class EnviarSalesNotesriCommandHandler : IRequestHandler<SendSales
 {
     private readonly ISalesRepository             _ventasRepository;
     private readonly ISalesOriginalBillResolver   _originalBillResolver;
-    private readonly ISriSettingsRepository _configSriRepository;
+    private readonly ISriSettingsRepository       _configSriRepository;
     private readonly ISriFacturaElectronicaService _sriService;
-    private readonly IFileStorage                _fileStorage;
-    private readonly IAccountingService          _accounting;
-    private readonly IProductRepository          _productRepository;
-    private readonly IUserActivityRepository     _activity;
-    private readonly IUnitOfWork                 _unitOfWork;
-    private readonly ISecretProtector            _secretProtector;
-    private readonly ICurrentSubscriber              _currentSubscriber;
-    private readonly ICurrentUser                _currentUser;
+    private readonly IFileStorage                 _fileStorage;
+    private readonly IAccountingService           _accounting;
+    private readonly IProductRepository           _productRepository;
+    private readonly IUserActivityRepository      _activity;
+    private readonly IUnitOfWork                  _unitOfWork;
+    private readonly ISecretProtector             _secretProtector;
+    private readonly ICurrentSubscriber           _currentSubscriber;
+    private readonly ICurrentCompany              _currentCompany;
+    private readonly ICurrentUser                 _currentUser;
     private readonly ILogger<EnviarSalesNotesriCommandHandler> _logger;
 
     public EnviarSalesNotesriCommandHandler(
@@ -42,22 +43,24 @@ public sealed class EnviarSalesNotesriCommandHandler : IRequestHandler<SendSales
         IUnitOfWork unitOfWork,
         ISecretProtector secretProtector,
         ICurrentSubscriber currentSubscriber,
+        ICurrentCompany currentCompany,
         ICurrentUser currentUser,
         ILogger<EnviarSalesNotesriCommandHandler> logger)
     {
-        _ventasRepository    = ventasRepository;
-        _originalBillResolver  = originalBillResolver;
-        _configSriRepository = configSriRepository;
-        _sriService          = sriService;
-        _fileStorage         = fileStorage;
-        _accounting          = accounting;
-        _productRepository   = productRepository;
-        _activity            = activity;
-        _unitOfWork          = unitOfWork;
-        _secretProtector     = secretProtector;
-        _currentSubscriber       = currentSubscriber;
-        _currentUser         = currentUser;
-        _logger              = logger;
+        _ventasRepository     = ventasRepository;
+        _originalBillResolver = originalBillResolver;
+        _configSriRepository  = configSriRepository;
+        _sriService           = sriService;
+        _fileStorage          = fileStorage;
+        _accounting           = accounting;
+        _productRepository    = productRepository;
+        _activity             = activity;
+        _unitOfWork           = unitOfWork;
+        _secretProtector      = secretProtector;
+        _currentSubscriber    = currentSubscriber;
+        _currentCompany       = currentCompany;
+        _currentUser          = currentUser;
+        _logger               = logger;
     }
 
     public async Task<Result<Guid>> Handle(SendSalesNoteSriCommand command, CancellationToken ct)
@@ -120,10 +123,10 @@ public sealed class EnviarSalesNotesriCommandHandler : IRequestHandler<SendSales
             return Result<(ERP.Domain.Modules.Sales.Entities.SalesNote, ERP.Domain.Modules.Sales.Entities.SalesBill, ERP.Domain.Configuration.Entities.SriSettings, List<ERP.Domain.Modules.Sales.Entities.SalesNoteLine>)>.Failure(
                 "La factura original debe permanecer autorizada.");
 
-        var configSri = await _configSriRepository.GetBySubscriberIdAsync(subscriberId, ct);
+        var configSri = await _configSriRepository.GetByCompanyIdAsync(_currentCompany.CompanyId, ct);
         if (configSri is null)
             return Result<(ERP.Domain.Modules.Sales.Entities.SalesNote, ERP.Domain.Modules.Sales.Entities.SalesBill, ERP.Domain.Configuration.Entities.SriSettings, List<ERP.Domain.Modules.Sales.Entities.SalesNoteLine>)>.Failure(
-                "La configuración SRI no está configurada para este tenant.");
+                "La configuración SRI no está configurada para esta empresa.");
 
         return Result<(ERP.Domain.Modules.Sales.Entities.SalesNote, ERP.Domain.Modules.Sales.Entities.SalesBill, ERP.Domain.Configuration.Entities.SriSettings, List<ERP.Domain.Modules.Sales.Entities.SalesNoteLine>)>.Success(
             (nota, facturaOriginal, configSri, nota.Lines.ToList()));

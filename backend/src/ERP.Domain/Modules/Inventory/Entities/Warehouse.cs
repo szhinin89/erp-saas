@@ -45,8 +45,8 @@ public sealed class Warehouse : MasterEntity, ISubscriberScopedEntity, ICompanyO
         decimal? capacity,
         decimal? dailyDispatchGoal,
         Guid     createdBy,
-        Guid?    establishmentId = null,
-        Guid?    companyId = null)
+        Guid     companyId,
+        Guid?    establishmentId = null)
     {
         if (string.IsNullOrWhiteSpace(name))
             throw new ArgumentException("Warehouse name is required.", nameof(name));
@@ -67,8 +67,8 @@ public sealed class Warehouse : MasterEntity, ISubscriberScopedEntity, ICompanyO
             Longitude        = Trim(longitude),
             Capacity         = capacity,
             DailyDispatchGoal = dailyDispatchGoal,
-            EstablishmentId  = establishmentId,
             CompanyId        = companyId,
+            EstablishmentId  = establishmentId,
         };
         w.SetCreated(createdBy);
         return w;

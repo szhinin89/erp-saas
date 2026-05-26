@@ -20,14 +20,6 @@ public sealed class UpsertSriConfigurationCommandValidator : AbstractValidator<U
             .NotEmpty().WithMessage("La dirección matriz es obligatoria.")
             .MaximumLength(SriSettings.AddressMaxLen);
 
-        RuleFor(x => x.EstabCode)
-            .NotEmpty().WithMessage("El establecimiento es obligatorio.")
-            .Matches(@"^\d{3}$").WithMessage("El establecimiento debe ser exactamente 3 dígitos (ej: 001).");
-
-        RuleFor(x => x.EmPointCode)
-            .NotEmpty().WithMessage("El punto de emisión es obligatorio.")
-            .Matches(@"^\d{3}$").WithMessage("El punto de emisión debe ser exactamente 3 dígitos (ej: 001).");
-
         RuleFor(x => x.CertP12Path)
             .NotEmpty().WithMessage("La ruta del certificado P12 es obligatoria.");
 

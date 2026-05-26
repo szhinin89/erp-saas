@@ -3,10 +3,8 @@ using ERP.Application.Common;
 using ERP.Application.Common.Interfaces;
 using ERP.Domain.Access.Entities;
 using ERP.Domain.Access.Enums;
-using ERP.Domain.Branches.Entities;
 using ERP.Domain.Modules.Accounting.Entities;
 using ERP.Domain.Modules.Accounting.Enums;
-using ERP.Domain.Modules.Inventory.Entities;
 using ERP.Domain.Products.Entities;
 using ERP.Domain.Subscriptions;
 using ERP.Domain.Subscriptions.Entities;
@@ -40,8 +38,9 @@ internal static class DevDatabaseSeeder
         var db             = scope.ServiceProvider.GetRequiredService<ErpDbContext>();
         var platform       = scope.ServiceProvider.GetRequiredService<IPlatformQueryAccessor>();
         var passwordHasher = scope.ServiceProvider.GetRequiredService<IPasswordHasher>();
-        var onboarding     = scope.ServiceProvider.GetRequiredService<ISubscriberOnboardingService>();
+        var onboarding          = scope.ServiceProvider.GetRequiredService<ISubscriberOnboardingService>();
         var companyProvisioning = scope.ServiceProvider.GetRequiredService<ICompanyProvisioningService>();
+        var companyBootstrap    = scope.ServiceProvider.GetRequiredService<ICompanyBootstrapService>();
 
         const string adminEmail = "admin@erp.com";
         const string adminPassword = "Admin123!";
@@ -139,47 +138,7 @@ internal static class DevDatabaseSeeder
             return;
         }
 
-        var branch = Branch.Create(
-            subscriberId:        tenant.Id,
-            name:            "Sucursal Principal",
-            address:         "Dirección Principal",
-            code:            "SUC-SEED-001",
-            branchType:      null,
-            reference:       null,
-            phones:          null,
-            email:           null,
-            managerName:     null,
-            countryId:       null,
-            provinceId:      null,
-            cantonId:        null,
-            parishId:        null,
-            latitude:        null,
-            longitude:       null,
-            storageCapacity: null,
-            dailySalesGoal:  null,
-            rechargeOption:  null,
-            isMainBranch:    true,
-            createdBy:       SeederActorId);
-        db.Branches.Add(branch);
-        await db.SaveChangesAsync(ct);
-
-        db.Warehouses.Add(Warehouse.Create(
-            subscriberId:          tenant.Id,
-            branchId:          branch.Id,
-            name:              "Warehouse Principal",
-            code:              "WH-SEED-001",
-            storageType:       null,
-            address:           null,
-            phone:             null,
-            email:             null,
-            manager:           null,
-            latitude:          null,
-            longitude:         null,
-            capacity:          null,
-            dailyDispatchGoal: null,
-            createdBy:         SeederActorId,
-            establishmentId:   null,
-            companyId:         defaultCompanyForSeed.Id));
+        await companyBootstrap.BootstrapCompanyAsync(tenant.Id, defaultCompanyForSeed.Id, SeederActorId, ct);
 
         db.Accounts.AddRange(
             Account.Create(tenant.Id, "1.1.01", "Caja General", AccountType.Asset, AccountNature.Debit, SeederActorId),

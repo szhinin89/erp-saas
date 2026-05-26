@@ -3,6 +3,7 @@ using System;
 using ERP.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,13 +12,15 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace ERP.Infrastructure.Migrations
 {
     [DbContext(typeof(ErpDbContext))]
-    partial class ErpDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260526224130_MultiCompanyOnboarding")]
+    partial class MultiCompanyOnboarding
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "10.0.7")
+                .HasAnnotation("ProductVersion", "10.0.4")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
@@ -1013,10 +1016,6 @@ namespace ERP.Infrastructure.Migrations
                         .HasColumnType("character varying(150)")
                         .HasColumnName("email");
 
-                    b.Property<Guid?>("EstablishmentId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("establishment_id");
-
                     b.Property<bool>("IsActive")
                         .HasColumnType("boolean")
                         .HasColumnName("is_active");
@@ -1465,6 +1464,16 @@ namespace ERP.Infrastructure.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("created_by");
 
+                    b.Property<int>("CurrentSequential")
+                        .HasColumnType("integer")
+                        .HasColumnName("current_sequential");
+
+                    b.Property<string>("EmPointCode")
+                        .IsRequired()
+                        .HasMaxLength(3)
+                        .HasColumnType("character varying(3)")
+                        .HasColumnName("em_point_code");
+
                     b.Property<int>("EmissionType")
                         .HasColumnType("integer")
                         .HasColumnName("emission_type");
@@ -1472,6 +1481,12 @@ namespace ERP.Infrastructure.Migrations
                     b.Property<int>("Environment")
                         .HasColumnType("integer")
                         .HasColumnName("environment");
+
+                    b.Property<string>("EstabCode")
+                        .IsRequired()
+                        .HasMaxLength(3)
+                        .HasColumnType("character varying(3)")
+                        .HasColumnName("estab_code");
 
                     b.Property<string>("LegalName")
                         .IsRequired()
@@ -3937,14 +3952,17 @@ namespace ERP.Infrastructure.Migrations
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid")
-                        .HasColumnName("id");
+                        .HasColumnName("id")
+                        .HasDefaultValueSql("gen_random_uuid()");
 
                     b.Property<Guid>("CompanyId")
                         .HasColumnType("uuid")
                         .HasColumnName("company_id");
 
                     b.Property<int>("CurrentSeq")
+                        .ValueGeneratedOnAdd()
                         .HasColumnType("integer")
+                        .HasDefaultValue(0)
                         .HasColumnName("current_seq");
 
                     b.Property<string>("DocTypeCode")
@@ -3957,13 +3975,11 @@ namespace ERP.Infrastructure.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("emission_point_id");
 
-                    b.Property<Guid>("SubscriberId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("subscriber_id");
-
                     b.Property<DateTime>("UpdatedAt")
+                        .ValueGeneratedOnAdd()
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at");
+                        .HasColumnName("updated_at")
+                        .HasDefaultValueSql("NOW()");
 
                     b.HasKey("Id");
 
@@ -3971,9 +3987,6 @@ namespace ERP.Infrastructure.Migrations
                         .HasDatabaseName("idx_docseq_company");
 
                     b.HasIndex("DocTypeCode");
-
-                    b.HasIndex("SubscriberId")
-                        .HasDatabaseName("ix_docseq_subscriber_id");
 
                     b.HasIndex("EmissionPointId", "DocTypeCode")
                         .IsUnique()
@@ -3987,7 +4000,8 @@ namespace ERP.Infrastructure.Migrations
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid")
-                        .HasColumnName("id");
+                        .HasColumnName("id")
+                        .HasDefaultValueSql("gen_random_uuid()");
 
                     b.Property<string>("Code")
                         .IsRequired()
@@ -4001,48 +4015,29 @@ namespace ERP.Infrastructure.Migrations
                         .HasColumnName("company_id");
 
                     b.Property<DateTime>("CreatedAt")
+                        .ValueGeneratedOnAdd()
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
-
-                    b.Property<Guid>("CreatedBy")
-                        .HasColumnType("uuid")
-                        .HasColumnName("created_by");
+                        .HasColumnName("created_at")
+                        .HasDefaultValueSql("NOW()");
 
                     b.Property<Guid>("EstablishmentId")
                         .HasColumnType("uuid")
                         .HasColumnName("establishment_id");
 
                     b.Property<bool>("IsActive")
+                        .ValueGeneratedOnAdd()
                         .HasColumnType("boolean")
+                        .HasDefaultValue(true)
                         .HasColumnName("is_active");
-
-                    b.Property<bool>("IsDefault")
-                        .HasColumnType("boolean")
-                        .HasColumnName("is_default");
 
                     b.Property<string>("Name")
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)")
                         .HasColumnName("name");
 
-                    b.Property<Guid>("SubscriberId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("subscriber_id");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at");
-
-                    b.Property<Guid?>("UpdatedBy")
-                        .HasColumnType("uuid")
-                        .HasColumnName("updated_by");
-
                     b.HasKey("Id");
 
                     b.HasIndex("CompanyId");
-
-                    b.HasIndex("SubscriberId")
-                        .HasDatabaseName("ix_emission_point_subscriber_id");
 
                     b.HasIndex("EstablishmentId", "Code")
                         .IsUnique()
@@ -4056,7 +4051,8 @@ namespace ERP.Infrastructure.Migrations
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid")
-                        .HasColumnName("id");
+                        .HasColumnName("id")
+                        .HasDefaultValueSql("gen_random_uuid()");
 
                     b.Property<string>("Address")
                         .IsRequired()
@@ -4076,19 +4072,21 @@ namespace ERP.Infrastructure.Migrations
                         .HasColumnName("company_id");
 
                     b.Property<DateTime>("CreatedAt")
+                        .ValueGeneratedOnAdd()
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
-
-                    b.Property<Guid>("CreatedBy")
-                        .HasColumnType("uuid")
-                        .HasColumnName("created_by");
+                        .HasColumnName("created_at")
+                        .HasDefaultValueSql("NOW()");
 
                     b.Property<bool>("IsActive")
+                        .ValueGeneratedOnAdd()
                         .HasColumnType("boolean")
+                        .HasDefaultValue(true)
                         .HasColumnName("is_active");
 
                     b.Property<bool>("IsMain")
+                        .ValueGeneratedOnAdd()
                         .HasColumnType("boolean")
+                        .HasDefaultValue(false)
                         .HasColumnName("is_main");
 
                     b.Property<string>("Name")
@@ -4102,22 +4100,7 @@ namespace ERP.Infrastructure.Migrations
                         .HasColumnType("character varying(40)")
                         .HasColumnName("phone");
 
-                    b.Property<Guid>("SubscriberId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("subscriber_id");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at");
-
-                    b.Property<Guid?>("UpdatedBy")
-                        .HasColumnType("uuid")
-                        .HasColumnName("updated_by");
-
                     b.HasKey("Id");
-
-                    b.HasIndex("SubscriberId")
-                        .HasDatabaseName("ix_establishment_subscriber_id");
 
                     b.HasIndex("CompanyId", "Code")
                         .IsUnique()
@@ -13934,17 +13917,29 @@ namespace ERP.Infrastructure.Migrations
 
             modelBuilder.Entity("ERP.Domain.Modules.Company.Entities.DocumentSequence", b =>
                 {
-                    b.HasOne("ERP.Domain.Modules.SriCatalogs.Entities.SriDocType", null)
+                    b.HasOne("ERP.Domain.Modules.Company.Entities.Company", "Company")
+                        .WithMany()
+                        .HasForeignKey("CompanyId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("ERP.Domain.Modules.SriCatalogs.Entities.SriDocType", "DocType")
                         .WithMany()
                         .HasForeignKey("DocTypeCode")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.HasOne("ERP.Domain.Modules.Company.Entities.EmissionPoint", null)
+                    b.HasOne("ERP.Domain.Modules.Company.Entities.EmissionPoint", "EmissionPoint")
                         .WithMany("Sequences")
                         .HasForeignKey("EmissionPointId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
+
+                    b.Navigation("Company");
+
+                    b.Navigation("DocType");
+
+                    b.Navigation("EmissionPoint");
                 });
 
             modelBuilder.Entity("ERP.Domain.Modules.Company.Entities.EmissionPoint", b =>

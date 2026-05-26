@@ -6,6 +6,7 @@ using ERP.Application.Sales.Helpers;
 using ERP.Domain.Audit.Entities;
 using ERP.Domain.Audit.Interfaces;
 using ERP.Domain.Configuration.Interfaces;
+using ERP.Domain.Modules.Company.Interfaces;
 using ERP.Domain.Modules.Purchasing.Entities;
 using ERP.Domain.Modules.Purchasing.Enums;
 using ERP.Domain.Modules.Purchasing.Interfaces;
@@ -16,29 +17,38 @@ public sealed class GenerateIssuedRetentionCommandHandler
     : IRequestHandler<GenerateIssuedRetentionCommand, Result<Guid>>
 {
     private readonly IPurchBillRepository                    _compraRepository;
-    private readonly ISriSettingsRepository        _configSriRepository;
-    private readonly IRetentionSettingsRepository  _configRetencionRepository;
-    private readonly IUserActivityRepository              _activity;
-    private readonly ICurrentSubscriber                       _currentSubscriber;
-    private readonly ICurrentUser                         _currentUser;
-    private readonly IUnitOfWork                          _unitOfWork;
+    private readonly ISriSettingsRepository                  _configSriRepository;
+    private readonly IRetentionSettingsRepository            _configRetencionRepository;
+    private readonly IEmissionPointRepository                _emissionPointRepository;
+    private readonly IDocumentSequenceRepository             _docSeqRepository;
+    private readonly IUserActivityRepository                 _activity;
+    private readonly ICurrentSubscriber                      _currentSubscriber;
+    private readonly ICurrentCompany                         _currentCompany;
+    private readonly ICurrentUser                            _currentUser;
+    private readonly IUnitOfWork                             _unitOfWork;
     private readonly ILogger<GenerateIssuedRetentionCommandHandler> _logger;
 
     public GenerateIssuedRetentionCommandHandler(
         IPurchBillRepository compraRepository,
         ISriSettingsRepository configSriRepository,
         IRetentionSettingsRepository configRetencionRepository,
+        IEmissionPointRepository emissionPointRepository,
+        IDocumentSequenceRepository docSeqRepository,
         IUserActivityRepository activity,
         ICurrentSubscriber currentSubscriber,
+        ICurrentCompany currentCompany,
         ICurrentUser currentUser,
         IUnitOfWork unitOfWork,
         ILogger<GenerateIssuedRetentionCommandHandler> logger)
     {
-        _compraRepository           = compraRepository;
+        _compraRepository          = compraRepository;
         _configSriRepository       = configSriRepository;
         _configRetencionRepository = configRetencionRepository;
+        _emissionPointRepository   = emissionPointRepository;
+        _docSeqRepository          = docSeqRepository;
         _activity                  = activity;
-        _currentSubscriber             = currentSubscriber;
+        _currentSubscriber         = currentSubscriber;
+        _currentCompany            = currentCompany;
         _currentUser               = currentUser;
         _unitOfWork                = unitOfWork;
         _logger                    = logger;
@@ -60,24 +70,33 @@ public sealed class GenerateIssuedRetentionCommandHandler
             return Result<Guid>.Failure(
                 "No hay tasas de retención activas para Supplier. Configure en Configuración de retenciones.");
 
-        var configSri = await _configSriRepository.GetBySubscriberIdAsync(subscriberId, ct);
-        if (configSri is null)
-            return Result<Guid>.Failure("La configuración SRI no está configurada.");
+        var hasSriConfig = await _configSriRepository.GetByCompanyIdAsync(_currentCompany.CompanyId, ct);
+        if (hasSriConfig is null)
+            return Result<Guid>.Failure("La configuración SRI no está configurada para esta empresa.");
 
         await _unitOfWork.BeginTransactionAsync(ct);
         try
         {
-            var secuencial = CapturarSecuencial(configSri);
-            await _configSriRepository.UpdateAsync(configSri, ct);
+            var sriConfig = await _configSriRepository.GetByCompanyIdForUpdateAsync(_currentCompany.CompanyId, ct)
+                ?? throw new InvalidOperationException("SRI config no encontrada durante la transacción.");
+
+            var emPoint = await _emissionPointRepository.GetDefaultForCompanyAsync(
+                    subscriberId, _currentCompany.CompanyId, ct)
+                ?? throw new InvalidOperationException("No hay punto de emisión predeterminado para esta empresa.");
+
+            var docSeq = await _docSeqRepository.GetForUpdateAsync(emPoint.Id, "07", ct)
+                ?? throw new InvalidOperationException($"No hay secuencial configurado para Retención en el punto de emisión {emPoint.Id}.");
+
+            var secuencial = docSeq.CaptureAndIncrement();
 
             var fecha = DateTime.UtcNow;
             var clave = ClaveAccesoHelper.Generar(
-                configSri.Ruc, configSri.Environment, configSri.EstabCode,
-                configSri.EmPointCode, configSri.EmissionType, secuencial, fecha, "07");
+                sriConfig.Ruc, sriConfig.Environment, emPoint.Establishment.Code,
+                emPoint.Code, sriConfig.EmissionType, secuencial, fecha, "07");
 
             var ret = IssuedRetention.Create(
                 subscriberId, compra.BusinessPartnerId, compra.Id, clave, fecha,
-                configSri.EstabCode, configSri.EmPointCode, secuencial, userId);
+                emPoint.Establishment.Code, emPoint.Code, secuencial, userId);
 
             foreach (var cfg in configs)
             {
@@ -129,10 +148,4 @@ public sealed class GenerateIssuedRetentionCommandHandler
         }
     }
 
-    private static string CapturarSecuencial(ERP.Domain.Configuration.Entities.SriSettings config)
-    {
-        var s = config.CurrentSequential.ToString("D9");
-        config.IncrementSequential();
-        return s;
-    }
 }

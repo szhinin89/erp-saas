@@ -152,6 +152,9 @@ public static class DependencyInjection
         services.AddScoped<IGeographyReadRepository, GeographyReadRepository>();
         services.AddScoped<IUserActivityRepository, UserActivityRepository>();
         services.AddScoped<IWarehouseRepository, WarehouseRepository>();
+        services.AddScoped<IEstablishmentRepository, EstablishmentRepository>();
+        services.AddScoped<IEmissionPointRepository, EmissionPointRepository>();
+        services.AddScoped<IDocumentSequenceRepository, DocumentSequenceRepository>();
         services.AddScoped<IXmlFacturaParser, SriFacturaParser>();
         services.AddScoped<IFileStorage, LocalFileStorage>();
         services.AddSingleton<ERP.Application.Common.Interfaces.SRI.IElectronicDocumentBuilder,
@@ -246,6 +249,7 @@ public static class DependencyInjection
         services.AddScoped<ICarrierRepository, CarrierRepository>();
         services.AddScoped<IDefaultProfileSeeder, DefaultProfileSeeder>();
         services.AddScoped<ISubscriberOnboardingService, SubscriberOnboardingService>();
+        services.AddScoped<ICompanyBootstrapService, CompanyBootstrapService>();
 
         // Event-driven foundation — outbox processor
         services.AddScoped<IOutboxProcessor, OutboxProcessor>();

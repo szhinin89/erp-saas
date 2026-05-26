@@ -5,15 +5,11 @@ namespace ERP.Application.Common.Interfaces;
 ///
 /// Called automatically by <c>PlatformCreateSubscriberWithAdminHandler</c>.
 ///
-/// Add new onboarding steps by adding a private method to
-/// <c>ERP.Infrastructure.Seeding.SubscriberOnboardingService</c>
-/// and calling it from <see cref="OnboardAsync"/>.
-///
 /// Current steps (in order):
 ///   1. Default access profiles  — Facturador / Bodeguero / Contador
 ///   2. Consumidor Final customer — CI 9999999999
-///   3. Main branch              — Sucursal Principal
-///   4. Main warehouse           — Bodega Principal (linked to main branch)
+///
+/// Company-level data (Branch, Warehouse) is handled by <c>ICompanyBootstrapService</c>.
 /// </summary>
 public interface ISubscriberOnboardingService
 {

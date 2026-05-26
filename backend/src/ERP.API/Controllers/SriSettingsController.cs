@@ -37,8 +37,7 @@ public sealed class SriSettingsController : ControllerBase
     }
 
     /// <summary>
-    /// Crea o actualiza la configuraciÃ³n SRI del tenant.
-    /// El CurrentSequential se preserva al actualizar para no romper la numeraciÃ³n en curso.
+    /// Crea o actualiza la configuración SRI del tenant.
     /// </summary>
     /// <response code="200">ConfiguraciÃ³n guardada.</response>
     /// <response code="400">Datos invÃ¡lidos.</response>

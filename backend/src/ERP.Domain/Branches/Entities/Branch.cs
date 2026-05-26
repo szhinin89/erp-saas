@@ -2,9 +2,13 @@ using ERP.Domain.Common;
 
 namespace ERP.Domain.Branches.Entities;
 
-/// <summary>Sucursal del tenant. <c>id_empresa</c> del modelo legado = <see cref="BaseEntity.SubscriberId"/>.</summary>
+/// <summary>Sucursal del tenant. CompanyId poblado en nuevas empresas; null en registros legacy.</summary>
 public sealed class Branch : MasterEntity
 {
+    /// <summary>Empresa a la que pertenece esta sucursal. Null = sucursal creada antes de P1-1.</summary>
+    public Guid? CompanyId       { get; private set; }
+    /// <summary>Establecimiento SRI asociado. Poblado por <c>CompanyBootstrapService</c> al crear empresa.</summary>
+    public Guid? EstablishmentId { get; private set; }
     public string  Name            { get; private set; } = null!;
     public string  Address         { get; private set; } = null!;
     public string? Code            { get; private set; }
@@ -50,14 +54,16 @@ public sealed class Branch : MasterEntity
         decimal? dailySalesGoal,
         string? rechargeOption,
         bool    isMainBranch,
-        Guid    createdBy)
+        Guid    createdBy,
+        Guid?   companyId = null)
     {
         var b = new Branch
         {
-            Id              = Guid.NewGuid(),
-            SubscriberId        = subscriberId,
-            Name            = name.Trim(),
-            Address         = address.Trim(),
+            Id           = Guid.NewGuid(),
+            SubscriberId = subscriberId,
+            CompanyId    = companyId,
+            Name         = name.Trim(),
+            Address      = address.Trim(),
             Code            = code,
             BranchType      = string.IsNullOrWhiteSpace(branchType) ? null : branchType.Trim(),
             Reference       = string.IsNullOrWhiteSpace(reference)   ? null : reference.Trim(),
@@ -122,6 +128,12 @@ public sealed class Branch : MasterEntity
     public void SetMainBranchFlag(bool isMain, Guid updatedBy)
     {
         IsMainBranch = isMain;
+        SetUpdated(updatedBy);
+    }
+
+    public void SetEstablishment(Guid establishmentId, Guid updatedBy)
+    {
+        EstablishmentId = establishmentId;
         SetUpdated(updatedBy);
     }
 }

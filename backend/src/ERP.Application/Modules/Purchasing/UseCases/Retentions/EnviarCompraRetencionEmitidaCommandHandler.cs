@@ -15,15 +15,16 @@ public sealed class SendIssuedRetentionCommandHandler
     : IRequestHandler<SendIssuedRetentionCommand, Result<Guid>>
 {
     private readonly IPurchBillRepository                    _compraRepository;
-    private readonly ISriSettingsRepository          _configSriRepository;
-    private readonly ISriComprobanteRetentionService      _sri;
-    private readonly IFileStorage                         _fileStorage;
-    private readonly IAccountingService                   _accounting;
-    private readonly IUserActivityRepository              _activity;
-    private readonly IUnitOfWork                          _unitOfWork;
-    private readonly ISecretProtector                     _secretProtector;
-    private readonly ICurrentSubscriber                       _currentSubscriber;
-    private readonly ICurrentUser                         _currentUser;
+    private readonly ISriSettingsRepository                  _configSriRepository;
+    private readonly ISriComprobanteRetentionService         _sri;
+    private readonly IFileStorage                            _fileStorage;
+    private readonly IAccountingService                      _accounting;
+    private readonly IUserActivityRepository                 _activity;
+    private readonly IUnitOfWork                             _unitOfWork;
+    private readonly ISecretProtector                        _secretProtector;
+    private readonly ICurrentSubscriber                      _currentSubscriber;
+    private readonly ICurrentCompany                         _currentCompany;
+    private readonly ICurrentUser                            _currentUser;
     private readonly ILogger<SendIssuedRetentionCommandHandler> _logger;
 
     public SendIssuedRetentionCommandHandler(
@@ -36,20 +37,22 @@ public sealed class SendIssuedRetentionCommandHandler
         IUnitOfWork unitOfWork,
         ISecretProtector secretProtector,
         ICurrentSubscriber currentSubscriber,
+        ICurrentCompany currentCompany,
         ICurrentUser currentUser,
         ILogger<SendIssuedRetentionCommandHandler> logger)
     {
-        _compraRepository      = compraRepository;
-        _configSriRepository   = configSriRepository;
-        _sri                   = sri;
-        _fileStorage           = fileStorage;
-        _accounting            = accounting;
-        _activity              = activity;
-        _unitOfWork            = unitOfWork;
-        _secretProtector       = secretProtector;
-        _currentSubscriber         = currentSubscriber;
-        _currentUser           = currentUser;
-        _logger                = logger;
+        _compraRepository    = compraRepository;
+        _configSriRepository = configSriRepository;
+        _sri                 = sri;
+        _fileStorage         = fileStorage;
+        _accounting          = accounting;
+        _activity            = activity;
+        _unitOfWork          = unitOfWork;
+        _secretProtector     = secretProtector;
+        _currentSubscriber   = currentSubscriber;
+        _currentCompany      = currentCompany;
+        _currentUser         = currentUser;
+        _logger              = logger;
     }
 
     public async Task<Result<Guid>> Handle(SendIssuedRetentionCommand command, CancellationToken ct)
@@ -67,9 +70,9 @@ public sealed class SendIssuedRetentionCommandHandler
         if (ret.Status != "Validated")
             return Result<Guid>.Failure($"Estado inválido para enviar: {ret.Status}");
 
-        var configSri = await _configSriRepository.GetBySubscriberIdAsync(subscriberId, ct);
+        var configSri = await _configSriRepository.GetByCompanyIdAsync(_currentCompany.CompanyId, ct);
         if (configSri is null)
-            return Result<Guid>.Failure("Configuración SRI ausente.");
+            return Result<Guid>.Failure("La configuración SRI no está configurada para esta empresa.");
 
         var detalles = ret.Lines.ToList();
         string xml;

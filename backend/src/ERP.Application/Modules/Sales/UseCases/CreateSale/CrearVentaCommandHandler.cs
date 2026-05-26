@@ -6,10 +6,10 @@ using ERP.Domain.Common;
 using ERP.Domain.Audit.Entities;
 using ERP.Domain.Audit.Interfaces;
 using ERP.Domain.Modules.Inventory.Interfaces;
-using ERP.Domain.Configuration.Entities;
 using ERP.Domain.Configuration.Interfaces;
 using ERP.Domain.MasterData.Interfaces;
 using ERP.Domain.MasterData.ValueObjects;
+using ERP.Domain.Modules.Company.Interfaces;
 using ERP.Domain.Modules.Fiscal.Entities;
 using ERP.Domain.Modules.Fiscal.Interfaces;
 using ERP.Domain.Modules.Commercial.Entities;
@@ -28,6 +28,8 @@ public sealed class CreateSaleCommandHandler : IRequestHandler<CreateSaleCommand
     private readonly IDocumentRelationRepository _documentRelationRepository;
     private readonly ISnowflakeIdGenerator _idGenerator;
     private readonly ISriSettingsRepository _configSriRepository;
+    private readonly IEmissionPointRepository _emissionPointRepository;
+    private readonly IDocumentSequenceRepository _docSeqRepository;
     private readonly IStockRepository _stockRepository;
     private readonly IBusinessPartnerRepository _bpRepository;
     private readonly IWarehouseRepository _bodegaRepository;
@@ -46,6 +48,8 @@ public sealed class CreateSaleCommandHandler : IRequestHandler<CreateSaleCommand
         IDocumentRelationRepository documentRelationRepository,
         ISnowflakeIdGenerator idGenerator,
         ISriSettingsRepository configSriRepository,
+        IEmissionPointRepository emissionPointRepository,
+        IDocumentSequenceRepository docSeqRepository,
         IStockRepository stockRepository,
         IBusinessPartnerRepository bpRepository,
         IWarehouseRepository bodegaRepository,
@@ -63,6 +67,8 @@ public sealed class CreateSaleCommandHandler : IRequestHandler<CreateSaleCommand
         _documentRelationRepository = documentRelationRepository;
         _idGenerator = idGenerator;
         _configSriRepository = configSriRepository;
+        _emissionPointRepository = emissionPointRepository;
+        _docSeqRepository    = docSeqRepository;
         _stockRepository     = stockRepository;
         _bpRepository        = bpRepository;
         _bodegaRepository    = bodegaRepository;
@@ -100,13 +106,13 @@ public sealed class CreateSaleCommandHandler : IRequestHandler<CreateSaleCommand
         if (!preflight.IsSuccess)
             return Result<Guid>.Failure(preflight.Error!);
 
-        var (productos, configSri) = preflight.Value;
+        var productos = preflight.Value;
 
         await _unitOfWork.BeginTransactionAsync(ct);
         try
         {
             return await PersistSaleAsync(
-                effectiveCommand, subscriberId, companyId, userId, productos, configSri, ct);
+                effectiveCommand, subscriberId, companyId, userId, productos, ct);
         }
         catch (Exception ex)
         {
@@ -176,7 +182,7 @@ public sealed class CreateSaleCommandHandler : IRequestHandler<CreateSaleCommand
         return Result<CreateSaleCommand>.Success(effectiveCommand);
     }
 
-    private async Task<Result<(Dictionary<Guid, ERP.Domain.Products.Entities.Product> Productos, SriSettings ConfigSri)>>
+    private async Task<Result<Dictionary<Guid, ERP.Domain.Products.Entities.Product>>>
         ValidateSalePreflightAsync(
             CreateSaleCommand command,
             Guid subscriberId,
@@ -185,32 +191,31 @@ public sealed class CreateSaleCommandHandler : IRequestHandler<CreateSaleCommand
     {
         var cliente = await _bpRepository.GetByIdAsync(command.BusinessPartnerId, ct);
         if (cliente is null || !cliente.IsActive)
-            return Result<(Dictionary<Guid, ERP.Domain.Products.Entities.Product>, SriSettings)>.Failure(
+            return Result<Dictionary<Guid, ERP.Domain.Products.Entities.Product>>.Failure(
                 "El cliente no existe o no está activo.");
 
         var warehouse = await _bodegaRepository.GetByIdAsync(subscriberId, command.WarehouseId, ct);
         if (warehouse is null || !warehouse.IsActive)
-            return Result<(Dictionary<Guid, ERP.Domain.Products.Entities.Product>, SriSettings)>.Failure(
+            return Result<Dictionary<Guid, ERP.Domain.Products.Entities.Product>>.Failure(
                 "La Warehouse no existe o no está activa.");
         if (warehouse.CompanyId.HasValue && warehouse.CompanyId != companyId)
-            return Result<(Dictionary<Guid, ERP.Domain.Products.Entities.Product>, SriSettings)>.Failure(
+            return Result<Dictionary<Guid, ERP.Domain.Products.Entities.Product>>.Failure(
                 "La bodega no pertenece a la empresa operativa activa.");
+
+        var hasSriConfig = await _configSriRepository.GetByCompanyIdAsync(companyId, ct);
+        if (hasSriConfig is null)
+            return Result<Dictionary<Guid, ERP.Domain.Products.Entities.Product>>.Failure(
+                "La configuración SRI no está configurada para esta empresa.");
 
         var productos = await LoadActiveProductsAsync(command, subscriberId, companyId, ct);
         if (!productos.IsSuccess)
-            return Result<(Dictionary<Guid, ERP.Domain.Products.Entities.Product>, SriSettings)>.Failure(productos.Error!);
+            return Result<Dictionary<Guid, ERP.Domain.Products.Entities.Product>>.Failure(productos.Error!);
 
         var stockError = await ValidateStockAsync(command, productos.Value!, ct);
         if (stockError is not null)
-            return Result<(Dictionary<Guid, ERP.Domain.Products.Entities.Product>, SriSettings)>.Failure(stockError);
+            return Result<Dictionary<Guid, ERP.Domain.Products.Entities.Product>>.Failure(stockError);
 
-        var configSri = await _configSriRepository.GetBySubscriberIdAsync(subscriberId, ct);
-        if (configSri is null)
-            return Result<(Dictionary<Guid, ERP.Domain.Products.Entities.Product>, SriSettings)>.Failure(
-                "La configuración SRI no está configurada para este tenant.");
-
-        return Result<(Dictionary<Guid, ERP.Domain.Products.Entities.Product>, SriSettings)>.Success(
-            (productos.Value!, configSri));
+        return Result<Dictionary<Guid, ERP.Domain.Products.Entities.Product>>.Success(productos.Value!);
     }
 
     private async Task<Result<Dictionary<Guid, ERP.Domain.Products.Entities.Product>>> LoadActiveProductsAsync(
@@ -271,20 +276,27 @@ public sealed class CreateSaleCommandHandler : IRequestHandler<CreateSaleCommand
         Guid companyId,
         Guid userId,
         Dictionary<Guid, ERP.Domain.Products.Entities.Product> productos,
-        SriSettings configSri,
         CancellationToken ct)
     {
         var cliente = await _bpRepository.GetByIdAsync(command.BusinessPartnerId, ct);
         if (cliente is null)
             return Result<Guid>.Failure("Cliente no encontrado.");
 
-        var secuencial = CapturarSecuencialComoString(configSri);
-        await _configSriRepository.UpdateAsync(configSri, ct);
+        var sriConfig = await _configSriRepository.GetByCompanyIdForUpdateAsync(companyId, ct)
+            ?? throw new InvalidOperationException("SRI config no encontrada durante la transacción.");
+
+        var emPoint = await _emissionPointRepository.GetDefaultForBranchAsync(subscriberId, command.BranchId, ct)
+            ?? throw new InvalidOperationException($"No hay punto de emisión predeterminado para la sucursal {command.BranchId}.");
+
+        var docSeq = await _docSeqRepository.GetForUpdateAsync(emPoint.Id, "01", ct)
+            ?? throw new InvalidOperationException($"No hay secuencial configurado para Factura en el punto de emisión {emPoint.Id}.");
+
+        var secuencial = docSeq.CaptureAndIncrement();
 
         var issueDate = DateTime.UtcNow;
         var accessKey = ClaveAccesoHelper.Generar(
-            configSri.Ruc, configSri.Environment, configSri.EstabCode,
-            configSri.EmPointCode, configSri.EmissionType, secuencial, issueDate);
+            sriConfig.Ruc, sriConfig.Environment, emPoint.Establishment.Code,
+            emPoint.Code, sriConfig.EmissionType, secuencial, issueDate);
 
         var publicId = Guid.NewGuid();
         var invoiceId = _idGenerator.NextId();
@@ -298,8 +310,8 @@ public sealed class CreateSaleCommandHandler : IRequestHandler<CreateSaleCommand
             command.BusinessPartnerId,
             command.WarehouseId,
             "01",
-            configSri.EstabCode,
-            configSri.EmPointCode,
+            emPoint.Establishment.Code,
+            emPoint.Code,
             secuencial,
             accessKey,
             issueDate,
@@ -476,17 +488,6 @@ public sealed class CreateSaleCommandHandler : IRequestHandler<CreateSaleCommand
         _ => "07",
     };
 
-    private static string CapturarSecuencialComoString(SriSettings config)
-    {
-        var secuencial = config.CurrentSequential.ToString("D9");
-        config.IncrementSequential();
-        return secuencial;
-    }
-
-    /// <summary>
-    /// Convierte un porcentaje de IVA al código SRI correspondiente.
-    /// Códigos oficiales: "0"=0%, "2"=12%, "3"=14%, "4"=15%, "5"=5%.
-    /// </summary>
     private static string SriVatCodeFromPercentage(decimal percentage) => percentage switch
     {
         0m    => "0",
