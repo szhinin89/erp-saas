@@ -160,7 +160,7 @@ public class AccountingRepository : IAccountingRepository
     }
 
     public async Task<IReadOnlyList<(DateTime Date, string Reference, string Description, decimal Debit, decimal Credit)>>
-        GetMayorGeneralLinesAsync(
+        GetGeneralLedgerLinesAsync(
             Guid subscriberId,
             Guid accountId,
             DateTime desde,
@@ -191,7 +191,7 @@ public class AccountingRepository : IAccountingRepository
     }
 
     public async Task<IReadOnlyList<(Guid AccountId, decimal TotalDebit, decimal TotalCredit)>>
-        GetBalanceComprobacionAsync(
+        GetTrialBalanceAsync(
             Guid subscriberId,
             DateTime desde,
             DateTime hasta,

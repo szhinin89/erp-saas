@@ -10,7 +10,7 @@ using ERP.Domain.Modules.Sales.Entities;
 using ERP.Domain.Modules.Sales.Interfaces;
 using ERP.Domain.Products.Interfaces;
 
-namespace ERP.Application.Sales.UseCases.Notas;
+namespace ERP.Application.Sales.UseCases.SalesNotes;
 
 public sealed class CrearSalesNoteCommandHandler
     : IRequestHandler<CreateSalesNoteCommand, Result<Guid>>

@@ -1,11 +1,11 @@
-﻿using FluentAssertions;
+using FluentAssertions;
 using FluentValidation;
 using ERP.Application.Modules.Purchasing.DTOs;
-using ERP.Application.Modules.Purchasing.UseCases.CrearOrdenCompra;
+using ERP.Application.Modules.Purchasing.UseCases.CreatePurchaseOrder;
 
 namespace ERP.Application.Tests.Compras;
 
-public sealed class CrearOrdenCompraCommandValidatorTests
+public sealed class CreatePurchaseOrderCommandValidatorTests
 {
     private static readonly CreatePurchaseOrderCommandValidator _v = new();
 

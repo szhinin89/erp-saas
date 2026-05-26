@@ -3,7 +3,7 @@ using ERP.Application.Common;
 
 using ERP.Application.Modules.Expenses.DTOs;
 
-namespace ERP.Application.Modules.Expenses.UseCases.RechazarGasto;
+namespace ERP.Application.Modules.Expenses.UseCases.RejectExpense;
 
 [RequireFeature(SubscriptionFeatureCodes.Gastos)]
 public sealed record RejectExpenseCommand(Guid ExpenseInvoiceId, string  Reason)

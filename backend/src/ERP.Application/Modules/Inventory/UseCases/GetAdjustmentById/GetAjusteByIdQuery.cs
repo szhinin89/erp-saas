@@ -2,7 +2,7 @@ using MediatR;
 using ERP.Application.Common;
 using ERP.Application.Inventory.DTOs;
 
-namespace ERP.Application.Inventory.UseCases.GetAjusteById;
+namespace ERP.Application.Inventory.UseCases.GetAdjustmentById;
 
 [RequireFeature(SubscriptionFeatureCodes.Inventory)]
 public record GetStockAdjustmentByIdQuery(Guid AdjustmentId)

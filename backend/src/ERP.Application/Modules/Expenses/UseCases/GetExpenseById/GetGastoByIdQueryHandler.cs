@@ -4,7 +4,7 @@ using ERP.Application.Modules.Expenses.DTOs;
 using ERP.Domain.Modules.Expenses.Entities;
 using ERP.Domain.Modules.Expenses.Interfaces;
 
-namespace ERP.Application.Modules.Expenses.UseCases.GetGastoById;
+namespace ERP.Application.Modules.Expenses.UseCases.GetExpenseById;
 
 public sealed class GetExpenseByIdQueryHandler
     : IRequestHandler<GetExpenseByIdQuery, Result<ExpenseInvoiceDto?>>

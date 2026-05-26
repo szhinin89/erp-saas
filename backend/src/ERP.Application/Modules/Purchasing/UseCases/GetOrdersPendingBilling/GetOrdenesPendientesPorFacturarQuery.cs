@@ -2,7 +2,7 @@ using MediatR;
 using ERP.Application.Common;
 using ERP.Application.Modules.Purchasing.DTOs;
 
-namespace ERP.Application.Modules.Purchasing.UseCases.GetOrdenesPendientesPorFacturar;
+namespace ERP.Application.Modules.Purchasing.UseCases.GetOrdersPendingBilling;
 
 [RequireFeature(SubscriptionFeatureCodes.Purchases)]
 public sealed record GetOrdersPendingBillingQuery

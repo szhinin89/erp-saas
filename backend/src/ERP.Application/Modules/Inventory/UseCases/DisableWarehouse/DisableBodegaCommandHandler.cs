@@ -6,7 +6,7 @@ using ERP.Domain.Audit.Interfaces;
 using ERP.Domain.Modules.Inventory.Entities;
 using ERP.Domain.Modules.Inventory.Interfaces;
 
-namespace ERP.Application.Modules.Inventory.UseCases.DeshabilitarBodega;
+namespace ERP.Application.Modules.Inventory.UseCases.DisableWarehouse;
 
 public sealed class DisableWarehouseCommandHandler
     : IRequestHandler<DisableWarehouseCommand, Result<WarehouseDto>>

@@ -3,7 +3,7 @@ using ERP.Application.Common;
 using ERP.Domain.Modules.Inventory.Entities;
 using ERP.Domain.Modules.Inventory.Interfaces;
 
-namespace ERP.Application.Modules.Inventory.UseCases.ActualizarBodega;
+namespace ERP.Application.Modules.Inventory.UseCases.UpdateWarehouse;
 
 public sealed class UpdateWarehouseCommandValidator : AbstractValidator<UpdateWarehouseCommand>
 {

@@ -5,7 +5,7 @@ using ERP.Application.Modules.Accounting.DTOs;
 using ERP.Domain.Modules.Accounting.Entities;
 using ERP.Domain.Modules.Accounting.Interfaces;
 
-namespace ERP.Application.Modules.Accounting.UseCases.ConfiguracionContable;
+namespace ERP.Application.Modules.Accounting.UseCases.AccountingConfiguration;
 
 public sealed class UpsertConfigurationContableCommandHandler
     : IRequestHandler<UpsertConfigurationContableCommand, Result<AccountingSetupDto>>

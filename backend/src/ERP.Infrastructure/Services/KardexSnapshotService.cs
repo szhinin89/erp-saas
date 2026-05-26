@@ -9,7 +9,7 @@ namespace ERP.Infrastructure.Services;
 /// <summary>
 /// Servicio de cómputo de snapshots del kardex.
 /// Usado por el <c>KardexSnapshotWorker</c> (nocturno) y por el
-/// <c>RecalcularSnapshotsCommandHandler</c> (bajo demanda).
+/// <c>RecalculateSnapshotsCommandHandler</c> (bajo demanda).
 /// </summary>
 public sealed class KardexSnapshotService : IKardexSnapshotCalculator
 {

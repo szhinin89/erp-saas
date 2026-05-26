@@ -1,7 +1,7 @@
 using MediatR;
 using ERP.Application.Common;
 
-namespace ERP.Application.Sales.UseCases.Notas;
+namespace ERP.Application.Sales.UseCases.SalesNotes;
 
 public sealed record CrearSalesNoteItemDto(Guid    ProductId, decimal Quantity, decimal UnitPrice);
 

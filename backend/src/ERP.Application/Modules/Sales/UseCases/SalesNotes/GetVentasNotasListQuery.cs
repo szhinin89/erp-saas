@@ -3,7 +3,7 @@ using ERP.Application.Common;
 using ERP.Application.Sales.DTOs;
 using ERP.Domain.Modules.Sales.Interfaces;
 
-namespace ERP.Application.Sales.UseCases.Notas;
+namespace ERP.Application.Sales.UseCases.SalesNotes;
 
 public record GetSalesNotesListQuery(Guid? OriginalBillId, string? Status)
     : IRequest<Result<IReadOnlyList<SalesNoteListItemDto>>>, ICompanyScopedRequest;

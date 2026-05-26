@@ -2,13 +2,13 @@ using MediatR;
 using Microsoft.Extensions.Logging;
 using ERP.Application.Common;
 using ERP.Application.Modules.Purchasing.DTOs;
-using ERP.Application.Modules.Purchasing.UseCases.CrearOrdenCompra;
+using ERP.Application.Modules.Purchasing.UseCases.CreatePurchaseOrder;
 using ERP.Domain.Audit.Entities;
 using ERP.Domain.Audit.Interfaces;
 using ERP.Domain.MasterData.Interfaces;
 using ERP.Domain.Modules.Purchasing.Interfaces;
 
-namespace ERP.Application.Modules.Purchasing.UseCases.AprobarOrdenCompra;
+namespace ERP.Application.Modules.Purchasing.UseCases.ApprovePurchaseOrder;
 
 public sealed class ApproveOrderPurchaseCommandHandler
     : IRequestHandler<ApproveOrderPurchaseCommand, Result<PurchaseOrderDto>>

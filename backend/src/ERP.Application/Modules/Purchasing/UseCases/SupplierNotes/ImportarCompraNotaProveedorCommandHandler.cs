@@ -12,7 +12,7 @@ using ERP.Domain.Modules.Purchasing.Interfaces;
 using ERP.Domain.Modules.Expenses.Enums;
 using ERP.Domain.Modules.Expenses.Interfaces;
 
-namespace ERP.Application.Modules.Purchasing.UseCases.NotasProveedor;
+namespace ERP.Application.Modules.Purchasing.UseCases.SupplierNotes;
 
 public sealed class ImportPurchaseSupplierNoteCommandHandler
     : IRequestHandler<ImportPurchaseSupplierNoteCommand, Result<SupplierPurchaseNoteDto>>

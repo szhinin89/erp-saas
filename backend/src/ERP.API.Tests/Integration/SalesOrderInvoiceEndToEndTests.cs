@@ -6,7 +6,7 @@ using ERP.API.Tests.Support;
 using ERP.Application.Modules.Commercial.DTOs;
 using ERP.Application.Modules.Commercial.UseCases.ConfirmSalesOrder;
 using ERP.Application.Modules.Commercial.UseCases.CreateSalesOrder;
-using ERP.Application.Sales.UseCases.CrearVenta;
+using ERP.Application.Sales.UseCases.CreateSale;
 using ERP.Domain.Modules.Commercial.Entities;
 using ERP.Domain.Modules.Fiscal.Entities;
 using ERP.Domain.Modules.Integration.Constants;

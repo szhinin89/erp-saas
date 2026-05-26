@@ -1,11 +1,9 @@
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Options;
 using ERP.Application.Common.Interfaces;
 using ERP.Domain.Common;
 using ERP.Domain.Modules.Purchasing.Entities;
 using ERP.Domain.Modules.Purchasing.Enums;
 using ERP.Domain.Modules.Purchasing.Interfaces;
-using ERP.Infrastructure.Options;
 using ERP.Infrastructure.Persistence.Mapping;
 
 namespace ERP.Infrastructure.Persistence.Repositories;
@@ -13,71 +11,43 @@ namespace ERP.Infrastructure.Persistence.Repositories;
 public sealed class PurchBillRepository : IPurchBillRepository
 {
     private readonly ErpDbContext _context;
-    private readonly DocumentSchemaOptions _schemaOptions;
     private readonly IUnifiedDocumentSync _documentSync;
 
     public PurchBillRepository(
         ErpDbContext context,
-        IOptions<DocumentSchemaOptions> schemaOptions,
         IUnifiedDocumentSync documentSync)
     {
         _context = context;
-        _schemaOptions = schemaOptions.Value;
         _documentSync = documentSync;
     }
 
-    private bool UseUnified => _schemaOptions.UseUnifiedSchema;
-
     public Task AddAsync(PurchBill compra, CancellationToken ct = default)
-    {
-        if (UseUnified)
-            return _context.PurchaseDocuments.AddAsync(PurchaseDocumentMapper.ToDocument(compra), ct).AsTask();
-        return _context.PurchBills.AddAsync(compra, ct).AsTask();
-    }
+        => _context.PurchaseDocuments.AddAsync(PurchaseDocumentMapper.ToDocument(compra), ct).AsTask();
 
     public async Task<PurchBill?> GetByIdAsync(Guid subscriberId, Guid id, CancellationToken ct = default)
     {
-        if (UseUnified)
-        {
-            var doc = await InvoiceDocumentsQuery(subscriberId)
-                .FirstOrDefaultAsync(c => c.Id == id, ct);
-            if (doc is null) return null;
-            var bill = PurchaseDocumentMapper.ToLegacyBill(doc);
-            if (UseUnified) _documentSync.StagePurchBill(bill);
-            return bill;
-        }
-
-        return await _context.PurchBills
-            .FirstOrDefaultAsync(c => c.SubscriberId == subscriberId && c.Id == id, ct);
+        var doc = await InvoiceDocumentsQuery(subscriberId)
+            .FirstOrDefaultAsync(c => c.Id == id, ct);
+        if (doc is null) return null;
+        var bill = PurchaseDocumentMapper.ToLegacyBill(doc);
+        _documentSync.StagePurchBill(bill);
+        return bill;
     }
 
     public async Task<PurchBill?> GetByIdWithLinesAsync(Guid subscriberId, Guid id, CancellationToken ct = default)
     {
-        if (UseUnified)
-        {
-            var doc = await InvoiceDocumentsQuery(subscriberId)
-                .Include(c => c.Lines)
-                .FirstOrDefaultAsync(c => c.Id == id, ct);
-            if (doc is null) return null;
-            var bill = PurchaseDocumentMapper.ToLegacyBill(doc);
-            if (UseUnified) _documentSync.StagePurchBill(bill);
-            return bill;
-        }
-
-        return await _context.PurchBills
+        var doc = await InvoiceDocumentsQuery(subscriberId)
             .Include(c => c.Lines)
-            .FirstOrDefaultAsync(c => c.SubscriberId == subscriberId && c.Id == id, ct);
+            .FirstOrDefaultAsync(c => c.Id == id, ct);
+        if (doc is null) return null;
+        var bill = PurchaseDocumentMapper.ToLegacyBill(doc);
+        _documentSync.StagePurchBill(bill);
+        return bill;
     }
 
     public Task<bool> ExistsAccessKeyAsync(Guid subscriberId, string accessKey, CancellationToken ct = default)
-    {
-        if (UseUnified)
-            return _context.PurchaseDocuments.AnyAsync(
-                c => c.SubscriberId == subscriberId && c.AccessKey == accessKey, ct);
-
-        return _context.PurchBills
-            .AnyAsync(c => c.SubscriberId == subscriberId && c.AccessKey == accessKey, ct);
-    }
+        => _context.PurchaseDocuments.AnyAsync(
+            c => c.SubscriberId == subscriberId && c.AccessKey == accessKey, ct);
 
     public async Task<IReadOnlyList<PurchBill>> GetAsync(
         Guid subscriberId,
@@ -88,47 +58,27 @@ public sealed class PurchBillRepository : IPurchBillRepository
         string? search,
         CancellationToken ct = default)
     {
-        if (UseUnified)
-        {
-            var q = InvoiceDocumentsQuery(subscriberId);
+        var q = InvoiceDocumentsQuery(subscriberId);
 
-            if (estado.HasValue)
-                q = q.Where(c => c.Status == estado.Value.ToString());
-            if (proveedorId.HasValue)
-                q = q.Where(c => c.BusinessPartnerId == proveedorId.Value);
-            if (desde.HasValue)
-                q = q.Where(c => c.IssueDate >= desde.Value.Date);
-            if (hasta.HasValue)
-                q = q.Where(c => c.IssueDate <= hasta.Value.Date);
-
-            if (!string.IsNullOrWhiteSpace(search))
-            {
-                var s = search.Trim().ToLower();
-                q = q.Where(c =>
-                    c.DocNumber.ToLower().Contains(s) ||
-                    (c.AccessKey != null && c.AccessKey.Contains(s)));
-            }
-
-            var docs = await q.OrderByDescending(c => c.IssueDate).ToListAsync(ct);
-            return docs.Select(PurchaseDocumentMapper.ToLegacyBill).ToList();
-        }
-
-        var legacy = _context.PurchBills.Where(c => c.SubscriberId == subscriberId);
-
-        if (estado.HasValue)        legacy = legacy.Where(c => c.Status == estado.Value);
-        if (proveedorId.HasValue)   legacy = legacy.Where(c => c.BusinessPartnerId == proveedorId.Value);
-        if (desde.HasValue)         legacy = legacy.Where(c => c.InvoiceDate >= desde.Value.Date);
-        if (hasta.HasValue)         legacy = legacy.Where(c => c.InvoiceDate <= hasta.Value.Date);
+        if (estado.HasValue)
+            q = q.Where(c => c.Status == estado.Value.ToString());
+        if (proveedorId.HasValue)
+            q = q.Where(c => c.BusinessPartnerId == proveedorId.Value);
+        if (desde.HasValue)
+            q = q.Where(c => c.IssueDate >= desde.Value.Date);
+        if (hasta.HasValue)
+            q = q.Where(c => c.IssueDate <= hasta.Value.Date);
 
         if (!string.IsNullOrWhiteSpace(search))
         {
             var s = search.Trim().ToLower();
-            legacy = legacy.Where(c =>
-                c.InvoiceNumber.ToLower().Contains(s) ||
+            q = q.Where(c =>
+                c.DocNumber.ToLower().Contains(s) ||
                 (c.AccessKey != null && c.AccessKey.Contains(s)));
         }
 
-        return await legacy.OrderByDescending(c => c.InvoiceDate).ToListAsync(ct);
+        var docs = await q.OrderByDescending(c => c.IssueDate).ToListAsync(ct);
+        return docs.Select(PurchaseDocumentMapper.ToLegacyBill).ToList();
     }
 
     private IQueryable<PurchaseDocument> InvoiceDocumentsQuery(Guid subscriberId) =>
@@ -149,28 +99,17 @@ public sealed class PurchBillRepository : IPurchBillRepository
         => _context.PurchWarehouseAllocs.AddAsync(asignacion, ct).AsTask();
 
     public Task AddIssuedRetentionAsync(IssuedRetention retencion, CancellationToken ct = default)
-    {
-        if (UseUnified)
-            return _context.PurchaseWithholdings.AddAsync(PurchaseWithholdingMapper.ToWithholding(retencion), ct).AsTask();
-        return _context.IssuedRetentions.AddAsync(retencion, ct).AsTask();
-    }
+        => _context.PurchaseWithholdings.AddAsync(PurchaseWithholdingMapper.ToWithholding(retencion), ct).AsTask();
 
     public async Task<IssuedRetention?> GetIssuedRetentionByIdWithLinesAsync(Guid subscriberId, Guid id, CancellationToken ct = default)
     {
-        if (UseUnified)
-        {
-            var w = await _context.PurchaseWithholdings
-                .Include(r => r.Lines)
-                .FirstOrDefaultAsync(r => r.SubscriberId == subscriberId && r.Id == id, ct);
-            if (w is null) return null;
-            var legacy = PurchaseWithholdingMapper.ToLegacyRetention(w);
-            _documentSync.StageIssuedRetention(legacy);
-            return legacy;
-        }
-
-        return await _context.IssuedRetentions
+        var w = await _context.PurchaseWithholdings
             .Include(r => r.Lines)
             .FirstOrDefaultAsync(r => r.SubscriberId == subscriberId && r.Id == id, ct);
+        if (w is null) return null;
+        var legacy = PurchaseWithholdingMapper.ToLegacyRetention(w);
+        _documentSync.StageIssuedRetention(legacy);
+        return legacy;
     }
 
     public async Task<IReadOnlyList<IssuedRetention>> GetIssuedRetentionsAsync(
@@ -178,66 +117,40 @@ public sealed class PurchBillRepository : IPurchBillRepository
         Guid? proveedorId,
         CancellationToken ct = default)
     {
-        if (UseUnified)
-        {
-            var q = _context.PurchaseWithholdings
-                .Where(r => r.SubscriberId == subscriberId
-                    && r.Direction == WithholdingDirection.Issued);
-            if (proveedorId.HasValue)
-                q = q.Where(r => r.BusinessPartnerId == proveedorId.Value);
-            var docs = await q.OrderByDescending(r => r.IssueDate).ToListAsync(ct);
-            return docs.Select(PurchaseWithholdingMapper.ToLegacyRetention).ToList();
-        }
-
-        var legacy = _context.IssuedRetentions
-            .Where(r => r.SubscriberId == subscriberId);
+        var q = _context.PurchaseWithholdings
+            .Where(r => r.SubscriberId == subscriberId
+                && r.Direction == WithholdingDirection.Issued);
         if (proveedorId.HasValue)
-            legacy = legacy.Where(r => r.BusinessPartnerId == proveedorId.Value);
-        return await legacy.OrderByDescending(r => r.IssueDate).ToListAsync(ct);
+            q = q.Where(r => r.BusinessPartnerId == proveedorId.Value);
+        var docs = await q.OrderByDescending(r => r.IssueDate).ToListAsync(ct);
+        return docs.Select(PurchaseWithholdingMapper.ToLegacyRetention).ToList();
     }
 
     public Task AddPurchNoteAsync(PurchNote nota, CancellationToken ct = default)
-    {
-        if (UseUnified)
-            return _context.PurchaseDocuments.AddAsync(PurchaseDocumentMapper.ToDocument(nota), ct).AsTask();
-        return _context.PurchNotes.AddAsync(nota, ct).AsTask();
-    }
+        => _context.PurchaseDocuments.AddAsync(PurchaseDocumentMapper.ToDocument(nota), ct).AsTask();
 
     public async Task<PurchNote?> GetPurchNoteByIdWithLinesAsync(
         Guid subscriberId,
         Guid id,
         CancellationToken ct = default)
     {
-        if (UseUnified)
-        {
-            var doc = await NoteDocumentsQuery(subscriberId)
-                .Include(n => n.Lines)
-                .Include(n => n.Reference)
-                .FirstOrDefaultAsync(n => n.SubscriberId == subscriberId && n.Id == id, ct);
-            if (doc is null) return null;
-            var (billId, expenseId) = await ResolveNoteLinksAsync(doc, ct);
-            var note = PurchaseDocumentMapper.ToLegacyNote(doc, billId, expenseId);
-            if (UseUnified) _documentSync.StagePurchNote(note);
-            return note;
-        }
-
-        return await _context.PurchNotes
+        var doc = await NoteDocumentsQuery(subscriberId)
             .Include(n => n.Lines)
+            .Include(n => n.Reference)
             .FirstOrDefaultAsync(n => n.SubscriberId == subscriberId && n.Id == id, ct);
+        if (doc is null) return null;
+        var (billId, expenseId) = await ResolveNoteLinksAsync(doc, ct);
+        var note = PurchaseDocumentMapper.ToLegacyNote(doc, billId, expenseId);
+        _documentSync.StagePurchNote(note);
+        return note;
     }
 
     public Task<bool> ExistsPurchNoteAccessKeyAsync(
         Guid subscriberId,
         string accessKey,
         CancellationToken ct = default)
-    {
-        if (UseUnified)
-            return _context.PurchaseDocuments.AnyAsync(
-                n => n.SubscriberId == subscriberId && n.AccessKey == accessKey, ct);
-
-        return _context.PurchNotes.AnyAsync(
+        => _context.PurchaseDocuments.AnyAsync(
             n => n.SubscriberId == subscriberId && n.AccessKey == accessKey, ct);
-    }
 
     public async Task<IReadOnlyList<PurchNote>> GetPurchNotesAsync(
         Guid subscriberId,
@@ -247,36 +160,24 @@ public sealed class PurchBillRepository : IPurchBillRepository
         string? estado,
         CancellationToken ct = default)
     {
-        if (UseUnified)
-        {
-            var q = NoteDocumentsQuery(subscriberId);
-            if (proveedorId.HasValue)
-                q = q.Where(n => n.BusinessPartnerId == proveedorId.Value);
-            if (PurchBillId.HasValue)
-                q = q.Where(n => n.ReferenceDocumentId == PurchBillId.Value);
-            if (ExpenseInvoiceId.HasValue)
-                q = q.Where(n => n.ReferenceDocumentId == ExpenseInvoiceId.Value);
-            if (!string.IsNullOrWhiteSpace(estado))
-                q = q.Where(n => n.Status == estado.Trim());
-
-            var docs = await q.OrderByDescending(n => n.IssueDate).ToListAsync(ct);
-            var result = new List<PurchNote>(docs.Count);
-            foreach (var doc in docs)
-            {
-                var links = await ResolveNoteLinksAsync(doc, ct);
-                result.Add(PurchaseDocumentMapper.ToLegacyNote(doc, links.BillId, links.ExpenseId));
-            }
-            return result;
-        }
-
-        var legacy = _context.PurchNotes.Where(n => n.SubscriberId == subscriberId);
-        if (proveedorId.HasValue) legacy = legacy.Where(n => n.BusinessPartnerId == proveedorId.Value);
-        if (PurchBillId.HasValue) legacy = legacy.Where(n => n.PurchBillId == PurchBillId.Value);
-        if (ExpenseInvoiceId.HasValue) legacy = legacy.Where(n => n.ExpenseInvoiceId == ExpenseInvoiceId.Value);
+        var q = NoteDocumentsQuery(subscriberId);
+        if (proveedorId.HasValue)
+            q = q.Where(n => n.BusinessPartnerId == proveedorId.Value);
+        if (PurchBillId.HasValue)
+            q = q.Where(n => n.ReferenceDocumentId == PurchBillId.Value);
+        if (ExpenseInvoiceId.HasValue)
+            q = q.Where(n => n.ReferenceDocumentId == ExpenseInvoiceId.Value);
         if (!string.IsNullOrWhiteSpace(estado))
-            legacy = legacy.Where(n => n.Status == estado.Trim());
+            q = q.Where(n => n.Status == estado.Trim());
 
-        return await legacy.OrderByDescending(n => n.IssueDate).ToListAsync(ct);
+        var docs = await q.OrderByDescending(n => n.IssueDate).ToListAsync(ct);
+        var result = new List<PurchNote>(docs.Count);
+        foreach (var doc in docs)
+        {
+            var links = await ResolveNoteLinksAsync(doc, ct);
+            result.Add(PurchaseDocumentMapper.ToLegacyNote(doc, links.BillId, links.ExpenseId));
+        }
+        return result;
     }
 
     private IQueryable<PurchaseDocument> NoteDocumentsQuery(Guid subscriberId) =>

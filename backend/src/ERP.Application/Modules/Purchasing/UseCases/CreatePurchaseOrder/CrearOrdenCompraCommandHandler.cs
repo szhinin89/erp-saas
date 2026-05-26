@@ -1,4 +1,4 @@
-﻿using MediatR;
+using MediatR;
 using Microsoft.Extensions.Logging;
 using ERP.Application.Common;
 using ERP.Application.Modules.Purchasing.DTOs;
@@ -9,7 +9,7 @@ using ERP.Domain.Modules.Purchasing.Interfaces;
 using ERP.Domain.MasterData.Interfaces;
 using ERP.Domain.Products.Interfaces;
 
-namespace ERP.Application.Modules.Purchasing.UseCases.CrearOrdenCompra;
+namespace ERP.Application.Modules.Purchasing.UseCases.CreatePurchaseOrder;
 
 public sealed class CreatePurchaseOrderCommandHandler
     : IRequestHandler<CreatePurchaseOrderCommand, Result<PurchaseOrderDto>>

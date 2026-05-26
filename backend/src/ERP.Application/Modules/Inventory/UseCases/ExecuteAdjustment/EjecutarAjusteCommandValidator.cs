@@ -1,6 +1,6 @@
 using FluentValidation;
 
-namespace ERP.Application.Inventory.UseCases.EjecutarAjuste;
+namespace ERP.Application.Inventory.UseCases.ExecuteAdjustment;
 
 public sealed class ExecuteStockAdjustmentCommandValidator : AbstractValidator<ExecuteStockAdjustmentCommand>
 {

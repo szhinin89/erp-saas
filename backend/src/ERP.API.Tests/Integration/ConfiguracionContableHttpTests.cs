@@ -13,7 +13,7 @@ using ERP.Infrastructure.Persistence;
 namespace ERP.API.Tests.Integration;
 
 /// <summary>Tests HTTP end-to-end: configuraciÃ³n contable por tenant.</summary>
-public sealed class ConfiguracionContableHttpTests
+public sealed class AccountingConfigurationHttpTests
 {
     private static async Task<(IntegrationTestWebAppFactory Factory, HttpClient Client, IntegrationSeedData.SeedResult Seed)>
         CreateClientAsync()
@@ -33,7 +33,7 @@ public sealed class ConfiguracionContableHttpTests
     }
 
     [Fact]
-    public async Task ConfiguracionContable_Get_sin_token_responde_401()
+    public async Task AccountingConfiguration_Get_sin_token_responde_401()
     {
         await using var factory = new IntegrationTestWebAppFactory();
         using var client = factory.CreateClient();
@@ -43,7 +43,7 @@ public sealed class ConfiguracionContableHttpTests
     }
 
     [Fact]
-    public async Task ConfiguracionContable_Get_con_token_responde_200()
+    public async Task AccountingConfiguration_Get_con_token_responde_200()
     {
         var (factory, client, _) = await CreateClientAsync();
         await using var _ = factory;
@@ -55,7 +55,7 @@ public sealed class ConfiguracionContableHttpTests
     }
 
     [Fact]
-    public async Task ConfiguracionContable_Put_con_cuenta_invalida_responde_400()
+    public async Task AccountingConfiguration_Put_con_cuenta_invalida_responde_400()
     {
         var (factory, client, _) = await CreateClientAsync();
         await using var _ = factory;
@@ -73,7 +73,7 @@ public sealed class ConfiguracionContableHttpTests
     }
 
     [Fact]
-    public async Task ConfiguracionContable_Put_valido_y_crud_gastos_funciona()
+    public async Task AccountingConfiguration_Put_valido_y_crud_gastos_funciona()
     {
         var (factory, client, seed) = await CreateClientAsync();
         await using var _ = factory;

@@ -1,25 +1,32 @@
 using ERP.API.Auth;
-using Microsoft.AspNetCore.RateLimiting;
+using ERP.API.Attributes;
+using ERP.API.Contracts;
+using ERP.API.Controllers.Platform;
+using ERP.API.Extensions;
+using ERP.Application.Auth.DTOs;
+using ERP.Application.Auth.UseCases.ListMyCompanies;
+using ERP.Application.Auth.UseCases.Login;
+using ERP.Application.Auth.UseCases.Logout;
+using ERP.Application.Auth.UseCases.PasswordReset;
+using ERP.Application.Auth.UseCases.RefreshToken;
+using ERP.Application.Auth.UseCases.Register;
+using ERP.Application.Auth.UseCases.SwitchCompany;
+using ERP.Application.Auth.UseCases.SwitchSubscriber;
+using ERP.Application.Common;
+using AccessibleCompanyDto = ERP.Application.Auth.DTOs.AccessibleCompanyDto;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using ERP.API.Attributes;
-using ERP.API.Contracts;
-using ERP.API.Extensions;
-using ERP.Application.Auth.UseCases.Register;
-using ERP.Application.Auth.UseCases.Login;
-using ERP.Application.Auth.UseCases.Logout;
-using ERP.Application.Auth.UseCases.RefreshToken;
-using ERP.Application.Auth.DTOs;
-using ERP.Application.Common;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace ERP.API.Controllers;
 
+/// <summary>Auth ERP único: login, refresh, sesión multi-empresa e impersonación platform.</summary>
 [ApiController]
 [AppFeature("Auth API", "perm:auth.api", "🧩", null, null, 988, IsVisibleInMenu = false)]
-[Route("api/[controller]")]
+[Route("api/auth")]
 [Produces("application/json")]
-public class AuthController : ControllerBase
+public sealed class AuthController : ControllerBase
 {
     private readonly IMediator _mediator;
 
@@ -84,6 +91,76 @@ public class AuthController : ControllerBase
         var result = await _mediator.Send(new LogoutCommand(rawToken ?? string.Empty, request?.AllDevices ?? false), ct);
 
         AuthRefreshCookieHelper.ClearRefreshCookie(HttpContext);
+        return this.ToOkOrBadRequest(result);
+    }
+
+    [HttpPost("password-reset")]
+    [AllowAnonymous]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> DirectPasswordReset([FromBody] DirectPasswordResetCommand command, CancellationToken ct)
+    {
+        var result = await _mediator.Send(command, ct);
+        return this.ToOkOrBadRequest(result);
+    }
+
+    [HttpPost("forgot-password")]
+    [AllowAnonymous]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordCommand command, CancellationToken ct)
+    {
+        var result = await _mediator.Send(command, ct);
+        return this.ToOkOrBadRequest(result);
+    }
+
+    [HttpPost("reset-password")]
+    [AllowAnonymous]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> ResetPasswordWithToken([FromBody] ResetPasswordWithTokenCommand command, CancellationToken ct)
+    {
+        var result = await _mediator.Send(command, ct);
+        return this.ToOkOrBadRequest(result);
+    }
+
+    [HttpGet("my-companies")]
+    [Authorize]
+    [ProducesResponseType(typeof(ApiResponse<IReadOnlyList<AccessibleCompanyDto>>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> ListMyCompanies(CancellationToken ct)
+    {
+        var result = await _mediator.Send(new ListMyCompaniesQuery(), ct);
+        return this.ToOkOrBadRequest(result);
+    }
+
+    [HttpPost("switch-company")]
+    [Authorize]
+    [ProducesResponseType(typeof(ApiResponse<AuthResponseDto?>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> SwitchCompany([FromBody] SwitchCompanyRequest request, CancellationToken ct)
+    {
+        var result = await _mediator.Send(new SwitchCompanyCommand(request.CompanyId), ct);
+        if (result.IsSuccess)
+        {
+            if (result.Value?.RefreshToken is not null && result.Value.RefreshTokenExpiry is not null)
+                AuthRefreshCookieHelper.SetRefreshCookie(HttpContext, result.Value.RefreshToken, result.Value.RefreshTokenExpiry.Value);
+
+            return this.ApiOk(result.Value);
+        }
+
+        return this.ToOkOrBadRequest(result);
+    }
+
+    [HttpPost("switch-subscriber")]
+    [Authorize(Roles = PlatformAuthorizationRoles.PlatformOperator)]
+    [ProducesResponseType(typeof(ApiResponse<AuthResponseDto?>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> SwitchSubscriber([FromBody] SwitchSubscriberCommand command, CancellationToken ct)
+    {
+        var result = await _mediator.Send(command, ct);
+        if (result.IsSuccess)
+        {
+            if (result.Value?.RefreshToken is not null && result.Value.RefreshTokenExpiry is not null)
+                AuthRefreshCookieHelper.SetRefreshCookie(HttpContext, result.Value.RefreshToken, result.Value.RefreshTokenExpiry.Value);
+
+            return this.ApiOk(result.Value);
+        }
+
         return this.ToOkOrBadRequest(result);
     }
 

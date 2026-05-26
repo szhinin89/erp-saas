@@ -1,7 +1,7 @@
 using FluentAssertions;
 using ERP.Application.Common;
 using ERP.Application.Inventory.DTOs;
-using ERP.Application.Inventory.UseCases.CrearTransferencia;
+using ERP.Application.Inventory.UseCases.CreateTransfer;
 using ERP.Domain.Audit.Interfaces;
 using ERP.Domain.Modules.Inventory.Entities;
 using ERP.Domain.Modules.Inventory.Interfaces;

@@ -1,14 +1,14 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using ERP.Domain.Modules.Accounting.Entities;
 using ERP.Domain.Modules.Accounting.Interfaces;
 
 namespace ERP.Infrastructure.Persistence.Repositories;
 
-public sealed class ConfiguracionContableRepository : IAccountingSetupRepository
+public sealed class AccountingConfigurationRepository : IAccountingSetupRepository
 {
     private readonly ErpDbContext _context;
 
-    public ConfiguracionContableRepository(ErpDbContext context)
+    public AccountingConfigurationRepository(ErpDbContext context)
     {
         _context = context;
     }

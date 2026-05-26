@@ -3,7 +3,7 @@ using ERP.Application.Common;
 
 using ERP.Application.Modules.Expenses.DTOs;
 
-namespace ERP.Application.Modules.Expenses.UseCases.GetGastoById;
+namespace ERP.Application.Modules.Expenses.UseCases.GetExpenseById;
 
 [RequireFeature(SubscriptionFeatureCodes.Gastos)]
 public sealed record GetExpenseByIdQuery(Guid Id)

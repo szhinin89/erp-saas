@@ -12,7 +12,7 @@ import { MasterDataPartnerListTab } from '../components/MasterDataPartnerListTab
 import { MasterDataPartnerToast } from '../components/MasterDataPartnerToast';
 import { useMasterDataCustomersUiStore } from '../store/masterDataPartnerUiStore';
 import type { CreateBusinessPartnerBody, UpdateBusinessPartnerBody } from '../types/businessPartner.types';
-import '../../../pages/ProductsPage.css';
+import '../../../styles/shared/products-catalog.css';
 import './masterdata-pages.css';
 
 const TABS = [

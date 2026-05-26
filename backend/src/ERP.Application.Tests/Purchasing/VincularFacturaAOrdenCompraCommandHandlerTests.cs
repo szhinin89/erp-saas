@@ -1,7 +1,7 @@
 using FluentAssertions;
 using ERP.Application.Common;
 using ERP.Application.Modules.Purchasing.DTOs;
-using ERP.Application.Modules.Purchasing.UseCases.VincularFacturaAOrdenCompra;
+using ERP.Application.Modules.Purchasing.UseCases.LinkInvoiceToPurchaseOrder;
 using ERP.Domain.Audit.Interfaces;
 using ERP.Domain.Modules.Purchasing.Entities;
 using ERP.Domain.Modules.Purchasing.Events;
@@ -13,7 +13,7 @@ using Moq;
 
 namespace ERP.Application.Tests.Compras;
 
-public sealed class VincularFacturaAOrdenCompraCommandHandlerTests
+public sealed class LinkInvoiceToPurchaseOrderCommandHandlerTests
 {
     // ── Casos exitosos ────────────────────────────────────────────────────
 

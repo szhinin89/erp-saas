@@ -1,6 +1,6 @@
 using FluentValidation;
 
-namespace ERP.Application.Inventory.UseCases.CancelarAjuste;
+namespace ERP.Application.Inventory.UseCases.CancelAdjustment;
 
 public sealed class CancelStockAdjustmentCommandValidator : AbstractValidator<CancelStockAdjustmentCommand>
 {

@@ -2,10 +2,10 @@ using FluentAssertions;
 using MediatR;
 using Microsoft.Extensions.DependencyInjection;
 using ERP.API.Tests.Support;
-using ERP.Application.Inventory.UseCases.CancelarTransferencia;
-using ERP.Application.Inventory.UseCases.ConfirmarTransferencia;
-using ERP.Application.Inventory.UseCases.CrearTransferencia;
-using ERP.Application.Modules.Inventory.UseCases.GetCurrentStockPorBodega;
+using ERP.Application.Inventory.UseCases.CancelTransfer;
+using ERP.Application.Inventory.UseCases.ConfirmTransfer;
+using ERP.Application.Inventory.UseCases.CreateTransfer;
+using ERP.Application.Modules.Inventory.UseCases.GetCurrentStockByWarehouse;
 using ERP.Domain.Modules.Inventory.Entities;
 using ERP.Domain.Modules.Inventory.Entities;
 using ERP.Domain.Modules.Inventory.Enums;
@@ -22,7 +22,7 @@ namespace ERP.API.Tests.Integration;
 public sealed class TransferenciasEndToEndTests
 {
     [Fact]
-    public async Task ConfirmarTransferencia_mueve_stock_de_origen_a_destino_y_registra_movimientos()
+    public async Task ConfirmTransfer_mueve_stock_de_origen_a_destino_y_registra_movimientos()
     {
         await using var factory = new IntegrationTestWebAppFactory();
         using var scope  = factory.Services.CreateScope();
@@ -83,7 +83,7 @@ public sealed class TransferenciasEndToEndTests
     }
 
     [Fact]
-    public async Task ConfirmarTransferencia_con_stock_insuficiente_retorna_failure_sin_mover_stock()
+    public async Task ConfirmTransfer_con_stock_insuficiente_retorna_failure_sin_mover_stock()
     {
         await using var factory = new IntegrationTestWebAppFactory();
         using var scope  = factory.Services.CreateScope();
@@ -132,7 +132,7 @@ public sealed class TransferenciasEndToEndTests
     }
 
     [Fact]
-    public async Task CancelarTransferencia_en_borrador_retorna_cancelado_sin_afectar_stock()
+    public async Task CancelTransfer_en_borrador_retorna_cancelado_sin_afectar_stock()
     {
         await using var factory = new IntegrationTestWebAppFactory();
         using var scope  = factory.Services.CreateScope();
@@ -166,7 +166,7 @@ public sealed class TransferenciasEndToEndTests
     }
 
     [Fact]
-    public async Task ConfirmarTransferencia_ya_confirmada_retorna_failure()
+    public async Task ConfirmTransfer_ya_confirmada_retorna_failure()
     {
         await using var factory = new IntegrationTestWebAppFactory();
         using var scope  = factory.Services.CreateScope();
@@ -194,7 +194,7 @@ public sealed class TransferenciasEndToEndTests
     }
 
     [Fact]
-    public async Task CancelarTransferencia_ya_confirmada_retorna_failure()
+    public async Task CancelTransfer_ya_confirmada_retorna_failure()
     {
         await using var factory = new IntegrationTestWebAppFactory();
         using var scope  = factory.Services.CreateScope();

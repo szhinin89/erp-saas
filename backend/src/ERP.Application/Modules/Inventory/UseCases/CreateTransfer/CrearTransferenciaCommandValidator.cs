@@ -1,6 +1,6 @@
-﻿using FluentValidation;
+using FluentValidation;
 
-namespace ERP.Application.Inventory.UseCases.CrearTransferencia;
+namespace ERP.Application.Inventory.UseCases.CreateTransfer;
 
 public sealed class CreateTransferCommandValidator : AbstractValidator<CreateTransferCommand>
 {

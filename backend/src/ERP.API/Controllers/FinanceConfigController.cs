@@ -4,7 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using ERP.API.Contracts;
 using ERP.API.Extensions;
 using ERP.Application.Modules.Accounting.DTOs;
-using ERP.Application.Modules.Accounting.UseCases.ConfiguracionContable;
+using ERP.Application.Modules.Accounting.UseCases.AccountingConfiguration;
 using ERP.API.Attributes;
 
 namespace ERP.API.Controllers;

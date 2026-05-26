@@ -2,7 +2,7 @@ using FluentAssertions;
 using MediatR;
 using Microsoft.Extensions.DependencyInjection;
 using ERP.API.Tests.Support;
-using ERP.Application.Inventory.UseCases.CrearTransferencia;
+using ERP.Application.Inventory.UseCases.CreateTransfer;
 using ERP.Domain.Modules.Inventory.Entities;
 using ERP.Domain.Modules.Inventory.Entities;
 using ERP.Domain.Modules.Inventory.Enums;
@@ -17,7 +17,7 @@ namespace ERP.API.Tests.Unit;
 public sealed class TransferenciasStockTests
 {
     [Fact]
-    public async Task CrearTransferencia_con_stock_suficiente_retorna_exito()
+    public async Task CreateTransfer_con_stock_suficiente_retorna_exito()
     {
         await using var factory = new IntegrationTestWebAppFactory();
         using var scope = factory.Services.CreateScope();
@@ -39,7 +39,7 @@ public sealed class TransferenciasStockTests
     }
 
     [Fact]
-    public async Task CrearTransferencia_con_stock_exactamente_suficiente_retorna_exito()
+    public async Task CreateTransfer_con_stock_exactamente_suficiente_retorna_exito()
     {
         await using var factory = new IntegrationTestWebAppFactory();
         using var scope = factory.Services.CreateScope();
@@ -59,7 +59,7 @@ public sealed class TransferenciasStockTests
     }
 
     [Fact]
-    public async Task CrearTransferencia_con_stock_insuficiente_retorna_failure_con_detalle()
+    public async Task CreateTransfer_con_stock_insuficiente_retorna_failure_con_detalle()
     {
         await using var factory = new IntegrationTestWebAppFactory();
         using var scope = factory.Services.CreateScope();
@@ -82,7 +82,7 @@ public sealed class TransferenciasStockTests
     }
 
     [Fact]
-    public async Task CrearTransferencia_sin_registro_de_stock_retorna_failure()
+    public async Task CreateTransfer_sin_registro_de_stock_retorna_failure()
     {
         await using var factory = new IntegrationTestWebAppFactory();
         using var scope = factory.Services.CreateScope();
@@ -104,7 +104,7 @@ public sealed class TransferenciasStockTests
     }
 
     [Fact]
-    public async Task CrearTransferencia_bodega_origen_inexistente_retorna_failure()
+    public async Task CreateTransfer_bodega_origen_inexistente_retorna_failure()
     {
         await using var factory = new IntegrationTestWebAppFactory();
         using var scope = factory.Services.CreateScope();

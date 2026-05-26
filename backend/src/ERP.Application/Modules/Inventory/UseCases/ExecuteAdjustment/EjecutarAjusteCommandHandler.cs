@@ -9,7 +9,7 @@ using ERP.Domain.Modules.Inventory.Entities;
 using ERP.Domain.Modules.Inventory.Enums;
 using ERP.Domain.Modules.Inventory.Interfaces;
 
-namespace ERP.Application.Inventory.UseCases.EjecutarAjuste;
+namespace ERP.Application.Inventory.UseCases.ExecuteAdjustment;
 
 public sealed class ExecuteStockAdjustmentCommandHandler
     : IRequestHandler<ExecuteStockAdjustmentCommand, Result<StockAdjustmentDto>>

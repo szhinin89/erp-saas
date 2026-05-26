@@ -1,23 +1,23 @@
-﻿using System.Globalization;
+using System.Globalization;
 using System.Text;
 using FluentAssertions;
 using MediatR;
 using Microsoft.Extensions.DependencyInjection;
 using ERP.API.Tests.Support;
 using ERP.Application.Modules.Purchasing.Services;
-using ERP.Application.Modules.Purchasing.UseCases.AprobarCompra;
-using ERP.Application.Modules.Purchasing.UseCases.CrearCompra;
-using ERP.Application.Modules.Purchasing.UseCases.NotasProveedor;
-using ERP.Application.Modules.Purchasing.UseCases.Retenciones;
-using ERP.Application.Modules.Purchasing.UseCases.ValidarCompra;
-using ERP.Application.Modules.Expenses.UseCases.AprobarGasto;
-using ERP.Application.Modules.Expenses.UseCases.CrearGasto;
-using ERP.Application.Modules.Expenses.UseCases.ValidarGasto;
-using ERP.Application.Sales.UseCases.CrearVenta;
-using ERP.Application.Sales.UseCases.EmitirFacturaElectronica;
-using ERP.Application.Sales.UseCases.Notas;
-using ERP.Application.Sales.UseCases.RetencionesRecibidas;
-using ERP.Application.Sales.UseCases.ValidarVenta;
+using ERP.Application.Modules.Purchasing.UseCases.ApprovePurchase;
+using ERP.Application.Modules.Purchasing.UseCases.CreatePurchase;
+using ERP.Application.Modules.Purchasing.UseCases.SupplierNotes;
+using ERP.Application.Modules.Purchasing.UseCases.Retentions;
+using ERP.Application.Modules.Purchasing.UseCases.ValidatePurchase;
+using ERP.Application.Modules.Expenses.UseCases.ApproveExpense;
+using ERP.Application.Modules.Expenses.UseCases.CreateExpense;
+using ERP.Application.Modules.Expenses.UseCases.ValidateExpense;
+using ERP.Application.Sales.UseCases.CreateSale;
+using ERP.Application.Sales.UseCases.IssueElectronicInvoice;
+using ERP.Application.Sales.UseCases.SalesNotes;
+using ERP.Application.Sales.UseCases.ReceivedRetentions;
+using ERP.Application.Sales.UseCases.ValidateSale;
 using ERP.Domain.Configuration.Entities;
 using ERP.Domain.Modules.Accounting.Entities;
 using ERP.Domain.Modules.Accounting.Enums;
@@ -27,9 +27,9 @@ using ERP.Infrastructure.Persistence;
 namespace ERP.API.Tests.Integration;
 
 /// <summary>Ã‚Â§6.1 escenarios NC/ND, retenciÃƒÂ³n emitida (compras) y retenciÃƒÂ³n recibida (ventas).</summary>
-public sealed class NotasYRetencionesEndToEndTests
+public sealed class SalesNotesYRetentionsEndToEndTests
 {
-    private static CreateSaleCommand BuildCrearVenta(
+    private static CreateSaleCommand BuildCreateSale(
         Guid clienteId, Guid bodegaId, Guid sucursalId, Guid productoId, decimal quantity)
         => new(clienteId, bodegaId, sucursalId, new List<SaleItemDto> { new(productoId, quantity, 25.00m) });
 
@@ -122,7 +122,7 @@ public sealed class NotasYRetencionesEndToEndTests
         var sucursalId = db.Branches.First(b => b.SubscriberId == seed.SubscriberId).Id;
 
         var venta = await mediator.Send(
-            BuildCrearVenta(clienteId, seed.WarehouseId, sucursalId, seed.ProductId, 2m),
+            BuildCreateSale(clienteId, seed.WarehouseId, sucursalId, seed.ProductId, 2m),
             CancellationToken.None);
         venta.IsSuccess.Should().BeTrue(venta.Error);
         await mediator.Send(new ValidateSaleCommand(venta.Value), CancellationToken.None);
@@ -177,7 +177,7 @@ public sealed class NotasYRetencionesEndToEndTests
         var cuentaVentas = db.Accounts.First(a => a.SubscriberId == seed.SubscriberId && a.Code.Value == "4.1.99");
 
         var venta = await mediator.Send(
-            BuildCrearVenta(clienteId, seed.WarehouseId, sucursalId, seed.ProductId, 1m),
+            BuildCreateSale(clienteId, seed.WarehouseId, sucursalId, seed.ProductId, 1m),
             CancellationToken.None);
         venta.IsSuccess.Should().BeTrue(venta.Error);
         await mediator.Send(new ValidateSaleCommand(venta.Value), CancellationToken.None);
@@ -540,7 +540,7 @@ public sealed class NotasYRetencionesEndToEndTests
         var sucursalId = db.Branches.First(b => b.SubscriberId == seed.SubscriberId).Id;
 
         var venta = await mediator.Send(
-            BuildCrearVenta(clienteId, seed.WarehouseId, sucursalId, seed.ProductId, 1m),
+            BuildCreateSale(clienteId, seed.WarehouseId, sucursalId, seed.ProductId, 1m),
             CancellationToken.None);
         venta.IsSuccess.Should().BeTrue(venta.Error);
         await mediator.Send(new ValidateSaleCommand(venta.Value), CancellationToken.None);

@@ -9,7 +9,7 @@ using ERP.Domain.Modules.Inventory.Entities;
 using ERP.Domain.Modules.Inventory.Interfaces;
 using ERP.Domain.Products.Interfaces;
 
-namespace ERP.Application.Inventory.UseCases.CrearAjuste;
+namespace ERP.Application.Inventory.UseCases.CreateAdjustment;
 
 public sealed class CreateStockAdjustmentCommandHandler
     : IRequestHandler<CreateStockAdjustmentCommand, Result<StockAdjustmentDto>>

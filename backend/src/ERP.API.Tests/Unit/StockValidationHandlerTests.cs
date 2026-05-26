@@ -1,8 +1,8 @@
-﻿using FluentAssertions;
+using FluentAssertions;
 using MediatR;
 using Microsoft.Extensions.DependencyInjection;
 using ERP.API.Tests.Support;
-using ERP.Application.Sales.UseCases.CrearVenta;
+using ERP.Application.Sales.UseCases.CreateSale;
 using ERP.Domain.Configuration.Entities;
 using ERP.Domain.Modules.Sales.Entities;
 using ERP.Domain.Modules.Inventory.Entities;
@@ -20,7 +20,7 @@ namespace ERP.API.Tests.Unit;
 public sealed class StockValidationHandlerTests
 {
     [Fact]
-    public async Task CrearVenta_con_stock_suficiente_retorna_exito()
+    public async Task CreateSale_con_stock_suficiente_retorna_exito()
     {
         await using var factory = new IntegrationTestWebAppFactory();
         using var scope = factory.Services.CreateScope();
@@ -39,7 +39,7 @@ public sealed class StockValidationHandlerTests
     }
 
     [Fact]
-    public async Task CrearVenta_con_stock_exactamente_suficiente_retorna_exito()
+    public async Task CreateSale_con_stock_exactamente_suficiente_retorna_exito()
     {
         await using var factory = new IntegrationTestWebAppFactory();
         using var scope = factory.Services.CreateScope();
@@ -58,7 +58,7 @@ public sealed class StockValidationHandlerTests
     }
 
     [Fact]
-    public async Task CrearVenta_con_stock_insuficiente_retorna_failure_con_detalle()
+    public async Task CreateSale_con_stock_insuficiente_retorna_failure_con_detalle()
     {
         await using var factory = new IntegrationTestWebAppFactory();
         using var scope = factory.Services.CreateScope();
@@ -80,7 +80,7 @@ public sealed class StockValidationHandlerTests
     }
 
     [Fact]
-    public async Task CrearVenta_sin_registro_de_stock_retorna_failure()
+    public async Task CreateSale_sin_registro_de_stock_retorna_failure()
     {
         await using var factory = new IntegrationTestWebAppFactory();
         using var scope = factory.Services.CreateScope();
@@ -101,7 +101,7 @@ public sealed class StockValidationHandlerTests
     }
 
     [Fact]
-    public async Task CrearVenta_con_varios_items_falla_si_uno_tiene_stock_insuficiente()
+    public async Task CreateSale_con_varios_items_falla_si_uno_tiene_stock_insuficiente()
     {
         await using var factory = new IntegrationTestWebAppFactory();
         using var scope = factory.Services.CreateScope();

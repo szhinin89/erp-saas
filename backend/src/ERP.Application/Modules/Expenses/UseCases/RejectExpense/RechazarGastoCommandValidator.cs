@@ -1,11 +1,11 @@
-﻿using FluentValidation;
+using FluentValidation;
 using ERP.Domain.Modules.Expenses.Entities;
 
-namespace ERP.Application.Modules.Expenses.UseCases.RechazarGasto;
+namespace ERP.Application.Modules.Expenses.UseCases.RejectExpense;
 
-public sealed class RechazarGastoCommandValidator : AbstractValidator<RejectExpenseCommand>
+public sealed class RejectExpenseCommandValidator : AbstractValidator<RejectExpenseCommand>
 {
-    public RechazarGastoCommandValidator()
+    public RejectExpenseCommandValidator()
     {
         RuleFor(x => x.ExpenseInvoiceId)
             .NotEmpty()

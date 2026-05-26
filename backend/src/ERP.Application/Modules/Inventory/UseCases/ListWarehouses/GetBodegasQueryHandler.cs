@@ -3,7 +3,7 @@ using ERP.Application.Common;
 using ERP.Application.Modules.Inventory.DTOs;
 using ERP.Domain.Modules.Inventory.Interfaces;
 
-namespace ERP.Application.Modules.Inventory.UseCases.ListarBodegas;
+namespace ERP.Application.Modules.Inventory.UseCases.ListWarehouses;
 
 public sealed class GetWarehousesQueryHandler
     : IRequestHandler<GetWarehousesQuery, Result<IReadOnlyList<WarehouseDto>>>

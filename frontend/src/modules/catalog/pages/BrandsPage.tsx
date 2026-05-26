@@ -17,7 +17,7 @@ import { BrandListadoTab }  from '../components/BrandListadoTab';
 import { BrandFormTab }     from '../components/BrandFormTab';
 import { BrandToastManager } from '../components/BrandToastManager';
 
-import '../../../pages/ProductsPage.css'; // prd-* shared styles
+import '../../../styles/shared/products-catalog.css'; // prd-* shared styles
 import './BrandsPage.css';                    // cat-brand-* module styles
 
 // ── Schema (unchanged from original) ─────────────────────────

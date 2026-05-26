@@ -73,7 +73,7 @@ public sealed class CrearPettyCashCommandHandler : IRequestHandler<CrearPettyCas
     }
 }
 
-public sealed record CrearGastoPettyCashCommand(
+public sealed record CreateExpensePettyCashCommand(
     Guid PettyCashId,
     DateTime TransactionDate,
     string Concept,
@@ -81,15 +81,15 @@ public sealed record CrearGastoPettyCashCommand(
     string VoucherType,
     string? VoucherNumber) : IRequest<Result<PettyCashExpenseDto>>, ICompanyScopedRequest;
 
-public sealed class CrearGastoPettyCashCommandHandler
-    : IRequestHandler<CrearGastoPettyCashCommand, Result<PettyCashExpenseDto>>
+public sealed class CreateExpensePettyCashCommandHandler
+    : IRequestHandler<CreateExpensePettyCashCommand, Result<PettyCashExpenseDto>>
 {
     private readonly ICashRepository _caja;
     private readonly ICurrentSubscriber _subscriber;
     private readonly ICurrentUser _user;
     private readonly IUnitOfWork _uow;
 
-    public CrearGastoPettyCashCommandHandler(
+    public CreateExpensePettyCashCommandHandler(
         ICashRepository caja,
         ICurrentSubscriber subscriber,
         ICurrentUser user,
@@ -101,7 +101,7 @@ public sealed class CrearGastoPettyCashCommandHandler
         _uow    = uow;
     }
 
-    public async Task<Result<PettyCashExpenseDto>> Handle(CrearGastoPettyCashCommand cmd, CancellationToken ct)
+    public async Task<Result<PettyCashExpenseDto>> Handle(CreateExpensePettyCashCommand cmd, CancellationToken ct)
     {
         var caja = await _caja.GetPettyCashByIdAsync(cmd.PettyCashId, ct);
         if (caja is null || !caja.IsActive)

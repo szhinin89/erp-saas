@@ -1,8 +1,8 @@
-﻿using MediatR;
+using MediatR;
 using ERP.Application.Common;
 using ERP.Domain.Modules.Accounting.Interfaces;
 
-namespace ERP.Application.Modules.Accounting.UseCases.ConfiguracionContable;
+namespace ERP.Application.Modules.Accounting.UseCases.AccountingConfiguration;
 
 public sealed class DeleteExpenseCategoryCommandHandler
     : IRequestHandler<DeleteExpenseCategoryCommand, Result<Unit>>

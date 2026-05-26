@@ -12,7 +12,7 @@ using ERP.Domain.Modules.Sales.Events;
 using ERP.Domain.Modules.Sales.Interfaces;
 using ERP.Domain.Products.Interfaces;
 
-namespace ERP.Application.Sales.UseCases.Notas;
+namespace ERP.Application.Sales.UseCases.SalesNotes;
 
 public sealed class EnviarSalesNotesriCommandHandler : IRequestHandler<SendSalesNoteSriCommand, Result<Guid>>
 {

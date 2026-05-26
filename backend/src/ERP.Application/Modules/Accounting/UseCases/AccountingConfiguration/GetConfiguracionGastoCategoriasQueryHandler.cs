@@ -1,9 +1,9 @@
-﻿using MediatR;
+using MediatR;
 using ERP.Application.Common;
 using ERP.Application.Modules.Accounting.DTOs;
 using ERP.Domain.Modules.Accounting.Interfaces;
 
-namespace ERP.Application.Modules.Accounting.UseCases.ConfiguracionContable;
+namespace ERP.Application.Modules.Accounting.UseCases.AccountingConfiguration;
 
 public sealed class GetExpenseCategorysQueryHandler
     : IRequestHandler<GetExpenseCategorysQuery, Result<IReadOnlyList<ExpenseCategoryDto>>>

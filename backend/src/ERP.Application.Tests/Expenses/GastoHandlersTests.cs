@@ -1,9 +1,9 @@
 using FluentAssertions;
 using ERP.Application.Common;
 using ERP.Application.Common.Interfaces;
-using ERP.Application.Modules.Expenses.UseCases.AprobarGasto;
-using ERP.Application.Modules.Expenses.UseCases.CrearGasto;
-using ERP.Application.Modules.Expenses.UseCases.ValidarGasto;
+using ERP.Application.Modules.Expenses.UseCases.ApproveExpense;
+using ERP.Application.Modules.Expenses.UseCases.CreateExpense;
+using ERP.Application.Modules.Expenses.UseCases.ValidateExpense;
 using ERP.Domain.Audit.Interfaces;
 using ERP.Domain.MasterData.Entities;
 using ERP.Domain.MasterData.Interfaces;

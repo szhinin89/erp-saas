@@ -10,7 +10,7 @@ using ERP.Domain.Modules.Expenses.Interfaces;
 using ERP.Domain.MasterData.Entities;
 using ERP.Domain.MasterData.Interfaces;
 
-namespace ERP.Application.Modules.Expenses.UseCases.CrearGasto;
+namespace ERP.Application.Modules.Expenses.UseCases.CreateExpense;
 
 public sealed class CreateExpenseCommandHandler
     : IRequestHandler<CreateExpenseCommand, Result<ExpenseInvoiceDto>>

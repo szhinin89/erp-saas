@@ -10,7 +10,7 @@ using ERP.Domain.Modules.Purchasing.Entities;
 using ERP.Domain.Modules.Purchasing.Enums;
 using ERP.Domain.Modules.Purchasing.Interfaces;
 
-namespace ERP.Application.Modules.Purchasing.UseCases.Retenciones;
+namespace ERP.Application.Modules.Purchasing.UseCases.Retentions;
 
 public sealed class GenerateIssuedRetentionCommandHandler
     : IRequestHandler<GenerateIssuedRetentionCommand, Result<Guid>>

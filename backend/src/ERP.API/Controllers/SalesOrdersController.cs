@@ -10,7 +10,7 @@ using ERP.Application.Modules.Commercial.UseCases.ConvertQuoteToOrder;
 using ERP.Application.Modules.Commercial.UseCases.CreateSalesOrder;
 using ERP.Application.Modules.Commercial.UseCases.GetSalesOrderByPublicId;
 using ERP.Application.Modules.Commercial.UseCases.GetSalesOrdersList;
-using ERP.Application.Sales.UseCases.CrearVenta;
+using ERP.Application.Sales.UseCases.CreateSale;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;

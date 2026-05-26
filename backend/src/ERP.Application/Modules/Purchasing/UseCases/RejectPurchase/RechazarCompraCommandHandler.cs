@@ -6,7 +6,7 @@ using ERP.Domain.Audit.Interfaces;
 using ERP.Domain.Modules.Purchasing.Enums;
 using ERP.Domain.Modules.Purchasing.Interfaces;
 
-namespace ERP.Application.Modules.Purchasing.UseCases.RechazarCompra;
+namespace ERP.Application.Modules.Purchasing.UseCases.RejectPurchase;
 
 public sealed class RejectPurchaseCommandHandler
     : IRequestHandler<RejectPurchaseCommand, Result<PurchBillDto>>

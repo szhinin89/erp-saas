@@ -105,16 +105,19 @@ Se eliminó código legacy, duplicado y sin referencias que coexistía con la ar
 **Frontend — una sola capa de páginas:**
 
 - Rutas lazy-importan **solo** desde `modules/*/pages/` (eliminados 25 wrappers `pages/*.tsx`).
-- Nav y dashboard apuntan a `/inventory/products` y `/finance/accounts` (no `/products` ni `/accounting`).
-- Eliminados aliases `@deprecated` `Bodega*` en `warehouseService.ts`.
-- `accessService.bootstrapSwitchSubscriber` → endpoint IAM renombrado.
+- Nav y dashboard apuntan a `/inventory/products` y `/finance/accounts`.
+- CSS compartido en `frontend/src/styles/shared/` (eliminado `pages/*.css`).
 
-**Pendiente P1 (migración de datos, PR dedicado):**
+### Resueltos P1 (2026-05-25, fase 3)
 
-- `DocumentSchemaOptions.UseUnifiedSchema` — dual-path repos hasta cutover SQL (`scripts/db/sql/002_unified_documents_*.sql`).
-- CQRS español en Application (`CrearCompra`, `CrearVenta`, …) → rename inglés.
-- Merge `AuthSessionController` → `AuthController` (casing `api/Auth` vs `api/auth`).
-- CSS compartido aún en `frontend/src/pages/*.css` — mover a `modules/` o `styles/shared/`.
+| Ítem | Resolución |
+|------|------------|
+| **UseUnifiedSchema dual-path** | Repos solo escriben/leen tablas unified (`purchase_documents`, `sales_documents`, `expense_documents`); eliminado `DocumentSchemaOptions` y ramas legacy |
+| **CQRS español en Application** | Namespaces y carpetas Sales/Purchasing/Inventory/Expenses/Accounting renombrados a inglés (`CreateSale`, `GetPurchases`, `CreateWarehouse`, …) |
+| **Auth fragmentado** | `AuthSessionController` + `AuthPasswordController` fusionados en `AuthController` con ruta única `api/auth` |
+| **CSS en pages/** | Movido a `styles/shared/` (`legacy-pages.css`, `products-catalog.css`, `platform-nav-menu.css`); duplicados huérfanos eliminados |
+
+**Migración BD existente:** ejecutar `scripts/db/sql/002_unified_documents_schema_and_migration.sql` antes de desplegar en entornos con datos legacy en `sales_bill` / `purch_bill`.
 
 ---
 
@@ -125,6 +128,7 @@ Se eliminó código legacy, duplicado y sin referencias que coexistía con la ar
 | Alta suscriptor + admin | `PlatformCreateSubscriberWithAdminCommand` → `POST /api/platform/subscribers` |
 | Bootstrap switch subscriber | `BootstrapSwitchSubscriberCommand` → `POST /api/admin/iam/bootstrap-switch-subscriber` |
 | Impersonación platform | `SwitchSubscriberCommand` (Auth) → `POST /api/auth/switch-subscriber` |
+| Auth ERP (login, refresh, password, sesión) | `AuthController` → `POST/GET /api/auth/*` |
 | Cambio de plan | `ChangePlatformSubscriberPlanCommand` → `PATCH /api/platform/subscribers/{id}/plan` |
 | Menú sesión runtime | `GetSessionMenuQuery` → `GET /api/me/menu` |
 | Estructura catálogo | `CatalogStructurePage` → `/inventory/catalog-structure` |

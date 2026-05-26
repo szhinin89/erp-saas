@@ -3,7 +3,7 @@ using ERP.Application.Common;
 using ERP.Application.Modules.Purchasing.DTOs;
 using ERP.Domain.Modules.Purchasing.Interfaces;
 
-namespace ERP.Application.Modules.Purchasing.UseCases.Retenciones;
+namespace ERP.Application.Modules.Purchasing.UseCases.Retentions;
 
 public sealed record GetPurchaseIssuedRetentionsListQuery(Guid? BusinessPartnerId)
     : IRequest<Result<IReadOnlyList<IssuedRetentionListItemDto>>>, ICompanyScopedRequest;

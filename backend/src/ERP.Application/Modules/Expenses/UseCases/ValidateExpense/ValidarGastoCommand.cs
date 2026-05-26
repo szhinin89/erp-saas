@@ -3,7 +3,7 @@ using ERP.Application.Common;
 
 using ERP.Application.Modules.Expenses.DTOs;
 
-namespace ERP.Application.Modules.Expenses.UseCases.ValidarGasto;
+namespace ERP.Application.Modules.Expenses.UseCases.ValidateExpense;
 
 [RequireFeature(SubscriptionFeatureCodes.Gastos)]
 public sealed record ValidateExpenseCommand(Guid ExpenseInvoiceId)

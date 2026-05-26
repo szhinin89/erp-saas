@@ -13,7 +13,7 @@ import { WarehouseListadoTab }  from '../components/WarehouseListadoTab';
 import { WarehouseFormTab }     from '../components/WarehouseFormTab';
 import { WarehouseToastManager } from '../components/WarehouseToastManager';
 
-import '../../../../pages/ProductsPage.css'; // prd-* shared tab/dashboard component styles
+import '../../../../styles/shared/products-catalog.css'; // prd-* shared tab/dashboard component styles
 import './BodegasPage.css';                  // bod-* module-specific overrides
 
 const TABS = [

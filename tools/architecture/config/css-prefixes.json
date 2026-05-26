@@ -2,7 +2,7 @@
   "$schemaNote": "Prefijos CSS por área. Canónico: AI-RULES/NAMING.md",
   "scanGlobs": [
     "frontend/src/modules/**/*.css",
-    "frontend/src/pages/**/*.css"
+    "frontend/src/styles/shared/**/*.css"
   ],
   "pathPrefixMap": [
     { "glob": "**/superadmin/**", "prefixes": ["sa-", "sap-"] },

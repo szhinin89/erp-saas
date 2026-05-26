@@ -1,6 +1,6 @@
-﻿using FluentValidation;
+using FluentValidation;
 
-namespace ERP.Application.Modules.Purchasing.UseCases.ValidarCompra;
+namespace ERP.Application.Modules.Purchasing.UseCases.ValidatePurchase;
 
 public sealed class ValidarPurchaseCommandValidator : AbstractValidator<ValidatePurchaseCommand>
 {

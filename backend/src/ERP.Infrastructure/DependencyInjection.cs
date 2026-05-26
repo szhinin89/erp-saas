@@ -82,7 +82,6 @@ public static class DependencyInjection
         services.AddSingleton<IDeploymentFeatureFlags, DeploymentFeatureFlags>();
         services.AddScoped<IFirstRunSetupService, FirstRunSetupService>();
         services.Configure<InstallDataOptions>(configuration.GetSection(InstallDataOptions.SectionName));
-        services.Configure<DocumentSchemaOptions>(configuration.GetSection(DocumentSchemaOptions.SectionName));
         services.Configure<SnowflakeOptions>(configuration.GetSection(SnowflakeOptions.SectionName));
         services.AddSingleton<ISnowflakeIdGenerator, SnowflakeIdGenerator>();
         services.AddScoped<IInstallDataBootstrapService, InstallDataBootstrapService>();
@@ -140,7 +139,7 @@ public static class DependencyInjection
         services.AddScoped<ICompanyRepository, CompanyRepository>();
         services.AddScoped<ICurrentUser, CurrentUserService>();
         services.AddScoped<IAccountingRepository, AccountingRepository>();
-        services.AddScoped<IAccountingSetupRepository, ConfiguracionContableRepository>();
+        services.AddScoped<IAccountingSetupRepository, AccountingConfigurationRepository>();
         services.AddScoped<ICuentaContableService, CuentaContableService>();
         services.AddScoped<IProductRepository, ProductRepository>();
         services.AddScoped<ITaxRateRepository, TaxRateRepository>();

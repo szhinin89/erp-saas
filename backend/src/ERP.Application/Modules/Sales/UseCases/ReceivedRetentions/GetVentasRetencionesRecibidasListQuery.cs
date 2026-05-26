@@ -3,7 +3,7 @@ using ERP.Application.Common;
 using ERP.Application.Sales.DTOs;
 using ERP.Domain.Modules.Sales.Interfaces;
 
-namespace ERP.Application.Sales.UseCases.RetencionesRecibidas;
+namespace ERP.Application.Sales.UseCases.ReceivedRetentions;
 
 public record GetSalesRetentionsReceivedListQuery : IRequest<Result<IReadOnlyList<SalesRetentionListItemDto>>>, ICompanyScopedRequest;
 

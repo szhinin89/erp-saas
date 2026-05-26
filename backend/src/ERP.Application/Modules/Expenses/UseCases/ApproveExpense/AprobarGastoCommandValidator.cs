@@ -1,10 +1,10 @@
-﻿using FluentValidation;
+using FluentValidation;
 
-namespace ERP.Application.Modules.Expenses.UseCases.AprobarGasto;
+namespace ERP.Application.Modules.Expenses.UseCases.ApproveExpense;
 
-public sealed class AprobarGastoCommandValidator : AbstractValidator<ApproveExpenseCommand>
+public sealed class ApproveExpenseCommandValidator : AbstractValidator<ApproveExpenseCommand>
 {
-    public AprobarGastoCommandValidator()
+    public ApproveExpenseCommandValidator()
     {
         RuleFor(x => x.ExpenseInvoiceId)
             .NotEmpty()

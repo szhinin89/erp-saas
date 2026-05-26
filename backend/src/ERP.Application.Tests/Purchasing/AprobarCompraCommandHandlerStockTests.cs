@@ -1,6 +1,6 @@
 using FluentAssertions;
 using ERP.Application.Common;
-using ERP.Application.Modules.Purchasing.UseCases.AprobarCompra;
+using ERP.Application.Modules.Purchasing.UseCases.ApprovePurchase;
 using ERP.Application.Modules.Inventory.EventHandlers;
 using ERP.Domain.Audit.Interfaces;
 using ERP.Domain.Modules.Purchasing.Entities;
@@ -14,7 +14,7 @@ using Moq;
 
 namespace ERP.Application.Tests.Compras;
 
-public sealed class AprobarCompraCommandHandlerStockTests
+public sealed class ApprovePurchaseCommandHandlerStockTests
 {
     [Fact]
     public async Task PurchBillApprovedEventHandler_crea_stock_y_movimientos()
@@ -64,7 +64,7 @@ public sealed class AprobarCompraCommandHandlerStockTests
     }
 
     [Fact]
-    public async Task AprobarCompra_agrega_CompraAprobadaEvent_y_no_llama_inventario_directamente()
+    public async Task ApprovePurchase_agrega_CompraAprobadaEvent_y_no_llama_inventario_directamente()
     {
         var subscriberId = Guid.NewGuid();
         var userId   = Guid.NewGuid();

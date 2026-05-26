@@ -1,6 +1,6 @@
-﻿using FluentValidation;
+using FluentValidation;
 
-namespace ERP.Application.Modules.Inventory.UseCases.DeshabilitarBodega;
+namespace ERP.Application.Modules.Inventory.UseCases.DisableWarehouse;
 
 public sealed class DisableWarehouseCommandValidator : AbstractValidator<DisableWarehouseCommand>
 {

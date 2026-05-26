@@ -4,7 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using ERP.API.Contracts;
 using ERP.API.Extensions;
 using ERP.Application.Modules.Inventory.DTOs;
-using ERP.Application.Modules.Inventory.UseCases.GetCurrentStockPorBodega;
+using ERP.Application.Modules.Inventory.UseCases.GetCurrentStockByWarehouse;
 using ERP.API.Attributes;
 
 namespace ERP.API.Controllers;

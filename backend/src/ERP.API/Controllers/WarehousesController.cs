@@ -1,15 +1,15 @@
-﻿using MediatR;
+using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using ERP.API.Contracts;
 using ERP.API.Extensions;
 using ERP.Application.Modules.Inventory.DTOs;
-using ERP.Application.Modules.Inventory.UseCases.CrearBodega;
-using ERP.Application.Modules.Inventory.UseCases.DeshabilitarBodega;
-using ERP.Application.Modules.Inventory.UseCases.HabilitarBodega;
-using ERP.Application.Modules.Inventory.UseCases.ObtenerBodega;
-using ERP.Application.Modules.Inventory.UseCases.ListarBodegas;
-using ERP.Application.Modules.Inventory.UseCases.ActualizarBodega;
+using ERP.Application.Modules.Inventory.UseCases.CreateWarehouse;
+using ERP.Application.Modules.Inventory.UseCases.DisableWarehouse;
+using ERP.Application.Modules.Inventory.UseCases.EnableWarehouse;
+using ERP.Application.Modules.Inventory.UseCases.GetWarehouse;
+using ERP.Application.Modules.Inventory.UseCases.ListWarehouses;
+using ERP.Application.Modules.Inventory.UseCases.UpdateWarehouse;
 using ERP.API.Attributes;
 
 namespace ERP.API.Controllers;

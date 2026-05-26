@@ -15,7 +15,7 @@ import { ListadoTab }   from '../components/ListadoTab';
 import { ProductWizard, buildProductPayload } from '../components/ProductWizard';
 import { ToastManager } from '../components/ToastManager';
 
-import '../../../pages/ProductsPage.css';
+import '../../../styles/shared/products-catalog.css';
 
 const TABS = [
   { id: 'resumen'  as const, labelKey: 'products.tabs.resumen', labelFb: 'Resumen',       icon: 'bar_chart_4_bars' },

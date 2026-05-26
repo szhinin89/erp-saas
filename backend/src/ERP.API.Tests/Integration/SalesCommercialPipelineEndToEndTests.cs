@@ -9,7 +9,7 @@ using ERP.Application.Modules.Commercial.UseCases.ConfirmSalesOrder;
 using ERP.Application.Modules.Commercial.UseCases.ConvertQuoteToOrder;
 using ERP.Application.Modules.Commercial.UseCases.CreateQuote;
 using ERP.Application.Modules.Commercial.UseCases.CreateSalesOrder;
-using ERP.Application.Sales.UseCases.CrearVenta;
+using ERP.Application.Sales.UseCases.CreateSale;
 using ERP.Domain.Modules.Commercial.Entities;
 using ERP.Domain.Modules.Fiscal.Entities;
 using ERP.Domain.Modules.Integration.Constants;

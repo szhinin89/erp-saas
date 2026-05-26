@@ -1,15 +1,15 @@
-﻿using FluentAssertions;
+using FluentAssertions;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using ERP.API.Tests.Support;
 using ERP.Application.Inventory.UseCases.GetKardex;
-using ERP.Application.Modules.Purchasing.UseCases.AprobarCompra;
-using ERP.Application.Modules.Purchasing.UseCases.CrearCompra;
-using ERP.Application.Modules.Purchasing.UseCases.ValidarCompra;
-using ERP.Application.Sales.UseCases.CrearVenta;
-using ERP.Application.Sales.UseCases.EmitirFacturaElectronica;
-using ERP.Application.Sales.UseCases.ValidarVenta;
+using ERP.Application.Modules.Purchasing.UseCases.ApprovePurchase;
+using ERP.Application.Modules.Purchasing.UseCases.CreatePurchase;
+using ERP.Application.Modules.Purchasing.UseCases.ValidatePurchase;
+using ERP.Application.Sales.UseCases.CreateSale;
+using ERP.Application.Sales.UseCases.IssueElectronicInvoice;
+using ERP.Application.Sales.UseCases.ValidateSale;
 using ERP.Domain.MasterData.Entities;
 using ERP.Infrastructure.Persistence;
 
@@ -65,7 +65,7 @@ public sealed class KardexFlujoCompletoTests
 
     // Ã¢â€â‚¬Ã¢â€â‚¬ Helper para crear una PurchBill completa (BorradorÃ¢â€ â€™ValidadoÃ¢â€ â€™IsApproved) Ã¢â€â‚¬Ã¢â€â‚¬
 
-    private static async Task<Guid> CrearYAprobarCompraAsync(
+    private static async Task<Guid> CrearYApprovePurchaseAsync(
         IMediator mediator,
         Guid proveedorId,
         Guid productoId,
@@ -91,18 +91,18 @@ public sealed class KardexFlujoCompletoTests
                 WarehouseAllocations: [new WarehouseAllocationRequest(0, bodegaId, quantity, productoId)]),
             CancellationToken.None);
 
-        crear.IsSuccess.Should().BeTrue($"CrearCompra {invoiceNumber} fallÃƒÂ³: {crear.Error}");
+        crear.IsSuccess.Should().BeTrue($"CreatePurchase {invoiceNumber} fallÃƒÂ³: {crear.Error}");
         var compraId = crear.Value!.Id;
 
         // 2. Validar (Borrador Ã¢â€ â€™ Validado)
         var validar = await mediator.Send(
             new ValidatePurchaseCommand(compraId), CancellationToken.None);
-        validar.IsSuccess.Should().BeTrue($"ValidarCompra {invoiceNumber} fallÃƒÂ³: {validar.Error}");
+        validar.IsSuccess.Should().BeTrue($"ValidatePurchase {invoiceNumber} fallÃƒÂ³: {validar.Error}");
 
         // 3. Aprobar (Validado Ã¢â€ â€™ IsApproved): registra movimiento de inventario con CostoUnitario
         var aprobar = await mediator.Send(
             new ApprovePurchaseCommand(compraId), CancellationToken.None);
-        aprobar.IsSuccess.Should().BeTrue($"AprobarCompra {invoiceNumber} fallÃƒÂ³: {aprobar.Error}");
+        aprobar.IsSuccess.Should().BeTrue($"ApprovePurchase {invoiceNumber} fallÃƒÂ³: {aprobar.Error}");
 
         return compraId;
     }
@@ -129,7 +129,7 @@ public sealed class KardexFlujoCompletoTests
         var bid = seed.WarehouseId;
 
         // Ã¢â€â‚¬Ã¢â€â‚¬ COMPRA 1: 10 uds @ $5 Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
-        await CrearYAprobarCompraAsync(
+        await CrearYApprovePurchaseAsync(
             mediator, proveedorId, pid, bid,
             invoiceNumber: "001-001-000000001",
             quantity:       10m,
@@ -144,7 +144,7 @@ public sealed class KardexFlujoCompletoTests
         stock1.AverageCost.Should().Be(5m);
 
         // Ã¢â€â‚¬Ã¢â€â‚¬ COMPRA 2: 10 uds @ $7 Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
-        await CrearYAprobarCompraAsync(
+        await CrearYApprovePurchaseAsync(
             mediator, proveedorId, pid, bid,
             invoiceNumber: "001-001-000000002",
             quantity:       10m,
@@ -240,8 +240,8 @@ public sealed class KardexFlujoCompletoTests
         var pid = seed.ProductId;
         var bid = seed.WarehouseId;
 
-        await CrearYAprobarCompraAsync(mediator, proveedorId, pid, bid, "001-001-000000010", 5m, 10m);
-        await CrearYAprobarCompraAsync(mediator, proveedorId, pid, bid, "001-001-000000011", 5m, 20m);
+        await CrearYApprovePurchaseAsync(mediator, proveedorId, pid, bid, "001-001-000000010", 5m, 10m);
+        await CrearYApprovePurchaseAsync(mediator, proveedorId, pid, bid, "001-001-000000011", 5m, 20m);
 
         var v1 = await mediator.Send(
             new CreateSaleCommand(clienteId, bid, sucursalId,
@@ -250,7 +250,7 @@ public sealed class KardexFlujoCompletoTests
         await mediator.Send(new ValidateSaleCommand(v1.Value), CancellationToken.None);
         await mediator.Send(new IssueElectronicInvoiceCommand(v1.Value), CancellationToken.None);
 
-        await CrearYAprobarCompraAsync(mediator, proveedorId, pid, bid, "001-001-000000012", 6m, 12m);
+        await CrearYApprovePurchaseAsync(mediator, proveedorId, pid, bid, "001-001-000000012", 6m, 12m);
 
         var v2 = await mediator.Send(
             new CreateSaleCommand(clienteId, bid, sucursalId,

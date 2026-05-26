@@ -2,7 +2,7 @@ using MediatR;
 using ERP.Application.Common;
 using ERP.Application.Modules.Inventory.DTOs;
 
-namespace ERP.Application.Modules.Inventory.UseCases.ActualizarBodega;
+namespace ERP.Application.Modules.Inventory.UseCases.UpdateWarehouse;
 
 [RequireFeature(SubscriptionFeatureCodes.Inventory)]
 public record UpdateWarehouseCommand(

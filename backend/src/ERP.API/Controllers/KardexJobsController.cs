@@ -4,7 +4,7 @@ using ERP.API.Contracts.Inventory;
 using ERP.API.Extensions;
 using ERP.Application.Common;
 using ERP.Application.Inventory.DTOs;
-using ERP.Application.Inventory.UseCases.RecalcularSnapshots;
+using ERP.Application.Inventory.UseCases.RecalculateSnapshots;
 using ERP.Domain.Modules.Inventory.Entities;
 using ERP.Domain.Modules.Inventory.Interfaces;
 using MediatR;
@@ -82,9 +82,9 @@ public sealed class KardexJobsController : ControllerBase
     [HttpPost("recalcular")]
     [Authorize(Policy = "perm:inventory.kardex.view")]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
-    public async Task<IActionResult> RecalcularSnapshots([FromBody] RecalcularSnapshotsBody body, CancellationToken ct = default)
+    public async Task<IActionResult> RecalculateSnapshots([FromBody] RecalculateSnapshotsBody body, CancellationToken ct = default)
     {
-        var result = await _mediator.Send(new RecalcularSnapshotsCommand(body.ProductId, body.WarehouseId, body.Until), ct);
+        var result = await _mediator.Send(new RecalculateSnapshotsCommand(body.ProductId, body.WarehouseId, body.Until), ct);
 
         if (!result.IsSuccess)
             return BadRequest(new { mensaje = result.Error });

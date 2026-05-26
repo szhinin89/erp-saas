@@ -1,7 +1,7 @@
 using FluentAssertions;
 using ERP.Application.Common;
 using ERP.Application.Modules.Purchasing;
-using ERP.Application.Modules.Purchasing.UseCases.CrearCompra;
+using ERP.Application.Modules.Purchasing.UseCases.CreatePurchase;
 using ERP.Domain.Modules.Inventory.Entities;
 using ERP.Domain.Modules.Inventory.Interfaces;
 using Moq;

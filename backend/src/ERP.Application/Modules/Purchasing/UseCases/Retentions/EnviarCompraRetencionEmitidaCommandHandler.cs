@@ -9,7 +9,7 @@ using ERP.Domain.Audit.Interfaces;
 using ERP.Domain.Configuration.Interfaces;
 using ERP.Domain.Modules.Purchasing.Interfaces;
 
-namespace ERP.Application.Modules.Purchasing.UseCases.Retenciones;
+namespace ERP.Application.Modules.Purchasing.UseCases.Retentions;
 
 public sealed class SendIssuedRetentionCommandHandler
     : IRequestHandler<SendIssuedRetentionCommand, Result<Guid>>

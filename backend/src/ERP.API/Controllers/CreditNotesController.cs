@@ -4,12 +4,12 @@ using Microsoft.AspNetCore.Mvc;
 using ERP.API.Contracts;
 using ERP.API.Extensions;
 using ERP.Application.Sales.DTOs;
-using ERP.Application.Sales.UseCases.Notas;
+using ERP.Application.Sales.UseCases.SalesNotes;
 using ERP.API.Attributes;
 
 namespace ERP.API.Controllers;
 
-[AppFeature("Notas ventas", "perm:sales.credit-notes.view", "📃", "/sales/credit-notes", "perm:sales.invoices.view", 51)]
+[AppFeature("SalesNotes ventas", "perm:sales.credit-notes.view", "📃", "/sales/credit-notes", "perm:sales.invoices.view", 51)]
 [ApiController]
 [Route("api/sales/credit-notes")]
 [Authorize]

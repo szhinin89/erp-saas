@@ -2,7 +2,7 @@ using MediatR;
 using ERP.Application.Common;
 using ERP.Application.Modules.Purchasing.DTOs;
 
-namespace ERP.Application.Modules.Purchasing.UseCases.CrearCompra;
+namespace ERP.Application.Modules.Purchasing.UseCases.CreatePurchase;
 
 public enum PurchaseCreationMode { Xml = 1, Manual = 2 }
 

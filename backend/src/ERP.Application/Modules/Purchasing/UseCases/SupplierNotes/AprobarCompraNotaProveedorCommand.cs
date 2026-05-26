@@ -2,7 +2,7 @@ using MediatR;
 using ERP.Application.Common;
 using ERP.Application.Modules.Purchasing.DTOs;
 
-namespace ERP.Application.Modules.Purchasing.UseCases.NotasProveedor;
+namespace ERP.Application.Modules.Purchasing.UseCases.SupplierNotes;
 
 public sealed record ApprovePurchaseSupplierNoteCommand(
     Guid    NotaId,

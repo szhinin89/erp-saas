@@ -1,11 +1,9 @@
 using System.Reflection;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Options;
 using ERP.Application.Common.Interfaces;
 using ERP.Domain.Modules.Expenses.Entities;
 using ERP.Domain.Modules.Purchasing.Entities;
 using ERP.Domain.Modules.Sales.Entities;
-using ERP.Infrastructure.Options;
 using ERP.Infrastructure.Persistence.Mapping;
 
 namespace ERP.Infrastructure.Persistence;
@@ -13,7 +11,6 @@ namespace ERP.Infrastructure.Persistence;
 public sealed class UnifiedDocumentSync : IUnifiedDocumentSync
 {
     private readonly ErpDbContext _context;
-    private readonly DocumentSchemaOptions _options;
 
     private SalesBill? _salesBill;
     private SalesNote? _salesNote;
@@ -23,10 +20,9 @@ public sealed class UnifiedDocumentSync : IUnifiedDocumentSync
     private SalesRetention? _salesRetention;
     private IssuedRetention? _issuedRetention;
 
-    public UnifiedDocumentSync(ErpDbContext context, IOptions<DocumentSchemaOptions> options)
+    public UnifiedDocumentSync(ErpDbContext context)
     {
         _context = context;
-        _options = options.Value;
     }
 
     public void StageSalesBill(SalesBill bill) => _salesBill = bill;
@@ -39,9 +35,6 @@ public sealed class UnifiedDocumentSync : IUnifiedDocumentSync
 
     public async Task FlushAsync(CancellationToken ct = default)
     {
-        if (!_options.UseUnifiedSchema)
-            return;
-
         if (_salesBill is not null)
             await UpsertSalesBillAsync(_salesBill, ct);
         if (_salesNote is not null)

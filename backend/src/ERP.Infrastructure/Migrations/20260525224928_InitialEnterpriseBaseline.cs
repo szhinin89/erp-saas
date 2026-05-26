@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using Microsoft.EntityFrameworkCore.Migrations;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -5051,7 +5051,7 @@ namespace ERP.Infrastructure.Migrations
                     { "14", true, "Exportación de servicios con domicilio en el exterior" },
                     { "15", true, "Supplier directo de exportador de bienes" },
                     { "19", true, "Reembolso de gastos" },
-                    { "20", true, "Notas de crédito por devoluciones" }
+                    { "20", true, "SalesNotes de crédito por devoluciones" }
                 });
 
             migrationBuilder.InsertData(

@@ -4,7 +4,7 @@ using ERP.Application.Common.Interfaces;
 using ERP.Application.Modules.Purchasing.DTOs;
 using ERP.Domain.Modules.Purchasing.Interfaces;
 
-namespace ERP.Application.Modules.Purchasing.UseCases.NotasProveedor;
+namespace ERP.Application.Modules.Purchasing.UseCases.SupplierNotes;
 
 public sealed class GetPurchasesNotesSupplierQueryHandler
     : IRequestHandler<GetPurchaseSupplierNotesQuery, Result<IReadOnlyList<SupplierPurchaseNoteDto>>>

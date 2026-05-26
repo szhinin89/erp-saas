@@ -7,7 +7,7 @@ using ERP.Domain.Audit.Interfaces;
 using ERP.Domain.Modules.Inventory.Entities;
 using ERP.Domain.Modules.Inventory.Interfaces;
 
-namespace ERP.Application.Inventory.UseCases.CancelarAjuste;
+namespace ERP.Application.Inventory.UseCases.CancelAdjustment;
 
 public sealed class CancelStockAdjustmentCommandHandler
     : IRequestHandler<CancelStockAdjustmentCommand, Result<StockAdjustmentDto>>

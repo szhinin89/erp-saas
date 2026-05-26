@@ -12,7 +12,7 @@ using ERP.Domain.Modules.Inventory.Interfaces;
 using ERP.Domain.Modules.Purchasing.Entities;
 using ERP.Domain.Modules.Purchasing.Interfaces;
 
-namespace ERP.Application.Modules.Purchasing.UseCases.CrearCompra;
+namespace ERP.Application.Modules.Purchasing.UseCases.CreatePurchase;
 
 public sealed class CreatePurchaseCommandHandler
     : IRequestHandler<CreatePurchaseCommand, Result<PurchBillDto>>

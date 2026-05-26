@@ -8,7 +8,7 @@ using ERP.Domain.Modules.Expenses.Enums;
 using ERP.Domain.MasterData.Interfaces;
 using ERP.Domain.Modules.Expenses.Interfaces;
 
-namespace ERP.Application.Modules.Expenses.UseCases.ValidarGasto;
+namespace ERP.Application.Modules.Expenses.UseCases.ValidateExpense;
 
 public sealed class ValidateExpenseCommandHandler
     : IRequestHandler<ValidateExpenseCommand, Result<ExpenseInvoiceDto>>

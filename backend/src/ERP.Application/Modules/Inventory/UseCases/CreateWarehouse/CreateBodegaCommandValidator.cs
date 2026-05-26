@@ -3,7 +3,7 @@ using ERP.Application.Common;
 using ERP.Domain.Modules.Inventory.Entities;
 using ERP.Domain.Modules.Inventory.Interfaces;
 
-namespace ERP.Application.Modules.Inventory.UseCases.CrearBodega;
+namespace ERP.Application.Modules.Inventory.UseCases.CreateWarehouse;
 
 public sealed class CreateWarehouseCommandValidator : AbstractValidator<CreateWarehouseCommand>
 {

@@ -3,7 +3,7 @@ using ERP.Application.Common;
 using ERP.Application.Inventory.DTOs;
 using ERP.Domain.Modules.Inventory.Interfaces;
 
-namespace ERP.Application.Inventory.UseCases.GetAjustesList;
+namespace ERP.Application.Inventory.UseCases.GetAdjustmentsList;
 
 public sealed class GetStockAdjustmentsListQueryHandler
     : IRequestHandler<GetStockAdjustmentsListQuery, Result<StockAdjustmentsPagedResult>>

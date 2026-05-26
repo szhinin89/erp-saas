@@ -3,10 +3,10 @@ using MediatR;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.EntityFrameworkCore;
 using ERP.API.Tests.Support;
-using ERP.Application.Inventory.UseCases.CancelarAjuste;
-using ERP.Application.Inventory.UseCases.CrearAjuste;
-using ERP.Application.Inventory.UseCases.EjecutarAjuste;
-using ERP.Application.Modules.Inventory.UseCases.GetCurrentStockPorBodega;
+using ERP.Application.Inventory.UseCases.CancelAdjustment;
+using ERP.Application.Inventory.UseCases.CreateAdjustment;
+using ERP.Application.Inventory.UseCases.ExecuteAdjustment;
+using ERP.Application.Modules.Inventory.UseCases.GetCurrentStockByWarehouse;
 using ERP.Domain.Modules.Inventory.Entities;
 using ERP.Domain.Modules.Inventory.Entities;
 using ERP.Domain.Modules.Inventory.Enums;
@@ -138,7 +138,7 @@ public sealed class AjustesInventarioEndToEndTests
     }
 
     [Fact]
-    public async Task CancelarAjuste_en_borrador_no_afecta_stock()
+    public async Task CancelAdjustment_en_borrador_no_afecta_stock()
     {
         await using var factory = new IntegrationTestWebAppFactory();
         using var scope  = factory.Services.CreateScope();
@@ -189,7 +189,7 @@ public sealed class AjustesInventarioEndToEndTests
     }
 
     [Fact]
-    public async Task CrearAjuste_con_cantidad_cero_lanza_validacion()
+    public async Task CreateAdjustment_con_cantidad_cero_lanza_validacion()
     {
         // FluentValidation lanza ValidationException antes de llegar al handler.
         await using var factory = new IntegrationTestWebAppFactory();
@@ -209,7 +209,7 @@ public sealed class AjustesInventarioEndToEndTests
     }
 
     [Fact]
-    public async Task CrearAjuste_con_motivo_vacio_lanza_validacion()
+    public async Task CreateAdjustment_con_motivo_vacio_lanza_validacion()
     {
         await using var factory = new IntegrationTestWebAppFactory();
         using var scope  = factory.Services.CreateScope();

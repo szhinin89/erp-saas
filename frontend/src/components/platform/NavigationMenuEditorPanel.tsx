@@ -9,7 +9,7 @@ import { NavigationMenuEditorFooterBar } from './NavigationMenuEditorFooterBar';
 import { NavigationMenuEditorSplitAside } from './NavigationMenuEditorSplitAside';
 import { NavigationMenuEditorTreePanel } from './NavigationMenuEditorTreePanel';
 import { useNavigationMenuEditorPanel } from './useNavigationMenuEditorPanel';
-import '../../pages/PlatformNavMenuPage.css';
+import '../../styles/shared/platform-nav-menu.css';
 
 export type NavigationMenuEditorPanelProps = {
   /** Vista 2:1: árbol a la izquierda, propiedades + vista previa a la derecha. */

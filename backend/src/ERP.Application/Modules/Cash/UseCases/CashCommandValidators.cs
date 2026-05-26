@@ -11,9 +11,9 @@ public sealed class CrearPettyCashCommandValidator : AbstractValidator<CrearPett
     }
 }
 
-public sealed class CrearGastoPettyCashCommandValidator : AbstractValidator<CrearGastoPettyCashCommand>
+public sealed class CreateExpensePettyCashCommandValidator : AbstractValidator<CreateExpensePettyCashCommand>
 {
-    public CrearGastoPettyCashCommandValidator()
+    public CreateExpensePettyCashCommandValidator()
     {
         RuleFor(x => x.PettyCashId).NotEmpty();
         RuleFor(x => x.Concept).NotEmpty().MaximumLength(500);

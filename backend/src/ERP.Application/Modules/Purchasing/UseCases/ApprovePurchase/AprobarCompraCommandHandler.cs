@@ -9,7 +9,7 @@ using ERP.Domain.Modules.Purchasing.Enums;
 using ERP.Domain.Modules.Purchasing.Events;
 using ERP.Domain.Modules.Purchasing.Interfaces;
 
-namespace ERP.Application.Modules.Purchasing.UseCases.AprobarCompra;
+namespace ERP.Application.Modules.Purchasing.UseCases.ApprovePurchase;
 
 public sealed class ApprovePurchaseCommandHandler
     : IRequestHandler<ApprovePurchaseCommand, Result<PurchBillDto>>

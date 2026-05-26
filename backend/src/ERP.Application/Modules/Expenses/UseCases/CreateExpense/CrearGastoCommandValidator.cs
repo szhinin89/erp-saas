@@ -1,6 +1,6 @@
-﻿using FluentValidation;
+using FluentValidation;
 
-namespace ERP.Application.Modules.Expenses.UseCases.CrearGasto;
+namespace ERP.Application.Modules.Expenses.UseCases.CreateExpense;
 
 public sealed class CreateExpenseCommandValidator : AbstractValidator<CreateExpenseCommand>
 {

@@ -3,7 +3,7 @@ using ERP.Application.Common;
 using ERP.Application.Modules.Inventory.DTOs;
 using ERP.Domain.Modules.Inventory.Interfaces;
 
-namespace ERP.Application.Modules.Inventory.UseCases.ObtenerBodega;
+namespace ERP.Application.Modules.Inventory.UseCases.GetWarehouse;
 
 public sealed class GetWarehouseByIdQueryHandler
     : IRequestHandler<GetWarehouseByIdQuery, Result<WarehouseDetailDto?>>

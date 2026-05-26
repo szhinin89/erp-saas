@@ -41,7 +41,7 @@ public sealed class PettyCashController : ControllerBase
     public async Task<IActionResult> CreatePettyCashExpense([FromBody] CreatePettyCashExpenseRequest body, CancellationToken ct)
     {
         var r = await _mediator.Send(
-            new CrearGastoPettyCashCommand(body.PettyCashId, body.Date, body.Description, body.Amount, body.VoucherType, body.VoucherNumber),
+            new CreateExpensePettyCashCommand(body.PettyCashId, body.Date, body.Description, body.Amount, body.VoucherType, body.VoucherNumber),
             ct);
         return this.ToCreatedOrBadRequest(r, "Registrado");
     }

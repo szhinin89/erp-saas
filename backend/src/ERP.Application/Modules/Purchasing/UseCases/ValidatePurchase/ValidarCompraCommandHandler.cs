@@ -8,7 +8,7 @@ using ERP.Domain.Modules.Purchasing.Enums;
 using ERP.Domain.MasterData.Interfaces;
 using ERP.Domain.Modules.Purchasing.Interfaces;
 
-namespace ERP.Application.Modules.Purchasing.UseCases.ValidarCompra;
+namespace ERP.Application.Modules.Purchasing.UseCases.ValidatePurchase;
 
 public sealed class ValidatePurchaseCommandHandler
     : IRequestHandler<ValidatePurchaseCommand, Result<PurchBillDto>>

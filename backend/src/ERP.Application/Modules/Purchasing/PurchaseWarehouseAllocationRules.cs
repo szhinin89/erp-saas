@@ -1,4 +1,4 @@
-using ERP.Application.Modules.Purchasing.UseCases.CrearCompra;
+using ERP.Application.Modules.Purchasing.UseCases.CreatePurchase;
 using ERP.Domain.Modules.Inventory.Interfaces;
 
 namespace ERP.Application.Modules.Purchasing;

@@ -36,7 +36,7 @@ public interface IAccountingRepository
 
     /// <summary>Movimientos de una cuenta para el Mayor General, ordenados por fecha.</summary>
     Task<IReadOnlyList<(DateTime Date, string Reference, string Description, decimal Debit, decimal Credit)>>
-        GetMayorGeneralLinesAsync(
+        GetGeneralLedgerLinesAsync(
             Guid subscriberId,
             Guid accountId,
             DateTime desde,
@@ -45,7 +45,7 @@ public interface IAccountingRepository
 
     /// <summary>Totales débito/crédito por cuenta para el Balance de Comprobación.</summary>
     Task<IReadOnlyList<(Guid AccountId, decimal TotalDebit, decimal TotalCredit)>>
-        GetBalanceComprobacionAsync(
+        GetTrialBalanceAsync(
             Guid subscriberId,
             DateTime desde,
             DateTime hasta,

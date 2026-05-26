@@ -1,6 +1,6 @@
-﻿using FluentValidation;
+using FluentValidation;
 
-namespace ERP.Application.Modules.Purchasing.UseCases.AprobarOrdenCompra;
+namespace ERP.Application.Modules.Purchasing.UseCases.ApprovePurchaseOrder;
 
 public sealed class AprobarOrderPurchaseCommandValidator : AbstractValidator<ApproveOrderPurchaseCommand>
 {

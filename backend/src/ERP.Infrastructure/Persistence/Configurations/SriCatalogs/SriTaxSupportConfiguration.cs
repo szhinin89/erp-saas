@@ -1,4 +1,4 @@
-﻿using ERP.Domain.Modules.SriCatalogs.Entities;
+using ERP.Domain.Modules.SriCatalogs.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -31,7 +31,7 @@ public class SriTaxSupportConfiguration : IEntityTypeConfiguration<SriTaxSupport
             new SriTaxSupport { Code = "14", Name = "Exportación de servicios con domicilio en el exterior", IsActive = true },
             new SriTaxSupport { Code = "15", Name = "Supplier directo de exportador de bienes",             IsActive = true },
             new SriTaxSupport { Code = "19", Name = "Reembolso de gastos",                                   IsActive = true },
-            new SriTaxSupport { Code = "20", Name = "Notas de crédito por devoluciones",                     IsActive = true }
+            new SriTaxSupport { Code = "20", Name = "SalesNotes de crédito por devoluciones",                     IsActive = true }
         );
     }
 }

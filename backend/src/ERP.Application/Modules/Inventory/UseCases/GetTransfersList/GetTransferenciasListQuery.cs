@@ -2,7 +2,7 @@ using MediatR;
 using ERP.Application.Common;
 using ERP.Application.Inventory.DTOs;
 
-namespace ERP.Application.Inventory.UseCases.GetTransferenciasList;
+namespace ERP.Application.Inventory.UseCases.GetTransfersList;
 
 [RequireFeature(SubscriptionFeatureCodes.Inventory)]
 public record GetTransfersListQuery(

@@ -1,6 +1,6 @@
 using FluentValidation;
 
-namespace ERP.Application.Sales.UseCases.RetencionesRecibidas;
+namespace ERP.Application.Sales.UseCases.ReceivedRetentions;
 
 public sealed class RegisterSalesRetentionCommandValidator : AbstractValidator<RegisterSalesRetentionCommand>
 {

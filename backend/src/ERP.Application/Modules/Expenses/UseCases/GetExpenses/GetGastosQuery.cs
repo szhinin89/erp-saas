@@ -4,7 +4,7 @@ using ERP.Application.Common;
 using ERP.Application.Modules.Expenses.DTOs;
 using ERP.Domain.Modules.Expenses.Enums;
 
-namespace ERP.Application.Modules.Expenses.UseCases.GetGastos;
+namespace ERP.Application.Modules.Expenses.UseCases.GetExpenses;
 
 [RequireFeature(SubscriptionFeatureCodes.Gastos)]
 public record GetExpensesQuery(

@@ -1,6 +1,6 @@
 using FluentValidation;
 
-namespace ERP.Application.Sales.UseCases.Notas;
+namespace ERP.Application.Sales.UseCases.SalesNotes;
 
 public sealed class CreateSalesNoteCommandValidator : AbstractValidator<CreateSalesNoteCommand>
 {

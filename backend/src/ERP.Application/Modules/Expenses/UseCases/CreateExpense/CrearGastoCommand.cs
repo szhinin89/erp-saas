@@ -3,7 +3,7 @@ using ERP.Application.Common;
 using ERP.Application.Modules.Expenses.DTOs;
 
 
-namespace ERP.Application.Modules.Expenses.UseCases.CrearGasto;
+namespace ERP.Application.Modules.Expenses.UseCases.CreateExpense;
 
 public enum ExpenseCreationMode { Manual = 1, Xml = 2 }
 

@@ -2,7 +2,7 @@ using FluentAssertions;
 using ERP.Application.Common;
 using ERP.Application.Common.Interfaces;
 using ERP.Application.Inventory.DTOs;
-using ERP.Application.Inventory.UseCases.ConfirmarTransferencia;
+using ERP.Application.Inventory.UseCases.ConfirmTransfer;
 using ERP.Domain.Audit.Interfaces;
 using ERP.Domain.Modules.Inventory.Entities;
 using ERP.Domain.Modules.Inventory.Enums;

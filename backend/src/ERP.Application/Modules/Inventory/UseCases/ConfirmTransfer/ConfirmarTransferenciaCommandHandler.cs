@@ -10,7 +10,7 @@ using ERP.Domain.Modules.Inventory.Enums;
 using ERP.Domain.Modules.Inventory.Interfaces;
 using ERP.Domain.Products.Interfaces;
 
-namespace ERP.Application.Inventory.UseCases.ConfirmarTransferencia;
+namespace ERP.Application.Inventory.UseCases.ConfirmTransfer;
 
 public sealed class ConfirmTransferCommandHandler
     : IRequestHandler<ConfirmTransferCommand, Result<TransferDto>>

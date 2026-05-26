@@ -4,7 +4,7 @@ using ERP.Application.Modules.Inventory.DTOs;
 using ERP.Domain.Modules.Inventory.Interfaces;
 using ERP.Domain.Modules.Inventory.Interfaces;
 
-namespace ERP.Application.Modules.Inventory.UseCases.GetCurrentStockPorBodega;
+namespace ERP.Application.Modules.Inventory.UseCases.GetCurrentStockByWarehouse;
 
 public sealed class GetCurrentStockPorWarehouseQueryHandler
     : IRequestHandler<GetCurrentStockPorWarehouseQuery, Result<IReadOnlyList<CurrentStockListItemDto>>>

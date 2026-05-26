@@ -1,12 +1,12 @@
-﻿using MediatR;
+using MediatR;
 using ERP.Application.Common;
 using ERP.Application.Modules.Purchasing.DTOs;
-using ERP.Application.Modules.Purchasing.UseCases.CrearOrdenCompra;
+using ERP.Application.Modules.Purchasing.UseCases.CreatePurchaseOrder;
 using ERP.Domain.Modules.Purchasing.Interfaces;
 using ERP.Domain.MasterData.Interfaces;
 using ERP.Domain.MasterData.Interfaces;
 
-namespace ERP.Application.Modules.Purchasing.UseCases.GetOrdenesCompraList;
+namespace ERP.Application.Modules.Purchasing.UseCases.GetPurchaseOrdersList;
 
 public sealed class GetPurchaseOrdersListQueryHandler
     : IRequestHandler<GetPurchaseOrdersListQuery, Result<PurchaseOrdersPagedResult>>

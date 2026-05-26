@@ -4,7 +4,7 @@ using ERP.Application.Inventory.DTOs;
 using ERP.Domain.Modules.Inventory.Entities;
 using ERP.Domain.Modules.Inventory.Interfaces;
 
-namespace ERP.Application.Inventory.UseCases.GetTransferenciasList;
+namespace ERP.Application.Inventory.UseCases.GetTransfersList;
 
 public sealed class GetTransfersListQueryHandler
     : IRequestHandler<GetTransfersListQuery, Result<TransfersPagedResult>>

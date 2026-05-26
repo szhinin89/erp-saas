@@ -2,7 +2,7 @@ using MediatR;
 using ERP.Application.Common;
 using ERP.Application.Inventory.DTOs;
 
-namespace ERP.Application.Inventory.UseCases.GetAjustesList;
+namespace ERP.Application.Inventory.UseCases.GetAdjustmentsList;
 
 [RequireFeature(SubscriptionFeatureCodes.Inventory)]
 public record GetStockAdjustmentsListQuery(

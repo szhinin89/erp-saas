@@ -2,7 +2,7 @@ using MediatR;
 using ERP.Application.Common;
 using ERP.Application.Inventory.DTOs;
 
-namespace ERP.Application.Inventory.UseCases.CrearAjuste;
+namespace ERP.Application.Inventory.UseCases.CreateAdjustment;
 
 [RequireFeature(SubscriptionFeatureCodes.Inventory)]
 public record CreateStockAdjustmentCommand(

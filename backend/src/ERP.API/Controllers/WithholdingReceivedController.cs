@@ -4,12 +4,12 @@ using Microsoft.AspNetCore.Mvc;
 using ERP.API.Contracts;
 using ERP.API.Extensions;
 using ERP.Application.Sales.DTOs;
-using ERP.Application.Sales.UseCases.RetencionesRecibidas;
+using ERP.Application.Sales.UseCases.ReceivedRetentions;
 using ERP.API.Attributes;
 
 namespace ERP.API.Controllers;
 
-[AppFeature("Retenciones recibidas", "perm:sales.withholding-received.view", "📋", "/sales/withholding-received", "perm:sales.invoices.view", 53)]
+[AppFeature("Retentions recibidas", "perm:sales.withholding-received.view", "📋", "/sales/withholding-received", "perm:sales.invoices.view", 53)]
 [ApiController]
 [Route("api/sales/withholding-received")]
 [Authorize]

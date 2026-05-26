@@ -7,7 +7,7 @@ using ERP.Domain.Modules.Expenses.Entities;
 using ERP.Domain.Modules.Expenses.Enums;
 using ERP.Domain.Modules.Expenses.Interfaces;
 
-namespace ERP.Application.Modules.Expenses.UseCases.RechazarGasto;
+namespace ERP.Application.Modules.Expenses.UseCases.RejectExpense;
 
 public sealed class RejectExpenseCommandHandler
     : IRequestHandler<RejectExpenseCommand, Result<ExpenseInvoiceDto>>

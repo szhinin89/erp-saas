@@ -10,7 +10,7 @@ using ERP.Domain.Audit.Interfaces;
 using ERP.Domain.Modules.Sales.Entities;
 using ERP.Domain.Modules.Sales.Interfaces;
 
-namespace ERP.Application.Sales.UseCases.RetencionesRecibidas;
+namespace ERP.Application.Sales.UseCases.ReceivedRetentions;
 
 public sealed class RegistrarSalesRetentionCommandHandler
     : IRequestHandler<RegisterSalesRetentionCommand, Result<Guid>>

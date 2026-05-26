@@ -1,8 +1,8 @@
-﻿using MediatR;
+using MediatR;
 using ERP.Application.Common;
 using ERP.Application.Modules.Inventory.DTOs;
 
-namespace ERP.Application.Modules.Inventory.UseCases.ListarBodegas;
+namespace ERP.Application.Modules.Inventory.UseCases.ListWarehouses;
 
 public sealed record GetWarehousesQuery(
     bool?  ActiveFilter,

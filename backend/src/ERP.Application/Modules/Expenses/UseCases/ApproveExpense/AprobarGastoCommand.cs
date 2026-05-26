@@ -3,7 +3,7 @@ using ERP.Application.Common;
 
 using ERP.Application.Modules.Expenses.DTOs;
 
-namespace ERP.Application.Modules.Expenses.UseCases.AprobarGasto;
+namespace ERP.Application.Modules.Expenses.UseCases.ApproveExpense;
 
 [RequireFeature(SubscriptionFeatureCodes.Gastos)]
 public sealed record ApproveExpenseCommand(Guid ExpenseInvoiceId)

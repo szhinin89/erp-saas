@@ -7,10 +7,10 @@ using ERP.API.Tests.Support;
 using ERP.Application.Common;
 using ERP.Application.Common.Interfaces;
 using ERP.Application.Sales.DTOs;
-using ERP.Application.Sales.UseCases.AnularFactura;
-using ERP.Application.Sales.UseCases.CrearVenta;
-using ERP.Application.Sales.UseCases.EmitirFacturaElectronica;
-using ERP.Application.Sales.UseCases.ValidarVenta;
+using ERP.Application.Sales.UseCases.VoidInvoice;
+using ERP.Application.Sales.UseCases.CreateSale;
+using ERP.Application.Sales.UseCases.IssueElectronicInvoice;
+using ERP.Application.Sales.UseCases.ValidateSale;
 
 namespace ERP.API.Tests.Controller;
 

@@ -9,7 +9,7 @@ using ERP.Domain.Modules.Inventory.Entities;
 using ERP.Domain.Modules.Inventory.Interfaces;
 using ERP.Domain.Products.Interfaces;
 
-namespace ERP.Application.Inventory.UseCases.CrearTransferencia;
+namespace ERP.Application.Inventory.UseCases.CreateTransfer;
 
 public sealed class CreateTransferCommandHandler
     : IRequestHandler<CreateTransferCommand, Result<TransferDto>>

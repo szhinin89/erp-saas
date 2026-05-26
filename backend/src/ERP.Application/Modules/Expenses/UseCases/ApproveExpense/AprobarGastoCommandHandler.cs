@@ -9,7 +9,7 @@ using ERP.Domain.Modules.Expenses.Entities;
 using ERP.Domain.Modules.Expenses.Enums;
 using ERP.Domain.Modules.Expenses.Interfaces;
 
-namespace ERP.Application.Modules.Expenses.UseCases.AprobarGasto;
+namespace ERP.Application.Modules.Expenses.UseCases.ApproveExpense;
 
 public sealed class ApproveExpenseCommandHandler
     : IRequestHandler<ApproveExpenseCommand, Result<ExpenseInvoiceDto>>

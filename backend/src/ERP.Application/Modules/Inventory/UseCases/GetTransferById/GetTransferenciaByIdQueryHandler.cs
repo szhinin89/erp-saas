@@ -3,7 +3,7 @@ using ERP.Application.Common;
 using ERP.Application.Inventory.DTOs;
 using ERP.Domain.Modules.Inventory.Interfaces;
 
-namespace ERP.Application.Inventory.UseCases.GetTransferenciaById;
+namespace ERP.Application.Inventory.UseCases.GetTransferById;
 
 public sealed class GetTransferByIdQueryHandler
     : IRequestHandler<GetTransferByIdQuery, Result<TransferDetailDto?>>

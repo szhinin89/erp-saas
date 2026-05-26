@@ -1,4 +1,4 @@
-﻿using System.Net;
+using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
 using FluentAssertions;
@@ -195,9 +195,9 @@ public sealed class VentasHttpTests
         var sucursalId     = db.Branches.First(b => b.SubscriberId == seed.SubscriberId).Id;
 
         var crear = await mediator.Send(
-            new ERP.Application.Sales.UseCases.CrearVenta.CreateSaleCommand(
+            new ERP.Application.Sales.UseCases.CreateSale.CreateSaleCommand(
                 clienteId, seed.WarehouseId, sucursalId,
-                new List<ERP.Application.Sales.UseCases.CrearVenta.SaleItemDto>
+                new List<ERP.Application.Sales.UseCases.CreateSale.SaleItemDto>
                     { new(seed.ProductId, 1m, 10m) }),
             CancellationToken.None);
         crear.IsSuccess.Should().BeTrue(crear.Error);

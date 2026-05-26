@@ -6,7 +6,7 @@ using ERP.Domain.Audit.Interfaces;
 using ERP.Domain.Modules.Inventory.Entities;
 using ERP.Domain.Modules.Inventory.Interfaces;
 
-namespace ERP.Application.Modules.Inventory.UseCases.CrearBodega;
+namespace ERP.Application.Modules.Inventory.UseCases.CreateWarehouse;
 
 public sealed class CreateWarehouseCommandHandler
     : IRequestHandler<CreateWarehouseCommand, Result<WarehouseDto>>

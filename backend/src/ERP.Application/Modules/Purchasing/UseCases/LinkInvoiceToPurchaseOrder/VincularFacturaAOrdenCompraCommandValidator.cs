@@ -1,6 +1,6 @@
-﻿using FluentValidation;
+using FluentValidation;
 
-namespace ERP.Application.Modules.Purchasing.UseCases.VincularFacturaAOrdenCompra;
+namespace ERP.Application.Modules.Purchasing.UseCases.LinkInvoiceToPurchaseOrder;
 
 public sealed class VincularFacturaAOrderPurchaseCommandValidator
     : AbstractValidator<LinkInvoiceToPurchaseOrderCommand>

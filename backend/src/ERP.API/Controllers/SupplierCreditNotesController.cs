@@ -4,13 +4,13 @@ using Microsoft.AspNetCore.Mvc;
 using ERP.API.Contracts;
 using ERP.API.Extensions;
 using ERP.Application.Modules.Purchasing.DTOs;
-using ERP.Application.Modules.Purchasing.UseCases.NotasProveedor;
+using ERP.Application.Modules.Purchasing.UseCases.SupplierNotes;
 using ERP.API.Attributes;
 
 namespace ERP.API.Controllers;
 
-/// <summary>Notas de crédito/débito recibidas de proveedores (SRI), aplicables a compras o gastos.</summary>
-[AppFeature("Notas proveedor", "perm:purchases.credit-notes.view", "🔄", "/purchases/credit-notes", "perm:purchases.invoices.view", 47)]
+/// <summary>SalesNotes de crédito/débito recibidas de proveedores (SRI), aplicables a compras o gastos.</summary>
+[AppFeature("SalesNotes proveedor", "perm:purchases.credit-notes.view", "🔄", "/purchases/credit-notes", "perm:purchases.invoices.view", 47)]
 [ApiController]
 [Route("api/purchases/credit-notes")]
 [Authorize]

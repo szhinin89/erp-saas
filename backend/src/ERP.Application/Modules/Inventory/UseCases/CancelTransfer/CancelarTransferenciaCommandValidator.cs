@@ -1,6 +1,6 @@
-﻿using FluentValidation;
+using FluentValidation;
 
-namespace ERP.Application.Inventory.UseCases.CancelarTransferencia;
+namespace ERP.Application.Inventory.UseCases.CancelTransfer;
 
 public sealed class CancelTransferCommandValidator : AbstractValidator<CancelTransferCommand>
 {

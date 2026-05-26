@@ -1,7 +1,7 @@
-﻿using FluentValidation;
+using FluentValidation;
 using ERP.Domain.Modules.Purchasing.Entities;
 
-namespace ERP.Application.Modules.Purchasing.UseCases.RechazarCompra;
+namespace ERP.Application.Modules.Purchasing.UseCases.RejectPurchase;
 
 public sealed class RechazarPurchaseCommandValidator : AbstractValidator<RejectPurchaseCommand>
 {

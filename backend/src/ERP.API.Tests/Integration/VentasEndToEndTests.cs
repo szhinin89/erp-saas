@@ -3,11 +3,11 @@ using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using ERP.API.Tests.Support;
-using ERP.Application.Sales.UseCases.AnularFactura;
-using ERP.Application.Sales.UseCases.CrearVenta;
-using ERP.Application.Sales.UseCases.EmitirFacturaElectronica;
-using ERP.Application.Sales.UseCases.GetVentaById;
-using ERP.Application.Sales.UseCases.ValidarVenta;
+using ERP.Application.Sales.UseCases.VoidInvoice;
+using ERP.Application.Sales.UseCases.CreateSale;
+using ERP.Application.Sales.UseCases.IssueElectronicInvoice;
+using ERP.Application.Sales.UseCases.GetSaleById;
+using ERP.Application.Sales.UseCases.ValidateSale;
 using ERP.Domain.Modules.Fiscal.Entities;
 using ERP.Domain.Modules.Inventory.Enums;
 using ERP.Infrastructure.Persistence;
@@ -18,7 +18,7 @@ public sealed class VentasEndToEndTests
 {
     // â”€â”€ Helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
-    private static CreateSaleCommand BuildCrearVenta(
+    private static CreateSaleCommand BuildCreateSale(
         Guid clienteId, Guid bodegaId, Guid sucursalId, Guid productoId, decimal quantity)
         => new(clienteId, bodegaId, sucursalId,
                new List<SaleItemDto> { new(productoId, quantity, 25.00m) });
@@ -48,7 +48,7 @@ public sealed class VentasEndToEndTests
 
         // 1. Crear venta (2 unidades)
         var crear = await mediator.Send(
-            BuildCrearVenta(clienteId, seed.WarehouseId, sucursalId, seed.ProductId, quantity: 2m),
+            BuildCreateSale(clienteId, seed.WarehouseId, sucursalId, seed.ProductId, quantity: 2m),
             CancellationToken.None);
         crear.IsSuccess.Should().BeTrue(crear.Error);
 
@@ -102,7 +102,7 @@ public sealed class VentasEndToEndTests
         var (mediator, db, seed, clienteId, sucursalId) = await SetupAsync(factory, stockInicial: 1m);
 
         var crear = await mediator.Send(
-            BuildCrearVenta(clienteId, seed.WarehouseId, sucursalId, seed.ProductId, quantity: 5m),
+            BuildCreateSale(clienteId, seed.WarehouseId, sucursalId, seed.ProductId, quantity: 5m),
             CancellationToken.None);
 
         crear.IsSuccess.Should().BeFalse();
@@ -116,7 +116,7 @@ public sealed class VentasEndToEndTests
         var (mediator, db, seed, clienteId, sucursalId) = await SetupAsync(factory);
 
         var crear = await mediator.Send(
-            BuildCrearVenta(clienteId, seed.WarehouseId, sucursalId, seed.ProductId, 2m),
+            BuildCreateSale(clienteId, seed.WarehouseId, sucursalId, seed.ProductId, 2m),
             CancellationToken.None);
         crear.IsSuccess.Should().BeTrue(crear.Error);
         var ventaId = crear.Value;
@@ -138,7 +138,7 @@ public sealed class VentasEndToEndTests
         var (mediator, db, seed, clienteId, sucursalId) = await SetupAsync(factory);
 
         var crear = await mediator.Send(
-            BuildCrearVenta(clienteId, seed.WarehouseId, sucursalId, seed.ProductId, 2m),
+            BuildCreateSale(clienteId, seed.WarehouseId, sucursalId, seed.ProductId, 2m),
             CancellationToken.None);
         crear.IsSuccess.Should().BeTrue(crear.Error);
 

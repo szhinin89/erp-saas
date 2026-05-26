@@ -3,7 +3,6 @@ using ERP.Application.Common.Config;
 using ERP.Application.Common.Interfaces;
 using ERP.Domain.Modules.Sales.Entities;
 using ERP.Domain.Modules.Sales.Interfaces;
-using ERP.Infrastructure.Options;
 using ERP.Infrastructure.Persistence;
 using ERP.Infrastructure.Persistence.Repositories;
 using FluentAssertions;
@@ -11,7 +10,6 @@ using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Options;
 using Moq;
 
 namespace ERP.Infrastructure.Tests.Persistence;
@@ -64,7 +62,7 @@ public sealed class UnifiedDocumentSyncIntegrationTests
             CreateTestCompany());
     }
 
-    private static ServiceProvider BuildServices(bool useUnified)
+    private static ServiceProvider BuildServices()
     {
         var tenant = new Mock<ICurrentSubscriber>();
         tenant.Setup(t => t.SubscriberId).Returns(SubscriberId);
@@ -78,7 +76,6 @@ public sealed class UnifiedDocumentSyncIntegrationTests
         services.AddScoped<IPlatformQueryAccessor, PlatformQueryAccessor>();
         services.AddDbContext<ErpDbContext>((_, o) =>
             o.UseNpgsql(ConnectionString, b => b.MigrationsAssembly(typeof(ErpDbContext).Assembly.FullName)));
-        services.Configure<DocumentSchemaOptions>(o => o.UseUnifiedSchema = useUnified);
         services.AddScoped<IUnifiedDocumentSync, UnifiedDocumentSync>();
         services.AddScoped<ISalesRepository, SalesRepository>();
         return services.BuildServiceProvider();
@@ -90,7 +87,7 @@ public sealed class UnifiedDocumentSyncIntegrationTests
         if (!await CanConnectAsync())
             return;
 
-        await using var sp = BuildServices(useUnified: true);
+        await using var sp = BuildServices();
         var repo = sp.GetRequiredService<ISalesRepository>();
         var ctx = sp.GetRequiredService<ErpDbContext>();
         if (!await UnifiedIntegrationTestSeed.TryEnsureAsync(ctx))
@@ -134,7 +131,7 @@ public sealed class UnifiedDocumentSyncIntegrationTests
         if (!await CanConnectAsync())
             return;
 
-        await using var sp = BuildServices(useUnified: true);
+        await using var sp = BuildServices();
         var repo = sp.GetRequiredService<ISalesRepository>();
         var ctx = sp.GetRequiredService<ErpDbContext>();
         if (!await UnifiedIntegrationTestSeed.TryEnsureAsync(ctx))
@@ -174,7 +171,7 @@ public sealed class UnifiedDocumentSyncIntegrationTests
         if (!await CanConnectAsync())
             return;
 
-        await using var sp = BuildServices(useUnified: true);
+        await using var sp = BuildServices();
         var repo = sp.GetRequiredService<ISalesRepository>();
         var ctx = sp.GetRequiredService<ErpDbContext>();
         if (!await UnifiedIntegrationTestSeed.TryEnsureAsync(ctx))
@@ -227,7 +224,7 @@ public sealed class UnifiedDocumentSyncIntegrationTests
         if (!await CanConnectAsync())
             return;
 
-        await using var sp = BuildServices(useUnified: true);
+        await using var sp = BuildServices();
         var repo = sp.GetRequiredService<ISalesRepository>();
         var ctx = sp.GetRequiredService<ErpDbContext>();
         if (!await UnifiedIntegrationTestSeed.TryEnsureAsync(ctx))
@@ -297,7 +294,7 @@ public sealed class UnifiedDocumentSyncIntegrationTests
         if (!await CanConnectAsync())
             return;
 
-        await using var sp = BuildServices(useUnified: true);
+        await using var sp = BuildServices();
         var repo = sp.GetRequiredService<ISalesRepository>();
         var ctx = sp.GetRequiredService<ErpDbContext>();
         if (!await UnifiedIntegrationTestSeed.TryEnsureAsync(ctx))

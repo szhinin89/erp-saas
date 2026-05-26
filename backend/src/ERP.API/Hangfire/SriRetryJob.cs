@@ -1,5 +1,5 @@
 using ERP.Application.Sales.UseCases.ListPendingSriRetry;
-using ERP.Application.Sales.UseCases.ReintentarEnvio;
+using ERP.Application.Sales.UseCases.RetrySubmission;
 using ERP.Domain.Modules.Sales.Interfaces;
 using ERP.Infrastructure.Services;
 using MediatR;

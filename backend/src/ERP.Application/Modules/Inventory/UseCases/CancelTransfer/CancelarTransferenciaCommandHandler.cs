@@ -6,7 +6,7 @@ using ERP.Domain.Audit.Entities;
 using ERP.Domain.Audit.Interfaces;
 using ERP.Domain.Modules.Inventory.Interfaces;
 
-namespace ERP.Application.Inventory.UseCases.CancelarTransferencia;
+namespace ERP.Application.Inventory.UseCases.CancelTransfer;
 
 public sealed class CancelTransferCommandHandler
     : IRequestHandler<CancelTransferCommand, Result<TransferDto>>

@@ -1,16 +1,16 @@
-﻿using System.Text;
+using System.Text;
 using FluentAssertions;
 using MediatR;
 using Microsoft.Extensions.DependencyInjection;
 using ERP.API.Tests.Support;
 using ERP.Application.Common;
-using ERP.Application.Modules.Purchasing.UseCases.AprobarCompra;
-using ERP.Application.Modules.Purchasing.UseCases.CrearCompra;
-using ERP.Application.Modules.Purchasing.UseCases.ValidarCompra;
-using ERP.Application.Modules.Expenses.UseCases.AprobarGasto;
-using ERP.Application.Modules.Expenses.UseCases.CrearGasto;
-using ERP.Application.Modules.Expenses.UseCases.ValidarGasto;
-using ERP.Application.Modules.Inventory.UseCases.GetCurrentStockPorBodega;
+using ERP.Application.Modules.Purchasing.UseCases.ApprovePurchase;
+using ERP.Application.Modules.Purchasing.UseCases.CreatePurchase;
+using ERP.Application.Modules.Purchasing.UseCases.ValidatePurchase;
+using ERP.Application.Modules.Expenses.UseCases.ApproveExpense;
+using ERP.Application.Modules.Expenses.UseCases.CreateExpense;
+using ERP.Application.Modules.Expenses.UseCases.ValidateExpense;
+using ERP.Application.Modules.Inventory.UseCases.GetCurrentStockByWarehouse;
 using ERP.Domain.Modules.Expenses.Enums;
 using ERP.Infrastructure.Persistence;
 

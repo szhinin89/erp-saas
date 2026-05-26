@@ -2,7 +2,7 @@ using FluentAssertions;
 using ERP.Application.Common;
 using ERP.Application.Common.Interfaces;
 using ERP.Application.Inventory.DTOs;
-using ERP.Application.Inventory.UseCases.EjecutarAjuste;
+using ERP.Application.Inventory.UseCases.ExecuteAdjustment;
 using ERP.Domain.Audit.Interfaces;
 using ERP.Domain.Modules.Inventory.Entities;
 using ERP.Domain.Modules.Inventory.Enums;
@@ -13,10 +13,10 @@ using Moq;
 namespace ERP.Application.Tests.Inventario;
 
 /// <summary>
-/// Pruebas unitarias de EjecutarAjusteCommandHandler con mocks de IStockRepository.
+/// Pruebas unitarias de ExecuteAdjustmentCommandHandler con mocks de IStockRepository.
 /// Verifican el ajuste atómico de stock para los casos de incremento y disminución.
 /// </summary>
-public sealed class EjecutarAjusteCommandHandlerTests
+public sealed class ExecuteAdjustmentCommandHandlerTests
 {
     // ── Incremento (cantidad positiva) ────────────────────────────────────
 

@@ -47,8 +47,10 @@ Factories: `CreateCompanyUser`, `CreatePlatformOperator` (tipo dominio; producto
 | POST | `/api/auth/login` | Usuarios company |
 | POST | `/api/auth/refresh` | Refresh único |
 | POST | `/api/auth/forgot-password` | Solicitud reset |
-| POST | `/api/auth/reset-password` | Completar reset |
-| POST | `/api/setup/platform-operator` | First-run operador platform (script `Crear-PlatformOperator.ps1`) |
+| POST | `/api/auth/reset-password` | Completar reset con token |
+| POST | `/api/auth/password-reset` | Reset directo (admin/dev) |
+| POST | `/api/auth/logout` | Cerrar sesión |
+| GET | `/api/auth/my-companies` | Empresas accesibles del usuario |
 | POST | `/api/auth/switch-company` | Cambiar empresa activa |
 | POST | `/api/auth/switch-subscriber` | Impersonación platform (operador global) |
 | POST | `/api/admin/iam/bootstrap-switch-subscriber` | Paso 2 login ERP (bootstrap token → sesión) |
