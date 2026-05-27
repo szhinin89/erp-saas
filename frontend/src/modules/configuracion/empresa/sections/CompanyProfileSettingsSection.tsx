@@ -2,7 +2,6 @@ import React, { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { LoadingState, NoAccessPage } from '../../../../components/PageShell';
-import { ErpPageTemplate } from '../../../../templates/ErpPageTemplate';
 import { ZHPageNotice } from '../../../../components/zh/ZHPageNotice';
 import { ZHBtn, ZHField } from '../../../../components/zh/ZHForm';
 import { useI18n } from '../../../../i18n/i18n';
@@ -19,11 +18,6 @@ import {
   type CompanyConfigValues,
 } from '../schemas/companyConfigSchema';
 
-const CURRENCIES = [
-  { value: 'USD', label: 'USD — Dólar Estadounidense' },
-  { value: 'EUR', label: 'EUR — Euro' },
-];
-
 const LANGUAGES = [
   { value: 'es', label: 'Español (Ecuador)' },
   { value: 'en', label: 'English (US)' },
@@ -37,6 +31,11 @@ const TIMEZONES = [
   { value: 'America/New_York',  label: '(GMT-05:00) Eastern Time' },
 ];
 
+const CURRENCIES = [
+  { value: 'USD', label: 'USD — Dólar Estadounidense' },
+  { value: 'EUR', label: 'EUR — Euro' },
+];
+
 function taxTypeBadge(type: string): React.ReactElement {
   const upper = type.toUpperCase();
   if (upper === 'VAT')    return <span className="badge badge--green">IVA</span>;
@@ -44,12 +43,12 @@ function taxTypeBadge(type: string): React.ReactElement {
   return <span className="badge badge--gray">{upper}</span>;
 }
 
-export function CompanyConfigPage() {
+export function CompanyProfileSettingsSection() {
   const { canShow } = usePermissionsUi();
   const { t } = useI18n();
   const subscriberId = useAuthStore((s) => s.user?.subscriberId ?? '');
-  const canView  = canShow('configuracion.empresa.view');
-  const canEdit  = canShow('configuracion.empresa.edit');
+  const canView = canShow('configuracion.empresa.view');
+  const canEdit = canShow('configuracion.empresa.edit');
 
   const [saving,    setSaving]    = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
@@ -103,19 +102,19 @@ export function CompanyConfigPage() {
 
       if (co) {
         await companyManagementService.update(co.id, {
-          taxId:        values.taxId ?? co.taxId,
-          legalName:    values.legalName,
-          mainAddress:  values.mainAddress ?? co.mainAddress,
-          tradeName:    values.tradeName || null,
-          phone:        co.phone,
-          email:        co.email,
-          countryCode:  co.countryCode,
-          timezone:     values.timezone,
+          taxId:       values.taxId ?? co.taxId,
+          legalName:   values.legalName,
+          mainAddress: values.mainAddress ?? co.mainAddress,
+          tradeName:   values.tradeName || null,
+          phone:       co.phone,
+          email:       co.email,
+          countryCode: co.countryCode,
+          timezone:    values.timezone,
           currencyCode: values.currency,
-          logoUrl:      co.logoUrl,
+          logoUrl:     co.logoUrl,
           brandingJson: co.brandingJson,
-          id:           co.id,
-          isActive:     co.isActive,
+          id:          co.id,
+          isActive:    co.isActive,
         });
       }
 
@@ -149,24 +148,10 @@ export function CompanyConfigPage() {
   };
 
   if (!canView) return <NoAccessPage title={t('settings.company.title')} />;
-  if (subscriberState.loading || companyState.loading) {
-    return (
-      <ErpPageTemplate
-        kicker={t('settings.company.kicker')}
-        title={t('settings.company.title')}
-        subtitle={t('settings.company.subtitle')}
-      >
-        <LoadingState />
-      </ErpPageTemplate>
-    );
-  }
+  if (subscriberState.loading || companyState.loading) return <LoadingState />;
 
   return (
-    <ErpPageTemplate
-      kicker={t('settings.company.kicker')}
-      title={t('settings.company.title')}
-      subtitle={t('settings.company.subtitle')}
-    >
+    <>
       {(subscriberState.error || companyState.error) && (
         <ZHPageNotice variant="error" message={t('common.errorPrefix')} detail={subscriberState.error ?? companyState.error} />
       )}
@@ -336,6 +321,6 @@ export function CompanyConfigPage() {
           </div>
         </div>
       </form>
-    </ErpPageTemplate>
+    </>
   );
 }

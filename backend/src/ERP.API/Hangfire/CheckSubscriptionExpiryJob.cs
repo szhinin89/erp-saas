@@ -2,6 +2,7 @@ using ERP.Application.Common;
 using ERP.Application.Platform.Audit;
 using ERP.Application.Platform.Subscribers.UseCases;
 using ERP.Application.Subscriptions.Caching;
+using ERP.Domain.Billing.Interfaces;
 using ERP.Domain.Platform.Audit.Entities;
 using ERP.Domain.Subscribers.Entities;
 using ERP.Domain.Subscribers.Interfaces;
@@ -23,6 +24,7 @@ public interface ICheckSubscriptionExpiryJob
 public sealed class CheckSubscriptionExpiryJob : ICheckSubscriptionExpiryJob
 {
     private readonly ISubscriberRepository _subscribers;
+    private readonly ISubscriberBillingRepository _billing;
     private readonly IMediator _mediator;
     private readonly IPlatformAuditLogger _audit;
     private readonly ISubscriberEntitlementsCacheInvalidator _cacheInvalidator;
@@ -31,6 +33,7 @@ public sealed class CheckSubscriptionExpiryJob : ICheckSubscriptionExpiryJob
 
     public CheckSubscriptionExpiryJob(
         ISubscriberRepository subscribers,
+        ISubscriberBillingRepository billing,
         IMediator mediator,
         IPlatformAuditLogger audit,
         ISubscriberEntitlementsCacheInvalidator cacheInvalidator,
@@ -38,6 +41,7 @@ public sealed class CheckSubscriptionExpiryJob : ICheckSubscriptionExpiryJob
         IConfiguration config)
     {
         _subscribers = subscribers;
+        _billing = billing;
         _mediator = mediator;
         _audit = audit;
         _cacheInvalidator = cacheInvalidator;
@@ -72,14 +76,16 @@ public sealed class CheckSubscriptionExpiryJob : ICheckSubscriptionExpiryJob
         CancellationToken ct)
     {
         var systemUserId = Guid.Empty;
+        var account = await _billing.GetAccountTrackedBySubscriberIdAsync(subscriber.Id, ct);
 
         // Trial vencido → GracePeriod
         if (subscriber.LifecycleStatus == SubscriberLifecycleStatus.Trial
-            && subscriber.TrialEndsAtUtc.HasValue
-            && subscriber.TrialEndsAtUtc.Value < now)
+            && account?.TrialEndsAtUtc.HasValue == true
+            && account.TrialEndsAtUtc!.Value < now)
         {
             var graceEnd = now.AddDays(graceDays);
-            subscriber.EnterGracePeriod(graceEnd, systemUserId);
+            subscriber.EnterGracePeriod(systemUserId);
+            account.EnterGracePeriod(graceEnd, systemUserId);
             await _subscribers.SaveChangesAsync(ct);
             await _cacheInvalidator.InvalidateAsync(subscriber.Id, ct);
 
@@ -90,7 +96,7 @@ public sealed class CheckSubscriptionExpiryJob : ICheckSubscriptionExpiryJob
                 targetSubscriberId: subscriber.Id,
                 resourceType: "Subscriber",
                 resourceId: subscriber.Id,
-                notes: $"Trial vencido ({subscriber.TrialEndsAtUtc:O}). Período de gracia hasta {graceEnd:O}.",
+                notes: $"Trial vencido ({account.TrialEndsAtUtc:O}). Período de gracia hasta {graceEnd:O}.",
                 ct: ct);
 
             _logger.LogInformation(
@@ -101,10 +107,11 @@ public sealed class CheckSubscriptionExpiryJob : ICheckSubscriptionExpiryJob
 
         // GracePeriod vencido → Suspended
         if (subscriber.LifecycleStatus == SubscriberLifecycleStatus.GracePeriod
-            && subscriber.GracePeriodEndsAtUtc.HasValue
-            && subscriber.GracePeriodEndsAtUtc.Value < now)
+            && account?.GracePeriodEndsAtUtc.HasValue == true
+            && account.GracePeriodEndsAtUtc!.Value < now)
         {
             subscriber.Suspend("Período de gracia vencido — suspensión automática.", systemUserId);
+            account.Suspend(systemUserId);
             await _subscribers.SaveChangesAsync(ct);
             await _cacheInvalidator.InvalidateAsync(subscriber.Id, ct);
 
@@ -115,7 +122,7 @@ public sealed class CheckSubscriptionExpiryJob : ICheckSubscriptionExpiryJob
                 targetSubscriberId: subscriber.Id,
                 resourceType: "Subscriber",
                 resourceId: subscriber.Id,
-                notes: $"Período de gracia vencido ({subscriber.GracePeriodEndsAtUtc:O}). Suspensión automática.",
+                notes: $"Período de gracia vencido ({account.GracePeriodEndsAtUtc:O}). Suspensión automática.",
                 ct: ct);
 
             _logger.LogWarning(

@@ -124,7 +124,7 @@ public sealed class SetSubscriberTrialHandler : IRequestHandler<SetSubscriberTri
         if (subscriber is null)
             return Result<bool>.NotFound("Suscriptor no encontrado.");
 
-        subscriber.SetTrial(request.TrialEndsAtUtc, _currentUser.UserId);
+        subscriber.SetTrial(_currentUser.UserId);
         await _subscribers.SaveChangesAsync(ct);
         await _cacheInvalidator.InvalidateAsync(request.SubscriberId, ct);
 
@@ -170,7 +170,7 @@ public sealed class SetSubscriberGracePeriodHandler : IRequestHandler<SetSubscri
         if (subscriber is null)
             return Result<bool>.NotFound("Suscriptor no encontrado.");
 
-        subscriber.EnterGracePeriod(request.GracePeriodEndsAtUtc, _currentUser.UserId);
+        subscriber.EnterGracePeriod(_currentUser.UserId);
         await _subscribers.SaveChangesAsync(ct);
         await _cacheInvalidator.InvalidateAsync(request.SubscriberId, ct);
 

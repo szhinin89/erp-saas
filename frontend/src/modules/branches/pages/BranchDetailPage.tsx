@@ -62,17 +62,21 @@ export function BranchDetailPage() {
         </Link>
       }
     >
-      <div className="zh-tabs">
+      <div className="zh-form-tabs" role="tablist">
         <button
           type="button"
-          className={`zh-tab${tab === 'general' ? ' zh-tab--active' : ''}`}
+          role="tab"
+          aria-selected={tab === 'general'}
+          className={tab === 'general' ? 'is-active' : ''}
           onClick={() => setTab('general')}
         >
           General
         </button>
         <button
           type="button"
-          className={`zh-tab${tab === 'establishments' ? ' zh-tab--active' : ''}`}
+          role="tab"
+          aria-selected={tab === 'establishments'}
+          className={tab === 'establishments' ? 'is-active' : ''}
           onClick={() => setTab('establishments')}
         >
           Establecimientos y Puntos de Emisión

@@ -70,13 +70,17 @@ public static class CommercialPlansBootstrap
             //   a) está vacío/null, o
             //   b) tiene estructura "plan-custom" plana (JSON de migración incorrecto), o
             //   c) contiene rutas legacy de BP (/sales/customers, /purchases/suppliers)
-            //      que apuntan a páginas eliminadas tras la unificación BusinessPartner.
+            //      que apuntan a páginas eliminadas tras la unificación BusinessPartner, o
+            //   d) contiene rutas de configuración consolidadas en el hub /settings/company.
             var hasPlanCustom      = existing.MenuConfigJson?.Contains("plan-custom") == true;
             var hasLegacyBpRoutes  = existing.MenuConfigJson?.Contains("/sales/customers") == true
                                    || existing.MenuConfigJson?.Contains("/purchases/suppliers") == true;
             var hasFinanceConfigNav = existing.MenuConfigJson?.Contains("\"/finance/config\"") == true;
+            var hasDeprecatedSettingsRoutes =
+                   existing.MenuConfigJson?.Contains("\"/settings/sri\"")      == true
+                || existing.MenuConfigJson?.Contains("\"/settings/branches\"") == true;
             if (seed.MenuConfigJson is not null &&
-                (string.IsNullOrWhiteSpace(existing.MenuConfigJson) || hasPlanCustom || hasLegacyBpRoutes || hasFinanceConfigNav))
+                (string.IsNullOrWhiteSpace(existing.MenuConfigJson) || hasPlanCustom || hasLegacyBpRoutes || hasFinanceConfigNav || hasDeprecatedSettingsRoutes))
             {
                 existing.SetMenuConfigJson(seed.MenuConfigJson);
                 changed = true;
@@ -179,11 +183,9 @@ public static class CommercialPlansBootstrap
             "sortOrder": 80, "moduleKey": "settings", "roles": null,
             "requirePlatformPanel": false, "menuBarLayout": null,
             "items": [
-              {"routePath": "/settings/company",   "labelKey": "app.nav.item.settings.company",   "displayLabel": "Datos de Empresa",   "sortOrder": 10, "moduleKey": "settings", "permissionKey": "perm:settings.company.view",   "permissionKeysAny": null, "itemRoles": null, "children": null, "icon": "🏢"},
-              {"routePath": "/settings/sri",       "labelKey": "app.nav.item.settings.sri",       "displayLabel": "Configuración SRI",  "sortOrder": 20, "moduleKey": "settings", "permissionKey": "perm:settings.sri.view",       "permissionKeysAny": null, "itemRoles": null, "children": null, "icon": "🧾"},
-              {"routePath": "/settings/ride",      "labelKey": "app.nav.item.settings.ride",      "displayLabel": "Configuración RIDE", "sortOrder": 30, "moduleKey": "settings", "permissionKey": "perm:settings.ride.view",      "permissionKeysAny": null, "itemRoles": null, "children": null, "icon": "🖨️"},
-              {"routePath": "/settings/branches",  "labelKey": "app.nav.item.settings.branches",  "displayLabel": "Sucursales",         "sortOrder": 40, "moduleKey": "settings", "permissionKey": "perm:settings.branches.view",  "permissionKeysAny": null, "itemRoles": null, "children": null, "icon": "🏪"},
-              {"routePath": "/settings/geography", "labelKey": "app.nav.item.settings.geography", "displayLabel": "Geografía",          "sortOrder": 50, "moduleKey": "settings", "permissionKey": "perm:settings.geography.view", "permissionKeysAny": null, "itemRoles": null, "children": null, "icon": "🌎"}
+              {"routePath": "/settings/company",   "labelKey": "app.nav.item.settings.company",   "displayLabel": "Configuración Empresa", "sortOrder": 10, "moduleKey": "settings", "permissionKey": "perm:settings.company.view",   "permissionKeysAny": null, "itemRoles": null, "children": null, "icon": "tune"},
+              {"routePath": "/settings/ride",      "labelKey": "app.nav.item.settings.ride",      "displayLabel": "Configuración RIDE",    "sortOrder": 20, "moduleKey": "settings", "permissionKey": "perm:settings.ride.view",      "permissionKeysAny": null, "itemRoles": null, "children": null, "icon": "🖨️"},
+              {"routePath": "/settings/geography", "labelKey": "app.nav.item.settings.geography", "displayLabel": "Geografía",             "sortOrder": 30, "moduleKey": "settings", "permissionKey": "perm:settings.geography.view", "permissionKeysAny": null, "itemRoles": null, "children": null, "icon": "🌎"}
             ]
           },
           {

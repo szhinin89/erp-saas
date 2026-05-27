@@ -16,39 +16,14 @@ public class Subscriber : AuditableEntity
     /// <summary>Motivo de suspensión/desactivación (opcional, para auditoría).</summary>
     public string? SuspendedReason { get; private set; }
 
-    /// <summary>Fin del período de prueba (trial). Null = sin trial activo.</summary>
-    public DateTime? TrialEndsAtUtc { get; private set; }
-
-    /// <summary>Fin del período de gracia tras vencimiento. Null = no aplica.</summary>
-    public DateTime? GracePeriodEndsAtUtc { get; private set; }
-
     /// <summary>Fecha de última suspensión (audit trail).</summary>
     public DateTime? SuspendedAtUtc { get; private set; }
-
-    // FIXME(phase5-db): Ruc pertenece a Company (entidad legal). Mover en migración DB futura.
-    public string? Ruc { get; private set; }
-    public string? ShortName { get; private set; }
-    // FIXME(phase5-db): TradeName pertenece a Company. Mover en migración DB futura.
-    public string? TradeName { get; private set; }
-    // FIXME(phase5-db): Dinardap pertenece a Company (registro fiscal). Mover en migración DB futura.
-    public string? Dinardap { get; private set; }
-    // FIXME(phase5-db): LogoUrl pertenece a Company (branding). Mover en migración DB futura.
-    public string? LogoUrl { get; private set; }
 
     public int DisplayOrder { get; private set; }
     public int Priority { get; private set; }
 
-    public bool ElectronicBillingTrialEnabled { get; private set; }
-
-    // FIXME(phase5-db): Currency duplicado con Company.CurrencyCode. Consolidar en Company.
-    public string Currency { get; private set; } = "USD";
-    public string Language { get; private set; } = "es";
-    // FIXME(phase5-db): Timezone duplicado con Company.Timezone. Consolidar en Company.
-    public string Timezone { get; private set; } = "America/Guayaquil";
-    // FIXME(phase5-db): InvoicePrefix pertenece a Company (prefijo de comprobantes SRI).
-    public string? InvoicePrefix { get; private set; }
-    // FIXME(phase5-db): DefaultCreditDays es parámetro operativo de Company.
-    public int DefaultCreditDays { get; private set; } = 30;
+    /// <summary>Idioma preferido de la UI para este tenant SaaS (es/en/qu).</summary>
+    public string PreferredLanguage { get; private set; } = "es";
 
     private Subscriber() { }
 
@@ -57,32 +32,23 @@ public class Subscriber : AuditableEntity
         string slug,
         Guid createdBy,
         PasswordResetMode passwordResetMode = PasswordResetMode.Disabled,
-        string? ruc = null,
-        string? shortName = null,
-        string? tradeName = null,
-        string? dinardap = null,
-        string? logoUrl = null,
         int displayOrder = 0,
         int priority = 0,
-        string? planCode = null)
+        string? planCode = null,
+        string preferredLanguage = "es")
     {
         var tenant = new Subscriber
         {
-            Id       = Guid.NewGuid(),
-            SubscriberId = Guid.Empty,
-            Name     = name,
-            Slug     = slug.ToLowerInvariant(),
-            IsActive = true,
+            Id               = Guid.NewGuid(),
+            SubscriberId     = Guid.Empty,
+            Name             = name,
+            Slug             = slug.ToLowerInvariant(),
+            IsActive         = true,
             PasswordResetMode = passwordResetMode,
-            Ruc = string.IsNullOrWhiteSpace(ruc) ? null : ruc.Trim(),
-            ShortName = string.IsNullOrWhiteSpace(shortName) ? null : shortName.Trim(),
-            TradeName = string.IsNullOrWhiteSpace(tradeName) ? null : tradeName.Trim(),
-            Dinardap = string.IsNullOrWhiteSpace(dinardap) ? null : dinardap.Trim(),
-            LogoUrl = string.IsNullOrWhiteSpace(logoUrl) ? null : logoUrl.Trim(),
-            DisplayOrder = displayOrder,
-            Priority = priority,
-            ElectronicBillingTrialEnabled = false,
-            PlanCode = string.IsNullOrWhiteSpace(planCode) ? null : planCode.Trim(),
+            DisplayOrder     = displayOrder,
+            Priority         = priority,
+            PlanCode         = string.IsNullOrWhiteSpace(planCode) ? null : planCode.Trim(),
+            PreferredLanguage = string.IsNullOrWhiteSpace(preferredLanguage) ? "es" : preferredLanguage.Trim().ToLowerInvariant(),
         };
         tenant.SetCreated(createdBy);
         return tenant;
@@ -94,60 +60,20 @@ public class Subscriber : AuditableEntity
         SetUpdated(updatedBy);
     }
 
-    /// <summary>
-    /// Actualiza el perfil SaaS del suscriptor (nombre de plataforma, slug, ordering y campos
-    /// fiscales heredados pendientes de migración a <c>Company</c>).
-    /// </summary>
+    /// <summary>Actualiza el perfil SaaS: nombre de plataforma, slug, ordering y preferencia de idioma.</summary>
     public void UpdateSaasProfile(
         string name,
         string slug,
-        string? ruc,
-        string? shortName,
-        string? tradeName,
-        string? dinardap,
-        string? logoUrl,
         int displayOrder,
         int priority,
+        string preferredLanguage,
         Guid updatedBy)
     {
-        Name = name;
-        Slug = slug.ToLowerInvariant();
-        Ruc = string.IsNullOrWhiteSpace(ruc) ? null : ruc.Trim();
-        ShortName = string.IsNullOrWhiteSpace(shortName) ? null : shortName.Trim();
-        TradeName = string.IsNullOrWhiteSpace(tradeName) ? null : tradeName.Trim();
-        Dinardap = string.IsNullOrWhiteSpace(dinardap) ? null : dinardap.Trim();
-        LogoUrl = string.IsNullOrWhiteSpace(logoUrl) ? null : logoUrl.Trim();
-        DisplayOrder = displayOrder;
-        Priority = priority;
-        SetUpdated(updatedBy);
-    }
-
-    /// <summary>Alias backward-compat. Usar <see cref="UpdateSaasProfile"/> en código nuevo.</summary>
-    [Obsolete("Use UpdateSaasProfile(). UpdateCompanyData is a misnomer — this method updates SaaS account profile, not the Company entity. Will be removed in phase5-db cleanup.")]
-    public void UpdateCompanyData(
-        string name, string slug, string? ruc, string? shortName, string? tradeName,
-        string? dinardap, string? logoUrl, int displayOrder, int priority, Guid updatedBy)
-        => UpdateSaasProfile(name, slug, ruc, shortName, tradeName, dinardap, logoUrl, displayOrder, priority, updatedBy);
-
-    public void UpdateGlobalParameters(bool electronicBillingTrialEnabled, Guid updatedBy)
-    {
-        ElectronicBillingTrialEnabled = electronicBillingTrialEnabled;
-        SetUpdated(updatedBy);
-    }
-
-    public void UpdateOperationalSettings(
-        string currency,
-        string language,
-        string timezone,
-        string? invoicePrefix,
-        int defaultCreditDays,
-        Guid updatedBy)
-    {
-        Currency = string.IsNullOrWhiteSpace(currency) ? "USD" : currency.Trim().ToUpperInvariant();
-        Language = string.IsNullOrWhiteSpace(language) ? "es" : language.Trim().ToLowerInvariant();
-        Timezone = string.IsNullOrWhiteSpace(timezone) ? "America/Guayaquil" : timezone.Trim();
-        InvoicePrefix = string.IsNullOrWhiteSpace(invoicePrefix) ? null : invoicePrefix.Trim();
-        DefaultCreditDays = defaultCreditDays < 0 ? 0 : defaultCreditDays;
+        Name             = name;
+        Slug             = slug.ToLowerInvariant();
+        DisplayOrder     = displayOrder;
+        Priority         = priority;
+        PreferredLanguage = string.IsNullOrWhiteSpace(preferredLanguage) ? "es" : preferredLanguage.Trim().ToLowerInvariant();
         SetUpdated(updatedBy);
     }
 
@@ -163,30 +89,27 @@ public class Subscriber : AuditableEntity
         IsActive = true;
         LifecycleStatus = SubscriberLifecycleStatus.Active;
         SuspendedReason = null;
-        SuspendedAtUtc = null;
-        GracePeriodEndsAtUtc = null;
+        SuspendedAtUtc  = null;
         SetUpdated(updatedBy);
     }
 
     public void Suspend(string? reason, Guid updatedBy)
     {
-        IsActive = false;
+        IsActive        = false;
         LifecycleStatus = SubscriberLifecycleStatus.Suspended;
         SuspendedReason = string.IsNullOrWhiteSpace(reason) ? null : reason.Trim();
-        SuspendedAtUtc = DateTime.UtcNow;
+        SuspendedAtUtc  = DateTime.UtcNow;
         SetUpdated(updatedBy);
     }
 
-    public void SetTrial(DateTime trialEndsAtUtc, Guid updatedBy)
+    public void SetTrial(Guid updatedBy)
     {
-        TrialEndsAtUtc = trialEndsAtUtc;
         LifecycleStatus = SubscriberLifecycleStatus.Trial;
         SetUpdated(updatedBy);
     }
 
-    public void EnterGracePeriod(DateTime gracePeriodEndsAtUtc, Guid updatedBy)
+    public void EnterGracePeriod(Guid updatedBy)
     {
-        GracePeriodEndsAtUtc = gracePeriodEndsAtUtc;
         LifecycleStatus = SubscriberLifecycleStatus.GracePeriod;
         SetUpdated(updatedBy);
     }
@@ -206,16 +129,16 @@ public class Subscriber : AuditableEntity
 public enum PasswordResetMode
 {
     Disabled = 0,
-    Direct = 1,
-    Email = 2,
-    Phone = 3,
+    Direct   = 1,
+    Email    = 2,
+    Phone    = 3,
 }
 
 public enum SubscriberLifecycleStatus
 {
-    Active = 0,
-    Trial = 1,
+    Active      = 0,
+    Trial       = 1,
     GracePeriod = 2,
-    Suspended = 3,
-    Inactive = 4,
+    Suspended   = 3,
+    Inactive    = 4,
 }

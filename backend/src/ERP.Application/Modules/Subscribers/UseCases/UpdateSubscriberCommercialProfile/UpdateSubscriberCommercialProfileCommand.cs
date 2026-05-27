@@ -8,10 +8,6 @@ public record UpdateSubscriberCommercialProfileCommand(
     Guid SubscriberId,
     string Name,
     string Slug,
-    string? Ruc,
-    string? ShortName,
-    string? TradeName,
-    string? Dinardap,
-    string? LogoUrl,
     int DisplayOrder,
-    int Priority) : IRequest<Result<SubscriberDto>>;
+    int Priority,
+    string PreferredLanguage = "es") : IRequest<Result<SubscriberDto>>;

@@ -3,22 +3,9 @@ namespace ERP.API.Contracts.Platform;
 public sealed record UpdatePlatformSubscriberCompanyBody(
     string Name,
     string Slug,
-    string? Ruc,
-    string? ShortName,
-    string? TradeName,
-    string? Dinardap,
-    string? LogoUrl,
     int DisplayOrder,
-    int Priority);
-
-public sealed record UpdatePlatformGlobalParametersBody(bool ElectronicBillingTrialEnabled);
-
-public sealed record UpdatePlatformOperationalSettingsBody(
-    string Currency,
-    string Language,
-    string Timezone,
-    string? InvoicePrefix,
-    int DefaultCreditDays);
+    int Priority,
+    string PreferredLanguage = "es");
 
 public sealed record SubscriberMenuPutBody(string MenuConfigJson);
 

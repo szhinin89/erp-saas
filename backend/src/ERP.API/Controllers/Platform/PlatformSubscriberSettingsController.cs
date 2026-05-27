@@ -2,8 +2,6 @@ using ERP.API.Contracts;
 using ERP.API.Contracts.Platform;
 using ERP.API.Extensions;
 using ERP.Application.Subscribers.DTOs;
-using ERP.Application.Subscribers.UseCases.UpdateSubscriberGlobalParameters;
-using ERP.Application.Subscribers.UseCases.UpdateSubscriberOperationalSettings;
 using ERP.Application.Subscribers.UseCases.UpdateSubscriberCommercialProfile;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
@@ -26,25 +24,7 @@ public sealed class PlatformSubscriberSettingsController : ControllerBase
     public async Task<IActionResult> UpdateCompany(Guid subscriberId, [FromBody] UpdatePlatformSubscriberCompanyBody body, CancellationToken ct)
     {
         var command = new UpdateSubscriberCommercialProfileCommand(
-            subscriberId, body.Name, body.Slug, body.Ruc, body.ShortName,
-            body.TradeName, body.Dinardap, body.LogoUrl, body.DisplayOrder, body.Priority);
-        return this.ToOkOrBadRequest(await _mediator.Send(command, ct));
-    }
-
-    [HttpPatch("{subscriberId:guid}/global-parameters")]
-    [ProducesResponseType(typeof(ApiResponse<SubscriberDto?>), StatusCodes.Status200OK)]
-    public async Task<IActionResult> UpdateGlobalParameters(Guid subscriberId, [FromBody] UpdatePlatformGlobalParametersBody body, CancellationToken ct)
-    {
-        var result = await _mediator.Send(new UpdateSubscriberGlobalParametersCommand(subscriberId, body.ElectronicBillingTrialEnabled), ct);
-        return this.ToOkOrBadRequest(result);
-    }
-
-    [HttpPatch("{subscriberId:guid}/operational-settings")]
-    [ProducesResponseType(typeof(ApiResponse<SubscriberDto?>), StatusCodes.Status200OK)]
-    public async Task<IActionResult> UpdateOperationalSettings(Guid subscriberId, [FromBody] UpdatePlatformOperationalSettingsBody body, CancellationToken ct)
-    {
-        var command = new UpdateSubscriberOperationalSettingsCommand(
-            subscriberId, body.Currency, body.Language, body.Timezone, body.InvoicePrefix, body.DefaultCreditDays);
+            subscriberId, body.Name, body.Slug, body.DisplayOrder, body.Priority, body.PreferredLanguage);
         return this.ToOkOrBadRequest(await _mediator.Send(command, ct));
     }
 }

@@ -52,7 +52,6 @@ const QuoteDetailPage = lazyNamedPage(
   () => import('../modules/ventas/cotizaciones/pages/QuoteDetailPage'),
   'QuoteDetailPage',
 );
-const BranchesPage = lazyNamedPage(() => import('../modules/branches/pages/BranchesPage'), 'BranchesPage');
 const BranchDetailPage = lazyNamedPage(() => import('../modules/branches/pages/BranchDetailPage'), 'BranchDetailPage');
 const SalesReportPage = lazyNamedPage(() => import('../modules/reportes/pages/SalesReportPage'), 'SalesReportPage');
 const MasterDataCustomersPage = lazyNamedPage(
@@ -67,13 +66,9 @@ const MasterDataBusinessPartnerDetailPage = lazyNamedPage(
   () => import('../modules/masterData/pages/MasterDataBusinessPartnerDetailPage'),
   'MasterDataBusinessPartnerDetailPage',
 );
-const CompanyConfigPage = lazyNamedPage(
-  () => import('../modules/configuracion/empresa/pages/CompanyConfigPage'),
-  'CompanyConfigPage',
-);
-const SriConfigPage = lazyNamedPage(
-  () => import('../modules/configuracion/sri/pages/SriConfigPage'),
-  'SriConfigPage',
+const CompanySettingsHubPage = lazyNamedPage(
+  () => import('../modules/configuracion/empresa/pages/CompanySettingsHubPage'),
+  'CompanySettingsHubPage',
 );
 const BillingSettingsPage = lazyNamedPage(
   () => import('../modules/configuracion/facturacion/pages/BillingSettingsPage'),
@@ -149,17 +144,17 @@ export const mainRoutes = [
   <Route key="gastos-nuevo-legacy" path="/gastos/nuevo" element={<Navigate to="/expenses/new" replace />} />,
 
   // ── Settings / Configuración ───────────────────────────────────────────────
-  <Route key="settings-company" path="/settings/company" element={<CompanyConfigPage />} />,
-  <Route key="settings-sri" path="/settings/sri" element={<SriConfigPage />} />,
+  <Route key="settings-company" path="/settings/company" element={<CompanySettingsHubPage />} />,
+  <Route key="settings-sri" path="/settings/sri" element={<Navigate to="/settings/company?tab=sri" replace />} />,
   <Route key="settings-ride" path="/settings/ride" element={<BillingSettingsPage />} />,
-  <Route key="settings-branches" path="/settings/branches" element={<BranchesPage />} />,
+  <Route key="settings-branches" path="/settings/branches" element={<Navigate to="/settings/company?tab=branches" replace />} />,
   <Route key="settings-branch-detail" path="/settings/branches/:id" element={<BranchDetailPage />} />,
   // Legacy redirects
   <Route key="config-empresa" path="/configuracion/empresa" element={<Navigate to="/settings/company" replace />} />,
-  <Route key="config-sri" path="/configuracion/sri" element={<Navigate to="/settings/sri" replace />} />,
+  <Route key="config-sri" path="/configuracion/sri" element={<Navigate to="/settings/company?tab=sri" replace />} />,
   <Route key="config-facturacion" path="/configuracion/facturacion" element={<Navigate to="/settings/ride" replace />} />,
-  <Route key="config-sucursales" path="/configuracion/sucursales" element={<Navigate to="/settings/branches" replace />} />,
-  <Route key="saas-branches" path="/saas/branches" element={<Navigate to="/settings/branches" replace />} />,
+  <Route key="config-sucursales" path="/configuracion/sucursales" element={<Navigate to="/settings/company?tab=branches" replace />} />,
+  <Route key="saas-branches" path="/saas/branches" element={<Navigate to="/settings/company?tab=branches" replace />} />,
 
   // ── Reportes ───────────────────────────────────────────────────────────────
   <Route key="sales-report" path="/reportes/ventas" element={<SalesReportPage />} />,

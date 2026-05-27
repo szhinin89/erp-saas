@@ -56,14 +56,14 @@ public sealed class CompanyProvisioningService : ICompanyProvisioningService
         string? timezone = "America/Guayaquil",
         CancellationToken ct = default)
     {
-        var (taxId, isProvisional, status) = await ResolveTaxIdAsync(subscriber.Ruc, ct);
+        var (taxId, isProvisional, status) = await ResolveTaxIdAsync(null, ct);
 
         return Company.CreateManaged(
             subscriber.Id,
             taxId,
             legalName: subscriber.Name,
             mainAddress: "—",
-            tradeName: subscriber.TradeName ?? subscriber.ShortName,
+            tradeName: null,
             email: null,
             phone: null,
             countryCode: string.IsNullOrWhiteSpace(countryCode) ? "ECU" : countryCode,

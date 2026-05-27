@@ -190,6 +190,5 @@ public sealed class SetTrialHandlerTests
 
         result.IsSuccess.Should().BeTrue();
         subscriber.LifecycleStatus.Should().Be(SubscriberLifecycleStatus.Trial);
-        subscriber.TrialEndsAtUtc.Should().Be(trialEnd);
     }
 }

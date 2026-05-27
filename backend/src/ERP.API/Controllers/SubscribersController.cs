@@ -6,7 +6,6 @@ using ERP.API.Contracts;
 using ERP.API.Contracts.Subscribers;
 using ERP.API.Extensions;
 using ERP.Application.Subscribers.UseCases.UpdateSubscriberCommercialProfile;
-using ERP.Application.Subscribers.UseCases.UpdateSubscriberOperationalSettings;
 using ERP.Application.Common;
 using ERP.Application.Subscriptions;
 using ERP.Application.Subscribers.DTOs;
@@ -33,10 +32,10 @@ public class SubscribersController : ControllerBase
         ISessionModulesResolver sessionModules,
         ICurrentSubscriber currentSubscriber)
     {
-        _mediator = mediator;
+        _mediator             = mediator;
         _subscriberRepository = subscriberRepository;
-        _sessionModules = sessionModules;
-        _currentSubscriber = currentSubscriber;
+        _sessionModules       = sessionModules;
+        _currentSubscriber    = currentSubscriber;
     }
 
     [HttpGet("{id:guid}")]
@@ -56,36 +55,16 @@ public class SubscribersController : ControllerBase
 
     [HttpPatch("{id:guid}/company")]
     [ProducesResponseType(typeof(ApiResponse<SubscriberDto?>), StatusCodes.Status200OK)]
-    public async Task<IActionResult> UpdateCompany([FromRoute] Guid id, [FromBody] UpdateSubscriberCompanyRequest body, CancellationToken ct)
-    {
-        if (!CanAccessOwnSubscriber(id))
-            return Forbid();
-
-        var command = new UpdateSubscriberCommercialProfileCommand(
-            id, body.Name, body.Slug, body.Ruc, body.ShortName,
-            body.TradeName, body.Dinardap, body.LogoUrl, body.DisplayOrder, body.Priority);
-
-        var result = await _mediator.Send(command, ct);
-        return this.ToOkOrBadRequest(result);
-    }
-
-    [HttpPatch("{id:guid}/operational-settings")]
-    [ProducesResponseType(typeof(ApiResponse<SubscriberDto?>), StatusCodes.Status200OK)]
-    public async Task<IActionResult> UpdateOperationalSettings(
+    public async Task<IActionResult> UpdateCompany(
         [FromRoute] Guid id,
-        [FromBody] UpdateSubscriberOperationalSettingsRequest body,
+        [FromBody] UpdateSubscriberCompanyRequest body,
         CancellationToken ct)
     {
         if (!CanAccessOwnSubscriber(id))
             return Forbid();
 
-        var command = new UpdateSubscriberOperationalSettingsCommand(
-            id,
-            body.Currency,
-            body.Language,
-            body.Timezone,
-            body.InvoicePrefix,
-            body.DefaultCreditDays);
+        var command = new UpdateSubscriberCommercialProfileCommand(
+            id, body.Name, body.Slug, body.DisplayOrder, body.Priority, body.PreferredLanguage);
 
         var result = await _mediator.Send(command, ct);
         return this.ToOkOrBadRequest(result);

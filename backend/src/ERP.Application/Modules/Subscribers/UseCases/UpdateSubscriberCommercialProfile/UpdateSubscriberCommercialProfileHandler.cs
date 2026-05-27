@@ -48,13 +48,9 @@ public sealed class UpdateSubscriberCommercialProfileHandler : IRequestHandler<U
         tenant.UpdateSaasProfile(
             name,
             slug,
-            command.Ruc,
-            command.ShortName,
-            command.TradeName,
-            command.Dinardap,
-            command.LogoUrl,
             command.DisplayOrder,
             command.Priority,
+            command.PreferredLanguage,
             _currentUser.UserId);
 
         await _repository.SaveChangesAsync(ct);

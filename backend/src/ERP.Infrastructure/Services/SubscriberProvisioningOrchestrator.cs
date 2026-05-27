@@ -81,22 +81,9 @@ public sealed class SubscriberProvisioningOrchestrator : ISubscriberProvisioning
                 request.SubscriberSlug,
                 createdBy: request.ActorId,
                 passwordResetMode: request.PasswordResetMode,
-                ruc: request.Ruc,
-                shortName: request.ShortName,
-                tradeName: request.TradeName,
-                dinardap: request.Dinardap,
-                logoUrl: request.LogoUrl,
                 displayOrder: request.DisplayOrder,
                 priority: request.Priority,
                 planCode: request.PlanCode);
-
-            subscriber.UpdateOperationalSettings(
-                currency: "USD",
-                language: "es",
-                timezone: string.IsNullOrWhiteSpace(request.Timezone) ? "America/Guayaquil" : request.Timezone.Trim(),
-                invoicePrefix: null,
-                defaultCreditDays: 30,
-                updatedBy: request.ActorId);
 
             _db.Subscribers.Add(subscriber);
 

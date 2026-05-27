@@ -4,6 +4,9 @@ namespace ERP.Application.Subscribers.UseCases.UpdateSubscriberCommercialProfile
 
 public sealed class UpdateSubscriberCommercialProfileCommandValidator : AbstractValidator<UpdateSubscriberCommercialProfileCommand>
 {
+    private static readonly HashSet<string> AllowedLanguages =
+        new(StringComparer.OrdinalIgnoreCase) { "es", "en", "qu" };
+
     public UpdateSubscriberCommercialProfileCommandValidator()
     {
         RuleFor(x => x.SubscriberId)
@@ -17,24 +20,9 @@ public sealed class UpdateSubscriberCommercialProfileCommandValidator : Abstract
             .NotEmpty().WithMessage("El slug es obligatorio.")
             .MaximumLength(100).WithMessage("El slug no puede exceder 100 caracteres.");
 
-        RuleFor(x => x.Ruc)
-            .MaximumLength(15).WithMessage("El RUC no puede exceder 15 caracteres.")
-            .When(x => !string.IsNullOrWhiteSpace(x.Ruc));
-
-        RuleFor(x => x.ShortName)
-            .MaximumLength(100).WithMessage("El nombre corto no puede exceder 100 caracteres.")
-            .When(x => !string.IsNullOrWhiteSpace(x.ShortName));
-
-        RuleFor(x => x.TradeName)
-            .MaximumLength(120).WithMessage("El nombre comercial no puede exceder 120 caracteres.")
-            .When(x => !string.IsNullOrWhiteSpace(x.TradeName));
-
-        RuleFor(x => x.Dinardap)
-            .MaximumLength(20).WithMessage("Dinardap no puede exceder 20 caracteres.")
-            .When(x => !string.IsNullOrWhiteSpace(x.Dinardap));
-
-        RuleFor(x => x.LogoUrl)
-            .MaximumLength(500).WithMessage("La URL del logo no puede exceder 500 caracteres.")
-            .When(x => !string.IsNullOrWhiteSpace(x.LogoUrl));
+        RuleFor(x => x.PreferredLanguage)
+            .NotEmpty().WithMessage("El idioma es requerido.")
+            .Must(l => AllowedLanguages.Contains(l))
+            .WithMessage("Idioma no soportado. Valores permitidos: es, en, qu.");
     }
 }

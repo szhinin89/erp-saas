@@ -13,8 +13,11 @@ type Props = Pick<
   | 'filtered'
   | 'canUpdate'
   | 'canDelete'
+  | 'canCreate'
   | 'openEditModal'
   | 'toggleDisable'
+  | 'openCreateModal'
+  | 'fetchList'
 >;
 
 export function BranchesListSection({
@@ -27,8 +30,11 @@ export function BranchesListSection({
   filtered,
   canUpdate,
   canDelete,
+  canCreate,
   openEditModal,
   toggleDisable,
+  openCreateModal,
+  fetchList,
 }: Props) {
   return (
     <>
@@ -78,6 +84,23 @@ export function BranchesListSection({
           <div className="pg-section-header-left">
             <span className="material-symbols-outlined pg-section-icon">business</span>
             <span className="pg-section-label">Sucursales Registradas</span>
+          </div>
+          <div className="br-actions-tight">
+            <button
+              className="zh-btn zh-btn--secondary zh-btn--sm"
+              type="button"
+              disabled={loading}
+              onClick={() => void fetchList()}
+            >
+              <span className="material-symbols-outlined">refresh</span>
+              {t('common.refresh')}
+            </button>
+            {canCreate && (
+              <button className="zh-btn zh-btn--primary zh-btn--sm" type="button" onClick={openCreateModal}>
+                <span className="material-symbols-outlined">add</span>
+                {t('branches.list.newAction')}
+              </button>
+            )}
           </div>
         </div>
 

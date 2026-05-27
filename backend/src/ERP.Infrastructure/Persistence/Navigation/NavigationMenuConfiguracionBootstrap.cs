@@ -17,18 +17,20 @@ public static class NavigationMenuConfiguracionBootstrap
         """
         UPDATE ui_nav_groups SET is_active = true WHERE code = 'settings';
 
-        -- Garantiza los 3 ítems de configuración con IDs fijos (idempotente).
-        -- sort_order alineado a la convención 10/20/30 del script 003.
+        -- Hub de configuración empresarial (único punto de entrada consolidado).
         INSERT INTO ui_nav_items ("Id", group_id, route_path, label_key, display_label, sort_order, module_key, permission_key, is_active)
         SELECT '00000000-0000-4000-8000-000000000101', g."Id",
-               '/settings/company', 'app.nav.item.settings.company', 'Datos de Empresa',
+               '/settings/company', 'app.nav.item.settings.company', 'Configuración Empresa',
                10, 'settings', 'settings.company.view', true
         FROM ui_nav_groups g WHERE g.code = 'settings'
         ON CONFLICT ("Id") DO UPDATE SET
-            route_path     = '/settings/company',
+            route_path    = '/settings/company',
+            display_label = 'Configuración Empresa',
             permission_key = 'settings.company.view',
-            module_key     = 'settings';
+            module_key    = 'settings',
+            is_active     = true;
 
+        -- Empresas operativas (solo panel SaaS).
         INSERT INTO ui_nav_items ("Id", group_id, route_path, label_key, display_label, sort_order, module_key, permission_key, is_active)
         SELECT '00000000-0000-4000-8000-000000000104', g."Id",
                '/saas/companies', 'app.nav.item.saas.companies', 'Empresas operativas',
@@ -37,37 +39,27 @@ public static class NavigationMenuConfiguracionBootstrap
         ON CONFLICT ("Id") DO UPDATE SET
             route_path     = '/saas/companies',
             permission_key = 'saas.companies.view',
-            module_key     = 'settings';
+            module_key     = 'settings',
+            is_active      = true;
 
-        INSERT INTO ui_nav_items ("Id", group_id, route_path, label_key, display_label, sort_order, module_key, permission_key, is_active)
-        SELECT '00000000-0000-4000-8000-000000000102', g."Id",
-               '/settings/sri', 'app.nav.item.settings.sri', 'Configuración SRI',
-               20, 'settings', 'settings.sri.view', true
-        FROM ui_nav_groups g WHERE g.code = 'settings'
-        ON CONFLICT ("Id") DO UPDATE SET
-            route_path     = '/settings/sri',
-            permission_key = 'settings.sri.view',
-            module_key     = 'settings';
-
+        -- Configuración RIDE (página independiente, no consolidada en el hub).
         INSERT INTO ui_nav_items ("Id", group_id, route_path, label_key, display_label, sort_order, module_key, permission_key, is_active)
         SELECT '00000000-0000-4000-8000-000000000103', g."Id",
                '/settings/ride', 'app.nav.item.settings.ride', 'Configuración RIDE',
-               30, 'settings', 'settings.ride.view', true
+               20, 'settings', 'settings.ride.view', true
         FROM ui_nav_groups g WHERE g.code = 'settings'
         ON CONFLICT ("Id") DO UPDATE SET
             route_path     = '/settings/ride',
             permission_key = 'settings.ride.view',
-            module_key     = 'settings';
+            module_key     = 'settings',
+            is_active      = true;
 
-        INSERT INTO ui_nav_items ("Id", group_id, route_path, label_key, display_label, sort_order, module_key, permission_key, is_active)
-        SELECT '00000000-0000-4000-8000-000000000105', g."Id",
-               '/settings/branches', 'app.nav.item.settings.branches', 'Sucursales',
-               40, 'settings', 'settings.branches.view', true
-        FROM ui_nav_groups g WHERE g.code = 'settings'
-        ON CONFLICT ("Id") DO UPDATE SET
-            route_path     = '/settings/branches',
-            permission_key = 'settings.branches.view',
-            module_key     = 'settings';
+        -- Desactivar ítems consolidados en el hub (SRI y Sucursales ya son tabs internas).
+        UPDATE ui_nav_items SET is_active = false
+        WHERE "Id" IN (
+            '00000000-0000-4000-8000-000000000102',
+            '00000000-0000-4000-8000-000000000105'
+        );
         """;
 
     // ── JSON de la carpeta "Configuración" que se inyecta en cada plan ──────────────
@@ -86,13 +78,19 @@ public static class NavigationMenuConfiguracionBootstrap
         "/configuracion/sucursales",
     ];
 
+    // Rutas que se consolidaron en el hub /settings/company y deben eliminarse de los JSON de planes.
+    private static readonly HashSet<string> DeprecatedLeafRoutes = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "/settings/sri",
+        "/settings/branches",
+    };
+
+    // Solo /settings/company y /saas/companies quedan como hojas activas en el menú.
     private static readonly (string route, string label, string perm, string icon, string leafKey)[] ConfigLeaves =
     [
-        ("/saas/companies",   "Empresas operativas", "perm:saas.companies.view",    "apartment",    "nav.planLeaf.saas-companies"),
-        ("/settings/company", "Datos de Empresa",   "perm:settings.company.view",  "business",     "nav.planLeaf.cfg-empresa"),
-        ("/settings/sri",     "Configuración SRI",  "perm:settings.sri.view",      "receipt_long", "nav.planLeaf.cfg-sri"),
-        ("/settings/ride",    "Configuración RIDE", "perm:settings.ride.view",     "print",        "nav.planLeaf.cfg-ride"),
-        ("/settings/branches","Sucursales",         "perm:settings.branches.view", "store",        "nav.planLeaf.cfg-branches"),
+        ("/saas/companies",   "Empresas operativas",   "perm:saas.companies.view",   "apartment", "nav.planLeaf.saas-companies"),
+        ("/settings/company", "Configuración Empresa", "perm:settings.company.view", "tune",      "nav.planLeaf.cfg-empresa"),
+        ("/settings/ride",    "Configuración RIDE",    "perm:settings.ride.view",    "print",     "nav.planLeaf.cfg-ride"),
     ];
 
     public static async Task EnsureAsync(ErpDbContext db, CancellationToken ct = default)
@@ -156,11 +154,14 @@ public static class NavigationMenuConfiguracionBootstrap
 
             groups = root as JsonArray ?? new JsonArray();
 
-            // Si el plan ya contiene la carpeta de configuración en cualquier grupo,
-            // asegurar que tenga todas las hojas requeridas (idempotente para planes ya migrados).
+            // Si el plan ya contiene la carpeta de configuración o ítems de settings en cualquier grupo:
+            // limpiar rutas obsoletas (tanto en carpetas como en ítems planos) y agregar las faltantes.
             if (AnyGroupContainsConfigRoute(groups))
             {
-                if (EnsureAllConfigLeavesInGroups(groups))
+                var modified = RemoveDeprecatedFlatItemsFromGroups(groups);
+                modified |= RemoveDeprecatedLeavesFromGroups(groups);
+                modified |= EnsureAllConfigLeavesInGroups(groups);
+                if (modified)
                 {
                     plan.SetMenuConfigJson(groups.ToJsonString(opts));
                     changed = true;
@@ -189,10 +190,12 @@ public static class NavigationMenuConfiguracionBootstrap
             customGroup["items"] = items;
 
             // ¿Ya existe la carpeta de configuración dentro de plan-custom?
-            // Si existe, verificar que tenga todas las hojas requeridas y agregar las faltantes.
+            // Si existe, eliminar hojas obsoletas y agregar las faltantes.
             if (HasConfigFolder(items))
             {
-                if (EnsureMissingLeavesInFolder(items))
+                var modified = RemoveDeprecatedLeavesFromFolder(items);
+                modified |= EnsureMissingLeavesInFolder(items);
+                if (modified)
                 {
                     plan.SetMenuConfigJson(groups.ToJsonString(opts));
                     changed = true;
@@ -430,5 +433,105 @@ public static class NavigationMenuConfiguracionBootstrap
         var group = BuildCustomGroupObject(planName);
         group["items"] = new JsonArray { BuildConfigFolder() };
         return [group];
+    }
+
+    /// <summary>
+    /// Recorre todos los grupos del plan y elimina de la lista plana de ítems (no de carpeta)
+    /// cualquier ítem cuya ruta esté en <see cref="DeprecatedLeafRoutes"/>.
+    /// Esto cubre planes con estructura multi-grupo donde los ítems de settings son directos.
+    /// Devuelve true si se eliminó al menos un ítem.
+    /// </summary>
+    private static bool RemoveDeprecatedFlatItemsFromGroups(JsonArray topLevelGroups)
+    {
+        var removed = false;
+        foreach (var g in topLevelGroups)
+        {
+            if (g is not JsonObject go) continue;
+            var groupItems = go["items"] as JsonArray;
+            if (groupItems is null) continue;
+
+            var toRemove = new List<int>();
+            for (var i = 0; i < groupItems.Count; i++)
+            {
+                if (groupItems[i] is JsonObject jo)
+                {
+                    var route = jo["routePath"]?.GetValue<string>() ?? "";
+                    if (DeprecatedLeafRoutes.Contains(route)) toRemove.Add(i);
+                }
+            }
+
+            if (toRemove.Count == 0) continue;
+
+            for (var i = toRemove.Count - 1; i >= 0; i--)
+                groupItems.RemoveAt(toRemove[i]);
+
+            removed = true;
+        }
+        return removed;
+    }
+
+    /// <summary>
+    /// Recorre todos los grupos de un plan y elimina las hojas obsoletas de la carpeta de configuración.
+    /// Devuelve true si se modificó algo.
+    /// </summary>
+    private static bool RemoveDeprecatedLeavesFromGroups(JsonArray topLevelGroups)
+    {
+        foreach (var g in topLevelGroups)
+        {
+            if (g is not JsonObject go) continue;
+            var groupItems = go["items"] as JsonArray ?? new JsonArray();
+            if (RemoveDeprecatedLeavesFromFolder(groupItems)) return true;
+        }
+        return false;
+    }
+
+    /// <summary>
+    /// Busca la carpeta de configuración dentro de <paramref name="planCustomItems"/> y elimina
+    /// cualquier hoja cuya ruta esté en <see cref="DeprecatedLeafRoutes"/>.
+    /// Devuelve true si se eliminó al menos una hoja.
+    /// </summary>
+    private static bool RemoveDeprecatedLeavesFromFolder(JsonArray planCustomItems)
+    {
+        JsonObject? folder = null;
+        foreach (var item in planCustomItems)
+        {
+            if (item is not JsonObject jo) continue;
+            var lk = jo["labelKey"]?.GetValue<string>() ?? "";
+            if (lk == ConfigFolderLabelKey) { folder = jo; break; }
+            if (jo["children"] is JsonArray ch)
+            {
+                foreach (var c in ch)
+                {
+                    if (c is JsonObject cjo && (cjo["routePath"]?.GetValue<string>() ?? "") == "/settings/company")
+                    {
+                        folder = jo;
+                        break;
+                    }
+                }
+            }
+            if (folder is not null) break;
+        }
+
+        if (folder is null) return false;
+
+        var children = folder["children"] as JsonArray;
+        if (children is null) return false;
+
+        var toRemove = new List<int>();
+        for (var i = 0; i < children.Count; i++)
+        {
+            if (children[i] is JsonObject cjo)
+            {
+                var route = cjo["routePath"]?.GetValue<string>() ?? "";
+                if (DeprecatedLeafRoutes.Contains(route)) toRemove.Add(i);
+            }
+        }
+
+        if (toRemove.Count == 0) return false;
+
+        for (var i = toRemove.Count - 1; i >= 0; i--)
+            children.RemoveAt(toRemove[i]);
+
+        return true;
     }
 }
