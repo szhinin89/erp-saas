@@ -7,8 +7,6 @@ public sealed class Branch : MasterEntity
 {
     /// <summary>Empresa a la que pertenece esta sucursal. Null = sucursal creada antes de P1-1.</summary>
     public Guid? CompanyId       { get; private set; }
-    /// <summary>Establecimiento SRI asociado. Poblado por <c>CompanyBootstrapService</c> al crear empresa.</summary>
-    public Guid? EstablishmentId { get; private set; }
     public string  Name            { get; private set; } = null!;
     public string  Address         { get; private set; } = null!;
     public string? Code            { get; private set; }
@@ -131,9 +129,4 @@ public sealed class Branch : MasterEntity
         SetUpdated(updatedBy);
     }
 
-    public void SetEstablishment(Guid establishmentId, Guid updatedBy)
-    {
-        EstablishmentId = establishmentId;
-        SetUpdated(updatedBy);
-    }
 }

@@ -14,6 +14,7 @@ public class EstablishmentConfiguration : IEntityTypeConfiguration<Establishment
         builder.Property(x => x.Id).HasColumnName("id");
         builder.Property(x => x.SubscriberId).HasColumnName("subscriber_id").IsRequired();
         builder.Property(x => x.CompanyId).HasColumnName("company_id").IsRequired();
+        builder.Property(x => x.BranchId).HasColumnName("branch_id").IsRequired();
 
         builder.Property(x => x.Code).HasColumnName("code")
             .HasMaxLength(Establishment.CodeMaxLen).IsFixedLength().IsRequired();
@@ -32,11 +33,17 @@ public class EstablishmentConfiguration : IEntityTypeConfiguration<Establishment
         builder.Property(x => x.UpdatedBy).HasColumnName("updated_by");
 
         builder.HasIndex(x => x.SubscriberId).HasDatabaseName("ix_establishment_subscriber_id");
+        builder.HasIndex(x => x.BranchId).HasDatabaseName("ix_establishment_branch_id");
         builder.HasIndex(x => new { x.CompanyId, x.Code }).IsUnique().HasDatabaseName("uq_estab_code");
 
         builder.HasOne(x => x.Company)
             .WithMany(x => x.Establishments)
             .HasForeignKey(x => x.CompanyId)
             .OnDelete(DeleteBehavior.Cascade);
+
+        builder.HasOne(x => x.Branch)
+            .WithMany()
+            .HasForeignKey(x => x.BranchId)
+            .OnDelete(DeleteBehavior.Restrict);
     }
 }

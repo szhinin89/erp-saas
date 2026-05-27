@@ -12,7 +12,6 @@ import { accessService } from '../modules/auth/api/accessService';
 import { useDeployment } from '../deployment/DeploymentContext';
 import {
   buildGlobalPlatformNavGroups,
-  buildNavGroups,
   ensureSalesNextToInventory,
   flattenAccessIntoSecurity,
   flattenSaaSIntoHome,
@@ -108,7 +107,7 @@ export function useAppLayoutNavigation() {
     const fromApi =
       sessionMenuDto !== undefined && sessionMenuDto.length > 0
         ? mapSessionMenuToNavGroups(sessionMenuDto, t, opts)
-        : buildNavGroups(t, opts);
+        : [];
     const raw = ensureSubscriberHomeOverview(
       mergePlatformNavExtrasIntoHome(fromApi, t, opts),
       t,

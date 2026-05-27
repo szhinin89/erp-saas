@@ -1,10 +1,12 @@
+using ERP.Domain.Branches.Entities;
 using ERP.Domain.Common;
 
 namespace ERP.Domain.Modules.Company.Entities;
 
 /// <summary>
 /// Establecimiento SRI — unidad fiscal registrada ante el SRI con código 001-999.
-/// Asociado 1:1 con una sucursal operativa (<see cref="ERP.Domain.Branches.Entities.Branch"/>).
+/// Pertenece a una <see cref="Branch"/> (sucursal operativa).
+/// CompanyId es denormalizado desde Branch.CompanyId para soportar filtros globales multi-tenant.
 /// </summary>
 public sealed class Establishment : MasterEntity, ICompanyScopedEntity
 {
@@ -13,6 +15,9 @@ public sealed class Establishment : MasterEntity, ICompanyScopedEntity
     public const int AddressMaxLen = 500;
     public const int PhoneMaxLen   = 40;
 
+    /// <summary>Sucursal operativa propietaria de este establecimiento (FK primaria de ownership).</summary>
+    public Guid    BranchId  { get; private set; }
+    /// <summary>Denormalizado desde Branch.CompanyId; requerido por filtro global ICompanyScopedEntity.</summary>
     public Guid    CompanyId { get; private set; }
     public string  Code      { get; private set; } = null!;
     public string  Name      { get; private set; } = null!;
@@ -20,7 +25,8 @@ public sealed class Establishment : MasterEntity, ICompanyScopedEntity
     public string? Phone     { get; private set; }
     public bool    IsMain    { get; private set; }
 
-    // EF navigation — no exponer como colección mutable
+    // EF navigation — no exponer como colecciones mutables
+    public Branch                     Branch         { get; private set; } = null!;
     public Company                    Company        { get; private set; } = null!;
     public ICollection<EmissionPoint> EmissionPoints { get; private set; } = [];
 
@@ -28,6 +34,7 @@ public sealed class Establishment : MasterEntity, ICompanyScopedEntity
 
     public static Establishment Create(
         Guid    subscriberId,
+        Guid    branchId,
         Guid    companyId,
         string  code,
         string  name,
@@ -43,6 +50,7 @@ public sealed class Establishment : MasterEntity, ICompanyScopedEntity
         {
             Id           = Guid.NewGuid(),
             SubscriberId = subscriberId,
+            BranchId     = branchId,
             CompanyId    = companyId,
             Code         = code.Trim().PadLeft(CodeMaxLen, '0'),
             Name         = name.Trim(),

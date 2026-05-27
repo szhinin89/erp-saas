@@ -58,20 +58,20 @@ public sealed class CompanyBootstrapService : ICompanyBootstrapService
         var existing = await _platform
             .Unfiltered(_db.Establishments, PlatformQueryReason.Seeding)
             .Where(e => e.SubscriberId == subscriberId
-                     && e.CompanyId    == companyId
+                     && e.BranchId     == branchId
                      && e.Code         == MainEstablishmentCode)
             .Select(e => (Guid?)e.Id)
             .FirstOrDefaultAsync(ct);
 
         if (existing.HasValue)
         {
-            _logger.LogDebug("Establishment {Code} already exists for company {CompanyId}. Skipping.", MainEstablishmentCode, companyId);
-            await LinkBranchToEstablishmentAsync(branchId, existing.Value, actorId, ct);
+            _logger.LogDebug("Establishment {Code} already exists for branch {BranchId}. Skipping.", MainEstablishmentCode, branchId);
             return existing.Value;
         }
 
         var establishment = Establishment.Create(
             subscriberId: subscriberId,
+            branchId:     branchId,
             companyId:    companyId,
             code:         MainEstablishmentCode,
             name:         MainEstablishmentName,
@@ -83,23 +83,8 @@ public sealed class CompanyBootstrapService : ICompanyBootstrapService
         _db.Establishments.Add(establishment);
         await _db.SaveChangesAsync(ct);
 
-        await LinkBranchToEstablishmentAsync(branchId, establishment.Id, actorId, ct);
-
-        _logger.LogInformation("Establishment {Code} seeded for company {CompanyId} (id={EstabId}).", MainEstablishmentCode, companyId, establishment.Id);
+        _logger.LogInformation("Establishment {Code} seeded for branch {BranchId} (id={EstabId}).", MainEstablishmentCode, branchId, establishment.Id);
         return establishment.Id;
-    }
-
-    private async Task LinkBranchToEstablishmentAsync(Guid branchId, Guid establishmentId, Guid actorId, CancellationToken ct)
-    {
-        var branch = await _platform
-            .Unfiltered(_db.Branches, PlatformQueryReason.Seeding)
-            .FirstOrDefaultAsync(b => b.Id == branchId, ct);
-
-        if (branch is null || branch.EstablishmentId == establishmentId)
-            return;
-
-        branch.SetEstablishment(establishmentId, actorId);
-        await _db.SaveChangesAsync(ct);
     }
 
     private async Task<Guid> SeedMainEmissionPointAsync(Guid subscriberId, Guid companyId, Guid establishmentId, Guid actorId, CancellationToken ct)

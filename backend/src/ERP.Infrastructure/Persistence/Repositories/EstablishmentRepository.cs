@@ -16,6 +16,14 @@ public sealed class EstablishmentRepository : IEstablishmentRepository
         _platform = platform;
     }
 
+    public Task<Establishment?> GetMainByBranchAsync(Guid subscriberId, Guid branchId, CancellationToken ct = default)
+        => _db.Establishments
+            .AsNoTracking()
+            .FirstOrDefaultAsync(e => e.SubscriberId == subscriberId
+                                   && e.BranchId     == branchId
+                                   && e.IsMain
+                                   && e.IsActive, ct);
+
     public Task<Establishment?> GetMainByCompanyAsync(Guid subscriberId, Guid companyId, CancellationToken ct = default)
         => _db.Establishments
             .AsNoTracking()
@@ -24,11 +32,11 @@ public sealed class EstablishmentRepository : IEstablishmentRepository
                                    && e.IsMain
                                    && e.IsActive, ct);
 
-    public Task<bool> ExistsAsync(Guid subscriberId, Guid companyId, string code, CancellationToken ct = default)
+    public Task<bool> ExistsAsync(Guid subscriberId, Guid branchId, string code, CancellationToken ct = default)
         => _platform
             .Unfiltered(_db.Establishments, PlatformQueryReason.Seeding)
             .AnyAsync(e => e.SubscriberId == subscriberId
-                        && e.CompanyId    == companyId
+                        && e.BranchId     == branchId
                         && e.Code         == code, ct);
 
     public Task AddAsync(Establishment establishment, CancellationToken ct = default)

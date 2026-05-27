@@ -10,10 +10,11 @@ public record CreateSaleCommand(
     Guid             WarehouseId,
     Guid             BranchId,
     List<SaleItemDto> Items,
-    string           PaymentMethodCode = "01",
-    short            PaymentDays       = 0,
-    string?          Notes             = null,
-    Guid?            SalesOrderPublicId = null
+    string           PaymentMethodCode  = "01",
+    short            PaymentDays        = 0,
+    string?          Notes              = null,
+    Guid?            SalesOrderPublicId = null,
+    Guid?            EmissionPointId    = null
 ) : IRequest<Result<Guid>>, ICompanyScopedRequest;
 
 public record SaleItemDto(

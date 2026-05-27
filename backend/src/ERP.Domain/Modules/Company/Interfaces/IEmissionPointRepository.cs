@@ -16,6 +16,7 @@ public interface IEmissionPointRepository
     /// </summary>
     Task<EmissionPoint?> GetDefaultForCompanyAsync(Guid subscriberId, Guid companyId, CancellationToken ct = default);
 
+    Task<EmissionPoint?> GetByIdAsync(Guid id, Guid subscriberId, CancellationToken ct = default);
     Task<bool> ExistsAsync(Guid subscriberId, Guid establishmentId, string code, CancellationToken ct = default);
     Task AddAsync(EmissionPoint emissionPoint, CancellationToken ct = default);
     Task SaveChangesAsync(CancellationToken ct = default);

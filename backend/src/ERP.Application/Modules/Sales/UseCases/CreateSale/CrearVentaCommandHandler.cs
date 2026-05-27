@@ -9,6 +9,7 @@ using ERP.Domain.Modules.Inventory.Interfaces;
 using ERP.Domain.Configuration.Interfaces;
 using ERP.Domain.MasterData.Interfaces;
 using ERP.Domain.MasterData.ValueObjects;
+using ERP.Domain.Modules.Company.Entities;
 using ERP.Domain.Modules.Company.Interfaces;
 using ERP.Domain.Modules.Fiscal.Entities;
 using ERP.Domain.Modules.Fiscal.Interfaces;
@@ -285,8 +286,19 @@ public sealed class CreateSaleCommandHandler : IRequestHandler<CreateSaleCommand
         var sriConfig = await _configSriRepository.GetByCompanyIdForUpdateAsync(companyId, ct)
             ?? throw new InvalidOperationException("SRI config no encontrada durante la transacción.");
 
-        var emPoint = await _emissionPointRepository.GetDefaultForBranchAsync(subscriberId, command.BranchId, ct)
-            ?? throw new InvalidOperationException($"No hay punto de emisión predeterminado para la sucursal {command.BranchId}.");
+        EmissionPoint emPoint;
+        if (command.EmissionPointId.HasValue)
+        {
+            emPoint = await _emissionPointRepository.GetByIdAsync(command.EmissionPointId.Value, subscriberId, ct)
+                ?? throw new InvalidOperationException($"Punto de emisión {command.EmissionPointId} no encontrado.");
+            if (emPoint.Establishment.BranchId != command.BranchId)
+                throw new InvalidOperationException("El punto de emisión no pertenece a la sucursal indicada.");
+        }
+        else
+        {
+            emPoint = await _emissionPointRepository.GetDefaultForBranchAsync(subscriberId, command.BranchId, ct)
+                ?? throw new InvalidOperationException($"No hay punto de emisión predeterminado para la sucursal {command.BranchId}.");
+        }
 
         var docSeq = await _docSeqRepository.GetForUpdateAsync(emPoint.Id, "01", ct)
             ?? throw new InvalidOperationException($"No hay secuencial configurado para Factura en el punto de emisión {emPoint.Id}.");
