@@ -14,7 +14,6 @@ type SriConfigPageDataTabProps = {
   showPass: boolean;
   setShowPass: (value: boolean | ((prev: boolean) => boolean)) => void;
   hasExistingConfig: boolean;
-  currentSequential?: number;
   setWsdlUrl: (url: string) => void;
 };
 
@@ -27,7 +26,6 @@ export function SriConfigPageDataTab({
   showPass,
   setShowPass,
   hasExistingConfig,
-  currentSequential,
   setWsdlUrl,
 }: SriConfigPageDataTabProps) {
   return (
@@ -130,31 +128,6 @@ export function SriConfigPageDataTab({
               />
             </ZHField>
           </div>
-        </div>
-      </div>
-
-      <div className="pg-section sri-section-mb">
-        <div className="pg-section-header">
-          <div className="pg-section-header-left">
-            <span className="material-symbols-outlined pg-section-icon">store</span>
-            <p className="pg-section-label">Establecimiento y Punto de Emisión</p>
-          </div>
-        </div>
-        <div className="pg-section-body">
-          <ZHPageNotice variant="info" message="Estos códigos forman parte de la clave de acceso y el número de comprobante (001-001-000000001)." />
-          <div className="pg-form-grid pg-form-grid--2 sri-form-grid-mt">
-            <ZHField label="Código de Establecimiento" required error={errors.estabCode?.message}>
-              <input className="zh-input mono" placeholder="001" maxLength={3} disabled={saving || !canEdit} {...register('estabCode')} />
-            </ZHField>
-            <ZHField label="Código de Punto de Emisión" required error={errors.emPointCode?.message}>
-              <input className="zh-input mono" placeholder="001" maxLength={3} disabled={saving || !canEdit} {...register('emPointCode')} />
-            </ZHField>
-          </div>
-          {hasExistingConfig && currentSequential != null && (
-            <p className="sri-hint-sm">
-              Secuencial actual: <strong className="mono">{String(currentSequential).padStart(9, '0')}</strong>
-            </p>
-          )}
         </div>
       </div>
 

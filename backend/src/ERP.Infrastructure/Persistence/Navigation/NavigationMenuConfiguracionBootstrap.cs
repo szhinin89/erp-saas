@@ -58,6 +58,16 @@ public static class NavigationMenuConfiguracionBootstrap
             route_path     = '/settings/ride',
             permission_key = 'settings.ride.view',
             module_key     = 'settings';
+
+        INSERT INTO ui_nav_items ("Id", group_id, route_path, label_key, display_label, sort_order, module_key, permission_key, is_active)
+        SELECT '00000000-0000-4000-8000-000000000105', g."Id",
+               '/settings/branches', 'app.nav.item.settings.branches', 'Sucursales',
+               40, 'settings', 'settings.branches.view', true
+        FROM ui_nav_groups g WHERE g.code = 'settings'
+        ON CONFLICT ("Id") DO UPDATE SET
+            route_path     = '/settings/branches',
+            permission_key = 'settings.branches.view',
+            module_key     = 'settings';
         """;
 
     // ── JSON de la carpeta "Configuración" que se inyecta en cada plan ──────────────
@@ -68,18 +78,21 @@ public static class NavigationMenuConfiguracionBootstrap
         "/settings/company",
         "/settings/sri",
         "/settings/ride",
+        "/settings/branches",
         // legacy routes (tolerated during migration window)
         "/configuracion/empresa",
         "/configuracion/sri",
         "/configuracion/facturacion",
+        "/configuracion/sucursales",
     ];
 
     private static readonly (string route, string label, string perm, string icon, string leafKey)[] ConfigLeaves =
     [
-        ("/saas/companies",   "Empresas operativas", "perm:saas.companies.view", "apartment",    "nav.planLeaf.saas-companies"),
-        ("/settings/company", "Datos de Empresa",   "perm:settings.company.view", "business",     "nav.planLeaf.cfg-empresa"),
-        ("/settings/sri",     "Configuración SRI",  "perm:settings.sri.view",     "receipt_long", "nav.planLeaf.cfg-sri"),
-        ("/settings/ride",    "Configuración RIDE", "perm:settings.ride.view",    "print",        "nav.planLeaf.cfg-ride"),
+        ("/saas/companies",   "Empresas operativas", "perm:saas.companies.view",    "apartment",    "nav.planLeaf.saas-companies"),
+        ("/settings/company", "Datos de Empresa",   "perm:settings.company.view",  "business",     "nav.planLeaf.cfg-empresa"),
+        ("/settings/sri",     "Configuración SRI",  "perm:settings.sri.view",      "receipt_long", "nav.planLeaf.cfg-sri"),
+        ("/settings/ride",    "Configuración RIDE", "perm:settings.ride.view",     "print",        "nav.planLeaf.cfg-ride"),
+        ("/settings/branches","Sucursales",         "perm:settings.branches.view", "store",        "nav.planLeaf.cfg-branches"),
     ];
 
     public static async Task EnsureAsync(ErpDbContext db, CancellationToken ct = default)
@@ -143,9 +156,17 @@ public static class NavigationMenuConfiguracionBootstrap
 
             groups = root as JsonArray ?? new JsonArray();
 
-            // Si el plan ya contiene /settings/company en cualquier grupo (estructura
-            // multi-grupo real), no inyectar la carpeta plan-custom de configuración.
-            if (AnyGroupContainsConfigRoute(groups)) continue;
+            // Si el plan ya contiene la carpeta de configuración en cualquier grupo,
+            // asegurar que tenga todas las hojas requeridas (idempotente para planes ya migrados).
+            if (AnyGroupContainsConfigRoute(groups))
+            {
+                if (EnsureAllConfigLeavesInGroups(groups))
+                {
+                    plan.SetMenuConfigJson(groups.ToJsonString(opts));
+                    changed = true;
+                }
+                continue;
+            }
 
             // Buscar o crear el grupo "plan-custom"
             JsonObject? customGroup = null;
@@ -168,7 +189,16 @@ public static class NavigationMenuConfiguracionBootstrap
             customGroup["items"] = items;
 
             // ¿Ya existe la carpeta de configuración dentro de plan-custom?
-            if (HasConfigFolder(items)) continue;
+            // Si existe, verificar que tenga todas las hojas requeridas y agregar las faltantes.
+            if (HasConfigFolder(items))
+            {
+                if (EnsureMissingLeavesInFolder(items))
+                {
+                    plan.SetMenuConfigJson(groups.ToJsonString(opts));
+                    changed = true;
+                }
+                continue;
+            }
 
             // Eliminar ítems sueltos de configuración para evitar duplicados
             RemoveLooseConfigItems(items);
@@ -258,6 +288,91 @@ public static class NavigationMenuConfiguracionBootstrap
         }
         for (var i = toRemove.Count - 1; i >= 0; i--)
             items.RemoveAt(toRemove[i]);
+    }
+
+    /// <summary>
+    /// Busca la carpeta de configuración en el árbol completo de grupos del plan y agrega hojas faltantes.
+    /// Maneja tanto planes con estructura `plan-custom` como planes con grupos múltiples.
+    /// Devuelve true si se modificó algo.
+    /// </summary>
+    private static bool EnsureAllConfigLeavesInGroups(JsonArray topLevelGroups)
+    {
+        foreach (var g in topLevelGroups)
+        {
+            if (g is not JsonObject go) continue;
+            var groupItems = go["items"] as JsonArray ?? new JsonArray();
+            if (EnsureMissingLeavesInFolder(groupItems)) return true;
+        }
+        return false;
+    }
+
+    /// <summary>
+    /// Si la carpeta de configuración ya existe en el plan pero le faltan hojas de <see cref="ConfigLeaves"/>,
+    /// agrega las hojas faltantes. Devuelve true si se modificó algo.
+    /// El caller es responsable de re-serializar y persistir el plan.
+    /// </summary>
+    private static bool EnsureMissingLeavesInFolder(JsonArray planCustomItems)
+    {
+        // Encontrar la carpeta dentro del grupo plan-custom
+        JsonObject? folder = null;
+        foreach (var item in planCustomItems)
+        {
+            if (item is not JsonObject jo) continue;
+            var lk = jo["labelKey"]?.GetValue<string>() ?? "";
+            if (lk == ConfigFolderLabelKey) { folder = jo; break; }
+            // Detectar por children que contienen /settings/company
+            if (jo["children"] is JsonArray ch)
+            {
+                foreach (var c in ch)
+                {
+                    if (c is JsonObject cjo && (cjo["routePath"]?.GetValue<string>() ?? "") == "/settings/company")
+                    {
+                        folder = jo;
+                        break;
+                    }
+                }
+            }
+            if (folder is not null) break;
+        }
+
+        if (folder is null) return false;
+
+        var children = folder["children"] as JsonArray ?? new JsonArray();
+        folder["children"] = children;
+
+        var existingRoutes = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var c in children)
+        {
+            if (c is JsonObject cjo)
+            {
+                var r = cjo["routePath"]?.GetValue<string>() ?? "";
+                if (!string.IsNullOrEmpty(r)) existingRoutes.Add(r);
+            }
+        }
+
+        var added = false;
+        for (var i = 0; i < ConfigLeaves.Length; i++)
+        {
+            var (route, label, perm, icon, leafKey) = ConfigLeaves[i];
+            if (existingRoutes.Contains(route)) continue;
+
+            children.Add(new JsonObject
+            {
+                ["routePath"]         = route,
+                ["labelKey"]          = leafKey,
+                ["displayLabel"]      = label,
+                ["sortOrder"]         = children.Count,
+                ["moduleKey"]         = null,
+                ["permissionKey"]     = perm,
+                ["permissionKeysAny"] = null,
+                ["itemRoles"]         = null,
+                ["icon"]              = icon,
+                ["children"]          = null,
+            });
+            added = true;
+        }
+
+        return added;
     }
 
     private static JsonObject BuildConfigFolder()

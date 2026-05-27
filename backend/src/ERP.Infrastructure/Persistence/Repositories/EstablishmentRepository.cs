@@ -16,6 +16,18 @@ public sealed class EstablishmentRepository : IEstablishmentRepository
         _platform = platform;
     }
 
+    public Task<IReadOnlyList<Establishment>> GetByBranchAsync(Guid subscriberId, Guid branchId, CancellationToken ct = default)
+        => _db.Establishments
+            .AsNoTracking()
+            .Where(e => e.SubscriberId == subscriberId && e.BranchId == branchId)
+            .OrderBy(e => e.Code)
+            .ToListAsync(ct)
+            .ContinueWith(t => (IReadOnlyList<Establishment>)t.Result, ct);
+
+    public Task<Establishment?> GetByIdAsync(Guid subscriberId, Guid id, CancellationToken ct = default)
+        => _db.Establishments
+            .FirstOrDefaultAsync(e => e.SubscriberId == subscriberId && e.Id == id, ct);
+
     public Task<Establishment?> GetMainByBranchAsync(Guid subscriberId, Guid branchId, CancellationToken ct = default)
         => _db.Establishments
             .AsNoTracking()

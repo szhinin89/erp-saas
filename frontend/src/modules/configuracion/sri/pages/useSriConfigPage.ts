@@ -18,8 +18,8 @@ export const SRI_ENV_OPTIONS = [
 
 export function useSriConfigPage() {
   const { canShow } = usePermissionsUi();
-  const canView = canShow('settings.company.view');
-  const canEdit = canShow('settings.company.edit');
+  const canView = canShow('settings.sri.view');
+  const canEdit = canShow('settings.sri.edit');
 
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
@@ -37,8 +37,6 @@ export function useSriConfigPage() {
       mainAddress: '',
       requiresAccounting: false,
       specialTaxpayer: '',
-      estabCode: '001',
-      emPointCode: '001',
       certP12Path: '',
       certPassword: '',
       environment: 2,
@@ -58,8 +56,6 @@ export function useSriConfigPage() {
       mainAddress: d.mainAddress ?? '',
       requiresAccounting: d.requiresAccounting ?? false,
       specialTaxpayer: d.specialTaxpayer ?? '',
-      estabCode: d.estabCode ?? '001',
-      emPointCode: d.emPointCode ?? '001',
       certP12Path: d.certificateP12Path ?? '',
       certPassword: '',
       environment: d.environment === 1 ? 1 : 2,
@@ -72,7 +68,7 @@ export function useSriConfigPage() {
     const d = sriState.data;
     if (!d) return;
     resetFromData(d);
-  }, [sriState.data, reset]);
+  }, [sriState.data]);
 
   useEffect(() => {
     const currentUrl = getValues('wsdlUrl');
@@ -97,8 +93,6 @@ export function useSriConfigPage() {
         mainAddress: values.mainAddress,
         requiresAccounting: values.requiresAccounting,
         specialTaxpayer: values.specialTaxpayer || null,
-        estabCode: values.estabCode,
-        emPointCode: values.emPointCode,
         certP12Path: values.certP12Path,
         certPassword: values.certPassword ?? '',
         environment: values.environment,

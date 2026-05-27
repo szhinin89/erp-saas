@@ -16,6 +16,19 @@ public sealed class EmissionPointRepository : IEmissionPointRepository
         _platform = platform;
     }
 
+    public Task<IReadOnlyList<EmissionPoint>> GetByEstablishmentAsync(Guid subscriberId, Guid establishmentId, CancellationToken ct = default)
+        => _db.EmissionPoints
+            .AsNoTracking()
+            .Where(ep => ep.SubscriberId == subscriberId && ep.EstablishmentId == establishmentId)
+            .OrderBy(ep => ep.Code)
+            .ToListAsync(ct)
+            .ContinueWith(t => (IReadOnlyList<EmissionPoint>)t.Result, ct);
+
+    public Task<EmissionPoint?> GetByIdAsync(Guid id, Guid subscriberId, CancellationToken ct = default)
+        => _db.EmissionPoints
+            .Include(ep => ep.Establishment)
+            .FirstOrDefaultAsync(ep => ep.Id == id && ep.SubscriberId == subscriberId && ep.IsActive, ct);
+
     /// <inheritdoc/>
     public async Task<EmissionPoint?> GetDefaultForBranchAsync(Guid subscriberId, Guid branchId, CancellationToken ct = default)
     {
@@ -58,11 +71,18 @@ public sealed class EmissionPointRepository : IEmissionPointRepository
                                      && ep.IsActive, ct);
     }
 
-    /// <inheritdoc/>
-    public Task<EmissionPoint?> GetByIdAsync(Guid id, Guid subscriberId, CancellationToken ct = default)
-        => _db.EmissionPoints
-            .Include(ep => ep.Establishment)
-            .FirstOrDefaultAsync(ep => ep.Id == id && ep.SubscriberId == subscriberId && ep.IsActive, ct);
+    public async Task ClearDefaultExceptAsync(Guid subscriberId, Guid establishmentId, Guid? exceptId, Guid updatedBy, CancellationToken ct = default)
+    {
+        var others = await _db.EmissionPoints
+            .Where(ep => ep.SubscriberId    == subscriberId
+                      && ep.EstablishmentId == establishmentId
+                      && ep.IsDefault
+                      && (exceptId == null || ep.Id != exceptId))
+            .ToListAsync(ct);
+
+        foreach (var ep in others)
+            ep.SetDefault(false, updatedBy);
+    }
 
     public Task<bool> ExistsAsync(Guid subscriberId, Guid establishmentId, string code, CancellationToken ct = default)
         => _platform

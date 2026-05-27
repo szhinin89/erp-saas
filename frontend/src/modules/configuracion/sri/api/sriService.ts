@@ -2,16 +2,13 @@ import { api } from '../../../lib/api';
 import type { ApiResponse } from '../../../../types/api';
 
 export type SriConfigDto = {
-  subscriberId: string;
+  companyId: string;
   companyRuc: string;
   legalName: string;
   tradeName: string | null;
   mainAddress: string;
   requiresAccounting: boolean;
   specialTaxpayer: string | null;
-  estabCode: string;
-  emPointCode: string;
-  currentSequential: number;
   certificateP12Path: string;
   environment: number;
   emissionType: number;
@@ -25,8 +22,6 @@ export type UpsertSriConfigRequest = {
   mainAddress: string;
   requiresAccounting: boolean;
   specialTaxpayer?: string | null;
-  estabCode: string;
-  emPointCode: string;
   certP12Path: string;
   certPassword: string;
   environment: number;

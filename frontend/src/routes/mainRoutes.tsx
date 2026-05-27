@@ -53,6 +53,7 @@ const QuoteDetailPage = lazyNamedPage(
   'QuoteDetailPage',
 );
 const BranchesPage = lazyNamedPage(() => import('../modules/branches/pages/BranchesPage'), 'BranchesPage');
+const BranchDetailPage = lazyNamedPage(() => import('../modules/branches/pages/BranchDetailPage'), 'BranchDetailPage');
 const SalesReportPage = lazyNamedPage(() => import('../modules/reportes/pages/SalesReportPage'), 'SalesReportPage');
 const MasterDataCustomersPage = lazyNamedPage(
   () => import('../modules/masterData/pages/MasterDataCustomersPage'),
@@ -152,6 +153,7 @@ export const mainRoutes = [
   <Route key="settings-sri" path="/settings/sri" element={<SriConfigPage />} />,
   <Route key="settings-ride" path="/settings/ride" element={<BillingSettingsPage />} />,
   <Route key="settings-branches" path="/settings/branches" element={<BranchesPage />} />,
+  <Route key="settings-branch-detail" path="/settings/branches/:id" element={<BranchDetailPage />} />,
   // Legacy redirects
   <Route key="config-empresa" path="/configuracion/empresa" element={<Navigate to="/settings/company" replace />} />,
   <Route key="config-sri" path="/configuracion/sri" element={<Navigate to="/settings/sri" replace />} />,

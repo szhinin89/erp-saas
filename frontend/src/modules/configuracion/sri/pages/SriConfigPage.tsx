@@ -48,7 +48,6 @@ export function SriConfigPage() {
           showPass={page.showPass}
           setShowPass={page.setShowPass}
           hasExistingConfig={!!page.sriState.data}
-          currentSequential={page.sriState.data?.currentSequential}
           setWsdlUrl={(url) => setValue('wsdlUrl', url, { shouldDirty: true })}
         />
 

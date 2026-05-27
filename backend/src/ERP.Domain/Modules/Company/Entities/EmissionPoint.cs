@@ -51,6 +51,12 @@ public sealed class EmissionPoint : MasterEntity, ICompanyScopedEntity
         return ep;
     }
 
+    public void Update(string? name, Guid updatedBy)
+    {
+        Name = string.IsNullOrWhiteSpace(name) ? null : name.Trim();
+        SetUpdated(updatedBy);
+    }
+
     public void SetDefault(bool isDefault, Guid updatedBy)
     {
         IsDefault = isDefault;

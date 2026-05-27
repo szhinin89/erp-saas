@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom';
 import { EmptyState, LoadingState } from '../../../components/PageShell';
 import type { BranchesPageContext } from '../hooks/useBranchesPage';
 
@@ -166,6 +167,13 @@ export function BranchesListSection({
                     {canUpdate || canDelete ? (
                       <td className="pg-td-right">
                         <div className="br-actions-tight">
+                          <Link
+                            to={`/settings/branches/${row.id}`}
+                            className="zh-btn zh-btn--ghost zh-btn--sm"
+                            title="Ver detalle"
+                          >
+                            <span className="material-symbols-outlined">open_in_new</span>
+                          </Link>
                           {canUpdate && (
                             <button
                               type="button"
