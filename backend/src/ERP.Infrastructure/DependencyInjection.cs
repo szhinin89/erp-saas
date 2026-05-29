@@ -218,6 +218,17 @@ public static class DependencyInjection
         services.AddScoped<ERP.Application.Common.Subscriptions.ISubscriptionLifecycleOrchestrator,
             ERP.Infrastructure.SaaS.SubscriptionLifecycleOrchestrator>();
         services.AddScoped<IPaymentProviderAdapter, NullPaymentProviderAdapter>();
+
+        // Billing Flow Architecture (payment providers, renewal, notifications)
+        services.AddSingleton<ERP.Infrastructure.SaaS.NullPaymentProvider>();
+        services.AddSingleton<ERP.Application.Billing.PaymentProviders.IPaymentProviderFactory,
+            ERP.Infrastructure.SaaS.PaymentProviderFactory>();
+        services.AddScoped<ERP.Application.Billing.PaymentProviders.IPaymentWebhookProcessor,
+            ERP.Infrastructure.SaaS.WebhookEventProcessor>();
+        services.AddScoped<ERP.Application.Billing.Renewal.ISubscriptionRenewalService,
+            ERP.Infrastructure.SaaS.SubscriptionRenewalService>();
+        services.AddScoped<ERP.Application.Billing.Notifications.IBillingNotificationService,
+            ERP.Infrastructure.SaaS.NullBillingNotificationService>();
         services.AddScoped<DistributedSubscriberEntitlementsSnapshotCache>();
         services.AddScoped<SubscriberEntitlementsPermissionsCacheInvalidator>();
         services.AddScoped<ISubscriberEntitlementsSnapshotCache>(sp =>

@@ -181,3 +181,58 @@ public sealed class PaymentProviderSubscriptionConfiguration : IEntityTypeConfig
         builder.HasIndex(x => new { x.SubscriberId, x.ProviderType }).IsUnique().HasDatabaseName("ux_payment_provider_subscriptions_sub_provider");
     }
 }
+
+public sealed class BillingPaymentAttemptConfiguration : IEntityTypeConfiguration<BillingPaymentAttempt>
+{
+    public void Configure(EntityTypeBuilder<BillingPaymentAttempt> builder)
+    {
+        builder.ToTable("billing_payment_attempts");
+        builder.HasKey(x => x.Id);
+        builder.Property(x => x.Id).HasColumnName("id");
+        builder.Property(x => x.SubscriberId).HasColumnName("subscriber_id").IsRequired();
+        builder.Property(x => x.InvoiceId).HasColumnName("invoice_id").IsRequired();
+        builder.Property(x => x.ProviderType).HasColumnName("provider_type").IsRequired();
+        builder.Property(x => x.ProviderReference).HasColumnName("provider_reference").HasMaxLength(BillingPaymentAttempt.ProviderReferenceMaxLen);
+        builder.Property(x => x.AttemptNumber).HasColumnName("attempt_number").IsRequired();
+        builder.Property(x => x.Status).HasColumnName("status").IsRequired();
+        builder.Property(x => x.FailureReason).HasColumnName("failure_reason").HasMaxLength(BillingPaymentAttempt.FailureReasonMaxLen);
+        builder.Property(x => x.FailureCode).HasColumnName("failure_code").HasMaxLength(BillingPaymentAttempt.FailureCodeMaxLen);
+        builder.Property(x => x.RequestedAmount).HasColumnName("requested_amount").HasPrecision(18, 2).IsRequired();
+        builder.Property(x => x.CurrencyCode).HasColumnName("currency_code").HasMaxLength(BillingPaymentAttempt.CurrencyMaxLen).IsRequired();
+        builder.Property(x => x.StartedAtUtc).HasColumnName("started_at_utc").IsRequired();
+        builder.Property(x => x.CompletedAtUtc).HasColumnName("completed_at_utc");
+        builder.Property(x => x.CreatedAt).HasColumnName("created_at");
+        builder.Property(x => x.UpdatedAt).HasColumnName("updated_at");
+        builder.Property(x => x.CreatedBy).HasColumnName("created_by");
+        builder.Property(x => x.UpdatedBy).HasColumnName("updated_by");
+        builder.HasIndex(x => new { x.SubscriberId, x.InvoiceId, x.AttemptNumber }).HasDatabaseName("ix_billing_payment_attempts_subscriber_invoice");
+    }
+}
+
+public sealed class BillingCheckoutSessionConfiguration : IEntityTypeConfiguration<BillingCheckoutSession>
+{
+    public void Configure(EntityTypeBuilder<BillingCheckoutSession> builder)
+    {
+        builder.ToTable("billing_checkout_sessions");
+        builder.HasKey(x => x.Id);
+        builder.Property(x => x.Id).HasColumnName("id");
+        builder.Property(x => x.SubscriberId).HasColumnName("subscriber_id").IsRequired();
+        builder.Property(x => x.ProviderType).HasColumnName("provider_type").IsRequired();
+        builder.Property(x => x.ProviderSessionId).HasColumnName("provider_session_id").HasMaxLength(BillingCheckoutSession.SessionIdMaxLen);
+        builder.Property(x => x.CheckoutUrl).HasColumnName("checkout_url").HasMaxLength(BillingCheckoutSession.CheckoutUrlMaxLen);
+        builder.Property(x => x.Status).HasColumnName("status").IsRequired();
+        builder.Property(x => x.PlanCode).HasColumnName("plan_code").HasMaxLength(BillingCheckoutSession.PlanCodeMaxLen);
+        builder.Property(x => x.CommercialPlanId).HasColumnName("commercial_plan_id");
+        builder.Property(x => x.BillingCycle).HasColumnName("billing_cycle").IsRequired();
+        builder.Property(x => x.Amount).HasColumnName("amount").HasPrecision(18, 2).IsRequired();
+        builder.Property(x => x.CurrencyCode).HasColumnName("currency_code").HasMaxLength(BillingCheckoutSession.CurrencyMaxLen).IsRequired();
+        builder.Property(x => x.ExpiresAtUtc).HasColumnName("expires_at_utc").IsRequired();
+        builder.Property(x => x.LinkedInvoiceId).HasColumnName("linked_invoice_id");
+        builder.Property(x => x.CreatedAt).HasColumnName("created_at");
+        builder.Property(x => x.UpdatedAt).HasColumnName("updated_at");
+        builder.Property(x => x.CreatedBy).HasColumnName("created_by");
+        builder.Property(x => x.UpdatedBy).HasColumnName("updated_by");
+        builder.HasIndex(x => x.SubscriberId).HasDatabaseName("ix_billing_checkout_sessions_subscriber");
+        builder.Ignore(x => x.IsExpired);
+    }
+}

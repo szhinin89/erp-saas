@@ -196,6 +196,8 @@ if (hangfireEnabled)
     builder.Services.AddScoped<IProcessOutboxJob, ProcessOutboxJob>();
     builder.Services.AddScoped<IMasterDataReconciliationJob, MasterDataReconciliationJob>();
     builder.Services.AddScoped<ICheckSubscriptionExpiryJob, CheckSubscriptionExpiryJob>();
+    builder.Services.AddScoped<ERP.API.Hangfire.ISubscriptionRenewalJob,
+        ERP.API.Hangfire.SubscriptionRenewalJob>();
 }
 
 // Opciones del Kardex: registrar tanto como IOptions<> (convención .NET)
@@ -404,6 +406,12 @@ if (hangfireEnabled)
         "sri-emission-retry",
         x => x.ExecuteAsync(CancellationToken.None),
         "*/5 * * * *"); // cada 5 minutos
+
+    // Billing renewal engine — runs every hour, looks 24h ahead
+    RecurringJob.AddOrUpdate<ERP.API.Hangfire.ISubscriptionRenewalJob>(
+        "subscription-renewal",
+        x => x.ExecuteAsync(CancellationToken.None),
+        Cron.Hourly());
 
     RecurringJob.AddOrUpdate<IProcessOutboxJob>(
         "process-outbox",

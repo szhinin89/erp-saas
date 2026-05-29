@@ -370,6 +370,8 @@ public class ErpDbContext : DbContext
     public DbSet<ERP.Domain.Billing.Entities.BillingEvent> BillingEvents => Set<ERP.Domain.Billing.Entities.BillingEvent>();
     public DbSet<ERP.Domain.Billing.Entities.PaymentProviderCustomer> PaymentProviderCustomers => Set<ERP.Domain.Billing.Entities.PaymentProviderCustomer>();
     public DbSet<ERP.Domain.Billing.Entities.PaymentProviderSubscription> PaymentProviderSubscriptions => Set<ERP.Domain.Billing.Entities.PaymentProviderSubscription>();
+    public DbSet<ERP.Domain.Billing.Entities.BillingPaymentAttempt> BillingPaymentAttempts => Set<ERP.Domain.Billing.Entities.BillingPaymentAttempt>();
+    public DbSet<ERP.Domain.Billing.Entities.BillingCheckoutSession> BillingCheckoutSessions => Set<ERP.Domain.Billing.Entities.BillingCheckoutSession>();
 
     public DbSet<UiNavGroup> UiNavGroups => Set<UiNavGroup>();
     public DbSet<UiNavItem> UiNavItems => Set<UiNavItem>();

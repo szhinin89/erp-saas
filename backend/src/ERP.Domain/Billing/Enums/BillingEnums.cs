@@ -60,3 +60,43 @@ public enum BillingEventSource
     Admin = 2,
     Webhook = 3,
 }
+
+/// <summary>Status of a single payment charge attempt.</summary>
+public enum PaymentAttemptStatus
+{
+    Pending   = 0,
+    Succeeded = 1,
+    Failed    = 2,
+    Cancelled = 3,
+}
+
+/// <summary>Status of a checkout session (pre-payment flow).</summary>
+public enum CheckoutSessionStatus
+{
+    Created   = 0,
+    Completed = 1,
+    Expired   = 2,
+    Cancelled = 3,
+}
+
+/// <summary>Billing period type.</summary>
+public enum BillingPeriodType
+{
+    Trial   = 0,
+    Monthly = 1,
+    Yearly  = 2,
+    Manual  = 3,
+}
+
+/// <summary>Provider codes for Kushki, MercadoPago, DataFast (future providers).</summary>
+public static class PaymentProviderCodes
+{
+    public const string None         = "none";
+    public const string Manual       = "manual";
+    public const string Stripe       = "stripe";
+    public const string Paddle       = "paddle";
+    public const string PayPal       = "paypal";
+    public const string Kushki       = "kushki";
+    public const string MercadoPago  = "mercadopago";
+    public const string DataFast     = "datafast";
+}
