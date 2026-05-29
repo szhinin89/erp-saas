@@ -36,8 +36,16 @@ public class SubscriberConfiguration : IEntityTypeConfiguration<Subscriber>
         builder.Property(t => t.CreatedBy).HasColumnName("created_by");
         builder.Property(t => t.UpdatedBy).HasColumnName("updated_by");
 
-        // Optimistic concurrency: if two handlers update simultaneously, the second fails
-        builder.Property(t => t.UpdatedAt).IsConcurrencyToken();
+        // FASE 1: Real row-version via PostgreSQL xmin system column.
+        // xmin changes ONLY on actual UPDATE — eliminates false-positive conflicts from
+        // non-lifecycle writes (profile updates, planCode changes, etc.).
+        // Shadow property — no entity change, no migration required.
+        builder.Property<uint>("xmin")
+            .HasColumnName("xmin")
+            .HasColumnType("xid")
+            .IsRequired()
+            .ValueGeneratedOnAddOrUpdate()
+            .IsConcurrencyToken();
 
         builder.HasIndex(t => t.Slug)
             .IsUnique()

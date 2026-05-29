@@ -7,43 +7,82 @@ namespace ERP.Application.Common.Subscriptions;
 /// </summary>
 public sealed class SubscriptionAccessResult
 {
-    public bool    CanAccess     { get; init; }
-    public bool    IsSuspended   { get; init; }
-    public bool    IsInactive    { get; init; }
+    // ── Backward-compatible boolean flags ────────────────────────────────────
+    public bool    CanAccess      { get; init; }
+    public bool    IsSuspended    { get; init; }
+    public bool    IsInactive     { get; init; }
     public bool    IsTrialExpired { get; init; }
-    public bool    IsPastDue     { get; init; }
-    public bool    IsGracePeriod { get; init; }
-    public bool    IsCancelled   { get; init; }
-    public string? Reason        { get; init; }
+    public bool    IsPastDue      { get; init; }
+    public bool    IsGracePeriod  { get; init; }
+    public bool    IsCancelled    { get; init; }
+    public string? Reason         { get; init; }
+
+    // ── Structured access decision (FASE 7/9) ────────────────────────────────
+    public SubscriptionAccessMode         AccessMode   { get; init; } = SubscriptionAccessMode.FullAccess;
+    public SubscriptionAccessDenialReason DenialReason { get; init; } = SubscriptionAccessDenialReason.None;
+
+    // ── Factory methods ───────────────────────────────────────────────────────
 
     public static SubscriptionAccessResult Allow() =>
-        new() { CanAccess = true };
+        new() { CanAccess = true, AccessMode = SubscriptionAccessMode.FullAccess };
 
     public static SubscriptionAccessResult Suspended(string reason) =>
-        new() { CanAccess = false, IsSuspended = true, Reason = reason };
+        new()
+        {
+            CanAccess    = false, IsSuspended = true, Reason = reason,
+            AccessMode   = SubscriptionAccessMode.Blocked,
+            DenialReason = SubscriptionAccessDenialReason.Suspended,
+        };
 
     public static SubscriptionAccessResult Inactive(string reason) =>
-        new() { CanAccess = false, IsInactive = true, Reason = reason };
+        new()
+        {
+            CanAccess    = false, IsInactive = true, Reason = reason,
+            AccessMode   = SubscriptionAccessMode.Blocked,
+            DenialReason = SubscriptionAccessDenialReason.Inactive,
+        };
 
     public static SubscriptionAccessResult Cancelled(string reason) =>
-        new() { CanAccess = false, IsCancelled = true, Reason = reason };
+        new()
+        {
+            CanAccess    = false, IsCancelled = true, Reason = reason,
+            AccessMode   = SubscriptionAccessMode.Blocked,
+            DenialReason = SubscriptionAccessDenialReason.Cancelled,
+        };
 
     public static SubscriptionAccessResult GracePeriod(string reason) =>
-        new() { CanAccess = true, IsGracePeriod = true, Reason = reason };
+        new()
+        {
+            CanAccess    = true, IsGracePeriod = true, Reason = reason,
+            AccessMode   = SubscriptionAccessMode.ReadOnly,
+            DenialReason = SubscriptionAccessDenialReason.GracePeriodExpired,
+        };
 
     public static SubscriptionAccessResult PastDue(string reason) =>
-        new() { CanAccess = true, IsPastDue = true, Reason = reason };
+        new()
+        {
+            CanAccess    = true, IsPastDue = true, Reason = reason,
+            AccessMode   = SubscriptionAccessMode.ReadOnly,
+            DenialReason = SubscriptionAccessDenialReason.BillingPastDue,
+        };
 
     public static SubscriptionAccessResult TrialExpired(string reason) =>
-        new() { CanAccess = false, IsTrialExpired = true, Reason = reason };
+        new()
+        {
+            CanAccess    = false, IsTrialExpired = true, Reason = reason,
+            AccessMode   = SubscriptionAccessMode.Blocked,
+            DenialReason = SubscriptionAccessDenialReason.TrialExpired,
+        };
 
-    /// <summary>Denial code for structured API error response.</summary>
-    public string DenialCode => this switch
+    /// <summary>Structured denial code for API responses.</summary>
+    public string DenialCode => DenialReason switch
     {
-        { IsSuspended   : true } => "subscription_suspended",
-        { IsInactive    : true } => "subscription_inactive",
-        { IsCancelled   : true } => "subscription_cancelled",
-        { IsTrialExpired: true } => "subscription_trial_expired",
-        _                        => "subscription_access_denied",
+        SubscriptionAccessDenialReason.Suspended          => "subscription_suspended",
+        SubscriptionAccessDenialReason.Inactive           => "subscription_inactive",
+        SubscriptionAccessDenialReason.Cancelled          => "subscription_cancelled",
+        SubscriptionAccessDenialReason.TrialExpired       => "subscription_trial_expired",
+        SubscriptionAccessDenialReason.GracePeriodExpired => "subscription_grace_period_expired",
+        SubscriptionAccessDenialReason.BillingPastDue     => "subscription_past_due",
+        _                                                  => "subscription_access_denied",
     };
 }

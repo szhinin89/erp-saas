@@ -30,8 +30,13 @@ public sealed class SubscriberBillingAccountConfiguration : IEntityTypeConfigura
         builder.Property(x => x.UpdatedBy).HasColumnName("updated_by");
         builder.HasIndex(x => x.SubscriberId).IsUnique().HasDatabaseName("ux_subscriber_billing_accounts_subscriber");
 
-        // Optimistic concurrency: UpdatedAt changes on every write
-        builder.Property(x => x.UpdatedAt).IsConcurrencyToken();
+        // FASE 1: Real row-version via PostgreSQL xmin — shadow property, no migration needed.
+        builder.Property<uint>("xmin")
+            .HasColumnName("xmin")
+            .HasColumnType("xid")
+            .IsRequired()
+            .ValueGeneratedOnAddOrUpdate()
+            .IsConcurrencyToken();
     }
 }
 

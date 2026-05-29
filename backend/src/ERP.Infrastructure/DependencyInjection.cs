@@ -208,6 +208,11 @@ public static class DependencyInjection
         services.AddScoped<ICommercialPlanLimitService, CommercialPlanLimitService>();
         services.AddScoped<ISubscriberBillingRepository, SubscriberBillingRepository>();
         services.AddScoped<IBillingGovernanceService, BillingGovernanceService>();
+
+        // Subscription Lifecycle Engine (FASE 1-17 hardening)
+        services.AddSingleton<ERP.Infrastructure.SaaS.SubscriptionMetrics>();
+        services.AddSingleton<ERP.Application.Common.Subscriptions.ISubscriptionAccessCache,
+            ERP.Infrastructure.SaaS.HybridSubscriptionAccessCache>();
         services.AddScoped<ERP.Application.Common.Subscriptions.ISubscriptionAccessService,
             ERP.Infrastructure.SaaS.SubscriptionAccessService>();
         services.AddScoped<ERP.Application.Common.Subscriptions.ISubscriptionLifecycleOrchestrator,

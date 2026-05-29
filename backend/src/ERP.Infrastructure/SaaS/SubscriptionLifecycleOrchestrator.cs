@@ -1,6 +1,6 @@
 using System.Data;
+using System.Diagnostics;
 using ERP.Application.Common.Subscriptions;
-using Microsoft.EntityFrameworkCore.Storage;
 using ERP.Application.Platform.Audit;
 using ERP.Application.Subscriptions.Caching;
 using ERP.Domain.Billing.Entities;
@@ -9,108 +9,113 @@ using ERP.Domain.Platform.Audit.Entities;
 using ERP.Domain.Subscribers.Entities;
 using ERP.Domain.Subscribers.Events;
 using ERP.Domain.Subscribers.Exceptions;
-using ERP.Domain.Subscribers.Interfaces;
 using ERP.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage;
+using Microsoft.Extensions.Logging;
 
 namespace ERP.Infrastructure.SaaS;
 
 /// <summary>
 /// Atomic lifecycle transitions: Subscriber + BillingAccount change inside a single
-/// serializable transaction. Every method validates the current state before mutating.
+/// RepeatableRead transaction.
+///
+/// STATE MACHINE (FASE 10):
+///   Active      → Trial, GracePeriod, Suspended, Cancelled
+///   Trial       → GracePeriod, Suspended, Cancelled, Active (re-activate)
+///   GracePeriod → Suspended, Cancelled, Active (payment received)
+///   Suspended   → Active (reactivation), Cancelled
+///   Inactive    → [terminal — no transitions allowed]
+///   Cancelled   → [terminal — no transitions allowed, idempotent]
+///
+/// CACHE (FASE 4/11): Invalidates ISubscriptionAccessCache after every transition.
+/// METRICS (FASE 12): Records transition duration and type counters.
+/// AUDIT (FASE 13): Enriches log with Source and CorrelationId.
 /// </summary>
 public sealed class SubscriptionLifecycleOrchestrator : ISubscriptionLifecycleOrchestrator
 {
-    // Pseudo-ID for system-initiated transitions (jobs, automation).
     public static readonly Guid SystemActorId = new("00000000-0000-0000-0000-000000000001");
 
     private readonly ErpDbContext                        _db;
     private readonly IPlatformAuditLogger                _audit;
-    private readonly ISubscriberEntitlementsCacheInvalidator _cache;
+    private readonly ISubscriberEntitlementsCacheInvalidator _entitlementsCache;
+    private readonly ISubscriptionAccessCache            _accessCache;
+    private readonly SubscriptionMetrics                 _metrics;
+    private readonly ILogger<SubscriptionLifecycleOrchestrator> _log;
 
     public SubscriptionLifecycleOrchestrator(
         ErpDbContext db,
         IPlatformAuditLogger audit,
-        ISubscriberEntitlementsCacheInvalidator cache)
+        ISubscriberEntitlementsCacheInvalidator entitlementsCache,
+        ISubscriptionAccessCache accessCache,
+        SubscriptionMetrics metrics,
+        ILogger<SubscriptionLifecycleOrchestrator> log)
     {
-        _db    = db;
-        _audit = audit;
-        _cache = cache;
+        _db                = db;
+        _audit             = audit;
+        _entitlementsCache = entitlementsCache;
+        _accessCache       = accessCache;
+        _metrics           = metrics;
+        _log               = log;
     }
 
-    // ──────────────────────────────────────────────────────────────────────────
-    // Public transitions
-    // ──────────────────────────────────────────────────────────────────────────
+    // ── Public transitions ────────────────────────────────────────────────────
 
     public async Task ActivateAsync(
         Guid subscriberId, Guid actorId, string? notes = null, CancellationToken ct = default)
     {
+        var sw = Stopwatch.StartNew();
         await using var tx = await BeginTxAsync(ct);
 
-        var (subscriber, account) = await LoadBothAsync(subscriberId, ct);
+        var (subscriber, account) = await LoadBothTrackedAsync(subscriberId, ct);
 
-        // Inactive is a terminal state — cannot be reactivated through normal flow
-        if (subscriber.LifecycleStatus == SubscriberLifecycleStatus.Inactive)
-            throw new InvalidLifecycleTransitionException(subscriber.LifecycleStatus, "Active");
+        // FASE 10: Inactive is terminal
+        AssertNotTerminal(subscriber, "Active");
 
         var previousStatus = subscriber.LifecycleStatus.ToString();
-
         subscriber.Activate(actorId);
         account.Activate(actorId);
-
         subscriber.AddDomainEvent(new SubscriptionActivatedEvent(subscriberId, actorId, notes));
 
-        await SaveAndInvalidateAsync(subscriberId, ct);
+        await SaveAndInvalidateBothCachesAsync(subscriberId, ct);
         await tx.CommitAsync(ct);
+        sw.Stop();
+        _metrics.LifecycleTransitionDurationMs.Record(sw.Elapsed.TotalMilliseconds,
+            new KeyValuePair<string, object?>("transition", "Activate"));
 
-        await _audit.LogAsync(
-            PlatformAuditLog.Actions.SubscriberActivated,
-            actorId == SystemActorId ? null : actorId,
-            actorId == SystemActorId ? "system" : null,
-            subscriberId,
-            resourceType: "Subscriber",
-            resourceId: subscriberId,
-            oldValueJson: $"{{\"status\":\"{previousStatus}\"}}",
-            newValueJson: "{\"status\":\"Active\"}",
-            notes: notes,
-            ct: ct);
+        await AuditAsync(PlatformAuditLog.Actions.SubscriberActivated, actorId, subscriberId,
+            $"{{\"status\":\"{previousStatus}\"}}", "{\"status\":\"Active\"}",
+            notes: notes, source: ActorSource(actorId), ct: ct);
     }
 
     public async Task SuspendAsync(
         Guid subscriberId, string reason, Guid actorId, CancellationToken ct = default)
     {
+        var sw = Stopwatch.StartNew();
         await using var tx = await BeginTxAsync(ct);
 
-        var (subscriber, account) = await LoadBothAsync(subscriberId, ct);
+        var (subscriber, account) = await LoadBothTrackedAsync(subscriberId, ct);
 
-        // Cancelled is terminal — suspending is a no-op guard
-        if (subscriber.LifecycleStatus == SubscriberLifecycleStatus.Inactive)
-            throw new InvalidLifecycleTransitionException(subscriber.LifecycleStatus, "Suspended");
-
+        // FASE 10: Inactive and Cancelled are terminal
+        AssertNotTerminal(subscriber, "Suspended");
         if (account.Status == BillingAccountStatus.Cancelled)
             throw new InvalidLifecycleTransitionException(subscriber.LifecycleStatus, "Suspended (account cancelled)");
 
-        var previousStatus = subscriber.LifecycleStatus.ToString();
-
+        var prev = subscriber.LifecycleStatus.ToString();
         subscriber.Suspend(reason, actorId);
         account.Suspend(actorId);
-
         subscriber.AddDomainEvent(new SubscriptionSuspendedEvent(subscriberId, actorId, reason));
 
-        await SaveAndInvalidateAsync(subscriberId, ct);
+        await SaveAndInvalidateBothCachesAsync(subscriberId, ct);
         await tx.CommitAsync(ct);
+        sw.Stop();
+        _metrics.SubscriptionSuspendTotal.Add(1);
+        _metrics.LifecycleTransitionDurationMs.Record(sw.Elapsed.TotalMilliseconds,
+            new KeyValuePair<string, object?>("transition", "Suspend"));
 
-        await _audit.LogAsync(
-            PlatformAuditLog.Actions.SubscriberSuspended,
-            actorId == SystemActorId ? null : actorId,
-            actorId == SystemActorId ? "system" : null,
-            subscriberId,
-            resourceType: "Subscriber",
-            resourceId: subscriberId,
-            oldValueJson: $"{{\"status\":\"{previousStatus}\"}}",
-            newValueJson: $"{{\"status\":\"Suspended\",\"reason\":\"{reason}\"}}",
-            notes: reason,
-            ct: ct);
+        await AuditAsync(PlatformAuditLog.Actions.SubscriberSuspended, actorId, subscriberId,
+            $"{{\"status\":\"{prev}\"}}", $"{{\"status\":\"Suspended\",\"reason\":\"{reason}\"}}",
+            notes: reason, source: ActorSource(actorId), ct: ct);
     }
 
     public async Task StartTrialAsync(
@@ -119,32 +124,28 @@ public sealed class SubscriptionLifecycleOrchestrator : ISubscriptionLifecycleOr
         if (endsAtUtc <= DateTime.UtcNow)
             throw new ArgumentException("endsAtUtc debe ser una fecha futura.", nameof(endsAtUtc));
 
+        var sw = Stopwatch.StartNew();
         await using var tx = await BeginTxAsync(ct);
 
-        var (subscriber, account) = await LoadBothAsync(subscriberId, ct);
+        var (subscriber, account) = await LoadBothTrackedAsync(subscriberId, ct);
 
-        // Trial only from Active or existing Trial (re-extension)
-        if (subscriber.LifecycleStatus is not (
-            SubscriberLifecycleStatus.Active or SubscriberLifecycleStatus.Trial))
+        // FASE 10: Trial only from Active or re-extension of existing Trial
+        if (subscriber.LifecycleStatus is not (SubscriberLifecycleStatus.Active or SubscriberLifecycleStatus.Trial))
             throw new InvalidLifecycleTransitionException(subscriber.LifecycleStatus, "Trial");
 
         subscriber.SetTrial(actorId);
         account.SetTrial(BillingTrialState.Active, endsAtUtc, actorId);
-
         subscriber.AddDomainEvent(new TrialStartedEvent(subscriberId, actorId, endsAtUtc));
 
-        await SaveAndInvalidateAsync(subscriberId, ct);
+        await SaveAndInvalidateBothCachesAsync(subscriberId, ct);
         await tx.CommitAsync(ct);
+        sw.Stop();
+        _metrics.LifecycleTransitionDurationMs.Record(sw.Elapsed.TotalMilliseconds,
+            new KeyValuePair<string, object?>("transition", "StartTrial"));
 
-        await _audit.LogAsync(
-            PlatformAuditLog.Actions.TrialStarted,
-            actorId == SystemActorId ? null : actorId,
-            actorId == SystemActorId ? "system" : null,
-            subscriberId,
-            resourceType: "Subscriber",
-            resourceId: subscriberId,
-            newValueJson: $"{{\"trialEndsAtUtc\":\"{endsAtUtc:O}\"}}",
-            ct: ct);
+        await AuditAsync(PlatformAuditLog.Actions.TrialStarted, actorId, subscriberId,
+            null, $"{{\"trialEndsAtUtc\":\"{endsAtUtc:O}\"}}",
+            source: ActorSource(actorId), ct: ct);
     }
 
     public async Task EnterGracePeriodAsync(
@@ -153,81 +154,88 @@ public sealed class SubscriptionLifecycleOrchestrator : ISubscriptionLifecycleOr
         if (endsAtUtc <= DateTime.UtcNow)
             throw new ArgumentException("endsAtUtc debe ser una fecha futura.", nameof(endsAtUtc));
 
+        var sw = Stopwatch.StartNew();
         await using var tx = await BeginTxAsync(ct);
 
-        var (subscriber, account) = await LoadBothAsync(subscriberId, ct);
+        var (subscriber, account) = await LoadBothTrackedAsync(subscriberId, ct);
 
-        // Guard: only enter GracePeriod from Trial or Active
-        if (subscriber.LifecycleStatus is not (
-            SubscriberLifecycleStatus.Trial or SubscriberLifecycleStatus.Active))
+        // FASE 10: GracePeriod only from Trial or Active
+        if (subscriber.LifecycleStatus is not (SubscriberLifecycleStatus.Trial or SubscriberLifecycleStatus.Active))
             throw new InvalidLifecycleTransitionException(subscriber.LifecycleStatus, "GracePeriod");
 
-        // Idempotency: already in GracePeriod → only update date if earlier
+        // Idempotency: already in grace period and the existing end is later → skip
         if (subscriber.LifecycleStatus == SubscriberLifecycleStatus.GracePeriod &&
             account.GracePeriodEndsAtUtc.HasValue &&
             account.GracePeriodEndsAtUtc.Value >= endsAtUtc)
+        {
+            await tx.RollbackAsync(ct);
             return;
+        }
 
         subscriber.EnterGracePeriod(actorId);
         account.EnterGracePeriod(endsAtUtc, actorId);
-
         subscriber.AddDomainEvent(new GracePeriodStartedEvent(subscriberId, actorId, endsAtUtc));
 
-        await SaveAndInvalidateAsync(subscriberId, ct);
+        await SaveAndInvalidateBothCachesAsync(subscriberId, ct);
         await tx.CommitAsync(ct);
+        sw.Stop();
+        _metrics.GracePeriodStartedTotal.Add(1);
+        _metrics.LifecycleTransitionDurationMs.Record(sw.Elapsed.TotalMilliseconds,
+            new KeyValuePair<string, object?>("transition", "EnterGracePeriod"));
 
-        await _audit.LogAsync(
-            PlatformAuditLog.Actions.GracePeriodStarted,
-            actorId == SystemActorId ? null : actorId,
-            actorId == SystemActorId ? "system" : null,
-            subscriberId,
-            resourceType: "Subscriber",
-            resourceId: subscriberId,
-            newValueJson: $"{{\"gracePeriodEndsAtUtc\":\"{endsAtUtc:O}\"}}",
-            ct: ct);
+        await AuditAsync(PlatformAuditLog.Actions.GracePeriodStarted, actorId, subscriberId,
+            null, $"{{\"gracePeriodEndsAtUtc\":\"{endsAtUtc:O}\"}}",
+            source: ActorSource(actorId), ct: ct);
     }
 
     public async Task CancelAsync(
         Guid subscriberId, string reason, Guid actorId, CancellationToken ct = default)
     {
+        var sw = Stopwatch.StartNew();
         await using var tx = await BeginTxAsync(ct);
 
-        var (subscriber, account) = await LoadBothAsync(subscriberId, ct);
+        var (subscriber, account) = await LoadBothTrackedAsync(subscriberId, ct);
 
+        // Idempotent: already cancelled
         if (account.Status == BillingAccountStatus.Cancelled)
-            return; // already cancelled — idempotent
+        {
+            await tx.RollbackAsync(ct);
+            return;
+        }
+
+        // FASE 10: Cannot cancel Inactive
+        if (subscriber.LifecycleStatus == SubscriberLifecycleStatus.Inactive)
+            throw new InvalidLifecycleTransitionException(subscriber.LifecycleStatus, "Cancelled");
 
         subscriber.Suspend(reason, actorId);
         account.Cancel(BillingRenewalState.Cancelled, actorId);
-
         subscriber.AddDomainEvent(new SubscriptionCancelledEvent(subscriberId, actorId, reason));
 
-        await SaveAndInvalidateAsync(subscriberId, ct);
+        await SaveAndInvalidateBothCachesAsync(subscriberId, ct);
         await tx.CommitAsync(ct);
+        sw.Stop();
+        _metrics.LifecycleTransitionDurationMs.Record(sw.Elapsed.TotalMilliseconds,
+            new KeyValuePair<string, object?>("transition", "Cancel"));
 
-        await _audit.LogAsync(
-            PlatformAuditLog.Actions.SubscriberSuspended,
-            actorId == SystemActorId ? null : actorId,
-            actorId == SystemActorId ? "system" : null,
-            subscriberId,
-            resourceType: "Subscriber",
-            resourceId: subscriberId,
-            newValueJson: $"{{\"status\":\"Cancelled\",\"reason\":\"{reason}\"}}",
-            notes: reason,
-            ct: ct);
+        await AuditAsync(PlatformAuditLog.Actions.SubscriberSuspended, actorId, subscriberId,
+            null, $"{{\"status\":\"Cancelled\",\"reason\":\"{reason}\"}}",
+            notes: reason, source: ActorSource(actorId), ct: ct);
     }
 
-    // ──────────────────────────────────────────────────────────────────────────
-    // Private helpers
-    // ──────────────────────────────────────────────────────────────────────────
+    // ── Private helpers ───────────────────────────────────────────────────────
+
+    private static void AssertNotTerminal(Subscriber subscriber, string targetState)
+    {
+        if (subscriber.LifecycleStatus == SubscriberLifecycleStatus.Inactive)
+            throw new InvalidLifecycleTransitionException(subscriber.LifecycleStatus, targetState);
+    }
 
     private async Task<IDbContextTransaction> BeginTxAsync(CancellationToken ct)
         => await _db.Database.BeginTransactionAsync(IsolationLevel.RepeatableRead, ct);
 
-    private async Task<(Subscriber subscriber, SubscriberBillingAccount account)> LoadBothAsync(
+    private async Task<(Subscriber subscriber, SubscriberBillingAccount account)> LoadBothTrackedAsync(
         Guid subscriberId, CancellationToken ct)
     {
-        // Load with tracking so EF can persist changes in one SaveChanges call
         var subscriber = await _db.Subscribers
             .FirstOrDefaultAsync(s => s.Id == subscriberId, ct)
             ?? throw new InvalidOperationException($"Subscriber {subscriberId} no encontrado.");
@@ -241,9 +249,40 @@ public sealed class SubscriptionLifecycleOrchestrator : ISubscriptionLifecycleOr
         return (subscriber, account);
     }
 
-    private async Task SaveAndInvalidateAsync(Guid subscriberId, CancellationToken ct)
+    private async Task SaveAndInvalidateBothCachesAsync(Guid subscriberId, CancellationToken ct)
     {
         await _db.SaveChangesAsync(ct);
-        await _cache.InvalidateAsync(subscriberId, ct);
+        // Invalidate both: entitlements (modules/permissions) and access snapshot (lifecycle)
+        await _entitlementsCache.InvalidateAsync(subscriberId, ct);
+        await _accessCache.InvalidateAsync(subscriberId, ct);
     }
+
+    // FASE 13: Audit enrichment with Source
+    private async Task AuditAsync(
+        string action,
+        Guid actorId,
+        Guid subscriberId,
+        string? oldValue,
+        string? newValue,
+        string? notes   = null,
+        string? source  = null,
+        CancellationToken ct = default)
+    {
+        var enrichedNotes = source is null ? notes : $"[source:{source}] {notes}".Trim();
+
+        await _audit.LogAsync(
+            action,
+            actorId == SystemActorId ? null : actorId,
+            actorId == SystemActorId ? "system" : null,
+            subscriberId,
+            resourceType:  "Subscriber",
+            resourceId:    subscriberId,
+            oldValueJson:  oldValue,
+            newValueJson:  newValue,
+            notes:         enrichedNotes,
+            ct:            ct);
+    }
+
+    private static string ActorSource(Guid actorId) =>
+        actorId == SystemActorId ? "CheckSubscriptionExpiryJob" : "PlatformOperator";
 }

@@ -2,52 +2,73 @@ using System.Net.Mime;
 using System.Security.Claims;
 using System.Text.Json;
 using ERP.Application.Common.Subscriptions;
+using ERP.Infrastructure.SaaS;
 
 namespace ERP.API.Middleware;
 
 /// <summary>
-/// Validates subscription access on every authenticated, non-exempt request.
-/// Returns 403 + structured JSON when a subscriber cannot access the platform.
-/// Place AFTER UseAuthentication() and BEFORE UseAuthorization().
+/// Cache-first subscription access guard for every authenticated request.
+///
+/// PERFORMANCE:
+///   Cache hit  → immediate allow/deny, ~0-1ms, zero DB queries.
+///   Cache miss → 1 JOIN query + cache write, ~5-20ms.
+///
+/// BYPASS rules (FASE 14):
+///   - Unauthenticated requests (handled by auth middleware → 401)
+///   - Exempt paths: /api/auth, /health, /hangfire, /swagger, /metrics, /api/setup
+///   - Platform roles: PlatformOperator, Support, BillingAdmin, Auditor
+///   - SuperAdmin users (user_type = Platform)
+///
+/// ACCESS MODES (FASE 15):
+///   FullAccess → no header
+///   ReadOnly   → response header X-Subscription-Access-Mode: ReadOnly
+///   Blocked    → 403 + structured JSON
+///
+/// Response body (Blocked):
+///   { "code": "subscription_suspended", "reason": "...", "accessMode": "Blocked" }
 /// </summary>
 public sealed class SubscriptionAccessMiddleware
 {
     private static readonly JsonSerializerOptions JsonOpts = new() { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
 
-    private readonly RequestDelegate _next;
+    private readonly RequestDelegate                       _next;
     private readonly ILogger<SubscriptionAccessMiddleware> _logger;
 
-    public SubscriptionAccessMiddleware(RequestDelegate next, ILogger<SubscriptionAccessMiddleware> logger)
+    public SubscriptionAccessMiddleware(
+        RequestDelegate next,
+        ILogger<SubscriptionAccessMiddleware> logger)
     {
         _next   = next;
         _logger = logger;
     }
 
-    public async Task InvokeAsync(HttpContext context, ISubscriptionAccessService accessService)
+    public async Task InvokeAsync(
+        HttpContext context,
+        ISubscriptionAccessService accessService,
+        SubscriptionMetrics metrics)
     {
-        // Skip unauthenticated requests — auth middleware handles 401
+        // 1 — unauthenticated
         if (context.User?.Identity?.IsAuthenticated != true)
         {
             await _next(context);
             return;
         }
 
-        // Skip exempt paths (auth, health, hangfire, setup, swagger)
+        // 2 — exempt paths
         if (IsExemptPath(context.Request.Path))
         {
             await _next(context);
             return;
         }
 
-        // Platform operators bypass tenant lifecycle check
-        var role = context.User.FindFirstValue(ClaimTypes.Role) ?? string.Empty;
-        if (IsPlatformRole(role))
+        // 3 — FASE 14: platform / super-admin bypass
+        if (IsPlatformUser(context.User))
         {
             await _next(context);
             return;
         }
 
-        // Resolve subscriber ID from claim
+        // 4 — resolve subscriber_id claim
         var subscriberClaim = context.User.FindFirstValue("subscriber_id");
         if (!Guid.TryParse(subscriberClaim, out var subscriberId) || subscriberId == Guid.Empty)
         {
@@ -55,34 +76,48 @@ public sealed class SubscriptionAccessMiddleware
             return;
         }
 
+        // 5 — evaluate (cache-first inside the service)
         var result = await accessService.EvaluateAsync(subscriberId, context.RequestAborted);
-        if (result.CanAccess)
+
+        if (result.AccessMode == SubscriptionAccessMode.Blocked)
         {
-            await _next(context);
+            metrics.AccessDeniedTotal.Add(1,
+                new KeyValuePair<string, object?>("reason", result.DenialReason.ToString()));
+
+            _logger.LogInformation(
+                "subscription-access: BLOCKED subscriber={SubscriberId} code={Code} reason={Reason}",
+                subscriberId, result.DenialCode, result.DenialReason);
+
+            context.Response.StatusCode  = StatusCodes.Status403Forbidden;
+            context.Response.ContentType = MediaTypeNames.Application.Json;
+
+            var body = JsonSerializer.Serialize(new
+            {
+                code       = result.DenialCode,
+                reason     = result.DenialReason.ToString(),
+                accessMode = result.AccessMode.ToString(),
+                message    = "Subscription access denied.",
+            }, JsonOpts);
+
+            await context.Response.WriteAsync(body, context.RequestAborted);
             return;
         }
 
-        // Subscriber is blocked — return 403 with structured payload
-        _logger.LogInformation(
-            "SubscriptionAccess denied for subscriber={SubscriberId} code={Code} reason={Reason}",
-            subscriberId, result.DenialCode, result.Reason);
-
-        context.Response.StatusCode  = StatusCodes.Status403Forbidden;
-        context.Response.ContentType = MediaTypeNames.Application.Json;
-
-        var body = JsonSerializer.Serialize(new
+        // FASE 15: ReadOnly — allow but signal frontend via response header
+        if (result.AccessMode == SubscriptionAccessMode.ReadOnly)
         {
-            code    = result.DenialCode,
-            message = "Subscription access denied.",
-            reason  = result.Reason,
-        }, JsonOpts);
+            context.Response.Headers["X-Subscription-Access-Mode"]   = "ReadOnly";
+            context.Response.Headers["X-Subscription-Denial-Reason"] = result.DenialReason.ToString();
 
-        await context.Response.WriteAsync(body, context.RequestAborted);
+            _logger.LogDebug(
+                "subscription-access: READONLY subscriber={SubscriberId} reason={Reason}",
+                subscriberId, result.DenialReason);
+        }
+
+        await _next(context);
     }
 
-    // ──────────────────────────────────────────────────────────────────────────
-    // Exempt path patterns
-    // ──────────────────────────────────────────────────────────────────────────
+    // ── Exempt path patterns ──────────────────────────────────────────────────
 
     private static readonly string[] ExemptPrefixes =
     [
@@ -100,12 +135,28 @@ public sealed class SubscriptionAccessMiddleware
     private static bool IsExemptPath(PathString path)
     {
         var value = path.Value ?? string.Empty;
-        return ExemptPrefixes.Any(p => value.StartsWith(p, StringComparison.OrdinalIgnoreCase));
+        foreach (var prefix in ExemptPrefixes)
+        {
+            if (value.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
+                return true;
+        }
+        return false;
     }
 
-    private static bool IsPlatformRole(string role) =>
-        role.Equals("PlatformOperator", StringComparison.OrdinalIgnoreCase) ||
-        role.Equals("Support",          StringComparison.OrdinalIgnoreCase) ||
-        role.Equals("BillingAdmin",     StringComparison.OrdinalIgnoreCase) ||
-        role.Equals("Auditor",          StringComparison.OrdinalIgnoreCase);
+    // ── Platform/SuperAdmin bypass (FASE 14) ──────────────────────────────────
+
+    private static readonly HashSet<string> PlatformRoles = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "PlatformOperator", "Support", "BillingAdmin", "Auditor",
+    };
+
+    private static bool IsPlatformUser(ClaimsPrincipal user)
+    {
+        var role = user.FindFirstValue(ClaimTypes.Role) ?? string.Empty;
+        if (PlatformRoles.Contains(role)) return true;
+
+        // user_type = Platform → SuperAdmin global
+        var userType = user.FindFirstValue("user_type") ?? string.Empty;
+        return userType.Equals("Platform", StringComparison.OrdinalIgnoreCase);
+    }
 }

@@ -1,85 +1,272 @@
+using System.Diagnostics;
 using ERP.Application.Common.Subscriptions;
 using ERP.Domain.Billing.Enums;
-using ERP.Domain.Billing.Interfaces;
 using ERP.Domain.Subscribers.Entities;
-using ERP.Domain.Subscribers.Interfaces;
+using ERP.Infrastructure.Persistence;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 
 namespace ERP.Infrastructure.SaaS;
 
 /// <summary>
-/// Single source of truth for platform access decisions.
-/// Evaluates Subscriber lifecycle + BillingAccount status together.
+/// Cache-first subscription access evaluator.
+///
+/// HOT PATH (cache hit):    O(1), ~0-1ms — no DB query.
+/// COLD PATH (cache miss):  1 JOIN query, ~5-20ms — result cached immediately.
+///
+/// Uses a compiled EF query (FASE 6) for the snapshot rebuild to avoid
+/// repeated LINQ expression tree compilation.
 /// </summary>
 public sealed class SubscriptionAccessService : ISubscriptionAccessService
 {
-    private readonly ISubscriberRepository       _subscribers;
-    private readonly ISubscriberBillingRepository _billing;
+    // ── FASE 6: Compiled query — avoids LINQ re-compilation on every cache miss ─
+    // Projects directly into snapshot DTO — no entity tracking, no navigation loads.
+    private static readonly Func<ErpDbContext, Guid, CancellationToken, Task<SnapshotProjection?>>
+        GetSnapshotQuery = EF.CompileAsyncQuery(
+            (ErpDbContext db, Guid subscriberId, CancellationToken _) =>
+                db.Subscribers
+                  .AsNoTracking()
+                  .Where(s => s.Id == subscriberId)
+                  .Join(
+                      db.SubscriberBillingAccounts.AsNoTracking(),
+                      s => s.Id,
+                      a => a.SubscriberId,
+                      (s, a) => new SnapshotProjection
+                      {
+                          LifecycleStatus      = s.LifecycleStatus,
+                          SuspendedReason      = s.SuspendedReason,
+                          PlanCode             = s.PlanCode,
+                          AccountStatus        = a.Status,
+                          TrialEndsAtUtc       = a.TrialEndsAtUtc,
+                          GracePeriodEndsAtUtc = a.GracePeriodEndsAtUtc,
+                      })
+                  .FirstOrDefault());
+
+    // Fallback: subscriber only (when no billing account yet — pre-provisioning)
+    private static readonly Func<ErpDbContext, Guid, CancellationToken, Task<SubscriberProjection?>>
+        GetSubscriberQuery = EF.CompileAsyncQuery(
+            (ErpDbContext db, Guid subscriberId, CancellationToken _) =>
+                db.Subscribers
+                  .AsNoTracking()
+                  .Where(s => s.Id == subscriberId)
+                  .Select(s => new SubscriberProjection
+                  {
+                      LifecycleStatus = s.LifecycleStatus,
+                      SuspendedReason = s.SuspendedReason,
+                      PlanCode        = s.PlanCode,
+                  })
+                  .FirstOrDefault());
+
+    private readonly ErpDbContext              _db;
+    private readonly ISubscriptionAccessCache  _cache;
+    private readonly SubscriptionMetrics       _metrics;
+    private readonly ILogger<SubscriptionAccessService> _log;
 
     public SubscriptionAccessService(
-        ISubscriberRepository subscribers,
-        ISubscriberBillingRepository billing)
+        ErpDbContext db,
+        ISubscriptionAccessCache cache,
+        SubscriptionMetrics metrics,
+        ILogger<SubscriptionAccessService> log)
     {
-        _subscribers = subscribers;
-        _billing     = billing;
+        _db      = db;
+        _cache   = cache;
+        _metrics = metrics;
+        _log     = log;
     }
 
     public async Task<SubscriptionAccessResult> EvaluateAsync(
         Guid subscriberId, CancellationToken ct = default)
     {
-        // Anonymous / system calls always allowed
         if (subscriberId == Guid.Empty)
             return SubscriptionAccessResult.Allow();
 
-        var subscriber = await _subscribers.GetByIdAsync(subscriberId, ct);
-        if (subscriber is null)
-            return SubscriptionAccessResult.Inactive("Suscriptor no encontrado.");
+        // ── CACHE HIT (FASE 4) ────────────────────────────────────────────────
+        var cached = await _cache.TryGetAsync(subscriberId, ct);
+        if (cached is not null)
+        {
+            _metrics.AccessCacheHits.Add(1);
+            var cachedResult = cached.ToResult();
+
+            _log.LogDebug(
+                "subscription-access: cache_hit subscriber={SubscriberId} mode={Mode} reason={Reason}",
+                subscriberId, cached.AccessMode, cached.DenialReason);
+
+            RecordAccessMetric(cachedResult);
+            return cachedResult;
+        }
+
+        _metrics.AccessCacheMisses.Add(1);
+
+        // ── CACHE MISS: rebuild from DB ───────────────────────────────────────
+        var sw       = Stopwatch.StartNew();
+        var snapshot = await BuildSnapshotAsync(subscriberId, ct);
+        sw.Stop();
+
+        _metrics.SnapshotRebuildDurationMs.Record(sw.Elapsed.TotalMilliseconds);
+
+        await _cache.SetAsync(snapshot, ct);
+
+        var result = snapshot.ToResult();
+
+        _log.LogDebug(
+            "subscription-access: db_rebuild subscriber={SubscriberId} mode={Mode} reason={Reason} duration_ms={Ms}",
+            subscriberId, snapshot.AccessMode, snapshot.DenialReason, sw.Elapsed.TotalMilliseconds);
+
+        RecordAccessMetric(result);
+        return result;
+    }
+
+    // ── Private helpers ───────────────────────────────────────────────────────
+
+    private async Task<SubscriptionAccessSnapshot> BuildSnapshotAsync(
+        Guid subscriberId, CancellationToken ct)
+    {
+        var utcNow  = DateTime.UtcNow;
+        var version = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+
+        // Try JOIN first (subscriber + billing account in one query)
+        var joined = await GetSnapshotQuery(_db, subscriberId, ct);
+
+        if (joined is null)
+        {
+            // Check if subscriber exists at all
+            var sub = await GetSubscriberQuery(_db, subscriberId, ct);
+            if (sub is null)
+            {
+                return Blocked(subscriberId, version, SubscriptionAccessDenialReason.Inactive,
+                    "subscription_inactive", null, utcNow);
+            }
+
+            // Subscriber exists but no billing account — pre-provisioning
+            return sub.LifecycleStatus switch
+            {
+                SubscriberLifecycleStatus.Suspended => Blocked(subscriberId, version,
+                    SubscriptionAccessDenialReason.Suspended, "subscription_suspended", sub.PlanCode, utcNow),
+                SubscriberLifecycleStatus.Inactive  => Blocked(subscriberId, version,
+                    SubscriptionAccessDenialReason.Inactive, "subscription_inactive", sub.PlanCode, utcNow),
+                _                                   => Full(subscriberId, version, sub.PlanCode, utcNow),
+            };
+        }
 
         // Subscriber-level hard blocks
-        switch (subscriber.LifecycleStatus)
+        if (joined.LifecycleStatus == SubscriberLifecycleStatus.Suspended)
+            return Blocked(subscriberId, version, SubscriptionAccessDenialReason.Suspended,
+                "subscription_suspended", joined.PlanCode, utcNow);
+
+        if (joined.LifecycleStatus == SubscriberLifecycleStatus.Inactive)
+            return Blocked(subscriberId, version, SubscriptionAccessDenialReason.Inactive,
+                "subscription_inactive", joined.PlanCode, utcNow);
+
+        // Billing-level decisions
+        return joined.AccountStatus switch
         {
-            case SubscriberLifecycleStatus.Suspended:
-                return SubscriptionAccessResult.Suspended(
-                    $"Cuenta suspendida. {subscriber.SuspendedReason}".Trim());
+            BillingAccountStatus.Cancelled =>
+                Blocked(subscriberId, version, SubscriptionAccessDenialReason.Cancelled,
+                    "subscription_cancelled", joined.PlanCode, utcNow),
 
-            case SubscriberLifecycleStatus.Inactive:
-                return SubscriptionAccessResult.Inactive("Cuenta inactiva.");
-        }
+            BillingAccountStatus.Suspended =>
+                Blocked(subscriberId, version, SubscriptionAccessDenialReason.Suspended,
+                    "subscription_suspended", joined.PlanCode, utcNow),
 
-        // Billing-level checks
-        var account = await _billing.GetAccountBySubscriberIdAsync(subscriberId, ct);
-        if (account is null)
-            return SubscriptionAccessResult.Allow(); // no billing account = pre-provisioning, allow
+            BillingAccountStatus.GracePeriod =>
+                joined.GracePeriodEndsAtUtc.HasValue && joined.GracePeriodEndsAtUtc.Value < utcNow
+                    ? Blocked(subscriberId, version, SubscriptionAccessDenialReason.GracePeriodExpired,
+                        "subscription_grace_period_expired", joined.PlanCode, utcNow,
+                        gracePeriodEndsAtUtc: joined.GracePeriodEndsAtUtc)
+                    : ReadOnly(subscriberId, version, SubscriptionAccessDenialReason.GracePeriodExpired,
+                        "subscription_grace_period_expired", joined.PlanCode, utcNow,
+                        gracePeriodEndsAtUtc: joined.GracePeriodEndsAtUtc),
 
-        var utcNow = DateTime.UtcNow;
+            BillingAccountStatus.Trialing =>
+                joined.TrialEndsAtUtc.HasValue && joined.TrialEndsAtUtc.Value < utcNow
+                    ? Blocked(subscriberId, version, SubscriptionAccessDenialReason.TrialExpired,
+                        "subscription_trial_expired", joined.PlanCode, utcNow,
+                        trialEndsAtUtc: joined.TrialEndsAtUtc)
+                    : Full(subscriberId, version, joined.PlanCode, utcNow,
+                        trialEndsAtUtc: joined.TrialEndsAtUtc),
 
-        switch (account.Status)
+            BillingAccountStatus.PastDue =>
+                ReadOnly(subscriberId, version, SubscriptionAccessDenialReason.BillingPastDue,
+                    "subscription_past_due", joined.PlanCode, utcNow),
+
+            _ => Full(subscriberId, version, joined.PlanCode, utcNow),
+        };
+    }
+
+    private void RecordAccessMetric(SubscriptionAccessResult r)
+    {
+        if (r.AccessMode == SubscriptionAccessMode.Blocked)
+            _metrics.AccessDeniedTotal.Add(1, new KeyValuePair<string, object?>("reason", r.DenialReason.ToString()));
+        else
+            _metrics.AccessAllowedTotal.Add(1);
+    }
+
+    // ── Snapshot factory helpers ──────────────────────────────────────────────
+
+    private static SubscriptionAccessSnapshot Full(
+        Guid id, long version, string? planCode, DateTime eval,
+        DateTime? trialEndsAtUtc = null, DateTime? gracePeriodEndsAtUtc = null) =>
+        new()
         {
-            case BillingAccountStatus.Cancelled:
-                return SubscriptionAccessResult.Cancelled("Suscripción cancelada.");
+            SubscriberId         = id,
+            AccessMode           = SubscriptionAccessMode.FullAccess,
+            DenialReason         = SubscriptionAccessDenialReason.None,
+            PlanCode             = planCode,
+            TrialEndsAtUtc       = trialEndsAtUtc,
+            GracePeriodEndsAtUtc = gracePeriodEndsAtUtc,
+            Version              = version,
+            EvaluatedAtUtc       = eval,
+        };
 
-            case BillingAccountStatus.Suspended:
-                return SubscriptionAccessResult.Suspended(
-                    "Cuenta de facturación suspendida.");
+    private static SubscriptionAccessSnapshot ReadOnly(
+        Guid id, long version, SubscriptionAccessDenialReason reason, string code,
+        string? planCode, DateTime eval,
+        DateTime? trialEndsAtUtc = null, DateTime? gracePeriodEndsAtUtc = null) =>
+        new()
+        {
+            SubscriberId         = id,
+            AccessMode           = SubscriptionAccessMode.ReadOnly,
+            DenialReason         = reason,
+            DenialCode           = code,
+            PlanCode             = planCode,
+            TrialEndsAtUtc       = trialEndsAtUtc,
+            GracePeriodEndsAtUtc = gracePeriodEndsAtUtc,
+            Version              = version,
+            EvaluatedAtUtc       = eval,
+        };
 
-            case BillingAccountStatus.GracePeriod:
-                if (account.GracePeriodEndsAtUtc.HasValue && account.GracePeriodEndsAtUtc.Value < utcNow)
-                    return SubscriptionAccessResult.TrialExpired(
-                        $"Período de gracia vencido ({account.GracePeriodEndsAtUtc:O}).");
+    private static SubscriptionAccessSnapshot Blocked(
+        Guid id, long version, SubscriptionAccessDenialReason reason, string code,
+        string? planCode, DateTime eval,
+        DateTime? trialEndsAtUtc = null, DateTime? gracePeriodEndsAtUtc = null) =>
+        new()
+        {
+            SubscriberId         = id,
+            AccessMode           = SubscriptionAccessMode.Blocked,
+            DenialReason         = reason,
+            DenialCode           = code,
+            PlanCode             = planCode,
+            TrialEndsAtUtc       = trialEndsAtUtc,
+            GracePeriodEndsAtUtc = gracePeriodEndsAtUtc,
+            Version              = version,
+            EvaluatedAtUtc       = eval,
+        };
 
-                return SubscriptionAccessResult.GracePeriod(
-                    $"Período de gracia activo hasta {account.GracePeriodEndsAtUtc:O}.");
+    // ── Projection DTOs (lightweight, no EF tracking) ────────────────────────
+    private sealed class SnapshotProjection
+    {
+        public SubscriberLifecycleStatus LifecycleStatus      { get; init; }
+        public string?                   SuspendedReason      { get; init; }
+        public string?                   PlanCode             { get; init; }
+        public BillingAccountStatus      AccountStatus        { get; init; }
+        public DateTime?                 TrialEndsAtUtc       { get; init; }
+        public DateTime?                 GracePeriodEndsAtUtc { get; init; }
+    }
 
-            case BillingAccountStatus.Trialing:
-                if (account.TrialEndsAtUtc.HasValue && account.TrialEndsAtUtc.Value < utcNow)
-                    return SubscriptionAccessResult.TrialExpired(
-                        $"Período de prueba vencido ({account.TrialEndsAtUtc:O}).");
-                return SubscriptionAccessResult.Allow();
-
-            case BillingAccountStatus.PastDue:
-                return SubscriptionAccessResult.PastDue("Pago pendiente.");
-
-            default: // Active
-                return SubscriptionAccessResult.Allow();
-        }
+    private sealed class SubscriberProjection
+    {
+        public SubscriberLifecycleStatus LifecycleStatus { get; init; }
+        public string?                   SuspendedReason { get; init; }
+        public string?                   PlanCode        { get; init; }
     }
 }
