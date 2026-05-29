@@ -12,7 +12,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace ERP.Infrastructure.Migrations
 {
     [DbContext(typeof(ErpDbContext))]
-    [Migration("20260529124825_ElectronicDocSubscriberScope")]
+    [Migration("20260529130245_ElectronicDocSubscriberScope")]
     partial class ElectronicDocSubscriberScope
     {
         /// <inheritdoc />
@@ -5028,6 +5028,9 @@ namespace ERP.Infrastructure.Migrations
                     b.HasIndex("EmissionPointId");
 
                     b.HasIndex("ErrorCode");
+
+                    b.HasIndex("SubscriberId")
+                        .HasDatabaseName("ix_electronic_doc_subscriber_id");
 
                     b.HasIndex("CompanyId", "IssueDate")
                         .HasDatabaseName("idx_edoc_company");

@@ -5026,6 +5026,9 @@ namespace ERP.Infrastructure.Migrations
 
                     b.HasIndex("ErrorCode");
 
+                    b.HasIndex("SubscriberId")
+                        .HasDatabaseName("ix_electronic_doc_subscriber_id");
+
                     b.HasIndex("CompanyId", "IssueDate")
                         .HasDatabaseName("idx_edoc_company");
 

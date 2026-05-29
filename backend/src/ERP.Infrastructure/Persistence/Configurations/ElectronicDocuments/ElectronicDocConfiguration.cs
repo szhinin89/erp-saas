@@ -47,6 +47,8 @@ public class ElectronicDocConfiguration : IEntityTypeConfiguration<ElectronicDoc
         builder.Property(x => x.UpdatedBy).HasColumnName("updated_by");
 
         // Índices
+        // Multi-tenant query filter index — must match ix_electronic_doc_subscriber_id in migration
+        builder.HasIndex(x => x.SubscriberId).HasDatabaseName("ix_electronic_doc_subscriber_id");
         builder.HasIndex(x => x.AccessKey)
             .IsUnique().HasFilter("access_key IS NOT NULL").HasDatabaseName("idx_edoc_access_key");
         builder.HasIndex(x => new { x.CompanyId, x.DocTypeCode, x.EstablishmentCode, x.EmissionPointCode, x.Sequential })
