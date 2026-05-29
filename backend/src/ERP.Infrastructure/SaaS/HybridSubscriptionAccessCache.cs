@@ -3,6 +3,7 @@ using ERP.Application.Common.Subscriptions;
 using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 namespace ERP.Infrastructure.SaaS;
 
@@ -22,22 +23,20 @@ public sealed class HybridSubscriptionAccessCache : ISubscriptionAccessCache
 {
     private static readonly JsonSerializerOptions Json = new(JsonSerializerDefaults.Web);
 
-    // L1 TTL is shorter than L2 so memory evicts before Redis — avoids stale L1 entries.
-    private static readonly TimeSpan L1Ttl = TimeSpan.FromSeconds(20);
-    private static readonly TimeSpan L2Ttl = TimeSpan.FromMinutes(5);
-    private static readonly TimeSpan VersionTtl = TimeSpan.FromDays(30);
-
-    private readonly IMemoryCache           _memory;
-    private readonly IDistributedCache      _distributed;
+    private readonly IMemoryCache                _memory;
+    private readonly IDistributedCache           _distributed;
+    private readonly SubscriptionBillingOptions  _opts;
     private readonly ILogger<HybridSubscriptionAccessCache> _log;
 
     public HybridSubscriptionAccessCache(
         IMemoryCache memory,
         IDistributedCache distributed,
+        IOptions<SubscriptionBillingOptions> options,
         ILogger<HybridSubscriptionAccessCache> log)
     {
         _memory      = memory;
         _distributed = distributed;
+        _opts        = options.Value;
         _log         = log;
     }
 
@@ -70,7 +69,7 @@ public sealed class HybridSubscriptionAccessCache : ISubscriptionAccessCache
             if (snapshot is null) return null;
 
             // Backfill L1
-            _memory.Set(l1Key, snapshot, L1Ttl);
+            _memory.Set(l1Key, snapshot, _opts.L1Ttl);
             return snapshot;
         }
         catch (Exception ex)
@@ -91,17 +90,17 @@ public sealed class HybridSubscriptionAccessCache : ISubscriptionAccessCache
             var bytes   = JsonSerializer.SerializeToUtf8Bytes(snapshot, Json);
 
             // L1
-            _memory.Set(l1Key, snapshot, L1Ttl);
+            _memory.Set(l1Key, snapshot, _opts.L1Ttl);
 
             // L2 version key (long TTL so it outlives the snapshot itself)
             var verBytes = BitConverter.GetBytes(version);
             try
             {
                 await _distributed.SetAsync(verKey, verBytes,
-                    new DistributedCacheEntryOptions { AbsoluteExpirationRelativeToNow = VersionTtl }, ct);
+                    new DistributedCacheEntryOptions { AbsoluteExpirationRelativeToNow = _opts.VersionTtl }, ct);
 
                 await _distributed.SetAsync(l2Key, bytes,
-                    new DistributedCacheEntryOptions { AbsoluteExpirationRelativeToNow = L2Ttl }, ct);
+                    new DistributedCacheEntryOptions { AbsoluteExpirationRelativeToNow = _opts.L2Ttl }, ct);
             }
             catch (Exception ex)
             {
@@ -124,13 +123,13 @@ public sealed class HybridSubscriptionAccessCache : ISubscriptionAccessCache
 
             // Clear L1 pattern: remove all versions by tracking them is complex.
             // Instead, use a sentinel L1 version key.
-            _memory.Set(verKey, newVersion, L1Ttl);
+            _memory.Set(verKey, newVersion, _opts.L1Ttl);
 
             var verBytes = BitConverter.GetBytes(newVersion);
             try
             {
                 await _distributed.SetAsync(verKey, verBytes,
-                    new DistributedCacheEntryOptions { AbsoluteExpirationRelativeToNow = VersionTtl }, ct);
+                    new DistributedCacheEntryOptions { AbsoluteExpirationRelativeToNow = _opts.VersionTtl }, ct);
             }
             catch (Exception ex)
             {
@@ -163,7 +162,7 @@ public sealed class HybridSubscriptionAccessCache : ISubscriptionAccessCache
         if (bytes is null || bytes.Length < 8) return 0L;
 
         var version = BitConverter.ToInt64(bytes);
-        if (version > 0) _memory.Set(verKey, version, L1Ttl);
+        if (version > 0) _memory.Set(verKey, version, _opts.L1Ttl);
         return version;
     }
 

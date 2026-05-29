@@ -1,29 +1,34 @@
 using ERP.Application.Billing.Invoices;
+using ERP.Application.Common.Subscriptions;
 using ERP.Domain.Billing.Entities;
 using ERP.Domain.Billing.Enums;
 using ERP.Domain.Billing.Interfaces;
-using ERP.Infrastructure.SaaS;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 namespace ERP.Infrastructure.SaaS;
 
 /// <summary>
 /// Creates and manages SaasBillingInvoice + BillingPaymentAttempt records.
 /// All operations are transactional via ISubscriberBillingRepository.SaveChangesAsync().
+/// Configurable via <see cref="SubscriptionBillingOptions"/>.
 /// </summary>
 public sealed class BillingInvoiceService : IBillingInvoiceService
 {
-    private readonly ISubscriberBillingRepository       _billing;
-    private readonly SubscriptionMetrics                _metrics;
-    private readonly ILogger<BillingInvoiceService>     _log;
+    private readonly ISubscriberBillingRepository      _billing;
+    private readonly SubscriptionMetrics               _metrics;
+    private readonly SubscriptionBillingOptions        _opts;
+    private readonly ILogger<BillingInvoiceService>    _log;
 
     public BillingInvoiceService(
         ISubscriberBillingRepository billing,
         SubscriptionMetrics metrics,
+        IOptions<SubscriptionBillingOptions> options,
         ILogger<BillingInvoiceService> log)
     {
         _billing = billing;
         _metrics = metrics;
+        _opts    = options.Value;
         _log     = log;
     }
 
@@ -62,8 +67,8 @@ public sealed class BillingInvoiceService : IBillingInvoiceService
 
         invoice.AddLine(line);
 
-        // Issue immediately with 30-day due date
-        var dueDate = periodEnd.AddDays(30);
+        // Issue immediately with configured due date
+        var dueDate = periodEnd.AddDays(_opts.InvoiceDueDays);
         invoice.Issue(dueDate, actorId);
 
         await _billing.AddInvoiceAsync(invoice, ct);

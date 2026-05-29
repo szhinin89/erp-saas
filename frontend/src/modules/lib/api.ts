@@ -7,31 +7,13 @@ import { getCorrelationId } from '../../lib/observability/requestContext';
 import { logDevApiRequest } from '../../lib/observability/devApiLog';
 import { useAuthStore } from '../../store/authStore';
 
-/**
- * Subscription-related 403 denial codes returned by SubscriptionAccessMiddleware.
- * Codes that cause immediate logout + redirect to /subscription-suspended.
- * ReadOnly codes (readonly_mode, subscription_past_due, subscription_grace_period_expired)
- * do NOT cause logout — they are informational banners on the UI.
- */
-const SUBSCRIPTION_DENIAL_CODES = new Set([
-  'subscription_suspended',
-  'subscription_inactive',
-  'subscription_cancelled',
-  'subscription_trial_expired',
-  'subscription_grace_period_expired',
-  'subscription_access_denied',
-]);
-
-/** ReadOnly codes — allow request but signal UI to show banner (no logout). */
-const READONLY_CODES = new Set([
-  'readonly_mode',
-  'subscription_past_due',
-]);
+// Import centralized status constants — single source of truth for denial code handling
+import { BLOCKED_DENIAL_CODES, READONLY_DENIAL_CODES } from '../saas/billing/constants/subscriptionStatus';
 
 function isSubscriptionDenial(responseData: unknown): boolean {
   if (typeof responseData !== 'object' || responseData === null) return false;
   const code = (responseData as Record<string, unknown>).code;
-  return typeof code === 'string' && SUBSCRIPTION_DENIAL_CODES.has(code);
+  return typeof code === 'string' && BLOCKED_DENIAL_CODES.has(code);
 }
 
 function handleSubscriptionDenial(responseData: unknown): void {
@@ -111,7 +93,7 @@ api.interceptors.response.use(
       const code = typeof data === 'object' && data !== null ? (data as Record<string,unknown>).code : undefined;
 
       // ReadOnly mode (GracePeriod/PastDue) — don't logout, let UI show banner
-      if (typeof code === 'string' && READONLY_CODES.has(code)) {
+      if (typeof code === 'string' && READONLY_DENIAL_CODES.has(code)) {
         return Promise.reject(error); // propagate for components to handle
       }
 

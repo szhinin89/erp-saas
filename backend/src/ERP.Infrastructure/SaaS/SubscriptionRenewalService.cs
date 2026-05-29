@@ -8,8 +8,8 @@ using ERP.Domain.Billing.Interfaces;
 using ERP.Domain.Subscriptions.Entities;
 using ERP.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 namespace ERP.Infrastructure.SaaS;
 
@@ -29,7 +29,7 @@ public sealed class SubscriptionRenewalService : ISubscriptionRenewalService
     private readonly ISubscriberBillingRepository        _billing;
     private readonly IBillingInvoiceService              _invoiceService;
     private readonly SubscriptionMetrics                 _metrics;
-    private readonly IConfiguration                      _config;
+    private readonly SubscriptionBillingOptions          _opts;
     private readonly ILogger<SubscriptionRenewalService> _log;
 
     public SubscriptionRenewalService(
@@ -39,7 +39,7 @@ public sealed class SubscriptionRenewalService : ISubscriptionRenewalService
         ISubscriberBillingRepository billing,
         IBillingInvoiceService invoiceService,
         SubscriptionMetrics metrics,
-        IConfiguration config,
+        IOptions<SubscriptionBillingOptions> options,
         ILogger<SubscriptionRenewalService> log)
     {
         _db              = db;
@@ -48,14 +48,15 @@ public sealed class SubscriptionRenewalService : ISubscriptionRenewalService
         _billing         = billing;
         _invoiceService  = invoiceService;
         _metrics         = metrics;
-        _config          = config;
+        _opts            = options.Value;
         _log             = log;
     }
 
-    public async Task ProcessUpcomingRenewalsAsync(int lookAheadHours = 24, CancellationToken ct = default)
+    public async Task ProcessUpcomingRenewalsAsync(int lookAheadHours = -1, CancellationToken ct = default)
     {
+        var hours   = lookAheadHours > 0 ? lookAheadHours : _opts.RenewalLookAheadHours;
         var now     = DateTime.UtcNow;
-        var horizon = now.AddHours(Math.Max(1, lookAheadHours));
+        var horizon = now.AddHours(Math.Max(1, hours));
 
         var accounts = await _db.SubscriberBillingAccounts
             .AsNoTracking()
@@ -192,7 +193,7 @@ public sealed class SubscriptionRenewalService : ISubscriptionRenewalService
                 "SubscriptionRenewalService: payment failed subscriber={SubscriberId} reason={Reason}",
                 subscriberId, reason);
 
-            var graceDays = _config.GetValue("SaaS:RenewalGracePeriodDays", 7);
+            var graceDays = _opts.RenewalGracePeriodDays;
             await _lifecycle.EnterGracePeriodAsync(
                 subscriberId, DateTime.UtcNow.AddDays(graceDays), sysId, ct);
 

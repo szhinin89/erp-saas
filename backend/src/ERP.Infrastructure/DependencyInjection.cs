@@ -209,7 +209,10 @@ public static class DependencyInjection
         services.AddScoped<ISubscriberBillingRepository, SubscriberBillingRepository>();
         services.AddScoped<IBillingGovernanceService, BillingGovernanceService>();
 
-        // Subscription Lifecycle Engine (FASE 1-17 hardening)
+        // Subscription Lifecycle Engine — centralized configurable constants
+        services.Configure<ERP.Application.Common.Subscriptions.SubscriptionBillingOptions>(
+            configuration.GetSection(ERP.Application.Common.Subscriptions.SubscriptionBillingOptions.SectionName));
+
         services.AddSingleton<ERP.Infrastructure.SaaS.SubscriptionMetrics>();
         services.AddSingleton<ERP.Application.Common.Subscriptions.ISubscriptionAccessCache,
             ERP.Infrastructure.SaaS.HybridSubscriptionAccessCache>();

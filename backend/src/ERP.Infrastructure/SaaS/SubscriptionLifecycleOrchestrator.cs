@@ -14,6 +14,7 @@ using ERP.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 namespace ERP.Infrastructure.SaaS;
 
@@ -42,6 +43,7 @@ public sealed class SubscriptionLifecycleOrchestrator : ISubscriptionLifecycleOr
     private readonly ISubscriberEntitlementsCacheInvalidator _entitlementsCache;
     private readonly ISubscriptionAccessCache            _accessCache;
     private readonly SubscriptionMetrics                 _metrics;
+    private readonly SubscriptionBillingOptions          _opts;
     private readonly ILogger<SubscriptionLifecycleOrchestrator> _log;
 
     public SubscriptionLifecycleOrchestrator(
@@ -50,6 +52,7 @@ public sealed class SubscriptionLifecycleOrchestrator : ISubscriptionLifecycleOr
         ISubscriberEntitlementsCacheInvalidator entitlementsCache,
         ISubscriptionAccessCache accessCache,
         SubscriptionMetrics metrics,
+        IOptions<SubscriptionBillingOptions> options,
         ILogger<SubscriptionLifecycleOrchestrator> log)
     {
         _db                = db;
@@ -57,6 +60,7 @@ public sealed class SubscriptionLifecycleOrchestrator : ISubscriptionLifecycleOr
         _entitlementsCache = entitlementsCache;
         _accessCache       = accessCache;
         _metrics           = metrics;
+        _opts              = options.Value;
         _log               = log;
     }
 
@@ -278,10 +282,10 @@ public sealed class SubscriptionLifecycleOrchestrator : ISubscriptionLifecycleOr
                 subscription.Reactivate(actorId);
                 break;
             case SubscriberLifecycleStatus.Trial:
-                subscription.StartTrial(DateTime.UtcNow.AddDays(30), actorId);
+                subscription.StartTrial(DateTime.UtcNow.AddDays(_opts.TrialDurationDays), actorId);
                 break;
             case SubscriberLifecycleStatus.GracePeriod:
-                subscription.EnterGracePeriod(DateTime.UtcNow.AddDays(7), actorId);
+                subscription.EnterGracePeriod(DateTime.UtcNow.AddDays(_opts.TrialGracePeriodDays), actorId);
                 break;
             case SubscriberLifecycleStatus.Suspended:
                 subscription.Suspend(actorId);

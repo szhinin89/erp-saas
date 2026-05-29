@@ -6,17 +6,15 @@ import { ZHPageNotice } from '../../../components/zh/ZHPageNotice';
 import { LoadingState, EmptyState } from '../../../components/PageShell';
 import { RuntimeModeBadge } from '../../../components/RuntimeModeBadge';
 import { saasBillingService, type SaasBillingInvoiceDto, type SubscriberBillingAccountDto } from '../billing/api/saasBillingService';
+import { isReadOnlyBillingStatus, isBlockedBillingStatus } from '../billing/constants/subscriptionStatus';
 import { formatApiRequestError } from '../../../modules/lib/apiError';
 import { useI18n } from '../../../i18n/i18n';
 import { formatDate } from '../../../lib/formatters/dateFormatters';
 
 // ── ReadOnly / GracePeriod banner ─────────────────────────────────────────────
 
-const READONLY_STATUSES = new Set(['GracePeriod', 'PastDue']);
-const BLOCKED_STATUSES  = new Set(['Suspended', 'Cancelled']);
-
 function AccountStatusBanner({ account }: { account: SubscriberBillingAccountDto }) {
-  if (BLOCKED_STATUSES.has(account.status)) {
+  if (isBlockedBillingStatus(account.status)) {
     return (
       <ZHPageNotice
         variant="error"
@@ -25,13 +23,13 @@ function AccountStatusBanner({ account }: { account: SubscriberBillingAccountDto
       />
     );
   }
-  if (READONLY_STATUSES.has(account.status)) {
+  if (isReadOnlyBillingStatus(account.status)) {
     return (
       <ZHPageNotice
         variant="warning"
         message="Modo solo lectura activo"
         detail={
-          account.status === 'GracePeriod'
+          isReadOnlyBillingStatus(account.status) && account.status === 'GracePeriod'
             ? 'Tu cuenta está en período de gracia. Las operaciones de escritura están deshabilitadas hasta regularizar el pago.'
             : 'Hay un pago pendiente en tu cuenta. Las operaciones de escritura están deshabilitadas.'
         }
@@ -101,8 +99,8 @@ export function SaasBillingPage() {
 
   useEffect(() => { void load(); }, [load]);
 
-  const isReadOnly = account ? READONLY_STATUSES.has(account.status) : false;
-  const isBlocked  = account ? BLOCKED_STATUSES.has(account.status) : false;
+  const isReadOnly = account ? isReadOnlyBillingStatus(account.status) : false;
+  const isBlocked  = account ? isBlockedBillingStatus(account.status) : false;
 
   return (
     <ErpPageTemplate

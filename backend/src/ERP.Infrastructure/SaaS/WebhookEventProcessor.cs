@@ -3,6 +3,7 @@ using ERP.Application.Common.Subscriptions;
 using ERP.Domain.Billing.Entities;
 using ERP.Domain.Billing.Interfaces;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 namespace ERP.Infrastructure.SaaS;
 
@@ -14,15 +15,18 @@ public sealed class WebhookEventProcessor : IPaymentWebhookProcessor
 {
     private readonly ISubscriptionLifecycleOrchestrator _lifecycle;
     private readonly ISubscriberBillingRepository       _billing;
+    private readonly SubscriptionBillingOptions         _opts;
     private readonly ILogger<WebhookEventProcessor>     _log;
 
     public WebhookEventProcessor(
         ISubscriptionLifecycleOrchestrator lifecycle,
         ISubscriberBillingRepository billing,
+        IOptions<SubscriptionBillingOptions> options,
         ILogger<WebhookEventProcessor> log)
     {
         _lifecycle = lifecycle;
         _billing   = billing;
+        _opts      = options.Value;
         _log       = log;
     }
 
@@ -85,7 +89,7 @@ public sealed class WebhookEventProcessor : IPaymentWebhookProcessor
             case ProviderWebhookEventType.PaymentFailed:
             case ProviderWebhookEventType.InvoicePaymentFailed:
                 await _lifecycle.EnterGracePeriodAsync(
-                    subscriberId, DateTime.UtcNow.AddDays(7), actorId, ct);
+                    subscriberId, DateTime.UtcNow.AddDays(_opts.WebhookPaymentFailureGracePeriodDays), actorId, ct);
                 break;
 
             case ProviderWebhookEventType.SubscriptionCancelled:

@@ -6,6 +6,7 @@ using ERP.Domain.Subscribers.Entities;
 using ERP.Domain.Subscribers.Interfaces;
 using ERP.Infrastructure.SaaS;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 
 namespace ERP.API.Hangfire;
 
@@ -28,27 +29,27 @@ public sealed class CheckSubscriptionExpiryJob : ICheckSubscriptionExpiryJob
     private readonly ISubscriberRepository                  _subscribers;
     private readonly ISubscriberBillingRepository           _billing;
     private readonly ILogger<CheckSubscriptionExpiryJob>    _logger;
-    private readonly IConfiguration                         _config;
+    private readonly SubscriptionBillingOptions             _opts;
     private readonly IServiceScopeFactory                   _scopeFactory;
 
     public CheckSubscriptionExpiryJob(
         ISubscriberRepository subscribers,
         ISubscriberBillingRepository billing,
         ILogger<CheckSubscriptionExpiryJob> logger,
-        IConfiguration config,
+        IOptions<SubscriptionBillingOptions> options,
         IServiceScopeFactory scopeFactory)
     {
         _subscribers  = subscribers;
         _billing      = billing;
         _logger       = logger;
-        _config       = config;
+        _opts         = options.Value;
         _scopeFactory = scopeFactory;
     }
 
     public async Task ExecuteAsync(CancellationToken ct = default)
     {
         var now       = DateTime.UtcNow;
-        var graceDays = _config.GetValue("SaaS:TrialGracePeriodDays", 7);
+        var graceDays = _opts.TrialGracePeriodDays;
         var all       = await _subscribers.GetAllAsync(ct);
 
         var failures  = 0;
