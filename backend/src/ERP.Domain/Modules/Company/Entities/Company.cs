@@ -71,6 +71,13 @@ public class Company : ISubscriberScopedEntity
     /// </summary>
     public CompanyOperationalStatus OperationalStatus   { get; private set; } = CompanyOperationalStatus.PendingSetup;
 
+    /// <summary>
+    /// True when this Company belongs to the internal platform owner (created by first-run provisioning).
+    /// Internal companies are excluded from: SaaS billing views, tenant metrics, commercial reports.
+    /// Set only by the setup-platform flow — cannot be toggled after creation.
+    /// </summary>
+    public bool IsPlatformInternal { get; private set; } = false;
+
     // Navigation
     public SriCountry?      Country      { get; set; }
     public SriTaxRegime?    TaxRegime    { get; set; }
@@ -109,6 +116,19 @@ public class Company : ISubscriberScopedEntity
     {
         OperationalStatus = CompanyOperationalStatus.Suspended;
         UpdatedAt         = DateTime.UtcNow;
+    }
+
+    /// <summary>
+    /// Marks this company as belonging to the internal platform owner.
+    /// Call only during first-run provisioning (POST /api/setup/platform-owner).
+    /// Cannot be toggled after setting — treat as immutable.
+    /// </summary>
+    public void MarkAsPlatformInternal()
+    {
+        IsPlatformInternal  = true;
+        OnboardingCompleted = true;
+        OperationalStatus   = CompanyOperationalStatus.Operational;
+        UpdatedAt           = DateTime.UtcNow;
     }
 
     // ── Factory methods ───────────────────────────────────────────────────────

@@ -7,6 +7,7 @@ using ERP.Application.Auth.UseCases.ClaimInitialPlatformOperator;
 using ERP.Application.Auth.UseCases.PlatformOwnerSetup;
 using ERP.Application.Common;
 using ERP.Application.Common.Interfaces;
+using ERP.Application.Platform.Provisioning;
 using ERP.Domain.Access.Interfaces;
 using ERP.Domain.Subscribers.Interfaces;
 using Microsoft.AspNetCore.Authorization;
@@ -27,6 +28,9 @@ public sealed class SetupController : ControllerBase
     private readonly IWebHostEnvironment _environment;
     private readonly ISubscriberRepository _subscribers;
     private readonly IAccessRepository _access;
+    private readonly IPlatformProvisioningLockService  _provisioningLock;
+    private readonly IPlatformProvisioningAuditService _provisioningAudit;
+    private readonly IPlatformProvisioningResetService _provisioningReset;
 
     public SetupController(
         IMediator mediator,
@@ -34,7 +38,10 @@ public sealed class SetupController : ControllerBase
         ISubscriberIntegrityRepairService integrityRepair,
         IWebHostEnvironment environment,
         ISubscriberRepository subscribers,
-        IAccessRepository access)
+        IAccessRepository access,
+        IPlatformProvisioningLockService provisioningLock,
+        IPlatformProvisioningAuditService provisioningAudit,
+        IPlatformProvisioningResetService provisioningReset)
     {
         _mediator             = mediator;
         _firstRunSetupService = firstRunSetupService;
@@ -42,6 +49,9 @@ public sealed class SetupController : ControllerBase
         _environment          = environment;
         _subscribers          = subscribers;
         _access               = access;
+        _provisioningLock     = provisioningLock;
+        _provisioningAudit    = provisioningAudit;
+        _provisioningReset    = provisioningReset;
     }
 
     // ── GET /api/setup/platform/status ────────────────────────────────────────
@@ -155,6 +165,71 @@ public sealed class SetupController : ControllerBase
             : await _integrityRepair.ScanAsync(ct);
 
         return this.ApiOk(new { report.Issues, report.RepairedCount, mode = repair ? "repair" : "scan" });
+    }
+
+    // ── GET /api/setup/platform/provisioning-status ────────────────────────────
+
+    /// <summary>
+    /// Returns the current provisioning lock state and full audit history.
+    /// </summary>
+    [HttpGet("platform/provisioning-status")]
+    [AllowAnonymous]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetProvisioningStatus(CancellationToken ct)
+    {
+        var lockState = await _provisioningLock.GetStateAsync(ct);
+        var history   = await _provisioningAudit.GetHistoryAsync(ct);
+
+        return this.ApiOk(new
+        {
+            Lock = new
+            {
+                lockState.IsLocked,
+                lockState.LockedByInstance,
+                lockState.LockedAtUtc,
+                lockState.ExpiresAtUtc,
+                lockState.IsExpired,
+            },
+            AuditEvents = history.Select(e => new
+            {
+                e.Id,
+                EventType    = e.EventType.ToString(),
+                e.TimestampUtc,
+                e.IsSuccess,
+                e.SubscriberId,
+                e.CompanyId,
+                e.OperatorUserId,
+                e.InstanceId,
+                e.Metadata,
+                e.ErrorMessage,
+            }),
+        });
+    }
+
+    // ── POST /api/dev/reset-platform-provisioning ──────────────────────────────
+
+    /// <summary>
+    /// DEVELOPMENT ONLY. Removes the internal platform owner subscriber and company,
+    /// releases the provisioning lock, and issues a fresh setup token.
+    /// Allows re-running the first-run provisioning script from scratch.
+    /// </summary>
+    [HttpPost("/api/dev/reset-platform-provisioning")]
+    [AllowAnonymous]
+    [ApiExplorerSettings(IgnoreApi = true)]
+    public async Task<IActionResult> ResetPlatformProvisioning(CancellationToken ct)
+    {
+        if (!_environment.IsDevelopment())
+            return this.ApiNotFound("Endpoint disponible solo en Development.");
+
+        var result = await _provisioningReset.ResetAsync(ct);
+
+        return this.ApiOk(new
+        {
+            Message      = "Platform provisioning reset. A new setup token has been issued.",
+            result.RemovedItems,
+            result.SetupToken,
+            result.ExpiresAtUtc,
+        });
     }
 }
 

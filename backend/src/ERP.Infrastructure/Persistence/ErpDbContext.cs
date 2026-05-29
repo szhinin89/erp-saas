@@ -34,6 +34,7 @@ using ERP.Domain.Modules.Auxiliary.Entities;
 using ERP.Application.Common;
 using ERP.Domain.MasterData.Entities;
 using ERP.Domain.Platform.Audit.Entities;
+using ERP.Domain.Platform.Provisioning;
 using FiscalInvoiceDetail = ERP.Domain.Modules.Fiscal.Entities.InvoiceDetail;
 
 namespace ERP.Infrastructure.Persistence;
@@ -448,6 +449,10 @@ public class ErpDbContext : DbContext
 
     // ── Platform Audit (global, no tenant filter) ──────────────────────────
     public DbSet<PlatformAuditLog> PlatformAuditLogs => Set<PlatformAuditLog>();
+
+    // ── Platform Provisioning (singleton lock + immutable audit) ───────────
+    public DbSet<PlatformProvisioningLock>       PlatformProvisioningLocks      => Set<PlatformProvisioningLock>();
+    public DbSet<PlatformProvisioningAuditEvent> PlatformProvisioningAuditEvents => Set<PlatformProvisioningAuditEvent>();
 
     /// <summary>
     /// Evaluada en cada query, no al compilar el modelo.

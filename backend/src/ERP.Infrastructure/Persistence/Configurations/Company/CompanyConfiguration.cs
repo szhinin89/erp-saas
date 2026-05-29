@@ -61,6 +61,15 @@ public class CompanyConfiguration : IEntityTypeConfiguration<Company>
             .HasDefaultValue(ERP.Domain.Modules.Company.Enums.CompanyOperationalStatus.PendingSetup)
             .IsRequired();
 
+        // Platform Internal flag (excludes from SaaS billing/reports)
+        builder.Property(x => x.IsPlatformInternal)
+            .HasColumnName("is_platform_internal")
+            .HasDefaultValue(false)
+            .IsRequired();
+        builder.HasIndex(x => x.IsPlatformInternal)
+            .HasFilter("is_platform_internal = true")
+            .HasDatabaseName("ix_company_platform_internal");
+
         builder.HasIndex(x => x.Ruc).IsUnique().HasDatabaseName("uq_company_ruc");
         builder.HasIndex(x => x.SubscriberId).HasDatabaseName("ix_company_subscriber_id");
 

@@ -279,6 +279,14 @@ public static class DependencyInjection
         services.AddScoped<ERP.Application.Platform.Audit.IPlatformAuditLogger, ERP.Infrastructure.Platform.Audit.PlatformAuditLogger>();
         services.AddScoped<ERP.Application.Platform.Audit.IPlatformAuditReader, ERP.Infrastructure.Platform.Audit.PlatformAuditReader>();
         services.AddScoped<ERP.Application.Platform.Users.IPlatformUsersReader, ERP.Infrastructure.Platform.Users.PlatformUsersReader>();
+
+        // Platform Provisioning services
+        services.AddScoped<ERP.Application.Platform.Provisioning.IPlatformProvisioningLockService,
+            ERP.Infrastructure.Platform.PlatformProvisioningLockService>();
+        services.AddScoped<ERP.Application.Platform.Provisioning.IPlatformProvisioningAuditService,
+            ERP.Infrastructure.Platform.PlatformProvisioningAuditService>();
+        services.AddScoped<ERP.Application.Platform.Provisioning.IPlatformProvisioningResetService,
+            ERP.Infrastructure.Platform.PlatformProvisioningResetService>();
         services.AddScoped<CommercialCatalogQuery>();
         services.AddScoped<ICommercialCatalogQuery>(sp => sp.GetRequiredService<CommercialCatalogQuery>());
         services.AddScoped<IPublicCommercialPlansQuery>(sp => sp.GetRequiredService<CommercialCatalogQuery>());
