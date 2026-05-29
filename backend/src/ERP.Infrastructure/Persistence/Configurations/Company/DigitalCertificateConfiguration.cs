@@ -11,6 +11,8 @@ public class DigitalCertificateConfiguration : IEntityTypeConfiguration<DigitalC
         builder.ToTable("digital_certificate");
         builder.HasKey(x => x.Id);
         builder.Property(x => x.Id).HasColumnName("id").HasDefaultValueSql("gen_random_uuid()");
+        // Multi-tenant scope (backfilled from company.subscriber_id)
+        builder.Property(x => x.SubscriberId).HasColumnName("subscriber_id").IsRequired();
         builder.Property(x => x.CompanyId).HasColumnName("company_id").IsRequired();
         builder.Property(x => x.FilePath).HasColumnName("file_path").HasMaxLength(500).IsRequired();
         builder.Property(x => x.PasswordHash).HasColumnName("password_hash").HasMaxLength(500).IsRequired();
@@ -20,6 +22,7 @@ public class DigitalCertificateConfiguration : IEntityTypeConfiguration<DigitalC
         builder.Property(x => x.IsActive).HasColumnName("is_active").HasDefaultValue(true);
         builder.Property(x => x.CreatedAt).HasColumnName("created_at").HasDefaultValueSql("NOW()");
 
+        builder.HasIndex(x => x.SubscriberId).HasDatabaseName("ix_digital_certificate_subscriber_id");
         builder.HasIndex(x => x.CompanyId).HasDatabaseName("idx_cert_company");
 
         builder.HasOne(x => x.Company)

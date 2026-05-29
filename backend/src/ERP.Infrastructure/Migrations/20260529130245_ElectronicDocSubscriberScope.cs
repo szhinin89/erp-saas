@@ -27,11 +27,12 @@ namespace ERP.Infrastructure.Migrations
                 nullable: false,
                 defaultValue: new Guid("00000000-0000-0000-0000-000000000000"));
 
-            // Step 2: Backfill from companies.subscriber_id via FK
+            // Step 2: Backfill from company.subscriber_id via FK
+            // NOTE: physical table name is "company" (singular), configured via ToTable("company")
             migrationBuilder.Sql(@"
                 UPDATE electronic_doc ed
                 SET subscriber_id = c.subscriber_id
-                FROM companies c
+                FROM company c
                 WHERE c.id = ed.company_id;
             ");
 

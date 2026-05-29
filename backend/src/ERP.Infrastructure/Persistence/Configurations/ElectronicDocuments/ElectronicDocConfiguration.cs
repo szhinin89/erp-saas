@@ -61,18 +61,22 @@ public class ElectronicDocConfiguration : IEntityTypeConfiguration<ElectronicDoc
         builder.HasOne(x => x.DocType).WithMany().HasForeignKey(x => x.DocTypeCode).OnDelete(DeleteBehavior.Restrict);
         builder.HasOne(x => x.Error).WithMany().HasForeignKey(x => x.ErrorCode).IsRequired(false).OnDelete(DeleteBehavior.Restrict);
 
-        // Extensiones 1:1 (shared primary key)
+        // Extensiones 1:1 (shared primary key — el Id de la extensión ES el FK a ElectronicDoc.Id).
+        // .IsRequired(false) en la navegación inverse (ElectronicDoc dentro de la extensión) resuelve
+        // el warning de EF Core sobre required navigation to filtered entity.
+        // SAFE: la extensión NO puede existir sin su ElectronicDoc padre (cascade delete + PK compartida).
+        // El warning es un false positive ya que ambas entidades SIEMPRE tienen el mismo tenant scope.
         builder.HasOne(x => x.SalesInvoice).WithOne(x => x.ElectronicDoc)
-            .HasForeignKey<SalesInvoice>(x => x.Id).OnDelete(DeleteBehavior.Cascade);
+            .HasForeignKey<SalesInvoice>(x => x.Id).IsRequired(false).OnDelete(DeleteBehavior.Cascade);
         builder.HasOne(x => x.CreditNote).WithOne(x => x.ElectronicDoc)
-            .HasForeignKey<CreditNote>(x => x.Id).OnDelete(DeleteBehavior.Cascade);
+            .HasForeignKey<CreditNote>(x => x.Id).IsRequired(false).OnDelete(DeleteBehavior.Cascade);
         builder.HasOne(x => x.DebitNote).WithOne(x => x.ElectronicDoc)
-            .HasForeignKey<DebitNote>(x => x.Id).OnDelete(DeleteBehavior.Cascade);
+            .HasForeignKey<DebitNote>(x => x.Id).IsRequired(false).OnDelete(DeleteBehavior.Cascade);
         builder.HasOne(x => x.DeliveryGuide).WithOne(x => x.ElectronicDoc)
-            .HasForeignKey<DeliveryGuide>(x => x.Id).OnDelete(DeleteBehavior.Cascade);
+            .HasForeignKey<DeliveryGuide>(x => x.Id).IsRequired(false).OnDelete(DeleteBehavior.Cascade);
         builder.HasOne(x => x.WithholdingCertificate).WithOne(x => x.ElectronicDoc)
-            .HasForeignKey<WithholdingCertificate>(x => x.Id).OnDelete(DeleteBehavior.Cascade);
+            .HasForeignKey<WithholdingCertificate>(x => x.Id).IsRequired(false).OnDelete(DeleteBehavior.Cascade);
         builder.HasOne(x => x.PurchaseSettlement).WithOne(x => x.ElectronicDoc)
-            .HasForeignKey<PurchaseSettlement>(x => x.Id).OnDelete(DeleteBehavior.Cascade);
+            .HasForeignKey<PurchaseSettlement>(x => x.Id).IsRequired(false).OnDelete(DeleteBehavior.Cascade);
     }
 }

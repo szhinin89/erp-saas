@@ -3,6 +3,7 @@ using System;
 using ERP.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace ERP.Infrastructure.Migrations
 {
     [DbContext(typeof(ErpDbContext))]
-    partial class ErpDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260529132957_CompanyEntitySubscriberScope")]
+    partial class CompanyEntitySubscriberScope
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -13867,7 +13870,7 @@ namespace ERP.Infrastructure.Migrations
 
                             b1.HasKey("BusinessPartnerId");
 
-                            b1.ToTable("master_business_partners", (string)null);
+                            b1.ToTable("master_business_partners");
 
                             b1.WithOwner()
                                 .HasForeignKey("BusinessPartnerId");
@@ -13993,7 +13996,7 @@ namespace ERP.Infrastructure.Migrations
 
                             b1.HasKey("JournalEntryLineId");
 
-                            b1.ToTable("journal_entry_lines", (string)null);
+                            b1.ToTable("journal_entry_lines");
 
                             b1.WithOwner()
                                 .HasForeignKey("JournalEntryLineId");
@@ -14017,7 +14020,7 @@ namespace ERP.Infrastructure.Migrations
 
                             b1.HasKey("JournalEntryLineId");
 
-                            b1.ToTable("journal_entry_lines", (string)null);
+                            b1.ToTable("journal_entry_lines");
 
                             b1.WithOwner()
                                 .HasForeignKey("JournalEntryLineId");
