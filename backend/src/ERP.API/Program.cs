@@ -272,7 +272,8 @@ if (!app.Environment.IsEnvironment("Testing")
     await CommercialPlansBootstrap.EnsureDefaultsAsync(db);
     await CommercialPlanFeaturesBootstrap.EnsureDefaultsAsync(db);
     await CommercialPlanLimitsBootstrap.EnsureDefaultsAsync(db);
-    await ZHTechnologiesBootstrap.EnsureAsync(db, app.Configuration);
+    // NOTE: ZHTechnologiesBootstrap removed — platform owner is now provisioned
+    // explicitly via POST /api/setup/platform-owner (called by Crear-PlatformOperator.ps1).
 }
 
 // Datos demo (subscriber-demo + admin) solo si se activa explícitamente — ver appsettings.Development → Development:SeedDemoSubscriber.

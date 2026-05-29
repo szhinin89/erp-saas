@@ -23,6 +23,7 @@ public class SubscriberConfiguration : IEntityTypeConfiguration<Subscriber>
         builder.Property(t => t.Priority).HasColumnName("priority").IsRequired();
         builder.Property(t => t.PlanCode).HasColumnName("plan_code").HasMaxLength(64);
         builder.Property(t => t.PreferredLanguage).HasColumnName("preferred_language").HasMaxLength(10).IsRequired().HasDefaultValue("es");
+        builder.Property(t => t.IsInternalPlatformOwner).HasColumnName("is_internal_platform_owner").HasDefaultValue(false).IsRequired();
 
         // Lifecycle (control plane)
         builder.Property(t => t.LifecycleStatus).HasColumnName("lifecycle_status").IsRequired().HasDefaultValue(SubscriberLifecycleStatus.Active);

@@ -1,355 +1,429 @@
 <#
 .SYNOPSIS
-    Crea el operador platform global en el ERP SaaS (modo first-run).
-.DESCRIPTION
-    Guía interactiva para:
-      - Conectar con la API.
-      - Usar el token efímero de first-run (tabla first_run_setup_state, hash en BD).
-      - Crear el operador en identity_users (user_type=Platform, platform_role=PlatformOperator).
-      - Verificar JWT (respuesta del setup o login POST /api/platform/auth/login).
+    First-Run Platform Provisioning Script — ERP SaaS.
 
-    NOTAS:
-      - El token first-run expira en ~15 minutos y solo se muestra en consola del servidor
-        (o vía POST /api/dev/reset-first-run en Development).
-      - Deployment:InitialPlatformOperatorSetupToken NO valida este flujo; no uses esa clave como sustituto.
-      - El login requiere Deployment:PlatformPanelEnabled = true (por defecto suele estarlo).
+.DESCRIPTION
+    Aprovisiona la plataforma SaaS desde cero en un único flujo interactivo:
+
+      ETAPA 1  Conexión y estado del sistema
+      ETAPA 2  Propietario de la plataforma (Subscriber + Company interna)
+      ETAPA 3  Platform Operator User (user_type=Platform)
+      ETAPA 4  Verificación de login y JWT
+      ETAPA 5  Resumen final
+
+    IDEMPOTENCIA:
+      Si la plataforma ya está provisionada, el script informa y sale de forma segura.
+      Si solo falta el Platform Operator, continúa desde la etapa 3.
+
+    VARIABLES DE ENTORNO (opcionales para CI/CD):
+      ERP_API_URL               URL base de la API (ej. http://localhost:5003)
+      ERP_PLATFORM_SETUP_TOKEN  Token efímero de first-run (consola del API)
+      ERP_PLATFORM_EMAIL        Email del operador platform
+      ERP_PLATFORM_PASSWORD     Contraseña del operador platform
+      ERP_OWNER_PLATFORM_NAME   Nombre de la plataforma (ej. "Acme SaaS")
+      ERP_OWNER_TAXID           RUC / TaxId de la empresa operadora
+      ERP_OWNER_LEGAL_NAME      Razón social
+      ERP_OWNER_ADDRESS         Dirección principal
+      ERP_OWNER_EMAIL           Email de billing/contacto
+
 .EXAMPLE
     .\scripts\setup\Crear-PlatformOperator.ps1
+
 .EXAMPLE
-    $env:ERP_PLATFORM_OPERATOR_SETUP_TOKEN = '<token-desde-consola>'; .\scripts\setup\Crear-PlatformOperator.ps1
+    $env:ERP_API_URL = "https://api.midominio.com"
+    $env:ERP_PLATFORM_SETUP_TOKEN = "base64token=="
+    .\scripts\setup\Crear-PlatformOperator.ps1
 #>
 
-$ErrorActionPreference = "Stop"
+[CmdletBinding()]
+param()
 
-# Salida UTF-8 en consola Windows (acentos en mensajes del script)
+$ErrorActionPreference = "Stop"
+$script:ApiBase    = $null
+$script:SetupToken = $null
+$script:StageNum   = 0
+
+# ─── UTF-8 ────────────────────────────────────────────────────────────────────
 try {
     if ($PSVersionTable.PSVersion.Major -ge 6) {
         [Console]::OutputEncoding = [System.Text.UTF8Encoding]::new($false)
         $OutputEncoding = [Console]::OutputEncoding
-    }
-    else {
+    } else {
         chcp 65001 | Out-Null
         [Console]::OutputEncoding = [System.Text.UTF8Encoding]::new($false)
     }
+} catch { }
+
+# ─── Helpers consola ─────────────────────────────────────────────────────────
+function Write-Stage($title) {
+    $script:StageNum++
+    $line = "─" * 68
+    Write-Host ""
+    Write-Host $line                              -ForegroundColor DarkGray
+    Write-Host "  ETAPA $($script:StageNum) · $title" -ForegroundColor White
+    Write-Host $line                              -ForegroundColor DarkGray
 }
-catch { }
+function Write-Info($m)    { Write-Host "  ℹ  $m" -ForegroundColor Cyan    }
+function Write-Ok($m)      { Write-Host "  ✓  $m" -ForegroundColor Green   }
+function Write-Warn($m)    { Write-Host "  ⚠  $m" -ForegroundColor Yellow  }
+function Write-Err($m)     { Write-Host "  ✗  $m" -ForegroundColor Red     }
+function Write-Detail($m)  { Write-Host "     $m" -ForegroundColor DarkCyan }
 
-function Write-Info { Write-Host "[INFO] $($args[0])" -ForegroundColor Cyan }
-function Write-Success { Write-Host "[SUCCESS] $($args[0])" -ForegroundColor Green }
-function Write-Err { Write-Host "[ERROR] $($args[0])" -ForegroundColor Red }
-function Write-Warn { Write-Host "[WARNING] $($args[0])" -ForegroundColor Yellow }
-
-function Get-ApiResponseObject {
-    param([object] $Response)
-    if ($null -eq $Response) { return $null }
-    if ($null -ne $Response.responseObject) { return $Response.responseObject }
-    if ($null -ne $Response.ResponseObject) { return $Response.ResponseObject }
-    return $Response
+function Prompt-Line($label, $default = "") {
+    $display = if ($default) { "$label [$default]" } else { $label }
+    $val = (Read-Host "  → $display").Trim()
+    if ([string]::IsNullOrWhiteSpace($val) -and $default) { return $default }
+    return $val
 }
 
-function Get-ApiSuccess {
-    param([object] $Response)
-    if ($null -eq $Response) { return $false }
-    $ok = $Response.success
-    if ($null -eq $ok) { $ok = $Response.Success }
+function Prompt-Secret($label) {
+    $sec = Read-Host "  → $label" -AsSecureString
+    if ($sec.Length -eq 0) { return "" }
+    $ptr = [Runtime.InteropServices.Marshal]::SecureStringToBSTR($sec)
+    try   { return [Runtime.InteropServices.Marshal]::PtrToStringBSTR($ptr) }
+    finally { [Runtime.InteropServices.Marshal]::ZeroFreeBSTR($ptr) | Out-Null }
+}
+
+# ─── HTTP helpers ─────────────────────────────────────────────────────────────
+function Invoke-Api($method, $path, $body = $null) {
+    $uri     = "$($script:ApiBase.TrimEnd('/'))$path"
+    $headers = @{ "Content-Type" = "application/json; charset=utf-8" }
+    $params  = @{ Uri = $uri; Method = $method; Headers = $headers; TimeoutSec = 30 }
+    if ($body) { $params["Body"] = ($body | ConvertTo-Json -Depth 10 -Compress) }
+    try {
+        return Invoke-RestMethod @params
+    } catch {
+        $raw = $null
+        if ($_.ErrorDetails -and $_.ErrorDetails.Message) {
+            $raw = $_.ErrorDetails.Message
+        } elseif ($_.Exception.Response) {
+            try {
+                $stream = $_.Exception.Response.GetResponseStream()
+                $reader = New-Object System.IO.StreamReader($stream)
+                $raw = $reader.ReadToEnd(); $reader.Dispose()
+            } catch { }
+        }
+        $result = [PSCustomObject]@{ Succeeded=$false; RawBody=$raw; ExMsg=$_.Exception.Message }
+        if ($raw) {
+            try { $result | Add-Member -NotePropertyName Parsed -NotePropertyValue ($raw | ConvertFrom-Json) } catch { }
+        }
+        return $result
+    }
+}
+
+function isOk($r) {
+    if ($null -eq $r) { return $false }
+    if ($r.PSObject.Properties["Succeeded"] -and $r.Succeeded -eq $false) { return $false }
+    $ok = $r.success; if ($null -eq $ok) { $ok = $r.Success }
     return [bool]$ok
 }
-
-function Get-ApiMessage {
-    param([object] $Response)
-    if ($null -eq $Response) { return $null }
-    $msg = $Response.message
-    if ([string]::IsNullOrWhiteSpace($msg)) { $msg = $Response.Message }
-    return $msg
+function getObj($r)   { $o=$r.responseObject; if($null -eq $o){$o=$r.ResponseObject}; return $o }
+function getMsg($r)   {
+    $m=$r.message; if([string]::IsNullOrWhiteSpace($m)){$m=$r.Message}
+    if([string]::IsNullOrWhiteSpace($m) -and $r.Parsed){$m=$r.Parsed.message}
+    return $m
+}
+function getToken($r) {
+    $obj=getObj $r; if(-not $obj){return $null}
+    $t=$obj.token; if([string]::IsNullOrWhiteSpace($t)){$t=$obj.Token}; return $t
 }
 
-function Get-AuthTokenFromResponse {
-    param([object] $Response)
-    $auth = Get-ApiResponseObject $Response
-    if (-not $auth) { return $null }
-    $token = $auth.token
-    if ([string]::IsNullOrWhiteSpace($token)) { $token = $auth.Token }
-    if ([string]::IsNullOrWhiteSpace($token)) { return $null }
-    return [string]$token
-}
+# ─────────────────────────────────────────────────────────────────────────────
+# BANNER
+# ─────────────────────────────────────────────────────────────────────────────
+Write-Host ""
+Write-Host "╔══════════════════════════════════════════════════════════════════╗" -ForegroundColor DarkCyan
+Write-Host "║    FIRST-RUN PLATFORM PROVISIONING SCRIPT — ERP SaaS           ║" -ForegroundColor DarkCyan
+Write-Host "║    Aprovisiona la plataforma SaaS desde cero en un solo flujo   ║" -ForegroundColor DarkCyan
+Write-Host "╚══════════════════════════════════════════════════════════════════╝" -ForegroundColor DarkCyan
 
-function Read-HttpErrorBody {
-    param([System.Management.Automation.ErrorRecord] $Err)
-    if ($Err.ErrorDetails -and $Err.ErrorDetails.Message) {
-        return [string]$Err.ErrorDetails.Message
-    }
-    $resp = $Err.Exception.Response
-    if ($null -eq $resp) { return $null }
+# ═════════════════════════════════════════════════════════════════════════════
+# ETAPA 1 · CONEXIÓN Y ESTADO
+# ═════════════════════════════════════════════════════════════════════════════
+Write-Stage "Conexión y estado de la plataforma"
+
+$defaultUrl      = if ($env:ERP_API_URL) { $env:ERP_API_URL } else { "http://localhost:5003" }
+Write-Info "URL de la API (vacío = $defaultUrl):"
+$inputUrl        = Read-Host "  → URL"
+$script:ApiBase  = if ([string]::IsNullOrWhiteSpace($inputUrl)) { $defaultUrl } else { $inputUrl.TrimEnd('/') }
+
+Write-Info "Probando conexión a $($script:ApiBase) ..."
+$reachable = $false
+foreach ($path in @("/health/live", "/swagger/index.html")) {
     try {
-        $stream = $resp.GetResponseStream()
-        if ($null -eq $stream) { return $null }
-        $reader = New-Object System.IO.StreamReader($stream)
-        $text = $reader.ReadToEnd()
-        $reader.Dispose()
-        return $text
-    }
-    catch {
-        return $null
-    }
+        $r = Invoke-WebRequest -Uri "$($script:ApiBase)$path" -Method Get -TimeoutSec 8 -UseBasicParsing
+        if ($r.StatusCode -eq 200) { $reachable = $true; break }
+    } catch { }
 }
-
-function Read-SecurePlainText {
-    param([string] $Prompt)
-    $secure = Read-Host $Prompt -AsSecureString
-    if ($null -eq $secure -or $secure.Length -eq 0) { return "" }
-    $ptr = [Runtime.InteropServices.Marshal]::SecureStringToBSTR($secure)
-    try {
-        return [Runtime.InteropServices.Marshal]::PtrToStringBSTR($ptr)
-    }
-    finally {
-        [Runtime.InteropServices.Marshal]::ZeroFreeBSTR($ptr) | Out-Null
-    }
-}
-
-function Test-ApiReachable {
-    param([Parameter(Mandatory)][string] $ApiBase)
-    $base = $ApiBase.TrimEnd('/')
-    $candidates = @(
-        "$base/health/live",
-        "$base/swagger/index.html"
-    )
-    foreach ($uri in $candidates) {
-        try {
-            $r = Invoke-WebRequest -Uri $uri -Method Get -TimeoutSec 8 -UseBasicParsing
-            if ($r.StatusCode -eq 200) {
-                Write-Success "API accesible ($uri)."
-                return $true
-            }
-        }
-        catch { }
-    }
-    return $false
-}
-
-function Invoke-SetupPlatformOperator {
-    param(
-        [Parameter(Mandatory)][string] $ApiBase,
-        [Parameter(Mandatory)][string] $SetupToken,
-        [Parameter(Mandatory)][string] $FirstName,
-        [Parameter(Mandatory)][string] $LastName,
-        [Parameter(Mandatory)][string] $Email,
-        [Parameter(Mandatory)][string] $Password
-    )
-
-    $uri = "$($ApiBase.TrimEnd('/'))/api/setup/platform-operator"
-    $body = @{
-        setupToken = $SetupToken.Trim()
-        firstName  = $FirstName.Trim()
-        lastName   = $LastName.Trim()
-        email      = $Email.Trim()
-        password   = $Password
-    } | ConvertTo-Json -Compress
-
-    Write-Info "Enviando solicitud a $uri ..."
-    return Invoke-RestMethod -Uri $uri -Method Post -Body $body -ContentType "application/json; charset=utf-8"
-}
-
-function Invoke-PlatformLogin {
-    param(
-        [Parameter(Mandatory)][string] $ApiBase,
-        [Parameter(Mandatory)][string] $Email,
-        [Parameter(Mandatory)][string] $Password
-    )
-
-    $base = $ApiBase.TrimEnd('/')
-    $uri = "$base/api/platform/auth/login"
-    $body = @{
-        email    = $Email.Trim()
-        password = $Password
-    } | ConvertTo-Json -Compress
-
-    return Invoke-RestMethod -Uri $uri -Method Post -Body $body -ContentType "application/json; charset=utf-8"
-}
-
-function Write-SetupFailureHints {
-    Write-Warn "Comprueba:"
-    Write-Warn "  1) Token copiado del bloque FIRST-RUN en consola del API (expira ~15 min)."
-    Write-Warn "  2) En Development: POST /api/dev/reset-first-run para un token nuevo."
-    Write-Warn "  3) Si ya hay operador platform: first-run está cerrado (solo uno por instancia)."
-    Write-Warn "  4) Deployment:InitialPlatformOperatorSetupToken NO sirve para este endpoint."
-}
-
-# ------------------------------------------------------------
-# 1. Configuración del endpoint de la API
-# ------------------------------------------------------------
-$defaultUrl = "http://localhost:5003"
-Write-Info "Indica la URL de la API (vacío = $defaultUrl):"
-$userUrl = Read-Host "URL"
-if ([string]::IsNullOrWhiteSpace($userUrl)) { $apiUrl = $defaultUrl } else { $apiUrl = $userUrl.TrimEnd('/') }
-
-Write-Info "Probando conexión a $apiUrl ..."
-if (-not (Test-ApiReachable -ApiBase $apiUrl)) {
-    Write-Err "No se pudo conectar a la API en $apiUrl. ¿Está corriendo? (dotnet run --project backend/src/ERP.API)"
+if (-not $reachable) {
+    Write-Err "No se pudo conectar a $($script:ApiBase)"
+    Write-Warn "¿Está corriendo el API? → dotnet run --project backend/src/ERP.API"
     exit 1
 }
+Write-Ok "API accesible en $($script:ApiBase)"
 
-# ------------------------------------------------------------
-# 2. Datos del operador platform
-# ------------------------------------------------------------
-Write-Info "Ingresa los datos del operador platform:"
-do {
-    $email = Read-Host "Email (ej. admin@erp.com)"
-    $email = $email.Trim()
-    if ($email -notmatch '^[^@]+@[^@]+\.[^@]+$') {
-        Write-Err "Formato de email inválido. Intenta de nuevo."
-    }
-} while ($email -notmatch '^[^@]+@[^@]+\.[^@]+$')
-
-$nombreCompleto = Read-Host "Nombre completo (nombre y apellido, p. ej. Ana Garcia)"
-$nameParts = $nombreCompleto.Trim() -split '\s+', 2
-$firstName = $nameParts[0]
-$lastName = if ($nameParts.Length -gt 1) { $nameParts[1] } else { "" }
-if ([string]::IsNullOrWhiteSpace($firstName) -or [string]::IsNullOrWhiteSpace($lastName)) {
-    Write-Err "Se requieren al menos dos palabras (nombre y apellido), como exige la API."
-    exit 1
+Write-Info "Consultando estado de la plataforma..."
+$sr = Invoke-Api "GET" "/api/setup/platform/status"
+$st = getObj $sr
+if ($null -eq $st) {
+    Write-Warn "No se pudo consultar el estado. Asumiendo first-run pendiente."
+    $st = [PSCustomObject]@{ isFullyProvisioned=$false; hasInternalPlatformOwner=$false; hasPlatformOperator=$false }
 }
 
-do {
-    $plainPassword = Read-SecurePlainText "Contraseña (mínimo 10 caracteres, igual que la API)"
-    if ($plainPassword.Length -lt 10) {
-        Write-Err "La contraseña debe tener al menos 10 caracteres."
-        $valid = $false
-    }
-    else {
-        $valid = $true
-    }
-} while (-not $valid)
+Write-Host ""
+Write-Detail "  Propietario de plataforma : $(if ($st.hasInternalPlatformOwner){'✓ Configurado'}else{'✗ Pendiente'})"
+Write-Detail "  Operador platform         : $(if ($st.hasPlatformOperator){'✓ Creado'}else{'✗ Pendiente'})"
+Write-Detail "  Estado general            : $(if ($st.isFullyProvisioned){'✓ Completamente provisionado'}else{'⚠ First-run pendiente'})"
 
-Write-Info "Confirmar contraseña:"
-$plainConfirm = Read-SecurePlainText "Repite la contraseña"
-if ($plainPassword -ne $plainConfirm) {
-    Write-Err "Las contraseñas no coinciden."
-    exit 1
-}
-
-# ------------------------------------------------------------
-# 3. Token efímero first-run (consola del servidor)
-# ------------------------------------------------------------
-Write-Warn "Requisitos: API en marcha, sin operador platform previo, token first-run vigente (~15 min)."
-Write-Info "Copia el token del bloque FIRST-RUN en la consola del proceso ERP.API."
-Write-Info "Development: POST $apiUrl/api/dev/reset-first-run devuelve setupToken en JSON."
-
-$setupTokenDefault = $env:ERP_PLATFORM_OPERATOR_SETUP_TOKEN
-if (-not [string]::IsNullOrWhiteSpace($env:Deployment__InitialPlatformOperatorSetupToken)) {
-    Write-Warn "Se ignoró Deployment__InitialPlatformOperatorSetupToken (no valida POST /api/setup/platform-operator)."
-}
-
-if ([string]::IsNullOrWhiteSpace($setupTokenDefault)) {
-    Read-Host "Presiona ENTER cuando tengas el token copiado (usa el token en los próximos ~15 min)"
-    $setupToken = Read-Host "Pega aquí el token (ej. base64 ...==)"
-}
-else {
-    Write-Info "ERP_PLATFORM_OPERATOR_SETUP_TOKEN detectado."
-    $setupToken = Read-Host "Pega el token o pulsa Enter para usar ERP_PLATFORM_OPERATOR_SETUP_TOKEN"
-    if ([string]::IsNullOrWhiteSpace($setupToken)) {
-        $setupToken = $setupTokenDefault
-    }
-}
-
-if ([string]::IsNullOrWhiteSpace($setupToken)) {
-    Write-Err "El token de first-run es obligatorio."
-    exit 1
-}
-
-# ------------------------------------------------------------
-# 4. Crear operador platform (identity_users: Platform / PlatformOperator)
-# ------------------------------------------------------------
-$setupTokenFromResponse = $null
-try {
-    $response = Invoke-SetupPlatformOperator `
-        -ApiBase $apiUrl `
-        -SetupToken $setupToken `
-        -FirstName $firstName `
-        -LastName $lastName `
-        -Email $email `
-        -Password $plainPassword
-
-    if (-not (Get-ApiSuccess $response)) {
-        Write-Err "El servidor respondió sin éxito: $(Get-ApiMessage $response)"
-        Write-SetupFailureHints
-        exit 1
-    }
-
-    $setupTokenFromResponse = Get-AuthTokenFromResponse $response
-    Write-Success "Operador platform creado en identity_users. $(Get-ApiMessage $response)"
-    if ($setupTokenFromResponse) {
-        $t = $setupTokenFromResponse
-        Write-Info "JWT del setup (primeros 50 caracteres): $($t.Substring(0, [Math]::Min(50, $t.Length)))..."
-    }
-}
-catch {
-    Write-Err "Falló la creación del operador platform."
-    $raw = Read-HttpErrorBody $_
-    if ($raw) {
-        Write-Err "Detalle: $raw"
-        try {
-            $errorBody = $raw | ConvertFrom-Json
-            $detail = Get-ApiMessage $errorBody
-            if (-not [string]::IsNullOrWhiteSpace($detail)) {
-                Write-Err "--> $detail"
-            }
-            elseif ($errorBody.title) {
-                Write-Err "--> $($errorBody.title)"
-            }
-        }
-        catch { }
-    }
-    else {
-        Write-Err $_.Exception.Message
-    }
-    Write-SetupFailureHints
-    exit 1
-}
-
-# ------------------------------------------------------------
-# 5. Verificar login platform (opcional si el setup ya devolvió JWT)
-# ------------------------------------------------------------
-Write-Info "Verificando login platform (POST /api/platform/auth/login)..."
-Write-Info "Si falla, comprueba Deployment:PlatformPanelEnabled=true en configuración."
-
-$loginOk = -not [string]::IsNullOrWhiteSpace($setupTokenFromResponse)
-if ($loginOk) {
-    Write-Success "JWT recibido en la respuesta del setup; alta confirmada."
-}
-
-if (-not $loginOk) {
-    try {
-        Write-Info "Intento login platform..."
-        $loginResponse = Invoke-PlatformLogin -ApiBase $apiUrl -Email $email -Password $plainPassword
-        $tokenValue = Get-AuthTokenFromResponse $loginResponse
-
-        if ((Get-ApiSuccess $loginResponse) -and -not [string]::IsNullOrWhiteSpace($tokenValue)) {
-            $loginOk = $true
-            Write-Success "Login verificado (POST /api/platform/auth/login)."
-            $t = [string]$tokenValue
-            Write-Info "JWT (primeros 50 caracteres): $($t.Substring(0, [Math]::Min(50, $t.Length)))..."
-        }
-        else {
-            Write-Warn "Login platform: sin token. message=$(Get-ApiMessage $loginResponse)"
-        }
-    }
-    catch {
-        Write-Warn "Login platform falló: $($_.Exception.Message)"
-        $raw = Read-HttpErrorBody $_
-        if ($raw) { Write-Warn "Detalle: $raw" }
-    }
-}
-
-$plainPassword = $null
-$plainConfirm = $null
-$setupToken = $null
-
-if ($loginOk) {
-    Write-Success "Proceso completado. Usuario en identity_users (Platform / PlatformOperator)."
-    Write-Info "Frontend: inicia sesión con el mismo email/contraseña (panel platform)."
+if ($st.isFullyProvisioned) {
+    Write-Host ""
+    Write-Ok "La plataforma ya está completamente provisionada. No hay nada que hacer."
+    Write-Info "Para restablecer (Development): POST $($script:ApiBase)/api/dev/reset-first-run"
     exit 0
 }
 
-Write-Warn "Operador platform creado, pero no se pudo verificar login."
-Write-Warn "Revisa Deployment:PlatformPanelEnabled y credenciales."
-exit 2
+# ═════════════════════════════════════════════════════════════════════════════
+# TOKEN FIRST-RUN
+# ═════════════════════════════════════════════════════════════════════════════
+Write-Stage "Token de first-run"
+
+Write-Info "El token se muestra en la consola del proceso ERP.API al arrancar."
+Write-Info "En Development: POST $($script:ApiBase)/api/dev/reset-first-run devuelve uno nuevo."
+Write-Host ""
+
+$envToken = $env:ERP_PLATFORM_SETUP_TOKEN
+if ([string]::IsNullOrWhiteSpace($envToken)) {
+    Read-Host "  Presiona ENTER cuando tengas el token listo" | Out-Null
+    $script:SetupToken = Prompt-Secret "Pega el token de first-run"
+} else {
+    Write-Ok "ERP_PLATFORM_SETUP_TOKEN detectado."
+    $manual = Prompt-Line "Pega manualmente o ENTER para usar la variable de entorno"
+    $script:SetupToken = if ([string]::IsNullOrWhiteSpace($manual)) { $envToken } else { $manual }
+}
+
+if ([string]::IsNullOrWhiteSpace($script:SetupToken)) {
+    Write-Err "El token de first-run es obligatorio."
+    exit 1
+}
+Write-Ok "Token de first-run recibido."
+
+# ═════════════════════════════════════════════════════════════════════════════
+# ETAPA 2 · PROPIETARIO DE LA PLATAFORMA
+# ═════════════════════════════════════════════════════════════════════════════
+if ($st.hasInternalPlatformOwner) {
+    Write-Stage "Propietario de plataforma (ya configurado — omitiendo)"
+    Write-Ok "El propietario de la plataforma ya fue configurado en un first-run anterior."
+} else {
+    Write-Stage "Configurar propietario de la plataforma (Subscriber + Company interna)"
+    Write-Info "Estos datos identifican a TU empresa como operadora del SaaS."
+    Write-Info "Son independientes de los datos de los tenants ERP que administrarás."
+    Write-Host ""
+
+    $ownerName    = if ($env:ERP_OWNER_PLATFORM_NAME) { Prompt-Line "Nombre de la plataforma" $env:ERP_OWNER_PLATFORM_NAME } else { Prompt-Line "Nombre de la plataforma (ej: Acme SaaS)" }
+    $ownerTaxId   = if ($env:ERP_OWNER_TAXID)         { Prompt-Line "RUC / TaxId" $env:ERP_OWNER_TAXID }                   else { Prompt-Line "RUC / TaxId de tu empresa (13 dígitos)" }
+    $ownerLegal   = if ($env:ERP_OWNER_LEGAL_NAME)     { Prompt-Line "Razón social" $env:ERP_OWNER_LEGAL_NAME }             else { Prompt-Line "Razón social (ej: Acme S.A.S.)" }
+    $ownerTrade   = Prompt-Line "Nombre comercial (ENTER para omitir)"
+    $ownerAddr    = if ($env:ERP_OWNER_ADDRESS)         { Prompt-Line "Dirección principal" $env:ERP_OWNER_ADDRESS }        else { Prompt-Line "Dirección principal" }
+    $ownerEmail   = if ($env:ERP_OWNER_EMAIL)           { Prompt-Line "Email de contacto" $env:ERP_OWNER_EMAIL }            else { Prompt-Line "Email de contacto (ej: billing@tuempresa.com)" }
+    $ownerTz      = Prompt-Line "Zona horaria" "America/Guayaquil"
+
+    Write-Host ""
+    Write-Info "Confirmación de datos:"
+    Write-Detail "  Nombre plataforma : $ownerName"
+    Write-Detail "  RUC               : $ownerTaxId"
+    Write-Detail "  Razón social      : $ownerLegal"
+    if ($ownerTrade) { Write-Detail "  Nombre comercial  : $ownerTrade" }
+    Write-Detail "  Dirección         : $ownerAddr"
+    Write-Detail "  Email             : $ownerEmail"
+    Write-Detail "  Timezone          : $ownerTz"
+    Write-Host ""
+
+    $confirm = Read-Host "  → ¿Confirmar? [S/n]"
+    if ($confirm -match "^[Nn]") { Write-Warn "Operación cancelada."; exit 0 }
+
+    Write-Info "Provisionando propietario de plataforma..."
+    $ownerBody = @{
+        setupToken        = $script:SetupToken
+        platformName      = $ownerName
+        taxId             = $ownerTaxId
+        legalName         = $ownerLegal
+        mainAddress       = $ownerAddr
+        timezone          = $ownerTz
+        email             = $ownerEmail
+        tradeName         = if ($ownerTrade) { $ownerTrade } else { $null }
+        preferredLanguage = "es"
+    }
+    $ownerRes = Invoke-Api "POST" "/api/setup/platform-owner" $ownerBody
+
+    if (-not (isOk $ownerRes)) {
+        Write-Err "Error al crear el propietario de plataforma."
+        $msg = getMsg $ownerRes
+        if ($msg) { Write-Err "Detalle: $msg" }
+        if ($ownerRes.RawBody) { Write-Err "Respuesta raw: $($ownerRes.RawBody)" }
+        Write-Warn "Comprueba el token first-run y los datos ingresados."
+        exit 1
+    }
+
+    $ownerObj = getObj $ownerRes
+    Write-Ok "Propietario de plataforma provisionado."
+    if ($ownerObj) {
+        Write-Detail "  Subscriber ID : $($ownerObj.subscriberId)"
+        Write-Detail "  Company ID    : $($ownerObj.companyId)"
+        Write-Detail "  Slug          : $($ownerObj.slug)"
+    }
+}
+
+# ═════════════════════════════════════════════════════════════════════════════
+# ETAPA 3 · PLATFORM OPERATOR USER
+# ═════════════════════════════════════════════════════════════════════════════
+$opEmail     = $null
+$opPassword  = $null
+$jwtToken    = $null
+
+if ($st.hasPlatformOperator) {
+    Write-Stage "Platform Operator User (ya creado — omitiendo)"
+    Write-Ok "Ya existe un operador platform en el sistema."
+} else {
+    Write-Stage "Crear Platform Operator User"
+    Write-Info "Administra tenants, planes y configuración global del SaaS."
+    Write-Info "NO es un usuario de ningún tenant ERP. Tiene contexto platform exclusivo."
+    Write-Host ""
+
+    # Email
+    if ($env:ERP_PLATFORM_EMAIL) {
+        $opEmail = $env:ERP_PLATFORM_EMAIL.Trim().ToLower()
+        Write-Info "Email: $opEmail (desde ERP_PLATFORM_EMAIL)"
+    } else {
+        do {
+            $opEmail = (Prompt-Line "Email del operador platform").ToLower()
+            if ($opEmail -notmatch '^[^@]+@[^@]+\.[^@]+$') { Write-Err "Formato de email inválido." }
+        } while ($opEmail -notmatch '^[^@]+@[^@]+\.[^@]+$')
+    }
+
+    # Nombre
+    $fullName  = Prompt-Line "Nombre completo (ej: Ana García)"
+    $parts     = $fullName.Trim() -split '\s+', 2
+    $firstName = $parts[0]
+    $lastName  = if ($parts.Length -gt 1) { $parts[1] } else { "" }
+    if ([string]::IsNullOrWhiteSpace($firstName) -or [string]::IsNullOrWhiteSpace($lastName)) {
+        Write-Err "Se requieren nombre Y apellido (mínimo dos palabras)."
+        exit 1
+    }
+
+    # Contraseña
+    if ($env:ERP_PLATFORM_PASSWORD) {
+        $opPassword = $env:ERP_PLATFORM_PASSWORD
+        Write-Info "Contraseña recibida desde ERP_PLATFORM_PASSWORD."
+    } else {
+        do {
+            $opPassword = Prompt-Secret "Contraseña (mínimo 10 caracteres)"
+            if ($opPassword.Length -lt 10) { Write-Err "Mínimo 10 caracteres." }
+        } while ($opPassword.Length -lt 10)
+        $confirm2 = Prompt-Secret "Confirmar contraseña"
+        if ($opPassword -ne $confirm2) {
+            Write-Err "Las contraseñas no coinciden."
+            $opPassword = $null; $confirm2 = $null; [System.GC]::Collect(); exit 1
+        }
+        $confirm2 = $null
+    }
+
+    Write-Info "Creando Platform Operator..."
+    $opBody = @{
+        setupToken = $script:SetupToken
+        firstName  = $firstName
+        lastName   = $lastName
+        email      = $opEmail
+        password   = $opPassword
+    }
+    $opRes = Invoke-Api "POST" "/api/setup/platform-operator" $opBody
+
+    if (-not (isOk $opRes)) {
+        Write-Err "Error al crear el operador platform."
+        $msg = getMsg $opRes
+        if ($msg) { Write-Err "Detalle: $msg" }
+        if ($opRes.RawBody) { Write-Err "Respuesta: $($opRes.RawBody)" }
+        Write-Host ""
+        Write-Warn "Causas comunes:"
+        Write-Warn "  1) Token expirado — obtén uno nuevo con /api/dev/reset-first-run"
+        Write-Warn "  2) Ya existe un operador platform"
+        Write-Warn "  3) Email ya registrado"
+        exit 1
+    }
+
+    $jwtToken = getToken $opRes
+    Write-Ok "Operador platform creado: $opEmail"
+    Write-Ok "user_type=Platform · platform_role=PlatformOperator · subscriber_id=Guid.Empty"
+}
+
+# ═════════════════════════════════════════════════════════════════════════════
+# ETAPA 4 · VERIFICACIÓN DE LOGIN
+# ═════════════════════════════════════════════════════════════════════════════
+Write-Stage "Verificación de login platform"
+
+if (-not [string]::IsNullOrWhiteSpace($jwtToken)) {
+    Write-Ok "JWT recibido en la respuesta del setup — login verificado implícitamente."
+} else {
+    if ([string]::IsNullOrWhiteSpace($opEmail))    { $opEmail    = Prompt-Line "Email del operador platform" }
+    if ([string]::IsNullOrWhiteSpace($opPassword)) { $opPassword = Prompt-Secret "Contraseña del operador platform" }
+
+    Write-Info "Verificando login en /api/platform/auth/login ..."
+    $loginRes = Invoke-Api "POST" "/api/platform/auth/login" @{ email=$opEmail; password=$opPassword }
+    $jwtToken = getToken $loginRes
+
+    if ((isOk $loginRes) -and -not [string]::IsNullOrWhiteSpace($jwtToken)) {
+        Write-Ok "Login platform verificado correctamente."
+    } else {
+        Write-Warn "No se pudo verificar login. Comprueba Deployment:PlatformPanelEnabled=true"
+        $msg = getMsg $loginRes; if ($msg) { Write-Warn "Detalle: $msg" }
+    }
+}
+
+if ($jwtToken) {
+    $preview = $jwtToken.Substring(0, [Math]::Min(60, $jwtToken.Length))
+    Write-Detail "JWT preview: $preview..."
+}
+
+# ─── Limpiar secretos ─────────────────────────────────────────────────────────
+$script:SetupToken = $null; $opPassword = $null; $jwtToken = $null
+[System.GC]::Collect()
+
+# ═════════════════════════════════════════════════════════════════════════════
+# ETAPA 5 · RESUMEN FINAL
+# ═════════════════════════════════════════════════════════════════════════════
+Write-Stage "Resumen final del aprovisionamiento"
+
+$finalRes = Invoke-Api "GET" "/api/setup/platform/status"
+$final    = getObj $finalRes
+$ownerOk  = if ($final) { $final.hasInternalPlatformOwner } else { $true }
+$opOk     = if ($final) { $final.hasPlatformOperator      } else { $true }
+$allOk    = $ownerOk -and $opOk
+
+Write-Host ""
+Write-Host "  ┌─────────────────────────────────────────────────────────────┐" -ForegroundColor DarkCyan
+Write-Host "  │  ESTADO FINAL DEL SISTEMA                                   │" -ForegroundColor DarkCyan
+Write-Host "  ├─────────────────────────────────────────────────────────────┤" -ForegroundColor DarkCyan
+$ownerStatus = if ($ownerOk) {"✓ Configurado  "} else {"✗ Pendiente    "}
+$opStatus    = if ($opOk)    {"✓ Creado       "} else {"✗ Pendiente    "}
+$sysStatus   = if ($allOk)   {"✓ LISTO PARA PRODUCCION"} else {"⚠ INCOMPLETO           "}
+Write-Host "  │  Propietario de plataforma : $ownerStatus                   │" -ForegroundColor $(if ($ownerOk) {"Green"} else {"Red"})
+Write-Host "  │  Operador platform         : $opStatus                   │" -ForegroundColor $(if ($opOk) {"Green"} else {"Red"})
+Write-Host "  │  Estado general            : $sysStatus     │" -ForegroundColor $(if ($allOk) {"Green"} else {"Yellow"})
+Write-Host "  └─────────────────────────────────────────────────────────────┘" -ForegroundColor DarkCyan
+Write-Host ""
+
+if ($allOk) {
+    Write-Ok "Plataforma SaaS aprovisionada y lista para operar."
+    Write-Host ""
+    Write-Info "Próximos pasos:"
+    Write-Detail "  1. Abre el panel platform en el frontend"
+    Write-Detail "  2. Inicia sesión con el email/contraseña del operador platform"
+    Write-Detail "  3. Crea el primer tenant: Panel → Suscriptores → Nuevo Suscriptor"
+    Write-Detail "  4. El tenant configurará su empresa ERP en el onboarding wizard"
+    Write-Host ""
+    Write-Warn "El token first-run ya fue consumido y no puede reutilizarse."
+    exit 0
+} else {
+    Write-Warn "El aprovisionamiento quedó incompleto. Revisa los errores anteriores."
+    Write-Info "El script es idempotente — puedes volver a ejecutarlo."
+    exit 2
+}

@@ -25,7 +25,28 @@ public class Subscriber : AuditableEntity
     /// <summary>Idioma preferido de la UI para este tenant SaaS (es/en/qu).</summary>
     public string PreferredLanguage { get; private set; } = "es";
 
+    /// <summary>
+    /// True when this Subscriber is the internal platform owner (e.g., ZH Technologies).
+    /// Internal owners are hidden from the tenant list in the platform control panel.
+    /// Created via POST /api/setup/platform-owner — NOT via ZHTechnologiesBootstrap.
+    /// </summary>
+    public bool IsInternalPlatformOwner { get; private set; } = false;
+
     private Subscriber() { }
+
+    /// <summary>Creates the internal platform owner subscriber during first-run provisioning.</summary>
+    public static Subscriber CreatePlatformOwner(
+        string name,
+        string slug,
+        Guid createdBy,
+        string preferredLanguage = "es")
+    {
+        var s = Create(name, slug, createdBy,
+            planCode: "platform",
+            preferredLanguage: preferredLanguage);
+        s.IsInternalPlatformOwner = true;
+        return s;
+    }
 
     public static Subscriber Create(
         string name,
