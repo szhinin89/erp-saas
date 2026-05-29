@@ -210,8 +210,35 @@ public static class DependencyInjection
         services.AddScoped<IBillingGovernanceService, BillingGovernanceService>();
 
         // Subscription Lifecycle Engine — centralized configurable constants
-        services.Configure<ERP.Application.Common.Subscriptions.SubscriptionBillingOptions>(
-            configuration.GetSection(ERP.Application.Common.Subscriptions.SubscriptionBillingOptions.SectionName));
+        // Binds from SaaS:Billing (new nested) → falls back to SaaS → flat SubscriptionBilling
+        var opts = typeof(ERP.Application.Common.Subscriptions.SubscriptionBillingOptions);
+        var billingSection = configuration.GetSection("SaaS:Billing");
+        if (!billingSection.Exists())
+            billingSection = configuration.GetSection(
+                ERP.Application.Common.Subscriptions.SubscriptionBillingOptions.LegacySectionName);
+
+        services.Configure<ERP.Application.Common.Subscriptions.SubscriptionBillingOptions>(billingSection);
+
+        // Renewal look-ahead may be in SaaS:Renewal
+        services.PostConfigure<ERP.Application.Common.Subscriptions.SubscriptionBillingOptions>(o =>
+        {
+            var renewal = configuration.GetSection("SaaS:Renewal");
+            if (renewal.Exists())
+            {
+                var hours = renewal.GetValue<int>("LookAheadHours");
+                if (hours > 0) o.RenewalLookAheadHours = hours;
+            }
+            var cache = configuration.GetSection("SaaS:Cache");
+            if (cache.Exists())
+            {
+                var l1  = cache.GetValue<int>("AccessCacheL1TtlSeconds");
+                var l2  = cache.GetValue<int>("AccessCacheL2TtlMinutes");
+                var ver = cache.GetValue<int>("AccessCacheVersionTtlDays");
+                if (l1  > 0) o.AccessCacheL1TtlSeconds   = l1;
+                if (l2  > 0) o.AccessCacheL2TtlMinutes   = l2;
+                if (ver > 0) o.AccessCacheVersionTtlDays  = ver;
+            }
+        });
 
         services.AddSingleton<ERP.Infrastructure.SaaS.SubscriptionMetrics>();
         services.AddSingleton<ERP.Application.Common.Subscriptions.ISubscriptionAccessCache,

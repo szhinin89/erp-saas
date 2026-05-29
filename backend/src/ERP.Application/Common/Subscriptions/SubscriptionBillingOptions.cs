@@ -2,26 +2,25 @@ namespace ERP.Application.Common.Subscriptions;
 
 /// <summary>
 /// Centralized configurable constants for the SaaS subscription billing flow.
-/// All magic numbers are now in one place — no more scattered hardcoded values.
+/// Registered under "SaaS:Billing" + "SaaS:Renewal" + "SaaS:Cache" in appsettings.json.
+/// Legacy flat section "SubscriptionBilling" still works (backward compat via DI binding).
 ///
 /// Configure via appsettings.json:
-/// {
-///   "SubscriptionBilling": {
-///     "TrialGracePeriodDays": 7,
-///     "RenewalGracePeriodDays": 7,
-///     "WebhookPaymentFailureGracePeriodDays": 7,
-///     "TrialDurationDays": 14,
-///     "InvoiceDueDays": 30,
-///     "RenewalLookAheadHours": 24,
-///     "AccessCacheL1TtlSeconds": 20,
-///     "AccessCacheL2TtlMinutes": 5,
-///     "AccessCacheVersionTtlDays": 30
-///   }
+/// <code>
+/// "SaaS": {
+///   "Billing": { "TrialGracePeriodDays": 7, "InvoiceDueDays": 30, ... },
+///   "Renewal": { "LookAheadHours": 24 },
+///   "Cache":   { "AccessCacheL1TtlSeconds": 20, ... }
 /// }
+/// </code>
 /// </summary>
 public sealed class SubscriptionBillingOptions
 {
-    public const string SectionName = "SubscriptionBilling";
+    /// <summary>Primary nested section — SaaS:Billing in appsettings.</summary>
+    public const string SectionName = "SaaS";
+
+    /// <summary>Legacy flat section name kept for backward compatibility.</summary>
+    public const string LegacySectionName = "SubscriptionBilling";
 
     // ── Grace periods ─────────────────────────────────────────────────────────
 
@@ -60,7 +59,7 @@ public sealed class SubscriptionBillingOptions
 
     // ── Computed helpers ──────────────────────────────────────────────────────
 
-    public TimeSpan L1Ttl           => TimeSpan.FromSeconds(AccessCacheL1TtlSeconds);
-    public TimeSpan L2Ttl           => TimeSpan.FromMinutes(AccessCacheL2TtlMinutes);
-    public TimeSpan VersionTtl      => TimeSpan.FromDays(AccessCacheVersionTtlDays);
+    public TimeSpan L1Ttl      => TimeSpan.FromSeconds(AccessCacheL1TtlSeconds);
+    public TimeSpan L2Ttl      => TimeSpan.FromMinutes(AccessCacheL2TtlMinutes);
+    public TimeSpan VersionTtl => TimeSpan.FromDays(AccessCacheVersionTtlDays);
 }

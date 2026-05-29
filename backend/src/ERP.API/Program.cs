@@ -139,10 +139,12 @@ var observabilityEnabled = builder.Configuration.GetValue("Observability:EnableP
 if (observabilityEnabled && !builder.Environment.IsEnvironment("Testing"))
 {
     builder.Services.AddOpenTelemetry()
-        .ConfigureResource(r => r.AddService("ERP.SaaS"))
+        .ConfigureResource(r => r.AddService("ERP.SaaS",
+            serviceVersion: typeof(Program).Assembly.GetName().Version?.ToString() ?? "1.0.0"))
         .WithMetrics(m => m
             .AddAspNetCoreInstrumentation()
             .AddMeter("ERP.Security")
+            .AddMeter(ERP.Infrastructure.SaaS.SubscriptionMetrics.MeterName) // SaaS lifecycle + billing
             .AddPrometheusExporter());
 }
 
@@ -155,7 +157,8 @@ var healthChecks = builder.Services.AddHealthChecks()
     .AddCheck<MasterDataSyncHealthCheck>("masterdata-sync", tags: ["security", "ready"])
     .AddCheck<BackgroundContextHealthCheck>("background-context", tags: ["security"])
     .AddCheck<QueryFilterEnforcementHealthCheck>("query-filter-enforcement", tags: ["security"])
-    .AddCheck<MasterDataReconciliationHealthCheck>("masterdata-reconciliation", tags: ["security", "ready"]);
+    .AddCheck<MasterDataReconciliationHealthCheck>("masterdata-reconciliation", tags: ["security", "ready"])
+    .AddCheck<ERP.API.Health.SaasSubsystemHealthCheck>("saas-subsystem", tags: ["saas", "ready"]);
 
 builder.Services.AddHostedService<ErpScopeMarkerStartupValidator>();
 
@@ -366,6 +369,11 @@ app.MapHealthChecks("/health/query-filter-enforcement", new HealthCheckOptions
 app.MapHealthChecks("/health/masterdata-reconciliation", new HealthCheckOptions
 {
     Predicate = r => r.Name == "masterdata-reconciliation",
+    ResponseWriter = UIResponseWriter.WriteHealthCheckUIResponse,
+});
+app.MapHealthChecks("/health/saas", new HealthCheckOptions
+{
+    Predicate = r => r.Tags.Contains("saas"),
     ResponseWriter = UIResponseWriter.WriteHealthCheckUIResponse,
 });
 
