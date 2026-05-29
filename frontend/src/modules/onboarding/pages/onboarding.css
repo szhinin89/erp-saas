@@ -1,0 +1,66 @@
+.onboarding-shell {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg, #080c17);
+  padding: 2rem;
+}
+
+.onboarding-card {
+  width: 100%;
+  max-width: 680px;
+  background: var(--surface, #0f1623);
+  border: 1px solid var(--border, rgba(255,255,255,0.07));
+  border-radius: 16px;
+  overflow: hidden;
+}
+
+.onboarding-header {
+  padding: 2rem 2rem 1.5rem;
+  text-align: center;
+  border-bottom: 1px solid var(--border, rgba(255,255,255,0.07));
+}
+
+.onboarding-logo {
+  font-size: 40px;
+  margin-bottom: 0.75rem;
+}
+
+.onboarding-header h1 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+  color: var(--text, #e2e8f0);
+}
+
+.onboarding-header p {
+  font-size: 0.875rem;
+  color: var(--text-muted, #94a3b8);
+  margin-bottom: 1.25rem;
+}
+
+.onboarding-steps {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.onboarding-step {
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: var(--surface-3, #1c2840);
+  color: var(--text-dim, #4b6484);
+}
+
+.onboarding-step.active {
+  background: var(--primary-dim, rgba(59,130,246,0.13));
+  color: var(--primary, #3b82f6);
+}
+
+.onboarding-step-arrow {
+  color: var(--text-dim, #4b6484);
+}

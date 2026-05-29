@@ -51,6 +51,16 @@ public class CompanyConfiguration : IEntityTypeConfiguration<Company>
         builder.Property(x => x.CreatedAt).HasColumnName("created_at").HasDefaultValueSql("NOW()");
         builder.Property(x => x.UpdatedAt).HasColumnName("updated_at").HasDefaultValueSql("NOW()");
 
+        // Onboarding & Operational Status (FASE 1 onboarding gate)
+        builder.Property(x => x.OnboardingCompleted)
+            .HasColumnName("onboarding_completed")
+            .HasDefaultValue(false)
+            .IsRequired();
+        builder.Property(x => x.OperationalStatus)
+            .HasColumnName("operational_status")
+            .HasDefaultValue(ERP.Domain.Modules.Company.Enums.CompanyOperationalStatus.PendingSetup)
+            .IsRequired();
+
         builder.HasIndex(x => x.Ruc).IsUnique().HasDatabaseName("uq_company_ruc");
         builder.HasIndex(x => x.SubscriberId).HasDatabaseName("ix_company_subscriber_id");
 

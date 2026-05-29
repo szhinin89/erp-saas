@@ -137,6 +137,8 @@ public static class DependencyInjection
             MasterData.Reconciliation.BusinessPartnerReconciliationService>();
         services.AddScoped<ERP.Application.Modules.Platform.Companies.ICompanyAccessGuard, CompanyAccessGuard>();
         services.AddScoped<ICompanyRepository, CompanyRepository>();
+        services.AddSingleton<ERP.Application.Common.IOnboardingCacheInvalidator,
+            ERP.Infrastructure.Services.OnboardingCacheInvalidator>();
         services.AddScoped<ICurrentUser, CurrentUserService>();
         services.AddScoped<IAccountingRepository, AccountingRepository>();
         services.AddScoped<IAccountingSetupRepository, AccountingConfigurationRepository>();

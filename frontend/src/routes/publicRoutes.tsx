@@ -1,6 +1,7 @@
 import { Route } from 'react-router-dom';
 import { lazyNamedPage } from './lazyPage';
 import { SubscriptionSuspendedPage } from '../pages/SubscriptionSuspendedPage';
+import { CompanyOnboardingPage } from '../modules/onboarding/pages/CompanyOnboardingPage';
 
 const LoginPage = lazyNamedPage(() => import('../modules/auth/pages/LoginPage'), 'LoginPage');
 const ForgotPasswordPage = lazyNamedPage(
@@ -32,4 +33,6 @@ export const publicRoutes = [
   <Route key="select-subscriber" path="/select-subscriber" element={<SubscriberSelectPage />} />,
   <Route key="select-company" path="/select-company" element={<CompanySelectPage />} />,
   <Route key="subscription-suspended" path="/subscription-suspended" element={<SubscriptionSuspendedPage />} />,
+  // Onboarding wizard — accessible before company onboarding is complete (no ERP access yet)
+  <Route key="onboarding-company" path="/onboarding/company" element={<CompanyOnboardingPage />} />,
 ];

@@ -391,6 +391,8 @@ app.UseMiddleware<PlatformPanelLockMiddleware>();
 app.UseMiddleware<ERP.API.Middleware.SubscriptionAccessMiddleware>();
 // FASE 5 — ReadOnly mode: block writes (POST/PUT/PATCH/DELETE) for GracePeriod/PastDue tenants
 app.UseMiddleware<ERP.API.Middleware.ReadOnlyEnforcementMiddleware>();
+// Company onboarding gate: blocks ERP access until admin completes onboarding wizard
+app.UseMiddleware<ERP.API.Middleware.CompanyOnboardingMiddleware>();
 app.UseAuthorization();
 app.UseRateLimiter();
 app.UseMiddleware<ForbiddenAccessLoggingMiddleware>();

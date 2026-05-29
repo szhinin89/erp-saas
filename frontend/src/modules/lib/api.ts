@@ -87,6 +87,15 @@ api.interceptors.response.use(
     const status          = error.response?.status as number | undefined;
     const url             = (originalRequest?.url ?? '') as string;
 
+    // Handle company onboarding required (403 from CompanyOnboardingMiddleware)
+    if (status === 403) {
+      const code403 = (error.response?.data as Record<string, unknown>)?.code;
+      if (code403 === 'company_onboarding_required') {
+        window.location.href = '/onboarding/company';
+        return Promise.reject(error);
+      }
+    }
+
     // Handle subscription-level 403 before attempting token refresh.
     if (status === 403) {
       const data = error.response?.data;

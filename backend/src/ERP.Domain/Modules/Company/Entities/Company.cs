@@ -8,6 +8,10 @@ namespace ERP.Domain.Modules.Company.Entities;
 /// Empresa emisora de comprobantes electrónicos (RUC).
 /// Un <see cref="Subscriber"/> puede tener N companies (holdings / franquicias).
 /// Tablas SRI y documentos electrónicos referencian <c>company_id</c>.
+///
+/// ONBOARDING: Las companies creadas en provisioning empiezan con OnboardingCompleted=false
+/// y OperationalStatus=PendingSetup. El admin DEBE completar el onboarding wizard antes de
+/// acceder al ERP. CompleteOnboarding() marca la company como operativa y dispara Bootstrap.
 /// </summary>
 public class Company : ISubscriberScopedEntity
 {
@@ -51,6 +55,22 @@ public class Company : ISubscriberScopedEntity
     public DateTime CreatedAt         { get; set; }
     public DateTime UpdatedAt         { get; set; }
 
+    // ── Onboarding & Operational Status ──────────────────────────────────────
+
+    /// <summary>
+    /// False until the admin completes the onboarding wizard.
+    /// When false, the company's ERP runtime is blocked by CompanyOnboardingMiddleware.
+    /// Branch, Warehouse, Establishment, EmissionPoint do NOT exist yet.
+    /// </summary>
+    public bool                    OnboardingCompleted { get; private set; } = false;
+
+    /// <summary>
+    /// PendingSetup: just provisioned — no ERP infrastructure yet.
+    /// Operational: onboarding complete, Branch/Warehouse/Establishment ready.
+    /// Suspended: suspended by platform operator.
+    /// </summary>
+    public CompanyOperationalStatus OperationalStatus   { get; private set; } = CompanyOperationalStatus.PendingSetup;
+
     // Navigation
     public SriCountry?      Country      { get; set; }
     public SriTaxRegime?    TaxRegime    { get; set; }
@@ -63,6 +83,35 @@ public class Company : ISubscriberScopedEntity
 
     /// <summary>Tax identifier (Ecuador: RUC). Alias for API consumers.</summary>
     public string TaxId => Ruc;
+
+    // ── Lifecycle methods ─────────────────────────────────────────────────────
+
+    /// <summary>
+    /// Marks the company as having completed onboarding.
+    /// Call AFTER successful CompanyBootstrapService.BootstrapCompanyAsync().
+    /// </summary>
+    public void CompleteOnboarding()
+    {
+        OnboardingCompleted = true;
+        OperationalStatus   = CompanyOperationalStatus.Operational;
+        UpdatedAt           = DateTime.UtcNow;
+    }
+
+    /// <summary>Marks company as fully operational (alias for use after admin re-enables).</summary>
+    public void MarkOperational()
+    {
+        OperationalStatus = CompanyOperationalStatus.Operational;
+        UpdatedAt         = DateTime.UtcNow;
+    }
+
+    /// <summary>Suspends company ERP operations (e.g., billing issue, platform action).</summary>
+    public void SuspendOperations()
+    {
+        OperationalStatus = CompanyOperationalStatus.Suspended;
+        UpdatedAt         = DateTime.UtcNow;
+    }
+
+    // ── Factory methods ───────────────────────────────────────────────────────
 
     public static Company CreateFromSubscriber(
         Guid subscriberId,
@@ -106,24 +155,27 @@ public class Company : ISubscriberScopedEntity
         var now = DateTime.UtcNow;
         return new Company
         {
-            Id = Guid.NewGuid(),
-            SubscriberId = subscriberId,
-            Ruc = NormalizeRuc(ruc, isProvisionalTaxId),
-            IsProvisionalTaxId = isProvisionalTaxId,
-            TaxIdStatus = taxIdStatus,
-            LegalName = legalName.Trim(),
-            TradeName = string.IsNullOrWhiteSpace(tradeName) ? null : tradeName.Trim(),
-            MainAddress = string.IsNullOrWhiteSpace(mainAddress) ? "—" : mainAddress.Trim(),
-            Email = string.IsNullOrWhiteSpace(email) ? null : email.Trim(),
-            Phone = string.IsNullOrWhiteSpace(phone) ? null : phone.Trim(),
-            CountryCode = string.IsNullOrWhiteSpace(countryCode) ? "ECU" : countryCode.Trim().ToUpperInvariant(),
-            Timezone = string.IsNullOrWhiteSpace(timezone) ? "America/Guayaquil" : timezone.Trim(),
-            CurrencyCode = string.IsNullOrWhiteSpace(currencyCode) ? "USD" : currencyCode.Trim().ToUpperInvariant(),
-            LogoUrl = string.IsNullOrWhiteSpace(logoUrl) ? null : logoUrl.Trim(),
-            BrandingJson = string.IsNullOrWhiteSpace(brandingJson) ? null : brandingJson.Trim(),
-            IsActive = true,
-            CreatedAt = now,
-            UpdatedAt = now,
+            Id                  = Guid.NewGuid(),
+            SubscriberId        = subscriberId,
+            Ruc                 = NormalizeRuc(ruc, isProvisionalTaxId),
+            IsProvisionalTaxId  = isProvisionalTaxId,
+            TaxIdStatus         = taxIdStatus,
+            LegalName           = legalName.Trim(),
+            TradeName           = string.IsNullOrWhiteSpace(tradeName) ? null : tradeName.Trim(),
+            MainAddress         = string.IsNullOrWhiteSpace(mainAddress) ? "—" : mainAddress.Trim(),
+            Email               = string.IsNullOrWhiteSpace(email) ? null : email.Trim(),
+            Phone               = string.IsNullOrWhiteSpace(phone) ? null : phone.Trim(),
+            CountryCode         = string.IsNullOrWhiteSpace(countryCode) ? "ECU" : countryCode.Trim().ToUpperInvariant(),
+            Timezone            = string.IsNullOrWhiteSpace(timezone) ? "America/Guayaquil" : timezone.Trim(),
+            CurrencyCode        = string.IsNullOrWhiteSpace(currencyCode) ? "USD" : currencyCode.Trim().ToUpperInvariant(),
+            LogoUrl             = string.IsNullOrWhiteSpace(logoUrl) ? null : logoUrl.Trim(),
+            BrandingJson        = string.IsNullOrWhiteSpace(brandingJson) ? null : brandingJson.Trim(),
+            IsActive            = true,
+            // Onboarding: provisional companies start as PendingSetup (no ERP infrastructure yet)
+            OnboardingCompleted = isProvisionalTaxId ? false : false,
+            OperationalStatus   = CompanyOperationalStatus.PendingSetup,
+            CreatedAt           = now,
+            UpdatedAt           = now,
         };
     }
 
@@ -140,37 +192,34 @@ public class Company : ISubscriberScopedEntity
         string? brandingJson,
         bool isActive)
     {
-        LegalName = legalName.Trim();
-        TradeName = string.IsNullOrWhiteSpace(tradeName) ? null : tradeName.Trim();
-        MainAddress = string.IsNullOrWhiteSpace(mainAddress) ? "—" : mainAddress.Trim();
-        Phone = string.IsNullOrWhiteSpace(phone) ? null : phone.Trim();
-        Email = string.IsNullOrWhiteSpace(email) ? null : email.Trim();
-        CountryCode = string.IsNullOrWhiteSpace(countryCode) ? CountryCode : countryCode.Trim().ToUpperInvariant();
-        Timezone = string.IsNullOrWhiteSpace(timezone) ? Timezone : timezone.Trim();
+        LegalName    = legalName.Trim();
+        TradeName    = string.IsNullOrWhiteSpace(tradeName) ? null : tradeName.Trim();
+        MainAddress  = string.IsNullOrWhiteSpace(mainAddress) ? "—" : mainAddress.Trim();
+        Phone        = string.IsNullOrWhiteSpace(phone) ? null : phone.Trim();
+        Email        = string.IsNullOrWhiteSpace(email) ? null : email.Trim();
+        CountryCode  = string.IsNullOrWhiteSpace(countryCode) ? CountryCode : countryCode.Trim().ToUpperInvariant();
+        Timezone     = string.IsNullOrWhiteSpace(timezone) ? Timezone : timezone.Trim();
         CurrencyCode = string.IsNullOrWhiteSpace(currencyCode) ? CurrencyCode : currencyCode.Trim().ToUpperInvariant();
-        LogoUrl = string.IsNullOrWhiteSpace(logoUrl) ? null : logoUrl.Trim();
+        LogoUrl      = string.IsNullOrWhiteSpace(logoUrl) ? null : logoUrl.Trim();
         BrandingJson = string.IsNullOrWhiteSpace(brandingJson) ? null : brandingJson.Trim();
-        IsActive = isActive;
-        UpdatedAt = DateTime.UtcNow;
+        IsActive     = isActive;
+        UpdatedAt    = DateTime.UtcNow;
     }
 
     public void UpdateTaxId(string ruc, bool isProvisional, TaxIdStatus status)
     {
-        Ruc = NormalizeRuc(ruc, isProvisional);
+        Ruc                = NormalizeRuc(ruc, isProvisional);
         IsProvisionalTaxId = isProvisional;
-        TaxIdStatus = status;
+        TaxIdStatus        = status;
+        UpdatedAt          = DateTime.UtcNow;
     }
 
     private static string NormalizeRuc(string ruc, bool isProvisional)
     {
         var t = ruc.Trim();
-        if (isProvisional)
-            return t;
-
-        if (t.Length == 13)
-            return t;
-        if (t.Length < 13)
-            return t.PadRight(13, '0')[..13];
+        if (isProvisional) return t;
+        if (t.Length == 13) return t;
+        if (t.Length < 13)  return t.PadRight(13, '0')[..13];
         return t[..13];
     }
 }
