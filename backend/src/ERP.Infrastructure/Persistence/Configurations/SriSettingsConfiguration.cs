@@ -14,12 +14,6 @@ public sealed class SriSettingsConfiguration : IEntityTypeConfiguration<SriSetti
         builder.Property(e => e.Id).HasColumnName("id").IsRequired();
         builder.Property(e => e.SubscriberId).HasColumnName("subscriber_id").IsRequired();
         builder.Property(e => e.CompanyId).HasColumnName("company_id").IsRequired();
-        builder.Property(e => e.Ruc).HasColumnName("ruc").HasMaxLength(SriSettings.RucMaxLen).IsRequired();
-        builder.Property(e => e.LegalName).HasColumnName("legal_name").HasMaxLength(SriSettings.LegalNameMaxLen).IsRequired();
-        builder.Property(e => e.TradeName).HasColumnName("trade_name").HasMaxLength(SriSettings.TradeNameMaxLen);
-        builder.Property(e => e.MainAddress).HasColumnName("main_address").HasMaxLength(SriSettings.AddressMaxLen).IsRequired();
-        builder.Property(e => e.RequiresAccounting).HasColumnName("requires_accounting").IsRequired();
-        builder.Property(e => e.SpecialTaxpayer).HasColumnName("special_taxpayer").HasMaxLength(SriSettings.SpecialTaxpayerMaxLen);
         builder.Property(e => e.CertP12Path).HasColumnName("cert_p12_path").HasMaxLength(SriSettings.CertPathMaxLen).IsRequired();
         builder.Property(e => e.CertPassword).HasColumnName("cert_password").HasMaxLength(SriSettings.CertPasswordMaxLen).IsRequired();
         builder.Property(e => e.Environment).HasColumnName("environment").IsRequired();
@@ -31,6 +25,5 @@ public sealed class SriSettingsConfiguration : IEntityTypeConfiguration<SriSetti
         builder.Property(e => e.UpdatedBy).HasColumnName("updated_by");
 
         builder.HasIndex(e => e.CompanyId).IsUnique().HasDatabaseName("uq_sri_settings_company_id");
-        builder.HasIndex(e => e.Ruc).IsUnique().HasDatabaseName("uq_sri_settings_ruc");
     }
 }

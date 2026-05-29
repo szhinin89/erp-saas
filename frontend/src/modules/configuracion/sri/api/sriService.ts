@@ -3,12 +3,6 @@ import type { ApiResponse } from '../../../../types/api';
 
 export type SriConfigDto = {
   companyId: string;
-  companyRuc: string;
-  legalName: string;
-  tradeName: string | null;
-  mainAddress: string;
-  requiresAccounting: boolean;
-  specialTaxpayer: string | null;
   certificateP12Path: string;
   environment: number;
   emissionType: number;
@@ -16,12 +10,6 @@ export type SriConfigDto = {
 };
 
 export type UpsertSriConfigRequest = {
-  ruc: string;
-  legalName: string;
-  tradeName?: string | null;
-  mainAddress: string;
-  requiresAccounting: boolean;
-  specialTaxpayer?: string | null;
   certP12Path: string;
   certPassword: string;
   environment: number;

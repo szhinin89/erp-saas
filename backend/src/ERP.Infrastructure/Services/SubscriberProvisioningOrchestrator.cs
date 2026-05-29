@@ -87,7 +87,9 @@ public sealed class SubscriberProvisioningOrchestrator : ISubscriberProvisioning
 
             _db.Subscribers.Add(subscriber);
 
-            await EnsureBillingAccountInContextAsync(subscriber.Id, adminUser.Email.Value, request.ActorId, ct);
+            // FASE 5: BillingAccount is MANDATORY — throw if creation fails
+            var billingAccount = await CreateBillingAccountOrThrowAsync(
+                subscriber.Id, adminUser.Email.Value, request.ActorId, ct);
 
             if (!request.LinkExistingAdmin)
                 _db.IdentityUsers.Add(adminUser);
@@ -153,7 +155,11 @@ public sealed class SubscriberProvisioningOrchestrator : ISubscriberProvisioning
         }
     }
 
-    private async Task EnsureBillingAccountInContextAsync(
+    /// <summary>
+    /// FASE 5: Creates a BillingAccount and throws if it already exists or cannot be created.
+    /// Replaces the silent EnsureBillingAccountInContextAsync.
+    /// </summary>
+    private async Task<SubscriberBillingAccount> CreateBillingAccountOrThrowAsync(
         Guid subscriberId,
         string billingEmail,
         Guid actorId,
@@ -162,8 +168,11 @@ public sealed class SubscriberProvisioningOrchestrator : ISubscriberProvisioning
         var exists = await _db.SubscriberBillingAccounts
             .AsNoTracking()
             .AnyAsync(a => a.SubscriberId == subscriberId, ct);
+
         if (exists)
-            return;
+            throw new InvalidOperationException(
+                $"Ya existe un BillingAccount para el subscriber {subscriberId}. " +
+                "No se puede provisionar dos veces el mismo subscriber.");
 
         var account = SubscriberBillingAccount.Create(subscriberId, billingEmail, actorId);
         _db.SubscriberBillingAccounts.Add(account);
@@ -172,5 +181,7 @@ public sealed class SubscriberProvisioningOrchestrator : ISubscriberProvisioning
             BillingEvent.Types.AccountCreated,
             BillingEventSource.System,
             actorId));
+
+        return account;
     }
 }

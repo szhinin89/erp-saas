@@ -1,8 +1,9 @@
-﻿using System.Text;
+using System.Text;
 using System.Xml.Linq;
 using Microsoft.Extensions.Logging;
 using ERP.Application.Common.Interfaces;
 using ERP.Domain.Configuration.Entities;
+using ERP.Domain.Modules.Company.Entities;
 using ERP.Domain.Modules.Purchasing.Entities;
 
 namespace ERP.Infrastructure.Services;
@@ -23,7 +24,8 @@ public sealed class SriWithholdingSimulatedService : ISriComprobanteRetentionSer
     public async Task<string> GenerarXmlRetencionAsync(
         IssuedRetention retencion,
         List<PurchRetentionLine> detalles,
-        SriSettings config)
+        SriSettings config,
+        Company company)
     {
         var xmlDoc = new XDocument(
             new XDeclaration("1.0", "UTF-8", null),
@@ -33,18 +35,18 @@ public sealed class SriWithholdingSimulatedService : ISriComprobanteRetentionSer
                 new XElement("infoTributaria",
                     new XElement("ambiente", config.Environment),
                     new XElement("tipoEmision", config.EmissionType),
-                    new XElement("razonSocial", config.LegalName),
-                    new XElement("ruc", config.Ruc),
+                    new XElement("razonSocial", company.LegalName),
+                    new XElement("ruc", company.Ruc),
                     new XElement("accessKey", retencion.AccessKey),
                     new XElement("codDoc", "07"),
                     new XElement("estab", retencion.EstablishmentCode),
                     new XElement("ptoEmi", retencion.EmissionPointCode),
                     new XElement("secuencial", retencion.Sequential),
-                    new XElement("dirMatriz", config.MainAddress)),
+                    new XElement("dirMatriz", company.MainAddress)),
                 new XElement("infoCompRetencion",
                     new XElement("issueDate", retencion.IssueDate.ToString("dd/MM/yyyy")),
-                    new XElement("dirEstablecimiento", config.MainAddress),
-                    new XElement("obligadoContabilidad", config.RequiresAccounting ? "SI" : "NO"),
+                    new XElement("dirEstablecimiento", company.MainAddress),
+                    new XElement("obligadoContabilidad", company.IsAccountingReq ? "SI" : "NO"),
                     new XElement("tipoIdentificacionSujetoRetenido", "04"),
                     new XElement("razonSocialSujetoRetenido", "PROVEEDOR"),
                     new XElement("identificacionSujetoRetenido", "9999999999999"),
@@ -81,5 +83,3 @@ public sealed class SriWithholdingSimulatedService : ISriComprobanteRetentionSer
         });
     }
 }
-
-

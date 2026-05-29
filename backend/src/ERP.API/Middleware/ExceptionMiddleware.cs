@@ -3,7 +3,9 @@ using System.Text.Json;
 using FluentValidation;
 using ERP.Application.Common.Exceptions;
 using ERP.Domain.Exceptions;
+using ERP.Domain.Subscribers.Exceptions;
 using ERP.Domain.Subscriptions.Exceptions;
+using Microsoft.EntityFrameworkCore;
 
 namespace ERP.API.Middleware;
 
@@ -71,6 +73,16 @@ public class ExceptionMiddleware
         {
             ValidationException =>
                 (HttpStatusCode.UnprocessableEntity, "La solicitud contiene errores de validación."),
+            // FASE 12: Invalid lifecycle transitions → 409 Conflict
+            InvalidLifecycleTransitionException lifecycleTx =>
+                (HttpStatusCode.Conflict,
+                 string.IsNullOrWhiteSpace(lifecycleTx.Message)
+                     ? "Transición de estado no permitida."
+                     : lifecycleTx.Message.Trim()),
+            // FASE 7: Optimistic concurrency violation → 409 Conflict
+            DbUpdateConcurrencyException =>
+                (HttpStatusCode.Conflict,
+                 "El recurso fue modificado por otro proceso. Reintente la operación."),
             ArgumentException arg =>
                 (HttpStatusCode.BadRequest,
                  string.IsNullOrWhiteSpace(arg.Message) ? "Solicitud inválida." : arg.Message.Trim()),

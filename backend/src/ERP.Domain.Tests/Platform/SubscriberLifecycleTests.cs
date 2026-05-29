@@ -54,10 +54,9 @@ public sealed class SubscriberLifecycleTests
         var s = NewSubscriber();
         var trialEnd = DateTime.UtcNow.AddDays(14);
 
-        s.SetTrial(trialEnd, Guid.NewGuid());
+        s.SetTrial(Guid.NewGuid());
 
         s.LifecycleStatus.Should().Be(SubscriberLifecycleStatus.Trial);
-        s.TrialEndsAtUtc.Should().Be(trialEnd);
         s.IsOperational.Should().BeTrue();
     }
 
@@ -67,10 +66,9 @@ public sealed class SubscriberLifecycleTests
         var s = NewSubscriber();
         var graceEnd = DateTime.UtcNow.AddDays(7);
 
-        s.EnterGracePeriod(graceEnd, Guid.NewGuid());
+        s.EnterGracePeriod(Guid.NewGuid());
 
         s.LifecycleStatus.Should().Be(SubscriberLifecycleStatus.GracePeriod);
-        s.GracePeriodEndsAtUtc.Should().Be(graceEnd);
         s.IsOperational.Should().BeTrue();
     }
 

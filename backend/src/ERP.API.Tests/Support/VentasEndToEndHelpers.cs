@@ -144,23 +144,14 @@ internal static class VentasEndToEndHelpers
 
         // SriSettings (Environment 1 = pruebas)
         var sri = SriSettings.Create(
-            subscriberId:              subscriberId,
-            companyId:                 seed.CompanyId,
-            ruc:            "9999999999999",
-            legalName:           "Empresa Test SRL",
-            tradeName:       null,
-            mainAddress:       "Av. Integracion 001",
-            requiresAccounting:  false,
-            specialTaxpayer: null,
-            estabCode:       "001",
-            emPointCode:          "001",
-            currentSequential:      1,
-            certP12Path:    "simulado.p12",
-            certPassword:   "test",
-            environment:              1,
-            emissionType:           1,
-            wsdlUrl:    "https://test-sri.example.com/wsdl",
-            createdBy:             userId);
+            subscriberId: subscriberId,
+            companyId:    seed.CompanyId,
+            certP12Path:  "simulado.p12",
+            certPassword: "test",
+            environment:  1,
+            emissionType: 1,
+            wsdlUrl:      "https://test-sri.example.com/wsdl",
+            createdBy:    userId);
         db.SriSettings.Add(sri);
 
         await db.SaveChangesAsync(ct);

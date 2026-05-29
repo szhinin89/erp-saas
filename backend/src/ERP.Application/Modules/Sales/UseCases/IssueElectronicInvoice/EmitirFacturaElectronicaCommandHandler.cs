@@ -9,6 +9,8 @@ using ERP.Domain.Audit.Entities;
 using ERP.Domain.Audit.Interfaces;
 using ERP.Domain.Configuration.Entities;
 using ERP.Domain.Configuration.Interfaces;
+using ERP.Domain.Modules.Company.Entities;
+using ERP.Domain.Modules.Company.Interfaces;
 using ERP.Domain.Modules.Fiscal.Entities;
 using ERP.Domain.Modules.Fiscal.Interfaces;
 using ERP.Domain.Products.Interfaces;
@@ -20,6 +22,7 @@ public sealed class IssueElectronicInvoiceCommandHandler
 {
     private readonly IInvoiceRepository _invoiceRepository;
     private readonly ISriSettingsRepository _configSriRepository;
+    private readonly ICompanyRepository _companyRepository;
     private readonly ISriFacturaElectronicaService _sriService;
     private readonly IFileStorage _fileStorage;
     private readonly IAccountingService _accounting;
@@ -35,6 +38,7 @@ public sealed class IssueElectronicInvoiceCommandHandler
     public IssueElectronicInvoiceCommandHandler(
         IInvoiceRepository invoiceRepository,
         ISriSettingsRepository configSriRepository,
+        ICompanyRepository companyRepository,
         ISriFacturaElectronicaService sriService,
         IFileStorage fileStorage,
         IAccountingService accounting,
@@ -49,6 +53,7 @@ public sealed class IssueElectronicInvoiceCommandHandler
     {
         _invoiceRepository   = invoiceRepository;
         _configSriRepository = configSriRepository;
+        _companyRepository   = companyRepository;
         _sriService          = sriService;
         _fileStorage         = fileStorage;
         _accounting          = accounting;
@@ -71,11 +76,11 @@ public sealed class IssueElectronicInvoiceCommandHandler
         if (!loadResult.IsSuccess)
             return Result<Guid>.Failure(loadResult.Error!);
 
-        var (invoice, configSri) = loadResult.Value;
+        var (invoice, configSri, company) = loadResult.Value;
         var legacyBill = FiscalInvoiceSriBridge.ToLegacyBill(invoice);
         var legacyLines = FiscalInvoiceSriBridge.ToLegacyLines(invoice, userId);
 
-        var xmlResult = await GenerateAndSignXmlAsync(invoice, legacyBill, legacyLines, configSri, userId, ct);
+        var xmlResult = await GenerateAndSignXmlAsync(invoice, legacyBill, legacyLines, configSri, company, userId, ct);
         if (!xmlResult.IsSuccess)
             return Result<Guid>.Failure(xmlResult.Error!);
 
@@ -101,25 +106,31 @@ public sealed class IssueElectronicInvoiceCommandHandler
             invoice, subscriberId, userId, response, xmlGeneradoPath, xmlAutorizacionPath, ct);
     }
 
-    private async Task<Result<(Invoice Invoice, SriSettings Config)>> LoadInvoiceForIssueAsync(
+    private async Task<Result<(Invoice Invoice, SriSettings Config, Company Company)>> LoadInvoiceForIssueAsync(
         Guid subscriberId,
         Guid publicId,
         CancellationToken ct)
     {
         var invoice = await _invoiceRepository.GetByPublicIdAsync(publicId, ct);
         if (invoice is null)
-            return Result<(Invoice, SriSettings)>.Failure("Factura de venta no encontrada.");
+            return Result<(Invoice, SriSettings, Company)>.Failure("Factura de venta no encontrada.");
 
         if (invoice.Status != Invoice.Statuses.Validated)
-            return Result<(Invoice, SriSettings)>.Failure(
+            return Result<(Invoice, SriSettings, Company)>.Failure(
                 $"Solo se puede emitir una factura Validada (estado actual: {invoice.Status}).");
 
-        var configSri = await _configSriRepository.GetByCompanyIdAsync(_currentCompany.CompanyId, ct);
+        var companyId = _currentCompany.CompanyId;
+
+        var configSri = await _configSriRepository.GetByCompanyIdAsync(companyId, ct);
         if (configSri is null)
-            return Result<(Invoice, SriSettings)>.Failure(
+            return Result<(Invoice, SriSettings, Company)>.Failure(
                 "La configuración SRI no está configurada para esta empresa.");
 
-        return Result<(Invoice, SriSettings)>.Success((invoice, configSri));
+        var company = await _companyRepository.GetByIdAsync(companyId, ct);
+        if (company is null)
+            return Result<(Invoice, SriSettings, Company)>.Failure("Empresa no encontrada.");
+
+        return Result<(Invoice, SriSettings, Company)>.Success((invoice, configSri, company));
     }
 
     private async Task<Result<(byte[] XmlFirmado, string XmlContent)>> GenerateAndSignXmlAsync(
@@ -127,13 +138,14 @@ public sealed class IssueElectronicInvoiceCommandHandler
         ERP.Domain.Modules.Sales.Entities.SalesBill legacyBill,
         List<ERP.Domain.Modules.Sales.Entities.SalesBillLine> legacyLines,
         SriSettings configSri,
+        Company company,
         Guid userId,
         CancellationToken ct)
     {
         try
         {
             _logger.LogDebug("Generando y firmando XML para factura {FacturaId}", invoice.PublicId);
-            var xmlContent = await _sriService.GenerarXmlFacturaAsync(legacyBill, legacyLines, configSri);
+            var xmlContent = await _sriService.GenerarXmlFacturaAsync(legacyBill, legacyLines, configSri, company);
             var xmlFirmado = await _sriService.FirmarXmlAsync(
                 xmlContent, configSri.CertP12Path, _secretProtector.UnprotectOrPlaintext(configSri.CertPassword));
             return Result<(byte[] XmlFirmado, string XmlContent)>.Success((xmlFirmado, xmlContent));

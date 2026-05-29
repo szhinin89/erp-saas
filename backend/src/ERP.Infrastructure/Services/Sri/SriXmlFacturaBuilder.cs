@@ -2,6 +2,7 @@ using System.Text;
 using System.Xml.Linq;
 using ERP.Domain.Configuration.Entities;
 using ERP.Domain.MasterData.Entities;
+using ERP.Domain.Modules.Company.Entities;
 using ERP.Domain.Modules.Sales.Entities;
 
 namespace ERP.Infrastructure.Services.Sri;
@@ -26,6 +27,7 @@ public static class SriXmlFacturaBuilder
         SalesBill            factura,
         List<SalesBillLine>  lineas,
         SriSettings          cfg,
+        Company              company,
         BusinessPartner?     buyer = null)
     {
         var totalDescuento = 0m;
@@ -47,14 +49,14 @@ public static class SriXmlFacturaBuilder
                 new XAttribute("id", "comprobante"),
                 new XAttribute("version", FacturaVersion),
 
-                BuildInfoTributaria(cfg, factura.AccessKey, factura.DocType,
+                BuildInfoTributaria(cfg, company, factura.AccessKey, factura.DocType,
                     factura.EstabCode, factura.EmPointCode, factura.Sequential),
 
                 new XElement("infoFactura",
                     new XElement("fechaEmision",        factura.IssueDate.ToString("dd/MM/yyyy")),
-                    new XElement("dirEstablecimiento",  cfg.MainAddress),
-                    ContribEspecialElement(cfg),
-                    new XElement("obligadoContabilidad", cfg.RequiresAccounting ? "SI" : "NO"),
+                    new XElement("dirEstablecimiento",  company.MainAddress),
+                    ContribEspecialElement(company),
+                    new XElement("obligadoContabilidad", company.IsAccountingReq ? "SI" : "NO"),
                     new XElement("tipoIdentificacionComprador", SriIdTypeCode(buyer)),
                     new XElement("razonSocialComprador", buyer?.LegalName ?? "CONSUMIDOR FINAL"),
                     new XElement("identificacionComprador", buyer?.Identification.Number ?? "9999999999"),
@@ -85,6 +87,7 @@ public static class SriXmlFacturaBuilder
         SalesNote           nota,
         List<SalesNoteLine> lineas,
         SriSettings         cfg,
+        Company             company,
         BusinessPartner?    buyer = null)
     {
         var esCredito = nota.NoteType.Equals("CREDITO", StringComparison.OrdinalIgnoreCase);
@@ -109,17 +112,17 @@ public static class SriXmlFacturaBuilder
                 new XAttribute("id", "comprobante"),
                 new XAttribute("version", NotaVersion),
 
-                BuildInfoTributaria(cfg, nota.AccessKey, nota.DocType,
+                BuildInfoTributaria(cfg, company, nota.AccessKey, nota.DocType,
                     nota.EstabCode, nota.EmPointCode, nota.Sequential),
 
                 new XElement(infoName,
                     new XElement("fechaEmision",            nota.IssueDate.ToString("dd/MM/yyyy")),
-                    new XElement("dirEstablecimiento",      cfg.MainAddress),
+                    new XElement("dirEstablecimiento",      company.MainAddress),
                     new XElement("tipoIdentificacionComprador", SriIdTypeCode(buyer)),
                     new XElement("razonSocialComprador",    buyer?.LegalName ?? "CONSUMIDOR FINAL"),
                     new XElement("identificacionComprador", buyer?.Identification.Number ?? "9999999999"),
-                    ContribEspecialElement(cfg),
-                    new XElement("obligadoContabilidad",    cfg.RequiresAccounting ? "SI" : "NO"),
+                    ContribEspecialElement(company),
+                    new XElement("obligadoContabilidad",    company.IsAccountingReq ? "SI" : "NO"),
                     new XElement("codDocModificado",        factOrig.DocType.Trim()),
                     new XElement("numDocModificado",        numDocSustento),
                     new XElement("fechaEmisionDocSustento", factOrig.IssueDate.ToString("dd/MM/yyyy")),
@@ -139,6 +142,7 @@ public static class SriXmlFacturaBuilder
 
     private static XElement BuildInfoTributaria(
         SriSettings cfg,
+        Company     company,
         string      claveAcceso,
         string      codDoc,
         string      estab,
@@ -147,15 +151,15 @@ public static class SriXmlFacturaBuilder
         => new("infoTributaria",
             new XElement("ambiente",       cfg.Environment),
             new XElement("tipoEmision",    cfg.EmissionType),
-            new XElement("razonSocial",    cfg.LegalName),
-            new XElement("nombreComercial",cfg.TradeName ?? cfg.LegalName),
-            new XElement("ruc",            cfg.Ruc),
+            new XElement("razonSocial",    company.LegalName),
+            new XElement("nombreComercial",company.TradeName ?? company.LegalName),
+            new XElement("ruc",            company.Ruc),
             new XElement("claveAcceso",    claveAcceso),
             new XElement("codDoc",         codDoc.PadLeft(2, '0')),
             new XElement("estab",          estab.PadLeft(3, '0')),
             new XElement("ptoEmi",         ptoEmi.PadLeft(3, '0')),
             new XElement("secuencial",     Seq(secuencial)),
-            new XElement("dirMatriz",      cfg.MainAddress));
+            new XElement("dirMatriz",      company.MainAddress));
 
     private static XElement BuildTotalImpuesto(string vatCode, decimal baseImp, decimal valor)
         => new XElement("totalImpuesto",
@@ -215,10 +219,10 @@ public static class SriXmlFacturaBuilder
             new XElement("baseImponible",    F2(baseImp)),
             new XElement("valor",            F2(valor)));
 
-    private static XElement? ContribEspecialElement(SriSettings cfg)
-        => string.IsNullOrWhiteSpace(cfg.SpecialTaxpayer)
+    private static XElement? ContribEspecialElement(Company company)
+        => string.IsNullOrWhiteSpace(company.SpecialTaxpayerNo)
             ? null
-            : new XElement("contribuyenteEspecial", cfg.SpecialTaxpayer.Trim());
+            : new XElement("contribuyenteEspecial", company.SpecialTaxpayerNo.Trim());
 
     // ── infoAdicional ─────────────────────────────────────────────────────────
 

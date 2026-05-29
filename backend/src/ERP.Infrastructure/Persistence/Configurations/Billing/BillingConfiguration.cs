@@ -20,7 +20,6 @@ public sealed class SubscriberBillingAccountConfiguration : IEntityTypeConfigura
         builder.Property(x => x.BillingEmail).HasColumnName("billing_email").HasMaxLength(SubscriberBillingAccount.EmailMaxLen).IsRequired();
         builder.Property(x => x.CountryCode).HasColumnName("country_code").HasMaxLength(SubscriberBillingAccount.CountryCodeMaxLen).IsRequired();
         builder.Property(x => x.CurrencyCode).HasColumnName("currency_code").HasMaxLength(SubscriberBillingAccount.CurrencyMaxLen).IsRequired();
-        builder.Property(x => x.TaxProfileJson).HasColumnName("tax_profile_json").HasColumnType("jsonb");
         builder.Property(x => x.DefaultPaymentMethodRef).HasColumnName("default_payment_method_ref").HasMaxLength(SubscriberBillingAccount.PaymentMethodRefMaxLen);
         builder.Property(x => x.TrialEndsAtUtc).HasColumnName("trial_ends_at_utc");
         builder.Property(x => x.GracePeriodEndsAtUtc).HasColumnName("grace_period_ends_at_utc");
@@ -30,6 +29,9 @@ public sealed class SubscriberBillingAccountConfiguration : IEntityTypeConfigura
         builder.Property(x => x.CreatedBy).HasColumnName("created_by");
         builder.Property(x => x.UpdatedBy).HasColumnName("updated_by");
         builder.HasIndex(x => x.SubscriberId).IsUnique().HasDatabaseName("ux_subscriber_billing_accounts_subscriber");
+
+        // Optimistic concurrency: UpdatedAt changes on every write
+        builder.Property(x => x.UpdatedAt).IsConcurrencyToken();
     }
 }
 
@@ -54,6 +56,7 @@ public sealed class SaasBillingInvoiceConfiguration : IEntityTypeConfiguration<S
         builder.Property(x => x.IssuedAtUtc).HasColumnName("issued_at_utc");
         builder.Property(x => x.DueAtUtc).HasColumnName("due_at_utc");
         builder.Property(x => x.PaidAtUtc).HasColumnName("paid_at_utc");
+        builder.Property(x => x.ErpInvoiceId).HasColumnName("erp_invoice_id");
         builder.Property(x => x.CreatedAt).HasColumnName("created_at");
         builder.Property(x => x.UpdatedAt).HasColumnName("updated_at");
         builder.Property(x => x.CreatedBy).HasColumnName("created_by");
@@ -121,6 +124,32 @@ public sealed class PaymentProviderCustomerConfiguration : IEntityTypeConfigurat
         builder.Property(x => x.CreatedBy).HasColumnName("created_by");
         builder.Property(x => x.UpdatedBy).HasColumnName("updated_by");
         builder.HasIndex(x => new { x.SubscriberId, x.ProviderType }).IsUnique().HasDatabaseName("ux_payment_provider_customers_sub_provider");
+    }
+}
+
+public sealed class SubscriberBillingProfileConfiguration : IEntityTypeConfiguration<SubscriberBillingProfile>
+{
+    public void Configure(EntityTypeBuilder<SubscriberBillingProfile> builder)
+    {
+        builder.ToTable("subscriber_billing_profiles");
+        builder.HasKey(x => x.Id);
+        builder.Property(x => x.Id).HasColumnName("id");
+        builder.Property(x => x.SubscriberId).HasColumnName("subscriber_id").IsRequired();
+        builder.Property(x => x.IdentificationType).HasColumnName("identification_type").HasMaxLength(SubscriberBillingProfile.IdentificationTypeMaxLen).IsRequired();
+        builder.Property(x => x.IdentificationNumber).HasColumnName("identification_number").HasMaxLength(SubscriberBillingProfile.IdentificationNumberMaxLen).IsRequired();
+        builder.Property(x => x.LegalName).HasColumnName("legal_name").HasMaxLength(SubscriberBillingProfile.LegalNameMaxLen).IsRequired();
+        builder.Property(x => x.TradeName).HasColumnName("trade_name").HasMaxLength(SubscriberBillingProfile.TradeNameMaxLen);
+        builder.Property(x => x.Address).HasColumnName("address").HasMaxLength(SubscriberBillingProfile.AddressMaxLen).IsRequired();
+        builder.Property(x => x.Phone).HasColumnName("phone").HasMaxLength(SubscriberBillingProfile.PhoneMaxLen);
+        builder.Property(x => x.Email).HasColumnName("email").HasMaxLength(SubscriberBillingProfile.EmailMaxLen);
+        builder.Property(x => x.Country).HasColumnName("country").HasMaxLength(SubscriberBillingProfile.CountryMaxLen).IsRequired();
+        builder.Property(x => x.City).HasColumnName("city").HasMaxLength(SubscriberBillingProfile.CityMaxLen);
+        builder.Property(x => x.BusinessPartnerId).HasColumnName("business_partner_id");
+        builder.Property(x => x.CreatedAt).HasColumnName("created_at");
+        builder.Property(x => x.UpdatedAt).HasColumnName("updated_at");
+        builder.Property(x => x.CreatedBy).HasColumnName("created_by");
+        builder.Property(x => x.UpdatedBy).HasColumnName("updated_by");
+        builder.HasIndex(x => x.SubscriberId).IsUnique().HasDatabaseName("ux_subscriber_billing_profiles_subscriber");
     }
 }
 

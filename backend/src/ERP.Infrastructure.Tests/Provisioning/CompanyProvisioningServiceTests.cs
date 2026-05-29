@@ -47,7 +47,7 @@ public sealed class CompanyProvisioningServiceTests
             Mock.Of<ICommercialPlanLimitService>(),
             Mock.Of<IAccessRepository>());
 
-        var subscriber = Subscriber.Create("Other", "other", Guid.NewGuid(), ruc: "1791234567001");
+        var subscriber = Subscriber.Create("Other", "other", Guid.NewGuid());
         var act = () => sut.CreateDefaultCompanyForSubscriberAsync(subscriber);
 
         await act.Should().ThrowAsync<CompanyRucAlreadyExistsException>()

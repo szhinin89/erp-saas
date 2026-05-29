@@ -33,53 +33,6 @@ export function SriConfigPageDataTab({
       <div className="pg-section sri-section-mb">
         <div className="pg-section-header">
           <div className="pg-section-header-left">
-            <span className="material-symbols-outlined pg-section-icon">business</span>
-            <p className="pg-section-label">Datos de la Empresa</p>
-          </div>
-        </div>
-        <div className="pg-section-body">
-          <div className="pg-form-grid pg-form-grid--2">
-            <ZHField label="RUC" required error={errors.ruc?.message}>
-              <input className="zh-input mono" placeholder="0000000000001" maxLength={13} disabled={saving || !canEdit} {...register('ruc')} />
-            </ZHField>
-            <ZHField label="Razón Social" required error={errors.legalName?.message}>
-              <input className="zh-input" placeholder="Nombre legal registrado en el SRI" disabled={saving || !canEdit} {...register('legalName')} />
-            </ZHField>
-            <ZHField label="Nombre Comercial" error={errors.tradeName?.message}>
-              <input className="zh-input" placeholder="Nombre visible en documentos (opcional)" disabled={saving || !canEdit} {...register('tradeName')} />
-            </ZHField>
-            <ZHField label="Dirección Matriz" required error={errors.mainAddress?.message}>
-              <input className="zh-input" placeholder="Dirección registrada en el SRI" disabled={saving || !canEdit} {...register('mainAddress')} />
-            </ZHField>
-            <ZHField label="N° Resolución Contribuyente Especial" error={errors.specialTaxpayer?.message}>
-              <input className="zh-input mono" placeholder="Ej: 001 — dejar vacío si no aplica" disabled={saving || !canEdit} {...register('specialTaxpayer')} />
-            </ZHField>
-            <ZHField label="Obligado a Llevar Contabilidad">
-              <div className="sri-check-row">
-                <Controller
-                  name="requiresAccounting"
-                  control={control}
-                  render={({ field }) => (
-                    <label className="zh-inline-check">
-                      <input
-                        type="checkbox"
-                        checked={field.value}
-                        onChange={(e) => field.onChange(e.target.checked)}
-                        disabled={saving || !canEdit}
-                      />
-                      <span>Sí, esta empresa está obligada a llevar contabilidad</span>
-                    </label>
-                  )}
-                />
-              </div>
-            </ZHField>
-          </div>
-        </div>
-      </div>
-
-      <div className="pg-section sri-section-mb">
-        <div className="pg-section-header">
-          <div className="pg-section-header-left">
             <span className="material-symbols-outlined pg-section-icon">cloud</span>
             <p className="pg-section-label">Ambiente y Tipo de Emisión</p>
           </div>

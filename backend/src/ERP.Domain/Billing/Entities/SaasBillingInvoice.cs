@@ -23,6 +23,8 @@ public sealed class SaasBillingInvoice : AuditableEntity
     public DateTime? IssuedAtUtc { get; private set; }
     public DateTime? DueAtUtc { get; private set; }
     public DateTime? PaidAtUtc { get; private set; }
+    /// <summary>ID de la factura ERP emitida por ZH Technologies para este cobro SaaS.</summary>
+    public Guid? ErpInvoiceId { get; private set; }
 
     public ICollection<SaasBillingInvoiceLine> Lines { get; private set; } = [];
 
@@ -85,6 +87,12 @@ public sealed class SaasBillingInvoice : AuditableEntity
     public void Void(Guid updatedBy)
     {
         Status = SaasBillingInvoiceStatus.Void;
+        SetUpdated(updatedBy);
+    }
+
+    public void LinkErpInvoice(Guid erpInvoiceId, Guid updatedBy)
+    {
+        ErpInvoiceId = erpInvoiceId;
         SetUpdated(updatedBy);
     }
 }

@@ -29,6 +29,7 @@ public sealed class CreateSaleCommandHandler : IRequestHandler<CreateSaleCommand
     private readonly IDocumentRelationRepository _documentRelationRepository;
     private readonly ISnowflakeIdGenerator _idGenerator;
     private readonly ISriSettingsRepository _configSriRepository;
+    private readonly ICompanyRepository _companyRepository;
     private readonly IEmissionPointRepository _emissionPointRepository;
     private readonly IDocumentSequenceRepository _docSeqRepository;
     private readonly IStockRepository _stockRepository;
@@ -49,6 +50,7 @@ public sealed class CreateSaleCommandHandler : IRequestHandler<CreateSaleCommand
         IDocumentRelationRepository documentRelationRepository,
         ISnowflakeIdGenerator idGenerator,
         ISriSettingsRepository configSriRepository,
+        ICompanyRepository companyRepository,
         IEmissionPointRepository emissionPointRepository,
         IDocumentSequenceRepository docSeqRepository,
         IStockRepository stockRepository,
@@ -68,6 +70,7 @@ public sealed class CreateSaleCommandHandler : IRequestHandler<CreateSaleCommand
         _documentRelationRepository = documentRelationRepository;
         _idGenerator = idGenerator;
         _configSriRepository = configSriRepository;
+        _companyRepository   = companyRepository;
         _emissionPointRepository = emissionPointRepository;
         _docSeqRepository    = docSeqRepository;
         _stockRepository     = stockRepository;
@@ -286,6 +289,9 @@ public sealed class CreateSaleCommandHandler : IRequestHandler<CreateSaleCommand
         var sriConfig = await _configSriRepository.GetByCompanyIdForUpdateAsync(companyId, ct)
             ?? throw new InvalidOperationException("SRI config no encontrada durante la transacción.");
 
+        var company = await _companyRepository.GetByIdAsync(companyId, ct)
+            ?? throw new InvalidOperationException("Empresa no encontrada.");
+
         EmissionPoint emPoint;
         if (command.EmissionPointId.HasValue)
         {
@@ -307,7 +313,7 @@ public sealed class CreateSaleCommandHandler : IRequestHandler<CreateSaleCommand
 
         var issueDate = DateTime.UtcNow;
         var accessKey = ClaveAccesoHelper.Generar(
-            sriConfig.Ruc, sriConfig.Environment, emPoint.Establishment.Code,
+            company.Ruc, sriConfig.Environment, emPoint.Establishment.Code,
             emPoint.Code, sriConfig.EmissionType, secuencial, issueDate);
 
         var publicId = Guid.NewGuid();

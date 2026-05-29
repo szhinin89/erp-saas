@@ -267,6 +267,7 @@ if (!app.Environment.IsEnvironment("Testing")
     await CommercialPlansBootstrap.EnsureDefaultsAsync(db);
     await CommercialPlanFeaturesBootstrap.EnsureDefaultsAsync(db);
     await CommercialPlanLimitsBootstrap.EnsureDefaultsAsync(db);
+    await ZHTechnologiesBootstrap.EnsureAsync(db, app.Configuration);
 }
 
 // Datos demo (subscriber-demo + admin) solo si se activa explícitamente — ver appsettings.Development → Development:SeedDemoSubscriber.
@@ -376,6 +377,8 @@ app.UseAuthentication();
 app.UseSecurityCorrelation();           // SubscriberId/CompanyId/UserId en log scope
 app.UseMiddleware<EnterpriseDiagnosticMiddleware>();
 app.UseMiddleware<PlatformPanelLockMiddleware>();
+// FASE 2 — Subscription access validation on every authenticated request
+app.UseMiddleware<ERP.API.Middleware.SubscriptionAccessMiddleware>();
 app.UseAuthorization();
 app.UseRateLimiter();
 app.UseMiddleware<ForbiddenAccessLoggingMiddleware>();

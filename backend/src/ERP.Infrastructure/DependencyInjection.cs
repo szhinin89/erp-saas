@@ -208,6 +208,10 @@ public static class DependencyInjection
         services.AddScoped<ICommercialPlanLimitService, CommercialPlanLimitService>();
         services.AddScoped<ISubscriberBillingRepository, SubscriberBillingRepository>();
         services.AddScoped<IBillingGovernanceService, BillingGovernanceService>();
+        services.AddScoped<ERP.Application.Common.Subscriptions.ISubscriptionAccessService,
+            ERP.Infrastructure.SaaS.SubscriptionAccessService>();
+        services.AddScoped<ERP.Application.Common.Subscriptions.ISubscriptionLifecycleOrchestrator,
+            ERP.Infrastructure.SaaS.SubscriptionLifecycleOrchestrator>();
         services.AddScoped<IPaymentProviderAdapter, NullPaymentProviderAdapter>();
         services.AddScoped<DistributedSubscriberEntitlementsSnapshotCache>();
         services.AddScoped<SubscriberEntitlementsPermissionsCacheInvalidator>();

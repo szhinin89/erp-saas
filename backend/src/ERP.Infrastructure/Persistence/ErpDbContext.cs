@@ -364,6 +364,7 @@ public class ErpDbContext : DbContext
 
     // ── SaaS Billing (subscriber-scoped; no ERP sales_invoice) ───────────────
     public DbSet<ERP.Domain.Billing.Entities.SubscriberBillingAccount> SubscriberBillingAccounts => Set<ERP.Domain.Billing.Entities.SubscriberBillingAccount>();
+    public DbSet<ERP.Domain.Billing.Entities.SubscriberBillingProfile> SubscriberBillingProfiles => Set<ERP.Domain.Billing.Entities.SubscriberBillingProfile>();
     public DbSet<ERP.Domain.Billing.Entities.SaasBillingInvoice> SaasBillingInvoices => Set<ERP.Domain.Billing.Entities.SaasBillingInvoice>();
     public DbSet<ERP.Domain.Billing.Entities.SaasBillingInvoiceLine> SaasBillingInvoiceLines => Set<ERP.Domain.Billing.Entities.SaasBillingInvoiceLine>();
     public DbSet<ERP.Domain.Billing.Entities.BillingEvent> BillingEvents => Set<ERP.Domain.Billing.Entities.BillingEvent>();

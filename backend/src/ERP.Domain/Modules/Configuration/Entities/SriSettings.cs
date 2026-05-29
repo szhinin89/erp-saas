@@ -4,92 +4,57 @@ namespace ERP.Domain.Configuration.Entities;
 
 public sealed class SriSettings : AuditableEntity, ISubscriberScopedEntity, ICompanyScopedEntity
 {
-    public const int RucMaxLen             = 13;
-    public const int LegalNameMaxLen       = 200;
-    public const int TradeNameMaxLen       = 200;
-    public const int AddressMaxLen         = 500;
-    public const int SpecialTaxpayerMaxLen = 200;
-    public const int CertPathMaxLen        = 500;
-    public const int CertPasswordMaxLen    = 500;
-    public const int WsdlUrlMaxLen         = 500;
+    public const int CertPathMaxLen    = 500;
+    public const int CertPasswordMaxLen = 500;
+    public const int WsdlUrlMaxLen     = 500;
 
-    public Guid    CompanyId           { get; private set; }
-    public string  Ruc                 { get; private set; } = null!;
-    public string  LegalName           { get; private set; } = null!;
-    public string? TradeName           { get; private set; }
-    public string  MainAddress         { get; private set; } = null!;
-    public bool    RequiresAccounting  { get; private set; }
-    public string? SpecialTaxpayer     { get; private set; }
-    public string  CertP12Path         { get; private set; } = null!;
+    public Guid   CompanyId    { get; private set; }
+    public string CertP12Path  { get; private set; } = null!;
     /// <summary>Contraseña del certificado cifrada en reposo (prefijo dp1:). Legacy: texto plano hasta próximo guardado.</summary>
-    public string  CertPassword        { get; private set; } = null!;
-    public int     Environment         { get; private set; }
-    public int     EmissionType        { get; private set; } = 1;
-    public string  WsdlUrl             { get; private set; } = null!;
+    public string CertPassword { get; private set; } = null!;
+    public int    Environment  { get; private set; }
+    public int    EmissionType { get; private set; } = 1;
+    public string WsdlUrl      { get; private set; } = null!;
 
     private SriSettings() { }
 
     public static SriSettings Create(
-        Guid     subscriberId,
-        Guid     companyId,
-        string   ruc,
-        string   legalName,
-        string?  tradeName,
-        string   mainAddress,
-        bool     requiresAccounting,
-        string?  specialTaxpayer,
-        string   certP12Path,
-        string   certPassword,
-        int      environment,
-        int      emissionType,
-        string   wsdlUrl,
-        Guid     createdBy)
+        Guid   subscriberId,
+        Guid   companyId,
+        string certP12Path,
+        string certPassword,
+        int    environment,
+        int    emissionType,
+        string wsdlUrl,
+        Guid   createdBy)
     {
         var s = new SriSettings
         {
-            SubscriberId       = subscriberId,
-            CompanyId          = companyId,
-            Ruc                = ruc.Trim(),
-            LegalName          = legalName.Trim(),
-            TradeName          = string.IsNullOrWhiteSpace(tradeName) ? null : tradeName.Trim(),
-            MainAddress        = mainAddress.Trim(),
-            RequiresAccounting = requiresAccounting,
-            SpecialTaxpayer    = string.IsNullOrWhiteSpace(specialTaxpayer) ? null : specialTaxpayer.Trim(),
-            CertP12Path        = certP12Path.Trim(),
-            CertPassword       = certPassword.Trim(),
-            Environment        = environment,
-            EmissionType       = emissionType,
-            WsdlUrl            = wsdlUrl.Trim(),
+            SubscriberId = subscriberId,
+            CompanyId    = companyId,
+            CertP12Path  = certP12Path.Trim(),
+            CertPassword = certPassword.Trim(),
+            Environment  = environment,
+            EmissionType = emissionType,
+            WsdlUrl      = wsdlUrl.Trim(),
         };
         s.SetCreated(createdBy);
         return s;
     }
 
     public void Update(
-        string   ruc,
-        string   legalName,
-        string?  tradeName,
-        string   mainAddress,
-        bool     requiresAccounting,
-        string?  specialTaxpayer,
-        string   certP12Path,
-        string   certPassword,
-        int      environment,
-        int      emissionType,
-        string   wsdlUrl,
-        Guid     updatedBy)
+        string certP12Path,
+        string certPassword,
+        int    environment,
+        int    emissionType,
+        string wsdlUrl,
+        Guid   updatedBy)
     {
-        Ruc                = ruc.Trim();
-        LegalName          = legalName.Trim();
-        TradeName          = string.IsNullOrWhiteSpace(tradeName) ? null : tradeName.Trim();
-        MainAddress        = mainAddress.Trim();
-        RequiresAccounting = requiresAccounting;
-        SpecialTaxpayer    = string.IsNullOrWhiteSpace(specialTaxpayer) ? null : specialTaxpayer.Trim();
-        CertP12Path        = certP12Path.Trim();
-        CertPassword       = certPassword.Trim();
-        Environment        = environment;
-        EmissionType       = emissionType;
-        WsdlUrl            = wsdlUrl.Trim();
+        CertP12Path  = certP12Path.Trim();
+        CertPassword = certPassword.Trim();
+        Environment  = environment;
+        EmissionType = emissionType;
+        WsdlUrl      = wsdlUrl.Trim();
         SetUpdated(updatedBy);
     }
 }

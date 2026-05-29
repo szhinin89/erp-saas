@@ -1,4 +1,4 @@
-﻿using FluentValidation;
+using FluentValidation;
 using ERP.Domain.Configuration.Entities;
 
 namespace ERP.Application.Configuration.UseCases.UpsertSriSettings;
@@ -7,19 +7,6 @@ public sealed class UpsertSriConfigurationCommandValidator : AbstractValidator<U
 {
     public UpsertSriConfigurationCommandValidator()
     {
-        RuleFor(x => x.Ruc)
-            .NotEmpty().WithMessage("El RUC de la empresa es obligatorio.")
-            .Length(13).WithMessage("El RUC debe tener exactamente 13 dígitos.")
-            .Matches(@"^\d{13}$").WithMessage("El RUC solo debe contener dígitos numéricos.");
-
-        RuleFor(x => x.LegalName)
-            .NotEmpty().WithMessage("La razón social es obligatoria.")
-            .MaximumLength(SriSettings.LegalNameMaxLen);
-
-        RuleFor(x => x.MainAddress)
-            .NotEmpty().WithMessage("La dirección matriz es obligatoria.")
-            .MaximumLength(SriSettings.AddressMaxLen);
-
         RuleFor(x => x.CertP12Path)
             .NotEmpty().WithMessage("La ruta del certificado P12 es obligatoria.");
 

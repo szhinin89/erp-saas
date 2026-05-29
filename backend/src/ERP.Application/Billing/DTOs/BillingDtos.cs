@@ -10,7 +10,6 @@ public sealed record SubscriberBillingAccountDto(
     string BillingEmail,
     string CountryCode,
     string CurrencyCode,
-    string? TaxProfileJson,
     string? DefaultPaymentMethodRef,
     DateTime? TrialEndsAtUtc,
     DateTime? GracePeriodEndsAtUtc,
@@ -30,6 +29,7 @@ public sealed record SaasBillingInvoiceDto(
     DateTime? IssuedAtUtc,
     DateTime? DueAtUtc,
     DateTime? PaidAtUtc,
+    Guid? ErpInvoiceId,
     IReadOnlyList<SaasBillingInvoiceLineDto> Lines);
 
 public sealed record SaasBillingInvoiceLineDto(
@@ -50,5 +50,4 @@ public sealed record BillingEventDto(
 public sealed record UpdateBillingAccountRequest(
     string BillingEmail,
     string CountryCode,
-    string CurrencyCode,
-    string? TaxProfileJson);
+    string CurrencyCode);

@@ -2,6 +2,7 @@ using System.Text;
 using Microsoft.Extensions.Logging;
 using ERP.Application.Common.Interfaces;
 using ERP.Domain.Configuration.Entities;
+using ERP.Domain.Modules.Company.Entities;
 using ERP.Domain.Modules.Sales.Entities;
 using ERP.Infrastructure.Services.Sri;
 
@@ -33,10 +34,11 @@ public sealed class SriFacturaElectronicaRealService : ISriFacturaElectronicaSer
     public Task<string> GenerarXmlFacturaAsync(
         SalesBill           factura,
         List<SalesBillLine> detalles,
-        SriSettings         config)
+        SriSettings         config,
+        Company             company)
     {
         _logger.LogDebug("[SRI-REAL] Generando XML factura {Id} clave {Key}", factura.Id, factura.AccessKey);
-        var xml = SriXmlFacturaBuilder.BuildFactura(factura, detalles, config);
+        var xml = SriXmlFacturaBuilder.BuildFactura(factura, detalles, config, company);
         return Task.FromResult(xml);
     }
 
@@ -44,10 +46,11 @@ public sealed class SriFacturaElectronicaRealService : ISriFacturaElectronicaSer
         SalesBill           facturaOriginal,
         SalesNote           nota,
         List<SalesNoteLine> detalles,
-        SriSettings         config)
+        SriSettings         config,
+        Company             company)
     {
         _logger.LogDebug("[SRI-REAL] Generando XML nota {Tipo} {Id}", nota.NoteType, nota.Id);
-        var xml = SriXmlFacturaBuilder.BuildNotaCreditoDebito(facturaOriginal, nota, detalles, config);
+        var xml = SriXmlFacturaBuilder.BuildNotaCreditoDebito(facturaOriginal, nota, detalles, config, company);
         return Task.FromResult(xml);
     }
 

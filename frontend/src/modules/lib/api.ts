@@ -7,6 +7,35 @@ import { getCorrelationId } from '../../lib/observability/requestContext';
 import { logDevApiRequest } from '../../lib/observability/devApiLog';
 import { useAuthStore } from '../../store/authStore';
 
+/** Subscription-related 403 denial codes returned by SubscriptionAccessMiddleware. */
+const SUBSCRIPTION_DENIAL_CODES = new Set([
+  'subscription_suspended',
+  'subscription_inactive',
+  'subscription_cancelled',
+  'subscription_trial_expired',
+  'subscription_access_denied',
+]);
+
+function isSubscriptionDenial(responseData: unknown): boolean {
+  if (typeof responseData !== 'object' || responseData === null) return false;
+  const code = (responseData as Record<string, unknown>).code;
+  return typeof code === 'string' && SUBSCRIPTION_DENIAL_CODES.has(code);
+}
+
+function handleSubscriptionDenial(responseData: unknown): void {
+  const data   = responseData as Record<string, unknown>;
+  const code   = String(data.code   ?? 'subscription_suspended');
+  const reason = String(data.reason ?? '');
+
+  // Clear session immediately — no retry, no refresh loop
+  fullLogout({ broadcast: true });
+
+  const params = new URLSearchParams({ code });
+  if (reason) params.set('reason', reason);
+
+  window.location.href = `/subscription-suspended?${params.toString()}`;
+}
+
 /**
  * Cliente HTTP centralizado.
  *
@@ -63,6 +92,13 @@ api.interceptors.response.use(
     const originalRequest = error.config as AxiosRequestConfig & { _retry?: boolean };
     const status          = error.response?.status as number | undefined;
     const url             = (originalRequest?.url ?? '') as string;
+
+    // Handle subscription-level 403 before attempting token refresh.
+    // These codes mean the tenant is blocked — logout immediately, no retry.
+    if (status === 403 && isSubscriptionDenial(error.response?.data)) {
+      handleSubscriptionDenial(error.response?.data);
+      return Promise.reject(error);
+    }
 
     if (!shouldAttemptTokenRefresh(status, url, originalRequest._retry ?? false)) {
       return Promise.reject(error);

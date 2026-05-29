@@ -19,6 +19,7 @@ public sealed class CrearSalesNoteCommandHandler
     private readonly ISalesRepository            _ventasRepository;
     private readonly ISalesOriginalBillResolver  _originalBillResolver;
     private readonly ISriSettingsRepository      _configSriRepository;
+    private readonly ICompanyRepository          _companyRepository;
     private readonly IEmissionPointRepository    _emissionPointRepository;
     private readonly IDocumentSequenceRepository _docSeqRepository;
     private readonly IProductRepository          _productRepository;
@@ -34,6 +35,7 @@ public sealed class CrearSalesNoteCommandHandler
         ISalesRepository ventasRepository,
         ISalesOriginalBillResolver originalBillResolver,
         ISriSettingsRepository configSriRepository,
+        ICompanyRepository companyRepository,
         IEmissionPointRepository emissionPointRepository,
         IDocumentSequenceRepository docSeqRepository,
         IProductRepository productRepository,
@@ -48,6 +50,7 @@ public sealed class CrearSalesNoteCommandHandler
         _ventasRepository        = ventasRepository;
         _originalBillResolver    = originalBillResolver;
         _configSriRepository     = configSriRepository;
+        _companyRepository       = companyRepository;
         _emissionPointRepository = emissionPointRepository;
         _docSeqRepository        = docSeqRepository;
         _productRepository       = productRepository;
@@ -95,6 +98,9 @@ public sealed class CrearSalesNoteCommandHandler
             var sriConfig = await _configSriRepository.GetByCompanyIdForUpdateAsync(_currentCompany.CompanyId, ct)
                 ?? throw new InvalidOperationException("SRI config no encontrada durante la transacción.");
 
+            var company = await _companyRepository.GetByIdAsync(_currentCompany.CompanyId, ct)
+                ?? throw new InvalidOperationException("Empresa no encontrada.");
+
             var tipoDoc = string.Equals(command.NoteType, "DEBITO", StringComparison.OrdinalIgnoreCase) ? "05" : "04";
 
             var emPoint = await _emissionPointRepository.GetDefaultForBranchAsync(
@@ -108,7 +114,7 @@ public sealed class CrearSalesNoteCommandHandler
 
             var issueDate = DateTime.UtcNow;
             var accessKey = ClaveAccesoHelper.Generar(
-                sriConfig.Ruc, sriConfig.Environment, emPoint.Establishment.Code,
+                company.Ruc, sriConfig.Environment, emPoint.Establishment.Code,
                 emPoint.Code, sriConfig.EmissionType, secuencial, issueDate, tipoDoc);
 
             var detalles = new List<SalesNoteLine>();

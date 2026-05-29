@@ -18,6 +18,7 @@ public sealed class GenerateIssuedRetentionCommandHandler
 {
     private readonly IPurchBillRepository                    _compraRepository;
     private readonly ISriSettingsRepository                  _configSriRepository;
+    private readonly ICompanyRepository                      _companyRepository;
     private readonly IRetentionSettingsRepository            _configRetencionRepository;
     private readonly IEmissionPointRepository                _emissionPointRepository;
     private readonly IDocumentSequenceRepository             _docSeqRepository;
@@ -31,6 +32,7 @@ public sealed class GenerateIssuedRetentionCommandHandler
     public GenerateIssuedRetentionCommandHandler(
         IPurchBillRepository compraRepository,
         ISriSettingsRepository configSriRepository,
+        ICompanyRepository companyRepository,
         IRetentionSettingsRepository configRetencionRepository,
         IEmissionPointRepository emissionPointRepository,
         IDocumentSequenceRepository docSeqRepository,
@@ -43,6 +45,7 @@ public sealed class GenerateIssuedRetentionCommandHandler
     {
         _compraRepository          = compraRepository;
         _configSriRepository       = configSriRepository;
+        _companyRepository         = companyRepository;
         _configRetencionRepository = configRetencionRepository;
         _emissionPointRepository   = emissionPointRepository;
         _docSeqRepository          = docSeqRepository;
@@ -80,6 +83,9 @@ public sealed class GenerateIssuedRetentionCommandHandler
             var sriConfig = await _configSriRepository.GetByCompanyIdForUpdateAsync(_currentCompany.CompanyId, ct)
                 ?? throw new InvalidOperationException("SRI config no encontrada durante la transacción.");
 
+            var company = await _companyRepository.GetByIdAsync(_currentCompany.CompanyId, ct)
+                ?? throw new InvalidOperationException("Empresa no encontrada.");
+
             var emPoint = await _emissionPointRepository.GetDefaultForCompanyAsync(
                     subscriberId, _currentCompany.CompanyId, ct)
                 ?? throw new InvalidOperationException("No hay punto de emisión predeterminado para esta empresa.");
@@ -91,7 +97,7 @@ public sealed class GenerateIssuedRetentionCommandHandler
 
             var fecha = DateTime.UtcNow;
             var clave = ClaveAccesoHelper.Generar(
-                sriConfig.Ruc, sriConfig.Environment, emPoint.Establishment.Code,
+                company.Ruc, sriConfig.Environment, emPoint.Establishment.Code,
                 emPoint.Code, sriConfig.EmissionType, secuencial, fecha, "07");
 
             var ret = IssuedRetention.Create(

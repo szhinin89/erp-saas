@@ -8,6 +8,7 @@ using ERP.Application.Common.Interfaces;
 using ERP.Domain.Audit.Entities;
 using ERP.Domain.Audit.Interfaces;
 using ERP.Domain.Configuration.Interfaces;
+using ERP.Domain.Modules.Company.Interfaces;
 using ERP.Domain.Modules.Sales.Events;
 using ERP.Domain.Modules.Sales.Interfaces;
 using ERP.Domain.Products.Interfaces;
@@ -19,6 +20,7 @@ public sealed class EnviarSalesNotesriCommandHandler : IRequestHandler<SendSales
     private readonly ISalesRepository             _ventasRepository;
     private readonly ISalesOriginalBillResolver   _originalBillResolver;
     private readonly ISriSettingsRepository       _configSriRepository;
+    private readonly ICompanyRepository           _companyRepository;
     private readonly ISriFacturaElectronicaService _sriService;
     private readonly IFileStorage                 _fileStorage;
     private readonly IAccountingService           _accounting;
@@ -35,6 +37,7 @@ public sealed class EnviarSalesNotesriCommandHandler : IRequestHandler<SendSales
         ISalesRepository ventasRepository,
         ISalesOriginalBillResolver originalBillResolver,
         ISriSettingsRepository configSriRepository,
+        ICompanyRepository companyRepository,
         ISriFacturaElectronicaService sriService,
         IFileStorage fileStorage,
         IAccountingService accounting,
@@ -48,6 +51,7 @@ public sealed class EnviarSalesNotesriCommandHandler : IRequestHandler<SendSales
         ILogger<EnviarSalesNotesriCommandHandler> logger)
     {
         _ventasRepository     = ventasRepository;
+        _companyRepository    = companyRepository;
         _originalBillResolver = originalBillResolver;
         _configSriRepository  = configSriRepository;
         _sriService           = sriService;
@@ -74,8 +78,11 @@ public sealed class EnviarSalesNotesriCommandHandler : IRequestHandler<SendSales
 
         var (nota, facturaOriginal, configSri, detalles) = loadResult.Value;
 
+        var company = await _companyRepository.GetByIdAsync(_currentCompany.CompanyId, ct)
+            ?? throw new InvalidOperationException("Empresa no encontrada.");
+
         var xmlResult = await GenerateAndSignNoteXmlAsync(
-            facturaOriginal, nota, detalles, configSri, userId, ct);
+            facturaOriginal, nota, detalles, configSri, company, userId, ct);
         if (!xmlResult.IsSuccess)
             return Result<Guid>.Failure(xmlResult.Error!);
 
@@ -137,12 +144,13 @@ public sealed class EnviarSalesNotesriCommandHandler : IRequestHandler<SendSales
         ERP.Domain.Modules.Sales.Entities.SalesNote nota,
         List<ERP.Domain.Modules.Sales.Entities.SalesNoteLine> detalles,
         ERP.Domain.Configuration.Entities.SriSettings configSri,
+        ERP.Domain.Modules.Company.Entities.Company company,
         Guid userId,
         CancellationToken ct)
     {
         try
         {
-            var xmlContent = await _sriService.GenerarXmlNotaCreditoDebitoAsync(facturaOriginal, nota, detalles, configSri);
+            var xmlContent = await _sriService.GenerarXmlNotaCreditoDebitoAsync(facturaOriginal, nota, detalles, configSri, company);
             var xmlFirmado = await _sriService.FirmarXmlAsync(
                 xmlContent, configSri.CertP12Path, _secretProtector.UnprotectOrPlaintext(configSri.CertPassword));
             return Result<byte[]>.Success(xmlFirmado);

@@ -39,6 +39,7 @@ public sealed class ListBillingInvoicesHandler
             inv.IssuedAtUtc,
             inv.DueAtUtc,
             inv.PaidAtUtc,
+            inv.ErpInvoiceId,
             inv.Lines.Select(l => new SaasBillingInvoiceLineDto(
                 l.Description,
                 l.LineType.ToString(),

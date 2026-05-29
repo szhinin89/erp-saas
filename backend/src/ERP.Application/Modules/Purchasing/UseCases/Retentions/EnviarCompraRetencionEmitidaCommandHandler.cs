@@ -7,6 +7,7 @@ using ERP.Application.Common.Interfaces;
 using ERP.Domain.Audit.Entities;
 using ERP.Domain.Audit.Interfaces;
 using ERP.Domain.Configuration.Interfaces;
+using ERP.Domain.Modules.Company.Interfaces;
 using ERP.Domain.Modules.Purchasing.Interfaces;
 
 namespace ERP.Application.Modules.Purchasing.UseCases.Retentions;
@@ -16,6 +17,7 @@ public sealed class SendIssuedRetentionCommandHandler
 {
     private readonly IPurchBillRepository                    _compraRepository;
     private readonly ISriSettingsRepository                  _configSriRepository;
+    private readonly ICompanyRepository                      _companyRepository;
     private readonly ISriComprobanteRetentionService         _sri;
     private readonly IFileStorage                            _fileStorage;
     private readonly IAccountingService                      _accounting;
@@ -30,6 +32,7 @@ public sealed class SendIssuedRetentionCommandHandler
     public SendIssuedRetentionCommandHandler(
         IPurchBillRepository compraRepository,
         ISriSettingsRepository configSriRepository,
+        ICompanyRepository companyRepository,
         ISriComprobanteRetentionService sri,
         IFileStorage fileStorage,
         IAccountingService accounting,
@@ -43,6 +46,7 @@ public sealed class SendIssuedRetentionCommandHandler
     {
         _compraRepository    = compraRepository;
         _configSriRepository = configSriRepository;
+        _companyRepository   = companyRepository;
         _sri                 = sri;
         _fileStorage         = fileStorage;
         _accounting          = accounting;
@@ -70,16 +74,22 @@ public sealed class SendIssuedRetentionCommandHandler
         if (ret.Status != "Validated")
             return Result<Guid>.Failure($"Estado inválido para enviar: {ret.Status}");
 
-        var configSri = await _configSriRepository.GetByCompanyIdAsync(_currentCompany.CompanyId, ct);
+        var companyId = _currentCompany.CompanyId;
+
+        var configSri = await _configSriRepository.GetByCompanyIdAsync(companyId, ct);
         if (configSri is null)
             return Result<Guid>.Failure("La configuración SRI no está configurada para esta empresa.");
+
+        var company = await _companyRepository.GetByIdAsync(companyId, ct);
+        if (company is null)
+            return Result<Guid>.Failure("Empresa no encontrada.");
 
         var detalles = ret.Lines.ToList();
         string xml;
         byte[] firmado;
         try
         {
-            xml     = await _sri.GenerarXmlRetencionAsync(ret, detalles, configSri);
+            xml     = await _sri.GenerarXmlRetencionAsync(ret, detalles, configSri, company);
             firmado = await _sri.FirmarXmlAsync(xml, configSri.CertP12Path, _secretProtector.UnprotectOrPlaintext(configSri.CertPassword));
         }
         catch (SriCommunicationException ex)

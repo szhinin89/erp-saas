@@ -1,5 +1,6 @@
 using ERP.Application.Common.Interfaces.SRI;
 using ERP.Domain.Configuration.Entities;
+using ERP.Domain.Modules.Company.Entities;
 using ERP.Domain.Modules.Sales.Entities;
 
 namespace ERP.Infrastructure.Services.Sri;
@@ -10,9 +11,9 @@ namespace ERP.Infrastructure.Services.Sri;
 /// </summary>
 public sealed class ElectronicDocumentBuilderAdapter : IElectronicDocumentBuilder
 {
-    public string BuildFactura(SalesBill factura, List<SalesBillLine> lineas, SriSettings cfg)
-        => SriXmlFacturaBuilder.BuildFactura(factura, lineas, cfg);
+    public string BuildFactura(SalesBill factura, List<SalesBillLine> lineas, SriSettings cfg, Company company)
+        => SriXmlFacturaBuilder.BuildFactura(factura, lineas, cfg, company);
 
-    public string BuildNotaCreditoDebito(SalesBill facturaOrigen, SalesNote nota, List<SalesNoteLine> lineas, SriSettings cfg)
-        => SriXmlFacturaBuilder.BuildNotaCreditoDebito(facturaOrigen, nota, lineas, cfg);
+    public string BuildNotaCreditoDebito(SalesBill facturaOrigen, SalesNote nota, List<SalesNoteLine> lineas, SriSettings cfg, Company company)
+        => SriXmlFacturaBuilder.BuildNotaCreditoDebito(facturaOrigen, nota, lineas, cfg, company);
 }

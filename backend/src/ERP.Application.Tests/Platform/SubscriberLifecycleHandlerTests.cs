@@ -1,5 +1,6 @@
 using FluentAssertions;
 using ERP.Application.Common;
+using ERP.Application.Common.Subscriptions;
 using ERP.Application.Platform.Audit;
 using ERP.Application.Platform.Subscribers.UseCases;
 using ERP.Application.Subscriptions.Caching;
@@ -9,62 +10,42 @@ using Moq;
 
 namespace ERP.Application.Tests.Platform;
 
+/// <summary>
+/// Handler tests after FASE 4 refactor — handlers delegate to ISubscriptionLifecycleOrchestrator.
+/// </summary>
 public sealed class ActivateSubscriberHandlerTests
 {
-    private static Subscriber BuildSuspendedSubscriber()
-    {
-        var s = Subscriber.Create("Test", "test", Guid.NewGuid());
-        s.Suspend("test reason", Guid.NewGuid());
-        return s;
-    }
+    private static Mock<ISubscriptionLifecycleOrchestrator> LifecycleMock() =>
+        new();
 
     [Fact]
-    public async Task Handle_activates_subscriber_and_invalidates_cache()
+    public async Task Handle_calls_orchestrator_ActivateAsync()
     {
-        var subscriber = BuildSuspendedSubscriber();
-        var subscriberId = subscriber.Id;
-
-        var repo = new Mock<ISubscriberRepository>();
-        repo.Setup(r => r.GetByIdAsync(subscriberId, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(subscriber);
-
-        var audit = new Mock<IPlatformAuditLogger>();
-        var currentUser = new Mock<ICurrentUser>();
+        var subscriberId  = Guid.NewGuid();
+        var lifecycle     = LifecycleMock();
+        var currentUser   = new Mock<ICurrentUser>();
         currentUser.Setup(u => u.UserId).Returns(Guid.NewGuid());
-        currentUser.Setup(u => u.Email).Returns("admin@platform.test");
-        var cacheInvalidator = new Mock<ISubscriberEntitlementsCacheInvalidator>();
 
-        var handler = new ActivateSubscriberHandler(
-            repo.Object, audit.Object, currentUser.Object, cacheInvalidator.Object);
+        var handler = new ActivateSubscriberHandler(lifecycle.Object, currentUser.Object);
 
         var result = await handler.Handle(new ActivateSubscriberCommand(subscriberId), CancellationToken.None);
 
         result.IsSuccess.Should().BeTrue();
-        subscriber.LifecycleStatus.Should().Be(SubscriberLifecycleStatus.Active);
-        subscriber.IsActive.Should().BeTrue();
-        cacheInvalidator.Verify(c => c.InvalidateAsync(subscriberId, It.IsAny<CancellationToken>()), Times.Once);
-        audit.Verify(a => a.LogAsync(
-            ERP.Domain.Platform.Audit.Entities.PlatformAuditLog.Actions.SubscriberActivated,
-            It.IsAny<Guid?>(), It.IsAny<string?>(), subscriberId,
-            It.IsAny<string?>(), It.IsAny<Guid?>(), It.IsAny<string?>(), It.IsAny<string?>(),
-            It.IsAny<string?>(), It.IsAny<string?>(), It.IsAny<string?>(), It.IsAny<CancellationToken>()),
-            Times.Once);
+        lifecycle.Verify(l => l.ActivateAsync(subscriberId, It.IsAny<Guid>(), It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
-    public async Task Handle_returns_not_found_when_subscriber_missing()
+    public async Task Handle_returns_not_found_when_orchestrator_throws()
     {
-        var repo = new Mock<ISubscriberRepository>();
-        repo.Setup(r => r.GetByIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync((Subscriber?)null);
+        var subscriberId = Guid.NewGuid();
+        var lifecycle    = LifecycleMock();
+        lifecycle
+            .Setup(l => l.ActivateAsync(subscriberId, It.IsAny<Guid>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new InvalidOperationException("Subscriber no encontrado."));
 
-        var handler = new ActivateSubscriberHandler(
-            repo.Object,
-            new Mock<IPlatformAuditLogger>().Object,
-            new Mock<ICurrentUser>().Object,
-            new Mock<ISubscriberEntitlementsCacheInvalidator>().Object);
+        var handler = new ActivateSubscriberHandler(lifecycle.Object, Mock.Of<ICurrentUser>());
 
-        var result = await handler.Handle(new ActivateSubscriberCommand(Guid.NewGuid()), CancellationToken.None);
+        var result = await handler.Handle(new ActivateSubscriberCommand(subscriberId), CancellationToken.None);
 
         result.IsSuccess.Should().BeFalse();
         result.ErrorCode.Should().Be(ResultErrorCodes.NotFound);
@@ -74,30 +55,20 @@ public sealed class ActivateSubscriberHandlerTests
 public sealed class SuspendSubscriberHandlerTests
 {
     [Fact]
-    public async Task Handle_suspends_active_subscriber()
+    public async Task Handle_calls_orchestrator_SuspendAsync()
     {
-        var subscriber = Subscriber.Create("Corp", "corp", Guid.NewGuid());
-        var subscriberId = subscriber.Id;
-
-        var repo = new Mock<ISubscriberRepository>();
-        repo.Setup(r => r.GetByIdAsync(subscriberId, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(subscriber);
-
-        var currentUser = new Mock<ICurrentUser>();
+        var subscriberId = Guid.NewGuid();
+        var lifecycle    = new Mock<ISubscriptionLifecycleOrchestrator>();
+        var currentUser  = new Mock<ICurrentUser>();
         currentUser.Setup(u => u.UserId).Returns(Guid.NewGuid());
 
-        var handler = new SuspendSubscriberHandler(
-            repo.Object,
-            new Mock<IPlatformAuditLogger>().Object,
-            currentUser.Object,
-            new Mock<ISubscriberEntitlementsCacheInvalidator>().Object);
+        var handler = new SuspendSubscriberHandler(lifecycle.Object, currentUser.Object);
 
         var result = await handler.Handle(
             new SuspendSubscriberCommand(subscriberId, "Non-payment"), CancellationToken.None);
 
         result.IsSuccess.Should().BeTrue();
-        subscriber.LifecycleStatus.Should().Be(SubscriberLifecycleStatus.Suspended);
-        subscriber.SuspendedReason.Should().Be("Non-payment");
+        lifecycle.Verify(l => l.SuspendAsync(subscriberId, It.IsAny<string>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()), Times.Once);
     }
 }
 
@@ -154,10 +125,8 @@ public sealed class SetTrialHandlerTests
     public async Task Handle_rejects_past_trial_date()
     {
         var handler = new SetSubscriberTrialHandler(
-            new Mock<ISubscriberRepository>().Object,
-            new Mock<IPlatformAuditLogger>().Object,
-            new Mock<ICurrentUser>().Object,
-            new Mock<ISubscriberEntitlementsCacheInvalidator>().Object);
+            new Mock<ISubscriptionLifecycleOrchestrator>().Object,
+            new Mock<ICurrentUser>().Object);
 
         var result = await handler.Handle(
             new SetSubscriberTrialCommand(Guid.NewGuid(), DateTime.UtcNow.AddDays(-1)),
@@ -170,25 +139,18 @@ public sealed class SetTrialHandlerTests
     [Fact]
     public async Task Handle_sets_trial_lifecycle()
     {
-        var subscriber = Subscriber.Create("Trial Corp", "trialcorp", Guid.NewGuid());
-        var repo = new Mock<ISubscriberRepository>();
-        repo.Setup(r => r.GetByIdAsync(subscriber.Id, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(subscriber);
-
-        var currentUser = new Mock<ICurrentUser>();
+        var subscriberId = Guid.NewGuid();
+        var lifecycle    = new Mock<ISubscriptionLifecycleOrchestrator>();
+        var currentUser  = new Mock<ICurrentUser>();
         currentUser.Setup(u => u.UserId).Returns(Guid.NewGuid());
 
-        var handler = new SetSubscriberTrialHandler(
-            repo.Object,
-            new Mock<IPlatformAuditLogger>().Object,
-            currentUser.Object,
-            new Mock<ISubscriberEntitlementsCacheInvalidator>().Object);
+        var handler = new SetSubscriberTrialHandler(lifecycle.Object, currentUser.Object);
 
         var trialEnd = DateTime.UtcNow.AddDays(14);
         var result = await handler.Handle(
-            new SetSubscriberTrialCommand(subscriber.Id, trialEnd), CancellationToken.None);
+            new SetSubscriberTrialCommand(subscriberId, trialEnd), CancellationToken.None);
 
         result.IsSuccess.Should().BeTrue();
-        subscriber.LifecycleStatus.Should().Be(SubscriberLifecycleStatus.Trial);
+        lifecycle.Verify(l => l.StartTrialAsync(subscriberId, trialEnd, It.IsAny<Guid>(), It.IsAny<CancellationToken>()), Times.Once);
     }
 }

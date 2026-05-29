@@ -1,4 +1,5 @@
 using ERP.Domain.Configuration.Entities;
+using ERP.Domain.Modules.Company.Entities;
 using ERP.Domain.Modules.Sales.Entities;
 
 namespace ERP.Application.Common.Interfaces.SRI;
@@ -11,8 +12,8 @@ namespace ERP.Application.Common.Interfaces.SRI;
 public interface IElectronicDocumentBuilder
 {
     /// <summary>Genera el XML de una factura de venta (tipo 01).</summary>
-    string BuildFactura(SalesBill factura, List<SalesBillLine> lineas, SriSettings cfg);
+    string BuildFactura(SalesBill factura, List<SalesBillLine> lineas, SriSettings cfg, Company company);
 
     /// <summary>Genera el XML de una nota de crédito o débito de venta.</summary>
-    string BuildNotaCreditoDebito(SalesBill facturaOrigen, SalesNote nota, List<SalesNoteLine> lineas, SriSettings cfg);
+    string BuildNotaCreditoDebito(SalesBill facturaOrigen, SalesNote nota, List<SalesNoteLine> lineas, SriSettings cfg, Company company);
 }

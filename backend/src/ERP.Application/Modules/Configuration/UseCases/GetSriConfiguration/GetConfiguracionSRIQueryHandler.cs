@@ -28,12 +28,6 @@ public sealed class GetSriConfigurationQueryHandler
 
         return Result<SriConfigurationDto?>.Success(new SriConfigurationDto(
             config.CompanyId,
-            config.Ruc,
-            config.LegalName,
-            config.TradeName,
-            config.MainAddress,
-            config.RequiresAccounting,
-            config.SpecialTaxpayer,
             config.CertP12Path,
             config.Environment,
             config.EmissionType,

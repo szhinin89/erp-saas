@@ -1,118 +1,92 @@
 using ERP.Application.Common;
-using ERP.Application.Platform.Audit;
-using ERP.Application.Subscriptions.Caching;
-using ERP.Domain.Platform.Audit.Entities;
-using ERP.Domain.Subscribers.Interfaces;
+using ERP.Application.Common.Subscriptions;
+using ERP.Domain.Subscribers.Exceptions;
 using MediatR;
 
 namespace ERP.Application.Platform.Subscribers.UseCases;
 
+// ── Activate ──────────────────────────────────────────────────────────────────
+
 public sealed class ActivateSubscriberHandler : IRequestHandler<ActivateSubscriberCommand, Result<bool>>
 {
-    private readonly ISubscriberRepository _subscribers;
-    private readonly IPlatformAuditLogger _audit;
-    private readonly ICurrentUser _currentUser;
-    private readonly ISubscriberEntitlementsCacheInvalidator _cacheInvalidator;
+    private readonly ISubscriptionLifecycleOrchestrator _lifecycle;
+    private readonly ICurrentUser                       _currentUser;
 
     public ActivateSubscriberHandler(
-        ISubscriberRepository subscribers,
-        IPlatformAuditLogger audit,
-        ICurrentUser currentUser,
-        ISubscriberEntitlementsCacheInvalidator cacheInvalidator)
+        ISubscriptionLifecycleOrchestrator lifecycle,
+        ICurrentUser currentUser)
     {
-        _subscribers = subscribers;
-        _audit = audit;
+        _lifecycle   = lifecycle;
         _currentUser = currentUser;
-        _cacheInvalidator = cacheInvalidator;
     }
 
     public async Task<Result<bool>> Handle(ActivateSubscriberCommand request, CancellationToken ct)
     {
-        var subscriber = await _subscribers.GetByIdAsync(request.SubscriberId, ct);
-        if (subscriber is null)
+        try
+        {
+            await _lifecycle.ActivateAsync(request.SubscriberId, _currentUser.UserId, request.Notes, ct);
+            return Result<bool>.Success(true);
+        }
+        catch (InvalidOperationException ex) when (ex.Message.Contains("no encontrado"))
+        {
             return Result<bool>.NotFound("Suscriptor no encontrado.");
-
-        subscriber.Activate(_currentUser.UserId);
-        await _subscribers.SaveChangesAsync(ct);
-        await _cacheInvalidator.InvalidateAsync(request.SubscriberId, ct);
-
-        await _audit.LogAsync(
-            PlatformAuditLog.Actions.SubscriberActivated,
-            _currentUser.UserId,
-            _currentUser.Email,
-            request.SubscriberId,
-            resourceType: "Subscriber",
-            resourceId: request.SubscriberId,
-            notes: request.Notes,
-            ct: ct);
-
-        return Result<bool>.Success(true);
+        }
+        catch (InvalidLifecycleTransitionException ex)
+        {
+            return Result<bool>.Failure(ex.Message);
+        }
+        // DbUpdateConcurrencyException propagates up — ExceptionMiddleware maps it to 409
     }
 }
 
+// ── Suspend ───────────────────────────────────────────────────────────────────
+
 public sealed class SuspendSubscriberHandler : IRequestHandler<SuspendSubscriberCommand, Result<bool>>
 {
-    private readonly ISubscriberRepository _subscribers;
-    private readonly IPlatformAuditLogger _audit;
-    private readonly ICurrentUser _currentUser;
-    private readonly ISubscriberEntitlementsCacheInvalidator _cacheInvalidator;
+    private readonly ISubscriptionLifecycleOrchestrator _lifecycle;
+    private readonly ICurrentUser                       _currentUser;
 
     public SuspendSubscriberHandler(
-        ISubscriberRepository subscribers,
-        IPlatformAuditLogger audit,
-        ICurrentUser currentUser,
-        ISubscriberEntitlementsCacheInvalidator cacheInvalidator)
+        ISubscriptionLifecycleOrchestrator lifecycle,
+        ICurrentUser currentUser)
     {
-        _subscribers = subscribers;
-        _audit = audit;
+        _lifecycle   = lifecycle;
         _currentUser = currentUser;
-        _cacheInvalidator = cacheInvalidator;
     }
 
     public async Task<Result<bool>> Handle(SuspendSubscriberCommand request, CancellationToken ct)
     {
-        var subscriber = await _subscribers.GetByIdAsync(request.SubscriberId, ct);
-        if (subscriber is null)
+        try
+        {
+            var reason = string.IsNullOrWhiteSpace(request.Reason) ? "Sin motivo indicado." : request.Reason;
+            await _lifecycle.SuspendAsync(request.SubscriberId, reason, _currentUser.UserId, ct);
+            return Result<bool>.Success(true);
+        }
+        catch (InvalidOperationException ex) when (ex.Message.Contains("no encontrado"))
+        {
             return Result<bool>.NotFound("Suscriptor no encontrado.");
-
-        var previousStatus = subscriber.LifecycleStatus.ToString();
-        subscriber.Suspend(request.Reason, _currentUser.UserId);
-        await _subscribers.SaveChangesAsync(ct);
-        await _cacheInvalidator.InvalidateAsync(request.SubscriberId, ct);
-
-        await _audit.LogAsync(
-            PlatformAuditLog.Actions.SubscriberSuspended,
-            _currentUser.UserId,
-            _currentUser.Email,
-            request.SubscriberId,
-            resourceType: "Subscriber",
-            resourceId: request.SubscriberId,
-            oldValueJson: $"{{\"status\":\"{previousStatus}\"}}",
-            newValueJson: $"{{\"status\":\"Suspended\",\"reason\":\"{request.Reason ?? ""}\"}}",
-            notes: request.Reason,
-            ct: ct);
-
-        return Result<bool>.Success(true);
+        }
+        catch (InvalidLifecycleTransitionException ex)
+        {
+            return Result<bool>.Failure(ex.Message);
+        }
+        // DbUpdateConcurrencyException propagates up — ExceptionMiddleware maps it to 409
     }
 }
 
+// ── SetTrial ──────────────────────────────────────────────────────────────────
+
 public sealed class SetSubscriberTrialHandler : IRequestHandler<SetSubscriberTrialCommand, Result<bool>>
 {
-    private readonly ISubscriberRepository _subscribers;
-    private readonly IPlatformAuditLogger _audit;
-    private readonly ICurrentUser _currentUser;
-    private readonly ISubscriberEntitlementsCacheInvalidator _cacheInvalidator;
+    private readonly ISubscriptionLifecycleOrchestrator _lifecycle;
+    private readonly ICurrentUser                       _currentUser;
 
     public SetSubscriberTrialHandler(
-        ISubscriberRepository subscribers,
-        IPlatformAuditLogger audit,
-        ICurrentUser currentUser,
-        ISubscriberEntitlementsCacheInvalidator cacheInvalidator)
+        ISubscriptionLifecycleOrchestrator lifecycle,
+        ICurrentUser currentUser)
     {
-        _subscribers = subscribers;
-        _audit = audit;
+        _lifecycle   = lifecycle;
         _currentUser = currentUser;
-        _cacheInvalidator = cacheInvalidator;
     }
 
     public async Task<Result<bool>> Handle(SetSubscriberTrialCommand request, CancellationToken ct)
@@ -120,45 +94,36 @@ public sealed class SetSubscriberTrialHandler : IRequestHandler<SetSubscriberTri
         if (request.TrialEndsAtUtc <= DateTime.UtcNow)
             return Result<bool>.Failure("TrialEndsAtUtc debe ser una fecha futura.");
 
-        var subscriber = await _subscribers.GetByIdAsync(request.SubscriberId, ct);
-        if (subscriber is null)
+        try
+        {
+            await _lifecycle.StartTrialAsync(request.SubscriberId, request.TrialEndsAtUtc, _currentUser.UserId, ct);
+            return Result<bool>.Success(true);
+        }
+        catch (InvalidOperationException ex) when (ex.Message.Contains("no encontrado"))
+        {
             return Result<bool>.NotFound("Suscriptor no encontrado.");
-
-        subscriber.SetTrial(_currentUser.UserId);
-        await _subscribers.SaveChangesAsync(ct);
-        await _cacheInvalidator.InvalidateAsync(request.SubscriberId, ct);
-
-        await _audit.LogAsync(
-            PlatformAuditLog.Actions.TrialStarted,
-            _currentUser.UserId,
-            _currentUser.Email,
-            request.SubscriberId,
-            resourceType: "Subscriber",
-            resourceId: request.SubscriberId,
-            newValueJson: $"{{\"trialEndsAtUtc\":\"{request.TrialEndsAtUtc:O}\"}}",
-            ct: ct);
-
-        return Result<bool>.Success(true);
+        }
+        catch (InvalidLifecycleTransitionException ex)
+        {
+            return Result<bool>.Failure(ex.Message);
+        }
+        // DbUpdateConcurrencyException propagates up — ExceptionMiddleware maps it to 409
     }
 }
 
+// ── GracePeriod ───────────────────────────────────────────────────────────────
+
 public sealed class SetSubscriberGracePeriodHandler : IRequestHandler<SetSubscriberGracePeriodCommand, Result<bool>>
 {
-    private readonly ISubscriberRepository _subscribers;
-    private readonly IPlatformAuditLogger _audit;
-    private readonly ICurrentUser _currentUser;
-    private readonly ISubscriberEntitlementsCacheInvalidator _cacheInvalidator;
+    private readonly ISubscriptionLifecycleOrchestrator _lifecycle;
+    private readonly ICurrentUser                       _currentUser;
 
     public SetSubscriberGracePeriodHandler(
-        ISubscriberRepository subscribers,
-        IPlatformAuditLogger audit,
-        ICurrentUser currentUser,
-        ISubscriberEntitlementsCacheInvalidator cacheInvalidator)
+        ISubscriptionLifecycleOrchestrator lifecycle,
+        ICurrentUser currentUser)
     {
-        _subscribers = subscribers;
-        _audit = audit;
+        _lifecycle   = lifecycle;
         _currentUser = currentUser;
-        _cacheInvalidator = cacheInvalidator;
     }
 
     public async Task<Result<bool>> Handle(SetSubscriberGracePeriodCommand request, CancellationToken ct)
@@ -166,46 +131,43 @@ public sealed class SetSubscriberGracePeriodHandler : IRequestHandler<SetSubscri
         if (request.GracePeriodEndsAtUtc <= DateTime.UtcNow)
             return Result<bool>.Failure("GracePeriodEndsAtUtc debe ser una fecha futura.");
 
-        var subscriber = await _subscribers.GetByIdAsync(request.SubscriberId, ct);
-        if (subscriber is null)
+        try
+        {
+            await _lifecycle.EnterGracePeriodAsync(
+                request.SubscriberId, request.GracePeriodEndsAtUtc, _currentUser.UserId, ct);
+            return Result<bool>.Success(true);
+        }
+        catch (InvalidOperationException ex) when (ex.Message.Contains("no encontrado"))
+        {
             return Result<bool>.NotFound("Suscriptor no encontrado.");
-
-        subscriber.EnterGracePeriod(_currentUser.UserId);
-        await _subscribers.SaveChangesAsync(ct);
-        await _cacheInvalidator.InvalidateAsync(request.SubscriberId, ct);
-
-        await _audit.LogAsync(
-            PlatformAuditLog.Actions.GracePeriodStarted,
-            _currentUser.UserId,
-            _currentUser.Email,
-            request.SubscriberId,
-            resourceType: "Subscriber",
-            resourceId: request.SubscriberId,
-            newValueJson: $"{{\"gracePeriodEndsAtUtc\":\"{request.GracePeriodEndsAtUtc:O}\"}}",
-            notes: request.Reason,
-            ct: ct);
-
-        return Result<bool>.Success(true);
+        }
+        catch (InvalidLifecycleTransitionException ex)
+        {
+            return Result<bool>.Failure(ex.Message);
+        }
+        // DbUpdateConcurrencyException propagates up — ExceptionMiddleware maps it to 409
     }
 }
 
+// ── ChangePlan ────────────────────────────────────────────────────────────────
+
 public sealed class ChangePlatformSubscriberPlanHandler : IRequestHandler<ChangePlatformSubscriberPlanCommand, Result<bool>>
 {
-    private readonly ISubscriberRepository _subscribers;
-    private readonly IPlatformAuditLogger _audit;
-    private readonly ICurrentUser _currentUser;
-    private readonly ISubscriberEntitlementsCacheInvalidator _cacheInvalidator;
+    private readonly ERP.Domain.Subscribers.Interfaces.ISubscriberRepository _subscribers;
+    private readonly ERP.Application.Platform.Audit.IPlatformAuditLogger     _audit;
+    private readonly ICurrentUser                                             _currentUser;
+    private readonly ERP.Application.Subscriptions.Caching.ISubscriberEntitlementsCacheInvalidator _cache;
 
     public ChangePlatformSubscriberPlanHandler(
-        ISubscriberRepository subscribers,
-        IPlatformAuditLogger audit,
+        ERP.Domain.Subscribers.Interfaces.ISubscriberRepository subscribers,
+        ERP.Application.Platform.Audit.IPlatformAuditLogger audit,
         ICurrentUser currentUser,
-        ISubscriberEntitlementsCacheInvalidator cacheInvalidator)
+        ERP.Application.Subscriptions.Caching.ISubscriberEntitlementsCacheInvalidator cache)
     {
         _subscribers = subscribers;
-        _audit = audit;
+        _audit       = audit;
         _currentUser = currentUser;
-        _cacheInvalidator = cacheInvalidator;
+        _cache       = cache;
     }
 
     public async Task<Result<bool>> Handle(ChangePlatformSubscriberPlanCommand request, CancellationToken ct)
@@ -220,13 +182,15 @@ public sealed class ChangePlatformSubscriberPlanHandler : IRequestHandler<Change
         var oldPlanCode = subscriber.PlanCode;
         var newPlanCode = request.NewPlanCode.Trim().ToLowerInvariant();
 
-        // SetPlanCode triggers SyncSubscriberSubscriptionsFromPlanCodeAsync in DbContext.SaveChangesAsync
         subscriber.SetPlanCode(newPlanCode, _currentUser.UserId);
+
+        // DbUpdateConcurrencyException propagates up — ExceptionMiddleware maps it to 409
         await _subscribers.SaveChangesAsync(ct);
-        await _cacheInvalidator.InvalidateAsync(request.SubscriberId, ct);
+
+        await _cache.InvalidateAsync(request.SubscriberId, ct);
 
         await _audit.LogAsync(
-            PlatformAuditLog.Actions.PlanChanged,
+            ERP.Domain.Platform.Audit.Entities.PlatformAuditLog.Actions.PlanChanged,
             _currentUser.UserId,
             _currentUser.Email,
             request.SubscriberId,

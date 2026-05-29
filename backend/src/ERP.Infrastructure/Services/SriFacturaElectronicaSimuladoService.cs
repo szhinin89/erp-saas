@@ -3,6 +3,7 @@ using System.Xml.Linq;
 using Microsoft.Extensions.Logging;
 using ERP.Application.Common.Interfaces;
 using ERP.Domain.Configuration.Entities;
+using ERP.Domain.Modules.Company.Entities;
 using ERP.Domain.Modules.Sales.Entities;
 
 namespace ERP.Infrastructure.Services;
@@ -20,13 +21,12 @@ public sealed class SriFacturaElectronicaSimuladoService : ISriFacturaElectronic
         _logger      = logger;
     }
 
-    public async Task<string> GenerarXmlFacturaAsync(SalesBill factura, List<SalesBillLine> detalles, SriSettings config)
+    public async Task<string> GenerarXmlFacturaAsync(SalesBill factura, List<SalesBillLine> detalles, SriSettings config, Company company)
     {
         _logger.LogDebug(
             "[SRI-SIM] Generando XML para factura {FacturaId} (clave={AccessKey}, tenant={SubscriberId})",
             factura.Id, factura.AccessKey, factura.SubscriberId);
 
-        // Construir XDocument según XSD del SRI (versión simplificada para simulación)
         var xmlDoc = new XDocument(
             new XDeclaration("1.0", "UTF-8", null),
             new XElement("factura",
@@ -35,21 +35,21 @@ public sealed class SriFacturaElectronicaSimuladoService : ISriFacturaElectronic
                 new XElement("infoTributaria",
                     new XElement("ambiente", config.Environment),
                     new XElement("tipoEmision", config.EmissionType),
-                    new XElement("razonSocial", config.LegalName),
-                    new XElement("nombreComercial", config.TradeName ?? config.LegalName),
-                    new XElement("ruc", config.Ruc),
+                    new XElement("razonSocial", company.LegalName),
+                    new XElement("nombreComercial", company.TradeName ?? company.LegalName),
+                    new XElement("ruc", company.Ruc),
                     new XElement("accessKey", factura.AccessKey),
                     new XElement("codDoc", factura.DocType),
                     new XElement("estab", factura.EstabCode),
                     new XElement("ptoEmi", factura.EmPointCode),
                     new XElement("secuencial", factura.Sequential),
-                    new XElement("dirMatriz", config.MainAddress)
+                    new XElement("dirMatriz", company.MainAddress)
                 ),
                 new XElement("infoFactura",
                     new XElement("issueDate", factura.IssueDate.ToString("dd/MM/yyyy")),
-                    new XElement("dirEstablecimiento", config.MainAddress),
-                    new XElement("obligadoContabilidad", config.RequiresAccounting ? "SI" : "NO"),
-                    new XElement("tipoIdentificacionComprador", "04"), // RUC por defecto
+                    new XElement("dirEstablecimiento", company.MainAddress),
+                    new XElement("obligadoContabilidad", company.IsAccountingReq ? "SI" : "NO"),
+                    new XElement("tipoIdentificacionComprador", "04"),
                     new XElement("razonSocialComprador", "CONSUMIDOR FINAL"),
                     new XElement("identificacionComprador", "9999999999"),
                     new XElement("direccionComprador", ""),
@@ -57,8 +57,8 @@ public sealed class SriFacturaElectronicaSimuladoService : ISriFacturaElectronic
                     new XElement("totalDescuento", "0.00"),
                     new XElement("totalConImpuestos",
                         new XElement("totalVat",
-                            new XElement("codigo", "2"), // IVA
-                            new XElement("codigoPorcentaje", "2"), // 12%
+                            new XElement("codigo", "2"),
+                            new XElement("codigoPorcentaje", "2"),
                             new XElement("baseImponible", factura.Subtotal.ToString("F2")),
                             new XElement("valor", factura.VatTotal.ToString("F2"))
                         )
@@ -77,8 +77,8 @@ public sealed class SriFacturaElectronicaSimuladoService : ISriFacturaElectronic
                         new XElement("precioTotalSinImpuesto", d.Subtotal.ToString("F2")),
                         new XElement("impuestos",
                             new XElement("impuesto",
-                                new XElement("codigo", "2"), // IVA
-                                new XElement("codigoPorcentaje", "2"), // 12%
+                                new XElement("codigo", "2"),
+                                new XElement("codigoPorcentaje", "2"),
                                 new XElement("tarifa", "12.00"),
                                 new XElement("baseImponible", d.Subtotal.ToString("F2")),
                                 new XElement("valor", d.VatTotal.ToString("F2"))
@@ -100,17 +100,17 @@ public sealed class SriFacturaElectronicaSimuladoService : ISriFacturaElectronic
         _logger.LogDebug("[SRI-SIM] XML generado ({Bytes} bytes) para factura {FacturaId}",
             xmlString.Length, factura.Id);
 
-        // Guardar archivo temporal para referencia
         var path = $"facturas/ventas/{factura.AccessKey}.xml";
         await _fileStorage.SaveAsync(path, new MemoryStream(Encoding.UTF8.GetBytes(xmlString)));
-        return xmlString; // Retornar contenido XML, no la ruta
+        return xmlString;
     }
 
     public async Task<string> GenerarXmlNotaCreditoDebitoAsync(
         SalesBill facturaOriginal,
         SalesNote nota,
         List<SalesNoteLine> detalles,
-        SriSettings config)
+        SriSettings config,
+        Company company)
     {
         var esCredito = string.Equals(nota.NoteType, "CREDITO", StringComparison.OrdinalIgnoreCase);
         var rootName  = esCredito ? "notaCredito" : "notaDebito";
@@ -122,24 +122,24 @@ public sealed class SriFacturaElectronicaSimuladoService : ISriFacturaElectronic
         var infoTributaria = new XElement("infoTributaria",
             new XElement("ambiente", config.Environment),
             new XElement("tipoEmision", config.EmissionType),
-            new XElement("razonSocial", config.LegalName),
-            new XElement("nombreComercial", config.TradeName ?? config.LegalName),
-            new XElement("ruc", config.Ruc),
+            new XElement("razonSocial", company.LegalName),
+            new XElement("nombreComercial", company.TradeName ?? company.LegalName),
+            new XElement("ruc", company.Ruc),
             new XElement("accessKey", nota.AccessKey),
             new XElement("codDoc", nota.DocType),
             new XElement("estab", nota.EstabCode),
             new XElement("ptoEmi", nota.EmPointCode),
             new XElement("secuencial", nota.Sequential),
-            new XElement("dirMatriz", config.MainAddress));
+            new XElement("dirMatriz", company.MainAddress));
 
         var infoPrincipal = new XElement(infoName,
             new XElement("issueDate", nota.IssueDate.ToString("dd/MM/yyyy")),
-            new XElement("dirEstablecimiento", config.MainAddress),
+            new XElement("dirEstablecimiento", company.MainAddress),
             new XElement("tipoIdentificacionComprador", "04"),
             new XElement("razonSocialComprador", "CONSUMIDOR FINAL"),
             new XElement("identificacionComprador", "9999999999"),
             new XElement("contribuyenteEspecial", ""),
-            new XElement("obligadoContabilidad", config.RequiresAccounting ? "SI" : "NO"),
+            new XElement("obligadoContabilidad", company.IsAccountingReq ? "SI" : "NO"),
             new XElement("tipoEmision", config.EmissionType),
             new XElement("rise", ""),
             new XElement("codDocModificado", facturaOriginal.DocType.Trim()),
@@ -192,7 +192,6 @@ public sealed class SriFacturaElectronicaSimuladoService : ISriFacturaElectronic
     public Task<byte[]> FirmarXmlAsync(string xmlContent, string p12Path, string password)
     {
         _logger.LogDebug("[SRI-SIM] Firma digital simulada (P12 no aplicado)");
-        // Simulación: retornar el mismo XML como bytes (sin firma real)
         return Task.FromResult(Encoding.UTF8.GetBytes(xmlContent));
     }
 
@@ -213,4 +212,3 @@ public sealed class SriFacturaElectronicaSimuladoService : ISriFacturaElectronic
         });
     }
 }
-

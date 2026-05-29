@@ -23,7 +23,6 @@ public sealed class SubscriberBillingAccount : AuditableEntity
     public string BillingEmail { get; private set; } = null!;
     public string CountryCode { get; private set; } = "ECU";
     public string CurrencyCode { get; private set; } = "USD";
-    public string? TaxProfileJson { get; private set; }
     public string? DefaultPaymentMethodRef { get; private set; }
     public DateTime? TrialEndsAtUtc { get; private set; }
     public DateTime? GracePeriodEndsAtUtc { get; private set; }
@@ -63,13 +62,11 @@ public sealed class SubscriberBillingAccount : AuditableEntity
         string billingEmail,
         string countryCode,
         string currencyCode,
-        string? taxProfileJson,
         Guid updatedBy)
     {
         BillingEmail = billingEmail.Trim();
         CountryCode = countryCode.Trim().ToUpperInvariant();
         CurrencyCode = currencyCode.Trim().ToUpperInvariant();
-        TaxProfileJson = string.IsNullOrWhiteSpace(taxProfileJson) ? null : taxProfileJson.Trim();
         SetUpdated(updatedBy);
     }
 

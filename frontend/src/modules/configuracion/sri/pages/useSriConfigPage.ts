@@ -31,17 +31,11 @@ export function useSriConfigPage() {
   const form = useForm<SriConfigValues>({
     resolver: zodResolver(sriConfigSchema),
     defaultValues: {
-      ruc: '',
-      legalName: '',
-      tradeName: '',
-      mainAddress: '',
-      requiresAccounting: false,
-      specialTaxpayer: '',
-      certP12Path: '',
+      certP12Path:  '',
       certPassword: '',
-      environment: 2,
+      environment:  2,
       emissionType: 1,
-      wsdlUrl: SRI_WSDL_DEFAULTS.pruebas,
+      wsdlUrl:      SRI_WSDL_DEFAULTS.pruebas,
     },
   });
 
@@ -50,17 +44,11 @@ export function useSriConfigPage() {
 
   const resetFromData = (d: NonNullable<typeof sriState.data>) => {
     reset({
-      ruc: d.companyRuc ?? '',
-      legalName: d.legalName ?? '',
-      tradeName: d.tradeName ?? '',
-      mainAddress: d.mainAddress ?? '',
-      requiresAccounting: d.requiresAccounting ?? false,
-      specialTaxpayer: d.specialTaxpayer ?? '',
-      certP12Path: d.certificateP12Path ?? '',
+      certP12Path:  d.certificateP12Path ?? '',
       certPassword: '',
-      environment: d.environment === 1 ? 1 : 2,
+      environment:  d.environment === 1 ? 1 : 2,
       emissionType: d.emissionType ?? 1,
-      wsdlUrl: d.sriAuthorizationUrl ?? SRI_WSDL_DEFAULTS.pruebas,
+      wsdlUrl:      d.sriAuthorizationUrl ?? SRI_WSDL_DEFAULTS.pruebas,
     });
   };
 
@@ -87,17 +75,11 @@ export function useSriConfigPage() {
     setSaving(true);
     try {
       await sriService.upsert({
-        ruc: values.ruc,
-        legalName: values.legalName,
-        tradeName: values.tradeName || null,
-        mainAddress: values.mainAddress,
-        requiresAccounting: values.requiresAccounting,
-        specialTaxpayer: values.specialTaxpayer || null,
-        certP12Path: values.certP12Path,
+        certP12Path:  values.certP12Path,
         certPassword: values.certPassword ?? '',
-        environment: values.environment,
+        environment:  values.environment,
         emissionType: 1,
-        wsdlUrl: values.wsdlUrl,
+        wsdlUrl:      values.wsdlUrl,
       });
       setSaved(true);
       sriState.refetch();

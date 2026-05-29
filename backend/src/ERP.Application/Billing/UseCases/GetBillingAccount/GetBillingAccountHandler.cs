@@ -44,7 +44,6 @@ public sealed class GetBillingAccountHandler : IRequestHandler<GetBillingAccount
             account.BillingEmail,
             account.CountryCode,
             account.CurrencyCode,
-            account.TaxProfileJson,
             account.DefaultPaymentMethodRef,
             account.TrialEndsAtUtc,
             account.GracePeriodEndsAtUtc,

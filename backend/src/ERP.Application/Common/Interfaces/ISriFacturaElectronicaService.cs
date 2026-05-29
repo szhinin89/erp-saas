@@ -1,17 +1,19 @@
 using ERP.Domain.Configuration.Entities;
+using ERP.Domain.Modules.Company.Entities;
 using ERP.Domain.Modules.Sales.Entities;
 
 namespace ERP.Application.Common.Interfaces;
 
 public interface ISriFacturaElectronicaService
 {
-    Task<string> GenerarXmlFacturaAsync(SalesBill factura, List<SalesBillLine> detalles, SriSettings config);
+    Task<string> GenerarXmlFacturaAsync(SalesBill factura, List<SalesBillLine> detalles, SriSettings config, Company company);
 
     Task<string> GenerarXmlNotaCreditoDebitoAsync(
         SalesBill facturaOriginal,
         SalesNote nota,
         List<SalesNoteLine> detalles,
-        SriSettings config);
+        SriSettings config,
+        Company company);
 
     Task<byte[]> FirmarXmlAsync(string xmlContent, string p12Path, string password);
     Task<SriAutorizacionResponse> EnviarAlSriAsync(byte[] xmlFirmado, string urlWsdl);

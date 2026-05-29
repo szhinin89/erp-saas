@@ -36,6 +36,9 @@ public class SubscriberConfiguration : IEntityTypeConfiguration<Subscriber>
         builder.Property(t => t.CreatedBy).HasColumnName("created_by");
         builder.Property(t => t.UpdatedBy).HasColumnName("updated_by");
 
+        // Optimistic concurrency: if two handlers update simultaneously, the second fails
+        builder.Property(t => t.UpdatedAt).IsConcurrencyToken();
+
         builder.HasIndex(t => t.Slug)
             .IsUnique()
             .HasDatabaseName("ix_subscribers_slug");

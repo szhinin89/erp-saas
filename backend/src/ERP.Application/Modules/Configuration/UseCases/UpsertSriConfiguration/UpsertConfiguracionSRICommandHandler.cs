@@ -43,20 +43,14 @@ public sealed class UpsertSriConfigurationCommandHandler
         if (existing is null)
         {
             var config = SriSettings.Create(
-                subscriberId:       subscriberId,
-                companyId:          companyId,
-                ruc:                command.Ruc,
-                legalName:          command.LegalName,
-                tradeName:          command.TradeName,
-                mainAddress:        command.MainAddress,
-                requiresAccounting: command.RequiresAccounting,
-                specialTaxpayer:    command.SpecialTaxpayer,
-                certP12Path:        command.CertP12Path,
-                certPassword:       protectedPassword,
-                environment:        command.Environment,
-                emissionType:       command.EmissionType,
-                wsdlUrl:            command.WsdlUrl,
-                createdBy:          userId);
+                subscriberId: subscriberId,
+                companyId:    companyId,
+                certP12Path:  command.CertP12Path,
+                certPassword: protectedPassword,
+                environment:  command.Environment,
+                emissionType: command.EmissionType,
+                wsdlUrl:      command.WsdlUrl,
+                createdBy:    userId);
 
             await _repo.AddAsync(config, ct);
             await _repo.SaveChangesAsync(ct);
@@ -64,18 +58,12 @@ public sealed class UpsertSriConfigurationCommandHandler
         }
 
         existing.Update(
-            ruc:                command.Ruc,
-            legalName:          command.LegalName,
-            tradeName:          command.TradeName,
-            mainAddress:        command.MainAddress,
-            requiresAccounting: command.RequiresAccounting,
-            specialTaxpayer:    command.SpecialTaxpayer,
-            certP12Path:        command.CertP12Path,
-            certPassword:       protectedPassword,
-            environment:        command.Environment,
-            emissionType:       command.EmissionType,
-            wsdlUrl:            command.WsdlUrl,
-            updatedBy:          userId);
+            certP12Path:  command.CertP12Path,
+            certPassword: protectedPassword,
+            environment:  command.Environment,
+            emissionType: command.EmissionType,
+            wsdlUrl:      command.WsdlUrl,
+            updatedBy:    userId);
 
         await _repo.UpdateAsync(existing, ct);
         await _repo.SaveChangesAsync(ct);
@@ -83,7 +71,5 @@ public sealed class UpsertSriConfigurationCommandHandler
     }
 
     private static SriConfigurationDto ToDto(SriSettings c) => new(
-        c.CompanyId, c.Ruc, c.LegalName, c.TradeName,
-        c.MainAddress, c.RequiresAccounting, c.SpecialTaxpayer,
-        c.CertP12Path, c.Environment, c.EmissionType, c.WsdlUrl);
+        c.CompanyId, c.CertP12Path, c.Environment, c.EmissionType, c.WsdlUrl);
 }
