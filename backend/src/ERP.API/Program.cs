@@ -381,6 +381,8 @@ app.UseMiddleware<EnterpriseDiagnosticMiddleware>();
 app.UseMiddleware<PlatformPanelLockMiddleware>();
 // FASE 2 — Subscription access validation on every authenticated request
 app.UseMiddleware<ERP.API.Middleware.SubscriptionAccessMiddleware>();
+// FASE 5 — ReadOnly mode: block writes (POST/PUT/PATCH/DELETE) for GracePeriod/PastDue tenants
+app.UseMiddleware<ERP.API.Middleware.ReadOnlyEnforcementMiddleware>();
 app.UseAuthorization();
 app.UseRateLimiter();
 app.UseMiddleware<ForbiddenAccessLoggingMiddleware>();

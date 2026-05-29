@@ -236,3 +236,24 @@ public sealed class BillingCheckoutSessionConfiguration : IEntityTypeConfigurati
         builder.Ignore(x => x.IsExpired);
     }
 }
+
+public sealed class ProcessedWebhookEventConfiguration : IEntityTypeConfiguration<ProcessedWebhookEvent>
+{
+    public void Configure(EntityTypeBuilder<ProcessedWebhookEvent> builder)
+    {
+        builder.ToTable("processed_webhook_events");
+        builder.HasKey(x => x.Id);
+        builder.Property(x => x.Id).HasColumnName("id");
+        builder.Property(x => x.SubscriberId).HasColumnName("subscriber_id").IsRequired();
+        builder.Property(x => x.ProviderType).HasColumnName("provider_type").IsRequired();
+        builder.Property(x => x.ProviderEventId).HasColumnName("provider_event_id").HasMaxLength(ProcessedWebhookEvent.ProviderEventIdMaxLen).IsRequired();
+        builder.Property(x => x.RawEventType).HasColumnName("raw_event_type").HasMaxLength(ProcessedWebhookEvent.RawEventTypeMaxLen).IsRequired();
+        builder.Property(x => x.ProcessedAtUtc).HasColumnName("processed_at_utc").IsRequired();
+        builder.Property(x => x.CreatedAt).HasColumnName("created_at");
+        builder.Property(x => x.UpdatedAt).HasColumnName("updated_at");
+        builder.Property(x => x.CreatedBy).HasColumnName("created_by");
+        builder.Property(x => x.UpdatedBy).HasColumnName("updated_by");
+        builder.HasIndex(x => x.ProviderEventId).IsUnique().HasDatabaseName("ux_processed_webhook_events_provider_event_id");
+        builder.HasIndex(x => x.ProcessedAtUtc).HasDatabaseName("ix_processed_webhook_events_processed_at");
+    }
+}

@@ -372,6 +372,7 @@ public class ErpDbContext : DbContext
     public DbSet<ERP.Domain.Billing.Entities.PaymentProviderSubscription> PaymentProviderSubscriptions => Set<ERP.Domain.Billing.Entities.PaymentProviderSubscription>();
     public DbSet<ERP.Domain.Billing.Entities.BillingPaymentAttempt> BillingPaymentAttempts => Set<ERP.Domain.Billing.Entities.BillingPaymentAttempt>();
     public DbSet<ERP.Domain.Billing.Entities.BillingCheckoutSession> BillingCheckoutSessions => Set<ERP.Domain.Billing.Entities.BillingCheckoutSession>();
+    public DbSet<ERP.Domain.Billing.Entities.ProcessedWebhookEvent> ProcessedWebhookEvents => Set<ERP.Domain.Billing.Entities.ProcessedWebhookEvent>();
 
     public DbSet<UiNavGroup> UiNavGroups => Set<UiNavGroup>();
     public DbSet<UiNavItem> UiNavItems => Set<UiNavItem>();

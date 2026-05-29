@@ -9,6 +9,7 @@ using ERP.Domain.Platform.Audit.Entities;
 using ERP.Domain.Subscribers.Entities;
 using ERP.Domain.Subscribers.Events;
 using ERP.Domain.Subscribers.Exceptions;
+using ERP.Domain.Subscriptions.Entities;
 using ERP.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
@@ -77,6 +78,8 @@ public sealed class SubscriptionLifecycleOrchestrator : ISubscriptionLifecycleOr
         account.Activate(actorId);
         subscriber.AddDomainEvent(new SubscriptionActivatedEvent(subscriberId, actorId, notes));
 
+        // FASE 6: keep SubscriberSubscription in sync
+        await SyncSubscriptionStatusAsync(subscriberId, SubscriberLifecycleStatus.Active, actorId, ct);
         await SaveAndInvalidateBothCachesAsync(subscriberId, ct);
         await tx.CommitAsync(ct);
         sw.Stop();
@@ -106,6 +109,7 @@ public sealed class SubscriptionLifecycleOrchestrator : ISubscriptionLifecycleOr
         account.Suspend(actorId);
         subscriber.AddDomainEvent(new SubscriptionSuspendedEvent(subscriberId, actorId, reason));
 
+        await SyncSubscriptionStatusAsync(subscriberId, SubscriberLifecycleStatus.Suspended, actorId, ct);
         await SaveAndInvalidateBothCachesAsync(subscriberId, ct);
         await tx.CommitAsync(ct);
         sw.Stop();
@@ -137,6 +141,7 @@ public sealed class SubscriptionLifecycleOrchestrator : ISubscriptionLifecycleOr
         account.SetTrial(BillingTrialState.Active, endsAtUtc, actorId);
         subscriber.AddDomainEvent(new TrialStartedEvent(subscriberId, actorId, endsAtUtc));
 
+        await SyncSubscriptionStatusAsync(subscriberId, SubscriberLifecycleStatus.Trial, actorId, ct);
         await SaveAndInvalidateBothCachesAsync(subscriberId, ct);
         await tx.CommitAsync(ct);
         sw.Stop();
@@ -176,6 +181,7 @@ public sealed class SubscriptionLifecycleOrchestrator : ISubscriptionLifecycleOr
         account.EnterGracePeriod(endsAtUtc, actorId);
         subscriber.AddDomainEvent(new GracePeriodStartedEvent(subscriberId, actorId, endsAtUtc));
 
+        await SyncSubscriptionStatusAsync(subscriberId, SubscriberLifecycleStatus.GracePeriod, actorId, ct);
         await SaveAndInvalidateBothCachesAsync(subscriberId, ct);
         await tx.CommitAsync(ct);
         sw.Stop();
@@ -211,6 +217,7 @@ public sealed class SubscriptionLifecycleOrchestrator : ISubscriptionLifecycleOr
         account.Cancel(BillingRenewalState.Cancelled, actorId);
         subscriber.AddDomainEvent(new SubscriptionCancelledEvent(subscriberId, actorId, reason));
 
+        await SyncSubscriptionStatusAsync(subscriberId, SubscriberLifecycleStatus.Inactive, actorId, ct);
         await SaveAndInvalidateBothCachesAsync(subscriberId, ct);
         await tx.CommitAsync(ct);
         sw.Stop();
@@ -249,10 +256,45 @@ public sealed class SubscriptionLifecycleOrchestrator : ISubscriptionLifecycleOr
         return (subscriber, account);
     }
 
+    /// <summary>
+    /// FASE 6: Synchronizes SubscriberSubscription.Status to match Subscriber.LifecycleStatus.
+    /// Mapping: Active→Active, Trial→Trial, GracePeriod→GracePeriod, Suspended→Suspended, Cancelled→Cancelled.
+    /// Called inside SaveChangesAsync so all three entities stay consistent.
+    /// </summary>
+    private async Task SyncSubscriptionStatusAsync(
+        Guid subscriberId, SubscriberLifecycleStatus lifecycleStatus, Guid actorId, CancellationToken ct)
+    {
+        var subscription = await _db.Set<SubscriberSubscription>()
+            .Where(s => s.SubscriberId == subscriberId &&
+                        s.Status != SubscriptionStatus.Cancelled)
+            .OrderByDescending(s => s.StartedAtUtc)
+            .FirstOrDefaultAsync(ct);
+
+        if (subscription is null) return;
+
+        switch (lifecycleStatus)
+        {
+            case SubscriberLifecycleStatus.Active:
+                subscription.Reactivate(actorId);
+                break;
+            case SubscriberLifecycleStatus.Trial:
+                subscription.StartTrial(DateTime.UtcNow.AddDays(30), actorId);
+                break;
+            case SubscriberLifecycleStatus.GracePeriod:
+                subscription.EnterGracePeriod(DateTime.UtcNow.AddDays(7), actorId);
+                break;
+            case SubscriberLifecycleStatus.Suspended:
+                subscription.Suspend(actorId);
+                break;
+            case SubscriberLifecycleStatus.Inactive:
+                subscription.Cancel(actorId);
+                break;
+        }
+    }
+
     private async Task SaveAndInvalidateBothCachesAsync(Guid subscriberId, CancellationToken ct)
     {
         await _db.SaveChangesAsync(ct);
-        // Invalidate both: entitlements (modules/permissions) and access snapshot (lifecycle)
         await _entitlementsCache.InvalidateAsync(subscriberId, ct);
         await _accessCache.InvalidateAsync(subscriberId, ct);
     }

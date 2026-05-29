@@ -229,6 +229,10 @@ public static class DependencyInjection
             ERP.Infrastructure.SaaS.SubscriptionRenewalService>();
         services.AddScoped<ERP.Application.Billing.Notifications.IBillingNotificationService,
             ERP.Infrastructure.SaaS.NullBillingNotificationService>();
+        services.AddScoped<ERP.Application.Billing.Invoices.IBillingInvoiceService,
+            ERP.Infrastructure.SaaS.BillingInvoiceService>();
+        services.AddScoped<ERP.Application.Common.Features.IFeatureAccessService,
+            ERP.Infrastructure.SaaS.FeatureAccessService>();
         services.AddScoped<DistributedSubscriberEntitlementsSnapshotCache>();
         services.AddScoped<SubscriberEntitlementsPermissionsCacheInvalidator>();
         services.AddScoped<ISubscriberEntitlementsSnapshotCache>(sp =>
