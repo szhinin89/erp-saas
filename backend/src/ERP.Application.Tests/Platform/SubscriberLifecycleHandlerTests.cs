@@ -81,7 +81,8 @@ public sealed class ChangePlanHandlerTests
             new Mock<ISubscriberRepository>().Object,
             new Mock<IPlatformAuditLogger>().Object,
             new Mock<ICurrentUser>().Object,
-            new Mock<ISubscriberEntitlementsCacheInvalidator>().Object);
+            new Mock<ISubscriberEntitlementsCacheInvalidator>().Object,
+            new Mock<ERP.Application.Common.Subscriptions.ISubscriptionAccessCache>().Object);
 
         var result = await handler.Handle(
             new ChangePlatformSubscriberPlanCommand(Guid.NewGuid(), ""), CancellationToken.None);
@@ -104,18 +105,23 @@ public sealed class ChangePlanHandlerTests
         currentUser.Setup(u => u.UserId).Returns(Guid.NewGuid());
         var cacheInvalidator = new Mock<ISubscriberEntitlementsCacheInvalidator>();
 
+        var accessCache = new Mock<ERP.Application.Common.Subscriptions.ISubscriptionAccessCache>();
+
         var handler = new ChangePlatformSubscriberPlanHandler(
             repo.Object,
             new Mock<IPlatformAuditLogger>().Object,
             currentUser.Object,
-            cacheInvalidator.Object);
+            cacheInvalidator.Object,
+            accessCache.Object);
 
         var result = await handler.Handle(
             new ChangePlatformSubscriberPlanCommand(subscriberId, "enterprise"), CancellationToken.None);
 
         result.IsSuccess.Should().BeTrue();
         subscriber.PlanCode.Should().Be("enterprise");
+        // Verify BOTH caches invalidated (plan change affects entitlements AND access snapshot)
         cacheInvalidator.Verify(c => c.InvalidateAsync(subscriberId, It.IsAny<CancellationToken>()), Times.Once);
+        accessCache.Verify(c => c.InvalidateAsync(subscriberId, It.IsAny<CancellationToken>()), Times.Once);
     }
 }
 

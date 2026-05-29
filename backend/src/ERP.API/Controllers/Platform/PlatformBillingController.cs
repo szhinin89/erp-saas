@@ -123,14 +123,16 @@ public sealed class PlatformBillingController : ControllerBase
         var invoiceId = await _invoiceService.EnsureRenewalInvoiceAsync(
             subscriberId, planCode, amount, currency, now, periodEnd, sysId, ct);
 
-        var attemptId = await _invoiceService.RecordPaymentAttemptAsync(
+        // Activate lifecycle FIRST — if this fails, invoice is not yet marked paid → retryable safely
+        await _lifecycle.ActivateAsync(subscriberId, sysId,
+            $"Pago simulado por plataforma", ct);
+
+        // Record attempt + mark invoice paid AFTER lifecycle is consistent
+        var attemptId   = await _invoiceService.RecordPaymentAttemptAsync(
             invoiceId, subscriberId, PaymentProviderType.Manual, amount, currency, sysId, ct);
 
-        var providerRef = $"sim-{Guid.NewGuid():N}".Substring(0, 20);
+        var providerRef = $"sim-{Guid.NewGuid():N}"[..20];
         await _invoiceService.CompletePaymentAsync(attemptId, invoiceId, subscriberId, providerRef, sysId, ct);
-
-        await _lifecycle.ActivateAsync(subscriberId, sysId,
-            $"Pago simulado por plataforma (ref={providerRef})", ct);
 
         return this.ApiOk(new SimulatePaymentResultDto(subscriberId, invoiceId, attemptId, providerRef, "PaymentSimulated"));
     }

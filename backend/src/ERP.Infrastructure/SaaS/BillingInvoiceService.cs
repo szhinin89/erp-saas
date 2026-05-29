@@ -97,7 +97,18 @@ public sealed class BillingInvoiceService : IBillingInvoiceService
         Guid invoiceId, Guid subscriberId, PaymentProviderType providerType,
         decimal amount, string currencyCode, Guid actorId, CancellationToken ct = default)
     {
-        var attemptNumber = await _billing.CountAttemptsForInvoiceAsync(invoiceId, ct) + 1;
+        // Idempotency: if there's already a pending attempt for this invoice, return its ID
+        var existingAttempts = await _billing.GetPaymentAttemptsForInvoiceAsync(invoiceId, ct);
+        var pendingAttempt   = existingAttempts.FirstOrDefault(a => a.Status == PaymentAttemptStatus.Pending);
+        if (pendingAttempt is not null)
+        {
+            _log.LogDebug(
+                "BillingInvoiceService: returning existing pending attempt {AttemptId} for invoice={InvoiceId}",
+                pendingAttempt.Id, invoiceId);
+            return pendingAttempt.Id;
+        }
+
+        var attemptNumber = existingAttempts.Count + 1;
 
         var attempt = BillingPaymentAttempt.Begin(
             subscriberId:    subscriberId,

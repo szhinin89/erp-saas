@@ -98,7 +98,7 @@ public sealed class BillingWebhookController : ControllerBase
             PaymentProviderCodes.Stripe     => PaymentProviderType.Stripe,
             PaymentProviderCodes.Paddle     => PaymentProviderType.Paddle,
             PaymentProviderCodes.PayPal     => PaymentProviderType.PayPal,
-            PaymentProviderCodes.Kushki     => PaymentProviderType.Stripe, // mapped until Kushki enum added
+            PaymentProviderCodes.Kushki     => PaymentProviderType.None, // Kushki not integrated yet — NullProvider handles gracefully
             _                               => PaymentProviderType.None,
         };
 }

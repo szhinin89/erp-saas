@@ -156,18 +156,21 @@ public sealed class ChangePlatformSubscriberPlanHandler : IRequestHandler<Change
     private readonly ERP.Domain.Subscribers.Interfaces.ISubscriberRepository _subscribers;
     private readonly ERP.Application.Platform.Audit.IPlatformAuditLogger     _audit;
     private readonly ICurrentUser                                             _currentUser;
-    private readonly ERP.Application.Subscriptions.Caching.ISubscriberEntitlementsCacheInvalidator _cache;
+    private readonly ERP.Application.Subscriptions.Caching.ISubscriberEntitlementsCacheInvalidator _entitlementsCache;
+    private readonly ERP.Application.Common.Subscriptions.ISubscriptionAccessCache                  _accessCache;
 
     public ChangePlatformSubscriberPlanHandler(
         ERP.Domain.Subscribers.Interfaces.ISubscriberRepository subscribers,
         ERP.Application.Platform.Audit.IPlatformAuditLogger audit,
         ICurrentUser currentUser,
-        ERP.Application.Subscriptions.Caching.ISubscriberEntitlementsCacheInvalidator cache)
+        ERP.Application.Subscriptions.Caching.ISubscriberEntitlementsCacheInvalidator entitlementsCache,
+        ERP.Application.Common.Subscriptions.ISubscriptionAccessCache accessCache)
     {
-        _subscribers = subscribers;
-        _audit       = audit;
-        _currentUser = currentUser;
-        _cache       = cache;
+        _subscribers       = subscribers;
+        _audit             = audit;
+        _currentUser       = currentUser;
+        _entitlementsCache = entitlementsCache;
+        _accessCache       = accessCache;
     }
 
     public async Task<Result<bool>> Handle(ChangePlatformSubscriberPlanCommand request, CancellationToken ct)
@@ -187,7 +190,9 @@ public sealed class ChangePlatformSubscriberPlanHandler : IRequestHandler<Change
         // DbUpdateConcurrencyException propagates up — ExceptionMiddleware maps it to 409
         await _subscribers.SaveChangesAsync(ct);
 
-        await _cache.InvalidateAsync(request.SubscriberId, ct);
+        // Invalidate both caches: plan change affects entitlements AND access snapshot
+        await _entitlementsCache.InvalidateAsync(request.SubscriberId, ct);
+        await _accessCache.InvalidateAsync(request.SubscriberId, ct);
 
         await _audit.LogAsync(
             ERP.Domain.Platform.Audit.Entities.PlatformAuditLog.Actions.PlanChanged,

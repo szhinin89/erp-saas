@@ -10,13 +10,73 @@ import { formatApiRequestError } from '../../../modules/lib/apiError';
 import { useI18n } from '../../../i18n/i18n';
 import { formatDate } from '../../../lib/formatters/dateFormatters';
 
+// ── ReadOnly / GracePeriod banner ─────────────────────────────────────────────
+
+const READONLY_STATUSES = new Set(['GracePeriod', 'PastDue']);
+const BLOCKED_STATUSES  = new Set(['Suspended', 'Cancelled']);
+
+function AccountStatusBanner({ account }: { account: SubscriberBillingAccountDto }) {
+  if (BLOCKED_STATUSES.has(account.status)) {
+    return (
+      <ZHPageNotice
+        variant="error"
+        message="Cuenta suspendida o cancelada"
+        detail="Tu suscripción está bloqueada. Contacta al soporte para reactivarla."
+      />
+    );
+  }
+  if (READONLY_STATUSES.has(account.status)) {
+    return (
+      <ZHPageNotice
+        variant="warning"
+        message="Modo solo lectura activo"
+        detail={
+          account.status === 'GracePeriod'
+            ? 'Tu cuenta está en período de gracia. Las operaciones de escritura están deshabilitadas hasta regularizar el pago.'
+            : 'Hay un pago pendiente en tu cuenta. Las operaciones de escritura están deshabilitadas.'
+        }
+      />
+    );
+  }
+  return null;
+}
+
+function StatusBadge({ status }: { status: string }) {
+  const variants: Record<string, string> = {
+    Active:      'zh-status--active',
+    Trialing:    'zh-status--info',
+    GracePeriod: 'zh-status--warning',
+    PastDue:     'zh-status--warning',
+    Suspended:   'zh-status--inactive',
+    Cancelled:   'zh-status--inactive',
+  };
+  return (
+    <span className={`zh-status ${variants[status] ?? 'zh-status--inactive'}`}>
+      {status}
+    </span>
+  );
+}
+
+function InvoiceStatusBadge({ status }: { status: string }) {
+  const variants: Record<string, string> = {
+    Draft:         'badge badge--gray',
+    Open:          'badge badge--yellow',
+    Paid:          'badge badge--green',
+    Void:          'badge badge--gray',
+    Uncollectible: 'badge badge--red',
+  };
+  return <span className={variants[status] ?? 'badge badge--gray'}>{status}</span>;
+}
+
+// ── Page ──────────────────────────────────────────────────────────────────────
+
 export function SaasBillingPage() {
   const { t } = useI18n();
   const navigate = useNavigate();
 
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-  const [account, setAccount] = useState<SubscriberBillingAccountDto | null>(null);
+  const [loading,  setLoading]  = useState(true);
+  const [error,    setError]    = useState('');
+  const [account,  setAccount]  = useState<SubscriberBillingAccountDto | null>(null);
   const [invoices, setInvoices] = useState<SaasBillingInvoiceDto[]>([]);
 
   const load = useCallback(async () => {
@@ -25,7 +85,7 @@ export function SaasBillingPage() {
     try {
       const [acc, inv] = await Promise.all([
         saasBillingService.getAccount(),
-        saasBillingService.listInvoices(10),
+        saasBillingService.listInvoices(20),
       ]);
       setAccount(acc);
       setInvoices(inv);
@@ -40,6 +100,9 @@ export function SaasBillingPage() {
   }, [t]);
 
   useEffect(() => { void load(); }, [load]);
+
+  const isReadOnly = account ? READONLY_STATUSES.has(account.status) : false;
+  const isBlocked  = account ? BLOCKED_STATUSES.has(account.status) : false;
 
   return (
     <ErpPageTemplate
@@ -57,10 +120,23 @@ export function SaasBillingPage() {
     >
       {error ? <ZHPageNotice variant="error" message={t('common.errorPrefix')} detail={error} /> : null}
 
+      {/* ReadOnly / Blocked banners */}
+      {account && <AccountStatusBanner account={account} />}
+
+      {/* ReadOnly mode notice for operations */}
+      {isReadOnly && !isBlocked && (
+        <ZHPageNotice
+          variant="info"
+          message="Acceso de solo lectura"
+          detail="Puedes consultar tu información de facturación. Para crear o modificar registros, regulariza el pago de tu suscripción."
+        />
+      )}
+
       {loading ? (
         <LoadingState />
       ) : (
         <>
+          {/* Account info */}
           <div className="card card--xl">
             <ZHCardSection title={t('saas.billing.accountTitle')}>
               {!account ? (
@@ -68,16 +144,33 @@ export function SaasBillingPage() {
               ) : (
                 <table className="table">
                   <tbody>
-                    <tr><th>{t('saas.billing.field.status')}</th><td>{account.status}</td></tr>
-                    <tr><th>{t('saas.billing.field.renewal')}</th><td>{account.renewalState}</td></tr>
-                    <tr><th>{t('saas.billing.field.email')}</th><td>{account.billingEmail}</td></tr>
-                    <tr><th>{t('saas.billing.field.currency')}</th><td>{account.currencyCode}</td></tr>
+                    <tr>
+                      <th>{t('saas.billing.field.status')}</th>
+                      <td><StatusBadge status={account.status} /></td>
+                    </tr>
+                    <tr>
+                      <th>{t('saas.billing.field.renewal')}</th>
+                      <td>{account.renewalState}</td>
+                    </tr>
+                    <tr>
+                      <th>Trial</th>
+                      <td>{account.trialState !== 'None' ? account.trialState : '—'}</td>
+                    </tr>
+                    <tr>
+                      <th>{t('saas.billing.field.email')}</th>
+                      <td>{account.billingEmail}</td>
+                    </tr>
+                    <tr>
+                      <th>{t('saas.billing.field.currency')}</th>
+                      <td>{account.currencyCode}</td>
+                    </tr>
                   </tbody>
                 </table>
               )}
             </ZHCardSection>
           </div>
 
+          {/* Invoice history */}
           <div className="card card--xl">
             <ZHCardSection title={t('saas.billing.invoicesTitle')}>
               {invoices.length === 0 ? (
@@ -88,17 +181,23 @@ export function SaasBillingPage() {
                     <tr>
                       <th>{t('saas.billing.col.number')}</th>
                       <th>{t('saas.billing.col.status')}</th>
-                      <th>{t('saas.billing.col.amount')}</th>
+                      <th className="pg-th-right">{t('saas.billing.col.amount')}</th>
                       <th>{t('saas.billing.col.date')}</th>
+                      <th>Vencimiento</th>
                     </tr>
                   </thead>
                   <tbody>
                     {invoices.map((inv) => (
                       <tr key={inv.id}>
-                        <td>{inv.invoiceNumber}</td>
-                        <td>{inv.status}</td>
-                        <td>{inv.totalAmount} {inv.currencyCode}</td>
+                        <td className="mono subtle">{inv.invoiceNumber}</td>
+                        <td><InvoiceStatusBadge status={inv.status} /></td>
+                        <td className="pg-td-right mono">
+                          {inv.totalAmount?.toFixed(2)} {inv.currencyCode}
+                        </td>
                         <td>{formatDate(inv.issuedAtUtc)}</td>
+                        <td className={inv.status === 'Open' ? 'pg-text-warning' : ''}>
+                          {inv.dueAtUtc ? formatDate(inv.dueAtUtc) : '—'}
+                        </td>
                       </tr>
                     ))}
                   </tbody>

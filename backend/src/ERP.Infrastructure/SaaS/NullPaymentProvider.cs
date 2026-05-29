@@ -64,8 +64,10 @@ public sealed class PaymentProviderFactory : IPaymentProviderFactory
 
     public IPaymentProvider GetForSubscriber(Guid subscriberId)
     {
-        // TODO: load tenant billing config from DB to choose provider
-        // For now: all tenants use manual (Null) provider
+        // Extension point: inject IEnumerable<IPaymentProvider> registered providers
+        // and resolve by reading the subscriber's configured provider from DB.
+        // When Stripe is integrated: check subscriber's payment_provider_customers table.
+        // For now: all tenants use NullPaymentProvider (manual/simulated billing).
         return _null;
     }
 
@@ -74,8 +76,10 @@ public sealed class PaymentProviderFactory : IPaymentProviderFactory
         {
             PaymentProviderType.None   => _null,
             PaymentProviderType.Manual => _null,
+            // Future: inject and return registered provider
             // PaymentProviderType.Stripe => _stripe,
             // PaymentProviderType.Paddle => _paddle,
-            _ => _null, // Unknown providers fall back to null
+            // PaymentProviderType.Kushki => _kushki,
+            _                          => _null, // Unknown/unregistered providers use NullProvider
         };
 }

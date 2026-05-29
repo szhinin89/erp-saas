@@ -104,6 +104,29 @@ export function SaasOverviewPage() {
     >
       {error ? <ZHPageNotice variant="error" message={t('common.errorPrefix')} detail={error} /> : null}
 
+      {/* ReadOnly / GracePeriod banners — shown on overview page too */}
+      {billingStatus === 'GracePeriod' && (
+        <ZHPageNotice
+          variant="warning"
+          message="Período de gracia activo"
+          detail="Tu suscripción está en período de gracia. Las operaciones de escritura están deshabilitadas. Regulariza el pago para restaurar el acceso completo."
+        />
+      )}
+      {billingStatus === 'PastDue' && (
+        <ZHPageNotice
+          variant="warning"
+          message="Pago pendiente"
+          detail="Hay un pago pendiente en tu cuenta. Contacta al soporte o regulariza el pago para restaurar el acceso completo."
+        />
+      )}
+      {billingStatus === 'Suspended' && (
+        <ZHPageNotice
+          variant="error"
+          message="Cuenta suspendida"
+          detail="Tu cuenta ha sido suspendida. Contacta al soporte para reactivarla."
+        />
+      )}
+
       {loading ? (
         <LoadingState />
       ) : (

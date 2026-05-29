@@ -7,13 +7,25 @@ import { getCorrelationId } from '../../lib/observability/requestContext';
 import { logDevApiRequest } from '../../lib/observability/devApiLog';
 import { useAuthStore } from '../../store/authStore';
 
-/** Subscription-related 403 denial codes returned by SubscriptionAccessMiddleware. */
+/**
+ * Subscription-related 403 denial codes returned by SubscriptionAccessMiddleware.
+ * Codes that cause immediate logout + redirect to /subscription-suspended.
+ * ReadOnly codes (readonly_mode, subscription_past_due, subscription_grace_period_expired)
+ * do NOT cause logout — they are informational banners on the UI.
+ */
 const SUBSCRIPTION_DENIAL_CODES = new Set([
   'subscription_suspended',
   'subscription_inactive',
   'subscription_cancelled',
   'subscription_trial_expired',
+  'subscription_grace_period_expired',
   'subscription_access_denied',
+]);
+
+/** ReadOnly codes — allow request but signal UI to show banner (no logout). */
+const READONLY_CODES = new Set([
+  'readonly_mode',
+  'subscription_past_due',
 ]);
 
 function isSubscriptionDenial(responseData: unknown): boolean {
@@ -94,10 +106,20 @@ api.interceptors.response.use(
     const url             = (originalRequest?.url ?? '') as string;
 
     // Handle subscription-level 403 before attempting token refresh.
-    // These codes mean the tenant is blocked — logout immediately, no retry.
-    if (status === 403 && isSubscriptionDenial(error.response?.data)) {
-      handleSubscriptionDenial(error.response?.data);
-      return Promise.reject(error);
+    if (status === 403) {
+      const data = error.response?.data;
+      const code = typeof data === 'object' && data !== null ? (data as Record<string,unknown>).code : undefined;
+
+      // ReadOnly mode (GracePeriod/PastDue) — don't logout, let UI show banner
+      if (typeof code === 'string' && READONLY_CODES.has(code)) {
+        return Promise.reject(error); // propagate for components to handle
+      }
+
+      // Blocked tenant (Suspended/Cancelled/TrialExpired) — logout immediately
+      if (isSubscriptionDenial(data)) {
+        handleSubscriptionDenial(data);
+        return Promise.reject(error);
+      }
     }
 
     if (!shouldAttemptTokenRefresh(status, url, originalRequest._retry ?? false)) {
