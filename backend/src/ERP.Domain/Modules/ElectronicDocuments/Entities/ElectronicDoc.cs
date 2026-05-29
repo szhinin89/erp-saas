@@ -1,3 +1,4 @@
+using ERP.Domain.Common;
 using ERP.Domain.Modules.Company.Entities;
 using ERP.Domain.Modules.SriCatalogs.Entities;
 
@@ -8,10 +9,17 @@ namespace ERP.Domain.Modules.ElectronicDocuments.Entities;
 /// Extensiones 1:1: SalesInvoice, CreditNote, DebitNote, DeliveryGuide,
 /// WithholdingCertificate, PurchaseSettlement.
 /// Estado: draft → validated → authorized | rejected | error | voided
+///
+/// MULTI-TENANT: implementa ISubscriberScopedEntity para que EnterpriseQueryFilterConfigurator
+/// aplique el filtro automático subscriber_id = current_subscriber.
+/// Esto también resuelve el warning de EF Core sobre EmissionPoint (ICompanyScopedEntity)
+/// y la navegación requerida — ambas entidades quedan bajo el mismo filtro de subscriber scope.
 /// </summary>
-public class ElectronicDoc
+public class ElectronicDoc : ISubscriberScopedEntity
 {
     public Guid    Id                  { get; set; }
+    /// <summary>Tenant owner — required for multi-tenant query filter.</summary>
+    public Guid    SubscriberId        { get; set; }
     public Guid    CompanyId           { get; set; }
     public Guid    EmissionPointId     { get; set; }
     public string  DocTypeCode         { get; set; } = null!;

@@ -11,6 +11,8 @@ public class ElectronicDocConfiguration : IEntityTypeConfiguration<ElectronicDoc
         builder.ToTable("electronic_doc");
         builder.HasKey(x => x.Id);
         builder.Property(x => x.Id).HasColumnName("id").HasDefaultValueSql("gen_random_uuid()");
+        // Multi-tenant scope: subscriber_id backfilled from companies.subscriber_id
+        builder.Property(x => x.SubscriberId).HasColumnName("subscriber_id").IsRequired();
         builder.Property(x => x.CompanyId).HasColumnName("company_id").IsRequired();
         builder.Property(x => x.EmissionPointId).HasColumnName("emission_point_id").IsRequired();
         builder.Property(x => x.DocTypeCode).HasColumnName("doc_type_code").HasMaxLength(5).IsRequired();
