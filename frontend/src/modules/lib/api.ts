@@ -6,6 +6,7 @@ import { refreshSessionToken } from '../../lib/session/refreshSessionToken';
 import { getCorrelationId } from '../../lib/observability/requestContext';
 import { logDevApiRequest } from '../../lib/observability/devApiLog';
 import { useAuthStore } from '../../store/authStore';
+import { spaNavigate } from '../../lib/navigation/globalNavigator';
 
 // Import centralized status constants — single source of truth for denial code handling
 import { BLOCKED_DENIAL_CODES, READONLY_DENIAL_CODES } from '../saas/billing/constants/subscriptionStatus';
@@ -87,11 +88,13 @@ api.interceptors.response.use(
     const status          = error.response?.status as number | undefined;
     const url             = (originalRequest?.url ?? '') as string;
 
-    // Handle company onboarding required (403 from CompanyOnboardingMiddleware)
+    // Handle company onboarding required (403 from CompanyOnboardingMiddleware).
+    // Use spaNavigate (React Router) instead of window.location.href to avoid a full
+    // page reload that clears the in-memory access token and triggers a refresh cascade.
     if (status === 403) {
       const code403 = (error.response?.data as Record<string, unknown>)?.code;
       if (code403 === 'company_onboarding_required') {
-        window.location.href = '/onboarding/company';
+        spaNavigate('/onboarding/company');
         return Promise.reject(error);
       }
     }
@@ -128,6 +131,13 @@ api.interceptors.response.use(
       return api(originalRequest);
     } catch (refreshError) {
       clearAccessToken();
+      // 429 means the refresh endpoint is rate-limiting this user (chain depth or burst limit).
+      // Don't log out — let the user stay on the current page; the next navigation or retry
+      // will re-attempt once the rate window resets. Logout only on definitive auth failures.
+      const refreshStatus = (refreshError as { response?: { status?: number } })?.response?.status;
+      if (refreshStatus === 429) {
+        return Promise.reject(refreshError);
+      }
       fullLogout();
       window.location.href = '/login';
       return Promise.reject(refreshError);

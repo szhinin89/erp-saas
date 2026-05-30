@@ -31,6 +31,7 @@ public sealed class SubscriberIntegrityRepairService : ISubscriberIntegrityRepai
         issues.AddRange(await ScanSubscribersWithoutCompanyAsync(ct));
         issues.AddRange(await ScanCompaniesWithoutAdminMembershipAsync(ct));
         issues.AddRange(await ScanSubscribersWithoutBillingAsync(ct));
+        issues.AddRange(await ScanCompaniesWithIncompleteOnboardingAsync(ct));
         return new EnterpriseIntegrityReport(issues, 0);
     }
 
@@ -38,6 +39,19 @@ public sealed class SubscriberIntegrityRepairService : ISubscriberIntegrityRepai
     {
         var issues = new List<EnterpriseIntegrityIssue>();
         var repaired = 0;
+
+        // Fix companies that have branches (= were bootstrapped before the onboarding gate was added)
+        // but still have onboarding_completed = false due to missing migration backfill.
+        var onboardingIssues = await ScanCompaniesWithIncompleteOnboardingAsync(ct);
+        issues.AddRange(onboardingIssues);
+        foreach (var issue in onboardingIssues.Where(i => i.CompanyId.HasValue))
+        {
+            var company = await _db.Companies.FirstOrDefaultAsync(c => c.Id == issue.CompanyId!.Value, ct);
+            if (company is null) continue;
+            company.CompleteOnboarding();
+            await _db.SaveChangesAsync(ct);
+            repaired++;
+        }
 
         var subscribersWithoutCompany = await _platform
             .Unfiltered(_db.Subscribers, PlatformQueryReason.CrossSubscriberSystem)
@@ -136,6 +150,33 @@ public sealed class SubscriberIntegrityRepairService : ISubscriberIntegrityRepai
             }
         }
 
+        return issues;
+    }
+
+    private async Task<IReadOnlyList<EnterpriseIntegrityIssue>> ScanCompaniesWithIncompleteOnboardingAsync(CancellationToken ct)
+    {
+        // A company is considered already bootstrapped (= should be marked as onboarded)
+        // when it has at least one branch — branch creation is the first step of BootstrapCompanyAsync.
+        // Companies created after the onboarding gate should go through the wizard normally.
+        var companies = await _db.Companies.AsNoTracking()
+            .Where(c => !c.OnboardingCompleted && !c.IsProvisionalTaxId)
+            .Select(c => new { c.Id, c.SubscriberId, c.LegalName })
+            .ToListAsync(ct);
+
+        var issues = new List<EnterpriseIntegrityIssue>();
+        foreach (var company in companies)
+        {
+            var hasBranch = await _db.Set<ERP.Domain.Branches.Entities.Branch>()
+                .AnyAsync(b => b.CompanyId == company.Id, ct);
+            if (hasBranch)
+            {
+                issues.Add(new EnterpriseIntegrityIssue(
+                    "company.onboarding_incomplete",
+                    $"Company '{company.LegalName}' tiene Branch pero onboarding_completed=false (pre-gate).",
+                    SubscriberId: company.SubscriberId,
+                    CompanyId: company.Id));
+            }
+        }
         return issues;
     }
 

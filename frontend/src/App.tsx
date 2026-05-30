@@ -1,4 +1,5 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, useNavigate } from 'react-router-dom';
+import { useEffect } from 'react';
 import './styles/shared/legacy-pages.css';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { HomeRedirect } from './components/HomeRedirect';
@@ -14,12 +15,23 @@ import {
 } from './routes';
 import { platformShellRoutes } from './routes/platformRoutes';
 import { SessionBootstrap } from './components/SessionBootstrap';
+import { registerGlobalNavigator } from './lib/navigation/globalNavigator';
+
+/** Registers the React Router navigate function so axios interceptors can do SPA navigation. */
+function GlobalNavigatorRegistrar() {
+  const navigate = useNavigate();
+  useEffect(() => {
+    registerGlobalNavigator((path) => navigate(path));
+  }, [navigate]);
+  return null;
+}
 
 function AppRoutes() {
   const { platformPanelEnabled } = useDeployment();
 
   return (
     <BrowserRouter>
+      <GlobalNavigatorRegistrar />
       <Routes>
         {publicRoutes}
 
