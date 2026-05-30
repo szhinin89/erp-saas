@@ -1,36 +1,36 @@
 <#
 .SYNOPSIS
-    First-Run Platform Provisioning Script — ERP SaaS.
+    First-Run Platform Provisioning Script -- ERP SaaS.
 
 .DESCRIPTION
-    Aprovisiona la plataforma SaaS desde cero en un único flujo:
+    Aprovisiona la plataforma SaaS desde cero en un unico flujo:
 
-      ETAPA 1  Conexión y estado del sistema
+      ETAPA 1  Conexion y estado del sistema
       ETAPA 2  Token first-run
       ETAPA 3  Propietario de plataforma (Subscriber + Company interna)
       ETAPA 4  Platform Operator User
-      ETAPA 5  Verificación de login y JWT
+      ETAPA 5  Verificacion de login y JWT
       ETAPA 6  Resumen final
 
     IDEMPOTENCIA:
-      Si la plataforma ya está provisionada, el script informa y sale de forma segura.
-      Si solo falta el Platform Operator, continúa desde la etapa 4.
+      Si la plataforma ya esta provisionada, el script informa y sale de forma segura.
+      Si solo falta el Platform Operator, continua desde la etapa 4.
 
     MODO NO INTERACTIVO (CI/CD):
       Establece ERP_SETUP_NON_INTERACTIVE=true y todas las variables obligatorias.
-      El script fallará inmediatamente si falta alguna variable requerida.
-      No habrá prompts de confirmación ni Read-Host.
+      El script fallara inmediatamente si falta alguna variable requerida.
+      No habra prompts de confirmacion ni Read-Host.
 
     VARIABLES DE ENTORNO:
       ERP_API_URL                URL base de la API (ej. http://localhost:5003)
-      ERP_PLATFORM_SETUP_TOKEN   Token efímero de first-run (consola del API)
+      ERP_PLATFORM_SETUP_TOKEN   Token efimero de first-run (consola del API)
       ERP_PLATFORM_EMAIL         Email del operador platform
-      ERP_PLATFORM_PASSWORD      Contraseña del operador platform
+      ERP_PLATFORM_PASSWORD      Contrasena del operador platform
       ERP_OWNER_PLATFORM_NAME    Nombre de la plataforma (ej. "Acme SaaS")
       ERP_OWNER_TAXID            RUC / TaxId de la empresa operadora
-      ERP_OWNER_LEGAL_NAME       Razón social
+      ERP_OWNER_LEGAL_NAME       Razon social
       ERP_OWNER_TRADE_NAME       Nombre comercial (opcional)
-      ERP_OWNER_ADDRESS          Dirección principal
+      ERP_OWNER_ADDRESS          Direccion principal
       ERP_OWNER_EMAIL            Email de billing/contacto
       ERP_OWNER_TIMEZONE         Zona horaria (default: America/Guayaquil)
       ERP_OPERATOR_FIRSTNAME     Nombre del operador platform
@@ -67,24 +67,13 @@ $script:SetupToken     = $null
 $script:StageNum       = 0
 $NonInteractive        = ($env:ERP_SETUP_NON_INTERACTIVE -eq "true")
 
-# ─── UTF-8 ────────────────────────────────────────────────────────────────────
-try {
-    if ($PSVersionTable.PSVersion.Major -ge 6) {
-        [Console]::OutputEncoding = [System.Text.UTF8Encoding]::new($false)
-        $OutputEncoding = [Console]::OutputEncoding
-    } else {
-        chcp 65001 | Out-Null
-        [Console]::OutputEncoding = [System.Text.UTF8Encoding]::new($false)
-    }
-} catch { }
-
-# ─── Helpers consola ─────────────────────────────────────────────────────────
+# ---- Helpers consola ---------------------------------------------------------
 function Write-Stage($title) {
     $script:StageNum++
-    $line = "─" * 68
+    $line = "=" * 68
     Write-Host ""
     Write-Host $line                                   -ForegroundColor DarkGray
-    Write-Host "  ETAPA $($script:StageNum) · $title" -ForegroundColor White
+    Write-Host "  ETAPA $($script:StageNum) - $title" -ForegroundColor White
     Write-Host $line                                   -ForegroundColor DarkGray
 }
 function Write-Info($m)   { Write-Host "  i  $m" -ForegroundColor Cyan    }
@@ -125,7 +114,7 @@ function Prompt-Secret($label) {
     finally { [Runtime.InteropServices.Marshal]::ZeroFreeBSTR($ptr) | Out-Null }
 }
 
-# ─── HTTP helpers ─────────────────────────────────────────────────────────────
+# ---- HTTP helpers ------------------------------------------------------------
 function Invoke-Api($method, $path, $body = $null) {
     $uri     = "$($script:ApiBase.TrimEnd('/'))$path"
     $headers = @{ "Content-Type" = "application/json; charset=utf-8" }
@@ -169,24 +158,24 @@ function getToken($r) {
     $t=$obj.token; if([string]::IsNullOrWhiteSpace($t)){$t=$obj.Token}; return $t
 }
 
-# ─────────────────────────────────────────────────────────────────────────────
+# -----------------------------------------------------------------------------
 # BANNER
-# ─────────────────────────────────────────────────────────────────────────────
+# -----------------------------------------------------------------------------
 Write-Host ""
-Write-Host "╔══════════════════════════════════════════════════════════════════╗" -ForegroundColor DarkCyan
-Write-Host "║    FIRST-RUN PLATFORM PROVISIONING SCRIPT — ERP SaaS           ║" -ForegroundColor DarkCyan
-Write-Host "║    Aprovisiona la plataforma SaaS desde cero en un solo flujo   ║" -ForegroundColor DarkCyan
+Write-Host "+==================================================================+" -ForegroundColor DarkCyan
+Write-Host "|    FIRST-RUN PLATFORM PROVISIONING SCRIPT -- ERP SaaS          |" -ForegroundColor DarkCyan
+Write-Host "|    Aprovisiona la plataforma SaaS desde cero en un solo flujo   |" -ForegroundColor DarkCyan
 if ($NonInteractive) {
-Write-Host "║    Modo: NO INTERACTIVO (CI/CD)                                 ║" -ForegroundColor Yellow
+    Write-Host "|    Modo: NO INTERACTIVO (CI/CD)                                 |" -ForegroundColor Yellow
 } else {
-Write-Host "║    Modo: INTERACTIVO (Development)                              ║" -ForegroundColor Green
+    Write-Host "|    Modo: INTERACTIVO (Development)                              |" -ForegroundColor Green
 }
-Write-Host "╚══════════════════════════════════════════════════════════════════╝" -ForegroundColor DarkCyan
+Write-Host "+==================================================================+" -ForegroundColor DarkCyan
 
-# ═════════════════════════════════════════════════════════════════════════════
-# ETAPA 1 · CONEXIÓN Y ESTADO
-# ═════════════════════════════════════════════════════════════════════════════
-Write-Stage "Conexión y estado de la plataforma"
+# =============================================================================
+# ETAPA 1 - CONEXION Y ESTADO
+# =============================================================================
+Write-Stage "Conexion y estado de la plataforma"
 
 $defaultUrl = if ($env:ERP_API_URL) { $env:ERP_API_URL } else { "http://localhost:5003" }
 
@@ -194,12 +183,12 @@ if ($NonInteractive) {
     $script:ApiBase = $defaultUrl.TrimEnd('/')
     Write-Info "URL API (ERP_API_URL): $($script:ApiBase)"
 } else {
-    Write-Info "URL de la API (vacío = $defaultUrl):"
+    Write-Info "URL de la API (vacio = $defaultUrl):"
     $inputUrl       = Read-Host "  -> URL"
     $script:ApiBase = if ([string]::IsNullOrWhiteSpace($inputUrl)) { $defaultUrl } else { $inputUrl.TrimEnd('/') }
 }
 
-Write-Info "Probando conexión a $($script:ApiBase) ..."
+Write-Info "Probando conexion a $($script:ApiBase) ..."
 $reachable = $false
 foreach ($path in @("/health/live", "/swagger/index.html")) {
     try {
@@ -209,7 +198,7 @@ foreach ($path in @("/health/live", "/swagger/index.html")) {
 }
 if (-not $reachable) {
     Write-Err "No se pudo conectar a $($script:ApiBase)"
-    Write-Warn "¿Está corriendo el API? -> dotnet run --project backend/src/ERP.API"
+    Write-Warn "Esta corriendo el API? -> dotnet run --project backend/src/ERP.API"
     exit 1
 }
 Write-Ok "API accesible en $($script:ApiBase)"
@@ -227,27 +216,29 @@ Write-Detail "  Propietario de plataforma : $(if ($st.hasInternalPlatformOwner){
 Write-Detail "  Operador platform         : $(if ($st.hasPlatformOperator){'+ Creado'}else{'X Pendiente'})"
 Write-Detail "  Estado general            : $(if ($st.isFullyProvisioned){'+ Completamente provisionado'}else{'! First-run pendiente'})"
 
-# Show provisioning lock state (informational)
+# Mostrar estado del lock de provisioning (informativo)
 $lockRes = Invoke-Api "GET" "/api/setup/platform/provisioning-status"
 $lockObj = if (isOk $lockRes) { getObj $lockRes } else { $null }
 if ($lockObj -and $lockObj.lock -and $lockObj.lock.isLocked) {
-    Write-Warn "AVISO: El lock de provisioning está activo (retenido por: $($lockObj.lock.lockedByInstance), expira: $($lockObj.lock.expiresAtUtc))"
+    Write-Warn "AVISO: El lock de provisioning esta activo"
+    Write-Warn "  Retenido por : $($lockObj.lock.lockedByInstance)"
+    Write-Warn "  Expira       : $($lockObj.lock.expiresAtUtc)"
     if ($NonInteractive) {
-        Write-Err "Lock de provisioning activo en modo no-interactivo. Espere o limpie con /api/dev/reset-platform-provisioning."
+        Write-Err "Lock activo en modo no-interactivo. Espere o limpie con POST /api/dev/reset-platform-provisioning"
         exit 1
     }
 }
 
 if ($st.isFullyProvisioned) {
     Write-Host ""
-    Write-Ok "La plataforma ya está completamente provisionada. No hay nada que hacer."
+    Write-Ok "La plataforma ya esta completamente provisionada. No hay nada que hacer."
     Write-Info "Para restablecer (Development): POST $($script:ApiBase)/api/dev/reset-platform-provisioning"
     exit 0
 }
 
-# ═════════════════════════════════════════════════════════════════════════════
-# ETAPA 2 · TOKEN FIRST-RUN
-# ═════════════════════════════════════════════════════════════════════════════
+# =============================================================================
+# ETAPA 2 - TOKEN FIRST-RUN
+# =============================================================================
 Write-Stage "Token de first-run"
 
 if ($NonInteractive) {
@@ -275,11 +266,11 @@ if ([string]::IsNullOrWhiteSpace($script:SetupToken)) {
 }
 Write-Ok "Token de first-run recibido."
 
-# ═════════════════════════════════════════════════════════════════════════════
-# ETAPA 3 · PROPIETARIO DE LA PLATAFORMA
-# ═════════════════════════════════════════════════════════════════════════════
+# =============================================================================
+# ETAPA 3 - PROPIETARIO DE LA PLATAFORMA
+# =============================================================================
 if ($st.hasInternalPlatformOwner) {
-    Write-Stage "Propietario de plataforma (ya configurado — omitiendo)"
+    Write-Stage "Propietario de plataforma (ya configurado - omitiendo)"
     Write-Ok "El propietario de la plataforma ya fue configurado en un first-run anterior."
 } else {
     Write-Stage "Configurar propietario de la plataforma (Subscriber + Company interna)"
@@ -295,15 +286,15 @@ if ($st.hasInternalPlatformOwner) {
         $ownerTz    = if ($env:ERP_OWNER_TIMEZONE) { $env:ERP_OWNER_TIMEZONE } else { "America/Guayaquil" }
     } else {
         Write-Info "Estos datos identifican a TU empresa como operadora del SaaS."
-        Write-Info "Son independientes de los datos de los tenants ERP que administrarás."
+        Write-Info "Son independientes de los datos de los tenants ERP que administraras."
         Write-Host ""
 
-        $ownerName  = if ($env:ERP_OWNER_PLATFORM_NAME) { Prompt-Line "Nombre de la plataforma"     $env:ERP_OWNER_PLATFORM_NAME } else { Prompt-Line "Nombre de la plataforma (ej: Acme SaaS)" }
-        $ownerTaxId = if ($env:ERP_OWNER_TAXID)         { Prompt-Line "RUC / TaxId"                 $env:ERP_OWNER_TAXID         } else { Prompt-Line "RUC / TaxId de tu empresa (13 digitos)" }
-        $ownerLegal = if ($env:ERP_OWNER_LEGAL_NAME)     { Prompt-Line "Razon social"                $env:ERP_OWNER_LEGAL_NAME   } else { Prompt-Line "Razon social (ej: Acme S.A.S.)" }
+        $ownerName  = if ($env:ERP_OWNER_PLATFORM_NAME) { Prompt-Line "Nombre de la plataforma"   $env:ERP_OWNER_PLATFORM_NAME } else { Prompt-Line "Nombre de la plataforma (ej: Acme SaaS)" }
+        $ownerTaxId = if ($env:ERP_OWNER_TAXID)         { Prompt-Line "RUC / TaxId"               $env:ERP_OWNER_TAXID         } else { Prompt-Line "RUC/TaxId de tu empresa (13 digitos)"     }
+        $ownerLegal = if ($env:ERP_OWNER_LEGAL_NAME)     { Prompt-Line "Razon social"              $env:ERP_OWNER_LEGAL_NAME    } else { Prompt-Line "Razon social (ej: Acme S.A.S.)"            }
         $ownerTrade = Prompt-Line "Nombre comercial (ENTER para omitir)"
-        $ownerAddr  = if ($env:ERP_OWNER_ADDRESS)         { Prompt-Line "Direccion principal"         $env:ERP_OWNER_ADDRESS      } else { Prompt-Line "Direccion principal" }
-        $ownerEmail = if ($env:ERP_OWNER_EMAIL)           { Prompt-Line "Email de contacto"           $env:ERP_OWNER_EMAIL        } else { Prompt-Line "Email de contacto (ej: billing@tuempresa.com)" }
+        $ownerAddr  = if ($env:ERP_OWNER_ADDRESS)         { Prompt-Line "Direccion principal"       $env:ERP_OWNER_ADDRESS       } else { Prompt-Line "Direccion principal"                       }
+        $ownerEmail = if ($env:ERP_OWNER_EMAIL)           { Prompt-Line "Email de contacto"         $env:ERP_OWNER_EMAIL         } else { Prompt-Line "Email de contacto (ej: billing@acme.com)" }
         $ownerTz    = Prompt-Line "Zona horaria" "America/Guayaquil"
 
         Write-Host ""
@@ -353,25 +344,25 @@ if ($st.hasInternalPlatformOwner) {
     }
 }
 
-# ═════════════════════════════════════════════════════════════════════════════
-# ETAPA 4 · PLATFORM OPERATOR USER
-# ═════════════════════════════════════════════════════════════════════════════
-$opEmail     = $null
-$opPassword  = $null
-$jwtToken    = $null
+# =============================================================================
+# ETAPA 4 - PLATFORM OPERATOR USER
+# =============================================================================
+$opEmail    = $null
+$opPassword = $null
+$jwtToken   = $null
 
 if ($st.hasPlatformOperator) {
-    Write-Stage "Platform Operator User (ya creado — omitiendo)"
+    Write-Stage "Platform Operator User (ya creado - omitiendo)"
     Write-Ok "Ya existe un operador platform en el sistema."
 } else {
     Write-Stage "Crear Platform Operator User"
 
     if ($NonInteractive) {
         Write-Info "Leyendo credenciales del operador desde variables de entorno..."
-        $opEmail     = (Get-RequiredEnvVar "ERP_PLATFORM_EMAIL").ToLower()
-        $opPassword  = Get-RequiredEnvVar "ERP_PLATFORM_PASSWORD"
-        $firstName   = Get-RequiredEnvVar "ERP_OPERATOR_FIRSTNAME"
-        $lastName    = Get-RequiredEnvVar "ERP_OPERATOR_LASTNAME"
+        $opEmail    = (Get-RequiredEnvVar "ERP_PLATFORM_EMAIL").ToLower()
+        $opPassword = Get-RequiredEnvVar "ERP_PLATFORM_PASSWORD"
+        $firstName  = Get-RequiredEnvVar "ERP_OPERATOR_FIRSTNAME"
+        $lastName   = Get-RequiredEnvVar "ERP_OPERATOR_LASTNAME"
 
         if ($opPassword.Length -lt 10) {
             Write-Err "ERP_PLATFORM_PASSWORD debe tener al menos 10 caracteres."
@@ -382,7 +373,6 @@ if ($st.hasPlatformOperator) {
         Write-Info "NO es un usuario de ningun tenant ERP. Tiene contexto platform exclusivo."
         Write-Host ""
 
-        # Email
         if ($env:ERP_PLATFORM_EMAIL) {
             $opEmail = $env:ERP_PLATFORM_EMAIL.Trim().ToLower()
             Write-Info "Email: $opEmail (desde ERP_PLATFORM_EMAIL)"
@@ -393,7 +383,6 @@ if ($st.hasPlatformOperator) {
             } while ($opEmail -notmatch '^[^@]+@[^@]+\.[^@]+$')
         }
 
-        # Nombre
         $fullName  = Prompt-Line "Nombre completo (ej: Ana Garcia)"
         $parts     = $fullName.Trim() -split '\s+', 2
         $firstName = $parts[0]
@@ -403,7 +392,6 @@ if ($st.hasPlatformOperator) {
             exit 1
         }
 
-        # Contrasena
         if ($env:ERP_PLATFORM_PASSWORD) {
             $opPassword = $env:ERP_PLATFORM_PASSWORD
             Write-Info "Contrasena recibida desde ERP_PLATFORM_PASSWORD."
@@ -438,7 +426,7 @@ if ($st.hasPlatformOperator) {
         if ($opRes.RawBody) { Write-Err "Respuesta: $($opRes.RawBody)" }
         Write-Host ""
         Write-Warn "Causas comunes:"
-        Write-Warn "  1) Token expirado — obtén uno nuevo con /api/dev/reset-first-run"
+        Write-Warn "  1) Token expirado -- obten uno nuevo con POST /api/dev/reset-first-run"
         Write-Warn "  2) Ya existe un operador platform"
         Write-Warn "  3) Email ya registrado"
         exit 1
@@ -449,13 +437,13 @@ if ($st.hasPlatformOperator) {
     Write-Ok "user_type=Platform | platform_role=PlatformOperator | subscriber_id=Guid.Empty"
 }
 
-# ═════════════════════════════════════════════════════════════════════════════
-# ETAPA 5 · VERIFICACIÓN DE LOGIN
-# ═════════════════════════════════════════════════════════════════════════════
+# =============================================================================
+# ETAPA 5 - VERIFICACION DE LOGIN
+# =============================================================================
 Write-Stage "Verificacion de login platform"
 
 if (-not [string]::IsNullOrWhiteSpace($jwtToken)) {
-    Write-Ok "JWT recibido en la respuesta del setup — login verificado implicitamente."
+    Write-Ok "JWT recibido en la respuesta del setup -- login verificado implicitamente."
 } else {
     if ([string]::IsNullOrWhiteSpace($opEmail)) {
         if ($NonInteractive) { $opEmail = $env:ERP_PLATFORM_EMAIL }
@@ -487,13 +475,13 @@ if ($jwtToken) {
     Write-Detail "JWT preview: $preview..."
 }
 
-# ─── Limpiar secretos ─────────────────────────────────────────────────────────
+# ---- Limpiar secretos --------------------------------------------------------
 $script:SetupToken = $null; $opPassword = $null; $jwtToken = $null
 [System.GC]::Collect()
 
-# ═════════════════════════════════════════════════════════════════════════════
-# ETAPA 6 · RESUMEN FINAL
-# ═════════════════════════════════════════════════════════════════════════════
+# =============================================================================
+# ETAPA 6 - RESUMEN FINAL
+# =============================================================================
 Write-Stage "Resumen final del aprovisionamiento"
 
 $finalRes = Invoke-Api "GET" "/api/setup/platform/status"
@@ -528,7 +516,6 @@ if ($allOk) {
     exit 0
 } else {
     Write-Warn "El aprovisionamiento quedo incompleto. Revisa los errores anteriores."
-    Write-Info "El script es idempotente — puedes volver a ejecutarlo."
-    if ($NonInteractive) { exit 2 }
+    Write-Info "El script es idempotente -- puedes volver a ejecutarlo."
     exit 2
 }
