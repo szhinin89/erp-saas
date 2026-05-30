@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { Fragment, useState } from 'react';
 import { LoadingState, EmptyState } from '../../../components/PageShell';
 import { ZHPageNotice } from '../../../components/zh/ZHPageNotice';
 import { EstablishmentFormModal } from './EstablishmentFormModal';
@@ -55,8 +55,8 @@ export function EstablishmentsSection({ branchId }: Props) {
             </thead>
             <tbody>
               {items.map((row) => (
-                <>
-                  <tr key={row.id} className={row.isActive ? undefined : 'pg-row-inactive'}>
+                <Fragment key={row.id}>
+                  <tr className={row.isActive ? undefined : 'pg-row-inactive'}>
                     <td>
                       <button
                         type="button"
@@ -118,7 +118,7 @@ export function EstablishmentsSection({ branchId }: Props) {
                     ) : null}
                   </tr>
                   {expandedId === row.id && (
-                    <tr key={`${row.id}-emission`}>
+                    <tr>
                       <td colSpan={canUpdate || canDelete ? 6 : 5} className="pg-nested-td">
                         <EmissionPointsSection
                           establishmentId={row.id}
@@ -127,7 +127,7 @@ export function EstablishmentsSection({ branchId }: Props) {
                       </td>
                     </tr>
                   )}
-                </>
+                </Fragment>
               ))}
             </tbody>
           </table>
