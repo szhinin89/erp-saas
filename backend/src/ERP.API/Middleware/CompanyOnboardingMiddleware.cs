@@ -120,6 +120,8 @@ public sealed class CompanyOnboardingMiddleware
         "/api/setup",
         "/api/entitlements",    // entitlements needed by SaaS overview
         "/api/companies",       // needed to read company info on login
+        "/api/settings/config", // global/UI config read-only metadata — needed by ConfigProvider during onboarding
+        "/api/public",          // public endpoints (deployment flags, catalogs)
         "/billing/webhooks",
         "/health",
         "/metrics",
