@@ -31,8 +31,30 @@ export const profileService = {
     ).then((r) => r.data.responseObject),
 
   upsertPermissions: (profileId: string, items: { permissionKey: string; isAllowed: boolean }[]) =>
-    api.put<ApiResponse<object>>(`/api/admin/iam/profiles/${profileId}/permissions`, {
+    api.put<ApiResponse<PermissionUpsertResult>>(`/api/admin/iam/profiles/${profileId}/permissions`, {
       profileId,
       items,
     }).then((r) => r.data.responseObject),
+
+  getPermissionAudit: (profileId: string) =>
+    api.get<ApiResponse<ProfilePermissionAudit>>(
+      `/api/admin/iam/profiles/${profileId}/permission-audit`,
+    ).then((r) => r.data.responseObject),
+};
+
+export type PermissionUpsertResult = {
+  saved: string[];
+  rejected: { permissionKey: string; reason: string; rejectionCode: string }[];
+  allSaved: boolean;
+};
+
+export type ProfilePermissionAudit = {
+  profileId: string;
+  profileName: string;
+  permissions: {
+    permissionKey: string;
+    isAllowed: boolean;
+    auditStatus: 'Effective' | 'BlockedByPlan' | 'UnknownPrefix';
+    note: string | null;
+  }[];
 };

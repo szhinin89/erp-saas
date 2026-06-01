@@ -65,14 +65,17 @@ public sealed class AccessProfilesController : ControllerBase
     [HttpPut("profiles/{profileId:guid}/permissions")]
     [Authorize(Policy = "Session")]
     [Authorize(Policy = "perm:access.profiles.view")]
-    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
-    public async Task<IActionResult> UpsertProfilePermissions([FromRoute] Guid profileId, [FromBody] UpsertProfilePermissionsCommand command, CancellationToken ct)
+    [ProducesResponseType(typeof(ApiResponse<PermissionUpsertResultDto>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> UpsertProfilePermissions(
+        [FromRoute] Guid profileId,
+        [FromBody] UpsertProfilePermissionsCommand command,
+        CancellationToken ct)
     {
         if (profileId != command.ProfileId)
             return this.ApiBadRequest("ProfileId no coincide con la ruta.");
 
         var result = await _mediator.Send(command, ct);
-        return this.ToOkOrBadRequest(result, "OK", () => new { });
+        return this.ToOkOrBadRequest(result);
     }
 
     [HttpGet("profiles/{profileId:guid}/permissions")]
@@ -82,6 +85,22 @@ public sealed class AccessProfilesController : ControllerBase
     public async Task<IActionResult> GetProfilePermissions([FromRoute] Guid profileId, CancellationToken ct)
     {
         var result = await _mediator.Send(new GetProfilePermissionsQuery(profileId), ct);
+        return this.ToOkOrBadRequest(result);
+    }
+
+    /// <summary>
+    /// Audits profile permissions against the subscriber's commercial plan.
+    /// Returns each assigned permission classified as: Effective, BlockedByPlan, or UnknownPrefix.
+    /// Phantom permissions (BlockedByPlan) are stored in DB but never effective at runtime.
+    /// Only accessible by admins (perm:access.profiles.view required).
+    /// </summary>
+    [HttpGet("profiles/{profileId:guid}/permission-audit")]
+    [Authorize(Policy = "Session")]
+    [Authorize(Policy = "perm:access.profiles.view")]
+    [ProducesResponseType(typeof(ApiResponse<ProfilePermissionAuditDto>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetProfilePermissionAudit([FromRoute] Guid profileId, CancellationToken ct)
+    {
+        var result = await _mediator.Send(new GetProfilePermissionAuditQuery(profileId), ct);
         return this.ToOkOrBadRequest(result);
     }
 }

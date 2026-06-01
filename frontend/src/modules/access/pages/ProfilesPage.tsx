@@ -16,6 +16,8 @@ import { useAuthStore } from '../../../store/authStore';
 /* ── Permission groups mapped to CRUD columns ───────────────── */
 type PermGroup = {
   module: string;
+  /** Canonical commercial plan module key (matches enabledModules from plan). */
+  planModule: string;
   view: string[];
   create: string[];
   edit: string[];
@@ -24,56 +26,56 @@ type PermGroup = {
 
 const MODULE_PERM_GROUPS: PermGroup[] = [
   {
-    module: 'Clientes / Proveedores',
+    module: 'Clientes / Proveedores', planModule: 'sales',
     view:   ['masterdata.businesspartners.view'],
     create: ['masterdata.businesspartners.create'],
     edit:   ['masterdata.businesspartners.update'],
     delete: ['masterdata.businesspartners.disable'],
   },
   {
-    module: 'Ventas',
+    module: 'Ventas', planModule: 'sales',
     view:   ['sales.invoices.view', 'sales.quotes.view', 'sales.orders.view', 'sales.credit-notes.view'],
     create: ['sales.invoices.create', 'sales.quotes.create', 'sales.orders.create', 'sales.credit-notes.create'],
     edit:   ['sales.invoices.update', 'sales.quotes.update', 'sales.orders.update', 'sales.credit-notes.send'],
     delete: ['sales.invoices.void'],
   },
   {
-    module: 'Compras',
+    module: 'Compras', planModule: 'purchases',
     view:   ['purchases.invoices.view', 'purchases.orders.view', 'purchases.credit-notes.view', 'purchases.withholding-issued.view'],
     create: ['purchases.invoices.create', 'purchases.orders.create'],
     edit:   ['purchases.orders.approve', 'purchases.orders.cancel'],
     delete: [],
   },
   {
-    module: 'Inventario',
+    module: 'Inventario', planModule: 'inventory',
     view:   ['inventory.products.view', 'inventory.warehouses.view', 'inventory.stock.view', 'inventory.kardex.view', 'inventory.transfers.view', 'inventory.adjustments.view'],
     create: ['inventory.products.create', 'inventory.warehouses.create', 'inventory.transfers.create', 'inventory.adjustments.create'],
-    edit:   ['inventory.products.update', 'inventory.warehouses.update', 'inventory.transfers.approve', 'inventory.adjustments.approve'],
+    edit:   ['inventory.products.update', 'inventory.warehouses.update', 'inventory.transfers.confirm', 'inventory.adjustments.execute'],
     delete: ['inventory.products.delete'],
   },
   {
-    module: 'Gastos',
+    module: 'Gastos', planModule: 'expenses',
     view:   ['expenses.invoices.view'],
     create: ['expenses.invoices.create'],
-    edit:   [],
+    edit:   ['expenses.invoices.validate', 'expenses.invoices.approve'],
     delete: [],
   },
   {
-    module: 'Contabilidad',
+    module: 'Contabilidad', planModule: 'accounting',
     view:   ['finance.accounts.view', 'finance.journal.view', 'finance.config.view'],
-    create: ['finance.accounts.create'],
-    edit:   ['finance.accounts.edit', 'finance.config.edit'],
+    create: ['finance.accounts.create', 'finance.journal.create'],
+    edit:   ['finance.accounts.edit', 'finance.journal.edit', 'finance.config.edit'],
     delete: [],
   },
   {
-    module: 'Configuración',
+    module: 'Configuración', planModule: 'access',
     view:   ['settings.branches.view', 'settings.company.view', 'settings.sri.view', 'settings.ride.view', 'settings.geography.view'],
     create: ['settings.branches.create'],
     edit:   ['settings.branches.update'],
     delete: ['settings.branches.delete'],
   },
   {
-    module: 'Administración',
+    module: 'Administración', planModule: 'access',
     view:   ['admin.roles.view', 'admin.users.view', 'admin.activity.view'],
     create: [],
     edit:   [],
@@ -130,6 +132,11 @@ export function ProfilesPage() {
   const { canShow, isSubscriberAdmin } = usePermissionsUi();
   const canManage = canShow('admin.roles.view');
 
+  /** Modules enabled by the subscriber's commercial plan. */
+  const enabledModules: string[] = user?.enabledModules ?? [];
+  const isModuleInPlan = (planModule: string) =>
+    enabledModules.length === 0 || enabledModules.includes(planModule);
+
   /* list state */
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [listLoading, setListLoading] = useState(false);
@@ -141,6 +148,7 @@ export function ProfilesPage() {
   const [editTarget, setEditTarget] = useState<Profile | null>(null);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState('');
+  const [rejectedPerms, setRejectedPerms] = useState<{ permissionKey: string; reason: string }[]>([]);
 
   /* permission state inside modal */
   const [permState, setPermState] = useState<Record<string, boolean>>(buildEmptyPermState);
@@ -209,6 +217,7 @@ export function ProfilesPage() {
     setModalOpen(false);
     setEditTarget(null);
     setSaveError('');
+    setRejectedPerms([]);
   };
 
   /* ── Save (create or update) ───────────────────────────────── */
@@ -225,9 +234,16 @@ export function ProfilesPage() {
         profileId = created!.id;
       }
       const permItems = Object.entries(permState).map(([permissionKey, isAllowed]) => ({ permissionKey, isAllowed }));
-      await profileService.upsertPermissions(profileId, permItems);
+      const upsertResult = await profileService.upsertPermissions(profileId, permItems);
+      // Show any permissions rejected because they are not in the plan
+      const planRejections = (upsertResult?.rejected ?? []).filter(
+        (r) => r.rejectionCode === 'blocked_by_plan'
+      );
+      if (planRejections.length > 0) {
+        setRejectedPerms(planRejections);
+      }
       await loadProfiles();
-      closeModal();
+      if (planRejections.length === 0) closeModal();
     } catch (err) {
       setSaveError(formatApiRequestError(err, { generic: t('profiles.error.create') }));
     } finally {
@@ -421,27 +437,42 @@ export function ProfilesPage() {
                           </tr>
                         </thead>
                         <tbody>
-                          {MODULE_PERM_GROUPS.map((group) => (
-                            <tr key={group.module}>
-                              <td><strong>{group.module}</strong></td>
-                              {(['view', 'create', 'edit', 'delete'] as const).map((col) => (
-                                <td key={col} className="prf-matrix-cell-action">
-                                  {group[col].length > 0 ? (
-                                    <input
-                                      type="checkbox"
-                                      className="zh-inline-check prf-matrix-check"
-                                      checked={allOn(group[col], permState)}
-                                      onChange={(e) =>
-                                        setPermState((s) => handleColumnToggle(group, col, e.target.checked, s))
-                                      }
-                                    />
-                                  ) : (
-                                    <span className="subtle prf-matrix-empty">—</span>
+                          {MODULE_PERM_GROUPS.map((group) => {
+                            const inPlan = isModuleInPlan(group.planModule);
+                            return (
+                              <tr key={group.module} style={inPlan ? undefined : { opacity: 0.55 }}>
+                                <td>
+                                  <strong>{group.module}</strong>
+                                  {!inPlan && (
+                                    <span
+                                      title="Módulo no incluido en el plan comercial. El permiso no tendrá efecto."
+                                      style={{ marginLeft: 6, fontSize: 13, cursor: 'help' }}
+                                    >
+                                      🔒
+                                    </span>
                                   )}
                                 </td>
-                              ))}
-                            </tr>
-                          ))}
+                                {(['view', 'create', 'edit', 'delete'] as const).map((col) => (
+                                  <td key={col} className="prf-matrix-cell-action">
+                                    {group[col].length > 0 ? (
+                                      <input
+                                        type="checkbox"
+                                        className="zh-inline-check prf-matrix-check"
+                                        checked={allOn(group[col], permState)}
+                                        disabled={!inPlan}
+                                        title={!inPlan ? 'Módulo no disponible en el plan' : undefined}
+                                        onChange={(e) =>
+                                          setPermState((s) => handleColumnToggle(group, col, e.target.checked, s))
+                                        }
+                                      />
+                                    ) : (
+                                      <span className="subtle prf-matrix-empty">—</span>
+                                    )}
+                                  </td>
+                                ))}
+                              </tr>
+                            );
+                          })}
                         </tbody>
                       </table>
                     </div>
@@ -518,6 +549,17 @@ export function ProfilesPage() {
                 </div>
               </div>
             </div>
+
+            {/* Rejected permissions notice */}
+            {rejectedPerms.length > 0 && (
+              <div className="prf-modal-error-wrap">
+                <ZHPageNotice
+                  variant="warning"
+                  message={`${rejectedPerms.length} permiso(s) no guardados — fuera del plan`}
+                  detail={rejectedPerms.map((r) => `🔒 ${r.permissionKey}: ${r.reason}`).join('\n')}
+                />
+              </div>
+            )}
 
             {/* Save error */}
             {saveError && (

@@ -1,5 +1,6 @@
 using System.Data;
 using System.Diagnostics;
+using ERP.Application.Access.Caching;
 using ERP.Application.Common.Subscriptions;
 using ERP.Application.Platform.Audit;
 using ERP.Application.Subscriptions.Caching;
@@ -38,12 +39,13 @@ public sealed class SubscriptionLifecycleOrchestrator : ISubscriptionLifecycleOr
 {
     public static readonly Guid SystemActorId = new("00000000-0000-0000-0000-000000000001");
 
-    private readonly ErpDbContext                        _db;
-    private readonly IPlatformAuditLogger                _audit;
-    private readonly ISubscriberEntitlementsCacheInvalidator _entitlementsCache;
-    private readonly ISubscriptionAccessCache            _accessCache;
-    private readonly SubscriptionMetrics                 _metrics;
-    private readonly SubscriptionBillingOptions          _opts;
+    private readonly ErpDbContext                             _db;
+    private readonly IPlatformAuditLogger                     _audit;
+    private readonly ISubscriberEntitlementsCacheInvalidator  _entitlementsCache;
+    private readonly ISubscriptionAccessCache                 _accessCache;
+    private readonly IPermissionsCacheInvalidator             _permissionsCache;
+    private readonly SubscriptionMetrics                      _metrics;
+    private readonly SubscriptionBillingOptions               _opts;
     private readonly ILogger<SubscriptionLifecycleOrchestrator> _log;
 
     public SubscriptionLifecycleOrchestrator(
@@ -51,6 +53,7 @@ public sealed class SubscriptionLifecycleOrchestrator : ISubscriptionLifecycleOr
         IPlatformAuditLogger audit,
         ISubscriberEntitlementsCacheInvalidator entitlementsCache,
         ISubscriptionAccessCache accessCache,
+        IPermissionsCacheInvalidator permissionsCache,
         SubscriptionMetrics metrics,
         IOptions<SubscriptionBillingOptions> options,
         ILogger<SubscriptionLifecycleOrchestrator> log)
@@ -59,6 +62,7 @@ public sealed class SubscriptionLifecycleOrchestrator : ISubscriptionLifecycleOr
         _audit             = audit;
         _entitlementsCache = entitlementsCache;
         _accessCache       = accessCache;
+        _permissionsCache  = permissionsCache;
         _metrics           = metrics;
         _opts              = options.Value;
         _log               = log;
@@ -301,6 +305,9 @@ public sealed class SubscriptionLifecycleOrchestrator : ISubscriptionLifecycleOr
         await _db.SaveChangesAsync(ct);
         await _entitlementsCache.InvalidateAsync(subscriberId, ct);
         await _accessCache.InvalidateAsync(subscriberId, ct);
+        // Also invalidate effective-permissions cache so plan changes take effect immediately.
+        // Without this, users retain stale effective permissions until the cache TTL expires.
+        await _permissionsCache.BumpSubscriberVersionAsync(subscriberId, ct);
     }
 
     // FASE 13: Audit enrichment with Source

@@ -272,6 +272,8 @@ public static class DependencyInjection
         services.AddScoped<ISubscriberEntitlementsCacheInvalidator>(sp =>
             sp.GetRequiredService<SubscriberEntitlementsPermissionsCacheInvalidator>());
         services.AddScoped<IEntitlementsCacheService, EntitlementsCacheService>();
+        services.AddScoped<ERP.Application.Access.IPermissionEntitlementValidator,
+                           ERP.Application.Access.PermissionEntitlementValidator>();
         services.AddSingleton<IPermissionsCacheDiagnostics, PermissionsCacheDiagnostics>();
         services.Configure<SubscriberEntitlementsCacheOptions>(
             configuration.GetSection(SubscriberEntitlementsCacheOptions.SectionName));
