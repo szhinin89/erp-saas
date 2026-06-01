@@ -8,7 +8,9 @@ using Microsoft.Extensions.Logging;
 namespace ERP.Infrastructure.Seeding;
 
 /// <summary>
-/// Creates the default access profiles (Facturador, Bodeguero, Contador) for a tenant.
+/// Creates or updates the default access profiles (Facturador, Bodeguero, Contador) for a tenant.
+/// Safe to call multiple times: new profiles are created, existing profiles have missing permissions
+/// added (additive-only — never removes permissions that were customized by the admin).
 /// Uses EF Core so it participates in the same DbContext transaction as tenant creation.
 /// </summary>
 public sealed class DefaultProfileSeeder : IDefaultProfileSeeder
@@ -33,44 +35,77 @@ public sealed class DefaultProfileSeeder : IDefaultProfileSeeder
         {
             ("Facturador", "Billing operator — can create and void invoices.",   Permissions.FacilitadorProfile),
             ("Bodeguero",  "Warehouse operator — manages stock and transfers.",  Permissions.BodegueroProfile),
-            ("Contador",   "Accountant — read-only access to accounting data.", Permissions.ContadorProfile),
+            ("Contador",   "Accountant — read and write access to accounting.", Permissions.ContadorProfile),
         };
 
         foreach (var (name, description, permKeys) in bundles)
         {
-            var exists = await _platform
+            var profile = await _platform
                 .Unfiltered(_db.AccessProfiles, PlatformQueryReason.Seeding)
-                .AnyAsync(p => p.SubscriberId == subscriberId && p.Name == name, ct);
+                .FirstOrDefaultAsync(p => p.SubscriberId == subscriberId && p.Name == name, ct);
 
-            if (exists)
+            if (profile is null)
             {
-                _logger.LogDebug("Default profile '{Name}' already exists for tenant {SubscriberId}. Skipping.", name, subscriberId);
-                continue;
+                // New profile — create with all permissions
+                profile = AccessProfile.Create(
+                    subscriberId: subscriberId,
+                    name:         name,
+                    description:  description,
+                    createdBy:    actorId);
+
+                _db.AccessProfiles.Add(profile);
+                await _db.SaveChangesAsync(ct);
+
+                var newPermissions = permKeys.Select(key =>
+                    AccessProfilePermission.Create(
+                        subscriberId:  subscriberId,
+                        profileId:     profile.Id,
+                        permissionKey: key,
+                        isAllowed:     true,
+                        createdBy:     actorId));
+
+                _db.AccessProfilePermissions.AddRange(newPermissions);
+                await _db.SaveChangesAsync(ct);
+
+                _logger.LogInformation(
+                    "Default profile '{Name}' created for tenant {SubscriberId} ({Count} permissions).",
+                    name, subscriberId, permKeys.Count);
             }
+            else
+            {
+                // Existing profile — add any missing permissions (additive-only, never remove)
+                var existing = await _platform
+                    .Unfiltered(_db.AccessProfilePermissions, PlatformQueryReason.Seeding)
+                    .Where(p => p.ProfileId == profile.Id)
+                    .Select(p => p.PermissionKey)
+                    .ToListAsync(ct);
 
-            var profile = AccessProfile.Create(
-                subscriberId:    subscriberId,
-                name:        name,
-                description: description,
-                createdBy:   actorId);
+                var existingSet = new HashSet<string>(existing, StringComparer.OrdinalIgnoreCase);
+                var missing = permKeys.Where(k => !existingSet.Contains(k)).ToList();
 
-            _db.AccessProfiles.Add(profile);
-            await _db.SaveChangesAsync(ct);
+                if (missing.Count == 0)
+                {
+                    _logger.LogDebug(
+                        "Default profile '{Name}' for tenant {SubscriberId} is up to date.",
+                        name, subscriberId);
+                    continue;
+                }
 
-            var permissions = permKeys.Select(key =>
-                AccessProfilePermission.Create(
-                    subscriberId:      subscriberId,
-                    profileId:     profile.Id,
-                    permissionKey: key,
-                    isAllowed:     true,
-                    createdBy:     actorId));
+                var addedPermissions = missing.Select(key =>
+                    AccessProfilePermission.Create(
+                        subscriberId:  subscriberId,
+                        profileId:     profile.Id,
+                        permissionKey: key,
+                        isAllowed:     true,
+                        createdBy:     actorId));
 
-            _db.AccessProfilePermissions.AddRange(permissions);
-            await _db.SaveChangesAsync(ct);
+                _db.AccessProfilePermissions.AddRange(addedPermissions);
+                await _db.SaveChangesAsync(ct);
 
-            _logger.LogInformation(
-                "Default profile '{Name}' seeded for tenant {SubscriberId} ({Count} permissions).",
-                name, subscriberId, permKeys.Count);
+                _logger.LogInformation(
+                    "Default profile '{Name}' for tenant {SubscriberId} updated: {Count} permission(s) added: {Keys}",
+                    name, subscriberId, missing.Count, string.Join(", ", missing));
+            }
         }
     }
 }
