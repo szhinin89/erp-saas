@@ -14,48 +14,45 @@ interface AuthState {
   hasHydrated: boolean;
   /** Incrementa en cada switch-company / login operativo para invalidar caches UI. */
   companySessionVersion: number;
-  /**
-   * True when the backend returned company_onboarding_required (403).
-   * ProtectedRoute uses this to suppress ERP component rendering while the
-   * onboarding wizard is active, preventing background API calls that would
-   * also return 403 and pollute the console.
-   * Cleared automatically when onboarding completes (new JWT issued).
-   */
-  companyNeedsOnboarding: boolean;
   login: (response: AuthResponse) => void;
   updateTokens: (accessToken: string, refreshToken: string | null) => void;
   incrementCompanySession: () => void;
-  setCompanyNeedsOnboarding: (value: boolean) => void;
+  /**
+   * Called by CompanyOnboardingPage after a successful onboarding completion.
+   * Updates the local store so ProtectedRoute allows ERP access immediately,
+   * without requiring a full token refresh roundtrip.
+   */
+  setOnboardingCompleted: (completed: boolean) => void;
   logout: () => void;
 }
 
 /**
  * Perfil de sesión en sessionStorage (pestaña).
  * Access token en memoria; refresh vía cookie httpOnly en el backend.
+ *
+ * onboardingCompleted is stored as part of `user` (comes from AuthResponse),
+ * and is the SINGLE source of truth for the ProtectedRoute onboarding guard.
+ * The previous reactive `companyNeedsOnboarding` flag has been removed —
+ * ProtectedRoute now reads `user.onboardingCompleted` proactively at render time.
  */
 export const useAuthStore = create<AuthState>()(
   persist(
     (set, get) => ({
-      user:                   null,
-      token:                  null,
-      isAuthenticated:        false,
-      hasHydrated:            false,
-      companySessionVersion:  0,
-      // Initialized from sessionStorage so it survives hot-reload and StrictMode re-mounts.
-      companyNeedsOnboarding: sessionStorage.getItem('erp.onboarding.needed') === '1',
+      user:            null,
+      token:           null,
+      isAuthenticated: false,
+      hasHydrated:     false,
+      companySessionVersion: 0,
 
       login: (response: AuthResponse) => {
         const { token, ...user } = response;
         const prevCompany = get().user?.companyId ?? null;
         const nextCompany = user.companyId ?? null;
         setAccessToken(token);
-        sessionStorage.removeItem('erp.onboarding.needed');
         set((state) => ({
           user,
           token,
           isAuthenticated: true,
-          // Clear onboarding flag when a new JWT with companyId is issued.
-          companyNeedsOnboarding: false,
           companySessionVersion:
             nextCompany && nextCompany !== prevCompany
               ? state.companySessionVersion + 1
@@ -73,19 +70,15 @@ export const useAuthStore = create<AuthState>()(
         set((state) => ({ companySessionVersion: state.companySessionVersion + 1 }));
       },
 
-      setCompanyNeedsOnboarding: (value: boolean) => {
-        // Also persist in sessionStorage so StrictMode re-mounts / hot-reloads pick it up.
-        if (value) {
-          sessionStorage.setItem('erp.onboarding.needed', '1');
-        } else {
-          sessionStorage.removeItem('erp.onboarding.needed');
-        }
-        set({ companyNeedsOnboarding: value });
+      setOnboardingCompleted: (completed: boolean) => {
+        set((state) => ({
+          user: state.user ? { ...state.user, onboardingCompleted: completed } : null,
+        }));
       },
 
       logout: () => {
         clearAccessToken();
-        set({ user: null, token: null, isAuthenticated: false, companySessionVersion: 0, companyNeedsOnboarding: false });
+        set({ user: null, token: null, isAuthenticated: false, companySessionVersion: 0 });
       },
     }),
     {

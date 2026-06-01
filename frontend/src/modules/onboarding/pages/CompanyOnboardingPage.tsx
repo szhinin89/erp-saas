@@ -10,7 +10,6 @@ import { LoadingState } from '../../../components/PageShell';
 import { onboardingService, type OnboardingContextDto } from '../api/onboardingService';
 import { formatApiRequestError } from '../../lib/apiError';
 import { useAuthStore } from '../../../store/authStore';
-import { resetOnboardingNavigationThrottle } from '../../lib/api';
 
 // ── Schema ────────────────────────────────────────────────────────────────────
 
@@ -34,7 +33,7 @@ type Step = 1 | 2 | 3;
 
 export function CompanyOnboardingPage() {
   const navigate = useNavigate();
-  const setCompanyNeedsOnboarding = useAuthStore((s) => s.setCompanyNeedsOnboarding);
+  const setOnboardingCompleted = useAuthStore((s) => s.setOnboardingCompleted);
   const [step, setStep]       = useState<Step>(1);
   const [ctx, setCtx]         = useState<OnboardingContextDto | null>(null);
   const [loading, setLoading] = useState(true);
@@ -88,9 +87,10 @@ export function CompanyOnboardingPage() {
         email:               values.email || null,
         createDefaultBranch: true,
       });
-      // Clear onboarding flags so ERP routes can render after wizard completes.
-      setCompanyNeedsOnboarding(false);
-      resetOnboardingNavigationThrottle();
+      // Update the store so ProtectedRoute allows ERP access immediately.
+      // (Backend already set OnboardingCompleted=true; this keeps the store in sync
+      // without requiring a full token refresh roundtrip.)
+      setOnboardingCompleted(true);
       setStep(3);
     } catch (e) {
       setError(formatApiRequestError(e, { generic: 'Error al completar el onboarding. Intente nuevamente.' }));

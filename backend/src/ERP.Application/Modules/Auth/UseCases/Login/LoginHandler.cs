@@ -139,10 +139,12 @@ public class LoginHandler : IRequestHandler<LoginCommand, Result<AuthResponseDto
             subscriber.PlanCode,
             identityModules)
         {
-            CompanyId = company.Id,
+            CompanyId               = company.Id,
             RequiresCompanySelection = false,
-            RefreshToken = identityRefresh,
-            RefreshTokenExpiry = identityRefreshExpiry,
+            OnboardingCompleted     = company.OnboardingCompleted,
+            OperationalStatus       = company.OperationalStatus,
+            RefreshToken            = identityRefresh,
+            RefreshTokenExpiry      = identityRefreshExpiry,
         });
     }
 

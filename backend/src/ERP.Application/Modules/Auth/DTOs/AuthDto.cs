@@ -1,3 +1,5 @@
+using ERP.Domain.Modules.Company.Enums;
+
 namespace ERP.Application.Auth.DTOs;
 
 // ── Request DTOs (endpoints /auth/refresh y /auth/logout) ─────────────────
@@ -51,4 +53,20 @@ public record AuthResponseDto(
 
     /// <summary>Rol platform cuando <see cref="UserType"/> es Platform.</summary>
     public string? PlatformRole { get; init; }
+
+    /// <summary>
+    /// True cuando la empresa ha completado el wizard de onboarding (datos fiscales +
+    /// infraestructura ERP). False si el onboarding sigue pendiente.
+    /// Solo tiene valor cuando <see cref="CompanyId"/> no es null.
+    /// El frontend usa este campo para decidir ERP vs /onboarding/company
+    /// sin depender del 403 company_onboarding_required.
+    /// </summary>
+    public bool OnboardingCompleted { get; init; }
+
+    /// <summary>
+    /// Estado operativo de la empresa activa.
+    /// Null cuando no hay empresa seleccionada (RequiresCompanySelection=true o platform operator).
+    /// El frontend usa el enum directamente — no strings mágicos.
+    /// </summary>
+    public CompanyOperationalStatus? OperationalStatus { get; init; }
 }

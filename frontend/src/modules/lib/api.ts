@@ -8,14 +8,6 @@ import { logDevApiRequest } from '../../lib/observability/devApiLog';
 import { useAuthStore } from '../../store/authStore';
 import { spaNavigate } from '../../lib/navigation/globalNavigator';
 
-// Throttle: prevent repeated navigations to /onboarding/company within the same session.
-let _onboardingNavigationFired = false;
-
-/** Reset after successful onboarding so the gate can trigger again on next login. */
-export function resetOnboardingNavigationThrottle(): void {
-  _onboardingNavigationFired = false;
-}
-
 // Import centralized status constants — single source of truth for denial code handling
 import { BLOCKED_DENIAL_CODES, READONLY_DENIAL_CODES } from '../saas/billing/constants/subscriptionStatus';
 
@@ -96,19 +88,18 @@ api.interceptors.response.use(
     const status          = error.response?.status as number | undefined;
     const url             = (originalRequest?.url ?? '') as string;
 
-    // Handle company onboarding required (403 from CompanyOnboardingMiddleware).
-    // Sets a store flag so ProtectedRoute can suppress ERP route rendering immediately,
-    // preventing further API calls from background components (dashboard hooks, etc.).
+    // company_onboarding_required (403 from CompanyOnboardingMiddleware):
+    // ProtectedRoute is now the PRIMARY authority for onboarding routing — it redirects
+    // to /onboarding/company BEFORE any ERP component mounts, using user.onboardingCompleted
+    // from the auth store (set at login/switch-company time from the AuthResponse).
+    //
+    // This interceptor only fires if a request somehow reaches the backend despite the
+    // proactive ProtectedRoute guard (e.g., a manually typed URL, a bug, or a direct API call).
+    // In that case, we navigate defensively — but normal flows never reach this code.
     if (status === 403) {
       const code403 = (error.response?.data as Record<string, unknown>)?.code;
       if (code403 === 'company_onboarding_required') {
-        // Mark in store so ProtectedRoute stops rendering ERP children.
-        useAuthStore.getState().setCompanyNeedsOnboarding(true);
-        // Navigate only once per session to avoid infinite redirects.
-        if (!_onboardingNavigationFired) {
-          _onboardingNavigationFired = true;
-          spaNavigate('/onboarding/company');
-        }
+        spaNavigate('/onboarding/company');
         return Promise.reject(error);
       }
     }

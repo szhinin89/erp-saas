@@ -94,10 +94,12 @@ public sealed class SwitchCompanyHandler : IRequestHandler<SwitchCompanyCommand,
             tenant?.PlanCode,
             modules)
         {
-            CompanyId = company.Id,
+            CompanyId                = company.Id,
             RequiresCompanySelection = false,
-            RefreshToken = refresh,
-            RefreshTokenExpiry = refreshExpiry,
+            OnboardingCompleted      = company.OnboardingCompleted,
+            OperationalStatus        = company.OperationalStatus,
+            RefreshToken             = refresh,
+            RefreshTokenExpiry       = refreshExpiry,
         });
     }
 }

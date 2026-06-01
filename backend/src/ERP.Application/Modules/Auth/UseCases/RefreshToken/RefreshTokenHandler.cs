@@ -74,17 +74,24 @@ public sealed class RefreshTokenHandler : IRequestHandler<RefreshTokenCommand, R
                         userType: platformUser.UserType,
                         platformRole: platformUser.PlatformRole);
 
-                var impersonatedModules = await _sessionModules.GetEnabledModuleKeysAsync(v.SubscriberId, ct);
+                // Fetch company for onboarding status (platform operators can impersonate any company).
+            ERP.Domain.Modules.Company.Entities.Company? impersonatedCompany = null;
+            if (impersonatedCompanyId != Guid.Empty)
+                impersonatedCompany = await _companyRepository.GetByIdAsync(impersonatedCompanyId, ct);
+
+            var impersonatedModules = await _sessionModules.GetEnabledModuleKeysAsync(v.SubscriberId, ct);
                 return Result<AuthResponseDto>.Success(new AuthResponseDto(
                     platformUser.Id, platformUser.FullName, platformUser.Email.Value,
                     PlatformAuthConstants.JwtPlatformOperatorRole, v.SubscriberId, impersonatedAccessToken,
                     impersonatedTenant.PlanCode, impersonatedModules)
                 {
-                    CompanyId = impersonatedCompanyId != Guid.Empty ? impersonatedCompanyId : null,
-                    RefreshToken = v.NewToken,
-                    RefreshTokenExpiry = v.NewExpiry,
-                    UserType = platformUser.UserType.ToString(),
-                    PlatformRole = platformUser.PlatformRole?.ToString(),
+                    CompanyId           = impersonatedCompanyId != Guid.Empty ? impersonatedCompanyId : null,
+                    OnboardingCompleted = impersonatedCompany?.OnboardingCompleted ?? false,
+                    OperationalStatus   = impersonatedCompany?.OperationalStatus,
+                    RefreshToken        = v.NewToken,
+                    RefreshTokenExpiry  = v.NewExpiry,
+                    UserType            = platformUser.UserType.ToString(),
+                    PlatformRole        = platformUser.PlatformRole?.ToString(),
                 });
             }
 
@@ -115,14 +122,15 @@ public sealed class RefreshTokenHandler : IRequestHandler<RefreshTokenCommand, R
 
         Guid? companyId = v.CompanyId;
         CompanyUserMembership? membership = null;
+        ERP.Domain.Modules.Company.Entities.Company? resolvedCompany = null;
 
         if (companyId is Guid cid && cid != Guid.Empty)
         {
-            var company = await _companyRepository.GetByIdForSubscriberAsync(cid, v.SubscriberId, ct);
-            if (company is null)
+            resolvedCompany = await _companyRepository.GetByIdForSubscriberAsync(cid, v.SubscriberId, ct);
+            if (resolvedCompany is null)
                 return Result<AuthResponseDto>.Failure("Empresa no válida para el suscriptor.");
 
-            membership = await _accessRepository.GetCompanyUserMembershipAsync(company.Id, user.Id, ct);
+            membership = await _accessRepository.GetCompanyUserMembershipAsync(resolvedCompany.Id, user.Id, ct);
             if (membership is null || !membership.IsActive)
                 return Result<AuthResponseDto>.Failure("Membresía no activa para la empresa.");
         }
@@ -133,8 +141,9 @@ public sealed class RefreshTokenHandler : IRequestHandler<RefreshTokenCommand, R
             var inSubscriber = companies.Where(c => c.SubscriberId == v.SubscriberId).ToList();
             if (inSubscriber.Count == 1)
             {
-                companyId = inSubscriber[0].Id;
-                membership = memberships.First(m => m.CompanyId == companyId);
+                resolvedCompany = inSubscriber[0];
+                companyId       = resolvedCompany.Id;
+                membership      = memberships.First(m => m.CompanyId == companyId);
             }
             else if (inSubscriber.Count == 0)
             {
@@ -153,9 +162,10 @@ public sealed class RefreshTokenHandler : IRequestHandler<RefreshTokenCommand, R
                     pendingCompanyRole, v.SubscriberId, accessTokenPartial,
                     tenant.PlanCode, modulesPartial)
                 {
-                    CompanyId = null,
-                    RefreshToken = v.NewToken,
-                    RefreshTokenExpiry = v.NewExpiry,
+                    CompanyId                = null,
+                    RequiresCompanySelection = true,
+                    RefreshToken             = v.NewToken,
+                    RefreshTokenExpiry       = v.NewExpiry,
                 });
             }
         }
@@ -174,9 +184,11 @@ public sealed class RefreshTokenHandler : IRequestHandler<RefreshTokenCommand, R
             tenant.PlanCode,
             modules)
         {
-            CompanyId = companyId,
-            RefreshToken = v.NewToken,
-            RefreshTokenExpiry = v.NewExpiry,
+            CompanyId           = companyId,
+            OnboardingCompleted = resolvedCompany?.OnboardingCompleted ?? false,
+            OperationalStatus   = resolvedCompany?.OperationalStatus,
+            RefreshToken        = v.NewToken,
+            RefreshTokenExpiry  = v.NewExpiry,
         });
     }
 }

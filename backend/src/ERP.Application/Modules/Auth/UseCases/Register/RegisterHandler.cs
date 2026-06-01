@@ -85,7 +85,9 @@ public class RegisterHandler : IRequestHandler<RegisterCommand, Result<AuthRespo
             tenant.PlanCode,
             modules)
         {
-            CompanyId = company.Id,
+            CompanyId           = company.Id,
+            OnboardingCompleted = company.OnboardingCompleted,
+            OperationalStatus   = company.OperationalStatus,
         });
     }
 }

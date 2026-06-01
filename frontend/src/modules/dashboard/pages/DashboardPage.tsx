@@ -36,7 +36,6 @@ export function DashboardPage() {
   const { t, locale } = useI18n();
   const user                   = useAuthStore((s) => s.user);
   const companySessionVersion  = useAuthStore((s) => s.companySessionVersion);
-  const companyNeedsOnboarding = useAuthStore((s) => s.companyNeedsOnboarding);
   const navigate = useNavigate();
 
   const kpis    = useDashboardKpis();
@@ -49,9 +48,8 @@ export function DashboardPage() {
     }
   }, [navigate, user?.companyId]);
 
-  // Render nothing while onboarding is pending — hooks already guard the API calls,
-  // but returning null here also avoids any visual flash.
-  if (!user?.companyId || companyNeedsOnboarding) return null;
+  // ProtectedRoute guarantees this component only mounts when onboardingCompleted=true.
+  if (!user?.companyId) return null;
 
   const today = new Date().toLocaleDateString(locale === 'en' ? 'en-US' : 'es-ES', {
     weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
