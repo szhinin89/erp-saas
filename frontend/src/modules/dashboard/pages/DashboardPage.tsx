@@ -34,11 +34,12 @@ function agingChartData(data: { totalCurrent: number; total1To30: number; total3
 
 export function DashboardPage() {
   const { t, locale } = useI18n();
-  const user = useAuthStore((s) => s.user);
-  const companySessionVersion = useAuthStore((s) => s.companySessionVersion);
+  const user                   = useAuthStore((s) => s.user);
+  const companySessionVersion  = useAuthStore((s) => s.companySessionVersion);
+  const companyNeedsOnboarding = useAuthStore((s) => s.companyNeedsOnboarding);
   const navigate = useNavigate();
 
-  const kpis   = useDashboardKpis();
+  const kpis    = useDashboardKpis();
   const arAging = useArAging();
   const apAging = useApAging();
 
@@ -48,7 +49,9 @@ export function DashboardPage() {
     }
   }, [navigate, user?.companyId]);
 
-  if (!user?.companyId) return null;
+  // Render nothing while onboarding is pending — hooks already guard the API calls,
+  // but returning null here also avoids any visual flash.
+  if (!user?.companyId || companyNeedsOnboarding) return null;
 
   const today = new Date().toLocaleDateString(locale === 'en' ? 'en-US' : 'es-ES', {
     weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',

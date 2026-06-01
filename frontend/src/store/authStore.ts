@@ -41,19 +41,20 @@ export const useAuthStore = create<AuthState>()(
       isAuthenticated:        false,
       hasHydrated:            false,
       companySessionVersion:  0,
-      companyNeedsOnboarding: false,
+      // Initialized from sessionStorage so it survives hot-reload and StrictMode re-mounts.
+      companyNeedsOnboarding: sessionStorage.getItem('erp.onboarding.needed') === '1',
 
       login: (response: AuthResponse) => {
         const { token, ...user } = response;
         const prevCompany = get().user?.companyId ?? null;
         const nextCompany = user.companyId ?? null;
         setAccessToken(token);
+        sessionStorage.removeItem('erp.onboarding.needed');
         set((state) => ({
           user,
           token,
           isAuthenticated: true,
-          // Clear onboarding flag when a new JWT with companyId is issued
-          // (i.e., after onboarding completes and a SwitchCompany / new login occurs).
+          // Clear onboarding flag when a new JWT with companyId is issued.
           companyNeedsOnboarding: false,
           companySessionVersion:
             nextCompany && nextCompany !== prevCompany
@@ -73,6 +74,12 @@ export const useAuthStore = create<AuthState>()(
       },
 
       setCompanyNeedsOnboarding: (value: boolean) => {
+        // Also persist in sessionStorage so StrictMode re-mounts / hot-reloads pick it up.
+        if (value) {
+          sessionStorage.setItem('erp.onboarding.needed', '1');
+        } else {
+          sessionStorage.removeItem('erp.onboarding.needed');
+        }
         set({ companyNeedsOnboarding: value });
       },
 
