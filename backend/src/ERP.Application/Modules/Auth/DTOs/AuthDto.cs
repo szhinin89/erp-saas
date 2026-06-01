@@ -35,6 +35,13 @@ public record AuthResponseDto(
     /// <summary>Empresa operativa (RUC) activa. Null si el token no incluye contexto company.</summary>
     public Guid? CompanyId { get; init; }
 
+    /// <summary>
+    /// True cuando el usuario tiene múltiples empresas disponibles y debe seleccionar una
+    /// antes de acceder al ERP. El frontend debe redirigir a /select-company.
+    /// False cuando ya tiene contexto de empresa (un solo empresa o después de SwitchCompany).
+    /// </summary>
+    public bool RequiresCompanySelection { get; init; }
+
     /// <summary>Token opaco para renovar el access token sin re-autenticarse.</summary>
     public string?   RefreshToken       { get; init; }
     public DateTime? RefreshTokenExpiry { get; init; }

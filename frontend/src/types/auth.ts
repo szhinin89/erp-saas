@@ -15,6 +15,11 @@ export interface AuthResponse {
   platformRole?: string | null;
   /** Empresa operativa (RUC) activa en la sesión. */
   companyId?: string | null;
+  /**
+   * True cuando el usuario tiene múltiples empresas y debe seleccionar una
+   * antes de acceder al ERP. El frontend debe redirigir a /select-company.
+   */
+  requiresCompanySelection?: boolean;
   token: string;
   /** Código comercial del plan del subscriber (p. ej. starter). */
   planCode?: string | null;

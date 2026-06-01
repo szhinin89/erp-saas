@@ -69,11 +69,25 @@ public sealed class CompanyOnboardingMiddleware
             return;
         }
 
-        // 4 — only applies when the user has a company context (ERP runtime)
+        // 4 — require company context for ERP endpoints
+        // All exempt paths were handled above, so reaching here means the request is
+        // for an ERP endpoint. Without company_id in the JWT the user must call
+        // POST /api/auth/switch-company first.
         var companyClaim = context.User.FindFirstValue("company_id");
         if (!Guid.TryParse(companyClaim, out var companyId) || companyId == Guid.Empty)
         {
-            await _next(context);
+            _logger.LogInformation(
+                "CompanyContext: BLOCKED (no company_id claim) path={Path} user={User}",
+                context.Request.Path, context.User.Identity?.Name);
+
+            context.Response.StatusCode  = StatusCodes.Status403Forbidden;
+            context.Response.ContentType = MediaTypeNames.Application.Json;
+            await context.Response.WriteAsync(JsonSerializer.Serialize(new
+            {
+                code    = "company_context_required",
+                message = "Debe seleccionar una empresa antes de acceder al ERP.",
+                redirect = "/select-company",
+            }, JsonOpts), context.RequestAborted);
             return;
         }
 

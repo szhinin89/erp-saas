@@ -75,7 +75,7 @@ export function LoginPage() {
     } catch {
       // AppLayout re-fetches entitlements if empty after redirect.
     }
-    navigate('/saas/overview', { replace: true });
+    navigate('/dashboard', { replace: true });
   };
 
   const onValid = async (form: LoginFormValues) => {
@@ -104,11 +104,11 @@ export function LoginPage() {
             return;
           }
 
-          if (!payload.companyId && !isJwtPlatformOperatorRole(payload.role)) {
+          if (payload.requiresCompanySelection && !isJwtPlatformOperatorRole(payload.role)) {
             clearBootstrap();
             clearPermissions();
             login(payload);
-            navigate('/saas/overview', { replace: true });
+            navigate('/select-company', { replace: true });
             return;
           }
 
@@ -161,11 +161,11 @@ export function LoginPage() {
           planCode:       session.planCode,
           enabledModules: session.enabledModules ?? [],
         };
-        if (!auth.companyId) {
+        if (!auth.companyId || auth.requiresCompanySelection) {
           clearBootstrap();
           clearPermissions();
           login(auth);
-          navigate('/saas/overview', { replace: true });
+          navigate('/select-company', { replace: true });
           return;
         }
         await enterSubscriberDashboard(auth);

@@ -95,16 +95,9 @@ export function ProtectedRoute() {
     !user.companyId;
 
   if (needsCompany) {
-    if (path === '/dashboard') {
-      return <Navigate to="/saas/overview" replace />;
-    }
-    if (requiresCompanyContext(path)) {
+    if (path === '/dashboard' || requiresCompanyContext(path)) {
       return <Navigate to="/select-company" replace />;
     }
-  }
-
-  if (path === '/dashboard' && isAuthenticated && user && !user.companyId) {
-    return <Navigate to="/saas/overview" replace />;
   }
 
   return isAuthenticated || token ? <Outlet /> : <Navigate to="/login" replace />;

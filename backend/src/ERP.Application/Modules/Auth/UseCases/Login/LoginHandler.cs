@@ -111,6 +111,7 @@ public class LoginHandler : IRequestHandler<LoginCommand, Result<AuthResponseDto
                 modulesMulti)
             {
                 CompanyId = null,
+                RequiresCompanySelection = true,
                 RefreshToken = refreshMulti,
                 RefreshTokenExpiry = refreshExpiryMulti,
             });
@@ -139,6 +140,7 @@ public class LoginHandler : IRequestHandler<LoginCommand, Result<AuthResponseDto
             identityModules)
         {
             CompanyId = company.Id,
+            RequiresCompanySelection = false,
             RefreshToken = identityRefresh,
             RefreshTokenExpiry = identityRefreshExpiry,
         });

@@ -95,6 +95,7 @@ public sealed class SwitchCompanyHandler : IRequestHandler<SwitchCompanyCommand,
             modules)
         {
             CompanyId = company.Id,
+            RequiresCompanySelection = false,
             RefreshToken = refresh,
             RefreshTokenExpiry = refreshExpiry,
         });
