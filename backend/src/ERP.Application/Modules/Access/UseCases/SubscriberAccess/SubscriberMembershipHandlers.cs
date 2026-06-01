@@ -4,6 +4,8 @@ using ERP.Application.Common.Interfaces;
 using MediatR;
 using ERP.Domain.Access.Entities;
 using ERP.Domain.Access.Interfaces;
+using ERP.Domain.Modules.Company.Entities;
+using ERP.Domain.Modules.Company.Interfaces;
 using ERP.Domain.Subscribers.Interfaces;
 
 namespace ERP.Application.Access.UseCases.SubscriberAccess;
@@ -59,29 +61,35 @@ public class SubscriberUpsertCompanyUserMembershipHandler : IRequestHandler<Subs
     private readonly IAccessRepository _repo;
     private readonly ICurrentSubscriber _subscriber;
     private readonly ICurrentUser _currentUser;
+    private readonly ICurrentCompany _currentCompany;
     private readonly IDeploymentFeatureFlags _deployment;
     private readonly IPasswordHasher _passwordHasher;
     private readonly ICompanyProvisioningService _companyProvisioning;
     private readonly ISubscriberRepository _subscriberRepository;
+    private readonly ICompanyRepository _companyRepository;
     private readonly IPermissionsCacheInvalidator _permissionsCache;
 
     public SubscriberUpsertCompanyUserMembershipHandler(
         IAccessRepository repo,
         ICurrentSubscriber subscriber,
         ICurrentUser currentUser,
+        ICurrentCompany currentCompany,
         IDeploymentFeatureFlags deployment,
         IPasswordHasher passwordHasher,
         ICompanyProvisioningService companyProvisioning,
         ISubscriberRepository subscriberRepository,
+        ICompanyRepository companyRepository,
         IPermissionsCacheInvalidator permissionsCache)
     {
         _repo = repo;
         _subscriber = subscriber;
         _currentUser = currentUser;
+        _currentCompany = currentCompany;
         _deployment = deployment;
         _passwordHasher = passwordHasher;
         _companyProvisioning = companyProvisioning;
         _subscriberRepository = subscriberRepository;
+        _companyRepository = companyRepository;
         _permissionsCache = permissionsCache;
     }
 
@@ -125,7 +133,20 @@ public class SubscriberUpsertCompanyUserMembershipHandler : IRequestHandler<Subs
         if (tenant is null)
             return Result<object>.Failure("Subscriber inválido.");
 
-        var company = await _companyProvisioning.EnsureDefaultCompanyAsync(tenant, ct);
+        // Prefer the company the calling admin is currently operating in (from JWT company_id claim).
+        // Falling back to EnsureDefaultCompanyAsync picks active[0] which may be a provisional company
+        // when the subscriber has multiple companies (e.g., one onboarded + several provisional stubs).
+        Company company;
+        var sessionCompanyId = _currentCompany.CompanyId;
+        if (sessionCompanyId != Guid.Empty)
+        {
+            var sessionCompany = await _companyRepository.GetByIdAsync(sessionCompanyId, ct);
+            company = sessionCompany ?? await _companyProvisioning.EnsureDefaultCompanyAsync(tenant, ct);
+        }
+        else
+        {
+            company = await _companyProvisioning.EnsureDefaultCompanyAsync(tenant, ct);
+        }
 
         var membership = await _repo.GetCompanyUserMembershipAsync(company.Id, user.Id, ct);
         if (membership is null)
@@ -160,23 +181,29 @@ public class SubscriberRevokeCompanyUserMembershipHandler : IRequestHandler<Subs
     private readonly IAccessRepository _repo;
     private readonly ICurrentSubscriber _subscriber;
     private readonly ICurrentUser _currentUser;
+    private readonly ICurrentCompany _currentCompany;
     private readonly ICompanyProvisioningService _companyProvisioning;
     private readonly ISubscriberRepository _subscriberRepository;
+    private readonly ICompanyRepository _companyRepository;
     private readonly IPermissionsCacheInvalidator _permissionsCache;
 
     public SubscriberRevokeCompanyUserMembershipHandler(
         IAccessRepository repo,
         ICurrentSubscriber subscriber,
         ICurrentUser currentUser,
+        ICurrentCompany currentCompany,
         ICompanyProvisioningService companyProvisioning,
         ISubscriberRepository subscriberRepository,
+        ICompanyRepository companyRepository,
         IPermissionsCacheInvalidator permissionsCache)
     {
         _repo = repo;
         _subscriber = subscriber;
         _currentUser = currentUser;
+        _currentCompany = currentCompany;
         _companyProvisioning = companyProvisioning;
         _subscriberRepository = subscriberRepository;
+        _companyRepository = companyRepository;
         _permissionsCache = permissionsCache;
     }
 
@@ -195,7 +222,18 @@ public class SubscriberRevokeCompanyUserMembershipHandler : IRequestHandler<Subs
         if (tenant is null)
             return Result<object>.Success(new { });
 
-        var company = await _companyProvisioning.EnsureDefaultCompanyAsync(tenant, ct);
+        Company company;
+        var sessionCompanyId = _currentCompany.CompanyId;
+        if (sessionCompanyId != Guid.Empty)
+        {
+            var sessionCompany = await _companyRepository.GetByIdAsync(sessionCompanyId, ct);
+            company = sessionCompany ?? await _companyProvisioning.EnsureDefaultCompanyAsync(tenant, ct);
+        }
+        else
+        {
+            company = await _companyProvisioning.EnsureDefaultCompanyAsync(tenant, ct);
+        }
+
         var membership = await _repo.GetCompanyUserMembershipAsync(company.Id, user.Id, ct);
         if (membership is null || !membership.IsActive)
             return Result<object>.Success(new { });
