@@ -51,9 +51,10 @@ function requiresCompanyContext(path: string): boolean {
 export function ProtectedRoute() {
   const { platformPanelEnabled } = useDeployment();
   const { isPlatformOperator } = usePlatformGate();
-  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
-  const hasHydrated = useAuthStore((s) => s.hasHydrated);
-  const user = useAuthStore((s) => s.user);
+  const isAuthenticated       = useAuthStore((s) => s.isAuthenticated);
+  const hasHydrated           = useAuthStore((s) => s.hasHydrated);
+  const user                  = useAuthStore((s) => s.user);
+  const companyNeedsOnboarding = useAuthStore((s) => s.companyNeedsOnboarding);
   const location = useLocation();
 
   if (!hasHydrated) return null;
@@ -93,6 +94,14 @@ export function ProtectedRoute() {
     user &&
     hasSubscriber &&
     !user.companyId;
+
+  // Company onboarding is pending (companyNeedsOnboarding flag set by API interceptor).
+  // Block ALL ERP routes to prevent background components from firing API calls
+  // that would return 403 and pollute the console. The interceptor already navigated
+  // to /onboarding/company — just return null here to unmount the ERP tree.
+  if (companyNeedsOnboarding && requiresCompanyContext(path)) {
+    return null;
+  }
 
   if (needsCompany) {
     if (path === '/dashboard' || requiresCompanyContext(path)) {

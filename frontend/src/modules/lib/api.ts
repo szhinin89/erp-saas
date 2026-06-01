@@ -8,6 +8,14 @@ import { logDevApiRequest } from '../../lib/observability/devApiLog';
 import { useAuthStore } from '../../store/authStore';
 import { spaNavigate } from '../../lib/navigation/globalNavigator';
 
+// Throttle: prevent repeated navigations to /onboarding/company within the same session.
+let _onboardingNavigationFired = false;
+
+/** Reset after successful onboarding so the gate can trigger again on next login. */
+export function resetOnboardingNavigationThrottle(): void {
+  _onboardingNavigationFired = false;
+}
+
 // Import centralized status constants — single source of truth for denial code handling
 import { BLOCKED_DENIAL_CODES, READONLY_DENIAL_CODES } from '../saas/billing/constants/subscriptionStatus';
 
@@ -89,12 +97,18 @@ api.interceptors.response.use(
     const url             = (originalRequest?.url ?? '') as string;
 
     // Handle company onboarding required (403 from CompanyOnboardingMiddleware).
-    // Use spaNavigate (React Router) instead of window.location.href to avoid a full
-    // page reload that clears the in-memory access token and triggers a refresh cascade.
+    // Sets a store flag so ProtectedRoute can suppress ERP route rendering immediately,
+    // preventing further API calls from background components (dashboard hooks, etc.).
     if (status === 403) {
       const code403 = (error.response?.data as Record<string, unknown>)?.code;
       if (code403 === 'company_onboarding_required') {
-        spaNavigate('/onboarding/company');
+        // Mark in store so ProtectedRoute stops rendering ERP children.
+        useAuthStore.getState().setCompanyNeedsOnboarding(true);
+        // Navigate only once per session to avoid infinite redirects.
+        if (!_onboardingNavigationFired) {
+          _onboardingNavigationFired = true;
+          spaNavigate('/onboarding/company');
+        }
         return Promise.reject(error);
       }
     }

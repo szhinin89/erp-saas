@@ -14,9 +14,18 @@ interface AuthState {
   hasHydrated: boolean;
   /** Incrementa en cada switch-company / login operativo para invalidar caches UI. */
   companySessionVersion: number;
+  /**
+   * True when the backend returned company_onboarding_required (403).
+   * ProtectedRoute uses this to suppress ERP component rendering while the
+   * onboarding wizard is active, preventing background API calls that would
+   * also return 403 and pollute the console.
+   * Cleared automatically when onboarding completes (new JWT issued).
+   */
+  companyNeedsOnboarding: boolean;
   login: (response: AuthResponse) => void;
   updateTokens: (accessToken: string, refreshToken: string | null) => void;
   incrementCompanySession: () => void;
+  setCompanyNeedsOnboarding: (value: boolean) => void;
   logout: () => void;
 }
 
@@ -27,11 +36,12 @@ interface AuthState {
 export const useAuthStore = create<AuthState>()(
   persist(
     (set, get) => ({
-      user:            null,
-      token:           null,
-      isAuthenticated: false,
-      hasHydrated:     false,
-      companySessionVersion: 0,
+      user:                   null,
+      token:                  null,
+      isAuthenticated:        false,
+      hasHydrated:            false,
+      companySessionVersion:  0,
+      companyNeedsOnboarding: false,
 
       login: (response: AuthResponse) => {
         const { token, ...user } = response;
@@ -42,6 +52,9 @@ export const useAuthStore = create<AuthState>()(
           user,
           token,
           isAuthenticated: true,
+          // Clear onboarding flag when a new JWT with companyId is issued
+          // (i.e., after onboarding completes and a SwitchCompany / new login occurs).
+          companyNeedsOnboarding: false,
           companySessionVersion:
             nextCompany && nextCompany !== prevCompany
               ? state.companySessionVersion + 1
@@ -59,9 +72,13 @@ export const useAuthStore = create<AuthState>()(
         set((state) => ({ companySessionVersion: state.companySessionVersion + 1 }));
       },
 
+      setCompanyNeedsOnboarding: (value: boolean) => {
+        set({ companyNeedsOnboarding: value });
+      },
+
       logout: () => {
         clearAccessToken();
-        set({ user: null, token: null, isAuthenticated: false, companySessionVersion: 0 });
+        set({ user: null, token: null, isAuthenticated: false, companySessionVersion: 0, companyNeedsOnboarding: false });
       },
     }),
     {

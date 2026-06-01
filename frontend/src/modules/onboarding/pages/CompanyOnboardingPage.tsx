@@ -9,6 +9,8 @@ import { ZHPageNotice } from '../../../components/zh/ZHPageNotice';
 import { LoadingState } from '../../../components/PageShell';
 import { onboardingService, type OnboardingContextDto } from '../api/onboardingService';
 import { formatApiRequestError } from '../../lib/apiError';
+import { useAuthStore } from '../../../store/authStore';
+import { resetOnboardingNavigationThrottle } from '../../lib/api';
 
 // ── Schema ────────────────────────────────────────────────────────────────────
 
@@ -32,6 +34,7 @@ type Step = 1 | 2 | 3;
 
 export function CompanyOnboardingPage() {
   const navigate = useNavigate();
+  const setCompanyNeedsOnboarding = useAuthStore((s) => s.setCompanyNeedsOnboarding);
   const [step, setStep]       = useState<Step>(1);
   const [ctx, setCtx]         = useState<OnboardingContextDto | null>(null);
   const [loading, setLoading] = useState(true);
@@ -85,6 +88,9 @@ export function CompanyOnboardingPage() {
         email:               values.email || null,
         createDefaultBranch: true,
       });
+      // Clear onboarding flags so ERP routes can render after wizard completes.
+      setCompanyNeedsOnboarding(false);
+      resetOnboardingNavigationThrottle();
       setStep(3);
     } catch (e) {
       setError(formatApiRequestError(e, { generic: 'Error al completar el onboarding. Intente nuevamente.' }));
