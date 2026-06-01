@@ -118,10 +118,12 @@ public sealed class CompanyOnboardingMiddleware
         "/api/platform",
         "/api/admin",
         "/api/setup",
-        "/api/entitlements",    // entitlements needed by SaaS overview
-        "/api/companies",       // needed to read company info on login
-        "/api/settings/config", // global/UI config read-only metadata — needed by ConfigProvider during onboarding
-        "/api/public",          // public endpoints (deployment flags, catalogs)
+        "/api/entitlements",          // entitlements (SaaS overview)
+        "/api/subscribers/entitlements", // actual runtime path: GET /api/subscribers/entitlements/me
+        "/api/me",                    // user profile, navigation menu (/api/me/menu, /api/me/profile)
+        "/api/companies",             // company info on login/select
+        "/api/settings/config",       // global UI config — needed by ConfigProvider during onboarding
+        "/api/public",                // public endpoints (deployment flags, catalogs)
         "/billing/webhooks",
         "/health",
         "/metrics",
