@@ -85,24 +85,27 @@ public static class SubscriberSubscriptionCatalog
     private static readonly IReadOnlyDictionary<string, string> PermissionPrefixToCanonicalModule =
         new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
         {
-            ["sales"] = "sales",
-            ["inventory"] = "inventory",
-            ["purchases"] = "purchases",
-            ["logistics"] = "logistics",
-            ["finance"] = "accounting",
-            ["admin"] = "access",
-            ["ventas"] = "sales",
-            ["inventario"] = "inventory",
-            ["compras"] = "purchases",
-            ["gastos"] = "expenses",
-            ["expenses"] = "expenses",
-            ["logistica"] = "logistics",
-            ["rrhh"] = "payroll",
-            ["accounting"] = "accounting",
-            ["access"] = "access",
-            ["settings"] = "access",
+            // ── English canonical prefixes ─────────────────────────────────────
+            ["sales"]      = "sales",
+            ["inventory"]  = "inventory",
+            ["purchases"]  = "purchases",
+            ["logistics"]  = "logistics",
+            ["finance"]    = "accounting",   // finance.* → accounting module
+            ["cash"]       = "accounting",   // cash.bank.* → accounting module (banks/treasury)
+            ["expenses"]   = "expenses",
+            ["admin"]      = "access",
+            ["access"]     = "access",
+            ["settings"]   = "access",
             ["masterdata"] = "sales",
-            ["saas"] = "saas",
+            ["accounting"] = "accounting",
+            ["saas"]       = "saas",
+            // ── Legacy Spanish prefixes (backward compat) ──────────────────────
+            ["ventas"]    = "sales",
+            ["inventario"]= "inventory",
+            ["compras"]   = "purchases",
+            ["gastos"]    = "expenses",
+            ["logistica"] = "logistics",
+            ["rrhh"]      = "payroll",
         };
 
     public static bool TryGetModuleKeyForPermission(string permissionKey, out string moduleKey)
