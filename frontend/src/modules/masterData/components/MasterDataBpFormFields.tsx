@@ -1,11 +1,12 @@
 import { ZHField } from '../../../components/zh/ZHForm';
+import { useSriIdTypes } from '../api/useSriIdTypes';
 
 export type BpFormFieldsState = {
   identificationType: string;
   identificationNumber: string;
   legalName: string;
   tradeName: string;
-  /** Representante legal — solo visible y editable cuando identificationType === 'RUC'. */
+  /** Representante legal — solo visible y editable cuando identificationType === '04' (RUC). */
   legalRepresentativeName: string;
   email: string;
   phone: string;
@@ -53,15 +54,16 @@ export function MasterDataBpFormFields({
   saving,
   section = 'all',
 }: Props) {
+  const { options: idTypes, loading: loadingTypes } = useSriIdTypes();
   const showIdentity = section === 'identity' || section === 'all';
-  const showContact = section === 'contact' || section === 'all';
-  const isRuc = identificationType === 'RUC';
+  const showContact  = section === 'contact'  || section === 'all';
+  const isRuc = identificationType === '04';
 
   return (
     <div className="pg-form-grid pg-form-grid--2">
       {showIdentity && (
         <>
-          <ZHField label="Tipo ID" required>
+          <ZHField label="Tipo de identificación" required>
             <select
               className="zh-input"
               value={identificationType}
@@ -69,17 +71,23 @@ export function MasterDataBpFormFields({
                 setIdentificationType(e.target.value);
                 setFieldErrors((p) => ({ ...p, identificationType: '' }));
               }}
-              disabled={saving}
+              disabled={saving || loadingTypes}
             >
-              <option value="RUC">RUC</option>
-              <option value="CI">CI</option>
-              <option value="PASSPORT">PASSPORT</option>
-              <option value="OTHER">OTHER</option>
+              {loadingTypes ? (
+                <option value="">Cargando…</option>
+              ) : (
+                idTypes.map((t) => (
+                  <option key={t.code} value={t.code}>
+                    {t.code} — {t.name}
+                  </option>
+                ))
+              )}
             </select>
             {fieldErrors.identificationType && (
               <span className="md-field-error">{fieldErrors.identificationType}</span>
             )}
           </ZHField>
+
           <ZHField label="Número" required>
             <input
               className={`zh-input mono${fieldErrors.identificationNumber ? ' zh-input--error' : ''}`}
@@ -94,6 +102,7 @@ export function MasterDataBpFormFields({
               <span className="md-field-error">{fieldErrors.identificationNumber}</span>
             )}
           </ZHField>
+
           <ZHField label="Razón social" required>
             <input
               className={`zh-input${fieldErrors.legalName ? ' zh-input--error' : ''}`}
@@ -108,6 +117,7 @@ export function MasterDataBpFormFields({
               <span className="md-field-error">{fieldErrors.legalName}</span>
             )}
           </ZHField>
+
           <ZHField label="Nombre comercial">
             <input
               className="zh-input"
@@ -116,7 +126,8 @@ export function MasterDataBpFormFields({
               disabled={saving}
             />
           </ZHField>
-          {/* Representante legal — solo visible para RUC (Persona Jurídica) */}
+
+          {/* Representante legal — solo visible para RUC (Persona Jurídica, código 04) */}
           {isRuc && (
             <ZHField label="Representante legal">
               <input
@@ -128,18 +139,20 @@ export function MasterDataBpFormFields({
               />
             </ZHField>
           )}
+
           <ZHField label="País (código ISO)">
             <input
               className="zh-input mono"
               value={countryCode}
-              onChange={(e) => setCountryCode(e.target.value.toUpperCase().slice(0, 2))}
+              onChange={(e) => setCountryCode(e.target.value.toUpperCase().slice(0, 3))}
               disabled={saving}
-              placeholder="EC"
-              maxLength={2}
+              placeholder="ECU"
+              maxLength={3}
             />
           </ZHField>
         </>
       )}
+
       {showContact && (
         <>
           <ZHField label="Email">
@@ -155,6 +168,7 @@ export function MasterDataBpFormFields({
             />
             {fieldErrors.email && <span className="md-field-error">{fieldErrors.email}</span>}
           </ZHField>
+
           <ZHField label="Teléfono">
             <input
               className={`zh-input${fieldErrors.phone ? ' zh-input--error' : ''}`}

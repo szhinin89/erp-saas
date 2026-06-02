@@ -3,28 +3,29 @@ namespace ERP.Domain.MasterData.ValueObjects;
 /// <summary>
 /// Value Object: identificación fiscal/personal unificada del BusinessPartner.
 ///
-/// Reemplaza la duplicación entre:
-///   - CustomerIdentification (ERP.Domain.Modules.Sales.ValueObjects)
-///   - Supplier.Ruc + Supplier.PersonType (ERP.Domain.Modules.Purchasing.Entities)
-///
-/// Tipos soportados (alineados con SRI Ecuador):
-///   RUC      — Registro Único de Contribuyentes (13 dígitos)
-///   CI       — Cédula de Identidad (10 dígitos)
-///   PASSPORT — Pasaporte (extranjeros)
-///   OTHER    — Otros documentos (consumidor final, etc.)
+/// Almacena directamente el código SRI de sri_id_type:
+///   04 — RUC (Registro Único de Contribuyentes, 13 dígitos)
+///   05 — Cédula de Identidad (10 dígitos)
+///   06 — Pasaporte (extranjeros)
+///   07 — Consumidor Final
+///   08 — Identificación del exterior
+///   09 — Placa
 /// </summary>
 public sealed record TaxIdentification
 {
-    public const int TypeMaxLen   = 20;
+    public const int TypeMaxLen   = 5;
     public const int NumberMaxLen = 32;
 
-    public const string TypeRuc      = "RUC";
-    public const string TypeCi       = "CI";
-    public const string TypePassport = "PASSPORT";
-    public const string TypeOther    = "OTHER";
+    // Códigos SRI de sri_id_type
+    public const string SriRuc            = "04";
+    public const string SriCi             = "05";
+    public const string SriPassport       = "06";
+    public const string SriConsumidorFinal = "07";
+    public const string SriExterior       = "08";
+    public const string SriPlaca          = "09";
 
     private static readonly HashSet<string> _validTypes =
-        [TypeRuc, TypeCi, TypePassport, TypeOther];
+        [SriRuc, SriCi, SriPassport, SriConsumidorFinal, SriExterior, SriPlaca];
 
     public string Type   { get; }
     public string Number { get; }
@@ -35,10 +36,6 @@ public sealed record TaxIdentification
         Number = number;
     }
 
-    /// <summary>
-    /// Crea una identificación validada.
-    /// Lanza <see cref="ArgumentException"/> si el tipo no es válido o el número está vacío.
-    /// </summary>
     public static TaxIdentification Create(string type, string number)
     {
         var normalizedType   = NormalizeType(type);
@@ -49,16 +46,18 @@ public sealed record TaxIdentification
     public static string NormalizeType(string type)
     {
         var t = (type ?? string.Empty).Trim().ToUpperInvariant();
-        // Aliases comunes
+        // Aliases de compatibilidad con valores legacy
         t = t switch
         {
-            "CEDULA" or "CÉDULA" or "CEDULA_IDENTIDAD" => TypeCi,
-            "PASAPORTE"                                 => TypePassport,
+            "RUC"                                       => SriRuc,
+            "CI" or "CEDULA" or "CÉDULA"               => SriCi,
+            "PASSPORT" or "PASAPORTE"                   => SriPassport,
+            "OTHER"                                     => SriConsumidorFinal,
             _                                           => t,
         };
         if (!_validTypes.Contains(t))
             throw new ArgumentException(
-                $"Tipo de identificación '{type}' no válido. Use: {string.Join(", ", _validTypes)}.",
+                $"Tipo de identificación '{type}' no válido. Códigos SRI aceptados: {string.Join(", ", _validTypes)}.",
                 nameof(type));
         return t;
     }
@@ -74,15 +73,8 @@ public sealed record TaxIdentification
         return n;
     }
 
-    /// <summary>Código SRI del tipo de documento (para XML comprobantes electrónicos).</summary>
-    public string SriCode => Type switch
-    {
-        TypeRuc      => "04",
-        TypeCi       => "05",
-        TypePassport => "06",
-        TypeOther    => "08",
-        _            => "07",
-    };
+    /// <summary>El código SRI ES el tipo — se mantiene por compatibilidad con XML de comprobantes.</summary>
+    public string SriCode => Type;
 
     public override string ToString() => $"{Type}:{Number}";
 }

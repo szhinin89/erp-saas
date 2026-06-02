@@ -4,6 +4,7 @@ import { ErpPageTemplate } from '../../../templates/ErpPageTemplate';
 import { ZHBtn } from '../../../components/zh/ZHForm';
 import { ZHPageNotice } from '../../../components/zh/ZHPageNotice';
 import { businessPartnerFacade } from '../api/businessPartnerFacade';
+import { useSriIdTypes, getSriIdTypeName } from '../api/useSriIdTypes';
 import type { BusinessPartnerDto } from '../types/businessPartner.types';
 import './masterdata-pages.css';
 
@@ -20,9 +21,10 @@ export function MasterDataBusinessPartnerDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
 
-  const [bp, setBp]       = useState<BusinessPartnerDto | null>(null);
+  const [bp, setBp]           = useState<BusinessPartnerDto | null>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError]     = useState<string | null>(null);
+  const { options: idTypes }  = useSriIdTypes();
 
   useEffect(() => {
     if (!id) return;
@@ -52,8 +54,8 @@ export function MasterDataBusinessPartnerDetailPage() {
         <>
           <section className="md-detail-section">
             <h3 className="md-detail-section-title">Identificación</h3>
-            <DetailRow label="Tipo"         value={bp.identificationType} />
-            <DetailRow label="Número"       value={bp.identificationNumber} />
+            <DetailRow label="Tipo"   value={`${bp.identificationType} — ${getSriIdTypeName(bp.identificationType, idTypes)}`} />
+            <DetailRow label="Número" value={bp.identificationNumber} />
             <DetailRow label="Razón social" value={bp.legalName} />
             <DetailRow label="Nombre comercial" value={bp.tradeName} />
             <DetailRow label="País"         value={bp.countryCode ?? 'EC'} />

@@ -3,6 +3,7 @@ import { ZHBtn, ZHField } from '../../../components/zh/ZHForm';
 import { ZHPageNotice } from '../../../components/zh/ZHPageNotice';
 import { businessPartnerSchema } from '../../../schemas/masterData/businessPartnerSchema';
 import { businessPartnerService } from '../api/businessPartnerService';
+import { useSriIdTypes } from '../api/useSriIdTypes';
 import type { BusinessPartnerDto, CreateBusinessPartnerBody, UpdateBusinessPartnerBody } from '../types/businessPartner.types';
 
 type Step = 'search' | 'results' | 'create';
@@ -58,7 +59,7 @@ export function MasterDataBpFormModal(props: Props) {
 
   // ── Form state (create + edit) ─────────────────────────────────────────────
   const [identificationType, setIdentificationType] = useState(
-    props.initialValues?.identificationType ?? 'RUC',
+    props.initialValues?.identificationType ?? '04',
   );
   const [identificationNumber, setIdentificationNumber] = useState(
     props.initialValues?.identificationNumber ?? '',
@@ -329,16 +330,22 @@ type FieldsProps = {
 function FormFields({ identificationType, setIdentificationType, identificationNumber, setIdentificationNumber,
   legalName, setLegalName, tradeName, setTradeName, email, setEmail, phone, setPhone,
   countryCode, setCountryCode, fieldErrors, setFieldErrors, saving }: FieldsProps) {
+  const { options: idTypes, loading: loadingTypes } = useSriIdTypes();
+  const isRuc = identificationType === '04';
+
   return (
     <div className="pg-form-grid pg-form-grid--2">
-      <ZHField label="Tipo ID" required>
+      <ZHField label="Tipo de identificación" required>
         <select className="zh-input" value={identificationType}
           onChange={(e) => { setIdentificationType(e.target.value); setFieldErrors((p) => ({ ...p, identificationType: '' })); }}
-          disabled={saving}>
-          <option value="RUC">RUC</option>
-          <option value="CI">CI</option>
-          <option value="PASSPORT">PASSPORT</option>
-          <option value="OTHER">OTHER</option>
+          disabled={saving || loadingTypes}>
+          {loadingTypes ? (
+            <option value="">Cargando…</option>
+          ) : (
+            idTypes.map((t) => (
+              <option key={t.code} value={t.code}>{t.code} — {t.name}</option>
+            ))
+          )}
         </select>
         {fieldErrors.identificationType && <span className="md-field-error">{fieldErrors.identificationType}</span>}
       </ZHField>
@@ -359,6 +366,12 @@ function FormFields({ identificationType, setIdentificationType, identificationN
       <ZHField label="Nombre comercial">
         <input className="zh-input" value={tradeName} onChange={(e) => setTradeName(e.target.value)} disabled={saving} />
       </ZHField>
+      {isRuc && (
+        <ZHField label="Representante legal">
+          <input className="zh-input" value="" onChange={() => {}} disabled={saving}
+            placeholder="Nombre completo del representante" />
+        </ZHField>
+      )}
       <ZHField label="Email">
         <input className={`zh-input${fieldErrors.email ? ' zh-input--error' : ''}`} type="email" value={email}
           onChange={(e) => { setEmail(e.target.value); setFieldErrors((p) => ({ ...p, email: '' })); }}
@@ -373,8 +386,8 @@ function FormFields({ identificationType, setIdentificationType, identificationN
       </ZHField>
       <ZHField label="País (código ISO)">
         <input className="zh-input mono" value={countryCode}
-          onChange={(e) => setCountryCode(e.target.value.toUpperCase().slice(0, 2))}
-          disabled={saving} placeholder="EC" maxLength={2} />
+          onChange={(e) => setCountryCode(e.target.value.toUpperCase().slice(0, 3))}
+          disabled={saving} placeholder="ECU" maxLength={3} />
       </ZHField>
     </div>
   );
