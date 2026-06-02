@@ -5,6 +5,7 @@ using ERP.Application.Common.Interfaces;
 using ERP.Domain.Configuration.Entities;
 using ERP.Domain.Modules.Company.Entities;
 using ERP.Domain.Modules.Sales.Entities;
+using ERP.Infrastructure.Persistence.Converters;
 
 namespace ERP.Infrastructure.Services;
 
@@ -112,7 +113,7 @@ public sealed class SriFacturaElectronicaSimuladoService : ISriFacturaElectronic
         SriSettings config,
         Company company)
     {
-        var esCredito = string.Equals(nota.NoteType, "CREDITO", StringComparison.OrdinalIgnoreCase);
+        var esCredito = SalesDocumentTypeConversions.IsNoteTypeCredit(nota.NoteType);
         var rootName  = esCredito ? "notaCredito" : "notaDebito";
         var infoName  = esCredito ? "infoNotaCredito" : "infoNotaDebito";
 

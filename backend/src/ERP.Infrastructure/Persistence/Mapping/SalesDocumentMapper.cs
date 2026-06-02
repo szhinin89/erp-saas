@@ -186,7 +186,7 @@ public static class SalesDocumentMapper
 
     public static SalesNote ToLegacyNote(SalesDocument doc)
     {
-        var noteType = doc.DocType == SalesDocumentType.CreditNote ? "CREDIT" : "DEBIT";
+        var noteType = SalesDocumentTypeConversions.ToNoteType(doc.DocType);
         var sriCode  = SalesDocumentTypeConversions.ToSriDocCode(doc.DocType);
 
         var note = SalesNote.Create(

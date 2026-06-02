@@ -3,12 +3,17 @@ using ERP.Domain.Modules.Sales.Enums;
 namespace ERP.Infrastructure.Persistence.Converters;
 
 /// <summary>
-/// Conversiones entre SalesDocumentType (dominio) y representaciones externas.
-/// Vive en Infrastructure — el dominio no mapea formatos externos.
+/// ÚNICA fuente de verdad para conversiones de SalesDocumentType.
+/// Cada destino tiene UN solo método:
+///   DB persistence  → ToDb / FromCode
+///   SalesNote field → ToNoteType / FromNoteType / IsNoteTypeCredit
+///   SRI XML         → ToSriDocCode
 /// </summary>
 internal static class SalesDocumentTypeConversions
 {
-    /// <summary>DB storage value. Used by EF value converter in SalesDocumentConfiguration.</summary>
+    // ── DB persistence (EF value converter) ──────────────────────────────────
+
+    /// <summary>Consumer: EF value converter en SalesDocumentConfiguration.</summary>
     internal static string ToDb(SalesDocumentType type) => type switch
     {
         SalesDocumentType.Invoice    => "INVOICE",
@@ -20,7 +25,7 @@ internal static class SalesDocumentTypeConversions
 
     /// <summary>
     /// Reads from DB value or SRI XML doc code.
-    /// Used by EF value converter in SalesDocumentConfiguration.
+    /// Consumer: EF value converter en SalesDocumentConfiguration.
     /// </summary>
     internal static SalesDocumentType FromCode(string? code) => code?.Trim() switch
     {
@@ -30,18 +35,39 @@ internal static class SalesDocumentTypeConversions
         _                                               => SalesDocumentType.Invoice
     };
 
+    // ── SalesNote.NoteType field ──────────────────────────────────────────────
+
     /// <summary>
-    /// Maps SalesNote.NoteType field ("CREDIT"/"DEBIT") to enum.
-    /// Used by SalesDocumentMapper when rehydrating notes from DB.
+    /// Canonical NoteType string written to SalesNote.NoteType.
+    /// Consumer: SalesDocumentMapper.ToLegacyNote().
+    /// </summary>
+    internal static string ToNoteType(SalesDocumentType type) =>
+        type == SalesDocumentType.CreditNote ? "CREDIT" : "DEBIT";
+
+    /// <summary>
+    /// Reconstructs enum from SalesNote.NoteType field.
+    /// Handles both legacy Spanish ("CREDITO") and canonical English ("CREDIT").
+    /// Consumer: SalesDocumentMapper.ToDocument(SalesNote).
     /// </summary>
     internal static SalesDocumentType FromNoteType(string noteType) =>
-        noteType.Trim().ToUpperInvariant() is "CREDIT" or "CREDITO"
+        IsNoteTypeCredit(noteType)
             ? SalesDocumentType.CreditNote
             : SalesDocumentType.DebitNote;
 
     /// <summary>
-    /// SRI XML doc code (codDocSustento) for electronic invoice generation.
-    /// Consumer: SriXmlFacturaBuilder, SalesDocumentMapper.
+    /// Single check for "is credit note?" from SalesNote.NoteType field.
+    /// Handles both "CREDIT" (canonical) and "CREDITO" (legacy DB values).
+    /// Consumers: SriXmlFacturaBuilder, RideGeneratorService, SriFacturaElectronicaSimuladoService.
+    /// </summary>
+    internal static bool IsNoteTypeCredit(string noteType) =>
+        noteType.Trim().Equals("CREDIT",  StringComparison.OrdinalIgnoreCase) ||
+        noteType.Trim().Equals("CREDITO", StringComparison.OrdinalIgnoreCase);
+
+    // ── SRI XML generation ────────────────────────────────────────────────────
+
+    /// <summary>
+    /// SRI XML doc code (codDocSustento) for electronic invoice XML.
+    /// Consumers: SriXmlFacturaBuilder, SalesDocumentMapper.
     /// </summary>
     internal static string ToSriDocCode(SalesDocumentType type) => type switch
     {

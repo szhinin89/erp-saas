@@ -9,6 +9,7 @@ using ERP.Domain.MasterData.Entities;
 using ERP.Domain.Modules.Fiscal.Entities;
 using ERP.Domain.Modules.Sales.Entities;
 using ERP.Infrastructure.Persistence;
+using ERP.Infrastructure.Persistence.Converters;
 
 namespace ERP.Infrastructure.Services.Sri;
 
@@ -298,7 +299,7 @@ public sealed class RideGeneratorService : IRideGeneratorService
 
     private byte[] BuildNotaPdf(SalesNote n, BusinessPartner? buyer, BillingSettings cfg, bool esPrueba)
     {
-        var esCredito = n.NoteType.Equals("CREDITO", StringComparison.OrdinalIgnoreCase);
+        var esCredito = SalesDocumentTypeConversions.IsNoteTypeCredit(n.NoteType);
         var docLabel  = esCredito ? "NOTA DE CRÉDITO" : "NOTA DE DÉBITO";
         var numDoc    = $"{n.EstabCode}-{n.EmPointCode}-{n.Sequential.PadLeft(9, '0')}";
         var origNum   = $"{n.OriginalBill.EstabCode}-{n.OriginalBill.EmPointCode}-{n.OriginalBill.Sequential.PadLeft(9, '0')}";

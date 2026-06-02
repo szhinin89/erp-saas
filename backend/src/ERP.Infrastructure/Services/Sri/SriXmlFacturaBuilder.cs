@@ -4,6 +4,7 @@ using ERP.Domain.Configuration.Entities;
 using ERP.Domain.MasterData.Entities;
 using ERP.Domain.Modules.Company.Entities;
 using ERP.Domain.Modules.Sales.Entities;
+using ERP.Infrastructure.Persistence.Converters;
 
 namespace ERP.Infrastructure.Services.Sri;
 
@@ -90,7 +91,7 @@ public static class SriXmlFacturaBuilder
         Company             company,
         BusinessPartner?    buyer = null)
     {
-        var esCredito = nota.NoteType.Equals("CREDITO", StringComparison.OrdinalIgnoreCase);
+        var esCredito = SalesDocumentTypeConversions.IsNoteTypeCredit(nota.NoteType);
         var rootName  = esCredito ? "notaCredito" : "notaDebito";
         var infoName  = esCredito ? "infoNotaCredito" : "infoNotaDebito";
         var totalDesc = 0m;

@@ -2,6 +2,7 @@
 using System.Xml.Linq;
 using ERP.Application.Common.Exceptions;
 using ERP.Application.Common.Interfaces;
+using ERP.Infrastructure.Persistence.Converters;
 
 namespace ERP.Infrastructure.Services;
 
@@ -96,14 +97,14 @@ public sealed class SriFacturaParser : IXmlFacturaParser
         var rootName = root.Name.LocalName;
         string tipoNota;
         if (string.Equals(rootName, "notaCredito", StringComparison.OrdinalIgnoreCase))
-            tipoNota = "CREDIT";
+            tipoNota = PurchaseDocumentTypeConversions.NoteTypeCredit;
         else if (string.Equals(rootName, "notaDebito", StringComparison.OrdinalIgnoreCase))
-            tipoNota = "DEBIT";
+            tipoNota = PurchaseDocumentTypeConversions.NoteTypeDebit;
         else
             throw new XmlParseException(
                 $"Se esperaba <notaCredito> o <notaDebito> como comprobante; raíz: <{rootName}>.");
 
-        var infoNotaName = tipoNota == "CREDIT" ? "infoNotaCredito" : "infoNotaDebito";
+        var infoNotaName = tipoNota == PurchaseDocumentTypeConversions.NoteTypeCredit ? "infoNotaCredito" : "infoNotaDebito";
         var infoTrib   = RequireElement(root, "infoTributaria");
         var infoNota   = RequireElement(root, infoNotaName);
         var detallesEl = RequireElement(root, "detalles");

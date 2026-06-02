@@ -148,7 +148,7 @@ public static class PurchaseDocumentMapper
             doc.BusinessPartnerId ?? Guid.Empty,
             purchBillId,
             expenseInvoiceId,
-            doc.DocType == PurchaseDocumentType.CreditNote ? "CREDIT" : "DEBIT",
+            PurchaseDocumentTypeConversions.ToNoteType(doc.DocType),
             doc.Reason ?? "",
             doc.AccessKey ?? "",
             doc.IssueDate,

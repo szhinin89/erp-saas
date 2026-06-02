@@ -1,5 +1,5 @@
 using ERP.Domain.Modules.Expenses.Entities;
-using ERP.Domain.Modules.Expenses.Enums;
+using ERP.Infrastructure.Persistence.Converters;
 
 namespace ERP.Infrastructure.Persistence.Mapping;
 
@@ -11,7 +11,7 @@ public static class ExpenseDocumentMapper
         Set(doc, nameof(ExpenseDocument.Id), invoice.Id);
         Set(doc, nameof(ExpenseDocument.SubscriberId), invoice.SubscriberId);
         Set(doc, nameof(ExpenseDocument.BusinessPartnerId), invoice.BusinessPartnerId);
-        Set(doc, nameof(ExpenseDocument.DocType), MapDocType(invoice.Category));
+        Set(doc, nameof(ExpenseDocument.DocType), ExpenseDocumentTypeConversions.FromDb(invoice.Category));
         Set(doc, nameof(ExpenseDocument.DocNumber), invoice.InvoiceNumber);
         Set(doc, nameof(ExpenseDocument.AccessKey), invoice.AccessKey);
         Set(doc, nameof(ExpenseDocument.IssueDate), invoice.IssueDate);
@@ -97,14 +97,6 @@ public static class ExpenseDocumentMapper
         Set(invoice, nameof(ExpenseInvoice.UpdatedBy), doc.UpdatedBy);
         invoice.Details = doc.Details.ToList();
         return invoice;
-    }
-
-    private static ExpenseDocumentType MapDocType(string category)
-    {
-        var c = category.Trim().ToUpperInvariant();
-        if (c is "RECEIPT" or "RECIBO") return ExpenseDocumentType.Receipt;
-        if (c is "OTHER" or "OTRO") return ExpenseDocumentType.Other;
-        return ExpenseDocumentType.Invoice;
     }
 
     private static void Set<T>(T target, string property, object? value) =>
