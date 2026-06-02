@@ -5,6 +5,8 @@ export type BpFormFieldsState = {
   identificationNumber: string;
   legalName: string;
   tradeName: string;
+  /** Representante legal — solo visible y editable cuando identificationType === 'RUC'. */
+  legalRepresentativeName: string;
   email: string;
   phone: string;
   countryCode: string;
@@ -15,6 +17,7 @@ type Setters = {
   setIdentificationNumber: (v: string) => void;
   setLegalName: (v: string) => void;
   setTradeName: (v: string) => void;
+  setLegalRepresentativeName: (v: string) => void;
   setEmail: (v: string) => void;
   setPhone: (v: string) => void;
   setCountryCode: (v: string) => void;
@@ -37,6 +40,8 @@ export function MasterDataBpFormFields({
   setLegalName,
   tradeName,
   setTradeName,
+  legalRepresentativeName,
+  setLegalRepresentativeName,
   email,
   setEmail,
   phone,
@@ -50,6 +55,7 @@ export function MasterDataBpFormFields({
 }: Props) {
   const showIdentity = section === 'identity' || section === 'all';
   const showContact = section === 'contact' || section === 'all';
+  const isRuc = identificationType === 'RUC';
 
   return (
     <div className="pg-form-grid pg-form-grid--2">
@@ -110,6 +116,18 @@ export function MasterDataBpFormFields({
               disabled={saving}
             />
           </ZHField>
+          {/* Representante legal — solo visible para RUC (Persona Jurídica) */}
+          {isRuc && (
+            <ZHField label="Representante legal">
+              <input
+                className="zh-input"
+                value={legalRepresentativeName}
+                onChange={(e) => setLegalRepresentativeName(e.target.value)}
+                disabled={saving}
+                placeholder="Nombre completo del representante"
+              />
+            </ZHField>
+          )}
           <ZHField label="País (código ISO)">
             <input
               className="zh-input mono"

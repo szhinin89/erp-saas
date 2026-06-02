@@ -96,6 +96,9 @@ export function MasterDataPartnerWizard({
   );
   const [legalName, setLegalName] = useState(editingPartner?.legalName ?? '');
   const [tradeName, setTradeName] = useState(editingPartner?.tradeName ?? '');
+  const [legalRepresentativeName, setLegalRepresentativeName] = useState(
+    editingPartner?.legalRepresentativeName ?? '',
+  );
   const [email, setEmail] = useState(editingPartner?.email ?? '');
   const [phone, setPhone] = useState(editingPartner?.phone ?? '');
   const [countryCode, setCountryCode] = useState(editingPartner?.countryCode ?? 'EC');
@@ -154,7 +157,7 @@ export function MasterDataPartnerWizard({
       setFieldErrors({});
       return true;
     },
-    [identificationType, identificationNumber, legalName, tradeName, email, phone],
+    [identificationType, identificationNumber, legalName, tradeName, legalRepresentativeName, email, phone],
   );
 
   const handleSearch = async () => {
@@ -208,6 +211,7 @@ export function MasterDataPartnerWizard({
     identificationNumber: identificationNumber.trim(),
     legalName: legalName.trim(),
     tradeName: tradeName.trim() || null,
+    legalRepresentativeName: legalRepresentativeName.trim() || null,
     email: email.trim() || null,
     phone: phone.trim() || null,
     countryCode: countryCode.trim() || null,
@@ -408,6 +412,8 @@ export function MasterDataPartnerWizard({
               setLegalName={setLegalName}
               tradeName={tradeName}
               setTradeName={setTradeName}
+              legalRepresentativeName={legalRepresentativeName}
+              setLegalRepresentativeName={setLegalRepresentativeName}
               email={email}
               setEmail={setEmail}
               phone={phone}
@@ -458,6 +464,12 @@ export function MasterDataPartnerWizard({
               <dd className="mono">{identificationType} — {identificationNumber}</dd>
               <dt>{t('masterdata.customers.col.legalName', 'Razón social')}</dt>
               <dd>{displayName}</dd>
+              {identificationType === 'RUC' && legalRepresentativeName.trim() && (
+                <>
+                  <dt>{t('masterdata.wizard.review.legalRep', 'Representante legal')}</dt>
+                  <dd>{legalRepresentativeName}</dd>
+                </>
+              )}
               {email.trim() && (
                 <>
                   <dt>Email</dt>

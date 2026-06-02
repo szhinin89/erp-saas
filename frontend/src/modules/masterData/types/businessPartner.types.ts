@@ -3,6 +3,8 @@ export type BusinessPartnerDto = {
   id: string;
   legalName: string;
   tradeName?: string | null;
+  /** Representante legal (solo Persona Jurídica / RUC). Null para CI y CONSUMER_FINAL. */
+  legalRepresentativeName?: string | null;
   identificationType: string;
   identificationNumber: string;
   email?: string | null;
@@ -38,6 +40,8 @@ export type CreateBusinessPartnerBody = {
   identificationNumber: string;
   legalName: string;
   tradeName?: string | null;
+  /** Representante legal (opcional, solo Persona Jurídica / RUC). */
+  legalRepresentativeName?: string | null;
   email?: string | null;
   phone?: string | null;
   countryCode?: string | null;
@@ -50,6 +54,8 @@ export type UpdateBusinessPartnerBody = {
   identificationNumber: string;
   legalName: string;
   tradeName?: string | null;
+  /** Representante legal (opcional, solo Persona Jurídica / RUC). */
+  legalRepresentativeName?: string | null;
   email?: string | null;
   phone?: string | null;
   countryCode?: string | null;
@@ -89,6 +95,8 @@ export type BusinessPartnerApiRow = {
   LegalName?: string;
   tradeName?: string | null;
   TradeName?: string | null;
+  legalRepresentativeName?: string | null;
+  LegalRepresentativeName?: string | null;
   email?: string | null;
   Email?: string | null;
   phone?: string | null;
