@@ -15,6 +15,7 @@ public sealed class PurchNoteConfiguration : IEntityTypeConfiguration<PurchNote>
         builder.HasKey(x => x.Id);
         builder.Property(x => x.Id).HasColumnName("id");
         builder.Property(x => x.SubscriberId).HasColumnName("subscriber_id").IsRequired();
+        builder.Property(x => x.CompanyId).HasColumnName("company_id");
         builder.Property(x => x.BusinessPartnerId).HasColumnName("business_partner_id").IsRequired();
         builder.Property(x => x.PurchBillId).HasColumnName("purch_bill_id");
         builder.Property(x => x.ExpenseInvoiceId).HasColumnName("expense_invoice_id");

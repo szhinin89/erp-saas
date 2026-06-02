@@ -4,7 +4,7 @@ using ERP.Domain.Modules.Purchasing.Events;
 
 namespace ERP.Domain.Modules.Purchasing.Entities;
 
-public sealed class PurchNote : AuditableEntity, ISubscriberScopedEntity
+public sealed class PurchNote : AuditableEntity, ICompanyOperationalEntity
 {
     public const int ReasonMaxLen       = 300;
     public const int AccessKeyMaxLen    = 49;
@@ -17,6 +17,8 @@ public sealed class PurchNote : AuditableEntity, ISubscriberScopedEntity
 
     private readonly List<PurchNoteLine> _lines = new();
 
+    /// <summary>Empresa operativa. Null = registro legacy pre-migración company-scope.</summary>
+    public Guid?     CompanyId         { get; private set; }
     public Guid      BusinessPartnerId { get; private set; }
     public Guid?     PurchBillId      { get; private set; }
     public Guid?     ExpenseInvoiceId { get; private set; }
@@ -54,7 +56,8 @@ public sealed class PurchNote : AuditableEntity, ISubscriberScopedEntity
         string   estabCode,
         string   emPointCode,
         string   sequential,
-        Guid     createdBy)
+        Guid     createdBy,
+        Guid?    companyId = null)
     {
         if (purchBillId.HasValue && expenseInvoiceId.HasValue)
             throw new ArgumentException("Note cannot be linked to both a bill and an expense.");
@@ -63,6 +66,7 @@ public sealed class PurchNote : AuditableEntity, ISubscriberScopedEntity
         {
             Id                = Guid.NewGuid(),
             SubscriberId      = subscriberId,
+            CompanyId         = companyId,
             BusinessPartnerId = businessPartnerId,
             PurchBillId      = purchBillId,
             ExpenseInvoiceId = expenseInvoiceId,

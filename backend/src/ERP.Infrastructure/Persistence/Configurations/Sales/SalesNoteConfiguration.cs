@@ -14,6 +14,7 @@ public sealed class SalesNoteConfiguration : IEntityTypeConfiguration<SalesNote>
         builder.HasKey(e => e.Id);
         builder.Property(e => e.Id).HasColumnName("id");
         builder.Property(e => e.SubscriberId).HasColumnName("subscriber_id").IsRequired();
+        builder.Property(e => e.CompanyId).HasColumnName("company_id");
         builder.Property(e => e.OriginalBillId).HasColumnName("original_bill_id").IsRequired();
         builder.Property(e => e.NoteType)
             .HasColumnName("note_type")

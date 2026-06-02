@@ -3,7 +3,7 @@ using ERP.Domain.Modules.Sales.Events;
 
 namespace ERP.Domain.Modules.Sales.Entities;
 
-public sealed class SalesNote : AuditableEntity, ISubscriberScopedEntity
+public sealed class SalesNote : AuditableEntity, ICompanyOperationalEntity
 {
     public const int ReasonMaxLen     = 300;
     public const int DocTypeMaxLen    = 10;
@@ -17,6 +17,8 @@ public sealed class SalesNote : AuditableEntity, ISubscriberScopedEntity
 
     private readonly List<SalesNoteLine> _lines = new();
 
+    /// <summary>Empresa operativa. Null = registro legacy pre-migración company-scope.</summary>
+    public Guid?     CompanyId       { get; private set; }
     public Guid      OriginalBillId  { get; private set; }
     public NoteType  NoteType        { get; private set; }
     public string    Reason          { get; private set; } = null!;
@@ -53,7 +55,8 @@ public sealed class SalesNote : AuditableEntity, ISubscriberScopedEntity
         string   sequential,
         string   accessKey,
         DateTime issueDate,
-        Guid     createdBy)
+        Guid     createdBy,
+        Guid?    companyId = null)
     {
         var dt = (docType ?? string.Empty).Trim();
         if (dt is not ("04" or "05"))
@@ -63,6 +66,7 @@ public sealed class SalesNote : AuditableEntity, ISubscriberScopedEntity
         {
             Id             = Guid.NewGuid(),
             SubscriberId   = subscriberId,
+            CompanyId      = companyId,
             OriginalBillId = originalBillId,
             NoteType       = noteType,
             Reason         = (reason ?? string.Empty).Trim(),

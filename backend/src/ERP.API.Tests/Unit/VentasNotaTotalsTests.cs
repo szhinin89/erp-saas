@@ -1,5 +1,6 @@
 using FluentAssertions;
 using ERP.API.Tests.Support;
+using ERP.Domain.Common;
 using ERP.Domain.Modules.Sales.Entities;
 
 namespace ERP.API.Tests.Unit;
@@ -18,7 +19,7 @@ public sealed class VentasNotaTotalsTests
         var nota = SalesNote.Create(
             subscriberId,
             facturaId,
-            "CREDIT",
+            NoteType.Credit,
             "DevoluciÃ³n",
             "04",
             "001",

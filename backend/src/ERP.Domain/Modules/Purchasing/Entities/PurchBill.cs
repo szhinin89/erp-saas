@@ -4,7 +4,7 @@ using ERP.Domain.Modules.Purchasing.Events;
 
 namespace ERP.Domain.Modules.Purchasing.Entities;
 
-public sealed class PurchBill : AuditableEntity, ISubscriberScopedEntity
+public sealed class PurchBill : AuditableEntity, ICompanyOperationalEntity
 {
     public const int InvoiceNumberMaxLen = 50;
     public const int AccessKeyLen        = 49;
@@ -16,6 +16,8 @@ public sealed class PurchBill : AuditableEntity, ISubscriberScopedEntity
 
     private readonly List<PurchBillLine> _lines = new();
 
+    /// <summary>Empresa operativa. Null = registro legacy pre-migración company-scope.</summary>
+    public Guid?          CompanyId         { get; private set; }
     public Guid           BusinessPartnerId { get; private set; }
     public string         InvoiceNumber     { get; private set; } = null!;
     public string?        AccessKey         { get; private set; }
@@ -52,12 +54,14 @@ public sealed class PurchBill : AuditableEntity, ISubscriberScopedEntity
         DateTime? dueDate,
         string    paymentTerms,
         string?   notes,
-        Guid      createdBy)
+        Guid      createdBy,
+        Guid?     companyId = null)
     {
         var b = new PurchBill
         {
             Id                = Guid.NewGuid(),
             SubscriberId      = subscriberId,
+            CompanyId         = companyId,
             BusinessPartnerId = businessPartnerId,
             InvoiceNumber     = invoiceNumber.Trim(),
             AccessKey     = string.IsNullOrWhiteSpace(accessKey) ? null : accessKey.Trim(),
