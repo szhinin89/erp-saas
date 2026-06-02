@@ -1,6 +1,7 @@
 using System.Reflection;
 using ERP.Domain.Modules.Purchasing.Entities;
 using ERP.Domain.Modules.Purchasing.Enums;
+using ERP.Infrastructure.Persistence.Converters;
 
 namespace ERP.Infrastructure.Persistence.Mapping;
 
@@ -114,7 +115,7 @@ public static class PurchaseDocumentMapper
         Set(doc, nameof(PurchaseDocument.Id), note.Id);
         Set(doc, nameof(PurchaseDocument.SubscriberId), note.SubscriberId);
         Set(doc, nameof(PurchaseDocument.BusinessPartnerId), note.BusinessPartnerId);
-        Set(doc, nameof(PurchaseDocument.DocType), PurchaseDocumentTypeExtensions.FromSupplierNoteType(note.NoteType));
+        Set(doc, nameof(PurchaseDocument.DocType), PurchaseDocumentTypeConversions.FromNoteType(note.NoteType));
         Set(doc, nameof(PurchaseDocument.DocNumber), $"{note.EstabCode}-{note.EmPointCode}-{note.Sequential}");
         Set(doc, nameof(PurchaseDocument.AccessKey), note.AccessKey);
         Set(doc, nameof(PurchaseDocument.IssueDate), note.IssueDate);

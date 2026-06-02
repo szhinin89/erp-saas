@@ -1,6 +1,7 @@
 using System.Reflection;
 using ERP.Domain.Modules.Sales.Entities;
 using ERP.Domain.Modules.Sales.Enums;
+using ERP.Infrastructure.Persistence.Converters;
 
 namespace ERP.Infrastructure.Persistence.Mapping;
 
@@ -84,7 +85,7 @@ public static class SalesDocumentMapper
             doc.BranchId ?? Guid.Empty,
             doc.BusinessPartnerId ?? Guid.Empty,
             doc.WarehouseId ?? Guid.Empty,
-            doc.DocType.ToSriDocCode(),
+            SalesDocumentTypeConversions.ToSriDocCode(doc.DocType),
             doc.EstabCode ?? "",
             doc.EmPointCode ?? "",
             doc.Sequential ?? "",
@@ -135,7 +136,7 @@ public static class SalesDocumentMapper
     public static SalesDocument ToDocument(SalesNote note, SalesBill? originalBill = null)
     {
         var doc = SalesDocument.Rehydrate();
-        var docType = SalesDocumentTypeExtensions.FromNoteType(note.NoteType);
+        var docType = SalesDocumentTypeConversions.FromNoteType(note.NoteType);
 
         Set(doc, nameof(SalesDocument.Id), note.Id);
         Set(doc, nameof(SalesDocument.SubscriberId), note.SubscriberId);
@@ -186,7 +187,7 @@ public static class SalesDocumentMapper
     public static SalesNote ToLegacyNote(SalesDocument doc)
     {
         var noteType = doc.DocType == SalesDocumentType.CreditNote ? "CREDIT" : "DEBIT";
-        var sriCode  = doc.DocType.ToSriDocCode();
+        var sriCode  = SalesDocumentTypeConversions.ToSriDocCode(doc.DocType);
 
         var note = SalesNote.Create(
             doc.SubscriberId,

@@ -1,5 +1,5 @@
-using ERP.Domain.Common;
 using ERP.Domain.Modules.Purchasing.Entities;
+using ERP.Infrastructure.Persistence.Converters;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -20,8 +20,8 @@ public sealed class PurchaseWithholdingConfiguration : IEntityTypeConfiguration<
             .HasColumnName("direction")
             .HasMaxLength(10)
             .HasConversion(
-                v => WithholdingDirectionExtensions.ToDbValue(v),
-                v => WithholdingDirectionExtensions.FromDbValue(v))
+                v => WithholdingDirectionConversions.ToDb(v),
+                v => WithholdingDirectionConversions.FromDb(v))
             .IsRequired();
         builder.Property(e => e.PurchaseDocumentId).HasColumnName("purchase_document_id");
         builder.Property(e => e.VoucherType).HasColumnName("voucher_type").HasMaxLength(30).IsRequired();

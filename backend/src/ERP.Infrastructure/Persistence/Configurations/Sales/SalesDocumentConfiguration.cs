@@ -1,5 +1,5 @@
 using ERP.Domain.Modules.Sales.Entities;
-using ERP.Domain.Modules.Sales.Enums;
+using ERP.Infrastructure.Persistence.Converters;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -23,8 +23,8 @@ public sealed class SalesDocumentConfiguration : IEntityTypeConfiguration<SalesD
             .HasColumnName("doc_type")
             .HasMaxLength(20)
             .HasConversion(
-                v => v.ToDbValue(),
-                v => SalesDocumentTypeExtensions.FromCode(v))
+                v => SalesDocumentTypeConversions.ToDb(v),
+                v => SalesDocumentTypeConversions.FromCode(v))
             .IsRequired();
         builder.Property(e => e.DocNumber).HasColumnName("doc_number").HasMaxLength(30);
         builder.Property(e => e.EstabCode).HasColumnName("estab_code").HasMaxLength(3);

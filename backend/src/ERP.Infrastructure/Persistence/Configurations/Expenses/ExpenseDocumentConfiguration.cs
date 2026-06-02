@@ -1,5 +1,5 @@
 using ERP.Domain.Modules.Expenses.Entities;
-using ERP.Domain.Modules.Expenses.Enums;
+using ERP.Infrastructure.Persistence.Converters;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -20,8 +20,8 @@ public sealed class ExpenseDocumentConfiguration : IEntityTypeConfiguration<Expe
             .HasColumnName("doc_type")
             .HasMaxLength(20)
             .HasConversion(
-                v => v.ToDbValue(),
-                v => ExpenseDocumentTypeExtensions.FromDbValue(v))
+                v => ExpenseDocumentTypeConversions.ToDb(v),
+                v => ExpenseDocumentTypeConversions.FromDb(v))
             .IsRequired();
         builder.Property(e => e.DocNumber).HasColumnName("doc_number").HasMaxLength(30);
         builder.Property(e => e.AccessKey).HasColumnName("access_key").HasMaxLength(49);
