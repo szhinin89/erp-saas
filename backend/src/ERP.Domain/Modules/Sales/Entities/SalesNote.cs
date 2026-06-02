@@ -5,7 +5,6 @@ namespace ERP.Domain.Modules.Sales.Entities;
 
 public sealed class SalesNote : AuditableEntity, ISubscriberScopedEntity
 {
-    public const int NoteTypeMaxLen   = 20;
     public const int ReasonMaxLen     = 300;
     public const int DocTypeMaxLen    = 10;
     public const int EstabMaxLen      = 3;
@@ -19,7 +18,7 @@ public sealed class SalesNote : AuditableEntity, ISubscriberScopedEntity
     private readonly List<SalesNoteLine> _lines = new();
 
     public Guid      OriginalBillId  { get; private set; }
-    public string    NoteType        { get; private set; } = null!;
+    public NoteType  NoteType        { get; private set; }
     public string    Reason          { get; private set; } = null!;
     public string    DocType         { get; private set; } = null!;
     public string    EstabCode       { get; private set; } = null!;
@@ -46,7 +45,7 @@ public sealed class SalesNote : AuditableEntity, ISubscriberScopedEntity
     public static SalesNote Create(
         Guid     subscriberId,
         Guid     originalBillId,
-        string   noteType,
+        NoteType noteType,
         string   reason,
         string   docType,
         string   estabCode,
@@ -56,20 +55,16 @@ public sealed class SalesNote : AuditableEntity, ISubscriberScopedEntity
         DateTime issueDate,
         Guid     createdBy)
     {
-        var nt = (noteType ?? string.Empty).Trim().ToUpperInvariant();
-        if (nt is not ("CREDIT" or "DEBIT"))
-            throw new ArgumentException("NoteType must be CREDIT or DEBIT.", nameof(noteType));
-
         var dt = (docType ?? string.Empty).Trim();
         if (dt is not ("04" or "05"))
-            throw new ArgumentException("DocType must be '04' (credit) or '05' (debit). Caller must resolve from NoteType before invoking Create.", nameof(docType));
+            throw new ArgumentException("DocType must be '04' (credit) or '05' (debit).", nameof(docType));
 
         var note = new SalesNote
         {
             Id             = Guid.NewGuid(),
-            SubscriberId       = subscriberId,
+            SubscriberId   = subscriberId,
             OriginalBillId = originalBillId,
-            NoteType       = nt,
+            NoteType       = noteType,
             Reason         = (reason ?? string.Empty).Trim(),
             DocType        = dt,
             EstabCode      = estabCode.Trim(),
@@ -118,8 +113,8 @@ public sealed class SalesNote : AuditableEntity, ISubscriberScopedEntity
     {
         if (Status != "Validated")
             throw new InvalidOperationException($"Only Validated notes can be authorized (current: {Status}).");
-        if (!string.Equals(NoteType, "CREDIT", StringComparison.OrdinalIgnoreCase))
-            throw new InvalidOperationException("AuthorizeCreditNote is only for CREDIT notes.");
+        if (NoteType != NoteType.Credit)
+            throw new InvalidOperationException("AuthorizeCreditNote is only for Credit notes.");
 
         Status         = "Authorized";
         AuthNumber     = authNumber;
@@ -147,8 +142,8 @@ public sealed class SalesNote : AuditableEntity, ISubscriberScopedEntity
     {
         if (Status != "Validated")
             throw new InvalidOperationException($"Only Validated notes can be authorized (current: {Status}).");
-        if (!string.Equals(NoteType, "DEBIT", StringComparison.OrdinalIgnoreCase))
-            throw new InvalidOperationException("AuthorizeDebitNote is only for DEBIT notes.");
+        if (NoteType != NoteType.Debit)
+            throw new InvalidOperationException("AuthorizeDebitNote is only for Debit notes.");
 
         Status         = "Authorized";
         AuthNumber     = authNumber;

@@ -1,3 +1,4 @@
+﻿using ERP.Domain.Common;
 using System.Text;
 using MediatR;
 using Microsoft.Extensions.Logging;
@@ -95,7 +96,7 @@ public sealed class EnviarSalesNotesriCommandHandler : IRequestHandler<SendSales
         {
             nota.Reject(userId, response.ErrorMessage ?? "Rechazada por el SRI.");
             await _unitOfWork.SaveChangesAsync(ct);
-            return Result<Guid>.Failure(response.ErrorMessage ?? "El SRI rechazó la nota.");
+            return Result<Guid>.Failure(response.ErrorMessage ?? "El SRI rechazÃ³ la nota.");
         }
 
         var (xmlGeneradoPath, xmlAutorizacionPath) = await SaveNoteXmlFilesAsync(
@@ -133,7 +134,7 @@ public sealed class EnviarSalesNotesriCommandHandler : IRequestHandler<SendSales
         var configSri = await _configSriRepository.GetByCompanyIdAsync(_currentCompany.CompanyId, ct);
         if (configSri is null)
             return Result<(ERP.Domain.Modules.Sales.Entities.SalesNote, ERP.Domain.Modules.Sales.Entities.SalesBill, ERP.Domain.Configuration.Entities.SriSettings, List<ERP.Domain.Modules.Sales.Entities.SalesNoteLine>)>.Failure(
-                "La configuración SRI no está configurada para esta empresa.");
+                "La configuraciÃ³n SRI no estÃ¡ configurada para esta empresa.");
 
         return Result<(ERP.Domain.Modules.Sales.Entities.SalesNote, ERP.Domain.Modules.Sales.Entities.SalesBill, ERP.Domain.Configuration.Entities.SriSettings, List<ERP.Domain.Modules.Sales.Entities.SalesNoteLine>)>.Success(
             (nota, facturaOriginal, configSri, nota.Lines.ToList()));
@@ -191,7 +192,7 @@ public sealed class EnviarSalesNotesriCommandHandler : IRequestHandler<SendSales
         {
             nota.Reject(userId, ex.Message);
             await _unitOfWork.SaveChangesAsync(ct);
-            return Result<SriAutorizacionResponse>.Failure($"Error de comunicación con SRI: {ex.Message}");
+            return Result<SriAutorizacionResponse>.Failure($"Error de comunicaciÃ³n con SRI: {ex.Message}");
         }
     }
 
@@ -234,13 +235,13 @@ public sealed class EnviarSalesNotesriCommandHandler : IRequestHandler<SendSales
         try
         {
             var numero = $"{nota.EstabCode}-{nota.EmPointCode}-{nota.Sequential}";
-            var isCredit = NoteTypeHelper.IsCredit(nota.NoteType);
+            var isCredit = nota.NoteType == NoteType.Credit;
             var asientoResult = await CreateNoteAccountingEntryAsync(nota, numero, isCredit, ct);
 
             if (!asientoResult.IsSuccess)
             {
                 await _unitOfWork.RollbackAsync(ct);
-                nota.Reject(userId, $"Autorizado por SRI pero falló el asiento: {asientoResult.Error}");
+                nota.Reject(userId, $"Autorizado por SRI pero fallÃ³ el asiento: {asientoResult.Error}");
                 await _unitOfWork.SaveChangesAsync(ct);
                 return Result<Guid>.Failure(asientoResult.Error ?? "Error contable.");
             }
@@ -274,7 +275,7 @@ public sealed class EnviarSalesNotesriCommandHandler : IRequestHandler<SendSales
                 subscriberId, userId, _currentUser.Email, _currentUser.FullName,
                 module: "ventas", action: "ventas.nota.enviar",
                 entityType: "SalesNote", entityId: nota.Id,
-                description: $"{numero} — auth {response.AuthNumber}"), ct);
+                description: $"{numero} â€” auth {response.AuthNumber}"), ct);
 
             await _unitOfWork.SaveChangesAsync(ct);
             await _unitOfWork.CommitAsync(ct);
@@ -299,11 +300,11 @@ public sealed class EnviarSalesNotesriCommandHandler : IRequestHandler<SendSales
         if (isCredit)
             return await _accounting.CrearAsientoNotaCreditoVentaAsync(
                 nota.Id, numero, nota.IssueDate, nota.Subtotal, nota.VatTotal, nota.Total,
-                $"Nota de crédito {numero}", ct);
+                $"Nota de crÃ©dito {numero}", ct);
 
         return await _accounting.CrearAsientoNotaDebitoVentaAsync(
             nota.Id, numero, nota.IssueDate, nota.Subtotal, nota.VatTotal, nota.Total,
-            $"Nota de débito {numero}", ct);
+            $"Nota de dÃ©bito {numero}", ct);
     }
 
     private async Task<List<SalesNoteStockLine>> BuildCreditNoteStockLinesAsync(
@@ -322,3 +323,4 @@ public sealed class EnviarSalesNotesriCommandHandler : IRequestHandler<SendSales
         return stockLines;
     }
 }
+

@@ -136,7 +136,7 @@ public static class SalesDocumentMapper
     public static SalesDocument ToDocument(SalesNote note, SalesBill? originalBill = null)
     {
         var doc = SalesDocument.Rehydrate();
-        var docType = SalesDocumentTypeConversions.FromNoteType(note.NoteType);
+        var docType = NoteTypeConversions.ToSalesDocumentType(note.NoteType);
 
         Set(doc, nameof(SalesDocument.Id), note.Id);
         Set(doc, nameof(SalesDocument.SubscriberId), note.SubscriberId);
@@ -186,8 +186,8 @@ public static class SalesDocumentMapper
 
     public static SalesNote ToLegacyNote(SalesDocument doc)
     {
-        var noteType = SalesDocumentTypeConversions.ToNoteType(doc.DocType);
-        var sriCode  = SalesDocumentTypeConversions.ToSriDocCode(doc.DocType);
+        var noteType = NoteTypeConversions.FromSalesDocumentType(doc.DocType);
+        var sriCode  = NoteTypeConversions.ToSriDocCode(noteType);
 
         var note = SalesNote.Create(
             doc.SubscriberId,

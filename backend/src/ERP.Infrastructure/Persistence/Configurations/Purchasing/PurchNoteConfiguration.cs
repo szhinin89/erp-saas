@@ -1,5 +1,6 @@
 using ERP.Domain.Modules.Purchasing.Entities;
 using ERP.Domain.Modules.Expenses.Entities;
+using ERP.Infrastructure.Persistence.Converters;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -17,7 +18,13 @@ public sealed class PurchNoteConfiguration : IEntityTypeConfiguration<PurchNote>
         builder.Property(x => x.BusinessPartnerId).HasColumnName("business_partner_id").IsRequired();
         builder.Property(x => x.PurchBillId).HasColumnName("purch_bill_id");
         builder.Property(x => x.ExpenseInvoiceId).HasColumnName("expense_invoice_id");
-        builder.Property(x => x.NoteType).HasColumnName("note_type").HasMaxLength(PurchNote.NoteTypeMaxLen).IsRequired();
+        builder.Property(x => x.NoteType)
+            .HasColumnName("note_type")
+            .HasMaxLength(10)
+            .HasConversion(
+                v => NoteTypeConversions.ToDb(v),
+                v => NoteTypeConversions.FromDb(v))
+            .IsRequired();
         builder.Property(x => x.Reason).HasColumnName("reason").HasMaxLength(PurchNote.ReasonMaxLen).IsRequired();
         builder.Property(x => x.AccessKey).HasColumnName("access_key").HasMaxLength(PurchNote.AccessKeyMaxLen).IsRequired();
         builder.Property(x => x.IssueDate).HasColumnName("issue_date").IsRequired();

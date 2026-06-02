@@ -1,3 +1,4 @@
+﻿using ERP.Domain.Common;
 using MediatR;
 using Microsoft.Extensions.Logging;
 using ERP.Application.Common;
@@ -30,7 +31,7 @@ public sealed class PurchNoteApprovedEventHandler : INotificationHandler<PurchNo
         var userId   = notification.UserId;
         var companyId = _company.HasCompanyContext ? _company.CompanyId : (Guid?)null;
 
-        var tipoMov = NoteTypeHelper.IsCredit(notification.NoteType)
+        var tipoMov = notification.NoteType == NoteType.Credit
             ? StockMovementType.SupplierCreditNote
             : StockMovementType.SupplierDebitNote;
 
@@ -79,3 +80,4 @@ public sealed class PurchNoteApprovedEventHandler : INotificationHandler<PurchNo
         }
     }
 }
+

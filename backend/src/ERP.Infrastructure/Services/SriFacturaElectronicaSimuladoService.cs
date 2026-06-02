@@ -1,3 +1,4 @@
+﻿using ERP.Domain.Common;
 using System.Text;
 using System.Xml.Linq;
 using Microsoft.Extensions.Logging;
@@ -113,9 +114,8 @@ public sealed class SriFacturaElectronicaSimuladoService : ISriFacturaElectronic
         SriSettings config,
         Company company)
     {
-        var esCredito = SalesDocumentTypeConversions.IsNoteTypeCredit(nota.NoteType);
-        var rootName  = esCredito ? "notaCredito" : "notaDebito";
-        var infoName  = esCredito ? "infoNotaCredito" : "infoNotaDebito";
+        var esCredito = nota.NoteType == NoteType.Credit;
+        var (rootName, infoName) = NoteTypeConversions.ToXmlElementNames(nota.NoteType);
 
         var numDocSustento =
             $"{facturaOriginal.EstabCode}-{facturaOriginal.EmPointCode}-{facturaOriginal.Sequential}";
@@ -201,7 +201,7 @@ public sealed class SriFacturaElectronicaSimuladoService : ISriFacturaElectronic
         var numeroAuth = Guid.NewGuid().ToString("N")[..10].ToUpper();
 
         _logger.LogInformation(
-            "[SRI-SIM] Autorización simulada generada: {NumeroAutorizacion}", numeroAuth);
+            "[SRI-SIM] AutorizaciÃ³n simulada generada: {NumeroAutorizacion}", numeroAuth);
 
         return Task.FromResult(new SriAutorizacionResponse
         {
@@ -213,3 +213,4 @@ public sealed class SriFacturaElectronicaSimuladoService : ISriFacturaElectronic
         });
     }
 }
+

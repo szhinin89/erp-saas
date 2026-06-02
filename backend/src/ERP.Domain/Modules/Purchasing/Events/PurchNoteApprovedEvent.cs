@@ -16,17 +16,17 @@ public sealed class PurchNoteApprovedEvent : IDomainEvent
     public Guid     SubscriberId    { get; }
     public Guid     UserId      { get; }
     public Guid     PurchBillId { get; }
-    public string   NoteType    { get; }
+    public NoteType NoteType    { get; }
     public string   NoteNumber  { get; }
     public IReadOnlyList<PurchNoteStockLine> StockLines { get; }
 
     public PurchNoteApprovedEvent(
-        Guid   noteId,
-        Guid   subscriberId,
-        Guid   userId,
-        Guid   purchBillId,
-        string noteType,
-        string noteNumber,
+        Guid     noteId,
+        Guid     subscriberId,
+        Guid     userId,
+        Guid     purchBillId,
+        NoteType noteType,
+        string   noteNumber,
         IReadOnlyList<PurchNoteStockLine> stockLines)
     {
         NoteId      = noteId;

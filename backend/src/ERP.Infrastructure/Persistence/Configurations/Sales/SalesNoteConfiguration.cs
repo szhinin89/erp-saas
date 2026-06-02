@@ -1,4 +1,5 @@
 using ERP.Domain.Modules.Sales.Entities;
+using ERP.Infrastructure.Persistence.Converters;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -14,7 +15,13 @@ public sealed class SalesNoteConfiguration : IEntityTypeConfiguration<SalesNote>
         builder.Property(e => e.Id).HasColumnName("id");
         builder.Property(e => e.SubscriberId).HasColumnName("subscriber_id").IsRequired();
         builder.Property(e => e.OriginalBillId).HasColumnName("original_bill_id").IsRequired();
-        builder.Property(e => e.NoteType).HasColumnName("note_type").HasMaxLength(SalesNote.NoteTypeMaxLen).IsRequired();
+        builder.Property(e => e.NoteType)
+            .HasColumnName("note_type")
+            .HasMaxLength(10)
+            .HasConversion(
+                v => NoteTypeConversions.ToDb(v),
+                v => NoteTypeConversions.FromDb(v))
+            .IsRequired();
         builder.Property(e => e.Reason).HasColumnName("reason").HasMaxLength(SalesNote.ReasonMaxLen).IsRequired();
         builder.Property(e => e.DocType).HasColumnName("doc_type").HasMaxLength(SalesNote.DocTypeMaxLen).IsRequired();
         builder.Property(e => e.EstabCode).HasColumnName("estab_code").HasMaxLength(SalesNote.EstabMaxLen).IsRequired();

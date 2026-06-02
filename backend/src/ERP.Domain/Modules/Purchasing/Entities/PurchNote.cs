@@ -6,7 +6,6 @@ namespace ERP.Domain.Modules.Purchasing.Entities;
 
 public sealed class PurchNote : AuditableEntity, ISubscriberScopedEntity
 {
-    public const int NoteTypeMaxLen     = 20;
     public const int ReasonMaxLen       = 300;
     public const int AccessKeyMaxLen    = 49;
     public const int StatusMaxLen       = 20;
@@ -21,7 +20,7 @@ public sealed class PurchNote : AuditableEntity, ISubscriberScopedEntity
     public Guid      BusinessPartnerId { get; private set; }
     public Guid?     PurchBillId      { get; private set; }
     public Guid?     ExpenseInvoiceId { get; private set; }
-    public string    NoteType         { get; private set; } = null!;
+    public NoteType  NoteType         { get; private set; }
     public string    Reason           { get; private set; } = null!;
     public string    AccessKey        { get; private set; } = null!;
     public DateTime  IssueDate        { get; private set; }
@@ -48,7 +47,7 @@ public sealed class PurchNote : AuditableEntity, ISubscriberScopedEntity
         Guid     businessPartnerId,
         Guid?    purchBillId,
         Guid?    expenseInvoiceId,
-        string   noteType,
+        NoteType noteType,
         string   reason,
         string   accessKey,
         DateTime issueDate,
@@ -60,10 +59,6 @@ public sealed class PurchNote : AuditableEntity, ISubscriberScopedEntity
         if (purchBillId.HasValue && expenseInvoiceId.HasValue)
             throw new ArgumentException("Note cannot be linked to both a bill and an expense.");
 
-        var nt = (noteType ?? string.Empty).Trim().ToUpperInvariant();
-        if (nt is not ("CREDIT" or "DEBIT"))
-            throw new ArgumentException("NoteType must be CREDIT or DEBIT.", nameof(noteType));
-
         var n = new PurchNote
         {
             Id                = Guid.NewGuid(),
@@ -71,7 +66,7 @@ public sealed class PurchNote : AuditableEntity, ISubscriberScopedEntity
             BusinessPartnerId = businessPartnerId,
             PurchBillId      = purchBillId,
             ExpenseInvoiceId = expenseInvoiceId,
-            NoteType         = nt,
+            NoteType         = noteType,
             Reason           = (reason ?? string.Empty).Trim(),
             AccessKey        = (accessKey ?? string.Empty).Trim(),
             IssueDate        = issueDate,

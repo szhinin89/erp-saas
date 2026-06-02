@@ -1,3 +1,4 @@
+﻿using ERP.Domain.Common;
 using MediatR;
 using Microsoft.Extensions.Logging;
 using ERP.Application.Common;
@@ -80,7 +81,7 @@ public sealed class CrearSalesNoteCommandHandler
 
         var hasSriConfig = await _configSriRepository.GetByCompanyIdAsync(_currentCompany.CompanyId, ct);
         if (hasSriConfig is null)
-            return Result<Guid>.Failure("La configuración SRI no está configurada para esta empresa.");
+            return Result<Guid>.Failure("La configuraciÃ³n SRI no estÃ¡ configurada para esta empresa.");
 
         var productos = new Dictionary<Guid, ERP.Domain.Products.Entities.Product>();
         foreach (var item in command.Items)
@@ -88,7 +89,7 @@ public sealed class CrearSalesNoteCommandHandler
             if (productos.ContainsKey(item.ProductId)) continue;
             var p = await _productRepository.GetByIdAsync(item.ProductId, subscriberId, ct);
             if (p is null || !p.IsActive)
-                return Result<Guid>.Failure($"Producto {item.ProductId} no existe o no está activo.");
+                return Result<Guid>.Failure($"Producto {item.ProductId} no existe o no estÃ¡ activo.");
             productos[item.ProductId] = p;
         }
 
@@ -96,19 +97,20 @@ public sealed class CrearSalesNoteCommandHandler
         try
         {
             var sriConfig = await _configSriRepository.GetByCompanyIdForUpdateAsync(_currentCompany.CompanyId, ct)
-                ?? throw new InvalidOperationException("SRI config no encontrada durante la transacción.");
+                ?? throw new InvalidOperationException("SRI config no encontrada durante la transacciÃ³n.");
 
             var company = await _companyRepository.GetByIdAsync(_currentCompany.CompanyId, ct)
                 ?? throw new InvalidOperationException("Empresa no encontrada.");
 
-            var tipoDoc = NoteTypeHelper.ToSriDocCode(command.NoteType);
+            var noteTypeEnum = Enum.Parse<NoteType>(command.NoteType, ignoreCase: true);
+            var tipoDoc = noteTypeEnum == NoteType.Credit ? "04" : "05";
 
             var emPoint = await _emissionPointRepository.GetDefaultForBranchAsync(
                     _currentSubscriber.SubscriberId, factura.BranchId, ct)
-                ?? throw new InvalidOperationException($"No hay punto de emisión predeterminado para la sucursal {factura.BranchId}.");
+                ?? throw new InvalidOperationException($"No hay punto de emisiÃ³n predeterminado para la sucursal {factura.BranchId}.");
 
             var docSeq = await _docSeqRepository.GetForUpdateAsync(emPoint.Id, tipoDoc, ct)
-                ?? throw new InvalidOperationException($"No hay secuencial configurado para doc {tipoDoc} en el punto de emisión {emPoint.Id}.");
+                ?? throw new InvalidOperationException($"No hay secuencial configurado para doc {tipoDoc} en el punto de emisiÃ³n {emPoint.Id}.");
 
             var secuencial = docSeq.CaptureAndIncrement();
 
@@ -146,7 +148,7 @@ public sealed class CrearSalesNoteCommandHandler
             var nota = SalesNote.Create(
                 subscriberId,
                 factura.Id,
-                command.NoteType,
+                noteTypeEnum,
                 command.Reason,
                 tipoDoc,
                 emPoint.Establishment.Code,
@@ -179,7 +181,7 @@ public sealed class CrearSalesNoteCommandHandler
         catch (Exception ex)
         {
             await _unitOfWork.RollbackAsync(ct);
-            _logger.LogError(ex, "Error al crear nota de crédito/débito");
+            _logger.LogError(ex, "Error al crear nota de crÃ©dito/dÃ©bito");
             return Result<Guid>.Failure($"No se pudo crear la nota: {ex.Message}");
         }
     }
@@ -194,3 +196,4 @@ public sealed class CrearSalesNoteCommandHandler
         _   => "4"
     };
 }
+

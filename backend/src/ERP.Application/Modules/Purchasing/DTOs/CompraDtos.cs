@@ -1,4 +1,5 @@
-﻿using ERP.Domain.Modules.Purchasing.Enums;
+﻿using ERP.Domain.Common;
+using ERP.Domain.Modules.Purchasing.Enums;
 
 namespace ERP.Application.Modules.Purchasing.DTOs;
 
@@ -62,8 +63,8 @@ public record SupplierPurchaseNoteDto(
     Guid    BusinessPartnerId,
     Guid?     PurchBillId,
     Guid?     ExpenseInvoiceId,
-    string    NoteType,
-    string  Reason,
+    NoteType  NoteType,
+    string    Reason,
     string    AccessKey,
     DateTime  IssueDate,
     string    EstabCode,

@@ -122,15 +122,14 @@ public sealed class PurchBill : AuditableEntity, ISubscriberScopedEntity
         RaiseDomainEvent(new PurchBillApprovedEvent(Id, SubscriberId, InvoiceNumber, userId, stockLines));
     }
 
-    public void RegisterAppliedNote(string noteType, decimal noteTotalAmount, Guid userId)
+    public void RegisterAppliedNote(NoteType noteType, decimal noteTotalAmount, Guid userId)
     {
         if (noteTotalAmount <= 0)
             throw new ArgumentException("Note amount must be greater than zero.", nameof(noteTotalAmount));
         if (Status != PurchaseStatus.Approved)
             throw new InvalidOperationException("Notes can only be applied to Approved bills.");
 
-        var nt = (noteType ?? string.Empty).Trim().ToUpperInvariant();
-        if (nt == "CREDIT")
+        if (noteType == NoteType.Credit)
         {
             var sum = TotalNotesApplied + noteTotalAmount;
             if (sum > Total + TotalTolerance)
@@ -138,8 +137,6 @@ public sealed class PurchBill : AuditableEntity, ISubscriberScopedEntity
                     $"Applied credit notes ({sum:F2}) exceed the bill total ({Total:F2}).");
             TotalNotesApplied = sum;
         }
-        else if (nt != "DEBIT")
-            throw new ArgumentException("noteType must be CREDIT or DEBIT.", nameof(noteType));
 
         SetUpdated(userId);
     }

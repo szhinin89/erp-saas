@@ -1,4 +1,6 @@
-﻿namespace ERP.Application.Common.Interfaces;
+﻿using ERP.Domain.Common;
+
+namespace ERP.Application.Common.Interfaces;
 
 /// <summary>
 /// Parsea un comprobante electrÃ³nico SRI Ecuador (XML) y extrae los datos relevantes.
@@ -31,7 +33,7 @@ public sealed record ItemFactura(
 );
 
 public sealed record SupplierNoteParseResult(
-    string                    NoteType,
+    NoteType                  NoteType,
     string                    Reason,
     string                    AccessKey,
     string                    EstabCode,

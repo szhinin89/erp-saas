@@ -115,7 +115,7 @@ public static class PurchaseDocumentMapper
         Set(doc, nameof(PurchaseDocument.Id), note.Id);
         Set(doc, nameof(PurchaseDocument.SubscriberId), note.SubscriberId);
         Set(doc, nameof(PurchaseDocument.BusinessPartnerId), note.BusinessPartnerId);
-        Set(doc, nameof(PurchaseDocument.DocType), PurchaseDocumentTypeConversions.FromNoteType(note.NoteType));
+        Set(doc, nameof(PurchaseDocument.DocType), NoteTypeConversions.ToPurchaseDocumentType(note.NoteType));
         Set(doc, nameof(PurchaseDocument.DocNumber), $"{note.EstabCode}-{note.EmPointCode}-{note.Sequential}");
         Set(doc, nameof(PurchaseDocument.AccessKey), note.AccessKey);
         Set(doc, nameof(PurchaseDocument.IssueDate), note.IssueDate);
@@ -148,7 +148,7 @@ public static class PurchaseDocumentMapper
             doc.BusinessPartnerId ?? Guid.Empty,
             purchBillId,
             expenseInvoiceId,
-            PurchaseDocumentTypeConversions.ToNoteType(doc.DocType),
+            NoteTypeConversions.FromPurchaseDocumentType(doc.DocType),
             doc.Reason ?? "",
             doc.AccessKey ?? "",
             doc.IssueDate,

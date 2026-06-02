@@ -95,16 +95,13 @@ public sealed class SriFacturaParser : IXmlFacturaParser
 
         var root = ResolveRoot(doc);
         var rootName = root.Name.LocalName;
-        string tipoNota;
-        if (string.Equals(rootName, "notaCredito", StringComparison.OrdinalIgnoreCase))
-            tipoNota = PurchaseDocumentTypeConversions.NoteTypeCredit;
-        else if (string.Equals(rootName, "notaDebito", StringComparison.OrdinalIgnoreCase))
-            tipoNota = PurchaseDocumentTypeConversions.NoteTypeDebit;
-        else
+        if (!rootName.Equals("notaCredito", StringComparison.OrdinalIgnoreCase) &&
+            !rootName.Equals("notaDebito",  StringComparison.OrdinalIgnoreCase))
             throw new XmlParseException(
                 $"Se esperaba <notaCredito> o <notaDebito> como comprobante; raíz: <{rootName}>.");
 
-        var infoNotaName = tipoNota == PurchaseDocumentTypeConversions.NoteTypeCredit ? "infoNotaCredito" : "infoNotaDebito";
+        var tipoNota = NoteTypeConversions.FromXmlRoot(rootName);
+        var (_, infoNotaName) = NoteTypeConversions.ToXmlElementNames(tipoNota);
         var infoTrib   = RequireElement(root, "infoTributaria");
         var infoNota   = RequireElement(root, infoNotaName);
         var detallesEl = RequireElement(root, "detalles");

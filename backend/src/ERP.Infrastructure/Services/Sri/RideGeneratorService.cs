@@ -1,3 +1,4 @@
+﻿using ERP.Domain.Common;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using QuestPDF.Fluent;
@@ -14,13 +15,13 @@ using ERP.Infrastructure.Persistence.Converters;
 namespace ERP.Infrastructure.Services.Sri;
 
 /// <summary>
-/// Genera el RIDE (Representación Impresa del Documento Electrónico) en PDF.
-/// Implementación con QuestPDF — sin dependencias HTTP.
+/// Genera el RIDE (RepresentaciÃ³n Impresa del Documento ElectrÃ³nico) en PDF.
+/// ImplementaciÃ³n con QuestPDF â€” sin dependencias HTTP.
 /// Reutilizable desde API, jobs, email o CLI.
 /// </summary>
 public sealed class RideGeneratorService : IRideGeneratorService
 {
-    // ── Paleta de colores ──────────────────────────────────────────────────────
+    // â”€â”€ Paleta de colores â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     private const string ColPrimary   = "#1F3864";
     private const string ColSecondary = "#2E75B6";
     private const string ColLight     = "#EEF3FA";
@@ -41,7 +42,7 @@ public sealed class RideGeneratorService : IRideGeneratorService
         QuestPDF.Settings.License = LicenseType.Community;
     }
 
-    // ── API pública ───────────────────────────────────────────────────────────
+    // â”€â”€ API pÃºblica â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     public async Task<byte[]> GenerateFacturaPdfAsync(Guid salesBillId, CancellationToken ct = default)
     {
@@ -89,7 +90,7 @@ public sealed class RideGeneratorService : IRideGeneratorService
         return BuildNotaPdf(nota, buyer, cfg, esPrueba);
     }
 
-    // ── Generadores QuestPDF ──────────────────────────────────────────────────
+    // â”€â”€ Generadores QuestPDF â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     private byte[] BuildFacturaPdf(RideFacturaSnapshot f, BusinessPartner? buyer, BillingSettings cfg, bool esPrueba)
     {
@@ -103,12 +104,12 @@ public sealed class RideGeneratorService : IRideGeneratorService
             page.Margin(1.2f, Unit.Centimetre);
             page.DefaultTextStyle(t => t.FontSize(8).FontFamily("Arial").FontColor(ColText));
 
-            // ── Encabezado ─────────────────────────────────────────────────
+            // â”€â”€ Encabezado â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
             page.Header().Column(col =>
             {
                 col.Item().Row(row =>
                 {
-                    // Bloque izquierdo — logo + empresa
+                    // Bloque izquierdo â€” logo + empresa
                     row.RelativeItem(2).Column(emp =>
                     {
                         if (!string.IsNullOrWhiteSpace(cfg.LogoBase64))
@@ -121,7 +122,7 @@ public sealed class RideGeneratorService : IRideGeneratorService
                                         : cfg.LogoBase64);
                                 emp.Item().MaxHeight(55).Image(imgBytes).FitArea();
                             }
-                            catch { /* logo inválido — omitir */ }
+                            catch { /* logo invÃ¡lido â€” omitir */ }
                         }
                         emp.Item().Text(cfg.LegalName).Bold().FontSize(10).FontColor(ColPrimary);
                         emp.Item().Text(cfg.TradeName).FontSize(8).FontColor(ColMuted);
@@ -133,7 +134,7 @@ public sealed class RideGeneratorService : IRideGeneratorService
                             emp.Item().Text(cfg.Email).FontSize(7.5f);
                     });
 
-                    // Bloque derecho — número y datos de emisión
+                    // Bloque derecho â€” nÃºmero y datos de emisiÃ³n
                     row.RelativeItem().Border(1).BorderColor(ColBorder).Padding(8).Column(doc =>
                     {
                         doc.Item().AlignCenter()
@@ -145,7 +146,7 @@ public sealed class RideGeneratorService : IRideGeneratorService
 
                         if (f.AuthNumber is { Length: > 0 })
                         {
-                            doc.Item().PaddingTop(6).Text("AUTORIZACIÓN SRI").Bold().FontSize(7).FontColor(ColMuted);
+                            doc.Item().PaddingTop(6).Text("AUTORIZACIÃ“N SRI").Bold().FontSize(7).FontColor(ColMuted);
                             doc.Item().Text(f.AuthNumber).FontSize(7).FontColor(ColText);
                             if (f.AuthDate.HasValue)
                                 doc.Item().Text($"Fecha auth: {f.AuthDate.Value:dd/MM/yyyy HH:mm}").FontSize(7).FontColor(ColMuted);
@@ -155,7 +156,7 @@ public sealed class RideGeneratorService : IRideGeneratorService
                             doc.Item().PaddingTop(4).Text($"Cont. Especial: {cfg.SpecialTaxpayer}").FontSize(7);
 
                         doc.Item().Text($"Oblig. Contabilidad: {(cfg.RequiresAccounting ? "SI" : "NO")}").FontSize(7);
-                        doc.Item().Text($"Ambiente: {(esPrueba ? "PRUEBAS" : "PRODUCCIÓN")}").FontSize(7)
+                        doc.Item().Text($"Ambiente: {(esPrueba ? "PRUEBAS" : "PRODUCCIÃ“N")}").FontSize(7)
                            .FontColor(esPrueba ? ColAlert : ColText);
                     });
                 });
@@ -164,11 +165,11 @@ public sealed class RideGeneratorService : IRideGeneratorService
 
                 if (esPrueba)
                     col.Item().AlignCenter().Background(ColAlert).Padding(3)
-                       .Text("⚠ DOCUMENTO DE PRUEBA — NO TIENE VALIDEZ TRIBUTARIA ⚠")
+                       .Text("âš  DOCUMENTO DE PRUEBA â€” NO TIENE VALIDEZ TRIBUTARIA âš ")
                        .Bold().FontSize(8).FontColor(ColWhite);
             });
 
-            // ── Contenido ──────────────────────────────────────────────────
+            // â”€â”€ Contenido â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
             page.Content().PaddingTop(8).Column(col =>
             {
                 // Datos del cliente
@@ -181,7 +182,7 @@ public sealed class RideGeneratorService : IRideGeneratorService
                     });
                     c.Item().Row(r =>
                     {
-                        r.ConstantItem(60).Text("Razón Social:").Bold().FontSize(7.5f);
+                        r.ConstantItem(60).Text("RazÃ³n Social:").Bold().FontSize(7.5f);
                         r.RelativeItem().Text(buyer?.LegalName ?? "CONSUMIDOR FINAL").FontSize(7.5f);
                     });
                     c.Item().Row(r =>
@@ -199,13 +200,13 @@ public sealed class RideGeneratorService : IRideGeneratorService
 
                 col.Item().PaddingTop(8);
 
-                // Tabla de líneas
+                // Tabla de lÃ­neas
                 col.Item().Table(table =>
                 {
                     table.ColumnsDefinition(cols =>
                     {
-                        cols.ConstantColumn(55);  // Código
-                        cols.RelativeColumn(4);   // Descripción
+                        cols.ConstantColumn(55);  // CÃ³digo
+                        cols.RelativeColumn(4);   // DescripciÃ³n
                         cols.ConstantColumn(45);  // Cantidad
                         cols.ConstantColumn(55);  // P. Unitario
                         cols.ConstantColumn(45);  // Descuento
@@ -217,8 +218,8 @@ public sealed class RideGeneratorService : IRideGeneratorService
                     {
                         foreach (var (label, right) in new (string, bool)[]
                         {
-                            ("Código",      false),
-                            ("Descripción", false),
+                            ("CÃ³digo",      false),
+                            ("DescripciÃ³n", false),
                             ("Cantidad",    true),
                             ("P.Unitario",  true),
                             ("Descuento",   true),
@@ -266,7 +267,7 @@ public sealed class RideGeneratorService : IRideGeneratorService
                 // Clave de acceso
                 col.Item().Background(ColLight).Border(1).BorderColor(ColBorder).Padding(6).Column(ck =>
                 {
-                    ck.Item().Text("CLAVE DE ACCESO (49 dígitos):").Bold().FontSize(7).FontColor(ColSecondary);
+                    ck.Item().Text("CLAVE DE ACCESO (49 dÃ­gitos):").Bold().FontSize(7).FontColor(ColSecondary);
                     ck.Item().PaddingTop(2)
                       .Text(FormatAccessKey(f.AccessKey))
                       .FontSize(7.5f).FontFamily("Courier New").FontColor(ColText);
@@ -280,15 +281,15 @@ public sealed class RideGeneratorService : IRideGeneratorService
                 }
             });
 
-            // ── Pie de página ──────────────────────────────────────────────
+            // â”€â”€ Pie de pÃ¡gina â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
             page.Footer().BorderTop(0.5f).BorderColor(ColBorder).PaddingTop(4).Row(r =>
             {
-                r.RelativeItem().Text("Documento generado electrónicamente. Autorizado por el SRI Ecuador.")
+                r.RelativeItem().Text("Documento generado electrÃ³nicamente. Autorizado por el SRI Ecuador.")
                  .FontSize(6.5f).FontColor(ColMuted);
                 r.ConstantItem(60).AlignRight()
                  .Text(x =>
                  {
-                     x.Span("Pág. ").FontSize(6.5f).FontColor(ColMuted);
+                     x.Span("PÃ¡g. ").FontSize(6.5f).FontColor(ColMuted);
                      x.CurrentPageNumber().FontSize(6.5f).FontColor(ColMuted);
                      x.Span(" / ").FontSize(6.5f).FontColor(ColMuted);
                      x.TotalPages().FontSize(6.5f).FontColor(ColMuted);
@@ -299,8 +300,8 @@ public sealed class RideGeneratorService : IRideGeneratorService
 
     private byte[] BuildNotaPdf(SalesNote n, BusinessPartner? buyer, BillingSettings cfg, bool esPrueba)
     {
-        var esCredito = SalesDocumentTypeConversions.IsNoteTypeCredit(n.NoteType);
-        var docLabel  = esCredito ? "NOTA DE CRÉDITO" : "NOTA DE DÉBITO";
+        var esCredito = n.NoteType == NoteType.Credit;
+        var docLabel  = esCredito ? "NOTA DE CRÃ‰DITO" : "NOTA DE DÃ‰BITO";
         var numDoc    = $"{n.EstabCode}-{n.EmPointCode}-{n.Sequential.PadLeft(9, '0')}";
         var origNum   = $"{n.OriginalBill.EstabCode}-{n.OriginalBill.EmPointCode}-{n.OriginalBill.Sequential.PadLeft(9, '0')}";
         var lines     = n.Lines.ToList();
@@ -342,7 +343,7 @@ public sealed class RideGeneratorService : IRideGeneratorService
                            .Text(numDoc).Bold().FontSize(10).FontColor(ColSecondary);
                         if (n.AuthNumber is { Length: > 0 })
                         {
-                            doc.Item().PaddingTop(6).Text("AUTORIZACIÓN SRI").Bold().FontSize(7).FontColor(ColMuted);
+                            doc.Item().PaddingTop(6).Text("AUTORIZACIÃ“N SRI").Bold().FontSize(7).FontColor(ColMuted);
                             doc.Item().Text(n.AuthNumber).FontSize(7);
                         }
                         doc.Item().PaddingTop(4).Text($"Doc. modificado: {origNum}").FontSize(7);
@@ -352,7 +353,7 @@ public sealed class RideGeneratorService : IRideGeneratorService
                 col.Item().PaddingTop(4).BorderBottom(1.5f).BorderColor(ColSecondary);
                 if (esPrueba)
                     col.Item().AlignCenter().Background(ColAlert).Padding(3)
-                       .Text("⚠ DOCUMENTO DE PRUEBA — NO TIENE VALIDEZ TRIBUTARIA ⚠")
+                       .Text("âš  DOCUMENTO DE PRUEBA â€” NO TIENE VALIDEZ TRIBUTARIA âš ")
                        .Bold().FontSize(8).FontColor(ColWhite);
             });
 
@@ -375,7 +376,7 @@ public sealed class RideGeneratorService : IRideGeneratorService
 
                 col.Item().PaddingTop(8);
 
-                // Tabla de líneas
+                // Tabla de lÃ­neas
                 col.Item().Table(table =>
                 {
                     table.ColumnsDefinition(cols =>
@@ -391,7 +392,7 @@ public sealed class RideGeneratorService : IRideGeneratorService
                     {
                         foreach (var (label, right) in new (string, bool)[]
                         {
-                            ("Descripción", false),
+                            ("DescripciÃ³n", false),
                             ("Cantidad",    true),
                             ("P.Unitario",  true),
                             ("IVA%",        true),
@@ -440,11 +441,11 @@ public sealed class RideGeneratorService : IRideGeneratorService
 
             page.Footer().BorderTop(0.5f).BorderColor(ColBorder).PaddingTop(4).Row(r =>
             {
-                r.RelativeItem().Text("Documento generado electrónicamente. Autorizado por el SRI Ecuador.")
+                r.RelativeItem().Text("Documento generado electrÃ³nicamente. Autorizado por el SRI Ecuador.")
                  .FontSize(6.5f).FontColor(ColMuted);
                 r.ConstantItem(60).AlignRight().Text(x =>
                 {
-                    x.Span("Pág. ").FontSize(6.5f).FontColor(ColMuted);
+                    x.Span("PÃ¡g. ").FontSize(6.5f).FontColor(ColMuted);
                     x.CurrentPageNumber().FontSize(6.5f).FontColor(ColMuted);
                     x.Span(" / ").FontSize(6.5f).FontColor(ColMuted);
                     x.TotalPages().FontSize(6.5f).FontColor(ColMuted);
@@ -453,7 +454,7 @@ public sealed class RideGeneratorService : IRideGeneratorService
         })).GeneratePdf();
     }
 
-    // ── Helpers de layout ─────────────────────────────────────────────────────
+    // â”€â”€ Helpers de layout â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     private static void CellText(
         TableDescriptor table,
@@ -491,16 +492,16 @@ public sealed class RideGeneratorService : IRideGeneratorService
     }
 
     /// <summary>
-    /// La clave de acceso SRI tiene 49 dígitos.
-    /// El dígito en la posición 25 (índice 24) indica el ambiente: '1'=producción, '2'=pruebas.
+    /// La clave de acceso SRI tiene 49 dÃ­gitos.
+    /// El dÃ­gito en la posiciÃ³n 25 (Ã­ndice 24) indica el ambiente: '1'=producciÃ³n, '2'=pruebas.
     /// </summary>
     private static bool IsAmbientePrueba(string? key)
         => string.IsNullOrWhiteSpace(key) || key.Length < 25 || key[24] == '2';
 
     private static string FormatAccessKey(string? key)
     {
-        if (string.IsNullOrWhiteSpace(key)) return "—";
-        // Insertar guión cada 10 dígitos para legibilidad
+        if (string.IsNullOrWhiteSpace(key)) return "â€”";
+        // Insertar guiÃ³n cada 10 dÃ­gitos para legibilidad
         return string.Join("-", Enumerable.Range(0, (key.Length + 9) / 10)
             .Select(i => key.Substring(i * 10, Math.Min(10, key.Length - i * 10))));
     }
@@ -561,3 +562,4 @@ public sealed class RideGeneratorService : IRideGeneratorService
         decimal VatTotal,
         decimal Total);
 }
+

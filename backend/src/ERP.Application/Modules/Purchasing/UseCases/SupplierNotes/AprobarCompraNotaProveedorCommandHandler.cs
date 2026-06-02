@@ -1,3 +1,4 @@
+﻿using ERP.Domain.Common;
 using MediatR;
 using Microsoft.Extensions.Logging;
 using ERP.Application.Common;
@@ -79,12 +80,12 @@ public sealed class ApprovePurchaseSupplierNoteCommandHandler
                 {
                     await _unitOfWork.RollbackAsync(ct);
                     return Result<SupplierPurchaseNoteDto>.Failure(
-                        "La factura de compra vinculada no existe o no está aprobada.");
+                        "La factura de compra vinculada no existe o no estÃ¡ aprobada.");
                 }
 
                 compra.RegisterAppliedNote(nota.NoteType, nota.Total, userId);
 
-                asientoResult = NoteTypeHelper.IsCredit(nota.NoteType)
+                asientoResult = nota.NoteType == NoteType.Credit
                     ? await _accounting.CrearAsientoNotaCreditoCompraProveedorAsync(
                         nota.Id,
                         reference:  numeroNota,
@@ -92,7 +93,7 @@ public sealed class ApprovePurchaseSupplierNoteCommandHandler
                         subtotal:    nota.Subtotal,
                         vatTotal:    nota.VatTotal,
                         total:       nota.Total,
-                        description: $"{descripcionBase} — compra {compra.InvoiceNumber}",
+                        description: $"{descripcionBase} â€” compra {compra.InvoiceNumber}",
                         ct)
                     : await _accounting.CrearAsientoNotaDebitoCompraProveedorAsync(
                         nota.Id,
@@ -101,7 +102,7 @@ public sealed class ApprovePurchaseSupplierNoteCommandHandler
                         subtotal:    nota.Subtotal,
                         vatTotal:    nota.VatTotal,
                         total:       nota.Total,
-                        description: $"{descripcionBase} — compra {compra.InvoiceNumber}",
+                        description: $"{descripcionBase} â€” compra {compra.InvoiceNumber}",
                         ct);
             }
             else
@@ -111,19 +112,19 @@ public sealed class ApprovePurchaseSupplierNoteCommandHandler
                 {
                     await _unitOfWork.RollbackAsync(ct);
                     return Result<SupplierPurchaseNoteDto>.Failure(
-                        "La factura de gasto vinculada no existe o no está aprobada.");
+                        "La factura de gasto vinculada no existe o no estÃ¡ aprobada.");
                 }
 
                 gasto.RegisterAppliedSupplierNote(nota.NoteType, nota.Total, userId);
 
-                asientoResult = NoteTypeHelper.IsCredit(nota.NoteType)
+                asientoResult = nota.NoteType == NoteType.Credit
                     ? await _accounting.CrearAsientoNotaCreditoGastoProveedorAsync(
                         nota.Id,
                         reference:     numeroNota,
                         date:          nota.IssueDate,
                         total:          nota.Total,
                         category: gasto.Category,
-                        description:    $"{descripcionBase} — gasto {gasto.Concept}",
+                        description:    $"{descripcionBase} â€” gasto {gasto.Concept}",
                         ct)
                     : await _accounting.CrearAsientoNotaDebitoGastoProveedorAsync(
                         nota.Id,
@@ -131,7 +132,7 @@ public sealed class ApprovePurchaseSupplierNoteCommandHandler
                         date:          nota.IssueDate,
                         total:          nota.Total,
                         category: gasto.Category,
-                        description:    $"{descripcionBase} — gasto {gasto.Concept}",
+                        description:    $"{descripcionBase} â€” gasto {gasto.Concept}",
                         ct);
             }
 
@@ -165,7 +166,7 @@ public sealed class ApprovePurchaseSupplierNoteCommandHandler
                 subscriberId, userId, _user.Email, _user.FullName,
                 module: "compras", action: "notas-Supplier.aprobar",
                 entityType: "PurchNote", entityId: nota.Id,
-                description: $"{numeroNota} — asiento {asientoId}"), ct);
+                description: $"{numeroNota} â€” asiento {asientoId}"), ct);
 
             await _unitOfWork.SaveChangesAsync(ct);
             await _unitOfWork.CommitAsync(ct);
@@ -207,7 +208,7 @@ public sealed class ApprovePurchaseSupplierNoteCommandHandler
                 continue;
 
             var detCant = compraDet.Quantity;
-            var sign    = NoteTypeHelper.IsCredit(nota.NoteType) ? 1m : -1m;
+            var sign    = nota.NoteType == NoteType.Credit ? 1m : -1m;
             var costo   = compraDet.Quantity > 0
                 ? compraDet.UnitPrice * (1 - compraDet.DiscountPct / 100m)
                 : 0m;
@@ -249,3 +250,4 @@ public sealed class ApprovePurchaseSupplierNoteCommandHandler
         n.JournalEntryId,
         n.CreatedAt);
 }
+

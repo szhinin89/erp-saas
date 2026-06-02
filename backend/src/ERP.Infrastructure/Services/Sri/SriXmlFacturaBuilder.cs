@@ -91,9 +91,7 @@ public static class SriXmlFacturaBuilder
         Company             company,
         BusinessPartner?    buyer = null)
     {
-        var esCredito = SalesDocumentTypeConversions.IsNoteTypeCredit(nota.NoteType);
-        var rootName  = esCredito ? "notaCredito" : "notaDebito";
-        var infoName  = esCredito ? "infoNotaCredito" : "infoNotaDebito";
+        var (rootName, infoName) = NoteTypeConversions.ToXmlElementNames(nota.NoteType);
         var totalDesc = 0m;
 
         var numDocSustento =

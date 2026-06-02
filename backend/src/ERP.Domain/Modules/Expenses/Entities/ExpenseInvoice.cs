@@ -137,15 +137,14 @@ public sealed class ExpenseInvoice : MasterEntity, ISubscriberScopedEntity
         SetUpdated(userId);
     }
 
-    public void RegisterAppliedSupplierNote(string noteType, decimal noteTotalAmount, Guid userId)
+    public void RegisterAppliedSupplierNote(NoteType noteType, decimal noteTotalAmount, Guid userId)
     {
         if (noteTotalAmount <= 0)
             throw new ArgumentException("Note amount must be greater than zero.", nameof(noteTotalAmount));
         if (Status != ExpenseStatus.Approved)
             throw new InvalidOperationException("Notes can only be applied to Approved expenses.");
 
-        var nt = (noteType ?? string.Empty).Trim().ToUpperInvariant();
-        if (nt == "CREDIT")
+        if (noteType == NoteType.Credit)
         {
             var sum = TotalNotesApplied + noteTotalAmount;
             if (sum > Total + TotalTolerance)
@@ -153,8 +152,6 @@ public sealed class ExpenseInvoice : MasterEntity, ISubscriberScopedEntity
                     $"Applied credit notes ({sum:F2}) exceed the expense total ({Total:F2}).");
             TotalNotesApplied = sum;
         }
-        else if (nt != "DEBIT")
-            throw new ArgumentException("noteType must be CREDIT or DEBIT.", nameof(noteType));
 
         SetUpdated(userId);
     }
