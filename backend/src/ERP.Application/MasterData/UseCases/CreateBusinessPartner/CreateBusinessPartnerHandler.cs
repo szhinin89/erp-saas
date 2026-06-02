@@ -67,6 +67,7 @@ public sealed class CreateBusinessPartnerHandler
                 command.LegalName,
                 userId,
                 command.TradeName,
+                command.LegalRepresentativeName,
                 command.Email,
                 command.Phone,
                 command.CountryCode);

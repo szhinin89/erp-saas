@@ -50,7 +50,7 @@ public sealed class UpdateBusinessPartnerHandler
             catch (ArgumentException ex) { return Result<bool>.ValidationFailure(ex.Message); }
         }
 
-        try { bp.UpdateProfile(command.LegalName, command.TradeName, command.Email, command.Phone, command.CountryCode, userId); }
+        try { bp.UpdateProfile(command.LegalName, command.TradeName, command.LegalRepresentativeName, command.Email, command.Phone, command.CountryCode, userId); }
         catch (ArgumentException ex) { return Result<bool>.ValidationFailure(ex.Message); }
 
         try

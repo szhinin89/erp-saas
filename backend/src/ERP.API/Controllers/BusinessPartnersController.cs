@@ -63,6 +63,7 @@ public sealed class BusinessPartnersController : ControllerBase
             body.IdentificationNumber,
             body.LegalName,
             body.TradeName,
+            body.LegalRepresentativeName,
             body.Email,
             body.Phone,
             body.CountryCode,
@@ -84,6 +85,7 @@ public sealed class BusinessPartnersController : ControllerBase
             body.IdentificationNumber,
             body.LegalName,
             body.TradeName,
+            body.LegalRepresentativeName,
             body.Email,
             body.Phone,
             body.CountryCode);

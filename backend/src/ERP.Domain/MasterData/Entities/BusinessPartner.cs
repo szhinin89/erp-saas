@@ -26,11 +26,12 @@ namespace ERP.Domain.MasterData.Entities;
 /// </summary>
 public sealed class BusinessPartner : AuditableEntity, ISubscriberScopedEntity
 {
-    public const int LegalNameMaxLen  = 200;
-    public const int TradeNameMaxLen  = 200;
-    public const int EmailMaxLen      = 120;
-    public const int PhoneMaxLen      = 40;
-    public const int CountryCodeMaxLen = 3;
+    public const int LegalNameMaxLen              = 200;
+    public const int TradeNameMaxLen              = 200;
+    public const int LegalRepresentativeNameMaxLen = 300;
+    public const int EmailMaxLen                  = 120;
+    public const int PhoneMaxLen                  = 40;
+    public const int CountryCodeMaxLen             = 3;
 
     /// <summary>FK al Subscriber SaaS propietario. No confundir con Company.</summary>
     public Guid SubscriberId { get; private set; }
@@ -41,8 +42,15 @@ public sealed class BusinessPartner : AuditableEntity, ISubscriberScopedEntity
     /// <summary>Razón social o nombre completo legal.</summary>
     public string LegalName { get; private set; } = null!;
 
-    /// <summary>Nombre comercial (opcional).</summary>
+    /// <summary>Nombre comercial (opcional). Aplica principalmente a Persona Jurídica.</summary>
     public string? TradeName { get; private set; }
+
+    /// <summary>
+    /// Nombre del representante legal (opcional).
+    /// Solo relevante para Persona Jurídica (RUC empresarial).
+    /// Para Persona Natural y Consumidor Final se deja null.
+    /// </summary>
+    public string? LegalRepresentativeName { get; private set; }
 
     /// <summary>Email de contacto principal (opcional).</summary>
     public string? Email { get; private set; }
@@ -63,31 +71,33 @@ public sealed class BusinessPartner : AuditableEntity, ISubscriberScopedEntity
     private BusinessPartner() { }
 
     public static BusinessPartner Create(
-        Guid   subscriberId,
-        string identificationType,
-        string identificationNumber,
-        string legalName,
-        Guid   createdBy,
-        string? tradeName    = null,
-        string? email        = null,
-        string? phone        = null,
-        string? countryCode  = null)
+        Guid    subscriberId,
+        string  identificationType,
+        string  identificationNumber,
+        string  legalName,
+        Guid    createdBy,
+        string? tradeName               = null,
+        string? legalRepresentativeName = null,
+        string? email                   = null,
+        string? phone                   = null,
+        string? countryCode             = null)
     {
         if (subscriberId == Guid.Empty)
             throw new ArgumentException("SubscriberId es obligatorio.", nameof(subscriberId));
 
         var bp = new BusinessPartner
         {
-            Id             = Guid.NewGuid(),
-            SubscriberId   = subscriberId,
-            Identification = TaxIdentification.Create(identificationType, identificationNumber),
-            LegalName      = Normalize(legalName, nameof(legalName), LegalNameMaxLen),
-            TradeName      = NormalizeOpt(tradeName, TradeNameMaxLen),
-            Email          = NormalizeOpt(email, EmailMaxLen),
-            Phone          = NormalizeOpt(phone, PhoneMaxLen),
-            CountryCode    = string.IsNullOrWhiteSpace(countryCode) ? null
-                             : countryCode.Trim().ToUpperInvariant()[..Math.Min(3, countryCode.Trim().Length)],
-            IsActive       = true,
+            Id                     = Guid.NewGuid(),
+            SubscriberId           = subscriberId,
+            Identification         = TaxIdentification.Create(identificationType, identificationNumber),
+            LegalName              = Normalize(legalName, nameof(legalName), LegalNameMaxLen),
+            TradeName              = NormalizeOpt(tradeName, TradeNameMaxLen),
+            LegalRepresentativeName = NormalizeOpt(legalRepresentativeName, LegalRepresentativeNameMaxLen),
+            Email                  = NormalizeOpt(email, EmailMaxLen),
+            Phone                  = NormalizeOpt(phone, PhoneMaxLen),
+            CountryCode            = string.IsNullOrWhiteSpace(countryCode) ? null
+                                     : countryCode.Trim().ToUpperInvariant()[..Math.Min(3, countryCode.Trim().Length)],
+            IsActive               = true,
         };
         bp.SetCreated(createdBy);
         return bp;
@@ -96,17 +106,19 @@ public sealed class BusinessPartner : AuditableEntity, ISubscriberScopedEntity
     public void UpdateProfile(
         string  legalName,
         string? tradeName,
+        string? legalRepresentativeName,
         string? email,
         string? phone,
         string? countryCode,
         Guid    updatedBy)
     {
-        LegalName   = Normalize(legalName, nameof(legalName), LegalNameMaxLen);
-        TradeName   = NormalizeOpt(tradeName, TradeNameMaxLen);
-        Email       = NormalizeOpt(email, EmailMaxLen);
-        Phone       = NormalizeOpt(phone, PhoneMaxLen);
-        CountryCode = string.IsNullOrWhiteSpace(countryCode) ? null
-                      : countryCode.Trim().ToUpperInvariant()[..Math.Min(3, countryCode.Trim().Length)];
+        LegalName               = Normalize(legalName, nameof(legalName), LegalNameMaxLen);
+        TradeName               = NormalizeOpt(tradeName, TradeNameMaxLen);
+        LegalRepresentativeName = NormalizeOpt(legalRepresentativeName, LegalRepresentativeNameMaxLen);
+        Email                   = NormalizeOpt(email, EmailMaxLen);
+        Phone                   = NormalizeOpt(phone, PhoneMaxLen);
+        CountryCode             = string.IsNullOrWhiteSpace(countryCode) ? null
+                                  : countryCode.Trim().ToUpperInvariant()[..Math.Min(3, countryCode.Trim().Length)];
         SetUpdated(updatedBy);
     }
 

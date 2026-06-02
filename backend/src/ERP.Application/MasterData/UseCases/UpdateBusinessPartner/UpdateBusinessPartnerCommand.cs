@@ -9,6 +9,7 @@ public sealed record UpdateBusinessPartnerCommand(
     string  IdentificationNumber,
     string  LegalName,
     string? TradeName,
+    string? LegalRepresentativeName,
     string? Email,
     string? Phone,
     string? CountryCode) : IRequest<Result<bool>>, ISubscriberOnlyRequest;

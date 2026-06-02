@@ -9,26 +9,30 @@ public sealed class UpsertCompanyBpSettingsRequest
 
 public sealed class CreateBusinessPartnerRequest
 {
-    public string IdentificationType { get; set; } = "";
-    public string IdentificationNumber { get; set; } = "";
-    public string LegalName { get; set; } = "";
-    public string? TradeName { get; set; }
-    public string? Email { get; set; }
-    public string? Phone { get; set; }
-    public string? CountryCode { get; set; }
-    public bool AsCustomer { get; set; }
-    public bool AsSupplier { get; set; }
+    public string  IdentificationType      { get; set; } = "";
+    public string  IdentificationNumber    { get; set; } = "";
+    public string  LegalName               { get; set; } = "";
+    public string? TradeName               { get; set; }
+    /// <summary>Representante legal. Solo relevante para RUC empresarial (Persona Jurídica).</summary>
+    public string? LegalRepresentativeName { get; set; }
+    public string? Email                   { get; set; }
+    public string? Phone                   { get; set; }
+    public string? CountryCode             { get; set; }
+    public bool    AsCustomer              { get; set; }
+    public bool    AsSupplier              { get; set; }
 }
 
 public sealed class UpdateBusinessPartnerRequest
 {
-    public string IdentificationType { get; set; } = "";
-    public string IdentificationNumber { get; set; } = "";
-    public string LegalName { get; set; } = "";
-    public string? TradeName { get; set; }
-    public string? Email { get; set; }
-    public string? Phone { get; set; }
-    public string? CountryCode { get; set; }
+    public string  IdentificationType      { get; set; } = "";
+    public string  IdentificationNumber    { get; set; } = "";
+    public string  LegalName               { get; set; } = "";
+    public string? TradeName               { get; set; }
+    /// <summary>Representante legal. Solo relevante para RUC empresarial (Persona Jurídica).</summary>
+    public string? LegalRepresentativeName { get; set; }
+    public string? Email                   { get; set; }
+    public string? Phone                   { get; set; }
+    public string? CountryCode             { get; set; }
 }
 
 public sealed class AddBusinessPartnerRoleRequest

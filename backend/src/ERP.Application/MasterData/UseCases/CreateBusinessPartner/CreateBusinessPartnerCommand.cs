@@ -13,6 +13,7 @@ public sealed record CreateBusinessPartnerCommand(
     string  IdentificationNumber,
     string  LegalName,
     string? TradeName,
+    string? LegalRepresentativeName,
     string? Email,
     string? Phone,
     string? CountryCode,

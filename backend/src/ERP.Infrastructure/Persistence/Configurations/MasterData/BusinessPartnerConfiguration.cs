@@ -37,6 +37,9 @@ public sealed class BusinessPartnerConfiguration : IEntityTypeConfiguration<Busi
         builder.Property(x => x.TradeName)
                .HasColumnName("trade_name")
                .HasMaxLength(BusinessPartner.TradeNameMaxLen);
+        builder.Property(x => x.LegalRepresentativeName)
+               .HasColumnName("legal_representative_name")
+               .HasMaxLength(BusinessPartner.LegalRepresentativeNameMaxLen);
         builder.Property(x => x.Email)
                .HasColumnName("email")
                .HasMaxLength(BusinessPartner.EmailMaxLen);
