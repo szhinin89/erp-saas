@@ -10,7 +10,7 @@ public class GeoProvinceConfiguration : IEntityTypeConfiguration<GeoProvince>
 {
     public void Configure(EntityTypeBuilder<GeoProvince> builder)
     {
-        builder.ToTable("geo_provinces");
+        builder.ToTable("geo_provinces", schema: "global");
         builder.HasKey(x => x.Id);
         builder.Property(x => x.Id).HasColumnName("id").HasMaxLength(10);
         builder.Property(x => x.CountryId).HasColumnName("country_id").HasMaxLength(10).IsRequired();
@@ -27,7 +27,7 @@ public class GeoCantonConfiguration : IEntityTypeConfiguration<GeoCanton>
 {
     public void Configure(EntityTypeBuilder<GeoCanton> builder)
     {
-        builder.ToTable("geo_cantons");
+        builder.ToTable("geo_cantons", schema: "global");
         builder.HasKey(x => x.Id);
         builder.Property(x => x.Id).HasColumnName("id").HasMaxLength(10);
         builder.Property(x => x.ProvinceId).HasColumnName("province_id").HasMaxLength(10).IsRequired();
@@ -43,7 +43,7 @@ public class GeoParishConfiguration : IEntityTypeConfiguration<GeoParish>
 {
     public void Configure(EntityTypeBuilder<GeoParish> builder)
     {
-        builder.ToTable("geo_parishes");
+        builder.ToTable("geo_parishes", schema: "global");
         builder.HasKey(x => x.Id);
         builder.Property(x => x.Id).HasColumnName("id").HasMaxLength(10);
         builder.Property(x => x.CantonId).HasColumnName("canton_id").HasMaxLength(10).IsRequired();
