@@ -1,6 +1,6 @@
 # Project Status
 
-**Single source of truth** for delivery state. Updated: **2026-05-24**.
+**Single source of truth** for delivery state. Updated: **2026-06-02**.
 
 ## Documentation map (canonical — `AI-RULES/` + 7 files in `docs/` + índices)
 
@@ -22,6 +22,18 @@
 | Database | `docs/DATABASE.md` |
 
 Consolidated 2026-05-21: former `MULTITENANCY`, `SCOPES`, `SECURITY`, `BILLING`, `DATABASE/*`, etc. merged into the files above. **2026-05-21:** `AI-RULES/` centralizes implementation rules for Cursor, Claude and future agents.
+
+## Módulos FROZEN (arquitectura cerrada)
+
+Los siguientes módulos tienen su arquitectura y modelo de datos cerrados definitivamente.
+No se aceptan cambios estructurales sin una ADR aprobada.
+
+| Módulo | Fecha cierre | ADR | Notas |
+|--------|:------------:|-----|-------|
+| **Business Partners** (Clientes / Proveedores) | 2026-06-02 | `docs/arch/BUSINESSPARTNER-ADR.md` | subscriber-scoped, Roles (Customer/Supplier), CompanySettings, LegalRepresentativeName, unique index DB |
+| **SaaS Commercial Flow** | 2026-05-28 | `docs/architecture/SAAS-FREEZE.md` | Plans, Entitlements, Subscription lifecycle |
+
+---
 
 ## Architecture (current)
 
@@ -138,6 +150,7 @@ Details: [ARCHITECTURE.md](./ARCHITECTURE.md), [DATABASE.md](./DATABASE.md).
 
 | Module | Status |
 |--------|--------|
+| **Business Partners (Clientes/Proveedores) — FROZEN** | ✅ FROZEN 2026-06-02 — ver `docs/arch/BUSINESSPARTNER-ADR.md` |
 | Products, catalogs, customers, suppliers | ✅ |
 | Inventory, transfers, adjustments, kardex | ✅ |
 | Purchases (OC, bills, expenses) | ✅ |

@@ -1,109 +1,108 @@
-# BusinessPartner Readiness Report
+# BusinessPartner — Estado Final: FROZEN
 
-**Fecha:** 2026-05-22  
-**Versión:** 1.0 — post normalización arquitectónica (Fases 1-7)
+**Estado:** ✅ FROZEN  
+**Fecha de cierre:** 2026-06-02  
+**Versión:** 2.0 — post-implementación completa  
 
----
-
-## Resumen ejecutivo
-
-El sistema completó 8 commits de normalización arquitectónica controlada
-antes de introducir el MasterData BC. El foundation está en producción.
+> Este documento reemplaza la versión 1.0 (2026-05-22) que describía el estado de prerequisitos.
+> El módulo está completamente implementado y cerrado. No se aceptan modificaciones
+> estructurales sin una nueva ADR aprobada.
 
 ---
 
-## Checklist de prerequisitos
+## Decisión arquitectónica oficial
 
-### ✅ Scopes
-
-| Check | Estado |
-|-------|--------|
-| IOperationalContext centraliza SubscriberId + CompanyId + UserId + Role | ✅ |
-| Query filters fail-closed (guard Guid.Empty en subscriber scope) | ✅ |
-| CompanyScopeBehavior cubre Purchasing, Sales, Inventory | ✅ |
-| IRequiresCompanyContext disponible para handlers fuera del prefix-list | ✅ |
-
-### ✅ JWT
-
-| Check | Estado |
-|-------|--------|
-| Session token emite `subscriber_id` | ✅ |
-| Session token emite `company_id` cuando hay empresa activa | ✅ |
-| `token_type` diferencia bootstrap de session | ✅ |
-| DefaultPolicy = Session — [Authorize] sin policy requiere session token | ✅ |
-
-### ✅ Filtros EF
-
-| Check | Estado |
-|-------|--------|
-| ISubscriberScopedEntity — fail-closed | ✅ |
-| ICompanyOperationalEntity — fail-closed en subscriber, opcional en company | ✅ |
-| IPlatformQueryAccessor.Unfiltered() — solo infraestructura con razón documentada | ✅ |
-
-### ✅ Ownership
-
-| Check | Estado |
-|-------|--------|
-| Subscriber = SaaS account — metadatos de plataforma | ✅ |
-| Company = entidad legal operativa con RUC, SRI, fiscal | ✅ |
-| CompanyUserMembership = fuente canónica de autorización | ✅ |
-| IMembershipAuthority disponible | ✅ |
-
-### ✅ Nomenclatura
-
-| Check | Estado |
-|-------|--------|
-| Naming Tenant → Subscriber 100% en código ejecutable | ✅ |
-| Namespaces ERP.Domain.Subscribers.* coherentes con carpetas | ✅ |
-| No hay clases de autorización con "Tenant" en nombre | ✅ |
-
----
-
-## Gaps conocidos (no bloqueantes para BP-1)
-
-| Gap | Impacto | Fase resolución |
-|-----|---------|-----------------|
-| Supplier sin ICompanyOperationalEntity | Intencional — Opción A | No aplica |
-| 8 FIXME(phase5-db) en Subscriber | DB migration futura | BP-8 |
-| Customer.CompanyId coexiste con BP subscriber-scoped | Período de migración controlado | BP-6 |
-
----
-
-## Estado de implementación MasterData BC
+**Business Partners son TENANT-SCOPED.**
 
 ```
-ERP.Domain/MasterData/
-  ✅ Entities/BusinessPartner.cs
-  ✅ Entities/CustomerProfile.cs
-  ✅ Entities/SupplierProfile.cs
-  ✅ Entities/CompanyBusinessPartnerSettings.cs
-  ✅ ValueObjects/TaxIdentification.cs
-  ✅ Interfaces/IBusinessPartnerRepository.cs
-  ✅ Interfaces/ICustomerProfileRepository.cs
-  ✅ Interfaces/ISupplierProfileRepository.cs
+Subscriber (tenant)
+└── BusinessPartner (identidad fiscal única — subscriber-scoped)
+    ├── CustomerProfile  (rol cliente — subscriber-scoped)
+    └── SupplierProfile  (rol proveedor — subscriber-scoped)
 
-ERP.Application/MasterData/
-  ⬜ Commands/CreateBusinessPartner (BP-2)
-  ⬜ Commands/CreateCustomerProfile (BP-3)
-  ⬜ Commands/CreateSupplierProfile (BP-4)
-  ⬜ Queries/SearchBusinessPartners (BP-2)
-
-ERP.Infrastructure/MasterData/
-  ⬜ Repositories/BusinessPartnerRepository (BP-2)
-  ⬜ EF Configuration (BP-2)
-  ⬜ DB Migration (BP-2)
-
-ERP.API/
-  ⬜ BusinessPartnersController (BP-2)
+Company A ──┐
+Company B ──┤──► CompanyBusinessPartnerSettings (condiciones por empresa — company-scoped)
+Company C ──┘
 ```
+
+- `master_business_partners` **mantiene `subscriber_id`** como campo de scope.
+- NO existe catálogo global de clientes.
+- NO existe catálogo global de proveedores.
+- Cada Subscriber es propietario exclusivo de sus Business Partners.
+- No se compartirán Business Partners entre Subscribers.
 
 ---
 
-## Próxima acción recomendada (BP-2)
+## Checklist de implementación — 100% completado
 
-1. `BusinessPartnerConfiguration.cs` — EF mapping de `master_business_partners`
-2. `DbSet<BusinessPartner>` en `ErpDbContext`
-3. Migración DB: `create table master_business_partners`
-4. `BusinessPartnerRepository` implementando `IBusinessPartnerRepository`
-5. `CreateBusinessPartnerCommandHandler`
-6. `BusinessPartnersController` con CRUD básico
+### Backend
+
+| Componente | Estado |
+|------------|--------|
+| `BusinessPartner` entidad + VOs (`TaxIdentification`) | ✅ |
+| `CustomerProfile` entidad | ✅ |
+| `SupplierProfile` entidad | ✅ |
+| `CompanyBusinessPartnerSettings` entidad | ✅ |
+| `LegalRepresentativeName` campo en BP | ✅ |
+| EF Configuration completa (columnas + navegación + índices) | ✅ |
+| Migración `AddBPUniqueIdentificationIndex` | ✅ |
+| Unique index `uq_mbp_subscriber_identification` en DB | ✅ |
+| `IBusinessPartnerRepository` + implementación | ✅ |
+| `ICustomerProfileRepository` + implementación | ✅ |
+| `ISupplierProfileRepository` + implementación | ✅ |
+| CRUD Commands: Create, Update, Disable, Activate | ✅ |
+| CRUD Queries: Search (paginado + filtros), GetById | ✅ |
+| `BusinessPartnerDto` con todos los campos | ✅ |
+| `CompanyBusinessPartnerSettings` handlers (CRUD + bloqueo) | ✅ |
+| Customer Notes handler | ✅ |
+| Supplier Profile update handler | ✅ |
+| `BusinessPartnersController` completo | ✅ |
+| Multi-tenant: query filters vía `ISubscriberScopedEntity` | ✅ |
+| Integridad referencial: FKs hacia `sales_bill`, `purch_note`, retenciones | ✅ |
+
+### Frontend
+
+| Componente | Estado |
+|------------|--------|
+| `businessPartner.types.ts` — todos los tipos TS | ✅ |
+| `businessPartnerService.ts` — `normalizeRow()` completo | ✅ |
+| `MasterDataBpFormFields` — todos los campos incluyendo "Representante legal" (solo RUC) | ✅ |
+| `MasterDataPartnerWizard` — 4 pasos: búsqueda, identidad, contacto, revisión | ✅ |
+| `MasterDataCustomersPage` — listado, detalle, crear, editar, activar/desactivar | ✅ |
+| `MasterDataSuppliersPage` — ídem | ✅ |
+| `MasterDataBusinessPartnerDetailPage` — detalle unificado | ✅ |
+| `MasterDataCompanySettingsModal` — configuración de crédito por empresa | ✅ |
+| `MasterDataCustomerNotesModal` — notas por cliente | ✅ |
+
+---
+
+## Modelos de negocio soportados
+
+### Persona Natural (CI)
+- Requiere: `identificationType`, `identificationNumber`, `legalName`
+- Opcional: `email`, `phone`, `countryCode`
+- `tradeName` y `legalRepresentativeName` se ignoran (null)
+
+### Persona Jurídica (RUC)
+- Requiere: `identificationType`, `identificationNumber`, `legalName` (Razón Social)
+- Opcional: `tradeName` (Nombre Comercial), `legalRepresentativeName`, `email`, `phone`
+
+### Consumidor Final
+- `identificationNumber` = `9999999999999`
+- `legalName` = `CONSUMIDOR FINAL`
+- `legalRepresentativeName` no aplica
+
+---
+
+## Backlog NO bloqueante
+
+| ID | Descripción |
+|----|-------------|
+| BP-002 | Validación ecuatoriana de formato: RUC=13 dígitos, CI=10 dígitos, CONSUMER_FINAL forced values |
+| BP-003 | Migración de validaciones de dominio hacia FluentValidation |
+
+---
+
+## Restricciones definitivas
+
+Ver `docs/arch/BUSINESSPARTNER-ADR.md` sección "Restricciones definitivas".
