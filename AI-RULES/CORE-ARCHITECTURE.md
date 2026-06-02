@@ -43,6 +43,65 @@ Estructura **real** (prevalece sobre diagramas desactualizados):
 
 ---
 
+## Política de compatibilidad legacy
+
+> **Regla de fase de proyecto.** Se aplica mientras el sistema no esté oficialmente en producción con clientes reales.
+
+### Estado actual del proyecto
+
+**Pre-producción.** No existen:
+- Clientes productivos ni datos reales que preservar.
+- Integraciones externas ni contratos públicos vigentes.
+- Consumidores de API que no se puedan migrar junto con el código.
+
+### Prohibiciones absolutas (pre-producción)
+
+Mientras el sistema no esté confirmado en producción, está **prohibido** introducir:
+
+| Patrón prohibido | Ejemplos concretos |
+|---|---|
+| Backward compatibility | Aceptar formato antiguo y nuevo simultáneamente |
+| Legacy adapters | `NormalizeType()`, `MapOldToNew()`, `LegacyMapper` |
+| Aliases históricos | `TypeRuc = "RUC"` cuando el código real es `"04"` |
+| Mappers de transición | Convertir automáticamente `"RUC"→"04"` en lugar de corregir el origen |
+| Código temporal de compatibilidad | Cualquier bloque marcado `// TODO: remove when migrated` |
+| Versiones duplicadas de modelos | `BusinessPartnerV1` + `BusinessPartner` coexistiendo |
+| Wrappers para formatos antiguos | Endpoints que aceptan tanto el formato viejo como el nuevo |
+
+### Regla de decisión
+
+Ante una disyuntiva entre **mantener compatibilidad** y **corregir el diseño**:
+
+```
+Pre-producción → siempre corregir el diseño
+Producción confirmada → evaluar caso por caso con evidencia documentada
+```
+
+**Corregir en el origen** significa actualizar todos los call-sites, tests, seeders y contratos para usar el modelo correcto. No significa añadir una capa de traducción.
+
+### Cuándo puede introducirse compatibilidad
+
+Solo cuando se cumplan **todas** las condiciones siguientes:
+
+1. El sistema está oficialmente en producción (deploy real, usuarios reales).
+2. Existen consumidores externos documentados que no pueden migrarse.
+3. Se documenta explícitamente:
+   - qué consumidor la necesita y por qué no puede migrarse,
+   - fecha límite de eliminación (máx. 2 sprints),
+   - PR o issue de seguimiento.
+
+Sin estas tres condiciones, cualquier capa de compatibilidad es rechazada en PR review.
+
+### Conflicto con EVENT-VERSIONING.md
+
+`EVENT-VERSIONING.md` define política de compatibilidad histórica para **Domain Events y Outbox** (log inmutable). Esa política es independiente y permanece vigente porque:
+- Los mensajes en el Outbox no pueden retroactivamente modificarse.
+- Aplica solo al schema de eventos, no a modelos de dominio, APIs ni Value Objects.
+
+Esta política de compatibilidad legacy **no aplica** al Outbox ni al schema de eventos.
+
+---
+
 ## Patrón de referencia: módulo Accounting
 
 Para un **módulo nuevo**, copiar la vertical por capas de **Accounting**:

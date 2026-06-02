@@ -214,6 +214,54 @@ var customer = await _customerReadStore.GetByIdAsync(id, ct);
 
 ---
 
+## B-07 — Sin compatibilidad legacy en pre-producción
+
+### RULE
+Mientras el sistema no esté confirmado en producción con clientes reales, está **prohibido** introducir capas de compatibilidad legacy. Todo cambio de modelo, contrato o código debe corregirse **en el origen** (todos los call-sites, tests, seeders y contratos), no mediante adaptadores de transición.
+
+Patrones **explícitamente prohibidos**:
+- `NormalizeType()` / `MapOldToNew()` / cualquier método que traduzca formato antiguo a nuevo.
+- Aliases de constantes duplicadas (`TypeRuc = "RUC"` cuando el código real es `"04"`).
+- Endpoints o deserializadores que aceptan dos formatos simultáneamente.
+- Código comentado `// legacy`, bloques `// TODO: remove when migrated`, wrappers `V1`/`V2` coexistentes.
+- Value Objects con rama `if (legacy) { ... }`.
+
+**No aplica** a `EVENT-VERSIONING.md` (Outbox es un log inmutable con sus propias reglas).
+
+### WHY
+Sin clientes productivos, cada capa de compatibilidad es deuda técnica innecesaria que enturbia el diseño real y complica la refactorización futura. El costo de actualizar todos los call-sites ahora es casi cero; el costo de mantener adapters en producción crece indefinidamente.
+
+### CUÁNDO SE PUEDE EXCEPCIONAR
+Solo con **las tres condiciones simultáneas**:
+1. Deploy real en producción con usuarios reales documentados.
+2. Consumidor externo que no puede migrarse en el mismo PR (con evidencia).
+3. Issue/PR de seguimiento con fecha límite ≤ 2 sprints y responsable asignado.
+
+### BAD
+```csharp
+// ❌ Adapter de transición innecesario
+public static string NormalizeType(string type) => type switch {
+    "RUC" => "04",
+    "CI"  => "05",
+    _     => type,
+};
+```
+
+### GOOD
+```csharp
+// ✅ Corrección en origen — todos los call-sites usan "04" directamente
+var bp = BusinessPartner.Create(subscriberId, "04", ruc, name, userId);
+```
+
+### ENFORCEMENT
+- **BLOQUEANTE PR:** presencia de métodos `Normalize*`, `MapLegacy*`, `Adapter*` en `ERP.Domain` o `ERP.Application` sin excepción documentada.
+- **BLOQUEANTE PR:** constantes de compatibilidad duplicadas (alias que mapean un valor a otro equivalente).
+- Revisión: todo `// TODO: remove` sin issue link y fecha es violación inmediata.
+
+Política completa: [CORE-ARCHITECTURE.md — Política de compatibilidad legacy](./CORE-ARCHITECTURE.md#política-de-compatibilidad-legacy)
+
+---
+
 # CQRS
 
 ## C-01 — Un Command/Query = un handler + un validator
