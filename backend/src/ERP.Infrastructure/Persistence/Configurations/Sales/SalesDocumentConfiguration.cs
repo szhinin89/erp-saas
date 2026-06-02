@@ -24,7 +24,7 @@ public sealed class SalesDocumentConfiguration : IEntityTypeConfiguration<SalesD
             .HasMaxLength(20)
             .HasConversion(
                 v => v.ToDbValue(),
-                v => SalesDocumentTypeExtensions.FromLegacyCode(v))
+                v => SalesDocumentTypeExtensions.FromCode(v))
             .IsRequired();
         builder.Property(e => e.DocNumber).HasColumnName("doc_number").HasMaxLength(30);
         builder.Property(e => e.EstabCode).HasColumnName("estab_code").HasMaxLength(3);

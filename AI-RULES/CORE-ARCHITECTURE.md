@@ -54,6 +54,19 @@ Estructura **real** (prevalece sobre diagramas desactualizados):
 - Integraciones externas ni contratos públicos vigentes.
 - Consumidores de API que no se puedan migrar junto con el código.
 
+### Dónde SÍ están permitidos los mappers
+
+El mapping legítimo vive **exclusivamente en capas de borde** y debe tener un consumidor identificado:
+
+| Capa | Mapping permitido | Ejemplo |
+|---|---|---|
+| `ERP.Infrastructure` — EF value converters | DB string ↔ enum de dominio | `FromCode(v)` en `SalesDocumentConfiguration` |
+| `ERP.Infrastructure` — XML builders | Enum de dominio → código SRI para XML | `ToSriDocCode()` en `SriXmlFacturaBuilder` |
+| `ERP.Infrastructure` — Importadores | Formato externo → modelo de dominio | Parse de XML SRI recibido |
+| `ERP.API` — Contratos | Request DTO → Command / Query | Mapeo manual en controllers |
+
+**El dominio no mapea.** Los Value Objects y entidades de dominio expresan el modelo canónico directo, sin métodos de conversión a formatos externos.
+
 ### Prohibiciones absolutas (pre-producción)
 
 Mientras el sistema no esté confirmado en producción, está **prohibido** introducir:
@@ -61,12 +74,13 @@ Mientras el sistema no esté confirmado en producción, está **prohibido** intr
 | Patrón prohibido | Ejemplos concretos |
 |---|---|
 | Backward compatibility | Aceptar formato antiguo y nuevo simultáneamente |
-| Legacy adapters | `NormalizeType()`, `MapOldToNew()`, `LegacyMapper` |
-| Aliases históricos | `TypeRuc = "RUC"` cuando el código real es `"04"` |
-| Mappers de transición | Convertir automáticamente `"RUC"→"04"` en lugar de corregir el origen |
-| Código temporal de compatibilidad | Cualquier bloque marcado `// TODO: remove when migrated` |
+| Aliases vacíos en dominio | `SriCode => Type` (alias trivial sin consumidor diferenciado) |
+| Legacy adapters en dominio | `NormalizeType()`, `MapOldToNew()` en Value Objects o entidades |
+| Aliases de constantes duplicadas | `TypeRuc = "RUC"` cuando el código real ya es `"04"` |
+| Mappers de transición en Application | `"RUC"→"04"` automático en lugar de corregir el origen |
+| Código temporal | Cualquier bloque marcado `// TODO: remove when migrated` sin issue link |
 | Versiones duplicadas de modelos | `BusinessPartnerV1` + `BusinessPartner` coexistiendo |
-| Wrappers para formatos antiguos | Endpoints que aceptan tanto el formato viejo como el nuevo |
+| Wrappers polimórficos | Endpoints que aceptan tanto el formato viejo como el nuevo |
 
 ### Regla de decisión
 

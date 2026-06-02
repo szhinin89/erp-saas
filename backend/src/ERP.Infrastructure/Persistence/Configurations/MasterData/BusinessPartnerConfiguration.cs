@@ -26,8 +26,6 @@ public sealed class BusinessPartnerConfiguration : IEntityTypeConfiguration<Busi
               .HasColumnName("identification_number")
               .HasMaxLength(TaxIdentification.NumberMaxLen)
               .IsRequired();
-            // SriCode es calculado — no persiste
-            id.Ignore(v => v.SriCode);
         });
 
         builder.Property(x => x.LegalName)

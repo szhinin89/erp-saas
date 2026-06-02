@@ -84,7 +84,7 @@ public static class SalesDocumentMapper
             doc.BranchId ?? Guid.Empty,
             doc.BusinessPartnerId ?? Guid.Empty,
             doc.WarehouseId ?? Guid.Empty,
-            doc.DocType.ToLegacySriCode(),
+            doc.DocType.ToSriDocCode(),
             doc.EstabCode ?? "",
             doc.EmPointCode ?? "",
             doc.Sequential ?? "",
@@ -186,7 +186,7 @@ public static class SalesDocumentMapper
     public static SalesNote ToLegacyNote(SalesDocument doc)
     {
         var noteType = doc.DocType == SalesDocumentType.CreditNote ? "CREDIT" : "DEBIT";
-        var sriCode  = doc.DocType.ToLegacySriCode();
+        var sriCode  = doc.DocType.ToSriDocCode();
 
         var note = SalesNote.Create(
             doc.SubscriberId,

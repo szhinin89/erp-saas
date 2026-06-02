@@ -333,7 +333,7 @@ public sealed class CreateSaleCommandHandler : IRequestHandler<CreateSaleCommand
             secuencial,
             accessKey,
             issueDate,
-            cliente.Identification.SriCode,
+            cliente.Identification.Type,
             cliente.Identification.Number,
             cliente.LegalName,
             null,

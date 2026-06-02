@@ -52,8 +52,5 @@ public sealed record TaxIdentification
         return new TaxIdentification(t, n);
     }
 
-    /// <summary>El código SRI es el tipo — se mantiene por compatibilidad con generación XML.</summary>
-    public string SriCode => Type;
-
     public override string ToString() => $"{Type}:{Number}";
 }

@@ -258,7 +258,7 @@ public static class SriXmlFacturaBuilder
 
     // ── Helpers identificación comprador ─────────────────────────────────────
 
-    private static string SriIdTypeCode(BusinessPartner? bp) => bp?.Identification.SriCode ?? "07";
+    private static string SriIdTypeCode(BusinessPartner? bp) => bp?.Identification.Type ?? "07";
 
     // ── Formato ───────────────────────────────────────────────────────────────
 
