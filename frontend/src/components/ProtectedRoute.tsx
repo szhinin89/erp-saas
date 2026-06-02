@@ -99,10 +99,11 @@ export function ProtectedRoute() {
   //
   // Does NOT depend on the 403 company_onboarding_required response.
   // The CompanyOnboardingMiddleware remains as backend defense-in-depth.
+  // !== true covers both false (confirmed pending) and undefined (session pre-dates the field).
   const companySelectedButNotOnboarded =
     isAuthenticated &&
     !!user?.companyId &&
-    user.onboardingCompleted === false;
+    user.onboardingCompleted !== true;
 
   if (companySelectedButNotOnboarded && requiresCompanyContext(path)) {
     return <Navigate to="/onboarding/company" replace />;

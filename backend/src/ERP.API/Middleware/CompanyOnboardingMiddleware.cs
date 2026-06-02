@@ -107,7 +107,7 @@ public sealed class CompanyOnboardingMiddleware
         }
 
         // 6 — block: onboarding not complete
-        _logger.LogInformation(
+        _logger.LogDebug(
             "CompanyOnboarding: BLOCKED company={CompanyId} path={Path}",
             companyId, context.Request.Path);
 
