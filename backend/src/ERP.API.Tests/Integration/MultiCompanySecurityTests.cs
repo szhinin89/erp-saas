@@ -160,7 +160,7 @@ public sealed class MultiCompanySecurityTests : IAsyncLifetime
 
             var customerB = ERP.Domain.MasterData.Entities.BusinessPartner.Create(
                 subscriberId:         subBId,
-                identificationType:   "RUC",
+                identificationType:   "04",
                 identificationNumber: "0912345678001",
                 legalName:            "Cliente Solo SubB",
                 createdBy:            userBId);
@@ -245,7 +245,7 @@ public sealed class MultiCompanySecurityTests : IAsyncLifetime
 
         // Crear BP subscriber-scoped
         var bp = ERP.Domain.MasterData.Entities.BusinessPartner.Create(
-            subscriber.Id, "RUC", "1790016919001", "Proveedor Global S7", userId);
+            subscriber.Id, "04", "1790016919001", "Proveedor Global S7", userId);
         db.BusinessPartners.Add(bp);
 
         JobCompanyContext.Current = compA.Id;

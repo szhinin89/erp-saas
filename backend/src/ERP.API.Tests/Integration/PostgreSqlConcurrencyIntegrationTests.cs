@@ -66,9 +66,10 @@ public sealed class PostgreSqlConcurrencyIntegrationTests : IAsyncLifetime
         _factory.MutableUser.UserId = userId;
 
         var command = new CreateBusinessPartnerCommand(
-            "RUC",
+            "04",
             "1790099999001",
             "Concurrent BP SA",
+            null,
             null,
             null,
             null,
@@ -131,7 +132,7 @@ public sealed class PostgreSqlConcurrencyIntegrationTests : IAsyncLifetime
             CompanyUserMembership.Create(company.Id, user.Id, "Admin", null, user.Id));
 
         var bp = BusinessPartner.Create(
-            subscriber.Id, "RUC", "1790016919003", "BP Seed", user.Id);
+            subscriber.Id, "04", "1790016919003", "BP Seed", user.Id);
         db.BusinessPartners.Add(bp);
 
         await db.SaveChangesAsync();

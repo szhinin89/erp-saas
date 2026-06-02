@@ -5,14 +5,15 @@ namespace ERP.Application.Modules.Logistics.UseCases.CreateCarrier;
 
 public class CreateCarrierValidator : AbstractValidator<CreateCarrierCommand>
 {
-    private static readonly string[] AllowedIdTypes = ["RUC", "CI", "PASSPORT"];
+    // Transportistas: RUC (04) o cédula (05). Pasaporte (06) admitido para extranjeros.
+    private static readonly string[] AllowedIdTypes = ["04", "05", "06"];
 
     public CreateCarrierValidator()
     {
         RuleFor(x => x.IdentificationType)
             .NotEmpty()
-            .Must(t => AllowedIdTypes.Contains(t.ToUpperInvariant()))
-            .WithMessage("Identification type must be RUC, CI or PASSPORT.");
+            .Must(t => AllowedIdTypes.Contains(t))
+            .WithMessage("El tipo de identificación debe ser 04 (RUC), 05 (Cédula) o 06 (Pasaporte).");
 
         RuleFor(x => x.IdentificationNumber)
             .NotEmpty()

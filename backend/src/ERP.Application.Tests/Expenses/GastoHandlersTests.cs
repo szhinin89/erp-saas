@@ -153,7 +153,7 @@ public sealed class GastoHandlersTests
         uow.Setup(x => x.RollbackAsync(It.IsAny<CancellationToken>())).Returns(Task.CompletedTask);
 
         var bpRepo = new Mock<IBusinessPartnerRepository>();
-        bpRepo.Setup(x => x.GetByIdentificationAsync("RUC", ruc, It.IsAny<CancellationToken>()))
+        bpRepo.Setup(x => x.GetByIdentificationAsync("04", ruc, It.IsAny<CancellationToken>()))
             .ReturnsAsync((BusinessPartner?)null);
         BusinessPartner? nuevoBp = null;
         bpRepo.Setup(x => x.AddAsync(It.IsAny<BusinessPartner>(), It.IsAny<CancellationToken>()))

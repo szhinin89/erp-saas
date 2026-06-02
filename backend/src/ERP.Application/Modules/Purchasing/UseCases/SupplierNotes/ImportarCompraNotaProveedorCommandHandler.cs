@@ -79,7 +79,7 @@ public sealed class ImportPurchaseSupplierNoteCommandHandler
             return Result<SupplierPurchaseNoteDto>.Failure(
                 $"Ya existe una nota de Supplier con la clave de acceso '{parsed.AccessKey}'.");
 
-        var Supplier = await _bpRepo.GetByIdentificationAsync("RUC", parsed.SupplierRuc, ct);
+        var Supplier = await _bpRepo.GetByIdentificationAsync("04", parsed.SupplierRuc, ct);
         if (Supplier is null)
             return Result<SupplierPurchaseNoteDto>.Failure(
                 $"No hay proveedor registrado con RUC '{parsed.SupplierRuc}'. Cree el proveedor antes de importar la nota.");

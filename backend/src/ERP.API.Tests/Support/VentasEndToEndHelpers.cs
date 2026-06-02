@@ -136,7 +136,7 @@ internal static class VentasEndToEndHelpers
         // Cliente activo
         var cliente = BusinessPartner.Create(
             subscriberId:        subscriberId,
-            identificationType:  "RUC",
+            identificationType:  "04",
             identificationNumber: "9999999999001",
             legalName:           "Cliente Test S.A.",
             createdBy:           userId);

@@ -53,7 +53,7 @@ public sealed class KardexFlujoCompletoTests
         // Crear proveedor de prueba
         var proveedor = BusinessPartner.Create(
             subscriberId:        seed.SubscriberId,
-            identificationType:  "RUC",
+            identificationType:  "04",
             identificationNumber: seed.ProveedorRuc,
             legalName:           "Supplier E2E S.A.",
             createdBy:           seed.UserId);

@@ -213,10 +213,10 @@ public sealed class CreateExpenseCommandHandler
     private async Task<BusinessPartner> ObtenerOCrearBusinessPartner(
         Guid subscriberId, string ruc, string razonSocial, Guid userId, CancellationToken ct)
     {
-        var existente = await _bpRepo.GetByIdentificationAsync("RUC", ruc, ct);
+        var existente = await _bpRepo.GetByIdentificationAsync("04", ruc, ct);
         if (existente is not null) return existente;
 
-        var nuevo = BusinessPartner.Create(subscriberId, "RUC", ruc, razonSocial, userId);
+        var nuevo = BusinessPartner.Create(subscriberId, "04", ruc, razonSocial, userId);
         await _bpRepo.AddAsync(nuevo, ct);
         return nuevo;
     }

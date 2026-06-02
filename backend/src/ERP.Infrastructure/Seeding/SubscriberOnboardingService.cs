@@ -16,8 +16,8 @@ public sealed class SubscriberOnboardingService : ISubscriberOnboardingService
 {
     // ── Constants ─────────────────────────────────────────────────────────────
 
-    /// <summary>Ecuador SRI standard identification for "Consumidor Final".</summary>
-    private const string ConsumidorFinalIdType   = "CI";
+    /// <summary>Consumidor Final — código SRI 07, número estándar ecuatoriano.</summary>
+    private const string ConsumidorFinalIdType   = "07";
     private const string ConsumidorFinalIdNumber = "9999999999";
     private const string ConsumidorFinalName     = "CONSUMIDOR FINAL";
 

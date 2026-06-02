@@ -166,7 +166,7 @@ public sealed class OrdenesCompraEndToEndTests
 
         var proveedor = BusinessPartner.Create(
             subscriberId:         seed.SubscriberId,
-            identificationType:   "RUC",
+            identificationType:   "04",
             identificationNumber: seed.ProveedorRuc,
             legalName:            "Supplier Test S.A.",
             createdBy:            seed.UserId);

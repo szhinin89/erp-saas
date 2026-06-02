@@ -333,7 +333,7 @@ public sealed class CreateSaleCommandHandler : IRequestHandler<CreateSaleCommand
             secuencial,
             accessKey,
             issueDate,
-            MapBuyerIdType(cliente.Identification.Type),
+            cliente.Identification.SriCode,
             cliente.Identification.Number,
             cliente.LegalName,
             null,
@@ -498,14 +498,6 @@ public sealed class CreateSaleCommandHandler : IRequestHandler<CreateSaleCommand
         return Result<bool>.Success(true);
     }
 
-    // identificationType ya es el código SRI directo — se retorna directo
-    private static string MapBuyerIdType(string identificationType) => identificationType switch
-    {
-        TaxIdentification.SriRuc      => TaxIdentification.SriRuc,
-        TaxIdentification.SriCi       => TaxIdentification.SriCi,
-        TaxIdentification.SriPassport => TaxIdentification.SriPassport,
-        _                             => TaxIdentification.SriConsumidorFinal,
-    };
 
     private static string SriVatCodeFromPercentage(decimal percentage) => percentage switch
     {
