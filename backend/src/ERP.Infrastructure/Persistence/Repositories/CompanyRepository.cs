@@ -23,8 +23,15 @@ public sealed class CompanyRepository : ICompanyRepository
         => _db.Companies.AsNoTracking()
             .FirstOrDefaultAsync(c => c.SubscriberId == subscriberId && c.Ruc == ruc, ct);
 
+    /// <summary>
+    /// RUC is globally unique across ALL subscribers (Ecuador tax law).
+    /// Uses IgnoreQueryFilters so the check spans every tenant — prevents the
+    /// subscriber-scoped EF filter from masking a cross-tenant duplicate
+    /// that the database constraint (uq_company_ruc) would otherwise reject with a 500.
+    /// </summary>
     public Task<Company?> GetByRucAsync(string ruc, CancellationToken ct = default)
         => _db.Companies.AsNoTracking()
+            .IgnoreQueryFilters()
             .FirstOrDefaultAsync(c => c.Ruc == ruc, ct);
 
     public async Task<IReadOnlyList<Company>> GetByIdsForManagementAsync(
