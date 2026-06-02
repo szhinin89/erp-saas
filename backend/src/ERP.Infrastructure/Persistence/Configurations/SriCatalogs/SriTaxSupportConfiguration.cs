@@ -29,9 +29,12 @@ public class SriTaxSupportConfiguration : IEntityTypeConfiguration<SriTaxSupport
             new SriTaxSupport { Code = "12", Name = "Exportación de Bienes",                                 IsActive = true },
             new SriTaxSupport { Code = "13", Name = "No aplica",                                             IsActive = true },
             new SriTaxSupport { Code = "14", Name = "Exportación de servicios con domicilio en el exterior", IsActive = true },
-            new SriTaxSupport { Code = "15", Name = "Supplier directo de exportador de bienes",             IsActive = true },
-            new SriTaxSupport { Code = "19", Name = "Reembolso de gastos",                                   IsActive = true },
-            new SriTaxSupport { Code = "20", Name = "Notas de crédito por devoluciones",                          IsActive = true }
+            new SriTaxSupport { Code = "15", Name = "Proveedor directo de exportador de bienes",            IsActive = true },
+            new SriTaxSupport { Code = "16", Name = "Provisiones de cuentas incobrables",                   IsActive = true },
+            new SriTaxSupport { Code = "17", Name = "Nota de crédito deducible",                            IsActive = true },
+            new SriTaxSupport { Code = "18", Name = "Importaciones",                                        IsActive = true },
+            new SriTaxSupport { Code = "19", Name = "Reembolso de gastos",                                  IsActive = true },
+            new SriTaxSupport { Code = "20", Name = "Notas de crédito por devoluciones",                    IsActive = true }
         );
     }
 }

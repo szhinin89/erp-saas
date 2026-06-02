@@ -18,6 +18,7 @@ public class SriDocTypeConfiguration : IEntityTypeConfiguration<SriDocType>
 
         builder.HasData(
             new SriDocType { Code = "01", Name = "Factura",                                                   ShortName = "FACTURA",    IsElectronic = true,  IsActive = true  },
+            new SriDocType { Code = "02", Name = "Nota de Venta - RISE",                                      ShortName = "NV_RISE",    IsElectronic = true,  IsActive = true  },
             new SriDocType { Code = "03", Name = "Liquidación de Compra de Bienes y Prestación de Servicios", ShortName = "LIQ_COMPRA", IsElectronic = true,  IsActive = true  },
             new SriDocType { Code = "04", Name = "Nota de Crédito",                                           ShortName = "N_CREDITO",  IsElectronic = true,  IsActive = true  },
             new SriDocType { Code = "05", Name = "Nota de Débito",                                            ShortName = "N_DEBITO",   IsElectronic = true,  IsActive = true  },
