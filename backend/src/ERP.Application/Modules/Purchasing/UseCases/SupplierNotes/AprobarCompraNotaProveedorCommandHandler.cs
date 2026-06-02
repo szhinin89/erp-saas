@@ -84,7 +84,7 @@ public sealed class ApprovePurchaseSupplierNoteCommandHandler
 
                 compra.RegisterAppliedNote(nota.NoteType, nota.Total, userId);
 
-                asientoResult = nota.NoteType is "CREDIT" or "CREDITO"
+                asientoResult = NoteTypeHelper.IsCredit(nota.NoteType)
                     ? await _accounting.CrearAsientoNotaCreditoCompraProveedorAsync(
                         nota.Id,
                         reference:  numeroNota,
@@ -116,7 +116,7 @@ public sealed class ApprovePurchaseSupplierNoteCommandHandler
 
                 gasto.RegisterAppliedSupplierNote(nota.NoteType, nota.Total, userId);
 
-                asientoResult = nota.NoteType is "CREDIT" or "CREDITO"
+                asientoResult = NoteTypeHelper.IsCredit(nota.NoteType)
                     ? await _accounting.CrearAsientoNotaCreditoGastoProveedorAsync(
                         nota.Id,
                         reference:     numeroNota,
@@ -207,7 +207,7 @@ public sealed class ApprovePurchaseSupplierNoteCommandHandler
                 continue;
 
             var detCant = compraDet.Quantity;
-            var sign    = nota.NoteType is "CREDIT" or "CREDITO" ? 1m : -1m;
+            var sign    = NoteTypeHelper.IsCredit(nota.NoteType) ? 1m : -1m;
             var costo   = compraDet.Quantity > 0
                 ? compraDet.UnitPrice * (1 - compraDet.DiscountPct / 100m)
                 : 0m;

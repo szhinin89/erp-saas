@@ -30,7 +30,7 @@ public sealed class PurchNoteApprovedEventHandler : INotificationHandler<PurchNo
         var userId   = notification.UserId;
         var companyId = _company.HasCompanyContext ? _company.CompanyId : (Guid?)null;
 
-        var tipoMov = notification.NoteType is "CREDIT" or "CREDITO"
+        var tipoMov = NoteTypeHelper.IsCredit(notification.NoteType)
             ? StockMovementType.SupplierCreditNote
             : StockMovementType.SupplierDebitNote;
 

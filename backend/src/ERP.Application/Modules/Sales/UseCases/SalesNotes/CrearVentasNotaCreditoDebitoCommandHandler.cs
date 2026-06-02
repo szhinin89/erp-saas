@@ -101,7 +101,7 @@ public sealed class CrearSalesNoteCommandHandler
             var company = await _companyRepository.GetByIdAsync(_currentCompany.CompanyId, ct)
                 ?? throw new InvalidOperationException("Empresa no encontrada.");
 
-            var tipoDoc = string.Equals(command.NoteType, "DEBITO", StringComparison.OrdinalIgnoreCase) ? "05" : "04";
+            var tipoDoc = NoteTypeHelper.ToSriDocCode(command.NoteType);
 
             var emPoint = await _emissionPointRepository.GetDefaultForBranchAsync(
                     _currentSubscriber.SubscriberId, factura.BranchId, ct)

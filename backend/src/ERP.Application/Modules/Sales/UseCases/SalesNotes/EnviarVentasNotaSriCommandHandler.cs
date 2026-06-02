@@ -234,7 +234,7 @@ public sealed class EnviarSalesNotesriCommandHandler : IRequestHandler<SendSales
         try
         {
             var numero = $"{nota.EstabCode}-{nota.EmPointCode}-{nota.Sequential}";
-            var isCredit = IsCreditNote(nota.NoteType);
+            var isCredit = NoteTypeHelper.IsCredit(nota.NoteType);
             var asientoResult = await CreateNoteAccountingEntryAsync(nota, numero, isCredit, ct);
 
             if (!asientoResult.IsSuccess)
@@ -289,9 +289,6 @@ public sealed class EnviarSalesNotesriCommandHandler : IRequestHandler<SendSales
         }
     }
 
-    private static bool IsCreditNote(string noteType) =>
-        string.Equals(noteType, "CREDIT", StringComparison.OrdinalIgnoreCase)
-        || string.Equals(noteType, "CREDITO", StringComparison.OrdinalIgnoreCase);
 
     private async Task<Result<Guid>> CreateNoteAccountingEntryAsync(
         ERP.Domain.Modules.Sales.Entities.SalesNote nota,

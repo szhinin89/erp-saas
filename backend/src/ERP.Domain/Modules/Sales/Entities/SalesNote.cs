@@ -62,7 +62,7 @@ public sealed class SalesNote : AuditableEntity, ISubscriberScopedEntity
 
         var dt = (docType ?? string.Empty).Trim();
         if (dt is not ("04" or "05"))
-            dt = nt == "CREDIT" ? "04" : "05";
+            throw new ArgumentException("DocType must be '04' (credit) or '05' (debit). Caller must resolve from NoteType before invoking Create.", nameof(docType));
 
         var note = new SalesNote
         {
