@@ -50,6 +50,9 @@ export function CompanyOnboardingPage() {
       .then(c => {
         setCtx(c);
         if (c.onboardingCompleted) {
+          // Sync the store BEFORE navigating so ProtectedRoute reads onboardingCompleted=true
+          // and doesn't redirect back here, which would cause an infinite loop.
+          setOnboardingCompleted(true);
           navigate('/dashboard', { replace: true });
           return;
         }
