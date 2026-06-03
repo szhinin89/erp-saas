@@ -1,4 +1,5 @@
 using ERP.Domain.Configuration.Entities;
+using ERP.Domain.Modules.SriCatalogs.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -16,13 +17,22 @@ public sealed class RetentionSettingsConfiguration : IEntityTypeConfiguration<Re
         builder.Property(e => e.TaxType).HasColumnName("tax_type").HasMaxLength(RetentionSettings.TaxTypeMaxLen).IsRequired();
         builder.Property(e => e.SubjectType).HasColumnName("subject_type").HasMaxLength(RetentionSettings.SubjectTypeMaxLen).IsRequired();
         builder.Property(e => e.SriCode).HasColumnName("sri_code").HasMaxLength(RetentionSettings.SriCodeMaxLen).IsRequired();
-        builder.Property(e => e.Percentage).HasColumnName("percentage").HasPrecision(18, 4).IsRequired();
         builder.Property(e => e.IsActive).HasColumnName("is_active").IsRequired();
         builder.Property(e => e.CreatedAt).HasColumnName("created_at");
         builder.Property(e => e.UpdatedAt).HasColumnName("updated_at");
         builder.Property(e => e.CreatedBy).HasColumnName("created_by");
         builder.Property(e => e.UpdatedBy).HasColumnName("updated_by");
 
-        builder.HasIndex(e => new { e.SubscriberId, e.TaxType, e.SubjectType, e.SriCode }).IsUnique().HasDatabaseName("uq_retention_settings_subscriber_tax_subject_code");
+        // FK a global.sri_retention_code — fuente única del porcentaje
+        builder.HasOne(e => e.SriRetentionCode)
+            .WithMany()
+            .HasForeignKey(e => e.SriCode)
+            .HasPrincipalKey(s => s.Code)
+            .IsRequired(false)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        builder.HasIndex(e => new { e.SubscriberId, e.TaxType, e.SubjectType, e.SriCode })
+            .IsUnique()
+            .HasDatabaseName("uq_retention_settings_subscriber_tax_subject_code");
     }
 }

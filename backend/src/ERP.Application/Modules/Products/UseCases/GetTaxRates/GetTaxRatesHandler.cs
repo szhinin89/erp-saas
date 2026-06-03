@@ -24,7 +24,7 @@ public class GetTaxRatesHandler : IRequestHandler<GetTaxRatesQuery, Result<IRead
     {
         var subscriberId = _currentSubscriber.SubscriberId;
         var items = await _repo.GetTaxRatesAsync(subscriberId, request.Type, request.OnlyActive, ct);
-        var dtos = items.Select(x => new TaxRateDto(x.Id, x.Code, x.Name, x.Type, x.Percentage, x.IsActive)).ToList();
+        var dtos = items.Select(x => new TaxRateDto(x.Id, x.Code, x.Name, x.Type, x.SriVatCode, x.SriIceCode, x.IsActive)).ToList();
         return Result<IReadOnlyList<TaxRateDto>>.Success(dtos);
     }
 }

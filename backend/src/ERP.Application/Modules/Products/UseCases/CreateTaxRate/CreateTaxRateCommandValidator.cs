@@ -1,3 +1,4 @@
+using ERP.Domain.Products.Entities;
 using FluentValidation;
 
 namespace ERP.Application.Products.UseCases.CreateTaxRate;
@@ -17,7 +18,12 @@ public sealed class CreateTaxRateCommandValidator : AbstractValidator<CreateTaxR
         RuleFor(x => x.Type)
             .IsInEnum().WithMessage("El tipo de tarifa no es válido.");
 
-        RuleFor(x => x.Percentage)
-            .InclusiveBetween(0, 100).WithMessage("El porcentaje debe estar entre 0 y 100.");
+        RuleFor(x => x.SriVatCode)
+            .NotEmpty().WithMessage("sriVatCode es requerido para tipo VAT.")
+            .When(x => x.Type == TaxRateType.VAT);
+
+        RuleFor(x => x.SriIceCode)
+            .NotEmpty().WithMessage("sriIceCode es requerido para tipo Excise.")
+            .When(x => x.Type == TaxRateType.Excise);
     }
 }

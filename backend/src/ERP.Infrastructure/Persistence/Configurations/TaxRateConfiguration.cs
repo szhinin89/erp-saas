@@ -1,3 +1,4 @@
+using ERP.Domain.Modules.SriCatalogs.Entities;
 using ERP.Domain.Products.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
@@ -17,7 +18,27 @@ public class TaxRateConfiguration : IEntityTypeConfiguration<TaxRate>
         builder.Property(x => x.Code).HasColumnName("code").HasMaxLength(20).IsRequired();
         builder.Property(x => x.Name).HasColumnName("name").HasMaxLength(120).IsRequired();
         builder.Property(x => x.Type).HasColumnName("type").IsRequired();
-        builder.Property(x => x.Percentage).HasColumnName("percentage").HasPrecision(9, 2).IsRequired();
+
+        // FKs a tablas globales — fuente única del porcentaje
+        builder.Property(x => x.SriVatCode).HasColumnName("sri_vat_code").HasMaxLength(10);
+        builder.Property(x => x.SriIceCode).HasColumnName("sri_ice_code").HasMaxLength(10);
+
+        builder.HasOne(x => x.SriVatRate)
+            .WithMany()
+            .HasForeignKey(x => x.SriVatCode)
+            .HasPrincipalKey(v => v.Code)
+            .IsRequired(false)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        builder.HasOne(x => x.SriIceRate)
+            .WithMany()
+            .HasForeignKey(x => x.SriIceCode)
+            .HasPrincipalKey(v => v.Code)
+            .IsRequired(false)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        // Percentage es computed desde navigation — no se persiste
+        builder.Ignore(x => x.Percentage);
 
         builder.Property(x => x.IsActive).HasColumnName("is_active").IsRequired();
         builder.Property(x => x.CreatedAt).HasColumnName("created_at");
@@ -31,4 +52,3 @@ public class TaxRateConfiguration : IEntityTypeConfiguration<TaxRate>
             .HasDatabaseName("ix_tax_rates_subscriber_type_code");
     }
 }
-

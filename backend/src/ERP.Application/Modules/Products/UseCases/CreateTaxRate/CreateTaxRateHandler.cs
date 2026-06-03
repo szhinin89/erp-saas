@@ -35,7 +35,8 @@ public class CreateTaxRateHandler : IRequestHandler<CreateTaxRateCommand, Result
         var subscriberId = _currentSubscriber.SubscriberId;
         var userId = _currentUser.UserId;
 
-        var entity = TaxRate.Create(subscriberId, command.Code, command.Name, command.Type, command.Percentage, userId);
+        var entity = TaxRate.Create(subscriberId, command.Code, command.Name, command.Type,
+            command.SriVatCode, command.SriIceCode, userId);
         await _repo.AddTaxRateAsync(entity, ct);
         await _activity.AddAsync(UserActivity.Create(
             subscriberId,
@@ -46,10 +47,10 @@ public class CreateTaxRateHandler : IRequestHandler<CreateTaxRateCommand, Result
             action: "taxRate.create",
             entityType: "TaxRate",
             entityId: entity.Id,
-            description: $"{entity.Code} — {entity.Name} ({entity.Type} {entity.Percentage}%)"), ct);
+            description: $"{entity.Code} — {entity.Name} ({entity.Type})"), ct);
         await _repo.SaveChangesAsync(ct);
 
-        return Result<TaxRateDto>.Success(new TaxRateDto(entity.Id, entity.Code, entity.Name, entity.Type, entity.Percentage, entity.IsActive));
+        return Result<TaxRateDto>.Success(new TaxRateDto(entity.Id, entity.Code, entity.Name,
+            entity.Type, entity.SriVatCode, entity.SriIceCode, entity.IsActive));
     }
 }
-

@@ -66,6 +66,14 @@ public class UnitOfMeasureConfiguration : IEntityTypeConfiguration<UnitOfMeasure
         builder.Property(x => x.Code).HasColumnName("code").HasMaxLength(20).IsRequired();
         builder.Property(x => x.Name).HasColumnName("name").HasMaxLength(120).IsRequired();
         builder.Property(x => x.Symbol).HasColumnName("symbol").HasMaxLength(20);
+        // FK a global.sri_uom — fuente única del código SRI para XML electrónico
+        builder.Property(x => x.SriUomCode).HasColumnName("sri_uom_code").HasMaxLength(5);
+        builder.HasOne<ERP.Domain.Modules.SriCatalogs.Entities.SriUom>()
+            .WithMany()
+            .HasForeignKey(x => x.SriUomCode)
+            .HasPrincipalKey(u => u.Code)
+            .IsRequired(false)
+            .OnDelete(DeleteBehavior.Restrict);
 
         builder.Property(x => x.IsActive).HasColumnName("is_active").IsRequired();
         builder.Property(x => x.CreatedAt).HasColumnName("created_at");

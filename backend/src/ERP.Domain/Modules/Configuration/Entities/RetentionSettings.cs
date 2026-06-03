@@ -1,7 +1,12 @@
 using ERP.Domain.Common;
+using ERP.Domain.Modules.SriCatalogs.Entities;
 
 namespace ERP.Domain.Configuration.Entities;
 
+/// <summary>
+/// Configuración de retenciones activas para un suscriptor.
+/// SriCode referencia global.sri_retention_code — el porcentaje NO se duplica aquí.
+/// </summary>
 public sealed class RetentionSettings : AuditableEntity, ISubscriberScopedEntity
 {
     public const int TaxTypeMaxLen      = 20;
@@ -10,9 +15,12 @@ public sealed class RetentionSettings : AuditableEntity, ISubscriberScopedEntity
 
     public string  TaxType      { get; private set; } = null!;
     public string  SubjectType  { get; private set; } = null!;
+    /// <summary>FK a global.sri_retention_code.Code — fuente única del porcentaje.</summary>
     public string  SriCode      { get; private set; } = null!;
-    public decimal Percentage   { get; private set; }
     public bool    IsActive     { get; private set; } = true;
+
+    /// <summary>Navigation a la fuente de verdad del porcentaje.</summary>
+    public SriRetentionCode? SriRetentionCode { get; private set; }
 
     private RetentionSettings() { }
 
@@ -21,7 +29,6 @@ public sealed class RetentionSettings : AuditableEntity, ISubscriberScopedEntity
         string  taxType,
         string  subjectType,
         string  sriCode,
-        decimal percentage,
         Guid    createdBy)
     {
         var c = new RetentionSettings
@@ -31,7 +38,6 @@ public sealed class RetentionSettings : AuditableEntity, ISubscriberScopedEntity
             TaxType     = (taxType ?? string.Empty).Trim().ToUpperInvariant(),
             SubjectType = (subjectType ?? string.Empty).Trim().ToUpperInvariant(),
             SriCode     = (sriCode ?? string.Empty).Trim(),
-            Percentage  = percentage,
             IsActive    = true,
         };
         c.SetCreated(createdBy);

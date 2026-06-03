@@ -473,7 +473,7 @@ public sealed class SalesNotesYRetentionsEndToEndTests
         db.Accounts.Add(Account.Create(
             tid, "2.2.77", "Pasivo RETENCIONES fuente", AccountType.Liability, AccountNature.Credit, userId));
         db.RetentionSettings.Add(RetentionSettings.Create(
-            tid, "RENTA", "Supplier", "303", 1.5m, userId));
+            tid, "RENTA", "Supplier", "303", userId));
         await db.SaveChangesAsync(CancellationToken.None);
 
         var xml = IntegrationSeedData.BuildFacturaXml(seed.ClaveAcceso49, seed.ProveedorRuc);

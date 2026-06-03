@@ -148,8 +148,8 @@ internal static class DevDatabaseSeeder
             Account.Create(tenant.Id, "5.1.01", "Gastos Operativos", AccountType.Expense, AccountNature.Debit, SeederActorId));
 
         db.TaxRates.AddRange(
-            TaxRate.Create(tenant.Id, "IVA12", "IVA 12%", TaxRateType.VAT, 12m, SeederActorId),
-            TaxRate.Create(tenant.Id, "IVA0", "IVA 0%", TaxRateType.VAT, 0m, SeederActorId));
+            TaxRate.Create(tenant.Id, "IVA15", "IVA 15%", TaxRateType.VAT, sriVatCode: "10", sriIceCode: null, SeederActorId),
+            TaxRate.Create(tenant.Id, "IVA0",  "IVA 0%",  TaxRateType.VAT, sriVatCode: "0",  sriIceCode: null, SeederActorId));
 
         await db.SaveChangesAsync(ct);
 

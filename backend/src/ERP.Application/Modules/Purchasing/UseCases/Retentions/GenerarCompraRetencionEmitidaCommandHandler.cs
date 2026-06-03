@@ -119,11 +119,13 @@ public sealed class GenerateIssuedRetentionCommandHandler
                 else
                     continue;
 
-                var valor = PurchaseRetentionCalculo.CalcularValorRetenido(@base, cfg.Percentage);
+                var pct = cfg.SriRetentionCode?.Percentage
+                    ?? throw new InvalidOperationException($"Código SRI de retención '{cfg.SriCode}' no existe en global.sri_retention_code.");
+                var valor = PurchaseRetentionCalculo.CalcularValorRetenido(@base, pct);
                 if (valor <= 0) continue;
 
                 var det = PurchRetentionLine.Create(
-                    subscriberId, cfg.TaxType, cfg.SriCode, @base, cfg.Percentage, valor,
+                    subscriberId, cfg.TaxType, cfg.SriCode, @base, pct, valor,
                     compra.InvoiceNumber, userId);
                 det.AssignRetentionId(ret.Id);
                 ret.AddLine(det);
