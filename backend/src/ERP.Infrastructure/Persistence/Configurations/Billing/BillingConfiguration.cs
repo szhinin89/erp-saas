@@ -132,31 +132,6 @@ public sealed class PaymentProviderCustomerConfiguration : IEntityTypeConfigurat
     }
 }
 
-public sealed class SubscriberBillingProfileConfiguration : IEntityTypeConfiguration<SubscriberBillingProfile>
-{
-    public void Configure(EntityTypeBuilder<SubscriberBillingProfile> builder)
-    {
-        builder.ToTable("subscriber_billing_profiles");
-        builder.HasKey(x => x.Id);
-        builder.Property(x => x.Id).HasColumnName("id");
-        builder.Property(x => x.SubscriberId).HasColumnName("subscriber_id").IsRequired();
-        builder.Property(x => x.IdentificationType).HasColumnName("identification_type").HasMaxLength(SubscriberBillingProfile.IdentificationTypeMaxLen).IsRequired();
-        builder.Property(x => x.IdentificationNumber).HasColumnName("identification_number").HasMaxLength(SubscriberBillingProfile.IdentificationNumberMaxLen).IsRequired();
-        builder.Property(x => x.LegalName).HasColumnName("legal_name").HasMaxLength(SubscriberBillingProfile.LegalNameMaxLen).IsRequired();
-        builder.Property(x => x.TradeName).HasColumnName("trade_name").HasMaxLength(SubscriberBillingProfile.TradeNameMaxLen);
-        builder.Property(x => x.Address).HasColumnName("address").HasMaxLength(SubscriberBillingProfile.AddressMaxLen).IsRequired();
-        builder.Property(x => x.Phone).HasColumnName("phone").HasMaxLength(SubscriberBillingProfile.PhoneMaxLen);
-        builder.Property(x => x.Email).HasColumnName("email").HasMaxLength(SubscriberBillingProfile.EmailMaxLen);
-        builder.Property(x => x.Country).HasColumnName("country").HasMaxLength(SubscriberBillingProfile.CountryMaxLen).IsRequired();
-        builder.Property(x => x.City).HasColumnName("city").HasMaxLength(SubscriberBillingProfile.CityMaxLen);
-        builder.Property(x => x.BusinessPartnerId).HasColumnName("business_partner_id");
-        builder.Property(x => x.CreatedAt).HasColumnName("created_at");
-        builder.Property(x => x.UpdatedAt).HasColumnName("updated_at");
-        builder.Property(x => x.CreatedBy).HasColumnName("created_by");
-        builder.Property(x => x.UpdatedBy).HasColumnName("updated_by");
-        builder.HasIndex(x => x.SubscriberId).IsUnique().HasDatabaseName("ux_subscriber_billing_profiles_subscriber");
-    }
-}
 
 public sealed class PaymentProviderSubscriptionConfiguration : IEntityTypeConfiguration<PaymentProviderSubscription>
 {

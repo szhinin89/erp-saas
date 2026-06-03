@@ -7,6 +7,6 @@ public sealed class FacturaTirillaModel
 {
     public FacturaTirillaDocument Venta { get; set; } = null!;
     public BusinessPartner? Buyer { get; set; }
-    public BillingSettings Configuracion { get; set; } = null!;
+    public SubscriberBillingProfile Configuracion { get; set; } = null!;
     public bool EsPrueba { get; set; }
 }

@@ -98,8 +98,8 @@
             }
             <div class="bold">@Model.Configuracion.TradeName</div>
             <div class="small">@Model.Configuracion.LegalName</div>
-            <div class="small">RUC: @Model.Configuracion.Ruc</div>
-            <div class="small">@Model.Configuracion.MainAddress</div>
+            <div class="small">RUC: @Model.Configuracion.IdentificationNumber</div>
+            <div class="small">@Model.Configuracion.Address</div>
             <div class="small">Tel: @Model.Configuracion.Phone</div>
             @if (!string.IsNullOrWhiteSpace(Model.Configuracion.Email))
             {

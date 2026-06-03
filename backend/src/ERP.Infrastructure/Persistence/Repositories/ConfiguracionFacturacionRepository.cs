@@ -11,15 +11,15 @@ public sealed class BillingSettingsRepository : IBillingSettingsRepository
 
     public BillingSettingsRepository(ErpDbContext context) => _context = context;
 
-    public Task<BillingSettings?> GetBySubscriberIdAsync(Guid subscriberId, CancellationToken ct = default)
-        => _context.BillingSettings.FirstOrDefaultAsync(c => c.SubscriberId == subscriberId, ct);
+    public Task<SubscriberBillingProfile?> GetBySubscriberIdAsync(Guid subscriberId, CancellationToken ct = default)
+        => _context.SubscriberBillingProfiles.FirstOrDefaultAsync(c => c.SubscriberId == subscriberId, ct);
 
-    public Task AddAsync(BillingSettings config, CancellationToken ct = default)
-        => _context.BillingSettings.AddAsync(config, ct).AsTask();
+    public Task AddAsync(SubscriberBillingProfile profile, CancellationToken ct = default)
+        => _context.SubscriberBillingProfiles.AddAsync(profile, ct).AsTask();
 
-    public Task UpdateAsync(BillingSettings config, CancellationToken ct = default)
+    public Task UpdateAsync(SubscriberBillingProfile profile, CancellationToken ct = default)
     {
-        _context.BillingSettings.Update(config);
+        _context.SubscriberBillingProfiles.Update(profile);
         return Task.CompletedTask;
     }
 

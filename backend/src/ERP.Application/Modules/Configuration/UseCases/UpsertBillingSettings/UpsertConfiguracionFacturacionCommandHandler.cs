@@ -1,4 +1,4 @@
-using MediatR;
+﻿using MediatR;
 using ERP.Application.Common;
 using ERP.Application.Configuration.DTOs;
 using ERP.Domain.Configuration.Entities;
@@ -28,60 +28,61 @@ public sealed class UpsertBillingSettingsCommandHandler
         UpsertBillingSettingsCommand command,
         CancellationToken ct)
     {
-        var config = await _repo.GetBySubscriberIdAsync(_currentSubscriber.SubscriberId, ct);
-        if (config is null)
+        var profile = await _repo.GetBySubscriberIdAsync(_currentSubscriber.SubscriberId, ct);
+        if (profile is null)
         {
-            config = BillingSettings.Create(
+            profile = SubscriberBillingProfile.Create(
                 _currentSubscriber.SubscriberId,
+                command.IdentificationType,
+                command.IdentificationNumber,
                 command.LegalName,
-                command.TradeName,
-                command.Ruc,
-                command.MainAddress,
-                command.Phone,
-                command.Email,
-                command.RequiresAccounting,
-                command.SpecialTaxpayer,
-                command.LogoBase64,
-                command.FooterText,
-                command.ReceiptWidth,
-                _currentUser.UserId);
-
-            await _repo.AddAsync(config, ct);
+                command.Address,
+                _currentUser.UserId,
+                tradeName:          command.TradeName,
+                phone:              command.Phone,
+                email:              command.Email,
+                country:            command.Country,
+                city:               command.City,
+                requiresAccounting: command.RequiresAccounting,
+                specialTaxpayer:    command.SpecialTaxpayer,
+                logoBase64:         command.LogoBase64,
+                footerText:         command.FooterText,
+                receiptWidth:       command.ReceiptWidth,
+                businessPartnerId:  command.BusinessPartnerId);
+            await _repo.AddAsync(profile, ct);
         }
         else
         {
-            config.Update(
+            profile.Update(
+                command.IdentificationType,
+                command.IdentificationNumber,
                 command.LegalName,
-                command.TradeName,
-                command.Ruc,
-                command.MainAddress,
-                command.Phone,
-                command.Email,
-                command.RequiresAccounting,
-                command.SpecialTaxpayer,
-                command.LogoBase64,
-                command.FooterText,
-                command.ReceiptWidth,
-                _currentUser.UserId);
-
-            await _repo.UpdateAsync(config, ct);
+                command.Address,
+                _currentUser.UserId,
+                tradeName:          command.TradeName,
+                phone:              command.Phone,
+                email:              command.Email,
+                country:            command.Country,
+                city:               command.City,
+                requiresAccounting: command.RequiresAccounting,
+                specialTaxpayer:    command.SpecialTaxpayer,
+                logoBase64:         command.LogoBase64,
+                footerText:         command.FooterText,
+                receiptWidth:       command.ReceiptWidth,
+                businessPartnerId:  command.BusinessPartnerId);
+            await _repo.UpdateAsync(profile, ct);
         }
 
         await _repo.SaveChangesAsync(ct);
-
-        return Result<BillingSettingsDto>.Success(new BillingSettingsDto(
-            config.Id,
-            config.SubscriberId,
-            config.LegalName,
-            config.TradeName,
-            config.Ruc,
-            config.MainAddress,
-            config.Phone,
-            config.Email,
-            config.RequiresAccounting,
-            config.SpecialTaxpayer,
-            config.LogoBase64,
-            config.FooterText,
-            config.ReceiptWidth));
+        return Result<BillingSettingsDto>.Success(ToDto(profile));
     }
+
+    private static BillingSettingsDto ToDto(SubscriberBillingProfile p) => new(
+        p.Id, p.SubscriberId,
+        p.IdentificationType, p.IdentificationNumber,
+        p.LegalName, p.TradeName, p.Address, p.Phone, p.Email,
+        p.Country, p.City,
+        p.RequiresAccounting, p.SpecialTaxpayer,
+        p.LogoBase64, p.FooterText, p.ReceiptWidth,
+        p.BusinessPartnerId);
 }

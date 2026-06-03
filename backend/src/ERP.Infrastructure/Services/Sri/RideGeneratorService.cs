@@ -92,7 +92,7 @@ public sealed class RideGeneratorService : IRideGeneratorService
 
     // â”€â”€ Generadores QuestPDF â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
-    private byte[] BuildFacturaPdf(RideFacturaSnapshot f, BusinessPartner? buyer, BillingSettings cfg, bool esPrueba)
+    private byte[] BuildFacturaPdf(RideFacturaSnapshot f, BusinessPartner? buyer, SubscriberBillingProfile cfg, bool esPrueba)
     {
         var lines   = f.Lines.ToList();
         var numDoc  = $"{f.EstabCode}-{f.EmPointCode}-{f.Sequential.PadLeft(9, '0')}";
@@ -126,8 +126,8 @@ public sealed class RideGeneratorService : IRideGeneratorService
                         }
                         emp.Item().Text(cfg.LegalName).Bold().FontSize(10).FontColor(ColPrimary);
                         emp.Item().Text(cfg.TradeName).FontSize(8).FontColor(ColMuted);
-                        emp.Item().Text($"RUC: {cfg.Ruc}").Bold();
-                        emp.Item().Text(cfg.MainAddress).FontSize(7.5f);
+                        emp.Item().Text($"RUC: {cfg.IdentificationNumber}").Bold();
+                        emp.Item().Text(cfg.Address).FontSize(7.5f);
                         if (!string.IsNullOrWhiteSpace(cfg.Phone))
                             emp.Item().Text($"Tel: {cfg.Phone}").FontSize(7.5f);
                         if (!string.IsNullOrWhiteSpace(cfg.Email))
@@ -298,7 +298,7 @@ public sealed class RideGeneratorService : IRideGeneratorService
         })).GeneratePdf();
     }
 
-    private byte[] BuildNotaPdf(SalesNote n, BusinessPartner? buyer, BillingSettings cfg, bool esPrueba)
+    private byte[] BuildNotaPdf(SalesNote n, BusinessPartner? buyer, SubscriberBillingProfile cfg, bool esPrueba)
     {
         var esCredito = n.NoteType == NoteType.Credit;
         var docLabel  = esCredito ? "NOTA DE CRÃ‰DITO" : "NOTA DE DÃ‰BITO";
@@ -331,8 +331,8 @@ public sealed class RideGeneratorService : IRideGeneratorService
                             catch { }
                         }
                         emp.Item().Text(cfg.LegalName).Bold().FontSize(10).FontColor(ColPrimary);
-                        emp.Item().Text($"RUC: {cfg.Ruc}").Bold();
-                        emp.Item().Text(cfg.MainAddress).FontSize(7.5f);
+                        emp.Item().Text($"RUC: {cfg.IdentificationNumber}").Bold();
+                        emp.Item().Text(cfg.Address).FontSize(7.5f);
                     });
 
                     row.RelativeItem().Border(1).BorderColor(ColBorder).Padding(8).Column(doc =>
@@ -506,13 +506,13 @@ public sealed class RideGeneratorService : IRideGeneratorService
             .Select(i => key.Substring(i * 10, Math.Min(10, key.Length - i * 10))));
     }
 
-    private async Task<BillingSettings> LoadBillingSettings(Guid subscriberId, CancellationToken ct)
+    private async Task<SubscriberBillingProfile> LoadBillingSettings(Guid subscriberId, CancellationToken ct)
     {
-        var cfg = await _db.Set<BillingSettings>()
+        var cfg = await _db.Set<SubscriberBillingProfile>()
             .AsNoTracking()
             .FirstOrDefaultAsync(c => c.SubscriberId == subscriberId, ct);
 
-        return cfg ?? BillingSettings.CreateDefault(subscriberId, Guid.Empty);
+        return cfg ?? SubscriberBillingProfile.CreateDefault(subscriberId, Guid.Empty);
     }
 
     private static RideFacturaSnapshot ToRideSnapshot(Invoice invoice) =>

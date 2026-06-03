@@ -7,36 +7,36 @@ public sealed class UpsertBillingSettingsCommandValidator
 {
     public UpsertBillingSettingsCommandValidator()
     {
+        RuleFor(x => x.IdentificationType)
+            .NotEmpty()
+            .MaximumLength(5);
+
+        RuleFor(x => x.IdentificationNumber)
+            .NotEmpty()
+            .MaximumLength(20);
+
         RuleFor(x => x.LegalName)
             .NotEmpty()
-            .MaximumLength(150);
+            .MaximumLength(200);
 
-        RuleFor(x => x.TradeName)
+        RuleFor(x => x.Address)
             .NotEmpty()
-            .MaximumLength(150);
-
-        RuleFor(x => x.Ruc)
-            .NotEmpty()
-            .Length(13);
-
-        RuleFor(x => x.MainAddress)
-            .NotEmpty()
-            .MaximumLength(250);
+            .MaximumLength(500);
 
         RuleFor(x => x.Phone)
-            .NotEmpty()
-            .MaximumLength(25);
+            .MaximumLength(50)
+            .When(x => !string.IsNullOrWhiteSpace(x.Phone));
 
         RuleFor(x => x.Email)
             .EmailAddress()
             .When(x => !string.IsNullOrWhiteSpace(x.Email));
 
         RuleFor(x => x.SpecialTaxpayer)
-            .MaximumLength(50)
+            .MaximumLength(200)
             .When(x => !string.IsNullOrWhiteSpace(x.SpecialTaxpayer));
 
         RuleFor(x => x.LogoBase64)
-            .MaximumLength(100000)
+            .MaximumLength(10000)
             .When(x => !string.IsNullOrWhiteSpace(x.LogoBase64));
 
         RuleFor(x => x.FooterText)

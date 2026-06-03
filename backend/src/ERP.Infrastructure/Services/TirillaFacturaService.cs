@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Hosting;
+﻿using Microsoft.AspNetCore.Hosting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using RazorLight;
@@ -44,13 +44,13 @@ public sealed class TirillaFacturaService : ITirillaFacturaService
         if (venta is null)
             throw new KeyNotFoundException("Factura no encontrada o no autorizada.");
 
-        var config = await _dbContext.Set<BillingSettings>()
+        var config = await _dbContext.Set<SubscriberBillingProfile>()
             .FirstOrDefaultAsync(c => c.SubscriberId == venta.SubscriberId, ct);
 
         if (config is null)
         {
-            _logger.LogWarning("No existe configuración de facturación para el tenant {SubscriberId}. Usando valores por defecto.", venta.SubscriberId);
-            config = BillingSettings.CreateDefault(venta.SubscriberId, Guid.Empty);
+            _logger.LogWarning("No existe configuraciÃ³n de facturaciÃ³n para el tenant {SubscriberId}. Usando valores por defecto.", venta.SubscriberId);
+            config = SubscriberBillingProfile.CreateDefault(venta.SubscriberId, Guid.Empty);
         }
 
         var buyer = await _dbContext.Set<ERP.Domain.MasterData.Entities.BusinessPartner>()

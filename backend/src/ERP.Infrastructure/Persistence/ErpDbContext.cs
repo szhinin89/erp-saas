@@ -303,8 +303,9 @@ public class ErpDbContext : DbContext
     public DbSet<InvoiceElectronic>   FiscalInvoiceElectronics  => Set<InvoiceElectronic>();
 
     // ── Configuration ─────────────────────────────────────────────────────
-    public DbSet<SriSettings>     SriSettings     => Set<SriSettings>();
-    public DbSet<BillingSettings> BillingSettings => Set<BillingSettings>();
+    public DbSet<SriSettings>              SriSettings              => Set<SriSettings>();
+    public DbSet<ERP.Domain.Configuration.Entities.SubscriberBillingProfile> SubscriberBillingProfiles
+        => Set<ERP.Domain.Configuration.Entities.SubscriberBillingProfile>();
 
     // ── Logistics / Warehouses ────────────────────────────────────────────
     public DbSet<Warehouse> Warehouses => Set<Warehouse>();
@@ -362,7 +363,6 @@ public class ErpDbContext : DbContext
 
     // ── SaaS Billing (subscriber-scoped; no ERP sales_invoice) ───────────────
     public DbSet<ERP.Domain.Billing.Entities.SubscriberBillingAccount> SubscriberBillingAccounts => Set<ERP.Domain.Billing.Entities.SubscriberBillingAccount>();
-    public DbSet<ERP.Domain.Billing.Entities.SubscriberBillingProfile> SubscriberBillingProfiles => Set<ERP.Domain.Billing.Entities.SubscriberBillingProfile>();
     public DbSet<ERP.Domain.Billing.Entities.SaasBillingInvoice> SaasBillingInvoices => Set<ERP.Domain.Billing.Entities.SaasBillingInvoice>();
     public DbSet<ERP.Domain.Billing.Entities.SaasBillingInvoiceLine> SaasBillingInvoiceLines => Set<ERP.Domain.Billing.Entities.SaasBillingInvoiceLine>();
     public DbSet<ERP.Domain.Billing.Entities.BillingEvent> BillingEvents => Set<ERP.Domain.Billing.Entities.BillingEvent>();

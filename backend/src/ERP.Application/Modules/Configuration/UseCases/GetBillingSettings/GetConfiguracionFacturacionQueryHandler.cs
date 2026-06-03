@@ -1,6 +1,7 @@
-using MediatR;
+﻿using MediatR;
 using ERP.Application.Common;
 using ERP.Application.Configuration.DTOs;
+using ERP.Domain.Configuration.Entities;
 using ERP.Domain.Configuration.Interfaces;
 
 namespace ERP.Application.Configuration.UseCases.GetBillingSettings;
@@ -22,23 +23,17 @@ public sealed class GetBillingSettingsQueryHandler
     public async Task<Result<BillingSettingsDto?>> Handle(
         GetBillingSettingsQuery query, CancellationToken ct)
     {
-        var config = await _repo.GetBySubscriberIdAsync(_currentSubscriber.SubscriberId, ct);
-        if (config is null)
+        var profile = await _repo.GetBySubscriberIdAsync(_currentSubscriber.SubscriberId, ct);
+        if (profile is null)
             return Result<BillingSettingsDto?>.Success(null);
 
         return Result<BillingSettingsDto?>.Success(new BillingSettingsDto(
-            config.Id,
-            config.SubscriberId,
-            config.LegalName,
-            config.TradeName,
-            config.Ruc,
-            config.MainAddress,
-            config.Phone,
-            config.Email,
-            config.RequiresAccounting,
-            config.SpecialTaxpayer,
-            config.LogoBase64,
-            config.FooterText,
-            config.ReceiptWidth));
+            profile.Id, profile.SubscriberId,
+            profile.IdentificationType, profile.IdentificationNumber,
+            profile.LegalName, profile.TradeName, profile.Address,
+            profile.Phone, profile.Email, profile.Country, profile.City,
+            profile.RequiresAccounting, profile.SpecialTaxpayer,
+            profile.LogoBase64, profile.FooterText, profile.ReceiptWidth,
+            profile.BusinessPartnerId));
     }
 }

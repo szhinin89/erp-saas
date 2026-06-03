@@ -4,8 +4,8 @@ namespace ERP.Domain.Configuration.Interfaces;
 
 public interface IBillingSettingsRepository
 {
-    Task<BillingSettings?> GetBySubscriberIdAsync(Guid subscriberId, CancellationToken ct = default);
-    Task AddAsync(BillingSettings config, CancellationToken ct = default);
-    Task UpdateAsync(BillingSettings config, CancellationToken ct = default);
+    Task<SubscriberBillingProfile?> GetBySubscriberIdAsync(Guid subscriberId, CancellationToken ct = default);
+    Task AddAsync(SubscriberBillingProfile profile, CancellationToken ct = default);
+    Task UpdateAsync(SubscriberBillingProfile profile, CancellationToken ct = default);
     Task SaveChangesAsync(CancellationToken ct = default);
 }
