@@ -57,7 +57,7 @@ public sealed class RideGeneratorService : IRideGeneratorService
             .AsNoTracking()
             .FirstOrDefaultAsync(b => b.Id == factura.BusinessPartnerId, ct);
 
-        var cfg      = await LoadBillingSettings(factura.SubscriberId, ct);
+        var cfg      = await LoadBillingProfile(factura.SubscriberId, ct);
         var esPrueba = IsAmbientePrueba(factura.AccessKey);
         var snapshot = ToRideSnapshot(factura);
 
@@ -82,7 +82,7 @@ public sealed class RideGeneratorService : IRideGeneratorService
                 .FirstOrDefaultAsync(b => b.Id == buyerPartnerId.Value, ct)
             : null;
 
-        var cfg      = await LoadBillingSettings(nota.SubscriberId, ct);
+        var cfg      = await LoadBillingProfile(nota.SubscriberId, ct);
         var esPrueba = IsAmbientePrueba(nota.AccessKey);
 
         _logger.LogDebug("[RIDE] Generando PDF nota {Id} ({Doc})", nota.Id, nota.AccessKey);
@@ -506,7 +506,7 @@ public sealed class RideGeneratorService : IRideGeneratorService
             .Select(i => key.Substring(i * 10, Math.Min(10, key.Length - i * 10))));
     }
 
-    private async Task<SubscriberBillingProfile> LoadBillingSettings(Guid subscriberId, CancellationToken ct)
+    private async Task<SubscriberBillingProfile> LoadBillingProfile(Guid subscriberId, CancellationToken ct)
     {
         var cfg = await _db.Set<SubscriberBillingProfile>()
             .AsNoTracking()

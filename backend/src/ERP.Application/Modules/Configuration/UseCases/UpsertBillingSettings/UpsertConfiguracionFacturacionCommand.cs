@@ -1,9 +1,9 @@
 ﻿using ERP.Application.Common;
 using MediatR;
 
-namespace ERP.Application.Configuration.UseCases.UpsertBillingSettings;
+namespace ERP.Application.Configuration.UseCases.UpsertSubscriberBillingProfile;
 
-public sealed record UpsertBillingSettingsCommand(
+public sealed record UpsertSubscriberBillingProfileCommand(
     string  IdentificationType,
     string  IdentificationNumber,
     string  LegalName,
@@ -19,4 +19,4 @@ public sealed record UpsertBillingSettingsCommand(
     string? FooterText,
     int     ReceiptWidth,
     Guid?   BusinessPartnerId)
-    : IRequest<Result<ERP.Application.Configuration.DTOs.BillingSettingsDto>>;
+    : IRequest<Result<ERP.Application.Configuration.DTOs.SubscriberBillingProfileDto>>;

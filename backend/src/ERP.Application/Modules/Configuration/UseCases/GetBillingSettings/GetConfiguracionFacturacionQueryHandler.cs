@@ -4,30 +4,30 @@ using ERP.Application.Configuration.DTOs;
 using ERP.Domain.Configuration.Entities;
 using ERP.Domain.Configuration.Interfaces;
 
-namespace ERP.Application.Configuration.UseCases.GetBillingSettings;
+namespace ERP.Application.Configuration.UseCases.GetSubscriberBillingProfile;
 
-public sealed class GetBillingSettingsQueryHandler
-    : IRequestHandler<GetBillingSettingsQuery, Result<BillingSettingsDto?>>
+public sealed class GetSubscriberBillingProfileQueryHandler
+    : IRequestHandler<GetSubscriberBillingProfileQuery, Result<SubscriberBillingProfileDto?>>
 {
-    private readonly IBillingSettingsRepository _repo;
+    private readonly ISubscriberBillingProfileRepository _repo;
     private readonly ICurrentSubscriber _currentSubscriber;
 
-    public GetBillingSettingsQueryHandler(
-        IBillingSettingsRepository repo,
+    public GetSubscriberBillingProfileQueryHandler(
+        ISubscriberBillingProfileRepository repo,
         ICurrentSubscriber currentSubscriber)
     {
         _repo = repo;
         _currentSubscriber = currentSubscriber;
     }
 
-    public async Task<Result<BillingSettingsDto?>> Handle(
-        GetBillingSettingsQuery query, CancellationToken ct)
+    public async Task<Result<SubscriberBillingProfileDto?>> Handle(
+        GetSubscriberBillingProfileQuery query, CancellationToken ct)
     {
         var profile = await _repo.GetBySubscriberIdAsync(_currentSubscriber.SubscriberId, ct);
         if (profile is null)
-            return Result<BillingSettingsDto?>.Success(null);
+            return Result<SubscriberBillingProfileDto?>.Success(null);
 
-        return Result<BillingSettingsDto?>.Success(new BillingSettingsDto(
+        return Result<SubscriberBillingProfileDto?>.Success(new SubscriberBillingProfileDto(
             profile.Id, profile.SubscriberId,
             profile.IdentificationType, profile.IdentificationNumber,
             profile.LegalName, profile.TradeName, profile.Address,

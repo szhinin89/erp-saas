@@ -1,4 +1,4 @@
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using ERP.Application.Common;
@@ -111,13 +111,13 @@ public static class DependencyInjection
         services.AddScoped<IOperationalContext, OperationalContextService>();
         services.AddScoped<IMembershipAuthority, MembershipAuthority>();
 
-        // ── AR / AP ───────────────────────────────────────────────────────
+        // â”€â”€ AR / AP â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         services.AddScoped<IArApRepository, ArApRepository>();
 
-        // ── Dashboard KPIs ────────────────────────────────────────────────
+        // â”€â”€ Dashboard KPIs â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         services.AddScoped<IDashboardKpiReader, DashboardKpiReader>();
 
-        // ── MasterData BC ────────────────────────────────────────────────
+        // â”€â”€ MasterData BC â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         services.AddScoped<IBusinessPartnerRepository, BusinessPartnerRepository>();
         services.AddScoped<IBusinessPartnerOperationalLinkEnricher, BusinessPartnerOperationalLinkEnricher>();
         services.AddScoped<ICustomerProfileRepository, CustomerProfileRepository>();
@@ -165,9 +165,9 @@ public static class DependencyInjection
         services.AddSingleton<ERP.Application.Common.Interfaces.SRI.IElectronicDocumentSigner,
             ERP.Infrastructure.Services.Sri.ElectronicDocumentSignerAdapter>();
 
-        // SRI Ecuador — switch Simulado/Real via appsettings.json "Sri:UseRealService"
+        // SRI Ecuador â€” switch Simulado/Real via appsettings.json "Sri:UseRealService"
         // En desarrollo/pruebas: Sri:UseRealService = false (simulado, sin certificado real)
-        // En producción:         Sri:UseRealService = true  (real, requiere P12 válido)
+        // En producciÃ³n:         Sri:UseRealService = true  (real, requiere P12 vÃ¡lido)
         var useSriReal = configuration.GetValue<bool>("Sri:UseRealService");
         if (useSriReal)
         {
@@ -212,8 +212,8 @@ public static class DependencyInjection
         services.AddScoped<ISubscriberBillingRepository, SubscriberBillingRepository>();
         services.AddScoped<IBillingGovernanceService, BillingGovernanceService>();
 
-        // Subscription Lifecycle Engine — centralized configurable constants
-        // Binds from SaaS:Billing (new nested) → falls back to SaaS → flat SubscriptionBilling
+        // Subscription Lifecycle Engine â€” centralized configurable constants
+        // Binds from SaaS:Billing (new nested) â†’ falls back to SaaS â†’ flat SubscriptionBilling
         var opts = typeof(ERP.Application.Common.Subscriptions.SubscriptionBillingOptions);
         var billingSection = configuration.GetSection("SaaS:Billing");
         if (!billingSection.Exists())
@@ -301,7 +301,7 @@ public static class DependencyInjection
         services.AddScoped<ISubscriberMenuAdminService>(sp => sp.GetRequiredService<SubscriberMenuService>());
         services.AddScoped<INavigationMenuAdminService, NavigationMenuAdminService>();
         services.AddScoped<IGrowthAnalyticsReader, GrowthAnalyticsReader>();
-        services.AddScoped<IBillingSettingsRepository, BillingSettingsRepository>();
+        services.AddScoped<ISubscriberBillingProfileRepository, SubscriberBillingProfileRepository>();
         services.AddScoped<ISriSettingsRepository, SriSettingsRepository>();
         services.AddScoped<ISalesRepository, SalesRepository>();
         services.AddScoped<IQuoteRepository, QuoteRepository>();
@@ -317,7 +317,7 @@ public static class DependencyInjection
         services.AddScoped<ISubscriberOnboardingService, SubscriberOnboardingService>();
         services.AddScoped<ICompanyBootstrapService, CompanyBootstrapService>();
 
-        // Event-driven foundation — outbox processor
+        // Event-driven foundation â€” outbox processor
         services.AddScoped<IOutboxProcessor, OutboxProcessor>();
 
         return services;

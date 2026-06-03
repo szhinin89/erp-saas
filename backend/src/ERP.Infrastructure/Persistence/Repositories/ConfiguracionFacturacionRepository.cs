@@ -1,15 +1,15 @@
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using ERP.Domain.Configuration.Entities;
 using ERP.Domain.Configuration.Interfaces;
 using ERP.Infrastructure.Persistence;
 
 namespace ERP.Infrastructure.Persistence.Repositories;
 
-public sealed class BillingSettingsRepository : IBillingSettingsRepository
+public sealed class SubscriberBillingProfileRepository : ISubscriberBillingProfileRepository
 {
     private readonly ErpDbContext _context;
 
-    public BillingSettingsRepository(ErpDbContext context) => _context = context;
+    public SubscriberBillingProfileRepository(ErpDbContext context) => _context = context;
 
     public Task<SubscriberBillingProfile?> GetBySubscriberIdAsync(Guid subscriberId, CancellationToken ct = default)
         => _context.SubscriberBillingProfiles.FirstOrDefaultAsync(c => c.SubscriberId == subscriberId, ct);

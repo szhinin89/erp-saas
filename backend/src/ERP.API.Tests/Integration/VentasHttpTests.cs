@@ -237,22 +237,22 @@ public sealed class VentasHttpTests
         var clienteId = db.BusinessPartners.First(c => c.SubscriberId == seed.SubscriberId).Id;
         var branchId = db.Branches.First(b => b.SubscriberId == seed.SubscriberId).Id;
 
-        var config = BillingSettings.Create(
-            subscriberId: seed.SubscriberId,
-            legalName: "Razon Social Test",
-            tradeName: "Comercial Test",
-            ruc: "1790016910001",
-            mainAddress: "Av. Prueba 123",
-            phone: "0999999999",
-            email: "test@example.com",
-            requiresAccounting: true,
-            specialTaxpayer: "1234",
-            logoBase64: null,
-            footerText: "Gracias por su compra",
-            receiptWidth: 80,
-            createdBy: seed.UserId);
+        var config = SubscriberBillingProfile.Create(
+            subscriberId:        seed.SubscriberId,
+            identificationType:  "04",
+            identificationNumber: "1790016910001",
+            legalName:           "Razon Social Test",
+            address:             "Av. Prueba 123",
+            createdBy:           seed.UserId,
+            tradeName:           "Comercial Test",
+            phone:               "0999999999",
+            email:               "test@example.com",
+            requiresAccounting:  true,
+            specialTaxpayer:     "1234",
+            footerText:          "Gracias por su compra",
+            receiptWidth:        80);
 
-        db.BillingSettings.Add(config);
+        db.SubscriberBillingProfiles.Add(config);
 
         var facturaId = await VentasEndToEndHelpers.SeedAuthorizedInvoiceAsync(
             db,

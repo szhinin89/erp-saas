@@ -2,6 +2,6 @@
 using ERP.Application.Configuration.DTOs;
 using MediatR;
 
-namespace ERP.Application.Configuration.UseCases.GetBillingSettings;
+namespace ERP.Application.Configuration.UseCases.GetSubscriberBillingProfile;
 
-public sealed record GetBillingSettingsQuery : IRequest<Result<BillingSettingsDto?>>;
+public sealed record GetSubscriberBillingProfileQuery : IRequest<Result<SubscriberBillingProfileDto?>>;

@@ -116,6 +116,36 @@ Esta política de compatibilidad legacy **no aplica** al Outbox ni al schema de 
 
 ---
 
+## SUBSCRIBER SCOPE — Modelo canónico sellado
+
+> **Estado:** SEALED. Cualquier intento de duplicar estas responsabilidades es un error arquitectónico bloqueante.
+
+### Entidades canónicas SUBSCRIBER (una por responsabilidad)
+
+| Responsabilidad | Entidad canónica | Tabla | Prohibición |
+|---|---|---|---|
+| Perfil fiscal + recibos | `SubscriberBillingProfile` | `subscriber_billing_profile` | `billing_settings`, `subscriber_billing_profiles` ELIMINADAS — no recrear |
+| Cuenta de billing SaaS | `SubscriberBillingAccount` | `subscriber_billing_accounts` | No duplicar |
+| Suscripción al plan | `SubscriberSubscription` | `subscriber_subscriptions` | No duplicar |
+| Identidad global | `IdentityUser` | `identity_users` | No crear segunda tabla de usuarios |
+
+### Comandos canónicos de escritura billing (uno por operación)
+
+| Operación | Command canónico |
+|---|---|
+| Crear/actualizar perfil fiscal | `UpsertSubscriberBillingProfileCommand` |
+| Leer perfil fiscal | `GetSubscriberBillingProfileQuery` |
+
+### Prohibiciones absolutas en SUBSCRIBER scope
+
+- **PROHIBIDO** crear `BillingSettings`, `SubscriberSettings`, `TenantProfile` u otras variantes del perfil de facturación.
+- **PROHIBIDO** introducir `BillingSettingsDto`, `TenantBillingDto` u otros DTOs que repliquen `SubscriberBillingProfileDto`.
+- **PROHIBIDO** crear un segundo repositorio de billing (ya existe `ISubscriberBillingProfileRepository`).
+- **PROHIBIDO** añadir campos de facturación a otras entidades (Company, Subscriber) — deben ir en `SubscriberBillingProfile`.
+- **PROHIBIDO** usar `db.BillingSettings` — el DbSet fue eliminado, usar `db.SubscriberBillingProfiles`.
+
+---
+
 ## Patrón de referencia: módulo Accounting
 
 Para un **módulo nuevo**, copiar la vertical por capas de **Accounting**:

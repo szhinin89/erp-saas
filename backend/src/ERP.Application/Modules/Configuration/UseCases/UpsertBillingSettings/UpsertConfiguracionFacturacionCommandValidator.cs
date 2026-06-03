@@ -1,11 +1,11 @@
 ﻿using FluentValidation;
 
-namespace ERP.Application.Configuration.UseCases.UpsertBillingSettings;
+namespace ERP.Application.Configuration.UseCases.UpsertSubscriberBillingProfile;
 
-public sealed class UpsertBillingSettingsCommandValidator
-    : AbstractValidator<UpsertBillingSettingsCommand>
+public sealed class UpsertSubscriberBillingProfileCommandValidator
+    : AbstractValidator<UpsertSubscriberBillingProfileCommand>
 {
-    public UpsertBillingSettingsCommandValidator()
+    public UpsertSubscriberBillingProfileCommandValidator()
     {
         RuleFor(x => x.IdentificationType)
             .NotEmpty()

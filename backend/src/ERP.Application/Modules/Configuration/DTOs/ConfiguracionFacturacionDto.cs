@@ -1,10 +1,10 @@
-namespace ERP.Application.Configuration.DTOs;
+﻿namespace ERP.Application.Configuration.DTOs;
 
-/// <summary>DTO del perfil de facturación canónico (fusión de BillingSettings + SubscriberBillingProfile).</summary>
-public sealed record BillingSettingsDto(
+/// <summary>DTO del perfil de facturaciÃ³n canÃ³nico (fusiÃ³n de BillingSettings + SubscriberBillingProfile).</summary>
+public sealed record SubscriberBillingProfileDto(
     Guid    Id,
     Guid    SubscriberId,
-    // Identificación fiscal SRI
+    // IdentificaciÃ³n fiscal SRI
     string  IdentificationType,
     string  IdentificationNumber,
     // Datos legales
@@ -15,12 +15,12 @@ public sealed record BillingSettingsDto(
     string? Email,
     string  Country,
     string? City,
-    // Régimen fiscal
+    // RÃ©gimen fiscal
     bool    RequiresAccounting,
     string? SpecialTaxpayer,
-    // Configuración de recibos
+    // ConfiguraciÃ³n de recibos
     string? LogoBase64,
     string? FooterText,
     int     ReceiptWidth,
-    // Vínculo SaaS
+    // VÃ­nculo SaaS
     Guid?   BusinessPartnerId);

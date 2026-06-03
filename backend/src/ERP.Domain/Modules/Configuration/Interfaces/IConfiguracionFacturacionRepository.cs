@@ -1,8 +1,8 @@
-using ERP.Domain.Configuration.Entities;
+﻿using ERP.Domain.Configuration.Entities;
 
 namespace ERP.Domain.Configuration.Interfaces;
 
-public interface IBillingSettingsRepository
+public interface ISubscriberBillingProfileRepository
 {
     Task<SubscriberBillingProfile?> GetBySubscriberIdAsync(Guid subscriberId, CancellationToken ct = default);
     Task AddAsync(SubscriberBillingProfile profile, CancellationToken ct = default);

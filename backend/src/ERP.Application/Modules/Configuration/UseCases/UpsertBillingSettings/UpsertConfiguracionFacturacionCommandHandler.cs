@@ -5,17 +5,17 @@ using ERP.Domain.Configuration.Entities;
 using ERP.Domain.Configuration.Interfaces;
 using ERP.Domain.Common;
 
-namespace ERP.Application.Configuration.UseCases.UpsertBillingSettings;
+namespace ERP.Application.Configuration.UseCases.UpsertSubscriberBillingProfile;
 
-public sealed class UpsertBillingSettingsCommandHandler
-    : IRequestHandler<UpsertBillingSettingsCommand, Result<BillingSettingsDto>>
+public sealed class UpsertSubscriberBillingProfileCommandHandler
+    : IRequestHandler<UpsertSubscriberBillingProfileCommand, Result<SubscriberBillingProfileDto>>
 {
-    private readonly IBillingSettingsRepository _repo;
+    private readonly ISubscriberBillingProfileRepository _repo;
     private readonly ICurrentSubscriber _currentSubscriber;
     private readonly ICurrentUser _currentUser;
 
-    public UpsertBillingSettingsCommandHandler(
-        IBillingSettingsRepository repo,
+    public UpsertSubscriberBillingProfileCommandHandler(
+        ISubscriberBillingProfileRepository repo,
         ICurrentSubscriber currentSubscriber,
         ICurrentUser currentUser)
     {
@@ -24,8 +24,8 @@ public sealed class UpsertBillingSettingsCommandHandler
         _currentUser = currentUser;
     }
 
-    public async Task<Result<BillingSettingsDto>> Handle(
-        UpsertBillingSettingsCommand command,
+    public async Task<Result<SubscriberBillingProfileDto>> Handle(
+        UpsertSubscriberBillingProfileCommand command,
         CancellationToken ct)
     {
         var profile = await _repo.GetBySubscriberIdAsync(_currentSubscriber.SubscriberId, ct);
@@ -74,10 +74,10 @@ public sealed class UpsertBillingSettingsCommandHandler
         }
 
         await _repo.SaveChangesAsync(ct);
-        return Result<BillingSettingsDto>.Success(ToDto(profile));
+        return Result<SubscriberBillingProfileDto>.Success(ToDto(profile));
     }
 
-    private static BillingSettingsDto ToDto(SubscriberBillingProfile p) => new(
+    private static SubscriberBillingProfileDto ToDto(SubscriberBillingProfile p) => new(
         p.Id, p.SubscriberId,
         p.IdentificationType, p.IdentificationNumber,
         p.LegalName, p.TradeName, p.Address, p.Phone, p.Email,
