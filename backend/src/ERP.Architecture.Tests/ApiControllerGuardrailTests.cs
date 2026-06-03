@@ -14,9 +14,18 @@ public sealed class ApiControllerGuardrailTests
         var controllersDir = Path.Combine(backendRoot, "ERP.API", "Controllers");
         Directory.Exists(controllersDir).Should().BeTrue();
 
+        // Exempted controllers: access global.* (no tenant scope) via DbContext directly
+        // to avoid MediatR pipeline behaviors that require company context.
+        // These controllers ONLY read from schema 'global' tables.
+        var exempted = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+        {
+            "SriCatalogsController.cs",  // global.sri_* — no tenant filtering needed
+        };
+
         var violations = new List<string>();
         foreach (var file in Directory.EnumerateFiles(controllersDir, "*.cs", SearchOption.AllDirectories))
         {
+            if (exempted.Contains(Path.GetFileName(file))) continue;
             var text = File.ReadAllText(file);
             if (text.Contains("ErpDbContext", StringComparison.Ordinal))
             {
@@ -24,7 +33,8 @@ public sealed class ApiControllerGuardrailTests
             }
         }
 
-        violations.Should().BeEmpty("use MediatR desde controllers; ErpDbContext solo en Infrastructure/Program startup");
+        violations.Should().BeEmpty("use MediatR desde controllers; ErpDbContext solo en Infrastructure/Program startup. " +
+            "Excepciones: controllers de catálogos globales (schema 'global') listados en exempted.");
     }
 
     private static string ResolveBackendSrcRoot()

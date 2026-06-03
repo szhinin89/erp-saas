@@ -133,6 +133,118 @@ public sealed class SecurityArchitectureTests
             $"quedan {handlersConDeuda.Count} requests sin marcador explícito en namespaces con deuda de prefix");
     }
 
+    private static readonly Assembly InfraAssembly =
+        typeof(ERP.Infrastructure.Persistence.ErpDbContext).Assembly;
+
+    /// <summary>
+    /// AR-SEC-6: Ninguna entidad con ICompanyOperationalEntity puede tener CompanyId como Guid?
+    /// CompanyId debe ser Guid (NOT NULL) tras la migración final.
+    /// </summary>
+    [Fact]
+    public void AR_SEC_6_company_operational_entities_must_have_non_nullable_company_id()
+    {
+        var violators = DomainAssembly.GetTypes()
+            .Where(t => t.IsClass && !t.IsAbstract)
+            .Where(t => typeof(ERP.Domain.Common.ICompanyOperationalEntity).IsAssignableFrom(t))
+            .Where(t =>
+            {
+                var prop = t.GetProperty("CompanyId");
+                if (prop is null) return false;
+                return prop.PropertyType == typeof(Guid?);
+            })
+            .Select(t => t.FullName)
+            .ToList();
+
+        violators.Should().BeEmpty(
+            "ICompanyOperationalEntity.CompanyId debe ser Guid (NOT NULL). " +
+            "Migración FinalizeCompanyIdNotNull ya fue aplicada. " +
+            "Ninguna nueva entidad operacional puede tener CompanyId nullable.");
+    }
+
+    /// <summary>
+    /// AR-SEC-7: Los tres interceptors de tenant deben estar registrados en Infrastructure.
+    /// Garantiza que no se eliminaron accidentalmente las capas de protección.
+    /// </summary>
+    [Fact]
+    public void AR_SEC_7_all_tenant_interceptors_must_exist()
+    {
+        var interceptorTypes = new[]
+        {
+            "ERP.Infrastructure.Persistence.Interceptors.CompanyTenantInterceptor",
+            "ERP.Infrastructure.Persistence.Interceptors.DbCommandTenantInterceptor",
+            "ERP.Infrastructure.Persistence.Interceptors.PostgreSqlSessionContextInterceptor",
+        };
+
+        foreach (var typeName in interceptorTypes)
+        {
+            var type = InfraAssembly.GetType(typeName);
+            type.Should().NotBeNull(
+                $"El interceptor {typeName} debe existir. " +
+                "Es parte del Zero-Leak enforcement layer y no puede eliminarse.");
+        }
+    }
+
+    /// <summary>
+    /// AR-SEC-8: Domain COMPANY no puede importar entidades de SUBSCRIBER billing.
+    /// Cross-domain reference prohibition.
+    /// </summary>
+    [Fact]
+    public void AR_SEC_8_company_domain_must_not_reference_subscriber_billing()
+    {
+        var forbiddenNamespaces = new[]
+        {
+            "ERP.Domain.Billing",
+            "ERP.Domain.Subscribers.Entities.SubscriberBillingAccount",
+            "ERP.Domain.Subscriptions",
+        };
+
+        var erpOperationalNamespaces = new[]
+        {
+            "ERP.Domain.Modules.Sales",
+            "ERP.Domain.Modules.Purchasing",
+            "ERP.Domain.Modules.Inventory",
+            "ERP.Domain.Modules.Accounting",
+            "ERP.Domain.Modules.Cash",
+            "ERP.Domain.Products",
+        };
+
+        var violators = DomainAssembly.GetTypes()
+            .Where(t => erpOperationalNamespaces.Any(ns =>
+                (t.Namespace ?? "").StartsWith(ns, StringComparison.Ordinal)))
+            .Where(t => t.GetFields(System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)
+                .Any(f => forbiddenNamespaces.Any(fn =>
+                    (f.FieldType.Namespace ?? "").StartsWith(fn, StringComparison.Ordinal))))
+            .Select(t => t.FullName)
+            .ToList();
+
+        violators.Should().BeEmpty(
+            "Entidades COMPANY no deben referenciar entidades SUBSCRIBER billing. " +
+            "Violación del boundary COMPANY ↔ SUBSCRIBER.");
+    }
+
+    /// <summary>
+    /// AR-SEC-9: ICompanyScopedEntity implementors deben tener CompanyId como Guid (NOT NULL).
+    /// </summary>
+    [Fact]
+    public void AR_SEC_9_company_scoped_entities_must_have_non_nullable_company_id()
+    {
+        var violators = DomainAssembly.GetTypes()
+            .Where(t => t.IsClass && !t.IsAbstract)
+            .Where(t => typeof(ERP.Domain.Common.ICompanyScopedEntity).IsAssignableFrom(t))
+            .Where(t =>
+            {
+                var prop = t.GetProperty("CompanyId");
+                if (prop is null) return false;
+                return prop.PropertyType == typeof(Guid?);
+            })
+            .Select(t => t.FullName)
+            .ToList();
+
+        violators.Should().BeEmpty(
+            "ICompanyScopedEntity.CompanyId debe ser Guid (NOT NULL). " +
+            "Entidades con company scope estricto nunca pueden tener CompanyId nullable.");
+    }
+
     private static bool HasExplicitScopeMarker(Type t) =>
         typeof(ICompanyScopedRequest).IsAssignableFrom(t)
         || typeof(ISubscriberScopedRequest).IsAssignableFrom(t)

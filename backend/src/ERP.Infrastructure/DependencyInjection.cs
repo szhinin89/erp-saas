@@ -88,13 +88,15 @@ public static class DependencyInjection
 
         services.AddScoped<PostgreSqlSessionContextInterceptor>();
         services.AddScoped<ERP.Infrastructure.Persistence.Interceptors.CompanyTenantInterceptor>();
+        services.AddScoped<ERP.Infrastructure.Persistence.Interceptors.DbCommandTenantInterceptor>();
         services.AddDbContext<ErpDbContext>((sp, options) =>
             options.UseNpgsql(
                     configuration.GetConnectionString("DefaultConnection"),
                     b => b.MigrationsAssembly(typeof(ErpDbContext).Assembly.FullName))
                 .AddInterceptors(
                     sp.GetRequiredService<PostgreSqlSessionContextInterceptor>(),
-                    sp.GetRequiredService<ERP.Infrastructure.Persistence.Interceptors.CompanyTenantInterceptor>()));
+                    sp.GetRequiredService<ERP.Infrastructure.Persistence.Interceptors.CompanyTenantInterceptor>(),
+                    sp.GetRequiredService<ERP.Infrastructure.Persistence.Interceptors.DbCommandTenantInterceptor>()));
 
         services.AddScoped<IPasswordHasher, BcryptPasswordHasher>();
         services.AddScoped<ISecretProtector, DataProtectionSecretProtector>();
