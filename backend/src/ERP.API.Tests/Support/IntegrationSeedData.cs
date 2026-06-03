@@ -123,7 +123,6 @@ internal static class IntegrationSeedData
         var line    = ProductLine.Create(tid, "L-INT", "LÃ­nea INT", userId);
         var category = ProductCategory.Create(tid, "C-INT", "Cat INT", line.Id, userId);
         var sub      = ProductSubcategory.Create(tid, "S-INT", "Sub INT", category.Id, userId);
-        var uom      = UnitOfMeasure.Create(tid, "U", "Unidad", userId);
         var brand    = Brand.Create(tid, "B-INT", "Marca INT", userId);
         var ptype    = ProductType.Create(tid, "T-INT", "Tipo INT", userId);
         var tariff   = Tariff.Create(tid, "TR-INT", "Arancel INT", userId);
@@ -131,7 +130,6 @@ internal static class IntegrationSeedData
         db.ProductLines.Add(line);
         db.ProductCategories.Add(category);
         db.ProductSubcategories.Add(sub);
-        db.UnitsOfMeasure.Add(uom);
         db.Brands.Add(brand);
         db.ProductTypes.Add(ptype);
         db.Tariffs.Add(tariff);
@@ -160,15 +158,15 @@ internal static class IntegrationSeedData
             line.Id,
             category.Id,
             sub.Id,
-            uom.Id,
+            "19",
             brand.Id,
             ptype.Id,
             tariff.Id,
             appliesVatOnSale: false,
-            saleTaxId: null,
+            saleVatCode: null,
             saleVatAccountId: null,
             appliesVatOnPurchase: false,
-            purchaseTaxId: null,
+            purchaseVatCode: null,
             purchaseVatAccountId: null,
             userId,
             purchaseCode: "SKU-INT-01",

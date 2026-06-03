@@ -18,7 +18,6 @@ using ERP.Application.Sales.UseCases.IssueElectronicInvoice;
 using ERP.Application.Sales.UseCases.SalesNotes;
 using ERP.Application.Sales.UseCases.ReceivedRetentions;
 using ERP.Application.Sales.UseCases.ValidateSale;
-using ERP.Domain.Configuration.Entities;
 using ERP.Domain.Modules.Accounting.Entities;
 using ERP.Domain.Modules.Accounting.Enums;
 using ERP.Domain.Modules.Inventory.Enums;
@@ -472,8 +471,7 @@ public sealed class SalesNotesYRetentionsEndToEndTests
             tid, "2.1.88", "PROVEEDORES cuenta CxP", AccountType.Liability, AccountNature.Credit, userId));
         db.Accounts.Add(Account.Create(
             tid, "2.2.77", "Pasivo RETENCIONES fuente", AccountType.Liability, AccountNature.Credit, userId));
-        db.RetentionSettings.Add(RetentionSettings.Create(
-            tid, "RENTA", "Supplier", "303", userId));
+        // RetentionSettings per-subscriber removed — lines are now passed directly in the command.
         await db.SaveChangesAsync(CancellationToken.None);
 
         var xml = IntegrationSeedData.BuildFacturaXml(seed.ClaveAcceso49, seed.ProveedorRuc);
@@ -498,7 +496,9 @@ public sealed class SalesNotesYRetentionsEndToEndTests
         var compra = db.PurchBills.First(c => c.Id == crear.Value.Id);
         compra.Subtotal.Should().BeGreaterThan(0m);
 
-        var gen = await mediator.Send(new GenerateIssuedRetentionCommand(compra.Id), CancellationToken.None);
+        var gen = await mediator.Send(new GenerateIssuedRetentionCommand(
+            compra.Id,
+            Lines: new[] { new RetentionLineInput("303", "RENTA") }), CancellationToken.None);
         gen.IsSuccess.Should().BeTrue(gen.Error);
 
         var env = await mediator.Send(new SendIssuedRetentionCommand(gen.Value), CancellationToken.None);

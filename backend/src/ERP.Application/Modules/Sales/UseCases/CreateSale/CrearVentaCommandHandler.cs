@@ -1,6 +1,7 @@
 using MediatR;
 using Microsoft.Extensions.Logging;
 using ERP.Application.Common;
+using ERP.Application.Common.Interfaces;
 using ERP.Application.Sales.Helpers;
 using ERP.Domain.Common;
 using ERP.Domain.Audit.Entities;
@@ -36,7 +37,7 @@ public sealed class CreateSaleCommandHandler : IRequestHandler<CreateSaleCommand
     private readonly IBusinessPartnerRepository _bpRepository;
     private readonly IWarehouseRepository _bodegaRepository;
     private readonly IProductRepository     _productRepository;
-    private readonly ITaxRateRepository     _taxRateRepository;
+    private readonly ISriGlobalRateReader   _sriRates;
     private readonly IUserActivityRepository _activity;
     private readonly ICurrentSubscriber          _currentSubscriber;
     private readonly ICurrentCompany           _currentCompany;
@@ -57,7 +58,7 @@ public sealed class CreateSaleCommandHandler : IRequestHandler<CreateSaleCommand
         IBusinessPartnerRepository bpRepository,
         IWarehouseRepository bodegaRepository,
         IProductRepository productRepository,
-        ITaxRateRepository taxRateRepository,
+        ISriGlobalRateReader sriRates,
         IUserActivityRepository activity,
         ICurrentSubscriber currentSubscriber,
         ICurrentCompany currentCompany,
@@ -77,7 +78,7 @@ public sealed class CreateSaleCommandHandler : IRequestHandler<CreateSaleCommand
         _bpRepository        = bpRepository;
         _bodegaRepository    = bodegaRepository;
         _productRepository   = productRepository;
-        _taxRateRepository   = taxRateRepository;
+        _sriRates            = sriRates;
         _activity            = activity;
         _currentSubscriber       = currentSubscriber;
         _currentCompany        = currentCompany;
@@ -354,13 +355,13 @@ public sealed class CreateSaleCommandHandler : IRequestHandler<CreateSaleCommand
             string vatCode = "0";
             decimal vatPct = 0m;
 
-            if (producto.AppliesVatOnSale && producto.SaleTaxId.HasValue)
+            if (producto.AppliesVatOnSale && !string.IsNullOrWhiteSpace(producto.SaleVatCode))
             {
-                var taxRate = await _taxRateRepository.GetByIdAsync(producto.SaleTaxId.Value, subscriberId, ct);
-                if (taxRate is not null)
+                var pct = await _sriRates.GetVatPercentageAsync(producto.SaleVatCode, ct);
+                if (pct.HasValue)
                 {
-                    vatPct = taxRate.Percentage;
-                    vatCode = SriVatCodeFromPercentage(vatPct);
+                    vatPct = pct.Value;
+                    vatCode = producto.SaleVatCode;
                     impuestoItem = subtotalItem * vatPct / 100;
                 }
             }

@@ -30,10 +30,10 @@ public class GetProductByIdHandler : IRequestHandler<GetProductByIdQuery, Result
         return Result<ProductDto>.Success(new ProductDto(
             product.Id, product.SaleCode, product.PurchaseCode, product.ShortName,
             product.Description, product.LineId, product.CategoryId, product.SubcategoryId,
-            product.UnitOfMeasureId, product.BrandId, product.ProductTypeId, product.TariffId,
-            product.AppliesVatOnSale, product.SaleTaxId,
-            product.AppliesVatOnPurchase, product.PurchaseTaxId,
-            product.AppliesExciseTax, product.ExciseTaxId,
+            product.UomCode, product.BrandId, product.ProductTypeId, product.TariffId,
+            product.AppliesVatOnSale, product.SaleVatCode,
+            product.AppliesVatOnPurchase, product.PurchaseVatCode,
+            product.AppliesExciseTax, product.IceCode,
             product.IsService, product.TracksStock, product.IsActive, product.AvailableOnWeb,
             product.AvailableOnMobile, product.IsEcommerceActive, product.IsForSale, product.CreatedAt));
     }

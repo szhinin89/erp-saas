@@ -76,47 +76,6 @@ public class ProductType : MasterEntity
 }
 
 /// <summary>
-/// Unidad de medida per-suscriptor (ej: UND, KG, LT, MT, CAJA).
-/// SriUomCode referencia global.sri_uom.Code — fuente única del código SRI para XML de facturas.
-/// </summary>
-public class UnitOfMeasure : MasterEntity
-{
-    public string  Code      { get; private set; } = null!;
-    public string  Name      { get; private set; } = null!;
-    public string? Symbol    { get; private set; }
-    /// <summary>FK a global.sri_uom.Code — código SRI para uso en XML electrónico.</summary>
-    public string? SriUomCode { get; private set; }
-
-    private UnitOfMeasure() { }
-
-    public static UnitOfMeasure Create(
-        Guid subscriberId, string code, string name, Guid createdBy,
-        string? symbol = null, string? sriUomCode = null)
-    {
-        var unit = new UnitOfMeasure
-        {
-            Id         = Guid.NewGuid(),
-            SubscriberId = subscriberId,
-            Code       = code.ToUpperInvariant(),
-            Name       = name,
-            Symbol     = symbol,
-            SriUomCode = sriUomCode?.Trim(),
-        };
-        unit.SetCreated(createdBy);
-        return unit;
-    }
-
-    public void Update(string code, string name, string? symbol, Guid updatedBy, string? sriUomCode = null)
-    {
-        Code       = code.ToUpperInvariant();
-        Name       = name;
-        Symbol     = symbol;
-        SriUomCode = sriUomCode?.Trim();
-        SetUpdated(updatedBy);
-    }
-}
-
-/// <summary>
 /// Arancel / código arancelario del producto.
 /// Usado para declaraciones de comercio exterior e impuestos especiales.
 /// </summary>

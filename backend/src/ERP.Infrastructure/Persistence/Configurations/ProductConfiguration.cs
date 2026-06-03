@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using ERP.Domain.Modules.Accounting.Entities;
+using ERP.Domain.Modules.SriCatalogs.Entities;
 using ERP.Domain.Products.Entities;
 
 namespace ERP.Infrastructure.Persistence.Configurations;
@@ -31,7 +32,7 @@ public class ProductConfiguration : IEntityTypeConfiguration<Product>
         builder.Property(p => p.SubcategoryId).HasColumnName("subcategory_id").IsRequired();
 
         // ── Catálogos ─────────────────────────────────────────────
-        builder.Property(p => p.UnitOfMeasureId).HasColumnName("unit_of_measure_id").IsRequired();
+        builder.Property(p => p.UomCode).HasColumnName("uom_code").HasMaxLength(10).IsRequired();
         builder.Property(p => p.BrandId).HasColumnName("brand_id").IsRequired();
         builder.Property(p => p.ProductTypeId).HasColumnName("product_type_id").IsRequired();
         builder.Property(p => p.TariffId).HasColumnName("tariff_id").IsRequired();
@@ -52,9 +53,12 @@ public class ProductConfiguration : IEntityTypeConfiguration<Product>
             .HasForeignKey(p => p.SubcategoryId)
             .OnDelete(DeleteBehavior.Restrict);
 
-        builder.HasOne<UnitOfMeasure>()
+        // FK a global.sri_uom.Code — fuente única de UOM
+        builder.HasOne<SriUom>()
             .WithMany()
-            .HasForeignKey(p => p.UnitOfMeasureId)
+            .HasForeignKey(p => p.UomCode)
+            .HasPrincipalKey(u => u.Code)
+            .IsRequired(false)
             .OnDelete(DeleteBehavior.Restrict);
 
         builder.HasOne<Brand>()
@@ -77,27 +81,34 @@ public class ProductConfiguration : IEntityTypeConfiguration<Product>
         builder.Property(p => p.AppliesVatOnPurchase).HasColumnName("applies_vat_on_purchase").IsRequired();
         builder.Property(p => p.AppliesExciseTax).HasColumnName("applies_excise_tax").IsRequired();
 
-        builder.Property(p => p.SaleTaxId).HasColumnName("sale_tax_id");
-        builder.Property(p => p.PurchaseTaxId).HasColumnName("purchase_tax_id");
-        builder.Property(p => p.ExciseTaxId).HasColumnName("excise_tax_id");
+        // FK a global.sri_vat_rate.Code / global.sri_ice_rate.Code
+        builder.Property(p => p.SaleVatCode).HasColumnName("sale_vat_code").HasMaxLength(10);
+        builder.Property(p => p.PurchaseVatCode).HasColumnName("purchase_vat_code").HasMaxLength(10);
+        builder.Property(p => p.IceCode).HasColumnName("ice_code").HasMaxLength(10);
 
         builder.Property(p => p.SaleVatAccountId).HasColumnName("sale_vat_account_id");
         builder.Property(p => p.PurchaseVatAccountId).HasColumnName("purchase_vat_account_id");
         builder.Property(p => p.ExciseAccountId).HasColumnName("excise_account_id");
 
-        builder.HasOne<TaxRate>()
+        builder.HasOne<SriVatRate>()
             .WithMany()
-            .HasForeignKey(p => p.SaleTaxId)
+            .HasForeignKey(p => p.SaleVatCode)
+            .HasPrincipalKey(v => v.Code)
+            .IsRequired(false)
             .OnDelete(DeleteBehavior.Restrict);
 
-        builder.HasOne<TaxRate>()
+        builder.HasOne<SriVatRate>()
             .WithMany()
-            .HasForeignKey(p => p.PurchaseTaxId)
+            .HasForeignKey(p => p.PurchaseVatCode)
+            .HasPrincipalKey(v => v.Code)
+            .IsRequired(false)
             .OnDelete(DeleteBehavior.Restrict);
 
-        builder.HasOne<TaxRate>()
+        builder.HasOne<SriIceRate>()
             .WithMany()
-            .HasForeignKey(p => p.ExciseTaxId)
+            .HasForeignKey(p => p.IceCode)
+            .HasPrincipalKey(v => v.Code)
+            .IsRequired(false)
             .OnDelete(DeleteBehavior.Restrict);
 
         builder.HasOne<Account>()
@@ -202,11 +213,11 @@ public class ProductConfiguration : IEntityTypeConfiguration<Product>
             u.Property(x => x.Id).HasColumnName("id");
             u.Property(x => x.SubscriberId).HasColumnName("subscriber_id").IsRequired();
             u.Property(x => x.ProductId).HasColumnName("product_id").IsRequired();
-            u.Property(x => x.AlternateUnitId).HasColumnName("alternate_unit_id").IsRequired();
+            u.Property(x => x.AlternateUomCode).HasColumnName("alternate_uom_code").HasMaxLength(10).IsRequired();
             u.Property(x => x.ConversionFactor).HasColumnName("conversion_factor").HasPrecision(18, 6).IsRequired();
             u.Property(x => x.IsActive).HasColumnName("is_active").IsRequired();
             u.HasIndex(x => x.ProductId).HasDatabaseName("ix_product_unit_conversions_product_id");
-            u.HasIndex(x => new { x.SubscriberId, x.AlternateUnitId }).HasDatabaseName("ix_product_unit_conversions_subscriber_alt_unit");
+            u.HasIndex(x => new { x.SubscriberId, x.AlternateUomCode }).HasDatabaseName("ix_product_unit_conversions_subscriber_alt_uom");
         });
 
         builder.OwnsMany(p => p.Colors, c =>

@@ -4,10 +4,6 @@ namespace ERP.Domain.Products.Interfaces;
 
 public interface IProductCatalogRepository
 {
-    // Tax rates
-    Task AddTaxRateAsync(TaxRate taxRate, CancellationToken ct = default);
-    Task<IReadOnlyList<TaxRate>> GetTaxRatesAsync(Guid subscriberId, TaxRateType? type = null, bool onlyActive = true, CancellationToken ct = default);
-
     // Catalogs
     Task AddBrandAsync(Brand brand, CancellationToken ct = default);
     Task<Brand?> GetBrandByIdAsync(Guid id, CancellationToken ct = default);
@@ -16,10 +12,6 @@ public interface IProductCatalogRepository
     Task AddProductTypeAsync(ProductType type, CancellationToken ct = default);
     Task<ProductType?> GetProductTypeByIdAsync(Guid id, CancellationToken ct = default);
     Task<IReadOnlyList<ProductType>> GetProductTypesAsync(Guid subscriberId, bool onlyActive = true, CancellationToken ct = default);
-
-    Task AddUnitOfMeasureAsync(UnitOfMeasure unit, CancellationToken ct = default);
-    Task<UnitOfMeasure?> GetUnitOfMeasureByIdAsync(Guid id, CancellationToken ct = default);
-    Task<IReadOnlyList<UnitOfMeasure>> GetUnitsOfMeasureAsync(Guid subscriberId, bool onlyActive = true, CancellationToken ct = default);
 
     Task AddTariffAsync(Tariff tariff, CancellationToken ct = default);
     Task<IReadOnlyList<Tariff>> GetTariffsAsync(Guid subscriberId, bool onlyActive = true, CancellationToken ct = default);

@@ -224,9 +224,9 @@ public sealed class CreateTransferCommandHandlerTests
             var g = Guid.NewGuid;
             return Product.Create(
                 SubscriberId, "SKU-TEST", "Prod Test", "Descripcion test",
-                g(), g(), g(), g(), g(), g(), g(),
-                appliesVatOnSale: false, saleTaxId: null, saleVatAccountId: null,
-                appliesVatOnPurchase: false, purchaseTaxId: null, purchaseVatAccountId: null,
+                g(), g(), g(), "19", g(), g(), g(),
+                appliesVatOnSale: false, saleVatCode: null, saleVatAccountId: null,
+                appliesVatOnPurchase: false, purchaseVatCode: null, purchaseVatAccountId: null,
                 createdBy: UserId,
                 isService: isService,
                 tracksStock: tracksStock);

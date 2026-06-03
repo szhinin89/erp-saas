@@ -4,47 +4,11 @@ using ERP.Application.Products.UseCases.CreateProduct;
 using ERP.Application.Products.UseCases.UpdateProduct;
 using ERP.Domain.Products.Entities;
 using ERP.Domain.Products.Enums;
-using ERP.Domain.Products.Interfaces;
 
 namespace ERP.Application.Products;
 
 internal static class ProductCommandMutationHelper
 {
-    public static async Task<Result<ProductDto>?> ValidateTaxRatesAsync(
-        ITaxRateRepository taxRates,
-        Guid subscriberId,
-        bool appliesVatOnSale,
-        Guid? saleTaxId,
-        bool appliesVatOnPurchase,
-        Guid? purchaseTaxId,
-        bool appliesExciseTax,
-        Guid? exciseTaxId,
-        CancellationToken ct)
-    {
-        if (appliesVatOnSale && saleTaxId is not null)
-        {
-            var tax = await taxRates.GetByIdAsync(saleTaxId.Value, subscriberId, ct);
-            if (tax is null || !tax.IsActive || tax.Type != TaxRateType.VAT)
-                return Result<ProductDto>.Failure("La tarifa de IVA (venta) no es válida o no está vigente.");
-        }
-
-        if (appliesVatOnPurchase && purchaseTaxId is not null)
-        {
-            var tax = await taxRates.GetByIdAsync(purchaseTaxId.Value, subscriberId, ct);
-            if (tax is null || !tax.IsActive || tax.Type != TaxRateType.VAT)
-                return Result<ProductDto>.Failure("La tarifa de IVA (compra) no es válida o no está vigente.");
-        }
-
-        if (appliesExciseTax && exciseTaxId is not null)
-        {
-            var tax = await taxRates.GetByIdAsync(exciseTaxId.Value, subscriberId, ct);
-            if (tax is null || !tax.IsActive || tax.Type != TaxRateType.Excise)
-                return Result<ProductDto>.Failure("La tarifa de ICE no es válida o no está vigente.");
-        }
-
-        return null;
-    }
-
     public static Result<ProductDto>? ApplyCreateChildCollections(Product product, CreateProductCommand command, Guid userId)
     {
         if (command.Barcodes is { Count: > 0 })
@@ -64,7 +28,7 @@ internal static class ProductCommandMutationHelper
 
         if (command.UnitConversions is { Count: > 0 })
             product.ReplaceUnitConversions(
-                command.UnitConversions.Select(u => (u.AlternateUnitId, u.ConversionFactor)),
+                command.UnitConversions.Select(u => (u.AlternateUomCode, u.ConversionFactor)),
                 userId);
 
         if (command.Colors is { Count: > 0 })
@@ -140,7 +104,7 @@ internal static class ProductCommandMutationHelper
 
         if (command.UnitConversions is not null)
             product.ReplaceUnitConversions(
-                command.UnitConversions.Select(u => (u.AlternateUnitId, u.ConversionFactor)),
+                command.UnitConversions.Select(u => (u.AlternateUomCode, u.ConversionFactor)),
                 userId);
 
         if (command.Colors is not null)
@@ -202,16 +166,16 @@ internal static class ProductCommandMutationHelper
         product.LineId,
         product.CategoryId,
         product.SubcategoryId,
-        product.UnitOfMeasureId,
+        product.UomCode,
         product.BrandId,
         product.ProductTypeId,
         product.TariffId,
         product.AppliesVatOnSale,
-        product.SaleTaxId,
+        product.SaleVatCode,
         product.AppliesVatOnPurchase,
-        product.PurchaseTaxId,
+        product.PurchaseVatCode,
         product.AppliesExciseTax,
-        product.ExciseTaxId,
+        product.IceCode,
         product.IsService,
         product.TracksStock,
         product.IsActive,

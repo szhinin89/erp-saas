@@ -17,7 +17,6 @@ public class ProductHandlersIntegrationTests
         var subscriberId = Guid.NewGuid();
         var userId = Guid.NewGuid();
         var productRepo = new InMemoryProductRepository();
-        var taxRepo = new InMemoryTaxRateRepository();
         var activityRepo = new InMemoryUserActivityRepository();
         var currentSubscriber = new TestCurrentSubscriber(subscriberId);
         var currentCompany = new TestCurrentCompany(Guid.NewGuid());
@@ -25,7 +24,6 @@ public class ProductHandlersIntegrationTests
 
         var handler = new CreateProductCommandHandler(
             productRepo,
-            taxRepo,
             activityRepo,
             currentSubscriber,
             currentCompany,
@@ -38,15 +36,15 @@ public class ProductHandlersIntegrationTests
             LineId: Guid.NewGuid(),
             CategoryId: Guid.NewGuid(),
             SubcategoryId: Guid.NewGuid(),
-            UnitOfMeasureId: Guid.NewGuid(),
+            UomCode: "19",
             BrandId: Guid.NewGuid(),
             ProductTypeId: Guid.NewGuid(),
             TariffId: Guid.NewGuid(),
             AppliesVatOnSale: false,
-            SaleTaxId: null,
+            SaleVatCode: null,
             SaleVatAccountId: null,
             AppliesVatOnPurchase: false,
-            PurchaseTaxId: null,
+            PurchaseVatCode: null,
             PurchaseVatAccountId: null);
 
         var result = await handler.Handle(command, CancellationToken.None);
@@ -93,15 +91,15 @@ public class ProductHandlersIntegrationTests
             lineId: Guid.NewGuid(),
             categoryId: Guid.NewGuid(),
             subcategoryId: Guid.NewGuid(),
-            unitOfMeasureId: Guid.NewGuid(),
+            uomCode: "19",
             brandId: Guid.NewGuid(),
             productTypeId: Guid.NewGuid(),
             tariffId: Guid.NewGuid(),
             appliesVatOnSale: false,
-            saleTaxId: null,
+            saleVatCode: null,
             saleVatAccountId: null,
             appliesVatOnPurchase: false,
-            purchaseTaxId: null,
+            purchaseVatCode: null,
             purchaseVatAccountId: null,
             createdBy: userId);
     }
@@ -135,12 +133,6 @@ public class ProductHandlersIntegrationTests
         public string? FullName { get; }
         public string? Role => "Admin";
         public bool IsAuthenticated => true;
-    }
-
-    private sealed class InMemoryTaxRateRepository : ITaxRateRepository
-    {
-        public Task<TaxRate?> GetByIdAsync(Guid id, Guid subscriberId, CancellationToken ct = default)
-            => Task.FromResult<TaxRate?>(null);
     }
 
     private sealed class InMemoryUserActivityRepository : IUserActivityRepository

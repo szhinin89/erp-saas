@@ -144,7 +144,6 @@ public static class DependencyInjection
         services.AddScoped<IAccountingSetupRepository, AccountingConfigurationRepository>();
         services.AddScoped<ICuentaContableService, CuentaContableService>();
         services.AddScoped<IProductRepository, ProductRepository>();
-        services.AddScoped<ITaxRateRepository, TaxRateRepository>();
         services.AddScoped<IProductCatalogRepository, ProductCatalogRepository>();
         services.AddScoped<IAccessRepository, AccessRepository>();
         services.AddScoped<IAccessTokenService, AccessTokenService>();
@@ -158,6 +157,8 @@ public static class DependencyInjection
         services.AddScoped<IEmissionPointRepository, EmissionPointRepository>();
         services.AddScoped<IDocumentSequenceRepository, DocumentSequenceRepository>();
         services.AddScoped<IXmlFacturaParser, SriFacturaParser>();
+        services.AddScoped<ERP.Application.Common.Interfaces.ISriGlobalRateReader,
+            ERP.Infrastructure.Services.SriGlobalRateReader>();
         services.AddScoped<IFileStorage, LocalFileStorage>();
         services.AddSingleton<ERP.Application.Common.Interfaces.SRI.IElectronicDocumentBuilder,
             ERP.Infrastructure.Services.Sri.ElectronicDocumentBuilderAdapter>();
@@ -302,7 +303,6 @@ public static class DependencyInjection
         services.AddScoped<IGrowthAnalyticsReader, GrowthAnalyticsReader>();
         services.AddScoped<IBillingSettingsRepository, BillingSettingsRepository>();
         services.AddScoped<ISriSettingsRepository, SriSettingsRepository>();
-        services.AddScoped<IRetentionSettingsRepository, RetentionSettingsRepository>();
         services.AddScoped<ISalesRepository, SalesRepository>();
         services.AddScoped<IQuoteRepository, QuoteRepository>();
         services.AddScoped<ISalesOrderRepository, SalesOrderRepository>();

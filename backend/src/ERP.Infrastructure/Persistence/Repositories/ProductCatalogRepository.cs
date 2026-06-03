@@ -16,19 +16,6 @@ public class ProductCatalogRepository : IProductCatalogRepository
         _platform = platform;
     }
 
-    public Task AddTaxRateAsync(TaxRate taxRate, CancellationToken ct = default)
-        => _context.TaxRates.AddAsync(taxRate, ct).AsTask();
-
-    public async Task<IReadOnlyList<TaxRate>> GetTaxRatesAsync(Guid subscriberId, TaxRateType? type = null, bool onlyActive = true, CancellationToken ct = default)
-    {
-        var q = _context.TaxRates.AsQueryable().Where(x => x.SubscriberId == subscriberId);
-        if (type is not null)
-            q = q.Where(x => x.Type == type);
-        if (onlyActive)
-            q = q.Where(x => x.IsActive);
-        return await q.OrderBy(x => x.Type).ThenBy(x => x.Percentage).ToListAsync(ct);
-    }
-
     public Task AddBrandAsync(Brand brand, CancellationToken ct = default)
         => _context.Brands.AddAsync(brand, ct).AsTask();
 
@@ -54,21 +41,6 @@ public class ProductCatalogRepository : IProductCatalogRepository
     public async Task<IReadOnlyList<ProductType>> GetProductTypesAsync(Guid subscriberId, bool onlyActive = true, CancellationToken ct = default)
     {
         var q = _context.ProductTypes.AsQueryable().Where(x => x.SubscriberId == subscriberId);
-        if (onlyActive)
-            q = q.Where(x => x.IsActive);
-        return await q.OrderBy(x => x.Code).ToListAsync(ct);
-    }
-
-    public Task AddUnitOfMeasureAsync(UnitOfMeasure unit, CancellationToken ct = default)
-        => _context.UnitsOfMeasure.AddAsync(unit, ct).AsTask();
-
-    public Task<UnitOfMeasure?> GetUnitOfMeasureByIdAsync(Guid id, CancellationToken ct = default)
-        => _platform.Unfiltered(_context.UnitsOfMeasure, PlatformQueryReason.SubscriberScopedExplicit)
-            .FirstOrDefaultAsync(x => x.Id == id, ct);
-
-    public async Task<IReadOnlyList<UnitOfMeasure>> GetUnitsOfMeasureAsync(Guid subscriberId, bool onlyActive = true, CancellationToken ct = default)
-    {
-        var q = _context.UnitsOfMeasure.AsQueryable().Where(x => x.SubscriberId == subscriberId);
         if (onlyActive)
             q = q.Where(x => x.IsActive);
         return await q.OrderBy(x => x.Code).ToListAsync(ct);

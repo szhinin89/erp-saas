@@ -13,18 +13,18 @@ public sealed record CreateProductCommand(
     Guid LineId,
     Guid CategoryId,
     Guid SubcategoryId,
-    Guid UnitOfMeasureId,
+    string UomCode,
     Guid BrandId,
     Guid ProductTypeId,
     Guid TariffId,
     bool AppliesVatOnSale,
-    Guid? SaleTaxId,
+    string? SaleVatCode,
     Guid? SaleVatAccountId,
     bool AppliesVatOnPurchase,
-    Guid? PurchaseTaxId,
+    string? PurchaseVatCode,
     Guid? PurchaseVatAccountId,
     bool AppliesExciseTax = false,
-    Guid? ExciseTaxId = null,
+    string? IceCode = null,
     Guid? ExciseAccountId = null,
     string? PurchaseCode = null,
     bool IsService = false,
@@ -59,7 +59,7 @@ public sealed record CreateProductCommand(
 
 public record BarcodeInput(string Code, int Type);
 public record SupplierCodeInput(Guid BusinessPartnerId, string Code, bool IsDefault = false);
-public record UnitConversionInput(Guid AlternateUnitId, decimal ConversionFactor);
+public record UnitConversionInput(string AlternateUomCode, decimal ConversionFactor);
 public record ColorInput(string Name, string? HexCode = null);
 public record SizeInput(string Name, int SortOrder = 0);
 public record DimensionInput(string Name, string Value, string Unit);

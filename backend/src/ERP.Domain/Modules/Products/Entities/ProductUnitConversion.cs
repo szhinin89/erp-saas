@@ -4,19 +4,20 @@ namespace ERP.Domain.Products.Entities;
 
 /// <summary>
 /// Conversión entre la unidad base del producto y una unidad alternativa.
-/// Ej: 1 CAJA = 12 UND  →  AlternateUnitId = CajaId, Factor = 12.
+/// Ej: 1 CAJA = 12 UND  →  AlternateUomCode = "83" (CAJA SRI), Factor = 12.
 /// </summary>
 public class ProductUnitConversion : BaseEntity
 {
     public Guid ProductId         { get; private set; }
-    public Guid AlternateUnitId   { get; private set; }
+    /// <summary>FK a global.sri_uom.Code.</summary>
+    public string AlternateUomCode { get; private set; } = null!;
     public decimal ConversionFactor { get; private set; }
     public bool IsActive          { get; private set; } = true;
 
     private ProductUnitConversion() { }
 
     internal static ProductUnitConversion Create(
-        Guid productId, Guid subscriberId, Guid alternateUnitId, decimal factor)
+        Guid productId, Guid subscriberId, string alternateUomCode, decimal factor)
     {
         if (factor <= 0)
             throw new ArgumentException("El factor de conversión debe ser positivo.");
@@ -25,7 +26,7 @@ public class ProductUnitConversion : BaseEntity
             Id                = Guid.NewGuid(),
             SubscriberId          = subscriberId,
             ProductId         = productId,
-            AlternateUnitId   = alternateUnitId,
+            AlternateUomCode  = alternateUomCode,
             ConversionFactor  = factor,
             IsActive          = true,
         };

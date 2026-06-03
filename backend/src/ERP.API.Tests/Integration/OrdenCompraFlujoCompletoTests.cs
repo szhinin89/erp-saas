@@ -152,17 +152,18 @@ public sealed class OrdenCompraFlujoCompletoTests
         var line     = db.ProductLines.First(l => l.SubscriberId == seed.SubscriberId);
         var category = db.ProductCategories.First(c => c.SubscriberId == seed.SubscriberId);
         var sub      = db.ProductSubcategories.First(s => s.SubscriberId == seed.SubscriberId);
-        var uom      = db.UnitsOfMeasure.First(u => u.SubscriberId == seed.SubscriberId);
         var brand    = db.Brands.First(b => b.SubscriberId == seed.SubscriberId);
         var ptype    = db.ProductTypes.First(t => t.SubscriberId == seed.SubscriberId);
         var tariff   = db.Tariffs.First(t => t.SubscriberId == seed.SubscriberId);
+        // Reusar el UomCode del primer producto (ahora es string, no Guid)
+        var seedProduct = db.Products.First(p => p.SubscriberId == seed.SubscriberId);
 
         var productoB = Product.Create(
             seed.SubscriberId,
             "SKU-INT-02", "Prod INT-B", "Producto B para prueba",
-            line.Id, category.Id, sub.Id, uom.Id, brand.Id, ptype.Id, tariff.Id,
-            appliesVatOnSale: false, saleTaxId: null, saleVatAccountId: null,
-            appliesVatOnPurchase: false, purchaseTaxId: null, purchaseVatAccountId: null,
+            line.Id, category.Id, sub.Id, seedProduct.UomCode, brand.Id, ptype.Id, tariff.Id,
+            appliesVatOnSale: false, saleVatCode: null, saleVatAccountId: null,
+            appliesVatOnPurchase: false, purchaseVatCode: null, purchaseVatAccountId: null,
             seed.UserId,
             purchaseCode: "SKU-INT-02",
             isService: false,

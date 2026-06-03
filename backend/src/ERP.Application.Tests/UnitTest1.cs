@@ -28,8 +28,6 @@ public class CreateProductHandlerTests
         currentUser.SetupGet(u => u.Email).Returns("u@test.local");
         currentUser.SetupGet(u => u.FullName).Returns("Test User");
 
-        var taxRates = new Mock<ITaxRateRepository>(MockBehavior.Strict);
-
         var activity = new Mock<IUserActivityRepository>(MockBehavior.Strict);
         activity.Setup(a => a.AddAsync(It.IsAny<ERP.Domain.Audit.Entities.UserActivity>(), It.IsAny<CancellationToken>()))
             .Returns(Task.CompletedTask);
@@ -39,7 +37,7 @@ public class CreateProductHandlerTests
         currentCompany.SetupGet(c => c.HasCompanyContext).Returns(true);
         currentCompany.SetupGet(c => c.IsAuthenticated).Returns(true);
 
-        var handler = new CreateProductCommandHandler(repo.Object, taxRates.Object, activity.Object, currentSubscriber.Object, currentCompany.Object, currentUser.Object);
+        var handler = new CreateProductCommandHandler(repo.Object, activity.Object, currentSubscriber.Object, currentCompany.Object, currentUser.Object);
 
         var cmd = new CreateProductCommand(
             SaleCode: "S-001",
@@ -48,15 +46,15 @@ public class CreateProductHandlerTests
             LineId: Guid.NewGuid(),
             CategoryId: Guid.NewGuid(),
             SubcategoryId: Guid.NewGuid(),
-            UnitOfMeasureId: Guid.NewGuid(),
+            UomCode: "19",
             BrandId: Guid.NewGuid(),
             ProductTypeId: Guid.NewGuid(),
             TariffId: Guid.NewGuid(),
             AppliesVatOnSale: false,
-            SaleTaxId: null,
+            SaleVatCode: null,
             SaleVatAccountId: null,
             AppliesVatOnPurchase: false,
-            PurchaseTaxId: null,
+            PurchaseVatCode: null,
             PurchaseVatAccountId: null);
 
         var result = await handler.Handle(cmd, CancellationToken.None);

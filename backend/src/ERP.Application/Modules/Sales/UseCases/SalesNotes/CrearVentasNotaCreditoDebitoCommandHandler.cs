@@ -2,6 +2,7 @@
 using MediatR;
 using Microsoft.Extensions.Logging;
 using ERP.Application.Common;
+using ERP.Application.Common.Interfaces;
 using ERP.Application.Modules.Fiscal.Integration;
 using ERP.Application.Sales.Helpers;
 using ERP.Domain.Audit.Entities;
@@ -24,7 +25,7 @@ public sealed class CrearSalesNoteCommandHandler
     private readonly IEmissionPointRepository    _emissionPointRepository;
     private readonly IDocumentSequenceRepository _docSeqRepository;
     private readonly IProductRepository          _productRepository;
-    private readonly ITaxRateRepository          _taxRateRepository;
+    private readonly ISriGlobalRateReader        _sriRates;
     private readonly IUserActivityRepository     _activity;
     private readonly ICurrentSubscriber          _currentSubscriber;
     private readonly ICurrentCompany             _currentCompany;
@@ -40,7 +41,7 @@ public sealed class CrearSalesNoteCommandHandler
         IEmissionPointRepository emissionPointRepository,
         IDocumentSequenceRepository docSeqRepository,
         IProductRepository productRepository,
-        ITaxRateRepository taxRateRepository,
+        ISriGlobalRateReader sriRates,
         IUserActivityRepository activity,
         ICurrentSubscriber currentSubscriber,
         ICurrentCompany currentCompany,
@@ -55,7 +56,7 @@ public sealed class CrearSalesNoteCommandHandler
         _emissionPointRepository = emissionPointRepository;
         _docSeqRepository        = docSeqRepository;
         _productRepository       = productRepository;
-        _taxRateRepository       = taxRateRepository;
+        _sriRates                = sriRates;
         _activity                = activity;
         _currentSubscriber       = currentSubscriber;
         _currentCompany          = currentCompany;
@@ -128,13 +129,13 @@ public sealed class CrearSalesNoteCommandHandler
                 string  vatCode      = "0";
                 decimal vatPct       = 0m;
 
-                if (producto.AppliesVatOnSale && producto.SaleTaxId.HasValue)
+                if (producto.AppliesVatOnSale && !string.IsNullOrWhiteSpace(producto.SaleVatCode))
                 {
-                    var taxRate = await _taxRateRepository.GetByIdAsync(producto.SaleTaxId.Value, subscriberId, ct);
-                    if (taxRate is not null)
+                    var pct = await _sriRates.GetVatPercentageAsync(producto.SaleVatCode, ct);
+                    if (pct.HasValue)
                     {
-                        vatPct       = taxRate.Percentage;
-                        vatCode      = SriVatCodeFromPercentage(vatPct);
+                        vatPct       = pct.Value;
+                        vatCode      = producto.SaleVatCode;
                         impuestoItem = subtotalItem * vatPct / 100;
                     }
                 }

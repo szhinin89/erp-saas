@@ -14,17 +14,17 @@ public record ProductFullReportDto(
     Guid BrandId,
     Guid ProductTypeId,
 
-    Guid UnitOfMeasureId,
+    string UomCode,
     IReadOnlyList<ProductUnitConversionDto> UnitConversions,
 
     bool AppliesVatOnPurchase,
-    Guid? PurchaseTaxId,
+    string? PurchaseVatCode,
     Guid? PurchaseVatAccountId,
     bool AppliesVatOnSale,
-    Guid? SaleTaxId,
+    string? SaleVatCode,
     Guid? SaleVatAccountId,
     bool AppliesExciseTax,
-    Guid? ExciseTaxId,
+    string? IceCode,
     Guid? ExciseAccountId,
 
     bool IsService,
@@ -71,7 +71,7 @@ public record ProductFullReportDto(
 
 public record ProductBarcodeDto(Guid Id, string Code, int Type);
 public record ProductSupplierCodeDto(Guid Id, Guid BusinessPartnerId, string Code, bool IsDefault);
-public record ProductUnitConversionDto(Guid Id, Guid AlternateUnitId, decimal ConversionFactor);
+public record ProductUnitConversionDto(Guid Id, string AlternateUomCode, decimal ConversionFactor);
 public record ProductColorDto(Guid Id, string Name, string? HexCode);
 public record ProductSizeDto(Guid Id, string Name, int SortOrder);
 public record ProductDimensionDto(Guid Id, string Name, string Value, string Unit);

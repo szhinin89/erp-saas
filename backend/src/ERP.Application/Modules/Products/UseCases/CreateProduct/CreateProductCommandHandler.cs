@@ -3,7 +3,6 @@ using ERP.Application.Common;
 using ERP.Application.Products.DTOs;
 using ERP.Domain.Audit.Entities;
 using ERP.Domain.Audit.Interfaces;
-using ERP.Domain.Products.Entities;
 using ERP.Domain.Products.Interfaces;
 
 namespace ERP.Application.Products.UseCases.CreateProduct;
@@ -11,7 +10,6 @@ namespace ERP.Application.Products.UseCases.CreateProduct;
 public sealed class CreateProductCommandHandler : IRequestHandler<CreateProductCommand, Result<ProductDto>>
 {
     private readonly IProductRepository _repository;
-    private readonly ITaxRateRepository _taxRates;
     private readonly IUserActivityRepository _activity;
     private readonly ICurrentSubscriber _currentSubscriber;
     private readonly ICurrentCompany _currentCompany;
@@ -19,14 +17,12 @@ public sealed class CreateProductCommandHandler : IRequestHandler<CreateProductC
 
     public CreateProductCommandHandler(
         IProductRepository repository,
-        ITaxRateRepository taxRates,
         IUserActivityRepository activity,
         ICurrentSubscriber currentSubscriber,
         ICurrentCompany currentCompany,
         ICurrentUser currentUser)
     {
         _repository    = repository;
-        _taxRates      = taxRates;
         _activity      = activity;
         _currentSubscriber = currentSubscriber;
         _currentCompany = currentCompany;
@@ -39,14 +35,6 @@ public sealed class CreateProductCommandHandler : IRequestHandler<CreateProductC
     {
         var subscriberId = _currentSubscriber.SubscriberId;
         var userId   = _currentUser.UserId;
-
-        var taxError = await ProductCommandMutationHelper.ValidateTaxRatesAsync(
-            _taxRates, subscriberId,
-            command.AppliesVatOnSale, command.SaleTaxId,
-            command.AppliesVatOnPurchase, command.PurchaseTaxId,
-            command.AppliesExciseTax, command.ExciseTaxId, ct);
-        if (taxError is not null)
-            return taxError;
 
         var product = BuildProduct(command, subscriberId, userId);
         var collectionError = ProductCommandMutationHelper.ApplyCreateChildCollections(product, command, userId);
@@ -69,8 +57,8 @@ public sealed class CreateProductCommandHandler : IRequestHandler<CreateProductC
         return Result<ProductDto>.Success(ProductCommandMutationHelper.MapToDto(product));
     }
 
-    private Product BuildProduct(CreateProductCommand command, Guid subscriberId, Guid userId) =>
-        Product.Create(
+    private ERP.Domain.Products.Entities.Product BuildProduct(CreateProductCommand command, Guid subscriberId, Guid userId) =>
+        ERP.Domain.Products.Entities.Product.Create(
             subscriberId,
             command.SaleCode,
             command.ShortName,
@@ -78,20 +66,20 @@ public sealed class CreateProductCommandHandler : IRequestHandler<CreateProductC
             command.LineId,
             command.CategoryId,
             command.SubcategoryId,
-            command.UnitOfMeasureId,
+            command.UomCode,
             command.BrandId,
             command.ProductTypeId,
             command.TariffId,
             command.AppliesVatOnSale,
-            command.SaleTaxId,
+            command.SaleVatCode,
             command.SaleVatAccountId,
             command.AppliesVatOnPurchase,
-            command.PurchaseTaxId,
+            command.PurchaseVatCode,
             command.PurchaseVatAccountId,
             userId,
             command.PurchaseCode,
             command.AppliesExciseTax,
-            command.ExciseTaxId,
+            command.IceCode,
             command.ExciseAccountId,
             command.IsService,
             command.TracksStock,

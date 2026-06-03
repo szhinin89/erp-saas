@@ -26,11 +26,11 @@ public class GetProductsHandler : IRequestHandler<GetProductsQuery, Result<IRead
 
         var dtos = products.Select(p => new ProductDto(
             p.Id, p.SaleCode, p.PurchaseCode, p.ShortName, p.Description,
-            p.LineId, p.CategoryId, p.SubcategoryId, p.UnitOfMeasureId,
+            p.LineId, p.CategoryId, p.SubcategoryId, p.UomCode,
             p.BrandId, p.ProductTypeId, p.TariffId,
-            p.AppliesVatOnSale, p.SaleTaxId,
-            p.AppliesVatOnPurchase, p.PurchaseTaxId,
-            p.AppliesExciseTax, p.ExciseTaxId,
+            p.AppliesVatOnSale, p.SaleVatCode,
+            p.AppliesVatOnPurchase, p.PurchaseVatCode,
+            p.AppliesExciseTax, p.IceCode,
             p.IsService, p.TracksStock, p.IsActive, p.AvailableOnWeb,
             p.AvailableOnMobile, p.IsEcommerceActive, p.IsForSale, p.CreatedAt))
             .ToList();

@@ -147,9 +147,7 @@ internal static class DevDatabaseSeeder
             Account.Create(tenant.Id, "4.1.01", "Ventas", AccountType.Revenue, AccountNature.Credit, SeederActorId),
             Account.Create(tenant.Id, "5.1.01", "Gastos Operativos", AccountType.Expense, AccountNature.Debit, SeederActorId));
 
-        db.TaxRates.AddRange(
-            TaxRate.Create(tenant.Id, "IVA15", "IVA 15%", TaxRateType.VAT, sriVatCode: "10", sriIceCode: null, SeederActorId),
-            TaxRate.Create(tenant.Id, "IVA0",  "IVA 0%",  TaxRateType.VAT, sriVatCode: "0",  sriIceCode: null, SeederActorId));
+        // TaxRate/UnitOfMeasure per-subscriber catalogs removed — now reference global.sri_* tables directly.
 
         await db.SaveChangesAsync(ct);
 

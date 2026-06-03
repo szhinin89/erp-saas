@@ -27,8 +27,9 @@ public sealed class CreateProductCommandValidator : AbstractValidator<CreateProd
         RuleFor(x => x.SubcategoryId)
             .NotEmpty().WithMessage("La subcategoría es obligatoria.");
 
-        RuleFor(x => x.UnitOfMeasureId)
-            .NotEmpty().WithMessage("La unidad de medida es obligatoria.");
+        RuleFor(x => x.UomCode)
+            .NotEmpty().WithMessage("El código UOM (SRI) es obligatorio.")
+            .MaximumLength(10).WithMessage("El código UOM no puede exceder 10 caracteres.");
 
         RuleFor(x => x.BrandId)
             .NotEmpty().WithMessage("La marca es obligatoria.");

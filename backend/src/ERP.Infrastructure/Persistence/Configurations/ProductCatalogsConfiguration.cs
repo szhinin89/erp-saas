@@ -54,39 +54,6 @@ public class ProductTypeConfiguration : IEntityTypeConfiguration<ProductType>
     }
 }
 
-public class UnitOfMeasureConfiguration : IEntityTypeConfiguration<UnitOfMeasure>
-{
-    public void Configure(EntityTypeBuilder<UnitOfMeasure> builder)
-    {
-        builder.ToTable("units_of_measure");
-        builder.HasKey(x => x.Id);
-        builder.Property(x => x.Id).HasColumnName("id");
-        builder.Property(x => x.SubscriberId).HasColumnName("subscriber_id").IsRequired();
-
-        builder.Property(x => x.Code).HasColumnName("code").HasMaxLength(20).IsRequired();
-        builder.Property(x => x.Name).HasColumnName("name").HasMaxLength(120).IsRequired();
-        builder.Property(x => x.Symbol).HasColumnName("symbol").HasMaxLength(20);
-        // FK a global.sri_uom — fuente única del código SRI para XML electrónico
-        builder.Property(x => x.SriUomCode).HasColumnName("sri_uom_code").HasMaxLength(5);
-        builder.HasOne<ERP.Domain.Modules.SriCatalogs.Entities.SriUom>()
-            .WithMany()
-            .HasForeignKey(x => x.SriUomCode)
-            .HasPrincipalKey(u => u.Code)
-            .IsRequired(false)
-            .OnDelete(DeleteBehavior.Restrict);
-
-        builder.Property(x => x.IsActive).HasColumnName("is_active").IsRequired();
-        builder.Property(x => x.CreatedAt).HasColumnName("created_at");
-        builder.Property(x => x.UpdatedAt).HasColumnName("updated_at");
-        builder.Property(x => x.CreatedBy).HasColumnName("created_by");
-        builder.Property(x => x.UpdatedBy).HasColumnName("updated_by");
-
-        builder.HasIndex(x => new { x.SubscriberId, x.Code })
-            .IsUnique()
-            .HasDatabaseName("ix_units_of_measure_subscriber_code");
-    }
-}
-
 public class TariffConfiguration : IEntityTypeConfiguration<Tariff>
 {
     public void Configure(EntityTypeBuilder<Tariff> builder)

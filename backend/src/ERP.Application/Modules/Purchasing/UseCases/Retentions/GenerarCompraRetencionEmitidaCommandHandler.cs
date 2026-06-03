@@ -1,6 +1,7 @@
 using MediatR;
 using Microsoft.Extensions.Logging;
 using ERP.Application.Common;
+using ERP.Application.Common.Interfaces;
 using ERP.Application.Modules.Purchasing.Services;
 using ERP.Application.Sales.Helpers;
 using ERP.Domain.Audit.Entities;
@@ -19,7 +20,7 @@ public sealed class GenerateIssuedRetentionCommandHandler
     private readonly IPurchBillRepository                    _compraRepository;
     private readonly ISriSettingsRepository                  _configSriRepository;
     private readonly ICompanyRepository                      _companyRepository;
-    private readonly IRetentionSettingsRepository            _configRetencionRepository;
+    private readonly ISriGlobalRateReader                    _sriRates;
     private readonly IEmissionPointRepository                _emissionPointRepository;
     private readonly IDocumentSequenceRepository             _docSeqRepository;
     private readonly IUserActivityRepository                 _activity;
@@ -33,7 +34,7 @@ public sealed class GenerateIssuedRetentionCommandHandler
         IPurchBillRepository compraRepository,
         ISriSettingsRepository configSriRepository,
         ICompanyRepository companyRepository,
-        IRetentionSettingsRepository configRetencionRepository,
+        ISriGlobalRateReader sriRates,
         IEmissionPointRepository emissionPointRepository,
         IDocumentSequenceRepository docSeqRepository,
         IUserActivityRepository activity,
@@ -43,18 +44,18 @@ public sealed class GenerateIssuedRetentionCommandHandler
         IUnitOfWork unitOfWork,
         ILogger<GenerateIssuedRetentionCommandHandler> logger)
     {
-        _compraRepository          = compraRepository;
-        _configSriRepository       = configSriRepository;
-        _companyRepository         = companyRepository;
-        _configRetencionRepository = configRetencionRepository;
-        _emissionPointRepository   = emissionPointRepository;
-        _docSeqRepository          = docSeqRepository;
-        _activity                  = activity;
-        _currentSubscriber         = currentSubscriber;
-        _currentCompany            = currentCompany;
-        _currentUser               = currentUser;
-        _unitOfWork                = unitOfWork;
-        _logger                    = logger;
+        _compraRepository    = compraRepository;
+        _configSriRepository = configSriRepository;
+        _companyRepository   = companyRepository;
+        _sriRates            = sriRates;
+        _emissionPointRepository = emissionPointRepository;
+        _docSeqRepository    = docSeqRepository;
+        _activity            = activity;
+        _currentSubscriber   = currentSubscriber;
+        _currentCompany      = currentCompany;
+        _currentUser         = currentUser;
+        _unitOfWork          = unitOfWork;
+        _logger              = logger;
     }
 
     public async Task<Result<Guid>> Handle(GenerateIssuedRetentionCommand command, CancellationToken ct)
@@ -68,10 +69,8 @@ public sealed class GenerateIssuedRetentionCommandHandler
         if (compra.Status != PurchaseStatus.Approved)
             return Result<Guid>.Failure("Solo se puede generar retención para una compra Aprobada.");
 
-        var configs = await _configRetencionRepository.GetActiveForSupplierAsync(subscriberId, ct);
-        if (configs.Count == 0)
-            return Result<Guid>.Failure(
-                "No hay tasas de retención activas para Supplier. Configure en Configuración de retenciones.");
+        if (command.Lines is null || command.Lines.Count == 0)
+            return Result<Guid>.Failure("Debe especificar al menos una línea de retención.");
 
         var hasSriConfig = await _configSriRepository.GetByCompanyIdAsync(_currentCompany.CompanyId, ct);
         if (hasSriConfig is null)
@@ -104,28 +103,28 @@ public sealed class GenerateIssuedRetentionCommandHandler
                 subscriberId, compra.BusinessPartnerId, compra.Id, clave, fecha,
                 emPoint.Establishment.Code, emPoint.Code, secuencial, userId);
 
-            foreach (var cfg in configs)
+            foreach (var line in command.Lines)
             {
                 decimal @base;
-                if (cfg.TaxType == "IVA")
+                if (line.TaxType == "IVA")
                 {
                     if (compra.VatTotal <= 0) continue;
                     @base = compra.VatTotal;
                 }
-                else if (cfg.TaxType == "RENTA")
+                else if (line.TaxType == "RENTA")
                 {
                     @base = compra.Subtotal;
                 }
                 else
                     continue;
 
-                var pct = cfg.SriRetentionCode?.Percentage
-                    ?? throw new InvalidOperationException($"Código SRI de retención '{cfg.SriCode}' no existe en global.sri_retention_code.");
+                var pct = await _sriRates.GetRetentionPercentageAsync(line.SriCode, ct)
+                    ?? throw new InvalidOperationException($"Código SRI de retención '{line.SriCode}' no existe en global.sri_retention_code.");
                 var valor = PurchaseRetentionCalculo.CalcularValorRetenido(@base, pct);
                 if (valor <= 0) continue;
 
                 var det = PurchRetentionLine.Create(
-                    subscriberId, cfg.TaxType, cfg.SriCode, @base, pct, valor,
+                    subscriberId, line.TaxType, line.SriCode, @base, pct, valor,
                     compra.InvoiceNumber, userId);
                 det.AssignRetentionId(ret.Id);
                 ret.AddLine(det);

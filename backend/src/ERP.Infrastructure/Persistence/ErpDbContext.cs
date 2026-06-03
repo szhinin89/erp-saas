@@ -46,7 +46,7 @@ namespace ERP.Infrastructure.Persistence;
 /// 
 /// ESTADO ACTUAL (Permitido para monolito modular):
 /// - Contabilidad: Account, JournalEntry, JournalEntryLine
-/// - Productos: Product, ProductLine, ProductCategory, ProductSubcategory, Brand, ProductType, TaxRate, UnitOfMeasure, Tariff
+/// - Productos: Product, ProductLine, ProductCategory, ProductSubcategory, Brand, ProductType, Tariff (UOM/IVA/ICE → global.sri_* tables)
 /// - Autenticación: IdentityUser, CompanyUserMembership
 /// - Subscribers: Subscriber
 /// - Seguridad: AccessProfile, AccessProfilePermission, SecurityAdminScopeAssignment
@@ -243,13 +243,11 @@ public class ErpDbContext : DbContext
     public DbSet<AccountingSetup> AccountingSetups => Set<AccountingSetup>();
     public DbSet<ExpenseCategory> ExpenseCategories => Set<ExpenseCategory>();
     public DbSet<Product> Products => Set<Product>();
-    public DbSet<TaxRate> TaxRates => Set<TaxRate>();
     public DbSet<ProductLine> ProductLines => Set<ProductLine>();
     public DbSet<ProductCategory> ProductCategories => Set<ProductCategory>();
     public DbSet<ProductSubcategory> ProductSubcategories => Set<ProductSubcategory>();
     public DbSet<Brand> Brands => Set<Brand>();
     public DbSet<ProductType> ProductTypes => Set<ProductType>();
-    public DbSet<UnitOfMeasure> UnitsOfMeasure => Set<UnitOfMeasure>();
     public DbSet<Tariff> Tariffs => Set<Tariff>();
     public DbSet<Carrier> Carriers => Set<Carrier>();
     public DbSet<FirstRunSetupState> FirstRunSetupStates => Set<FirstRunSetupState>();
@@ -305,9 +303,8 @@ public class ErpDbContext : DbContext
     public DbSet<InvoiceElectronic>   FiscalInvoiceElectronics  => Set<InvoiceElectronic>();
 
     // ── Configuration ─────────────────────────────────────────────────────
-    public DbSet<SriSettings>       SriSettings       => Set<SriSettings>();
-    public DbSet<RetentionSettings> RetentionSettings => Set<RetentionSettings>();
-    public DbSet<BillingSettings>   BillingSettings   => Set<BillingSettings>();
+    public DbSet<SriSettings>     SriSettings     => Set<SriSettings>();
+    public DbSet<BillingSettings> BillingSettings => Set<BillingSettings>();
 
     // ── Logistics / Warehouses ────────────────────────────────────────────
     public DbSet<Warehouse> Warehouses => Set<Warehouse>();

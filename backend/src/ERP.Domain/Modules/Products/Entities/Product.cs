@@ -38,7 +38,8 @@ public class Product : MasterEntity, ISubscriberScopedEntity, ICompanyOperationa
     public Guid SubcategoryId { get; private set; }
 
     // ── Catálogos relacionados ────────────────────────────────────
-    public Guid UnitOfMeasureId { get; private set; }
+    /// <summary>FK a global.sri_uom.Code (ej: "19"=Unidad).</summary>
+    public string UomCode { get; private set; } = null!;
     public Guid BrandId { get; private set; }
     public Guid ProductTypeId { get; private set; }
     public Guid TariffId { get; private set; }                   // Arancel
@@ -48,10 +49,13 @@ public class Product : MasterEntity, ISubscriberScopedEntity, ICompanyOperationa
     public bool AppliesVatOnPurchase { get; private set; }
     public bool AppliesExciseTax { get; private set; }
 
-    // ── Impuestos (catálogos separados) ──────────────────────────
-    public Guid? SaleTaxId { get; private set; }                 // IVA venta (TaxRate)
-    public Guid? PurchaseTaxId { get; private set; }             // IVA compra (TaxRate)
-    public Guid? ExciseTaxId { get; private set; }               // ICE (TaxRate)
+    // ── Impuestos (catálogos globales SRI) ───────────────────────
+    /// <summary>FK a global.sri_vat_rate.Code para IVA de venta ("0","8","10").</summary>
+    public string? SaleVatCode { get; private set; }
+    /// <summary>FK a global.sri_vat_rate.Code para IVA de compra.</summary>
+    public string? PurchaseVatCode { get; private set; }
+    /// <summary>FK a global.sri_ice_rate.Code para ICE.</summary>
+    public string? IceCode { get; private set; }
 
     // ── Cuentas contables por impuesto ───────────────────────────
     public Guid? SaleVatAccountId { get; private set; }
@@ -116,20 +120,20 @@ public class Product : MasterEntity, ISubscriberScopedEntity, ICompanyOperationa
         Guid lineId,
         Guid categoryId,
         Guid subcategoryId,
-        Guid unitOfMeasureId,
+        string uomCode,
         Guid brandId,
         Guid productTypeId,
         Guid tariffId,
         bool appliesVatOnSale,
-        Guid? saleTaxId,
+        string? saleVatCode,
         Guid? saleVatAccountId,
         bool appliesVatOnPurchase,
-        Guid? purchaseTaxId,
+        string? purchaseVatCode,
         Guid? purchaseVatAccountId,
         Guid createdBy,
         string? purchaseCode = null,
         bool appliesExciseTax = false,
-        Guid? exciseTaxId = null,
+        string? iceCode = null,
         Guid? exciseAccountId = null,
         bool isService = false,
         bool tracksStock = true,
@@ -156,14 +160,14 @@ public class Product : MasterEntity, ISubscriberScopedEntity, ICompanyOperationa
         if (maxItemDiscountPercent < 0 || maxItemDiscountPercent > 100)
             throw new ArgumentException("El descuento máximo por ítem debe estar entre 0 y 100.", nameof(maxItemDiscountPercent));
 
-        if (appliesVatOnSale && saleTaxId is null)
-            throw new ArgumentException("Debe seleccionar una tarifa de IVA para la venta.", nameof(saleTaxId));
+        if (appliesVatOnSale && string.IsNullOrWhiteSpace(saleVatCode))
+            throw new ArgumentException("Debe seleccionar un código de IVA para la venta.", nameof(saleVatCode));
 
-        if (appliesVatOnPurchase && purchaseTaxId is null)
-            throw new ArgumentException("Debe seleccionar una tarifa de IVA para la compra.", nameof(purchaseTaxId));
+        if (appliesVatOnPurchase && string.IsNullOrWhiteSpace(purchaseVatCode))
+            throw new ArgumentException("Debe seleccionar un código de IVA para la compra.", nameof(purchaseVatCode));
 
-        if (appliesExciseTax && exciseTaxId is null)
-            throw new ArgumentException("Debe seleccionar una tarifa de ICE.", nameof(exciseTaxId));
+        if (appliesExciseTax && string.IsNullOrWhiteSpace(iceCode))
+            throw new ArgumentException("Debe seleccionar un código de ICE.", nameof(iceCode));
 
         var product = new Product
         {
@@ -177,18 +181,18 @@ public class Product : MasterEntity, ISubscriberScopedEntity, ICompanyOperationa
             LineId            = lineId,
             CategoryId        = categoryId,
             SubcategoryId     = subcategoryId,
-            UnitOfMeasureId   = unitOfMeasureId,
+            UomCode           = uomCode,
             BrandId           = brandId,
             ProductTypeId     = productTypeId,
             TariffId          = tariffId,
             AppliesVatOnSale      = appliesVatOnSale,
-            SaleTaxId             = saleTaxId,
+            SaleVatCode           = saleVatCode,
             SaleVatAccountId      = saleVatAccountId,
             AppliesVatOnPurchase  = appliesVatOnPurchase,
-            PurchaseTaxId         = purchaseTaxId,
+            PurchaseVatCode       = purchaseVatCode,
             PurchaseVatAccountId  = purchaseVatAccountId,
             AppliesExciseTax      = appliesExciseTax,
-            ExciseTaxId       = exciseTaxId,
+            IceCode           = iceCode,
             ExciseAccountId   = exciseAccountId,
             IsService         = isService,
             TracksStock       = tracksStock,
@@ -224,17 +228,17 @@ public class Product : MasterEntity, ISubscriberScopedEntity, ICompanyOperationa
         Guid lineId,
         Guid categoryId,
         Guid subcategoryId,
-        Guid unitOfMeasureId,
+        string uomCode,
         Guid brandId,
         Guid productTypeId,
         bool appliesVatOnSale,
-        Guid? saleTaxId,
+        string? saleVatCode,
         Guid? saleVatAccountId,
         bool appliesVatOnPurchase,
-        Guid? purchaseTaxId,
+        string? purchaseVatCode,
         Guid? purchaseVatAccountId,
         bool appliesExciseTax,
-        Guid? exciseTaxId,
+        string? iceCode,
         Guid? exciseAccountId,
         bool tracksStock,
         bool isService,
@@ -257,14 +261,14 @@ public class Product : MasterEntity, ISubscriberScopedEntity, ICompanyOperationa
         if (maxItemDiscountPercent < 0 || maxItemDiscountPercent > 100)
             throw new ArgumentException("El descuento máximo por ítem debe estar entre 0 y 100.", nameof(maxItemDiscountPercent));
 
-        if (appliesVatOnSale && saleTaxId is null)
-            throw new ArgumentException("Debe seleccionar una tarifa de IVA para la venta.", nameof(saleTaxId));
+        if (appliesVatOnSale && string.IsNullOrWhiteSpace(saleVatCode))
+            throw new ArgumentException("Debe seleccionar un código de IVA para la venta.", nameof(saleVatCode));
 
-        if (appliesVatOnPurchase && purchaseTaxId is null)
-            throw new ArgumentException("Debe seleccionar una tarifa de IVA para la compra.", nameof(purchaseTaxId));
+        if (appliesVatOnPurchase && string.IsNullOrWhiteSpace(purchaseVatCode))
+            throw new ArgumentException("Debe seleccionar un código de IVA para la compra.", nameof(purchaseVatCode));
 
-        if (appliesExciseTax && exciseTaxId is null)
-            throw new ArgumentException("Debe seleccionar una tarifa de ICE.", nameof(exciseTaxId));
+        if (appliesExciseTax && string.IsNullOrWhiteSpace(iceCode))
+            throw new ArgumentException("Debe seleccionar un código de ICE.", nameof(iceCode));
 
         ShortName       = identity.ShortName;
         Description     = identity.Description;
@@ -272,17 +276,17 @@ public class Product : MasterEntity, ISubscriberScopedEntity, ICompanyOperationa
         LineId          = lineId;
         CategoryId      = categoryId;
         SubcategoryId   = subcategoryId;
-        UnitOfMeasureId = unitOfMeasureId;
+        UomCode         = uomCode;
         BrandId         = brandId;
         ProductTypeId   = productTypeId;
         AppliesVatOnSale     = appliesVatOnSale;
-        SaleTaxId            = saleTaxId;
+        SaleVatCode          = saleVatCode;
         SaleVatAccountId     = saleVatAccountId;
         AppliesVatOnPurchase = appliesVatOnPurchase;
-        PurchaseTaxId        = purchaseTaxId;
+        PurchaseVatCode      = purchaseVatCode;
         PurchaseVatAccountId = purchaseVatAccountId;
         AppliesExciseTax     = appliesExciseTax;
-        ExciseTaxId          = exciseTaxId;
+        IceCode              = iceCode;
         ExciseAccountId      = exciseAccountId;
         TracksStock          = tracksStock;
         IsService            = isService;
@@ -360,12 +364,12 @@ public class Product : MasterEntity, ISubscriberScopedEntity, ICompanyOperationa
     }
 
     public void ReplaceUnitConversions(
-        IEnumerable<(Guid AlternateUnitId, decimal ConversionFactor)> conversions,
+        IEnumerable<(string AlternateUomCode, decimal ConversionFactor)> conversions,
         Guid updatedBy)
     {
         _unitConversions.Clear();
         foreach (var c in conversions)
-            _unitConversions.Add(ProductUnitConversion.Create(Id, SubscriberId, c.AlternateUnitId, c.ConversionFactor));
+            _unitConversions.Add(ProductUnitConversion.Create(Id, SubscriberId, c.AlternateUomCode, c.ConversionFactor));
         SetUpdated(updatedBy);
     }
 
