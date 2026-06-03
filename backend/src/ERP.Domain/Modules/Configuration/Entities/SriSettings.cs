@@ -1,4 +1,4 @@
-using ERP.Domain.Common;
+﻿using ERP.Domain.Common;
 
 namespace ERP.Domain.Configuration.Entities;
 
@@ -10,7 +10,7 @@ public sealed class SriSettings : AuditableEntity, ISubscriberScopedEntity, ICom
 
     public Guid   CompanyId    { get; private set; }
     public string CertP12Path  { get; private set; } = null!;
-    /// <summary>Contraseña del certificado cifrada en reposo (prefijo dp1:). Legacy: texto plano hasta próximo guardado.</summary>
+    /// <summary>ContraseÃ±a del certificado cifrada en reposo (prefijo dp1:). Legacy: texto plano hasta prÃ³ximo guardado.</summary>
     public string CertPassword { get; private set; } = null!;
     public int    Environment  { get; private set; }
     public int    EmissionType { get; private set; } = 1;
@@ -31,7 +31,7 @@ public sealed class SriSettings : AuditableEntity, ISubscriberScopedEntity, ICom
         var s = new SriSettings
         {
             SubscriberId = subscriberId,
-            CompanyId    = companyId,
+            CompanyId = companyId,
             CertP12Path  = certP12Path.Trim(),
             CertPassword = certPassword.Trim(),
             Environment  = environment,

@@ -1,8 +1,8 @@
-namespace ERP.Domain.Auth.Entities;
+﻿namespace ERP.Domain.Auth.Entities;
 
 /// <summary>
-/// Token opaco de larga duración (30 días) almacenado en BD como hash SHA-256.
-/// Se rota en cada uso para detectar reutilización maliciosa.
+/// Token opaco de larga duraciÃ³n (30 dÃ­as) almacenado en BD como hash SHA-256.
+/// Se rota en cada uso para detectar reutilizaciÃ³n maliciosa.
 /// No implementa ISubscriberScopedEntity porque se consulta por hash, no por tenant.
 /// </summary>
 public sealed class RefreshToken
@@ -18,7 +18,7 @@ public sealed class RefreshToken
     public Guid     Id             { get; private set; }
     public Guid     UserId         { get; private set; }
     public Guid     SubscriberId       { get; private set; }
-    public Guid?    CompanyId        { get; private set; }
+    public Guid? CompanyId { get; private set; }
     public string   UserType       { get; private set; } = null!;
     public string   TokenHash      { get; private set; } = null!;
     public DateTime ExpiresAt      { get; private set; }
@@ -28,13 +28,13 @@ public sealed class RefreshToken
     public string?  ReasonRevoked  { get; private set; }
     public DateTime CreatedAt      { get; private set; }
 
-    /// <summary>Cadena de rotación (sesión/dispositivo). Todos los sucesores comparten el mismo FamilyId.</summary>
+    /// <summary>Cadena de rotaciÃ³n (sesiÃ³n/dispositivo). Todos los sucesores comparten el mismo FamilyId.</summary>
     public Guid     FamilyId       { get; private set; }
 
-    /// <summary>Token anterior en la cadena de rotación, si aplica.</summary>
+    /// <summary>Token anterior en la cadena de rotaciÃ³n, si aplica.</summary>
     public Guid?    ParentTokenId  { get; private set; }
 
-    /// <summary>Profundidad de rotación dentro de la familia (0 = emisión inicial).</summary>
+    /// <summary>Profundidad de rotaciÃ³n dentro de la familia (0 = emisiÃ³n inicial).</summary>
     public int      RotationDepth  { get; private set; }
 
     private RefreshToken() { }

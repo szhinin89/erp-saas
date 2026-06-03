@@ -1,4 +1,4 @@
-using MediatR;
+﻿using MediatR;
 using Microsoft.Extensions.Logging;
 using ERP.Application.Common;
 using ERP.Application.Inventory.DTOs;
@@ -56,17 +56,17 @@ public sealed class CreateTransferCommandHandler
         var userId   = _currentUser.UserId;
 
         _logger.LogInformation(
-            "Creando transfer: origen={Origen}, destino={Destino}, ítems={Count}",
+            "Creando transfer: origen={Origen}, destino={Destino}, Ã­tems={Count}",
             command.SourceWarehouseId, command.TargetWarehouseId, command.Items.Count);
 
         // 1. Validar bodegas
         var origen = await _bodegaRepo.GetByIdAsync(subscriberId, command.SourceWarehouseId, ct);
         if (origen is null || !origen.IsActive)
-            return Result<TransferDto>.Failure("La Warehouse origen no existe o no está activa.");
+            return Result<TransferDto>.Failure("La Warehouse origen no existe o no estÃ¡ activa.");
 
         var destino = await _bodegaRepo.GetByIdAsync(subscriberId, command.TargetWarehouseId, ct);
         if (destino is null || !destino.IsActive)
-            return Result<TransferDto>.Failure("La Warehouse destino no existe o no está activa.");
+            return Result<TransferDto>.Failure("La Warehouse destino no existe o no estÃ¡ activa.");
 
         if (_currentCompany.HasCompanyContext)
         {
@@ -83,7 +83,7 @@ public sealed class CreateTransferCommandHandler
             var producto = await _productRepo.GetByIdAsync(item.ProductId, subscriberId, ct);
             if (producto is null || !producto.IsActive)
                 return Result<TransferDto>.Failure(
-                    $"El producto {item.ProductId} no existe o no está activo.");
+                    $"El producto {item.ProductId} no existe o no estÃ¡ activo.");
             productos[item.ProductId] = producto;
         }
 
@@ -109,12 +109,12 @@ public sealed class CreateTransferCommandHandler
         await _unitOfWork.BeginTransactionAsync(ct);
         try
         {
-            // 3. Generar número de transfer (dentro de la transacción)
+            // 3. Generar nÃºmero de transfer (dentro de la transacciÃ³n)
             var secuencial = await _transferenciaRepo.GetNextSequentialAsync(subscriberId, ct);
 
             // 4. Crear la transfer en Borrador + sus detalles
             // El Id es client-generated (Guid.NewGuid()), no requiere flush previo.
-            var companyIdOp = _currentCompany.HasCompanyContext ? _currentCompany.CompanyId : (Guid?)null;
+            var companyIdOp = _currentCompany.CompanyId;
             var t = StockTransfer.Create(
                 subscriberId, secuencial,
                 command.SourceWarehouseId, command.TargetWarehouseId,

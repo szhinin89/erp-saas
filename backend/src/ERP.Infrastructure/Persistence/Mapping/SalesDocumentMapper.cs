@@ -1,4 +1,4 @@
-using System.Reflection;
+﻿using System.Reflection;
 using ERP.Domain.Modules.Sales.Entities;
 using ERP.Domain.Modules.Sales.Enums;
 using ERP.Infrastructure.Persistence.Converters;
@@ -30,7 +30,7 @@ public static class SalesDocumentMapper
             bill.CreatedBy,
             bill.CompanyId);
 
-        // Preservar id y auditoría
+        // Preservar id y auditorÃ­a
         Set(doc, nameof(SalesDocument.Id), bill.Id);
         Set(doc, nameof(SalesDocument.Status), bill.Status);
         Set(doc, nameof(SalesDocument.CreatedAt), bill.CreatedAt);
@@ -43,7 +43,7 @@ public static class SalesDocumentMapper
         if (bill.XmlSignedPath is not null || bill.XmlAuthPath is not null
             || bill.AuthNumber is not null || bill.ErrorMessage is not null)
         {
-            var electronic = SalesElectronicDoc.CreateShell(bill.Id, bill.SubscriberId);
+            var electronic = SalesElectronicDoc.CreateShell(bill.Id, bill.SubscriberId, bill.CompanyId);
             if (bill.AuthNumber is not null)
                 electronic.SetAuthorization(
                     bill.AuthNumber,
@@ -167,7 +167,7 @@ public static class SalesDocumentMapper
 
         if (note.XmlSignedPath is not null || note.XmlAuthPath is not null || note.AuthNumber is not null)
         {
-            var electronic = SalesElectronicDoc.CreateShell(note.Id, note.SubscriberId);
+            var electronic = SalesElectronicDoc.CreateShell(note.Id, note.SubscriberId, note.CompanyId);
             electronic.SetAuthorization(
                 note.AuthNumber ?? "",
                 note.AuthDate ?? note.IssueDate,

@@ -1,4 +1,4 @@
-using System.Net;
+﻿using System.Net;
 using System.Net.Http.Headers;
 using System.Reflection;
 using FluentAssertions;
@@ -23,16 +23,16 @@ using ERP.Infrastructure.Services;
 namespace ERP.API.Tests.Integration;
 
 /// <summary>
-/// Pruebas de conmutaciÃ³n entre modo simple y escalable del Kardex.
+/// Pruebas de conmutaciÃƒÂ³n entre modo simple y escalable del Kardex.
 /// Escenarios:
-///   1. UseScalableMode=false â†’ calcula sin snapshots (modo original)
-///   2. UseScalableMode=true  con snapshot disponible â†’ usa snapshot como saldo inicial
-///   3. UseScalableMode=true  con rango > MaxDaysForSync â†’ retorna 202 Accepted + jobId
-///   4. UseScalableMode=true  sin snapshots (tabla vacÃ­a) â†’ fallback correcto (mismo que simple)
+///   1. UseScalableMode=false Ã¢â€ â€™ calcula sin snapshots (modo original)
+///   2. UseScalableMode=true  con snapshot disponible Ã¢â€ â€™ usa snapshot como saldo inicial
+///   3. UseScalableMode=true  con rango > MaxDaysForSync Ã¢â€ â€™ retorna 202 Accepted + jobId
+///   4. UseScalableMode=true  sin snapshots (tabla vacÃƒÂ­a) Ã¢â€ â€™ fallback correcto (mismo que simple)
 /// </summary>
 public sealed class KardexConmutacionTests
 {
-    // â”€â”€ Helper: crear un movimiento con fecha controlada â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // Ã¢â€â‚¬Ã¢â€â‚¬ Helper: crear un movimiento con fecha controlada Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
 
     private static void SetCreatedAt(AuditableEntity entity, DateTime utc)
         => typeof(AuditableEntity)
@@ -53,8 +53,8 @@ public sealed class KardexConmutacionTests
             _ => Math.Abs(quantity),
         };
 
-        var resolvedCompanyId = companyId
-            ?? (JobCompanyContext.Current != Guid.Empty ? JobCompanyContext.Current : (Guid?)null);
+        var resolvedCompanyId = companyId.GetValueOrDefault(
+            JobCompanyContext.Current != Guid.Empty ? JobCompanyContext.Current : Guid.Empty);
 
         var m = StockMovement.Create(
             subscriberId, productoId, bodegaId, tipo,
@@ -64,7 +64,7 @@ public sealed class KardexConmutacionTests
         return m;
     }
 
-    // â”€â”€ Helper: instanciar el handler con opciones especÃ­ficas â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // Ã¢â€â‚¬Ã¢â€â‚¬ Helper: instanciar el handler con opciones especÃƒÂ­ficas Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
 
     private static GetKardexQueryHandler BuildHandler(
         IServiceScope scope, Guid subscriberId, KardexOptions opts)
@@ -80,7 +80,7 @@ public sealed class KardexConmutacionTests
         return new GetKardexQueryHandler(kardex);
     }
 
-    // â”€â”€ Helper: seed base + ManualCurrentSubscriber en el scope â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // Ã¢â€â‚¬Ã¢â€â‚¬ Helper: seed base + ManualCurrentSubscriber en el scope Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
 
     private static async Task<(ErpDbContext Db, IServiceScope Scope, IntegrationSeedData.SeedResult Seed)>
         SeedAsync(IntegrationTestWebAppFactory factory)
@@ -92,16 +92,16 @@ public sealed class KardexConmutacionTests
         JobCompanyContext.Current = seed.CompanyId;
 
         // Registrar un ManualCurrentSubscriber que el handler pueda resolver directamente.
-        // (No se pasa por DI convencional â€” se pasa directo al constructor del handler.)
+        // (No se pasa por DI convencional Ã¢â‚¬â€ se pasa directo al constructor del handler.)
         scope.ServiceProvider.GetRequiredService<IStockRepository>(); // warm up scope
 
         return (db, scope, seed);
     }
 
-    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-    // ESCENARIO 1 â€” Modo simple (UseScalableMode = false)
+    // Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â
+    // ESCENARIO 1 Ã¢â‚¬â€ Modo simple (UseScalableMode = false)
     // El handler NO consulta KardexSnapshot aunque haya snapshots en la tabla.
-    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+    // Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â
 
     [Fact]
     public async Task ModoSimple_calcula_sin_usar_snapshots_aunque_existan()
@@ -113,7 +113,7 @@ public sealed class KardexConmutacionTests
         var hoyUtc  = DateTime.UtcNow.Date;
         var ayerUtc = hoyUtc.AddDays(-1).AddHours(12);
 
-        // Movimiento de ayer (queda fuera del perÃ­odo)
+        // Movimiento de ayer (queda fuera del perÃƒÂ­odo)
         db.StockMovements.Add(
             MovConFecha(tid, pid, bid, StockMovementType.PurchaseEntry,
                         10m, 0m, 50m, uid, ayerUtc, seed.CompanyId));
@@ -125,13 +125,13 @@ public sealed class KardexConmutacionTests
                    .UpsertAsync(snapFalso, CancellationToken.None);
         await db.SaveChangesAsync();
 
-        // Movimiento de hoy (perÃ­odo)
+        // Movimiento de hoy (perÃƒÂ­odo)
         db.StockMovements.Add(
             MovConFecha(tid, pid, bid, StockMovementType.PurchaseEntry,
                         5m, 10m, 60m, uid, hoyUtc.AddHours(1), seed.CompanyId));
         await db.SaveChangesAsync();
 
-        // Handler en modo SIMPLE â€” no debe usar el snapshot falso
+        // Handler en modo SIMPLE Ã¢â‚¬â€ no debe usar el snapshot falso
         var opts    = new KardexOptions { UseScalableMode = false };
         var handler = BuildHandler(scope, tid, opts);
 
@@ -148,15 +148,15 @@ public sealed class KardexConmutacionTests
             "el modo simple recorre el historial real, no el snapshot");
         k.Resumen.OpeningValue.Should().BeApproximately(500m, 0.01m);
 
-        // Solo 1 movimiento en el perÃ­odo (hoy)
+        // Solo 1 movimiento en el perÃƒÂ­odo (hoy)
         k.Rows.Should().HaveCount(1);
         k.Rows[0].InboundQuantity.Should().Be(5m);
     }
 
-    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-    // ESCENARIO 2 â€” Modo escalable con snapshot disponible
-    // El handler DEBE usar el snapshot como saldo inicial (O(perÃ­odo), no O(total)).
-    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+    // Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â
+    // ESCENARIO 2 Ã¢â‚¬â€ Modo escalable con snapshot disponible
+    // El handler DEBE usar el snapshot como saldo inicial (O(perÃƒÂ­odo), no O(total)).
+    // Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â
 
     [Fact]
     public async Task ModoEscalable_con_snapshot_usa_saldo_del_snapshot_como_punto_de_partida()
@@ -168,7 +168,7 @@ public sealed class KardexConmutacionTests
         var hoyUtc = DateTime.UtcNow.Date;
         var ayer   = hoyUtc.AddDays(-1);
 
-        // NO creamos movimientos previos al perÃ­odo â€” el saldo inicial debe venir del snapshot.
+        // NO creamos movimientos previos al perÃƒÂ­odo Ã¢â‚¬â€ el saldo inicial debe venir del snapshot.
         // Si el handler no usara el snapshot y no hay movimientos previos, saldo inicial = 0.
 
         // Snapshot para "ayer" con datos conocidos: qty=10, valor=$500, avg=$50
@@ -177,7 +177,7 @@ public sealed class KardexConmutacionTests
                    .UpsertAsync(snapshot, CancellationToken.None);
         await db.SaveChangesAsync();
 
-        // Movimiento de hoy (perÃ­odo): E=5@$70
+        // Movimiento de hoy (perÃƒÂ­odo): E=5@$70
         db.StockMovements.Add(
             MovConFecha(tid, pid, bid, StockMovementType.PurchaseEntry,
                         5m, 10m, 70m, uid, hoyUtc.AddHours(1), seed.CompanyId));
@@ -195,13 +195,13 @@ public sealed class KardexConmutacionTests
         var k = result.Value!;
 
         // Saldo inicial PROVIENE DEL SNAPSHOT (10 uds, $500)
-        // Si no se usara el snapshot, serÃ­a 0 porque no hay movimientos previos.
+        // Si no se usara el snapshot, serÃƒÂ­a 0 porque no hay movimientos previos.
         k.Resumen.OpeningQuantity.Should().Be(10m,
             "el modo escalable usa el snapshot como punto de partida");
         k.Resumen.OpeningValue.Should().BeApproximately(500m, 0.01m);
 
-        // Movimiento del perÃ­odo: E=5@$70
-        // avg = (500 + 5Ã—70) / 15 = 850/15 = 56.667
+        // Movimiento del perÃƒÂ­odo: E=5@$70
+        // avg = (500 + 5Ãƒâ€”70) / 15 = 850/15 = 56.667
         k.Rows.Should().HaveCount(1);
         var fila = k.Rows[0];
         fila.InboundQuantity.Should().Be(5m);
@@ -213,10 +213,10 @@ public sealed class KardexConmutacionTests
         k.Resumen.ClosingQuantity.Should().Be(15m);
     }
 
-    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-    // ESCENARIO 3 â€” Modo escalable con rango > MaxDaysForSync â†’ 202 Accepted
+    // Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â
+    // ESCENARIO 3 Ã¢â‚¬â€ Modo escalable con rango > MaxDaysForSync Ã¢â€ â€™ 202 Accepted
     // El endpoint HTTP retorna 202 con jobId en lugar del resultado inmediato.
-    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+    // Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â
 
     [Fact]
     public async Task ModoEscalable_rango_grande_retorna_202_con_jobId()
@@ -235,7 +235,7 @@ public sealed class KardexConmutacionTests
         client.DefaultRequestHeaders.Authorization =
             new AuthenticationHeaderValue("Bearer", token);
 
-        // Rango de 200 dÃ­as >> MaxDaysForSync (90) â†’ debe activar el modo async
+        // Rango de 200 dÃƒÂ­as >> MaxDaysForSync (90) Ã¢â€ â€™ debe activar el modo async
         var fechaInicio = DateTime.Today.AddDays(-200).ToString("yyyy-MM-dd");
         var fechaFin    = DateTime.Today.ToString("yyyy-MM-dd");
         var url = $"/api/inventory/kardex?productoId={seed.ProductId}&bodegaId={seed.WarehouseId}" +
@@ -243,9 +243,9 @@ public sealed class KardexConmutacionTests
 
         var response = await client.GetAsync(url);
 
-        // El rango supera MaxDaysForSync=90 â†’ debe devolver 202 Accepted
+        // El rango supera MaxDaysForSync=90 Ã¢â€ â€™ debe devolver 202 Accepted
         response.StatusCode.Should().Be(HttpStatusCode.Accepted,
-            "un rango de 200 dÃ­as supera el umbral de 90 dÃ­as para procesamiento sÃ­ncrono");
+            "un rango de 200 dÃƒÂ­as supera el umbral de 90 dÃƒÂ­as para procesamiento sÃƒÂ­ncrono");
 
         var body = await response.Content.ReadAsStringAsync();
         body.Should().Contain("jobId", "la respuesta debe incluir un identificador del trabajo");
@@ -257,10 +257,10 @@ public sealed class KardexConmutacionTests
         reporteCreado.Should().BeTrue("debe haberse persistido el registro del job en BD");
     }
 
-    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-    // ESCENARIO 4 â€” Modo escalable sin snapshots (fallback transparente)
-    // Si no hay snapshots disponibles, el resultado debe ser idÃ©ntico al modo simple.
-    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+    // Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â
+    // ESCENARIO 4 Ã¢â‚¬â€ Modo escalable sin snapshots (fallback transparente)
+    // Si no hay snapshots disponibles, el resultado debe ser idÃƒÂ©ntico al modo simple.
+    // Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â
 
     [Fact]
     public async Task ModoEscalable_sin_snapshots_produce_mismo_resultado_que_modo_simple()
@@ -272,19 +272,19 @@ public sealed class KardexConmutacionTests
         var hoyUtc  = DateTime.UtcNow.Date;
         var ayerUtc = hoyUtc.AddDays(-1).AddHours(12);
 
-        // Movimientos previos al perÃ­odo (ayer)
+        // Movimientos previos al perÃƒÂ­odo (ayer)
         db.StockMovements.Add(
             MovConFecha(tid, pid, bid, StockMovementType.PurchaseEntry,
                         10m, 0m, 50m, uid, ayerUtc, seed.CompanyId));
-        // Movimiento del perÃ­odo (hoy)
+        // Movimiento del perÃƒÂ­odo (hoy)
         db.StockMovements.Add(
             MovConFecha(tid, pid, bid, StockMovementType.SaleExit,
                         4m, 10m, 50m, uid, hoyUtc.AddHours(1), seed.CompanyId));
         await db.SaveChangesAsync();
 
-        // Confirmar que la tabla de snapshots estÃ¡ vacÃ­a
+        // Confirmar que la tabla de snapshots estÃƒÂ¡ vacÃƒÂ­a
         var haySnapshots = await db.KardexSnapshots.AnyAsync();
-        haySnapshots.Should().BeFalse("la tabla de snapshots debe estar vacÃ­a para este escenario");
+        haySnapshots.Should().BeFalse("la tabla de snapshots debe estar vacÃƒÂ­a para este escenario");
 
         // Ejecutar con modo SIMPLE
         var handlerSimple = BuildHandler(scope, tid, new KardexOptions { UseScalableMode = false });
@@ -293,7 +293,7 @@ public sealed class KardexConmutacionTests
             new GetKardexQuery(pid, bid, DateFrom: hoyUtc, DateTo: null),
             CancellationToken.None);
 
-        // Ejecutar con modo ESCALABLE (sin snapshots â†’ fallback idÃ©ntico)
+        // Ejecutar con modo ESCALABLE (sin snapshots Ã¢â€ â€™ fallback idÃƒÂ©ntico)
         var handlerScalable = BuildHandler(scope, tid, new KardexOptions { UseScalableMode = true });
 
         var resultScalable = await handlerScalable.Handle(
@@ -312,14 +312,14 @@ public sealed class KardexConmutacionTests
         e.Resumen.OpeningValue.Should().BeApproximately(
             s.Resumen.OpeningValue, 0.001m);
         e.Rows.Should().HaveCount(s.Rows.Count,
-            "ambos modos deben producir el mismo nÃºmero de filas");
+            "ambos modos deben producir el mismo nÃƒÂºmero de filas");
         e.Resumen.ClosingQuantity.Should().Be(s.Resumen.ClosingQuantity);
         e.Resumen.ClosingValue.Should().BeApproximately(
             s.Resumen.ClosingValue, 0.001m);
         e.Resumen.FinalAverageCost.Should().BeApproximately(
             s.Resumen.FinalAverageCost, 0.001m);
 
-        // Los valores concretos son: saldo inicial=10@$50, perÃ­odo: -4@$50=$200 salida
+        // Los valores concretos son: saldo inicial=10@$50, perÃƒÂ­odo: -4@$50=$200 salida
         s.Resumen.OpeningQuantity.Should().Be(10m);
         s.Resumen.OpeningValue.Should().BeApproximately(500m, 0.01m);
         s.Rows.Should().HaveCount(1);
@@ -327,9 +327,9 @@ public sealed class KardexConmutacionTests
         s.Resumen.ClosingQuantity.Should().Be(6m);
     }
 
-    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-    // ESCENARIO EXTRA â€” Rango dentro del umbral NO activa async
-    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+    // Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â
+    // ESCENARIO EXTRA Ã¢â‚¬â€ Rango dentro del umbral NO activa async
+    // Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â
 
     [Fact]
     public async Task ModoEscalable_rango_dentro_del_umbral_responde_sincrono()
@@ -345,7 +345,7 @@ public sealed class KardexConmutacionTests
         client.DefaultRequestHeaders.Authorization =
             new AuthenticationHeaderValue("Bearer", token);
 
-        // Rango de 7 dÃ­as << MaxDaysForSync (90) â†’ debe responder 200 (sÃ­ncrono)
+        // Rango de 7 dÃƒÂ­as << MaxDaysForSync (90) Ã¢â€ â€™ debe responder 200 (sÃƒÂ­ncrono)
         var fechaInicio = DateTime.Today.AddDays(-7).ToString("yyyy-MM-dd");
         var fechaFin    = DateTime.Today.ToString("yyyy-MM-dd");
         var url = $"/api/inventory/kardex?productoId={seed.ProductId}&bodegaId={seed.WarehouseId}" +
@@ -353,13 +353,13 @@ public sealed class KardexConmutacionTests
 
         var response = await client.GetAsync(url);
 
-        // 7 dÃ­as < 90 â†’ respuesta sÃ­ncrona 200 OK
+        // 7 dÃƒÂ­as < 90 Ã¢â€ â€™ respuesta sÃƒÂ­ncrona 200 OK
         response.StatusCode.Should().Be(HttpStatusCode.OK,
-            "un rango de 7 dÃ­as no supera el umbral de 90 dÃ­as, debe responder sincrono");
+            "un rango de 7 dÃƒÂ­as no supera el umbral de 90 dÃƒÂ­as, debe responder sincrono");
 
         var body = await response.Content.ReadAsStringAsync();
         body.Should().Contain("\"rows\"",
-            "la respuesta sÃ­ncrona incluye el kardex completo en JSON");
+            "la respuesta sÃƒÂ­ncrona incluye el kardex completo en JSON");
     }
 }
 

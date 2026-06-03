@@ -1,4 +1,4 @@
-namespace ERP.Domain.Access.Entities;
+﻿namespace ERP.Domain.Access.Entities;
 
 /// <summary>
 /// Acceso de un <see cref="IdentityUser"/> a una empresa operativa (<c>company</c>).

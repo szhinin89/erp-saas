@@ -1,4 +1,4 @@
-using MediatR;
+﻿using MediatR;
 using Microsoft.Extensions.Logging;
 using ERP.Application.Common;
 using ERP.Application.Inventory.DTOs;
@@ -54,15 +54,15 @@ public sealed class CreateStockAdjustmentCommandHandler
 
         var Warehouse = await _bodegaRepo.GetByIdAsync(subscriberId, command.WarehouseId, ct);
         if (Warehouse is null || !Warehouse.IsActive)
-            return Result<StockAdjustmentDto>.Failure("La Warehouse no existe o no está activa.");
+            return Result<StockAdjustmentDto>.Failure("La Warehouse no existe o no estÃ¡ activa.");
 
         var producto = await _productRepo.GetByIdAsync(command.ProductId, subscriberId, ct);
         if (producto is null || !producto.IsActive)
-            return Result<StockAdjustmentDto>.Failure("El producto no existe o no está activo.");
+            return Result<StockAdjustmentDto>.Failure("El producto no existe o no estÃ¡ activo.");
 
         if (producto.IsService || !producto.TracksStock)
             return Result<StockAdjustmentDto>.Failure(
-                "El producto es un servicio o no maneja stock físico y no puede tener ajustes de inventario.");
+                "El producto es un servicio o no maneja stock fÃ­sico y no puede tener ajustes de inventario.");
 
         if (_currentCompany.HasCompanyContext &&
             (Warehouse.CompanyId != _currentCompany.CompanyId || producto.CompanyId != _currentCompany.CompanyId))
@@ -73,7 +73,7 @@ public sealed class CreateStockAdjustmentCommandHandler
         {
             var secuencial = await _ajusteRepo.GetNextSequentialAsync(subscriberId, ct);
 
-            var companyIdOp = _currentCompany.HasCompanyContext ? _currentCompany.CompanyId : (Guid?)null;
+            var companyIdOp = _currentCompany.CompanyId;
             var ajuste = StockAdjustment.Create(
                 subscriberId, secuencial,
                 command.WarehouseId,   Warehouse.Name,

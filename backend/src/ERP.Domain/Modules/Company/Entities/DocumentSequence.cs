@@ -1,17 +1,17 @@
-using ERP.Domain.Common;
+﻿using ERP.Domain.Common;
 
 namespace ERP.Domain.Modules.Company.Entities;
 
 /// <summary>
-/// Controla el secuencial por punto de emisión y tipo de comprobante SRI.
-/// CRÍTICO: <see cref="CaptureAndIncrement"/> debe ejecutarse siempre dentro de una
-/// transacción con <c>SELECT … FOR UPDATE</c> para evitar secuenciales duplicados.
+/// Controla el secuencial por punto de emisiÃ³n y tipo de comprobante SRI.
+/// CRÃTICO: <see cref="CaptureAndIncrement"/> debe ejecutarse siempre dentro de una
+/// transacciÃ³n con <c>SELECT â€¦ FOR UPDATE</c> para evitar secuenciales duplicados.
 /// </summary>
 public sealed class DocumentSequence : BaseEntity, ICompanyScopedEntity
 {
     public Guid     CompanyId       { get; private set; }
     public Guid     EmissionPointId { get; private set; }
-    /// <summary>Código de tipo documental SRI: "01" Factura, "04" NC, "05" ND, "07" Retención.</summary>
+    /// <summary>CÃ³digo de tipo documental SRI: "01" Factura, "04" NC, "05" ND, "07" RetenciÃ³n.</summary>
     public string   DocTypeCode     { get; private set; } = null!;
     public int      CurrentSeq      { get; private set; } = 0;
     public DateTime UpdatedAt       { get; private set; }
@@ -25,13 +25,13 @@ public sealed class DocumentSequence : BaseEntity, ICompanyScopedEntity
         string docTypeCode)
     {
         if (string.IsNullOrWhiteSpace(docTypeCode))
-            throw new ArgumentException("El código de tipo documental es obligatorio.", nameof(docTypeCode));
+            throw new ArgumentException("El cÃ³digo de tipo documental es obligatorio.", nameof(docTypeCode));
 
         return new DocumentSequence
         {
             Id              = Guid.NewGuid(),
             SubscriberId    = subscriberId,
-            CompanyId       = companyId,
+            CompanyId = companyId,
             EmissionPointId = emissionPointId,
             DocTypeCode     = docTypeCode.Trim(),
             CurrentSeq      = 0,
@@ -41,7 +41,7 @@ public sealed class DocumentSequence : BaseEntity, ICompanyScopedEntity
 
     /// <summary>
     /// Devuelve el secuencial actual formateado (D9) e incrementa el contador en memoria.
-    /// PRECONDICIÓN: la fila debe estar bloqueada con SELECT FOR UPDATE.
+    /// PRECONDICIÃ“N: la fila debe estar bloqueada con SELECT FOR UPDATE.
     /// </summary>
     public string CaptureAndIncrement()
     {

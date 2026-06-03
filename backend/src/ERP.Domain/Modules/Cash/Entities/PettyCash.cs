@@ -1,4 +1,4 @@
-using ERP.Domain.Common;
+﻿using ERP.Domain.Common;
 
 namespace ERP.Domain.Modules.Cash.Entities;
 
@@ -6,7 +6,7 @@ public sealed class PettyCash : MasterEntity, ICompanyOperationalEntity
 {
     public const int NameMaxLen = 200;
 
-    public Guid?   CompanyId              { get; private set; }
+    public Guid CompanyId { get; private set; }
     public string  Name                    { get; private set; } = null!;
     public decimal AssignedBalance         { get; private set; }
     public decimal CurrentBalance          { get; private set; }
@@ -22,7 +22,7 @@ public sealed class PettyCash : MasterEntity, ICompanyOperationalEntity
         Guid     createdBy,
         Guid?    replenishBankAccountId = null,
         Guid?    ledgerAccountId = null,
-        Guid?    companyId = null)
+        Guid companyId = default)
     {
         if (string.IsNullOrWhiteSpace(name))
             throw new ArgumentException("Name is required.", nameof(name));
@@ -33,7 +33,7 @@ public sealed class PettyCash : MasterEntity, ICompanyOperationalEntity
         {
             Id                     = Guid.NewGuid(),
             SubscriberId           = subscriberId,
-            CompanyId              = companyId,
+            CompanyId = companyId,
             Name                   = name.Trim(),
             AssignedBalance        = assignedBalance,
             CurrentBalance         = assignedBalance,

@@ -1,4 +1,4 @@
-using ERP.Domain.Common;
+﻿using ERP.Domain.Common;
 using ERP.Domain.Modules.Accounting.Enums;
 using ERP.Domain.Modules.Accounting.ValueObjects;
 
@@ -13,7 +13,7 @@ public class Account : MasterEntity, ICompanyScopedEntity
     public AccountNature Nature { get; private set; }
     public Guid? ParentId { get; private set; }
 
-    /// <summary>Si es false, la cuenta es de agrupación y no debe usarse en partidas de asientos.</summary>
+    /// <summary>Si es false, la cuenta es de agrupaciÃ³n y no debe usarse en partidas de asientos.</summary>
     public bool AllowsMovements { get; private set; } = true;
 
     private Account() { }
@@ -30,13 +30,13 @@ public class Account : MasterEntity, ICompanyScopedEntity
         bool allowsMovements = true)
     {
         if (string.IsNullOrWhiteSpace(name))
-            throw new ArgumentException("El nombre de la cuenta no puede estar vacío.");
+            throw new ArgumentException("El nombre de la cuenta no puede estar vacÃ­o.");
 
         var account = new Account
         {
             Id                = Guid.NewGuid(),
             SubscriberId      = subscriberId,
-            CompanyId         = companyId,
+            CompanyId = companyId,
             Code              = new AccountCode(code),
             Name              = name,
             Type              = type,

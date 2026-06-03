@@ -1,4 +1,4 @@
-using MediatR;
+﻿using MediatR;
 using Microsoft.Extensions.Logging;
 using ERP.Application.Common;
 using ERP.Application.Common.Interfaces;
@@ -98,7 +98,7 @@ public sealed class CreateSaleCommandHandler : IRequestHandler<CreateSaleCommand
         var companyId = _currentCompany.CompanyId;
 
         _logger.LogInformation(
-            "Creando venta: tenant={SubscriberId}, bp={BusinessPartnerId}, Warehouse={BodegaId}, ítems={ItemCount}, salesOrder={SalesOrderPublicId}",
+            "Creando venta: tenant={SubscriberId}, bp={BusinessPartnerId}, Warehouse={BodegaId}, Ã­tems={ItemCount}, salesOrder={SalesOrderPublicId}",
             subscriberId, command.BusinessPartnerId, command.WarehouseId, command.Items.Count, command.SalesOrderPublicId);
 
         var resolveResult = await ResolveCommandFromSalesOrderAsync(command, subscriberId, companyId, ct);
@@ -197,20 +197,20 @@ public sealed class CreateSaleCommandHandler : IRequestHandler<CreateSaleCommand
         var cliente = await _bpRepository.GetByIdAsync(command.BusinessPartnerId, ct);
         if (cliente is null || !cliente.IsActive)
             return Result<Dictionary<Guid, ERP.Domain.Products.Entities.Product>>.Failure(
-                "El cliente no existe o no está activo.");
+                "El cliente no existe o no estÃ¡ activo.");
 
         var warehouse = await _bodegaRepository.GetByIdAsync(subscriberId, command.WarehouseId, ct);
         if (warehouse is null || !warehouse.IsActive)
             return Result<Dictionary<Guid, ERP.Domain.Products.Entities.Product>>.Failure(
-                "La Warehouse no existe o no está activa.");
-        if (warehouse.CompanyId.HasValue && warehouse.CompanyId != companyId)
+                "La Warehouse no existe o no estÃ¡ activa.");
+        if (warehouse.CompanyId != Guid.Empty && warehouse.CompanyId != companyId)
             return Result<Dictionary<Guid, ERP.Domain.Products.Entities.Product>>.Failure(
                 "La bodega no pertenece a la empresa operativa activa.");
 
         var hasSriConfig = await _configSriRepository.GetByCompanyIdAsync(companyId, ct);
         if (hasSriConfig is null)
             return Result<Dictionary<Guid, ERP.Domain.Products.Entities.Product>>.Failure(
-                "La configuración SRI no está configurada para esta empresa.");
+                "La configuraciÃ³n SRI no estÃ¡ configurada para esta empresa.");
 
         var productos = await LoadActiveProductsAsync(command, subscriberId, companyId, ct);
         if (!productos.IsSuccess)
@@ -237,8 +237,8 @@ public sealed class CreateSaleCommandHandler : IRequestHandler<CreateSaleCommand
             var producto = await _productRepository.GetByIdAsync(item.ProductId, subscriberId, ct);
             if (producto is null || !producto.IsActive)
                 return Result<Dictionary<Guid, ERP.Domain.Products.Entities.Product>>.Failure(
-                    $"El producto con ID {item.ProductId} no existe o no está activo.");
-            if (producto.CompanyId.HasValue && producto.CompanyId != companyId)
+                    $"El producto con ID {item.ProductId} no existe o no estÃ¡ activo.");
+            if (producto.CompanyId != Guid.Empty && producto.CompanyId != companyId)
                 return Result<Dictionary<Guid, ERP.Domain.Products.Entities.Product>>.Failure(
                     $"El producto '{producto.ShortName}' no pertenece a la empresa operativa activa.");
             productos[item.ProductId] = producto;
@@ -288,7 +288,7 @@ public sealed class CreateSaleCommandHandler : IRequestHandler<CreateSaleCommand
             return Result<Guid>.Failure("Cliente no encontrado.");
 
         var sriConfig = await _configSriRepository.GetByCompanyIdForUpdateAsync(companyId, ct)
-            ?? throw new InvalidOperationException("SRI config no encontrada durante la transacción.");
+            ?? throw new InvalidOperationException("SRI config no encontrada durante la transacciÃ³n.");
 
         var company = await _companyRepository.GetByIdAsync(companyId, ct)
             ?? throw new InvalidOperationException("Empresa no encontrada.");
@@ -297,18 +297,18 @@ public sealed class CreateSaleCommandHandler : IRequestHandler<CreateSaleCommand
         if (command.EmissionPointId.HasValue)
         {
             emPoint = await _emissionPointRepository.GetByIdAsync(command.EmissionPointId.Value, subscriberId, ct)
-                ?? throw new InvalidOperationException($"Punto de emisión {command.EmissionPointId} no encontrado.");
+                ?? throw new InvalidOperationException($"Punto de emisiÃ³n {command.EmissionPointId} no encontrado.");
             if (emPoint.Establishment.BranchId != command.BranchId)
-                throw new InvalidOperationException("El punto de emisión no pertenece a la sucursal indicada.");
+                throw new InvalidOperationException("El punto de emisiÃ³n no pertenece a la sucursal indicada.");
         }
         else
         {
             emPoint = await _emissionPointRepository.GetDefaultForBranchAsync(subscriberId, command.BranchId, ct)
-                ?? throw new InvalidOperationException($"No hay punto de emisión predeterminado para la sucursal {command.BranchId}.");
+                ?? throw new InvalidOperationException($"No hay punto de emisiÃ³n predeterminado para la sucursal {command.BranchId}.");
         }
 
         var docSeq = await _docSeqRepository.GetForUpdateAsync(emPoint.Id, "01", ct)
-            ?? throw new InvalidOperationException($"No hay secuencial configurado para Factura en el punto de emisión {emPoint.Id}.");
+            ?? throw new InvalidOperationException($"No hay secuencial configurado para Factura en el punto de emisiÃ³n {emPoint.Id}.");
 
         var secuencial = docSeq.CaptureAndIncrement();
 
@@ -439,7 +439,7 @@ public sealed class CreateSaleCommandHandler : IRequestHandler<CreateSaleCommand
             }
             catch (Exception linkEx)
             {
-                _logger.LogError(linkEx, "Link pedido→factura falló tras crear factura {PublicId}", invoice.PublicId);
+                _logger.LogError(linkEx, "Link pedidoâ†’factura fallÃ³ tras crear factura {PublicId}", invoice.PublicId);
                 return Result<Guid>.Failure($"Invoice created but order link failed: {linkEx.Message}");
             }
         }

@@ -1,10 +1,10 @@
-using ERP.Domain.Branches.Entities;
+﻿using ERP.Domain.Branches.Entities;
 using ERP.Domain.Common;
 
 namespace ERP.Domain.Modules.Company.Entities;
 
 /// <summary>
-/// Establecimiento SRI — unidad fiscal registrada ante el SRI con código 001-999.
+/// Establecimiento SRI â€” unidad fiscal registrada ante el SRI con cÃ³digo 001-999.
 /// Pertenece a una <see cref="Branch"/> (sucursal operativa).
 /// CompanyId es denormalizado desde Branch.CompanyId para soportar filtros globales multi-tenant.
 /// </summary>
@@ -25,7 +25,7 @@ public sealed class Establishment : MasterEntity, ICompanyScopedEntity
     public string? Phone     { get; private set; }
     public bool    IsMain    { get; private set; }
 
-    // EF navigation — no exponer como colecciones mutables
+    // EF navigation â€” no exponer como colecciones mutables
     public Branch                     Branch         { get; private set; } = null!;
     public Company                    Company        { get; private set; } = null!;
     public ICollection<EmissionPoint> EmissionPoints { get; private set; } = [];
@@ -44,14 +44,14 @@ public sealed class Establishment : MasterEntity, ICompanyScopedEntity
         Guid    createdBy)
     {
         if (string.IsNullOrWhiteSpace(code))
-            throw new ArgumentException("El código de establecimiento es obligatorio.", nameof(code));
+            throw new ArgumentException("El cÃ³digo de establecimiento es obligatorio.", nameof(code));
 
         var e = new Establishment
         {
             Id           = Guid.NewGuid(),
             SubscriberId = subscriberId,
             BranchId     = branchId,
-            CompanyId    = companyId,
+            CompanyId = companyId,
             Code         = code.Trim().PadLeft(CodeMaxLen, '0'),
             Name         = name.Trim(),
             Address      = address.Trim(),

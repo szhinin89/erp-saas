@@ -1,11 +1,11 @@
-using ERP.Domain.Common;
+﻿using ERP.Domain.Common;
 using ERP.Domain.Modules.Inventory.Enums;
 
 namespace ERP.Domain.Modules.Inventory.Entities;
 
 public sealed class StockMovement : AuditableEntity, ISubscriberScopedEntity, ICompanyOperationalEntity
 {
-    public Guid? CompanyId { get; private set; }
+    public Guid CompanyId { get; private set; }
     public const int ReferenceMaxLen        = 100;
     public const int SourceDocTypeMaxLen    = 50;
 
@@ -35,13 +35,13 @@ public sealed class StockMovement : AuditableEntity, ISubscriberScopedEntity, IC
         string?          sourceDocType,
         Guid             createdBy,
         decimal?         unitCost = null,
-        Guid?            companyId = null)
+        Guid companyId = default)
     {
         var m = new StockMovement
         {
             Id               = Guid.NewGuid(),
             SubscriberId         = subscriberId,
-            CompanyId            = companyId,
+            CompanyId = companyId,
             ProductId        = productId,
             WarehouseId      = warehouseId,
             MovementType     = movementType,

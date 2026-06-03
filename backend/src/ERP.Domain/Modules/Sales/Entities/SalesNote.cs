@@ -1,4 +1,4 @@
-using ERP.Domain.Common;
+﻿using ERP.Domain.Common;
 using ERP.Domain.Modules.Sales.Events;
 
 namespace ERP.Domain.Modules.Sales.Entities;
@@ -17,8 +17,8 @@ public sealed class SalesNote : AuditableEntity, ICompanyOperationalEntity
 
     private readonly List<SalesNoteLine> _lines = new();
 
-    /// <summary>Empresa operativa. Null = registro legacy pre-migración company-scope.</summary>
-    public Guid?     CompanyId       { get; private set; }
+    /// <summary>Empresa operativa. Null = registro legacy pre-migraciÃ³n company-scope.</summary>
+    public Guid CompanyId { get; private set; }
     public Guid      OriginalBillId  { get; private set; }
     public NoteType  NoteType        { get; private set; }
     public string    Reason          { get; private set; } = null!;
@@ -56,7 +56,7 @@ public sealed class SalesNote : AuditableEntity, ICompanyOperationalEntity
         string   accessKey,
         DateTime issueDate,
         Guid     createdBy,
-        Guid?    companyId = null)
+        Guid companyId = default)
     {
         var dt = (docType ?? string.Empty).Trim();
         if (dt is not ("04" or "05"))
@@ -66,7 +66,7 @@ public sealed class SalesNote : AuditableEntity, ICompanyOperationalEntity
         {
             Id             = Guid.NewGuid(),
             SubscriberId   = subscriberId,
-            CompanyId      = companyId,
+            CompanyId = companyId,
             OriginalBillId = originalBillId,
             NoteType       = noteType,
             Reason         = (reason ?? string.Empty).Trim(),
@@ -113,7 +113,7 @@ public sealed class SalesNote : AuditableEntity, ICompanyOperationalEntity
         string?  xmlAuthPath,
         Guid     journalEntryId,
         IReadOnlyList<SalesNoteStockLine>? stockLines = null,
-        Guid? companyId = null)
+        Guid companyId = default)
     {
         if (Status != "Validated")
             throw new InvalidOperationException($"Only Validated notes can be authorized (current: {Status}).");
@@ -132,7 +132,7 @@ public sealed class SalesNote : AuditableEntity, ICompanyOperationalEntity
         if (lines.Count > 0)
         {
             var number = $"{EstabCode}-{EmPointCode}-{Sequential}";
-            RaiseDomainEvent(new SalesNoteAuthorizedEvent(Id, SubscriberId, userId, warehouseId, companyId ?? Guid.Empty, number, lines));
+            RaiseDomainEvent(new SalesNoteAuthorizedEvent(Id, SubscriberId, userId, warehouseId, companyId, number, lines));
         }
     }
 

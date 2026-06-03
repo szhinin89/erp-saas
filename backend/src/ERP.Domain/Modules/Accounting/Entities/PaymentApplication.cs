@@ -1,10 +1,10 @@
-using ERP.Domain.Common;
+﻿using ERP.Domain.Common;
 
 namespace ERP.Domain.Modules.Accounting.Entities;
 
 /// <summary>
-/// Registro de aplicación de pago a una entrada de CxC o CxP.
-/// Una aplicación apunta exactamente a una entrada (AR o AP).
+/// Registro de aplicaciÃ³n de pago a una entrada de CxC o CxP.
+/// Una aplicaciÃ³n apunta exactamente a una entrada (AR o AP).
 /// </summary>
 public sealed class PaymentApplication : AuditableEntity, ISubscriberScopedEntity
 {
@@ -35,7 +35,7 @@ public sealed class PaymentApplication : AuditableEntity, ISubscriberScopedEntit
         {
             Id               = Guid.NewGuid(),
             SubscriberId     = subscriberId,
-            CompanyId        = companyId,
+            CompanyId = companyId,
             ArEntryId        = arEntryId,
             ApEntryId        = null,
             Amount           = amount,
@@ -64,7 +64,7 @@ public sealed class PaymentApplication : AuditableEntity, ISubscriberScopedEntit
         {
             Id               = Guid.NewGuid(),
             SubscriberId     = subscriberId,
-            CompanyId        = companyId,
+            CompanyId = companyId,
             ArEntryId        = null,
             ApEntryId        = apEntryId,
             Amount           = amount,

@@ -1,4 +1,4 @@
-using MediatR;
+﻿using MediatR;
 using Microsoft.Extensions.Logging;
 using ERP.Application.Common;
 using ERP.Domain.Modules.Purchasing.Events;
@@ -28,14 +28,14 @@ public sealed class PurchBillApprovedEventHandler : INotificationHandler<PurchBi
     {
         var subscriberId = notification.SubscriberId;
         var userId   = notification.ApprovedByUserId;
-        var companyId = _company.HasCompanyContext ? _company.CompanyId : (Guid?)null;
+        var companyId = _company.CompanyId;
 
         foreach (var line in notification.StockLines)
         {
             if (!line.ProductId.HasValue)
             {
                 _logger.LogWarning(
-                    "Compra {CompraId}: línea sin producto; no se actualiza inventario (detalle {DetalleId}, Warehouse {BodegaId}).",
+                    "Compra {CompraId}: lÃ­nea sin producto; no se actualiza inventario (detalle {DetalleId}, Warehouse {BodegaId}).",
                     notification.PurchBillId, line.BillLineId, line.WarehouseId);
                 continue;
             }

@@ -1,4 +1,4 @@
-using ERP.Domain.Common;
+﻿using ERP.Domain.Common;
 
 namespace ERP.Domain.Modules.Purchasing.Entities;
 
@@ -14,7 +14,7 @@ public sealed class PurchaseWithholding : AuditableEntity, ISubscriberScopedEnti
 
     private readonly List<PurchaseWithholdingLine> _lines = new();
 
-    public Guid?                CompanyId            { get; private set; }
+    public Guid CompanyId { get; private set; }
     public Guid                 BusinessPartnerId    { get; private set; }
     public WithholdingDirection Direction            { get; private set; } = WithholdingDirection.Issued;
     public Guid?                PurchaseDocumentId   { get; private set; }

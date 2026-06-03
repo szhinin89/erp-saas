@@ -1,4 +1,4 @@
-using System.Reflection;
+﻿using System.Reflection;
 using FluentAssertions;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
@@ -16,15 +16,15 @@ using ERP.Infrastructure.Services;
 namespace ERP.API.Tests.Integration;
 
 /// <summary>
-/// Pruebas de integraciÃ³n del Kardex valorizado.
-/// Verifican el algoritmo de promedio ponderado mÃ³vil, el cÃ¡lculo del saldo inicial,
+/// Pruebas de integraciÃƒÂ³n del Kardex valorizado.
+/// Verifican el algoritmo de promedio ponderado mÃƒÂ³vil, el cÃƒÂ¡lculo del saldo inicial,
 /// el aislamiento por bodega/producto y el resumen de totales.
 /// </summary>
 public sealed class KardexInventarioTests
 {
-    // â”€â”€ Helpers de datos de prueba â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // Ã¢â€â‚¬Ã¢â€â‚¬ Helpers de datos de prueba Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
 
-    /// <summary>Modifica CreatedAt vÃ­a reflexiÃ³n (propiedad con private set).</summary>
+    /// <summary>Modifica CreatedAt vÃƒÂ­a reflexiÃƒÂ³n (propiedad con private set).</summary>
     private static void SetCreatedAt(AuditableEntity entity, DateTime utc)
         => typeof(AuditableEntity)
             .GetProperty("CreatedAt", BindingFlags.Public | BindingFlags.Instance)!
@@ -41,7 +41,7 @@ public sealed class KardexInventarioTests
         var m = StockMovement.Create(
             subscriberId, productoId, bodegaId, tipo,
             quantity, cantAnterior, referencia, null, null, userId, unitCost,
-            companyId: companyId);
+            companyId: companyId.GetValueOrDefault());
         if (fecha.HasValue) SetCreatedAt(m, fecha.Value);
         return m;
     }
@@ -57,7 +57,7 @@ public sealed class KardexInventarioTests
         var m = StockMovement.Create(
             subscriberId, productoId, bodegaId, tipo,
             -quantity, cantAnterior, referencia, null, null, userId, averageCost,
-            companyId: companyId);
+            companyId: companyId.GetValueOrDefault());
         if (fecha.HasValue) SetCreatedAt(m, fecha.Value);
         return m;
     }
@@ -71,7 +71,7 @@ public sealed class KardexInventarioTests
         return seed;
     }
 
-    // â”€â”€ Escenario 1: Errores bÃ¡sicos â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // Ã¢â€â‚¬Ã¢â€â‚¬ Escenario 1: Errores bÃƒÂ¡sicos Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
 
     [Fact]
     public async Task Kardex_producto_inexistente_retorna_failure()
@@ -109,7 +109,7 @@ public sealed class KardexInventarioTests
         result.Error.Should().Contain("Warehouse");
     }
 
-    // â”€â”€ Escenario 2: Sin movimientos â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // Ã¢â€â‚¬Ã¢â€â‚¬ Escenario 2: Sin movimientos Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
 
     [Fact]
     public async Task Kardex_sin_movimientos_retorna_resumen_en_cero()
@@ -135,7 +135,7 @@ public sealed class KardexInventarioTests
         k.Warehouse.Id.Should().Be(seed.WarehouseId);
     }
 
-    // â”€â”€ Escenario 3: Una sola entrada â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // Ã¢â€â‚¬Ã¢â€â‚¬ Escenario 3: Una sola entrada Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
 
     [Fact]
     public async Task Kardex_una_sola_entrada_calcula_saldo_y_promedio_correctos()
@@ -161,7 +161,7 @@ public sealed class KardexInventarioTests
 
         var fila = k.Rows[0];
         fila.InboundQuantity.Should().Be(10m);
-        fila.InboundValue.Should().Be(500m);       // 10 Ã— $50
+        fila.InboundValue.Should().Be(500m);       // 10 Ãƒâ€” $50
         fila.OutboundQuantity.Should().Be(0m);
         fila.OutboundValue.Should().Be(0m);
         fila.BalanceQuantity.Should().Be(10m);
@@ -182,20 +182,20 @@ public sealed class KardexInventarioTests
         r.FinalAverageCost.Should().Be(50m);
     }
 
-    // â”€â”€ Escenario 4: Promedio ponderado mÃ³vil completo â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // Ã¢â€â‚¬Ã¢â€â‚¬ Escenario 4: Promedio ponderado mÃƒÂ³vil completo Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
 
     [Fact]
     public async Task Kardex_multiples_entradas_y_salidas_calcula_promedio_ponderado_movil()
     {
         /*
-         * CÃ¡lculo esperado (promedio ponderado mÃ³vil):
+         * CÃƒÂ¡lculo esperado (promedio ponderado mÃƒÂ³vil):
          *
-         * M1 E=10 @$50.00  â†’ saldo=10 val=$500.000  avg=$50.0000
-         * M2 E= 5 @$60.00  â†’ saldo=15 val=$800.000  avg=$53.3333  (800/15)
-         * M3 S= 8 @avg     â†’ salida=8Ã—(800/15)=$426.667
+         * M1 E=10 @$50.00  Ã¢â€ â€™ saldo=10 val=$500.000  avg=$50.0000
+         * M2 E= 5 @$60.00  Ã¢â€ â€™ saldo=15 val=$800.000  avg=$53.3333  (800/15)
+         * M3 S= 8 @avg     Ã¢â€ â€™ salida=8Ãƒâ€”(800/15)=$426.667
          *                    saldo=7  val=$373.333  avg=$53.3333  (promedio no cambia en salidas)
-         * M4 E= 3 @$55.00  â†’ saldo=10 val=$538.333  avg=$53.8333  (8075/150)
-         * M5 S= 3 @avg     â†’ salida=3Ã—(8075/150)=$161.500
+         * M4 E= 3 @$55.00  Ã¢â€ â€™ saldo=10 val=$538.333  avg=$53.8333  (8075/150)
+         * M5 S= 3 @avg     Ã¢â€ â€™ salida=3Ãƒâ€”(8075/150)=$161.500
          *                    saldo=7  val=$376.833  avg=$53.8333
          */
         await using var factory = new IntegrationTestWebAppFactory();
@@ -245,7 +245,7 @@ public sealed class KardexInventarioTests
         var m3 = k.Rows[2];
         m3.InboundQuantity.Should().Be(0m);
         m3.OutboundQuantity.Should().Be(8m);
-        m3.OutboundValue.Should().BeApproximately(426.667m, 0.001m);  // 8 Ã— 53.333
+        m3.OutboundValue.Should().BeApproximately(426.667m, 0.001m);  // 8 Ãƒâ€” 53.333
         m3.BalanceQuantity.Should().Be(7m);
         m3.BalanceValue.Should().BeApproximately(373.333m, 0.001m);
         m3.AverageUnitCost.Should().BeApproximately(53.333m, 0.001m);
@@ -261,7 +261,7 @@ public sealed class KardexInventarioTests
         // M5: salida al nuevo promedio (el promedio permanece igual)
         var m5 = k.Rows[4];
         m5.OutboundQuantity.Should().Be(3m);
-        m5.OutboundValue.Should().BeApproximately(161.5m, 0.001m);    // 3 Ã— 53.833
+        m5.OutboundValue.Should().BeApproximately(161.5m, 0.001m);    // 3 Ãƒâ€” 53.833
         m5.BalanceQuantity.Should().Be(7m);
         m5.BalanceValue.Should().BeApproximately(376.833m, 0.001m);
         m5.AverageUnitCost.Should().BeApproximately(53.833m, 0.001m);
@@ -279,15 +279,15 @@ public sealed class KardexInventarioTests
         r.FinalAverageCost.Should().BeApproximately(53.833m, 0.001m);
     }
 
-    // â”€â”€ Escenario 5: Saldo inicial con filtro de fecha â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // Ã¢â€â‚¬Ã¢â€â‚¬ Escenario 5: Saldo inicial con filtro de fecha Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
 
     [Fact]
     public async Task Kardex_filtro_fecha_inicio_calcula_saldo_inicial_del_periodo_previo()
     {
         /*
-         * Ayer: E=10@$50, E=5@$60  â†’ saldo previo=15, val=$800, avg=$53.333
-         * Hoy:  E=4@$70            â†’ avg=(800+280)/19=1080/19â‰ˆ$56.842
-         * Hoy:  S=6@56.842         â†’ saldoFinal=13, val=1080-6Ã—(1080/19)â‰ˆ$739.579
+         * Ayer: E=10@$50, E=5@$60  Ã¢â€ â€™ saldo previo=15, val=$800, avg=$53.333
+         * Hoy:  E=4@$70            Ã¢â€ â€™ avg=(800+280)/19=1080/19Ã¢â€°Ë†$56.842
+         * Hoy:  S=6@56.842         Ã¢â€ â€™ saldoFinal=13, val=1080-6Ãƒâ€”(1080/19)Ã¢â€°Ë†$739.579
          *
          * Query desde hoy:
          *  - InventarioInicial = saldo de ayer = 15 uds, $800
@@ -301,10 +301,10 @@ public sealed class KardexInventarioTests
         var seed = await SeedBaseAsync(db, factory);
         var (tid, pid, bid, uid, cid) = (seed.SubscriberId, seed.ProductId, seed.WarehouseId, seed.UserId, seed.CompanyId);
 
-        // Usar fechas UTC explÃ­citas para evitar problemas de zona horaria.
-        // "ayer" = inicio del dÃ­a anterior en UTC, "hoy" = inicio del dÃ­a actual en UTC + 1 hora.
+        // Usar fechas UTC explÃƒÂ­citas para evitar problemas de zona horaria.
+        // "ayer" = inicio del dÃƒÂ­a anterior en UTC, "hoy" = inicio del dÃƒÂ­a actual en UTC + 1 hora.
         var hoyUtc  = DateTime.UtcNow.Date;                         // 2026-05-10 00:00:00 UTC
-        var ayerUtc = hoyUtc.AddDays(-1).AddHours(12);              // 2026-05-09 12:00:00 UTC (mediodÃ­a de ayer)
+        var ayerUtc = hoyUtc.AddDays(-1).AddHours(12);              // 2026-05-09 12:00:00 UTC (mediodÃƒÂ­a de ayer)
         var hogUtcNow = hoyUtc.AddHours(1);                         // 2026-05-10 01:00:00 UTC
 
         // Movimientos de ayer
@@ -333,25 +333,25 @@ public sealed class KardexInventarioTests
         k.Resumen.OpeningQuantity.Should().Be(15m);
         k.Resumen.OpeningValue.Should().BeApproximately(800m, 0.01m);
 
-        // SÃ³lo dos movimientos en el perÃ­odo
+        // SÃƒÂ³lo dos movimientos en el perÃƒÂ­odo
         k.Rows.Should().HaveCount(2);
 
         // Fila M3: parte de un saldo inicial de 15@avg=53.333
         var r3 = k.Rows[0];
         r3.InboundQuantity.Should().Be(4m);
-        r3.InboundValue.Should().BeApproximately(280m, 0.01m);   // 4Ã—$70
+        r3.InboundValue.Should().BeApproximately(280m, 0.01m);   // 4Ãƒâ€”$70
         r3.BalanceQuantity.Should().Be(19m);
         r3.BalanceValue.Should().BeApproximately(1080m, 0.01m);
         r3.AverageUnitCost.Should().BeApproximately(1080m / 19m, 0.001m);
 
-        // Fila M4: salida al promedio vigente del perÃ­odo
+        // Fila M4: salida al promedio vigente del perÃƒÂ­odo
         var r4 = k.Rows[1];
         r4.OutboundQuantity.Should().Be(6m);
         r4.OutboundValue.Should().BeApproximately(6m * (1080m / 19m), 0.01m);
         r4.BalanceQuantity.Should().Be(13m);
     }
 
-    // â”€â”€ Escenario 6: Dos bodegas independientes â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // Ã¢â€â‚¬Ã¢â€â‚¬ Escenario 6: Dos bodegas independientes Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
 
     [Fact]
     public async Task Kardex_dos_bodegas_son_completamente_independientes()
@@ -360,8 +360,8 @@ public sealed class KardexInventarioTests
          * Warehouse A: E=20@$40, S=5 (TransferenciaSalida)
          * Warehouse B: E=5@$40  (TransferenciaEntrada)
          *
-         * Kardex A â†’ 2 filas, saldo=15, val=$600
-         * Kardex B â†’ 1 fila,  saldo= 5, val=$200
+         * Kardex A Ã¢â€ â€™ 2 filas, saldo=15, val=$600
+         * Kardex B Ã¢â€ â€™ 1 fila,  saldo= 5, val=$200
          */
         await using var factory = new IntegrationTestWebAppFactory();
         using var scope  = factory.Services.CreateScope();
@@ -395,9 +395,9 @@ public sealed class KardexInventarioTests
         resA.Value!.Rows[0].MovementType.Should().Be("Compra");
         resA.Value!.Rows[1].MovementType.Should().Be("transfer salida");
         resA.Value!.Resumen.ClosingQuantity.Should().Be(15m);
-        resA.Value!.Resumen.ClosingValue.Should().Be(600m); // 15 Ã— $40
+        resA.Value!.Resumen.ClosingValue.Should().Be(600m); // 15 Ãƒâ€” $40
 
-        // Kardex bodega B â€” solo muestra su propia entrada
+        // Kardex bodega B Ã¢â‚¬â€ solo muestra su propia entrada
         var resB = await mediator.Send(
             new GetKardexQuery(pid, bidB, null, null), CancellationToken.None);
 
@@ -406,19 +406,19 @@ public sealed class KardexInventarioTests
         resB.Value!.Rows[0].MovementType.Should().Be("transfer entrada");
         resB.Value!.Rows[0].InboundQuantity.Should().Be(5m);
         resB.Value!.Resumen.ClosingQuantity.Should().Be(5m);
-        resB.Value!.Resumen.ClosingValue.Should().Be(200m); // 5 Ã— $40
+        resB.Value!.Resumen.ClosingValue.Should().Be(200m); // 5 Ãƒâ€” $40
     }
 
-    // â”€â”€ Escenario 7: Ajuste positivo sin costo â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // Ã¢â€â‚¬Ã¢â€â‚¬ Escenario 7: Ajuste positivo sin costo Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
 
     [Fact]
     public async Task Kardex_ajuste_positivo_sin_costo_agrega_cantidad_sin_alterar_valor()
     {
         /*
-         * M1: E=10@$50 â†’ saldo=10, val=$500, avg=$50
-         * M2: AjustePositivo=5 (sin costo) â†’ saldo=15, val=$500 (sin cambio en valor)
+         * M1: E=10@$50 Ã¢â€ â€™ saldo=10, val=$500, avg=$50
+         * M2: AjustePositivo=5 (sin costo) Ã¢â€ â€™ saldo=15, val=$500 (sin cambio en valor)
          *     El nuevo promedio baja: $500/15 = $33.333
-         *     (comportamiento esperado: ajuste sin valorizaciÃ³n no infla el inventario)
+         *     (comportamiento esperado: ajuste sin valorizaciÃƒÂ³n no infla el inventario)
          */
         await using var factory = new IntegrationTestWebAppFactory();
         using var scope  = factory.Services.CreateScope();
@@ -461,16 +461,16 @@ public sealed class KardexInventarioTests
         m2.AverageUnitCost.Should().BeApproximately(500m / 15m, 0.001m); // $33.333
     }
 
-    // â”€â”€ Escenario 8: Ajuste negativo al costo promedio vigente â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // Ã¢â€â‚¬Ã¢â€â‚¬ Escenario 8: Ajuste negativo al costo promedio vigente Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
 
     [Fact]
     public async Task Kardex_ajuste_negativo_usa_costo_promedio_ponderado_vigente()
     {
         /*
-         * M1: E= 6@$30 â†’ saldo=6,  val=$180, avg=$30.00
-         * M2: E= 4@$50 â†’ saldo=10, val=$380, avg=$38.00  (6Ã—30+4Ã—50)/10
+         * M1: E= 6@$30 Ã¢â€ â€™ saldo=6,  val=$180, avg=$30.00
+         * M2: E= 4@$50 Ã¢â€ â€™ saldo=10, val=$380, avg=$38.00  (6Ãƒâ€”30+4Ãƒâ€”50)/10
          * M3: AjusteNegativo=3@$38 (costo promedio actual)
-         *      â†’ saldo=7, val=$380-3Ã—$38=$266, avg=$38.00
+         *      Ã¢â€ â€™ saldo=7, val=$380-3Ãƒâ€”$38=$266, avg=$38.00
          */
         await using var factory = new IntegrationTestWebAppFactory();
         using var scope  = factory.Services.CreateScope();
@@ -514,7 +514,7 @@ public sealed class KardexInventarioTests
         var m3 = k.Rows[2];
         m3.MovementType.Should().Be("Ajuste (-)");
         m3.OutboundQuantity.Should().Be(3m);
-        m3.OutboundValue.Should().BeApproximately(114m, 0.001m);     // 3 Ã— $38
+        m3.OutboundValue.Should().BeApproximately(114m, 0.001m);     // 3 Ãƒâ€” $38
         m3.BalanceQuantity.Should().Be(7m);
         m3.BalanceValue.Should().BeApproximately(266m, 0.001m);      // $380 - $114
         m3.AverageUnitCost.Should().BeApproximately(38m, 0.001m); // no cambia
@@ -523,7 +523,7 @@ public sealed class KardexInventarioTests
         k.Resumen.ClosingValue.Should().BeApproximately(266m, 0.001m);
     }
 
-    // â”€â”€ Escenario 9: Etiquetas legibles de tipo movimiento â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // Ã¢â€â‚¬Ã¢â€â‚¬ Escenario 9: Etiquetas legibles de tipo movimiento Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
 
     [Fact]
     public async Task Kardex_tipos_de_movimiento_tienen_etiquetas_legibles()
@@ -559,18 +559,18 @@ public sealed class KardexInventarioTests
         tipos.Should().Contain("transfer salida");
         tipos.Should().Contain("Ajuste (+)");
         tipos.Should().Contain("Ajuste (-)");
-        tipos.Should().Contain("Devolución compra");
-        tipos.Should().Contain("Devolución venta");
+        tipos.Should().Contain("DevoluciÃ³n compra");
+        tipos.Should().Contain("DevoluciÃ³n venta");
     }
 
-    // â”€â”€ Escenario 10: MÃºltiples productos son independientes â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // Ã¢â€â‚¬Ã¢â€â‚¬ Escenario 10: MÃƒÂºltiples productos son independientes Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
 
     [Fact]
     public async Task Kardex_dos_productos_son_completamente_independientes()
     {
         /*
-         * Producto A: 10 uds @ $50 â†’ val=$500
-         * Producto B: 20 uds @ $30 â†’ val=$600
+         * Producto A: 10 uds @ $50 Ã¢â€ â€™ val=$500
+         * Producto B: 20 uds @ $30 Ã¢â€ â€™ val=$600
          * Kardex de A no debe mezclar movimientos de B y viceversa.
          */
         await using var factory = new IntegrationTestWebAppFactory();
@@ -582,13 +582,13 @@ public sealed class KardexInventarioTests
         var (tid, uid, bid, cid) = (seed.SubscriberId, seed.UserId, seed.WarehouseId, seed.CompanyId);
         var pidA = seed.ProductId;
 
-        // Crear segundo producto con los mismos catÃ¡logos del primero
+        // Crear segundo producto con los mismos catÃƒÂ¡logos del primero
         var prodA = await db.Products.FirstAsync(p => p.Id == pidA);
         var prodB = Product.Create(
             tid,
             "SKU-INT-B",
             "Prod INT B",
-            "Segundo producto de integraciÃ³n",
+            "Segundo producto de integraciÃƒÂ³n",
             prodA.LineId, prodA.CategoryId, prodA.SubcategoryId,
             prodA.UomCode, prodA.BrandId, prodA.ProductTypeId, prodA.TariffId,
             appliesVatOnSale: false, saleVatCode: null, saleVatAccountId: null,

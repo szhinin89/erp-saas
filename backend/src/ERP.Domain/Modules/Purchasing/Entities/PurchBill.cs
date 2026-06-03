@@ -1,4 +1,4 @@
-using ERP.Domain.Common;
+﻿using ERP.Domain.Common;
 using ERP.Domain.Modules.Purchasing.Enums;
 using ERP.Domain.Modules.Purchasing.Events;
 
@@ -16,8 +16,8 @@ public sealed class PurchBill : AuditableEntity, ICompanyOperationalEntity
 
     private readonly List<PurchBillLine> _lines = new();
 
-    /// <summary>Empresa operativa. Null = registro legacy pre-migración company-scope.</summary>
-    public Guid?          CompanyId         { get; private set; }
+    /// <summary>Empresa operativa. Null = registro legacy pre-migraciÃ³n company-scope.</summary>
+    public Guid CompanyId { get; private set; }
     public Guid           BusinessPartnerId { get; private set; }
     public string         InvoiceNumber     { get; private set; } = null!;
     public string?        AccessKey         { get; private set; }
@@ -55,13 +55,13 @@ public sealed class PurchBill : AuditableEntity, ICompanyOperationalEntity
         string    paymentTerms,
         string?   notes,
         Guid      createdBy,
-        Guid?     companyId = null)
+        Guid companyId = default)
     {
         var b = new PurchBill
         {
             Id                = Guid.NewGuid(),
             SubscriberId      = subscriberId,
-            CompanyId         = companyId,
+            CompanyId = companyId,
             BusinessPartnerId = businessPartnerId,
             InvoiceNumber     = invoiceNumber.Trim(),
             AccessKey     = string.IsNullOrWhiteSpace(accessKey) ? null : accessKey.Trim(),

@@ -1,4 +1,4 @@
-using ERP.Domain.Common;
+﻿using ERP.Domain.Common;
 
 namespace ERP.Domain.Modules.Cash.Entities;
 
@@ -8,7 +8,7 @@ public sealed class BankStatement : AuditableEntity, ICompanyOperationalEntity
 
     public IReadOnlyList<BankTransaction> Transactions => _transactions.AsReadOnly();
 
-    public Guid?    CompanyId       { get; private set; }
+    public Guid CompanyId { get; private set; }
     public Guid     BankAccountId   { get; private set; }
     public DateTime PeriodFrom      { get; private set; }
     public DateTime PeriodTo        { get; private set; }
@@ -27,7 +27,7 @@ public sealed class BankStatement : AuditableEntity, ICompanyOperationalEntity
         decimal  openingBalance,
         decimal  closingBalance,
         Guid     createdBy,
-        Guid?    companyId = null)
+        Guid companyId = default)
     {
         if (periodTo < periodFrom)
             throw new ArgumentException("Period end cannot be before period start.");
@@ -36,7 +36,7 @@ public sealed class BankStatement : AuditableEntity, ICompanyOperationalEntity
         {
             Id            = Guid.NewGuid(),
             SubscriberId  = subscriberId,
-            CompanyId     = companyId,
+            CompanyId = companyId,
             BankAccountId = bankAccountId,
             PeriodFrom     = periodFrom,
             PeriodTo       = periodTo,

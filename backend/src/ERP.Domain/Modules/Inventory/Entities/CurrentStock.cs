@@ -1,10 +1,10 @@
-using ERP.Domain.Common;
+﻿using ERP.Domain.Common;
 
 namespace ERP.Domain.Modules.Inventory.Entities;
 
 public sealed class CurrentStock : AuditableEntity, ISubscriberScopedEntity, ICompanyOperationalEntity
 {
-    public Guid? CompanyId { get; private set; }
+    public Guid CompanyId { get; private set; }
     public Guid    ProductId         { get; private set; }
     public Guid    WarehouseId       { get; private set; }
     public decimal Quantity          { get; private set; }
@@ -13,7 +13,7 @@ public sealed class CurrentStock : AuditableEntity, ISubscriberScopedEntity, ICo
     public decimal TotalStockValue   { get; private set; }
     public decimal AverageCost       => Quantity > 0m ? TotalStockValue / Quantity : 0m;
     public DateTime LastUpdatedAt    { get; private set; }
-    /// <summary>Optimistic concurrency token — EF Core uses this for concurrent update detection.</summary>
+    /// <summary>Optimistic concurrency token â€” EF Core uses this for concurrent update detection.</summary>
     public uint RowVersion { get; private set; }
 
     private CurrentStock() { }
@@ -23,13 +23,13 @@ public sealed class CurrentStock : AuditableEntity, ISubscriberScopedEntity, ICo
         Guid productId,
         Guid warehouseId,
         Guid createdBy,
-        Guid? companyId = null)
+        Guid companyId)
     {
         var s = new CurrentStock
         {
             Id              = Guid.NewGuid(),
             SubscriberId        = subscriberId,
-            CompanyId           = companyId,
+            CompanyId = companyId,
             ProductId       = productId,
             WarehouseId     = warehouseId,
             Quantity        = 0,

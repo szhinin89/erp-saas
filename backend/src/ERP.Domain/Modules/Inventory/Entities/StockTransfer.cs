@@ -1,10 +1,10 @@
-using ERP.Domain.Common;
+﻿using ERP.Domain.Common;
 
 namespace ERP.Domain.Modules.Inventory.Entities;
 
 public sealed class StockTransfer : AuditableEntity, ISubscriberScopedEntity, ICompanyOperationalEntity
 {
-    public Guid? CompanyId { get; private set; }
+    public Guid CompanyId { get; private set; }
     public const int NumberMaxLen = 20;
     public const int StatusMaxLen = 20;
     public const int ReasonMaxLen = 500;
@@ -38,13 +38,13 @@ public sealed class StockTransfer : AuditableEntity, ISubscriberScopedEntity, IC
         string? reason,
         string? notes,
         Guid    createdBy,
-        Guid?   companyId = null)
+        Guid companyId = default)
     {
         var t = new StockTransfer
         {
             Id                = Guid.NewGuid(),
             SubscriberId          = subscriberId,
-            CompanyId         = companyId,
+            CompanyId = companyId,
             Sequential        = sequential,
             TransferNumber    = $"TR-{sequential:D4}",
             SourceWarehouseId = sourceWarehouseId,

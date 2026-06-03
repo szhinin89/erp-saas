@@ -1,4 +1,4 @@
-using ERP.Domain.Common;
+﻿using ERP.Domain.Common;
 
 namespace ERP.Domain.Modules.Cash.Entities;
 
@@ -9,7 +9,7 @@ public sealed class BankAccount : MasterEntity, ICompanyOperationalEntity
     public const int AccountTypeMaxLen   = 40;
     public const int CurrencyMaxLen      = 3;
 
-    public Guid?   CompanyId       { get; private set; }
+    public Guid CompanyId { get; private set; }
     public string  Name            { get; private set; } = null!;
     public string  AccountNumber   { get; private set; } = null!;
     public string  AccountType     { get; private set; } = null!;
@@ -29,7 +29,7 @@ public sealed class BankAccount : MasterEntity, ICompanyOperationalEntity
         decimal  initialBalance,
         Guid     createdBy,
         Guid?    ledgerAccountId = null,
-        Guid?    companyId = null)
+        Guid companyId = default)
     {
         if (string.IsNullOrWhiteSpace(name))
             throw new ArgumentException("Name is required.", nameof(name));
@@ -46,7 +46,7 @@ public sealed class BankAccount : MasterEntity, ICompanyOperationalEntity
         {
             Id              = Guid.NewGuid(),
             SubscriberId    = subscriberId,
-            CompanyId       = companyId,
+            CompanyId = companyId,
             Name            = name.Trim(),
             AccountNumber   = accountNumber.Trim(),
             AccountType     = accountType.Trim(),

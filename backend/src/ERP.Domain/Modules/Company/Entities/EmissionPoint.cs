@@ -1,9 +1,9 @@
-using ERP.Domain.Common;
+﻿using ERP.Domain.Common;
 
 namespace ERP.Domain.Modules.Company.Entities;
 
 /// <summary>
-/// Punto de emisión SRI — dispositivo o canal de emisión (código 001-999) dentro de un establecimiento.
+/// Punto de emisiÃ³n SRI â€” dispositivo o canal de emisiÃ³n (cÃ³digo 001-999) dentro de un establecimiento.
 /// Cada punto mantiene secuenciales independientes por tipo documental (<see cref="DocumentSequence"/>).
 /// </summary>
 public sealed class EmissionPoint : MasterEntity, ICompanyScopedEntity
@@ -15,7 +15,7 @@ public sealed class EmissionPoint : MasterEntity, ICompanyScopedEntity
     public Guid    EstablishmentId { get; private set; }
     public string  Code            { get; private set; } = null!;
     public string? Name            { get; private set; }
-    /// <summary>Punto de emisión predeterminado del establecimiento; usado cuando el comando no especifica uno.</summary>
+    /// <summary>Punto de emisiÃ³n predeterminado del establecimiento; usado cuando el comando no especifica uno.</summary>
     public bool    IsDefault       { get; private set; }
 
     // EF navigation
@@ -35,13 +35,13 @@ public sealed class EmissionPoint : MasterEntity, ICompanyScopedEntity
         Guid    createdBy)
     {
         if (string.IsNullOrWhiteSpace(code))
-            throw new ArgumentException("El código de punto de emisión es obligatorio.", nameof(code));
+            throw new ArgumentException("El cÃ³digo de punto de emisiÃ³n es obligatorio.", nameof(code));
 
         var ep = new EmissionPoint
         {
             Id              = Guid.NewGuid(),
             SubscriberId    = subscriberId,
-            CompanyId       = companyId,
+            CompanyId = companyId,
             EstablishmentId = establishmentId,
             Code            = code.Trim().PadLeft(CodeMaxLen, '0'),
             Name            = string.IsNullOrWhiteSpace(name) ? null : name.Trim(),

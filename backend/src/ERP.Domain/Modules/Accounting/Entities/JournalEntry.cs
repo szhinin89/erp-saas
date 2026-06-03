@@ -1,4 +1,4 @@
-using ERP.Domain.Common;
+﻿using ERP.Domain.Common;
 using ERP.Domain.Modules.Accounting.Rules;
 using ERP.Domain.Modules.Accounting.ValueObjects;
 using ERP.Domain.Modules.Accounting.Events;
@@ -33,7 +33,7 @@ public class JournalEntry : DocumentEntity, ICompanyScopedEntity
         {
             Id           = Guid.NewGuid(),
             SubscriberId = subscriberId,
-            CompanyId    = companyId,
+            CompanyId = companyId,
             Reference    = reference,
             Date        = date,
             Description = description,

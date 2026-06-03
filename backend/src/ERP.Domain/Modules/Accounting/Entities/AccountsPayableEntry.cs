@@ -1,4 +1,4 @@
-using ERP.Domain.Common;
+﻿using ERP.Domain.Common;
 
 namespace ERP.Domain.Modules.Accounting.Entities;
 
@@ -47,7 +47,7 @@ public sealed class AccountsPayableEntry : AuditableEntity, ISubscriberScopedEnt
         if (amount <= 0)
             throw new ArgumentException("El monto debe ser mayor a cero.", nameof(amount));
         if (dueDate < issueDate)
-            throw new ArgumentException("La fecha de vencimiento no puede ser anterior a la fecha de emisión.", nameof(dueDate));
+            throw new ArgumentException("La fecha de vencimiento no puede ser anterior a la fecha de emisiÃ³n.", nameof(dueDate));
         if (string.IsNullOrWhiteSpace(reference))
             throw new ArgumentException("La referencia es requerida.", nameof(reference));
 
@@ -55,7 +55,7 @@ public sealed class AccountsPayableEntry : AuditableEntity, ISubscriberScopedEnt
         {
             Id                = Guid.NewGuid(),
             SubscriberId      = subscriberId,
-            CompanyId         = companyId,
+            CompanyId = companyId,
             BusinessPartnerId = businessPartnerId,
             PurchBillId       = purchBillId,
             Reference         = reference.Trim(),
@@ -87,7 +87,7 @@ public sealed class AccountsPayableEntry : AuditableEntity, ISubscriberScopedEnt
     public void Cancel(Guid userId)
     {
         if (Status == StatusCancelled)
-            throw new InvalidOperationException("La entrada ya está cancelada.");
+            throw new InvalidOperationException("La entrada ya estÃ¡ cancelada.");
         if (Status == StatusPaid)
             throw new InvalidOperationException("No se puede cancelar una entrada totalmente pagada.");
 

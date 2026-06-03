@@ -1,10 +1,10 @@
-using ERP.Domain.Common;
+﻿using ERP.Domain.Common;
 
 namespace ERP.Domain.Modules.Accounting.Entities;
 
 /// <summary>
-/// Período contable mensual. Cuando está cerrado (<see cref="IsClosed"/> = true)
-/// no se pueden registrar ni modificar asientos en él.
+/// PerÃ­odo contable mensual. Cuando estÃ¡ cerrado (<see cref="IsClosed"/> = true)
+/// no se pueden registrar ni modificar asientos en Ã©l.
 /// </summary>
 public sealed class AccountingPeriod : AuditableEntity, ISubscriberScopedEntity, ICompanyScopedEntity
 {
@@ -28,7 +28,7 @@ public sealed class AccountingPeriod : AuditableEntity, ISubscriberScopedEntity,
         Guid   createdBy)
     {
         if (year < 2000 || year > 2100)
-            throw new ArgumentException("Year fuera de rango válido.", nameof(year));
+            throw new ArgumentException("Year fuera de rango vÃ¡lido.", nameof(year));
         if (month < 1 || month > 12)
             throw new ArgumentException("Month debe estar entre 1 y 12.", nameof(month));
 
@@ -36,7 +36,7 @@ public sealed class AccountingPeriod : AuditableEntity, ISubscriberScopedEntity,
         {
             Id           = Guid.NewGuid(),
             SubscriberId = subscriberId,
-            CompanyId    = companyId,
+            CompanyId = companyId,
             Year         = year,
             Month        = month,
             Name         = $"{year:D4}-{month:D2}",
@@ -49,7 +49,7 @@ public sealed class AccountingPeriod : AuditableEntity, ISubscriberScopedEntity,
     public void Close(Guid userId)
     {
         if (IsClosed)
-            throw new InvalidOperationException($"El período {Name} ya está cerrado.");
+            throw new InvalidOperationException($"El perÃ­odo {Name} ya estÃ¡ cerrado.");
         IsClosed = true;
         ClosedBy = userId;
         ClosedAt = DateTime.UtcNow;
@@ -59,7 +59,7 @@ public sealed class AccountingPeriod : AuditableEntity, ISubscriberScopedEntity,
     public void Reopen(Guid userId)
     {
         if (!IsClosed)
-            throw new InvalidOperationException($"El período {Name} no está cerrado.");
+            throw new InvalidOperationException($"El perÃ­odo {Name} no estÃ¡ cerrado.");
         IsClosed = false;
         ClosedBy = null;
         ClosedAt = null;

@@ -1,4 +1,4 @@
-using ERP.Domain.Common;
+﻿using ERP.Domain.Common;
 using ERP.Domain.Modules.Inventory.Entities;
 using ERP.Domain.Modules.Sales.Enums;
 using ERP.Domain.Modules.Sales.Events;
@@ -18,7 +18,7 @@ public sealed class SalesDocument : AuditableEntity, ISubscriberScopedEntity, IC
     private readonly List<SalesDetail> _lines = new();
     private readonly List<SalesPayment> _payments = new();
 
-    public Guid?              CompanyId             { get; private set; }
+    public Guid CompanyId { get; private set; }
     public Guid?              BranchId              { get; private set; }
     public Guid?              BusinessPartnerId     { get; private set; }
     public Guid?              WarehouseId           { get; private set; }
@@ -76,13 +76,13 @@ public sealed class SalesDocument : AuditableEntity, ISubscriberScopedEntity, IC
         short paymentDays,
         string? notes,
         Guid createdBy,
-        Guid? companyId = null)
+        Guid companyId)
     {
         var doc = new SalesDocument
         {
             Id                = Guid.NewGuid(),
             SubscriberId      = subscriberId,
-            CompanyId         = companyId,
+            CompanyId = companyId,
             BranchId          = branchId,
             BusinessPartnerId = businessPartnerId,
             WarehouseId       = warehouseId,
@@ -135,7 +135,7 @@ public sealed class SalesDocument : AuditableEntity, ISubscriberScopedEntity, IC
             && stockLines is { Count: > 0 })
         {
             var number = $"{EstabCode}-{EmPointCode}-{Sequential}";
-            RaiseDomainEvent(new SalesBillAuthorizedEvent(Id, SubscriberId, userId, WarehouseId.Value, CompanyId ?? Guid.Empty, number, stockLines));
+            RaiseDomainEvent(new SalesBillAuthorizedEvent(Id, SubscriberId, userId, WarehouseId.Value, CompanyId, number, stockLines));
         }
     }
 

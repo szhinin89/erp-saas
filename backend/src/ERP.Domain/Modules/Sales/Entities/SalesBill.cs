@@ -1,4 +1,4 @@
-using ERP.Domain.Modules.Inventory.Entities;
+﻿using ERP.Domain.Modules.Inventory.Entities;
 using ERP.Domain.Common;
 using ERP.Domain.Modules.Sales.Events;
 
@@ -6,7 +6,7 @@ namespace ERP.Domain.Modules.Sales.Entities;
 
 public sealed class SalesBill : AuditableEntity, ISubscriberScopedEntity, ICompanyOperationalEntity
 {
-    public Guid? CompanyId { get; private set; }
+    public Guid CompanyId { get; private set; }
     public const int DocTypeMaxLen       = 10;
     public const int EstabMaxLen         = 3;
     public const int EmPointMaxLen       = 3;
@@ -33,11 +33,11 @@ public sealed class SalesBill : AuditableEntity, ISubscriberScopedEntity, ICompa
     public decimal   VatTotal          { get; private set; }
     public decimal   Total             { get; private set; }
     public decimal   TotalDiscount     { get; private set; }
-    /// <summary>Código SRI forma de pago: "01"=efectivo, "02"=cheque, "03"=crédito, "04"=transferencia...</summary>
+    /// <summary>CÃ³digo SRI forma de pago: "01"=efectivo, "02"=cheque, "03"=crÃ©dito, "04"=transferencia...</summary>
     public string    PaymentMethodCode { get; private set; } = "01";
-    /// <summary>Plazo en días (0 = contado).</summary>
+    /// <summary>Plazo en dÃ­as (0 = contado).</summary>
     public short     PaymentDays       { get; private set; }
-    /// <summary>Observaciones libres — se emiten como &lt;campoAdicional&gt; en el XML SRI.</summary>
+    /// <summary>Observaciones libres â€” se emiten como &lt;campoAdicional&gt; en el XML SRI.</summary>
     public string?   Notes             { get; private set; }
     public string    Status            { get; private set; } = "Borrador";
     public string?   XmlSignedPath     { get; private set; }
@@ -76,13 +76,13 @@ public sealed class SalesBill : AuditableEntity, ISubscriberScopedEntity, ICompa
         DateTime? authDate,
         string?   errorMessage,
         Guid      createdBy,
-        Guid?     companyId = null)
+        Guid companyId = default)
     {
         var b = new SalesBill
         {
             Id                = Guid.NewGuid(),
             SubscriberId          = subscriberId,
-            CompanyId           = companyId,
+            CompanyId = companyId,
             BranchId            = branchId,
             BusinessPartnerId  = businessPartnerId,
             WarehouseId         = warehouseId,
@@ -141,7 +141,7 @@ public sealed class SalesBill : AuditableEntity, ISubscriberScopedEntity, ICompa
         if (lines.Count > 0)
         {
             var number = $"{EstabCode}-{EmPointCode}-{Sequential}";
-            RaiseDomainEvent(new SalesBillAuthorizedEvent(Id, SubscriberId, userId, WarehouseId, CompanyId ?? Guid.Empty, number, lines));
+            RaiseDomainEvent(new SalesBillAuthorizedEvent(Id, SubscriberId, userId, WarehouseId, CompanyId, number, lines));
         }
     }
 

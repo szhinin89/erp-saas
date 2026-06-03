@@ -1,10 +1,10 @@
-using ERP.Domain.Common;
+﻿using ERP.Domain.Common;
 
 namespace ERP.Domain.Modules.Inventory.Entities;
 
 public sealed class Warehouse : MasterEntity, ISubscriberScopedEntity, ICompanyOperationalEntity
 {
-    public Guid? CompanyId { get; private set; }
+    public Guid CompanyId { get; private set; }
     public const int NameMaxLen            = 100;
     public const int AddressMaxLen         = 300;
     public const int ManagerMaxLen         = 100;
@@ -67,7 +67,7 @@ public sealed class Warehouse : MasterEntity, ISubscriberScopedEntity, ICompanyO
             Longitude        = Trim(longitude),
             Capacity         = capacity,
             DailyDispatchGoal = dailyDispatchGoal,
-            CompanyId        = companyId,
+            CompanyId = companyId,
             EstablishmentId  = establishmentId,
         };
         w.SetCreated(createdBy);

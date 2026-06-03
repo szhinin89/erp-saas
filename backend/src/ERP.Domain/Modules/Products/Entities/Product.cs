@@ -1,4 +1,4 @@
-using ERP.Domain.Common;
+﻿using ERP.Domain.Common;
 using ERP.Domain.Products.Enums;
 using ERP.Domain.Products.ValueObjects;
 
@@ -6,13 +6,13 @@ namespace ERP.Domain.Products.Entities;
 
 /// <summary>
 /// Entidad maestra de productos.
-/// Soporta: múltiples códigos de barras, categorización 3 niveles,
-/// impuestos por catálogo, flags de canal y comportamiento.
+/// Soporta: mÃºltiples cÃ³digos de barras, categorizaciÃ³n 3 niveles,
+/// impuestos por catÃ¡logo, flags de canal y comportamiento.
 /// REGLA: Nunca se elimina. Solo se deshabilita con Disable().
 /// </summary>
 public class Product : MasterEntity, ISubscriberScopedEntity, ICompanyOperationalEntity
 {
-    public Guid? CompanyId { get; private set; }
+    public Guid CompanyId { get; private set; }
     private readonly List<ProductBarcode> _barcodes = new();
     private readonly List<ProductSupplierCode> _supplierCodes = new();
     private readonly List<ProductUnitConversion> _unitConversions = new();
@@ -25,31 +25,31 @@ public class Product : MasterEntity, ISubscriberScopedEntity, ICompanyOperationa
     private readonly List<ProductSubstitute> _substitutes = new();
     private readonly List<ProductCustomField> _customFields = new();
 
-    // ── Identificación ────────────────────────────────────────────
-    public string SaleCode { get; private set; } = null!;        // Código único de venta
-    public string? PurchaseCode { get; private set; }            // Código principal de compra
+    // â”€â”€ IdentificaciÃ³n â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    public string SaleCode { get; private set; } = null!;        // CÃ³digo Ãºnico de venta
+    public string? PurchaseCode { get; private set; }            // CÃ³digo principal de compra
     public string ShortName { get; private set; } = null!;       // Abreviado
-    public string Description { get; private set; } = null!;     // Descripción completa
+    public string Description { get; private set; } = null!;     // DescripciÃ³n completa
     public string? Observations { get; private set; }
 
-    // ── Categorización (3 niveles) ────────────────────────────────
+    // â”€â”€ CategorizaciÃ³n (3 niveles) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     public Guid LineId { get; private set; }
     public Guid CategoryId { get; private set; }
     public Guid SubcategoryId { get; private set; }
 
-    // ── Catálogos relacionados ────────────────────────────────────
+    // â”€â”€ CatÃ¡logos relacionados â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     /// <summary>FK a global.sri_uom.Code (ej: "19"=Unidad).</summary>
     public string UomCode { get; private set; } = null!;
     public Guid BrandId { get; private set; }
     public Guid ProductTypeId { get; private set; }
     public Guid TariffId { get; private set; }                   // Arancel
 
-    // ── Impuestos (tarifas maestras) ──────────────────────────────
+    // â”€â”€ Impuestos (tarifas maestras) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     public bool AppliesVatOnSale { get; private set; }
     public bool AppliesVatOnPurchase { get; private set; }
     public bool AppliesExciseTax { get; private set; }
 
-    // ── Impuestos (catálogos globales SRI) ───────────────────────
+    // â”€â”€ Impuestos (catÃ¡logos globales SRI) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     /// <summary>FK a global.sri_vat_rate.Code para IVA de venta ("0","8","10").</summary>
     public string? SaleVatCode { get; private set; }
     /// <summary>FK a global.sri_vat_rate.Code para IVA de compra.</summary>
@@ -57,47 +57,47 @@ public class Product : MasterEntity, ISubscriberScopedEntity, ICompanyOperationa
     /// <summary>FK a global.sri_ice_rate.Code para ICE.</summary>
     public string? IceCode { get; private set; }
 
-    // ── Cuentas contables por impuesto ───────────────────────────
+    // â”€â”€ Cuentas contables por impuesto â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     public Guid? SaleVatAccountId { get; private set; }
     public Guid? PurchaseVatAccountId { get; private set; }
     public Guid? ExciseAccountId { get; private set; }
 
-    // ── Comportamiento de stock ───────────────────────────────────
-    public bool IsService { get; private set; }                  // No maneja stock físico
+    // â”€â”€ Comportamiento de stock â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    public bool IsService { get; private set; }                  // No maneja stock fÃ­sico
     public bool TracksStock { get; private set; }                // Maneja stock
     public bool TracksLot { get; private set; }                  // Manejo por lote
     public bool TracksSeries { get; private set; }               // Manejo por serie
-    public bool HasRecipe { get; private set; }                  // Tiene receta/composición
+    public bool HasRecipe { get; private set; }                  // Tiene receta/composiciÃ³n
     public bool StockWithDecimal { get; private set; }           // Stock permite decimales
-    public Guid? RecipeId { get; private set; }                  // Referencial (módulo Recipe aún no implementado)
+    public Guid? RecipeId { get; private set; }                  // Referencial (mÃ³dulo Recipe aÃºn no implementado)
     public bool SaleWithDecimal { get; private set; }            // Venta permite decimales
-    public decimal MaxItemDiscountPercent { get; private set; }  // Máximo % de descuento por ítem
+    public decimal MaxItemDiscountPercent { get; private set; }  // MÃ¡ximo % de descuento por Ã­tem
 
-    // ── Canales de venta ─────────────────────────────────────────
+    // â”€â”€ Canales de venta â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     public bool AvailableOnWeb { get; private set; }
     public bool AvailableOnMobile { get; private set; }
     public bool IsEcommerceActive { get; private set; }
     public bool IsFavorite { get; private set; }
     public bool IsForSale { get; private set; }                  // Habilitado para venta
 
-    // ── Variantes ────────────────────────────────────────────────
+    // â”€â”€ Variantes â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     public string? BaseColor { get; private set; }
     public bool HasMultipleColors { get; private set; }
     public bool HasSizes { get; private set; }
 
-    // ── Aranceles / importación ──────────────────────────────────
+    // â”€â”€ Aranceles / importaciÃ³n â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     public bool HandlesTariff { get; private set; }
 
-    // ── SRI ───────────────────────────────────────────────────────
+    // â”€â”€ SRI â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     /// <summary>
-    /// Tipo de servicio SRI para el XML del comprobante electrónico.
-    /// Null / vacío = bien físico.
+    /// Tipo de servicio SRI para el XML del comprobante electrÃ³nico.
+    /// Null / vacÃ­o = bien fÃ­sico.
     /// Valores SRI: "01"=Servicios, "02"=Arrendamiento, "03"=Honorarios,
     /// "04"=Comisiones, "05"=Otros.
     /// </summary>
     public string? SriServiceCode { get; private set; }
 
-    // ── Códigos de barras ─────────────────────────────────────────
+    // â”€â”€ CÃ³digos de barras â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     public IReadOnlyList<ProductBarcode> Barcodes => _barcodes.AsReadOnly();
     public IReadOnlyList<ProductSupplierCode> SupplierCodes => _supplierCodes.AsReadOnly();
     public IReadOnlyList<ProductUnitConversion> UnitConversions => _unitConversions.AsReadOnly();
@@ -153,27 +153,27 @@ public class Product : MasterEntity, ISubscriberScopedEntity, ICompanyOperationa
         bool handlesTariff = false,
         bool isForSale = true,
         string? sriServiceCode = null,
-        Guid? companyId = null)
+        Guid companyId = default)
     {
         var identity = ProductIdentity.Create(saleCode, shortName, description);
 
         if (maxItemDiscountPercent < 0 || maxItemDiscountPercent > 100)
-            throw new ArgumentException("El descuento máximo por ítem debe estar entre 0 y 100.", nameof(maxItemDiscountPercent));
+            throw new ArgumentException("El descuento mÃ¡ximo por Ã­tem debe estar entre 0 y 100.", nameof(maxItemDiscountPercent));
 
         if (appliesVatOnSale && string.IsNullOrWhiteSpace(saleVatCode))
-            throw new ArgumentException("Debe seleccionar un código de IVA para la venta.", nameof(saleVatCode));
+            throw new ArgumentException("Debe seleccionar un cÃ³digo de IVA para la venta.", nameof(saleVatCode));
 
         if (appliesVatOnPurchase && string.IsNullOrWhiteSpace(purchaseVatCode))
-            throw new ArgumentException("Debe seleccionar un código de IVA para la compra.", nameof(purchaseVatCode));
+            throw new ArgumentException("Debe seleccionar un cÃ³digo de IVA para la compra.", nameof(purchaseVatCode));
 
         if (appliesExciseTax && string.IsNullOrWhiteSpace(iceCode))
-            throw new ArgumentException("Debe seleccionar un código de ICE.", nameof(iceCode));
+            throw new ArgumentException("Debe seleccionar un cÃ³digo de ICE.", nameof(iceCode));
 
         var product = new Product
         {
             Id                = Guid.NewGuid(),
             SubscriberId          = subscriberId,
-            CompanyId             = companyId,
+            CompanyId = companyId,
             SaleCode          = identity.SaleCode,
             PurchaseCode      = purchaseCode,
             ShortName         = identity.ShortName,
@@ -219,7 +219,7 @@ public class Product : MasterEntity, ISubscriberScopedEntity, ICompanyOperationa
         return product;
     }
 
-    // ── Modificación ──────────────────────────────────────────────
+    // â”€â”€ ModificaciÃ³n â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     public void Update(
         string shortName,
@@ -259,16 +259,16 @@ public class Product : MasterEntity, ISubscriberScopedEntity, ICompanyOperationa
         var identity = ProductIdentity.Create(SaleCode, shortName, description);
 
         if (maxItemDiscountPercent < 0 || maxItemDiscountPercent > 100)
-            throw new ArgumentException("El descuento máximo por ítem debe estar entre 0 y 100.", nameof(maxItemDiscountPercent));
+            throw new ArgumentException("El descuento mÃ¡ximo por Ã­tem debe estar entre 0 y 100.", nameof(maxItemDiscountPercent));
 
         if (appliesVatOnSale && string.IsNullOrWhiteSpace(saleVatCode))
-            throw new ArgumentException("Debe seleccionar un código de IVA para la venta.", nameof(saleVatCode));
+            throw new ArgumentException("Debe seleccionar un cÃ³digo de IVA para la venta.", nameof(saleVatCode));
 
         if (appliesVatOnPurchase && string.IsNullOrWhiteSpace(purchaseVatCode))
-            throw new ArgumentException("Debe seleccionar un código de IVA para la compra.", nameof(purchaseVatCode));
+            throw new ArgumentException("Debe seleccionar un cÃ³digo de IVA para la compra.", nameof(purchaseVatCode));
 
         if (appliesExciseTax && string.IsNullOrWhiteSpace(iceCode))
-            throw new ArgumentException("Debe seleccionar un código de ICE.", nameof(iceCode));
+            throw new ArgumentException("Debe seleccionar un cÃ³digo de ICE.", nameof(iceCode));
 
         ShortName       = identity.ShortName;
         Description     = identity.Description;
@@ -331,12 +331,12 @@ public class Product : MasterEntity, ISubscriberScopedEntity, ICompanyOperationa
         SetUpdated(updatedBy);
     }
 
-    // ── Códigos de barras ─────────────────────────────────────────
+    // â”€â”€ CÃ³digos de barras â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     public void AddBarcode(string code, BarcodeType type, Guid updatedBy)
     {
         if (_barcodes.Any(b => b.Code == code))
-            throw new InvalidOperationException($"El código de barras '{code}' ya existe.");
+            throw new InvalidOperationException($"El cÃ³digo de barras '{code}' ya existe.");
 
         _barcodes.Add(ProductBarcode.Create(Id, SubscriberId, code, type));
         SetUpdated(updatedBy);
@@ -345,13 +345,13 @@ public class Product : MasterEntity, ISubscriberScopedEntity, ICompanyOperationa
     public void RemoveBarcode(Guid barcodeId, Guid updatedBy)
     {
         var barcode = _barcodes.FirstOrDefault(b => b.Id == barcodeId)
-            ?? throw new InvalidOperationException("Código de barras no encontrado.");
+            ?? throw new InvalidOperationException("CÃ³digo de barras no encontrado.");
 
         _barcodes.Remove(barcode);
         SetUpdated(updatedBy);
     }
 
-    // ── Colecciones (reemplazo completo) ──────────────────────────
+    // â”€â”€ Colecciones (reemplazo completo) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     public void ReplaceSupplierCodes(
         IEnumerable<(Guid SupplierId, string Code, bool IsDefault)> supplierCodes,

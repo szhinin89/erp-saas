@@ -1,4 +1,4 @@
-using MediatR;
+﻿using MediatR;
 using ERP.Application.Common;
 using ERP.Application.Products.DTOs;
 using ERP.Domain.Audit.Entities;
@@ -51,7 +51,7 @@ public sealed class CreateProductCommandHandler : IRequestHandler<CreateProductC
             action: "product.create",
             entityType: "Product",
             entityId: product.Id,
-            description: $"{product.SaleCode} — {product.ShortName}"), ct);
+            description: $"{product.SaleCode} â€” {product.ShortName}"), ct);
         await _repository.SaveChangesAsync(ct);
 
         return Result<ProductDto>.Success(ProductCommandMutationHelper.MapToDto(product));
@@ -98,5 +98,5 @@ public sealed class CreateProductCommandHandler : IRequestHandler<CreateProductC
             command.HasSizes,
             command.HandlesTariff,
             command.IsForSale,
-            companyId: _currentCompany.HasCompanyContext ? _currentCompany.CompanyId : null);
+            companyId: _currentCompany.CompanyId);
 }

@@ -1,4 +1,4 @@
-using ERP.Domain.Common;
+﻿using ERP.Domain.Common;
 
 namespace ERP.Domain.Modules.Cash.Entities;
 
@@ -6,7 +6,7 @@ public sealed class CashCount : AuditableEntity, ICompanyOperationalEntity
 {
     public const int NotesMaxLen = 2000;
 
-    public Guid?   CompanyId    { get; private set; }
+    public Guid CompanyId { get; private set; }
     public Guid    PettyCashId  { get; private set; }
     public DateTime CountDate   { get; private set; }
     public decimal PhysicalCash { get; private set; }
@@ -24,7 +24,7 @@ public sealed class CashCount : AuditableEntity, ICompanyOperationalEntity
         decimal  expectedBalance,
         string?  notes,
         Guid     createdBy,
-        Guid?    companyId = null)
+        Guid companyId = default)
     {
         if (physicalCash < 0)
             throw new ArgumentException("Physical cash cannot be negative.", nameof(physicalCash));
@@ -33,7 +33,7 @@ public sealed class CashCount : AuditableEntity, ICompanyOperationalEntity
         {
             Id           = Guid.NewGuid(),
             SubscriberId = subscriberId,
-            CompanyId    = companyId,
+            CompanyId = companyId,
             PettyCashId  = pettyCashId,
             CountDate    = countDate,
             PhysicalCash = physicalCash,

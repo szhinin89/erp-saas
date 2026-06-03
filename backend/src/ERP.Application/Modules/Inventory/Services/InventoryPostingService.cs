@@ -1,4 +1,4 @@
-using ERP.Application.Common;
+﻿using ERP.Application.Common;
 using ERP.Application.Common.Inventory;
 using ERP.Domain.Modules.Inventory.Entities;
 using ERP.Domain.Modules.Inventory.Enums;
@@ -23,7 +23,7 @@ public sealed class InventoryPostingService : IInventoryPostingService
                 return Result<bool>.Failure(
                     $"Sin stock registrado para el producto {line.ProductId} en la bodega indicada.");
 
-            if (stock.CompanyId.HasValue && stock.CompanyId != request.CompanyId)
+            if (stock.CompanyId != Guid.Empty && stock.CompanyId != request.CompanyId)
                 return Result<bool>.Failure("El stock no pertenece a la empresa operativa activa.");
 
             if (stock.AvailableQuantity < line.Quantity)

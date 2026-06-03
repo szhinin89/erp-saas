@@ -1,4 +1,4 @@
-using ERP.Domain.Modules.Inventory.Entities;
+﻿using ERP.Domain.Modules.Inventory.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -13,7 +13,7 @@ public sealed class WarehouseConfiguration : IEntityTypeConfiguration<Warehouse>
         builder.HasKey(w => w.Id);
         builder.Property(w => w.Id).HasColumnName("id");
         builder.Property(w => w.SubscriberId).HasColumnName("subscriber_id").IsRequired();
-        builder.Property(w => w.CompanyId).HasColumnName("company_id").IsRequired(false);
+        builder.Property(w => w.CompanyId).HasColumnName("company_id");
         builder.HasIndex(w => new { w.SubscriberId, w.CompanyId }).HasDatabaseName("ix_warehouse_subscriber_company");
         builder.Property(w => w.BranchId).HasColumnName("branch_id").IsRequired();
         builder.Property(w => w.Name).HasColumnName("name").HasMaxLength(Warehouse.NameMaxLen).IsRequired();

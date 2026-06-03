@@ -1,10 +1,10 @@
-using ERP.Domain.Common;
+﻿using ERP.Domain.Common;
 
 namespace ERP.Domain.Modules.Inventory.Entities;
 
 public sealed class StockAdjustment : AuditableEntity, ISubscriberScopedEntity, ICompanyOperationalEntity
 {
-    public Guid? CompanyId { get; private set; }
+    public Guid CompanyId { get; private set; }
     public const int NumberMaxLen          = 20;
     public const int AdjustmentTypeMaxLen  = 20;
     public const int ReasonMaxLen          = 200;
@@ -41,7 +41,7 @@ public sealed class StockAdjustment : AuditableEntity, ISubscriberScopedEntity, 
         string  reason,
         string? notes,
         Guid    createdBy,
-        Guid?   companyId = null)
+        Guid companyId = default)
     {
         if (adjustmentQty == 0)
             throw new ArgumentException("Adjustment quantity cannot be zero.", nameof(adjustmentQty));
@@ -52,7 +52,7 @@ public sealed class StockAdjustment : AuditableEntity, ISubscriberScopedEntity, 
         {
             Id               = Guid.NewGuid(),
             SubscriberId         = subscriberId,
-            CompanyId        = companyId,
+            CompanyId = companyId,
             Sequential       = sequential,
             AdjustmentNumber = $"ADJ-{sequential:D4}",
             WarehouseId      = warehouseId,

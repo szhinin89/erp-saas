@@ -1,4 +1,4 @@
-using ERP.Domain.Common;
+﻿using ERP.Domain.Common;
 using ERP.Domain.Modules.Purchasing.Enums;
 namespace ERP.Domain.Modules.Purchasing.Entities;
 
@@ -10,7 +10,7 @@ public sealed class PurchaseDocument : AuditableEntity, ISubscriberScopedEntity,
 
     private readonly List<PurchaseDetail> _lines = new();
 
-    public Guid?                CompanyId           { get; private set; }
+    public Guid CompanyId { get; private set; }
     public PurchaseDocumentType DocType             { get; private set; } = PurchaseDocumentType.Invoice;
     public string               DocNumber           { get; private set; } = null!;
     public string?              AccessKey           { get; private set; }
@@ -44,7 +44,7 @@ public sealed class PurchaseDocument : AuditableEntity, ISubscriberScopedEntity,
 
     private PurchaseDocument() { }
 
-    /// <summary>Rehidratación desde capa de persistencia / mapper.</summary>
+    /// <summary>RehidrataciÃ³n desde capa de persistencia / mapper.</summary>
     public static PurchaseDocument Rehydrate() => new();
 
     public void AddLine(PurchaseDetail line)

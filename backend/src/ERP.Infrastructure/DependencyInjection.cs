@@ -87,11 +87,14 @@ public static class DependencyInjection
         services.AddScoped<IInstallDataBootstrapService, InstallDataBootstrapService>();
 
         services.AddScoped<PostgreSqlSessionContextInterceptor>();
+        services.AddScoped<ERP.Infrastructure.Persistence.Interceptors.CompanyTenantInterceptor>();
         services.AddDbContext<ErpDbContext>((sp, options) =>
             options.UseNpgsql(
                     configuration.GetConnectionString("DefaultConnection"),
                     b => b.MigrationsAssembly(typeof(ErpDbContext).Assembly.FullName))
-                .AddInterceptors(sp.GetRequiredService<PostgreSqlSessionContextInterceptor>()));
+                .AddInterceptors(
+                    sp.GetRequiredService<PostgreSqlSessionContextInterceptor>(),
+                    sp.GetRequiredService<ERP.Infrastructure.Persistence.Interceptors.CompanyTenantInterceptor>()));
 
         services.AddScoped<IPasswordHasher, BcryptPasswordHasher>();
         services.AddScoped<ISecretProtector, DataProtectionSecretProtector>();

@@ -29,7 +29,7 @@ public sealed class PurchNoteApprovedEventHandler : INotificationHandler<PurchNo
     {
         var subscriberId = notification.SubscriberId;
         var userId   = notification.UserId;
-        var companyId = _company.HasCompanyContext ? _company.CompanyId : (Guid?)null;
+        var companyId = _company.CompanyId;
 
         var tipoMov = notification.NoteType == NoteType.Credit
             ? StockMovementType.SupplierCreditNote

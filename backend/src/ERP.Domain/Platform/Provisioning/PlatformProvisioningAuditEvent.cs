@@ -1,8 +1,8 @@
-namespace ERP.Domain.Platform.Provisioning;
+﻿namespace ERP.Domain.Platform.Provisioning;
 
 /// <summary>
 /// Immutable audit record for every step in the platform first-run provisioning flow.
-/// Written sequentially: Started → OwnerCreated → OperatorCreated → Completed (or Failed).
+/// Written sequentially: Started â†’ OwnerCreated â†’ OperatorCreated â†’ Completed (or Failed).
 /// </summary>
 public sealed class PlatformProvisioningAuditEvent
 {
@@ -14,7 +14,7 @@ public sealed class PlatformProvisioningAuditEvent
     public ProvisioningEventType EventType { get; private set; }
     public DateTime TimestampUtc    { get; private set; }
     public Guid?    SubscriberId    { get; private set; }
-    public Guid?    CompanyId       { get; private set; }
+    public Guid? CompanyId { get; private set; }
     public Guid?    OperatorUserId  { get; private set; }
     /// <summary>Machine name + PID that ran the provisioning command.</summary>
     public string?  InstanceId      { get; private set; }
@@ -31,7 +31,7 @@ public sealed class PlatformProvisioningAuditEvent
         bool isSuccess,
         string? instanceId      = null,
         Guid? subscriberId      = null,
-        Guid? companyId         = null,
+        Guid? companyId             = null,
         Guid? operatorUserId    = null,
         string? metadata        = null,
         string? errorMessage    = null)
@@ -43,7 +43,7 @@ public sealed class PlatformProvisioningAuditEvent
             EventType      = eventType,
             TimestampUtc   = now,
             SubscriberId   = subscriberId,
-            CompanyId      = companyId,
+            CompanyId = companyId,
             OperatorUserId = operatorUserId,
             InstanceId     = instanceId?.Length > InstanceIdMaxLen
                                 ? instanceId[..InstanceIdMaxLen]

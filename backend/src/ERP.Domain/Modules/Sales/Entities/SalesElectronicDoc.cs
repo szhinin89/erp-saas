@@ -1,13 +1,13 @@
-using ERP.Domain.Common;
+﻿using ERP.Domain.Common;
 
 namespace ERP.Domain.Modules.Sales.Entities;
 
-/// <summary>Extensión 1:1 SRI del documento de venta (tabla sales_electronic_doc).</summary>
+/// <summary>ExtensiÃ³n 1:1 SRI del documento de venta (tabla sales_electronic_doc).</summary>
 public sealed class SalesElectronicDoc : ISubscriberScopedEntity, ICompanyOperationalEntity
 {
     public Guid     SalesDocumentId       { get; private set; }
     public Guid     SubscriberId              { get; private set; }
-    public Guid?    CompanyId             { get; private set; }
+    public Guid CompanyId { get; private set; }
     public Guid?    EmissionPointId        { get; private set; }
     public Guid?    LegacyElectronicDocId { get; private set; }
     public string   DocTypeCode           { get; private set; } = "01";
@@ -29,7 +29,7 @@ public sealed class SalesElectronicDoc : ISubscriberScopedEntity, ICompanyOperat
 
     private SalesElectronicDoc() { }
 
-    public static SalesElectronicDoc CreateShell(Guid salesDocumentId, Guid subscriberId, Guid? companyId = null) =>
+    public static SalesElectronicDoc CreateShell(Guid salesDocumentId, Guid subscriberId, Guid companyId) =>
         new()
         {
             SalesDocumentId = salesDocumentId,

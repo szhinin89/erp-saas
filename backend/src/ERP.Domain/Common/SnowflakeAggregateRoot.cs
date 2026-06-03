@@ -10,7 +10,7 @@ public abstract class SnowflakeAggregateRoot : IHasDomainEvents, ISubscriberScop
     public long Id { get; protected set; }
     public Guid PublicId { get; protected set; }
     public Guid SubscriberId { get; protected set; }
-    public Guid? CompanyId { get; protected set; }
+    public Guid CompanyId { get; protected set; }
     public long RowVersion { get; protected set; }
 
     public IReadOnlyCollection<IDomainEvent> DomainEvents => _domainEvents.AsReadOnly();

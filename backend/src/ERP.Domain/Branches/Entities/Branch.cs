@@ -1,12 +1,12 @@
-using ERP.Domain.Common;
+﻿using ERP.Domain.Common;
 
 namespace ERP.Domain.Branches.Entities;
 
-/// <summary>Sucursal operativa del ERP. CompanyId poblado desde Fase P1-1; null en registros legacy pre-migración.</summary>
+/// <summary>Sucursal operativa del ERP. CompanyId poblado desde Fase P1-1; null en registros legacy pre-migraciÃ³n.</summary>
 public sealed class Branch : MasterEntity, ICompanyOperationalEntity
 {
     /// <summary>Empresa a la que pertenece esta sucursal. Null = sucursal creada antes de P1-1.</summary>
-    public Guid? CompanyId       { get; private set; }
+    public Guid CompanyId { get; private set; }
     public string  Name            { get; private set; } = null!;
     public string  Address         { get; private set; } = null!;
     public string? Code            { get; private set; }
@@ -53,13 +53,13 @@ public sealed class Branch : MasterEntity, ICompanyOperationalEntity
         string? rechargeOption,
         bool    isMainBranch,
         Guid    createdBy,
-        Guid?   companyId = null)
+        Guid companyId = default)
     {
         var b = new Branch
         {
             Id           = Guid.NewGuid(),
             SubscriberId = subscriberId,
-            CompanyId    = companyId,
+            CompanyId = companyId,
             Name         = name.Trim(),
             Address      = address.Trim(),
             Code            = code,

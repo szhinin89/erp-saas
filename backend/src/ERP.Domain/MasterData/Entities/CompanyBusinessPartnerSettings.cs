@@ -1,25 +1,25 @@
-using ERP.Domain.Common;
+﻿using ERP.Domain.Common;
 
 namespace ERP.Domain.MasterData.Entities;
 
 /// <summary>
-/// Condiciones comerciales específicas de un BusinessPartner en una Company concreta.
+/// Condiciones comerciales especÃ­ficas de un BusinessPartner en una Company concreta.
 ///
 /// SCOPE: ICompanyScopedEntity + ISubscriberScopedEntity.
 /// Query filter: fail-closed en ambas dimensiones (subscriber + company).
-/// Sin company context en el JWT → 0 filas retornadas.
+/// Sin company context en el JWT â†’ 0 filas retornadas.
 ///
-/// Separación de responsabilidades:
-///   BusinessPartner                    → identidad fiscal (quién es)
-///   CompanyBusinessPartnerSettings     → condiciones comerciales por empresa (cómo opera con nosotros)
+/// SeparaciÃ³n de responsabilidades:
+///   BusinessPartner                    â†’ identidad fiscal (quiÃ©n es)
+///   CompanyBusinessPartnerSettings     â†’ condiciones comerciales por empresa (cÃ³mo opera con nosotros)
 ///
 /// Ejemplos de uso:
-///   - La misma persona jurídica puede tener CreditLimit diferente en Company A y Company B
+///   - La misma persona jurÃ­dica puede tener CreditLimit diferente en Company A y Company B
 ///   - Un BP puede estar bloqueado solo en una de las empresas del Subscriber
-///   - El PriceListId puede variar por empresa (lista de precios de exportación vs. local)
+///   - El PriceListId puede variar por empresa (lista de precios de exportaciÃ³n vs. local)
 ///
 /// Cardinalidad: 0..N por BusinessPartner (una por cada Company que lo usa)
-/// Unicidad: (company_id, business_partner_id) es única
+/// Unicidad: (company_id, business_partner_id) es Ãºnica
 /// </summary>
 public sealed class CompanyBusinessPartnerSettings : AuditableEntity, ISubscriberScopedEntity, ICompanyScopedEntity
 {
@@ -27,26 +27,26 @@ public sealed class CompanyBusinessPartnerSettings : AuditableEntity, ISubscribe
     public Guid    CompanyId         { get; private set; }
     public Guid    BusinessPartnerId { get; private set; }
 
-    /// <summary>Límite de crédito aprobado para esta empresa. Null = sin límite.</summary>
+    /// <summary>LÃ­mite de crÃ©dito aprobado para esta empresa. Null = sin lÃ­mite.</summary>
     public decimal? CreditLimit  { get; private set; }
 
-    /// <summary>Días de crédito acordados (0 = contado).</summary>
+    /// <summary>DÃ­as de crÃ©dito acordados (0 = contado).</summary>
     public short    PaymentDays  { get; private set; }
 
     /// <summary>Bloqueo operativo: impide crear nuevas transacciones con este BP en esta empresa.</summary>
     public bool     IsBlocked    { get; private set; }
 
-    /// <summary>FK a lista de precios específica para este BP en esta empresa (futuro).</summary>
+    /// <summary>FK a lista de precios especÃ­fica para este BP en esta empresa (futuro).</summary>
     public Guid?    PriceListId  { get; private set; }
 
     /// <summary>
-    /// Moneda del límite de crédito. ISO-4217 (ej. "USD", "EUR").
+    /// Moneda del lÃ­mite de crÃ©dito. ISO-4217 (ej. "USD", "EUR").
     /// Necesario en holdings multimoneda donde Company A opera en USD y Company B en EUR.
     /// Null = moneda de la company activa.
     /// </summary>
     public string?  CreditCurrencyCode { get; private set; }
 
-    // Navegación
+    // NavegaciÃ³n
     public BusinessPartner? BusinessPartner { get; private set; }
 
     private CompanyBusinessPartnerSettings() { }
@@ -73,7 +73,7 @@ public sealed class CompanyBusinessPartnerSettings : AuditableEntity, ISubscribe
         {
             Id                 = Guid.NewGuid(),
             SubscriberId       = subscriberId,
-            CompanyId          = companyId,
+            CompanyId = companyId,
             BusinessPartnerId  = businessPartnerId,
             CreditLimit        = creditLimit is < 0 ? null : creditLimit,
             PaymentDays        = paymentDays < 0 ? (short)0 : paymentDays,

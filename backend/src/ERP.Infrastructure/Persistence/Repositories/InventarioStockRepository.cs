@@ -1,4 +1,4 @@
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using ERP.Application.Common;
 using ERP.Domain.Modules.Inventory.Entities;
 using ERP.Domain.Modules.Inventory.Interfaces;
@@ -48,7 +48,7 @@ public sealed class StockRepository : IStockRepository
     public Task AddMovementAsync(StockMovement movimiento, CancellationToken ct = default)
         => _context.StockMovements.AddAsync(movimiento, ct).AsTask();
 
-    // ── Operaciones atómicas de concurrencia ─────────────────────────────────
+    // â”€â”€ Operaciones atÃ³micas de concurrencia â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     /// <inheritdoc/>
     public async Task<decimal?> DecrementStockAtomicAsync(
@@ -63,7 +63,7 @@ public sealed class StockRepository : IStockRepository
         var valorSalida = delta * unitCost;
 
         // PostgreSQL: una sola sentencia que verifica disponibilidad y descuenta.
-        // También actualiza valor_total_stock para mantener el promedio ponderado.
+        // TambiÃ©n actualiza valor_total_stock para mantener el promedio ponderado.
         var rows = await _context.Database.ExecuteSqlAsync(
             $"""
             UPDATE stock_actual
@@ -168,13 +168,13 @@ public sealed class StockRepository : IStockRepository
         return await q.OrderBy(m => m.CreatedAt).ThenBy(m => m.Id).ToListAsync(ct);
     }
 
-    // ── Helpers ──────────────────────────────────────────────────────────────
+    // â”€â”€ Helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     // EF InMemory no soporta SQL raw; detectamos el Supplier por nombre.
     private bool IsInMemoryProvider()
         => _context.Database.ProviderName?.Contains("InMemory", StringComparison.OrdinalIgnoreCase) == true;
 
-    // ── Fallbacks para EF InMemory (pruebas) ─────────────────────────────────
+    // â”€â”€ Fallbacks para EF InMemory (pruebas) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     private async Task<decimal?> DecrementarInMemoryAsync(
         Guid subscriberId, Guid WarehouseId, Guid productoId,
@@ -200,7 +200,7 @@ public sealed class StockRepository : IStockRepository
 
         if (stock is null)
         {
-            var companyId = _company.HasCompanyContext ? _company.CompanyId : (Guid?)null;
+            var companyId = _company.CompanyId;
             stock = CurrentStock.Create(subscriberId, productoId, WarehouseId, createdBy, companyId: companyId);
             await _context.CurrentStocks.AddAsync(stock, ct);
             stock.ApplyMovement(delta, createdBy, unitCost);
