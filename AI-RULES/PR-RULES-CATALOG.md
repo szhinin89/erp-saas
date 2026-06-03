@@ -262,6 +262,126 @@ Política completa: [CORE-ARCHITECTURE.md — Política de compatibilidad legacy
 
 ---
 
+## B-08 — Single Command per Operation
+
+### RULE
+Para cada operación de escritura sobre un agregado, solo puede existir **UN** Command. Dos Commands con el mismo target y misma acción son duplicación semántica prohibida.
+
+### WHY
+Commands duplicados divergen inevitablemente — uno se actualiza y el otro no. Genera comportamiento inconsistente y deuda de mantenimiento.
+
+### BAD
+```csharp
+CreateProductCommand   // crea producto
+AddProductCommand      // ❌ duplicado semántico
+RegisterProductCommand // ❌ duplicado semántico
+```
+
+### GOOD
+```csharp
+CreateProductCommand   // ✅ único Command de creación
+UpdateProductCommand   // ✅ único Command de actualización
+```
+
+### ENFORCEMENT
+- **BLOQUEANTE PR:** nuevo Command cuyo nombre es sinónimo de un Command existente sobre el mismo agregado.
+- Revisión: comparar con Commands existentes antes de crear uno nuevo.
+
+Referencia: [ARCHITECTURE-GOVERNANCE.md](./ARCHITECTURE-GOVERNANCE.md#b-08--single-command-per-operation-bloqueante)
+
+---
+
+## B-09 — No Semantic DTO Duplication
+
+### RULE
+Máximo **2 DTOs** por entidad (List + Detail). Un tercer DTO requiere justificación documentada en PR que demuestre propósito genuinamente distinto. Dos DTOs con los mismos campos bajo nombres distintos son duplicación prohibida.
+
+### WHY
+DTOs duplicados generan desincronización cuando la entidad cambia, y confunden al desarrollador sobre cuál usar.
+
+### BAD
+```csharp
+ProductDto         // id, name, code, price
+ProductSummaryDto  // ❌ mismos campos que ProductDto, nombre distinto
+ProductResponseDto // ❌ wrapping sin valor añadido
+```
+
+### GOOD
+```csharp
+ProductDto         // ✅ campos para listado (id, name, code, isActive)
+ProductDetailDto   // ✅ campos para detalle completo + children (barcodes, conversions)
+```
+
+### ENFORCEMENT
+- **BLOQUEANTE PR:** nuevo DTO cuyos campos son subconjunto o superconjunto equivalente de un DTO existente sin propósito diferenciado.
+
+Referencia: [ARCHITECTURE-GOVERNANCE.md](./ARCHITECTURE-GOVERNANCE.md#b-09--no-semantic-dto-duplication-bloqueante)
+
+---
+
+## B-10 — Scope Boundary Enforcement
+
+### RULE
+Las entidades de dominio no pueden cruzar boundaries de scope sin justificación arquitectónica documentada:
+- **SUBSCRIBER** no puede contener lógica ERP ni referenciar entidades COMPANY.
+- **COMPANY** no puede referenciar entidades SUBSCRIBER billing (solo ids como Guid).
+- **GLOBAL** no contiene lógica de negocio ni referencias a ningún tenant.
+
+### WHY
+La mezcla de scopes produce acoplamiento accidental, dificulta el aislamiento multi-tenant y viola el principio de responsabilidad única del scope.
+
+### BAD
+```csharp
+// ❌ SUBSCRIBER importando lógica ERP
+namespace ERP.Domain.Billing {
+    using ERP.Domain.Modules.Sales.Entities; // prohibido
+}
+```
+
+### GOOD
+```csharp
+// ✅ Referencias cruzadas por ID, no por entidad
+public class SaasBillingInvoice {
+    public Guid? ErpInvoiceId { get; private set; } // referencia cruzada como Guid
+}
+```
+
+### ENFORCEMENT
+- **BLOQUEANTE PR:** `using` de namespace de otro scope dentro de una entidad de dominio.
+
+Referencia: [ARCHITECTURE-GOVERNANCE.md](./ARCHITECTURE-GOVERNANCE.md#b-10--scope-boundary-enforcement-bloqueante)
+
+---
+
+## B-11 — No Per-Subscriber Regulatory Data
+
+### RULE
+Ninguna tabla per-subscriber puede almacenar datos que ya existen en `global.*`. Los productos, facturas y comprobantes deben referenciar directamente `global.sri_*` por código (string), no via tabla propia.
+
+### WHY
+Las tablas eliminadas (`tax_rates`, `units_of_measure`, `retention_settings`) generaban divergencia entre lo que un subscriber configuraba y lo que SRI mandataba. En Ecuador, los códigos fiscales son ley — no pueden ser personalizados.
+
+### BAD
+```csharp
+// ❌ tabla per-subscriber duplicando dato global
+CREATE TABLE tax_rates (subscriber_id uuid, code text, percentage decimal);
+```
+
+### GOOD
+```csharp
+// ✅ referencia directa al catálogo global
+public string? SaleVatCode { get; private set; }  // FK a global.sri_vat_rate.code
+public string  UomCode     { get; private set; }  // FK a global.sri_uom.code
+```
+
+### ENFORCEMENT
+- **BLOQUEANTE PR:** nueva tabla con `subscriber_id` que almacena datos regulatorios SRI (tasas, códigos, catálogos).
+- Script CI: verificar que no existen nuevas tablas per-subscriber en el schema `global`.
+
+Referencia: [ARCHITECTURE-GOVERNANCE.md](./ARCHITECTURE-GOVERNANCE.md#b-11--no-per-subscriber-regulatory-data-bloqueante)
+
+---
+
 # CQRS
 
 ## C-01 — Un Command/Query = un handler + un validator

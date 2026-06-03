@@ -28,6 +28,7 @@ Cursor, Claude y futuros agentes deben leer **estos archivos** antes de inventar
 | [ANALYTICS-FOUNDATION.md](./ANALYTICS-FOUNDATION.md) | Read models, proyecciones, estrategia BI/analytics |
 | [AI-FOUNDATION.md](./AI-FOUNDATION.md) | Arquitectura IA futura — separación de capas, prohibiciones |
 | [SUBSCRIBER-SCOPE-SEALED.md](./SUBSCRIBER-SCOPE-SEALED.md) | **SEALED** — Modelo canónico SUBSCRIBER, boundaries, prohibiciones de duplicación |
+| [ARCHITECTURE-GOVERNANCE.md](./ARCHITECTURE-GOVERNANCE.md) | **GOVERNANCE** — Canonical Model Map, enforcement rules B-08–B-11, PR checklist |
 | [docs/adr/](../docs/adr/README.md) | ADRs — rationale arquitectónico (no duplicar reglas de enforcement) |
 
 ---
