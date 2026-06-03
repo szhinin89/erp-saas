@@ -13,6 +13,7 @@ public sealed class BankStatementConfiguration : IEntityTypeConfiguration<BankSt
         builder.HasKey(x => x.Id);
         builder.Property(x => x.Id).HasColumnName("id");
         builder.Property(x => x.SubscriberId).HasColumnName("subscriber_id").IsRequired();
+        builder.Property(x => x.CompanyId).HasColumnName("company_id");
         builder.Property(x => x.BankAccountId).HasColumnName("bank_account_id").IsRequired();
         builder.Property(x => x.PeriodFrom).HasColumnName("period_from").IsRequired();
         builder.Property(x => x.PeriodTo).HasColumnName("period_to").IsRequired();

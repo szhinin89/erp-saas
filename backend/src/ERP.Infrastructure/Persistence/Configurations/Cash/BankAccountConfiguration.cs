@@ -13,6 +13,7 @@ public sealed class BankAccountConfiguration : IEntityTypeConfiguration<BankAcco
         builder.HasKey(x => x.Id);
         builder.Property(x => x.Id).HasColumnName("id");
         builder.Property(x => x.SubscriberId).HasColumnName("subscriber_id").IsRequired();
+        builder.Property(x => x.CompanyId).HasColumnName("company_id");
         builder.Property(x => x.Name).HasColumnName("name").HasMaxLength(BankAccount.NameMaxLen).IsRequired();
         builder.Property(x => x.AccountNumber).HasColumnName("account_number").HasMaxLength(BankAccount.AccountNumberMaxLen).IsRequired();
         builder.Property(x => x.AccountType).HasColumnName("account_type").HasMaxLength(BankAccount.AccountTypeMaxLen).IsRequired();

@@ -12,18 +12,21 @@ public sealed class UpsertConfigurationContableCommandHandler
 {
     private readonly IAccountingSetupRepository _configRepo;
     private readonly IAccountingRepository      _accounts;
-    private readonly ICurrentSubscriber             _subscriber;
+    private readonly ICurrentSubscriber         _subscriber;
+    private readonly ICurrentCompany            _company;
     private readonly ICurrentUser               _user;
 
     public UpsertConfigurationContableCommandHandler(
         IAccountingSetupRepository configRepo,
         IAccountingRepository accounts,
         ICurrentSubscriber subscriber,
+        ICurrentCompany company,
         ICurrentUser user)
     {
         _configRepo = configRepo;
         _accounts   = accounts;
         _subscriber = subscriber;
+        _company    = company;
         _user       = user;
     }
 
@@ -32,7 +35,8 @@ public sealed class UpsertConfigurationContableCommandHandler
         CancellationToken ct)
     {
         var subscriberId = _subscriber.SubscriberId;
-        var userId   = _user.UserId;
+        var companyId    = _company.CompanyId;
+        var userId       = _user.UserId;
 
         foreach (var (role, id) in new (string, Guid?)[]
                  {
@@ -57,7 +61,7 @@ public sealed class UpsertConfigurationContableCommandHandler
         var existing = await _configRepo.GetSetupAsync(ct);
         if (existing is null)
         {
-            var created = AccountingSetup.Create(subscriberId, userId);
+            var created = AccountingSetup.Create(subscriberId, companyId, userId);
             created.UpdateAccounts(
                 command.InventoryAccountId,
                 command.CostOfSalesAccountId,

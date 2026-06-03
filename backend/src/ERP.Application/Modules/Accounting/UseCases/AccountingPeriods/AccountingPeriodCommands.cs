@@ -4,7 +4,7 @@ using ERP.Application.Common;
 namespace ERP.Application.Modules.Accounting.UseCases.AccountingPeriods;
 
 public sealed record OpenAccountingPeriodCommand(int Year, int Month)
-    : IRequest<Result<Guid>>, ISubscriberScopedRequest;
+    : IRequest<Result<Guid>>, ICompanyScopedRequest;
 
 public sealed record CloseAccountingPeriodCommand(Guid PeriodId)
     : IRequest<Result<bool>>, ISubscriberScopedRequest;

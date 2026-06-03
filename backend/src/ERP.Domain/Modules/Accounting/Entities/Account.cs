@@ -4,8 +4,9 @@ using ERP.Domain.Modules.Accounting.ValueObjects;
 
 namespace ERP.Domain.Modules.Accounting.Entities;
 
-public class Account : MasterEntity
+public class Account : MasterEntity, ICompanyScopedEntity
 {
+    public Guid CompanyId { get; private set; }
     public AccountCode Code { get; private set; } = null!;
     public string Name { get; private set; } = null!;
     public AccountType Type { get; private set; }
@@ -19,6 +20,7 @@ public class Account : MasterEntity
 
     public static Account Create(
         Guid subscriberId,
+        Guid companyId,
         string code,
         string name,
         AccountType type,
@@ -33,7 +35,8 @@ public class Account : MasterEntity
         var account = new Account
         {
             Id                = Guid.NewGuid(),
-            SubscriberId          = subscriberId,
+            SubscriberId      = subscriberId,
+            CompanyId         = companyId,
             Code              = new AccountCode(code),
             Name              = name,
             Type              = type,

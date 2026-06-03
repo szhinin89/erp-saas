@@ -1,4 +1,4 @@
-using System.Net;
+﻿using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
 using FluentAssertions;
@@ -12,7 +12,7 @@ using ERP.Infrastructure.Persistence;
 
 namespace ERP.API.Tests.Integration;
 
-/// <summary>Tests HTTP end-to-end: configuraciÃ³n contable por tenant.</summary>
+/// <summary>Tests HTTP end-to-end: configuraciÃƒÂ³n contable por tenant.</summary>
 public sealed class AccountingConfigurationHttpTests
 {
     private static async Task<(IntegrationTestWebAppFactory Factory, HttpClient Client, IntegrationSeedData.SeedResult Seed)>
@@ -83,12 +83,12 @@ public sealed class AccountingConfigurationHttpTests
         {
             var db = scope.ServiceProvider.GetRequiredService<ErpDbContext>();
 
-            var inv = Account.Create(seed.SubscriberId, "1.1.10", "Inventario INT", AccountType.Asset, AccountNature.Debit, seed.UserId);
-            var prov = Account.Create(seed.SubscriberId, "2.1.10", "Suppliers INT", AccountType.Liability, AccountNature.Credit, seed.UserId);
-            var ventas = Account.Create(seed.SubscriberId, "4.1.10", "Ventas INT", AccountType.Revenue, AccountNature.Credit, seed.UserId);
-            var clientes = Account.Create(seed.SubscriberId, "1.1.20", "Clientes INT", AccountType.Asset, AccountNature.Debit, seed.UserId);
-            var ivaV = Account.Create(seed.SubscriberId, "2.1.20", "IVA ventas INT", AccountType.Liability, AccountNature.Credit, seed.UserId);
-            var gasto = Account.Create(seed.SubscriberId, "5.1.10", "Luz", AccountType.Expense, AccountNature.Debit, seed.UserId);
+            var inv = Account.Create(seed.SubscriberId, seed.CompanyId, "1.1.10", "Inventario INT", AccountType.Asset, AccountNature.Debit, seed.UserId);
+            var prov = Account.Create(seed.SubscriberId, seed.CompanyId, "2.1.10", "Suppliers INT", AccountType.Liability, AccountNature.Credit, seed.UserId);
+            var ventas = Account.Create(seed.SubscriberId, seed.CompanyId, "4.1.10", "Ventas INT", AccountType.Revenue, AccountNature.Credit, seed.UserId);
+            var clientes = Account.Create(seed.SubscriberId, seed.CompanyId, "1.1.20", "Clientes INT", AccountType.Asset, AccountNature.Debit, seed.UserId);
+            var ivaV = Account.Create(seed.SubscriberId, seed.CompanyId, "2.1.20", "IVA ventas INT", AccountType.Liability, AccountNature.Credit, seed.UserId);
+            var gasto = Account.Create(seed.SubscriberId, seed.CompanyId, "5.1.10", "Luz", AccountType.Expense, AccountNature.Debit, seed.UserId);
 
             db.Accounts.AddRange(inv, prov, ventas, clientes, ivaV, gasto);
             await db.SaveChangesAsync();

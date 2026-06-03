@@ -7,7 +7,7 @@ namespace ERP.Domain.Modules.Accounting.Entities;
 /// Rastrea el monto original, pagado y pendiente. El cobro se registra
 /// mediante <see cref="PaymentApplication"/>.
 /// </summary>
-public sealed class AccountsReceivableEntry : AuditableEntity, ISubscriberScopedEntity
+public sealed class AccountsReceivableEntry : AuditableEntity, ISubscriberScopedEntity, ICompanyScopedEntity
 {
     public const string StatusOpen          = "Open";
     public const string StatusPartiallyPaid = "PartiallyPaid";

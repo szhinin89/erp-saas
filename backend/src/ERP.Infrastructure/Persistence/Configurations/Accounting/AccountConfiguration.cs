@@ -21,6 +21,10 @@ public class AccountConfiguration : IEntityTypeConfiguration<Account>
             .HasColumnName("subscriber_id")
             .IsRequired();
 
+        builder.Property(a => a.CompanyId)
+            .HasColumnName("company_id")
+            .IsRequired();
+
         builder.Property(a => a.Code)
             .HasColumnName("code")
             .HasMaxLength(20)
@@ -66,6 +70,9 @@ public class AccountConfiguration : IEntityTypeConfiguration<Account>
 
         builder.Property(a => a.UpdatedBy)
             .HasColumnName("updated_by");
+
+        builder.HasIndex(a => new { a.SubscriberId, a.CompanyId })
+            .HasDatabaseName("ix_accounts_subscriber_company");
 
         builder.HasIndex(a => new { a.SubscriberId, a.Code })
             .IsUnique()

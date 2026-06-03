@@ -140,12 +140,13 @@ internal static class DevDatabaseSeeder
 
         await companyBootstrap.BootstrapCompanyAsync(tenant.Id, defaultCompanyForSeed.Id, SeederActorId, ct);
 
+        var seedCompanyId = defaultCompanyForSeed.Id;
         db.Accounts.AddRange(
-            Account.Create(tenant.Id, "1.1.01", "Caja General", AccountType.Asset, AccountNature.Debit, SeederActorId),
-            Account.Create(tenant.Id, "1.1.02", "Inventario Mercaderia", AccountType.Asset, AccountNature.Debit, SeederActorId),
-            Account.Create(tenant.Id, "2.1.01", "Cuentas por Pagar", AccountType.Liability, AccountNature.Credit, SeederActorId),
-            Account.Create(tenant.Id, "4.1.01", "Ventas", AccountType.Revenue, AccountNature.Credit, SeederActorId),
-            Account.Create(tenant.Id, "5.1.01", "Gastos Operativos", AccountType.Expense, AccountNature.Debit, SeederActorId));
+            Account.Create(tenant.Id, seedCompanyId, "1.1.01", "Caja General", AccountType.Asset, AccountNature.Debit, SeederActorId),
+            Account.Create(tenant.Id, seedCompanyId, "1.1.02", "Inventario Mercaderia", AccountType.Asset, AccountNature.Debit, SeederActorId),
+            Account.Create(tenant.Id, seedCompanyId, "2.1.01", "Cuentas por Pagar", AccountType.Liability, AccountNature.Credit, SeederActorId),
+            Account.Create(tenant.Id, seedCompanyId, "4.1.01", "Ventas", AccountType.Revenue, AccountNature.Credit, SeederActorId),
+            Account.Create(tenant.Id, seedCompanyId, "5.1.01", "Gastos Operativos", AccountType.Expense, AccountNature.Debit, SeederActorId));
 
         // TaxRate/UnitOfMeasure per-subscriber catalogs removed — now reference global.sri_* tables directly.
 

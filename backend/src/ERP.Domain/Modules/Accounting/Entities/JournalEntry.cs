@@ -5,10 +5,11 @@ using ERP.Domain.Modules.Accounting.Events;
 
 namespace ERP.Domain.Modules.Accounting.Entities;
 
-public class JournalEntry : DocumentEntity
+public class JournalEntry : DocumentEntity, ICompanyScopedEntity
 {
     private readonly List<JournalEntryLine> _lines = new();
 
+    public Guid CompanyId { get; private set; }
     public string Reference { get; private set; } = null!;
     public DateTime Date { get; private set; }
     public string Description { get; private set; } = null!;
@@ -22,6 +23,7 @@ public class JournalEntry : DocumentEntity
 
     public static JournalEntry Create(
         Guid subscriberId,
+        Guid companyId,
         string reference,
         DateTime date,
         string description,
@@ -29,9 +31,10 @@ public class JournalEntry : DocumentEntity
     {
         var entry = new JournalEntry
         {
-            Id          = Guid.NewGuid(),
-            SubscriberId    = subscriberId,
-            Reference   = reference,
+            Id           = Guid.NewGuid(),
+            SubscriberId = subscriberId,
+            CompanyId    = companyId,
+            Reference    = reference,
             Date        = date,
             Description = description,
         };

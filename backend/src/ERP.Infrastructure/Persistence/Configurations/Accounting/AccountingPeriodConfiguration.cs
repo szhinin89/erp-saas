@@ -13,6 +13,7 @@ public sealed class AccountingPeriodConfiguration : IEntityTypeConfiguration<Acc
         builder.HasKey(e => e.Id);
         builder.Property(e => e.Id).HasColumnName("id");
         builder.Property(e => e.SubscriberId).HasColumnName("subscriber_id").IsRequired();
+        builder.Property(e => e.CompanyId).HasColumnName("company_id").IsRequired();
         builder.Property(e => e.Year).HasColumnName("year").IsRequired();
         builder.Property(e => e.Month).HasColumnName("month").IsRequired();
         builder.Property(e => e.Name).HasColumnName("name").HasMaxLength(AccountingPeriod.NameMaxLen).IsRequired();
@@ -24,9 +25,12 @@ public sealed class AccountingPeriodConfiguration : IEntityTypeConfiguration<Acc
         builder.Property(e => e.CreatedBy).HasColumnName("created_by");
         builder.Property(e => e.UpdatedBy).HasColumnName("updated_by");
 
-        builder.HasIndex(e => new { e.SubscriberId, e.Year, e.Month })
+        builder.HasIndex(e => new { e.SubscriberId, e.CompanyId })
+            .HasDatabaseName("ix_accounting_periods_subscriber_company");
+
+        builder.HasIndex(e => new { e.SubscriberId, e.CompanyId, e.Year, e.Month })
             .IsUnique()
-            .HasDatabaseName("uq_accounting_periods_subscriber_year_month");
+            .HasDatabaseName("uq_accounting_periods_subscriber_company_year_month");
 
         builder.HasIndex(e => new { e.SubscriberId, e.IsClosed })
             .HasDatabaseName("ix_accounting_periods_subscriber_closed");

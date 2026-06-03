@@ -12,19 +12,22 @@ public sealed class CreateJournalEntryCommandHandler : IRequestHandler<CreateJou
 {
     private readonly IAccountingRepository _repository;
     private readonly ICurrentSubscriber _currentSubscriber;
+    private readonly ICurrentCompany _currentCompany;
     private readonly ICurrentUser _currentUser;
     private readonly IUnitOfWork _unitOfWork;
 
     public CreateJournalEntryCommandHandler(
         IAccountingRepository repository,
         ICurrentSubscriber currentSubscriber,
+        ICurrentCompany currentCompany,
         ICurrentUser currentUser,
         IUnitOfWork unitOfWork)
     {
-        _repository    = repository;
+        _repository        = repository;
         _currentSubscriber = currentSubscriber;
-        _currentUser   = currentUser;
-        _unitOfWork    = unitOfWork;
+        _currentCompany    = currentCompany;
+        _currentUser       = currentUser;
+        _unitOfWork        = unitOfWork;
     }
 
     public async Task<Result<JournalEntryDto>> Handle(
@@ -32,7 +35,8 @@ public sealed class CreateJournalEntryCommandHandler : IRequestHandler<CreateJou
         CancellationToken ct)
     {
         var subscriberId = _currentSubscriber.SubscriberId;
-        var userId   = _currentUser.UserId;
+        var companyId    = _currentCompany.CompanyId;
+        var userId       = _currentUser.UserId;
 
         // Period-locking check: if a period exists for the entry date and it's closed, reject
         var period = await _repository.GetPeriodAsync(
@@ -43,6 +47,7 @@ public sealed class CreateJournalEntryCommandHandler : IRequestHandler<CreateJou
 
         var entry = JournalEntry.Create(
             subscriberId,
+            companyId,
             command.Reference,
             command.Date,
             command.Description,

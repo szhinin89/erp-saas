@@ -2,10 +2,11 @@ using ERP.Domain.Common;
 
 namespace ERP.Domain.Modules.Cash.Entities;
 
-public sealed class CashCount : AuditableEntity, ISubscriberScopedEntity
+public sealed class CashCount : AuditableEntity, ICompanyOperationalEntity
 {
     public const int NotesMaxLen = 2000;
 
+    public Guid?   CompanyId    { get; private set; }
     public Guid    PettyCashId  { get; private set; }
     public DateTime CountDate   { get; private set; }
     public decimal PhysicalCash { get; private set; }
@@ -22,7 +23,8 @@ public sealed class CashCount : AuditableEntity, ISubscriberScopedEntity
         decimal  physicalCash,
         decimal  expectedBalance,
         string?  notes,
-        Guid     createdBy)
+        Guid     createdBy,
+        Guid?    companyId = null)
     {
         if (physicalCash < 0)
             throw new ArgumentException("Physical cash cannot be negative.", nameof(physicalCash));
@@ -30,7 +32,8 @@ public sealed class CashCount : AuditableEntity, ISubscriberScopedEntity
         var a = new CashCount
         {
             Id           = Guid.NewGuid(),
-            SubscriberId     = subscriberId,
+            SubscriberId = subscriberId,
+            CompanyId    = companyId,
             PettyCashId  = pettyCashId,
             CountDate    = countDate,
             PhysicalCash = physicalCash,

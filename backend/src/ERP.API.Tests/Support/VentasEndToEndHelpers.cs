@@ -1,4 +1,4 @@
-using ERP.Domain.Modules.Accounting.Entities;
+﻿using ERP.Domain.Modules.Accounting.Entities;
 using ERP.Domain.Modules.Accounting.Enums;
 using ERP.Domain.Configuration.Entities;
 using ERP.Domain.MasterData.Entities;
@@ -26,7 +26,7 @@ internal static class VentasEndToEndHelpers
             .First(i => i.PublicId == publicId);
 
     /// <summary>
-    /// Crea una factura fiscal autorizada (greenfield) para tests de impresión/RIDE.
+    /// Crea una factura fiscal autorizada (greenfield) para tests de impresiÃ³n/RIDE.
     /// </summary>
     internal static async Task<Guid> SeedAuthorizedInvoiceAsync(
         ErpDbContext db,
@@ -129,8 +129,7 @@ internal static class VentasEndToEndHelpers
         var bodegaId  = seed.WarehouseId;
 
         // Cuenta de ingresos (Revenue) para el asiento contable de venta
-        var revenue = Account.Create(
-            subscriberId, "4.1.99", "Ventas pruebas", AccountType.Revenue, AccountNature.Credit, userId);
+        var revenue = Account.Create(subscriberId, seed.CompanyId, "4.1.99", "Ventas pruebas", AccountType.Revenue, AccountNature.Credit, userId);
         db.Accounts.Add(revenue);
 
         // Cliente activo

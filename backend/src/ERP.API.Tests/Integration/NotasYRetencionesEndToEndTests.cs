@@ -1,4 +1,4 @@
-using System.Globalization;
+﻿using System.Globalization;
 using System.Text;
 using FluentAssertions;
 using MediatR;
@@ -25,7 +25,7 @@ using ERP.Infrastructure.Persistence;
 
 namespace ERP.API.Tests.Integration;
 
-/// <summary>Ã‚Â§6.1 escenarios NC/ND, retenciÃƒÂ³n emitida (compras) y retenciÃƒÂ³n recibida (ventas).</summary>
+/// <summary>Ãƒâ€šÃ‚Â§6.1 escenarios NC/ND, retenciÃƒÆ’Ã‚Â³n emitida (compras) y retenciÃƒÆ’Ã‚Â³n recibida (ventas).</summary>
 public sealed class SalesNotesYRetentionsEndToEndTests
 {
     private static CreateSaleCommand BuildCreateSale(
@@ -90,7 +90,7 @@ public sealed class SalesNotesYRetentionsEndToEndTests
               <detalles>
                 <detalle>
                   <codigoPrincipal>{codigoPrincipal}</codigoPrincipal>
-                  <descripcion>Item integraciÃƒÂ³n</descripcion>
+                  <descripcion>Item integraciÃƒÆ’Ã‚Â³n</descripcion>
                   <cantidad>{quantity.ToString(CultureInfo.InvariantCulture)}</cantidad>
                   <precioUnitario>{unitPrice.ToString(CultureInfo.InvariantCulture)}</precioUnitario>
                   <descuento>0</descuento>
@@ -136,7 +136,7 @@ public sealed class SalesNotesYRetentionsEndToEndTests
             new CreateSalesNoteCommand(
                 venta.Value,
                 "CREDIT",
-                "DevoluciÃƒÂ³n parcial",
+                "DevoluciÃƒÆ’Ã‚Â³n parcial",
                 new[] { new CrearSalesNoteItemDto(seed.ProductId, 1m, 25m) }),
             CancellationToken.None);
         crearNota.IsSuccess.Should().BeTrue(crearNota.Error);
@@ -467,11 +467,9 @@ public sealed class SalesNotesYRetentionsEndToEndTests
 
         var userId = seed.UserId;
         var tid    = seed.SubscriberId;
-        db.Accounts.Add(Account.Create(
-            tid, "2.1.88", "PROVEEDORES cuenta CxP", AccountType.Liability, AccountNature.Credit, userId));
-        db.Accounts.Add(Account.Create(
-            tid, "2.2.77", "Pasivo RETENCIONES fuente", AccountType.Liability, AccountNature.Credit, userId));
-        // RetentionSettings per-subscriber removed — lines are now passed directly in the command.
+        db.Accounts.Add(Account.Create(tid, seed.CompanyId, "2.1.88", "PROVEEDORES cuenta CxP", AccountType.Liability, AccountNature.Credit, userId));
+        db.Accounts.Add(Account.Create(tid, seed.CompanyId, "2.2.77", "Pasivo RETENCIONES fuente", AccountType.Liability, AccountNature.Credit, userId));
+        // RetentionSettings per-subscriber removed â€” lines are now passed directly in the command.
         await db.SaveChangesAsync(CancellationToken.None);
 
         var xml = IntegrationSeedData.BuildFacturaXml(seed.ClaveAcceso49, seed.ProveedorRuc);
@@ -530,10 +528,8 @@ public sealed class SalesNotesYRetentionsEndToEndTests
 
         var userId = seed.UserId;
         var tid    = seed.SubscriberId;
-        db.Accounts.Add(Account.Create(
-            tid, "2.3.01", "IVA IMPUESTOS por pagar pruebas", AccountType.Liability, AccountNature.Credit, userId));
-        db.Accounts.Add(Account.Create(
-            tid, "1.2.01", "Clientes por COBRAR integraciÃƒÂ³n", AccountType.Asset, AccountNature.Debit, userId));
+        db.Accounts.Add(Account.Create(tid, seed.CompanyId, "2.3.01", "IVA IMPUESTOS por pagar pruebas", AccountType.Liability, AccountNature.Credit, userId));
+        db.Accounts.Add(Account.Create(tid, seed.CompanyId, "1.2.01", "Clientes por COBRAR integraciÃƒÆ’Ã‚Â³n", AccountType.Asset, AccountNature.Debit, userId));
         await db.SaveChangesAsync(CancellationToken.None);
 
         var clienteId  = db.BusinessPartners.First(c => c.SubscriberId == seed.SubscriberId).Id;

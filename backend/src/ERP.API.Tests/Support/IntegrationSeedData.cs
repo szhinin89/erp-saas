@@ -1,4 +1,4 @@
-using ERP.Domain.Access.Entities;
+﻿using ERP.Domain.Access.Entities;
 using ERP.Domain.Modules.Accounting.Entities;
 using ERP.Domain.Modules.Accounting.Enums;
 using ERP.Domain.Modules.Company.Entities;
@@ -35,7 +35,7 @@ internal static class IntegrationSeedData
         throw new InvalidOperationException("RUC de prueba no encontrado.");
     }
 
-    /// <summary>XML mÃ­nimo compatible con <see cref="ERP.Infrastructure.Services.SriFacturaParser"/>.</summary>
+    /// <summary>XML mÃƒÂ­nimo compatible con <see cref="ERP.Infrastructure.Services.SriFacturaParser"/>.</summary>
     internal static string BuildFacturaXml(string clave49, string rucEmisor) =>
         $"""
         <?xml version="1.0" encoding="UTF-8"?>
@@ -61,7 +61,7 @@ internal static class IntegrationSeedData
           <detalles>
             <detalle>
               <codigoPrincipal>P-INT</codigoPrincipal>
-              <descripcion>Item integraciÃ³n</descripcion>
+              <descripcion>Item integraciÃƒÂ³n</descripcion>
               <cantidad>2</cantidad>
               <precioUnitario>25</precioUnitario>
               <descuento>0</descuento>
@@ -81,7 +81,7 @@ internal static class IntegrationSeedData
         var userId = Guid.NewGuid();
         mu.UserId = userId;
 
-        var tenant = Subscriber.Create("Empresa integraciÃ³n", "empresa-int", userId);
+        var tenant = Subscriber.Create("Empresa integraciÃƒÂ³n", "empresa-int", userId);
         mt.SubscriberId = tenant.Id;
         var tid = tenant.Id;
         db.Subscribers.Add(tenant);
@@ -120,7 +120,7 @@ internal static class IntegrationSeedData
             createdBy: userId);
         db.Branches.Add(branch);
 
-        var line    = ProductLine.Create(tid, "L-INT", "LÃ­nea INT", userId);
+        var line    = ProductLine.Create(tid, "L-INT", "LÃƒÂ­nea INT", userId);
         var category = ProductCategory.Create(tid, "C-INT", "Cat INT", line.Id, userId);
         var sub      = ProductSubcategory.Create(tid, "S-INT", "Sub INT", category.Id, userId);
         var brand    = Brand.Create(tid, "B-INT", "Marca INT", userId);
@@ -134,12 +134,9 @@ internal static class IntegrationSeedData
         db.ProductTypes.Add(ptype);
         db.Tariffs.Add(tariff);
 
-        var expense = Account.Create(
-            tid, "5.1.99", "Gasto pruebas", AccountType.Expense, AccountNature.Debit, userId);
-        var liability = Account.Create(
-            tid, "2.1.99", "CxP pruebas", AccountType.Liability, AccountNature.Credit, userId);
-        var caja = Account.Create(
-            tid, "1.1.99", "Caja pruebas", AccountType.Asset, AccountNature.Debit, userId);
+        var expense = Account.Create(tid, company.Id, "5.1.99", "Gasto pruebas", AccountType.Expense, AccountNature.Debit, userId);
+        var liability = Account.Create(tid, company.Id, "2.1.99", "CxP pruebas", AccountType.Liability, AccountNature.Credit, userId);
+        var caja = Account.Create(tid, company.Id, "1.1.99", "Caja pruebas", AccountType.Asset, AccountNature.Debit, userId);
 
         db.Accounts.AddRange(expense, liability, caja);
 
@@ -154,7 +151,7 @@ internal static class IntegrationSeedData
             tid,
             "SKU-INT-01",
             "Prod INT",
-            "Producto integraciÃ³n stock",
+            "Producto integraciÃƒÂ³n stock",
             line.Id,
             category.Id,
             sub.Id,

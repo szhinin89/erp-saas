@@ -10,16 +10,19 @@ public sealed class CreateAccountCommandHandler : IRequestHandler<CreateAccountC
 {
     private readonly IAccountingRepository _repository;
     private readonly ICurrentSubscriber _currentSubscriber;
+    private readonly ICurrentCompany _currentCompany;
     private readonly ICurrentUser _currentUser;
 
     public CreateAccountCommandHandler(
         IAccountingRepository repository,
         ICurrentSubscriber currentSubscriber,
+        ICurrentCompany currentCompany,
         ICurrentUser currentUser)
     {
-        _repository    = repository;
+        _repository        = repository;
         _currentSubscriber = currentSubscriber;
-        _currentUser   = currentUser;
+        _currentCompany    = currentCompany;
+        _currentUser       = currentUser;
     }
 
     public async Task<Result<AccountDto>> Handle(
@@ -27,7 +30,8 @@ public sealed class CreateAccountCommandHandler : IRequestHandler<CreateAccountC
         CancellationToken ct)
     {
         var subscriberId = _currentSubscriber.SubscriberId;
-        var userId   = _currentUser.UserId;
+        var companyId    = _currentCompany.CompanyId;
+        var userId       = _currentUser.UserId;
 
         var exists = await _repository.ExistsAsync(command.Code, subscriberId, ct);
         if (exists)
@@ -35,6 +39,7 @@ public sealed class CreateAccountCommandHandler : IRequestHandler<CreateAccountC
 
         var account = Account.Create(
             subscriberId,
+            companyId,
             command.Code,
             command.Name,
             command.Type,

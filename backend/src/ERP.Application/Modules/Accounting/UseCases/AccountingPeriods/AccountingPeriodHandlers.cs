@@ -10,17 +10,20 @@ public sealed class OpenAccountingPeriodHandler
 {
     private readonly IAccountingRepository _repo;
     private readonly ICurrentSubscriber    _subscriber;
+    private readonly ICurrentCompany       _company;
     private readonly ICurrentUser          _user;
     private readonly IUnitOfWork           _uow;
 
     public OpenAccountingPeriodHandler(
         IAccountingRepository repo,
         ICurrentSubscriber subscriber,
+        ICurrentCompany company,
         ICurrentUser user,
         IUnitOfWork uow)
     {
         _repo       = repo;
         _subscriber = subscriber;
+        _company    = company;
         _user       = user;
         _uow        = uow;
     }
@@ -29,12 +32,13 @@ public sealed class OpenAccountingPeriodHandler
         OpenAccountingPeriodCommand cmd, CancellationToken ct)
     {
         var subscriberId = _subscriber.SubscriberId;
+        var companyId    = _company.CompanyId;
 
         var existing = await _repo.GetPeriodAsync(subscriberId, cmd.Year, cmd.Month, ct);
         if (existing is not null)
             return Result<Guid>.Failure($"El período {existing.Name} ya existe.");
 
-        var period = AccountingPeriod.Create(subscriberId, cmd.Year, cmd.Month, _user.UserId);
+        var period = AccountingPeriod.Create(subscriberId, companyId, cmd.Year, cmd.Month, _user.UserId);
         await _repo.AddPeriodAsync(period, ct);
         await _repo.SaveChangesAsync(ct);
 

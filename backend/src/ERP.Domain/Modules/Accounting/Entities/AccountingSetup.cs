@@ -2,8 +2,9 @@ using ERP.Domain.Common;
 
 namespace ERP.Domain.Modules.Accounting.Entities;
 
-public sealed class AccountingSetup : AuditableEntity, ISubscriberScopedEntity
+public sealed class AccountingSetup : AuditableEntity, ISubscriberScopedEntity, ICompanyScopedEntity
 {
+    public Guid  CompanyId             { get; private set; }
     public Guid? InventoryAccountId    { get; private set; }
     public Guid? CostOfSalesAccountId  { get; private set; }
     public Guid? SuppliersAccountId    { get; private set; }
@@ -16,9 +17,9 @@ public sealed class AccountingSetup : AuditableEntity, ISubscriberScopedEntity
 
     private AccountingSetup() { }
 
-    public static AccountingSetup Create(Guid subscriberId, Guid createdBy)
+    public static AccountingSetup Create(Guid subscriberId, Guid companyId, Guid createdBy)
     {
-        var e = new AccountingSetup { SubscriberId = subscriberId };
+        var e = new AccountingSetup { SubscriberId = subscriberId, CompanyId = companyId };
         e.SetCreated(createdBy);
         return e;
     }

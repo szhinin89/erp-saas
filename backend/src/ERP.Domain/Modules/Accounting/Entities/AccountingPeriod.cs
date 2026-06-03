@@ -6,10 +6,11 @@ namespace ERP.Domain.Modules.Accounting.Entities;
 /// Período contable mensual. Cuando está cerrado (<see cref="IsClosed"/> = true)
 /// no se pueden registrar ni modificar asientos en él.
 /// </summary>
-public sealed class AccountingPeriod : AuditableEntity, ISubscriberScopedEntity
+public sealed class AccountingPeriod : AuditableEntity, ISubscriberScopedEntity, ICompanyScopedEntity
 {
     public const int NameMaxLen = 50;
 
+    public Guid    CompanyId  { get; private set; }
     public int     Year       { get; private set; }
     public int     Month      { get; private set; }
     public string  Name       { get; private set; } = null!;
@@ -21,6 +22,7 @@ public sealed class AccountingPeriod : AuditableEntity, ISubscriberScopedEntity
 
     public static AccountingPeriod Create(
         Guid   subscriberId,
+        Guid   companyId,
         int    year,
         int    month,
         Guid   createdBy)
@@ -34,6 +36,7 @@ public sealed class AccountingPeriod : AuditableEntity, ISubscriberScopedEntity
         {
             Id           = Guid.NewGuid(),
             SubscriberId = subscriberId,
+            CompanyId    = companyId,
             Year         = year,
             Month        = month,
             Name         = $"{year:D4}-{month:D2}",

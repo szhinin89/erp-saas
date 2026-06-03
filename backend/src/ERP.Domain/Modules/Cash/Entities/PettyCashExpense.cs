@@ -2,12 +2,13 @@ using ERP.Domain.Common;
 
 namespace ERP.Domain.Modules.Cash.Entities;
 
-public sealed class PettyCashExpense : AuditableEntity, ISubscriberScopedEntity
+public sealed class PettyCashExpense : AuditableEntity, ICompanyOperationalEntity
 {
     public const int DescriptionMaxLen   = 500;
     public const int VoucherTypeMaxLen   = 40;
     public const int VoucherNumberMaxLen = 80;
 
+    public Guid?    CompanyId      { get; private set; }
     public Guid     PettyCashId    { get; private set; }
     public DateTime ExpenseDate    { get; private set; }
     public string   Description    { get; private set; } = null!;
@@ -26,7 +27,8 @@ public sealed class PettyCashExpense : AuditableEntity, ISubscriberScopedEntity
         decimal  amount,
         string   voucherType,
         string?  voucherNumber,
-        Guid     createdBy)
+        Guid     createdBy,
+        Guid?    companyId = null)
     {
         if (string.IsNullOrWhiteSpace(description))
             throw new ArgumentException("Description is required.", nameof(description));
@@ -38,7 +40,8 @@ public sealed class PettyCashExpense : AuditableEntity, ISubscriberScopedEntity
         var g = new PettyCashExpense
         {
             Id             = Guid.NewGuid(),
-            SubscriberId       = subscriberId,
+            SubscriberId   = subscriberId,
+            CompanyId      = companyId,
             PettyCashId    = pettyCashId,
             ExpenseDate    = expenseDate,
             Description    = description.Trim(),
