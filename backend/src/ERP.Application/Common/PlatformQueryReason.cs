@@ -10,4 +10,6 @@ public enum PlatformQueryReason
     Seeding,
     DbContextSync,
     DevOnly,
+    /// <summary>Verificar unicidad global (ej: RUC único entre todos los tenants según ley SRI).</summary>
+    GlobalUniquenessCheck,
 }

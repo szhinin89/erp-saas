@@ -30,8 +30,8 @@ public sealed class CompanyRepository : ICompanyRepository
     /// that the database constraint (uq_company_ruc) would otherwise reject with a 500.
     /// </summary>
     public Task<Company?> GetByRucAsync(string ruc, CancellationToken ct = default)
-        => _db.Companies.AsNoTracking()
-            .IgnoreQueryFilters()
+        => _platform.Unfiltered(_db.Companies, PlatformQueryReason.GlobalUniquenessCheck)
+            .AsNoTracking()
             .FirstOrDefaultAsync(c => c.Ruc == ruc, ct);
 
     public async Task<IReadOnlyList<Company>> GetByIdsForManagementAsync(

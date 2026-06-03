@@ -1,9 +1,9 @@
-using ERP.Domain.Common;
+﻿using ERP.Domain.Common;
 
 namespace ERP.Domain.Products.Entities;
 
-/// <summary>Línea de producto — nivel 1 de categorización.</summary>
-public class ProductLine : MasterEntity
+/// <summary>LÃ­nea de producto â€” nivel 1 de categorizaciÃ³n.</summary>
+public class ProductLine : MasterEntity, ISubscriberScopedEntity
 {
     public string Code { get; private set; } = null!;
     public string Name { get; private set; } = null!;
@@ -31,8 +31,8 @@ public class ProductLine : MasterEntity
     }
 }
 
-/// <summary>Categoría de producto — nivel 2 de categorización.</summary>
-public class ProductCategory : MasterEntity
+/// <summary>CategorÃ­a de producto â€” nivel 2 de categorizaciÃ³n.</summary>
+public class ProductCategory : MasterEntity, ISubscriberScopedEntity
 {
     public string Code { get; private set; } = null!;
     public string Name { get; private set; } = null!;
@@ -64,8 +64,8 @@ public class ProductCategory : MasterEntity
     }
 }
 
-/// <summary>Subcategoría de producto — nivel 3 de categorización.</summary>
-public class ProductSubcategory : MasterEntity
+/// <summary>SubcategorÃ­a de producto â€” nivel 3 de categorizaciÃ³n.</summary>
+public class ProductSubcategory : MasterEntity, ISubscriberScopedEntity
 {
     public string Code { get; private set; } = null!;
     public string Name { get; private set; } = null!;

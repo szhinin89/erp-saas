@@ -1,9 +1,9 @@
-using ERP.Domain.Common;
+﻿using ERP.Domain.Common;
 
 namespace ERP.Domain.Products.Entities;
 
 /// <summary>Product brand with optional manufacturer and country of origin.</summary>
-public class Brand : MasterEntity
+public class Brand : MasterEntity, ISubscriberScopedEntity
 {
     public const int MaxCodeLength         = 20;
     public const int MaxNameLength         = 120;
@@ -46,8 +46,8 @@ public class Brand : MasterEntity
     }
 }
 
-/// <summary>Tipo de producto (ej: mercadería, materia prima, servicio, activo).</summary>
-public class ProductType : MasterEntity
+/// <summary>Tipo de producto (ej: mercaderÃ­a, materia prima, servicio, activo).</summary>
+public class ProductType : MasterEntity, ISubscriberScopedEntity
 {
     public string Code { get; private set; } = null!;
     public string Name { get; private set; } = null!;
@@ -76,10 +76,10 @@ public class ProductType : MasterEntity
 }
 
 /// <summary>
-/// Arancel / código arancelario del producto.
+/// Arancel / cÃ³digo arancelario del producto.
 /// Usado para declaraciones de comercio exterior e impuestos especiales.
 /// </summary>
-public class Tariff : MasterEntity
+public class Tariff : MasterEntity, ISubscriberScopedEntity
 {
     public string Code { get; private set; } = null!;
     public string Description { get; private set; } = null!;

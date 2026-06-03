@@ -1,9 +1,9 @@
-using ERP.Domain.Common;
+﻿using ERP.Domain.Common;
 
 namespace ERP.Domain.Modules.Logistics.Entities;
 
 /// <summary>Authorized transport carrier for delivery guides (SRI doc type 06).</summary>
-public sealed class Carrier : MasterEntity
+public sealed class Carrier : MasterEntity, ISubscriberScopedEntity
 {
     public const int MaxIdentificationTypeLength   = 20;
     public const int MaxIdentificationNumberLength = 20;
