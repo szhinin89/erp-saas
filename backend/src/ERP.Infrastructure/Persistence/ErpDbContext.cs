@@ -269,6 +269,8 @@ public class ErpDbContext : DbContext
     public DbSet<CustomerProfile>                CustomerProfiles               => Set<CustomerProfile>();
     public DbSet<SupplierProfile>                SupplierProfiles               => Set<SupplierProfile>();
     public DbSet<CompanyBusinessPartnerSettings> CompanyBusinessPartnerSettings => Set<CompanyBusinessPartnerSettings>();
+    public DbSet<BusinessPartnerLocation>        BusinessPartnerLocations       => Set<BusinessPartnerLocation>();
+    public DbSet<BusinessPartnerContact>         BusinessPartnerContacts        => Set<BusinessPartnerContact>();
 
     // ── Sales (traditional) ───────────────────────────────────────────────
     public DbSet<SalesBill>           SalesBills          => Set<SalesBill>();

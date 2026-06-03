@@ -128,6 +128,10 @@ public static class DependencyInjection
         services.AddScoped<ICustomerProfileRepository, CustomerProfileRepository>();
         services.AddScoped<ISupplierProfileRepository, SupplierProfileRepository>();
         services.AddScoped<ICompanyBpSettingsRepository, CompanyBpSettingsRepository>();
+        services.AddScoped<ERP.Domain.MasterData.Interfaces.IBusinessPartnerLocationRepository,
+            ERP.Infrastructure.MasterData.Repositories.BusinessPartnerLocationRepository>();
+        services.AddScoped<ERP.Domain.MasterData.Interfaces.IBusinessPartnerContactRepository,
+            ERP.Infrastructure.MasterData.Repositories.BusinessPartnerContactRepository>();
         services.AddScoped<DistributedPermissionsCacheService>();
         services.AddScoped<ResilientPermissionsCacheService>();
         services.AddScoped<IPermissionsCacheBackend>(sp => sp.GetRequiredService<ResilientPermissionsCacheService>());
