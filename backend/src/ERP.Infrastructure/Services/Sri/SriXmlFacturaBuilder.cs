@@ -1,4 +1,4 @@
-using System.Text;
+﻿using System.Text;
 using System.Xml.Linq;
 using ERP.Domain.Configuration.Entities;
 using ERP.Domain.MasterData.Entities;
@@ -59,7 +59,7 @@ public static class SriXmlFacturaBuilder
                     ContribEspecialElement(company),
                     new XElement("obligadoContabilidad", company.IsAccountingReq ? "SI" : "NO"),
                     new XElement("tipoIdentificacionComprador", SriIdTypeCode(buyer)),
-                    new XElement("razonSocialComprador", buyer?.LegalName ?? "CONSUMIDOR FINAL"),
+                    new XElement("razonSocialComprador", buyer?.Name.LegalName ?? "CONSUMIDOR FINAL"),
                     new XElement("identificacionComprador", buyer?.Identification.Number ?? "9999999999"),
                     new XElement("direccionComprador",  ""),
                     new XElement("totalSinImpuestos",   F2(factura.Subtotal)),
@@ -118,7 +118,7 @@ public static class SriXmlFacturaBuilder
                     new XElement("fechaEmision",            nota.IssueDate.ToString("dd/MM/yyyy")),
                     new XElement("dirEstablecimiento",      company.MainAddress),
                     new XElement("tipoIdentificacionComprador", SriIdTypeCode(buyer)),
-                    new XElement("razonSocialComprador",    buyer?.LegalName ?? "CONSUMIDOR FINAL"),
+                    new XElement("razonSocialComprador",    buyer?.Name.LegalName ?? "CONSUMIDOR FINAL"),
                     new XElement("identificacionComprador", buyer?.Identification.Number ?? "9999999999"),
                     ContribEspecialElement(company),
                     new XElement("obligadoContabilidad",    company.IsAccountingReq ? "SI" : "NO"),
@@ -233,11 +233,11 @@ public static class SriXmlFacturaBuilder
     {
         var campos = new List<XElement>();
 
-        if (!string.IsNullOrWhiteSpace(buyer?.Email))
-            campos.Add(CampoAdicional("Email", buyer.Email!));
+        if (!string.IsNullOrWhiteSpace((string?)null  /* Phase 13: load from contacts */))
+            campos.Add(CampoAdicional("Email", (string?)null  /* Phase 13: load from contacts */));
 
-        if (!string.IsNullOrWhiteSpace(buyer?.Phone))
-            campos.Add(CampoAdicional("Telefono", buyer.Phone!));
+        if (!string.IsNullOrWhiteSpace((string?)null  /* Phase 13: load from contacts */))
+            campos.Add(CampoAdicional("Telefono", (string?)null  /* Phase 13: load from contacts */));
 
         if (!string.IsNullOrWhiteSpace(notes))
             campos.Add(CampoAdicional("Observaciones", notes));
@@ -276,3 +276,4 @@ public static class SriXmlFacturaBuilder
         return Encoding.UTF8.GetString(ms.ToArray());
     }
 }
+

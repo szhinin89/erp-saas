@@ -183,19 +183,15 @@ public sealed class RideGeneratorService : IRideGeneratorService
                     c.Item().Row(r =>
                     {
                         r.ConstantItem(60).Text("RazÃ³n Social:").Bold().FontSize(7.5f);
-                        r.RelativeItem().Text(buyer?.LegalName ?? "CONSUMIDOR FINAL").FontSize(7.5f);
+                        r.RelativeItem().Text(buyer?.Name.LegalName ?? "CONSUMIDOR FINAL").FontSize(7.5f);
                     });
                     c.Item().Row(r =>
                     {
                         r.ConstantItem(60).Text("RUC / CI:").Bold().FontSize(7.5f);
                         r.RelativeItem().Text(buyer?.Identification.Number ?? "9999999999").FontSize(7.5f);
                     });
-                    if (!string.IsNullOrWhiteSpace(buyer?.Email))
-                        c.Item().Row(r =>
-                        {
-                            r.ConstantItem(60).Text("Email:").Bold().FontSize(7.5f);
-                            r.RelativeItem().Text(buyer.Email).FontSize(7.5f);
-                        });
+                    // Phase 13: buyer email se cargará desde BusinessPartnerContact (Rol=Billing/Commercial)
+                    // buyer?.Email eliminado de BusinessPartner en V2
                 });
 
                 col.Item().PaddingTop(8);
@@ -364,7 +360,7 @@ public sealed class RideGeneratorService : IRideGeneratorService
                 {
                     r.RelativeItem().Column(c =>
                     {
-                        c.Item().Text($"Cliente: {buyer?.LegalName ?? "CONSUMIDOR FINAL"}").Bold().FontSize(8);
+                        c.Item().Text($"Cliente: {buyer?.Name.LegalName ?? "CONSUMIDOR FINAL"}").Bold().FontSize(8);
                         c.Item().Text($"RUC/CI:  {buyer?.Identification.Number ?? "9999999999"}").FontSize(8);
                     });
                     r.ConstantItem(120).Column(c =>
@@ -562,4 +558,5 @@ public sealed class RideGeneratorService : IRideGeneratorService
         decimal VatTotal,
         decimal Total);
 }
+
 
