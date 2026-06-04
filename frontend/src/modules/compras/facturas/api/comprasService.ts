@@ -59,8 +59,8 @@ export interface CompraLineaInput {
 }
 
 export interface CrearCompraManualRequest {
-  supplierId: string;
-  businessPartnerId?: string | null;
+  /** V2: businessPartnerId es el ID canónico del proveedor. supplierId eliminado. */
+  businessPartnerId: string;
   invoiceNumber: string;
   invoiceDate: string;
   dueDate: string | null;
@@ -95,8 +95,7 @@ export const comprasService = {
   async crearManual(payload: CrearCompraManualRequest): Promise<CompraDto> {
     const res = await api.post<ApiResponse<CompraDto>>('/api/purchases/invoices/manual', {
       modo: 2, // Manual
-      supplierId: payload.supplierId,
-      businessPartnerId: payload.businessPartnerId ?? null,
+      businessPartnerId: payload.businessPartnerId,
       invoiceNumber: payload.invoiceNumber,
       invoiceDate: payload.invoiceDate,
       dueDate: payload.dueDate,

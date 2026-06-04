@@ -45,6 +45,7 @@ public sealed class OrdenCompraFlujoCompletoTests
             subscriberId:         subscriberId,
             identificationType:   "04",
             identificationNumber: seed.ProveedorRuc,
+            personType:           ERP.Domain.MasterData.Enums.PersonType.Legal,
             legalName:            "Supplier Test S.A.",
             createdBy:            userId);
         db.BusinessPartners.Add(proveedor);

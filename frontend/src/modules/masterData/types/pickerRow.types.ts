@@ -1,38 +1,31 @@
-import type { OperationalPickerMeta } from './operationalLink.types';
+/**
+ * Picker row types para selectores de cliente/proveedor en formularios.
+ *
+ * V2: el concepto de legacyOperationalId fue eliminado.
+ * El businessPartnerId ES el ID operacional — no hay puente legacy.
+ * Los pickers son siempre seleccionables si el BP tiene el rol activo.
+ *
+ * Los tipos CustomerPickerRow / SupplierPickerRow se definen canónicamente
+ * en businessPartner.types.ts — estos re-exports mantienen compatibilidad
+ * con los imports existentes en adaptadores y fachada.
+ */
+
+export type { CustomerPickerRow, SupplierPickerRow } from './businessPartner.types';
 
 /** Forma mínima de cliente necesaria para pickers de ventas. */
 export type CustomerPickerShape = {
-  id: string;
-  identificationType: 'RUC' | 'CI';
+  id:                   string;  // businessPartnerId
+  identificationType:   string;
   identificationNumber: string;
-  fullName: string;
-  email: string | null;
-  phone: string | null;
-  address: string | null;
-  isActive: boolean;
+  fullName:             string;
+  isActive:             boolean;
 };
 
 /** Forma mínima de proveedor necesaria para pickers de compras. */
 export type SupplierPickerShape = {
-  id: string;
-  taxId: string;
-  legalName: string;
-  tradeName: string | null;
-  primaryContact: string | null;
-  email: string | null;
-  phone: string | null;
-  address: string | null;
-  website: string | null;
-  category: string | null;
-  status: 'active' | 'inactive';
-  isActive: boolean;
-  createdAt: string;
-};
-
-export type CustomerPickerRow = CustomerPickerShape & {
-  pickerMeta: OperationalPickerMeta;
-};
-
-export type SupplierPickerRow = SupplierPickerShape & {
-  pickerMeta: OperationalPickerMeta;
+  id:                   string;  // businessPartnerId
+  identificationNumber: string;
+  legalName:            string;
+  tradeName:            string | null;
+  isActive:             boolean;
 };

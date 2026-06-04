@@ -1,24 +1,111 @@
-import { useCallback, useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { NoAccessPage } from '../../../components/PageShell';
 import { ErpPageTemplate } from '../../../templates/ErpPageTemplate';
 import { ZHPageNotice } from '../../../components/zh/ZHPageNotice';
+import { ZHBtn, ZHField } from '../../../components/zh/ZHForm';
 import { useI18n } from '../../../i18n/i18n';
 import { useMasterDataCustomersPage } from './useMasterDataCustomersPage';
 import { MasterDataCompanySettingsModal } from './MasterDataCompanySettingsModal';
-import { MasterDataCustomerNotesModal } from './MasterDataCustomerNotesModal';
 import { MasterDataPartnerWizard } from '../components/MasterDataPartnerWizard';
 import { MasterDataPartnerResumenTab } from '../components/MasterDataPartnerResumenTab';
 import { MasterDataPartnerListTab } from '../components/MasterDataPartnerListTab';
 import { MasterDataPartnerToast } from '../components/MasterDataPartnerToast';
 import { useMasterDataCustomersUiStore } from '../store/masterDataPartnerUiStore';
-import type { CreateBusinessPartnerBody, UpdateBusinessPartnerBody } from '../types/businessPartner.types';
+import type { CreateBusinessPartnerBody, CustomerConfigBody, UpdateBusinessPartnerBody } from '../types/businessPartner.types';
+import { CUSTOMER_CATEGORIES, CUSTOMER_CLASSIFICATIONS, CUSTOMER_SEGMENTS, CREDIT_RATINGS, INVOICE_FORMATS, LOYALTY_TIERS } from '../types/businessPartner.types';
 import '../../../styles/shared/products-catalog.css';
 import './masterdata-pages.css';
 
+// ── CustomerConfigModal — CRM-ready classification modal ─────────────────────
+function CustomerConfigModal({
+  bpName, saving, error, onClose, onSave,
+}: {
+  bpName: string; saving: boolean; error?: string | null;
+  onClose: () => void;
+  onSave: (body: CustomerConfigBody) => void;
+}) {
+  const [category,       setCategory]       = useState('');
+  const [segment,        setSegment]        = useState('');
+  const [zone,           setZone]           = useState('');
+  const [rating,         setRating]         = useState('');
+  const [loyalty,        setLoyalty]        = useState('');
+  const [invoiceFormat,  setInvoiceFormat]  = useState('');
+  const [classification, setClassification] = useState('');
+
+  const handleSave = (e: React.FormEvent) => {
+    e.preventDefault();
+    onSave({
+      customerCategory:       category       || null,
+      customerSegment:        segment        || null,
+      salesZone:              zone.trim()    || null,
+      creditRating:           rating         || null,
+      loyaltyTier:            loyalty        || null,
+      preferredInvoiceFormat: invoiceFormat  || null,
+      customerClassification: classification || null,
+    });
+  };
+
+  return (
+    <div className="md-modal-backdrop" role="dialog" aria-modal="true">
+      <form className="md-modal" onSubmit={handleSave}>
+        <h2>Perfil Cliente — CRM</h2>
+        <p className="md-modal-sub">{bpName}</p>
+        {error && <ZHPageNotice variant="error" message={error} className="md-modal-notice" />}
+        <div className="pg-form-grid pg-form-grid--2">
+          <ZHField label="Categoría">
+            <select className="zh-input" value={category} onChange={(e) => setCategory(e.target.value)} disabled={saving}>
+              <option value="">— Sin asignar —</option>
+              {CUSTOMER_CATEGORIES.map((v) => <option key={v} value={v}>{v}</option>)}
+            </select>
+          </ZHField>
+          <ZHField label="Segmento">
+            <select className="zh-input" value={segment} onChange={(e) => setSegment(e.target.value)} disabled={saving}>
+              <option value="">— Sin asignar —</option>
+              {CUSTOMER_SEGMENTS.map((v) => <option key={v} value={v}>{v}</option>)}
+            </select>
+          </ZHField>
+          <ZHField label="Zona de ventas">
+            <input className="zh-input" value={zone} onChange={(e) => setZone(e.target.value)}
+              placeholder="Norte, Sur, Centro…" maxLength={100} disabled={saving} />
+          </ZHField>
+          <ZHField label="Rating crediticio">
+            <select className="zh-input" value={rating} onChange={(e) => setRating(e.target.value)} disabled={saving}>
+              <option value="">— Sin calificar —</option>
+              {CREDIT_RATINGS.map((v) => <option key={v} value={v}>{v}</option>)}
+            </select>
+          </ZHField>
+          <ZHField label="Nivel de fidelización">
+            <select className="zh-input" value={loyalty} onChange={(e) => setLoyalty(e.target.value)} disabled={saving}>
+              <option value="">— Sin nivel —</option>
+              {LOYALTY_TIERS.map((v) => <option key={v} value={v}>{v}</option>)}
+            </select>
+          </ZHField>
+          <ZHField label="Formato de factura">
+            <select className="zh-input" value={invoiceFormat} onChange={(e) => setInvoiceFormat(e.target.value)} disabled={saving}>
+              <option value="">— Sin preferencia —</option>
+              {INVOICE_FORMATS.map((v) => <option key={v} value={v}>{v}</option>)}
+            </select>
+          </ZHField>
+          <ZHField label="Clasificación comercial">
+            <select className="zh-input" value={classification} onChange={(e) => setClassification(e.target.value)} disabled={saving}>
+              <option value="">— Sin clasificar —</option>
+              {CUSTOMER_CLASSIFICATIONS.map((v) => <option key={v} value={v}>{v}</option>)}
+            </select>
+          </ZHField>
+        </div>
+        <div className="md-modal-actions">
+          <ZHBtn variant="ghost" type="button" onClick={onClose} disabled={saving}>Cerrar</ZHBtn>
+          <ZHBtn variant="primary" type="submit" disabled={saving}>{saving ? 'Guardando…' : 'Guardar'}</ZHBtn>
+        </div>
+      </form>
+    </div>
+  );
+}
+
 const TABS = [
-  { id: 'resumen' as const, labelKey: 'masterdata.customers.tabs.resumen', labelFb: 'Resumen', icon: 'bar_chart_4_bars' },
-  { id: 'listado' as const, labelKey: 'masterdata.customers.tabs.listado', labelFb: 'Listado', icon: 'view_list' },
-  { id: 'nuevo' as const, labelKey: 'masterdata.customers.tabs.nuevo', labelFb: 'Nuevo cliente', icon: 'add_box' },
+  { id: 'resumen' as const, labelKey: 'masterdata.customers.tabs.resumen', labelFb: 'Resumen',        icon: 'bar_chart_4_bars' },
+  { id: 'listado' as const, labelKey: 'masterdata.customers.tabs.listado', labelFb: 'Listado',        icon: 'view_list' },
+  { id: 'nuevo'   as const, labelKey: 'masterdata.customers.tabs.nuevo',   labelFb: 'Nuevo cliente',  icon: 'add_box' },
 ] as const;
 
 const DRAFT_KEY = 'erp.masterdata.customers.draft';
@@ -26,22 +113,19 @@ const DRAFT_KEY = 'erp.masterdata.customers.draft';
 export function MasterDataCustomersPage() {
   const { t } = useI18n();
   const page = useMasterDataCustomersPage();
-  const ui = useMasterDataCustomersUiStore;
+  const ui   = useMasterDataCustomersUiStore;
 
-  const activeTab = ui((s) => s.activeTab);
+  const activeTab      = ui((s) => s.activeTab);
   const editingPartner = ui((s) => s.editingPartner);
-  const setActiveTab = ui((s) => s.setActiveTab);
-  const cancelEdit = ui((s) => s.cancelEdit);
-  const showToast = ui((s) => s.showToast);
-  const addActivity = ui((s) => s.addActivity);
-  const reset = ui((s) => s.reset);
+  const setActiveTab   = ui((s) => s.setActiveTab);
+  const cancelEdit     = ui((s) => s.cancelEdit);
+  const showToast      = ui((s) => s.showToast);
+  const addActivity    = ui((s) => s.addActivity);
+  const reset          = ui((s) => s.reset);
 
   const searchRef = useRef<HTMLInputElement>(null);
 
-  useEffect(() => {
-    reset();
-    return () => reset();
-  }, [reset]);
+  useEffect(() => { reset(); return () => reset(); }, [reset]);
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
@@ -97,51 +181,37 @@ export function MasterDataCustomersPage() {
     async (id: string) => {
       await page.disableCustomer(id);
       const bp = page.customers.find((c) => c.id === id);
-      if (bp) {
-        addActivity(bp.legalName, 'disabled');
-        showToast(t('masterdata.customers.disabled.success', 'Cliente desactivado.'), 'info');
-      }
+      if (bp) { addActivity(bp.legalName, 'disabled'); showToast('Cliente desactivado.', 'info'); }
     },
-    [page, addActivity, showToast, t],
+    [page, addActivity, showToast],
   );
 
   const handleActivate = useCallback(
     async (id: string) => {
       await page.activateCustomer(id);
       const bp = page.customers.find((c) => c.id === id);
-      if (bp) {
-        addActivity(bp.legalName, 'enabled');
-        showToast(t('masterdata.customers.enabled.success', 'Cliente activado.'), 'info');
-      }
+      if (bp) { addActivity(bp.legalName, 'enabled'); showToast('Cliente activado.', 'info'); }
     },
-    [page, addActivity, showToast, t],
+    [page, addActivity, showToast],
   );
 
-  if (!page.canView) {
-    return <NoAccessPage title={t('masterdata.customers.title')} />;
-  }
+  if (!page.canView) return <NoAccessPage title={t('masterdata.customers.title')} />;
 
   return (
-    <ErpPageTemplate
-      kicker="MasterData"
+    <ErpPageTemplate kicker="MasterData"
       title={t('masterdata.customers.title')}
-      subtitle={t('masterdata.customers.subtitle')}
-    >
-      {page.listError && <ZHPageNotice variant="error" message={t('common.errorPrefix')} detail={page.listError} />}
-      {page.inlineError && <ZHPageNotice variant="error" message={t('common.errorPrefix')} detail={page.inlineError} />}
+      subtitle={t('masterdata.customers.subtitle')}>
 
-      <div className="prd-tabs" role="tablist" aria-label={t('masterdata.customers.tabs.aria', 'Secciones de clientes')}>
+      {page.listError   && <ZHPageNotice variant="error" message={page.listError} />}
+      {page.inlineError && <ZHPageNotice variant="error" message={page.inlineError} />}
+
+      <div className="prd-tabs" role="tablist">
         {TABS.map((tab) => {
           const active = activeTab === tab.id;
           return (
-            <button
-              key={tab.id}
-              type="button"
-              role="tab"
-              aria-selected={active}
+            <button key={tab.id} type="button" role="tab" aria-selected={active}
               className={`prd-tab-btn ${active ? 'prd-tab-btn--active' : ''}`}
-              onClick={() => setActiveTab(tab.id)}
-            >
+              onClick={() => setActiveTab(tab.id)}>
               <span className="material-symbols-outlined prd-tab-icon">{tab.icon}</span>
               {t(tab.labelKey, tab.labelFb)}
             </button>
@@ -151,36 +221,23 @@ export function MasterDataCustomersPage() {
 
       <div className="prd-tab-content">
         {activeTab === 'resumen' && (
-          <MasterDataPartnerResumenTab
-            role="customer"
-            partners={page.customers}
-            totalCount={page.totalCount}
-            store={ui}
-          />
+          <MasterDataPartnerResumenTab role="customer" partners={page.customers}
+            totalCount={page.totalCount} store={ui} />
         )}
         {activeTab === 'listado' && (
           <MasterDataPartnerListTab
-            role="customer"
-            store={ui}
-            canCreate={page.canCreate}
-            canUpdate={page.canUpdate}
-            canDisable={page.canDisable}
-            canConfigure={page.canConfigure}
-            loading={page.loading}
-            saving={page.saving}
-            partners={page.customers}
-            totalCount={page.totalCount}
-            search={page.search}
-            setSearch={page.setSearch}
-            showInactive={page.showInactive}
-            setShowInactive={page.setShowInactive}
-            page={page.page}
-            totalPages={page.totalPages}
-            setPage={page.setPage}
+            role="customer" store={ui}
+            canCreate={page.canCreate} canUpdate={page.canUpdate}
+            canDisable={page.canDisable} canConfigure={page.canConfigure}
+            loading={page.loading} saving={page.saving}
+            partners={page.customers} totalCount={page.totalCount}
+            search={page.search} setSearch={page.setSearch}
+            showInactive={page.showInactive} setShowInactive={page.setShowInactive}
+            page={page.page} totalPages={page.totalPages} setPage={page.setPage}
             searchInputRef={searchRef}
-            onNotes={page.openNotes}
-            onSettings={page.openSettings}
-            onAddAsSupplier={page.addAsSupplier}
+            onSettings={(bp) => void page.openSettings(bp)}
+            onSupplierProfile={page.canUpdate ? (bp) => void page.openCustomerConfig(bp) : undefined}
+            onAddAsSupplier={(id) => void page.addAsSupplier(id)}
             onActivate={handleActivate}
             onDisable={handleDisable}
           />
@@ -188,28 +245,14 @@ export function MasterDataCustomersPage() {
         {activeTab === 'nuevo' && (page.canCreate || editingPartner) && (
           <MasterDataPartnerWizard
             key={editingPartner?.id ?? 'create'}
-            role="customer"
-            draftKey={DRAFT_KEY}
-            submitting={page.saving}
-            wizardError={page.modalError}
+            role="customer" draftKey={DRAFT_KEY}
+            submitting={page.saving} wizardError={page.modalError}
             editingPartner={editingPartner}
-            onSubmitCreate={handleCreate}
-            onSubmitUpdate={handleUpdate}
-            onAssignRole={handleAssign}
-            onCancel={cancelEdit}
+            onSubmitCreate={handleCreate} onSubmitUpdate={handleUpdate}
+            onAssignRole={handleAssign} onCancel={cancelEdit}
           />
         )}
       </div>
-
-      {page.notesBp && (
-        <MasterDataCustomerNotesModal
-          partner={page.notesBp}
-          saving={page.saving}
-          error={page.modalError}
-          onClose={page.closeNotes}
-          onSave={(notes) => void page.saveNotes(page.notesBp!.id, notes)}
-        />
-      )}
 
       {page.settingsBp && page.canConfigure && (
         <MasterDataCompanySettingsModal
@@ -218,7 +261,23 @@ export function MasterDataCustomersPage() {
           saving={page.saving}
           error={page.modalError}
           onClose={page.closeSettings}
-          onSave={(payload) => void page.saveCompanySettings(page.settingsBp!.id, payload)}
+          onSave={(payload) => void page.saveSettings(page.settingsBp!.id, payload)}
+          onBlock={(reason) => void page.blockCustomer(page.settingsBp!.id, reason)}
+          onUnblock={() => void page.unblockCustomer(page.settingsBp!.id)}
+        />
+      )}
+
+      {page.customerConfigBp && (
+        <CustomerConfigModal
+          bpName={page.customerConfigBp.bp.legalName}
+          saving={page.saving}
+          error={page.modalError}
+          onClose={page.closeCustomerConfig}
+          onSave={(body) => void page.saveCustomerConfig(
+            page.customerConfigBp!.bp.id,
+            page.customerConfigBp!.roleId,
+            body
+          )}
         />
       )}
 

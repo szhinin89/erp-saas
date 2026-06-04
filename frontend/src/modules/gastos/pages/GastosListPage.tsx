@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+﻿import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { EmptyState, LoadingState, NoAccessPage } from '../../../components/PageShell';
 import { ErpPageTemplate } from '../../../templates/ErpPageTemplate';
@@ -39,11 +39,11 @@ export function GastosListPage() {
     try {
       const [data, bps] = await Promise.all([
         gastosService.list(),
-        businessPartnerService.search({ isSupplier: true, isActive: true, take: 200 }),
+        businessPartnerService.search({ roles: [2], isActive: true, take: 200 }),
       ]);
       setRows(data);
       const m = new Map<string, string>();
-      bps.forEach((bp) => { if (bp.legacySupplierId) m.set(bp.legacySupplierId, bp.legalName); });
+      bps.forEach((bp) => { m.set(bp.id, bp.legalName); });
       setSupplierMap(m);
     } catch (e) {
       setMsg({ type: 'error', text: e instanceof Error ? e.message : 'Error al cargar gastos' });
@@ -60,7 +60,7 @@ export function GastosListPage() {
     return rows.filter((r) =>
       r.description.toLowerCase().includes(qn) ||
       r.expenseCategory.toLowerCase().includes(qn) ||
-      (r.supplierId ? supplierMap.get(r.supplierId) ?? '' : '').toLowerCase().includes(qn),
+      (r.supplierId ? supplierMap.get(r.businessPartnerId ?? r.supplierId) ?? '' : '').toLowerCase().includes(qn),
     );
   }, [rows, q, supplierMap]);
 
@@ -201,7 +201,7 @@ export function GastosListPage() {
                 {filtered.map((row) => {
                   const badge  = estadoBadge(row.status);
                   const isBusy = actionId === row.id;
-                  const prov   = row.supplierId ? (supplierMap.get(row.supplierId) ?? '—') : '—';
+                  const prov   = row.supplierId ? (supplierMap.get(row.businessPartnerId ?? row.supplierId) ?? '—') : '—';
                   return (
                     <tr key={row.id}>
                       <td className="gst-col-date">{formatDate(row.issueDate)}</td>
@@ -270,3 +270,4 @@ export function GastosListPage() {
     </ErpPageTemplate>
   );
 }
+

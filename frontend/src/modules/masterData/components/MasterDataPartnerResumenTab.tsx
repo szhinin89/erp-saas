@@ -1,18 +1,17 @@
 import { useMemo } from 'react';
 import { useI18n } from '../../../i18n/i18n';
-import type { BusinessPartnerDto } from '../types/businessPartner.types';
+import type { BusinessPartnerSummaryDto } from '../types/businessPartner.types';
 import type { PartnerActivityItem, PartnerUiState } from '../store/masterDataPartnerUiStore';
 import type { StoreApi, UseBoundStore } from 'zustand';
 
 type UiStore = UseBoundStore<StoreApi<PartnerUiState>>;
-
 type Role = 'customer' | 'supplier';
 
 interface Props {
-  role: Role;
-  partners: BusinessPartnerDto[];
-  totalCount: number;
-  store: UiStore;
+  role:        Role;
+  partners:    BusinessPartnerSummaryDto[];
+  totalCount:  number;
+  store:       UiStore;
 }
 
 function timeAgo(date: Date): string {
@@ -26,22 +25,19 @@ function timeAgo(date: Date): string {
 }
 
 const ACTIVITY_ICONS: Record<string, { icon: string; cls: string }> = {
-  created:  { icon: 'person_add',    cls: 'prd-activity__dot--green' },
-  updated:  { icon: 'edit',          cls: 'prd-activity__dot--blue'  },
-  assigned: { icon: 'link',          cls: 'prd-activity__dot--green' },
-  disabled: { icon: 'visibility_off',cls: 'prd-activity__dot--red'   },
-  enabled:  { icon: 'visibility',    cls: 'prd-activity__dot--green' },
+  created:  { icon: 'person_add',     cls: 'prd-activity__dot--green' },
+  updated:  { icon: 'edit',           cls: 'prd-activity__dot--blue'  },
+  assigned: { icon: 'link',           cls: 'prd-activity__dot--green' },
+  revoked:  { icon: 'link_off',       cls: 'prd-activity__dot--red'   },
+  disabled: { icon: 'visibility_off', cls: 'prd-activity__dot--red'   },
+  enabled:  { icon: 'visibility',     cls: 'prd-activity__dot--green' },
 };
 
-function ActivityRow({
-  item,
-  t,
-}: {
+function ActivityRow({ item, t }: {
   item: PartnerActivityItem;
-  t: (key: string, fb?: string, params?: Record<string, string | number>) => string;
+  t: (key: string, fb?: string) => string;
 }) {
   const meta = ACTIVITY_ICONS[item.action] ?? ACTIVITY_ICONS.updated;
-  const actionKey = `masterdata.activity.action.${item.action}`;
   return (
     <div className="prd-activity__row">
       <div className={`prd-activity__dot ${meta.cls}`}>
@@ -49,7 +45,7 @@ function ActivityRow({
       </div>
       <div className="prd-activity__info">
         <span className="prd-activity__name">{item.partnerName}</span>
-        <span className="prd-activity__action">{t(actionKey, item.action)}</span>
+        <span className="prd-activity__action">{t(`masterdata.activity.action.${item.action}`, item.action)}</span>
       </div>
       <span className="prd-activity__time">{timeAgo(item.timestamp)}</span>
     </div>
@@ -57,22 +53,18 @@ function ActivityRow({
 }
 
 export function MasterDataPartnerResumenTab({ role, partners, totalCount, store }: Props) {
-  const { t } = useI18n();
-  const activity = store((s) => s.recentActivity);
-  const setActiveTab = store((s) => s.setActiveTab);
+  const { t }          = useI18n();
+  const activity       = store((s) => s.recentActivity);
+  const setActiveTab   = store((s) => s.setActiveTab);
 
   const prefix = role === 'customer' ? 'masterdata.customers' : 'masterdata.suppliers';
-  const icon = role === 'customer' ? 'groups' : 'local_shipping';
+  const icon   = role === 'customer' ? 'groups' : 'local_shipping';
 
-  const stats = useMemo(() => {
-    const active = partners.filter((p) => p.isActive).length;
-    const inactive = partners.filter((p) => !p.isActive).length;
-    const withLegacy =
-      role === 'customer'
-        ? partners.filter((p) => p.legacyCustomerId).length
-        : partners.filter((p) => p.legacySupplierId).length;
-    return { total: totalCount, active, inactive, withLegacy };
-  }, [partners, totalCount, role]);
+  const stats = useMemo(() => ({
+    total:    totalCount,
+    active:   partners.filter((p) => p.isActive).length,
+    inactive: partners.filter((p) => !p.isActive).length,
+  }), [partners, totalCount]);
 
   return (
     <div className="prd-resumen prd-fadein">
@@ -96,20 +88,8 @@ export function MasterDataPartnerResumenTab({ role, partners, totalCount, store 
             </div>
           </div>
           <div className="pg-kpi-bottom">
-            <p className="pg-kpi-label">{t(`${prefix}.kpi.activePage`, 'Activos (página actual)')}</p>
+            <p className="pg-kpi-label">{t(`${prefix}.kpi.activePage`, 'Activos (página)')}</p>
             <p className="pg-kpi-value">{stats.active}</p>
-          </div>
-        </div>
-
-        <div className="pg-kpi">
-          <div className="pg-kpi-top">
-            <div className="pg-kpi-icon pg-kpi-icon--warning">
-              <span className="material-symbols-outlined">link</span>
-            </div>
-          </div>
-          <div className="pg-kpi-bottom">
-            <p className="pg-kpi-label">{t(`${prefix}.kpi.legacyPage`, 'Con vínculo operacional')}</p>
-            <p className="pg-kpi-value">{stats.withLegacy}</p>
           </div>
         </div>
 
@@ -120,7 +100,7 @@ export function MasterDataPartnerResumenTab({ role, partners, totalCount, store 
             </div>
           </div>
           <div className="pg-kpi-bottom">
-            <p className="pg-kpi-label">{t(`${prefix}.kpi.inactivePage`, 'Inactivos (página actual)')}</p>
+            <p className="pg-kpi-label">{t(`${prefix}.kpi.inactivePage`, 'Inactivos (página)')}</p>
             <p className="pg-kpi-value">{stats.inactive}</p>
           </div>
         </div>
@@ -130,12 +110,15 @@ export function MasterDataPartnerResumenTab({ role, partners, totalCount, store 
         <div className="prd-activity-card">
           <div className="prd-activity-card__head">
             <h3>{t('masterdata.resumen.activity', 'Actividad reciente')}</h3>
-            <button type="button" className="zh-btn zh-btn--ghost zh-btn--sm" onClick={() => setActiveTab('listado')}>
+            <button type="button" className="zh-btn zh-btn--ghost zh-btn--sm"
+              onClick={() => setActiveTab('listado')}>
               {t('masterdata.resumen.viewList', 'Ver listado')}
             </button>
           </div>
           {activity.length === 0 ? (
-            <p className="prd-activity-empty">{t('masterdata.resumen.noActivity', 'Aún no hay acciones en esta sesión.')}</p>
+            <p className="prd-activity-empty">
+              {t('masterdata.resumen.noActivity', 'Aún no hay acciones en esta sesión.')}
+            </p>
           ) : (
             <div className="prd-activity__list">
               {activity.map((item) => (
@@ -149,7 +132,11 @@ export function MasterDataPartnerResumenTab({ role, partners, totalCount, store 
           <h3>{t('masterdata.resumen.quickActions', 'Acciones rápidas')}</h3>
           <button type="button" className="prd-quick-btn" onClick={() => setActiveTab('listado')}>
             <span className="material-symbols-outlined">view_list</span>
-            {t(`${prefix}.tabList`, 'Ver clientes')}
+            {t(`${prefix}.tabList`, role === 'customer' ? 'Ver clientes' : 'Ver proveedores')}
+          </button>
+          <button type="button" className="prd-quick-btn" onClick={() => setActiveTab('nuevo')}>
+            <span className="material-symbols-outlined">add_circle</span>
+            {t(`${prefix}.tabNew`, role === 'customer' ? 'Nuevo cliente' : 'Nuevo proveedor')}
           </button>
         </div>
       </div>

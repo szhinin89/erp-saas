@@ -1,113 +1,73 @@
 using ERP.Application.Common;
 using ERP.Application.Common.Persistence;
-using ERP.Application.MasterData;
 using ERP.Application.MasterData.DTOs;
 using ERP.Domain.MasterData.Entities;
 using ERP.Domain.MasterData.Interfaces;
 using MediatR;
-using Microsoft.Extensions.Logging;
 
 namespace ERP.Application.MasterData.UseCases.CreateBusinessPartner;
 
+/// <summary>
+/// Handler delgado: solo orquesta dominio + persistencia.
+/// Reglas de negocio (validación RUC/CI, formato de nombre) viven en el AR BusinessPartner.
+///
+/// FLUJO POST-CREACIÓN:
+///   1. Usar AssignBusinessPartnerRoleCommand para asignar roles (Customer, Supplier, etc.)
+///   2. Usar CreateBpContactCommand para registrar representante legal, teléfonos, email.
+/// </summary>
 public sealed class CreateBusinessPartnerHandler
-    : IRequestHandler<CreateBusinessPartnerCommand, Result<BusinessPartnerDto>>
+    : IRequestHandler<CreateBusinessPartnerCommand, Result<BusinessPartnerSummaryDto>>
 {
     private readonly IBusinessPartnerRepository _bpRepo;
-    private readonly ICustomerProfileRepository _cpRepo;
-    private readonly ISupplierProfileRepository _spRepo;
-    private readonly ICurrentSubscriber _currentSubscriber;
-    private readonly ICurrentUser _currentUser;
-    private readonly IDatabaseExceptionTranslator _dbExceptions;
-    private readonly IBusinessPartnerOperationalLinkEnricher _linkEnricher;
-    private readonly ILogger<CreateBusinessPartnerHandler> _logger;
+    private readonly IOperationalContext        _ctx;
+    private readonly IDatabaseExceptionTranslator _dbEx;
 
     public CreateBusinessPartnerHandler(
-        IBusinessPartnerRepository bpRepo,
-        ICustomerProfileRepository cpRepo,
-        ISupplierProfileRepository spRepo,
-        ICurrentSubscriber currentSubscriber,
-        ICurrentUser currentUser,
-        IDatabaseExceptionTranslator dbExceptions,
-        IBusinessPartnerOperationalLinkEnricher linkEnricher,
-        ILogger<CreateBusinessPartnerHandler> logger)
+        IBusinessPartnerRepository  bpRepo,
+        IOperationalContext         ctx,
+        IDatabaseExceptionTranslator dbEx)
     {
         _bpRepo = bpRepo;
-        _cpRepo = cpRepo;
-        _spRepo = spRepo;
-        _currentSubscriber = currentSubscriber;
-        _currentUser = currentUser;
-        _dbExceptions = dbExceptions;
-        _linkEnricher = linkEnricher;
-        _logger = logger;
+        _ctx    = ctx;
+        _dbEx   = dbEx;
     }
 
-    public async Task<Result<BusinessPartnerDto>> Handle(
-        CreateBusinessPartnerCommand command,
+    public async Task<Result<BusinessPartnerSummaryDto>> Handle(
+        CreateBusinessPartnerCommand cmd,
         CancellationToken ct)
     {
-        var subscriberId = _currentSubscriber.SubscriberId;
-        if (subscriberId == Guid.Empty)
-            return Result<BusinessPartnerDto>.Failure("Contexto de suscriptor no establecido.");
-
-        var userId = _currentUser.UserId;
-
-        var duplicate = await _bpRepo.ExistsByIdentificationAsync(
-            command.IdentificationType, command.IdentificationNumber, ct: ct);
-        if (duplicate)
-            return Result<BusinessPartnerDto>.ValidationFailure(
-                $"Ya existe un BusinessPartner con {command.IdentificationType} {command.IdentificationNumber} en este suscriptor.");
+        if (!_ctx.HasSubscriber)
+            return Result<BusinessPartnerSummaryDto>.Failure("Contexto de suscriptor no establecido.");
 
         BusinessPartner bp;
         try
         {
             bp = BusinessPartner.Create(
-                subscriberId,
-                command.IdentificationType,
-                command.IdentificationNumber,
-                command.LegalName,
-                userId,
-                command.TradeName,
-                command.LegalRepresentativeName,
-                command.Email,
-                command.Phone,
-                command.CountryCode);
+                _ctx.SubscriberId,
+                cmd.IdentificationType,
+                cmd.IdentificationNumber,
+                cmd.PersonType,
+                cmd.LegalName,
+                _ctx.UserId,
+                cmd.TradeName,
+                cmd.CountryCode);
         }
         catch (ArgumentException ex)
         {
-            return Result<BusinessPartnerDto>.ValidationFailure(ex.Message);
+            return Result<BusinessPartnerSummaryDto>.ValidationFailure(ex.Message);
         }
 
         await _bpRepo.AddAsync(bp, ct);
 
-        if (command.AsCustomer)
-        {
-            var cp = CustomerProfile.Create(subscriberId, bp.Id, userId);
-            await _cpRepo.AddAsync(cp, ct);
-        }
-
-        if (command.AsSupplier)
-        {
-            var sp = SupplierProfile.Create(subscriberId, bp.Id, userId);
-            await _spRepo.AddAsync(sp, ct);
-        }
-
         try
         {
             await _bpRepo.SaveChangesAsync(ct);
-            var enriched = await _linkEnricher.EnrichAsync(bp, ct);
-            return Result<BusinessPartnerDto>.Success(enriched);
+            return Result<BusinessPartnerSummaryDto>.Success(BusinessPartnerSummaryDto.From(bp));
         }
-        catch (Exception ex) when (_dbExceptions.TryGetUniqueViolation(ex, out var violation))
+        catch (Exception ex) when (_dbEx.TryGetUniqueViolation(ex, out _))
         {
-            UniqueViolationLogger.LogUniqueViolation(
-                _logger,
-                nameof(CreateBusinessPartnerHandler),
-                violation,
-                subscriberId,
-                Guid.Empty);
-
-            return Result<BusinessPartnerDto>.Conflict(
-                $"Ya existe un BusinessPartner con {command.IdentificationType} {command.IdentificationNumber} en este suscriptor.");
+            return Result<BusinessPartnerSummaryDto>.Conflict(
+                $"Ya existe un BusinessPartner con {cmd.IdentificationType} {cmd.IdentificationNumber} en este tenant.");
         }
     }
 }

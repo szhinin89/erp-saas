@@ -137,6 +137,7 @@ internal static class VentasEndToEndHelpers
             subscriberId:        subscriberId,
             identificationType:  "04",
             identificationNumber: "9999999999001",
+            personType:          ERP.Domain.MasterData.Enums.PersonType.Legal,
             legalName:           "Cliente Test S.A.",
             createdBy:           userId);
         db.BusinessPartners.Add(cliente);

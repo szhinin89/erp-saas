@@ -55,6 +55,7 @@ public sealed class KardexFlujoCompletoTests
             subscriberId:        seed.SubscriberId,
             identificationType:  "04",
             identificationNumber: seed.ProveedorRuc,
+            personType:          ERP.Domain.MasterData.Enums.PersonType.Legal,
             legalName:           "Supplier E2E S.A.",
             createdBy:           seed.UserId);
         db.BusinessPartners.Add(proveedor);

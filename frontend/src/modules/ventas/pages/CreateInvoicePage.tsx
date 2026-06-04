@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+﻿import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { NoAccessPage } from '../../../components/PageShell';
 import { ErpPageTemplate } from '../../../templates/ErpPageTemplate';
@@ -30,7 +30,7 @@ export function CreateInvoicePage() {
   const navigate  = useNavigate();
   const canCreate = canShow('sales.invoices.create');
 
-  const [customerId,        setCustomerId]        = useState('');
+  
   const [businessPartnerId, setBusinessPartnerId] = useState<string | null>(null);
   const [customerRuc,       setCustomerRuc]       = useState('');
   const [customerAddr,      setCustomerAddr]      = useState('');
@@ -80,12 +80,9 @@ export function CreateInvoicePage() {
 
   const handleSelectClient = (id: string) => {
     const c = (clientsState.data ?? []).find((x) => x.id === id);
-    if (!c || !c.pickerMeta.selectable || !c.pickerMeta.legacyOperationalId) return;
-    setCustomerId(c.pickerMeta.legacyOperationalId);
-    setBusinessPartnerId(c.pickerMeta.businessPartnerId ?? null);
+    if (!c) return;
+    setBusinessPartnerId(c.id);  // c.id IS the businessPartnerId in V2
     setCustomerRuc(c.identificationNumber);
-    setCustomerAddr(c.address ?? '');
-    setCustomerEmail(c.email ?? '');
     setClientSearch(c.fullName);
   };
 
@@ -102,7 +99,7 @@ export function CreateInvoicePage() {
 
   const handleSaveDraft = async () => {
     setError(null);
-    if (!customerId)  { setError('Seleccione un cliente.'); return; }
+    if (!businessPartnerId) { setError('Seleccione un cliente.'); return; }
     if (!warehouseId) { setError('Seleccione una bodega.');  return; }
     const validLines = lines.filter((l) => l.description.trim() && l.quantity > 0);
     if (validLines.length === 0) { setError('Agregue al menos un ítem con cantidad mayor a 0.'); return; }
@@ -113,8 +110,7 @@ export function CreateInvoicePage() {
     setSaving(true);
     try {
       const id = await ventasFacturasService.create({
-        customerId,
-        businessPartnerId,
+        businessPartnerId: businessPartnerId!,
         warehouseId,
         branchId: warehouse.branchId,
         items: validLines
@@ -139,14 +135,14 @@ export function CreateInvoicePage() {
     try {
       let id = draftId;
       if (!id) {
-        if (!customerId)  { setError('Seleccione un cliente.'); setSaving(false); return; }
+        if (!businessPartnerId) { setError('Seleccione un cliente.'); setSaving(false); return; }
         if (!warehouseId) { setError('Seleccione una bodega.');  setSaving(false); return; }
         const warehouse = (warehousesState.data ?? []).find((w) => w.id === warehouseId);
         if (!warehouse) { setError('Bodega no encontrada.'); setSaving(false); return; }
         const validLines = lines.filter((l) => l.description.trim() && l.quantity > 0 && l.productId);
         if (validLines.length === 0) { setError('Agregue al menos un ítem con producto seleccionado.'); setSaving(false); return; }
         id = await ventasFacturasService.create({
-          customerId, businessPartnerId, warehouseId,
+          businessPartnerId: businessPartnerId!, warehouseId,
           branchId: warehouse.branchId,
           items: validLines.map((l) => ({ productId: l.productId!, quantity: l.quantity, unitPrice: l.unitPrice })),
         });
@@ -232,24 +228,20 @@ export function CreateInvoicePage() {
                     ))}
                   </datalist>
                 </div>
-                {clientSearch && !customerId && filteredClients.length > 0 && (
+                {clientSearch && !businessPartnerId && filteredClients.length > 0 && (
                   <div className="vf-create-client-dropdown" role="listbox">
                     {filteredClients.slice(0, 8).map((c) => (
                       <button
-                        key={`${c.pickerMeta.businessPartnerId}-${c.id}`}
+                        key={c.id}
                         type="button"
-                        className={`vf-create-client-option${c.pickerMeta.selectable ? '' : ' vf-create-client-option--disabled'}`}
+                        className="vf-create-client-option"
                         role="option"
-                        disabled={!c.pickerMeta.selectable}
-                        title={c.pickerMeta.warningMessage}
-                        onMouseDown={() => {
-                          if (c.pickerMeta.selectable) handleSelectClient(c.id);
-                        }}
+                        onMouseDown={() => handleSelectClient(c.id)}
                       >
                         <strong>{c.fullName}</strong>
                         <span className="vf-create-client-option-id">
                           {c.identificationNumber}
-                          {!c.pickerMeta.selectable && ' · sin vínculo operacional'}
+                          
                         </span>
                       </button>
                     ))}
@@ -493,3 +485,4 @@ export function CreateInvoicePage() {
     </ErpPageTemplate>
   );
 }
+

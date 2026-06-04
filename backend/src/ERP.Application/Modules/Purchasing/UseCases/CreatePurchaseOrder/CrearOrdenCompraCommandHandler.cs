@@ -1,4 +1,4 @@
-using MediatR;
+﻿using MediatR;
 using Microsoft.Extensions.Logging;
 using ERP.Application.Common;
 using ERP.Application.Modules.Purchasing.DTOs;
@@ -92,7 +92,7 @@ public sealed class CreatePurchaseOrderCommandHandler
 
         _logger.LogInformation("OC creada: {Numero} ({Id})", orden.OrderNumber, orden.Id);
 
-        return Result<PurchaseOrderDto>.Success(ToDto(orden, bp.LegalName));
+        return Result<PurchaseOrderDto>.Success(ToDto(orden, bp.Name.LegalName));
     }
 
     internal static PurchaseOrderDto ToDto(
@@ -111,3 +111,4 @@ public sealed class CreatePurchaseOrderCommandHandler
         Warnings = advertencias is { Count: > 0 } ? advertencias : null,
     };
 }
+

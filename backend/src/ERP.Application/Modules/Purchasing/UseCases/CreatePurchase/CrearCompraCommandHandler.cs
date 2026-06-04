@@ -1,4 +1,4 @@
-using MediatR;
+﻿using MediatR;
 using Microsoft.Extensions.Logging;
 using ERP.Application.Common;
 using ERP.Application.Common.Interfaces;
@@ -152,7 +152,7 @@ public sealed class CreatePurchaseCommandHandler
                 subscriberId, userId, _user.Email, _user.FullName,
                 module: "compras", action: "compra.crear.xml",
                 entityType: "PurchBill", entityId: compra.Id,
-                description: $"{parsed.InvoiceNumber} — {bp.LegalName}"), ct);
+                description: $"{parsed.InvoiceNumber} — {bp.Name.LegalName}"), ct);
 
             await _unitOfWork.SaveChangesAsync(ct);
             await _unitOfWork.CommitAsync(ct);
@@ -229,7 +229,7 @@ public sealed class CreatePurchaseCommandHandler
                 subscriberId, userId, _user.Email, _user.FullName,
                 module: "compras", action: "compra.crear.manual",
                 entityType: "PurchBill", entityId: compra.Id,
-                description: $"{compra.InvoiceNumber} — {bp.LegalName}"), ct);
+                description: $"{compra.InvoiceNumber} — {bp.Name.LegalName}"), ct);
 
             await _unitOfWork.SaveChangesAsync(ct);
             await _unitOfWork.CommitAsync(ct);
@@ -257,7 +257,7 @@ public sealed class CreatePurchaseCommandHandler
         if (existente is not null) return existente;
 
         var nuevo = BusinessPartner.Create(
-            subscriberId, "04", ruc, razonSocial, userId);
+            subscriberId, "04", ruc, ERP.Domain.MasterData.Enums.PersonType.Legal, razonSocial, userId);
         await _bpRepo.AddAsync(nuevo, ct);
         return nuevo;
     }
@@ -267,3 +267,4 @@ public sealed class CreatePurchaseCommandHandler
         c.InvoiceDate, c.DueDate, c.Status, c.PaymentTerms,
         c.Subtotal, c.VatTotal, c.Total, c.Notes, c.JournalEntryId, c.CreatedAt);
 }
+

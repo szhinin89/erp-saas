@@ -1,6 +1,7 @@
 using ERP.Application.Common;
 using ERP.Application.Common.Interfaces;
 using ERP.Domain.MasterData.Entities;
+using ERP.Domain.MasterData.Enums;
 using ERP.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
@@ -78,15 +79,21 @@ public sealed class SubscriberOnboardingService : ISubscriberOnboardingService
             subscriberId:        subscriberId,
             identificationType:  ConsumidorFinalIdType,
             identificationNumber: ConsumidorFinalIdNumber,
+            personType:          PersonType.Natural,
             legalName:           ConsumidorFinalName,
             createdBy:           actorId);
 
-        var cp = CustomerProfile.Create(subscriberId, bp.Id, actorId);
+        var customerRole = BusinessPartnerRole.Create(
+            subscriberId:      subscriberId,
+            businessPartnerId: bp.Id,
+            roleType:          RoleType.Customer,
+            assignedBy:        actorId);
 
         _db.BusinessPartners.Add(bp);
-        _db.Set<CustomerProfile>().Add(cp);
+        _db.BusinessPartnerRoles.Add(customerRole);
         await _db.SaveChangesAsync(ct);
 
-        _logger.LogInformation("Consumidor Final seeded as active customer for tenant {SubscriberId}.", subscriberId);
+        _logger.LogInformation(
+            "Consumidor Final seeded with Customer role for tenant {SubscriberId}.", subscriberId);
     }
 }

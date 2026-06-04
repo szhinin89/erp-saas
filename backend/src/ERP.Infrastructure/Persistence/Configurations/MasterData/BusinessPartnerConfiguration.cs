@@ -1,10 +1,28 @@
 using ERP.Domain.MasterData.Entities;
+using ERP.Domain.MasterData.Enums;
 using ERP.Domain.MasterData.ValueObjects;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace ERP.Infrastructure.Persistence.Configurations.MasterData;
 
+/// <summary>
+/// Configuración EF Core para BusinessPartner.
+///
+/// CAMBIOS respecto al modelo anterior:
+///   - Eliminado: email, phone, legal_representative_name, navigations CustomerProfile/SupplierProfile
+///   - Agregado: person_type, PersonName OwnsOne (legal_name + trade_name), CountryCode char(2)
+///   - AlternateKey(Id, SubscriberId): permite FK compuesto desde roles/locations/contacts.
+///     Garantiza cross-tenant safety a nivel BD. Ver ADR-BP-13 (Fase 4).
+///
+/// ÍNDICE ÚNICO de identificación:
+///   Creado via SQL raw en la migración (limitación EF Core con owned types en índice compuesto).
+///   Es INCONDICIONAL (sin WHERE is_active) — ver ADR-BP-03 (Fase 3).
+///
+/// QUERY FILTER:
+///   Aplicado automáticamente por EnterpriseQueryFilterConfigurator
+///   (ISubscriberScopedEntity → subscriber fail-closed).
+/// </summary>
 public sealed class BusinessPartnerConfiguration : IEntityTypeConfiguration<BusinessPartner>
 {
     public void Configure(EntityTypeBuilder<BusinessPartner> builder)
@@ -15,7 +33,13 @@ public sealed class BusinessPartnerConfiguration : IEntityTypeConfiguration<Busi
         builder.Property(x => x.Id).HasColumnName("id");
         builder.Property(x => x.SubscriberId).HasColumnName("subscriber_id").IsRequired();
 
-        // ── TaxIdentification (owned type — columnas aplanadas) ──────────
+        // ── AlternateKey compuesto: permite que roles/locations/contacts referencien
+        //    (business_partner_id, subscriber_id) → (id, subscriber_id).
+        //    Garantiza a nivel BD que no puede existir una FK cross-tenant. ADR-BP-13.
+        builder.HasAlternateKey(x => new { x.Id, x.SubscriberId })
+               .HasName("uq_mbp_id_subscriber");
+
+        // ── TaxIdentification VO (owned, columnas aplanadas) ─────────────────
         builder.OwnsOne(x => x.Identification, id =>
         {
             id.Property(v => v.Type)
@@ -28,53 +52,50 @@ public sealed class BusinessPartnerConfiguration : IEntityTypeConfiguration<Busi
               .IsRequired();
         });
 
-        builder.Property(x => x.LegalName)
-               .HasColumnName("legal_name")
-               .HasMaxLength(BusinessPartner.LegalNameMaxLen)
+        // ── PersonName VO (owned, columnas aplanadas) ────────────────────────
+        builder.OwnsOne(x => x.Name, pn =>
+        {
+            pn.Property(v => v.LegalName)
+              .HasColumnName("legal_name")
+              .HasMaxLength(PersonName.LegalNameMaxLen)
+              .IsRequired();
+            pn.Property(v => v.TradeName)
+              .HasColumnName("trade_name")
+              .HasMaxLength(PersonName.TradeNameMaxLen);
+        });
+
+        builder.Property(x => x.PersonType)
+               .HasColumnName("person_type")
+               .HasConversion<short>()
                .IsRequired();
-        builder.Property(x => x.TradeName)
-               .HasColumnName("trade_name")
-               .HasMaxLength(BusinessPartner.TradeNameMaxLen);
-        builder.Property(x => x.LegalRepresentativeName)
-               .HasColumnName("legal_representative_name")
-               .HasMaxLength(BusinessPartner.LegalRepresentativeNameMaxLen);
-        builder.Property(x => x.Email)
-               .HasColumnName("email")
-               .HasMaxLength(BusinessPartner.EmailMaxLen);
-        builder.Property(x => x.Phone)
-               .HasColumnName("phone")
-               .HasMaxLength(BusinessPartner.PhoneMaxLen);
+
         builder.Property(x => x.CountryCode)
                .HasColumnName("country_code")
-               .HasMaxLength(BusinessPartner.CountryCodeMaxLen)
+               .HasMaxLength(BusinessPartner.CountryCodeLen)
                .IsFixedLength();
-        builder.Property(x => x.IsActive).HasColumnName("is_active").IsRequired();
-        builder.Property(x => x.CreatedAt).HasColumnName("created_at");
+
+        builder.Property(x => x.IsActive)
+               .HasColumnName("is_active")
+               .IsRequired()
+               .HasDefaultValue(true);
+
+        // ── Audit ────────────────────────────────────────────────────────────
+        builder.Property(x => x.CreatedAt).HasColumnName("created_at").IsRequired();
+        builder.Property(x => x.CreatedBy).HasColumnName("created_by").IsRequired();
         builder.Property(x => x.UpdatedAt).HasColumnName("updated_at");
-        builder.Property(x => x.CreatedBy).HasColumnName("created_by");
         builder.Property(x => x.UpdatedBy).HasColumnName("updated_by");
 
-        // ── Navegación a perfiles (sin FK cascade para no propagar Disable) ──
-        builder.HasOne(x => x.CustomerProfile)
-               .WithOne(p => p.BusinessPartner)
-               .HasForeignKey<CustomerProfile>(p => p.BusinessPartnerId)
-               .OnDelete(DeleteBehavior.Restrict);
-
-        builder.HasOne(x => x.SupplierProfile)
-               .WithOne(p => p.BusinessPartner)
-               .HasForeignKey<SupplierProfile>(p => p.BusinessPartnerId)
-               .OnDelete(DeleteBehavior.Restrict);
-
-        // ── Índices ───────────────────────────────────────────────────────
-        builder.HasIndex(x => new { x.SubscriberId })
+        // ── Índices ───────────────────────────────────────────────────────────
+        builder.HasIndex(x => x.SubscriberId)
                .HasDatabaseName("ix_mbp_subscriber");
 
-        // NOTA: El índice único compuesto (subscriber_id, identification_type, identification_number)
-        // se agrega manualmente en la migración AddMasterDataBC vía SQL raw:
-        //   migrationBuilder.Sql("CREATE UNIQUE INDEX uq_mbp_subscriber_identification " +
-        //     "ON master_business_partners (subscriber_id, identification_type, identification_number) " +
-        //     "WHERE is_active = true;");
-        // EF Core owned types no soportan HasIndex compuesto owner+owned por string en el builder del owner.
-        // La unicidad se valida a nivel Application en ExistsByIdentificationAsync.
+        builder.HasIndex(x => new { x.SubscriberId, x.IsActive })
+               .HasDatabaseName("ix_mbp_subscriber_active");
+
+        // Índice único incondicional — ver nota en comentario de clase.
+        // Migración lo crea con SQL raw:
+        //   CREATE UNIQUE INDEX uq_mbp_identification
+        //   ON master_business_partners (subscriber_id, identification_type, identification_number);
+        // EF Core no puede expresar un índice compuesto owner+owned directamente.
     }
 }

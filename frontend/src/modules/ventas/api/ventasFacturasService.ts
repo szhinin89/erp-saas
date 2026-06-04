@@ -70,11 +70,11 @@ export interface CreateSaleItemDto {
 }
 
 export interface CreateSaleRequest {
-  customerId: string;
+  /** V2: businessPartnerId es el ID canónico del tercero. customerId eliminado. */
+  businessPartnerId: string;
   warehouseId: string;
   branchId: string;
   items: CreateSaleItemDto[];
-  businessPartnerId?: string | null;
 }
 
 export interface StockDisponibleDto {

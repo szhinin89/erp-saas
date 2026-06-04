@@ -1,4 +1,4 @@
-using MediatR;
+﻿using MediatR;
 using Microsoft.Extensions.Logging;
 using ERP.Application.Common;
 using ERP.Application.Modules.Purchasing.DTOs;
@@ -160,7 +160,7 @@ public sealed class LinkInvoiceToPurchaseOrderCommandHandler
             return Result<PurchaseOrderDto>.Success(
                 CreatePurchaseOrderCommandHandler.ToDto(
                     orden,
-                    bp?.LegalName ?? orden.BusinessPartnerId.ToString(),
+                    bp?.Name.LegalName ?? orden.BusinessPartnerId.ToString(),
                     advertencias));
         }
         catch (Exception ex)
@@ -171,3 +171,4 @@ public sealed class LinkInvoiceToPurchaseOrderCommandHandler
         }
     }
 }
+

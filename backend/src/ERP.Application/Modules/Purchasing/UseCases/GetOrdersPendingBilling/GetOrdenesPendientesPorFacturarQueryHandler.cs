@@ -1,4 +1,4 @@
-using MediatR;
+﻿using MediatR;
 using ERP.Application.Common;
 using ERP.Application.Modules.Purchasing.DTOs;
 using ERP.Application.Modules.Purchasing.UseCases.CreatePurchaseOrder;
@@ -36,7 +36,7 @@ public sealed class GetOrdersPendingBillingQueryHandler
         foreach (var pid in proveedorIds)
         {
             var p = await _bpRepo.GetByIdAsync(pid, ct);
-            proveedores[pid] = p?.LegalName ?? pid.ToString();
+            proveedores[pid] = p?.Name.LegalName ?? pid.ToString();
         }
 
         var dtos = ordenes
@@ -46,3 +46,4 @@ public sealed class GetOrdersPendingBillingQueryHandler
         return Result<IReadOnlyList<PurchaseOrderDto>>.Success(dtos);
     }
 }
+

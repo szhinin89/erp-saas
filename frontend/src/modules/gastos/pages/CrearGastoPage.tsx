@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+﻿import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { NoAccessPage } from '../../../components/PageShell';
 import { ErpPageTemplate } from '../../../templates/ErpPageTemplate';
@@ -21,7 +21,7 @@ export function CrearGastoPage() {
   const suppliersState  = useCompanyScopedAsync(() => businessPartnerFacade.searchSuppliersForPicker());
   const categoriasState = useCompanyScopedAsync(() => gastosService.getCategorias());
 
-  const [supplierId,    setSupplierId]    = useState('');
+  const [businessPartnerId, setBusinessPartnerId] = useState('');
   const [invoiceNumber, setInvoiceNumber] = useState('');
   const [issueDate,     setIssueDate]     = useState(TODAY);
   const [category,      setCategory]      = useState('');
@@ -52,7 +52,7 @@ export function CrearGastoPage() {
     setSaving(true);
     try {
       await gastosService.crearManual({
-        supplierId: supplierId || null,
+        businessPartnerId: businessPartnerId || null,
         issueDate,
         invoiceNumber: invoiceNumber.trim() || null,
         concept: concept.trim(),
@@ -125,19 +125,14 @@ export function CrearGastoPage() {
             <ZHField label="Proveedor">
               <select
                 className="zh-input"
-                value={supplierId}
+                value={businessPartnerId}
                 onChange={(e) => setSupplierId(e.target.value)}
                 disabled={suppliersState.loading}
               >
                 <option value="">-- Sin proveedor (opcional) --</option>
                 {(suppliersState.data ?? []).map((s) => (
-                  <option
-                    key={s.pickerMeta.businessPartnerId}
-                    value={s.pickerMeta.legacyOperationalId ?? ''}
-                    disabled={!s.pickerMeta.selectable}
-                  >
-                    {s.legalName} ({s.taxId})
-                    {!s.pickerMeta.selectable ? ' — sin vínculo operacional' : ''}
+                  <option key={s.id} value={s.id}>
+                    {s.fullName} ({s.identificationNumber})
                   </option>
                 ))}
               </select>
@@ -209,3 +204,4 @@ export function CrearGastoPage() {
     </ErpPageTemplate>
   );
 }
+

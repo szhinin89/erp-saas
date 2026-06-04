@@ -1,87 +1,94 @@
 using ERP.Domain.Common;
+using ERP.Domain.MasterData.Enums;
+using ERP.Domain.MasterData.Events;
+using ERP.Domain.MasterData.ValueObjects;
 
 namespace ERP.Domain.MasterData.Entities;
 
 /// <summary>
-/// Contacto de un BusinessPartner (cliente/proveedor) en el contexto de una empresa.
+/// Aggregate Root: persona de contacto de un BusinessPartner.
 ///
-/// Company-scoped: cada empresa registra los contactos relevantes para sus operaciones.
-/// Un contacto puede estar asociado a una ubicación específica (LocationId) o ser general (null).
+/// SCOPE: ISubscriberScopedEntity ÚNICAMENTE — eliminado CompanyId.
+/// Los contactos son datos maestros del tercero compartidos entre todas las
+/// Companies del tenant. Ver ADR-BP-02 (Fase 4).
 ///
-/// Ejemplos: Gerente de Compras, Contador, Recepcionista, Responsable de Despacho.
+/// LocationId: referencia opcional a una BusinessPartnerLocation del mismo BP.
+/// Si la ubicación referenciada se desactiva, el handler de DeactivateLocation
+/// debe verificar contactos activos antes de proceder (ver Problema 7, Fase 4).
+///
+/// IsPrimary: contacto principal del BP. Solo uno puede ser primario por
+/// (SubscriberId, BusinessPartnerId). Garantizado por índice UNIQUE parcial en BD.
 /// </summary>
-public sealed class BusinessPartnerContact : AuditableEntity, ISubscriberScopedEntity, ICompanyScopedEntity
+public sealed class BusinessPartnerContact : AuditableEntity, ISubscriberScopedEntity
 {
-    public const int FirstNameMaxLen = 100;
-    public const int LastNameMaxLen  = 100;
-    public const int PositionMaxLen  = 100;
-    public const int PhoneMaxLen     = 40;
-    public const int MobileMaxLen    = 40;
-    public const int EmailMaxLen     = 120;
-    public const int NotesMaxLen     = 500;
+    public const int FirstNameMaxLen        = 100;
+    public const int LastNameMaxLen         = 100;
+    public const int PositionMaxLen         = 150;
+    public const int NotesMaxLen            = 2000;
+    public const int OtherDescriptionMaxLen = 100;
 
-    public Guid  BusinessPartnerId { get; private set; }
-    public Guid  CompanyId         { get; private set; }
-    public Guid? LocationId        { get; private set; }  // null = contacto general del BP
+    public Guid        BusinessPartnerId { get; private set; }
+    public Guid?       LocationId        { get; private set; }
+    public string      FirstName         { get; private set; } = null!;
+    public string?     LastName          { get; private set; }
+    public string?     Position          { get; private set; }
+    public ContactRole Role              { get; private set; }
+    public string?     OtherDescription  { get; private set; }
+    public ContactInfo Contact           { get; private set; } = null!;
+    public string?     Notes             { get; private set; }
+    public bool        IsPrimary         { get; private set; }
+    public bool        IsActive          { get; private set; } = true;
 
-    public string      FirstName  { get; private set; } = null!;
-    public string?     LastName   { get; private set; }
-    public string?     Position   { get; private set; }  // Cargo / Rol en la empresa del BP
-    public ContactRole Role       { get; private set; }
-    public string?     Phone      { get; private set; }
-    public string?     Mobile     { get; private set; }
-    public string?     Email      { get; private set; }
-    public string?     Notes      { get; private set; }
-    public bool        IsPrimary  { get; private set; }
-    public bool        IsActive   { get; private set; } = true;
+    public string FullName => LastName is not null ? $"{FirstName} {LastName}" : FirstName;
 
     private BusinessPartnerContact() { }
 
     public static BusinessPartnerContact Create(
         Guid        subscriberId,
-        Guid        companyId,
         Guid        businessPartnerId,
         string      firstName,
         ContactRole role,
         Guid        createdBy,
-        Guid?       locationId = null,
-        string?     lastName   = null,
-        string?     position   = null,
-        string?     phone      = null,
-        string?     mobile     = null,
-        string?     email      = null,
-        string?     notes      = null,
-        bool        isPrimary  = false)
+        Guid?       locationId       = null,
+        string?     lastName         = null,
+        string?     position         = null,
+        string?     phone            = null,
+        string?     mobile           = null,
+        string?     email            = null,
+        string?     notes            = null,
+        bool        isPrimary        = false,
+        string?     otherDescription = null)
     {
-        if (string.IsNullOrWhiteSpace(firstName))
-            throw new ArgumentException("El nombre del contacto es obligatorio.", nameof(firstName));
+        if (subscriberId == Guid.Empty)
+            throw new ArgumentException("SubscriberId es obligatorio.", nameof(subscriberId));
         if (businessPartnerId == Guid.Empty)
             throw new ArgumentException("BusinessPartnerId es obligatorio.", nameof(businessPartnerId));
-        if (companyId == Guid.Empty)
-            throw new ArgumentException("CompanyId es obligatorio.", nameof(companyId));
-
-        static string? Trim(string? s, int max)
-            => string.IsNullOrWhiteSpace(s) ? null : s.Trim()[..Math.Min(s.Trim().Length, max)];
 
         var contact = new BusinessPartnerContact
         {
             Id                = Guid.NewGuid(),
             SubscriberId      = subscriberId,
-            CompanyId         = companyId,
             BusinessPartnerId = businessPartnerId,
             LocationId        = locationId,
-            FirstName         = firstName.Trim()[..Math.Min(firstName.Trim().Length, FirstNameMaxLen)],
-            LastName          = Trim(lastName, LastNameMaxLen),
-            Position          = Trim(position, PositionMaxLen),
+            FirstName         = NormalizeName(firstName, FirstNameMaxLen, nameof(firstName)),
+            LastName          = NormalizeOptional(lastName, LastNameMaxLen, nameof(lastName)),
+            Position          = NormalizeOptional(position, PositionMaxLen, nameof(position)),
             Role              = role,
-            Phone             = Trim(phone,  PhoneMaxLen),
-            Mobile            = Trim(mobile, MobileMaxLen),
-            Email             = Trim(email,  EmailMaxLen),
-            Notes             = Trim(notes,  NotesMaxLen),
+            OtherDescription  = ValidateOtherDescription(role, otherDescription),
+            Contact           = ContactInfo.Create(phone, mobile, email),
+            Notes             = NormalizeOptional(notes, NotesMaxLen, nameof(notes)),
             IsPrimary         = isPrimary,
             IsActive          = true,
         };
         contact.SetCreated(createdBy);
+        contact.RaiseDomainEvent(new BusinessPartnerContactCreatedEvent
+        {
+            SubscriberId      = subscriberId,
+            ContactId         = contact.Id,
+            BusinessPartnerId = businessPartnerId,
+            ContactRole       = role,
+            CreatedBy         = createdBy,
+        });
         return contact;
     }
 
@@ -89,39 +96,56 @@ public sealed class BusinessPartnerContact : AuditableEntity, ISubscriberScopedE
         string      firstName,
         ContactRole role,
         Guid        updatedBy,
-        Guid?       locationId = null,
-        string?     lastName   = null,
-        string?     position   = null,
-        string?     phone      = null,
-        string?     mobile     = null,
-        string?     email      = null,
-        string?     notes      = null)
+        Guid?       locationId       = null,
+        string?     lastName         = null,
+        string?     position         = null,
+        string?     phone            = null,
+        string?     mobile           = null,
+        string?     email            = null,
+        string?     notes            = null,
+        string?     otherDescription = null)
     {
-        if (string.IsNullOrWhiteSpace(firstName))
-            throw new ArgumentException("El nombre del contacto es obligatorio.", nameof(firstName));
+        if (!IsActive)
+            throw new InvalidOperationException("No se puede actualizar un contacto inactivo.");
 
-        static string? Trim(string? s, int max)
-            => string.IsNullOrWhiteSpace(s) ? null : s.Trim()[..Math.Min(s.Trim().Length, max)];
-
-        LocationId = locationId;
-        FirstName  = firstName.Trim()[..Math.Min(firstName.Trim().Length, FirstNameMaxLen)];
-        LastName   = Trim(lastName, LastNameMaxLen);
-        Position   = Trim(position, PositionMaxLen);
-        Role       = role;
-        Phone      = Trim(phone,  PhoneMaxLen);
-        Mobile     = Trim(mobile, MobileMaxLen);
-        Email      = Trim(email,  EmailMaxLen);
-        Notes      = Trim(notes,  NotesMaxLen);
+        LocationId       = locationId;
+        FirstName        = NormalizeName(firstName, FirstNameMaxLen, nameof(firstName));
+        LastName         = NormalizeOptional(lastName, LastNameMaxLen, nameof(lastName));
+        Position         = NormalizeOptional(position, PositionMaxLen, nameof(position));
+        Role             = role;
+        OtherDescription = ValidateOtherDescription(role, otherDescription);
+        Contact          = ContactInfo.Create(phone, mobile, email);
+        Notes            = NormalizeOptional(notes, NotesMaxLen, nameof(notes));
         SetUpdated(updatedBy);
+        RaiseDomainEvent(new BusinessPartnerContactUpdatedEvent
+        {
+            SubscriberId = SubscriberId,
+            ContactId    = Id,
+            UpdatedBy    = updatedBy,
+        });
     }
 
+    /// <summary>
+    /// Marca este contacto como primario.
+    /// PRECONDICIÓN (en handler): llamar ClearPrimaryAsync antes de SetPrimary.
+    /// </summary>
     public void SetPrimary(Guid updatedBy)
     {
+        if (!IsActive)
+            throw new InvalidOperationException("No se puede marcar como principal un contacto inactivo.");
+
         IsPrimary = true;
         SetUpdated(updatedBy);
+        RaiseDomainEvent(new BusinessPartnerPrimaryContactChangedEvent
+        {
+            SubscriberId        = SubscriberId,
+            NewPrimaryContactId = Id,
+            BusinessPartnerId   = BusinessPartnerId,
+            ChangedBy           = updatedBy,
+        });
     }
 
-    public void UnsetPrimary(Guid updatedBy)
+    internal void ClearPrimary(Guid updatedBy)
     {
         IsPrimary = false;
         SetUpdated(updatedBy);
@@ -129,35 +153,59 @@ public sealed class BusinessPartnerContact : AuditableEntity, ISubscriberScopedE
 
     public void Deactivate(Guid updatedBy)
     {
-        if (!IsActive) throw new InvalidOperationException("El contacto ya está inactivo.");
+        if (!IsActive)
+            throw new InvalidOperationException("El contacto ya está inactivo.");
         IsActive = false;
         SetUpdated(updatedBy);
+        RaiseDomainEvent(new BusinessPartnerContactDeactivatedEvent
+        {
+            SubscriberId      = SubscriberId,
+            ContactId         = Id,
+            BusinessPartnerId = BusinessPartnerId,
+            DeactivatedBy     = updatedBy,
+        });
     }
 
     public void Activate(Guid updatedBy)
     {
-        if (IsActive) throw new InvalidOperationException("El contacto ya está activo.");
+        if (IsActive)
+            throw new InvalidOperationException("El contacto ya está activo.");
         IsActive = true;
         SetUpdated(updatedBy);
     }
 
-    /// <summary>Nombre completo del contacto.</summary>
-    public string FullName => string.IsNullOrWhiteSpace(LastName)
-        ? FirstName
-        : $"{FirstName} {LastName}";
-}
+    private static string NormalizeName(string value, int maxLen, string paramName)
+    {
+        var v = (value ?? string.Empty).Trim();
+        if (string.IsNullOrEmpty(v))
+            throw new ArgumentException($"{paramName} es obligatorio.", paramName);
+        if (v.Length > maxLen)
+            throw new ArgumentException($"{paramName} no puede superar {maxLen} caracteres.", paramName);
+        return v;
+    }
 
-/// <summary>Rol del contacto en la empresa del BusinessPartner.</summary>
-public enum ContactRole
-{
-    Commercial   = 1,   // Ejecutivo de ventas / Responsable comercial
-    Accounting   = 2,   // Contador / Responsable contable
-    Management   = 3,   // Gerente / Director
-    Reception    = 4,   // Recepción / Secretaria
-    Dispatch     = 5,   // Responsable de despacho / bodega
-    Billing      = 6,   // Responsable de facturación / cuentas por pagar
-    Technical    = 7,   // Soporte técnico / Ingeniería
-    Purchasing   = 8,   // Jefe de compras / Aprovisionamiento
-    Legal        = 9,   // Asesor legal / Abogado
-    Other        = 99,
+    private static string? NormalizeOptional(string? value, int maxLen, string paramName)
+    {
+        var v = value?.Trim();
+        if (string.IsNullOrEmpty(v)) return null;
+        if (v.Length > maxLen)
+            throw new ArgumentException($"{paramName} no puede superar {maxLen} caracteres.", paramName);
+        return v;
+    }
+
+    private static string? ValidateOtherDescription(ContactRole role, string? description)
+    {
+        var d = description?.Trim();
+        if (d is { Length: 0 }) d = null;
+
+        if (role == ContactRole.Other && string.IsNullOrEmpty(d))
+            throw new ArgumentException(
+                "OtherDescription es obligatorio cuando ContactRole = Other.", nameof(description));
+
+        if (d?.Length > OtherDescriptionMaxLen)
+            throw new ArgumentException(
+                $"OtherDescription no puede superar {OtherDescriptionMaxLen} caracteres.", nameof(description));
+
+        return role == ContactRole.Other ? d : null;
+    }
 }

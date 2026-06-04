@@ -29,7 +29,6 @@ using ERP.Application.Access.Caching;
 using ERP.Application.MasterData;
 using ERP.Application.Modules.Fiscal.Integration;
 using ERP.Domain.MasterData.Interfaces;
-using ERP.Infrastructure.MasterData;
 using ERP.Infrastructure.MasterData.Repositories;
 using ERP.Application.Subscriptions;
 using ERP.Application.Subscriptions.Caching;
@@ -123,15 +122,11 @@ public static class DependencyInjection
         services.AddScoped<IDashboardKpiReader, DashboardKpiReader>();
 
         // â”€â”€ MasterData BC â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-        services.AddScoped<IBusinessPartnerRepository, BusinessPartnerRepository>();
-        services.AddScoped<IBusinessPartnerOperationalLinkEnricher, BusinessPartnerOperationalLinkEnricher>();
-        services.AddScoped<ICustomerProfileRepository, CustomerProfileRepository>();
-        services.AddScoped<ISupplierProfileRepository, SupplierProfileRepository>();
-        services.AddScoped<ICompanyBpSettingsRepository, CompanyBpSettingsRepository>();
-        services.AddScoped<ERP.Domain.MasterData.Interfaces.IBusinessPartnerLocationRepository,
-            ERP.Infrastructure.MasterData.Repositories.BusinessPartnerLocationRepository>();
-        services.AddScoped<ERP.Domain.MasterData.Interfaces.IBusinessPartnerContactRepository,
-            ERP.Infrastructure.MasterData.Repositories.BusinessPartnerContactRepository>();
+        services.AddScoped<IBusinessPartnerRepository,          BusinessPartnerRepository>();
+        services.AddScoped<IBusinessPartnerRoleRepository,      BusinessPartnerRoleRepository>();
+        services.AddScoped<IBusinessPartnerLocationRepository,  BusinessPartnerLocationRepository>();
+        services.AddScoped<IBusinessPartnerContactRepository,   BusinessPartnerContactRepository>();
+        services.AddScoped<ICompanyBpTradingSettingsRepository, CompanyBpTradingSettingsRepository>();
         services.AddScoped<DistributedPermissionsCacheService>();
         services.AddScoped<ResilientPermissionsCacheService>();
         services.AddScoped<IPermissionsCacheBackend>(sp => sp.GetRequiredService<ResilientPermissionsCacheService>());

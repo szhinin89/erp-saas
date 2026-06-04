@@ -168,6 +168,7 @@ public sealed class OrdenesCompraEndToEndTests
             subscriberId:         seed.SubscriberId,
             identificationType:   "04",
             identificationNumber: seed.ProveedorRuc,
+            personType:           ERP.Domain.MasterData.Enums.PersonType.Legal,
             legalName:            "Supplier Test S.A.",
             createdBy:            seed.UserId);
         db.BusinessPartners.Add(proveedor);

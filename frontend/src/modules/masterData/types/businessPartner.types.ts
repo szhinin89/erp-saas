@@ -1,132 +1,376 @@
-/** DTO unificado MasterData — alineado a `ERP.Application.MasterData.DTOs.BusinessPartnerDto`. */
-export type BusinessPartnerDto = {
-  id: string;
-  legalName: string;
-  tradeName?: string | null;
-  /** Representante legal (solo Persona Jurídica / RUC). Null para CI y CONSUMER_FINAL. */
-  legalRepresentativeName?: string | null;
-  identificationType: string;
+/**
+ * BusinessPartner V2 — Contract types
+ *
+ * RESPONSE fields con enum: son STRINGS (el backend llama .ToString() explícitamente).
+ * REQUEST fields con enum: son NUMBERS (integer value del enum de C#).
+ *
+ * Convención de fechas: ISO 8601 string (el frontend formatea según locale).
+ *
+ * Enumeraciones como const objects para usar en requests y comparaciones en lógica de UI.
+ */
+
+// ── Enumeraciones (valores numéricos para request bodies) ─────────────────────
+
+/** PersonType enum — usar en CreateBusinessPartnerBody.personType */
+export const PersonTypeEnum = {
+  Natural:      1,
+  Legal:        2,
+  Government:   3,
+  Organization: 4,
+} as const;
+export type PersonTypeValue = typeof PersonTypeEnum[keyof typeof PersonTypeEnum];
+
+/** RoleType enum — usar en AssignRoleBody.roleType y filtros de búsqueda */
+export const RoleTypeEnum = {
+  Customer:    1,
+  Supplier:    2,
+  Employee:    3,
+  Carrier:     4,
+  Broker:      5,
+  Agent:       6,
+  Distributor: 7,
+  Contractor:  8,
+} as const;
+export type RoleTypeValue = typeof RoleTypeEnum[keyof typeof RoleTypeEnum];
+
+/** LocationType enum — usar en CreateLocationBody.type */
+export const LocationTypeEnum = {
+  Matrix:        1,
+  Branch:        2,
+  Office:        3,
+  Warehouse:     4,
+  DeliveryPoint: 5,
+  Other:         99,
+} as const;
+export type LocationTypeValue = typeof LocationTypeEnum[keyof typeof LocationTypeEnum];
+
+/**
+ * LocationPurpose flags — bitmask, usar en CreateLocationBody.purpose
+ * Combinar con OR: Billing | Fiscal = 1 | 4 = 5
+ */
+export const LocationPurposeEnum = {
+  None:           0,
+  Billing:        1,
+  Delivery:       2,
+  Fiscal:         4,
+  Correspondence: 8,
+} as const;
+export type LocationPurposeValue = number; // bitmask — puede combinar valores
+
+/** ContactRole enum — usar en CreateContactBody.role */
+export const ContactRoleEnum = {
+  Commercial:  1,
+  Accounting:  2,
+  Management:  3,
+  Reception:   4,
+  Dispatch:    5,
+  Billing:     6,
+  Technical:   7,
+  Purchasing:  8,
+  Legal:       9,
+  Other:       99,
+} as const;
+export type ContactRoleValue = typeof ContactRoleEnum[keyof typeof ContactRoleEnum];
+
+// ── Response DTOs ─────────────────────────────────────────────────────────────
+
+/**
+ * Identidad del BP para listas y resultados de búsqueda.
+ * No incluye roles — evita N+1. Usar filtro `roles[]` para acotar la búsqueda.
+ * Response: GET /api/master/business-partners (items[])
+ */
+export type BusinessPartnerSummaryDto = {
+  id:                   string;
+  identificationType:   string;   // SRI code: "04" | "05" | "06" | "07" | "08" | "09"
   identificationNumber: string;
-  email?: string | null;
-  phone?: string | null;
-  countryCode?: string | null;
-  isCustomer: boolean;
-  isSupplier: boolean;
-  isActive: boolean;
-  customerProfileId?: string | null;
-  supplierProfileId?: string | null;
-  legacyCustomerId?: string | null;
-  legacySupplierId?: string | null;
-  // Customer profile data
-  customerNotes?: string | null;
-  // Supplier SRI defaults
-  defaultTaxSupportCode?: string | null;
-  defaultRetentionVatCode?: string | null;
-  defaultRetentionIncomeCode?: string | null;
-  supplierPaymentTerms?: string | null;
+  legalName:            string;
+  tradeName:            string | null;
+  personType:           string;   // "Natural" | "Legal" | "Government" | "Organization"
+  countryCode:          string | null;
+  isActive:             boolean;
+  createdAt:            string;   // ISO 8601
 };
 
-export type SearchBusinessPartnersParams = {
-  q?: string;
-  isActive?: boolean;
-  isCustomer?: boolean;
-  isSupplier?: boolean;
-  skip?: number;
-  take?: number;
+/**
+ * Detalle completo — incluye roles con sus configs.
+ * Response: GET /api/master/business-partners/{id}
+ */
+export type BusinessPartnerDetailDto = BusinessPartnerSummaryDto & {
+  roles: BusinessPartnerRoleDto[];
 };
 
-export type CreateBusinessPartnerBody = {
-  identificationType: string;
-  identificationNumber: string;
-  legalName: string;
-  tradeName?: string | null;
-  /** Representante legal (opcional, solo Persona Jurídica / RUC). */
-  legalRepresentativeName?: string | null;
-  email?: string | null;
-  phone?: string | null;
-  countryCode?: string | null;
-  asCustomer: boolean;
-  asSupplier: boolean;
+/**
+ * Rol asignado al BP.
+ * Response: dentro de BusinessPartnerDetailDto.roles
+ *           y GET /api/master/business-partners/{bpId}/roles
+ */
+export type BusinessPartnerRoleDto = {
+  id:             string;
+  roleType:       string;   // "Customer" | "Supplier" | "Employee" | "Carrier" | "Broker" | "Agent" | "Distributor" | "Contractor"
+  roleLabel:      string;   // Etiqueta en español
+  isActive:       boolean;
+  notes:          string | null;
+  assignedAt:     string;
+  revokedAt:      string | null;
+  supplierConfig:  SupplierRoleConfigDto  | null;  // solo si roleType === "Supplier"
+  carrierConfig:   CarrierRoleConfigDto   | null;  // solo si roleType === "Carrier"
+  customerConfig:  CustomerRoleConfigDto  | null;  // solo si roleType === "Customer"
 };
 
-export type UpdateBusinessPartnerBody = {
-  identificationType: string;
-  identificationNumber: string;
-  legalName: string;
-  tradeName?: string | null;
-  /** Representante legal (opcional, solo Persona Jurídica / RUC). */
-  legalRepresentativeName?: string | null;
-  email?: string | null;
-  phone?: string | null;
-  countryCode?: string | null;
+/** Defaults SRI para compras — parte de BusinessPartnerRoleDto cuando roleType="Supplier" */
+export type SupplierRoleConfigDto = {
+  defaultTaxSupportCode:       string | null;
+  defaultRetentionVatCode:     string | null;
+  defaultRetentionIncomeCode:  string | null;
+  paymentTerms:                string | null;
 };
 
-export type CompanyBpSettingsDto = {
+/** Datos de transporte — parte de BusinessPartnerRoleDto cuando roleType="Carrier" */
+export type CarrierRoleConfigDto = {
+  transportAuthorizationNumber: string | null;
+  vehicleCapacityTons:          number | null;
+};
+
+/**
+ * Clasificación y scoring del cliente — CRM-ready.
+ * Parte de BusinessPartnerRoleDto cuando roleType === "Customer".
+ * Subscriber-scoped: describe al cliente como tercero, no por empresa.
+ */
+export type CustomerRoleConfigDto = {
+  customerCategory?:       string | null;  // 'Retail' | 'Wholesale' | 'Corporate' | 'Government' | 'VIP' | 'Other'
+  customerSegment?:        string | null;  // 'Individual' | 'SMB' | 'MidMarket' | 'Enterprise' | 'StartUp'
+  salesZone?:              string | null;  // texto libre: "Norte", "Sur", código de zona
+  creditRating?:           string | null;  // 'AAA' | 'AA' | 'A' | 'BBB' | 'B' | 'C' | 'D' | 'NR'
+  loyaltyTier?:            string | null;  // 'None' | 'Bronze' | 'Silver' | 'Gold' | 'Platinum'
+  preferredInvoiceFormat?: string | null;  // 'PDF' | 'XML' | 'EMAIL' | 'PORTAL' | 'PAPER'
+  customerClassification?: string | null;  // 'Nacional' | 'Exportador' | 'Importador' | 'Exento' | 'Especial'
+};
+
+/**
+ * Ubicación física del BP. Subscriber-scoped.
+ * Response: GET /api/master/business-partners/{bpId}/locations
+ */
+export type BpLocationDto = {
+  id:               string;
   businessPartnerId: string;
-  creditLimit?: number | null;
-  paymentDays: number;
-  isBlocked: boolean;
-  creditCurrencyCode?: string | null;
+  name:             string;
+  locationType:     string;     // "Matrix" | "Branch" | "Office" | "Warehouse" | "DeliveryPoint" | "Other"
+  typeLabel:        string;     // Etiqueta en español
+  purposes:         string[];   // ["Facturación", "Entrega", "Fiscal", "Correspondencia"]
+  addressLine:      string;
+  provinceCode:     string | null;
+  cantonCode:       string | null;
+  parishCode:       string | null;
+  phone:            string | null;
+  email:            string | null;
+  otherDescription: string | null;  // Presente cuando locationType="Other"
+  isPrimary:        boolean;
+  isActive:         boolean;
+  createdAt:        string;
 };
 
-export type UpdateSupplierProfileBody = {
-  defaultTaxSupportCode?: string | null;
-  defaultRetentionVatCode?: string | null;
-  defaultRetentionIncomeCode?: string | null;
-  paymentTerms?: string | null;
+/**
+ * Contacto del BP. Subscriber-scoped.
+ * Response: GET /api/master/business-partners/{bpId}/contacts
+ */
+export type BpContactDto = {
+  id:               string;
+  businessPartnerId: string;
+  locationId:       string | null;
+  firstName:        string;
+  lastName:         string | null;
+  fullName:         string;   // Computed: firstName + ' ' + lastName
+  position:         string | null;
+  contactRole:      string;   // "Commercial" | "Accounting" | "Legal" | ... | "Other"
+  roleLabel:        string;   // Etiqueta en español
+  otherDescription: string | null;
+  phone:            string | null;
+  mobile:           string | null;
+  email:            string | null;
+  notes:            string | null;
+  isPrimary:        boolean;
+  isActive:         boolean;
+  createdAt:        string;
 };
 
+/**
+ * Configuración comercial del BP en la empresa activa. Company-scoped.
+ * Response: GET /api/master/business-partners/{bpId}/trading-settings
+ */
+export type CompanyBpTradingSettingsDto = {
+  id:                 string;
+  businessPartnerId:  string;
+  creditLimit:        number;
+  creditCurrencyCode: string;   // ISO 4217, default "USD"
+  paymentDays:        number;
+  isBlocked:          boolean;
+  blockedReason:      string | null;  // Present cuando isBlocked=true
+  blockedAt:          string | null;  // ISO 8601, present cuando isBlocked=true
+};
+
+// ── Paginación ────────────────────────────────────────────────────────────────
+
+/** Resultado paginado — ResponseObject de la API para búsquedas */
 export type BusinessPartnerPagedResult = {
-  items: BusinessPartnerDto[];
-  pageNumber: number;
-  pageSize: number;
-  totalCount: number;
+  items:       BusinessPartnerSummaryDto[];
+  pageNumber:  number;
+  pageSize:    number;
+  totalCount:  number;
 };
 
-/** Respuesta cruda del API (camelCase o PascalCase). */
-export type BusinessPartnerApiRow = {
-  id?: string;
-  Id?: string;
-  identificationType?: string;
-  IdentificationType?: string;
-  identificationNumber?: string;
-  IdentificationNumber?: string;
-  legalName?: string;
-  LegalName?: string;
-  tradeName?: string | null;
-  TradeName?: string | null;
-  legalRepresentativeName?: string | null;
-  LegalRepresentativeName?: string | null;
-  email?: string | null;
-  Email?: string | null;
-  phone?: string | null;
-  Phone?: string | null;
+// ── Request Bodies (Frontend → Backend) ──────────────────────────────────────
+
+/** POST /api/master/business-partners */
+export type CreateBusinessPartnerBody = {
+  identificationType:   string;         // SRI code
+  identificationNumber: string;
+  personType:           PersonTypeValue; // INTEGER: 1=Natural, 2=Legal, 3=Government, 4=Organization
+  legalName:            string;
+  tradeName?:           string | null;
+  countryCode?:         string | null;  // ISO alpha-2
+};
+
+/** PUT /api/master/business-partners/{id} */
+export type UpdateBusinessPartnerBody = {
+  legalName:   string;
+  personType:  PersonTypeValue;
+  tradeName?:  string | null;
   countryCode?: string | null;
-  CountryCode?: string | null;
+};
+
+/** PATCH /api/master/business-partners/{id}/identification */
+export type UpdateIdentificationBody = {
+  identificationType:   string;
+  identificationNumber: string;
+};
+
+/** POST /api/master/business-partners/{bpId}/roles */
+export type AssignRoleBody = {
+  roleType:        RoleTypeValue;               // INTEGER: Customer=1, Supplier=2, ...
+  supplierConfig?:  SupplierConfigBody  | null;  // Solo para roleType=2
+  carrierConfig?:   CarrierConfigBody   | null;  // Solo para roleType=4
+  customerConfig?:  CustomerConfigBody  | null;  // Solo para roleType=1
+};
+
+/** Body para PATCH /{bpId}/roles/{roleId}/customer-config */
+export type CustomerConfigBody = {
+  customerCategory?:        string | null;
+  customerSegment?:         string | null;
+  salesZone?:               string | null;
+  creditRating?:            string | null;
+  loyaltyTier?:             string | null;
+  preferredInvoiceFormat?:  string | null;
+  customerClassification?:  string | null;
+};
+
+// ── Constantes de validación (espejo de CustomerRoleConfig C#) ────────────────
+export const CUSTOMER_CATEGORIES    = ['Retail', 'Wholesale', 'Corporate', 'Government', 'VIP', 'Other'] as const;
+export const CUSTOMER_SEGMENTS      = ['Individual', 'SMB', 'MidMarket', 'Enterprise', 'StartUp'] as const;
+export const CREDIT_RATINGS         = ['AAA', 'AA', 'A', 'BBB', 'BB', 'B', 'C', 'D', 'NR'] as const;
+export const LOYALTY_TIERS          = ['None', 'Bronze', 'Silver', 'Gold', 'Platinum'] as const;
+export const INVOICE_FORMATS        = ['PDF', 'XML', 'EMAIL', 'PORTAL', 'PAPER'] as const;
+export const CUSTOMER_CLASSIFICATIONS = ['Nacional', 'Exportador', 'Importador', 'Exento', 'Especial'] as const;
+
+export type SupplierConfigBody = {
+  defaultTaxSupportCode?:       string | null;
+  defaultRetentionVatCode?:     string | null;
+  defaultRetentionIncomeCode?:  string | null;
+  paymentTerms?:                string | null;
+};
+
+export type CarrierConfigBody = {
+  transportAuthorizationNumber?: string | null;
+  vehicleCapacityTons?:          number | null;
+};
+
+export type UpdateRoleNotesBody = {
+  notes: string | null;
+};
+
+/** POST /api/master/business-partners/{bpId}/locations */
+export type CreateLocationBody = {
+  name:             string;
+  type:             LocationTypeValue;    // INTEGER: Matrix=1, ..., Other=99
+  purpose:          LocationPurposeValue; // BITMASK: None=0, Billing=1, Delivery=2, Fiscal=4, Correspondence=8
+  addressLine:      string;
+  provinceCode?:    string | null;
+  cantonCode?:      string | null;
+  parishCode?:      string | null;
+  phone?:           string | null;
+  email?:           string | null;
+  isPrimary?:       boolean;
+  otherDescription?: string | null;  // Obligatorio si type=99 (Other)
+};
+
+/** PUT /api/master/business-partners/{bpId}/locations/{id} */
+export type UpdateLocationBody = Omit<CreateLocationBody, 'isPrimary'>;
+
+/** POST /api/master/business-partners/{bpId}/contacts */
+export type CreateContactBody = {
+  firstName:        string;
+  role:             ContactRoleValue;    // INTEGER: Commercial=1, ..., Legal=9, Other=99
+  locationId?:      string | null;
+  lastName?:        string | null;
+  position?:        string | null;
+  phone?:           string | null;
+  mobile?:          string | null;
+  email?:           string | null;
+  notes?:           string | null;
+  isPrimary?:       boolean;
+  otherDescription?: string | null;  // Obligatorio si role=99 (Other)
+};
+
+/** PUT /api/master/business-partners/{bpId}/contacts/{id} */
+export type UpdateContactBody = Omit<CreateContactBody, 'isPrimary'>;
+
+/** PUT /api/master/business-partners/{bpId}/trading-settings */
+export type UpsertTradingSettingsBody = {
+  creditLimit:        number;   // >= 0
+  paymentDays:        number;   // >= 0
+  creditCurrencyCode: string;   // ISO 4217, default "USD"
+};
+
+/** PATCH /api/master/business-partners/{bpId}/trading-settings/block */
+export type BlockBody = {
+  reason: string;  // Obligatorio, max 500 chars
+};
+
+// ── Parámetros de búsqueda ────────────────────────────────────────────────────
+
+/**
+ * Query params para GET /api/master/business-partners
+ * roles: enviar como parámetro repetido → ?roles=1&roles=2
+ */
+export type SearchBusinessPartnersParams = {
+  q?:        string;
   isActive?: boolean;
-  IsActive?: boolean;
-  isCustomer?: boolean;
-  IsCustomer?: boolean;
-  isSupplier?: boolean;
-  IsSupplier?: boolean;
-  customerProfileId?: string | null;
-  CustomerProfileId?: string | null;
-  supplierProfileId?: string | null;
-  SupplierProfileId?: string | null;
-  legacyCustomerId?: string | null;
-  LegacyCustomerId?: string | null;
-  legacySupplierId?: string | null;
-  LegacySupplierId?: string | null;
-  // Customer profile data
-  customerNotes?: string | null;
-  CustomerNotes?: string | null;
-  // Supplier SRI defaults
-  defaultTaxSupportCode?: string | null;
-  DefaultTaxSupportCode?: string | null;
-  defaultRetentionVatCode?: string | null;
-  DefaultRetentionVatCode?: string | null;
-  defaultRetentionIncomeCode?: string | null;
-  DefaultRetentionIncomeCode?: string | null;
-  supplierPaymentTerms?: string | null;
-  SupplierPaymentTerms?: string | null;
+  roles?:    RoleTypeValue[];  // RoleType integers: [1] = Customers, [2] = Suppliers, [1,2] = ambos
+  skip?:     number;
+  take?:     number;
+};
+
+// ── Picker types (simplificados — sin legacyId) ───────────────────────────────
+
+/**
+ * Fila de picker de cliente — usa businessPartnerId directamente como ID operacional.
+ * El concepto de legacyOperationalId fue eliminado en V2.
+ */
+export type CustomerPickerRow = {
+  id:                   string;  // businessPartnerId — este ES el ID operacional
+  identificationNumber: string;
+  fullName:             string;  // tradeName ?? legalName
+  isActive:             boolean;
+  hasCustomerRole:      boolean;
+};
+
+/**
+ * Fila de picker de proveedor — usa businessPartnerId directamente.
+ */
+export type SupplierPickerRow = {
+  id:                   string;  // businessPartnerId — este ES el ID operacional
+  identificationNumber: string;
+  fullName:             string;
+  isActive:             boolean;
+  hasSupplierRole:      boolean;
+  supplierConfig:       SupplierRoleConfigDto | null;
 };

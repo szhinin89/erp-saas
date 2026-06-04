@@ -1,4 +1,4 @@
-using MediatR;
+﻿using MediatR;
 using Microsoft.Extensions.Logging;
 using ERP.Application.Common;
 using ERP.Application.Common.Interfaces;
@@ -124,7 +124,7 @@ public sealed class CreateExpenseCommandHandler
                 subscriberId, userId, _user.Email, _user.FullName,
                 module: "gastos", action: "gasto.crear.xml",
                 entityType: "ExpenseInvoice", entityId: gasto.Id,
-                description: $"{parsed.InvoiceNumber} — {bp.LegalName}"), ct);
+                description: $"{parsed.InvoiceNumber} — {bp.Name.LegalName}"), ct);
 
             await _unitOfWork.SaveChangesAsync(ct);
             await _unitOfWork.CommitAsync(ct);
@@ -216,7 +216,7 @@ public sealed class CreateExpenseCommandHandler
         var existente = await _bpRepo.GetByIdentificationAsync("04", ruc, ct);
         if (existente is not null) return existente;
 
-        var nuevo = BusinessPartner.Create(subscriberId, "04", ruc, razonSocial, userId);
+        var nuevo = BusinessPartner.Create(subscriberId, "04", ruc, ERP.Domain.MasterData.Enums.PersonType.Legal, razonSocial, userId);
         await _bpRepo.AddAsync(nuevo, ct);
         return nuevo;
     }
@@ -238,3 +238,4 @@ public sealed class CreateExpenseCommandHandler
         g.JournalEntryId,
         g.CreatedAt);
 }
+

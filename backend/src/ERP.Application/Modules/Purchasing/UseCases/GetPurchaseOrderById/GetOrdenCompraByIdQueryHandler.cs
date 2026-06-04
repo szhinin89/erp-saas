@@ -1,4 +1,4 @@
-using MediatR;
+﻿using MediatR;
 using ERP.Application.Common;
 using ERP.Application.Modules.Purchasing.DTOs;
 using ERP.Application.Modules.Purchasing.UseCases.CreatePurchaseOrder;
@@ -48,7 +48,7 @@ public sealed class GetPurchaseOrderByIdQueryHandler
 
         return Result<PurchaseOrderDetailDto?>.Success(new PurchaseOrderDetailDto(
             orden.Id, orden.OrderNumber,
-            orden.BusinessPartnerId, bp?.LegalName ?? orden.BusinessPartnerId.ToString(),
+            orden.BusinessPartnerId, bp?.Name.LegalName ?? orden.BusinessPartnerId.ToString(),
             orden.IssueDate, orden.RequiredDate,
             orden.Status, orden.Currency,
             orden.Subtotal, orden.TaxTotal, orden.Total,
@@ -59,5 +59,6 @@ public sealed class GetPurchaseOrderByIdQueryHandler
             lines, linkedBills));
     }
 }
+
 
 

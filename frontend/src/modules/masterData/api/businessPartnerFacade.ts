@@ -1,89 +1,211 @@
-import { logDevApiRequest } from '../../../lib/observability/devApiLog';
-import { mapBusinessPartnerToCustomerPickerRow } from '../adapters/businessPartnerCustomerAdapter';
+/**
+ * businessPartnerFacade — capa de orquestación para componentes UI.
+ *
+ * Centraliza todas las operaciones de BusinessPartner V2.
+ * Los componentes importan desde aquí, nunca directamente de los servicios.
+ *
+ * ELIMINADO (V1 legacy):
+ *   - IBusinessPartnerOperationalLinkEnricher
+ *   - searchCustomersForPicker con legacyId
+ *   - addRole con flags booleanos (asCustomer/asSupplier)
+ *   - updateCustomerNotes / updateSupplierProfile (reemplazados por updateRoleNotes / updateSupplierConfig)
+ *   - getCompanySettings / upsertCompanySettings (endpoint renombrado a trading-settings)
+ */
+
 import {
+  bpContactService,
+  bpLocationService,
+  bpRoleService,
+  bpTradingSettingsService,
+  businessPartnerService,
+} from './businessPartnerService';
+import {
+  mapBusinessPartnerToCustomerPickerRow,
   mapBusinessPartnerToSupplierPickerRow,
-  type SupplierPickerOption,
-} from '../adapters/businessPartnerSupplierAdapter';
-import type { CustomerPickerRow, SupplierPickerRow } from '../types/pickerRow.types';
-import { businessPartnerService } from './businessPartnerService';
+} from '../adapters/businessPartnerCustomerAdapter';
 import type {
-  BusinessPartnerDto,
+  AssignRoleBody,
+  BlockBody,
+  BpContactDto,
+  BpLocationDto,
+  BusinessPartnerDetailDto,
   BusinessPartnerPagedResult,
-  CompanyBpSettingsDto,
+  BusinessPartnerRoleDto,
+  BusinessPartnerSummaryDto,
+  CarrierConfigBody,
+  CompanyBpTradingSettingsDto,
   CreateBusinessPartnerBody,
+  CreateContactBody,
+  CreateLocationBody,
+  CustomerConfigBody,
+  CustomerPickerRow,
+  SearchBusinessPartnersParams,
+  SupplierConfigBody,
+  SupplierPickerRow,
   UpdateBusinessPartnerBody,
-  UpdateSupplierProfileBody,
+  UpdateContactBody,
+  UpdateIdentificationBody,
+  UpdateLocationBody,
+  UpdateRoleNotesBody,
+  UpsertTradingSettingsBody,
 } from '../types/businessPartner.types';
+import { RoleTypeEnum } from '../types/businessPartner.types';
+
+// ── Identity ──────────────────────────────────────────────────────────────────
 
 export const businessPartnerFacade = {
-  async searchCustomersForPicker(search?: string): Promise<CustomerPickerRow[]> {
-    logDevApiRequest({ endpoint: '/api/master/business-partners', mode: 'masterdata', method: 'GET' });
-    const bps = await businessPartnerService.search({ q: search, isActive: true, isCustomer: true, take: 100 });
+  // ── Búsqueda e identidad ───────────────────────────────────────────────────
+
+  searchBusinessPartners: (params?: SearchBusinessPartnersParams): Promise<BusinessPartnerSummaryDto[]> =>
+    businessPartnerService.search(params),
+
+  searchBusinessPartnersPaged: (params?: SearchBusinessPartnersParams): Promise<BusinessPartnerPagedResult> =>
+    businessPartnerService.searchPaged(params),
+
+  getBusinessPartner: (id: string): Promise<BusinessPartnerDetailDto> =>
+    businessPartnerService.getById(id),
+
+  createBusinessPartner: (body: CreateBusinessPartnerBody): Promise<BusinessPartnerSummaryDto> =>
+    businessPartnerService.create(body),
+
+  updateBusinessPartner: (id: string, body: UpdateBusinessPartnerBody): Promise<BusinessPartnerSummaryDto> =>
+    businessPartnerService.updateProfile(id, body),
+
+  updateIdentification: (id: string, body: UpdateIdentificationBody): Promise<BusinessPartnerSummaryDto> =>
+    businessPartnerService.updateIdentification(id, body),
+
+  activateBusinessPartner: (id: string): Promise<boolean> =>
+    businessPartnerService.activate(id),
+
+  deactivateBusinessPartner: (id: string): Promise<boolean> =>
+    businessPartnerService.deactivate(id),
+
+  // ── Pickers (Customer / Supplier) ─────────────────────────────────────────
+  //
+  // V2: businessPartnerId ES el ID operacional — no hay legacyId bridge.
+  // Los BP son siempre seleccionables si tienen el rol activo.
+
+  searchCustomersForPicker: async (q?: string): Promise<CustomerPickerRow[]> => {
+    const bps = await businessPartnerService.search({
+      q,
+      isActive: true,
+      roles: [RoleTypeEnum.Customer],
+      take: 100,
+    });
     return bps.map(mapBusinessPartnerToCustomerPickerRow);
   },
 
-  searchCustomers: (search?: string) => businessPartnerFacade.searchCustomersForPicker(search),
+  searchCustomers: (q?: string): Promise<CustomerPickerRow[]> =>
+    businessPartnerFacade.searchCustomersForPicker(q),
 
-  async searchSuppliersForPicker(search?: string): Promise<SupplierPickerRow[]> {
-    logDevApiRequest({ endpoint: '/api/master/business-partners', mode: 'masterdata', method: 'GET' });
-    const bps = await businessPartnerService.search({ q: search, isActive: true, isSupplier: true, take: 100 });
+  searchSuppliersForPicker: async (q?: string): Promise<SupplierPickerRow[]> => {
+    const bps = await businessPartnerService.search({
+      q,
+      isActive: true,
+      roles: [RoleTypeEnum.Supplier],
+      take: 100,
+    });
     return bps.map(mapBusinessPartnerToSupplierPickerRow);
   },
 
-  searchSuppliers: (search?: string) => businessPartnerFacade.searchSuppliersForPicker(search),
+  searchSuppliers: (q?: string): Promise<SupplierPickerRow[]> =>
+    businessPartnerFacade.searchSuppliersForPicker(q),
 
-  async searchSupplierPickerOptions(search?: string): Promise<SupplierPickerOption[]> {
-    const suppliers = await businessPartnerFacade.searchSuppliersForPicker(search);
-    return suppliers.map((s) => ({
-      id: s.pickerMeta.legacyOperationalId ?? s.id,
-      razonSocial: s.tradeName?.trim() || s.legalName,
-      selectable: s.pickerMeta.selectable,
-      missingOperationalLink: s.pickerMeta.missingOperationalLink,
-      warningMessage: s.pickerMeta.warningMessage,
-    }));
-  },
+  // ── Roles ──────────────────────────────────────────────────────────────────
 
-  searchBusinessPartners: (params?: Parameters<typeof businessPartnerService.search>[0]) =>
-    businessPartnerService.search(params),
+  getRoles: (bpId: string, onlyActive?: boolean): Promise<BusinessPartnerRoleDto[]> =>
+    bpRoleService.list(bpId, onlyActive),
 
-  searchBusinessPartnersPaged: (params?: Parameters<typeof businessPartnerService.searchPaged>[0]): Promise<BusinessPartnerPagedResult> =>
-    businessPartnerService.searchPaged(params),
+  assignRole: (bpId: string, body: AssignRoleBody): Promise<BusinessPartnerRoleDto> =>
+    bpRoleService.assign(bpId, body),
 
-  getBusinessPartner: (id: string) => businessPartnerService.getById(id),
+  revokeRole: (bpId: string, roleId: string): Promise<boolean> =>
+    bpRoleService.revoke(bpId, roleId),
 
-  createBusinessPartner: (body: CreateBusinessPartnerBody) => businessPartnerService.create(body),
+  updateSupplierConfig: (bpId: string, roleId: string, config: SupplierConfigBody): Promise<BusinessPartnerRoleDto> =>
+    bpRoleService.updateSupplierConfig(bpId, roleId, config),
 
-  disableBusinessPartner: (id: string) => businessPartnerService.disable(id),
+  updateCarrierConfig: (bpId: string, roleId: string, config: CarrierConfigBody): Promise<BusinessPartnerRoleDto> =>
+    bpRoleService.updateCarrierConfig(bpId, roleId, config),
 
-  updateBusinessPartner: (id: string, body: UpdateBusinessPartnerBody) =>
-    businessPartnerService.update(id, body),
+  updateRoleNotes: (bpId: string, roleId: string, body: UpdateRoleNotesBody): Promise<boolean> =>
+    bpRoleService.updateNotes(bpId, roleId, body),
 
-  activateBusinessPartner: (id: string) => businessPartnerService.activate(id),
+  updateCustomerConfig: (bpId: string, roleId: string, config: CustomerConfigBody): Promise<BusinessPartnerRoleDto> =>
+    bpRoleService.updateCustomerConfig(bpId, roleId, config),
 
-  getCompanySettings: (id: string): Promise<CompanyBpSettingsDto | null> =>
-    businessPartnerService.getCompanySettings(id),
+  // ── Locations ──────────────────────────────────────────────────────────────
 
-  upsertCompanySettings: (
-    id: string,
-    body: { creditLimit?: number | null; paymentDays: number; isBlocked: boolean },
-  ) => businessPartnerService.upsertCompanySettings(id, body),
+  getLocations: (bpId: string, onlyActive?: boolean): Promise<BpLocationDto[]> =>
+    bpLocationService.list(bpId, onlyActive),
 
-  addRole: (id: string, asCustomer: boolean, asSupplier: boolean) =>
-    businessPartnerService.addRole(id, asCustomer, asSupplier),
+  getLocation: (bpId: string, locationId: string): Promise<BpLocationDto> =>
+    bpLocationService.getById(bpId, locationId),
 
-  updateCustomerNotes: (id: string, notes: string | null) =>
-    businessPartnerService.updateCustomerNotes(id, notes),
+  createLocation: (bpId: string, body: CreateLocationBody): Promise<BpLocationDto> =>
+    bpLocationService.create(bpId, body),
 
-  updateSupplierProfile: (id: string, body: UpdateSupplierProfileBody) =>
-    businessPartnerService.updateSupplierProfile(id, body),
+  updateLocation: (bpId: string, locationId: string, body: UpdateLocationBody): Promise<BpLocationDto> =>
+    bpLocationService.update(bpId, locationId, body),
+
+  setLocationPrimary: (bpId: string, locationId: string): Promise<boolean> =>
+    bpLocationService.setPrimary(bpId, locationId),
+
+  activateLocation: (bpId: string, locationId: string): Promise<boolean> =>
+    bpLocationService.activate(bpId, locationId),
+
+  deactivateLocation: (bpId: string, locationId: string): Promise<boolean> =>
+    bpLocationService.deactivate(bpId, locationId),
+
+  // ── Contacts ───────────────────────────────────────────────────────────────
+
+  getContacts: (bpId: string, onlyActive?: boolean): Promise<BpContactDto[]> =>
+    bpContactService.list(bpId, onlyActive),
+
+  getContact: (bpId: string, contactId: string): Promise<BpContactDto> =>
+    bpContactService.getById(bpId, contactId),
+
+  createContact: (bpId: string, body: CreateContactBody): Promise<BpContactDto> =>
+    bpContactService.create(bpId, body),
+
+  updateContact: (bpId: string, contactId: string, body: UpdateContactBody): Promise<BpContactDto> =>
+    bpContactService.update(bpId, contactId, body),
+
+  setContactPrimary: (bpId: string, contactId: string): Promise<boolean> =>
+    bpContactService.setPrimary(bpId, contactId),
+
+  activateContact: (bpId: string, contactId: string): Promise<boolean> =>
+    bpContactService.activate(bpId, contactId),
+
+  deactivateContact: (bpId: string, contactId: string): Promise<boolean> =>
+    bpContactService.deactivate(bpId, contactId),
+
+  // ── Trading Settings ───────────────────────────────────────────────────────
+
+  getTradingSettings: (bpId: string): Promise<CompanyBpTradingSettingsDto | null> =>
+    bpTradingSettingsService.get(bpId),
+
+  upsertTradingSettings: (bpId: string, body: UpsertTradingSettingsBody): Promise<CompanyBpTradingSettingsDto> =>
+    bpTradingSettingsService.upsert(bpId, body),
+
+  blockBusinessPartner: (bpId: string, body: BlockBody): Promise<boolean> =>
+    bpTradingSettingsService.block(bpId, body),
+
+  unblockBusinessPartner: (bpId: string): Promise<boolean> =>
+    bpTradingSettingsService.unblock(bpId),
 };
 
+// ── Re-exports para compatibilidad con imports existentes ─────────────────────
+
 export type {
-  BusinessPartnerDto,
-  CompanyBpSettingsDto,
-  UpdateBusinessPartnerBody,
-  UpdateSupplierProfileBody,
-  SupplierPickerOption,
+  BusinessPartnerSummaryDto,
+  BusinessPartnerDetailDto,
+  BusinessPartnerRoleDto,
+  BpLocationDto,
+  BpContactDto,
+  CompanyBpTradingSettingsDto,
   CustomerPickerRow,
   SupplierPickerRow,
+  UpdateBusinessPartnerBody,
+  SupplierConfigBody,
 };

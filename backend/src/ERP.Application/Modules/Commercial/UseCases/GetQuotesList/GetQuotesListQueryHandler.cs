@@ -1,4 +1,4 @@
-using ERP.Application.Common;
+﻿using ERP.Application.Common;
 using ERP.Application.Modules.Commercial.DTOs;
 using ERP.Domain.MasterData.Interfaces;
 using ERP.Domain.Modules.Commercial.Interfaces;
@@ -50,7 +50,7 @@ public sealed class GetQuotesListQueryHandler
         foreach (var partnerId in partnerIds)
         {
             var bp = await _bpRepo.GetByIdAsync(partnerId, ct);
-            partnerNames[partnerId] = bp?.LegalName ?? partnerId.ToString();
+            partnerNames[partnerId] = bp?.Name.LegalName ?? partnerId.ToString();
         }
 
         var dtos = items
@@ -63,3 +63,4 @@ public sealed class GetQuotesListQueryHandler
             new QuotesPagedResult(dtos, total, query.PageNumber, query.PageSize));
     }
 }
+

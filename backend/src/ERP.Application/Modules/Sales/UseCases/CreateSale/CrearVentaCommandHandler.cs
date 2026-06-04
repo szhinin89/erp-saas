@@ -336,7 +336,7 @@ public sealed class CreateSaleCommandHandler : IRequestHandler<CreateSaleCommand
             issueDate,
             cliente.Identification.Type,
             cliente.Identification.Number,
-            cliente.LegalName,
+            cliente.Name.LegalName,
             null,
             command.PaymentMethodCode,
             command.PaymentDays,
@@ -511,3 +511,4 @@ public sealed class CreateSaleCommandHandler : IRequestHandler<CreateSaleCommand
     };
 
 }
+

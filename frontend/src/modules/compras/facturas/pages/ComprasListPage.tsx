@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+﻿import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { EmptyState, LoadingState, NoAccessPage } from '../../../../components/PageShell';
 import { ErpPageTemplate } from '../../../../templates/ErpPageTemplate';
@@ -39,11 +39,11 @@ export function ComprasListPage() {
     try {
       const [data, bps] = await Promise.all([
         comprasService.list(),
-        businessPartnerService.search({ isSupplier: true, isActive: true, take: 200 }),
+        businessPartnerService.search({ roles: [2], isActive: true, take: 200 }),
       ]);
       setRows(data);
       const m = new Map<string, string>();
-      bps.forEach((bp) => { if (bp.legacySupplierId) m.set(bp.legacySupplierId, bp.legalName); });
+      bps.forEach((bp) => { m.set(bp.id, bp.legalName); });
       setSupplierMap(m);
     } catch (e) {
       setMsg({ type: 'error', text: e instanceof Error ? e.message : 'Error al cargar compras' });
@@ -59,7 +59,7 @@ export function ComprasListPage() {
     if (!qn) return rows;
     return rows.filter((r) =>
       r.invoiceNumber.toLowerCase().includes(qn) ||
-      (supplierMap.get(r.supplierId) ?? '').toLowerCase().includes(qn),
+      (supplierMap.get(r.businessPartnerId ?? r.supplierId) ?? '').toLowerCase().includes(qn),
     );
   }, [rows, q, supplierMap]);
 
@@ -206,7 +206,7 @@ export function ComprasListPage() {
                 {filtered.map((row) => {
                   const badge    = estadoBadge(row.estado);
                   const isBusy   = actionId === row.id;
-                  const prov     = supplierMap.get(row.supplierId) ?? row.supplierId.slice(0, 8);
+                  const prov = supplierMap.get(row.businessPartnerId ?? row.supplierId) ?? (row.businessPartnerId ?? row.supplierId).slice(0, 8);
                   return (
                     <tr key={row.id}>
                       <td className="cf-col-numero">{row.invoiceNumber}</td>
@@ -301,3 +301,4 @@ export function ComprasListPage() {
     </ErpPageTemplate>
   );
 }
+

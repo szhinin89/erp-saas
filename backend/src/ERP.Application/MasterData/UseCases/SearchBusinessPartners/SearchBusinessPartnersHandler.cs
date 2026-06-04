@@ -1,5 +1,4 @@
 using ERP.Application.Common;
-using ERP.Application.MasterData;
 using ERP.Application.MasterData.DTOs;
 using ERP.Domain.MasterData.Interfaces;
 using MediatR;
@@ -7,30 +6,23 @@ using MediatR;
 namespace ERP.Application.MasterData.UseCases.SearchBusinessPartners;
 
 public sealed class SearchBusinessPartnersHandler
-    : IRequestHandler<SearchBusinessPartnersQuery, Result<PagedResult<BusinessPartnerDto>>>
+    : IRequestHandler<SearchBusinessPartnersQuery, Result<PagedResult<BusinessPartnerSummaryDto>>>
 {
-    private readonly IBusinessPartnerRepository _repo;
-    private readonly IBusinessPartnerOperationalLinkEnricher _linkEnricher;
+    private readonly IBusinessPartnerRepository _bpRepo;
 
-    public SearchBusinessPartnersHandler(
-        IBusinessPartnerRepository repo,
-        IBusinessPartnerOperationalLinkEnricher linkEnricher)
+    public SearchBusinessPartnersHandler(IBusinessPartnerRepository bpRepo) => _bpRepo = bpRepo;
+
+    public async Task<Result<PagedResult<BusinessPartnerSummaryDto>>> Handle(
+        SearchBusinessPartnersQuery q, CancellationToken ct)
     {
-        _repo = repo;
-        _linkEnricher = linkEnricher;
-    }
+        var take       = Math.Clamp(q.Take, 1, 200);
+        var pageNumber = take > 0 ? (q.Skip / take) + 1 : 1;
 
-    public async Task<Result<PagedResult<BusinessPartnerDto>>> Handle(
-        SearchBusinessPartnersQuery request, CancellationToken ct)
-    {
-        var take = Math.Clamp(request.Take, 1, 200);
-        var pageNumber = take > 0 ? (request.Skip / take) + 1 : 1;
+        var items = await _bpRepo.SearchAsync(q.Query, q.IsActive, q.Roles, q.Skip, take, ct);
+        var total = await _bpRepo.CountAsync(q.Query, q.IsActive, q.Roles, ct);
 
-        var results = await _repo.SearchAsync(request.Query, request.IsActive, request.IsCustomer, request.IsSupplier, request.Skip, take, ct);
-        var total = await _repo.CountAsync(request.Query, request.IsActive, request.IsCustomer, request.IsSupplier, ct);
-
-        var enriched = await _linkEnricher.EnrichAsync(results, ct);
-        return Result<PagedResult<BusinessPartnerDto>>.Success(
-            new PagedResult<BusinessPartnerDto>(enriched, pageNumber, take, total));
+        var dtos = items.Select(BusinessPartnerSummaryDto.From).ToList();
+        return Result<PagedResult<BusinessPartnerSummaryDto>>.Success(
+            new PagedResult<BusinessPartnerSummaryDto>(dtos, pageNumber, take, total));
     }
 }

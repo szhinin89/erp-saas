@@ -4,7 +4,14 @@ using Microsoft.Extensions.Diagnostics.HealthChecks;
 
 namespace ERP.API.Health;
 
-/// <summary>/health/masterdata-sync — perfiles BP sin partner o settings sin partner activo.</summary>
+/// <summary>
+/// /health/masterdata-sync — verifica integridad básica del modelo BusinessPartner V2.
+///
+/// ELIMINADO (legacy): referencias a CustomerProfiles/SupplierProfiles
+///   — esas tablas ya no existen en el modelo V2.
+///
+/// NUEVO: verifica que no existan BusinessPartnerRoles huérfanos (sin BP padre).
+/// </summary>
 public sealed class MasterDataSyncHealthCheck : IHealthCheck
 {
     private readonly ErpDbContext _db;
@@ -19,22 +26,14 @@ public sealed class MasterDataSyncHealthCheck : IHealthCheck
         if (provider.Contains("InMemory", StringComparison.OrdinalIgnoreCase))
             return HealthCheckResult.Healthy("Skipped for in-memory provider.");
 
-        var orphanCustomerProfiles = await _db.CustomerProfiles
-            .Where(p => !_db.BusinessPartners.Any(b => b.Id == p.BusinessPartnerId))
+        var orphanRoles = await _db.BusinessPartnerRoles
+            .Where(r => !_db.BusinessPartners.Any(b => b.Id == r.BusinessPartnerId))
             .Take(1)
             .AnyAsync(cancellationToken);
 
-        if (orphanCustomerProfiles)
-            return HealthCheckResult.Degraded("CustomerProfile sin BusinessPartner.");
+        if (orphanRoles)
+            return HealthCheckResult.Degraded("BusinessPartnerRole sin BusinessPartner padre.");
 
-        var orphanSupplierProfiles = await _db.SupplierProfiles
-            .Where(p => !_db.BusinessPartners.Any(b => b.Id == p.BusinessPartnerId))
-            .Take(1)
-            .AnyAsync(cancellationToken);
-
-        if (orphanSupplierProfiles)
-            return HealthCheckResult.Degraded("SupplierProfile sin BusinessPartner.");
-
-        return HealthCheckResult.Healthy("MasterData sync OK.");
+        return HealthCheckResult.Healthy("MasterData V2 integrity OK.");
     }
 }

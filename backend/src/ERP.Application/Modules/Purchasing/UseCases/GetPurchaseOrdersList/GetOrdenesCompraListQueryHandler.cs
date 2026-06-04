@@ -1,4 +1,4 @@
-using MediatR;
+﻿using MediatR;
 using ERP.Application.Common;
 using ERP.Application.Modules.Purchasing.DTOs;
 using ERP.Application.Modules.Purchasing.UseCases.CreatePurchaseOrder;
@@ -40,7 +40,7 @@ public sealed class GetPurchaseOrdersListQueryHandler
         foreach (var pid in proveedorIds)
         {
             var p = await _bpRepo.GetByIdAsync(pid, ct);
-            proveedores[pid] = p?.LegalName ?? pid.ToString();
+            proveedores[pid] = p?.Name.LegalName ?? pid.ToString();
         }
 
         var dtos = items.Select(o =>
@@ -50,3 +50,4 @@ public sealed class GetPurchaseOrdersListQueryHandler
             new PurchaseOrdersPagedResult(dtos, total, query.PageNumber, query.PageSize));
     }
 }
+

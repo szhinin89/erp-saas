@@ -29,7 +29,8 @@ export interface ExpenseCategoryDto {
 }
 
 export interface CrearGastoManualRequest {
-  supplierId: string | null;
+  /** V2: businessPartnerId es el ID canónico del proveedor. supplierId eliminado. */
+  businessPartnerId: string | null;
   issueDate: string;
   invoiceNumber: string | null;
   concept: string;
@@ -68,7 +69,7 @@ export const gastosService = {
   async crearManual(payload: CrearGastoManualRequest): Promise<GastoDto> {
     const res = await api.post<ApiResponse<GastoDto>>('/api/expenses/manual', {
       modo: 1, // Manual
-      supplierId: payload.supplierId,
+      businessPartnerId: payload.businessPartnerId,
       issueDate: payload.issueDate,
       invoiceNumber: payload.invoiceNumber,
       concept: payload.concept,

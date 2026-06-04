@@ -1,4 +1,4 @@
-using MediatR;
+﻿using MediatR;
 using Microsoft.Extensions.Logging;
 using ERP.Application.Common;
 using ERP.Application.Modules.Purchasing.DTOs;
@@ -63,6 +63,7 @@ public sealed class ApproveOrderPurchaseCommandHandler
 
         var bp = await _bpRepo.GetByIdAsync(orden.BusinessPartnerId, ct);
         return Result<PurchaseOrderDto>.Success(
-            CreatePurchaseOrderCommandHandler.ToDto(orden, bp?.LegalName ?? orden.BusinessPartnerId.ToString()));
+            CreatePurchaseOrderCommandHandler.ToDto(orden, bp?.Name.LegalName ?? orden.BusinessPartnerId.ToString()));
     }
 }
+

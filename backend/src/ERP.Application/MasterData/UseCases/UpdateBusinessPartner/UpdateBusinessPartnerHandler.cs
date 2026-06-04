@@ -1,74 +1,73 @@
 using ERP.Application.Common;
 using ERP.Application.Common.Persistence;
+using ERP.Application.MasterData.DTOs;
 using ERP.Domain.MasterData.Interfaces;
 using MediatR;
-using Microsoft.Extensions.Logging;
 
 namespace ERP.Application.MasterData.UseCases.UpdateBusinessPartner;
 
 public sealed class UpdateBusinessPartnerHandler
-    : IRequestHandler<UpdateBusinessPartnerCommand, Result<bool>>
+    : IRequestHandler<UpdateBusinessPartnerCommand, Result<BusinessPartnerSummaryDto>>
 {
-    private readonly IBusinessPartnerRepository _repo;
-    private readonly ICurrentUser _currentUser;
-    private readonly IDatabaseExceptionTranslator _dbExceptions;
-    private readonly ILogger<UpdateBusinessPartnerHandler> _logger;
+    private readonly IBusinessPartnerRepository _bpRepo;
+    private readonly IOperationalContext        _ctx;
 
-    public UpdateBusinessPartnerHandler(
-        IBusinessPartnerRepository repo,
-        ICurrentUser currentUser,
-        IDatabaseExceptionTranslator dbExceptions,
-        ILogger<UpdateBusinessPartnerHandler> logger)
-    {
-        _repo = repo;
-        _currentUser = currentUser;
-        _dbExceptions = dbExceptions;
-        _logger = logger;
-    }
+    public UpdateBusinessPartnerHandler(IBusinessPartnerRepository bpRepo, IOperationalContext ctx)
+        => (_bpRepo, _ctx) = (bpRepo, ctx);
 
-    public async Task<Result<bool>> Handle(UpdateBusinessPartnerCommand command, CancellationToken ct)
+    public async Task<Result<BusinessPartnerSummaryDto>> Handle(
+        UpdateBusinessPartnerCommand cmd, CancellationToken ct)
     {
-        var bp = await _repo.GetByIdAsync(command.Id, ct);
+        var bp = await _bpRepo.GetByIdAsync(cmd.Id, ct);
         if (bp is null)
-            return Result<bool>.Failure("BusinessPartner no encontrado.");
-
-        var userId = _currentUser.UserId;
-
-        var identificationChanged =
-            bp.Identification.Type   != command.IdentificationType ||
-            bp.Identification.Number != command.IdentificationNumber;
-
-        if (identificationChanged)
-        {
-            var duplicate = await _repo.ExistsByIdentificationAsync(
-                command.IdentificationType, command.IdentificationNumber, excludeId: command.Id, ct: ct);
-            if (duplicate)
-                return Result<bool>.ValidationFailure(
-                    $"Ya existe un BusinessPartner con {command.IdentificationType} {command.IdentificationNumber}.");
-
-            try { bp.UpdateIdentification(command.IdentificationType, command.IdentificationNumber, userId); }
-            catch (ArgumentException ex) { return Result<bool>.ValidationFailure(ex.Message); }
-        }
-
-        try { bp.UpdateProfile(command.LegalName, command.TradeName, command.LegalRepresentativeName, command.Email, command.Phone, command.CountryCode, userId); }
-        catch (ArgumentException ex) { return Result<bool>.ValidationFailure(ex.Message); }
+            return Result<BusinessPartnerSummaryDto>.NotFound("BusinessPartner no encontrado.");
 
         try
         {
-            await _repo.SaveChangesAsync(ct);
-            return Result<bool>.Success(true);
+            bp.UpdateProfile(cmd.LegalName, cmd.PersonType, _ctx.UserId, cmd.TradeName, cmd.CountryCode);
         }
-        catch (Exception ex) when (_dbExceptions.TryGetUniqueViolation(ex, out var violation))
-        {
-            UniqueViolationLogger.LogUniqueViolation(
-                _logger,
-                nameof(UpdateBusinessPartnerHandler),
-                violation,
-                Guid.Empty,
-                Guid.Empty);
+        catch (ArgumentException ex)        { return Result<BusinessPartnerSummaryDto>.ValidationFailure(ex.Message); }
+        catch (InvalidOperationException ex) { return Result<BusinessPartnerSummaryDto>.ValidationFailure(ex.Message); }
 
-            return Result<bool>.Conflict(
-                $"Ya existe un BusinessPartner con {command.IdentificationType} {command.IdentificationNumber}.");
+        await _bpRepo.SaveChangesAsync(ct);
+        return Result<BusinessPartnerSummaryDto>.Success(BusinessPartnerSummaryDto.From(bp));
+    }
+}
+
+public sealed class UpdateBusinessPartnerIdentificationHandler
+    : IRequestHandler<UpdateBusinessPartnerIdentificationCommand, Result<BusinessPartnerSummaryDto>>
+{
+    private readonly IBusinessPartnerRepository   _bpRepo;
+    private readonly IOperationalContext          _ctx;
+    private readonly IDatabaseExceptionTranslator _dbEx;
+
+    public UpdateBusinessPartnerIdentificationHandler(
+        IBusinessPartnerRepository bpRepo, IOperationalContext ctx, IDatabaseExceptionTranslator dbEx)
+        => (_bpRepo, _ctx, _dbEx) = (bpRepo, ctx, dbEx);
+
+    public async Task<Result<BusinessPartnerSummaryDto>> Handle(
+        UpdateBusinessPartnerIdentificationCommand cmd, CancellationToken ct)
+    {
+        var bp = await _bpRepo.GetByIdAsync(cmd.Id, ct);
+        if (bp is null)
+            return Result<BusinessPartnerSummaryDto>.NotFound("BusinessPartner no encontrado.");
+
+        try
+        {
+            bp.UpdateIdentification(cmd.IdentificationType, cmd.IdentificationNumber, _ctx.UserId);
+        }
+        catch (ArgumentException ex)        { return Result<BusinessPartnerSummaryDto>.ValidationFailure(ex.Message); }
+        catch (InvalidOperationException ex) { return Result<BusinessPartnerSummaryDto>.ValidationFailure(ex.Message); }
+
+        try
+        {
+            await _bpRepo.SaveChangesAsync(ct);
+            return Result<BusinessPartnerSummaryDto>.Success(BusinessPartnerSummaryDto.From(bp));
+        }
+        catch (Exception ex) when (_dbEx.TryGetUniqueViolation(ex, out _))
+        {
+            return Result<BusinessPartnerSummaryDto>.Conflict(
+                $"Ya existe un BusinessPartner con {cmd.IdentificationType} {cmd.IdentificationNumber}.");
         }
     }
 }

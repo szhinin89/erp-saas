@@ -5,82 +5,41 @@ using Microsoft.EntityFrameworkCore;
 
 namespace ERP.Infrastructure.MasterData.Reconciliation;
 
-/// <summary>READ-ONLY: detecta drift entre entidades legacy y MasterData BC.</summary>
+/// <summary>
+/// READ-ONLY: detecta problemas de integridad en el modelo BusinessPartner V2.
+///
+/// ELIMINADO (legacy): DetectOrphanProfilesAsync — CustomerProfile/SupplierProfile ya no existen.
+/// ELIMINADO (legacy): DetectLegacyWithoutProfilesAsync — concepto legacy eliminado.
+///
+/// VIGENTE: DetectDuplicateIdentificationsAsync — sigue siendo relevante en V2.
+/// </summary>
 public sealed class BusinessPartnerReconciliationService : IMasterDataReconciliationService
 {
     private readonly IPlatformQueryAccessor _platform;
-    private readonly ErpDbContext _db;
+    private readonly ErpDbContext           _db;
 
-    public BusinessPartnerReconciliationService(
-        IPlatformQueryAccessor platform,
-        ErpDbContext db)
-    {
-        _platform = platform;
-        _db = db;
-    }
+    public BusinessPartnerReconciliationService(IPlatformQueryAccessor platform, ErpDbContext db)
+        => (_platform, _db) = (platform, db);
 
     public async Task<MasterDataReconciliationReport> AnalyzeAsync(CancellationToken ct = default)
     {
         var issues = new List<MasterDataReconciliationIssue>();
 
-        await foreach (var issue in DetectOrphanProfilesAsync(ct))
-            issues.Add(issue);
-
-        await foreach (var issue in DetectLegacyWithoutProfilesAsync(ct))
-            issues.Add(issue);
-
         await foreach (var issue in DetectDuplicateIdentificationsAsync(ct))
             issues.Add(issue);
 
-        return new MasterDataReconciliationReport(
-            issues.Count == 0,
-            issues.Count,
-            issues);
+        await foreach (var issue in DetectOrphanRolesAsync(ct))
+            issues.Add(issue);
+
+        return new MasterDataReconciliationReport(issues.Count == 0, issues.Count, issues);
     }
 
-    private async IAsyncEnumerable<MasterDataReconciliationIssue> DetectOrphanProfilesAsync(
-        [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken ct)
-    {
-        var orphanCustomers = await _platform.Unfiltered(
-            _db.CustomerProfiles.Where(p => !_db.BusinessPartners.Any(b => b.Id == p.BusinessPartnerId)),
-            PlatformQueryReason.PlatformMetrics)
-            .Take(20).Select(p => p.SubscriberId).ToListAsync(ct);
-
-        foreach (var subId in orphanCustomers.Distinct())
-        {
-            yield return new MasterDataReconciliationIssue(
-                "orphan_customer_profile",
-                "warning",
-                "CustomerProfile sin BusinessPartner asociado.",
-                subId);
-        }
-
-        var orphanSuppliers = await _platform.Unfiltered(
-            _db.SupplierProfiles.Where(p => !_db.BusinessPartners.Any(b => b.Id == p.BusinessPartnerId)),
-            PlatformQueryReason.PlatformMetrics)
-            .Take(20).Select(p => p.SubscriberId).ToListAsync(ct);
-
-        foreach (var subId in orphanSuppliers.Distinct())
-        {
-            yield return new MasterDataReconciliationIssue(
-                "orphan_supplier_profile",
-                "warning",
-                "SupplierProfile sin BusinessPartner asociado.",
-                subId);
-        }
-    }
-
-    private static async IAsyncEnumerable<MasterDataReconciliationIssue> DetectLegacyWithoutProfilesAsync(
-        [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken ct)
-    {
-        await Task.CompletedTask;
-        yield break;
-    }
-
+    /// <summary>Detecta identificaciones fiscales duplicadas dentro del mismo subscriber.</summary>
     private async IAsyncEnumerable<MasterDataReconciliationIssue> DetectDuplicateIdentificationsAsync(
         [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken ct)
     {
-        var dupes = await _platform.Unfiltered(_db.BusinessPartners.AsNoTracking(), PlatformQueryReason.PlatformMetrics)
+        var dupes = await _platform
+            .Unfiltered(_db.BusinessPartners.AsNoTracking(), PlatformQueryReason.PlatformMetrics)
             .GroupBy(b => new { b.SubscriberId, b.Identification.Type, b.Identification.Number })
             .Where(g => g.Count() > 1)
             .Select(g => g.Key.SubscriberId)
@@ -89,12 +48,30 @@ public sealed class BusinessPartnerReconciliationService : IMasterDataReconcilia
             .ToListAsync(ct);
 
         foreach (var subId in dupes)
-        {
             yield return new MasterDataReconciliationIssue(
                 "duplicate_bp_identification",
                 "critical",
-                "Identificación duplicada en BusinessPartners del subscriber.",
+                "Identificación fiscal duplicada para el mismo subscriber.",
                 subId);
-        }
+    }
+
+    /// <summary>Detecta BusinessPartnerRoles sin un BusinessPartner padre válido.</summary>
+    private async IAsyncEnumerable<MasterDataReconciliationIssue> DetectOrphanRolesAsync(
+        [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken ct)
+    {
+        var orphanSubIds = await _platform
+            .Unfiltered(_db.BusinessPartnerRoles.AsNoTracking(), PlatformQueryReason.PlatformMetrics)
+            .Where(r => !_db.BusinessPartners.Any(b => b.Id == r.BusinessPartnerId))
+            .Select(r => r.SubscriberId)
+            .Distinct()
+            .Take(20)
+            .ToListAsync(ct);
+
+        foreach (var subId in orphanSubIds)
+            yield return new MasterDataReconciliationIssue(
+                "orphan_bp_role",
+                "warning",
+                "BusinessPartnerRole sin BusinessPartner padre.",
+                subId);
     }
 }

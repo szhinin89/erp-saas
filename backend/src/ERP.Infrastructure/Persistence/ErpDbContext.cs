@@ -265,12 +265,11 @@ public class ErpDbContext : DbContext
     public DbSet<Branch> Branches => Set<Branch>();
     public DbSet<UserActivity> UserActivities => Set<UserActivity>();
     // ── MasterData BC ─────────────────────────────────────────────────────
-    public DbSet<BusinessPartner>                BusinessPartners               => Set<BusinessPartner>();
-    public DbSet<CustomerProfile>                CustomerProfiles               => Set<CustomerProfile>();
-    public DbSet<SupplierProfile>                SupplierProfiles               => Set<SupplierProfile>();
-    public DbSet<CompanyBusinessPartnerSettings> CompanyBusinessPartnerSettings => Set<CompanyBusinessPartnerSettings>();
-    public DbSet<BusinessPartnerLocation>        BusinessPartnerLocations       => Set<BusinessPartnerLocation>();
-    public DbSet<BusinessPartnerContact>         BusinessPartnerContacts        => Set<BusinessPartnerContact>();
+    public DbSet<BusinessPartner>           BusinessPartners          => Set<BusinessPartner>();
+    public DbSet<BusinessPartnerRole>       BusinessPartnerRoles      => Set<BusinessPartnerRole>();
+    public DbSet<CompanyBpTradingSettings>  CompanyBpTradingSettings  => Set<CompanyBpTradingSettings>();
+    public DbSet<BusinessPartnerLocation>   BusinessPartnerLocations  => Set<BusinessPartnerLocation>();
+    public DbSet<BusinessPartnerContact>    BusinessPartnerContacts   => Set<BusinessPartnerContact>();
 
     // ── Sales (traditional) ───────────────────────────────────────────────
     public DbSet<SalesBill>           SalesBills          => Set<SalesBill>();

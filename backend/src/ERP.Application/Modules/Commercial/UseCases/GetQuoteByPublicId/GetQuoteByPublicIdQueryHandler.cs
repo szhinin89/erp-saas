@@ -1,4 +1,4 @@
-using ERP.Application.Common;
+﻿using ERP.Application.Common;
 using ERP.Application.Modules.Commercial.DTOs;
 using ERP.Domain.MasterData.Interfaces;
 using ERP.Domain.Modules.Commercial.Interfaces;
@@ -67,7 +67,8 @@ public sealed class GetQuoteByPublicIdQueryHandler
         return Result<QuoteDetailDto?>.Success(
             QuoteDtoMapper.ToDetail(
                 quote,
-                bp?.LegalName ?? quote.BusinessPartnerId.ToString(),
+                bp?.Name.LegalName ?? quote.BusinessPartnerId.ToString(),
                 relatedOrderPublicId));
     }
 }
+

@@ -4,11 +4,13 @@ import { useDebounce } from '../../../hooks/useDebounce';
 import { usePermissionsUi } from '../../../access/usePermissionsUi';
 import { businessPartnerFacade } from '../api/businessPartnerFacade';
 import type {
-  BusinessPartnerDto,
-  CompanyBpSettingsDto,
+  BusinessPartnerSummaryDto,
+  CompanyBpTradingSettingsDto,
   CreateBusinessPartnerBody,
+  CustomerConfigBody,
   UpdateBusinessPartnerBody,
 } from '../types/businessPartner.types';
+import { RoleTypeEnum } from '../types/businessPartner.types';
 import { formatApiError } from '../../lib/formatApiError';
 
 export function useMasterDataCustomersPage() {
@@ -24,26 +26,24 @@ export function useMasterDataCustomersPage() {
   const [showInactive, setShowInactive] = useState(false);
   const [page, setPage]                 = useState(1);
   const PAGE_SIZE                       = 50;
-  const [modalOpen, setModalOpen]       = useState(false);
-  const [editBp, setEditBp]             = useState<BusinessPartnerDto | null>(null);
-  const [settingsBp, setSettingsBp]     = useState<BusinessPartnerDto | null>(null);
-  const [settingsData, setSettingsData] = useState<CompanyBpSettingsDto | null>(null);
-  const [saving, setSaving]             = useState(false);
-  const [notesBp, setNotesBp]           = useState<BusinessPartnerDto | null>(null);
 
-  // Errores de acciones inline (disable/activate) — banner en la página
-  const [inlineError, setInlineError] = useState<string | null>(null);
-  // Errores de guardado en modal — banner DENTRO del modal activo
-  const [modalError, setModalError] = useState<string | null>(null);
+  const [modalOpen, setModalOpen]       = useState(false);
+  const [editBp, setEditBp]             = useState<BusinessPartnerSummaryDto | null>(null);
+  const [settingsBp, setSettingsBp]     = useState<BusinessPartnerSummaryDto | null>(null);
+  const [settingsData, setSettingsData] = useState<CompanyBpTradingSettingsDto | null>(null);
+  const [saving, setSaving]             = useState(false);
+  const [inlineError, setInlineError]   = useState<string | null>(null);
+  const [modalError, setModalError]     = useState<string | null>(null);
+  const [customerConfigBp, setCustomerConfigBp] = useState<{ bp: BusinessPartnerSummaryDto; roleId: string } | null>(null);
 
   const listState = useCompanyScopedAsync(
     () =>
       businessPartnerFacade.searchBusinessPartnersPaged({
-        q: debouncedSearch || undefined,
+        q:       debouncedSearch || undefined,
         isActive: showInactive ? undefined : true,
-        isCustomer: true,
-        skip: (page - 1) * PAGE_SIZE,
-        take: PAGE_SIZE,
+        roles:   [RoleTypeEnum.Customer],   // replaces legacy isCustomer: true
+        skip:    (page - 1) * PAGE_SIZE,
+        take:    PAGE_SIZE,
       }),
     canView,
     [debouncedSearch, showInactive, page],
@@ -53,40 +53,22 @@ export function useMasterDataCustomersPage() {
   const totalCount = listState.data?.totalCount ?? 0;
   const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE));
 
-  const setSearchReset = (v: string) => { setSearch(v); setPage(1); };
-  const setShowInactiveReset = (v: boolean) => { setShowInactive(v); setPage(1); };
+  const clearModalError  = () => setModalError(null);
+  const setSearchReset   = (v: string)  => { setSearch(v);       setPage(1); };
+  const setInactiveReset = (v: boolean) => { setShowInactive(v); setPage(1); };
 
-  const clearModalError = () => setModalError(null);
+  // ── Create ─────────────────────────────────────────────────────────────────
 
-  const openCreate = () => {
-    clearModalError();
-    setInlineError(null);
-    setModalOpen(true);
-  };
+  const openCreate  = () => { clearModalError(); setInlineError(null); setModalOpen(true); };
+  const closeCreate = useCallback(() => { setModalOpen(false); clearModalError(); }, []);
 
-  const openEdit = (bp: BusinessPartnerDto) => {
-    clearModalError();
-    setInlineError(null);
-    setEditBp(bp);
-  };
-
-  const openSettings = async (bp: BusinessPartnerDto) => {
-    clearModalError();
-    setInlineError(null);
-    setSettingsBp(bp);
-    try {
-      const data = await businessPartnerFacade.getCompanySettings(bp.id);
-      setSettingsData(data);
-    } catch {
-      setSettingsData(null);
-    }
-  };
-
+  /** Creates the BP identity and immediately assigns the Customer role. */
   const createCustomer = async (body: CreateBusinessPartnerBody): Promise<boolean> => {
     setSaving(true);
     clearModalError();
     try {
-      await businessPartnerFacade.createBusinessPartner({ ...body, asCustomer: true, asSupplier: false });
+      const created = await businessPartnerFacade.createBusinessPartner(body);
+      await businessPartnerFacade.assignRole(created.id, { roleType: RoleTypeEnum.Customer });
       setModalOpen(false);
       listState.refetch();
       return true;
@@ -97,6 +79,28 @@ export function useMasterDataCustomersPage() {
       setSaving(false);
     }
   };
+
+  /** Assigns the Customer role to an existing BP that was found via search. */
+  const assignAsCustomer = async (id: string): Promise<boolean> => {
+    setSaving(true);
+    clearModalError();
+    try {
+      await businessPartnerFacade.assignRole(id, { roleType: RoleTypeEnum.Customer });
+      setModalOpen(false);
+      listState.refetch();
+      return true;
+    } catch (err) {
+      setModalError(formatApiError(err));
+      return false;
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  // ── Update ─────────────────────────────────────────────────────────────────
+
+  const openEdit  = (bp: BusinessPartnerSummaryDto) => { clearModalError(); setInlineError(null); setEditBp(bp); };
+  const closeEdit = useCallback(() => { setEditBp(null); clearModalError(); }, []);
 
   const updateCustomer = async (id: string, body: UpdateBusinessPartnerBody): Promise<boolean> => {
     setSaving(true);
@@ -114,12 +118,13 @@ export function useMasterDataCustomersPage() {
     }
   };
 
-  // Acciones inline — sin modal: error va al banner de página
+  // ── Inline actions ─────────────────────────────────────────────────────────
+
   const disableCustomer = async (id: string) => {
     setSaving(true);
     setInlineError(null);
     try {
-      await businessPartnerFacade.disableBusinessPartner(id);
+      await businessPartnerFacade.deactivateBusinessPartner(id);
       listState.refetch();
     } catch (err) {
       setInlineError(formatApiError(err));
@@ -141,29 +146,11 @@ export function useMasterDataCustomersPage() {
     }
   };
 
-  const saveCompanySettings = async (
-    id: string,
-    payload: { creditLimit?: number | null; paymentDays: number; isBlocked: boolean },
-  ) => {
-    setSaving(true);
-    clearModalError();
-    try {
-      await businessPartnerFacade.upsertCompanySettings(id, payload);
-      setSettingsBp(null);
-      setSettingsData(null);
-      listState.refetch();
-    } catch (err) {
-      setModalError(formatApiError(err));
-    } finally {
-      setSaving(false);
-    }
-  };
-
   const addAsSupplier = async (id: string) => {
     setSaving(true);
     setInlineError(null);
     try {
-      await businessPartnerFacade.addRole(id, false, true);
+      await businessPartnerFacade.assignRole(id, { roleType: RoleTypeEnum.Supplier });
       listState.refetch();
     } catch (err) {
       setInlineError(formatApiError(err));
@@ -172,44 +159,17 @@ export function useMasterDataCustomersPage() {
     }
   };
 
-  const assignAsCustomer = async (id: string): Promise<boolean> => {
-    setSaving(true);
-    clearModalError();
-    try {
-      await businessPartnerFacade.addRole(id, true, false);
-      setModalOpen(false);
-      listState.refetch();
-      return true;
-    } catch (err) {
-      setModalError(formatApiError(err));
-      return false;
-    } finally {
-      setSaving(false);
-    }
-  };
+  // ── Trading Settings ───────────────────────────────────────────────────────
 
-  const openNotes = (bp: BusinessPartnerDto) => {
+  const openSettings = async (bp: BusinessPartnerSummaryDto) => {
     clearModalError();
     setInlineError(null);
-    setNotesBp(bp);
-  };
-
-  const closeNotes = useCallback(() => {
-    setNotesBp(null);
-    clearModalError();
-  }, []);
-
-  const saveNotes = async (id: string, notes: string | null) => {
-    setSaving(true);
-    clearModalError();
+    setSettingsBp(bp);
     try {
-      await businessPartnerFacade.updateCustomerNotes(id, notes);
-      setNotesBp(null);
-      listState.refetch();
-    } catch (err) {
-      setModalError(formatApiError(err));
-    } finally {
-      setSaving(false);
+      const data = await businessPartnerFacade.getTradingSettings(bp.id);
+      setSettingsData(data);
+    } catch {
+      setSettingsData(null);
     }
   };
 
@@ -219,57 +179,95 @@ export function useMasterDataCustomersPage() {
     clearModalError();
   }, []);
 
-  const closeCreate = useCallback(() => {
-    setModalOpen(false);
+  const saveSettings = async (
+    id: string,
+    payload: { creditLimit: number; paymentDays: number; creditCurrencyCode: string },
+  ) => {
+    setSaving(true);
     clearModalError();
-  }, []);
+    try {
+      await businessPartnerFacade.upsertTradingSettings(id, payload);
+      await openSettings({ ...settingsBp!, id }); // reload settings
+      listState.refetch();
+    } catch (err) {
+      setModalError(formatApiError(err));
+    } finally {
+      setSaving(false);
+    }
+  };
 
-  const closeEdit = useCallback(() => {
-    setEditBp(null);
+  // ── Customer Config (CRM fields) ──────────────────────────────────────────
+
+  const openCustomerConfig = async (bp: BusinessPartnerSummaryDto) => {
     clearModalError();
-  }, []);
+    try {
+      const roles = await businessPartnerFacade.getRoles(bp.id, true);
+      const customerRole = roles.find((r) => r.roleType === 'Customer');
+      if (customerRole) setCustomerConfigBp({ bp, roleId: customerRole.id });
+    } catch { /* no action — BP may not have Customer role yet */ }
+  };
+
+  const closeCustomerConfig = useCallback(() => { setCustomerConfigBp(null); clearModalError(); }, []);
+
+  const saveCustomerConfig = async (bpId: string, roleId: string, config: CustomerConfigBody): Promise<boolean> => {
+    setSaving(true);
+    clearModalError();
+    try {
+      await businessPartnerFacade.updateCustomerConfig(bpId, roleId, config);
+      setCustomerConfigBp(null);
+      return true;
+    } catch (err) {
+      setModalError(formatApiError(err));
+      return false;
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const blockCustomer = async (id: string, reason: string) => {
+    setSaving(true);
+    clearModalError();
+    try {
+      await businessPartnerFacade.blockBusinessPartner(id, { reason });
+      await openSettings({ ...settingsBp!, id });
+    } catch (err) {
+      setModalError(formatApiError(err));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const unblockCustomer = async (id: string) => {
+    setSaving(true);
+    clearModalError();
+    try {
+      await businessPartnerFacade.unblockBusinessPartner(id);
+      await openSettings({ ...settingsBp!, id });
+    } catch (err) {
+      setModalError(formatApiError(err));
+    } finally {
+      setSaving(false);
+    }
+  };
 
   return {
-    canView,
-    canCreate,
-    canUpdate,
-    canDisable,
-    canConfigure,
-    search,
-    setSearch: setSearchReset,
-    showInactive,
-    setShowInactive: setShowInactiveReset,
-    page,
-    setPage,
-    totalCount,
-    totalPages,
+    canView, canCreate, canUpdate, canDisable, canConfigure,
+    search, setSearch: setSearchReset,
+    showInactive, setShowInactive: setInactiveReset,
+    page, setPage,
+    totalCount, totalPages,
     customers,
-    loading:     listState.loading,
-    listError:   listState.error,
-    inlineError,
-    modalError,
-    modalOpen,
-    closeCreate,
-    openCreate,
-    editBp,
-    closeEdit,
-    openEdit,
-    createCustomer,
-    updateCustomer,
-    disableCustomer,
-    activateCustomer,
-    settingsBp,
-    settingsData,
-    openSettings,
-    saveCompanySettings,
-    closeSettings,
-    addAsSupplier,
-    assignAsCustomer,
-    notesBp,
-    openNotes,
-    closeNotes,
-    saveNotes,
+    loading:    listState.loading,
+    listError:  listState.error,
+    inlineError, modalError,
+    modalOpen, openCreate, closeCreate,
+    editBp, openEdit, closeEdit,
+    createCustomer, updateCustomer, assignAsCustomer,
+    disableCustomer, activateCustomer, addAsSupplier,
+    settingsBp, settingsData, openSettings, closeSettings,
+    saveSettings, blockCustomer, unblockCustomer,
     saving,
     refetch: listState.refetch,
+    customerConfigBp, openCustomerConfig, closeCustomerConfig, saveCustomerConfig,
   };
 }

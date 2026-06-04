@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import type { BusinessPartnerDto } from '../types/businessPartner.types';
+import type { BusinessPartnerSummaryDto } from '../types/businessPartner.types';
 
 export type PartnerTabId = 'resumen' | 'listado' | 'nuevo';
 
@@ -7,6 +7,7 @@ export type PartnerActivityAction =
   | 'created'
   | 'updated'
   | 'assigned'
+  | 'revoked'
   | 'disabled'
   | 'enabled';
 
@@ -25,12 +26,12 @@ export interface PartnerToast {
 
 export interface PartnerUiState {
   activeTab: PartnerTabId;
-  editingPartner: BusinessPartnerDto | null;
+  editingPartner: BusinessPartnerSummaryDto | null;
   toast: PartnerToast | null;
   recentActivity: PartnerActivityItem[];
 
   setActiveTab: (tab: PartnerTabId) => void;
-  startEdit: (partner: BusinessPartnerDto) => void;
+  startEdit: (partner: BusinessPartnerSummaryDto) => void;
   cancelEdit: () => void;
   showToast: (message: string, type: PartnerToast['type']) => void;
   dismissToast: () => void;
@@ -40,21 +41,16 @@ export interface PartnerUiState {
 
 function createPartnerUiStore() {
   return create<PartnerUiState>((set) => ({
-    activeTab: 'resumen',
+    activeTab:      'resumen',
     editingPartner: null,
-    toast: null,
+    toast:          null,
     recentActivity: [],
 
-    setActiveTab: (tab) => set({ activeTab: tab }),
-
-    startEdit: (partner) => set({ editingPartner: partner, activeTab: 'nuevo' }),
-
-    cancelEdit: () => set({ editingPartner: null, activeTab: 'listado' }),
-
-    showToast: (message, type) =>
-      set({ toast: { id: `${Date.now()}`, message, type } }),
-
-    dismissToast: () => set({ toast: null }),
+    setActiveTab:  (tab)     => set({ activeTab: tab }),
+    startEdit:     (partner) => set({ editingPartner: partner, activeTab: 'nuevo' }),
+    cancelEdit:    ()        => set({ editingPartner: null, activeTab: 'listado' }),
+    showToast:     (message, type) => set({ toast: { id: `${Date.now()}`, message, type } }),
+    dismissToast:  ()        => set({ toast: null }),
 
     addActivity: (partnerName, action) =>
       set((s) => ({
@@ -64,13 +60,7 @@ function createPartnerUiStore() {
         ],
       })),
 
-    reset: () =>
-      set({
-        activeTab: 'resumen',
-        editingPartner: null,
-        toast: null,
-        recentActivity: [],
-      }),
+    reset: () => set({ activeTab: 'resumen', editingPartner: null, toast: null, recentActivity: [] }),
   }));
 }
 

@@ -1,131 +1,124 @@
 using ERP.Domain.Common;
+using ERP.Domain.MasterData.Enums;
+using ERP.Domain.MasterData.Events;
 using ERP.Domain.MasterData.ValueObjects;
 
 namespace ERP.Domain.MasterData.Entities;
 
 /// <summary>
-/// Aggregate root del bounded context MasterData.
+/// Aggregate Root: identidad fiscal de un tercero dentro del tenant.
 ///
-/// Representa la identidad comercial/fiscal única de una persona natural o jurídica
-/// dentro de un Subscriber. Un mismo RUC/CI existe una SOLA vez por Subscriber,
-/// independientemente de cuántas Companies tenga.
+/// SCOPE: ISubscriberScopedEntity — compartido entre todas las Companies del subscriber.
 ///
-/// SCOPE: ISubscriberScopedEntity — NO tiene CompanyId.
+/// CONTIENE: TaxIdentification, PersonName, PersonType, CountryCode, IsActive.
+/// NO CONTIENE: Email, Phone, LegalRepresentativeName (→ BusinessPartnerContact),
+///              roles (→ BusinessPartnerRole AR independiente),
+///              condiciones comerciales (→ CompanyBpTradingSettings).
 ///
-/// Relación con Companies:
-///   Las condiciones comerciales específicas por empresa (CreditLimit, PaymentDays, etc.)
-///   se modelan en CompanyBusinessPartnerSettings, que sí es ICompanyScopedEntity.
-///
-/// Migración futura:
-///   Customer.IdentificationNumber → BusinessPartner.Identification.Number
-///   Supplier.Ruc                 → BusinessPartner.Identification.Number
-///   Customer/Supplier conservan solo datos operativos de transacción.
-///
-/// IMPORTANTE: No agregar CompanyId a esta entidad. Es una decisión de dominio FINAL.
-/// Ver docs/arch/BUSINESSPARTNER-ADR.md.
+/// EXTENSIÓN DE ROLES: ver BusinessPartnerRole. PROHIBIDO agregar IsCustomer/IsSupplier aquí.
 /// </summary>
 public sealed class BusinessPartner : AuditableEntity, ISubscriberScopedEntity
 {
-    public const int LegalNameMaxLen              = 200;
-    public const int TradeNameMaxLen              = 200;
-    public const int LegalRepresentativeNameMaxLen = 300;
-    public const int EmailMaxLen                  = 120;
-    public const int PhoneMaxLen                  = 40;
-    public const int CountryCodeMaxLen             = 3;
+    public const int CountryCodeLen = 2;
 
-    /// <summary>FK al Subscriber SaaS propietario. No confundir con Company.</summary>
-    public Guid SubscriberId { get; private set; }
-
-    /// <summary>Identificación fiscal/personal unificada (RUC, CI, PASSPORT, OTHER).</summary>
     public TaxIdentification Identification { get; private set; } = null!;
-
-    /// <summary>Razón social o nombre completo legal.</summary>
-    public string LegalName { get; private set; } = null!;
-
-    /// <summary>Nombre comercial (opcional). Aplica principalmente a Persona Jurídica.</summary>
-    public string? TradeName { get; private set; }
-
-    /// <summary>
-    /// Nombre del representante legal (opcional).
-    /// Solo relevante para Persona Jurídica (RUC empresarial).
-    /// Para Persona Natural y Consumidor Final se deja null.
-    /// </summary>
-    public string? LegalRepresentativeName { get; private set; }
-
-    /// <summary>Email de contacto principal (opcional).</summary>
-    public string? Email { get; private set; }
-
-    /// <summary>Teléfono de contacto principal (opcional).</summary>
-    public string? Phone { get; private set; }
-
-    /// <summary>ISO-3 del país (ej. ECU, USA). FK → sri_country.code.</summary>
-    public string? CountryCode { get; private set; }
-
-    public bool IsActive { get; private set; } = true;
-
-    // ── Roles del BusinessPartner (1:1 opcionales) ─────────────
-    // Navegación lazy — no cargar por defecto. Usar proyección explícita.
-    public CustomerProfile? CustomerProfile { get; private set; }
-    public SupplierProfile? SupplierProfile { get; private set; }
+    public PersonName        Name           { get; private set; } = null!;
+    public PersonType        PersonType     { get; private set; }
+    public string?           CountryCode    { get; private set; }
+    public bool              IsActive       { get; private set; } = true;
 
     private BusinessPartner() { }
 
     public static BusinessPartner Create(
-        Guid    subscriberId,
-        string  identificationType,
-        string  identificationNumber,
-        string  legalName,
-        Guid    createdBy,
-        string? tradeName               = null,
-        string? legalRepresentativeName = null,
-        string? email                   = null,
-        string? phone                   = null,
-        string? countryCode             = null)
+        Guid       subscriberId,
+        string     identificationType,
+        string     identificationNumber,
+        PersonType personType,
+        string     legalName,
+        Guid       createdBy,
+        string?    tradeName   = null,
+        string?    countryCode = null)
     {
         if (subscriberId == Guid.Empty)
             throw new ArgumentException("SubscriberId es obligatorio.", nameof(subscriberId));
+        if (createdBy == Guid.Empty)
+            throw new ArgumentException("CreatedBy es obligatorio.", nameof(createdBy));
 
         var bp = new BusinessPartner
         {
-            Id                     = Guid.NewGuid(),
-            SubscriberId           = subscriberId,
-            Identification         = TaxIdentification.Create(identificationType, identificationNumber),
-            LegalName              = Normalize(legalName, nameof(legalName), LegalNameMaxLen),
-            TradeName              = NormalizeOpt(tradeName, TradeNameMaxLen),
-            LegalRepresentativeName = NormalizeOpt(legalRepresentativeName, LegalRepresentativeNameMaxLen),
-            Email                  = NormalizeOpt(email, EmailMaxLen),
-            Phone                  = NormalizeOpt(phone, PhoneMaxLen),
-            CountryCode            = string.IsNullOrWhiteSpace(countryCode) ? null
-                                     : countryCode.Trim().ToUpperInvariant()[..Math.Min(3, countryCode.Trim().Length)],
-            IsActive               = true,
+            Id             = Guid.NewGuid(),
+            SubscriberId   = subscriberId,
+            Identification = TaxIdentification.Create(identificationType, identificationNumber),
+            Name           = PersonName.Create(legalName, tradeName),
+            PersonType     = personType,
+            CountryCode    = NormalizeCountryCode(countryCode),
+            IsActive       = true,
         };
         bp.SetCreated(createdBy);
+        bp.RaiseDomainEvent(new BusinessPartnerCreatedEvent
+        {
+            SubscriberId           = subscriberId,
+            BusinessPartnerId      = bp.Id,
+            IdentificationType     = bp.Identification.Type,
+            IdentificationNumber   = bp.Identification.Number,
+            LegalName              = bp.Name.LegalName,
+            CreatedBy              = createdBy,
+        });
         return bp;
     }
 
+    /// <summary>
+    /// Actualiza nombre legal/comercial, tipo de persona y país.
+    /// No modifica la identificación fiscal — use UpdateIdentification() para eso.
+    /// </summary>
     public void UpdateProfile(
-        string  legalName,
-        string? tradeName,
-        string? legalRepresentativeName,
-        string? email,
-        string? phone,
-        string? countryCode,
-        Guid    updatedBy)
+        string     legalName,
+        PersonType personType,
+        Guid       updatedBy,
+        string?    tradeName   = null,
+        string?    countryCode = null)
     {
-        LegalName               = Normalize(legalName, nameof(legalName), LegalNameMaxLen);
-        TradeName               = NormalizeOpt(tradeName, TradeNameMaxLen);
-        LegalRepresentativeName = NormalizeOpt(legalRepresentativeName, LegalRepresentativeNameMaxLen);
-        Email                   = NormalizeOpt(email, EmailMaxLen);
-        Phone                   = NormalizeOpt(phone, PhoneMaxLen);
-        CountryCode             = string.IsNullOrWhiteSpace(countryCode) ? null
-                                  : countryCode.Trim().ToUpperInvariant()[..Math.Min(3, countryCode.Trim().Length)];
+        if (!IsActive)
+            throw new InvalidOperationException("No se puede actualizar un BusinessPartner inactivo.");
+
+        Name        = PersonName.Create(legalName, tradeName);
+        PersonType  = personType;
+        CountryCode = NormalizeCountryCode(countryCode);
         SetUpdated(updatedBy);
+        RaiseDomainEvent(new BusinessPartnerProfileUpdatedEvent
+        {
+            SubscriberId      = SubscriberId,
+            BusinessPartnerId = Id,
+            LegalName         = Name.LegalName,
+            UpdatedBy         = updatedBy,
+        });
     }
 
+    /// <summary>
+    /// Cambia la identificación fiscal. Operación de alto impacto: emite evento de auditoría.
+    /// ATENCIÓN: cuando el módulo de documentos exista, verificar que no haya documentos
+    /// en estados no-finales antes de permitir este cambio. Ver ADR-BP-14.
+    /// </summary>
     public void UpdateIdentification(string type, string number, Guid updatedBy)
     {
+        if (!IsActive)
+            throw new InvalidOperationException("No se puede modificar la identificación de un BusinessPartner inactivo.");
+
+        var oldType   = Identification.Type;
+        var oldNumber = Identification.Number;
+
         Identification = TaxIdentification.Create(type, number);
         SetUpdated(updatedBy);
+        RaiseDomainEvent(new BusinessPartnerIdentificationChangedEvent
+        {
+            SubscriberId       = SubscriberId,
+            BusinessPartnerId  = Id,
+            OldType            = oldType,
+            OldNumber          = oldNumber,
+            NewType            = Identification.Type,
+            NewNumber          = Identification.Number,
+            ChangedBy          = updatedBy,
+        });
     }
 
     public void Deactivate(Guid updatedBy)
@@ -134,6 +127,12 @@ public sealed class BusinessPartner : AuditableEntity, ISubscriberScopedEntity
             throw new InvalidOperationException("El BusinessPartner ya está inactivo.");
         IsActive = false;
         SetUpdated(updatedBy);
+        RaiseDomainEvent(new BusinessPartnerDeactivatedEvent
+        {
+            SubscriberId      = SubscriberId,
+            BusinessPartnerId = Id,
+            DeactivatedBy     = updatedBy,
+        });
     }
 
     public void Activate(Guid updatedBy)
@@ -142,24 +141,20 @@ public sealed class BusinessPartner : AuditableEntity, ISubscriberScopedEntity
             throw new InvalidOperationException("El BusinessPartner ya está activo.");
         IsActive = true;
         SetUpdated(updatedBy);
+        RaiseDomainEvent(new BusinessPartnerActivatedEvent
+        {
+            SubscriberId      = SubscriberId,
+            BusinessPartnerId = Id,
+            ActivatedBy       = updatedBy,
+        });
     }
 
-    private static string Normalize(string value, string paramName, int maxLen)
+    private static string? NormalizeCountryCode(string? code)
     {
-        var t = value?.Trim() ?? string.Empty;
-        if (string.IsNullOrWhiteSpace(t))
-            throw new ArgumentException($"{paramName} es obligatorio.", paramName);
-        if (t.Length > maxLen)
-            throw new ArgumentException($"{paramName} no puede superar {maxLen} caracteres.", paramName);
-        return t;
-    }
-
-    private static string? NormalizeOpt(string? value, int maxLen)
-    {
-        var t = value?.Trim();
-        if (string.IsNullOrWhiteSpace(t)) return null;
-        if (t.Length > maxLen)
-            throw new ArgumentException($"El valor no puede superar {maxLen} caracteres.");
-        return t;
+        var c = code?.Trim().ToUpperInvariant();
+        if (string.IsNullOrEmpty(c)) return null;
+        if (c.Length != CountryCodeLen)
+            throw new ArgumentException($"CountryCode debe ser un código ISO 3166-1 alpha-2 de {CountryCodeLen} caracteres.", nameof(code));
+        return c;
     }
 }

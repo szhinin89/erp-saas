@@ -1,150 +1,224 @@
 using ERP.Domain.Common;
+using ERP.Domain.MasterData.Enums;
+using ERP.Domain.MasterData.Events;
+using ERP.Domain.MasterData.ValueObjects;
 
 namespace ERP.Domain.MasterData.Entities;
 
 /// <summary>
-/// Ubicación física de un BusinessPartner (cliente/proveedor) en el contexto de una empresa.
+/// Aggregate Root: ubicación física de un BusinessPartner.
 ///
-/// Company-scoped: cada empresa registra las ubicaciones relevantes para sus operaciones.
-/// Ejemplos: Matriz, Sucursal Norte, Bodega de Entrega, Domicilio Fiscal, Punto de Facturación.
+/// SCOPE: ISubscriberScopedEntity ÚNICAMENTE — eliminado CompanyId.
+/// Las ubicaciones son datos maestros del tercero compartidos entre todas las
+/// Companies del tenant. Ver ADR-BP-02 (Fase 4).
 ///
-/// Una ubicación marcada como IsPrimary es la dirección principal para documentos (factura, guía remisión).
+/// Una ubicación puede tener múltiples propósitos simultáneos via LocationPurpose flags.
+/// Ejemplo: Matriz = Billing | Fiscal | Correspondence.
+///
+/// IsPrimary: dirección principal para documentos SRI. Solo una puede ser primaria
+/// por (SubscriberId, BusinessPartnerId). Garantizado por índice UNIQUE parcial en BD.
 /// </summary>
-public sealed class BusinessPartnerLocation : AuditableEntity, ISubscriberScopedEntity, ICompanyScopedEntity
+public sealed class BusinessPartnerLocation : AuditableEntity, ISubscriberScopedEntity
 {
-    public const int NameMaxLen    = 120;
-    public const int AddressMaxLen = 500;
-    public const int PhoneMaxLen   = 40;
-    public const int EmailMaxLen   = 120;
-    public const int GeoCodeMaxLen = 10;  // código INEC (provincia/cantón/parroquia)
+    public const int NameMaxLen             = 150;
+    public const int OtherDescriptionMaxLen = 100;
 
-    public Guid   BusinessPartnerId { get; private set; }
-    public Guid   CompanyId         { get; private set; }
-
-    public string           Name         { get; private set; } = null!;
-    public LocationType     Type         { get; private set; }
-    public string           Address      { get; private set; } = null!;
-    public string?          ProvinceCode { get; private set; }  // global.geo_provinces.id
-    public string?          CantonCode   { get; private set; }  // global.geo_cantons.id
-    public string?          ParishCode   { get; private set; }  // global.geo_parishes.id
-    public string?          Phone        { get; private set; }
-    public string?          Email        { get; private set; }
-    public bool             IsPrimary    { get; private set; }
-    public bool             IsActive     { get; private set; } = true;
+    public Guid            BusinessPartnerId    { get; private set; }
+    public string          Name                 { get; private set; } = null!;
+    public LocationType    Type                 { get; private set; }
+    public LocationPurpose Purpose              { get; private set; }
+    public PhysicalAddress Address              { get; private set; } = null!;
+    public string?         Phone                { get; private set; }
+    public string?         Email                { get; private set; }
+    public string?         OtherDescription     { get; private set; }
+    public bool            IsPrimary            { get; private set; }
+    public bool            IsActive             { get; private set; } = true;
 
     private BusinessPartnerLocation() { }
 
     public static BusinessPartnerLocation Create(
-        Guid         subscriberId,
-        Guid         companyId,
-        Guid         businessPartnerId,
-        string       name,
-        LocationType type,
-        string       address,
-        Guid         createdBy,
-        string?      provinceCode = null,
-        string?      cantonCode   = null,
-        string?      parishCode   = null,
-        string?      phone        = null,
-        string?      email        = null,
-        bool         isPrimary    = false)
+        Guid            subscriberId,
+        Guid            businessPartnerId,
+        string          name,
+        LocationType    type,
+        LocationPurpose purpose,
+        string          addressLine,
+        Guid            createdBy,
+        string?         provinceCode      = null,
+        string?         cantonCode        = null,
+        string?         parishCode        = null,
+        string?         phone             = null,
+        string?         email             = null,
+        bool            isPrimary         = false,
+        string?         otherDescription  = null)
     {
-        if (string.IsNullOrWhiteSpace(name))
-            throw new ArgumentException("El nombre de la ubicación es obligatorio.", nameof(name));
-        if (string.IsNullOrWhiteSpace(address))
-            throw new ArgumentException("La dirección es obligatoria.", nameof(address));
+        if (subscriberId == Guid.Empty)
+            throw new ArgumentException("SubscriberId es obligatorio.", nameof(subscriberId));
         if (businessPartnerId == Guid.Empty)
             throw new ArgumentException("BusinessPartnerId es obligatorio.", nameof(businessPartnerId));
-        if (companyId == Guid.Empty)
-            throw new ArgumentException("CompanyId es obligatorio.", nameof(companyId));
 
         var loc = new BusinessPartnerLocation
         {
             Id                = Guid.NewGuid(),
             SubscriberId      = subscriberId,
-            CompanyId         = companyId,
             BusinessPartnerId = businessPartnerId,
-            Name              = name.Trim()[..Math.Min(name.Trim().Length, NameMaxLen)],
+            Name              = NormalizeName(name),
             Type              = type,
-            Address           = address.Trim()[..Math.Min(address.Trim().Length, AddressMaxLen)],
-            ProvinceCode      = string.IsNullOrWhiteSpace(provinceCode) ? null : provinceCode.Trim(),
-            CantonCode        = string.IsNullOrWhiteSpace(cantonCode)   ? null : cantonCode.Trim(),
-            ParishCode        = string.IsNullOrWhiteSpace(parishCode)   ? null : parishCode.Trim(),
-            Phone             = string.IsNullOrWhiteSpace(phone)        ? null : phone.Trim()[..Math.Min(phone.Trim().Length, PhoneMaxLen)],
-            Email             = string.IsNullOrWhiteSpace(email)        ? null : email.Trim()[..Math.Min(email.Trim().Length, EmailMaxLen)],
+            Purpose           = purpose,
+            Address           = PhysicalAddress.Create(addressLine, provinceCode, cantonCode, parishCode),
+            Phone             = NormalizeOptional(phone, 20, nameof(phone)),
+            Email             = NormalizeEmail(email),
+            OtherDescription  = ValidateOtherDescription(type, otherDescription),
             IsPrimary         = isPrimary,
             IsActive          = true,
         };
         loc.SetCreated(createdBy);
+        loc.RaiseDomainEvent(new BusinessPartnerLocationCreatedEvent
+        {
+            SubscriberId      = subscriberId,
+            LocationId        = loc.Id,
+            BusinessPartnerId = businessPartnerId,
+            LocationType      = type,
+            CreatedBy         = createdBy,
+        });
         return loc;
     }
 
     public void Update(
-        string       name,
-        LocationType type,
-        string       address,
-        Guid         updatedBy,
-        string?      provinceCode = null,
-        string?      cantonCode   = null,
-        string?      parishCode   = null,
-        string?      phone        = null,
-        string?      email        = null)
+        string          name,
+        LocationType    type,
+        LocationPurpose purpose,
+        string          addressLine,
+        Guid            updatedBy,
+        string?         provinceCode     = null,
+        string?         cantonCode       = null,
+        string?         parishCode       = null,
+        string?         phone            = null,
+        string?         email            = null,
+        string?         otherDescription = null)
     {
-        if (string.IsNullOrWhiteSpace(name))
-            throw new ArgumentException("El nombre de la ubicación es obligatorio.", nameof(name));
-        if (string.IsNullOrWhiteSpace(address))
-            throw new ArgumentException("La dirección es obligatoria.", nameof(address));
+        if (!IsActive)
+            throw new InvalidOperationException("No se puede actualizar una ubicación inactiva.");
 
-        Name         = name.Trim()[..Math.Min(name.Trim().Length, NameMaxLen)];
-        Type         = type;
-        Address      = address.Trim()[..Math.Min(address.Trim().Length, AddressMaxLen)];
-        ProvinceCode = string.IsNullOrWhiteSpace(provinceCode) ? null : provinceCode.Trim();
-        CantonCode   = string.IsNullOrWhiteSpace(cantonCode)   ? null : cantonCode.Trim();
-        ParishCode   = string.IsNullOrWhiteSpace(parishCode)   ? null : parishCode.Trim();
-        Phone        = string.IsNullOrWhiteSpace(phone)        ? null : phone.Trim()[..Math.Min(phone.Trim().Length, PhoneMaxLen)];
-        Email        = string.IsNullOrWhiteSpace(email)        ? null : email.Trim()[..Math.Min(email.Trim().Length, EmailMaxLen)];
+        Name             = NormalizeName(name);
+        Type             = type;
+        Purpose          = purpose;
+        Address          = PhysicalAddress.Create(addressLine, provinceCode, cantonCode, parishCode);
+        Phone            = NormalizeOptional(phone, 20, nameof(phone));
+        Email            = NormalizeEmail(email);
+        OtherDescription = ValidateOtherDescription(type, otherDescription);
         SetUpdated(updatedBy);
+        RaiseDomainEvent(new BusinessPartnerLocationUpdatedEvent
+        {
+            SubscriberId = SubscriberId,
+            LocationId   = Id,
+            UpdatedBy    = updatedBy,
+        });
     }
 
-    /// <summary>Marca como ubicación principal. El repositorio garantiza unicidad de IsPrimary por (company, bp).</summary>
+    /// <summary>
+    /// Marca esta ubicación como primaria.
+    /// PRECONDICIÓN (en handler): llamar ClearPrimaryAsync antes de SetPrimary para
+    /// mantener la invariante de unicidad. Ver ADR concurrencia (Fase 4).
+    /// </summary>
     public void SetPrimary(Guid updatedBy)
     {
+        if (!IsActive)
+            throw new InvalidOperationException("No se puede marcar como principal una ubicación inactiva.");
+
         IsPrimary = true;
         SetUpdated(updatedBy);
+        RaiseDomainEvent(new BusinessPartnerPrimaryLocationChangedEvent
+        {
+            SubscriberId         = SubscriberId,
+            NewPrimaryLocationId = Id,
+            BusinessPartnerId    = BusinessPartnerId,
+            ChangedBy            = updatedBy,
+        });
     }
 
-    public void UnsetPrimary(Guid updatedBy)
+    internal void ClearPrimary(Guid updatedBy)
     {
         IsPrimary = false;
         SetUpdated(updatedBy);
     }
 
+    /// <summary>
+    /// Desactiva la ubicación (soft delete).
+    /// INVARIANTE: no se puede desactivar la ubicación primaria.
+    /// El handler debe verificar si hay contactos activos referenciando esta ubicación.
+    /// </summary>
     public void Deactivate(Guid updatedBy)
     {
-        if (!IsActive) throw new InvalidOperationException("La ubicación ya está inactiva.");
+        if (!IsActive)
+            throw new InvalidOperationException("La ubicación ya está inactiva.");
         if (IsPrimary)
             throw new InvalidOperationException(
                 "No se puede desactivar la ubicación principal. Asigne otra ubicación como principal primero.");
+
         IsActive = false;
         SetUpdated(updatedBy);
+        RaiseDomainEvent(new BusinessPartnerLocationDeactivatedEvent
+        {
+            SubscriberId      = SubscriberId,
+            LocationId        = Id,
+            BusinessPartnerId = BusinessPartnerId,
+            DeactivatedBy     = updatedBy,
+        });
     }
 
     public void Activate(Guid updatedBy)
     {
-        if (IsActive) throw new InvalidOperationException("La ubicación ya está activa.");
+        if (IsActive)
+            throw new InvalidOperationException("La ubicación ya está activa.");
         IsActive = true;
         SetUpdated(updatedBy);
     }
-}
 
-/// <summary>Tipo de ubicación del BusinessPartner.</summary>
-public enum LocationType
-{
-    Matrix        = 1,   // Domicilio principal / Matriz
-    Branch        = 2,   // Sucursal
-    Office        = 3,   // Oficina administrativa
-    Warehouse     = 4,   // Bodega / Almacén
-    DeliveryPoint = 5,   // Punto de entrega (solo recibe mercadería)
-    BillingAddr   = 6,   // Dirección de facturación / fiscal
-    Other         = 99,
+    private static string NormalizeName(string name)
+    {
+        var n = (name ?? string.Empty).Trim();
+        if (string.IsNullOrEmpty(n))
+            throw new ArgumentException("El nombre de la ubicación es obligatorio.", nameof(name));
+        if (n.Length > NameMaxLen)
+            throw new ArgumentException($"El nombre no puede superar {NameMaxLen} caracteres.", nameof(name));
+        return n;
+    }
+
+    private static string? NormalizeOptional(string? value, int maxLen, string paramName)
+    {
+        var v = value?.Trim();
+        if (string.IsNullOrEmpty(v)) return null;
+        if (v.Length > maxLen)
+            throw new ArgumentException($"{paramName} no puede superar {maxLen} caracteres.", paramName);
+        return v;
+    }
+
+    private static string? NormalizeEmail(string? email)
+    {
+        var e = email?.Trim().ToLowerInvariant();
+        if (string.IsNullOrEmpty(e)) return null;
+        if (e.Length > 254)
+            throw new ArgumentException("El email no puede superar 254 caracteres.", nameof(email));
+        if (!e.Contains('@'))
+            throw new ArgumentException("Formato de email inválido.", nameof(email));
+        return e;
+    }
+
+    // Cuando LocationType = Other, OtherDescription es obligatorio. Ver Problema 8 (Fase 4).
+    private static string? ValidateOtherDescription(LocationType type, string? description)
+    {
+        var d = description?.Trim();
+        if (d is { Length: 0 }) d = null;
+
+        if (type == LocationType.Other && string.IsNullOrEmpty(d))
+            throw new ArgumentException(
+                "OtherDescription es obligatorio cuando LocationType = Other.", nameof(description));
+
+        if (d?.Length > OtherDescriptionMaxLen)
+            throw new ArgumentException(
+                $"OtherDescription no puede superar {OtherDescriptionMaxLen} caracteres.", nameof(description));
+
+        return type == LocationType.Other ? d : null;
+    }
 }

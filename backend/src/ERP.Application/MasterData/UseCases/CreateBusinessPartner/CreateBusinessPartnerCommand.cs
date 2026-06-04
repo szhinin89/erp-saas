@@ -1,21 +1,22 @@
 using ERP.Application.Common;
 using ERP.Application.MasterData.DTOs;
+using ERP.Domain.MasterData.Enums;
 using MediatR;
 
 namespace ERP.Application.MasterData.UseCases.CreateBusinessPartner;
 
 /// <summary>
-/// ISubscriberOnlyRequest: BusinessPartner es subscriber-scoped — no requiere company_id en el JWT.
-/// El CompanyScopeBehavior permite el paso sin validar empresa activa.
+/// Crea la identidad fiscal de un tercero en el tenant.
+/// Subscriber-scoped: no requiere company en el JWT.
+///
+/// ELIMINADO: AsCustomer, AsSupplier → usar AssignBusinessPartnerRoleCommand después de crear.
+/// ELIMINADO: LegalRepresentativeName, Email, Phone → usar CreateBpContactCommand después de crear.
 /// </summary>
 public sealed record CreateBusinessPartnerCommand(
-    string  IdentificationType,
-    string  IdentificationNumber,
-    string  LegalName,
-    string? TradeName,
-    string? LegalRepresentativeName,
-    string? Email,
-    string? Phone,
-    string? CountryCode,
-    bool    AsCustomer,
-    bool    AsSupplier) : IRequest<Result<BusinessPartnerDto>>, ISubscriberOnlyRequest;
+    string     IdentificationType,
+    string     IdentificationNumber,
+    PersonType PersonType,
+    string     LegalName,
+    string?    TradeName   = null,
+    string?    CountryCode = null)
+    : IRequest<Result<BusinessPartnerSummaryDto>>, ISubscriberScopedRequest;

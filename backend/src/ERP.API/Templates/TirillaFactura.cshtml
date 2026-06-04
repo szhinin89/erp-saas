@@ -136,7 +136,7 @@
         <table class="customer-meta small">
             <tr>
                 <td>Cliente:</td>
-                <td class="bold">@(Model.Buyer?.TradeName ?? Model.Buyer?.LegalName ?? "CONSUMIDOR FINAL")</td>
+                <td class="bold">@(Model.Buyer?.Name.TradeName ?? Model.Buyer?.Name.LegalName ?? "CONSUMIDOR FINAL")</td>
             </tr>
             <tr>
                 <td>Identificación:</td>

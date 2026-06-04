@@ -14,7 +14,7 @@ import type { ItemOrdenCompraRequest } from '../api/ordenCompraService';
 import './orden-compra-page.css';
 import { usePermissionsUi } from '../../../../access/usePermissionsUi';
 
-import type { SupplierPickerOption } from '../../../masterData/api/businessPartnerFacade';
+import type { SupplierPickerRow } from '../../../masterData/types/businessPartner.types';
 interface ProductoOpcion  { id: string; shortName: string; isActive: boolean; }
 
 interface ItemRow {
@@ -33,12 +33,12 @@ export function CrearOrdenCompraPage() {
 
   const companySessionVersion = useAuthStore((s) => s.companySessionVersion);
   const [proveedorId,      setProveedorId]      = useState('');
-  const [proveedores, setProveedores] = useState<SupplierPickerOption[]>([]);
+  const [proveedores, setProveedores] = useState<SupplierPickerRow[]>([]);
   const [productos,   setProductos]   = useState<ProductoOpcion[]>([]);
 
   const loadPickerData = useCallback(() => {
     setProveedorId('');
-    void businessPartnerFacade.searchSupplierPickerOptions().then(setProveedores);
+    void businessPartnerFacade.searchSuppliersForPicker().then(setProveedores);
     api.get<ApiResponse<ProductoOpcion[]>>('/api/inventory/products')
       .then((r) => setProductos((r.data.responseObject ?? []).filter((p) => p.isActive)));
   }, []);
@@ -124,13 +124,8 @@ export function CrearOrdenCompraPage() {
                   onChange={(e) => setProveedorId(e.target.value)} required>
                   <option value="">Seleccionar proveedor…</option>
                   {proveedores.map((p) => (
-                    <option
-                      key={p.id}
-                      value={p.selectable ? p.id : ''}
-                      disabled={!p.selectable}
-                    >
-                      {p.razonSocial}
-                      {!p.selectable ? ' — sin vínculo operacional' : ''}
+                    <option key={p.id} value={p.id}>
+                      {p.fullName} ({p.identificationNumber})
                     </option>
                   ))}
                 </select>

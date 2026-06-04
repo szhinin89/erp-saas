@@ -1,5 +1,6 @@
-using ERP.API.Tests.Support;
+﻿using ERP.API.Tests.Support;
 using ERP.Domain.MasterData.Entities;
+using ERP.Domain.MasterData.Enums;
 using ERP.Infrastructure.Persistence;
 using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
@@ -37,11 +38,11 @@ public sealed class PostgreSqlSecurityIntegrationTests : IAsyncLifetime
         var subscriberId = Guid.NewGuid();
         var userId = Guid.NewGuid();
 
-        var bp1 = BusinessPartner.Create(subscriberId, "04", "1791234567001", "Empresa A", userId);
+        var bp1 = BusinessPartner.Create(subscriberId, "04", "1791234567001", PersonType.Legal, "Empresa A", userId);
         db.BusinessPartners.Add(bp1);
         await db.SaveChangesAsync();
 
-        var bp2 = BusinessPartner.Create(subscriberId, "04", "1791234567001", "Empresa B", userId);
+        var bp2 = BusinessPartner.Create(subscriberId, "04", "1791234567001", PersonType.Legal, "Empresa B", userId);
         db.BusinessPartners.Add(bp2);
 
         var act = async () => await db.SaveChangesAsync();
@@ -57,3 +58,4 @@ public sealed class PostgreSqlSecurityIntegrationTests : IAsyncLifetime
         (await db.Database.GetAppliedMigrationsAsync()).Should().NotBeEmpty();
     }
 }
+

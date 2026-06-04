@@ -1,6 +1,7 @@
-using ERP.Domain.Branches.Entities;
+﻿using ERP.Domain.Branches.Entities;
 using ERP.Domain.Common;
 using ERP.Domain.MasterData.Entities;
+using ERP.Domain.MasterData.Enums;
 using ERP.Domain.Modules.Accounting.Entities;
 using ERP.Domain.Modules.Accounting.Enums;
 using ERP.Domain.Modules.Company.Entities;
@@ -51,7 +52,7 @@ internal static class SecurityTestSeeder
         await db.SaveChangesAsync(ct);
 
         // ── DATA A1: BusinessPartner + Account ────────────────────────────────
-        var bpA1 = BusinessPartner.Create(subA.Id, "04", "1790000000001", "Cliente A1 Corp", SeedActor);
+        var bpA1 = BusinessPartner.Create(subA.Id, "04", "1790000000001", PersonType.Legal, "Cliente A1 Corp", SeedActor);
         db.BusinessPartners.Add(bpA1);
 
         var accA1 = Account.Create(subA.Id, companyA1.Id, "4.1.01", "Ventas A1",
@@ -60,7 +61,7 @@ internal static class SecurityTestSeeder
         await db.SaveChangesAsync(ct);
 
         // ── DATA A2: BusinessPartner + Account ────────────────────────────────
-        var bpA2 = BusinessPartner.Create(subA.Id, "04", "1790000000002", "Cliente A2 Corp", SeedActor);
+        var bpA2 = BusinessPartner.Create(subA.Id, "04", "1790000000002", PersonType.Legal, "Cliente A2 Corp", SeedActor);
         db.BusinessPartners.Add(bpA2);
 
         var accA2 = Account.Create(subA.Id, companyA2.Id, "4.1.01", "Ventas A2",
@@ -69,7 +70,7 @@ internal static class SecurityTestSeeder
         await db.SaveChangesAsync(ct);
 
         // ── DATA B1: BusinessPartner + Account ────────────────────────────────
-        var bpB1 = BusinessPartner.Create(subB.Id, "04", "1790000000003", "Cliente B1 Corp", SeedActor);
+        var bpB1 = BusinessPartner.Create(subB.Id, "04", "1790000000003", PersonType.Legal, "Cliente B1 Corp", SeedActor);
         db.BusinessPartners.Add(bpB1);
 
         var accB1 = Account.Create(subB.Id, companyB1.Id, "4.1.01", "Ventas B1",
@@ -105,3 +106,4 @@ internal sealed record AttackTestState(
     Guid AccA1Id,
     Guid AccA2Id,
     Guid AccB1Id);
+

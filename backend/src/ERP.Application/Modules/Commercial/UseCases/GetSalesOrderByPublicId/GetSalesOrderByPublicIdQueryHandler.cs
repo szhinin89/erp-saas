@@ -1,4 +1,4 @@
-using ERP.Application.Common;
+﻿using ERP.Application.Common;
 using ERP.Application.Modules.Commercial.DTOs;
 using ERP.Domain.MasterData.Interfaces;
 using ERP.Domain.Modules.Commercial.Interfaces;
@@ -78,8 +78,9 @@ public sealed class GetSalesOrderByPublicIdQueryHandler
         return Result<SalesOrderDetailDto?>.Success(
             SalesOrderDtoMapper.ToDetail(
                 order,
-                bp?.LegalName ?? order.BusinessPartnerId.ToString(),
+                bp?.Name.LegalName ?? order.BusinessPartnerId.ToString(),
                 warehouse?.Name ?? order.WarehouseId.ToString(),
                 relatedInvoicePublicId));
     }
 }
+

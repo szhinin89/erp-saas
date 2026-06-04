@@ -1,188 +1,126 @@
 import { ZHField } from '../../../components/zh/ZHForm';
 import { useSriIdTypes } from '../api/useSriIdTypes';
+import { PersonTypeEnum } from '../types/businessPartner.types';
 
+const PERSON_TYPE_OPTIONS = [
+  { value: PersonTypeEnum.Natural,      label: 'Natural (persona física)' },
+  { value: PersonTypeEnum.Legal,        label: 'Jurídica (empresa/sociedad)' },
+  { value: PersonTypeEnum.Government,   label: 'Gubernamental' },
+  { value: PersonTypeEnum.Organization, label: 'Organización / ONG' },
+];
+
+/** Shared form field state — V2: sin email, phone, legalRepresentativeName */
 export type BpFormFieldsState = {
-  identificationType: string;
+  identificationType:   string;
   identificationNumber: string;
-  legalName: string;
-  tradeName: string;
-  /** Representante legal — solo visible y editable cuando identificationType === '04' (RUC). */
-  legalRepresentativeName: string;
-  email: string;
-  phone: string;
-  countryCode: string;
+  personType:           number;
+  legalName:            string;
+  tradeName:            string;
+  countryCode:          string;
 };
 
 type Setters = {
-  setIdentificationType: (v: string) => void;
+  setIdentificationType:   (v: string) => void;
   setIdentificationNumber: (v: string) => void;
-  setLegalName: (v: string) => void;
-  setTradeName: (v: string) => void;
-  setLegalRepresentativeName: (v: string) => void;
-  setEmail: (v: string) => void;
-  setPhone: (v: string) => void;
-  setCountryCode: (v: string) => void;
-  setFieldErrors: (fn: (p: Record<string, string>) => Record<string, string>) => void;
+  setPersonType:           (v: number) => void;
+  setLegalName:            (v: string) => void;
+  setTradeName:            (v: string) => void;
+  setCountryCode:          (v: string) => void;
+  setFieldErrors:          (fn: (p: Record<string, string>) => Record<string, string>) => void;
 };
 
 type Props = BpFormFieldsState & Setters & {
   fieldErrors: Record<string, string>;
-  saving: boolean;
-  /** 'identity' | 'contact' | 'all' */
-  section?: 'identity' | 'contact' | 'all';
+  saving:      boolean;
+  /** 'identity' shows all fields; 'review' shows read-only summary. */
+  section?: 'identity' | 'review';
 };
 
 export function MasterDataBpFormFields({
-  identificationType,
-  setIdentificationType,
-  identificationNumber,
-  setIdentificationNumber,
-  legalName,
-  setLegalName,
-  tradeName,
-  setTradeName,
-  legalRepresentativeName,
-  setLegalRepresentativeName,
-  email,
-  setEmail,
-  phone,
-  setPhone,
-  countryCode,
-  setCountryCode,
-  fieldErrors,
-  setFieldErrors,
+  identificationType, setIdentificationType,
+  identificationNumber, setIdentificationNumber,
+  personType, setPersonType,
+  legalName, setLegalName,
+  tradeName, setTradeName,
+  countryCode, setCountryCode,
+  fieldErrors, setFieldErrors,
   saving,
-  section = 'all',
+  section = 'identity',
 }: Props) {
   const { options: idTypes, loading: loadingTypes } = useSriIdTypes();
-  const showIdentity = section === 'identity' || section === 'all';
-  const showContact  = section === 'contact'  || section === 'all';
-  const isRuc = identificationType === '04';
+
+  const clr = (f: string) => setFieldErrors((p) => ({ ...p, [f]: '' }));
+  const err = (f: string) => fieldErrors[f] ? ` zh-input--error` : '';
+
+  if (section === 'review') {
+    return (
+      <dl className="prd-review-grid">
+        <dt>Tipo de identificación</dt>
+        <dd className="mono">{identificationType}</dd>
+        <dt>Número</dt>
+        <dd className="mono">{identificationNumber}</dd>
+        <dt>Tipo de persona</dt>
+        <dd>{PERSON_TYPE_OPTIONS.find((o) => o.value === personType)?.label ?? personType}</dd>
+        <dt>Razón social</dt>
+        <dd>{tradeName.trim() || legalName}</dd>
+        {tradeName.trim() && <><dt>Nombre legal</dt><dd>{legalName}</dd></>}
+        <dt>País</dt>
+        <dd className="mono">{countryCode || 'EC'}</dd>
+      </dl>
+    );
+  }
 
   return (
     <div className="pg-form-grid pg-form-grid--2">
-      {showIdentity && (
-        <>
-          <ZHField label="Tipo de identificación" required>
-            <select
-              className="zh-input"
-              value={identificationType}
-              onChange={(e) => {
-                setIdentificationType(e.target.value);
-                setFieldErrors((p) => ({ ...p, identificationType: '' }));
-              }}
-              disabled={saving || loadingTypes}
-            >
-              {loadingTypes ? (
-                <option value="">Cargando…</option>
-              ) : (
-                idTypes.map((t) => (
-                  <option key={t.code} value={t.code}>
-                    {t.code} — {t.name}
-                  </option>
-                ))
-              )}
-            </select>
-            {fieldErrors.identificationType && (
-              <span className="md-field-error">{fieldErrors.identificationType}</span>
-            )}
-          </ZHField>
+      <ZHField label="Tipo de identificación" required>
+        <select className={`zh-input${err('identificationType')}`}
+          value={identificationType}
+          onChange={(e) => { setIdentificationType(e.target.value); clr('identificationType'); }}
+          disabled={saving || loadingTypes}>
+          {loadingTypes
+            ? <option value="">Cargando…</option>
+            : idTypes.map((t) => <option key={t.code} value={t.code}>{t.code} — {t.name}</option>)
+          }
+        </select>
+        {fieldErrors.identificationType && <span className="md-field-error">{fieldErrors.identificationType}</span>}
+      </ZHField>
 
-          <ZHField label="Número" required>
-            <input
-              className={`zh-input mono${fieldErrors.identificationNumber ? ' zh-input--error' : ''}`}
-              value={identificationNumber}
-              onChange={(e) => {
-                setIdentificationNumber(e.target.value);
-                setFieldErrors((p) => ({ ...p, identificationNumber: '' }));
-              }}
-              disabled={saving}
-            />
-            {fieldErrors.identificationNumber && (
-              <span className="md-field-error">{fieldErrors.identificationNumber}</span>
-            )}
-          </ZHField>
+      <ZHField label="Número de identificación" required>
+        <input className={`zh-input mono${err('identificationNumber')}`}
+          value={identificationNumber}
+          onChange={(e) => { setIdentificationNumber(e.target.value); clr('identificationNumber'); }}
+          disabled={saving} />
+        {fieldErrors.identificationNumber && <span className="md-field-error">{fieldErrors.identificationNumber}</span>}
+      </ZHField>
 
-          <ZHField label="Razón social" required>
-            <input
-              className={`zh-input${fieldErrors.legalName ? ' zh-input--error' : ''}`}
-              value={legalName}
-              onChange={(e) => {
-                setLegalName(e.target.value);
-                setFieldErrors((p) => ({ ...p, legalName: '' }));
-              }}
-              disabled={saving}
-            />
-            {fieldErrors.legalName && (
-              <span className="md-field-error">{fieldErrors.legalName}</span>
-            )}
-          </ZHField>
+      <ZHField label="Tipo de persona" required>
+        <select className={`zh-input${err('personType')}`}
+          value={personType}
+          onChange={(e) => { setPersonType(Number(e.target.value)); clr('personType'); }}
+          disabled={saving}>
+          {PERSON_TYPE_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+        </select>
+        {fieldErrors.personType && <span className="md-field-error">{fieldErrors.personType}</span>}
+      </ZHField>
 
-          <ZHField label="Nombre comercial">
-            <input
-              className="zh-input"
-              value={tradeName}
-              onChange={(e) => setTradeName(e.target.value)}
-              disabled={saving}
-            />
-          </ZHField>
+      <ZHField label="Razón social" required>
+        <input className={`zh-input${err('legalName')}`}
+          value={legalName}
+          onChange={(e) => { setLegalName(e.target.value); clr('legalName'); }}
+          disabled={saving} />
+        {fieldErrors.legalName && <span className="md-field-error">{fieldErrors.legalName}</span>}
+      </ZHField>
 
-          {/* Representante legal — solo visible para RUC (Persona Jurídica, código 04) */}
-          {isRuc && (
-            <ZHField label="Representante legal">
-              <input
-                className="zh-input"
-                value={legalRepresentativeName}
-                onChange={(e) => setLegalRepresentativeName(e.target.value)}
-                disabled={saving}
-                placeholder="Nombre completo del representante"
-              />
-            </ZHField>
-          )}
+      <ZHField label="Nombre comercial">
+        <input className="zh-input" value={tradeName}
+          onChange={(e) => setTradeName(e.target.value)} disabled={saving} />
+      </ZHField>
 
-          <ZHField label="País (código ISO)">
-            <input
-              className="zh-input mono"
-              value={countryCode}
-              onChange={(e) => setCountryCode(e.target.value.toUpperCase().slice(0, 3))}
-              disabled={saving}
-              placeholder="ECU"
-              maxLength={3}
-            />
-          </ZHField>
-        </>
-      )}
-
-      {showContact && (
-        <>
-          <ZHField label="Email">
-            <input
-              className={`zh-input${fieldErrors.email ? ' zh-input--error' : ''}`}
-              type="email"
-              value={email}
-              onChange={(e) => {
-                setEmail(e.target.value);
-                setFieldErrors((p) => ({ ...p, email: '' }));
-              }}
-              disabled={saving}
-            />
-            {fieldErrors.email && <span className="md-field-error">{fieldErrors.email}</span>}
-          </ZHField>
-
-          <ZHField label="Teléfono">
-            <input
-              className={`zh-input${fieldErrors.phone ? ' zh-input--error' : ''}`}
-              value={phone}
-              onChange={(e) => {
-                setPhone(e.target.value);
-                setFieldErrors((p) => ({ ...p, phone: '' }));
-              }}
-              disabled={saving}
-            />
-            {fieldErrors.phone && <span className="md-field-error">{fieldErrors.phone}</span>}
-          </ZHField>
-        </>
-      )}
+      <ZHField label="País (ISO alpha-2)">
+        <input className="zh-input mono" value={countryCode} maxLength={2}
+          onChange={(e) => setCountryCode(e.target.value.toUpperCase().slice(0, 2))}
+          disabled={saving} placeholder="EC" />
+      </ZHField>
     </div>
   );
 }

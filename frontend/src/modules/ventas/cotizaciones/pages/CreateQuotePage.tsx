@@ -146,13 +146,11 @@ export function CreateQuotePage() {
                   required
                 >
                   <option value="">{t('ventas.cotizaciones.form.selectCustomer')}</option>
-                  {customers
-                    .filter((c) => c.pickerMeta.selectable && c.pickerMeta.businessPartnerId)
-                    .map((c) => (
-                      <option key={c.id} value={c.pickerMeta.businessPartnerId!}>
-                        {c.fullName}
-                      </option>
-                    ))}
+                  {customers.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.fullName}
+                    </option>
+                  ))}
                 </select>
               </ZHField>
               <ZHField label={t('ventas.cotizaciones.form.validUntil')} required>

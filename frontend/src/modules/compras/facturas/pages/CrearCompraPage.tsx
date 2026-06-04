@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+﻿import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { NoAccessPage } from '../../../../components/PageShell';
 import { ErpPageTemplate } from '../../../../templates/ErpPageTemplate';
@@ -49,8 +49,7 @@ export function CrearCompraPage() {
 
   const suppliersState = useCompanyScopedAsync(() => businessPartnerFacade.searchSuppliersForPicker());
 
-  const [supplierId,          setSupplierId]          = useState('');
-  const [businessPartnerId,   setBusinessPartnerId]   = useState<string | null>(null);
+    const [businessPartnerId, setBusinessPartnerId] = useState('');
   const [invoiceNumber, setInvoiceNumber] = useState('');
   const [invoiceDate,   setInvoiceDate]   = useState(TODAY);
   const [dueDate,       setDueDate]       = useState('');
@@ -77,7 +76,7 @@ export function CrearCompraPage() {
 
   const handleSubmit = async () => {
     setError(null);
-    if (!supplierId) { setError('Selecciona un proveedor.'); return; }
+    if (!businessPartnerId) { setError('Selecciona un proveedor.'); return; }
     if (!invoiceNumber.trim()) { setError('El número de factura es obligatorio.'); return; }
     if (lineas.some((l) => !l.description.trim())) { setError('Todas las líneas deben tener descripción.'); return; }
 
@@ -94,7 +93,6 @@ export function CrearCompraPage() {
     setSaving(true);
     try {
       await comprasService.crearManual({
-        supplierId,
         businessPartnerId,
         invoiceNumber: invoiceNumber.trim(),
         invoiceDate,
@@ -143,25 +141,16 @@ export function CrearCompraPage() {
             <ZHField label="Proveedor" required>
               <select
                 className="zh-input"
-                value={supplierId}
+                value={businessPartnerId}
                 onChange={(e) => {
-                  const selected = (suppliersState.data ?? []).find(
-                    (s) => (s.pickerMeta.legacyOperationalId ?? '') === e.target.value
-                  );
-                  setSupplierId(e.target.value);
-                  setBusinessPartnerId(selected?.pickerMeta.businessPartnerId ?? null);
+                  setBusinessPartnerId(e.target.value);
                 }}
                 disabled={suppliersState.loading}
               >
                 <option value="">-- Seleccionar proveedor --</option>
                 {(suppliersState.data ?? []).map((s) => (
-                  <option
-                    key={s.pickerMeta.businessPartnerId}
-                    value={s.pickerMeta.legacyOperationalId ?? ''}
-                    disabled={!s.pickerMeta.selectable}
-                  >
-                    {s.legalName} ({s.taxId})
-                    {!s.pickerMeta.selectable ? ' — sin vínculo operacional' : ''}
+                  <option key={s.id} value={s.id}>
+                    {s.fullName} ({s.identificationNumber})
                   </option>
                 ))}
               </select>
@@ -290,3 +279,4 @@ export function CrearCompraPage() {
     </ErpPageTemplate>
   );
 }
+
