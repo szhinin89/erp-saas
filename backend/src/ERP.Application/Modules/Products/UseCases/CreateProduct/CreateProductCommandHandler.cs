@@ -93,10 +93,6 @@ public sealed class CreateProductCommandHandler : IRequestHandler<CreateProductC
             command.AvailableOnWeb,
             command.AvailableOnMobile,
             command.IsEcommerceActive,
-            command.BaseColor,
-            command.HasMultipleColors,
-            command.HasSizes,
-            command.HandlesTariff,
             command.IsForSale,
             companyId: _currentCompany.CompanyId);
 }

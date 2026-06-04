@@ -4565,6 +4565,213 @@ namespace ERP.Infrastructure.Persistence.Migrations
                     b.ToTable("general_parameter", (string)null);
                 });
 
+            modelBuilder.Entity("ERP.Domain.Modules.Costing.Entities.CostLayer", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid>("CompanyId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("company_id");
+
+                    b.Property<string>("CostMethod")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("character varying(10)")
+                        .HasColumnName("cost_method");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<decimal>("EntryQty")
+                        .HasPrecision(14, 4)
+                        .HasColumnType("numeric(14,4)")
+                        .HasColumnName("entry_qty");
+
+                    b.Property<bool>("IsExhausted")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_exhausted");
+
+                    b.Property<Guid>("ItemId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("item_id");
+
+                    b.Property<DateTime>("LayerDate")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("layer_date");
+
+                    b.Property<Guid?>("LotId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("lot_id");
+
+                    b.Property<decimal>("RemainingQty")
+                        .HasPrecision(14, 4)
+                        .HasColumnType("numeric(14,4)")
+                        .HasColumnName("remaining_qty");
+
+                    b.Property<Guid>("SourceDocumentId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("source_document_id");
+
+                    b.Property<string>("SourceDocumentType")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("source_document_type");
+
+                    b.Property<Guid>("SubscriberId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("subscriber_id");
+
+                    b.Property<decimal>("TotalCost")
+                        .HasPrecision(14, 2)
+                        .HasColumnType("numeric(14,2)")
+                        .HasColumnName("total_cost");
+
+                    b.Property<decimal>("UnitCost")
+                        .HasPrecision(14, 4)
+                        .HasColumnType("numeric(14,4)")
+                        .HasColumnName("unit_cost");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid?>("UpdatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by");
+
+                    b.Property<Guid?>("VariantId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("variant_id");
+
+                    b.Property<Guid>("WarehouseId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("warehouse_id");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("SubscriberId", "ItemId")
+                        .HasDatabaseName("ix_cost_layers_item");
+
+                    b.HasIndex("SubscriberId", "CompanyId", "ItemId", "WarehouseId", "IsExhausted", "LayerDate")
+                        .HasDatabaseName("ix_cost_layers_fifo");
+
+                    b.ToTable("cost_layers", (string)null);
+                });
+
+            modelBuilder.Entity("ERP.Domain.Modules.DigitalItems.Entities.DigitalDeliverable", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid>("DigitalItemId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("digital_item_id");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_active");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("name");
+
+                    b.Property<Guid>("StorageObjectId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("storage_object_id");
+
+                    b.Property<Guid>("SubscriberId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("subscriber_id");
+
+                    b.Property<string>("Version")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("version");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("DigitalItemId");
+
+                    b.ToTable("digital_deliverables", (string)null);
+                });
+
+            modelBuilder.Entity("ERP.Domain.Modules.DigitalItems.Entities.DigitalItem", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<string>("DeliveryMethod")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("delivery_method");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_active");
+
+                    b.Property<Guid>("ItemId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("item_id");
+
+                    b.Property<string>("LicenseType")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("license_type");
+
+                    b.Property<int?>("MaxDownloads")
+                        .HasColumnType("integer")
+                        .HasColumnName("max_downloads");
+
+                    b.Property<Guid>("SubscriberId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("subscriber_id");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid?>("UpdatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by");
+
+                    b.Property<int?>("ValidityDays")
+                        .HasColumnType("integer")
+                        .HasColumnName("validity_days");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ItemId")
+                        .IsUnique()
+                        .HasDatabaseName("uq_digital_item");
+
+                    b.ToTable("digital_items", (string)null);
+                });
+
             modelBuilder.Entity("ERP.Domain.Modules.ElectronicDocuments.Entities.CreditNote", b =>
                 {
                     b.Property<Guid>("Id")
@@ -6661,6 +6868,198 @@ namespace ERP.Infrastructure.Persistence.Migrations
                     b.ToTable("kardex_snapshot", (string)null);
                 });
 
+            modelBuilder.Entity("ERP.Domain.Modules.Inventory.Entities.Lot", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid>("CompanyId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("company_id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<decimal>("CurrentQty")
+                        .HasPrecision(14, 4)
+                        .HasColumnType("numeric(14,4)")
+                        .HasColumnName("current_qty");
+
+                    b.Property<DateOnly?>("ExpirationDate")
+                        .HasColumnType("date")
+                        .HasColumnName("expiration_date");
+
+                    b.Property<decimal>("InitialQty")
+                        .HasPrecision(14, 4)
+                        .HasColumnType("numeric(14,4)")
+                        .HasColumnName("initial_qty");
+
+                    b.Property<Guid>("ItemId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("item_id");
+
+                    b.Property<string>("LotNumber")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("lot_number");
+
+                    b.Property<DateOnly?>("ManufactureDate")
+                        .HasColumnType("date")
+                        .HasColumnName("manufacture_date");
+
+                    b.Property<string>("Notes")
+                        .HasColumnType("text")
+                        .HasColumnName("notes");
+
+                    b.Property<Guid?>("ReceiptLineId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("receipt_line_id");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("status");
+
+                    b.Property<Guid>("SubscriberId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("subscriber_id");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid?>("UpdatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by");
+
+                    b.Property<Guid?>("VariantId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("variant_id");
+
+                    b.Property<Guid>("WarehouseId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("warehouse_id");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ExpirationDate")
+                        .HasDatabaseName("ix_lots_expiration_active")
+                        .HasFilter("expiration_date IS NOT NULL AND status = 'Active'");
+
+                    b.HasIndex("SubscriberId", "ItemId")
+                        .HasDatabaseName("ix_lots_subscriber_item");
+
+                    b.HasIndex("SubscriberId", "CompanyId", "ItemId", "LotNumber")
+                        .IsUnique()
+                        .HasDatabaseName("uq_lot_number");
+
+                    b.ToTable("lots", (string)null);
+                });
+
+            modelBuilder.Entity("ERP.Domain.Modules.Inventory.Entities.SerialNumber", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTime>("AcquiredAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("acquired_at");
+
+                    b.Property<Guid>("CompanyId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("company_id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<string>("DocumentRef")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("document_ref");
+
+                    b.Property<Guid>("ItemId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("item_id");
+
+                    b.Property<Guid?>("LotId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("lot_id");
+
+                    b.Property<string>("Notes")
+                        .HasColumnType("text")
+                        .HasColumnName("notes");
+
+                    b.Property<Guid?>("ReceiptLineId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("receipt_line_id");
+
+                    b.Property<string>("Serial")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("serial");
+
+                    b.Property<DateTime?>("SoldAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("sold_at");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("status");
+
+                    b.Property<Guid>("SubscriberId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("subscriber_id");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid?>("UpdatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by");
+
+                    b.Property<Guid?>("VariantId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("variant_id");
+
+                    b.Property<Guid>("WarehouseId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("warehouse_id");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("SubscriberId", "ItemId")
+                        .HasDatabaseName("ix_serial_numbers_subscriber_item");
+
+                    b.HasIndex("SubscriberId", "Status")
+                        .HasDatabaseName("ix_serial_numbers_status");
+
+                    b.HasIndex("SubscriberId", "CompanyId", "ItemId", "Serial")
+                        .IsUnique()
+                        .HasDatabaseName("uq_serial_number");
+
+                    b.ToTable("serial_numbers", (string)null);
+                });
+
             modelBuilder.Entity("ERP.Domain.Modules.Inventory.Entities.StockAdjustment", b =>
                 {
                     b.Property<Guid>("Id")
@@ -7286,6 +7685,869 @@ namespace ERP.Infrastructure.Persistence.Migrations
                     b.ToTable("warehouse", (string)null);
                 });
 
+            modelBuilder.Entity("ERP.Domain.Modules.Items.Entities.AttributeDefinition", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("AllowedValues")
+                        .HasColumnType("jsonb")
+                        .HasColumnName("allowed_values");
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("code");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<string>("DataType")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("data_type");
+
+                    b.Property<Guid>("GroupId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("group_id");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_active");
+
+                    b.Property<bool>("IsRequired")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_required");
+
+                    b.Property<bool>("IsVariantAxis")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_variant_axis");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("name");
+
+                    b.Property<int>("SortOrder")
+                        .HasColumnType("integer")
+                        .HasColumnName("sort_order");
+
+                    b.Property<Guid>("SubscriberId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("subscriber_id");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid?>("UpdatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("GroupId");
+
+                    b.HasIndex("SubscriberId", "IsVariantAxis")
+                        .HasDatabaseName("ix_attribute_definitions_variant_axis");
+
+                    b.HasIndex("SubscriberId", "GroupId", "Code")
+                        .IsUnique()
+                        .HasDatabaseName("uq_attribute_definitions_subscriber_group_code");
+
+                    b.ToTable("attribute_definitions", (string)null);
+                });
+
+            modelBuilder.Entity("ERP.Domain.Modules.Items.Entities.AttributeGroup", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("code");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_active");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("name");
+
+                    b.Property<int>("SortOrder")
+                        .HasColumnType("integer")
+                        .HasColumnName("sort_order");
+
+                    b.Property<Guid>("SubscriberId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("subscriber_id");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid?>("UpdatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("SubscriberId", "Code")
+                        .IsUnique()
+                        .HasDatabaseName("uq_attribute_groups_subscriber_code");
+
+                    b.ToTable("attribute_groups", (string)null);
+                });
+
+            modelBuilder.Entity("ERP.Domain.Modules.Items.Entities.Item", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid?>("BrandId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("brand_id");
+
+                    b.Property<Guid?>("CategoryNodeId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("category_node_id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<string>("DefaultUomCode")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("character varying(10)")
+                        .HasColumnName("default_uom_code");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_active");
+
+                    b.Property<string>("ItemType")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("item_type");
+
+                    b.Property<string>("MarketingAttributes")
+                        .IsRequired()
+                        .HasColumnType("jsonb")
+                        .HasColumnName("marketing_attributes");
+
+                    b.Property<string>("Observations")
+                        .HasColumnType("text")
+                        .HasColumnName("observations");
+
+                    b.Property<string>("Specifications")
+                        .IsRequired()
+                        .HasColumnType("jsonb")
+                        .HasColumnName("specifications");
+
+                    b.Property<Guid>("SubscriberId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("subscriber_id");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid?>("UpdatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("SubscriberId")
+                        .HasDatabaseName("ix_items_subscriber");
+
+                    b.HasIndex("SubscriberId", "CategoryNodeId")
+                        .HasDatabaseName("ix_items_subscriber_category");
+
+                    b.HasIndex("SubscriberId", "ItemType")
+                        .HasDatabaseName("ix_items_subscriber_type");
+
+                    b.ToTable("items", (string)null);
+                });
+
+            modelBuilder.Entity("ERP.Domain.Modules.Items.Entities.ItemCategory", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("code");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<Guid>("FamilyId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("family_id");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_active");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(120)
+                        .HasColumnType("character varying(120)")
+                        .HasColumnName("name");
+
+                    b.Property<Guid>("SubscriberId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("subscriber_id");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid?>("UpdatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("FamilyId");
+
+                    b.HasIndex("SubscriberId", "FamilyId")
+                        .HasDatabaseName("ix_item_categories_subscriber_family");
+
+                    b.HasIndex("SubscriberId", "FamilyId", "Code")
+                        .IsUnique()
+                        .HasDatabaseName("uq_item_categories_family_code");
+
+                    b.ToTable("item_categories", (string)null);
+                });
+
+            modelBuilder.Entity("ERP.Domain.Modules.Items.Entities.ItemFamily", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("code");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_active");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(120)
+                        .HasColumnType("character varying(120)")
+                        .HasColumnName("name");
+
+                    b.Property<Guid>("SubscriberId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("subscriber_id");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid?>("UpdatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("SubscriberId")
+                        .HasDatabaseName("ix_item_families_subscriber");
+
+                    b.HasIndex("SubscriberId", "Code")
+                        .IsUnique()
+                        .HasDatabaseName("uq_item_families_subscriber_code");
+
+                    b.ToTable("item_families", (string)null);
+                });
+
+            modelBuilder.Entity("ERP.Domain.Modules.Items.Entities.ItemImage", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("AltText")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("alt_text");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_active");
+
+                    b.Property<bool>("IsEcommerce")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_ecommerce");
+
+                    b.Property<bool>("IsMain")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_main");
+
+                    b.Property<Guid>("ItemId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("item_id");
+
+                    b.Property<int>("SortOrder")
+                        .HasColumnType("integer")
+                        .HasColumnName("sort_order");
+
+                    b.Property<Guid>("StorageObjectId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("storage_object_id");
+
+                    b.Property<Guid>("SubscriberId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("subscriber_id");
+
+                    b.Property<Guid?>("VariantId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("variant_id");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ItemId")
+                        .HasDatabaseName("ix_item_images_item");
+
+                    b.ToTable("item_images", (string)null);
+                });
+
+            modelBuilder.Entity("ERP.Domain.Modules.Items.Entities.ItemPackagingLevel", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("Barcode")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("barcode");
+
+                    b.Property<decimal>("BaseQuantity")
+                        .HasPrecision(14, 4)
+                        .HasColumnType("numeric(14,4)")
+                        .HasColumnName("base_quantity");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_active");
+
+                    b.Property<bool>("IsBaseUnit")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_base_unit");
+
+                    b.Property<bool>("IsPurchaseDefault")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_purchase_default");
+
+                    b.Property<bool>("IsSaleDefault")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_sale_default");
+
+                    b.Property<Guid>("ItemId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("item_id");
+
+                    b.Property<int>("Level")
+                        .HasColumnType("integer")
+                        .HasColumnName("level");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("name");
+
+                    b.Property<Guid>("SubscriberId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("subscriber_id");
+
+                    b.Property<string>("UomCode")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("character varying(10)")
+                        .HasColumnName("uom_code");
+
+                    b.Property<decimal?>("Weight")
+                        .HasPrecision(10, 3)
+                        .HasColumnType("numeric(10,3)")
+                        .HasColumnName("weight");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ItemId", "Level")
+                        .IsUnique()
+                        .HasDatabaseName("uq_item_packaging_level");
+
+                    b.HasIndex("ItemId", "UomCode")
+                        .IsUnique()
+                        .HasDatabaseName("uq_item_packaging_uom");
+
+                    b.ToTable("item_packaging_levels", (string)null);
+                });
+
+            modelBuilder.Entity("ERP.Domain.Modules.Items.Entities.ItemSubcategory", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid>("CategoryId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("category_id");
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("code");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_active");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(120)
+                        .HasColumnType("character varying(120)")
+                        .HasColumnName("name");
+
+                    b.Property<Guid>("SubscriberId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("subscriber_id");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid?>("UpdatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CategoryId");
+
+                    b.HasIndex("SubscriberId", "CategoryId")
+                        .HasDatabaseName("ix_item_subcategories_subscriber_category");
+
+                    b.HasIndex("SubscriberId", "CategoryId", "Code")
+                        .IsUnique()
+                        .HasDatabaseName("uq_item_subcategories_category_code");
+
+                    b.ToTable("item_subcategories", (string)null);
+                });
+
+            modelBuilder.Entity("ERP.Domain.Modules.Items.Entities.ItemSubstitute", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_active");
+
+                    b.Property<Guid>("ItemId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("item_id");
+
+                    b.Property<string>("Note")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("note");
+
+                    b.Property<int>("Priority")
+                        .HasColumnType("integer")
+                        .HasColumnName("priority");
+
+                    b.Property<Guid>("SubscriberId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("subscriber_id");
+
+                    b.Property<Guid>("SubstituteItemId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("substitute_item_id");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ItemId", "SubstituteItemId")
+                        .IsUnique()
+                        .HasDatabaseName("uq_item_substitute");
+
+                    b.ToTable("item_substitutes", (string)null);
+                });
+
+            modelBuilder.Entity("ERP.Domain.Modules.Items.Entities.ItemUnitConversion", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<decimal>("Factor")
+                        .HasPrecision(14, 6)
+                        .HasColumnType("numeric(14,6)")
+                        .HasColumnName("factor");
+
+                    b.Property<string>("FromUomCode")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("character varying(10)")
+                        .HasColumnName("from_uom_code");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_active");
+
+                    b.Property<Guid>("ItemId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("item_id");
+
+                    b.Property<Guid>("SubscriberId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("subscriber_id");
+
+                    b.Property<string>("ToUomCode")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("character varying(10)")
+                        .HasColumnName("to_uom_code");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ItemId", "FromUomCode", "ToUomCode")
+                        .IsUnique()
+                        .HasDatabaseName("uq_item_unit_conversion");
+
+                    b.ToTable("item_unit_conversions", (string)null);
+                });
+
+            modelBuilder.Entity("ERP.Domain.Modules.Items.Entities.ItemVariant", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_active");
+
+                    b.Property<bool>("IsDefault")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_default");
+
+                    b.Property<Guid>("ItemId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("item_id");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("name");
+
+                    b.Property<string>("SKU")
+                        .IsRequired()
+                        .HasMaxLength(80)
+                        .HasColumnType("character varying(80)")
+                        .HasColumnName("sku");
+
+                    b.Property<int>("SortOrder")
+                        .HasColumnType("integer")
+                        .HasColumnName("sort_order");
+
+                    b.Property<Guid>("SubscriberId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("subscriber_id");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid?>("UpdatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ItemId")
+                        .HasDatabaseName("ix_item_variants_item");
+
+                    b.HasIndex("ItemId", "SKU")
+                        .IsUnique()
+                        .HasDatabaseName("uq_item_variants_item_sku");
+
+                    b.ToTable("item_variants", (string)null);
+                });
+
+            modelBuilder.Entity("ERP.Domain.Modules.Items.Entities.ItemVariantAttribute", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid>("AttributeDefinitionId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("attribute_definition_id");
+
+                    b.Property<Guid>("SubscriberId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("subscriber_id");
+
+                    b.Property<string>("Value")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("value");
+
+                    b.Property<Guid>("VariantId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("variant_id");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("VariantId", "AttributeDefinitionId")
+                        .IsUnique()
+                        .HasDatabaseName("uq_item_variant_attribute");
+
+                    b.ToTable("item_variant_attributes", (string)null);
+                });
+
+            modelBuilder.Entity("ERP.Domain.Modules.Items.Entities.ItemVariantBarcode", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("BarcodeType")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("barcode_type");
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("code");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_active");
+
+                    b.Property<Guid>("ItemId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("item_id");
+
+                    b.Property<Guid>("SubscriberId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("subscriber_id");
+
+                    b.Property<Guid?>("VariantId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("variant_id");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Code")
+                        .HasDatabaseName("ix_item_variant_barcodes_code");
+
+                    b.HasIndex("VariantId");
+
+                    b.HasIndex("ItemId", "Code")
+                        .IsUnique()
+                        .HasDatabaseName("uq_item_variant_barcode_code");
+
+                    b.ToTable("item_variant_barcodes", (string)null);
+                });
+
+            modelBuilder.Entity("ERP.Domain.Modules.Kits.Entities.Kit", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_active");
+
+                    b.Property<Guid>("ItemId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("item_id");
+
+                    b.Property<string>("KitType")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("kit_type");
+
+                    b.Property<Guid>("SubscriberId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("subscriber_id");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid?>("UpdatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ItemId")
+                        .IsUnique()
+                        .HasDatabaseName("uq_kit_item");
+
+                    b.ToTable("kits", (string)null);
+                });
+
+            modelBuilder.Entity("ERP.Domain.Modules.Kits.Entities.KitLine", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid>("ComponentItemId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("component_item_id");
+
+                    b.Property<Guid?>("ComponentVariantId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("component_variant_id");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_active");
+
+                    b.Property<bool>("IsOptional")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_optional");
+
+                    b.Property<Guid>("KitId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("kit_id");
+
+                    b.Property<decimal>("Quantity")
+                        .HasPrecision(14, 4)
+                        .HasColumnType("numeric(14,4)")
+                        .HasColumnName("quantity");
+
+                    b.Property<int>("SortOrder")
+                        .HasColumnType("integer")
+                        .HasColumnName("sort_order");
+
+                    b.Property<Guid>("SubscriberId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("subscriber_id");
+
+                    b.Property<string>("UomCode")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("character varying(10)")
+                        .HasColumnName("uom_code");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("KitId", "ComponentItemId", "ComponentVariantId")
+                        .IsUnique()
+                        .HasDatabaseName("uq_kit_component");
+
+                    b.ToTable("kit_lines", (string)null);
+                });
+
             modelBuilder.Entity("ERP.Domain.Modules.Logistics.Entities.Carrier", b =>
                 {
                     b.Property<Guid>("Id")
@@ -7426,6 +8688,205 @@ namespace ERP.Infrastructure.Persistence.Migrations
                         .HasDatabaseName("uq_app_features_permission");
 
                     b.ToTable("app_features", (string)null);
+                });
+
+            modelBuilder.Entity("ERP.Domain.Modules.Pricing.Entities.PriceList", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("code");
+
+                    b.Property<Guid>("CompanyId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("company_id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<string>("CurrencyCode")
+                        .IsRequired()
+                        .HasMaxLength(3)
+                        .HasColumnType("character varying(3)")
+                        .HasColumnName("currency_code");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_active");
+
+                    b.Property<bool>("IsDefault")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_default");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("name");
+
+                    b.Property<bool>("PriceIncludesVat")
+                        .HasColumnType("boolean")
+                        .HasColumnName("price_includes_vat");
+
+                    b.Property<Guid>("SubscriberId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("subscriber_id");
+
+                    b.Property<string>("Target")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)")
+                        .HasColumnName("target");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid?>("UpdatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by");
+
+                    b.Property<DateOnly>("ValidFrom")
+                        .HasColumnType("date")
+                        .HasColumnName("valid_from");
+
+                    b.Property<DateOnly?>("ValidTo")
+                        .HasColumnType("date")
+                        .HasColumnName("valid_to");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("SubscriberId", "CompanyId", "Code")
+                        .IsUnique()
+                        .HasDatabaseName("uq_price_lists_subscriber_company_code");
+
+                    b.HasIndex("SubscriberId", "CompanyId", "IsDefault")
+                        .HasDatabaseName("ix_price_lists_default");
+
+                    b.ToTable("price_lists", (string)null);
+                });
+
+            modelBuilder.Entity("ERP.Domain.Modules.Pricing.Entities.PriceListDiscount", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid?>("CategoryNodeId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("category_node_id");
+
+                    b.Property<string>("DiscountType")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("discount_type");
+
+                    b.Property<decimal>("DiscountValue")
+                        .HasPrecision(10, 4)
+                        .HasColumnType("numeric(10,4)")
+                        .HasColumnName("discount_value");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_active");
+
+                    b.Property<Guid?>("ItemId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("item_id");
+
+                    b.Property<decimal?>("MinQty")
+                        .HasPrecision(14, 4)
+                        .HasColumnType("numeric(14,4)")
+                        .HasColumnName("min_qty");
+
+                    b.Property<Guid>("PriceListId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("price_list_id");
+
+                    b.Property<Guid>("SubscriberId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("subscriber_id");
+
+                    b.Property<DateOnly?>("ValidFrom")
+                        .HasColumnType("date")
+                        .HasColumnName("valid_from");
+
+                    b.Property<DateOnly?>("ValidTo")
+                        .HasColumnType("date")
+                        .HasColumnName("valid_to");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("PriceListId");
+
+                    b.ToTable("price_list_discounts", (string)null);
+                });
+
+            modelBuilder.Entity("ERP.Domain.Modules.Pricing.Entities.PriceListEntry", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_active");
+
+                    b.Property<Guid>("ItemId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("item_id");
+
+                    b.Property<decimal>("MinQty")
+                        .HasPrecision(14, 4)
+                        .HasColumnType("numeric(14,4)")
+                        .HasColumnName("min_qty");
+
+                    b.Property<decimal>("Price")
+                        .HasPrecision(14, 4)
+                        .HasColumnType("numeric(14,4)")
+                        .HasColumnName("price");
+
+                    b.Property<Guid>("PriceListId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("price_list_id");
+
+                    b.Property<Guid>("SubscriberId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("subscriber_id");
+
+                    b.Property<string>("UomCode")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("character varying(10)")
+                        .HasColumnName("uom_code");
+
+                    b.Property<Guid?>("VariantId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("variant_id");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ItemId")
+                        .HasDatabaseName("ix_price_list_entries_item");
+
+                    b.HasIndex("PriceListId", "ItemId")
+                        .HasDatabaseName("ix_price_list_entries_list_item");
+
+                    b.ToTable("price_list_entries", (string)null);
                 });
 
             modelBuilder.Entity("ERP.Domain.Modules.Purchases.Entities.PurchaseInvoice", b =>
@@ -12352,6 +13813,141 @@ namespace ERP.Infrastructure.Persistence.Migrations
                         });
                 });
 
+            modelBuilder.Entity("ERP.Domain.Modules.SupplierCatalog.Entities.SupplierItem", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<string>("DefaultUomCode")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("character varying(10)")
+                        .HasColumnName("default_uom_code");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_active");
+
+                    b.Property<bool>("IsDefault")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_default");
+
+                    b.Property<Guid>("ItemId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("item_id");
+
+                    b.Property<int>("LeadTimeDays")
+                        .HasColumnType("integer")
+                        .HasColumnName("lead_time_days");
+
+                    b.Property<decimal>("MinOrderQty")
+                        .HasPrecision(14, 4)
+                        .HasColumnType("numeric(14,4)")
+                        .HasColumnName("min_order_qty");
+
+                    b.Property<Guid>("SubscriberId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("subscriber_id");
+
+                    b.Property<string>("SupplierCode")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("supplier_code");
+
+                    b.Property<Guid>("SupplierId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("supplier_id");
+
+                    b.Property<string>("SupplierName")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("supplier_name");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid?>("UpdatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by");
+
+                    b.Property<Guid?>("VariantId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("variant_id");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("SubscriberId", "ItemId")
+                        .HasDatabaseName("ix_supplier_items_item");
+
+                    b.HasIndex("SubscriberId", "SupplierId", "ItemId", "VariantId")
+                        .IsUnique()
+                        .HasDatabaseName("uq_supplier_item");
+
+                    b.ToTable("supplier_items", (string)null);
+                });
+
+            modelBuilder.Entity("ERP.Domain.Modules.SupplierCatalog.Entities.SupplierItemPrice", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("CurrencyCode")
+                        .IsRequired()
+                        .HasMaxLength(3)
+                        .HasColumnType("character varying(3)")
+                        .HasColumnName("currency_code");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_active");
+
+                    b.Property<decimal>("MinQty")
+                        .HasPrecision(14, 4)
+                        .HasColumnType("numeric(14,4)")
+                        .HasColumnName("min_qty");
+
+                    b.Property<Guid>("SubscriberId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("subscriber_id");
+
+                    b.Property<Guid>("SupplierItemId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("supplier_item_id");
+
+                    b.Property<decimal>("UnitPrice")
+                        .HasPrecision(14, 4)
+                        .HasColumnType("numeric(14,4)")
+                        .HasColumnName("unit_price");
+
+                    b.Property<DateOnly?>("ValidFrom")
+                        .HasColumnType("date")
+                        .HasColumnName("valid_from");
+
+                    b.Property<DateOnly?>("ValidTo")
+                        .HasColumnType("date")
+                        .HasColumnName("valid_to");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("SupplierItemId");
+
+                    b.ToTable("supplier_item_prices", (string)null);
+                });
+
             modelBuilder.Entity("ERP.Domain.Navigation.Entities.SubscriberCustomMenu", b =>
                 {
                     b.Property<Guid>("Id")
@@ -12776,11 +14372,6 @@ namespace ERP.Infrastructure.Persistence.Migrations
                         .HasColumnType("boolean")
                         .HasColumnName("available_on_web");
 
-                    b.Property<string>("BaseColor")
-                        .HasMaxLength(80)
-                        .HasColumnType("character varying(80)")
-                        .HasColumnName("base_color");
-
                     b.Property<Guid>("BrandId")
                         .HasColumnType("uuid")
                         .HasColumnName("brand_id");
@@ -12811,21 +14402,9 @@ namespace ERP.Infrastructure.Persistence.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("excise_account_id");
 
-                    b.Property<bool>("HandlesTariff")
-                        .HasColumnType("boolean")
-                        .HasColumnName("handles_tariff");
-
-                    b.Property<bool>("HasMultipleColors")
-                        .HasColumnType("boolean")
-                        .HasColumnName("has_multiple_colors");
-
                     b.Property<bool>("HasRecipe")
                         .HasColumnType("boolean")
                         .HasColumnName("has_recipe");
-
-                    b.Property<bool>("HasSizes")
-                        .HasColumnType("boolean")
-                        .HasColumnName("has_sizes");
 
                     b.Property<string>("IceCode")
                         .HasMaxLength(10)
@@ -14636,6 +16215,15 @@ namespace ERP.Infrastructure.Persistence.Migrations
                     b.Navigation("Company");
                 });
 
+            modelBuilder.Entity("ERP.Domain.Modules.DigitalItems.Entities.DigitalDeliverable", b =>
+                {
+                    b.HasOne("ERP.Domain.Modules.DigitalItems.Entities.DigitalItem", null)
+                        .WithMany("Deliverables")
+                        .HasForeignKey("DigitalItemId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("ERP.Domain.Modules.ElectronicDocuments.Entities.CreditNote", b =>
                 {
                     b.HasOne("ERP.Domain.Modules.ElectronicDocuments.Entities.ElectronicDoc", "ElectronicDoc")
@@ -14927,12 +16515,321 @@ namespace ERP.Infrastructure.Persistence.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("ERP.Domain.Modules.Items.Entities.AttributeDefinition", b =>
+                {
+                    b.HasOne("ERP.Domain.Modules.Items.Entities.AttributeGroup", null)
+                        .WithMany()
+                        .HasForeignKey("GroupId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("ERP.Domain.Modules.Items.Entities.Item", b =>
+                {
+                    b.OwnsOne("ERP.Domain.Modules.Items.ValueObjects.ItemCode", "Code", b1 =>
+                        {
+                            b1.Property<Guid>("ItemId")
+                                .HasColumnType("uuid");
+
+                            b1.Property<string>("Description")
+                                .IsRequired()
+                                .HasMaxLength(254)
+                                .HasColumnType("character varying(254)")
+                                .HasColumnName("description");
+
+                            b1.Property<string>("PurchaseCode")
+                                .HasMaxLength(50)
+                                .HasColumnType("character varying(50)")
+                                .HasColumnName("purchase_code");
+
+                            b1.Property<string>("SKU")
+                                .IsRequired()
+                                .HasMaxLength(50)
+                                .HasColumnType("character varying(50)")
+                                .HasColumnName("sku");
+
+                            b1.Property<string>("ShortName")
+                                .IsRequired()
+                                .HasMaxLength(50)
+                                .HasColumnType("character varying(50)")
+                                .HasColumnName("short_name");
+
+                            b1.HasKey("ItemId");
+
+                            b1.ToTable("items");
+
+                            b1.WithOwner()
+                                .HasForeignKey("ItemId");
+                        });
+
+                    b.OwnsOne("ERP.Domain.Modules.Items.ValueObjects.ItemSaleConfig", "SaleConfig", b1 =>
+                        {
+                            b1.Property<Guid>("ItemId")
+                                .HasColumnType("uuid");
+
+                            b1.Property<bool>("IsAvailableOnMobile")
+                                .HasColumnType("boolean")
+                                .HasColumnName("available_on_mobile");
+
+                            b1.Property<bool>("IsAvailableOnPOS")
+                                .HasColumnType("boolean")
+                                .HasColumnName("available_on_pos");
+
+                            b1.Property<bool>("IsAvailableOnWeb")
+                                .HasColumnType("boolean")
+                                .HasColumnName("available_on_web");
+
+                            b1.Property<bool>("IsEcommerceActive")
+                                .HasColumnType("boolean")
+                                .HasColumnName("is_ecommerce_active");
+
+                            b1.Property<bool>("IsFavorite")
+                                .HasColumnType("boolean")
+                                .HasColumnName("is_favorite");
+
+                            b1.Property<bool>("IsForSale")
+                                .HasColumnType("boolean")
+                                .HasColumnName("is_for_sale");
+
+                            b1.Property<decimal?>("MaxDiscountPercent")
+                                .HasPrecision(5, 2)
+                                .HasColumnType("numeric(5,2)")
+                                .HasColumnName("max_discount_percent");
+
+                            b1.HasKey("ItemId");
+
+                            b1.ToTable("items");
+
+                            b1.WithOwner()
+                                .HasForeignKey("ItemId");
+                        });
+
+                    b.OwnsOne("ERP.Domain.Modules.Items.ValueObjects.ItemStockConfig", "StockConfig", b1 =>
+                        {
+                            b1.Property<Guid>("ItemId")
+                                .HasColumnType("uuid");
+
+                            b1.Property<bool>("AllowDecimalQty")
+                                .HasColumnType("boolean")
+                                .HasColumnName("allow_decimal_qty");
+
+                            b1.Property<bool>("AllowDecimalSale")
+                                .HasColumnType("boolean")
+                                .HasColumnName("allow_decimal_sale");
+
+                            b1.Property<decimal?>("MaxStockQty")
+                                .HasPrecision(14, 4)
+                                .HasColumnType("numeric(14,4)")
+                                .HasColumnName("max_stock_qty");
+
+                            b1.Property<decimal?>("MinStockQty")
+                                .HasPrecision(14, 4)
+                                .HasColumnType("numeric(14,4)")
+                                .HasColumnName("min_stock_qty");
+
+                            b1.Property<bool>("TracksLot")
+                                .HasColumnType("boolean")
+                                .HasColumnName("tracks_lot");
+
+                            b1.Property<bool>("TracksSeries")
+                                .HasColumnType("boolean")
+                                .HasColumnName("tracks_series");
+
+                            b1.Property<bool>("TracksStock")
+                                .HasColumnType("boolean")
+                                .HasColumnName("tracks_stock");
+
+                            b1.HasKey("ItemId");
+
+                            b1.ToTable("items");
+
+                            b1.WithOwner()
+                                .HasForeignKey("ItemId");
+                        });
+
+                    b.OwnsOne("ERP.Domain.Modules.Items.ValueObjects.ItemTaxConfig", "TaxConfig", b1 =>
+                        {
+                            b1.Property<Guid>("ItemId")
+                                .HasColumnType("uuid");
+
+                            b1.Property<bool>("AppliesExciseTax")
+                                .HasColumnType("boolean")
+                                .HasColumnName("applies_excise_tax");
+
+                            b1.Property<bool>("AppliesVatOnPurchase")
+                                .HasColumnType("boolean")
+                                .HasColumnName("applies_vat_on_purchase");
+
+                            b1.Property<bool>("AppliesVatOnSale")
+                                .HasColumnType("boolean")
+                                .HasColumnName("applies_vat_on_sale");
+
+                            b1.Property<Guid?>("ExciseAccountId")
+                                .HasColumnType("uuid")
+                                .HasColumnName("excise_account_id");
+
+                            b1.Property<string>("ExciseTaxCode")
+                                .HasMaxLength(10)
+                                .HasColumnType("character varying(10)")
+                                .HasColumnName("excise_tax_code");
+
+                            b1.Property<Guid?>("PurchaseVatAccountId")
+                                .HasColumnType("uuid")
+                                .HasColumnName("purchase_vat_account_id");
+
+                            b1.Property<string>("PurchaseVatCode")
+                                .HasMaxLength(10)
+                                .HasColumnType("character varying(10)")
+                                .HasColumnName("purchase_vat_code");
+
+                            b1.Property<string>("SaleVatCode")
+                                .HasMaxLength(10)
+                                .HasColumnType("character varying(10)")
+                                .HasColumnName("sale_vat_code");
+
+                            b1.Property<string>("SriServiceCode")
+                                .HasMaxLength(5)
+                                .HasColumnType("character varying(5)")
+                                .HasColumnName("sri_service_code");
+
+                            b1.Property<Guid?>("VatAccountId")
+                                .HasColumnType("uuid")
+                                .HasColumnName("vat_account_id");
+
+                            b1.HasKey("ItemId");
+
+                            b1.ToTable("items");
+
+                            b1.WithOwner()
+                                .HasForeignKey("ItemId");
+                        });
+
+                    b.Navigation("Code")
+                        .IsRequired();
+
+                    b.Navigation("SaleConfig")
+                        .IsRequired();
+
+                    b.Navigation("StockConfig")
+                        .IsRequired();
+
+                    b.Navigation("TaxConfig")
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("ERP.Domain.Modules.Items.Entities.ItemCategory", b =>
+                {
+                    b.HasOne("ERP.Domain.Modules.Items.Entities.ItemFamily", null)
+                        .WithMany()
+                        .HasForeignKey("FamilyId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("ERP.Domain.Modules.Items.Entities.ItemImage", b =>
+                {
+                    b.HasOne("ERP.Domain.Modules.Items.Entities.Item", null)
+                        .WithMany("Images")
+                        .HasForeignKey("ItemId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("ERP.Domain.Modules.Items.Entities.ItemPackagingLevel", b =>
+                {
+                    b.HasOne("ERP.Domain.Modules.Items.Entities.Item", null)
+                        .WithMany("PackagingLevels")
+                        .HasForeignKey("ItemId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("ERP.Domain.Modules.Items.Entities.ItemSubcategory", b =>
+                {
+                    b.HasOne("ERP.Domain.Modules.Items.Entities.ItemCategory", null)
+                        .WithMany()
+                        .HasForeignKey("CategoryId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("ERP.Domain.Modules.Items.Entities.ItemSubstitute", b =>
+                {
+                    b.HasOne("ERP.Domain.Modules.Items.Entities.Item", null)
+                        .WithMany("Substitutes")
+                        .HasForeignKey("ItemId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("ERP.Domain.Modules.Items.Entities.ItemUnitConversion", b =>
+                {
+                    b.HasOne("ERP.Domain.Modules.Items.Entities.Item", null)
+                        .WithMany("UnitConversions")
+                        .HasForeignKey("ItemId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("ERP.Domain.Modules.Items.Entities.ItemVariant", b =>
+                {
+                    b.HasOne("ERP.Domain.Modules.Items.Entities.Item", null)
+                        .WithMany("Variants")
+                        .HasForeignKey("ItemId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("ERP.Domain.Modules.Items.Entities.ItemVariantAttribute", b =>
+                {
+                    b.HasOne("ERP.Domain.Modules.Items.Entities.ItemVariant", null)
+                        .WithMany("Attributes")
+                        .HasForeignKey("VariantId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("ERP.Domain.Modules.Items.Entities.ItemVariantBarcode", b =>
+                {
+                    b.HasOne("ERP.Domain.Modules.Items.Entities.ItemVariant", null)
+                        .WithMany("Barcodes")
+                        .HasForeignKey("VariantId")
+                        .OnDelete(DeleteBehavior.Cascade);
+                });
+
+            modelBuilder.Entity("ERP.Domain.Modules.Kits.Entities.KitLine", b =>
+                {
+                    b.HasOne("ERP.Domain.Modules.Kits.Entities.Kit", null)
+                        .WithMany("Lines")
+                        .HasForeignKey("KitId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("ERP.Domain.Modules.Menu.Entities.AppFeature", b =>
                 {
                     b.HasOne("ERP.Domain.Modules.Menu.Entities.AppFeature", null)
                         .WithMany()
                         .HasForeignKey("ParentId")
                         .OnDelete(DeleteBehavior.Restrict);
+                });
+
+            modelBuilder.Entity("ERP.Domain.Modules.Pricing.Entities.PriceListDiscount", b =>
+                {
+                    b.HasOne("ERP.Domain.Modules.Pricing.Entities.PriceList", null)
+                        .WithMany("Discounts")
+                        .HasForeignKey("PriceListId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("ERP.Domain.Modules.Pricing.Entities.PriceListEntry", b =>
+                {
+                    b.HasOne("ERP.Domain.Modules.Pricing.Entities.PriceList", null)
+                        .WithMany("Entries")
+                        .HasForeignKey("PriceListId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("ERP.Domain.Modules.Purchases.Entities.PurchaseInvoice", b =>
@@ -15246,6 +17143,15 @@ namespace ERP.Infrastructure.Persistence.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("ERP.Domain.Modules.SupplierCatalog.Entities.SupplierItemPrice", b =>
+                {
+                    b.HasOne("ERP.Domain.Modules.SupplierCatalog.Entities.SupplierItem", null)
+                        .WithMany("Prices")
+                        .HasForeignKey("SupplierItemId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("ERP.Domain.Navigation.Entities.SubscriberCustomMenu", b =>
                 {
                     b.HasOne("ERP.Domain.Subscribers.Entities.Subscriber", null)
@@ -15391,195 +17297,6 @@ namespace ERP.Infrastructure.Persistence.Migrations
                                 .HasForeignKey("ProductId");
                         });
 
-                    b.OwnsMany("ERP.Domain.Products.Entities.ProductColor", "Colors", b1 =>
-                        {
-                            b1.Property<Guid>("Id")
-                                .ValueGeneratedOnAdd()
-                                .HasColumnType("uuid")
-                                .HasColumnName("id");
-
-                            b1.Property<string>("HexCode")
-                                .HasMaxLength(10)
-                                .HasColumnType("character varying(10)")
-                                .HasColumnName("hex_code");
-
-                            b1.Property<bool>("IsActive")
-                                .HasColumnType("boolean")
-                                .HasColumnName("is_active");
-
-                            b1.Property<string>("Name")
-                                .IsRequired()
-                                .HasMaxLength(80)
-                                .HasColumnType("character varying(80)")
-                                .HasColumnName("name");
-
-                            b1.Property<Guid>("ProductId")
-                                .HasColumnType("uuid")
-                                .HasColumnName("product_id");
-
-                            b1.Property<Guid>("SubscriberId")
-                                .HasColumnType("uuid")
-                                .HasColumnName("subscriber_id");
-
-                            b1.HasKey("Id");
-
-                            b1.HasIndex("ProductId")
-                                .HasDatabaseName("ix_product_colors_product_id");
-
-                            b1.HasIndex("SubscriberId", "Name")
-                                .HasDatabaseName("ix_product_colors_subscriber_name");
-
-                            b1.ToTable("product_colors", (string)null);
-
-                            b1.WithOwner()
-                                .HasForeignKey("ProductId");
-                        });
-
-                    b.OwnsMany("ERP.Domain.Products.Entities.ProductCustomField", "CustomFields", b1 =>
-                        {
-                            b1.Property<Guid>("Id")
-                                .ValueGeneratedOnAdd()
-                                .HasColumnType("uuid")
-                                .HasColumnName("id");
-
-                            b1.Property<string>("FieldName")
-                                .IsRequired()
-                                .HasMaxLength(120)
-                                .HasColumnType("character varying(120)")
-                                .HasColumnName("field_name");
-
-                            b1.Property<int>("FieldType")
-                                .HasColumnType("integer")
-                                .HasColumnName("field_type");
-
-                            b1.Property<string>("FieldValue")
-                                .IsRequired()
-                                .HasMaxLength(1024)
-                                .HasColumnType("character varying(1024)")
-                                .HasColumnName("field_value");
-
-                            b1.Property<bool>("IsActive")
-                                .HasColumnType("boolean")
-                                .HasColumnName("is_active");
-
-                            b1.Property<Guid>("ProductId")
-                                .HasColumnType("uuid")
-                                .HasColumnName("product_id");
-
-                            b1.Property<Guid>("SubscriberId")
-                                .HasColumnType("uuid")
-                                .HasColumnName("subscriber_id");
-
-                            b1.HasKey("Id");
-
-                            b1.HasIndex("ProductId")
-                                .HasDatabaseName("ix_product_custom_fields_product_id");
-
-                            b1.HasIndex("SubscriberId", "FieldName")
-                                .HasDatabaseName("ix_product_custom_fields_subscriber_field_name");
-
-                            b1.ToTable("product_custom_fields", (string)null);
-
-                            b1.WithOwner()
-                                .HasForeignKey("ProductId");
-                        });
-
-                    b.OwnsMany("ERP.Domain.Products.Entities.ProductDimension", "Dimensions", b1 =>
-                        {
-                            b1.Property<Guid>("Id")
-                                .ValueGeneratedOnAdd()
-                                .HasColumnType("uuid")
-                                .HasColumnName("id");
-
-                            b1.Property<bool>("IsActive")
-                                .HasColumnType("boolean")
-                                .HasColumnName("is_active");
-
-                            b1.Property<string>("Name")
-                                .IsRequired()
-                                .HasMaxLength(80)
-                                .HasColumnType("character varying(80)")
-                                .HasColumnName("name");
-
-                            b1.Property<Guid>("ProductId")
-                                .HasColumnType("uuid")
-                                .HasColumnName("product_id");
-
-                            b1.Property<Guid>("SubscriberId")
-                                .HasColumnType("uuid")
-                                .HasColumnName("subscriber_id");
-
-                            b1.Property<string>("Unit")
-                                .IsRequired()
-                                .HasMaxLength(20)
-                                .HasColumnType("character varying(20)")
-                                .HasColumnName("unit");
-
-                            b1.Property<string>("Value")
-                                .IsRequired()
-                                .HasMaxLength(80)
-                                .HasColumnType("character varying(80)")
-                                .HasColumnName("value");
-
-                            b1.HasKey("Id");
-
-                            b1.HasIndex("ProductId")
-                                .HasDatabaseName("ix_product_dimensions_product_id");
-
-                            b1.HasIndex("SubscriberId", "Name")
-                                .HasDatabaseName("ix_product_dimensions_subscriber_name");
-
-                            b1.ToTable("product_dimensions", (string)null);
-
-                            b1.WithOwner()
-                                .HasForeignKey("ProductId");
-                        });
-
-                    b.OwnsMany("ERP.Domain.Products.Entities.ProductFeature", "Features", b1 =>
-                        {
-                            b1.Property<Guid>("Id")
-                                .ValueGeneratedOnAdd()
-                                .HasColumnType("uuid")
-                                .HasColumnName("id");
-
-                            b1.Property<bool>("IsActive")
-                                .HasColumnType("boolean")
-                                .HasColumnName("is_active");
-
-                            b1.Property<string>("Name")
-                                .IsRequired()
-                                .HasMaxLength(120)
-                                .HasColumnType("character varying(120)")
-                                .HasColumnName("name");
-
-                            b1.Property<Guid>("ProductId")
-                                .HasColumnType("uuid")
-                                .HasColumnName("product_id");
-
-                            b1.Property<Guid>("SubscriberId")
-                                .HasColumnType("uuid")
-                                .HasColumnName("subscriber_id");
-
-                            b1.Property<string>("Value")
-                                .IsRequired()
-                                .HasMaxLength(254)
-                                .HasColumnType("character varying(254)")
-                                .HasColumnName("value");
-
-                            b1.HasKey("Id");
-
-                            b1.HasIndex("ProductId")
-                                .HasDatabaseName("ix_product_features_product_id");
-
-                            b1.HasIndex("SubscriberId", "Name")
-                                .HasDatabaseName("ix_product_features_subscriber_name");
-
-                            b1.ToTable("product_features", (string)null);
-
-                            b1.WithOwner()
-                                .HasForeignKey("ProductId");
-                        });
-
                     b.OwnsMany("ERP.Domain.Products.Entities.ProductImage", "Images", b1 =>
                         {
                             b1.Property<Guid>("Id")
@@ -15639,49 +17356,6 @@ namespace ERP.Infrastructure.Persistence.Migrations
                                 .HasForeignKey("ProductId");
                         });
 
-                    b.OwnsMany("ERP.Domain.Products.Entities.ProductSize", "Sizes", b1 =>
-                        {
-                            b1.Property<Guid>("Id")
-                                .ValueGeneratedOnAdd()
-                                .HasColumnType("uuid")
-                                .HasColumnName("id");
-
-                            b1.Property<bool>("IsActive")
-                                .HasColumnType("boolean")
-                                .HasColumnName("is_active");
-
-                            b1.Property<string>("Name")
-                                .IsRequired()
-                                .HasMaxLength(50)
-                                .HasColumnType("character varying(50)")
-                                .HasColumnName("name");
-
-                            b1.Property<Guid>("ProductId")
-                                .HasColumnType("uuid")
-                                .HasColumnName("product_id");
-
-                            b1.Property<int>("SortOrder")
-                                .HasColumnType("integer")
-                                .HasColumnName("sort_order");
-
-                            b1.Property<Guid>("SubscriberId")
-                                .HasColumnType("uuid")
-                                .HasColumnName("subscriber_id");
-
-                            b1.HasKey("Id");
-
-                            b1.HasIndex("ProductId")
-                                .HasDatabaseName("ix_product_sizes_product_id");
-
-                            b1.HasIndex("SubscriberId", "Name")
-                                .HasDatabaseName("ix_product_sizes_subscriber_name");
-
-                            b1.ToTable("product_sizes", (string)null);
-
-                            b1.WithOwner()
-                                .HasForeignKey("ProductId");
-                        });
-
                     b.OwnsMany("ERP.Domain.Products.Entities.ProductSubstitute", "Substitutes", b1 =>
                         {
                             b1.Property<Guid>("Id")
@@ -15719,106 +17393,6 @@ namespace ERP.Infrastructure.Persistence.Migrations
                                 .HasDatabaseName("ix_product_substitutes_subscriber_substitute");
 
                             b1.ToTable("product_substitutes", (string)null);
-
-                            b1.WithOwner()
-                                .HasForeignKey("ProductId");
-                        });
-
-                    b.OwnsMany("ERP.Domain.Products.Entities.ProductSupplierCode", "SupplierCodes", b1 =>
-                        {
-                            b1.Property<Guid>("Id")
-                                .ValueGeneratedOnAdd()
-                                .HasColumnType("uuid")
-                                .HasColumnName("id");
-
-                            b1.Property<Guid>("BusinessPartnerId")
-                                .HasColumnType("uuid")
-                                .HasColumnName("business_partner_id");
-
-                            b1.Property<string>("Code")
-                                .IsRequired()
-                                .HasMaxLength(100)
-                                .HasColumnType("character varying(100)")
-                                .HasColumnName("code");
-
-                            b1.Property<bool>("IsActive")
-                                .HasColumnType("boolean")
-                                .HasColumnName("is_active");
-
-                            b1.Property<bool>("IsDefault")
-                                .HasColumnType("boolean")
-                                .HasColumnName("is_default");
-
-                            b1.Property<Guid>("ProductId")
-                                .HasColumnType("uuid")
-                                .HasColumnName("product_id");
-
-                            b1.Property<Guid>("SubscriberId")
-                                .HasColumnType("uuid")
-                                .HasColumnName("subscriber_id");
-
-                            b1.HasKey("Id");
-
-                            b1.HasIndex("ProductId")
-                                .HasDatabaseName("ix_product_supplier_codes_product_id");
-
-                            b1.HasIndex("SubscriberId", "BusinessPartnerId")
-                                .HasDatabaseName("ix_product_supplier_codes_subscriber_supplier");
-
-                            b1.HasIndex("SubscriberId", "Code")
-                                .HasDatabaseName("ix_product_supplier_codes_subscriber_code");
-
-                            b1.ToTable("product_supplier_codes", (string)null);
-
-                            b1.WithOwner()
-                                .HasForeignKey("ProductId");
-                        });
-
-                    b.OwnsMany("ERP.Domain.Products.Entities.ProductTariffDetail", "TariffDetails", b1 =>
-                        {
-                            b1.Property<Guid>("Id")
-                                .ValueGeneratedOnAdd()
-                                .HasColumnType("uuid")
-                                .HasColumnName("id");
-
-                            b1.Property<bool>("IsActive")
-                                .HasColumnType("boolean")
-                                .HasColumnName("is_active");
-
-                            b1.Property<string>("OriginCountry")
-                                .IsRequired()
-                                .HasMaxLength(3)
-                                .HasColumnType("character varying(3)")
-                                .HasColumnName("origin_country");
-
-                            b1.Property<decimal>("Percentage")
-                                .HasPrecision(9, 2)
-                                .HasColumnType("numeric(9,2)")
-                                .HasColumnName("percentage");
-
-                            b1.Property<Guid>("ProductId")
-                                .HasColumnType("uuid")
-                                .HasColumnName("product_id");
-
-                            b1.Property<Guid>("SubscriberId")
-                                .HasColumnType("uuid")
-                                .HasColumnName("subscriber_id");
-
-                            b1.Property<string>("TariffCode")
-                                .IsRequired()
-                                .HasMaxLength(50)
-                                .HasColumnType("character varying(50)")
-                                .HasColumnName("tariff_code");
-
-                            b1.HasKey("Id");
-
-                            b1.HasIndex("ProductId")
-                                .HasDatabaseName("ix_product_tariff_details_product_id");
-
-                            b1.HasIndex("SubscriberId", "OriginCountry")
-                                .HasDatabaseName("ix_product_tariff_details_subscriber_country");
-
-                            b1.ToTable("product_tariff_details", (string)null);
 
                             b1.WithOwner()
                                 .HasForeignKey("ProductId");
@@ -15870,23 +17444,9 @@ namespace ERP.Infrastructure.Persistence.Migrations
 
                     b.Navigation("Barcodes");
 
-                    b.Navigation("Colors");
-
-                    b.Navigation("CustomFields");
-
-                    b.Navigation("Dimensions");
-
-                    b.Navigation("Features");
-
                     b.Navigation("Images");
 
-                    b.Navigation("Sizes");
-
                     b.Navigation("Substitutes");
-
-                    b.Navigation("SupplierCodes");
-
-                    b.Navigation("TariffDetails");
 
                     b.Navigation("UnitConversions");
                 });
@@ -15948,6 +17508,11 @@ namespace ERP.Infrastructure.Persistence.Migrations
                     b.Navigation("EmissionPoints");
                 });
 
+            modelBuilder.Entity("ERP.Domain.Modules.DigitalItems.Entities.DigitalItem", b =>
+                {
+                    b.Navigation("Deliverables");
+                });
+
             modelBuilder.Entity("ERP.Domain.Modules.ElectronicDocuments.Entities.ElectronicDoc", b =>
                 {
                     b.Navigation("CreditNote");
@@ -16007,6 +17572,38 @@ namespace ERP.Infrastructure.Persistence.Migrations
             modelBuilder.Entity("ERP.Domain.Modules.Inventory.Entities.StockTransfer", b =>
                 {
                     b.Navigation("Lines");
+                });
+
+            modelBuilder.Entity("ERP.Domain.Modules.Items.Entities.Item", b =>
+                {
+                    b.Navigation("Images");
+
+                    b.Navigation("PackagingLevels");
+
+                    b.Navigation("Substitutes");
+
+                    b.Navigation("UnitConversions");
+
+                    b.Navigation("Variants");
+                });
+
+            modelBuilder.Entity("ERP.Domain.Modules.Items.Entities.ItemVariant", b =>
+                {
+                    b.Navigation("Attributes");
+
+                    b.Navigation("Barcodes");
+                });
+
+            modelBuilder.Entity("ERP.Domain.Modules.Kits.Entities.Kit", b =>
+                {
+                    b.Navigation("Lines");
+                });
+
+            modelBuilder.Entity("ERP.Domain.Modules.Pricing.Entities.PriceList", b =>
+                {
+                    b.Navigation("Discounts");
+
+                    b.Navigation("Entries");
                 });
 
             modelBuilder.Entity("ERP.Domain.Modules.Purchases.Entities.PurchaseInvoice", b =>
@@ -16085,6 +17682,11 @@ namespace ERP.Infrastructure.Persistence.Migrations
             modelBuilder.Entity("ERP.Domain.Modules.Sales.Entities.SalesWithholding", b =>
                 {
                     b.Navigation("Lines");
+                });
+
+            modelBuilder.Entity("ERP.Domain.Modules.SupplierCatalog.Entities.SupplierItem", b =>
+                {
+                    b.Navigation("Prices");
                 });
 #pragma warning restore 612, 618
         }

@@ -1,5 +1,4 @@
 ﻿using ERP.Domain.Common;
-using ERP.Domain.Products.Enums;
 using ERP.Domain.Products.ValueObjects;
 
 namespace ERP.Domain.Products.Entities;
@@ -14,16 +13,9 @@ public class Product : MasterEntity, ISubscriberScopedEntity, ICompanyOperationa
 {
     public Guid CompanyId { get; private set; }
     private readonly List<ProductBarcode> _barcodes = new();
-    private readonly List<ProductSupplierCode> _supplierCodes = new();
     private readonly List<ProductUnitConversion> _unitConversions = new();
-    private readonly List<ProductColor> _colors = new();
-    private readonly List<ProductSize> _sizes = new();
-    private readonly List<ProductDimension> _dimensions = new();
     private readonly List<ProductImage> _images = new();
-    private readonly List<ProductFeature> _features = new();
-    private readonly List<ProductTariffDetail> _tariffDetails = new();
     private readonly List<ProductSubstitute> _substitutes = new();
-    private readonly List<ProductCustomField> _customFields = new();
 
     // â”€â”€ IdentificaciÃ³n â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     public string SaleCode { get; private set; } = null!;        // CÃ³digo Ãºnico de venta
@@ -80,14 +72,6 @@ public class Product : MasterEntity, ISubscriberScopedEntity, ICompanyOperationa
     public bool IsFavorite { get; private set; }
     public bool IsForSale { get; private set; }                  // Habilitado para venta
 
-    // â”€â”€ Variantes â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-    public string? BaseColor { get; private set; }
-    public bool HasMultipleColors { get; private set; }
-    public bool HasSizes { get; private set; }
-
-    // â”€â”€ Aranceles / importaciÃ³n â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-    public bool HandlesTariff { get; private set; }
-
     // â”€â”€ SRI â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     /// <summary>
     /// Tipo de servicio SRI para el XML del comprobante electrÃ³nico.
@@ -99,16 +83,9 @@ public class Product : MasterEntity, ISubscriberScopedEntity, ICompanyOperationa
 
     // â”€â”€ CÃ³digos de barras â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     public IReadOnlyList<ProductBarcode> Barcodes => _barcodes.AsReadOnly();
-    public IReadOnlyList<ProductSupplierCode> SupplierCodes => _supplierCodes.AsReadOnly();
     public IReadOnlyList<ProductUnitConversion> UnitConversions => _unitConversions.AsReadOnly();
-    public IReadOnlyList<ProductColor> Colors => _colors.AsReadOnly();
-    public IReadOnlyList<ProductSize> Sizes => _sizes.AsReadOnly();
-    public IReadOnlyList<ProductDimension> Dimensions => _dimensions.AsReadOnly();
     public IReadOnlyList<ProductImage> Images => _images.AsReadOnly();
-    public IReadOnlyList<ProductFeature> Features => _features.AsReadOnly();
-    public IReadOnlyList<ProductTariffDetail> TariffDetails => _tariffDetails.AsReadOnly();
     public IReadOnlyList<ProductSubstitute> Substitutes => _substitutes.AsReadOnly();
-    public IReadOnlyList<ProductCustomField> CustomFields => _customFields.AsReadOnly();
 
     private Product() { }
 
@@ -147,10 +124,6 @@ public class Product : MasterEntity, ISubscriberScopedEntity, ICompanyOperationa
         bool availableOnWeb = false,
         bool availableOnMobile = false,
         bool isEcommerceActive = false,
-        string? baseColor = null,
-        bool hasMultipleColors = false,
-        bool hasSizes = false,
-        bool handlesTariff = false,
         bool isForSale = true,
         string? sriServiceCode = null,
         Guid companyId = default)
@@ -206,10 +179,6 @@ public class Product : MasterEntity, ISubscriberScopedEntity, ICompanyOperationa
             AvailableOnWeb    = availableOnWeb,
             AvailableOnMobile = availableOnMobile,
             IsEcommerceActive = isEcommerceActive,
-            BaseColor         = baseColor,
-            HasMultipleColors = hasMultipleColors,
-            HasSizes          = hasSizes,
-            HandlesTariff     = handlesTariff,
             IsFavorite        = false,
             IsForSale         = isForSale,
             SriServiceCode    = sriServiceCode,
@@ -249,10 +218,6 @@ public class Product : MasterEntity, ISubscriberScopedEntity, ICompanyOperationa
         bool stockWithDecimal,
         bool saleWithDecimal,
         decimal maxItemDiscountPercent,
-        string? baseColor,
-        bool hasMultipleColors,
-        bool hasSizes,
-        bool handlesTariff,
         Guid updatedBy,
         string? sriServiceCode = null)
     {
@@ -297,10 +262,6 @@ public class Product : MasterEntity, ISubscriberScopedEntity, ICompanyOperationa
         StockWithDecimal     = stockWithDecimal;
         SaleWithDecimal      = saleWithDecimal;
         MaxItemDiscountPercent = maxItemDiscountPercent;
-        BaseColor            = baseColor;
-        HasMultipleColors    = hasMultipleColors;
-        HasSizes             = hasSizes;
-        HandlesTariff        = handlesTariff;
         SriServiceCode       = sriServiceCode;
         SetUpdated(updatedBy);
     }
@@ -322,12 +283,6 @@ public class Product : MasterEntity, ISubscriberScopedEntity, ICompanyOperationa
     public void ToggleFavorite(Guid updatedBy)
     {
         IsFavorite = !IsFavorite;
-        SetUpdated(updatedBy);
-    }
-
-    public void UpdateTariff(Guid tariffId, Guid updatedBy)
-    {
-        TariffId = tariffId;
         SetUpdated(updatedBy);
     }
 
@@ -353,16 +308,6 @@ public class Product : MasterEntity, ISubscriberScopedEntity, ICompanyOperationa
 
     // â”€â”€ Colecciones (reemplazo completo) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
-    public void ReplaceSupplierCodes(
-        IEnumerable<(Guid SupplierId, string Code, bool IsDefault)> supplierCodes,
-        Guid updatedBy)
-    {
-        _supplierCodes.Clear();
-        foreach (var s in supplierCodes)
-            _supplierCodes.Add(ProductSupplierCode.Create(Id, SubscriberId, s.SupplierId, s.Code, s.IsDefault));
-        SetUpdated(updatedBy);
-    }
-
     public void ReplaceUnitConversions(
         IEnumerable<(string AlternateUomCode, decimal ConversionFactor)> conversions,
         Guid updatedBy)
@@ -373,48 +318,6 @@ public class Product : MasterEntity, ISubscriberScopedEntity, ICompanyOperationa
         SetUpdated(updatedBy);
     }
 
-    public void ReplaceColors(IEnumerable<(string Name, string? HexCode)> colors, Guid updatedBy)
-    {
-        _colors.Clear();
-        foreach (var c in colors)
-            _colors.Add(ProductColor.Create(Id, SubscriberId, c.Name, c.HexCode));
-        SetUpdated(updatedBy);
-    }
-
-    public void ReplaceSizes(IEnumerable<(string Name, int SortOrder)> sizes, Guid updatedBy)
-    {
-        _sizes.Clear();
-        foreach (var s in sizes)
-            _sizes.Add(ProductSize.Create(Id, SubscriberId, s.Name, s.SortOrder));
-        SetUpdated(updatedBy);
-    }
-
-    public void ReplaceDimensions(IEnumerable<(string Name, string Value, string Unit)> dimensions, Guid updatedBy)
-    {
-        _dimensions.Clear();
-        foreach (var d in dimensions)
-            _dimensions.Add(ProductDimension.Create(Id, SubscriberId, d.Name, d.Value, d.Unit));
-        SetUpdated(updatedBy);
-    }
-
-    public void ReplaceFeatures(IEnumerable<(string Name, string Value)> features, Guid updatedBy)
-    {
-        _features.Clear();
-        foreach (var f in features)
-            _features.Add(ProductFeature.Create(Id, SubscriberId, f.Name, f.Value));
-        SetUpdated(updatedBy);
-    }
-
-    public void ReplaceTariffDetails(
-        IEnumerable<(string OriginCountry, string TariffCode, decimal Percentage)> tariffDetails,
-        Guid updatedBy)
-    {
-        _tariffDetails.Clear();
-        foreach (var t in tariffDetails)
-            _tariffDetails.Add(ProductTariffDetail.Create(Id, SubscriberId, t.OriginCountry, t.TariffCode, t.Percentage));
-        SetUpdated(updatedBy);
-    }
-
     public void ReplaceSubstitutes(
         IEnumerable<(Guid SubstituteProductId, string? Note)> substitutes,
         Guid updatedBy)
@@ -422,16 +325,6 @@ public class Product : MasterEntity, ISubscriberScopedEntity, ICompanyOperationa
         _substitutes.Clear();
         foreach (var s in substitutes)
             _substitutes.Add(ProductSubstitute.Create(Id, SubscriberId, s.SubstituteProductId, s.Note));
-        SetUpdated(updatedBy);
-    }
-
-    public void ReplaceCustomFields(
-        IEnumerable<(string FieldName, CustomFieldType FieldType, string FieldValue)> customFields,
-        Guid updatedBy)
-    {
-        _customFields.Clear();
-        foreach (var c in customFields)
-            _customFields.Add(ProductCustomField.Create(Id, SubscriberId, c.FieldName, c.FieldType, c.FieldValue));
         SetUpdated(updatedBy);
     }
 

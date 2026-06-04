@@ -1,6 +1,20 @@
 import { Route, Navigate } from 'react-router-dom';
 import { lazyNamedPage } from './lazyPage';
 
+// ── Items module ────────────────────────────────────────────────────────────
+const ItemsPage = lazyNamedPage(
+  () => import('../modules/items/pages/ItemsPage'),
+  'ItemsPage',
+);
+const AttributesPage = lazyNamedPage(
+  () => import('../modules/items/pages/AttributesPage'),
+  'AttributesPage',
+);
+const PriceListsPage = lazyNamedPage(
+  () => import('../modules/items/pages/PriceListsPage'),
+  'PriceListsPage',
+);
+
 const TariffsCatalogPage = lazyNamedPage(
   () => import('../modules/catalog/pages/CatalogPages'),
   'TariffsCatalogPage',
@@ -175,4 +189,11 @@ export const catalogRoutes = [
   // ── Admin / Activity ───────────────────────────────────────────────────────
   <Route key="admin-activity" path="/admin/activity" element={<ActivityPage />} />,
   <Route key="actividad-legacy" path="/actividad" element={<Navigate to="/admin/activity" replace />} />,
+
+  // ── Items BC ───────────────────────────────────────────────────────────────
+  <Route key="items"            path="/items"                   element={<ItemsPage />} />,
+  <Route key="catalog-attrs"    path="/catalog/attributes"      element={<AttributesPage />} />,
+  <Route key="pricing-lists"    path="/pricing/price-lists"     element={<PriceListsPage />} />,
+  // Legacy redirects
+  <Route key="inventory-products-legacy" path="/inventory/products" element={<Navigate to="/items" replace />} />,
 ];

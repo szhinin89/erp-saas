@@ -31,6 +31,12 @@ using ERP.Domain.Modules.Company.Entities;
 using ERP.Domain.Modules.ElectronicDocuments.Entities;
 using ERP.Domain.Modules.Purchases.Entities;
 using ERP.Domain.Modules.Auxiliary.Entities;
+using ERP.Domain.Modules.Items.Entities;
+using ERP.Domain.Modules.Pricing.Entities;
+using ERP.Domain.Modules.Costing.Entities;
+using ERP.Domain.Modules.Kits.Entities;
+using ERP.Domain.Modules.SupplierCatalog.Entities;
+using ERP.Domain.Modules.DigitalItems.Entities;
 using ERP.Application.Common;
 using ERP.Domain.MasterData.Entities;
 using ERP.Domain.Platform.Audit.Entities;
@@ -341,6 +347,45 @@ public class ErpDbContext : DbContext
     public DbSet<PettyCash>        PettyCashes       => Set<PettyCash>();
     public DbSet<CashCount>        CashCounts        => Set<CashCount>();
     public DbSet<PettyCashExpense> PettyCashExpenses => Set<PettyCashExpense>();
+
+    // ── Items (canonical catalog) ─────────────────────────────────────────
+    public DbSet<ItemFamily>            ItemFamilies           => Set<ItemFamily>();
+    public DbSet<ItemCategory>          ItemCategories         => Set<ItemCategory>();
+    public DbSet<ItemSubcategory>       ItemSubcategories      => Set<ItemSubcategory>();
+    public DbSet<Item>                  Items                  => Set<Item>();
+    public DbSet<ItemVariant>           ItemVariants           => Set<ItemVariant>();
+    public DbSet<ItemVariantAttribute>  ItemVariantAttributes  => Set<ItemVariantAttribute>();
+    public DbSet<ItemVariantBarcode>    ItemVariantBarcodes    => Set<ItemVariantBarcode>();
+    public DbSet<ItemImage>             ItemImages             => Set<ItemImage>();
+    public DbSet<ItemUnitConversion>    ItemUnitConversions    => Set<ItemUnitConversion>();
+    public DbSet<ItemSubstitute>        ItemSubstitutes        => Set<ItemSubstitute>();
+    public DbSet<ItemPackagingLevel>    ItemPackagingLevels    => Set<ItemPackagingLevel>();
+    public DbSet<AttributeGroup>        AttributeGroups        => Set<AttributeGroup>();
+    public DbSet<AttributeDefinition>   AttributeDefinitions   => Set<AttributeDefinition>();
+
+    // ── Pricing ───────────────────────────────────────────────────────────
+    public DbSet<PriceList>             PriceLists             => Set<PriceList>();
+    public DbSet<PriceListEntry>        PriceListEntries       => Set<PriceListEntry>();
+    public DbSet<PriceListDiscount>     PriceListDiscounts     => Set<PriceListDiscount>();
+
+    // ── Costing ───────────────────────────────────────────────────────────
+    public DbSet<CostLayer>             CostLayers             => Set<CostLayer>();
+
+    // ── Kits / BOM ────────────────────────────────────────────────────────
+    public DbSet<Kit>                   Kits                   => Set<Kit>();
+    public DbSet<KitLine>               KitLines               => Set<KitLine>();
+
+    // ── Supplier Catalog ──────────────────────────────────────────────────
+    public DbSet<SupplierItem>          SupplierItems          => Set<SupplierItem>();
+    public DbSet<SupplierItemPrice>     SupplierItemPrices     => Set<SupplierItemPrice>();
+
+    // ── Digital Items ─────────────────────────────────────────────────────
+    public DbSet<DigitalItem>           DigitalItems           => Set<DigitalItem>();
+    public DbSet<DigitalDeliverable>    DigitalDeliverables    => Set<DigitalDeliverable>();
+
+    // ── Lots + Serials ────────────────────────────────────────────────────
+    public DbSet<Lot>                   Lots                   => Set<Lot>();
+    public DbSet<SerialNumber>          SerialNumbers          => Set<SerialNumber>();
 
     // ── Inventory ─────────────────────────────────────────────────────────
     public DbSet<CurrentStock>        CurrentStocks        => Set<CurrentStock>();

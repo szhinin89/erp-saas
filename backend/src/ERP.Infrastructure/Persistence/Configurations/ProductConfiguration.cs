@@ -144,13 +144,7 @@ public class ProductConfiguration : IEntityTypeConfiguration<Product>
         builder.Property(p => p.IsFavorite).HasColumnName("is_favorite").IsRequired();
         builder.Property(p => p.IsForSale).HasColumnName("is_for_sale").IsRequired();
 
-        // ── Variantes ─────────────────────────────────────────────
-        builder.Property(p => p.BaseColor).HasColumnName("base_color").HasMaxLength(80);
-        builder.Property(p => p.HasMultipleColors).HasColumnName("has_multiple_colors").IsRequired();
-        builder.Property(p => p.HasSizes).HasColumnName("has_sizes").IsRequired();
 
-        // ── Aranceles / importación ───────────────────────────────
-        builder.Property(p => p.HandlesTariff).HasColumnName("handles_tariff").IsRequired();
 
         // ── SRI ───────────────────────────────────────────────────
         builder.Property(p => p.SriServiceCode).HasColumnName("sri_service_code").HasMaxLength(5);
@@ -190,22 +184,6 @@ public class ProductConfiguration : IEntityTypeConfiguration<Product>
             b.HasIndex(x => new { x.SubscriberId, x.Code }).HasDatabaseName("ix_product_barcodes_subscriber_code");
         });
 
-        builder.OwnsMany(p => p.SupplierCodes, s =>
-        {
-            s.ToTable("product_supplier_codes");
-            s.HasKey(x => x.Id);
-            s.Property(x => x.Id).HasColumnName("id");
-            s.Property(x => x.SubscriberId).HasColumnName("subscriber_id").IsRequired();
-            s.Property(x => x.ProductId).HasColumnName("product_id").IsRequired();
-            s.Property(x => x.BusinessPartnerId).HasColumnName("business_partner_id").IsRequired();
-            s.Property(x => x.Code).HasColumnName("code").HasMaxLength(100).IsRequired();
-            s.Property(x => x.IsDefault).HasColumnName("is_default").IsRequired();
-            s.Property(x => x.IsActive).HasColumnName("is_active").IsRequired();
-            s.HasIndex(x => x.ProductId).HasDatabaseName("ix_product_supplier_codes_product_id");
-            s.HasIndex(x => new { x.SubscriberId, x.BusinessPartnerId }).HasDatabaseName("ix_product_supplier_codes_subscriber_supplier");
-            s.HasIndex(x => new { x.SubscriberId, x.Code }).HasDatabaseName("ix_product_supplier_codes_subscriber_code");
-        });
-
         builder.OwnsMany(p => p.UnitConversions, u =>
         {
             u.ToTable("product_unit_conversions");
@@ -218,49 +196,6 @@ public class ProductConfiguration : IEntityTypeConfiguration<Product>
             u.Property(x => x.IsActive).HasColumnName("is_active").IsRequired();
             u.HasIndex(x => x.ProductId).HasDatabaseName("ix_product_unit_conversions_product_id");
             u.HasIndex(x => new { x.SubscriberId, x.AlternateUomCode }).HasDatabaseName("ix_product_unit_conversions_subscriber_alt_uom");
-        });
-
-        builder.OwnsMany(p => p.Colors, c =>
-        {
-            c.ToTable("product_colors");
-            c.HasKey(x => x.Id);
-            c.Property(x => x.Id).HasColumnName("id");
-            c.Property(x => x.SubscriberId).HasColumnName("subscriber_id").IsRequired();
-            c.Property(x => x.ProductId).HasColumnName("product_id").IsRequired();
-            c.Property(x => x.Name).HasColumnName("name").HasMaxLength(80).IsRequired();
-            c.Property(x => x.HexCode).HasColumnName("hex_code").HasMaxLength(10);
-            c.Property(x => x.IsActive).HasColumnName("is_active").IsRequired();
-            c.HasIndex(x => x.ProductId).HasDatabaseName("ix_product_colors_product_id");
-            c.HasIndex(x => new { x.SubscriberId, x.Name }).HasDatabaseName("ix_product_colors_subscriber_name");
-        });
-
-        builder.OwnsMany(p => p.Sizes, s =>
-        {
-            s.ToTable("product_sizes");
-            s.HasKey(x => x.Id);
-            s.Property(x => x.Id).HasColumnName("id");
-            s.Property(x => x.SubscriberId).HasColumnName("subscriber_id").IsRequired();
-            s.Property(x => x.ProductId).HasColumnName("product_id").IsRequired();
-            s.Property(x => x.Name).HasColumnName("name").HasMaxLength(50).IsRequired();
-            s.Property(x => x.SortOrder).HasColumnName("sort_order").IsRequired();
-            s.Property(x => x.IsActive).HasColumnName("is_active").IsRequired();
-            s.HasIndex(x => x.ProductId).HasDatabaseName("ix_product_sizes_product_id");
-            s.HasIndex(x => new { x.SubscriberId, x.Name }).HasDatabaseName("ix_product_sizes_subscriber_name");
-        });
-
-        builder.OwnsMany(p => p.Dimensions, d =>
-        {
-            d.ToTable("product_dimensions");
-            d.HasKey(x => x.Id);
-            d.Property(x => x.Id).HasColumnName("id");
-            d.Property(x => x.SubscriberId).HasColumnName("subscriber_id").IsRequired();
-            d.Property(x => x.ProductId).HasColumnName("product_id").IsRequired();
-            d.Property(x => x.Name).HasColumnName("name").HasMaxLength(80).IsRequired();
-            d.Property(x => x.Value).HasColumnName("value").HasMaxLength(80).IsRequired();
-            d.Property(x => x.Unit).HasColumnName("unit").HasMaxLength(20).IsRequired();
-            d.Property(x => x.IsActive).HasColumnName("is_active").IsRequired();
-            d.HasIndex(x => x.ProductId).HasDatabaseName("ix_product_dimensions_product_id");
-            d.HasIndex(x => new { x.SubscriberId, x.Name }).HasDatabaseName("ix_product_dimensions_subscriber_name");
         });
 
         builder.OwnsMany(p => p.Images, i =>
@@ -281,35 +216,6 @@ public class ProductConfiguration : IEntityTypeConfiguration<Product>
             i.HasIndex(x => new { x.SubscriberId, x.IsEcommerce }).HasDatabaseName("ix_product_images_subscriber_is_ecommerce");
         });
 
-        builder.OwnsMany(p => p.Features, f =>
-        {
-            f.ToTable("product_features");
-            f.HasKey(x => x.Id);
-            f.Property(x => x.Id).HasColumnName("id");
-            f.Property(x => x.SubscriberId).HasColumnName("subscriber_id").IsRequired();
-            f.Property(x => x.ProductId).HasColumnName("product_id").IsRequired();
-            f.Property(x => x.Name).HasColumnName("name").HasMaxLength(120).IsRequired();
-            f.Property(x => x.Value).HasColumnName("value").HasMaxLength(254).IsRequired();
-            f.Property(x => x.IsActive).HasColumnName("is_active").IsRequired();
-            f.HasIndex(x => x.ProductId).HasDatabaseName("ix_product_features_product_id");
-            f.HasIndex(x => new { x.SubscriberId, x.Name }).HasDatabaseName("ix_product_features_subscriber_name");
-        });
-
-        builder.OwnsMany(p => p.TariffDetails, t =>
-        {
-            t.ToTable("product_tariff_details");
-            t.HasKey(x => x.Id);
-            t.Property(x => x.Id).HasColumnName("id");
-            t.Property(x => x.SubscriberId).HasColumnName("subscriber_id").IsRequired();
-            t.Property(x => x.ProductId).HasColumnName("product_id").IsRequired();
-            t.Property(x => x.OriginCountry).HasColumnName("origin_country").HasMaxLength(3).IsRequired();
-            t.Property(x => x.TariffCode).HasColumnName("tariff_code").HasMaxLength(50).IsRequired();
-            t.Property(x => x.Percentage).HasColumnName("percentage").HasPrecision(9, 2).IsRequired();
-            t.Property(x => x.IsActive).HasColumnName("is_active").IsRequired();
-            t.HasIndex(x => x.ProductId).HasDatabaseName("ix_product_tariff_details_product_id");
-            t.HasIndex(x => new { x.SubscriberId, x.OriginCountry }).HasDatabaseName("ix_product_tariff_details_subscriber_country");
-        });
-
         builder.OwnsMany(p => p.Substitutes, s =>
         {
             s.ToTable("product_substitutes");
@@ -324,19 +230,5 @@ public class ProductConfiguration : IEntityTypeConfiguration<Product>
             s.HasIndex(x => new { x.SubscriberId, x.SubstituteProductId }).HasDatabaseName("ix_product_substitutes_subscriber_substitute");
         });
 
-        builder.OwnsMany(p => p.CustomFields, c =>
-        {
-            c.ToTable("product_custom_fields");
-            c.HasKey(x => x.Id);
-            c.Property(x => x.Id).HasColumnName("id");
-            c.Property(x => x.SubscriberId).HasColumnName("subscriber_id").IsRequired();
-            c.Property(x => x.ProductId).HasColumnName("product_id").IsRequired();
-            c.Property(x => x.FieldName).HasColumnName("field_name").HasMaxLength(120).IsRequired();
-            c.Property(x => x.FieldType).HasColumnName("field_type").IsRequired();
-            c.Property(x => x.FieldValue).HasColumnName("field_value").HasMaxLength(1024).IsRequired();
-            c.Property(x => x.IsActive).HasColumnName("is_active").IsRequired();
-            c.HasIndex(x => x.ProductId).HasDatabaseName("ix_product_custom_fields_product_id");
-            c.HasIndex(x => new { x.SubscriberId, x.FieldName }).HasDatabaseName("ix_product_custom_fields_subscriber_field_name");
-        });
     }
 }

@@ -25,16 +25,9 @@ public class ProductRepository : IProductRepository
     public async Task<Product?> GetByIdWithLinesAsync(Guid id, Guid subscriberId, CancellationToken ct = default)
         => await Scoped(subscriberId)
             .Include(p => p.Barcodes)
-            .Include(p => p.SupplierCodes)
             .Include(p => p.UnitConversions)
-            .Include(p => p.Colors)
-            .Include(p => p.Sizes)
-            .Include(p => p.Dimensions)
             .Include(p => p.Images)
-            .Include(p => p.Features)
-            .Include(p => p.TariffDetails)
             .Include(p => p.Substitutes)
-            .Include(p => p.CustomFields)
             .FirstOrDefaultAsync(p => p.Id == id, ct);
 
     public async Task<IReadOnlyList<Product>> GetAllBySubscriberAsync(Guid subscriberId, CancellationToken ct = default)

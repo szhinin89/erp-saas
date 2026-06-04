@@ -74,15 +74,8 @@ public class UpdateProductHandler : IRequestHandler<UpdateProductCommand, Result
             command.StockWithDecimal,
             command.SaleWithDecimal,
             command.MaxItemDiscountPercent,
-            command.BaseColor,
-            command.HasMultipleColors,
-            command.HasSizes,
-            command.HandlesTariff,
             userId);
 
         product.UpdateChannels(command.AvailableOnWeb, command.AvailableOnMobile, command.IsEcommerceActive, command.IsForSale, userId);
-
-        if (product.TariffId != command.TariffId)
-            product.UpdateTariff(command.TariffId, userId);
     }
 }

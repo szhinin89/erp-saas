@@ -12,17 +12,14 @@ public class GetProductFullReportHandler : IRequestHandler<GetProductFullReportQ
 
     public GetProductFullReportHandler(IProductRepository repository, ICurrentSubscriber currentSubscriber)
     {
-        _repository    = repository;
+        _repository        = repository;
         _currentSubscriber = currentSubscriber;
     }
-
-    public Task<Result<ProductFullReportDto>> HandleAsync(Guid id, CancellationToken ct = default)
-        => Handle(new GetProductFullReportQuery(id), ct);
 
     public async Task<Result<ProductFullReportDto>> Handle(GetProductFullReportQuery request, CancellationToken ct)
     {
         var subscriberId = _currentSubscriber.SubscriberId;
-        var product  = await _repository.GetByIdAsync(request.Id, subscriberId, ct);
+        var product = await _repository.GetByIdAsync(request.Id, subscriberId, ct);
 
         if (product is null)
             return Result<ProductFullReportDto>.Failure("Producto no encontrado.");
@@ -40,7 +37,8 @@ public class GetProductFullReportHandler : IRequestHandler<GetProductFullReportQ
             product.BrandId,
             product.ProductTypeId,
             product.UomCode,
-            product.UnitConversions.Where(u => u.IsActive).Select(u => new ProductUnitConversionDto(u.Id, u.AlternateUomCode, u.ConversionFactor)).ToList(),
+            product.UnitConversions.Where(u => u.IsActive)
+                .Select(u => new ProductUnitConversionDto(u.Id, u.AlternateUomCode, u.ConversionFactor)).ToList(),
             product.AppliesVatOnPurchase,
             product.PurchaseVatCode,
             product.PurchaseVatAccountId,
@@ -65,25 +63,16 @@ public class GetProductFullReportHandler : IRequestHandler<GetProductFullReportQ
             product.AvailableOnWeb,
             product.AvailableOnMobile,
             product.IsEcommerceActive,
-            product.BaseColor,
-            product.HasMultipleColors,
-            product.Colors.Where(c => c.IsActive).Select(c => new ProductColorDto(c.Id, c.Name, c.HexCode)).ToList(),
-            product.HasSizes,
-            product.Sizes.Where(s => s.IsActive).OrderBy(s => s.SortOrder).Select(s => new ProductSizeDto(s.Id, s.Name, s.SortOrder)).ToList(),
-            product.Dimensions.Where(d => d.IsActive).Select(d => new ProductDimensionDto(d.Id, d.Name, d.Value, d.Unit)).ToList(),
-            product.Barcodes.Where(b => b.IsActive).Select(b => new ProductBarcodeDto(b.Id, b.Code, (int)b.Type)).ToList(),
-            product.SupplierCodes.Where(s => s.IsActive).Select(s => new ProductSupplierCodeDto(s.Id, s.BusinessPartnerId, s.Code, s.IsDefault)).ToList(),
-            product.Images.Where(i => i.IsActive).OrderBy(i => i.SortOrder).Select(i => new ProductImageDto(i.Id, i.Url, i.AltText, i.IsMain, i.IsEcommerce, i.SortOrder)).ToList(),
-            product.Features.Where(f => f.IsActive).Select(f => new ProductFeatureDto(f.Id, f.Name, f.Value)).ToList(),
-            product.HandlesTariff,
+            product.Barcodes.Where(b => b.IsActive)
+                .Select(b => new ProductBarcodeDto(b.Id, b.Code, (int)b.Type)).ToList(),
+            product.Images.Where(i => i.IsActive).OrderBy(i => i.SortOrder)
+                .Select(i => new ProductImageDto(i.Id, i.Url, i.AltText, i.IsMain, i.IsEcommerce, i.SortOrder)).ToList(),
+            product.Substitutes.Where(s => s.IsActive)
+                .Select(s => new ProductSubstituteDto(s.Id, s.SubstituteProductId, s.Note)).ToList(),
             product.TariffId,
-            product.TariffDetails.Where(t => t.IsActive).Select(t => new ProductTariffDetailDto(t.Id, t.OriginCountry, t.TariffCode, t.Percentage)).ToList(),
-            product.Substitutes.Where(s => s.IsActive).Select(s => new ProductSubstituteDto(s.Id, s.SubstituteProductId, s.Note)).ToList(),
-            product.CustomFields.Where(c => c.IsActive).Select(c => new ProductCustomFieldDto(c.Id, c.FieldName, (int)c.FieldType, c.FieldValue)).ToList(),
             product.CreatedAt,
             product.UpdatedAt);
 
         return Result<ProductFullReportDto>.Success(dto);
     }
 }
-

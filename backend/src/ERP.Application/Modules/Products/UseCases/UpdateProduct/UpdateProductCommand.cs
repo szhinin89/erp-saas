@@ -43,21 +43,8 @@ public record UpdateProductCommand(
     bool IsEcommerceActive,
     bool IsForSale,
 
-    string? BaseColor,
-    bool HasMultipleColors,
-    bool HasSizes,
-    bool HandlesTariff,
-
     IReadOnlyList<BarcodeInput>? Barcodes = null,
-    IReadOnlyList<SupplierCodeInput>? SupplierCodes = null,
     IReadOnlyList<UnitConversionInput>? UnitConversions = null,
-    IReadOnlyList<ColorInput>? Colors = null,
-    IReadOnlyList<SizeInput>? Sizes = null,
-    IReadOnlyList<DimensionInput>? Dimensions = null,
     IReadOnlyList<ImageInput>? Images = null,
-    IReadOnlyList<FeatureInput>? Features = null,
-    IReadOnlyList<TariffDetailInput>? TariffDetails = null,
-    IReadOnlyList<SubstituteInput>? Substitutes = null,
-    IReadOnlyList<CustomFieldInput>? CustomFields = null
+    IReadOnlyList<SubstituteInput>? Substitutes = null
 ) : IRequest<Result<ProductDto>>, ICompanyScopedRequest;
-

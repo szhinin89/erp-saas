@@ -39,32 +39,14 @@ public sealed record CreateProductCommand(
     bool AvailableOnWeb = false,
     bool AvailableOnMobile = false,
     bool IsEcommerceActive = false,
-    string? BaseColor = null,
-    bool HasMultipleColors = false,
-    bool HasSizes = false,
-    bool HandlesTariff = false,
     IReadOnlyList<BarcodeInput>? Barcodes = null,
-    IReadOnlyList<SupplierCodeInput>? SupplierCodes = null,
     IReadOnlyList<UnitConversionInput>? UnitConversions = null,
-    IReadOnlyList<ColorInput>? Colors = null,
-    IReadOnlyList<SizeInput>? Sizes = null,
-    IReadOnlyList<DimensionInput>? Dimensions = null,
     IReadOnlyList<ImageInput>? Images = null,
-    IReadOnlyList<FeatureInput>? Features = null,
-    IReadOnlyList<TariffDetailInput>? TariffDetails = null,
     IReadOnlyList<SubstituteInput>? Substitutes = null,
-    IReadOnlyList<CustomFieldInput>? CustomFields = null,
     bool IsForSale = true
 ) : IRequest<Result<ProductDto>>, ICompanyScopedRequest;
 
 public record BarcodeInput(string Code, int Type);
-public record SupplierCodeInput(Guid BusinessPartnerId, string Code, bool IsDefault = false);
 public record UnitConversionInput(string AlternateUomCode, decimal ConversionFactor);
-public record ColorInput(string Name, string? HexCode = null);
-public record SizeInput(string Name, int SortOrder = 0);
-public record DimensionInput(string Name, string Value, string Unit);
 public record ImageInput(string Url, string? AltText = null, bool IsMain = false, bool IsEcommerce = false, int SortOrder = 0);
-public record FeatureInput(string Name, string Value);
-public record TariffDetailInput(string OriginCountry, string TariffCode, decimal Percentage);
 public record SubstituteInput(Guid SubstituteProductId, string? Note = null);
-public record CustomFieldInput(string FieldName, int FieldType, string FieldValue);

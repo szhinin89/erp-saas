@@ -149,6 +149,42 @@ public static class DependencyInjection
         services.AddScoped<ICuentaContableService, CuentaContableService>();
         services.AddScoped<IProductRepository, ProductRepository>();
         services.AddScoped<IProductCatalogRepository, ProductCatalogRepository>();
+
+        // ── Items BC ──────────────────────────────────────────────────────────
+        services.AddScoped<ERP.Domain.Modules.Items.Interfaces.IItemRepository,
+            ERP.Infrastructure.Persistence.Repositories.Items.ItemRepository>();
+        services.AddScoped<ERP.Domain.Modules.Items.Interfaces.IItemCatalogRepository,
+            ERP.Infrastructure.Persistence.Repositories.Items.ItemCatalogRepository>();
+        services.AddScoped<ERP.Application.Items.UseCases.AttributeGroups.IAttributeGroupRepository,
+            ERP.Infrastructure.Persistence.Repositories.Items.AttributeGroupRepository>();
+        services.AddScoped<ERP.Application.Items.UseCases.AttributeDefinitions.IAttributeDefinitionRepository,
+            ERP.Infrastructure.Persistence.Repositories.Items.AttributeDefinitionRepository>();
+
+        // ── Pricing BC ────────────────────────────────────────────────────────
+        services.AddScoped<ERP.Domain.Modules.Pricing.Interfaces.IPriceListRepository,
+            ERP.Infrastructure.Persistence.Repositories.Pricing.PriceListRepository>();
+
+        // ── Inventory — Lots + Serials ────────────────────────────────────────
+        services.AddScoped<ERP.Domain.Modules.Inventory.Interfaces.ILotRepository,
+            ERP.Infrastructure.Persistence.Repositories.Inventory.LotRepository>();
+        services.AddScoped<ERP.Domain.Modules.Inventory.Interfaces.ISerialRepository,
+            ERP.Infrastructure.Persistence.Repositories.Inventory.SerialRepository>();
+
+        // ── Costing BC ────────────────────────────────────────────────────────
+        services.AddScoped<ERP.Domain.Modules.Costing.Interfaces.ICostLayerRepository,
+            ERP.Infrastructure.Persistence.Repositories.Costing.CostLayerRepository>();
+
+        // ── Kits BC ───────────────────────────────────────────────────────────
+        services.AddScoped<ERP.Domain.Modules.Kits.Interfaces.IKitRepository,
+            ERP.Infrastructure.Persistence.Repositories.Kits.KitRepository>();
+
+        // ── Supplier Catalog BC ───────────────────────────────────────────────
+        services.AddScoped<ERP.Domain.Modules.SupplierCatalog.Interfaces.ISupplierItemRepository,
+            ERP.Infrastructure.Persistence.Repositories.SupplierCatalog.SupplierItemRepository>();
+
+        // ── Digital Items BC ──────────────────────────────────────────────────
+        services.AddScoped<ERP.Domain.Modules.DigitalItems.Interfaces.IDigitalItemRepository,
+            ERP.Infrastructure.Persistence.Repositories.DigitalItems.DigitalItemRepository>();
         services.AddScoped<IAccessRepository, AccessRepository>();
         services.AddScoped<IAccessTokenService, AccessTokenService>();
         services.AddScoped<ISubscriberRepository, SubscriberRepository>();
