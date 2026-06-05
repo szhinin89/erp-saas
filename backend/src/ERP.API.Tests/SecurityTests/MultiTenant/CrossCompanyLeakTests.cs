@@ -3,6 +3,8 @@ using ERP.API.Tests.SecurityTests.Infrastructure;
 using ERP.API.Tests.Support;
 using ERP.Domain.Modules.Accounting.Entities;
 using ERP.Domain.MasterData.Entities;
+using ERP.Domain.Modules.Purchasing.Entities;
+using ERP.Domain.Modules.Expenses.Entities;
 using ERP.Infrastructure.Persistence;
 using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
@@ -163,5 +165,91 @@ public sealed class CrossCompanyLeakTests
         // Cross-company sum: 3 accounts total, each company sees exactly 1
         (countA1 + countA2 + countB1).Should().Be(3,
             "Total visible across all contexts = 3 (1 per company, no overlap).");
+    }
+
+    // ── ATTACK 1.6: PurchaseOrder cross-company isolation ──────────────────
+
+    [Fact(DisplayName = "ATTACK-1.6: Company A1 cannot see Company A2 purchase orders (same subscriber)")]
+    public async Task Attack_1_6_PurchaseOrder_company_isolation_same_subscriber()
+    {
+        await using var factory = new IntegrationTestWebAppFactory();
+        var state = await SecurityTestSeeder.SeedAsync(factory.Services);
+
+        factory.MutableSubscriber.SubscriberId = state.SubscriberAId;
+        factory.MutableCompany.CompanyId = state.CompanyA1Id;
+
+        using var scope = factory.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<ErpDbContext>();
+
+        var orders = await db.PurchaseOrders.ToListAsync();
+
+        orders.Should().OnlyContain(o => o.CompanyId == state.CompanyA1Id,
+            "Company A1 context must never return Company A2 purchase orders.");
+        orders.Should().NotContain(o => o.Id == state.PoA2Id,
+            "CRITICAL LEAK: A1 context returned A2 purchase order.");
+        orders.Should().NotContain(o => o.CompanyId == state.CompanyB1Id,
+            "CRITICAL LEAK: A1 context returned cross-subscriber purchase order.");
+        orders.Should().HaveCount(1, "Company A1 must see exactly 1 purchase order.");
+    }
+
+    [Fact(DisplayName = "ATTACK-1.6b: Company B1 cannot see Company A purchase orders (different subscriber)")]
+    public async Task Attack_1_6b_PurchaseOrder_cross_subscriber_isolation()
+    {
+        await using var factory = new IntegrationTestWebAppFactory();
+        var state = await SecurityTestSeeder.SeedAsync(factory.Services);
+
+        factory.MutableSubscriber.SubscriberId = state.SubscriberBId;
+        factory.MutableCompany.CompanyId = state.CompanyB1Id;
+
+        using var scope = factory.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<ErpDbContext>();
+
+        var orders = await db.PurchaseOrders.ToListAsync();
+
+        orders.Should().NotContain(o => o.SubscriberId == state.SubscriberAId,
+            "CRITICAL LEAK: SubscriberB context returned SubscriberA purchase orders.");
+        orders.Should().HaveCount(1, "Company B1 must see exactly 1 purchase order.");
+    }
+
+    // ── ATTACK 1.7: ExpenseInvoice cross-company isolation ─────────────────
+
+    [Fact(DisplayName = "ATTACK-1.7: Company A1 cannot see Company A2 expense invoices (same subscriber)")]
+    public async Task Attack_1_7_ExpenseInvoice_company_isolation_same_subscriber()
+    {
+        await using var factory = new IntegrationTestWebAppFactory();
+        var state = await SecurityTestSeeder.SeedAsync(factory.Services);
+
+        factory.MutableSubscriber.SubscriberId = state.SubscriberAId;
+        factory.MutableCompany.CompanyId = state.CompanyA1Id;
+
+        using var scope = factory.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<ErpDbContext>();
+
+        var expenses = await db.ExpenseInvoices.ToListAsync();
+
+        expenses.Should().OnlyContain(e => e.CompanyId == state.CompanyA1Id,
+            "Company A1 context must never return Company A2 expense invoices.");
+        expenses.Should().NotContain(e => e.Id == state.ExpA2Id,
+            "CRITICAL LEAK: A1 context returned A2 expense invoice.");
+        expenses.Should().HaveCount(1, "Company A1 must see exactly 1 expense invoice.");
+    }
+
+    [Fact(DisplayName = "ATTACK-1.7b: Company B1 cannot see Company A expense invoices (different subscriber)")]
+    public async Task Attack_1_7b_ExpenseInvoice_cross_subscriber_isolation()
+    {
+        await using var factory = new IntegrationTestWebAppFactory();
+        var state = await SecurityTestSeeder.SeedAsync(factory.Services);
+
+        factory.MutableSubscriber.SubscriberId = state.SubscriberBId;
+        factory.MutableCompany.CompanyId = state.CompanyB1Id;
+
+        using var scope = factory.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<ErpDbContext>();
+
+        var expenses = await db.ExpenseInvoices.ToListAsync();
+
+        expenses.Should().NotContain(e => e.SubscriberId == state.SubscriberAId,
+            "CRITICAL LEAK: SubscriberB context returned SubscriberA expense invoices.");
+        expenses.Should().HaveCount(1, "Company B1 must see exactly 1 expense invoice.");
     }
 }

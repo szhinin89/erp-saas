@@ -7,8 +7,8 @@ namespace ERP.Application.Modules.Dashboard;
 /// KPIs operativos tenant-scoped para el dashboard principal.
 /// AsOf defaults to today (UTC) when null.
 /// </summary>
-public sealed record GetDashboardKpisQuery(Guid CompanyId, DateTime? AsOf = null)
-    : IRequest<Result<DashboardKpisDto>>, ISubscriberScopedRequest;
+public sealed record GetDashboardKpisQuery(DateTime? AsOf = null)
+    : IRequest<Result<DashboardKpisDto>>, ICompanyScopedRequest;
 
 public sealed record DashboardKpisDto(
     // ── Sales ─────────────────────────────────────────────────────────────

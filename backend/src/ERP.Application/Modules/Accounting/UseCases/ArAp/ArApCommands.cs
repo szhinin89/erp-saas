@@ -6,7 +6,6 @@ namespace ERP.Application.Modules.Accounting.UseCases.ArAp;
 // ── AR ────────────────────────────────────────────────────────────────────────
 
 public sealed record CreateArEntryCommand(
-    Guid     CompanyId,
     Guid     BusinessPartnerId,
     string   Reference,
     DateTime IssueDate,
@@ -14,7 +13,7 @@ public sealed record CreateArEntryCommand(
     decimal  Amount,
     Guid?    SalesBillId = null,
     string   Currency    = "USD")
-    : IRequest<Result<Guid>>, ISubscriberScopedRequest;
+    : IRequest<Result<Guid>>, ICompanyScopedRequest;
 
 public sealed record ApplyArPaymentCommand(
     Guid     ArEntryId,
@@ -24,13 +23,12 @@ public sealed record ApplyArPaymentCommand(
     string?  Notes            = null)
     : IRequest<Result<bool>>, ISubscriberScopedRequest;
 
-public sealed record GetArAgingReportQuery(Guid CompanyId, DateTime AsOf)
-    : IRequest<Result<ArAgingReportDto>>, ISubscriberScopedRequest;
+public sealed record GetArAgingReportQuery(DateTime AsOf)
+    : IRequest<Result<ArAgingReportDto>>, ICompanyScopedRequest;
 
 // ── AP ────────────────────────────────────────────────────────────────────────
 
 public sealed record CreateApEntryCommand(
-    Guid     CompanyId,
     Guid     BusinessPartnerId,
     string   Reference,
     DateTime IssueDate,
@@ -38,7 +36,7 @@ public sealed record CreateApEntryCommand(
     decimal  Amount,
     Guid?    PurchBillId = null,
     string   Currency    = "USD")
-    : IRequest<Result<Guid>>, ISubscriberScopedRequest;
+    : IRequest<Result<Guid>>, ICompanyScopedRequest;
 
 public sealed record ApplyApPaymentCommand(
     Guid     ApEntryId,
@@ -48,8 +46,8 @@ public sealed record ApplyApPaymentCommand(
     string?  Notes            = null)
     : IRequest<Result<bool>>, ISubscriberScopedRequest;
 
-public sealed record GetApAgingReportQuery(Guid CompanyId, DateTime AsOf)
-    : IRequest<Result<ApAgingReportDto>>, ISubscriberScopedRequest;
+public sealed record GetApAgingReportQuery(DateTime AsOf)
+    : IRequest<Result<ApAgingReportDto>>, ICompanyScopedRequest;
 
 // ── DTOs ──────────────────────────────────────────────────────────────────────
 

@@ -5927,6 +5927,10 @@ namespace ERP.Infrastructure.Persistence.Migrations
                         .HasColumnType("character varying(50)")
                         .HasColumnName("category");
 
+                    b.Property<Guid>("CompanyId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("company_id");
+
                     b.Property<string>("Concept")
                         .IsRequired()
                         .HasMaxLength(500)
@@ -6068,6 +6072,10 @@ namespace ERP.Infrastructure.Persistence.Migrations
                         .HasColumnType("character varying(80)")
                         .HasColumnName("category");
 
+                    b.Property<Guid>("CompanyId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("company_id");
+
                     b.Property<string>("Concept")
                         .IsRequired()
                         .HasMaxLength(200)
@@ -6170,19 +6178,22 @@ namespace ERP.Infrastructure.Persistence.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("SubscriberId", "AccessKey")
+                    b.HasIndex("CompanyId", "AccessKey")
                         .IsUnique()
                         .HasDatabaseName("uq_expense_invoice_access_key")
                         .HasFilter("access_key IS NOT NULL");
 
+                    b.HasIndex("CompanyId", "IssueDate")
+                        .HasDatabaseName("ix_expense_invoice_company_date");
+
+                    b.HasIndex("CompanyId", "Status")
+                        .HasDatabaseName("ix_expense_invoice_company_status");
+
                     b.HasIndex("SubscriberId", "Category")
                         .HasDatabaseName("ix_expense_invoice_subscriber_category");
 
-                    b.HasIndex("SubscriberId", "IssueDate")
-                        .HasDatabaseName("ix_expense_invoice_subscriber_date");
-
-                    b.HasIndex("SubscriberId", "Status")
-                        .HasDatabaseName("ix_expense_invoice_subscriber_status");
+                    b.HasIndex("SubscriberId", "CompanyId")
+                        .HasDatabaseName("ix_expense_invoice_company");
 
                     b.ToTable("expense_invoice", (string)null);
                 });
@@ -9500,6 +9511,10 @@ namespace ERP.Infrastructure.Persistence.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("business_partner_id");
 
+                    b.Property<Guid>("CompanyId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("company_id");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
@@ -9588,7 +9603,10 @@ namespace ERP.Infrastructure.Persistence.Migrations
 
                     b.HasIndex("PurchBillId");
 
-                    b.HasIndex("SubscriberId", "EstablishmentCode", "EmissionPointCode", "Sequential")
+                    b.HasIndex("SubscriberId", "CompanyId")
+                        .HasDatabaseName("ix_issued_retention_company");
+
+                    b.HasIndex("CompanyId", "EstablishmentCode", "EmissionPointCode", "Sequential")
                         .IsUnique()
                         .HasDatabaseName("uq_issued_retention_seq");
 
@@ -10479,6 +10497,10 @@ namespace ERP.Infrastructure.Persistence.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("closed_at");
 
+                    b.Property<Guid>("CompanyId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("company_id");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
@@ -10564,12 +10586,15 @@ namespace ERP.Infrastructure.Persistence.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("CompanyId", "OrderNumber")
+                        .IsUnique()
+                        .HasDatabaseName("uq_purchase_order_number");
+
                     b.HasIndex("SubscriberId", "BusinessPartnerId")
                         .HasDatabaseName("ix_purchase_order_subscriber_supplier");
 
-                    b.HasIndex("SubscriberId", "OrderNumber")
-                        .IsUnique()
-                        .HasDatabaseName("uq_purchase_order_number");
+                    b.HasIndex("SubscriberId", "CompanyId")
+                        .HasDatabaseName("ix_purchase_order_company");
 
                     b.HasIndex("SubscriberId", "Status")
                         .HasDatabaseName("ix_purchase_order_subscriber_status");

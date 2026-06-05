@@ -248,7 +248,6 @@ public sealed class TenantIsolationInvariantTests
         violators.Should().BeEmpty(
             "Requests en módulos COMPANY deben implementar ICompanyScopedRequest " +
             "(o ISubscriberScopedRequest / IPlatformScopedRequest). " +
-            "Sin scope explícito el CompanyScopeBehavior usa namespace fallback " +
-            "(deuda técnica que aumenta riesgo de bypass).");
+            "Sin scope explícito el CompanyScopeBehavior no valida company context (fail-closed).");
     }
 }

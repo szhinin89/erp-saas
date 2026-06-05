@@ -13,6 +13,7 @@ public sealed class IssuedRetentionConfiguration : IEntityTypeConfiguration<Issu
         builder.HasKey(e => e.Id);
         builder.Property(e => e.Id).HasColumnName("id");
         builder.Property(e => e.SubscriberId).HasColumnName("subscriber_id").IsRequired();
+        builder.Property(e => e.CompanyId).HasColumnName("company_id").IsRequired();
         builder.Property(e => e.BusinessPartnerId).HasColumnName("business_partner_id").IsRequired();
         builder.Property(e => e.PurchBillId).HasColumnName("purch_bill_id");
         builder.Property(e => e.VoucherType).HasColumnName("voucher_type").HasMaxLength(30).IsRequired();
@@ -38,6 +39,7 @@ public sealed class IssuedRetentionConfiguration : IEntityTypeConfiguration<Issu
         builder.HasOne<PurchBill>().WithMany().HasForeignKey(e => e.PurchBillId).OnDelete(DeleteBehavior.SetNull);
         builder.HasMany(e => e.Lines).WithOne().HasForeignKey(d => d.IssuedRetentionId).OnDelete(DeleteBehavior.Cascade);
 
-        builder.HasIndex(e => new { e.SubscriberId, e.EstablishmentCode, e.EmissionPointCode, e.Sequential }).IsUnique().HasDatabaseName("uq_issued_retention_seq");
+        builder.HasIndex(e => new { e.SubscriberId, e.CompanyId }).HasDatabaseName("ix_issued_retention_company");
+        builder.HasIndex(e => new { e.CompanyId, e.EstablishmentCode, e.EmissionPointCode, e.Sequential }).IsUnique().HasDatabaseName("uq_issued_retention_seq");
     }
 }

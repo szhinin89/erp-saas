@@ -2,7 +2,7 @@ using ERP.Domain.Common;
 
 namespace ERP.Domain.Modules.Purchasing.Entities;
 
-public sealed class IssuedRetention : AuditableEntity, ISubscriberScopedEntity
+public sealed class IssuedRetention : AuditableEntity, ICompanyOperationalEntity
 {
     public const int AccessKeyLen    = 49;
     public const int EstabMaxLen     = 3;
@@ -14,6 +14,7 @@ public sealed class IssuedRetention : AuditableEntity, ISubscriberScopedEntity
 
     private readonly List<PurchRetentionLine> _lines = new();
 
+    public Guid      CompanyId           { get; private set; }
     public Guid      BusinessPartnerId   { get; private set; }
     public Guid?     PurchBillId         { get; private set; }
     public string    VoucherType         { get; private set; } = "RETENTION";
@@ -37,6 +38,7 @@ public sealed class IssuedRetention : AuditableEntity, ISubscriberScopedEntity
 
     public static IssuedRetention Create(
         Guid     subscriberId,
+        Guid     companyId,
         Guid     businessPartnerId,
         Guid?    purchBillId,
         string   accessKey,
@@ -50,6 +52,7 @@ public sealed class IssuedRetention : AuditableEntity, ISubscriberScopedEntity
         {
             Id                = Guid.NewGuid(),
             SubscriberId      = subscriberId,
+            CompanyId         = companyId,
             BusinessPartnerId = businessPartnerId,
             PurchBillId       = purchBillId,
             AccessKey         = accessKey.Trim(),

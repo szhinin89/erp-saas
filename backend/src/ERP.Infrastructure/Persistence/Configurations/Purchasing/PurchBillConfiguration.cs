@@ -13,7 +13,7 @@ public sealed class PurchBillConfiguration : IEntityTypeConfiguration<PurchBill>
         builder.HasKey(c => c.Id);
         builder.Property(c => c.Id).HasColumnName("id");
         builder.Property(c => c.SubscriberId).HasColumnName("subscriber_id").IsRequired();
-        builder.Property(c => c.CompanyId).HasColumnName("company_id");
+        builder.Property(c => c.CompanyId).HasColumnName("company_id").IsRequired();
         builder.Property(c => c.BusinessPartnerId).HasColumnName("business_partner_id").IsRequired();
         builder.Property(c => c.BusinessPartnerId).HasColumnName("business_partner_id");
         builder.Property(c => c.InvoiceNumber).HasColumnName("invoice_number").HasMaxLength(PurchBill.InvoiceNumberMaxLen).IsRequired();

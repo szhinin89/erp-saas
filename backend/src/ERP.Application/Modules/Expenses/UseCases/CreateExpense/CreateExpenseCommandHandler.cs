@@ -21,6 +21,7 @@ public sealed class CreateExpenseCommandHandler
     private readonly IFileStorage            _storage;
     private readonly IUserActivityRepository _activity;
     private readonly ICurrentSubscriber          _subscriber;
+    private readonly ICurrentCompany             _currentCompany;
     private readonly ICurrentUser            _user;
     private readonly IUnitOfWork             _unitOfWork;
     private readonly ILogger<CreateExpenseCommandHandler> _logger;
@@ -32,6 +33,7 @@ public sealed class CreateExpenseCommandHandler
         IFileStorage storage,
         IUserActivityRepository activity,
         ICurrentSubscriber subscriber,
+        ICurrentCompany currentCompany,
         ICurrentUser user,
         IUnitOfWork unitOfWork,
         ILogger<CreateExpenseCommandHandler> logger)
@@ -42,6 +44,7 @@ public sealed class CreateExpenseCommandHandler
         _storage       = storage;
         _activity      = activity;
         _subscriber = subscriber;
+        _currentCompany = currentCompany;
         _user          = user;
         _unitOfWork    = unitOfWork;
         _logger        = logger;
@@ -95,6 +98,7 @@ public sealed class CreateExpenseCommandHandler
             {
                 gasto = ExpenseInvoice.CreateFromXml(
                     subscriberId,
+                    _currentCompany.CompanyId,
                     bp.Id,
                     parsed.AccessKey,
                     parsed.InvoiceNumber,
@@ -167,6 +171,7 @@ public sealed class CreateExpenseCommandHandler
         {
             gasto = ExpenseInvoice.CreateManual(
                 subscriberId,
+                _currentCompany.CompanyId,
                 bpId,
                 command.IssueDate!.Value,
                 command.Concept!,

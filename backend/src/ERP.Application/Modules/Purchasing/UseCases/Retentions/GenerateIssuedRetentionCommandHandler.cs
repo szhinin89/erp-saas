@@ -100,7 +100,8 @@ public sealed class GenerateIssuedRetentionCommandHandler
                 emPoint.Code, sriConfig.EmissionType, secuencial, fecha, "07");
 
             var ret = IssuedRetention.Create(
-                subscriberId, compra.BusinessPartnerId, compra.Id, clave, fecha,
+                subscriberId, _currentCompany.CompanyId,
+                compra.BusinessPartnerId, compra.Id, clave, fecha,
                 emPoint.Establishment.Code, emPoint.Code, secuencial, userId);
 
             foreach (var line in command.Lines)

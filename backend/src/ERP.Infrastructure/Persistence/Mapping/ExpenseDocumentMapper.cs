@@ -10,6 +10,7 @@ public static class ExpenseDocumentMapper
         var doc = ExpenseDocument.Rehydrate();
         Set(doc, nameof(ExpenseDocument.Id), invoice.Id);
         Set(doc, nameof(ExpenseDocument.SubscriberId), invoice.SubscriberId);
+        Set(doc, nameof(ExpenseDocument.CompanyId), invoice.CompanyId);
         Set(doc, nameof(ExpenseDocument.BusinessPartnerId), invoice.BusinessPartnerId);
         Set(doc, nameof(ExpenseDocument.DocType), ExpenseDocumentTypeConversions.FromDb(invoice.Category));
         Set(doc, nameof(ExpenseDocument.DocNumber), invoice.InvoiceNumber);
@@ -50,6 +51,7 @@ public static class ExpenseDocumentMapper
         {
             invoice = ExpenseInvoice.CreateFromXml(
                 doc.SubscriberId,
+                doc.CompanyId,
                 doc.BusinessPartnerId ?? Guid.Empty,
                 doc.AccessKey!,
                 doc.DocNumber,
@@ -67,6 +69,7 @@ public static class ExpenseDocumentMapper
         {
             invoice = ExpenseInvoice.CreateManual(
                 doc.SubscriberId,
+                doc.CompanyId,
                 doc.BusinessPartnerId,
                 doc.IssueDate,
                 doc.Concept,

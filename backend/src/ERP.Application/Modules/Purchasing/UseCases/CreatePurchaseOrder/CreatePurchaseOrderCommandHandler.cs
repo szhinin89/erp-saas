@@ -19,6 +19,7 @@ public sealed class CreatePurchaseOrderCommandHandler
     private readonly IProductRepository      _productRepo;
     private readonly IUserActivityRepository _activity;
     private readonly ICurrentSubscriber          _currentSubscriber;
+    private readonly ICurrentCompany             _currentCompany;
     private readonly ICurrentUser            _currentUser;
     private readonly ILogger<CreatePurchaseOrderCommandHandler> _logger;
 
@@ -28,6 +29,7 @@ public sealed class CreatePurchaseOrderCommandHandler
         IProductRepository productRepo,
         IUserActivityRepository activity,
         ICurrentSubscriber currentSubscriber,
+        ICurrentCompany currentCompany,
         ICurrentUser currentUser,
         ILogger<CreatePurchaseOrderCommandHandler> logger)
     {
@@ -36,6 +38,7 @@ public sealed class CreatePurchaseOrderCommandHandler
         _productRepo   = productRepo;
         _activity      = activity;
         _currentSubscriber = currentSubscriber;
+        _currentCompany    = currentCompany;
         _currentUser   = currentUser;
         _logger        = logger;
     }
@@ -44,6 +47,7 @@ public sealed class CreatePurchaseOrderCommandHandler
         CreatePurchaseOrderCommand command, CancellationToken ct)
     {
         var subscriberId = _currentSubscriber.SubscriberId;
+        var companyId    = _currentCompany.CompanyId;
         var userId   = _currentUser.UserId;
 
         var bp = await _bpRepo.GetByIdAsync(command.BusinessPartnerId, ct);
@@ -65,7 +69,7 @@ public sealed class CreatePurchaseOrderCommandHandler
         var secuencial = await _ordenRepo.GetNextSequentialAsync(subscriberId, ct);
 
         var orden = PurchaseOrder.Create(
-            subscriberId, secuencial,
+            subscriberId, companyId, secuencial,
             command.BusinessPartnerId, command.RequiredDate,
             command.TargetWarehouseId, command.DeliveryAddress, command.Notes,
             userId);

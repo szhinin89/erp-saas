@@ -55,6 +55,7 @@ public static class PurchaseWithholdingMapper
     {
         var retention = IssuedRetention.Create(
             w.SubscriberId,
+            w.CompanyId,
             w.BusinessPartnerId,
             w.PurchaseDocumentId,
             w.AccessKey,

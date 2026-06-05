@@ -2,7 +2,7 @@ using ERP.Domain.Common;
 
 namespace ERP.Domain.Modules.Purchasing.Entities;
 
-public sealed class PurchaseOrder : AuditableEntity, ISubscriberScopedEntity
+public sealed class PurchaseOrder : AuditableEntity, ICompanyOperationalEntity
 {
     public const int NumberMaxLen  = 20;
     public const int StatusMaxLen  = 20;
@@ -12,6 +12,7 @@ public sealed class PurchaseOrder : AuditableEntity, ISubscriberScopedEntity
 
     private readonly List<PurchaseOrderLine> _lines = new();
 
+    public Guid      CompanyId         { get; private set; }
     public int       Sequential        { get; private set; }
     public string    OrderNumber       { get; private set; } = null!;
     public Guid      BusinessPartnerId { get; private set; }
@@ -36,6 +37,7 @@ public sealed class PurchaseOrder : AuditableEntity, ISubscriberScopedEntity
 
     public static PurchaseOrder Create(
         Guid      subscriberId,
+        Guid      companyId,
         int       sequential,
         Guid      businessPartnerId,
         DateTime  requiredDate,
@@ -48,6 +50,7 @@ public sealed class PurchaseOrder : AuditableEntity, ISubscriberScopedEntity
         {
             Id                = Guid.NewGuid(),
             SubscriberId      = subscriberId,
+            CompanyId         = companyId,
             Sequential        = sequential,
             OrderNumber       = $"PO-{sequential:D4}",
             BusinessPartnerId = businessPartnerId,

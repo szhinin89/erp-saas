@@ -13,6 +13,7 @@ public sealed class PurchaseOrderConfiguration : IEntityTypeConfiguration<Purcha
         builder.HasKey(e => e.Id);
         builder.Property(e => e.Id).HasColumnName("id");
         builder.Property(e => e.SubscriberId).HasColumnName("subscriber_id").IsRequired();
+        builder.Property(e => e.CompanyId).HasColumnName("company_id").IsRequired();
         builder.Property(e => e.Sequential).HasColumnName("sequential").IsRequired();
         builder.Property(e => e.OrderNumber).HasColumnName("order_number").HasMaxLength(PurchaseOrder.NumberMaxLen).IsRequired();
         builder.Property(e => e.BusinessPartnerId).HasColumnName("business_partner_id").IsRequired();
@@ -38,7 +39,8 @@ public sealed class PurchaseOrderConfiguration : IEntityTypeConfiguration<Purcha
 
         builder.HasMany(e => e.Lines).WithOne().HasForeignKey(d => d.PurchaseOrderId).OnDelete(DeleteBehavior.Cascade);
 
-        builder.HasIndex(e => new { e.SubscriberId, e.OrderNumber }).IsUnique().HasDatabaseName("uq_purchase_order_number");
+        builder.HasIndex(e => new { e.CompanyId, e.OrderNumber }).IsUnique().HasDatabaseName("uq_purchase_order_number");
+        builder.HasIndex(e => new { e.SubscriberId, e.CompanyId }).HasDatabaseName("ix_purchase_order_company");
         builder.HasIndex(e => new { e.SubscriberId, e.Status }).HasDatabaseName("ix_purchase_order_subscriber_status");
         builder.HasIndex(e => new { e.SubscriberId, e.BusinessPartnerId }).HasDatabaseName("ix_purchase_order_subscriber_supplier");
     }

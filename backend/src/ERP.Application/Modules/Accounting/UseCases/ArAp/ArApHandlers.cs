@@ -10,19 +10,21 @@ public sealed class CreateArEntryCommandHandler : IRequestHandler<CreateArEntryC
     private readonly IArApRepository  _repo;
     private readonly ICurrentUser     _user;
     private readonly ICurrentSubscriber _subscriber;
+    private readonly ICurrentCompany    _currentCompany;
 
-    public CreateArEntryCommandHandler(IArApRepository repo, ICurrentUser user, ICurrentSubscriber subscriber)
+    public CreateArEntryCommandHandler(IArApRepository repo, ICurrentUser user, ICurrentSubscriber subscriber, ICurrentCompany currentCompany)
     {
-        _repo       = repo;
-        _user       = user;
-        _subscriber = subscriber;
+        _repo           = repo;
+        _user           = user;
+        _subscriber     = subscriber;
+        _currentCompany = currentCompany;
     }
 
     public async Task<Result<Guid>> Handle(CreateArEntryCommand cmd, CancellationToken ct)
     {
         var entry = AccountsReceivableEntry.Create(
             subscriberId:     _subscriber.SubscriberId,
-            companyId:        cmd.CompanyId,
+            companyId:        _currentCompany.CompanyId,
             businessPartnerId: cmd.BusinessPartnerId,
             reference:        cmd.Reference,
             issueDate:        cmd.IssueDate,
@@ -79,16 +81,18 @@ public sealed class GetArAgingReportQueryHandler : IRequestHandler<GetArAgingRep
 {
     private readonly IArApRepository  _repo;
     private readonly ICurrentSubscriber _subscriber;
+    private readonly ICurrentCompany    _currentCompany;
 
-    public GetArAgingReportQueryHandler(IArApRepository repo, ICurrentSubscriber subscriber)
+    public GetArAgingReportQueryHandler(IArApRepository repo, ICurrentSubscriber subscriber, ICurrentCompany currentCompany)
     {
-        _repo       = repo;
-        _subscriber = subscriber;
+        _repo           = repo;
+        _subscriber     = subscriber;
+        _currentCompany = currentCompany;
     }
 
     public async Task<Result<ArAgingReportDto>> Handle(GetArAgingReportQuery query, CancellationToken ct)
     {
-        var entries = await _repo.GetOpenArEntriesAsync(_subscriber.SubscriberId, query.CompanyId, ct);
+        var entries = await _repo.GetOpenArEntriesAsync(_subscriber.SubscriberId, _currentCompany.CompanyId, ct);
         var asOf    = query.AsOf.Date;
 
         var lines = entries.Select(e =>
@@ -125,19 +129,21 @@ public sealed class CreateApEntryCommandHandler : IRequestHandler<CreateApEntryC
     private readonly IArApRepository  _repo;
     private readonly ICurrentUser     _user;
     private readonly ICurrentSubscriber _subscriber;
+    private readonly ICurrentCompany    _currentCompany;
 
-    public CreateApEntryCommandHandler(IArApRepository repo, ICurrentUser user, ICurrentSubscriber subscriber)
+    public CreateApEntryCommandHandler(IArApRepository repo, ICurrentUser user, ICurrentSubscriber subscriber, ICurrentCompany currentCompany)
     {
-        _repo       = repo;
-        _user       = user;
-        _subscriber = subscriber;
+        _repo           = repo;
+        _user           = user;
+        _subscriber     = subscriber;
+        _currentCompany = currentCompany;
     }
 
     public async Task<Result<Guid>> Handle(CreateApEntryCommand cmd, CancellationToken ct)
     {
         var entry = AccountsPayableEntry.Create(
             subscriberId:     _subscriber.SubscriberId,
-            companyId:        cmd.CompanyId,
+            companyId:        _currentCompany.CompanyId,
             businessPartnerId: cmd.BusinessPartnerId,
             reference:        cmd.Reference,
             issueDate:        cmd.IssueDate,
@@ -194,16 +200,18 @@ public sealed class GetApAgingReportQueryHandler : IRequestHandler<GetApAgingRep
 {
     private readonly IArApRepository  _repo;
     private readonly ICurrentSubscriber _subscriber;
+    private readonly ICurrentCompany    _currentCompany;
 
-    public GetApAgingReportQueryHandler(IArApRepository repo, ICurrentSubscriber subscriber)
+    public GetApAgingReportQueryHandler(IArApRepository repo, ICurrentSubscriber subscriber, ICurrentCompany currentCompany)
     {
-        _repo       = repo;
-        _subscriber = subscriber;
+        _repo           = repo;
+        _subscriber     = subscriber;
+        _currentCompany = currentCompany;
     }
 
     public async Task<Result<ApAgingReportDto>> Handle(GetApAgingReportQuery query, CancellationToken ct)
     {
-        var entries = await _repo.GetOpenApEntriesAsync(_subscriber.SubscriberId, query.CompanyId, ct);
+        var entries = await _repo.GetOpenApEntriesAsync(_subscriber.SubscriberId, _currentCompany.CompanyId, ct);
         var asOf    = query.AsOf.Date;
 
         var lines = entries.Select(e =>

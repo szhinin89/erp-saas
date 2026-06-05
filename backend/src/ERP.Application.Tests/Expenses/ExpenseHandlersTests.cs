@@ -49,8 +49,11 @@ public sealed class ExpenseHandlersTests
         var user = new Mock<ICurrentUser>();
         user.SetupGet(x => x.UserId).Returns(userId);
 
+        var company = new Mock<ICurrentCompany>();
+        company.SetupGet(x => x.CompanyId).Returns(Guid.NewGuid());
+
         var handler = new CreateExpenseCommandHandler(
-            gastos.Object, bpRepo.Object, parser.Object, storage.Object, activity.Object, tenant.Object, user.Object,
+            gastos.Object, bpRepo.Object, parser.Object, storage.Object, activity.Object, tenant.Object, company.Object, user.Object,
             uow.Object,
             NullLogger<CreateExpenseCommandHandler>.Instance);
 
@@ -97,8 +100,11 @@ public sealed class ExpenseHandlersTests
         uow.Setup(x => x.CommitAsync(It.IsAny<CancellationToken>())).Returns(Task.CompletedTask);
         uow.Setup(x => x.RollbackAsync(It.IsAny<CancellationToken>())).Returns(Task.CompletedTask);
 
+        var company = new Mock<ICurrentCompany>();
+        company.SetupGet(x => x.CompanyId).Returns(Guid.NewGuid());
+
         var handler = new CreateExpenseCommandHandler(
-            gastos.Object, bpRepo.Object, parser.Object, storage.Object, activity.Object, tenant.Object, user.Object,
+            gastos.Object, bpRepo.Object, parser.Object, storage.Object, activity.Object, tenant.Object, company.Object, user.Object,
             uow.Object,
             NullLogger<CreateExpenseCommandHandler>.Instance);
 
@@ -177,8 +183,11 @@ public sealed class ExpenseHandlersTests
         var user = new Mock<ICurrentUser>();
         user.SetupGet(x => x.UserId).Returns(userId);
 
+        var company = new Mock<ICurrentCompany>();
+        company.SetupGet(x => x.CompanyId).Returns(Guid.NewGuid());
+
         var handler = new CreateExpenseCommandHandler(
-            gastos.Object, bpRepo.Object, parser.Object, storage.Object, activity.Object, tenant.Object, user.Object,
+            gastos.Object, bpRepo.Object, parser.Object, storage.Object, activity.Object, tenant.Object, company.Object, user.Object,
             uow.Object,
             NullLogger<CreateExpenseCommandHandler>.Instance);
 
@@ -210,7 +219,7 @@ public sealed class ExpenseHandlersTests
         var userId   = Guid.NewGuid();
 
         var gasto = ExpenseInvoice.CreateManual(
-            subscriberId, businessPartnerId: null, DateTime.UtcNow.Date, "Taxi", "Viajes",
+            subscriberId, Guid.NewGuid(), businessPartnerId: null, DateTime.UtcNow.Date, "Taxi", "Viajes",
             10m, 1.2m, 11.2m, null, userId);
 
         var gastos = new Mock<IExpenseInvoiceRepository>();

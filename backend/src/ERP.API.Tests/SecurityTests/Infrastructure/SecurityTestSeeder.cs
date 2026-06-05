@@ -5,6 +5,8 @@ using ERP.Domain.MasterData.Enums;
 using ERP.Domain.Modules.Accounting.Entities;
 using ERP.Domain.Modules.Accounting.Enums;
 using ERP.Domain.Modules.Company.Entities;
+using ERP.Domain.Modules.Expenses.Entities;
+using ERP.Domain.Modules.Purchasing.Entities;
 using ERP.Domain.Subscribers.Entities;
 using ERP.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
@@ -51,31 +53,58 @@ internal static class SecurityTestSeeder
         db.Companies.Add(companyB1);
         await db.SaveChangesAsync(ct);
 
-        // ── DATA A1: BusinessPartner + Account ────────────────────────────────
-        var bpA1 = BusinessPartner.Create(subA.Id, "04", "1790000000001", PersonType.Legal, "Cliente A1 Corp", SeedActor);
+        // ── DATA A1: BusinessPartner + Account + PurchaseOrder + ExpenseInvoice ─
+        var bpA1 = BusinessPartner.Create(subA.Id, "04", "1790012344001", PersonType.Legal, "Cliente A1 Corp", SeedActor);
         db.BusinessPartners.Add(bpA1);
 
         var accA1 = Account.Create(subA.Id, companyA1.Id, "4.1.01", "Ventas A1",
             AccountType.Revenue, AccountNature.Credit, SeedActor);
         db.Accounts.Add(accA1);
+
+        var poA1 = PurchaseOrder.Create(subA.Id, companyA1.Id, 1, bpA1.Id,
+            DateTime.UtcNow.AddDays(30), null, null, null, SeedActor);
+        db.PurchaseOrders.Add(poA1);
+
+        var expA1 = ExpenseInvoice.CreateManual(subA.Id, companyA1.Id, bpA1.Id,
+            DateTime.UtcNow.Date, "Gasto A1", "Operaciones", 10m, 1.2m, 11.2m, null, SeedActor);
+        db.ExpenseInvoices.Add(expA1);
+
         await db.SaveChangesAsync(ct);
 
-        // ── DATA A2: BusinessPartner + Account ────────────────────────────────
-        var bpA2 = BusinessPartner.Create(subA.Id, "04", "1790000000002", PersonType.Legal, "Cliente A2 Corp", SeedActor);
+        // ── DATA A2: BusinessPartner + Account + PurchaseOrder + ExpenseInvoice ─
+        var bpA2 = BusinessPartner.Create(subA.Id, "04", "1790012352001", PersonType.Legal, "Cliente A2 Corp", SeedActor);
         db.BusinessPartners.Add(bpA2);
 
         var accA2 = Account.Create(subA.Id, companyA2.Id, "4.1.01", "Ventas A2",
             AccountType.Revenue, AccountNature.Credit, SeedActor);
         db.Accounts.Add(accA2);
+
+        var poA2 = PurchaseOrder.Create(subA.Id, companyA2.Id, 1, bpA2.Id,
+            DateTime.UtcNow.AddDays(30), null, null, null, SeedActor);
+        db.PurchaseOrders.Add(poA2);
+
+        var expA2 = ExpenseInvoice.CreateManual(subA.Id, companyA2.Id, bpA2.Id,
+            DateTime.UtcNow.Date, "Gasto A2", "Operaciones", 10m, 1.2m, 11.2m, null, SeedActor);
+        db.ExpenseInvoices.Add(expA2);
+
         await db.SaveChangesAsync(ct);
 
-        // ── DATA B1: BusinessPartner + Account ────────────────────────────────
-        var bpB1 = BusinessPartner.Create(subB.Id, "04", "1790000000003", PersonType.Legal, "Cliente B1 Corp", SeedActor);
+        // ── DATA B1: BusinessPartner + Account + PurchaseOrder + ExpenseInvoice ─
+        var bpB1 = BusinessPartner.Create(subB.Id, "04", "1790012360001", PersonType.Legal, "Cliente B1 Corp", SeedActor);
         db.BusinessPartners.Add(bpB1);
 
         var accB1 = Account.Create(subB.Id, companyB1.Id, "4.1.01", "Ventas B1",
             AccountType.Revenue, AccountNature.Credit, SeedActor);
         db.Accounts.Add(accB1);
+
+        var poB1 = PurchaseOrder.Create(subB.Id, companyB1.Id, 1, bpB1.Id,
+            DateTime.UtcNow.AddDays(30), null, null, null, SeedActor);
+        db.PurchaseOrders.Add(poB1);
+
+        var expB1 = ExpenseInvoice.CreateManual(subB.Id, companyB1.Id, bpB1.Id,
+            DateTime.UtcNow.Date, "Gasto B1", "Operaciones", 10m, 1.2m, 11.2m, null, SeedActor);
+        db.ExpenseInvoices.Add(expB1);
+
         await db.SaveChangesAsync(ct);
 
         return new AttackTestState(
@@ -89,7 +118,13 @@ internal static class SecurityTestSeeder
             BpB1Id: bpB1.Id,
             AccA1Id: accA1.Id,
             AccA2Id: accA2.Id,
-            AccB1Id: accB1.Id);
+            AccB1Id: accB1.Id,
+            PoA1Id: poA1.Id,
+            PoA2Id: poA2.Id,
+            PoB1Id: poB1.Id,
+            ExpA1Id: expA1.Id,
+            ExpA2Id: expA2.Id,
+            ExpB1Id: expB1.Id);
     }
 }
 
@@ -105,5 +140,11 @@ internal sealed record AttackTestState(
     Guid BpB1Id,
     Guid AccA1Id,
     Guid AccA2Id,
-    Guid AccB1Id);
+    Guid AccB1Id,
+    Guid PoA1Id,
+    Guid PoA2Id,
+    Guid PoB1Id,
+    Guid ExpA1Id,
+    Guid ExpA2Id,
+    Guid ExpB1Id);
 

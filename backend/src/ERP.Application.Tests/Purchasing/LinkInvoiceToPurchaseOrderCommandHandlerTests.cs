@@ -184,6 +184,7 @@ public sealed class LinkInvoiceToPurchaseOrderCommandHandlerTests
     private sealed class TestContext
     {
         public Guid SubscriberId   { get; } = Guid.NewGuid();
+        public Guid CompanyId      { get; } = Guid.NewGuid();
         public Guid UserId     { get; } = Guid.NewGuid();
         public Guid ProductoId { get; } = Guid.NewGuid();
         public Guid ProveedorId { get; } = Guid.NewGuid();
@@ -256,7 +257,7 @@ public sealed class LinkInvoiceToPurchaseOrderCommandHandlerTests
         public PurchaseOrder BuildOrdenCompra(bool aprobar)
         {
             var oc = PurchaseOrder.Create(
-                SubscriberId, sequential: 1, ProveedorId,
+                SubscriberId, CompanyId, sequential: 1, ProveedorId,
                 DateTime.UtcNow.AddDays(30),
                 targetWarehouseId: null, deliveryAddress: null, notes: null,
                 UserId);

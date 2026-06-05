@@ -28,11 +28,10 @@ public class DashboardController : ControllerBase
     [ProducesResponseType(typeof(DashboardKpisDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> GetKpis(
-        [FromQuery] Guid     companyId,
         [FromQuery] DateTime? asOf = null,
         CancellationToken ct = default)
     {
-        var result = await _mediator.Send(new GetDashboardKpisQuery(companyId, asOf), ct);
+        var result = await _mediator.Send(new GetDashboardKpisQuery(asOf), ct);
         return this.ToOkOrBadRequest(result);
     }
 
@@ -43,12 +42,11 @@ public class DashboardController : ControllerBase
     [ProducesResponseType(typeof(ArAgingReportDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> GetArAging(
-        [FromQuery] Guid     companyId,
         [FromQuery] DateTime? asOf = null,
         CancellationToken ct = default)
     {
         var result = await _mediator.Send(
-            new GetArAgingReportQuery(companyId, asOf ?? DateTime.UtcNow), ct);
+            new GetArAgingReportQuery(asOf ?? DateTime.UtcNow), ct);
         return this.ToOkOrBadRequest(result);
     }
 
@@ -59,12 +57,11 @@ public class DashboardController : ControllerBase
     [ProducesResponseType(typeof(ApAgingReportDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> GetApAging(
-        [FromQuery] Guid     companyId,
         [FromQuery] DateTime? asOf = null,
         CancellationToken ct = default)
     {
         var result = await _mediator.Send(
-            new GetApAgingReportQuery(companyId, asOf ?? DateTime.UtcNow), ct);
+            new GetApAgingReportQuery(asOf ?? DateTime.UtcNow), ct);
         return this.ToOkOrBadRequest(result);
     }
 }

@@ -3,58 +3,25 @@ using ERP.Application.Common.Security;
 using ERP.Application.Modules.Platform.Companies;
 using ERP.Domain.Exceptions;
 using MediatR;
-using Microsoft.Extensions.Logging;
 
 namespace ERP.Application.Behaviors;
 
 /// <summary>
 /// Valida centralmente contexto subscriber + empresa + membership para módulos ERP operativos.
-/// Interfaces explícitas son la fuente primaria; namespace-prefix es fallback legacy temporal.
+/// ICompanyScopedRequest / IRequiresCompanyContext son la única fuente de verdad para scope de empresa.
 /// </summary>
 public sealed class CompanyScopeBehavior<TRequest, TResponse> : IPipelineBehavior<TRequest, TResponse>
     where TRequest : notnull
 {
-    private static readonly string[] CompanyScopedNamespacePrefixes =
-    [
-        "ERP.Application.Sales",
-        "ERP.Application.Modules.Sales",
-        "ERP.Application.Modules.Inventory",
-        "ERP.Application.Inventory",
-        "ERP.Application.Products",
-        "ERP.Application.Modules.Products",
-        "ERP.Application.Modules.Purchasing",
-        "ERP.Application.Purchasing",
-        "ERP.Application.Modules.Accounting",
-        "ERP.Application.Accounting",
-        "ERP.Application.Modules.Cash",
-        "ERP.Application.Cash",
-        "ERP.Application.Modules.Logistics",
-        "ERP.Application.Logistics",
-        "ERP.Application.Modules.Branches",
-        "ERP.Application.Modules.Expenses",
-        "ERP.Application.Modules.Configuration",
-    ];
-
     private readonly ICompanyAccessGuard _accessGuard;
-    private readonly ICurrentCompany _company;
-    private readonly ICurrentSubscriber _subscriber;
-    private readonly ISecurityMetrics _metrics;
-    private readonly ILogger<CompanyScopeBehavior<TRequest, TResponse>> _logger;
+    private readonly ICurrentCompany     _company;
 
     public CompanyScopeBehavior(
         ICompanyAccessGuard accessGuard,
-        ICurrentSubscriber subscriber,
-        ICurrentCompany company,
-        ICurrentUser user,
-        ISecurityMetrics metrics,
-        ILogger<CompanyScopeBehavior<TRequest, TResponse>> logger)
+        ICurrentCompany company)
     {
         _accessGuard = accessGuard;
-        _company = company;
-        _subscriber = subscriber;
-        _metrics = metrics;
-        _logger = logger;
-        _ = user;
+        _company     = company;
     }
 
     public async Task<TResponse> Handle(TRequest request, RequestHandlerDelegate<TResponse> next, CancellationToken ct)
@@ -70,21 +37,9 @@ public sealed class CompanyScopeBehavior<TRequest, TResponse> : IPipelineBehavio
             return await next();
         }
 
-        if (!RequiresCompanyScope(request, out var usedNamespaceFallback))
+        if (!RequiresCompanyScope(request))
         {
             return await next();
-        }
-
-        if (usedNamespaceFallback)
-        {
-            _logger.LogWarning(
-                "CompanyScopeBehavior: {RequestType} depende solo del namespace-prefix (deuda legacy). " +
-                "Migrar a ICompanyScopedRequest.",
-                typeof(TRequest).FullName);
-            _metrics.RecordNamespaceFallbackUsed(new SecurityMetricTags(
-                SubscriberId: _subscriber.SubscriberId,
-                CompanyId: _company.CompanyId,
-                RequestType: typeof(TRequest).Name));
         }
 
         var subResult = await _accessGuard.RequireActiveSubscriberAsync(ct);
@@ -112,18 +67,6 @@ public sealed class CompanyScopeBehavior<TRequest, TResponse> : IPipelineBehavio
         return await next();
     }
 
-    private static bool RequiresCompanyScope(TRequest request, out bool usedNamespaceFallback)
-    {
-        usedNamespaceFallback = false;
-
-        if (request is ICompanyScopedRequest or IRequiresCompanyContext)
-            return true;
-
-        var ns = request.GetType().Namespace ?? string.Empty;
-        if (!CompanyScopedNamespacePrefixes.Any(p => ns.StartsWith(p, StringComparison.Ordinal)))
-            return false;
-
-        usedNamespaceFallback = true;
-        return true;
-    }
+    private static bool RequiresCompanyScope(TRequest request)
+        => request is ICompanyScopedRequest or IRequiresCompanyContext;
 }

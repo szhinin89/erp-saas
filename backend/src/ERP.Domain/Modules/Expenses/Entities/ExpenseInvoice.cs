@@ -3,7 +3,7 @@ using ERP.Domain.Modules.Expenses.Enums;
 
 namespace ERP.Domain.Modules.Expenses.Entities;
 
-public sealed class ExpenseInvoice : MasterEntity, ISubscriberScopedEntity
+public sealed class ExpenseInvoice : MasterEntity, ICompanyOperationalEntity
 {
     public const int AccessKeyLen         = 49;
     public const int XmlPathMaxLen        = 500;
@@ -16,6 +16,7 @@ public sealed class ExpenseInvoice : MasterEntity, ISubscriberScopedEntity
     public const decimal RequiresXmlThreshold = 100m;
     public const decimal TotalTolerance       = 0.01m;
 
+    public Guid          CompanyId          { get; private set; }
     public string?       AccessKey          { get; private set; }
     public DateTime      IssueDate          { get; private set; }
     public Guid?         BusinessPartnerId  { get; private set; }
@@ -44,6 +45,7 @@ public sealed class ExpenseInvoice : MasterEntity, ISubscriberScopedEntity
 
     public static ExpenseInvoice CreateManual(
         Guid     subscriberId,
+        Guid     companyId,
         Guid?    businessPartnerId,
         DateTime issueDate,
         string   concept,
@@ -63,6 +65,7 @@ public sealed class ExpenseInvoice : MasterEntity, ISubscriberScopedEntity
         {
             Id                = Guid.NewGuid(),
             SubscriberId      = subscriberId,
+            CompanyId         = companyId,
             BusinessPartnerId = businessPartnerId,
             IssueDate  = issueDate,
             Concept    = concept.Trim(),
@@ -79,6 +82,7 @@ public sealed class ExpenseInvoice : MasterEntity, ISubscriberScopedEntity
 
     public static ExpenseInvoice CreateFromXml(
         Guid     subscriberId,
+        Guid     companyId,
         Guid     businessPartnerId,
         string   accessKey,
         string?  invoiceNumber,
@@ -99,6 +103,7 @@ public sealed class ExpenseInvoice : MasterEntity, ISubscriberScopedEntity
         {
             Id                = Guid.NewGuid(),
             SubscriberId      = subscriberId,
+            CompanyId         = companyId,
             BusinessPartnerId = businessPartnerId,
             AccessKey     = accessKey.Trim(),
             InvoiceNumber = Trim(invoiceNumber),
