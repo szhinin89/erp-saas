@@ -2,7 +2,10 @@ using ERP.Domain.Common;
 
 namespace ERP.Domain.Subscribers.Entities;
 
-public class Subscriber : AuditableEntity
+// Subscriber ES el root del tenant — no pertenece a ningún tenant.
+// Hereda de SystemAuditableEntity (global scope: Id, CreatedAt/By, DomainEvents)
+// sin SubscriberId — no implementa ISubscriberScopedEntity.
+public class Subscriber : SystemAuditableEntity
 {
     public string Name { get; private set; } = null!;
     public string Slug { get; private set; } = null!;
@@ -61,7 +64,6 @@ public class Subscriber : AuditableEntity
         var tenant = new Subscriber
         {
             Id               = Guid.NewGuid(),
-            SubscriberId     = Guid.Empty,
             Name             = name,
             Slug             = slug.ToLowerInvariant(),
             IsActive         = true,

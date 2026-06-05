@@ -10,9 +10,7 @@ public class SubscriberConfiguration : IEntityTypeConfiguration<Subscriber>
     {
         builder.ToTable("subscribers");
 
-        // Root tenant aggregate: Id is the subscriber key — no subscriber_id column on this table.
-        builder.Ignore(t => t.SubscriberId);
-
+        // Subscriber es global — hereda de SystemAuditableEntity, sin subscriber_id.
         builder.HasKey(t => t.Id).HasName("PK_subscribers");
         builder.Property(t => t.Id).HasColumnName("id");
         builder.Property(t => t.Name).HasColumnName("name").HasMaxLength(200).IsRequired();

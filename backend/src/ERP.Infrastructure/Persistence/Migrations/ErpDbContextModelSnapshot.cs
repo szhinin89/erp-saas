@@ -15594,30 +15594,6 @@ namespace ERP.Infrastructure.Persistence.Migrations
 
             modelBuilder.Entity("ERP.Domain.MasterData.Entities.BusinessPartner", b =>
                 {
-                    b.OwnsOne("ERP.Domain.MasterData.ValueObjects.PersonName", "Name", b1 =>
-                        {
-                            b1.Property<Guid>("BusinessPartnerId")
-                                .HasColumnType("uuid");
-
-                            b1.Property<string>("LegalName")
-                                .IsRequired()
-                                .HasMaxLength(200)
-                                .HasColumnType("character varying(200)")
-                                .HasColumnName("legal_name");
-
-                            b1.Property<string>("TradeName")
-                                .HasMaxLength(200)
-                                .HasColumnType("character varying(200)")
-                                .HasColumnName("trade_name");
-
-                            b1.HasKey("BusinessPartnerId");
-
-                            b1.ToTable("master_business_partners");
-
-                            b1.WithOwner()
-                                .HasForeignKey("BusinessPartnerId");
-                        });
-
                     b.OwnsOne("ERP.Domain.MasterData.ValueObjects.TaxIdentification", "Identification", b1 =>
                         {
                             b1.Property<Guid>("BusinessPartnerId")
@@ -15637,7 +15613,31 @@ namespace ERP.Infrastructure.Persistence.Migrations
 
                             b1.HasKey("BusinessPartnerId");
 
-                            b1.ToTable("master_business_partners");
+                            b1.ToTable("master_business_partners", (string)null);
+
+                            b1.WithOwner()
+                                .HasForeignKey("BusinessPartnerId");
+                        });
+
+                    b.OwnsOne("ERP.Domain.MasterData.ValueObjects.PersonName", "Name", b1 =>
+                        {
+                            b1.Property<Guid>("BusinessPartnerId")
+                                .HasColumnType("uuid");
+
+                            b1.Property<string>("LegalName")
+                                .IsRequired()
+                                .HasMaxLength(200)
+                                .HasColumnType("character varying(200)")
+                                .HasColumnName("legal_name");
+
+                            b1.Property<string>("TradeName")
+                                .HasMaxLength(200)
+                                .HasColumnType("character varying(200)")
+                                .HasColumnName("trade_name");
+
+                            b1.HasKey("BusinessPartnerId");
+
+                            b1.ToTable("master_business_partners", (string)null);
 
                             b1.WithOwner()
                                 .HasForeignKey("BusinessPartnerId");
@@ -15687,7 +15687,7 @@ namespace ERP.Infrastructure.Persistence.Migrations
 
                             b1.HasKey("BusinessPartnerContactId");
 
-                            b1.ToTable("master_bp_contacts");
+                            b1.ToTable("master_bp_contacts", (string)null);
 
                             b1.WithOwner()
                                 .HasForeignKey("BusinessPartnerContactId");
@@ -15743,7 +15743,7 @@ namespace ERP.Infrastructure.Persistence.Migrations
 
                             b1.HasIndex("ProvinceCode");
 
-                            b1.ToTable("master_bp_locations");
+                            b1.ToTable("master_bp_locations", (string)null);
 
                             b1.WithOwner()
                                 .HasForeignKey("BusinessPartnerLocationId");
@@ -15804,6 +15804,55 @@ namespace ERP.Infrastructure.Persistence.Migrations
                                 .HasConstraintName("fk_bpcc_role");
                         });
 
+                    b.OwnsOne("ERP.Domain.MasterData.ValueObjects.SupplierClassificationConfig", "ClassificationConfig", b1 =>
+                        {
+                            b1.Property<Guid>("role_id")
+                                .HasColumnType("uuid");
+
+                            b1.Property<string>("PaymentMethodPreference")
+                                .HasMaxLength(100)
+                                .HasColumnType("character varying(100)")
+                                .HasColumnName("payment_method_preference");
+
+                            b1.Property<string>("PrimaryGoodType")
+                                .HasMaxLength(30)
+                                .HasColumnType("character varying(30)")
+                                .HasColumnName("primary_good_type");
+
+                            b1.Property<string>("SupplierCategory")
+                                .HasMaxLength(50)
+                                .HasColumnType("character varying(50)")
+                                .HasColumnName("supplier_category");
+
+                            b1.Property<string>("SupplierRating")
+                                .HasMaxLength(10)
+                                .HasColumnType("character varying(10)")
+                                .HasColumnName("supplier_rating");
+
+                            b1.Property<string>("SupplierRisk")
+                                .HasMaxLength(20)
+                                .HasColumnType("character varying(20)")
+                                .HasColumnName("supplier_risk");
+
+                            b1.Property<string>("SupplierSegment")
+                                .HasMaxLength(30)
+                                .HasColumnType("character varying(30)")
+                                .HasColumnName("supplier_segment");
+
+                            b1.Property<string>("SupplierType")
+                                .HasMaxLength(30)
+                                .HasColumnType("character varying(30)")
+                                .HasColumnName("supplier_type");
+
+                            b1.HasKey("role_id");
+
+                            b1.ToTable("master_bp_supplier_classification_configs", (string)null);
+
+                            b1.WithOwner()
+                                .HasForeignKey("role_id")
+                                .HasConstraintName("fk_bpscc_role");
+                        });
+
                     b.OwnsOne("ERP.Domain.MasterData.ValueObjects.CustomerRoleConfig", "CustomerConfig", b1 =>
                         {
                             b1.Property<Guid>("role_id")
@@ -15854,55 +15903,6 @@ namespace ERP.Infrastructure.Persistence.Migrations
                             b1.WithOwner()
                                 .HasForeignKey("role_id")
                                 .HasConstraintName("fk_bpcrc_role");
-                        });
-
-                    b.OwnsOne("ERP.Domain.MasterData.ValueObjects.SupplierClassificationConfig", "ClassificationConfig", b1 =>
-                        {
-                            b1.Property<Guid>("role_id")
-                                .HasColumnType("uuid");
-
-                            b1.Property<string>("PaymentMethodPreference")
-                                .HasMaxLength(100)
-                                .HasColumnType("character varying(100)")
-                                .HasColumnName("payment_method_preference");
-
-                            b1.Property<string>("PrimaryGoodType")
-                                .HasMaxLength(30)
-                                .HasColumnType("character varying(30)")
-                                .HasColumnName("primary_good_type");
-
-                            b1.Property<string>("SupplierCategory")
-                                .HasMaxLength(50)
-                                .HasColumnType("character varying(50)")
-                                .HasColumnName("supplier_category");
-
-                            b1.Property<string>("SupplierRating")
-                                .HasMaxLength(10)
-                                .HasColumnType("character varying(10)")
-                                .HasColumnName("supplier_rating");
-
-                            b1.Property<string>("SupplierRisk")
-                                .HasMaxLength(20)
-                                .HasColumnType("character varying(20)")
-                                .HasColumnName("supplier_risk");
-
-                            b1.Property<string>("SupplierSegment")
-                                .HasMaxLength(30)
-                                .HasColumnType("character varying(30)")
-                                .HasColumnName("supplier_segment");
-
-                            b1.Property<string>("SupplierType")
-                                .HasMaxLength(30)
-                                .HasColumnType("character varying(30)")
-                                .HasColumnName("supplier_type");
-
-                            b1.HasKey("role_id");
-
-                            b1.ToTable("master_bp_supplier_classification_configs", (string)null);
-
-                            b1.WithOwner()
-                                .HasForeignKey("role_id")
-                                .HasConstraintName("fk_bpscc_role");
                         });
 
                     b.OwnsOne("ERP.Domain.MasterData.ValueObjects.SupplierRoleConfig", "SupplierConfig", b1 =>
@@ -16052,7 +16052,7 @@ namespace ERP.Infrastructure.Persistence.Migrations
 
                             b1.HasKey("JournalEntryLineId");
 
-                            b1.ToTable("journal_entry_lines");
+                            b1.ToTable("journal_entry_lines", (string)null);
 
                             b1.WithOwner()
                                 .HasForeignKey("JournalEntryLineId");
@@ -16076,7 +16076,7 @@ namespace ERP.Infrastructure.Persistence.Migrations
 
                             b1.HasKey("JournalEntryLineId");
 
-                            b1.ToTable("journal_entry_lines");
+                            b1.ToTable("journal_entry_lines", (string)null);
 
                             b1.WithOwner()
                                 .HasForeignKey("JournalEntryLineId");
@@ -16649,7 +16649,7 @@ namespace ERP.Infrastructure.Persistence.Migrations
 
                             b1.HasKey("ItemId");
 
-                            b1.ToTable("items");
+                            b1.ToTable("items", (string)null);
 
                             b1.WithOwner()
                                 .HasForeignKey("ItemId");
@@ -16691,7 +16691,7 @@ namespace ERP.Infrastructure.Persistence.Migrations
 
                             b1.HasKey("ItemId");
 
-                            b1.ToTable("items");
+                            b1.ToTable("items", (string)null);
 
                             b1.WithOwner()
                                 .HasForeignKey("ItemId");
@@ -16734,7 +16734,7 @@ namespace ERP.Infrastructure.Persistence.Migrations
 
                             b1.HasKey("ItemId");
 
-                            b1.ToTable("items");
+                            b1.ToTable("items", (string)null);
 
                             b1.WithOwner()
                                 .HasForeignKey("ItemId");
@@ -16791,7 +16791,7 @@ namespace ERP.Infrastructure.Persistence.Migrations
 
                             b1.HasKey("ItemId");
 
-                            b1.ToTable("items");
+                            b1.ToTable("items", (string)null);
 
                             b1.WithOwner()
                                 .HasForeignKey("ItemId");

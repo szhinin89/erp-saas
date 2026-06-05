@@ -31,8 +31,9 @@ internal static class EnterpriseQueryFilterConfigurator
                 continue;
 
             var clrType = entityType.ClrType;
-            if (clrType == typeof(Subscriber))
-                continue;
+
+            // Subscriber ya no implementa ISubscriberScopedEntity (hereda de SystemAuditableEntity).
+            // No necesita special case — simplemente no entra en ninguna rama de filtro.
 
             if (typeof(ICompanyOperationalEntity).IsAssignableFrom(clrType))
             {
