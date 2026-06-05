@@ -1,4 +1,4 @@
-using MediatR;
+﻿using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using ERP.API.Contracts;
@@ -57,7 +57,7 @@ public sealed class StockTransfersController : ControllerBase
         return this.ToOkOrBadRequest(result, "OK");
     }
 
-    /// <summary>Retorna el detalle completo de una transferencia (con ítems).</summary>
+    /// <summary>Retorna el line completo de una transferencia (con ítems).</summary>
     [HttpGet("{id:guid}")]
     [Authorize(Policy = "perm:inventory.transfers.view")]
     [ProducesResponseType(typeof(ApiResponse<TransferDetailDto?>), StatusCodes.Status200OK)]

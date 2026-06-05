@@ -1,4 +1,4 @@
-using ERP.API.Attributes;
+﻿using ERP.API.Attributes;
 using ERP.API.Contracts;
 using ERP.API.Extensions;
 using ERP.Application.Sales.DTOs;
@@ -58,7 +58,7 @@ public sealed class InvoicesController : ControllerBase
 
     [HttpGet("stock")]
     [Authorize(Policy = "perm:ventas.stock.view")]
-    [ProducesResponseType(typeof(ApiResponse<StockDisponibleDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<AvailableStockDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> GetStock(CancellationToken ct = default)
     {

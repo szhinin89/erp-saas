@@ -1,0 +1,43 @@
+﻿using MediatR;
+using ERP.Application.Common;
+using ERP.Application.Modules.Purchasing.DTOs;
+
+namespace ERP.Application.Modules.Purchasing.UseCases.CreatePurchase;
+
+public enum PurchaseCreationMode { Xml = 1, Manual = 2 }
+
+/// <summary>Datos de una l�nea de line en modo Manual.</summary>
+public sealed record PurchaseLineInput(
+    string  Description,
+    string? ProductCode,
+    Guid?   ProductId,
+    decimal Quantity,
+    decimal UnitPrice,
+    decimal DiscountPct,
+    decimal VatPct);
+
+/// <summary>
+/// Distribuci�n de la cantidad de un line (<see cref="ItemIndex"/>) hacia una Warehouse.
+/// <see cref="ProductoId"/> opcional: si viene, enlaza inventario aunque la l�nea (p. ej. XML) no tenga producto.
+/// </summary>
+public sealed record WarehouseAllocationRequest(int ItemIndex, Guid    WarehouseId, decimal Quantity, Guid?     ProductId = null);
+
+/// <summary>Crea una salesBill de compra. <c>WarehouseAllocations</c> es opcional; si viene, la suma por �tem debe igualar la cantidad de cada line.</summary>
+[RequireFeature(SubscriptionFeatureCodes.Inventory)]
+public sealed record CreatePurchaseCommand(
+    PurchaseCreationMode Mode,
+
+    // -- XML --------------------------------------------------------------
+    byte[]? XmlContent,
+    string? XmlFileName,
+
+    // -- Manual -----------------------------------------------------------
+    Guid?     BusinessPartnerId,
+    string?   InvoiceNumber,
+    DateTime? InvoiceDate,
+    DateTime? DueDate,
+    string?   PaymentTerms,
+    string?   Notes,
+    IReadOnlyList<PurchaseLineInput>? Lines,
+    IReadOnlyList<WarehouseAllocationRequest>? WarehouseAllocations
+) : IRequest<Result<PurchBillDto>>, ICompanyScopedRequest;

@@ -1,4 +1,4 @@
-using MediatR;
+﻿using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using ERP.API.Contracts;
@@ -31,7 +31,7 @@ public sealed class StockController : ControllerBase
         [FromQuery(Name = "productoId")] Guid? productId = null,
         CancellationToken ct = default)
     {
-        var result = await _mediator.Send(new GetCurrentStockPorWarehouseQuery(warehouseId, productId), ct);
+        var result = await _mediator.Send(new GetCurrentStockByWarehouseQuery(warehouseId, productId), ct);
         return this.ToOkOrBadRequest(result, "OK", () => Array.Empty<CurrentStockListItemDto>());
     }
 }

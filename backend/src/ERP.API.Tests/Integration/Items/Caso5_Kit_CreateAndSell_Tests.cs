@@ -1,4 +1,4 @@
-using ERP.API.Tests.Support;
+﻿using ERP.API.Tests.Support;
 using ERP.Application.Items.UseCases.CreateItem;
 using ERP.Application.Kits.UseCases.AddKitLine;
 using ERP.Application.Kits.UseCases.CreateKit;
@@ -23,7 +23,7 @@ namespace ERP.API.Tests.Integration.Items;
 /// ✅ GetKitByItemIdQuery — completamente implementado
 /// ✅ Kit domain invariants (no-recursión, componentes únicos)
 /// ⚠️  Venta de kit con descuento de componentes (Sales integration) pendiente.
-///     Requiere: VentaAutorizadaEventHandler actualizado para desensamblar kit
+///     Requiere: SaleAuthorizedEventHandler actualizado para desensamblar kit
 ///     en componentes y crear StockMovements por cada componente.
 /// </summary>
 public sealed class Caso5_Kit_CreateAndSell_Tests
@@ -231,13 +231,13 @@ public sealed class Caso5_Kit_CreateAndSell_Tests
         kit.Value.Lines.Sum(l => l.Quantity).Should().Be(5m);
     }
 
-    // ── Test 5.6: Verificación pendiente (nota de integración futura) ─────
+    // ── Test 5.6: Verificación pendiente (note de integración futura) ─────
 
     [Fact]
     public async Task Kit_SaleIntegration_IsDocumented_AsPendingScope()
     {
         // This test documents the pending scope for Kit sale integration.
-        // PENDING: VentaAutorizadaEventHandler needs to:
+        // PENDING: SaleAuthorizedEventHandler needs to:
         //   1. Detect if sold item is ItemType.Kit
         //   2. Load Kit.Lines from IKitRepository
         //   3. For each KitLine: create StockMovement (SaleExit) for the component
@@ -247,7 +247,7 @@ public sealed class Caso5_Kit_CreateAndSell_Tests
         // This assertion is intentionally always true — it documents the scope.
         true.Should().BeTrue(
             "PENDING: Kit sale disassembly (component stock deduction) requires " +
-            "VentaAutorizadaEventHandler to be updated to use ItemId/VariantId " +
+            "SaleAuthorizedEventHandler to be updated to use ItemId/VariantId " +
             "and to detect Kit items. Tracked in project decisions.");
     }
 }

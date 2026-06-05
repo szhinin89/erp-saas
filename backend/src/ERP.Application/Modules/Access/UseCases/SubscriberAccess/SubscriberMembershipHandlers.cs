@@ -1,4 +1,4 @@
-using ERP.Application.Access.Caching;
+﻿using ERP.Application.Access.Caching;
 using ERP.Application.Common;
 using ERP.Application.Common.Interfaces;
 using MediatR;
@@ -29,7 +29,7 @@ public class GetSubscriberCompanyUserMembershipsHandler : IRequestHandler<GetSub
         var subscriberId = _subscriber.SubscriberId;
         var company_user_memberships = await _repo.GetCompanyUserMembershipsBySubscriberAsync(subscriberId, request.OnlyActive, ct);
 
-        // En este MVP, solo retornamos company_user_memberships. Los detalles del usuario se leen por Id (sin joins complejos).
+        // En este MVP, solo retornamos company_user_memberships. Los lines del usuario se leen por Id (sin joins complejos).
         // Para UX, hacemos lookup por email/nombre desde IdentityUsers.
         var users = new Dictionary<Guid, IdentityUser>();
         foreach (var m in company_user_memberships)

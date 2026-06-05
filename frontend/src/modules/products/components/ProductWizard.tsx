@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+﻿import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useFieldArray, useForm, type Resolver } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import type { Product } from '../../../types/product';
@@ -454,11 +454,11 @@ export function ProductWizard({
               </FieldWrap>
             </div>
 
-            <FieldWrap t={t} label={t('products.wizard.field.observations','Observaciones')} error={errors.observations?.message}>
+            <FieldWrap t={t} label={t('products.wizard.field.observations','notes')} error={errors.observations?.message}>
               <textarea
                 {...register('observations')}
                 className="zh-input prd-wiz-input prd-wiz-textarea"
-                placeholder="Observaciones adicionales (opcional)"
+                placeholder="notes adicionales (opcional)"
                 rows={2}
                 maxLength={500}
               />

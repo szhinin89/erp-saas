@@ -1,4 +1,4 @@
-using ERP.Application.Common.Config;
+﻿using ERP.Application.Common.Config;
 using ERP.Application.Inventory.DTOs;
 using ERP.Application.Inventory.UseCases.EnqueueKardexReport;
 using MediatR;
@@ -37,7 +37,7 @@ internal static class KardexAsyncHelper
         return new ObjectResult(new
         {
             jobId = result.Value!.JobId,
-            estado = result.Value.Status,
+            Status = result.Value.Status,
             mensaje = result.Value.Message,
         })
         { StatusCode = StatusCodes.Status202Accepted };

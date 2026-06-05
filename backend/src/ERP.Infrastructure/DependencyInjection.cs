@@ -146,7 +146,7 @@ public static class DependencyInjection
         services.AddScoped<ICurrentUser, CurrentUserService>();
         services.AddScoped<IAccountingRepository, AccountingRepository>();
         services.AddScoped<IAccountingSetupRepository, AccountingConfigurationRepository>();
-        services.AddScoped<ICuentaContableService, CuentaContableService>();
+        services.AddScoped<ILedgerAccountService, LedgerAccountService>();
         services.AddScoped<IProductRepository, ProductRepository>();
         services.AddScoped<IProductCatalogRepository, ProductCatalogRepository>();
 
@@ -196,7 +196,7 @@ public static class DependencyInjection
         services.AddScoped<IEstablishmentRepository, EstablishmentRepository>();
         services.AddScoped<IEmissionPointRepository, EmissionPointRepository>();
         services.AddScoped<IDocumentSequenceRepository, DocumentSequenceRepository>();
-        services.AddScoped<IXmlFacturaParser, SriFacturaParser>();
+        services.AddScoped<IXmlInvoiceParser, SriInvoiceParser>();
         services.AddScoped<ERP.Application.Common.Interfaces.ISriGlobalRateReader,
             ERP.Infrastructure.Services.SriGlobalRateReader>();
         services.AddScoped<IFileStorage, LocalFileStorage>();
@@ -216,14 +216,14 @@ public static class DependencyInjection
                 c.Timeout = TimeSpan.FromSeconds(60);
             });
             services.AddScoped<ERP.Infrastructure.Services.Sri.SriSoapClient>();
-            services.AddScoped<ISriFacturaElectronicaService, SriFacturaElectronicaRealService>();
+            services.AddScoped<ISriElectronicInvoiceService, SriElectronicInvoiceRealService>();
         }
         else
         {
-            services.AddScoped<ISriFacturaElectronicaService, SriFacturaElectronicaSimuladoService>();
+            services.AddScoped<ISriElectronicInvoiceService, SriElectronicInvoiceSimulatedService>();
         }
 
-        services.AddScoped<ISriComprobanteRetentionService, SriWithholdingSimulatedService>();
+        services.AddScoped<ISriWithholdingService, SriWithholdingSimulatedService>();
         services.AddScoped<IRideGeneratorService, ERP.Infrastructure.Services.Sri.RideGeneratorService>();
         services.AddScoped<IPurchBillRepository, PurchBillRepository>();
         services.AddScoped<IExpenseInvoiceRepository, ExpenseInvoiceRepository>();
@@ -232,7 +232,7 @@ public static class DependencyInjection
         services.AddScoped<IKardexReportRepository, KardexReportRepository>();
         services.AddScoped<IKardexDatabaseMaintenance, KardexDatabaseMaintenanceService>();
         services.AddScoped<IKardexMaterializedDailySummariesReader, KardexMaterializedDailySummariesReader>();
-        services.AddScoped<ICostoPromedioService, CostoPromedioService>();
+        services.AddScoped<IAverageCostService, AverageCostService>();
         services.AddScoped<KardexSnapshotService>();
         services.AddScoped<IKardexSnapshotCalculator>(sp => sp.GetRequiredService<KardexSnapshotService>());
         services.AddSingleton<KardexReportQueue>();
@@ -349,8 +349,8 @@ public static class DependencyInjection
         services.AddScoped<IDocumentRelationRepository, DocumentRelationRepository>();
         services.AddScoped<IInvoiceRepository, InvoiceRepository>();
         services.AddScoped<ISalesOriginalBillResolver, SalesOriginalBillResolver>();
-        services.AddScoped<ITirillaFacturaService, TirillaFacturaService>();
-        services.AddScoped<ICashRepository, CajaRepository>();
+        services.AddScoped<IReceiptPrintService, ReceiptPrintService>();
+        services.AddScoped<ICashRepository, CashRepository>();
         services.AddScoped<IStatementParser, BankStatementCsvParser>();
         services.AddScoped<ICarrierRepository, CarrierRepository>();
         services.AddScoped<IDefaultProfileSeeder, DefaultProfileSeeder>();

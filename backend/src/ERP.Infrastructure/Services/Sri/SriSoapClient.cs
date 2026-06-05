@@ -1,4 +1,4 @@
-using System.Text;
+﻿using System.Text;
 using System.Xml;
 using Microsoft.Extensions.Logging;
 
@@ -72,19 +72,19 @@ public sealed class SriSoapClient
             var response = await PostSoapAsync(endpointUrl, envelope, ct);
             var result   = ParseAutorizacionResponse(response);
 
-            if (result.Estado is "AUTORIZADO" or "NO_AUTORIZADO")
+            if (result.Status is "AUTORIZADO" or "NO_AUTORIZADO")
                 return result;
 
             // PENDIENTE o EN_PROCESO — esperar antes del siguiente intento
             if (attempt < maxAttempts)
             {
                 var delay = TimeSpan.FromSeconds(Math.Pow(2, attempt)); // 2s, 4s, 8s, 16s
-                _logger.LogDebug("[SRI] Estado: {Estado} — esperando {Delay}s", result.Estado, delay.TotalSeconds);
+                _logger.LogDebug("[SRI] Estado: {Estado} — esperando {Delay}s", result.Status, delay.TotalSeconds);
                 await Task.Delay(delay, ct);
             }
         }
 
-        return new SriAutorizacionResult { Estado = "TIMEOUT", ErrorMessage = "El SRI no respondió tras varios reintentos." };
+        return new SriAutorizacionResult { Status = "TIMEOUT", ErrorMessage = "El SRI no respondió tras varios reintentos." };
     }
 
     // ── Envelopes SOAP ────────────────────────────────────────────────────────
@@ -130,18 +130,18 @@ public sealed class SriSoapClient
 
     private static SriRecepcionResult ParseRecepcionResponse(string soap)
     {
-        var doc = LoadXml(soap);
-        var estado = NodeText(doc, "estado") ?? "DESCONOCIDO";
+        var doc    = LoadXml(soap);
+        var status = NodeText(doc, "estado") ?? "DESCONOCIDO";
 
-        var errores = doc.GetElementsByTagName("mensaje")
+        var errors = doc.GetElementsByTagName("mensaje")
             .OfType<XmlElement>()
             .Select(m => $"[{NodeText(m, "identificador")}] {NodeText(m, "mensaje")}: {NodeText(m, "informacionAdicional")}")
             .ToList();
 
         return new SriRecepcionResult
         {
-            Estado  = estado,
-            Errores = errores,
+            Status = status,
+            Errors = errors,
         };
     }
 
@@ -154,28 +154,28 @@ public sealed class SriSoapClient
             .FirstOrDefault();
 
         if (autorizacion is null)
-            return new SriAutorizacionResult { Estado = "SIN_RESPUESTA", ErrorMessage = "No se encontró el nodo <autorizacion>." };
+            return new SriAutorizacionResult { Status = "SIN_RESPUESTA", ErrorMessage = "No se encontró el nodo <autorizacion>." };
 
-        var estado   = NodeText(autorizacion, "estado")               ?? "DESCONOCIDO";
-        var numero   = NodeText(autorizacion, "numeroAutorizacion")   ?? "";
-        var fechaStr = NodeText(autorizacion, "fechaAutorizacion")    ?? "";
-        var xmlComp  = NodeText(autorizacion, "comprobante")          ?? "";
+        var status   = NodeText(autorizacion, "estado")               ?? "DESCONOCIDO";
+        var number   = NodeText(autorizacion, "numeroAutorizacion")   ?? "";
+        var dateStr  = NodeText(autorizacion, "fechaAutorizacion")    ?? "";
+        var xmlDoc   = NodeText(autorizacion, "comprobante")          ?? "";
 
-        DateTime.TryParse(fechaStr, out var fecha);
+        DateTime.TryParse(dateStr, out var authDate);
 
-        var mensajes = autorizacion.GetElementsByTagName("mensaje")
+        var messages = autorizacion.GetElementsByTagName("mensaje")
             .OfType<XmlElement>()
             .Select(m => $"[{NodeText(m, "identificador")}] {NodeText(m, "mensaje")}: {NodeText(m, "informacionAdicional")}")
             .ToList();
 
         return new SriAutorizacionResult
         {
-            Estado              = estado,
-            NumeroAutorizacion  = numero,
-            FechaAutorizacion   = fecha,
-            ComprobanteXml      = xmlComp,
-            Mensajes            = mensajes,
-            ErrorMessage        = estado != "AUTORIZADO" ? string.Join("; ", mensajes) : null,
+            Status              = status,
+            AuthorizationNumber = number,
+            AuthorizationDate   = authDate,
+            DocumentXml         = xmlDoc,
+            Messages            = messages,
+            ErrorMessage        = status != "AUTORIZADO" ? string.Join("; ", messages) : null,
         };
     }
 
@@ -214,18 +214,18 @@ public sealed class SriSoapClient
 
 public sealed class SriRecepcionResult
 {
-    public string       Estado  { get; init; } = "";
-    public List<string> Errores { get; init; } = new();
-    public bool         Recibida => Estado.Equals("RECIBIDA", StringComparison.OrdinalIgnoreCase);
+    public string       Status   { get; init; } = "";
+    public List<string> Errors   { get; init; } = new();
+    public bool         Received => Status.Equals("RECIBIDA", StringComparison.OrdinalIgnoreCase);
 }
 
 public sealed class SriAutorizacionResult
 {
-    public string       Estado             { get; init; } = "";
-    public string       NumeroAutorizacion { get; init; } = "";
-    public DateTime     FechaAutorizacion  { get; init; }
-    public string       ComprobanteXml     { get; init; } = "";
-    public List<string> Mensajes           { get; init; } = new();
-    public string?      ErrorMessage       { get; set;  }
-    public bool         Autorizado => Estado.Equals("AUTORIZADO", StringComparison.OrdinalIgnoreCase);
+    public string       Status              { get; init; } = "";
+    public string       AuthorizationNumber { get; init; } = "";
+    public DateTime     AuthorizationDate   { get; init; }
+    public string       DocumentXml         { get; init; } = "";
+    public List<string> Messages            { get; init; } = new();
+    public string?      ErrorMessage        { get; set;  }
+    public bool         Authorized => Status.Equals("AUTORIZADO", StringComparison.OrdinalIgnoreCase);
 }

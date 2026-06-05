@@ -1,4 +1,4 @@
-using ERP.Application.Modules.SriCatalogs.DTOs;
+﻿using ERP.Application.Modules.SriCatalogs.DTOs;
 using ERP.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -50,7 +50,7 @@ public sealed class SriCatalogsController : ControllerBase
                 .Select(x => new SriPaymentMethodDto(x.Code, x.Name, x.IsActive))
                 .ToListAsync(ct)));
 
-    /// <summary>Tipos de comprobante SRI (01=Factura, 04=NC, 07=Retención…).</summary>
+    /// <summary>Tipos de comprobante SRI (01=salesBill, 04=NC, 07=Retención…).</summary>
     [HttpGet("doc-types")]
     [ProducesResponseType(typeof(IReadOnlyList<SriDocTypeDto>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetDocTypes(CancellationToken ct)
@@ -142,7 +142,7 @@ public sealed class SriCatalogsController : ControllerBase
                 .Select(x => new SriTaxSupportDto(x.Code, x.Name, x.IsActive))
                 .ToListAsync(ct)));
 
-    /// <summary>Unidades de medida SRI para detalles de factura. Solo activas.</summary>
+    /// <summary>Unidades de medida SRI para lines de salesBill. Solo activas.</summary>
     [HttpGet("uom")]
     [ProducesResponseType(typeof(IReadOnlyList<SriUomDto>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetUom(CancellationToken ct)

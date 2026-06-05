@@ -1,9 +1,9 @@
-using ERP.Domain.Common;
+﻿using ERP.Domain.Common;
 
 namespace ERP.Domain.Modules.Expenses.Entities;
 
 /// <summary>
-/// Detalle del gasto. Comparte scope de suscriptor con <see cref="ExpenseInvoice"/>.
+/// line del gasto. Comparte scope de suscriptor con <see cref="ExpenseInvoice"/>.
 /// </summary>
 public class ExpenseDetail : ISubscriberScopedEntity
 {

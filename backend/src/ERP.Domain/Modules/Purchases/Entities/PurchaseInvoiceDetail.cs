@@ -1,6 +1,6 @@
-namespace ERP.Domain.Modules.Purchases.Entities;
+﻿namespace ERP.Domain.Modules.Purchases.Entities;
 
-/// <summary>Líneas de la factura de compra recibida.</summary>
+/// <summary>Líneas de la salesBill de compra recibida.</summary>
 public class PurchaseInvoiceDetail
 {
     public Guid    Id          { get; set; }

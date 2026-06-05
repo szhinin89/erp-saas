@@ -1,0 +1,271 @@
+﻿using FluentAssertions;
+using MediatR;
+using Microsoft.AspNetCore.Mvc;
+using ERP.API.Controllers;
+using ERP.API.Contracts;
+using ERP.API.Tests.Support;
+using ERP.Application.Common;
+using ERP.Application.Common.Interfaces;
+using ERP.Application.Sales.DTOs;
+using ERP.Application.Sales.UseCases.VoidInvoice;
+using ERP.Application.Sales.UseCases.CreateSale;
+using ERP.Application.Sales.UseCases.IssueElectronicInvoice;
+using ERP.Application.Sales.UseCases.ValidateSale;
+
+namespace ERP.API.Tests.Controller;
+
+/// <summary>
+/// Tests de contrato del controlador VentasController.
+/// Verifican que el controlador mapea Result&lt;T&gt; a los status codes correctos
+/// y que la estructura de ApiResponse&lt;T&gt; cumple el contrato de la API.
+/// No requieren base de datos ni servidor HTTP: usan StubMediator.
+/// </summary>
+public sealed class SalesInvoicesControllerContractTests
+{
+    // ── Crear ─────────────────────────────────────────────────────────────
+
+    [Fact]
+    public async Task Crear_WhenSuccess_Returns201WithId()
+    {
+        var SaleId = Guid.NewGuid();
+        var ctrl = CreateController(new StubMediator(_ => Result<Guid>.Success(SaleId)));
+
+        var result = await ctrl.Create(
+            new CreateSaleCommand(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), new List<SaleItemDto>()),
+            CancellationToken.None);
+
+        var obj = result.Should().BeOfType<ObjectResult>().Subject;
+        obj.StatusCode.Should().Be(201);
+
+        var payload = obj.Value.Should().BeOfType<ApiResponse<Guid>>().Subject;
+        payload.Success.Should().BeTrue();
+        payload.Message.Should().Be("Creado");
+        payload.ResponseObject.Should().Be(SaleId);
+    }
+
+    [Fact]
+    public async Task Crear_WhenStockInsuficiente_Returns400()
+    {
+        var ctrl = CreateController(
+            new StubMediator(_ => Result<Guid>.Failure("Stock insuficiente para 'Prod A'.")));
+
+        var result = await ctrl.Create(
+            new CreateSaleCommand(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), new List<SaleItemDto>()),
+            CancellationToken.None);
+
+        var bad = result.Should().BeOfType<BadRequestObjectResult>().Subject;
+        bad.StatusCode.Should().Be(400);
+
+        var payload = bad.Value.Should().BeOfType<ApiResponse<object>>().Subject;
+        payload.Success.Should().BeFalse();
+        payload.Message.Should().Contain("Stock insuficiente");
+    }
+
+    // ── Validar ───────────────────────────────────────────────────────────
+
+    [Fact]
+    public async Task Validar_WhenSuccess_Returns200()
+    {
+        var id   = Guid.NewGuid();
+        var ctrl = CreateController(new StubMediator(_ => Result<Guid>.Success(id)));
+
+        var result = await ctrl.Validate(id, CancellationToken.None);
+
+        var ok = result.Should().BeOfType<OkObjectResult>().Subject;
+        ok.StatusCode.Should().Be(200);
+        var payload = ok.Value.Should().BeOfType<ApiResponse<Guid>>().Subject;
+        payload.Success.Should().BeTrue();
+        payload.Message.Should().Be("Validado");
+    }
+
+    [Fact]
+    public async Task Validar_WhenNotBorrador_Returns400()
+    {
+        var ctrl = CreateController(
+            new StubMediator(_ => Result<Guid>.Failure("Solo se puede validar una salesBill en Borrador.")));
+
+        var result = await ctrl.Validate(Guid.NewGuid(), CancellationToken.None);
+
+        result.Should().BeOfType<BadRequestObjectResult>()
+              .Which.StatusCode.Should().Be(400);
+    }
+
+    // ── Emitir ────────────────────────────────────────────────────────────
+
+    [Fact]
+    public async Task Emitir_WhenSuccess_Returns200WithMessage()
+    {
+        var id   = Guid.NewGuid();
+        var ctrl = CreateController(new StubMediator(_ => Result<Guid>.Success(id)));
+
+        var result = await ctrl.Emit(id, CancellationToken.None);
+
+        var ok = result.Should().BeOfType<OkObjectResult>().Subject;
+        ok.Value.Should().BeOfType<ApiResponse<Guid>>()
+          .Which.Message.Should().Be("Emitido");
+    }
+
+    [Fact]
+    public async Task Emitir_WhenNotValidado_Returns400()
+    {
+        var ctrl = CreateController(
+            new StubMediator(_ => Result<Guid>.Failure("Solo se puede emitir una salesBill Validada.")));
+
+        var result = await ctrl.Emit(Guid.NewGuid(), CancellationToken.None);
+
+        result.Should().BeOfType<BadRequestObjectResult>();
+    }
+
+    // ── Anular ────────────────────────────────────────────────────────────
+
+    [Fact]
+    public async Task Anular_WhenSuccess_Returns200()
+    {
+        var id   = Guid.NewGuid();
+        var ctrl = CreateController(new StubMediator(_ => Result<Guid>.Success(id)));
+
+        var result = await ctrl.Void(id, CancellationToken.None);
+
+        var ok = result.Should().BeOfType<OkObjectResult>().Subject;
+        ok.Value.Should().BeOfType<ApiResponse<Guid>>()
+          .Which.Success.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task Anular_WhenAutorizado_Returns400()
+    {
+        var ctrl = CreateController(
+            new StubMediator(_ => Result<Guid>.Failure("No se puede anular una salesBill ya autorizada.")));
+
+        var result = await ctrl.Void(Guid.NewGuid(), CancellationToken.None);
+        result.Should().BeOfType<BadRequestObjectResult>();
+    }
+
+    // ── GetById ───────────────────────────────────────────────────────────
+
+    [Fact]
+    public async Task GetById_WhenFound_Returns200WithDetail()
+    {
+        var dto = new SalesBillDetailDto(
+            Guid.NewGuid(), Guid.NewGuid(), "Cliente Test",
+            Guid.NewGuid(), Guid.NewGuid(),
+            "01", "001", "001", "000000001", new string('0', 49),
+            DateTime.UtcNow, 100m, 15m, 115m,
+            "Autorizado", "AUTH001", DateTime.UtcNow,
+            null, null, null, null, DateTime.UtcNow,
+            new List<SalesDetailDto>());
+
+        var ctrl = CreateController(
+            new StubMediator(_ => Result<SalesBillDetailDto?>.Success(dto)));
+
+        var result = await ctrl.GetById(dto.Id, CancellationToken.None);
+
+        var ok = result.Should().BeOfType<OkObjectResult>().Subject;
+        ok.Value.Should().BeOfType<ApiResponse<SalesBillDetailDto?>>()
+          .Which.ResponseObject.Should().Be(dto);
+    }
+
+    [Fact]
+    public async Task GetById_WhenNotFound_Returns200WithNullPayload()
+    {
+        // El patrón de la API retorna Success(null) para "no encontrado" → 200 con payload nulo.
+        // Para un 404 real, el handler debería devolver Result.Failure.
+        var ctrl = CreateController(
+            new StubMediator(_ => Result<SalesBillDetailDto?>.Success(null)));
+
+        var result = await ctrl.GetById(Guid.NewGuid(), CancellationToken.None);
+
+        var ok = result.Should().BeOfType<OkObjectResult>().Subject;
+        ok.StatusCode.Should().Be(200);
+        var payload = ok.Value.Should().BeOfType<ApiResponse<SalesBillDetailDto?>>().Subject;
+        payload.Success.Should().BeTrue();
+        payload.ResponseObject.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task GetById_WhenRepositoryFails_Returns404()
+    {
+        var ctrl = CreateController(
+            new StubMediator(_ => Result<SalesBillDetailDto?>.Failure("No encontrado.")));
+
+        var result = await ctrl.GetById(Guid.NewGuid(), CancellationToken.None);
+        result.Should().BeOfType<NotFoundObjectResult>().Which.StatusCode.Should().Be(404);
+    }
+
+    [Fact]
+    public async Task Imprimir_WhenSuccess_ReturnsHtmlContent()
+    {
+        var ctrl = CreateDocumentsController(new StubReceiptPrintService());
+
+        var result = await ctrl.Print(Guid.NewGuid(), CancellationToken.None);
+
+        var content = result.Should().BeOfType<ContentResult>().Subject;
+        content.ContentType.Should().Contain("text/html");
+        content.Content.Should().Contain("<html>");
+    }
+
+    [Fact]
+    public async Task Imprimir_WhenNotFound_Returns404()
+    {
+        var service = new StubReceiptPrintService(failNotFound: true);
+        var ctrl = CreateDocumentsController(service);
+
+        var result = await ctrl.Print(Guid.NewGuid(), CancellationToken.None);
+        result.Should().BeOfType<NotFoundResult>();
+    }
+
+    // ── GetStock ──────────────────────────────────────────────────────────
+
+    [Fact]
+    public async Task GetStock_SinParametros_Retorna400()
+    {
+        // HttpContext simulado con query vacía requeriría MockHttpContext.
+        // En su lugar verificamos que la lógica de parseo rechaza GUIDs vacíos.
+        // Este test valida el contrato sin servidor HTTP.
+        var ctrl = CreateController(new StubMediator(_ => throw new InvalidOperationException("no debería llegar")));
+
+        // Sin HttpContext real, GetStock lanza NullRef al leer Request.Query
+        // Verificamos que la línea de validación existe en el controlador
+        // mediante tests HTTP en SalesInvoicesHttpTests.
+        // (ver SalesInvoicesHttpTests.Ventas_GetStock_SinParametros_Retorna400)
+        await Task.CompletedTask; // placeholder — la cobertura real está en SalesInvoicesHttpTests
+    }
+    private static InvoicesController CreateController(IMediator mediator)
+        => new(mediator);
+
+    private static InvoiceDocumentsController CreateDocumentsController(
+        IReceiptPrintService? service = null,
+        IRideGeneratorService? ride = null)
+        => new(
+            service ?? new StubReceiptPrintService(),
+            ride ?? new StubRideGeneratorService());
+
+    private sealed class StubRideGeneratorService : IRideGeneratorService
+    {
+        public Task<byte[]> GenerateFacturaPdfAsync(Guid SaleId, CancellationToken ct = default)
+            => Task.FromResult(Array.Empty<byte>());
+
+        public Task<byte[]> GenerateNotaPdfAsync(Guid NoteId, CancellationToken ct = default)
+            => Task.FromResult(Array.Empty<byte>());
+    }
+
+    private sealed class StubReceiptPrintService : IReceiptPrintService
+    {
+        private readonly bool _failNotFound;
+
+        public StubReceiptPrintService(bool failNotFound = false)
+        {
+            _failNotFound = failNotFound;
+        }
+
+        public Task<string> GenerateInvoiceHtmlAsync(Guid SaleId, CancellationToken ct = default)
+        {
+            if (_failNotFound)
+                throw new KeyNotFoundException("salesBill no encontrada o no autorizada.");
+
+            return Task.FromResult("<html><body>Test</body></html>");
+        }
+    }
+}
+
+

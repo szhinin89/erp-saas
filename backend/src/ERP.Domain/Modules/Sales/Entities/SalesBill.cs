@@ -37,7 +37,7 @@ public sealed class SalesBill : AuditableEntity, ISubscriberScopedEntity, ICompa
     public string    PaymentMethodCode { get; private set; } = "01";
     /// <summary>Plazo en dÃ­as (0 = contado).</summary>
     public short     PaymentDays       { get; private set; }
-    /// <summary>Observaciones libres â€” se emiten como &lt;campoAdicional&gt; en el XML SRI.</summary>
+    /// <summary>notes libres â€” se emiten como &lt;campoAdicional&gt; en el XML SRI.</summary>
     public string?   Notes             { get; private set; }
     public string    Status            { get; private set; } = "Borrador";
     public string?   XmlSignedPath     { get; private set; }
@@ -171,7 +171,7 @@ public sealed class SalesBill : AuditableEntity, ISubscriberScopedEntity, ICompa
     public void Void(Guid userId)
     {
         if (Status is "Autorizado" or "Anulado")
-            throw new InvalidOperationException($"No se puede anular una factura en estado {Status}.");
+            throw new InvalidOperationException($"No se puede anular una salesBill en estado {Status}.");
         Status = "Anulado";
         SetUpdated(userId);
     }

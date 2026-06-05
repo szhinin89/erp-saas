@@ -1,4 +1,4 @@
-using ERP.Domain.MasterData.Entities;
+﻿using ERP.Domain.MasterData.Entities;
 using ERP.Domain.MasterData.Enums;
 using ERP.Domain.MasterData.ValueObjects;
 using Microsoft.EntityFrameworkCore;
@@ -92,7 +92,7 @@ public sealed class BusinessPartnerConfiguration : IEntityTypeConfiguration<Busi
         builder.HasIndex(x => new { x.SubscriberId, x.IsActive })
                .HasDatabaseName("ix_mbp_subscriber_active");
 
-        // Índice único incondicional — ver nota en comentario de clase.
+        // Índice único incondicional — ver note en comentario de clase.
         // Migración lo crea con SQL raw:
         //   CREATE UNIQUE INDEX uq_mbp_identification
         //   ON master_business_partners (subscriber_id, identification_type, identification_number);

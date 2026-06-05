@@ -1,4 +1,4 @@
-using FluentAssertions;
+﻿using FluentAssertions;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -29,7 +29,7 @@ public sealed class SalesCommercialPipelineEndToEndTests
 
         var seed = await IntegrationSeedData.SeedAsync(
             db, factory.MutableSubscriber, factory.MutableUser, CancellationToken.None, factory.MutableCompany);
-        await VentasEndToEndHelpers.SeedVentasPrerequisitesAsync(db, seed, stockInicial: 10m, ct: CancellationToken.None);
+        await SalesEndToEndHelpers.SeedVentasPrerequisitesAsync(db, seed, stockInicial: 10m, ct: CancellationToken.None);
 
         var clienteId = db.BusinessPartners.First(c => c.SubscriberId == seed.SubscriberId).Id;
         var validUntil = DateOnly.FromDateTime(DateTime.UtcNow.AddDays(30));
@@ -82,7 +82,7 @@ public sealed class SalesCommercialPipelineEndToEndTests
         var order = await db.SalesOrders.AsNoTracking().FirstAsync(o => o.PublicId == orderPublicId);
         order.Status.Should().Be(SalesOrder.Statuses.Invoiced);
 
-        var invoice = VentasEndToEndHelpers.RequireInvoice(db, invoiceResult.Value);
+        var invoice = SalesEndToEndHelpers.RequireInvoice(db, invoiceResult.Value);
         invoice.Status.Should().Be(Invoice.Statuses.Draft);
 
         var quoteToOrder = await db.DocumentRelations.AsNoTracking()

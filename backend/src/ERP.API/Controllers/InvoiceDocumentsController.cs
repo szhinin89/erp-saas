@@ -1,4 +1,4 @@
-using ERP.API.Attributes;
+﻿using ERP.API.Attributes;
 using ERP.Application.Common.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -12,14 +12,14 @@ namespace ERP.API.Controllers;
 [Authorize]
 public sealed class InvoiceDocumentsController : ControllerBase
 {
-    private readonly ITirillaFacturaService _tirillaFacturaService;
+    private readonly IReceiptPrintService _tirillaFacturaService;
     private readonly IRideGeneratorService _rideGenerator;
 
     public InvoiceDocumentsController(
-        ITirillaFacturaService tirillaFacturaService,
+        IReceiptPrintService ReceiptPrintService,
         IRideGeneratorService rideGenerator)
     {
-        _tirillaFacturaService = tirillaFacturaService;
+        _tirillaFacturaService = ReceiptPrintService;
         _rideGenerator = rideGenerator;
     }
 
@@ -32,7 +32,7 @@ public sealed class InvoiceDocumentsController : ControllerBase
     {
         try
         {
-            var html = await _tirillaFacturaService.GenerarHtmlFacturaAsync(id, ct);
+            var html = await _tirillaFacturaService.GenerateInvoiceHtmlAsync(id, ct);
             return Content(html, "text/html; charset=utf-8");
         }
         catch (KeyNotFoundException)

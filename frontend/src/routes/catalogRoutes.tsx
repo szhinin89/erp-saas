@@ -1,4 +1,4 @@
-import { Route, Navigate } from 'react-router-dom';
+﻿import { Route, Navigate } from 'react-router-dom';
 import { lazyNamedPage } from './lazyPage';
 
 // ── Items module ────────────────────────────────────────────────────────────
@@ -27,47 +27,47 @@ const BrandsPage = lazyNamedPage(() => import('../modules/catalog/pages/BrandsPa
 const ProductTypesPage = lazyNamedPage(() => import('../modules/catalog/pages/ProductTypesPage'), 'ProductTypesPage');
 const UnitsPage = lazyNamedPage(() => import('../modules/catalog/pages/UnitsPage'), 'UnitsPage');
 const TransferenciasListPage = lazyNamedPage(
-  () => import('../modules/inventario/transferencias/pages/TransferenciasListPage'),
+  () => import(../modules/inventory/transferencias/pages/TransfersListPage'),
   'TransferenciasListPage',
 );
 const CrearTransferenciaPage = lazyNamedPage(
-  () => import('../modules/inventario/transferencias/pages/CrearTransferenciaPage'),
+  () => import(../modules/inventory/transferencias/pages/CreateTransferPage'),
   'CrearTransferenciaPage',
 );
 const TransferenciaDetailPage = lazyNamedPage(
-  () => import('../modules/inventario/transferencias/pages/TransferenciaDetailPage'),
+  () => import(../modules/inventory/transferencias/pages/TransferDetailPage'),
   'TransferenciaDetailPage',
 );
 const AjustesListPage = lazyNamedPage(
-  () => import('../modules/inventario/ajustes/pages/AjustesListPage'),
+  () => import(../modules/inventory/ajustes/pages/AdjustmentsListPage'),
   'AjustesListPage',
 );
 const CrearAjustePage = lazyNamedPage(
-  () => import('../modules/inventario/ajustes/pages/CrearAjustePage'),
+  () => import(../modules/inventory/ajustes/pages/CreateAdjustmentPage'),
   'CrearAjustePage',
 );
 const AjusteDetailPage = lazyNamedPage(
-  () => import('../modules/inventario/ajustes/pages/AjusteDetailPage'),
+  () => import(../modules/inventory/ajustes/pages/AdjustmentDetailPage'),
   'AjusteDetailPage',
 );
 const OrdenesCompraListPage = lazyNamedPage(
-  () => import('../modules/compras/ordenes/pages/OrdenesCompraListPage'),
+  () => import(../modules/purchasing/ordenes/pages/PurchaseOrdersListPage'),
   'OrdenesCompraListPage',
 );
 const CrearOrdenCompraPage = lazyNamedPage(
-  () => import('../modules/compras/ordenes/pages/CrearOrdenCompraPage'),
+  () => import(../modules/purchasing/ordenes/pages/CreatePurchaseOrderPage'),
   'CrearOrdenCompraPage',
 );
 const OrdenCompraDetailPage = lazyNamedPage(
-  () => import('../modules/compras/ordenes/pages/OrdenCompraDetailPage'),
+  () => import(../modules/purchasing/ordenes/pages/PurchaseOrderDetailPage'),
   'OrdenCompraDetailPage',
 );
 const StockPage = lazyNamedPage(
-  () => import('../modules/inventario/stock/pages/StockPage'),
+  () => import('../modules/inventory/stock/pages/StockPage'),
   'StockPage',
 );
 const KardexPage = lazyNamedPage(
-  () => import('../modules/inventario/kardex/pages/KardexPage'),
+  () => import('../modules/inventory/kardex/pages/KardexPage'),
   'KardexPage',
 );
 const CashBankPage = lazyNamedPage(
@@ -83,29 +83,29 @@ const ActivityPage = lazyNamedPage(
   'ActivityPage',
 );
 const WithholdingReceivedPage = lazyNamedPage(
-  () => import('../modules/ventas/pages/WithholdingReceivedPage'),
+  () => import('../modules/sales/pages/WithholdingReceivedPage'),
   'WithholdingReceivedPage',
 );
 const WithholdingReceivedNewPage = lazyNamedPage(
-  () => import('../modules/ventas/pages/WithholdingReceivedNewPage'),
+  () => import('../modules/sales/pages/WithholdingReceivedNewPage'),
   'WithholdingReceivedNewPage',
 );
 const PurchaseCreditNotesPage = lazyNamedPage(
-  () => import('../modules/compras/credit-notes/pages/PurchaseCreditNotesPage'),
+  () => import('../modules/purchasing/credit-notes/pages/PurchaseCreditNotesPage'),
   'PurchaseCreditNotesPage',
 );
 const WithholdingIssuedPage = lazyNamedPage(
-  () => import('../modules/compras/withholding-issued/pages/WithholdingIssuedPage'),
+  () => import('../modules/purchasing/withholding-issued/pages/WithholdingIssuedPage'),
   'WithholdingIssuedPage',
 );
-const BodegasPage = lazyNamedPage(() => import('../modules/inventario/warehouses/pages/BodegasPage'), 'BodegasPage');
+const BodegasPage = lazyNamedPage(() => import(../modules/inventory/warehouses/pages/WarehousesPage'), 'BodegasPage');
 const CarriersPage = lazyNamedPage(
   () => import('../modules/logistica/transportistas/pages/CarriersPage'),
   'CarriersPage',
 );
-const CreditNotesPage = lazyNamedPage(() => import('../modules/ventas/pages/CreditNotesPage'), 'CreditNotesPage');
+const CreditNotesPage = lazyNamedPage(() => import('../modules/sales/pages/CreditNotesPage'), 'CreditNotesPage');
 const CreateCreditNotePage = lazyNamedPage(
-  () => import('../modules/ventas/pages/CreateCreditNotePage'),
+  () => import('../modules/sales/pages/CreateCreditNotePage'),
   'CreateCreditNotePage',
 );
 

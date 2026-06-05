@@ -1,4 +1,4 @@
-using System.Text.Json;
+﻿using System.Text.Json;
 using ERP.API.Contracts;
 using ERP.API.Contracts.Inventory;
 using ERP.API.Extensions;
@@ -61,7 +61,7 @@ public sealed class KardexJobsController : ControllerBase
             return Accepted(new
             {
                 jobId = reporte.Id,
-                estado = reporte.Status,
+                Status = reporte.Status,
                 mensaje = "El reporte aún está siendo procesado. Consulte nuevamente en unos segundos.",
             });
         }

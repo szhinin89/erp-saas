@@ -1,4 +1,4 @@
-using MediatR;
+﻿using MediatR;
 using ERP.Application.Common;
 
 namespace ERP.Application.Inventory.UseCases.RecalculateSnapshots;
@@ -9,7 +9,7 @@ namespace ERP.Application.Inventory.UseCases.RecalculateSnapshots;
 /// Si no se proporciona <c>Hasta</c>, calcula hasta ayer.
 /// Retorna el n�mero de snapshots generados o actualizados.
 ///
-/// Nota operativa: este comando debe ejecutarse antes de activar
+/// note operativa: este comando debe ejecutarse antes de activar
 /// <c>UseScalableMode=true</c> en producci�n para preparar los saldos peri�dicos.
 /// </summary>
 public sealed record RecalculateSnapshotsCommand(

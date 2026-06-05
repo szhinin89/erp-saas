@@ -1,4 +1,4 @@
-using ERP.Domain.MasterData.Entities;
+﻿using ERP.Domain.MasterData.Entities;
 using ERP.Domain.MasterData.Enums;
 using ERP.Domain.MasterData.ValueObjects;
 using CustomerRoleConfig = ERP.Domain.MasterData.ValueObjects.CustomerRoleConfig;
@@ -34,7 +34,7 @@ public sealed record BusinessPartnerSummaryDto(
         bp.CreatedAt);
 }
 
-// ── Detalle completo — incluye roles con sus configs ─────────────────────────
+// ── line completo — incluye roles con sus configs ─────────────────────────
 
 public sealed record BusinessPartnerDetailDto(
     Guid    Id,

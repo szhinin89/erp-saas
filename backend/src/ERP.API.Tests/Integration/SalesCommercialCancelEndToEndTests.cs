@@ -1,4 +1,4 @@
-using FluentAssertions;
+﻿using FluentAssertions;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -25,7 +25,7 @@ public sealed class SalesCommercialCancelEndToEndTests
 
         var seed = await IntegrationSeedData.SeedAsync(
             db, factory.MutableSubscriber, factory.MutableUser, CancellationToken.None, factory.MutableCompany);
-        await VentasEndToEndHelpers.SeedVentasPrerequisitesAsync(db, seed, stockInicial: 10m, ct: CancellationToken.None);
+        await SalesEndToEndHelpers.SeedVentasPrerequisitesAsync(db, seed, stockInicial: 10m, ct: CancellationToken.None);
 
         var clienteId = db.BusinessPartners.First(c => c.SubscriberId == seed.SubscriberId).Id;
         var validUntil = DateOnly.FromDateTime(DateTime.UtcNow.AddDays(30));
@@ -62,7 +62,7 @@ public sealed class SalesCommercialCancelEndToEndTests
 
         var seed = await IntegrationSeedData.SeedAsync(
             db, factory.MutableSubscriber, factory.MutableUser, CancellationToken.None, factory.MutableCompany);
-        await VentasEndToEndHelpers.SeedVentasPrerequisitesAsync(db, seed, stockInicial: 10m, ct: CancellationToken.None);
+        await SalesEndToEndHelpers.SeedVentasPrerequisitesAsync(db, seed, stockInicial: 10m, ct: CancellationToken.None);
 
         var clienteId = db.BusinessPartners.First(c => c.SubscriberId == seed.SubscriberId).Id;
         var requiredDate = DateOnly.FromDateTime(DateTime.UtcNow.AddDays(7));

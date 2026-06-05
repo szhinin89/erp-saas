@@ -1,4 +1,4 @@
-import type { UseFormReturn } from 'react-hook-form';
+﻿import type { UseFormReturn } from 'react-hook-form';
 import { ZHField, ZHFormSection, ZHGrid } from '../../../../components/zh/ZHForm';
 import type { CreateItemFormValues } from '../../schemas/createItemSchema';
 import type { AttributeGroupDto } from '../../../../types/items';
@@ -36,7 +36,7 @@ export function GeneralTab({ form, t, disabled, isEditMode, sriUomOptions, categ
         <ZHField label={t('items.form.description', 'Descripción *')} required fieldError={fe(errors.description?.message)}>
           <input {...register('description')} placeholder="Descripción completa del ítem" disabled={disabled} />
         </ZHField>
-        <ZHField label={t('items.form.observations', 'Observaciones')}>
+        <ZHField label={t('items.form.observations', 'notes')}>
           <textarea {...register('observations')} rows={2} disabled={disabled} />
         </ZHField>
       </ZHFormSection>

@@ -1,4 +1,4 @@
-namespace ERP.API.Contracts.Cash;
+﻿namespace ERP.API.Contracts.Cash;
 
 public sealed class ImportStatementForm
 {
@@ -18,7 +18,7 @@ public sealed record CreateBankAccountRequest(
     decimal InitialBalance,
     Guid? LedgerAccountId);
 
-public sealed record ConciliarRequest(Guid JournalEntryId);
+public sealed record ReconcileRequest(Guid JournalEntryId);
 
 public sealed record CreatePettyCashRequest(
     string Name,

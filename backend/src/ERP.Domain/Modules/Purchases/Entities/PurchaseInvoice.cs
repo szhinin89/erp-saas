@@ -1,9 +1,9 @@
-using ERP.Domain.Modules.SriCatalogs.Entities;
+﻿using ERP.Domain.Modules.SriCatalogs.Entities;
 
 namespace ERP.Domain.Modules.Purchases.Entities;
 
 /// <summary>
-/// Factura RECIBIDA de proveedor. La empresa NO la emite — la recibe.
+/// salesBill RECIBIDA de proveedor. La empresa NO la emite — la recibe.
 /// Por eso NO extiende ElectronicDoc (que es solo para comprobantes emitidos).
 /// </summary>
 public class PurchaseInvoice
@@ -11,7 +11,7 @@ public class PurchaseInvoice
     public Guid     Id              { get; set; }
     public Guid     CompanyId       { get; set; }
     public Guid     BusinessPartnerId { get; set; }
-    /// <summary>Número de factura del proveedor: "001-001-000000123".</summary>
+    /// <summary>Número de salesBill del proveedor: "001-001-000000123".</summary>
     public string   InvoiceNumber   { get; set; } = null!;
     /// <summary>Clave de acceso SRI (49 dígitos) si la recibimos electrónicamente.</summary>
     public string?  AccessKey       { get; set; }
@@ -23,7 +23,7 @@ public class PurchaseInvoice
     public decimal  Subtotal        { get; set; }
     public decimal  VatTotal        { get; set; }
     public decimal  Total           { get; set; }
-    /// <summary>Total de notas de crédito del proveedor aplicadas a esta factura.</summary>
+    /// <summary>Total de notas de crédito del proveedor aplicadas a esta salesBill.</summary>
     public decimal  NotesApplied    { get; set; }
     // net_payable = Total - NotesApplied (calculado en la app, no columna generada)
     public string?  PaymentTerms    { get; set; }

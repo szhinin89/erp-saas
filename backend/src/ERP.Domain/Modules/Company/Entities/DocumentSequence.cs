@@ -11,7 +11,7 @@ public sealed class DocumentSequence : BaseEntity, ICompanyScopedEntity
 {
     public Guid     CompanyId       { get; private set; }
     public Guid     EmissionPointId { get; private set; }
-    /// <summary>CÃ³digo de tipo documental SRI: "01" Factura, "04" NC, "05" ND, "07" RetenciÃ³n.</summary>
+    /// <summary>CÃ³digo de tipo documental SRI: "01" salesBill, "04" NC, "05" ND, "07" RetenciÃ³n.</summary>
     public string   DocTypeCode     { get; private set; } = null!;
     public int      CurrentSeq      { get; private set; } = 0;
     public DateTime UpdatedAt       { get; private set; }

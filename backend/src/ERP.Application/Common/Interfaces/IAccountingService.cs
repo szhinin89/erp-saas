@@ -1,10 +1,10 @@
-using ERP.Application.Common;
+﻿using ERP.Application.Common;
 
 namespace ERP.Application.Common.Interfaces;
 
 public interface IAccountingService
 {
-    Task<Result<Guid>> CrearAsientoCompraAsync(
+    Task<Result<Guid>> CreatePurchaseJournalEntryAsync(
         Guid     purchBillId,
         string   reference,
         DateTime date,
@@ -14,7 +14,7 @@ public interface IAccountingService
         string   description,
         CancellationToken ct);
 
-    Task<Result<Guid>> CrearAsientoVentaAsync(
+    Task<Result<Guid>> CreateSalesJournalEntryAsync(
         Guid     salesBillId,
         string   reference,
         DateTime date,
@@ -24,7 +24,7 @@ public interface IAccountingService
         string   description,
         CancellationToken ct);
 
-    Task<Result<Guid>> CrearAsientoGastoAsync(
+    Task<Result<Guid>> CreateExpenseJournalEntryAsync(
         Guid     expenseId,
         string   category,
         string   reference,
@@ -35,7 +35,7 @@ public interface IAccountingService
         string   description,
         CancellationToken ct);
 
-    Task<Result<Guid>> CrearAsientoNotaCreditoVentaAsync(
+    Task<Result<Guid>> CreateSalesCreditNoteJournalEntryAsync(
         Guid     noteId,
         string   reference,
         DateTime date,
@@ -45,7 +45,7 @@ public interface IAccountingService
         string   description,
         CancellationToken ct);
 
-    Task<Result<Guid>> CrearAsientoNotaDebitoVentaAsync(
+    Task<Result<Guid>> CreateSalesDebitNoteJournalEntryAsync(
         Guid     noteId,
         string   reference,
         DateTime date,
@@ -55,7 +55,7 @@ public interface IAccountingService
         string   description,
         CancellationToken ct);
 
-    Task<Result<Guid>> CrearAsientoRetencionEmitidaAsync(
+    Task<Result<Guid>> CreateIssuedWithholdingJournalEntryAsync(
         Guid     retentionId,
         string   reference,
         DateTime date,
@@ -63,7 +63,7 @@ public interface IAccountingService
         string   description,
         CancellationToken ct);
 
-    Task<Result<Guid>> CrearAsientoRetencionRecibidaAsync(
+    Task<Result<Guid>> CreateReceivedWithholdingJournalEntryAsync(
         Guid     retentionId,
         string   reference,
         DateTime date,
@@ -71,7 +71,7 @@ public interface IAccountingService
         string   description,
         CancellationToken ct);
 
-    Task<Result<Guid>> CrearAsientoNotaCreditoCompraProveedorAsync(
+    Task<Result<Guid>> CreatePurchaseSupplierCreditNoteJournalEntryAsync(
         Guid     noteId,
         string   reference,
         DateTime date,
@@ -81,7 +81,7 @@ public interface IAccountingService
         string   description,
         CancellationToken ct);
 
-    Task<Result<Guid>> CrearAsientoNotaDebitoCompraProveedorAsync(
+    Task<Result<Guid>> CreatePurchaseSupplierDebitNoteJournalEntryAsync(
         Guid     noteId,
         string   reference,
         DateTime date,
@@ -91,7 +91,7 @@ public interface IAccountingService
         string   description,
         CancellationToken ct);
 
-    Task<Result<Guid>> CrearAsientoNotaCreditoGastoProveedorAsync(
+    Task<Result<Guid>> CreateExpenseSupplierCreditNoteJournalEntryAsync(
         Guid     noteId,
         string   reference,
         DateTime date,
@@ -100,7 +100,7 @@ public interface IAccountingService
         string   description,
         CancellationToken ct);
 
-    Task<Result<Guid>> CrearAsientoNotaDebitoGastoProveedorAsync(
+    Task<Result<Guid>> CreateExpenseSupplierDebitNoteJournalEntryAsync(
         Guid     noteId,
         string   reference,
         DateTime date,

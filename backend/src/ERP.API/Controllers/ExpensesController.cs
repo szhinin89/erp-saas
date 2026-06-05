@@ -1,4 +1,4 @@
-using ERP.API.Attributes;
+﻿using ERP.API.Attributes;
 using ERP.API.Contracts;
 using ERP.API.Contracts.Expenses;
 using ERP.API.Extensions;
@@ -32,17 +32,17 @@ public sealed class ExpensesController : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<IReadOnlyList<ExpenseInvoiceDto>>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetAll(CancellationToken ct = default)
     {
-        ExpenseStatus? estado = null;
+        ExpenseStatus? Status = null;
         if (Request.Query.TryGetValue("estado", out var ev) &&
             Enum.TryParse<ExpenseStatus>(ev, out var ep))
-            estado = ep;
+            Status = ep;
 
         var proveedorId = ListQueryParameters.ParseOptionalGuid(Request.Query, "proveedorId");
         var (desde, hasta) = ListQueryParameters.ParseDateTimeRange(Request.Query);
         var search = CatalogQueryParameters.ParseSearch(Request.Query);
 
         var result = await _mediator.Send(
-            new GetExpensesQuery(estado, proveedorId, desde, hasta, search), ct);
+            new GetExpensesQuery(Status, proveedorId, desde, hasta, search), ct);
         return this.ToOkOrBadRequest(result, "OK", () => Array.Empty<ExpenseInvoiceDto>());
     }
 
@@ -63,7 +63,7 @@ public sealed class ExpensesController : ControllerBase
         [FromBody] CreateExpenseCommand command,
         CancellationToken ct = default)
     {
-        var result = await _mediator.Send(command with { Modo = ExpenseCreationMode.Manual }, ct);
+        var result = await _mediator.Send(command with { Mode = ExpenseCreationMode.Manual }, ct);
         return this.ToCreatedOrBadRequest(result, "Creado");
     }
 
@@ -74,8 +74,8 @@ public sealed class ExpensesController : ControllerBase
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> CreateFromXml(
         IFormFile xmlFile,
-        [FromForm] string categoriaGasto,
-        [FromForm] string? observaciones,
+        [FromForm] string expenseCategory,
+        [FromForm] string? notes,
         CancellationToken ct = default)
     {
         if (xmlFile is null || xmlFile.Length == 0)
@@ -86,17 +86,17 @@ public sealed class ExpensesController : ControllerBase
 
         var result = await _mediator.Send(
             new CreateExpenseCommand(
-                Modo: ExpenseCreationMode.Xml,
+                Mode: ExpenseCreationMode.Xml,
                 XmlContent: ms.ToArray(),
                 XmlFileName: xmlFile.FileName,
                 BusinessPartnerId: null,
                 IssueDate: null,
                 Concept: null,
-                Category: categoriaGasto,
+                Category: expenseCategory,
                 Subtotal: null,
                 VatTotal: null,
                 Total: null,
-                Notes: observaciones),
+                Notes: notes),
             ct);
         return this.ToCreatedOrBadRequest(result, "Creado");
     }

@@ -1,4 +1,4 @@
-using System.Net;
+﻿using System.Net;
 using System.Text.Json;
 using FluentValidation;
 using ERP.Application.Common.Exceptions;
@@ -35,7 +35,7 @@ public class ExceptionMiddleware
         }
         catch (Exception ex)
         {
-            // Logueamos el detalle completo internamente; el cliente recibe solo un mensaje seguro.
+            // Logueamos el line completo internamente; el cliente recibe solo un mensaje seguro.
             _logger.LogError(ex, "Error no controlado en {Method} {Path}",
                 context.Request.Method, context.Request.Path);
 
@@ -57,7 +57,7 @@ public class ExceptionMiddleware
 
         // Mensajes de ArgumentException / InvalidOperationException suelen ser textos de validación
         // pensados para el usuario (dominio y aplicación). Mostrarlos mejora la claridad en la UI;
-        // el detalle técnico sigue solo en logs.
+        // el line técnico sigue solo en logs.
         var validationErrors = exception is ValidationException validationException
             ? validationException.Errors
                 .Where(e => e is not null)
@@ -92,7 +92,7 @@ public class ExceptionMiddleware
             SriCommunicationException sri =>
                 (HttpStatusCode.BadGateway,
                  string.IsNullOrWhiteSpace(sri.Message)
-                     ? "Error de comunicación con el SRI. La factura quedó en estado ErrorEnvio para reintentar."
+                     ? "Error de comunicación con el SRI. La salesBill quedó en estado ErrorEnvio para reintentar."
                      : $"Error SRI: {sri.Message.Trim()}"),
             FeatureNotEntitledException feat =>
                 (HttpStatusCode.Forbidden,

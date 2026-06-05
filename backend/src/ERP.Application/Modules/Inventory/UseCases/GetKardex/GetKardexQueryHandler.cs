@@ -1,4 +1,4 @@
-using MediatR;
+﻿using MediatR;
 using ERP.Application.Common;
 using ERP.Application.Common.Interfaces;
 using ERP.Application.Inventory.DTOs;
@@ -16,5 +16,5 @@ public sealed class GetKardexQueryHandler
     }
 
     public Task<Result<KardexResponse>> Handle(GetKardexQuery query, CancellationToken ct)
-        => _kardex.GenerarKardexEscalableAsync(query, ct);
+        => _kardex.GenerateScalableKardexAsync(query, ct);
 }

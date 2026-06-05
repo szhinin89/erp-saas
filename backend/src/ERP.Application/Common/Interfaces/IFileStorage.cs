@@ -1,4 +1,4 @@
-namespace ERP.Application.Common.Interfaces;
+﻿namespace ERP.Application.Common.Interfaces;
 
 /// <summary>
 /// Almacenamiento de archivos binarios (local o nube).
@@ -10,7 +10,7 @@ public interface IFileStorage
     /// <summary>
     /// Persiste el contenido y retorna la ruta relativa del archivo guardado.
     /// </summary>
-    /// <param name="relativePath">Ruta relativa sugerida (p.ej. "compras/xml/2024/factura.xml").</param>
+    /// <param name="relativePath">Ruta relativa sugerida (p.ej. "compras/xml/2024/salesBill.xml").</param>
     /// <param name="content">Stream con el contenido a guardar.</param>
     Task<string> SaveAsync(string relativePath, Stream content, CancellationToken ct = default);
 

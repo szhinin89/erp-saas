@@ -3,7 +3,7 @@
 namespace ERP.Domain.Modules.Accounting.Entities;
 
 /// <summary>
-/// Entrada de Cuentas por Pagar generada a partir de una factura de compra.
+/// Entrada de Cuentas por Pagar generada a partir de una salesBill de compra.
 /// Rastrea el monto original, pagado y pendiente. El pago se registra
 /// mediante <see cref="PaymentApplication"/>.
 /// </summary>

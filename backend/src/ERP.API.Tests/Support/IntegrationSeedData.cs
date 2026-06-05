@@ -35,11 +35,11 @@ internal static class IntegrationSeedData
         throw new InvalidOperationException("RUC de prueba no encontrado.");
     }
 
-    /// <summary>XML mÃƒÂ­nimo compatible con <see cref="ERP.Infrastructure.Services.SriFacturaParser"/>.</summary>
+    /// <summary>XML mÃƒÂ­nimo compatible con <see cref="ERP.Infrastructure.Services.SriInvoiceParser"/>.</summary>
     internal static string BuildFacturaXml(string clave49, string rucEmisor) =>
         $"""
         <?xml version="1.0" encoding="UTF-8"?>
-        <factura id="comprobante" version="1.1.0">
+        <salesBill id="comprobante" version="1.1.0">
           <infoTributaria>
             <razonSocial>PROVEEDOR INTEGRACION S.A.</razonSocial>
             <ruc>{rucEmisor}</ruc>
@@ -58,17 +58,17 @@ internal static class IntegrationSeedData
             </totalConImpuestos>
             <importeTotal>56.00</importeTotal>
           </infoFactura>
-          <detalles>
-            <detalle>
+          <lines>
+            <line>
               <codigoPrincipal>P-INT</codigoPrincipal>
               <descripcion>Item integraciÃƒÂ³n</descripcion>
               <cantidad>2</cantidad>
               <precioUnitario>25</precioUnitario>
               <descuento>0</descuento>
               <precioTotalSinImpuesto>50.00</precioTotalSinImpuesto>
-            </detalle>
-          </detalles>
-        </factura>
+            </line>
+          </lines>
+        </salesBill>
         """;
 
     internal static async Task<SeedResult> SeedAsync(
@@ -176,7 +176,7 @@ internal static class IntegrationSeedData
         await db.SaveChangesAsync(ct);
 
         var ruc   = ValidSociedadPrivadaRuc();
-        var clave = ClaveAcceso49TestFactory.FromPrefix48(new string('6', 48));
+        var clave = AccessKey49TestFactory.FromPrefix48(new string('6', 48));
 
         return new SeedResult(tid, userId, company.Id, product.Id, bodega.Id, ruc, clave);
     }

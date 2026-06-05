@@ -1,4 +1,4 @@
-using ERP.Domain.Common.Validators;
+﻿using ERP.Domain.Common.Validators;
 
 namespace ERP.Domain.MasterData.ValueObjects;
 
@@ -75,7 +75,7 @@ public sealed record TaxIdentification
                 if (n.Length != 10)
                     throw new ArgumentException(
                         $"Cédula ecuatoriana debe tener exactamente 10 dígitos (recibido: {n.Length}).", nameof(number));
-                if (!CedulaValidator.EsCedulaValida(n))
+                if (!EcuadorIdValidator.EsCedulaValida(n))
                     throw new ArgumentException(
                         $"Cédula '{n}' inválida según el algoritmo del Registro Civil. " +
                         "Verifique provincia (01-24), 3.er dígito y dígito verificador.", nameof(number));

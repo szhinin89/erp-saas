@@ -1,4 +1,4 @@
-import { useWarehouseUiStore } from '../../modules/inventario/warehouses/store/warehouseUiStore';
+﻿import { useWarehouseUiStore } from '../../modules/inventory/warehouses/store/warehouseUiStore';
 import { useAuthStore } from '../../store/authStore';
 
 /** Limpia estado UI en memoria que no debe sobrevivir a un cambio de empresa. */

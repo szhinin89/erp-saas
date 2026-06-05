@@ -1,4 +1,4 @@
-using ERP.Application.Common;
+﻿using ERP.Application.Common;
 using ERP.Application.Inventory.DTOs;
 using ERP.Application.Inventory.UseCases.GetKardex;
 
@@ -13,14 +13,14 @@ public interface IKardexService
     /// <summary>
     /// Usa el <see cref="ICurrentSubscriber"/> del scope HTTP (o el registrado en DI).
     /// </summary>
-    Task<Result<KardexResponse>> GenerarKardexEscalableAsync(
+    Task<Result<KardexResponse>> GenerateScalableKardexAsync(
         GetKardexQuery query,
         CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Fija el tenant explícitamente (workers en segundo plano sin <c>HttpContext</c>).
     /// </summary>
-    Task<Result<KardexResponse>> GenerarKardexEscalableAsync(
+    Task<Result<KardexResponse>> GenerateScalableKardexAsync(
         Guid subscriberId,
         GetKardexQuery query,
         CancellationToken cancellationToken = default);

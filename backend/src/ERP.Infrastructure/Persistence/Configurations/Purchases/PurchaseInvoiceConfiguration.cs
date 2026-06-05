@@ -1,4 +1,4 @@
-using ERP.Domain.Modules.Purchases.Entities;
+﻿using ERP.Domain.Modules.Purchases.Entities;
 using ERP.Domain.Modules.SriCatalogs.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
@@ -40,7 +40,7 @@ public class PurchaseInvoiceConfiguration : IEntityTypeConfiguration<PurchaseInv
         builder.Property(x => x.UpdatedAt).HasColumnName("updated_at").HasDefaultValueSql("NOW()");
         builder.Property(x => x.CreatedBy).HasColumnName("created_by");
 
-        // Unicidad: mismo n�mero de factura por Supplier; clave de acceso �nica por empresa
+        // Unicidad: mismo n�mero de salesBill por Supplier; clave de acceso �nica por empresa
         builder.HasIndex(x => new { x.CompanyId, x.BusinessPartnerId, x.InvoiceNumber })
             .IsUnique().HasDatabaseName("uq_pi_number");
         builder.HasIndex(x => new { x.CompanyId, x.AccessKey })

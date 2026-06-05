@@ -26,7 +26,7 @@ public sealed class CashBankController : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<IReadOnlyList<BankAccountDto>>), StatusCodes.Status200OK)]
     public async Task<IActionResult> ListBankAccounts(CancellationToken ct)
     {
-        var r = await _mediator.Send(new ListCuentasBancariasQuery(), ct);
+        var r = await _mediator.Send(new ListBankAccountsQuery(), ct);
         return this.ToOkOrBadRequest(r, "OK", () => Array.Empty<BankAccountDto>());
     }
 
@@ -36,7 +36,7 @@ public sealed class CashBankController : ControllerBase
     public async Task<IActionResult> CreateBankAccount([FromBody] CreateBankAccountRequest body, CancellationToken ct)
     {
         var r = await _mediator.Send(
-            new CrearBankAccountCommand(
+            new CreateBankAccountCommand(
                 body.Name,
                 body.AccountNumber,
                 body.AccountType,

@@ -1,4 +1,4 @@
-using MediatR;
+﻿using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using ERP.API.Contracts;
@@ -40,7 +40,7 @@ public sealed class SupplierCreditNotesController : ControllerBase
         return this.ToOkOrBadRequest(result, "OK", () => Array.Empty<SupplierPurchaseNoteDto>());
     }
 
-    /// <summary>Importa XML de nota (multipart campo <c>xmlFile</c>).</summary>
+    /// <summary>Importa XML de note (multipart campo <c>xmlFile</c>).</summary>
     [HttpPost]
     [Authorize(Policy = "perm:purchases.credit-notes.create")]
     [Consumes("multipart/form-data")]
@@ -52,7 +52,7 @@ public sealed class SupplierCreditNotesController : ControllerBase
         CancellationToken ct = default)
     {
         if (xmlFile is null || xmlFile.Length == 0)
-            return this.ApiBadRequest("Debe adjuntar el archivo XML de la nota.");
+            return this.ApiBadRequest("Debe adjuntar el archivo XML de la note.");
 
         await using var ms = new MemoryStream();
         await xmlFile.CopyToAsync(ms, ct);

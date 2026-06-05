@@ -1,4 +1,4 @@
-using ERP.Application.Navigation;
+﻿using ERP.Application.Navigation;
 using ERP.Application.Navigation.DTOs;
 using ERP.Domain.Navigation.Entities;
 using ERP.Infrastructure.Persistence;
@@ -15,7 +15,7 @@ public sealed class NavigationMenuAdminService : INavigationMenuAdminService
 
     public async Task<AdminNavigationMenuResponse> GetMenuTreeAsync(CancellationToken ct = default)
     {
-        await NavigationMenuConfiguracionBootstrap.EnsureAsync(_db, ct);
+        await NavigationMenuConfigurationBootstrap.EnsureAsync(_db, ct);
 
         var groups = await _db.UiNavGroups.AsNoTracking()
             .Where(g => g.IsActive)

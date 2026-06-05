@@ -1,4 +1,4 @@
-using FluentAssertions;
+﻿using FluentAssertions;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -26,7 +26,7 @@ public sealed class SalesOrderInvoiceEndToEndTests
 
         var seed = await IntegrationSeedData.SeedAsync(
             db, factory.MutableSubscriber, factory.MutableUser, CancellationToken.None, factory.MutableCompany);
-        await VentasEndToEndHelpers.SeedVentasPrerequisitesAsync(db, seed, stockInicial: 10m, ct: CancellationToken.None);
+        await SalesEndToEndHelpers.SeedVentasPrerequisitesAsync(db, seed, stockInicial: 10m, ct: CancellationToken.None);
 
         var clienteId = db.BusinessPartners.First(c => c.SubscriberId == seed.SubscriberId).Id;
         var sucursalId = db.Branches.First(b => b.SubscriberId == seed.SubscriberId).Id;
@@ -67,7 +67,7 @@ public sealed class SalesOrderInvoiceEndToEndTests
             .FirstAsync(o => o.PublicId == orderPublicId);
         order.Status.Should().Be(SalesOrder.Statuses.Invoiced);
 
-        var invoice = VentasEndToEndHelpers.RequireInvoice(db, invoiceResult.Value);
+        var invoice = SalesEndToEndHelpers.RequireInvoice(db, invoiceResult.Value);
         invoice.Status.Should().Be(Invoice.Statuses.Draft);
         invoice.BusinessPartnerId.Should().Be(clienteId);
         invoice.WarehouseId.Should().Be(seed.WarehouseId);
@@ -96,7 +96,7 @@ public sealed class SalesOrderInvoiceEndToEndTests
 
         var seed = await IntegrationSeedData.SeedAsync(
             db, factory.MutableSubscriber, factory.MutableUser, CancellationToken.None, factory.MutableCompany);
-        await VentasEndToEndHelpers.SeedVentasPrerequisitesAsync(db, seed, stockInicial: 20m, ct: CancellationToken.None);
+        await SalesEndToEndHelpers.SeedVentasPrerequisitesAsync(db, seed, stockInicial: 20m, ct: CancellationToken.None);
 
         var clienteId = db.BusinessPartners.First(c => c.SubscriberId == seed.SubscriberId).Id;
         var sucursalId = db.Branches.First(b => b.SubscriberId == seed.SubscriberId).Id;

@@ -1,4 +1,4 @@
-using ERP.API.Contracts;
+﻿using ERP.API.Contracts;
 using ERP.API.Contracts.Cash;
 using ERP.API.Extensions;
 using ERP.Application.Modules.Cash.DTOs;
@@ -29,7 +29,7 @@ public sealed class BankStatementsController : ControllerBase
     [Authorize(Policy = "perm:cash.bank.view")]
     public async Task<IActionResult> ListStatements([FromQuery] Guid cuentaBancariaId, CancellationToken ct)
     {
-        var r = await _mediator.Send(new ListExtractosPorCuentaQuery(cuentaBancariaId), ct);
+        var r = await _mediator.Send(new ListStatementsByAccountQuery(cuentaBancariaId), ct);
         return this.ToOkOrBadRequest(r, "OK", () => Array.Empty<BankStatementDto>());
     }
 
@@ -37,7 +37,7 @@ public sealed class BankStatementsController : ControllerBase
     [Authorize(Policy = "perm:cash.bank.view")]
     public async Task<IActionResult> GetStatement(Guid id, CancellationToken ct)
     {
-        var r = await _mediator.Send(new GetExtractoDetalleQuery(id), ct);
+        var r = await _mediator.Send(new GetStatementDetailQuery(id), ct);
         return this.ToOkOrBadRequest(r);
     }
 
@@ -73,19 +73,19 @@ public sealed class BankStatementsController : ControllerBase
         return this.ToCreatedOrBadRequest(r, "Importado");
     }
 
-    [HttpGet("extractos/{extractoId:guid}/sugerencias-conciliacion")]
+    [HttpGet("extractos/{StatementId:guid}/sugerencias-conciliacion")]
     [Authorize(Policy = "perm:cash.bank.view")]
-    public async Task<IActionResult> SuggestReconciliation(Guid extractoId, CancellationToken ct)
+    public async Task<IActionResult> SuggestReconciliation(Guid StatementId, CancellationToken ct)
     {
-        var r = await _mediator.Send(new SugerirReconciliationQuery(extractoId), ct);
+        var r = await _mediator.Send(new SuggestReconciliationQuery(StatementId), ct);
         return this.ToOkOrBadRequest(r, "OK", () => Array.Empty<ReconciliationSuggestionDto>());
     }
 
     [HttpPost("movimientos/{movimientoId:guid}/conciliar")]
     [Authorize(Policy = "perm:cash.bank.conciliar")]
-    public async Task<IActionResult> ReconcileTransaction(Guid movimientoId, [FromBody] ConciliarRequest body, CancellationToken ct)
+    public async Task<IActionResult> ReconcileTransaction(Guid movimientoId, [FromBody] ReconcileRequest body, CancellationToken ct)
     {
-        var r = await _mediator.Send(new ConciliarBankTransactionCommand(movimientoId, body.JournalEntryId), ct);
+        var r = await _mediator.Send(new ReconcileBankTransactionCommand(movimientoId, body.JournalEntryId), ct);
         return this.ToOkOrBadRequest(r, "Reconciled", () => false);
     }
 }

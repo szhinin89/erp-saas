@@ -1,10 +1,10 @@
-using FluentValidation;
+﻿using FluentValidation;
 
 namespace ERP.Application.Modules.Cash.UseCases;
 
-public sealed class CrearPettyCashCommandValidator : AbstractValidator<CrearPettyCashCommand>
+public sealed class CreatePettyCashCommandValidator : AbstractValidator<CreatePettyCashCommand>
 {
-    public CrearPettyCashCommandValidator()
+    public CreatePettyCashCommandValidator()
     {
         RuleFor(x => x.Name).NotEmpty().MaximumLength(120);
         RuleFor(x => x.AssignedBalance).GreaterThanOrEqualTo(0);
@@ -22,18 +22,18 @@ public sealed class CreateExpensePettyCashCommandValidator : AbstractValidator<C
     }
 }
 
-public sealed class CrearCashCountCommandValidator : AbstractValidator<CrearCashCountCommand>
+public sealed class CreateCashCountCommandValidator : AbstractValidator<CreateCashCountCommand>
 {
-    public CrearCashCountCommandValidator()
+    public CreateCashCountCommandValidator()
     {
         RuleFor(x => x.PettyCashId).NotEmpty();
         RuleFor(x => x.PhysicalCash).GreaterThanOrEqualTo(0);
     }
 }
 
-public sealed class AprobarCashCountCommandValidator : AbstractValidator<AprobarCashCountCommand>
+public sealed class ApproveCashCountCommandValidator : AbstractValidator<ApproveCashCountCommand>
 {
-    public AprobarCashCountCommandValidator()
+    public ApproveCashCountCommandValidator()
     {
         RuleFor(x => x.ArqueoId).NotEmpty();
     }
@@ -48,9 +48,9 @@ public sealed class ReposicionPettyCashCommandValidator : AbstractValidator<Repo
     }
 }
 
-public sealed class CrearBankAccountCommandValidator : AbstractValidator<CrearBankAccountCommand>
+public sealed class CreateBankAccountCommandValidator : AbstractValidator<CreateBankAccountCommand>
 {
-    public CrearBankAccountCommandValidator()
+    public CreateBankAccountCommandValidator()
     {
         RuleFor(x => x.Name).NotEmpty().MaximumLength(120);
         RuleFor(x => x.AccountNumber).NotEmpty().MaximumLength(50);
@@ -60,9 +60,9 @@ public sealed class CrearBankAccountCommandValidator : AbstractValidator<CrearBa
     }
 }
 
-public sealed class ConciliarBankTransactionCommandValidator : AbstractValidator<ConciliarBankTransactionCommand>
+public sealed class ReconcileBankTransactionCommandValidator : AbstractValidator<ReconcileBankTransactionCommand>
 {
-    public ConciliarBankTransactionCommandValidator()
+    public ReconcileBankTransactionCommandValidator()
     {
         RuleFor(x => x.MovimientoId).NotEmpty();
         RuleFor(x => x.JournalEntryId).NotEmpty();

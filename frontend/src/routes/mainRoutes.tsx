@@ -1,4 +1,4 @@
-import { Route, Navigate, useParams } from 'react-router-dom';
+﻿import { Route, Navigate, useParams } from 'react-router-dom';
 import { lazyNamedPage } from './lazyPage';
 
 function LegacySalesOrderDetailRedirect() {
@@ -19,37 +19,37 @@ const ModulePlaceholderPage = lazyNamedPage<{ variant: 'purchases' | 'hr' }>(
 const DashboardPage = lazyNamedPage(() => import('../modules/dashboard/pages/DashboardPage'), 'DashboardPage');
 const ProductsPage = lazyNamedPage(() => import('../modules/products/pages/ProductPage'), 'ProductPage');
 const AccountingPage = lazyNamedPage(() => import('../modules/accounting/pages/AccountingPage'), 'AccountingPage');
-const VentasFacturasPage = lazyNamedPage(() => import('../modules/ventas/pages/VentasFacturasPage'), 'VentasFacturasPage');
+const SalesInvoicesPage = lazyNamedPage(() => import('../modules/sales/pages/SalesInvoicesPage'), 'SalesInvoicesPage');
 const CreateInvoicePage = lazyNamedPage(
-  () => import('../modules/ventas/pages/CreateInvoicePage'),
+  () => import('../modules/sales/pages/CreateInvoicePage'),
   'CreateInvoicePage',
 );
 const InvoiceDetailPage = lazyNamedPage(
-  () => import('../modules/ventas/pages/InvoiceDetailPage'),
+  () => import('../modules/sales/pages/InvoiceDetailPage'),
   'InvoiceDetailPage',
 );
 const CreateSalesOrderPage = lazyNamedPage(
-  () => import('../modules/ventas/ordenes/pages/CreateSalesOrderPage'),
+  () => import('../modules/sales/ordenes/pages/CreateSalesOrderPage'),
   'CreateSalesOrderPage',
 );
 const SalesOrdersListPage = lazyNamedPage(
-  () => import('../modules/ventas/ordenes/pages/SalesOrdersListPage'),
+  () => import('../modules/sales/ordenes/pages/SalesOrdersListPage'),
   'SalesOrdersListPage',
 );
 const SalesOrderDetailPage = lazyNamedPage(
-  () => import('../modules/ventas/ordenes/pages/SalesOrderDetailPage'),
+  () => import('../modules/sales/ordenes/pages/SalesOrderDetailPage'),
   'SalesOrderDetailPage',
 );
 const CreateQuotePage = lazyNamedPage(
-  () => import('../modules/ventas/cotizaciones/pages/CreateQuotePage'),
+  () => import('../modules/sales/cotizaciones/pages/CreateQuotePage'),
   'CreateQuotePage',
 );
 const QuotesListPage = lazyNamedPage(
-  () => import('../modules/ventas/cotizaciones/pages/QuotesListPage'),
+  () => import('../modules/sales/cotizaciones/pages/QuotesListPage'),
   'QuotesListPage',
 );
 const QuoteDetailPage = lazyNamedPage(
-  () => import('../modules/ventas/cotizaciones/pages/QuoteDetailPage'),
+  () => import('../modules/sales/cotizaciones/pages/QuoteDetailPage'),
   'QuoteDetailPage',
 );
 const BranchDetailPage = lazyNamedPage(() => import('../modules/branches/pages/BranchDetailPage'), 'BranchDetailPage');
@@ -74,40 +74,40 @@ const BillingSettingsPage = lazyNamedPage(
   () => import('../modules/configuracion/facturacion/pages/BillingSettingsPage'),
   'BillingSettingsPage',
 );
-const ComprasListPage = lazyNamedPage(
-  () => import('../modules/compras/facturas/pages/ComprasListPage'),
-  'ComprasListPage',
+const PurchaseInvoicesListPage = lazyNamedPage(
+  () => import('../modules/purchasing/facturas/pages/PurchaseInvoicesListPage'),
+  'PurchaseInvoicesListPage',
 );
-const CrearCompraPage = lazyNamedPage(
-  () => import('../modules/compras/facturas/pages/CrearCompraPage'),
-  'CrearCompraPage',
+const CreatePurchaseInvoicePage = lazyNamedPage(
+  () => import('../modules/purchasing/facturas/pages/CreatePurchaseInvoicePage'),
+  'CreatePurchaseInvoicePage',
 );
-const OrdenesCompraListPage = lazyNamedPage(
-  () => import('../modules/compras/ordenes/pages/OrdenesCompraListPage'),
-  'OrdenesCompraListPage',
+const PurchaseOrdersListPage = lazyNamedPage(
+  () => import('../modules/purchasing/ordenes/pages/PurchaseOrdersListPage'),
+  'PurchaseOrdersListPage',
 );
-const CrearOrdenCompraPage = lazyNamedPage(
-  () => import('../modules/compras/ordenes/pages/CrearOrdenCompraPage'),
-  'CrearOrdenCompraPage',
+const CreatePurchaseOrderPage = lazyNamedPage(
+  () => import('../modules/purchasing/ordenes/pages/CreatePurchaseOrderPage'),
+  'CreatePurchaseOrderPage',
 );
-const OrdenCompraDetailPage = lazyNamedPage(
-  () => import('../modules/compras/ordenes/pages/OrdenCompraDetailPage'),
-  'OrdenCompraDetailPage',
+const PurchaseOrderDetailPage = lazyNamedPage(
+  () => import('../modules/purchasing/ordenes/pages/PurchaseOrderDetailPage'),
+  'PurchaseOrderDetailPage',
 );
 const CashBankPage = lazyNamedPage(
   () => import('../modules/cash/bank/pages/CashBankPage'),
   'CashBankPage',
 );
 const CreditNotesPage = lazyNamedPage(
-  () => import('../modules/ventas/pages/CreditNotesPage'),
+  () => import('../modules/sales/pages/CreditNotesPage'),
   'CreditNotesPage',
 );
 const CreateCreditNotePage = lazyNamedPage(
-  () => import('../modules/ventas/pages/CreateCreditNotePage'),
+  () => import('../modules/sales/pages/CreateCreditNotePage'),
   'CreateCreditNotePage',
 );
-const GastosListPage = lazyNamedPage(() => import('../modules/gastos/pages/GastosListPage'), 'GastosListPage');
-const CrearGastoPage = lazyNamedPage(() => import('../modules/gastos/pages/CrearGastoPage'), 'CrearGastoPage');
+const ExpensesListPage = lazyNamedPage(() => import('../modules/expenses/pages/ExpensesListPage'), 'ExpensesListPage');
+const CreateExpensePage = lazyNamedPage(() => import('../modules/expenses/pages/CreateExpensePage'), 'CreateExpensePage');
 
 export const mainRoutes = [
   <Route key="dashboard" path="/dashboard" element={<DashboardPage />} />,
@@ -121,7 +121,7 @@ export const mainRoutes = [
   <Route key="product-legacy" path="/product" element={<Navigate to="/inventory/products" replace />} />,
 
   // ── Sales / Ventas ─────────────────────────────────────────────────────────
-  <Route key="sales-invoices" path="/sales/invoices" element={<VentasFacturasPage />} />,
+  <Route key="sales-invoices" path="/sales/invoices" element={<SalesInvoicesPage />} />,
   <Route key="sales-invoices-new" path="/sales/invoices/new" element={<CreateInvoicePage />} />,
   <Route key="sales-invoices-detail" path="/sales/invoices/:id" element={<InvoiceDetailPage />} />,
   <Route key="sales-credit-notes" path="/sales/credit-notes" element={<CreditNotesPage />} />,
@@ -154,11 +154,11 @@ export const mainRoutes = [
   <Route key="contabilidad-config" path="/contabilidad/configuracion" element={<Navigate to="/finance/accounts?tab=config" replace />} />,
 
   // ── Purchases / Compras ────────────────────────────────────────────────────
-  <Route key="purchases-invoices" path="/purchases/invoices" element={<ComprasListPage />} />,
-  <Route key="purchases-invoices-new" path="/purchases/invoices/new" element={<CrearCompraPage />} />,
-  <Route key="purchases-orders" path="/purchases/orders" element={<OrdenesCompraListPage />} />,
-  <Route key="purchases-orders-new" path="/purchases/orders/new" element={<CrearOrdenCompraPage />} />,
-  <Route key="purchases-orders-detail" path="/purchases/orders/:id" element={<OrdenCompraDetailPage />} />,
+  <Route key="purchases-invoices" path="/purchases/invoices" element={<PurchaseInvoicesListPage />} />,
+  <Route key="purchases-invoices-new" path="/purchases/invoices/new" element={<CreatePurchaseInvoicePage />} />,
+  <Route key="purchases-orders" path="/purchases/orders" element={<PurchaseOrdersListPage />} />,
+  <Route key="purchases-orders-new" path="/purchases/orders/new" element={<CreatePurchaseOrderPage />} />,
+  <Route key="purchases-orders-detail" path="/purchases/orders/:id" element={<PurchaseOrderDetailPage />} />,
   <Route key="masterdata-suppliers" path="/masterdata/suppliers" element={<MasterDataSuppliersPage />} />,
   // Legacy redirects
   <Route key="compras-facturas" path="/compras/facturas" element={<Navigate to="/purchases/invoices" replace />} />,
@@ -174,8 +174,8 @@ export const mainRoutes = [
   <Route key="bancos-root" path="/bancos" element={<Navigate to="/cash/bank" replace />} />,
 
   // ── Expenses / Gastos ──────────────────────────────────────────────────────
-  <Route key="expenses" path="/expenses" element={<GastosListPage />} />,
-  <Route key="expenses-new" path="/expenses/new" element={<CrearGastoPage />} />,
+  <Route key="expenses" path="/expenses" element={<ExpensesListPage />} />,
+  <Route key="expenses-new" path="/expenses/new" element={<CreateExpensePage />} />,
   // Legacy redirects
   <Route key="gastos-legacy" path="/gastos" element={<Navigate to="/expenses" replace />} />,
   <Route key="gastos-nuevo-legacy" path="/gastos/nuevo" element={<Navigate to="/expenses/new" replace />} />,

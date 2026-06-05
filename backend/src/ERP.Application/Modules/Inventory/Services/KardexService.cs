@@ -1,4 +1,4 @@
-using Microsoft.Extensions.Options;
+﻿using Microsoft.Extensions.Options;
 using ERP.Application.Common;
 using ERP.Application.Common.Config;
 using ERP.Application.Common.Interfaces;
@@ -13,7 +13,7 @@ using ERP.Domain.Products.Interfaces;
 namespace ERP.Application.Modules.Inventory.Services;
 
 /// <summary>
-/// Implementación del kardex valorizado; el nombre <see cref="GenerarKardexEscalableAsync"/> refleja
+/// Implementación del kardex valorizado; el nombre <see cref="GenerateScalableKardexAsync"/> refleja
 /// el uso de <see cref="KardexOptions.UseScalableMode"/> y extensiones opcionales (MV diaria).
 /// </summary>
 public sealed class KardexService : IKardexService
@@ -46,11 +46,11 @@ public sealed class KardexService : IKardexService
         _mvReader   = mvReader;
     }
 
-    public Task<Result<KardexResponse>> GenerarKardexEscalableAsync(
+    public Task<Result<KardexResponse>> GenerateScalableKardexAsync(
         GetKardexQuery query, CancellationToken cancellationToken = default)
         => GenerarInternalAsync(_subscriber.SubscriberId, query, cancellationToken);
 
-    public Task<Result<KardexResponse>> GenerarKardexEscalableAsync(
+    public Task<Result<KardexResponse>> GenerateScalableKardexAsync(
         Guid subscriberId, GetKardexQuery query, CancellationToken cancellationToken = default)
         => GenerarInternalAsync(subscriberId, query, cancellationToken);
 
@@ -327,8 +327,8 @@ public sealed class KardexService : IKardexService
         "TransferExit"         => "transfer salida",
         "PurchaseReturn"       => "Devolución compra",
         "SaleReturn"           => "Devolución venta",
-        "SupplierCreditNote"   => "Nota crédito proveedor",
-        "SupplierDebitNote"    => "Nota débito proveedor",
+        "SupplierCreditNote"   => "note crédito proveedor",
+        "SupplierDebitNote"    => "note débito proveedor",
         "EntradaCompra"        => "Compra",
         "SalidaVenta"          => "Venta",
         "AjustePositivo"       => "Ajuste (+)",

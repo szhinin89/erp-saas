@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef } from 'react';
+﻿import { useCallback, useEffect, useRef } from 'react';
 import { ErpPageTemplate } from '../../../templates/ErpPageTemplate';
 import { useI18n } from '../../../i18n/i18n';
 import { usePermissionsUi } from '../../../access/usePermissionsUi';
@@ -11,7 +11,7 @@ import { useProductUiStore } from '../store/productUiStore';
 import type { ProductFormValues } from '../schemas/productSchema';
 
 import { ResumenTab }   from '../components/ResumenTab';
-import { ListadoTab }   from '../components/ListadoTab';
+import { ListadoTab }   from ../components/ListTab';
 import { ProductWizard, buildProductPayload } from '../components/ProductWizard';
 import { ToastManager } from '../components/ToastManager';
 

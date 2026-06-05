@@ -1,4 +1,4 @@
-using ERP.API.Contracts.Cash;
+﻿using ERP.API.Contracts.Cash;
 using ERP.API.Extensions;
 using ERP.Application.Modules.Cash.DTOs;
 using ERP.Application.Modules.Cash.UseCases;
@@ -31,7 +31,7 @@ public sealed class PettyCashController : ControllerBase
     public async Task<IActionResult> CreatePettyCash([FromBody] CreatePettyCashRequest body, CancellationToken ct)
     {
         var r = await _mediator.Send(
-            new CrearPettyCashCommand(body.Name, body.AssignedBalance, body.ReplenishmentBankAccountId, body.LedgerCashAccountId),
+            new CreatePettyCashCommand(body.Name, body.AssignedBalance, body.ReplenishmentBankAccountId, body.LedgerCashAccountId),
             ct);
         return this.ToCreatedOrBadRequest(r, "Creado");
     }
@@ -50,7 +50,7 @@ public sealed class PettyCashController : ControllerBase
     [Authorize(Policy = "perm:cash.bank.arqueos.perform")]
     public async Task<IActionResult> CreateCashCount([FromBody] CreateCashCountRequest body, CancellationToken ct)
     {
-        var r = await _mediator.Send(new CrearCashCountCommand(body.PettyCashId, body.CountDate, body.PhysicalCash, body.Notes), ct);
+        var r = await _mediator.Send(new CreateCashCountCommand(body.PettyCashId, body.CountDate, body.PhysicalCash, body.Notes), ct);
         return this.ToCreatedOrBadRequest(r, "Creado");
     }
 
@@ -58,7 +58,7 @@ public sealed class PettyCashController : ControllerBase
     [Authorize(Policy = "perm:cash.bank.arqueos.perform")]
     public async Task<IActionResult> ApproveCashCount(Guid arqueoId, CancellationToken ct)
     {
-        var r = await _mediator.Send(new AprobarCashCountCommand(arqueoId), ct);
+        var r = await _mediator.Send(new ApproveCashCountCommand(arqueoId), ct);
         return this.ToOkOrBadRequest(r, "IsApproved");
     }
 

@@ -1,4 +1,4 @@
-using ERP.Domain.Common;
+﻿using ERP.Domain.Common;
 using ERP.Domain.Modules.Purchasing.Enums;
 using ERP.Domain.Modules.Sales.Enums;
 
@@ -33,13 +33,13 @@ internal static class NoteTypeConversions
     // ── SRI XML ───────────────────────────────────────────────────────────────
 
     /// <summary>
-    /// SRI XML codDocSustento. Consumers: SriXmlFacturaBuilder, RideGeneratorService,
-    /// SriFacturaElectronicaSimuladoService, SalesDocumentMapper.
+    /// SRI XML codDocSustento. Consumers: SriXmlInvoiceBuilder, RideGeneratorService,
+    /// SriElectronicInvoiceSimulatedService, SalesDocumentMapper.
     /// </summary>
     internal static string ToSriDocCode(NoteType type) =>
         type == NoteType.Credit ? "04" : "05";
 
-    /// <summary>Consumer: SriFacturaParser — maps XML root element to NoteType.</summary>
+    /// <summary>Consumer: SriInvoiceParser — maps XML root element to NoteType.</summary>
     internal static NoteType FromXmlRoot(string rootName) =>
         rootName.Trim().Equals("notaCredito", StringComparison.OrdinalIgnoreCase)
             ? NoteType.Credit
@@ -47,7 +47,7 @@ internal static class NoteTypeConversions
 
     /// <summary>
     /// SRI XML root and info element names.
-    /// Consumers: SriXmlFacturaBuilder, SriFacturaElectronicaSimuladoService.
+    /// Consumers: SriXmlInvoiceBuilder, SriElectronicInvoiceSimulatedService.
     /// </summary>
     internal static (string Root, string Info) ToXmlElementNames(NoteType type) =>
         type == NoteType.Credit

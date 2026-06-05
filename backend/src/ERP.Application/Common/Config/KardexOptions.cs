@@ -12,7 +12,7 @@ public sealed class KardexOptions
     /// true  → usa KardexSnapshot como punto de partida (O(período) vs O(total)).
     /// false → calcula siempre desde el origen (comportamiento original, sin dependencia de snapshots).
     ///
-    /// Nota: el modo escalable no se activa por defecto. En producción se debe
+    /// note: el modo escalable no se activa por defecto. En producción se debe
     /// habilitar manualmente cuando el volumen de datos lo requiera.
     /// </summary>
     public bool UseScalableMode { get; set; } = false;

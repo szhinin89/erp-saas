@@ -1,4 +1,4 @@
-using System.Text.Json;
+﻿using System.Text.Json;
 using ERP.Application.Navigation;
 using ERP.Application.Navigation.DTOs;
 using ERP.Domain.Navigation.Entities;
@@ -16,7 +16,7 @@ public sealed class NavigationMenuReader : INavigationMenuReader
 
     public async Task<IReadOnlyList<SessionMenuGroupDto>> GetActiveMenuAsync(CancellationToken ct = default)
     {
-        await NavigationMenuConfiguracionBootstrap.EnsureAsync(_db, ct);
+        await NavigationMenuConfigurationBootstrap.EnsureAsync(_db, ct);
 
         var groups = await _db.UiNavGroups.AsNoTracking()
             .Where(g => g.IsActive)

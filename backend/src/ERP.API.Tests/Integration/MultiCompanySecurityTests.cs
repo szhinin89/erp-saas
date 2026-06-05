@@ -260,7 +260,7 @@ public sealed class MultiCompanySecurityTests : IAsyncLifetime
         var resA = await clientA.GetAsync($"/api/master/business-partners/{bp.Id}");
 
         // BP subscriber-scoped â†’ visible desde CompanyA aunque se creÃ³ con CompanyB context
-        // Nota: BusinessPartnersController usa ISubscriberOnlyRequest â†’ no requiere company_id
+        // note: BusinessPartnersController usa ISubscriberOnlyRequest â†’ no requiere company_id
         resA.StatusCode.Should().BeOneOf(
             HttpStatusCode.OK,
             HttpStatusCode.Forbidden); // si el perm:masterdata.businesspartners.view bloquea (no tiene perfil)

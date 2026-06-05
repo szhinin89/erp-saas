@@ -95,6 +95,16 @@ public sealed class BusinessPartnerRoleConfiguration : IEntityTypeConfiguration<
             sc.Property(c => c.PaymentTerms)
               .HasColumnName("payment_terms")
               .HasMaxLength(SupplierRoleConfig.PaymentTermsMaxLen);
+
+            // ── S3-A: nuevos campos SRI ──────────────────────────────────────
+            sc.Property(c => c.DefaultPaymentMethodCode)
+              .HasColumnName("default_payment_method_code")
+              .HasMaxLength(SupplierRoleConfig.PaymentMethodCodeMaxLen);
+
+            sc.Property(c => c.IsRetentionExempt)
+              .HasColumnName("is_retention_exempt")
+              .IsRequired()
+              .HasDefaultValue(false);
         });
 
         // ── CarrierRoleConfig — tabla separada (1:1, PK = FK al rol) ─────────

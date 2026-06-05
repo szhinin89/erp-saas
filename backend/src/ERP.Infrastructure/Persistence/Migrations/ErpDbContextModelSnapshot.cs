@@ -12525,15 +12525,15 @@ namespace ERP.Infrastructure.Persistence.Migrations
                             Code = "01",
                             IsActive = true,
                             IsElectronic = true,
-                            Name = "Factura",
-                            ShortName = "FACTURA"
+                            Name = "salesBill",
+                            ShortName = "salesBill"
                         },
                         new
                         {
                             Code = "02",
                             IsActive = true,
                             IsElectronic = true,
-                            Name = "Nota de Venta - RISE",
+                            Name = "note de Venta - RISE",
                             ShortName = "NV_RISE"
                         },
                         new
@@ -12549,7 +12549,7 @@ namespace ERP.Infrastructure.Persistence.Migrations
                             Code = "04",
                             IsActive = true,
                             IsElectronic = true,
-                            Name = "Nota de CrÃ©dito",
+                            Name = "note de CrÃ©dito",
                             ShortName = "N_CREDITO"
                         },
                         new
@@ -12557,7 +12557,7 @@ namespace ERP.Infrastructure.Persistence.Migrations
                             Code = "05",
                             IsActive = true,
                             IsElectronic = true,
-                            Name = "Nota de DÃ©bito",
+                            Name = "note de DÃ©bito",
                             ShortName = "N_DEBITO"
                         },
                         new
@@ -12574,7 +12574,7 @@ namespace ERP.Infrastructure.Persistence.Migrations
                             IsActive = true,
                             IsElectronic = true,
                             Name = "Comprobante de RetenciÃ³n",
-                            ShortName = "RETENCION"
+                            ShortName = "retention"
                         },
                         new
                         {
@@ -13484,7 +13484,7 @@ namespace ERP.Infrastructure.Persistence.Migrations
                         {
                             Code = "17",
                             IsActive = true,
-                            Name = "Nota de crÃ©dito deducible"
+                            Name = "note de crÃ©dito deducible"
                         },
                         new
                         {

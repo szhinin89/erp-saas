@@ -1,4 +1,4 @@
-using ERP.API.Attributes;
+﻿using ERP.API.Attributes;
 using ERP.API.Contracts;
 using ERP.API.Contracts.Purchasing;
 using ERP.API.Extensions;
@@ -77,7 +77,7 @@ public sealed class PurchaseOrdersController : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<PurchaseOrderDto>), StatusCodes.Status200OK)]
     public async Task<IActionResult> Send(Guid id, CancellationToken ct = default)
     {
-        var result = await _mediator.Send(new SendOrderPurchaseCommand(id), ct);
+        var result = await _mediator.Send(new SendPurchaseOrderCommand(id), ct);
         return this.ToOkOrBadRequest(result, "Enviada");
     }
 
@@ -86,7 +86,7 @@ public sealed class PurchaseOrdersController : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<PurchaseOrderDto>), StatusCodes.Status200OK)]
     public async Task<IActionResult> Approve(Guid id, CancellationToken ct = default)
     {
-        var result = await _mediator.Send(new ApproveOrderPurchaseCommand(id), ct);
+        var result = await _mediator.Send(new ApprovePurchaseOrderCommand(id), ct);
         return this.ToOkOrBadRequest(result, "Aprobada");
     }
 
@@ -95,11 +95,11 @@ public sealed class PurchaseOrdersController : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<PurchaseOrderDto>), StatusCodes.Status200OK)]
     public async Task<IActionResult> Cancel(Guid id, CancellationToken ct = default)
     {
-        var result = await _mediator.Send(new CancelOrderPurchaseCommand(id), ct);
+        var result = await _mediator.Send(new CancelPurchaseOrderCommand(id), ct);
         return this.ToOkOrBadRequest(result, "Cancelada");
     }
 
-    [HttpPost("{id:guid}/vincular-factura")]
+    [HttpPost("{id:guid}/vincular-salesBill")]
     [Authorize(Policy = "perm:purchases.orders.link-invoice")]
     [ProducesResponseType(typeof(ApiResponse<PurchaseOrderDto>), StatusCodes.Status200OK)]
     public async Task<IActionResult> LinkInvoice(
@@ -109,6 +109,6 @@ public sealed class PurchaseOrdersController : ControllerBase
     {
         var result = await _mediator.Send(
             new LinkInvoiceToPurchaseOrderCommand(id, body.PurchaseInvoiceId), ct);
-        return this.ToOkOrBadRequest(result, "Factura vinculada");
+        return this.ToOkOrBadRequest(result, "salesBill vinculada");
     }
 }

@@ -1,4 +1,4 @@
-using ERP.Domain.MasterData.Entities;
+﻿using ERP.Domain.MasterData.Entities;
 using ERP.Domain.MasterData.Enums;
 using ERP.Domain.MasterData.Interfaces;
 using ERP.Infrastructure.Persistence;
@@ -23,7 +23,7 @@ namespace ERP.Infrastructure.MasterData.Repositories;
 /// ContactInfo (VO): phone, mobile, email son propiedades del VO embebido.
 /// EF Core accede via Contact.Phone, Contact.Mobile, Contact.Email en queries.
 ///
-/// NOTA sobre ClearPrimaryAsync: misma semántica transaccional que LocationRepository.
+/// note sobre ClearPrimaryAsync: misma semántica transaccional que LocationRepository.
 /// </summary>
 public sealed class BusinessPartnerContactRepository : IBusinessPartnerContactRepository
 {

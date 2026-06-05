@@ -1,4 +1,4 @@
-using ERP.API.Attributes;
+﻿using ERP.API.Attributes;
 using ERP.API.Contracts;
 using ERP.API.Contracts.Sales;
 using ERP.API.Extensions;
@@ -102,7 +102,7 @@ public sealed class SalesOrdersController : ControllerBase
         return this.ToCreatedOrBadRequest(result, "Convertido");
     }
 
-    /// <summary>Crea factura borrador desde un pedido confirmado (ORDER_TO_INVOICE).</summary>
+    /// <summary>Crea salesBill borrador desde un pedido confirmado (ORDER_TO_INVOICE).</summary>
     [HttpPost("{publicId:guid}/invoice")]
     [Authorize(Policy = "perm:sales.invoices.create")]
     [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status201Created)]
@@ -119,6 +119,6 @@ public sealed class SalesOrdersController : ControllerBase
                 Notes: request?.Notes,
                 SalesOrderPublicId: publicId),
             ct);
-        return this.ToCreatedOrBadRequest(result, "Factura creada");
+        return this.ToCreatedOrBadRequest(result, "salesBill creada");
     }
 }

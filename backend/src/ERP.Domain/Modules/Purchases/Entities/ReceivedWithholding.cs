@@ -1,4 +1,4 @@
-namespace ERP.Domain.Modules.Purchases.Entities;
+﻿namespace ERP.Domain.Modules.Purchases.Entities;
 
 /// <summary>
 /// Comprobante de retención RECIBIDO de un cliente.
@@ -16,7 +16,7 @@ public class ReceivedWithholding
     public string   IssuerRuc     { get; set; } = null!;
     public string   IssuerName    { get; set; } = null!;
     public DateOnly IssueDate     { get; set; }
-    /// <summary>Factura de venta relacionada (nuestra) que motivó la retención.</summary>
+    /// <summary>salesBill de venta relacionada (nuestra) que motivó la retención.</summary>
     public Guid?    SalesDocId    { get; set; }
     public decimal  TotalRetained { get; set; }
     public string   Status        { get; set; } = "active";

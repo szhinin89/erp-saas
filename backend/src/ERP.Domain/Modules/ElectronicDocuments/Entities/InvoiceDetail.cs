@@ -1,9 +1,9 @@
-using ERP.Domain.Modules.SriCatalogs.Entities;
+﻿using ERP.Domain.Modules.SriCatalogs.Entities;
 
 namespace ERP.Domain.Modules.ElectronicDocuments.Entities;
 
 /// <summary>
-/// Líneas de factura (01) y liquidación de compra (03).
+/// Líneas de salesBill (01) y liquidación de compra (03).
 /// Los campos product_code y description son snapshot inmutable tras autorización.
 /// </summary>
 public class InvoiceDetail

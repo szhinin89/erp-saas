@@ -1,4 +1,4 @@
-using ERP.Domain.MasterData.Entities;
+﻿using ERP.Domain.MasterData.Entities;
 using ERP.Domain.MasterData.Enums;
 using ERP.Domain.MasterData.Interfaces;
 using ERP.Infrastructure.Persistence;
@@ -24,7 +24,7 @@ namespace ERP.Infrastructure.MasterData.Repositories;
 ///      - HasActiveContactsAsync() debe llamarse en el handler ANTES de Deactivate().
 ///      - El FK RESTRICT es la barrera para eliminaciones físicas (soft delete no activa FKs).
 ///
-/// NOTA sobre ClearPrimaryAsync y transaccionalidad:
+/// note sobre ClearPrimaryAsync y transaccionalidad:
 ///   ExecuteUpdateAsync se ejecuta inmediatamente vía UPDATE SQL, fuera del SaveChanges.
 ///   Si SaveChanges falla después de ClearPrimaryAsync, el BP queda sin ubicación primaria.
 ///   Esto es aceptable: el estado "sin primaria" es válido y transitorio.

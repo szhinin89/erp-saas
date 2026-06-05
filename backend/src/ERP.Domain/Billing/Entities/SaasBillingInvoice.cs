@@ -1,9 +1,9 @@
-using ERP.Domain.Billing.Enums;
+﻿using ERP.Domain.Billing.Enums;
 using ERP.Domain.Common;
 
 namespace ERP.Domain.Billing.Entities;
 
-/// <summary>Factura SaaS del suscriptor (suscripción/plan). No confundir con <c>sales_invoice</c> ERP.</summary>
+/// <summary>salesBill SaaS del suscriptor (suscripción/plan). No confundir con <c>sales_invoice</c> ERP.</summary>
 public sealed class SaasBillingInvoice : AuditableEntity
 {
     public const int InvoiceNumberMaxLen = 40;
@@ -23,7 +23,7 @@ public sealed class SaasBillingInvoice : AuditableEntity
     public DateTime? IssuedAtUtc { get; private set; }
     public DateTime? DueAtUtc { get; private set; }
     public DateTime? PaidAtUtc { get; private set; }
-    /// <summary>ID de la factura ERP emitida por ZH Technologies para este cobro SaaS.</summary>
+    /// <summary>ID de la salesBill ERP emitida por ZH Technologies para este cobro SaaS.</summary>
     public Guid? ErpInvoiceId { get; private set; }
 
     public ICollection<SaasBillingInvoiceLine> Lines { get; private set; } = [];

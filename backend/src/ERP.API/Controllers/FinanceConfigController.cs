@@ -1,4 +1,4 @@
-using MediatR;
+﻿using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using ERP.API.Contracts;
@@ -26,7 +26,7 @@ public sealed class FinanceConfigController : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<AccountingSetupDto?>), StatusCodes.Status200OK)]
     public async Task<IActionResult> Get(CancellationToken ct = default)
     {
-        var result = await _mediator.Send(new GetConfigurationContableQuery(), ct);
+        var result = await _mediator.Send(new GetAccountingConfigurationQuery(), ct);
         return this.ToOkOrBadRequest(result, "OK");
     }
 
@@ -34,7 +34,7 @@ public sealed class FinanceConfigController : ControllerBase
     [Authorize(Policy = "perm:finance.config.edit")]
     [ProducesResponseType(typeof(ApiResponse<AccountingSetupDto>), StatusCodes.Status200OK)]
     public async Task<IActionResult> Upsert(
-        [FromBody] UpsertConfigurationContableCommand command,
+        [FromBody] UpsertAccountingConfigurationCommand command,
         CancellationToken ct = default)
     {
         var result = await _mediator.Send(command, ct);
@@ -46,7 +46,7 @@ public sealed class FinanceConfigController : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<IReadOnlyList<ExpenseCategoryDto>>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetExpenses(CancellationToken ct = default)
     {
-        var result = await _mediator.Send(new GetExpenseCategorysQuery(), ct);
+        var result = await _mediator.Send(new GetExpenseCategoriesQuery(), ct);
         return this.ToOkOrBadRequest(result, "OK", () => Array.Empty<ExpenseCategoryDto>());
     }
 

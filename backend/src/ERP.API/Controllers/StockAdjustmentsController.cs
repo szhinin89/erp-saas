@@ -1,4 +1,4 @@
-using MediatR;
+﻿using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using ERP.API.Contracts;
@@ -57,7 +57,7 @@ public sealed class StockAdjustmentsController : ControllerBase
         return this.ToOkOrBadRequest(result, "OK");
     }
 
-    /// <summary>Retorna el detalle de un ajuste.</summary>
+    /// <summary>Retorna el line de un ajuste.</summary>
     [HttpGet("{id:guid}")]
     [Authorize(Policy = "perm:inventory.adjustments.view")]
     [ProducesResponseType(typeof(ApiResponse<StockAdjustmentDto?>), StatusCodes.Status200OK)]

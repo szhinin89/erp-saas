@@ -5118,13 +5118,13 @@ namespace ERP.Infrastructure.Persistence.Migrations
                 columns: new[] { "code", "is_active", "is_electronic", "name", "short_name" },
                 values: new object[,]
                 {
-                    { "01", true, true, "Factura", "FACTURA" },
-                    { "02", true, true, "Nota de Venta - RISE", "NV_RISE" },
+                    { "01", true, true, "salesBill", "salesBill" },
+                    { "02", true, true, "note de Venta - RISE", "NV_RISE" },
                     { "03", true, true, "LiquidaciÃ³n de Compra de Bienes y PrestaciÃ³n de Servicios", "LIQ_COMPRA" },
-                    { "04", true, true, "Nota de CrÃ©dito", "N_CREDITO" },
-                    { "05", true, true, "Nota de DÃ©bito", "N_DEBITO" },
+                    { "04", true, true, "note de CrÃ©dito", "N_CREDITO" },
+                    { "05", true, true, "note de DÃ©bito", "N_DEBITO" },
                     { "06", true, true, "GuÃ­a de RemisiÃ³n", "G_REMISION" },
-                    { "07", true, true, "Comprobante de RetenciÃ³n", "RETENCION" }
+                    { "07", true, true, "Comprobante de RetenciÃ³n", "retention" }
                 });
 
             migrationBuilder.InsertData(
@@ -5290,7 +5290,7 @@ namespace ERP.Infrastructure.Persistence.Migrations
                     { "14", true, "ExportaciÃ³n de servicios con domicilio en el exterior" },
                     { "15", true, "Proveedor directo de exportador de bienes" },
                     { "16", true, "Provisiones de cuentas incobrables" },
-                    { "17", true, "Nota de crÃ©dito deducible" },
+                    { "17", true, "note de crÃ©dito deducible" },
                     { "18", true, "Importaciones" },
                     { "19", true, "Reembolso de gastos" },
                     { "20", true, "Notas de crÃ©dito por devoluciones" }

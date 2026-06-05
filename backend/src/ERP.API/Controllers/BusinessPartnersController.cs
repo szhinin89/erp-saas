@@ -1,4 +1,4 @@
-using ERP.API.Contracts;
+﻿using ERP.API.Contracts;
 using ERP.API.Contracts.MasterData;
 using ERP.API.Extensions;
 using ERP.Application.Common;
@@ -60,7 +60,7 @@ public sealed class BusinessPartnersController : ControllerBase
     }
 
     /// <summary>
-    /// Obtiene el detalle completo de un BP incluyendo todos sus roles con configs.
+    /// Obtiene el line completo de un BP incluyendo todos sus roles con configs.
     /// </summary>
     [HttpGet("{id:guid}")]
     [Authorize(Policy = $"perm:{Permissions.MasterDataBusinessPartner.View}")]

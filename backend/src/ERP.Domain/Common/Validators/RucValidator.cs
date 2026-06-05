@@ -1,17 +1,17 @@
-namespace ERP.Domain.Common.Validators;
+﻿namespace ERP.Domain.Common.Validators;
 
 /// <summary>
 /// Valida el RUC ecuatoriano (13 dígitos) según el algoritmo del Servicio de Rentas Internas (SRI).
 ///
 /// Tipos de RUC según el 3.er dígito:
 ///   0-5 → Persona Natural     → Módulo 10 (misma base que la cédula)
-///   6   → Entidad Pública     → Módulo 11 (8 coeficientes)
-///   9   → Sociedad Privada    → Módulo 11 (9 coeficientes)
+///   6   → Entidad Pública     → Módulo 11 (8 Coefficients)
+///   9   → Sociedad Privada    → Módulo 11 (9 Coefficients)
 ///   7,8 → No asignados        → inválido
 /// </summary>
 public static class RucValidator
 {
-    // ── Coeficientes SRI ──────────────────────────────────────────────────
+    // ── Coefficients SRI ──────────────────────────────────────────────────
     private static readonly int[] CoefPersonaNatural  = { 2, 1, 2, 1, 2, 1, 2, 1, 2 };
     private static readonly int[] CoefSociedadPrivada = { 4, 3, 2, 7, 6, 5, 4, 3, 2 };
     private static readonly int[] CoefEntidadPublica  = { 3, 2, 7, 6, 5, 4, 3, 2 };
@@ -62,7 +62,7 @@ public static class RucValidator
     }
 
     // ─────────────────────────────────────────────────────────────────────
-    // Sociedad Privada — Módulo 11 (9 coeficientes)
+    // Sociedad Privada — Módulo 11 (9 Coefficients)
     // Dígitos 1-9 → suma ponderada → verificador en posición 10
     // Establecimiento en posiciones 11-13 (≠ "000")
     // ─────────────────────────────────────────────────────────────────────
@@ -81,7 +81,7 @@ public static class RucValidator
     }
 
     // ─────────────────────────────────────────────────────────────────────
-    // Entidad Pública — Módulo 11 (8 coeficientes)
+    // Entidad Pública — Módulo 11 (8 Coefficients)
     // Dígitos 1-8 → suma ponderada → verificador en posición 9
     // Establecimiento en posiciones 10-13 (≠ "0000")
     // ─────────────────────────────────────────────────────────────────────

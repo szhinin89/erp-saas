@@ -1,4 +1,4 @@
-using FluentValidation;
+﻿using FluentValidation;
 
 namespace ERP.Application.Sales.UseCases.SalesNotes;
 
@@ -6,6 +6,6 @@ public sealed class SendSalesNoteSriCommandValidator : AbstractValidator<SendSal
 {
     public SendSalesNoteSriCommandValidator()
     {
-        RuleFor(x => x.NotaId).NotEmpty();
+        RuleFor(x => x.NoteId).NotEmpty();
     }
 }

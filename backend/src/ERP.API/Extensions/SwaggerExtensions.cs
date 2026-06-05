@@ -1,4 +1,4 @@
-using System.Reflection;
+﻿using System.Reflection;
 using Microsoft.AspNetCore.Http;
 using Microsoft.OpenApi.Models;
 
@@ -68,7 +68,7 @@ public static class SwaggerExtensions
             });
 
             // Incluir comentarios XML (controllers + modelos/DTOs)
-            // Nota: requiere <GenerateDocumentationFile>true</GenerateDocumentationFile> en los .csproj.
+            // note: requiere <GenerateDocumentationFile>true</GenerateDocumentationFile> en los .csproj.
             var assembliesToDocument = new[]
             {
                 Assembly.GetExecutingAssembly(),           // ERP.API

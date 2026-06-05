@@ -1,4 +1,4 @@
-namespace ERP.Application.Common.Interfaces;
+﻿namespace ERP.Application.Common.Interfaces;
 
 /// <summary>
 /// Genera la Representación Impresa del Documento Electrónico (RIDE) en PDF.
@@ -7,12 +7,12 @@ namespace ERP.Application.Common.Interfaces;
 /// </summary>
 public interface IRideGeneratorService
 {
-    /// <summary>Genera el RIDE en PDF de una factura de venta autorizada.</summary>
-    /// <param name="salesBillId">ID de la factura.</param>
+    /// <summary>Genera el RIDE en PDF de una salesBill de venta autorizada.</summary>
+    /// <param name="salesBillId">ID de la salesBill.</param>
     /// <param name="ct">Cancellation token.</param>
     /// <returns>Bytes del PDF generado.</returns>
     Task<byte[]> GenerateFacturaPdfAsync(Guid salesBillId, CancellationToken ct = default);
 
-    /// <summary>Genera el RIDE en PDF de una nota de crédito o débito autorizada.</summary>
+    /// <summary>Genera el RIDE en PDF de una note de crédito o débito autorizada.</summary>
     Task<byte[]> GenerateNotaPdfAsync(Guid salesNoteId, CancellationToken ct = default);
 }

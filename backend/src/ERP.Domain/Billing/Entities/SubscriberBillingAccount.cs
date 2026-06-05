@@ -1,11 +1,11 @@
-using ERP.Domain.Billing.Enums;
+﻿using ERP.Domain.Billing.Enums;
 using ERP.Domain.Common;
 
 namespace ERP.Domain.Billing.Entities;
 
 /// <summary>
 /// Cuenta de facturación SaaS del <see cref="Subscribers.Entities.Subscriber"/>.
-/// Scope: <c>subscriber_id</c> únicamente. El ERP operativo factura por <c>company_id</c>.
+/// Scope: <c>subscriber_id</c> únicamente. El ERP operativo salesBill por <c>company_id</c>.
 /// </summary>
 public sealed class SubscriberBillingAccount : AuditableEntity
 {

@@ -1,4 +1,4 @@
-using ERP.Application.Modules.Purchasing.UseCases.CreatePurchase;
+﻿using ERP.Application.Modules.Purchasing.UseCases.CreatePurchase;
 using ERP.Domain.Modules.Inventory.Interfaces;
 
 namespace ERP.Application.Modules.Purchasing;
@@ -10,7 +10,7 @@ public static class PurchaseAsignacionWarehousesRules
 
     /// <returns>null si es válido; mensaje de error en caso contrario.</returns>
     public static async Task<string?> ValidateAsync(
-        IReadOnlyList<PurchaseLineInput> detalles,
+        IReadOnlyList<PurchaseLineInput> lines,
         IReadOnlyList<WarehouseAllocationRequest> asignaciones,
         Guid subscriberId,
         IWarehouseRepository bodegas,
@@ -21,8 +21,8 @@ public static class PurchaseAsignacionWarehousesRules
 
         foreach (var a in asignaciones)
         {
-            if (a.ItemIndex < 0 || a.ItemIndex >= detalles.Count)
-                return $"ItemIndex {a.ItemIndex} está fuera de rango (0..{detalles.Count - 1}).";
+            if (a.ItemIndex < 0 || a.ItemIndex >= lines.Count)
+                return $"ItemIndex {a.ItemIndex} está fuera de rango (0..{lines.Count - 1}).";
 
             if (a.Quantity <= 0)
                 return $"La cantidad asignada debe ser mayor a cero (ItemIndex {a.ItemIndex}).";
@@ -34,16 +34,16 @@ public static class PurchaseAsignacionWarehousesRules
                 return $"La Warehouse '{Warehouse.Name}' está deshabilitada.";
         }
 
-        var sums = new decimal[detalles.Count];
+        var sums = new decimal[lines.Count];
         foreach (var a in asignaciones)
             sums[a.ItemIndex] += a.Quantity;
 
-        for (var i = 0; i < detalles.Count; i++)
+        for (var i = 0; i < lines.Count; i++)
         {
-            var esperada = detalles[i].Quantity;
+            var esperada = lines[i].Quantity;
             var suma   = sums[i];
             if (Math.Abs(suma - esperada) > CantidadTolerance)
-                return $"La suma de cantidades asignadas al ítem {i} ({suma}) no coincide con la cantidad del detalle ({esperada}).";
+                return $"La suma de cantidades asignadas al ítem {i} ({suma}) no coincide con la cantidad del line ({esperada}).";
         }
 
         return null;

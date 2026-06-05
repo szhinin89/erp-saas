@@ -17,13 +17,13 @@ public class SriDocTypeConfiguration : IEntityTypeConfiguration<SriDocType>
         builder.Property(x => x.IsActive).HasColumnName("is_active").HasDefaultValue(true);
 
         builder.HasData(
-            new SriDocType { Code = "01", Name = "Factura",                                                   ShortName = "FACTURA",    IsElectronic = true,  IsActive = true  },
-            new SriDocType { Code = "02", Name = "Nota de Venta - RISE",                                      ShortName = "NV_RISE",    IsElectronic = true,  IsActive = true  },
+            new SriDocType { Code = "01", Name = "salesBill",                                                   ShortName = "salesBill",    IsElectronic = true,  IsActive = true  },
+            new SriDocType { Code = "02", Name = "note de Venta - RISE",                                      ShortName = "NV_RISE",    IsElectronic = true,  IsActive = true  },
             new SriDocType { Code = "03", Name = "LiquidaciÃ³n de Compra de Bienes y PrestaciÃ³n de Servicios", ShortName = "LIQ_COMPRA", IsElectronic = true,  IsActive = true  },
-            new SriDocType { Code = "04", Name = "Nota de CrÃ©dito",                                           ShortName = "N_CREDITO",  IsElectronic = true,  IsActive = true  },
-            new SriDocType { Code = "05", Name = "Nota de DÃ©bito",                                            ShortName = "N_DEBITO",   IsElectronic = true,  IsActive = true  },
+            new SriDocType { Code = "04", Name = "note de CrÃ©dito",                                           ShortName = "N_CREDITO",  IsElectronic = true,  IsActive = true  },
+            new SriDocType { Code = "05", Name = "note de DÃ©bito",                                            ShortName = "N_DEBITO",   IsElectronic = true,  IsActive = true  },
             new SriDocType { Code = "06", Name = "GuÃ­a de RemisiÃ³n",                                          ShortName = "G_REMISION", IsElectronic = true,  IsActive = true  },
-            new SriDocType { Code = "07", Name = "Comprobante de RetenciÃ³n",                                  ShortName = "RETENCION",  IsElectronic = true,  IsActive = true  },
+            new SriDocType { Code = "07", Name = "Comprobante de RetenciÃ³n",                                  ShortName = "retention",  IsElectronic = true,  IsActive = true  },
             new SriDocType { Code = "08", Name = "Tiquete de MÃ¡quina Registradora",                           ShortName = "TIQUETE",    IsElectronic = false, IsActive = false },
             new SriDocType { Code = "09", Name = "Tiquete de Caja Registradora",                              ShortName = "CAJA_REG",   IsElectronic = false, IsActive = false },
             new SriDocType { Code = "18", Name = "Documento ElectrÃ³nico de ImportaciÃ³n",                      ShortName = "DEI",        IsElectronic = false, IsActive = false }

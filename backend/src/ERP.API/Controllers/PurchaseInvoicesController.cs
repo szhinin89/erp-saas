@@ -1,4 +1,4 @@
-using ERP.API.Attributes;
+﻿using ERP.API.Attributes;
 using ERP.API.Contracts;
 using ERP.API.Contracts.Purchasing;
 using ERP.API.Extensions;
@@ -32,17 +32,17 @@ public sealed class PurchaseInvoicesController : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<IReadOnlyList<PurchBillDto>>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetAll(CancellationToken ct = default)
     {
-        PurchaseStatus? estado = null;
+        PurchaseStatus? Status = null;
         if (Request.Query.TryGetValue("estado", out var ev) &&
             Enum.TryParse<PurchaseStatus>(ev, out var ep))
-            estado = ep;
+            Status = ep;
 
         var proveedorId = ListQueryParameters.ParseOptionalGuid(Request.Query, "proveedorId");
         var (desde, hasta) = ListQueryParameters.ParseDateTimeRange(Request.Query);
         var search = CatalogQueryParameters.ParseSearch(Request.Query);
 
         var result = await _mediator.Send(
-            new GetPurchasesQuery(estado, proveedorId, desde, hasta, search), ct);
+            new GetPurchasesQuery(Status, proveedorId, desde, hasta, search), ct);
         return this.ToOkOrBadRequest(result, "OK", () => Array.Empty<PurchBillDto>());
     }
 
@@ -63,7 +63,7 @@ public sealed class PurchaseInvoicesController : ControllerBase
         [FromBody] CreatePurchaseCommand command,
         CancellationToken ct = default)
     {
-        var result = await _mediator.Send(command with { Modo = PurchaseCreationMode.Manual }, ct);
+        var result = await _mediator.Send(command with { Mode = PurchaseCreationMode.Manual }, ct);
         return this.ToCreatedOrBadRequest(result, "Creado");
     }
 
@@ -75,14 +75,14 @@ public sealed class PurchaseInvoicesController : ControllerBase
     public async Task<IActionResult> CreateFromXml(IFormFile xmlFile, CancellationToken ct = default)
     {
         if (xmlFile is null || xmlFile.Length == 0)
-            return this.ApiBadRequest("Debe adjuntar el archivo XML de la factura.");
+            return this.ApiBadRequest("Debe adjuntar el archivo XML de la salesBill.");
 
         await using var ms = new MemoryStream();
         await xmlFile.CopyToAsync(ms, ct);
 
         var result = await _mediator.Send(
             new CreatePurchaseCommand(
-                Modo: PurchaseCreationMode.Xml,
+                Mode: PurchaseCreationMode.Xml,
                 XmlContent: ms.ToArray(),
                 XmlFileName: xmlFile.FileName,
                 BusinessPartnerId: null,

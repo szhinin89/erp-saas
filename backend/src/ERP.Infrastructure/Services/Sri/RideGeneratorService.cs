@@ -46,57 +46,57 @@ public sealed class RideGeneratorService : IRideGeneratorService
 
     public async Task<byte[]> GenerateFacturaPdfAsync(Guid salesBillId, CancellationToken ct = default)
     {
-        var factura = await _db.FiscalInvoices
+        var salesBill = await _db.FiscalInvoices
             .AsNoTracking()
             .Include(f => f.Lines)
             .Include(f => f.Electronic)
             .FirstOrDefaultAsync(f => f.PublicId == salesBillId, ct)
-            ?? throw new KeyNotFoundException($"Factura {salesBillId} no encontrada.");
+            ?? throw new KeyNotFoundException($"salesBill {salesBillId} no encontrada.");
 
         var buyer = await _db.Set<BusinessPartner>()
             .AsNoTracking()
-            .FirstOrDefaultAsync(b => b.Id == factura.BusinessPartnerId, ct);
+            .FirstOrDefaultAsync(b => b.Id == salesBill.BusinessPartnerId, ct);
 
-        var cfg      = await LoadBillingProfile(factura.SubscriberId, ct);
-        var esPrueba = IsAmbientePrueba(factura.AccessKey);
-        var snapshot = ToRideSnapshot(factura);
+        var cfg      = await LoadBillingProfile(salesBill.SubscriberId, ct);
+        var isTestMode = IsAmbientePrueba(salesBill.AccessKey);
+        var snapshot = ToRideSnapshot(salesBill);
 
-        _logger.LogDebug("[RIDE] Generando PDF factura {Id} ({Doc})", factura.PublicId, factura.AccessKey);
+        _logger.LogDebug("[RIDE] Generando PDF salesBill {Id} ({Doc})", salesBill.PublicId, salesBill.AccessKey);
 
-        return BuildFacturaPdf(snapshot, buyer, cfg, esPrueba);
+        return BuildFacturaPdf(snapshot, buyer, cfg, isTestMode);
     }
 
     public async Task<byte[]> GenerateNotaPdfAsync(Guid salesNoteId, CancellationToken ct = default)
     {
-        var nota = await _db.Set<SalesNote>()
+        var note = await _db.Set<SalesNote>()
             .AsNoTracking()
             .Include(n => n.OriginalBill)
             .Include(n => n.Lines)
             .FirstOrDefaultAsync(n => n.Id == salesNoteId, ct)
-            ?? throw new KeyNotFoundException($"Nota {salesNoteId} no encontrada.");
+            ?? throw new KeyNotFoundException($"note {salesNoteId} no encontrada.");
 
-        var buyerPartnerId = nota.OriginalBill?.BusinessPartnerId;
+        var buyerPartnerId = note.OriginalBill?.BusinessPartnerId;
         var buyer = buyerPartnerId.HasValue && buyerPartnerId.Value != Guid.Empty
             ? await _db.Set<BusinessPartner>()
                 .AsNoTracking()
                 .FirstOrDefaultAsync(b => b.Id == buyerPartnerId.Value, ct)
             : null;
 
-        var cfg      = await LoadBillingProfile(nota.SubscriberId, ct);
-        var esPrueba = IsAmbientePrueba(nota.AccessKey);
+        var cfg      = await LoadBillingProfile(note.SubscriberId, ct);
+        var isTestMode = IsAmbientePrueba(note.AccessKey);
 
-        _logger.LogDebug("[RIDE] Generando PDF nota {Id} ({Doc})", nota.Id, nota.AccessKey);
+        _logger.LogDebug("[RIDE] Generando PDF note {Id} ({Doc})", note.Id, note.AccessKey);
 
-        return BuildNotaPdf(nota, buyer, cfg, esPrueba);
+        return BuildNotaPdf(note, buyer, cfg, isTestMode);
     }
 
     // â”€â”€ Generadores QuestPDF â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
-    private byte[] BuildFacturaPdf(RideFacturaSnapshot f, BusinessPartner? buyer, SubscriberBillingProfile cfg, bool esPrueba)
+    private byte[] BuildFacturaPdf(RideInvoiceSnapshot f, BusinessPartner? buyer, SubscriberBillingProfile cfg, bool isTestMode)
     {
         var lines   = f.Lines.ToList();
         var numDoc  = $"{f.EstabCode}-{f.EmPointCode}-{f.Sequential.PadLeft(9, '0')}";
-        var docLabel = "FACTURA";
+        var docLabel = "salesBill";
 
         return Document.Create(container => container.Page(page =>
         {
@@ -156,14 +156,14 @@ public sealed class RideGeneratorService : IRideGeneratorService
                             doc.Item().PaddingTop(4).Text($"Cont. Especial: {cfg.SpecialTaxpayer}").FontSize(7);
 
                         doc.Item().Text($"Oblig. Contabilidad: {(cfg.RequiresAccounting ? "SI" : "NO")}").FontSize(7);
-                        doc.Item().Text($"Ambiente: {(esPrueba ? "PRUEBAS" : "PRODUCCIÃ“N")}").FontSize(7)
-                           .FontColor(esPrueba ? ColAlert : ColText);
+                        doc.Item().Text($"Ambiente: {(isTestMode ? "PRUEBAS" : "PRODUCCIÃ“N")}").FontSize(7)
+                           .FontColor(isTestMode ? ColAlert : ColText);
                     });
                 });
 
                 col.Item().PaddingTop(4).BorderBottom(1.5f).BorderColor(ColSecondary);
 
-                if (esPrueba)
+                if (isTestMode)
                     col.Item().AlignCenter().Background(ColAlert).Padding(3)
                        .Text("âš  DOCUMENTO DE PRUEBA â€” NO TIENE VALIDEZ TRIBUTARIA âš ")
                        .Bold().FontSize(8).FontColor(ColWhite);
@@ -294,10 +294,10 @@ public sealed class RideGeneratorService : IRideGeneratorService
         })).GeneratePdf();
     }
 
-    private byte[] BuildNotaPdf(SalesNote n, BusinessPartner? buyer, SubscriberBillingProfile cfg, bool esPrueba)
+    private byte[] BuildNotaPdf(SalesNote n, BusinessPartner? buyer, SubscriberBillingProfile cfg, bool isTestMode)
     {
         var esCredito = n.NoteType == NoteType.Credit;
-        var docLabel  = esCredito ? "NOTA DE CRÃ‰DITO" : "NOTA DE DÃ‰BITO";
+        var docLabel  = esCredito ? "note DE CRÃ‰DITO" : "note DE DÃ‰BITO";
         var numDoc    = $"{n.EstabCode}-{n.EmPointCode}-{n.Sequential.PadLeft(9, '0')}";
         var origNum   = $"{n.OriginalBill.EstabCode}-{n.OriginalBill.EmPointCode}-{n.OriginalBill.Sequential.PadLeft(9, '0')}";
         var lines     = n.Lines.ToList();
@@ -347,7 +347,7 @@ public sealed class RideGeneratorService : IRideGeneratorService
                     });
                 });
                 col.Item().PaddingTop(4).BorderBottom(1.5f).BorderColor(ColSecondary);
-                if (esPrueba)
+                if (isTestMode)
                     col.Item().AlignCenter().Background(ColAlert).Padding(3)
                        .Text("âš  DOCUMENTO DE PRUEBA â€” NO TIENE VALIDEZ TRIBUTARIA âš ")
                        .Bold().FontSize(8).FontColor(ColWhite);
@@ -355,7 +355,7 @@ public sealed class RideGeneratorService : IRideGeneratorService
 
             page.Content().PaddingTop(8).Column(col =>
             {
-                // Cliente (desde factura original)
+                // Cliente (desde salesBill original)
                 col.Item().Background(ColLight).Border(1).BorderColor(ColBorder).Padding(6).Row(r =>
                 {
                     r.RelativeItem().Column(c =>
@@ -511,7 +511,7 @@ public sealed class RideGeneratorService : IRideGeneratorService
         return cfg ?? SubscriberBillingProfile.CreateDefault(subscriberId, Guid.Empty);
     }
 
-    private static RideFacturaSnapshot ToRideSnapshot(Invoice invoice) =>
+    private static RideInvoiceSnapshot ToRideSnapshot(Invoice invoice) =>
         new(
             invoice.PublicId,
             invoice.EstabCode,
@@ -524,7 +524,7 @@ public sealed class RideGeneratorService : IRideGeneratorService
             invoice.Subtotal,
             invoice.TaxTotal,
             invoice.Total,
-            invoice.Lines.Select(l => new RideFacturaLine(
+            invoice.Lines.Select(l => new RideInvoiceLine(
                 l.ProductId,
                 l.DescriptionSnapshot,
                 l.Quantity,
@@ -534,7 +534,7 @@ public sealed class RideGeneratorService : IRideGeneratorService
                 l.LineTax,
                 l.LineTotal)).ToList());
 
-    private sealed record RideFacturaSnapshot(
+    private sealed record RideInvoiceSnapshot(
         Guid PublicId,
         string EstabCode,
         string EmPointCode,
@@ -546,9 +546,9 @@ public sealed class RideGeneratorService : IRideGeneratorService
         decimal Subtotal,
         decimal VatTotal,
         decimal Total,
-        IReadOnlyList<RideFacturaLine> Lines);
+        IReadOnlyList<RideInvoiceLine> Lines);
 
-    private sealed record RideFacturaLine(
+    private sealed record RideInvoiceLine(
         Guid ProductId,
         string Description,
         decimal Quantity,

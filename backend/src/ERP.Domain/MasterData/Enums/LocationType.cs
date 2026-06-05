@@ -1,9 +1,9 @@
-namespace ERP.Domain.MasterData.Enums;
+﻿namespace ERP.Domain.MasterData.Enums;
 
 /// <summary>
 /// Tipo físico de la ubicación del BusinessPartner.
 ///
-/// NOTA: BillingAddr fue eliminado deliberadamente. El propósito de facturación
+/// note: BillingAddr fue eliminado deliberadamente. El propósito de facturación
 /// es ortogonal al tipo físico — se modela con LocationPurpose (flags).
 /// Una Matriz puede ser simultáneamente punto de entrega Y dirección de facturación.
 /// </summary>

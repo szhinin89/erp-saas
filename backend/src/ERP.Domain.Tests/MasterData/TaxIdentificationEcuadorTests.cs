@@ -1,4 +1,4 @@
-using ERP.Domain.MasterData.ValueObjects;
+﻿using ERP.Domain.MasterData.ValueObjects;
 using FluentAssertions;
 
 namespace ERP.Domain.Tests.MasterData;
@@ -55,7 +55,7 @@ public sealed class TaxIdentificationEcuadorTests
     public void CI_valida_es_aceptada(string ci)
     {
         // Usar CIs que pasen el algoritmo del Registro Civil
-        // Nota: los ejemplos deben ser CIs reales válidas
+        // note: los ejemplos deben ser CIs reales válidas
         var act = () => TaxIdentification.Create("05", ci);
         // Solo verificamos que si es válida, no lanza
         // (las CIs inválidas lanzarán, las válidas no)

@@ -1,4 +1,4 @@
-using FluentValidation;
+﻿using FluentValidation;
 
 namespace ERP.Application.Sales.UseCases.SalesNotes;
 
@@ -13,9 +13,9 @@ public sealed class CreateSalesNoteCommandValidator : AbstractValidator<CreateSa
         RuleFor(x => x.NoteType)
             .NotEmpty()
             .Must(t => AllowedNoteTypes.Contains(t.Trim()))
-            .WithMessage("Tipo de nota inválido. Use CREDIT o DEBIT.");
+            .WithMessage("Tipo de note inválido. Use CREDIT o DEBIT.");
         RuleFor(x => x.Reason).NotEmpty().MaximumLength(500);
-        RuleFor(x => x.Items).NotEmpty().WithMessage("La nota debe tener al menos una línea.");
+        RuleFor(x => x.Items).NotEmpty().WithMessage("La note debe tener al menos una línea.");
         RuleForEach(x => x.Items).ChildRules(line =>
         {
             line.RuleFor(i => i.ProductId).NotEmpty();

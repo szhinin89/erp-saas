@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+﻿import { useCallback, useEffect, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -13,7 +13,7 @@ import { formatApiRequestError } from '../../lib/apiError';
 
 import { useBrandUiStore } from '../store/brandUiStore';
 import { BrandResumenTab }  from '../components/BrandResumenTab';
-import { BrandListadoTab }  from '../components/BrandListadoTab';
+import { BrandListadoTab }  from ../components/BrandListTab';
 import { BrandFormTab }     from '../components/BrandFormTab';
 import { BrandToastManager } from '../components/BrandToastManager';
 

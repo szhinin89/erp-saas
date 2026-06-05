@@ -1,6 +1,6 @@
 using FluentAssertions;
 using ERP.Domain.Products.Entities;
-using ERP.Domain.Products.Enums;
+// BarcodeType is in ERP.Domain.Products.Entities
 
 namespace ERP.Domain.Tests.Products;
 
@@ -79,10 +79,6 @@ public class ProductTests
             availableOnWeb: false,
             availableOnMobile: false,
             isEcommerceActive: false,
-            baseColor: null,
-            hasMultipleColors: false,
-            hasSizes: false,
-            handlesTariff: false,
             isForSale: true);
     }
 }

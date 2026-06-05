@@ -1,4 +1,4 @@
-using ERP.Domain.Common;
+﻿using ERP.Domain.Common;
 using ERP.Domain.Modules.Fiscal.Events;
 
 namespace ERP.Domain.Modules.Fiscal.Entities;
@@ -178,7 +178,7 @@ public sealed class Invoice : SnowflakeAuditableEntity
     public void Void(Guid userId)
     {
         if (Status is Statuses.Authorized or Statuses.Voided)
-            throw new InvalidOperationException($"No se puede anular una factura en estado {Status}.");
+            throw new InvalidOperationException($"No se puede anular una salesBill en estado {Status}.");
         Transition(Statuses.Voided, userId, null, s => s is not (Statuses.Authorized or Statuses.Voided));
     }
 

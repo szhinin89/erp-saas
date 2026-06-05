@@ -1,4 +1,4 @@
-using ERP.Application.Common.Inventory;
+﻿using ERP.Application.Common.Inventory;
 using ERP.Domain.Modules.Fiscal.Events;
 using MediatR;
 
@@ -32,6 +32,6 @@ public sealed class InvoiceAuthorizedEventHandler : INotificationHandler<Invoice
             ct);
 
         if (!result.IsSuccess)
-            throw new InvalidOperationException(result.Error ?? "Error al registrar salida de inventario por factura.");
+            throw new InvalidOperationException(result.Error ?? "Error al registrar salida de inventario por salesBill.");
     }
 }

@@ -1,4 +1,4 @@
-using ERP.Application.Common.Inventory;
+﻿using ERP.Application.Common.Inventory;
 using ERP.Domain.Modules.Sales.Events;
 using MediatR;
 
@@ -32,6 +32,6 @@ public sealed class SalesNoteAuthorizedEventHandler : INotificationHandler<Sales
             ct);
 
         if (!result.IsSuccess)
-            throw new InvalidOperationException(result.Error ?? "Error al registrar reingreso de inventario por nota.");
+            throw new InvalidOperationException(result.Error ?? "Error al registrar reingreso de inventario por note.");
     }
 }

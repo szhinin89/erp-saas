@@ -1,4 +1,4 @@
-using ERP.Application.Sales.UseCases.ListPendingSriRetry;
+﻿using ERP.Application.Sales.UseCases.ListPendingSriRetry;
 using ERP.Application.Sales.UseCases.RetrySubmission;
 using ERP.Domain.Modules.Sales.Interfaces;
 using ERP.Infrastructure.Services;
@@ -44,7 +44,7 @@ public sealed class SriRetryJob : ISriRetryJob
         }
 
         _logger.LogInformation(
-            "SriRetryJob: {Count} factura(s) pendiente(s) de reintento.",
+            "SriRetryJob: {Count} salesBill(s) pendiente(s) de reintento.",
             pendientes.Count);
 
         var porSubscriber = pendientes.GroupBy(b => b.SubscriberId);
@@ -68,17 +68,17 @@ public sealed class SriRetryJob : ISriRetryJob
 
                         if (result.IsSuccess)
                             _logger.LogInformation(
-                                "SriRetryJob: factura {BillId} (tenant {SubscriberId}) reintentada con éxito.",
+                                "SriRetryJob: salesBill {BillId} (tenant {SubscriberId}) reintentada con éxito.",
                                 bill.BillId, subscriberId);
                         else
                             _logger.LogWarning(
-                                "SriRetryJob: factura {BillId} (tenant {SubscriberId}) falló: {Error}",
+                                "SriRetryJob: salesBill {BillId} (tenant {SubscriberId}) falló: {Error}",
                                 bill.BillId, subscriberId, result.Error);
                     }
                     catch (Exception ex)
                     {
                         _logger.LogError(ex,
-                            "SriRetryJob: error inesperado al reintentar factura {BillId} (tenant {SubscriberId}).",
+                            "SriRetryJob: error inesperado al reintentar salesBill {BillId} (tenant {SubscriberId}).",
                             bill.BillId, subscriberId);
                     }
                 }

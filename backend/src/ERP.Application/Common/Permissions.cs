@@ -1,4 +1,4 @@
-namespace ERP.Application.Common;
+﻿namespace ERP.Application.Common;
 
 /// <summary>
 /// Centralized registry of all permission keys used in the system.
@@ -43,9 +43,9 @@ public static class Permissions
     }
 
     /// <summary>Internal: check available stock when creating a sales invoice.</summary>
-    public static class VentasStock
+    public static class SalesStock
     {
-        public const string View = "ventas.stock.view";
+        public const string View = "sales.stock.view";
     }
 
     public static class SalesCreditNote
@@ -414,7 +414,7 @@ public static class Permissions
         InventoryTaxRate.View,
         // Stock — needed to validate availability when creating invoice
         InventoryStock.View,
-        VentasStock.View,
+        SalesStock.View,
         InventoryWarehouse.View,
         // Branches — required to select establishment / emission point on invoice
         SettingsBranch.View,
