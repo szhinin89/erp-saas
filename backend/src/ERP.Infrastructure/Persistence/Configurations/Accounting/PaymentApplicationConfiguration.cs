@@ -35,5 +35,8 @@ public sealed class PaymentApplicationConfiguration : IEntityTypeConfiguration<P
 
         builder.HasIndex(e => new { e.SubscriberId, e.ApplicationDate })
             .HasDatabaseName("ix_payment_applications_subscriber_date");
+
+        builder.HasIndex(e => new { e.SubscriberId, e.CompanyId })
+            .HasDatabaseName("ix_payment_applications_company");
     }
 }

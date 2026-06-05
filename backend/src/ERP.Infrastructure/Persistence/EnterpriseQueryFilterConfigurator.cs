@@ -12,15 +12,13 @@ namespace ERP.Infrastructure.Persistence;
 ///
 /// Semántica fail-closed aplicada en dos capas:
 ///   1. Subscriber: si FilterSubscriberId == Guid.Empty → 0 filas (nunca actúa como wildcard).
-///   2. Company (ICompanyScopedEntity): si no hay company context → 0 filas.
-///      Esta semántica difiere de ICompanyOperationalEntity (entidades en migración),
-///      donde "sin company context = ver todas las companies del subscriber" es intencional.
+///   2. Company: si FilterHasCompanyContext == false → 0 filas (fail-closed en ambas dimensiones).
 ///
 /// Para consultas legítimas sin filtro usar IPlatformQueryAccessor.Unfiltered().
 ///
 /// Tabla de semánticas:
-///   ISubscriberScopedEntity            → fail-closed subscriber
-///   ICompanyOperationalEntity          → fail-closed subscriber + pass-all-companies si sin ctx
+///   ISubscriberScopedEntity            → fail-closed subscriber only
+///   ICompanyOperationalEntity          → fail-closed subscriber + fail-closed company
 ///   ICompanyScopedEntity + ISubscriber → fail-closed subscriber + fail-closed company
 /// </summary>
 internal static class EnterpriseQueryFilterConfigurator

@@ -21,7 +21,7 @@ public sealed record ApplyArPaymentCommand(
     DateTime PaymentDate,
     string?  PaymentReference = null,
     string?  Notes            = null)
-    : IRequest<Result<bool>>, ISubscriberScopedRequest;
+    : IRequest<Result<bool>>, ICompanyScopedRequest;
 
 public sealed record GetArAgingReportQuery(DateTime AsOf)
     : IRequest<Result<ArAgingReportDto>>, ICompanyScopedRequest;
@@ -44,7 +44,7 @@ public sealed record ApplyApPaymentCommand(
     DateTime PaymentDate,
     string?  PaymentReference = null,
     string?  Notes            = null)
-    : IRequest<Result<bool>>, ISubscriberScopedRequest;
+    : IRequest<Result<bool>>, ICompanyScopedRequest;
 
 public sealed record GetApAgingReportQuery(DateTime AsOf)
     : IRequest<Result<ApAgingReportDto>>, ICompanyScopedRequest;

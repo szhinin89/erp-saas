@@ -28,7 +28,7 @@ public sealed class CreatePurchaseOrderCommandValidatorTests
     {
         var result = _v.Validate(ValidCmd(proveedorId: Guid.Empty));
         result.IsValid.Should().BeFalse();
-        result.Errors.Should().Contain(e => e.PropertyName == "SupplierId");
+        result.Errors.Should().Contain(e => e.PropertyName == "BusinessPartnerId");
     }
 
     // ── RequiredDate ────────────────────────────────────────────────────

@@ -132,7 +132,7 @@ public sealed class ExpenseHandlersTests
         var subscriberId = Guid.NewGuid();
         var userId   = Guid.NewGuid();
         var clave    = ClaveAcceso49();
-        var ruc      = "1790016918001";
+        var ruc      = "1790016919001";
 
         var parsed = new InvoiceParseResult(
             clave,

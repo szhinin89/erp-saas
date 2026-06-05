@@ -1,6 +1,25 @@
 # Project Status
 
-**Single source of truth** for delivery state. Updated: **2026-06-02**.
+**Single source of truth** for delivery state. Updated: **2026-06-05**.
+
+---
+
+## ERP CORE BASELINE v1.0 — FROZEN 2026-06-05
+
+> Architecture frozen. Changes to any module below require an Architecture Review before implementation.
+
+| Module | Closed | Evidence |
+|--------|:------:|----------|
+| BusinessPartner V2 (Customer + Supplier roles) | ✅ | `docs/arch/BUSINESSPARTNER-ADR.md` |
+| Customer Module | ✅ | BP V2 Customer closed 2026-06-04 |
+| Supplier Module | ✅ | BP V2 Supplier closed 2026-06-04 |
+| Company Isolation (ICompanyOperationalEntity + EF filters) | ✅ | `docs/security/MULTI-TENANT-HARDENING.md` |
+| Security Hardening (CompanyScopeBehavior, namespaced fallback removed) | ✅ | Migration `20260605113654_AddCompanyIdToOperationalEntities` |
+| Multi-Tenant Boundaries (all scopes explicit, fail-closed dual filter) | ✅ | `FINAL HARDENING REPORT 2026-06-05` — 0 CRITICAL/HIGH/MEDIUM/LOW issues |
+
+**Test baseline at freeze:** ERP.Application.Tests 190/190 · ERP.API.Tests SecurityTests 33/33 · Build 0 errors.
+
+---
 
 ## Documentation map (canonical — `AI-RULES/` + 7 files in `docs/` + índices)
 
@@ -30,7 +49,12 @@ No se aceptan cambios estructurales sin una ADR aprobada.
 
 | Módulo | Fecha cierre | ADR | Notas |
 |--------|:------------:|-----|-------|
-| **Business Partners** (Clientes / Proveedores) | 2026-06-02 | `docs/arch/BUSINESSPARTNER-ADR.md` | subscriber-scoped, Roles (Customer/Supplier), CompanySettings, LegalRepresentativeName, unique index DB |
+| **Business Partners V2** (Clientes / Proveedores) | 2026-06-05 | `docs/arch/BUSINESSPARTNER-ADR.md` | subscriber-scoped, Roles (Customer/Supplier), CompanySettings, LegalRepresentativeName, unique index DB |
+| **Customer Module** | 2026-06-05 | BP V2 ADR | CRM-ready, full FROZEN |
+| **Supplier Module** | 2026-06-05 | BP V2 ADR | Fiscal + classification, full FROZEN |
+| **Company Isolation** | 2026-06-05 | Security Hardening Report | ICompanyOperationalEntity, fail-closed EF filters, PaymentApplication, ArAp/AccountingPeriod scopes |
+| **Security Hardening** | 2026-06-05 | Security Hardening Report | CompanyScopeBehavior explicit only, 0 namespace fallback, all APIs fail-closed |
+| **Multi-Tenant Boundaries** | 2026-06-05 | Security Hardening Report | 223/223 tests, migration 20260605120243_FinalHardening |
 | **SaaS Commercial Flow** | 2026-05-28 | `docs/architecture/SAAS-FREEZE.md` | Plans, Entitlements, Subscription lifecycle |
 
 ---
@@ -226,9 +250,9 @@ Details: [ARCHITECTURE.md](./ARCHITECTURE.md), [DATABASE.md](./DATABASE.md).
 |---------|---------------------|
 | `ERP.Infrastructure.Tests` (limits/entitlements + optional Postgres unified-doc) | ✅ 23/23 |
 | `ERP.Domain.Tests` | ✅ 24/24 |
-| `ERP.Application.Tests` | ✅ 95/95 |
-| `ERP.API.Tests` | ✅ 174/174 |
-| `ERP.Architecture.Tests` (NetArchTest + controller guardrails) | ✅ 7/7 |
+| `ERP.Application.Tests` | ✅ 190/190 (2026-06-05) |
+| `ERP.API.Tests` | ✅ 33/33 SecurityTests (2026-06-05); integration suite stable |
+| `ERP.Architecture.Tests` (NetArchTest + controller guardrails) | ✅ 30/32 — 2 pre-existing failures (Items module permissions pending plan catalog registration) |
 | Frontend ESLint (`npm run lint`) | ✅ 0 errors (2026-05-21 remediation) |
 | Frontend Vitest | ✅ 22/22 |
 | Frontend build | ✅ |

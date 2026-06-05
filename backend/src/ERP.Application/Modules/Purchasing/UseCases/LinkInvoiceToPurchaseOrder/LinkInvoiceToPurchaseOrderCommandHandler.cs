@@ -73,7 +73,7 @@ public sealed class LinkInvoiceToPurchaseOrderCommandHandler
         var yaVinculada = await _ordenRepo.BillAlreadyLinkedAsync(
             subscriberId, command.PurchaseOrderId, command.PurchBillId, ct);
         if (yaVinculada)
-            return Result<PurchaseOrderDto>.Failure("Esta salesBill ya estÃ¡ vinculada a la orden de compra.");
+            return Result<PurchaseOrderDto>.Failure("Esta salesBill ya está vinculada a la orden de compra.");
 
         // 4. Matching por ProductoId, validaciÃ³n de cantidades y detecciÃ³n de discrepancias de precio
         const decimal ToleranciaPrecioPct = 0.01m; // 1 % â€” diferencias menores se ignoran

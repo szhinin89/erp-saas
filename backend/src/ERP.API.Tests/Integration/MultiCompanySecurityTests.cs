@@ -161,7 +161,7 @@ public sealed class MultiCompanySecurityTests : IAsyncLifetime
             var customerB = ERP.Domain.MasterData.Entities.BusinessPartner.Create(
                 subscriberId:         subBId,
                 identificationType:   "04",
-                identificationNumber: "0912345678001",
+                identificationNumber: "0990000018001",
                 personType:           ERP.Domain.MasterData.Enums.PersonType.Legal,
                 legalName:            "Cliente Solo SubB",
                 createdBy:            userBId);

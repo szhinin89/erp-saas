@@ -54,5 +54,8 @@ public sealed class ExpenseDocumentConfiguration : IEntityTypeConfiguration<Expe
         builder.Property(e => e.UpdatedBy).HasColumnName("updated_by");
 
         builder.HasMany(e => e.Details).WithOne().HasForeignKey(d => d.ExpenseId).OnDelete(DeleteBehavior.Cascade);
+
+        builder.HasIndex(e => new { e.SubscriberId, e.CompanyId })
+            .HasDatabaseName("ix_expense_document_company");
     }
 }

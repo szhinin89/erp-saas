@@ -3,10 +3,10 @@
 namespace ERP.Domain.Modules.Accounting.Entities;
 
 /// <summary>
-/// Registro de aplicaciÃ³n de pago a una entrada de CxC o CxP.
-/// Una aplicaciÃ³n apunta exactamente a una entrada (AR o AP).
+/// Registro de aplicación de pago a una entrada de CxC o CxP.
+/// Una aplicación apunta exactamente a una entrada (AR o AP).
 /// </summary>
-public sealed class PaymentApplication : AuditableEntity, ISubscriberScopedEntity
+public sealed class PaymentApplication : AuditableEntity, ICompanyOperationalEntity
 {
     public Guid     CompanyId         { get; private set; }
     public Guid?    ArEntryId         { get; private set; }

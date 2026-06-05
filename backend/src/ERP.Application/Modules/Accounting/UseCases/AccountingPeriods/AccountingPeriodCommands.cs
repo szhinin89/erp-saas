@@ -7,13 +7,13 @@ public sealed record OpenAccountingPeriodCommand(int Year, int Month)
     : IRequest<Result<Guid>>, ICompanyScopedRequest;
 
 public sealed record CloseAccountingPeriodCommand(Guid PeriodId)
-    : IRequest<Result<bool>>, ISubscriberScopedRequest;
+    : IRequest<Result<bool>>, ICompanyScopedRequest;
 
 public sealed record ReopenAccountingPeriodCommand(Guid PeriodId)
-    : IRequest<Result<bool>>, ISubscriberScopedRequest;
+    : IRequest<Result<bool>>, ICompanyScopedRequest;
 
 public sealed record GetAccountingPeriodsQuery()
-    : IRequest<Result<IReadOnlyList<AccountingPeriodDto>>>, ISubscriberScopedRequest;
+    : IRequest<Result<IReadOnlyList<AccountingPeriodDto>>>, ICompanyScopedRequest;
 
 public sealed record AccountingPeriodDto(
     Guid      Id,
