@@ -7,6 +7,7 @@ import type {
   BusinessPartnerSummaryDto,
   CompanyBpTradingSettingsDto,
   CreateBusinessPartnerBody,
+  SupplierClassificationBody,
   SupplierConfigBody,
   UpdateBusinessPartnerBody,
 } from '../types/businessPartner.types';
@@ -32,7 +33,8 @@ export function useMasterDataSuppliersPage() {
   const [settingsBp, setSettingsBp]       = useState<BusinessPartnerSummaryDto | null>(null);
   const [settingsData, setSettingsData]   = useState<CompanyBpTradingSettingsDto | null>(null);
   // supplierProfileBp: store the bp + roleId for updating supplier config
-  const [supplierConfigBp, setSupplierConfigBp] = useState<{ bp: BusinessPartnerSummaryDto; roleId: string } | null>(null);
+  const [supplierConfigBp,         setSupplierConfigBp]         = useState<{ bp: BusinessPartnerSummaryDto; roleId: string } | null>(null);
+  const [supplierClassificationBp, setSupplierClassificationBp] = useState<{ bp: BusinessPartnerSummaryDto; roleId: string } | null>(null);
   const [saving, setSaving]               = useState(false);
   const [inlineError, setInlineError]     = useState<string | null>(null);
   const [modalError, setModalError]       = useState<string | null>(null);
@@ -128,7 +130,8 @@ export function useMasterDataSuppliersPage() {
     } catch { /* no action */ }
   };
 
-  const closeSupplierConfig = useCallback(() => { setSupplierConfigBp(null); clearModalError(); }, []);
+  const closeSupplierConfig         = useCallback(() => { setSupplierConfigBp(null);         clearModalError(); }, []);
+  const closeSupplierClassification = useCallback(() => { setSupplierClassificationBp(null); clearModalError(); }, []);
 
   const saveSupplierConfig = async (bpId: string, roleId: string, config: SupplierConfigBody): Promise<boolean> => {
     setSaving(true);
@@ -136,6 +139,32 @@ export function useMasterDataSuppliersPage() {
     try {
       await businessPartnerFacade.updateSupplierConfig(bpId, roleId, config);
       setSupplierConfigBp(null);
+      return true;
+    } catch (err) {
+      setModalError(formatApiError(err));
+      return false;
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const openSupplierClassification = async (bp: BusinessPartnerSummaryDto) => {
+    clearModalError();
+    try {
+      const roles = await businessPartnerFacade.getRoles(bp.id, true);
+      const supplierRole = roles.find((r) => r.roleType === 'Supplier');
+      if (supplierRole) setSupplierClassificationBp({ bp, roleId: supplierRole.id });
+    } catch { /* no action */ }
+  };
+
+  const saveSupplierClassification = async (
+    bpId: string, roleId: string, config: SupplierClassificationBody,
+  ): Promise<boolean> => {
+    setSaving(true);
+    clearModalError();
+    try {
+      await businessPartnerFacade.updateSupplierClassification(bpId, roleId, config);
+      setSupplierClassificationBp(null);
       return true;
     } catch (err) {
       setModalError(formatApiError(err));
@@ -264,6 +293,7 @@ export function useMasterDataSuppliersPage() {
     createSupplier, updateSupplier, assignAsSupplier,
     disableSupplier, activateSupplier, addAsCustomer,
     supplierConfigBp, openSupplierConfig, closeSupplierConfig, saveSupplierConfig,
+    supplierClassificationBp, openSupplierClassification, closeSupplierClassification, saveSupplierClassification,
     settingsBp, settingsData, openSettings, closeSettings,
     saveSettings, blockSupplier, unblockSupplier,
     saving,

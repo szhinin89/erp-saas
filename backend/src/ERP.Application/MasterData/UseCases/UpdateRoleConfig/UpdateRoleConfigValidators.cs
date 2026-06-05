@@ -20,6 +20,51 @@ public sealed class UpdateSupplierRoleConfigValidator : AbstractValidator<Update
                 .MaximumLength(SupplierRoleConfig.SriCodeMaxLen).When(x => x.Config.DefaultRetentionIncomeCode is not null);
             RuleFor(x => x.Config.PaymentTerms)
                 .MaximumLength(SupplierRoleConfig.PaymentTermsMaxLen).When(x => x.Config.PaymentTerms is not null);
+            RuleFor(x => x.Config.DefaultPaymentMethodCode)
+                .Must(v => v is null || SupplierRoleConfig.ValidPaymentMethodCodes.Contains(v))
+                .WithMessage($"DefaultPaymentMethodCode debe ser uno de: {string.Join(", ", SupplierRoleConfig.ValidPaymentMethodCodes)}")
+                .When(x => x.Config.DefaultPaymentMethodCode is not null);
+        });
+    }
+}
+
+public sealed class UpdateSupplierClassificationConfigValidator
+    : AbstractValidator<UpdateSupplierClassificationConfigCommand>
+{
+    public UpdateSupplierClassificationConfigValidator()
+    {
+        RuleFor(x => x.RoleId).NotEmpty().WithMessage("RoleId es obligatorio.");
+        RuleFor(x => x.Config).NotNull().WithMessage("Config es obligatoria.");
+
+        When(x => x.Config is not null, () =>
+        {
+            RuleFor(x => x.Config.SupplierCategory)
+                .Must(v => v is null || SupplierClassificationConfig.ValidCategories.Contains(v))
+                .WithMessage($"SupplierCategory debe ser uno de: {string.Join(", ", SupplierClassificationConfig.ValidCategories)}")
+                .When(x => x.Config.SupplierCategory is not null);
+            RuleFor(x => x.Config.SupplierType)
+                .Must(v => v is null || SupplierClassificationConfig.ValidTypes.Contains(v))
+                .WithMessage($"SupplierType debe ser uno de: {string.Join(", ", SupplierClassificationConfig.ValidTypes)}")
+                .When(x => x.Config.SupplierType is not null);
+            RuleFor(x => x.Config.SupplierRisk)
+                .Must(v => v is null || SupplierClassificationConfig.ValidRisks.Contains(v))
+                .WithMessage($"SupplierRisk debe ser uno de: {string.Join(", ", SupplierClassificationConfig.ValidRisks)}")
+                .When(x => x.Config.SupplierRisk is not null);
+            RuleFor(x => x.Config.SupplierRating)
+                .Must(v => v is null || SupplierClassificationConfig.ValidRatings.Contains(v))
+                .WithMessage($"SupplierRating debe ser uno de: {string.Join(", ", SupplierClassificationConfig.ValidRatings)}")
+                .When(x => x.Config.SupplierRating is not null);
+            RuleFor(x => x.Config.PrimaryGoodType)
+                .Must(v => v is null || SupplierClassificationConfig.ValidGoodTypes.Contains(v))
+                .WithMessage($"PrimaryGoodType debe ser uno de: {string.Join(", ", SupplierClassificationConfig.ValidGoodTypes)}")
+                .When(x => x.Config.PrimaryGoodType is not null);
+            RuleFor(x => x.Config.SupplierSegment)
+                .Must(v => v is null || SupplierClassificationConfig.ValidSegments.Contains(v))
+                .WithMessage($"SupplierSegment debe ser uno de: {string.Join(", ", SupplierClassificationConfig.ValidSegments)}")
+                .When(x => x.Config.SupplierSegment is not null);
+            RuleFor(x => x.Config.PaymentMethodPreference)
+                .MaximumLength(SupplierClassificationConfig.PaymentPrefMaxLen)
+                .When(x => x.Config.PaymentMethodPreference is not null);
         });
     }
 }

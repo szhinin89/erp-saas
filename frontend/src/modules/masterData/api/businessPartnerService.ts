@@ -15,6 +15,7 @@ import type {
   CreateLocationBody,
   CustomerConfigBody,
   SearchBusinessPartnersParams,
+  SupplierClassificationBody,
   SupplierConfigBody,
   UpdateBusinessPartnerBody,
   UpdateContactBody,
@@ -116,6 +117,10 @@ export const bpRoleService = {
   /** PATCH /{bpId}/roles/{roleId}/customer-config */
   updateCustomerConfig: (bpId: string, roleId: string, config: CustomerConfigBody): Promise<BusinessPartnerRoleDto> =>
     apiPatch<BusinessPartnerRoleDto>(`${BASE}/${enc(bpId)}/roles/${enc(roleId)}/customer-config`, config),
+
+  /** PATCH /{bpId}/roles/{roleId}/supplier-classification */
+  updateSupplierClassification: (bpId: string, roleId: string, config: SupplierClassificationBody): Promise<BusinessPartnerRoleDto> =>
+    apiPatch<BusinessPartnerRoleDto>(`${BASE}/${enc(bpId)}/roles/${enc(roleId)}/supplier-classification`, config),
 };
 
 // ── BusinessPartner Locations ─────────────────────────────────────────────────

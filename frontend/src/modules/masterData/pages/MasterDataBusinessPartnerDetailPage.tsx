@@ -37,7 +37,19 @@ function RoleBadge({ role }: { role: BusinessPartnerRoleDto }) {
           <small>Sustento: {role.supplierConfig.defaultTaxSupportCode ?? '—'}</small>
           <small>Ret. IVA: {role.supplierConfig.defaultRetentionVatCode ?? '—'}</small>
           <small>Ret. Renta: {role.supplierConfig.defaultRetentionIncomeCode ?? '—'}</small>
-          {role.supplierConfig.paymentTerms && <small>Plazo: {role.supplierConfig.paymentTerms}</small>}
+          {role.supplierConfig.paymentTerms           && <small>Plazo: {role.supplierConfig.paymentTerms}</small>}
+          {role.supplierConfig.defaultPaymentMethodCode && <small>Método SRI: {role.supplierConfig.defaultPaymentMethodCode}</small>}
+          {role.supplierConfig.isRetentionExempt      && <small className="md-badge md-badge--warn">Exento retención</small>}
+        </div>
+      )}
+      {role.classificationConfig && (
+        <div className="md-role-card__config md-role-card__config--crm">
+          {role.classificationConfig.supplierCategory  && <small>Categoría: {role.classificationConfig.supplierCategory}</small>}
+          {role.classificationConfig.supplierType      && <small>Tipo: {role.classificationConfig.supplierType}</small>}
+          {role.classificationConfig.supplierRisk      && <small>Riesgo: {role.classificationConfig.supplierRisk}</small>}
+          {role.classificationConfig.supplierRating    && <small>Rating: {role.classificationConfig.supplierRating}</small>}
+          {role.classificationConfig.primaryGoodType   && <small>Bien: {role.classificationConfig.primaryGoodType}</small>}
+          {role.classificationConfig.supplierSegment   && <small>Segmento: {role.classificationConfig.supplierSegment}</small>}
         </div>
       )}
       {role.carrierConfig?.transportAuthorizationNumber && (

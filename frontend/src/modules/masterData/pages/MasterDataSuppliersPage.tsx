@@ -11,7 +11,17 @@ import { MasterDataPartnerResumenTab } from '../components/MasterDataPartnerResu
 import { MasterDataPartnerListTab } from '../components/MasterDataPartnerListTab';
 import { MasterDataPartnerToast } from '../components/MasterDataPartnerToast';
 import { useMasterDataSuppliersUiStore } from '../store/masterDataPartnerUiStore';
-import type { CreateBusinessPartnerBody, SupplierConfigBody, UpdateBusinessPartnerBody } from '../types/businessPartner.types';
+import type {
+  CreateBusinessPartnerBody,
+  SupplierClassificationBody,
+  SupplierConfigBody,
+  UpdateBusinessPartnerBody,
+} from '../types/businessPartner.types';
+import {
+  SRI_PAYMENT_METHOD_CODES,
+  SUPPLIER_CATEGORIES, SUPPLIER_GOOD_TYPES, SUPPLIER_RATINGS,
+  SUPPLIER_RISKS, SUPPLIER_SEGMENTS, SUPPLIER_TYPES,
+} from '../types/businessPartner.types';
 import '../../../styles/shared/products-catalog.css';
 import './masterdata-pages.css';
 
@@ -23,38 +33,152 @@ const TABS = [
 
 const DRAFT_KEY = 'erp.masterdata.suppliers.draft';
 
-// ── Inline Supplier Config Modal (replaces deleted MasterDataSupplierProfileModal) ──
+// ── SupplierConfigModal — Config SRI operativa (S3-A: incluye método de pago + exención) ──
 function SupplierConfigModal({
-  bpName, saving, error,
-  onClose, onSave,
+  bpName, saving, error, onClose, onSave,
 }: {
   bpName: string; saving: boolean; error?: string | null;
   onClose: () => void;
   onSave: (body: SupplierConfigBody) => void;
 }) {
-  const [taxSupportCode,      setTaxSupportCode]      = useState('');
-  const [retentionVatCode,    setRetentionVatCode]    = useState('');
-  const [retentionIncomeCode, setRetentionIncomeCode] = useState('');
-  const [paymentTerms,        setPaymentTerms]        = useState('');
+  const [taxSupportCode,       setTaxSupportCode]       = useState('');
+  const [retentionVatCode,     setRetentionVatCode]     = useState('');
+  const [retentionIncomeCode,  setRetentionIncomeCode]  = useState('');
+  const [paymentTerms,         setPaymentTerms]         = useState('');
+  const [paymentMethodCode,    setPaymentMethodCode]    = useState('');
+  const [isRetentionExempt,    setIsRetentionExempt]    = useState(false);
 
   return (
     <div className="md-modal-backdrop" role="dialog" aria-modal="true">
-      <form className="md-modal" onSubmit={(e) => { e.preventDefault(); onSave({ defaultTaxSupportCode: taxSupportCode || null, defaultRetentionVatCode: retentionVatCode || null, defaultRetentionIncomeCode: retentionIncomeCode || null, paymentTerms: paymentTerms || null }); }}>
-        <h2>Defaults SRI — Proveedor</h2>
+      <form className="md-modal" onSubmit={(e) => {
+        e.preventDefault();
+        onSave({
+          defaultTaxSupportCode:      taxSupportCode      || null,
+          defaultRetentionVatCode:    retentionVatCode    || null,
+          defaultRetentionIncomeCode: retentionIncomeCode || null,
+          paymentTerms:               paymentTerms        || null,
+          defaultPaymentMethodCode:   paymentMethodCode   || null,
+          isRetentionExempt,
+        });
+      }}>
+        <h2>Config SRI — Proveedor</h2>
         <p className="md-modal-sub">{bpName}</p>
         {error && <ZHPageNotice variant="error" message={error} className="md-modal-notice" />}
         <div className="pg-form-grid pg-form-grid--2">
           <ZHField label="Sustento tributario">
-            <input className="zh-input mono" value={taxSupportCode} onChange={(e) => setTaxSupportCode(e.target.value)} disabled={saving} placeholder="01" maxLength={2} />
+            <input className="zh-input mono" value={taxSupportCode}
+              onChange={(e) => setTaxSupportCode(e.target.value)} disabled={saving} placeholder="01" maxLength={2} />
           </ZHField>
           <ZHField label="Código ret. IVA">
-            <input className="zh-input mono" value={retentionVatCode} onChange={(e) => setRetentionVatCode(e.target.value)} disabled={saving} placeholder="725" maxLength={5} />
+            <input className="zh-input mono" value={retentionVatCode}
+              onChange={(e) => setRetentionVatCode(e.target.value)} disabled={saving} placeholder="725" maxLength={5} />
           </ZHField>
           <ZHField label="Código ret. Renta">
-            <input className="zh-input mono" value={retentionIncomeCode} onChange={(e) => setRetentionIncomeCode(e.target.value)} disabled={saving} placeholder="303" maxLength={5} />
+            <input className="zh-input mono" value={retentionIncomeCode}
+              onChange={(e) => setRetentionIncomeCode(e.target.value)} disabled={saving} placeholder="303" maxLength={5} />
           </ZHField>
           <ZHField label="Condición de pago">
-            <input className="zh-input" value={paymentTerms} onChange={(e) => setPaymentTerms(e.target.value)} disabled={saving} placeholder="30 días" maxLength={200} />
+            <input className="zh-input" value={paymentTerms}
+              onChange={(e) => setPaymentTerms(e.target.value)} disabled={saving} placeholder="30 días" maxLength={200} />
+          </ZHField>
+          <ZHField label="Método de pago SRI">
+            <select className="zh-input" value={paymentMethodCode}
+              onChange={(e) => setPaymentMethodCode(e.target.value)} disabled={saving}>
+              <option value="">— Sin preferencia —</option>
+              {SRI_PAYMENT_METHOD_CODES.map((c) => <option key={c} value={c}>{c}</option>)}
+            </select>
+          </ZHField>
+          <ZHField label="Exento de retención">
+            <label className="md-page-check">
+              <input type="checkbox" checked={isRetentionExempt}
+                onChange={(e) => setIsRetentionExempt(e.target.checked)} disabled={saving} />
+              RISE / Microempresa / Sector público
+            </label>
+          </ZHField>
+        </div>
+        <div className="md-modal-actions">
+          <ZHBtn variant="ghost" type="button" onClick={onClose} disabled={saving}>Cerrar</ZHBtn>
+          <ZHBtn variant="primary" type="submit" disabled={saving}>{saving ? 'Guardando…' : 'Guardar'}</ZHBtn>
+        </div>
+      </form>
+    </div>
+  );
+}
+
+// ── SupplierClassificationModal — Clasificación estratégica (S3-B) ───────────
+function SupplierClassificationModal({
+  bpName, saving, error, onClose, onSave,
+}: {
+  bpName: string; saving: boolean; error?: string | null;
+  onClose: () => void;
+  onSave: (body: SupplierClassificationBody) => void;
+}) {
+  const [category,   setCategory]   = useState('');
+  const [type,       setType]       = useState('');
+  const [risk,       setRisk]       = useState('');
+  const [rating,     setRating]     = useState('');
+  const [goodType,   setGoodType]   = useState('');
+  const [segment,    setSegment]    = useState('');
+  const [paymentPref, setPaymentPref] = useState('');
+
+  return (
+    <div className="md-modal-backdrop" role="dialog" aria-modal="true">
+      <form className="md-modal" onSubmit={(e) => {
+        e.preventDefault();
+        onSave({
+          supplierCategory:       category    || null,
+          supplierType:           type        || null,
+          supplierRisk:           risk        || null,
+          supplierRating:         rating      || null,
+          primaryGoodType:        goodType    || null,
+          supplierSegment:        segment     || null,
+          paymentMethodPreference: paymentPref || null,
+        });
+      }}>
+        <h2>Clasificación — Proveedor</h2>
+        <p className="md-modal-sub">{bpName}</p>
+        {error && <ZHPageNotice variant="error" message={error} className="md-modal-notice" />}
+        <div className="pg-form-grid pg-form-grid--2">
+          <ZHField label="Categoría">
+            <select className="zh-input" value={category} onChange={(e) => setCategory(e.target.value)} disabled={saving}>
+              <option value="">— Sin asignar —</option>
+              {SUPPLIER_CATEGORIES.map((v) => <option key={v} value={v}>{v}</option>)}
+            </select>
+          </ZHField>
+          <ZHField label="Tipo">
+            <select className="zh-input" value={type} onChange={(e) => setType(e.target.value)} disabled={saving}>
+              <option value="">— Sin asignar —</option>
+              {SUPPLIER_TYPES.map((v) => <option key={v} value={v}>{v}</option>)}
+            </select>
+          </ZHField>
+          <ZHField label="Riesgo">
+            <select className="zh-input" value={risk} onChange={(e) => setRisk(e.target.value)} disabled={saving}>
+              <option value="">— Sin asignar —</option>
+              {SUPPLIER_RISKS.map((v) => <option key={v} value={v}>{v}</option>)}
+            </select>
+          </ZHField>
+          <ZHField label="Rating">
+            <select className="zh-input" value={rating} onChange={(e) => setRating(e.target.value)} disabled={saving}>
+              <option value="">— Sin calificar —</option>
+              {SUPPLIER_RATINGS.map((v) => <option key={v} value={v}>{v}</option>)}
+            </select>
+          </ZHField>
+          <ZHField label="Tipo de bien">
+            <select className="zh-input" value={goodType} onChange={(e) => setGoodType(e.target.value)} disabled={saving}>
+              <option value="">— Sin asignar —</option>
+              {SUPPLIER_GOOD_TYPES.map((v) => <option key={v} value={v}>{v}</option>)}
+            </select>
+          </ZHField>
+          <ZHField label="Segmento estratégico">
+            <select className="zh-input" value={segment} onChange={(e) => setSegment(e.target.value)} disabled={saving}>
+              <option value="">— Sin asignar —</option>
+              {SUPPLIER_SEGMENTS.map((v) => <option key={v} value={v}>{v}</option>)}
+            </select>
+          </ZHField>
+          <ZHField label="Método de pago interno">
+            <input className="zh-input" value={paymentPref}
+              onChange={(e) => setPaymentPref(e.target.value)} disabled={saving}
+              placeholder="Ej: Transferencia bancaria" maxLength={100} />
           </ZHField>
         </div>
         <div className="md-modal-actions">
@@ -230,6 +354,20 @@ export function MasterDataSuppliersPage() {
           onSave={(body) => void page.saveSupplierConfig(
             page.supplierConfigBp!.bp.id,
             page.supplierConfigBp!.roleId,
+            body
+          )}
+        />
+      )}
+
+      {page.supplierClassificationBp && (
+        <SupplierClassificationModal
+          bpName={page.supplierClassificationBp.bp.legalName}
+          saving={page.saving}
+          error={page.modalError}
+          onClose={page.closeSupplierClassification}
+          onSave={(body) => void page.saveSupplierClassification(
+            page.supplierClassificationBp!.bp.id,
+            page.supplierClassificationBp!.roleId,
             body
           )}
         />

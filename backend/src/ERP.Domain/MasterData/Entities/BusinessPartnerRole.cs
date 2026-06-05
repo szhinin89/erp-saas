@@ -34,9 +34,10 @@ public sealed class BusinessPartnerRole : AuditableEntity, ISubscriberScopedEnti
     // ── Configs específicas por tipo de rol ───────────────────────────────────
     // Solo la config correspondiente al RoleType puede estar populated.
     // La validación de coherencia tipo↔config está en Create() y UpdateXxxConfig().
-    public SupplierRoleConfig?  SupplierConfig  { get; private set; }
-    public CarrierRoleConfig?   CarrierConfig   { get; private set; }
-    public CustomerRoleConfig?  CustomerConfig  { get; private set; }
+    public SupplierRoleConfig?          SupplierConfig          { get; private set; }
+    public SupplierClassificationConfig? ClassificationConfig   { get; private set; }
+    public CarrierRoleConfig?           CarrierConfig           { get; private set; }
+    public CustomerRoleConfig?          CustomerConfig          { get; private set; }
 
     private BusinessPartnerRole() { }
 
@@ -50,13 +51,14 @@ public sealed class BusinessPartnerRole : AuditableEntity, ISubscriberScopedEnti
     /// PRECONDICIÓN (garantizada por BD): no puede existir otro rol del mismo tipo para este BP.
     /// </summary>
     public static BusinessPartnerRole Create(
-        Guid                subscriberId,
-        Guid                businessPartnerId,
-        RoleType            roleType,
-        Guid                assignedBy,
-        SupplierRoleConfig?  supplierConfig  = null,
-        CarrierRoleConfig?   carrierConfig   = null,
-        CustomerRoleConfig?  customerConfig  = null)
+        Guid                          subscriberId,
+        Guid                          businessPartnerId,
+        RoleType                      roleType,
+        Guid                          assignedBy,
+        SupplierRoleConfig?            supplierConfig         = null,
+        CarrierRoleConfig?             carrierConfig          = null,
+        CustomerRoleConfig?            customerConfig         = null,
+        SupplierClassificationConfig?  classificationConfig   = null)
     {
         if (subscriberId == Guid.Empty)
             throw new ArgumentException("SubscriberId es obligatorio.", nameof(subscriberId));
@@ -65,21 +67,22 @@ public sealed class BusinessPartnerRole : AuditableEntity, ISubscriberScopedEnti
         if (assignedBy == Guid.Empty)
             throw new ArgumentException("AssignedBy es obligatorio.", nameof(assignedBy));
 
-        ValidateConfigCoherence(roleType, supplierConfig, carrierConfig, customerConfig);
+        ValidateConfigCoherence(roleType, supplierConfig, carrierConfig, customerConfig, classificationConfig);
 
         var now  = DateTime.UtcNow;
         var role = new BusinessPartnerRole
         {
-            Id                = Guid.NewGuid(),
-            SubscriberId      = subscriberId,
-            BusinessPartnerId = businessPartnerId,
-            RoleType          = roleType,
-            IsActive          = true,
-            AssignedAt        = now,
-            AssignedBy        = assignedBy,
-            SupplierConfig    = supplierConfig,
-            CarrierConfig     = carrierConfig,
-            CustomerConfig    = customerConfig,
+            Id                   = Guid.NewGuid(),
+            SubscriberId         = subscriberId,
+            BusinessPartnerId    = businessPartnerId,
+            RoleType             = roleType,
+            IsActive             = true,
+            AssignedAt           = now,
+            AssignedBy           = assignedBy,
+            SupplierConfig       = supplierConfig,
+            ClassificationConfig = classificationConfig,
+            CarrierConfig        = carrierConfig,
+            CustomerConfig       = customerConfig,
         };
         role.SetCreated(assignedBy);
         role.RaiseDomainEvent(new BusinessPartnerRoleAssignedEvent
@@ -232,13 +235,37 @@ public sealed class BusinessPartnerRole : AuditableEntity, ISubscriberScopedEnti
         });
     }
 
+    /// <summary>
+    /// Actualiza la clasificación estratégica del rol Supplier.
+    /// Solo aplica cuando RoleType = Supplier. Ver ADR-BP-11.
+    /// </summary>
+    public void UpdateClassificationConfig(SupplierClassificationConfig config, Guid updatedBy)
+    {
+        if (RoleType != RoleType.Supplier)
+            throw new InvalidOperationException($"UpdateClassificationConfig solo aplica al rol Supplier. Rol actual: {RoleType}.");
+        if (!IsActive)
+            throw new InvalidOperationException("No se puede actualizar la config de un rol revocado.");
+
+        ClassificationConfig = config ?? throw new ArgumentNullException(nameof(config));
+        SetUpdated(updatedBy);
+        RaiseDomainEvent(new BusinessPartnerRoleConfigUpdatedEvent
+        {
+            SubscriberId      = SubscriberId,
+            RoleId            = Id,
+            BusinessPartnerId = BusinessPartnerId,
+            RoleType          = RoleType,
+            UpdatedBy         = updatedBy,
+        });
+    }
+
     // ── Validación de coherencia tipo↔config ─────────────────────────────────
     // ÚNICA instancia de condicional sobre RoleType en todo el sistema. Ver ADR-BP-11.
     private static void ValidateConfigCoherence(
-        RoleType             roleType,
-        SupplierRoleConfig?  supplierConfig,
-        CarrierRoleConfig?   carrierConfig,
-        CustomerRoleConfig?  customerConfig)
+        RoleType                       roleType,
+        SupplierRoleConfig?            supplierConfig,
+        CarrierRoleConfig?             carrierConfig,
+        CustomerRoleConfig?            customerConfig,
+        SupplierClassificationConfig?  classificationConfig = null)
     {
         if (supplierConfig is not null && roleType != RoleType.Supplier)
             throw new ArgumentException(
@@ -254,5 +281,10 @@ public sealed class BusinessPartnerRole : AuditableEntity, ISubscriberScopedEnti
             throw new ArgumentException(
                 $"CustomerConfig solo es válido para el rol Customer. Rol recibido: {roleType}.",
                 nameof(customerConfig));
+
+        if (classificationConfig is not null && roleType != RoleType.Supplier)
+            throw new ArgumentException(
+                $"ClassificationConfig solo es válido para el rol Supplier. Rol recibido: {roleType}.",
+                nameof(classificationConfig));
     }
 }

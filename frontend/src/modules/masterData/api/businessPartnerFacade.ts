@@ -40,6 +40,7 @@ import type {
   CustomerConfigBody,
   CustomerPickerRow,
   SearchBusinessPartnersParams,
+  SupplierClassificationBody,
   SupplierConfigBody,
   SupplierPickerRow,
   UpdateBusinessPartnerBody,
@@ -133,6 +134,9 @@ export const businessPartnerFacade = {
 
   updateCustomerConfig: (bpId: string, roleId: string, config: CustomerConfigBody): Promise<BusinessPartnerRoleDto> =>
     bpRoleService.updateCustomerConfig(bpId, roleId, config),
+
+  updateSupplierClassification: (bpId: string, roleId: string, config: SupplierClassificationBody): Promise<BusinessPartnerRoleDto> =>
+    bpRoleService.updateSupplierClassification(bpId, roleId, config),
 
   // ── Locations ──────────────────────────────────────────────────────────────
 

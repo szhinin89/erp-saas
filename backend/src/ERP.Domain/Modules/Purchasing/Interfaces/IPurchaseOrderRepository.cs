@@ -12,7 +12,7 @@ public interface IPurchaseOrderRepository
         Guid      subscriberId,
         int       pageNumber,
         int       pageSize,
-        Guid?     supplierId,
+        Guid?     businessPartnerId,
         string?   status,
         DateTime? from,
         DateTime? to,

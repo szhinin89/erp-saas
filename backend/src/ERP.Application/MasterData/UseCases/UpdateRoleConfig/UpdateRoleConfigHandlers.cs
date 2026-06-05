@@ -29,6 +29,30 @@ public sealed class UpdateSupplierRoleConfigHandler
     }
 }
 
+public sealed class UpdateSupplierClassificationConfigHandler
+    : IRequestHandler<UpdateSupplierClassificationConfigCommand, Result<BusinessPartnerRoleDto>>
+{
+    private readonly IBusinessPartnerRoleRepository _roleRepo;
+    private readonly IOperationalContext            _ctx;
+
+    public UpdateSupplierClassificationConfigHandler(IBusinessPartnerRoleRepository roleRepo, IOperationalContext ctx)
+        => (_roleRepo, _ctx) = (roleRepo, ctx);
+
+    public async Task<Result<BusinessPartnerRoleDto>> Handle(
+        UpdateSupplierClassificationConfigCommand cmd, CancellationToken ct)
+    {
+        var role = await _roleRepo.GetByIdAsync(cmd.RoleId, ct);
+        if (role is null) return Result<BusinessPartnerRoleDto>.NotFound("Rol no encontrado.");
+
+        try { role.UpdateClassificationConfig(cmd.Config, _ctx.UserId); }
+        catch (ArgumentException ex)        { return Result<BusinessPartnerRoleDto>.ValidationFailure(ex.Message); }
+        catch (InvalidOperationException ex) { return Result<BusinessPartnerRoleDto>.ValidationFailure(ex.Message); }
+
+        await _roleRepo.SaveChangesAsync(ct);
+        return Result<BusinessPartnerRoleDto>.Success(BusinessPartnerRoleDto.From(role));
+    }
+}
+
 public sealed class UpdateCarrierRoleConfigHandler
     : IRequestHandler<UpdateCarrierRoleConfigCommand, Result<BusinessPartnerRoleDto>>
 {

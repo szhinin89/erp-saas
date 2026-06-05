@@ -7,6 +7,7 @@ using ERP.Application.MasterData.UseCases.AssignBusinessPartnerRole;
 using ERP.Application.MasterData.UseCases.GetBusinessPartnerRoles;
 using ERP.Application.MasterData.UseCases.RevokeBusinessPartnerRole;
 using ERP.Application.MasterData.UseCases.UpdateRoleConfig;
+using ERP.Application.MasterData.UseCases.UpdateRoleConfig;
 using ERP.Domain.MasterData.ValueObjects;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
@@ -70,7 +71,9 @@ public sealed class BusinessPartnerRolesController : ControllerBase
                 body.SupplierConfig.DefaultTaxSupportCode,
                 body.SupplierConfig.DefaultRetentionVatCode,
                 body.SupplierConfig.DefaultRetentionIncomeCode,
-                body.SupplierConfig.PaymentTerms)
+                body.SupplierConfig.PaymentTerms,
+                body.SupplierConfig.DefaultPaymentMethodCode,
+                body.SupplierConfig.IsRetentionExempt)
             : null;
 
         var carrierConfig = body.CarrierConfig is not null
@@ -90,8 +93,25 @@ public sealed class BusinessPartnerRolesController : ControllerBase
                 body.CustomerConfig.CustomerClassification)
             : null;
 
+        SupplierClassificationConfig? classificationConfig = null;
+        if (body.SupplierClassification is not null)
+        {
+            try
+            {
+                classificationConfig = SupplierClassificationConfig.Create(
+                    body.SupplierClassification.SupplierCategory,
+                    body.SupplierClassification.SupplierType,
+                    body.SupplierClassification.SupplierRisk,
+                    body.SupplierClassification.SupplierRating,
+                    body.SupplierClassification.PrimaryGoodType,
+                    body.SupplierClassification.SupplierSegment,
+                    body.SupplierClassification.PaymentMethodPreference);
+            }
+            catch (ArgumentException ex) { return this.ApiBadRequest(ex.Message); }
+        }
+
         var cmd = new AssignBusinessPartnerRoleCommand(
-            bpId, body.RoleType, supplierConfig, carrierConfig, customerConfig);
+            bpId, body.RoleType, supplierConfig, carrierConfig, customerConfig, classificationConfig);
 
         var result = await _mediator.Send(cmd, ct);
         return result.IsSuccess
@@ -139,11 +159,47 @@ public sealed class BusinessPartnerRolesController : ControllerBase
                 body.DefaultTaxSupportCode,
                 body.DefaultRetentionVatCode,
                 body.DefaultRetentionIncomeCode,
-                body.PaymentTerms);
+                body.PaymentTerms,
+                body.DefaultPaymentMethodCode,
+                body.IsRetentionExempt);
         }
         catch (ArgumentException ex) { return this.ApiBadRequest(ex.Message); }
 
         var result = await _mediator.Send(new UpdateSupplierRoleConfigCommand(roleId, config), ct);
+        return this.ToOkOrBadRequest(result);
+    }
+
+    /// <summary>
+    /// Actualiza la clasificación estratégica del rol Supplier.
+    /// Categoría, tipo, riesgo, rating, tipo de bien, segmento, preferencia de pago operativo.
+    /// Solo aplica a roles con RoleType = Supplier.
+    /// </summary>
+    [HttpPatch("{roleId:guid}/supplier-classification")]
+    [Authorize(Policy = $"perm:{Permissions.MasterDataBusinessPartner.Update}")]
+    [ProducesResponseType(typeof(ApiResponse<BusinessPartnerRoleDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status422UnprocessableEntity)]
+    public async Task<IActionResult> UpdateSupplierClassification(
+        [FromRoute] Guid                          bpId,
+        [FromRoute] Guid                          roleId,
+        [FromBody]  SupplierClassificationRequest body,
+        CancellationToken ct = default)
+    {
+        _ = bpId;
+        SupplierClassificationConfig config;
+        try
+        {
+            config = SupplierClassificationConfig.Create(
+                body.SupplierCategory,
+                body.SupplierType,
+                body.SupplierRisk,
+                body.SupplierRating,
+                body.PrimaryGoodType,
+                body.SupplierSegment,
+                body.PaymentMethodPreference);
+        }
+        catch (ArgumentException ex) { return this.ApiBadRequest(ex.Message); }
+
+        var result = await _mediator.Send(new UpdateSupplierClassificationConfigCommand(roleId, config), ct);
         return this.ToOkOrBadRequest(result);
     }
 

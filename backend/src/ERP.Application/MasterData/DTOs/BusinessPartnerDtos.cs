@@ -73,9 +73,10 @@ public sealed record BusinessPartnerRoleDto(
     string? Notes,
     DateTime  AssignedAt,
     DateTime? RevokedAt,
-    SupplierRoleConfigDto?  SupplierConfig,
-    CarrierRoleConfigDto?   CarrierConfig,
-    CustomerRoleConfigDto?  CustomerConfig)
+    SupplierRoleConfigDto?           SupplierConfig,
+    CarrierRoleConfigDto?            CarrierConfig,
+    CustomerRoleConfigDto?           CustomerConfig,
+    SupplierClassificationConfigDto? ClassificationConfig)
 {
     public static BusinessPartnerRoleDto From(BusinessPartnerRole role) => new(
         role.Id,
@@ -85,9 +86,10 @@ public sealed record BusinessPartnerRoleDto(
         role.Notes,
         role.AssignedAt,
         role.RevokedAt,
-        role.SupplierConfig  is not null ? SupplierRoleConfigDto.From(role.SupplierConfig)   : null,
-        role.CarrierConfig   is not null ? CarrierRoleConfigDto.From(role.CarrierConfig)     : null,
-        role.CustomerConfig  is not null ? CustomerRoleConfigDto.From(role.CustomerConfig)   : null);
+        role.SupplierConfig       is not null ? SupplierRoleConfigDto.From(role.SupplierConfig)             : null,
+        role.CarrierConfig        is not null ? CarrierRoleConfigDto.From(role.CarrierConfig)               : null,
+        role.CustomerConfig       is not null ? CustomerRoleConfigDto.From(role.CustomerConfig)             : null,
+        role.ClassificationConfig is not null ? SupplierClassificationConfigDto.From(role.ClassificationConfig) : null);
 
 }
 
@@ -95,13 +97,36 @@ public sealed record SupplierRoleConfigDto(
     string? DefaultTaxSupportCode,
     string? DefaultRetentionVatCode,
     string? DefaultRetentionIncomeCode,
-    string? PaymentTerms)
+    string? PaymentTerms,
+    string? DefaultPaymentMethodCode,
+    bool    IsRetentionExempt)
 {
     public static SupplierRoleConfigDto From(SupplierRoleConfig c) => new(
         c.DefaultTaxSupportCode,
         c.DefaultRetentionVatCode,
         c.DefaultRetentionIncomeCode,
-        c.PaymentTerms);
+        c.PaymentTerms,
+        c.DefaultPaymentMethodCode,
+        c.IsRetentionExempt);
+}
+
+public sealed record SupplierClassificationConfigDto(
+    string? SupplierCategory,
+    string? SupplierType,
+    string? SupplierRisk,
+    string? SupplierRating,
+    string? PrimaryGoodType,
+    string? SupplierSegment,
+    string? PaymentMethodPreference)
+{
+    public static SupplierClassificationConfigDto From(SupplierClassificationConfig c) => new(
+        c.SupplierCategory,
+        c.SupplierType,
+        c.SupplierRisk,
+        c.SupplierRating,
+        c.PrimaryGoodType,
+        c.SupplierSegment,
+        c.PaymentMethodPreference);
 }
 
 public sealed record CarrierRoleConfigDto(

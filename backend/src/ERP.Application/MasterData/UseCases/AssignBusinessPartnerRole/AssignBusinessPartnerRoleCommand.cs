@@ -15,9 +15,10 @@ namespace ERP.Application.MasterData.UseCases.AssignBusinessPartnerRole;
 /// Las configs son opcionales. Se pueden actualizar después con UpdateRoleConfigCommand.
 /// </summary>
 public sealed record AssignBusinessPartnerRoleCommand(
-    Guid                BusinessPartnerId,
-    RoleType            RoleType,
-    SupplierRoleConfig?  SupplierConfig  = null,
-    CarrierRoleConfig?   CarrierConfig   = null,
-    CustomerRoleConfig?  CustomerConfig  = null)
+    Guid                          BusinessPartnerId,
+    RoleType                      RoleType,
+    SupplierRoleConfig?            SupplierConfig         = null,
+    CarrierRoleConfig?             CarrierConfig          = null,
+    CustomerRoleConfig?            CustomerConfig         = null,
+    SupplierClassificationConfig?  ClassificationConfig   = null)
     : IRequest<Result<BusinessPartnerRoleDto>>, ISubscriberScopedRequest;

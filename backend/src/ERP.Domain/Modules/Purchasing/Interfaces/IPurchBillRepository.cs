@@ -12,7 +12,7 @@ public interface IPurchBillRepository
     Task<IReadOnlyList<PurchBill>> GetAsync(
         Guid           subscriberId,
         PurchaseStatus? status,
-        Guid?          supplierId,
+        Guid?          businessPartnerId,
         DateTime?      from,
         DateTime?      to,
         string?        search,
@@ -24,7 +24,7 @@ public interface IPurchBillRepository
 
     Task AddIssuedRetentionAsync(IssuedRetention retention, CancellationToken ct = default);
     Task<IssuedRetention?> GetIssuedRetentionByIdWithLinesAsync(Guid subscriberId, Guid id, CancellationToken ct = default);
-    Task<IReadOnlyList<IssuedRetention>> GetIssuedRetentionsAsync(Guid subscriberId, Guid? supplierId, CancellationToken ct = default);
+    Task<IReadOnlyList<IssuedRetention>> GetIssuedRetentionsAsync(Guid subscriberId, Guid? businessPartnerId, CancellationToken ct = default);
 
     Task AddPurchNoteAsync(PurchNote note, CancellationToken ct = default);
     Task<PurchNote?> GetPurchNoteByIdWithLinesAsync(Guid subscriberId, Guid id, CancellationToken ct = default);

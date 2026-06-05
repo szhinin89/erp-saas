@@ -5,10 +5,24 @@ using MediatR;
 
 namespace ERP.Application.MasterData.UseCases.UpdateRoleConfig;
 
-/// <summary>Actualiza la config del rol Supplier (DefaultTaxSupportCode, retenciones, PaymentTerms).</summary>
+/// <summary>
+/// Actualiza la config SRI operativa del rol Supplier.
+/// Incluye (S3-A): DefaultTaxSupportCode, RetentionCodes, PaymentTerms,
+///                 DefaultPaymentMethodCode, IsRetentionExempt.
+/// </summary>
 public sealed record UpdateSupplierRoleConfigCommand(
     Guid               RoleId,
     SupplierRoleConfig Config)
+    : IRequest<Result<BusinessPartnerRoleDto>>, ISubscriberScopedRequest;
+
+/// <summary>
+/// Actualiza la clasificación estratégica del rol Supplier (S3-B).
+/// Categoría, tipo, riesgo, rating, tipo de bien, segmento, preferencia de pago.
+/// Simétrico a UpdateCustomerRoleConfigCommand.
+/// </summary>
+public sealed record UpdateSupplierClassificationConfigCommand(
+    Guid                         RoleId,
+    SupplierClassificationConfig Config)
     : IRequest<Result<BusinessPartnerRoleDto>>, ISubscriberScopedRequest;
 
 /// <summary>Actualiza la config del rol Carrier (número autorización transporte, capacidad).</summary>
@@ -17,10 +31,7 @@ public sealed record UpdateCarrierRoleConfigCommand(
     CarrierRoleConfig Config)
     : IRequest<Result<BusinessPartnerRoleDto>>, ISubscriberScopedRequest;
 
-/// <summary>
-/// Actualiza la config del rol Customer (categoría, segmento, zona, rating, fidelización, etc.).
-/// CRM-ready: soporta segmentación, scoring y automatización documental.
-/// </summary>
+/// <summary>Actualiza la config del rol Customer (CRM fields).</summary>
 public sealed record UpdateCustomerRoleConfigCommand(
     Guid               RoleId,
     CustomerRoleConfig Config)

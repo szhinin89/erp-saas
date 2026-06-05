@@ -71,7 +71,8 @@ public sealed class AssignBusinessPartnerRoleHandler
                     _ctx.UserId,
                     cmd.SupplierConfig,
                     cmd.CarrierConfig,
-                    cmd.CustomerConfig);
+                    cmd.CustomerConfig,
+                    cmd.ClassificationConfig);
             }
             catch (ArgumentException ex) { return Result<BusinessPartnerRoleDto>.ValidationFailure(ex.Message); }
             await _roleRepo.AddAsync(role, ct);

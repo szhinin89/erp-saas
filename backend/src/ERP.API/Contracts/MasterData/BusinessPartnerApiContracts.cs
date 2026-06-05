@@ -43,16 +43,17 @@ public sealed class UpdateIdentificationRequest
 public sealed class AssignRoleRequest
 {
     /// <summary>Customer=1, Supplier=2, Employee=3, Carrier=4, Broker=5, Agent=6, Distributor=7, Contractor=8</summary>
-    public RoleType              RoleType        { get; set; }
-    public SupplierConfigRequest? SupplierConfig { get; set; }
-    public CarrierConfigRequest?  CarrierConfig  { get; set; }
-    public CustomerConfigRequest? CustomerConfig { get; set; }
+    public RoleType                       RoleType              { get; set; }
+    public SupplierConfigRequest?          SupplierConfig        { get; set; }
+    public SupplierClassificationRequest?  SupplierClassification { get; set; }
+    public CarrierConfigRequest?           CarrierConfig         { get; set; }
+    public CustomerConfigRequest?          CustomerConfig        { get; set; }
 }
 
-/// <summary>Defaults SRI para documentos de compra con este proveedor (pre-llenado, no obligatorios).</summary>
+/// <summary>Config SRI operativa del proveedor (pre-llenado para documentos de compra).</summary>
 public sealed class SupplierConfigRequest
 {
-    /// <summary>Código sustento tributario SRI (01-15). Ej: "01" = Crédito Tributario.</summary>
+    /// <summary>Código sustento tributario SRI (01-19). Ej: "01" = Crédito Tributario.</summary>
     public string? DefaultTaxSupportCode       { get; set; }
     /// <summary>Código retención IVA SRI. Ej: "725".</summary>
     public string? DefaultRetentionVatCode     { get; set; }
@@ -60,6 +61,10 @@ public sealed class SupplierConfigRequest
     public string? DefaultRetentionIncomeCode  { get; set; }
     /// <summary>Descripción libre del plazo de pago acordado.</summary>
     public string? PaymentTerms                { get; set; }
+    /// <summary>Método de pago SRI por defecto (01-21). Ej: "01" = Sin sistema financiero.</summary>
+    public string? DefaultPaymentMethodCode    { get; set; }
+    /// <summary>Proveedor exento de retención (RISE, microempresa, sector público). Default: false.</summary>
+    public bool    IsRetentionExempt           { get; set; } = false;
 }
 
 /// <summary>Datos del transportista para guías de remisión electrónicas SRI.</summary>
@@ -181,6 +186,25 @@ public sealed class UpsertTradingSettingsRequest
     public int     PaymentDays        { get; set; } = 0;
     /// <summary>ISO 4217. Default: USD.</summary>
     public string  CreditCurrencyCode { get; set; } = "USD";
+}
+
+/// <summary>Clasificación estratégica del proveedor (S3-B).</summary>
+public sealed class SupplierClassificationRequest
+{
+    /// <summary>Manufacturer | Distributor | ServiceProvider | Agent | Retailer | Other</summary>
+    public string? SupplierCategory        { get; set; }
+    /// <summary>National | International | Both</summary>
+    public string? SupplierType            { get; set; }
+    /// <summary>Low | Medium | High | Critical</summary>
+    public string? SupplierRisk            { get; set; }
+    /// <summary>AAA | AA | A | BBB | BB | B | C | D | NR</summary>
+    public string? SupplierRating          { get; set; }
+    /// <summary>Goods | Services | Both | Digital</summary>
+    public string? PrimaryGoodType         { get; set; }
+    /// <summary>Strategic | Preferred | Approved | Transactional</summary>
+    public string? SupplierSegment         { get; set; }
+    /// <summary>Texto libre — método de pago operativo interno (distinto del código SRI).</summary>
+    public string? PaymentMethodPreference { get; set; }
 }
 
 /// <summary>Bloquea operativamente al BP en la empresa activa. Requiere motivo.</summary>

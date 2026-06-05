@@ -3,7 +3,10 @@ import type { ApiResponse } from '../../../../types/api';
 
 export interface WithholdingIssuedItem {
   id: string;
-  supplierId: string;
+  /** V2: businessPartnerId es el ID canónico del proveedor. */
+  businessPartnerId: string;
+  /** @deprecated Legacy — usar businessPartnerId. */
+  supplierId?: string | null;
   accessKey: string;
   status: string;
   totalRetained: number;
@@ -11,8 +14,8 @@ export interface WithholdingIssuedItem {
 }
 
 export const withholdingIssuedService = {
-  async list(supplierId?: string): Promise<WithholdingIssuedItem[]> {
-    const q = supplierId ? `?proveedorId=${encodeURIComponent(supplierId)}` : '';
+  async list(businessPartnerId?: string): Promise<WithholdingIssuedItem[]> {
+    const q = businessPartnerId ? `?proveedorId=${encodeURIComponent(businessPartnerId)}` : '';
     const res = await api.get<ApiResponse<WithholdingIssuedItem[]>>(`/api/purchases/withholding-issued${q}`);
     return res.data.responseObject ?? [];
   },

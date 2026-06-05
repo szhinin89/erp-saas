@@ -3,6 +3,7 @@ using System;
 using ERP.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace ERP.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(ErpDbContext))]
-    partial class ErpDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260605034358_SupplierRoleConfigFiscalCompletion")]
+    partial class SupplierRoleConfigFiscalCompletion
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -15825,55 +15828,6 @@ namespace ERP.Infrastructure.Persistence.Migrations
                                 .HasConstraintName("fk_bpcrc_role");
                         });
 
-                    b.OwnsOne("ERP.Domain.MasterData.ValueObjects.SupplierClassificationConfig", "ClassificationConfig", b1 =>
-                        {
-                            b1.Property<Guid>("role_id")
-                                .HasColumnType("uuid");
-
-                            b1.Property<string>("PaymentMethodPreference")
-                                .HasMaxLength(100)
-                                .HasColumnType("character varying(100)")
-                                .HasColumnName("payment_method_preference");
-
-                            b1.Property<string>("PrimaryGoodType")
-                                .HasMaxLength(30)
-                                .HasColumnType("character varying(30)")
-                                .HasColumnName("primary_good_type");
-
-                            b1.Property<string>("SupplierCategory")
-                                .HasMaxLength(50)
-                                .HasColumnType("character varying(50)")
-                                .HasColumnName("supplier_category");
-
-                            b1.Property<string>("SupplierRating")
-                                .HasMaxLength(10)
-                                .HasColumnType("character varying(10)")
-                                .HasColumnName("supplier_rating");
-
-                            b1.Property<string>("SupplierRisk")
-                                .HasMaxLength(20)
-                                .HasColumnType("character varying(20)")
-                                .HasColumnName("supplier_risk");
-
-                            b1.Property<string>("SupplierSegment")
-                                .HasMaxLength(30)
-                                .HasColumnType("character varying(30)")
-                                .HasColumnName("supplier_segment");
-
-                            b1.Property<string>("SupplierType")
-                                .HasMaxLength(30)
-                                .HasColumnType("character varying(30)")
-                                .HasColumnName("supplier_type");
-
-                            b1.HasKey("role_id");
-
-                            b1.ToTable("master_bp_supplier_classification_configs", (string)null);
-
-                            b1.WithOwner()
-                                .HasForeignKey("role_id")
-                                .HasConstraintName("fk_bpscc_role");
-                        });
-
                     b.OwnsOne("ERP.Domain.MasterData.ValueObjects.SupplierRoleConfig", "SupplierConfig", b1 =>
                         {
                             b1.Property<Guid>("role_id")
@@ -15920,8 +15874,6 @@ namespace ERP.Infrastructure.Persistence.Migrations
                         });
 
                     b.Navigation("CarrierConfig");
-
-                    b.Navigation("ClassificationConfig");
 
                     b.Navigation("CustomerConfig");
 

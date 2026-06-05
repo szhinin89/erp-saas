@@ -105,16 +105,17 @@ export type BusinessPartnerDetailDto = BusinessPartnerSummaryDto & {
  *           y GET /api/master/business-partners/{bpId}/roles
  */
 export type BusinessPartnerRoleDto = {
-  id:             string;
-  roleType:       string;   // "Customer" | "Supplier" | "Employee" | "Carrier" | "Broker" | "Agent" | "Distributor" | "Contractor"
-  roleLabel:      string;   // Etiqueta en español
-  isActive:       boolean;
-  notes:          string | null;
-  assignedAt:     string;
-  revokedAt:      string | null;
-  supplierConfig:  SupplierRoleConfigDto  | null;  // solo si roleType === "Supplier"
-  carrierConfig:   CarrierRoleConfigDto   | null;  // solo si roleType === "Carrier"
-  customerConfig:  CustomerRoleConfigDto  | null;  // solo si roleType === "Customer"
+  id:                   string;
+  roleType:             string;   // "Customer" | "Supplier" | "Employee" | "Carrier" | ...
+  roleLabel:            string;   // Etiqueta en español
+  isActive:             boolean;
+  notes:                string | null;
+  assignedAt:           string;
+  revokedAt:            string | null;
+  supplierConfig:        SupplierRoleConfigDto           | null;  // solo si roleType === "Supplier"
+  carrierConfig:         CarrierRoleConfigDto            | null;  // solo si roleType === "Carrier"
+  customerConfig:        CustomerRoleConfigDto           | null;  // solo si roleType === "Customer"
+  classificationConfig:  SupplierClassificationConfigDto | null;  // solo si roleType === "Supplier"
 };
 
 /** Defaults SRI para compras — parte de BusinessPartnerRoleDto cuando roleType="Supplier" */
@@ -129,6 +130,32 @@ export type SupplierRoleConfigDto = {
 export type CarrierRoleConfigDto = {
   transportAuthorizationNumber: string | null;
   vehicleCapacityTons:          number | null;
+};
+
+/**
+ * Config SRI operativa del proveedor — parte de BusinessPartnerRoleDto cuando roleType="Supplier".
+ * Incluye S3-A: DefaultPaymentMethodCode + IsRetentionExempt.
+ */
+export type SupplierRoleConfigDto = {
+  defaultTaxSupportCode?:       string | null;
+  defaultRetentionVatCode?:     string | null;
+  defaultRetentionIncomeCode?:  string | null;
+  paymentTerms?:                string | null;
+  defaultPaymentMethodCode?:    string | null;  // SRI code: 01-21
+  isRetentionExempt:            boolean;         // RISE, microempresa, sector público
+};
+
+/**
+ * Clasificación estratégica del proveedor (S3-B) — parte de BusinessPartnerRoleDto cuando roleType="Supplier".
+ */
+export type SupplierClassificationConfigDto = {
+  supplierCategory?:        string | null;  // 'Manufacturer' | 'Distributor' | 'ServiceProvider' | 'Agent' | 'Retailer' | 'Other'
+  supplierType?:            string | null;  // 'National' | 'International' | 'Both'
+  supplierRisk?:            string | null;  // 'Low' | 'Medium' | 'High' | 'Critical'
+  supplierRating?:          string | null;  // 'AAA' | 'AA' | 'A' | 'BBB' | 'B' | 'C' | 'D' | 'NR'
+  primaryGoodType?:         string | null;  // 'Goods' | 'Services' | 'Both' | 'Digital'
+  supplierSegment?:         string | null;  // 'Strategic' | 'Preferred' | 'Approved' | 'Transactional'
+  paymentMethodPreference?: string | null;  // texto libre operativo interno
 };
 
 /**
@@ -271,12 +298,35 @@ export const LOYALTY_TIERS          = ['None', 'Bronze', 'Silver', 'Gold', 'Plat
 export const INVOICE_FORMATS        = ['PDF', 'XML', 'EMAIL', 'PORTAL', 'PAPER'] as const;
 export const CUSTOMER_CLASSIFICATIONS = ['Nacional', 'Exportador', 'Importador', 'Exento', 'Especial'] as const;
 
+/** Body para PATCH /{bpId}/roles/{roleId}/supplier-config */
 export type SupplierConfigBody = {
   defaultTaxSupportCode?:       string | null;
   defaultRetentionVatCode?:     string | null;
   defaultRetentionIncomeCode?:  string | null;
   paymentTerms?:                string | null;
+  defaultPaymentMethodCode?:    string | null;  // SRI code 01-21
+  isRetentionExempt?:           boolean;         // default false
 };
+
+/** Body para PATCH /{bpId}/roles/{roleId}/supplier-classification */
+export type SupplierClassificationBody = {
+  supplierCategory?:        string | null;
+  supplierType?:            string | null;
+  supplierRisk?:            string | null;
+  supplierRating?:          string | null;
+  primaryGoodType?:         string | null;
+  supplierSegment?:         string | null;
+  paymentMethodPreference?: string | null;
+};
+
+// ── Constantes de validación (espejo de SupplierRoleConfig + SupplierClassificationConfig C#) ──
+export const SRI_PAYMENT_METHOD_CODES  = ['01', '15', '16', '17', '18', '19', '20', '21'] as const;
+export const SUPPLIER_CATEGORIES        = ['Manufacturer', 'Distributor', 'ServiceProvider', 'Agent', 'Retailer', 'Other'] as const;
+export const SUPPLIER_TYPES             = ['National', 'International', 'Both'] as const;
+export const SUPPLIER_RISKS             = ['Low', 'Medium', 'High', 'Critical'] as const;
+export const SUPPLIER_RATINGS           = ['AAA', 'AA', 'A', 'BBB', 'BB', 'B', 'C', 'D', 'NR'] as const;
+export const SUPPLIER_GOOD_TYPES        = ['Goods', 'Services', 'Both', 'Digital'] as const;
+export const SUPPLIER_SEGMENTS          = ['Strategic', 'Preferred', 'Approved', 'Transactional'] as const;
 
 export type CarrierConfigBody = {
   transportAuthorizationNumber?: string | null;

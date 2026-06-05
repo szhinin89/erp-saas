@@ -20,8 +20,10 @@ export interface PurchaseInvoiceLineDto {
 
 export interface PurchaseInvoiceDto {
   id: string;
-  supplierId: string;
-  businessPartnerId?: string | null;
+  /** V2: businessPartnerId es el ID canónico del proveedor. supplierId = campo legacy en respuesta histórica. */
+  businessPartnerId: string;
+  /** @deprecated Legacy — usar businessPartnerId. Presente solo en documentos anteriores a V2. */
+  supplierId?: string | null;
   invoiceNumber: string;
   accessKey: string | null;
   xmlPath: string | null;

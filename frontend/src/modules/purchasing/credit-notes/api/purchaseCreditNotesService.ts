@@ -3,7 +3,10 @@ import type { ApiResponse } from '../../../../types/api';
 
 export interface PurchaseCreditNote {
   id: string;
-  supplierId: string;
+  /** V2: businessPartnerId es el ID canónico del proveedor. */
+  businessPartnerId: string;
+  /** @deprecated Legacy — usar businessPartnerId. */
+  supplierId?: string | null;
   purchBillId: string | null;
   expenseInvoiceId: string | null;
   noteType: string;
