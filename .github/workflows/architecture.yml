@@ -12,7 +12,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - name: Verify allowed stack
         shell: pwsh
         run: ./scripts/ci/verify-stack-allowlist.ps1
@@ -23,7 +23,7 @@ jobs:
     timeout-minutes: 15
     needs: stack-audit
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
       - name: Backend architecture guardrails

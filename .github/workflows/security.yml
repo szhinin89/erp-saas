@@ -12,7 +12,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - name: Identity guardrails (no legacy users auth)
         shell: pwsh
         run: ./tools/architecture/check-identity-guardrails.ps1
