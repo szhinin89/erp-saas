@@ -1,0 +1,31 @@
+/* EmissionPointsPage — prefijo ep-* */
+
+.ep-code-readonly {
+  color: var(--color-primary);
+  background: var(--color-surface-container);
+}
+
+.zh-radio-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.zh-radio-option {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  cursor: pointer;
+}
+
+.zh-radio-option input[type='radio'] {
+  accent-color: var(--color-primary);
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+}
+
+.zh-radio-desc {
+  font-size: var(--text-body-sm-size);
+  color: var(--color-text-secondary);
+}

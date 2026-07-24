@@ -1,0 +1,21 @@
+﻿{
+    "Generated":  "2026-07-16 12:24:34",
+    "RootDocuments":  [
+                          {
+                              "Name":  "CLAUDE.md",
+                              "Exists":  true
+                          },
+                          {
+                              "Name":  "STATUS.md",
+                              "Exists":  false
+                          },
+                          {
+                              "Name":  "FEATURES.md",
+                              "Exists":  true
+                          }
+                      ],
+    "Documentation":  {
+                          "TotalMarkdownFiles":  107,
+                          "ADRCount":  26
+                      }
+}

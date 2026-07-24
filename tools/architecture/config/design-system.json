@@ -1,0 +1,91 @@
+{
+  "$schemaNote": "Reglas F-04 — Design System único (UI). Canónico: AI-RULES/FRONTEND-RULES.md#design-system-estándares-únicos-obligatorios. Checks Node: tools/architecture/README.md. F-04-color (hex fuera de design-tokens.css) escanea frontend/src/**/*.css salvo cssHexExcludeFiles.",
+  "scanGlobs": [
+    "frontend/src/modules/**/*.tsx",
+    "frontend/src/pages/**/*.tsx",
+    "frontend/src/templates/**/*.tsx",
+    "frontend/src/components/**/*.tsx"
+  ],
+  "deprecatedClassPatterns": [
+    {
+      "rule": "F-04-grid",
+      "pattern": "\\bpg-form-grid(--\\d+)?\\b",
+      "message": "Clase deprecada '.pg-form-grid'/'.pg-form-grid--N' — usar <ZHGrid cols={1|2|3}>."
+    },
+    {
+      "rule": "F-04-grid",
+      "pattern": "\\bpg-form-span-full\\b",
+      "message": "Clase deprecada '.pg-form-span-full' — usar .zh-col-span-2 / .zh-col-span-3 dentro de ZHGrid."
+    },
+    {
+      "rule": "F-04-toggle",
+      "pattern": "\\bzh-inline-check\\b",
+      "message": "Clase deprecada '.zh-inline-check' — usar <ZHToggle>."
+    },
+    {
+      "rule": "F-04-toggle",
+      "pattern": "\\bcompanies-checkbox-label\\b",
+      "message": "Clase deprecada '.companies-checkbox-label' — usar <ZHToggle>."
+    },
+    {
+      "rule": "F-04-toggle",
+      "pattern": "\\btoggle-ui\\b",
+      "message": "Clase deprecada '.toggle-ui' — usar <ZHToggle>."
+    },
+    {
+      "rule": "F-04-toggle",
+      "pattern": "\\bmd-page-check\\b",
+      "message": "Clase deprecada '.md-page-check' — usar <ZHToggle>."
+    },
+    {
+      "rule": "F-04-icon",
+      "pattern": "\\bprd-icon-sm\\b",
+      "message": "Clase deprecada '.prd-icon-sm' — usar .zh-icon-lg (18px)."
+    },
+    {
+      "rule": "F-04-modal",
+      "pattern": "\\bmd-modal(?:-[\\w-]+)?\\b",
+      "message": "Clase deprecada '.md-modal*' — usar <ZHModalHeader> + <ZHFormActions> sobre .zh-modal-overlay > .zh-modal."
+    },
+    {
+      "rule": "F-04-modal",
+      "pattern": "\\bprf-modal-header-main\\b",
+      "message": "Clase deprecada '.prf-modal-header-main' — usar <ZHModalHeader>."
+    },
+    {
+      "rule": "F-04-tabs",
+      "pattern": "\\bzh-form-tabs\\b",
+      "message": "Clase deprecada '.zh-form-tabs' — usar .prd-tabs / .prd-tab-btn / .prd-tab-btn--active."
+    },
+    {
+      "rule": "F-04-table",
+      "pattern": "\\bmd-table(?:-wrap)?\\b",
+      "message": "Clase deprecada '.md-table'/'.md-table-wrap' — usar .table + .prd-table-wrap."
+    },
+    {
+      "rule": "F-04-activity",
+      "pattern": "\\bbod-activity__[\\w-]*\\b",
+      "message": "Clase deprecada '.bod-activity__*' — usar .prd-activity__* (items-catalog.css)."
+    },
+    {
+      "rule": "F-04-btn",
+      "pattern": "className=(\"|\\{`)\\s*zh-btn\\b",
+      "message": "Botón crudo con className=\"zh-btn...\" — usar <ZHBtn variant=\"primary|secondary|ghost|destructive\" size=\"md|sm|xs\">. Excepción: <Link> de navegación estilizado como botón (no puede ser <ZHBtn>, que solo renderiza <button>)."
+    },
+    {
+      "rule": "F-04-badge",
+      "pattern": "\\bbadge badge--",
+      "message": "Badge crudo con className=\"badge badge--...\" — usar <Badge label=\"...\" variant=\"green|gray|red|blue|orange\" /> (components/PageShell.tsx)."
+    },
+    {
+      "rule": "F-04-pf-field",
+      "pattern": "\\bpf-field(__[\\w-]+)?\\b|\\bpf-label\\b",
+      "message": "Clase eliminada '.pf-field'/'.pf-field__*'/'.pf-label' (Fase 3B) — usar <ZHField density=\"compact\">."
+    }
+  ],
+  "iconInlineStyleRule": "F-04-icon",
+  "iconInlineStyleMessage": "Ícono con style={{ fontSize: N }} — usar .zh-icon-sm/md/lg/xl según valor (14/16/18/32px).",
+  "cssHexExcludeFiles": [
+    "frontend/src/styles/design-tokens.css"
+  ]
+}

@@ -1,0 +1,48 @@
+---
+description: >-
+  ZH Technologies ERP — adaptador Cursor hacia AI-RULES (fuente canónica).
+  Flujo jerárquico, arquitectura, validación, ZH Form, SaaS, i18n qu.
+alwaysApply: true
+---
+
+# Reglas del proyecto ERP (adaptador Cursor)
+
+**Fuente canónica:** [`AI-RULES/README.md`](../../AI-RULES/README.md) — **no duplicar reglas aquí.**
+
+## Precedencia
+
+1. [AI-RULES/HIERARCHY.md](../../AI-RULES/HIERARCHY.md)
+2. [AI-RULES/PR-RULES-CATALOG.md](../../AI-RULES/PR-RULES-CATALOG.md) (B-xx/F-xx bloqueante)
+3. Reglas `.mdc` con `globs` más específicas
+4. Mapa: `rules-consolidated-map.mdc`
+
+## Índice canónico (leer según tarea)
+
+| Tarea | Archivo |
+|-------|---------|
+| Flujo feature / monorepo | [CORE-ARCHITECTURE.md](../../AI-RULES/CORE-ARCHITECTURE.md) |
+| Backend | [BACKEND-RULES.md](../../AI-RULES/BACKEND-RULES.md) |
+| Frontend / ZH Form / tabs | [FRONTEND-RULES.md](../../AI-RULES/FRONTEND-RULES.md) |
+| SaaS / planes / URL | [SAAS-RULES.md](../../AI-RULES/SAAS-RULES.md) |
+| Platform naming (equipo) | [TEAM-NAMING-GUIDE.md](../../docs/platform/TEAM-NAMING-GUIDE.md) |
+| Auth / tenant | [SECURITY.md](../../AI-RULES/SECURITY.md) |
+| Stack | [STACK.md](../../AI-RULES/STACK.md) |
+| Validación 4 capas / CI | [ENFORCEMENT.md](../../AI-RULES/ENFORCEMENT.md) |
+| Naming | [NAMING.md](../../AI-RULES/NAMING.md) |
+
+## Reglas operativas Cursor (mínimas)
+
+1. **Antes de actuar:** `CONTEXT.md` + comprobar si el archivo ya existe.
+2. **Frontend:** ZH Form → tabs Datos→listado → Copy UX; claves `{modulo}.tabList` en es/en/qu.
+3. **Backend:** Validator + dominio + EF; `ApiResultExtensions`; `Result<T>`.
+4. **SaaS:** IDs tenant en `sessionStorage` (`erp.saas.*`), no en URL; panel platform = `/platform/*` (ver `TEAM-NAMING-GUIDE.md`, no `SuperAdmin` en nombres).
+5. **Módulo nuevo:** preguntar planes SaaS antes de cerrar.
+6. **Al terminar:** sync docs → `docs-progress-status-sync.mdc`; validar → `npm run architecture:check` (desde `frontend/`).
+
+## Adaptadores por área (globs)
+
+- `backend-api-contracts.mdc`, `backend-clean-architecture-strict.mdc`, `backend-cqrs-validation-result.mdc`, `backend-multitenancy-jwt-source.mdc`
+- `frontend-modules-i18n-validation.mdc`, `frontend-no-native-dialogs.mdc`
+- `stack-tools-source-of-truth.mdc`
+
+**Anti-drift:** editar reglas solo en `AI-RULES/*`. Este archivo solo enlaza.

@@ -1,0 +1,151 @@
+/* SriConfigPageDataTab — prefijo sri-* */
+
+.sri-section-mb {
+  margin-bottom: var(--space-4);
+}
+
+.sri-check-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding-top: 6px;
+}
+
+.sri-env-stack {
+  margin-top: var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.sri-env-option {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border: 2px solid var(--color-border);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  background: transparent;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.sri-env-option--selected {
+  border-color: var(--color-primary);
+  background: var(--color-primary-subtle);
+}
+
+.sri-env-option:has(input:disabled) {
+  cursor: default;
+}
+
+.sri-env-option input[type='radio'] {
+  margin-top: 2px;
+}
+
+.sri-env-option-title {
+  font-weight: var(--text-label-md-weight);
+  font-size: var(--text-label-md-size);
+}
+
+.sri-env-option-desc {
+  font-size: var(--text-help-size);
+  color: var(--color-text-secondary);
+  margin-top: 2px;
+}
+
+.sri-field-error {
+  color: var(--color-error);
+  font-size: var(--text-help-size);
+  margin: 0;
+}
+
+.sri-block-mt {
+  margin-top: var(--space-4);
+}
+
+.sri-hint-sm {
+  margin-top: var(--space-3);
+  font-size: var(--text-help-size);
+  color: var(--color-text-secondary);
+}
+
+.sri-input-readonly-muted {
+  color: var(--color-text-secondary);
+}
+
+.sri-pass-wrap {
+  position: relative;
+}
+
+.sri-pass-input {
+  padding-right: 40px;
+}
+
+.sri-pass-toggle {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--color-text-secondary);
+  padding: 0;
+  line-height: 0;
+}
+
+.sri-wsdl-actions {
+  margin-top: var(--space-3);
+  display: flex;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+.sri-wsdl-hint {
+  margin-top: var(--space-3);
+  font-size: var(--text-help-size);
+  color: var(--color-text-secondary);
+}
+
+.sri-validation-list {
+  list-style: none;
+  margin: var(--space-3) 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.sri-validation-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--text-label-md-size);
+}
+
+.sri-validation-item--pass {
+  color: var(--color-success);
+}
+
+.sri-validation-item--fail {
+  color: var(--color-error);
+}
+
+.sri-cert-info {
+  margin: var(--space-3) 0 0;
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  column-gap: var(--space-3);
+  row-gap: var(--space-1);
+  font-size: var(--text-help-size);
+}
+
+.sri-cert-info dt {
+  color: var(--color-text-secondary);
+}
+
+.sri-cert-info dd {
+  margin: 0;
+  word-break: break-all;
+}

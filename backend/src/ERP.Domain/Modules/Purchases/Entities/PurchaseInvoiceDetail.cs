@@ -1,0 +1,264 @@
+using ERP.Domain.Common;
+
+namespace ERP.Domain.Modules.Purchases.Entities;
+
+public sealed class PurchaseInvoiceDetail : IMustHaveTenant
+{
+    public const int DescriptionMaxLen   = 300;
+    public const int NotesMaxLen         = 300;
+    public const int VatCodeMaxLen       = 10;
+    public const int IceCodeMaxLen       = 10;
+    public const int SkuMaxLen           = 50;
+    public const int ItemNameMaxLen      = 254;
+    public const int SupplierCodeMaxLen  = 50;
+    public const int UomCodeMaxLen       = 10;
+    public const int VatNameMaxLen       = 100;
+    public const int IceNameMaxLen       = 100;
+    public const int WarehouseCodeMaxLen = 20;
+
+    // ── Identity ────────────────────────────────────────────────────────
+    public Guid     Id               { get; private set; }
+    public Guid     TenantId         { get; private set; }
+    public Guid     InvoiceId        { get; private set; }
+
+    // ── Product Snapshot (immutable after creation) ─────────────────────
+    public Guid?    ItemId               { get; private set; }
+    public string   Description          { get; private set; } = null!;
+    public string?  SnapshotSku          { get; private set; }
+    public string?  SnapshotItemName     { get; private set; }
+    public string?  SnapshotSupplierCode { get; private set; }
+
+    // ── UoM ─────────────────────────────────────────────────────────────
+    public string   UomCode           { get; private set; } = "UNIT";
+    public decimal  ConversionFactor  { get; private set; } = 1m;
+    public decimal  QuantityInBaseUom { get; private set; }
+
+    // ── Quantity & Price ────────────────────────────────────────────────
+    public decimal  Quantity         { get; private set; }
+    public decimal  UnitPrice        { get; private set; }
+    public decimal  DiscountPct      { get; private set; }
+    public decimal  DiscountAmount   { get; private set; }
+
+    // ── Distributed Costs ──────────────────────────────────────────────
+    public decimal  FreightAllocated    { get; private set; }
+    public decimal  OtherCostsAllocated { get; private set; }
+
+    // ── Landed Cost (frozen on Confirm — single source of truth) ───────
+    public decimal  TotalLineCost  { get; private set; }
+    public decimal  LandedUnitCost { get; private set; }
+    public bool     IsFrozen       { get; private set; }
+
+    // ── VAT (fiscal snapshot) ───────────────────────────────────────────
+    public string   VatCode         { get; private set; } = null!;
+    public decimal  VatRate         { get; private set; }
+    public decimal  VatAmount       { get; private set; }
+    public string?  SnapshotVatName { get; private set; }
+
+    // ── ICE (fiscal snapshot) ───────────────────────────────────────────
+    public string?  IceCode         { get; private set; }
+    public decimal  IceRate         { get; private set; }
+    public decimal  IceAmount       { get; private set; }
+    public string?  SnapshotIceName { get; private set; }
+
+    // ── Warehouse (logistic reference) ──────────────────────────────────
+    public Guid?    WarehouseId           { get; private set; }
+    public string?  SnapshotWarehouseCode { get; private set; }
+
+    // ── Analytic Snapshot (PVP at purchase time — read-only history) ────
+    public decimal  SnapshotItemPvp { get; private set; }
+
+    // ── Purchase Order Traceability ─────────────────────────────────────
+    public Guid?    PurchaseOrderDetailId { get; private set; }
+    public decimal? OrderedQuantity       { get; private set; }
+
+    // ── Meta ────────────────────────────────────────────────────────────
+    public string?  Notes     { get; private set; }
+    public short    SortOrder { get; private set; }
+
+    // ── Calculated (NOT persisted) ──────────────────────────────────────
+    public decimal LineSubtotal      => Quantity * UnitPrice;
+    public decimal TaxableBase       => Math.Round(LineSubtotal - DiscountAmount, FiscalPrecision.TaxAmount, MidpointRounding.AwayFromZero);
+    public decimal TaxInclusiveTotal => Math.Round(TaxableBase + IceAmount + VatAmount, FiscalPrecision.TaxAmount, MidpointRounding.AwayFromZero);
+
+    // ── Constructor ─────────────────────────────────────────────────────
+    private PurchaseInvoiceDetail() { }
+
+    // ── Factory ─────────────────────────────────────────────────────────
+    public static PurchaseInvoiceDetail Create(
+        Guid    invoiceId,
+        Guid    tenantId,
+        string  description,
+        decimal quantity,
+        decimal unitPrice,
+        string  vatCode,
+        string  uomCode,
+        Guid?   itemId                = null,
+        Guid?   warehouseId           = null,
+        string? notes                 = null,
+        decimal discountPct           = 0,
+        string? iceCode               = null,
+        string? snapshotSku           = null,
+        string? snapshotItemName      = null,
+        string? snapshotSupplierCode  = null,
+        decimal conversionFactor      = 1m,
+        string? snapshotWarehouseCode = null,
+        Guid?   purchaseOrderDetailId = null,
+        decimal? orderedQuantity      = null)
+    {
+        if (string.IsNullOrWhiteSpace(description))
+            throw new ArgumentException("La descripción de la línea es obligatoria.", nameof(description));
+        if (quantity <= 0)
+            throw new ArgumentException("La cantidad debe ser mayor a cero.", nameof(quantity));
+        if (unitPrice < 0)
+            throw new ArgumentException("El precio unitario no puede ser negativo.", nameof(unitPrice));
+        if (discountPct is < 0 or > 100)
+            throw new ArgumentException("El descuento debe estar entre 0 y 100.", nameof(discountPct));
+        if (string.IsNullOrWhiteSpace(vatCode))
+            throw new ArgumentException("El código IVA es obligatorio.", nameof(vatCode));
+        if (string.IsNullOrWhiteSpace(uomCode))
+            throw new ArgumentException("La unidad de medida es obligatoria.", nameof(uomCode));
+        if (conversionFactor <= 0)
+            throw new ArgumentException("El factor de conversión debe ser mayor a cero.", nameof(conversionFactor));
+
+        var line = new PurchaseInvoiceDetail
+        {
+            Id                    = Guid.NewGuid(),
+            TenantId              = tenantId,
+            InvoiceId             = invoiceId,
+            ItemId                = itemId,
+            Description           = description.Trim(),
+            SnapshotSku           = snapshotSku?.Trim(),
+            SnapshotItemName      = snapshotItemName?.Trim(),
+            SnapshotSupplierCode  = snapshotSupplierCode?.Trim(),
+            UomCode               = uomCode.Trim().ToUpperInvariant(),
+            ConversionFactor      = conversionFactor,
+            Quantity              = quantity,
+            QuantityInBaseUom     = Math.Round(quantity * conversionFactor, FiscalPrecision.Quantity, MidpointRounding.AwayFromZero),
+            UnitPrice             = unitPrice,
+            DiscountPct           = discountPct,
+            VatCode               = vatCode.Trim(),
+            IceCode               = OptionalCode.Normalize(iceCode),
+            WarehouseId           = warehouseId,
+            SnapshotWarehouseCode = snapshotWarehouseCode?.Trim(),
+            PurchaseOrderDetailId = purchaseOrderDetailId,
+            OrderedQuantity       = orderedQuantity,
+            Notes                 = notes?.Trim(),
+            IsFrozen              = false,
+        };
+        line.RecalcDiscount();
+        line.RecalcCosts();
+        return line;
+    }
+
+    // ── Tax Application ─────────────────────────────────────────────────
+    public void ApplyTaxes(string vatCode, decimal vatRate, string? vatName,
+                           string? iceCode, decimal iceRate, string? iceName)
+    {
+        EnsureNotFrozen();
+        if (string.IsNullOrWhiteSpace(vatCode))
+            throw new ArgumentException("El código IVA es obligatorio.", nameof(vatCode));
+        if (vatRate < 0)
+            throw new ArgumentException("La tasa IVA no puede ser negativa.", nameof(vatRate));
+        if (iceRate < 0)
+            throw new ArgumentException("La tasa ICE no puede ser negativa.", nameof(iceRate));
+
+        VatCode         = vatCode.Trim();
+        VatRate         = vatRate;
+        SnapshotVatName = vatName?.Trim();
+        IceCode         = OptionalCode.Normalize(iceCode);
+        IceRate         = iceRate;
+        SnapshotIceName = iceName?.Trim();
+        RecalcTaxes();
+    }
+
+    // ── Discount ────────────────────────────────────────────────────────
+    public void ApplyDiscount(decimal pct)
+    {
+        EnsureNotFrozen();
+        if (pct is < 0 or > 100)
+            throw new ArgumentException("El descuento debe estar entre 0 y 100.", nameof(pct));
+        DiscountPct = pct;
+        RecalcDiscount();
+        RecalcTaxes();
+        RecalcCosts();
+    }
+
+    // ── Freight & Other Costs ───────────────────────────────────────────
+    public void SetFreightAllocated(decimal amount)
+    {
+        EnsureNotFrozen();
+        if (amount < 0)
+            throw new ArgumentException("El flete asignado no puede ser negativo.", nameof(amount));
+        FreightAllocated = amount;
+        RecalcCosts();
+    }
+
+    public void SetOtherCostsAllocated(decimal amount)
+    {
+        EnsureNotFrozen();
+        if (amount < 0)
+            throw new ArgumentException("Los otros costos asignados no pueden ser negativos.", nameof(amount));
+        OtherCostsAllocated = amount;
+        RecalcCosts();
+    }
+
+    // ── Analytic PVP Snapshot ───────────────────────────────────────────
+    public void SetItemPvpSnapshot(decimal pvp)
+    {
+        EnsureNotFrozen();
+        if (pvp < 0) throw new ArgumentException("El PVP no puede ser negativo.", nameof(pvp));
+        SnapshotItemPvp = pvp;
+    }
+
+    // ── Sort ────────────────────────────────────────────────────────────
+    internal void SetSortOrder(short order) => SortOrder = order;
+
+    // ── Freeze (called once on Confirm — irreversible) ─────────────────
+    internal void FreezeCosts()
+    {
+        if (IsFrozen) return;
+        RecalcCosts();
+        IsFrozen = true;
+    }
+
+    // ── Invariant Guards ────────────────────────────────────────────────
+    private void EnsureNotFrozen()
+    {
+        if (IsFrozen)
+            throw new InvalidOperationException(
+                "La línea de compra está confirmada y no puede ser modificada.");
+    }
+
+    // ── Private Calculations ────────────────────────────────────────────
+    private void RecalcDiscount()
+    {
+        DiscountAmount = DiscountPct > 0
+            ? Math.Round(LineSubtotal * DiscountPct / 100m, FiscalPrecision.UnitCost, MidpointRounding.AwayFromZero)
+            : 0;
+    }
+
+    private void RecalcTaxes()
+    {
+        var taxBase = TaxableBase;
+
+        IceAmount = !string.IsNullOrWhiteSpace(IceCode) && IceRate > 0
+            ? Math.Round(taxBase * IceRate / 100m, FiscalPrecision.TaxAmount, MidpointRounding.AwayFromZero)
+            : 0;
+
+        var baseIva = taxBase + IceAmount;
+        VatAmount = VatRate > 0
+            ? Math.Round(baseIva * VatRate / 100m, FiscalPrecision.TaxAmount, MidpointRounding.AwayFromZero)
+            : 0;
+    }
+
+    private void RecalcCosts()
+    {
+        TotalLineCost = Math.Round(
+            TaxableBase + FreightAllocated + OtherCostsAllocated,
+            FiscalPrecision.UnitCost, MidpointRounding.AwayFromZero);
+
+        LandedUnitCost = Quantity > 0
+            ? Math.Round(TotalLineCost / Quantity, FiscalPrecision.UnitCost, MidpointRounding.AwayFromZero)
+            : 0;
+    }
+}

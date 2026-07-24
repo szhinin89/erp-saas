@@ -1,0 +1,47 @@
+{
+  "documentTypes": {
+    "Invoice": {
+      "activeVersion": "1.1.0",
+      "versions": [
+        { "version": "1.0.0", "xsd": "Invoice/factura_V1.0.0.xsd", "dependencies": ["Common/xmldsig-core-schema.xsd"] },
+        { "version": "1.1.0", "xsd": "Invoice/factura_V1.1.0.xsd", "dependencies": ["Common/xmldsig-core-schema.xsd"] },
+        { "version": "2.0.0", "xsd": "Invoice/factura_V2.0.0.xsd", "dependencies": ["Common/xmldsig-core-schema.xsd"] },
+        { "version": "2.1.0", "xsd": "Invoice/factura_V2.1.0.xsd", "dependencies": ["Common/xmldsig-core-schema.xsd"] }
+      ]
+    },
+    "CreditNote": {
+      "activeVersion": null,
+      "versions": [
+        { "version": "1.0.0", "xsd": "CreditNote/NotaCredito_V1.0.0.xsd", "dependencies": ["Common/xmldsig-core-schema.xsd"] },
+        { "version": "1.1.0", "xsd": "CreditNote/NotaCredito_V1.1.0.xsd", "dependencies": ["Common/xmldsig-core-schema.xsd"] }
+      ]
+    },
+    "DebitNote": {
+      "activeVersion": null,
+      "versions": [
+        { "version": "1.0.0", "xsd": "DebitNote/NotaDebito_V1.0.0.xsd", "dependencies": ["Common/xmldsig-core-schema.xsd"] }
+      ]
+    },
+    "ShippingGuide": {
+      "activeVersion": null,
+      "versions": [
+        { "version": "1.0.0", "xsd": "DeliveryGuide/GuiaRemision_V1.0.0.xsd", "dependencies": ["Common/xmldsig-core-schema.xsd"] },
+        { "version": "1.1.0", "xsd": "DeliveryGuide/GuiaRemision_V1.1.0.xsd", "dependencies": ["Common/xmldsig-core-schema.xsd"] }
+      ]
+    },
+    "Retention": {
+      "activeVersion": null,
+      "versions": [
+        { "version": "1.0.0", "xsd": "Retention/ComprobanteRetencion_V1.0.0.xsd", "dependencies": ["Common/xmldsig-core-schema.xsd"] },
+        { "version": "2.0.0", "xsd": "Retention/ComprobanteRetencion_V2.0.0.xsd", "dependencies": ["Common/xmldsig-core-schema.xsd"] }
+      ]
+    },
+    "PurchaseSettlement": {
+      "activeVersion": null,
+      "versions": [
+        { "version": "1.0.0", "xsd": "Liquidation/LiquidacionCompra_V1.0.0.xsd", "dependencies": ["Common/xmldsig-core-schema.xsd"] },
+        { "version": "1.1.0", "xsd": "Liquidation/LiquidacionCompra_V1.1.0.xsd", "dependencies": ["Common/xmldsig-core-schema.xsd"] }
+      ]
+    }
+  }
+}

@@ -1,0 +1,46 @@
+# CI alineado con GitHub-hosted ubuntu-latest.
+# Orquestador: delega en workflows reutilizables por dominio.
+
+name: CI
+
+permissions:
+  contents: read
+
+on:
+  push:
+    branches:
+      - main
+      - master
+      - development
+      - develop
+      - "release/**"
+      - "hotfix/**"
+  pull_request:
+    branches:
+      - main
+      - master
+      - development
+      - develop
+      - "release/**"
+      - "hotfix/**"
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  architecture:
+    uses: ./.github/workflows/architecture.yml
+
+  backend:
+    needs: architecture
+    uses: ./.github/workflows/backend-ci.yml
+
+  frontend:
+    needs: architecture
+    uses: ./.github/workflows/frontend-ci.yml
+
+  security:
+    needs: architecture
+    uses: ./.github/workflows/security.yml

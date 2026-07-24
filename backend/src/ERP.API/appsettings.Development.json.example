@@ -1,0 +1,56 @@
+{
+  "ConnectionStrings": {
+    "DefaultConnection": "Host=localhost;Port=5435;Database=dberpsaas;Username=postgres;Password=CHANGE_ME",
+    "Redis": "localhost:6379"
+  },
+  "Jwt": {
+    "SecretKey": "CHANGE_ME_USE_A_LONG_RANDOM_SECRET_FOR_DEV_ONLY"
+  },
+  "Cors": {
+    "AllowedOrigins": [
+      "http://localhost:5173",
+      "http://localhost:5174",
+      "http://localhost:5175",
+      "http://localhost:5176",
+      "http://localhost:5177",
+      "http://localhost:5178",
+      "http://127.0.0.1:5173",
+      "http://127.0.0.1:5174",
+      "http://127.0.0.1:5175",
+      "http://127.0.0.1:5176",
+      "http://127.0.0.1:5177",
+      "http://127.0.0.1:5178",
+      "http://localhost:4173",
+      "http://localhost:4174",
+      "http://localhost:4175",
+      "http://127.0.0.1:4173",
+      "http://127.0.0.1:4174",
+      "http://127.0.0.1:4175"
+    ]
+  },
+  "Logging": {
+    "LogLevel": {
+      "Default": "Information",
+      "Microsoft.AspNetCore": "Warning"
+    }
+  },
+  "Deployment": {
+    "PlatformPanelEnabled": true,
+    "InitialPlatformOperatorSetupToken": "",
+    "DedicatedSingleClientInstance": false,
+    "MaxUsersPerTenant": ""
+  },
+  "InstallData": {
+    "Enabled": true,
+    "AllowDestructive": false,
+    "ConfirmDestructive": ""
+  },
+  "Redis": {
+    "ConnectionString": "localhost:6379",
+    "InstanceName": "ERP_"
+  },
+  "CacheDiagnostics": {
+    "LogEnabled": true,
+    "LogConfigSnapshot": true
+  }
+}

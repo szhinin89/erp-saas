@@ -1,0 +1,15 @@
+﻿{
+    "Generated":  "2026-07-20 19:20:11",
+    "Status":  "RED",
+    "EngineeringScore":  72.72,
+    "Warnings":  [
+                     "Engineering score needs improvement",
+                     "High number of possible secrets detected",
+                     "High TODO count",
+                     "Not implemented code detected"
+                 ],
+    "Strengths":  [
+                      "Dependency rules respected",
+                      "Module health above 75%"
+                  ]
+}

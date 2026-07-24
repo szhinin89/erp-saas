@@ -1,0 +1,20 @@
+﻿{
+    "Dashboard":  {
+                      "ProductionReadiness":  0,
+                      "Status":  "Initialized",
+                      "Maturity":  0,
+                      "Progress":  0
+                  },
+    "Version":  "4.0",
+    "Statistics":  {
+                       "Domains":  0,
+                       "Tasks":  0,
+                       "Layers":  0,
+                       "Features":  0,
+                       "Processes":  0,
+                       "Modules":  0
+                   },
+    "Created":  "2026-07-15 17:38:07",
+    "LastBuild":  null,
+    "Project":  "ZH ERP SaaS"
+}

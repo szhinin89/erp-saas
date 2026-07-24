@@ -1,0 +1,41 @@
+# Servicios base locales — PostgreSQL + Redis (ERP SaaS)
+# Incluido desde docker-compose.yml en la raíz del repo.
+# Documentación: infrastructure/README.md · docs/DEVELOPMENT.md
+
+services:
+  redis:
+    image: redis:7-alpine
+    container_name: erp-saas-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - erp_saas_redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  postgres:
+    image: postgres:16
+    container_name: postgreszh
+    restart: unless-stopped
+    ports:
+      - "5435:5432"
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-zhin@2024}
+      POSTGRES_DB: dberpsaas
+    volumes:
+      - erp_saas_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d dberpsaas"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  erp_saas_pgdata:
+  erp_saas_redisdata:

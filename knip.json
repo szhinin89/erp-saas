@@ -1,0 +1,26 @@
+{
+  "$schema": "https://unpkg.com/knip@5/schema.json",
+  "root": "frontend",
+  "entry": [
+    "frontend/src/main.tsx",
+    "frontend/src/routes/**/*.tsx",
+    "frontend/src/routes/**/*.ts"
+  ],
+  "project": [
+    "frontend/src/**/*.{ts,tsx}",
+    "tools/**/*.mjs"
+  ],
+  "ignore": [
+    "frontend/src/**/*.test.{ts,tsx}",
+    "frontend/src/**/*.spec.{ts,tsx}",
+    "frontend/node_modules/**",
+    "frontend/dist/**"
+  ],
+  "ignoreDependencies": [
+    "@playwright/test",
+    "vitest"
+  ],
+  "reportUnusedFiles": true,
+  "reportUnusedDependencies": true,
+  "reportUnusedDevDependencies": true
+}

@@ -1,0 +1,199 @@
+/* ProfilesPage — listado + modal RBAC (prefijo prf-)
+   Base: .pg-*, .zh-modal*, .table, .zh-grid, .zh-toggle (globales) */
+
+.prf-row-actions {
+  display: flex;
+  gap: var(--space-2);
+}
+
+/* ── Modal: cuerpo dos columnas ──────────────────────────────── */
+.prf-modal-body-grid {
+  display: grid;
+  grid-template-columns: 1fr 280px;
+  gap: var(--space-6);
+  align-items: start;
+}
+
+@media (max-width: 980px) {
+  .prf-modal-body-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.prf-modal-column-main {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+  min-width: 0;
+}
+
+.prf-modal-column-aside {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+/* ── Secciones internas (sin caja duplicada) ─────────────────── */
+.prf-modal-section-flush.pg-section {
+  padding: 0;
+  box-shadow: none;
+  border: none;
+}
+
+.prf-modal-section-icon {
+  font-size: 16px;
+}
+
+.prf-modal-field-offset {
+  margin-top: var(--space-3);
+}
+
+.prf-modal-loading {
+  padding: var(--space-4);
+}
+
+/* ── Panel lateral: tip ──────────────────────────────────────── */
+.prf-modal-tip.pg-section {
+  background: var(--color-surface-primary-tint);
+  border: 1px solid color-mix(in srgb, var(--color-primary) 13%, transparent);
+}
+
+.prf-modal-tip-row {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+}
+
+.prf-modal-tip-icon {
+  flex-shrink: 0;
+  font-size: 20px;
+  color: var(--color-primary);
+}
+
+.prf-modal-tip-title {
+  margin: 0 0 var(--space-1);
+  font-size: var(--text-label-sm-size);
+  font-weight: 600;
+  color: var(--color-primary);
+}
+
+.prf-modal-tip-body {
+  margin: 0;
+  font-size: var(--text-label-sm-size);
+  line-height: 1.5;
+}
+
+/* ── Estado de configuración / progreso ───────────────────────── */
+.prf-modal-status-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.prf-modal-status-label {
+  margin: 0;
+  font-size: var(--text-label-sm-size);
+  font-weight: 600;
+}
+
+.prf-modal-progress-value {
+  font-size: var(--text-label-sm-size);
+  font-weight: 700;
+  color: var(--color-text-secondary);
+}
+
+.prf-modal-progress-value--active {
+  color: var(--color-success);
+}
+
+.prf-modal-progress {
+  display: block;
+  width: 100%;
+  height: 8px;
+  margin: 0 0 var(--space-2);
+  border: none;
+  border-radius: 99px;
+  overflow: hidden;
+  background: var(--color-border);
+  appearance: none;
+}
+
+.prf-modal-progress::-webkit-progress-bar {
+  background: var(--color-border);
+  border-radius: 99px;
+}
+
+.prf-modal-progress::-webkit-progress-value {
+  background: var(--color-success);
+  border-radius: 99px;
+  transition: width 0.3s ease;
+}
+
+.prf-modal-progress::-moz-progress-bar {
+  background: var(--color-success);
+  border-radius: 99px;
+}
+
+.prf-modal-status-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.prf-modal-status-row-icon {
+  font-size: 14px;
+  color: var(--color-text-secondary);
+}
+
+.prf-modal-status-row-icon--success {
+  color: var(--color-success);
+}
+
+.prf-modal-status-row-text {
+  margin: 0;
+  font-size: var(--text-label-sm-size);
+}
+
+/* ── Badge seguridad ─────────────────────────────────────────── */
+.prf-modal-security.pg-section {
+  text-align: center;
+  padding: var(--space-6) var(--space-4);
+}
+
+.prf-modal-security-icon-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  height: 56px;
+  margin: 0 auto var(--space-3);
+  border-radius: 14px;
+  background: var(--color-primary);
+  box-shadow: 0 4px 12px color-mix(in srgb, var(--color-primary) 25%, transparent);
+}
+
+.prf-modal-security-icon {
+  font-size: 28px;
+  color: var(--color-surface);
+}
+
+.prf-modal-security-title {
+  margin: 0 0 var(--space-1);
+  font-size: var(--text-label-sm-size);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-primary);
+}
+
+.prf-modal-security-desc {
+  margin: 0;
+  font-size: var(--text-help-size);
+  line-height: 1.4;
+}
+
+/* ── Pie / errores ───────────────────────────────────────────── */
+.prf-modal-error-wrap {
+  padding: 0 var(--space-6);
+}

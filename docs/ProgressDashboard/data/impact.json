@@ -1,0 +1,413 @@
+﻿{
+    "generated":  "2026-07-20 19:20:26",
+    "coverage":  {
+                     "mappedFeaturePoints":  22,
+                     "totalFeaturePoints":  181,
+                     "percentage":  12.15
+                 },
+    "domains":  [
+                    {
+                        "domain":  "Configuration",
+                        "modules":  [
+                                        {
+                                            "name":  "Company",
+                                            "score":  77.75,
+                                            "features":  10,
+                                            "processes":  [
+
+                                                          ],
+                                            "risks":  [
+
+                                                      ],
+                                            "risk":  "MEDIUM"
+                                        },
+                                        {
+                                            "name":  "Companies",
+                                            "score":  77.75,
+                                            "features":  16,
+                                            "processes":  [
+
+                                                          ],
+                                            "risks":  [
+
+                                                      ],
+                                            "risk":  "MEDIUM"
+                                        },
+                                        {
+                                            "name":  "Tenants",
+                                            "score":  77.75,
+                                            "features":  0,
+                                            "processes":  [
+
+                                                          ],
+                                            "risks":  [
+
+                                                      ],
+                                            "risk":  "MEDIUM"
+                                        },
+                                        {
+                                            "name":  "Branches",
+                                            "score":  81.5,
+                                            "features":  10,
+                                            "processes":  [
+
+                                                          ],
+                                            "risks":  [
+
+                                                      ],
+                                            "risk":  "MEDIUM"
+                                        },
+                                        {
+                                            "name":  "Configuration",
+                                            "score":  77.75,
+                                            "features":  0,
+                                            "processes":  [
+
+                                                          ],
+                                            "risks":  [
+                                                          "1 possible secret(s) detected in module source"
+                                                      ],
+                                            "risk":  "HIGH"
+                                        },
+                                        {
+                                            "name":  "OrgConfig",
+                                            "score":  77.75,
+                                            "features":  4,
+                                            "processes":  [
+
+                                                          ],
+                                            "risks":  [
+
+                                                      ],
+                                            "risk":  "MEDIUM"
+                                        }
+                                    ]
+                    },
+                    {
+                        "domain":  "Security",
+                        "modules":  [
+                                        {
+                                            "name":  "Auth",
+                                            "score":  81.5,
+                                            "features":  11,
+                                            "processes":  [
+
+                                                          ],
+                                            "risks":  [
+                                                          "4 possible secret(s) detected in module source"
+                                                      ],
+                                            "risk":  "HIGH"
+                                        },
+                                        {
+                                            "name":  "Access",
+                                            "score":  81.5,
+                                            "features":  25,
+                                            "processes":  [
+
+                                                          ],
+                                            "risks":  [
+                                                          "6 possible secret(s) detected in module source",
+                                                          "1 anonymous-access file(s) detected in module source"
+                                                      ],
+                                            "risk":  "HIGH"
+                                        },
+                                        {
+                                            "name":  "Session",
+                                            "score":  81.5,
+                                            "features":  3,
+                                            "processes":  [
+
+                                                          ],
+                                            "risks":  [
+
+                                                      ],
+                                            "risk":  "MEDIUM"
+                                        },
+                                        {
+                                            "name":  "Audit",
+                                            "score":  77.75,
+                                            "features":  2,
+                                            "processes":  [
+
+                                                          ],
+                                            "risks":  [
+
+                                                      ],
+                                            "risk":  "MEDIUM"
+                                        },
+                                        {
+                                            "name":  "Security",
+                                            "score":  81.5,
+                                            "features":  2,
+                                            "processes":  [
+
+                                                          ],
+                                            "risks":  [
+
+                                                      ],
+                                            "risk":  "MEDIUM"
+                                        }
+                                    ]
+                    },
+                    {
+                        "domain":  "Purchases",
+                        "modules":  [
+                                        {
+                                            "name":  "Purchases",
+                                            "score":  81.5,
+                                            "features":  13,
+                                            "processes":  [
+                                                              {
+                                                                  "name":  "Compra",
+                                                                  "status":  "verified",
+                                                                  "risk":  "LOW"
+                                                              }
+                                                          ],
+                                            "risks":  [
+
+                                                      ],
+                                            "risk":  "MEDIUM"
+                                        }
+                                    ]
+                    },
+                    {
+                        "domain":  "Inventory",
+                        "modules":  [
+                                        {
+                                            "name":  "Items",
+                                            "score":  81.5,
+                                            "features":  23,
+                                            "processes":  [
+
+                                                          ],
+                                            "risks":  [
+
+                                                      ],
+                                            "risk":  "MEDIUM"
+                                        },
+                                        {
+                                            "name":  "Inventory",
+                                            "score":  81.5,
+                                            "features":  17,
+                                            "processes":  [
+
+                                                          ],
+                                            "risks":  [
+
+                                                      ],
+                                            "risk":  "MEDIUM"
+                                        }
+                                    ]
+                    },
+                    {
+                        "domain":  "Sales",
+                        "modules":  [
+                                        {
+                                            "name":  "Sales",
+                                            "score":  81.5,
+                                            "features":  9,
+                                            "processes":  [
+                                                              {
+                                                                  "name":  "Venta",
+                                                                  "status":  "verified",
+                                                                  "risk":  "LOW"
+                                                              }
+                                                          ],
+                                            "risks":  [
+                                                          "1 large file(s) (\u003e=500 lines)"
+                                                      ],
+                                            "risk":  "MEDIUM"
+                                        },
+                                        {
+                                            "name":  "Pricing",
+                                            "score":  81.5,
+                                            "features":  4,
+                                            "processes":  [
+
+                                                          ],
+                                            "risks":  [
+
+                                                      ],
+                                            "risk":  "MEDIUM"
+                                        }
+                                    ]
+                    },
+                    {
+                        "domain":  "Cash",
+                        "modules":  [
+                                        {
+                                            "name":  "Caja",
+                                            "score":  81.5,
+                                            "features":  10,
+                                            "processes":  [
+
+                                                          ],
+                                            "risks":  [
+
+                                                      ],
+                                            "risk":  "MEDIUM"
+                                        }
+                                    ]
+                    },
+                    {
+                        "domain":  "Accounting",
+                        "modules":  [
+                                        {
+                                            "name":  "Finance",
+                                            "score":  81.5,
+                                            "features":  1,
+                                            "processes":  [
+
+                                                          ],
+                                            "risks":  [
+
+                                                      ],
+                                            "risk":  "MEDIUM"
+                                        }
+                                    ]
+                    },
+                    {
+                        "domain":  "Electronic Documents",
+                        "modules":  [
+                                        {
+                                            "name":  "ElectronicInvoicing",
+                                            "score":  77.75,
+                                            "features":  6,
+                                            "processes":  [
+
+                                                          ],
+                                            "risks":  [
+                                                          "3 possible secret(s) detected in module source"
+                                                      ],
+                                            "risk":  "HIGH"
+                                        },
+                                        {
+                                            "name":  "Ride",
+                                            "score":  81.5,
+                                            "features":  2,
+                                            "processes":  [
+
+                                                          ],
+                                            "risks":  [
+
+                                                      ],
+                                            "risk":  "MEDIUM"
+                                        },
+                                        {
+                                            "name":  "ElectronicDocuments",
+                                            "score":  81.5,
+                                            "features":  9,
+                                            "processes":  [
+
+                                                          ],
+                                            "risks":  [
+                                                          "1 large file(s) (\u003e=500 lines)",
+                                                          "1 possible secret(s) detected in module source"
+                                                      ],
+                                            "risk":  "HIGH"
+                                        },
+                                        {
+                                            "name":  "SriCatalogs",
+                                            "score":  77.75,
+                                            "features":  0,
+                                            "processes":  [
+
+                                                          ],
+                                            "risks":  [
+
+                                                      ],
+                                            "risk":  "MEDIUM"
+                                        }
+                                    ]
+                    },
+                    {
+                        "domain":  "Unmapped",
+                        "modules":  [
+                                        {
+                                            "name":  "Dashboard",
+                                            "score":  81.5,
+                                            "features":  1,
+                                            "processes":  [
+
+                                                          ],
+                                            "risks":  [
+                                                          "Unmapped business domain - no domains.json relationship"
+                                                      ],
+                                            "risk":  "MEDIUM"
+                                        },
+                                        {
+                                            "name":  "Menu",
+                                            "score":  77.75,
+                                            "features":  0,
+                                            "processes":  [
+
+                                                          ],
+                                            "risks":  [
+                                                          "Unmapped business domain - no domains.json relationship"
+                                                      ],
+                                            "risk":  "MEDIUM"
+                                        },
+                                        {
+                                            "name":  "Integration",
+                                            "score":  77.75,
+                                            "features":  2,
+                                            "processes":  [
+
+                                                          ],
+                                            "risks":  [
+                                                          "Unmapped business domain - no domains.json relationship"
+                                                      ],
+                                            "risk":  "MEDIUM"
+                                        },
+                                        {
+                                            "name":  "Common",
+                                            "score":  77.75,
+                                            "features":  0,
+                                            "processes":  [
+
+                                                          ],
+                                            "risks":  [
+                                                          "Unmapped business domain - no domains.json relationship"
+                                                      ],
+                                            "risk":  "MEDIUM"
+                                        },
+                                        {
+                                            "name":  "Auxiliary",
+                                            "score":  77.75,
+                                            "features":  0,
+                                            "processes":  [
+
+                                                          ],
+                                            "risks":  [
+                                                          "Unmapped business domain - no domains.json relationship"
+                                                      ],
+                                            "risk":  "MEDIUM"
+                                        },
+                                        {
+                                            "name":  "Media",
+                                            "score":  77.75,
+                                            "features":  0,
+                                            "processes":  [
+
+                                                          ],
+                                            "risks":  [
+                                                          "Unmapped business domain - no domains.json relationship"
+                                                      ],
+                                            "risk":  "MEDIUM"
+                                        },
+                                        {
+                                            "name":  "Navigation",
+                                            "score":  77.75,
+                                            "features":  1,
+                                            "processes":  [
+
+                                                          ],
+                                            "risks":  [
+                                                          "Unmapped business domain - no domains.json relationship"
+                                                      ],
+                                            "risk":  "MEDIUM"
+                                        }
+                                    ]
+                    }
+                ]
+}

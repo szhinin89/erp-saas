@@ -1,0 +1,32 @@
+---
+description: >-
+  No poner UUID de tenant/company ni tokens en la query de la URL; usar sessionStorage
+  con el prefijo erp.saas.*.
+alwaysApply: true
+---
+
+# Navegación SaaS: sin IDs sensibles en la URL
+
+**Canónico:** [`AI-RULES/SAAS-RULES.md`](../../AI-RULES/SAAS-RULES.md#ids-de-tenantcompany-fuera-de-la-url)
+
+## Objetivo
+
+Evitar que **UUID de tenant/company**, tokens u otros identificadores sensibles aparezcan en `location.search` o en enlaces compartibles (historial, capturas, referrers).
+
+## Patrón obligatorio (referencia implementada)
+
+- **Módulo:** `frontend/src/lib/session/sessionStorageKeys.ts`
+- **Prefijo `sessionStorage`:** `erp.saas.` (`SAAS_SESSION_STORAGE_PREFIX`) — claves de contexto de navegación, limpiadas por `fullLogout`.
+
+## Al añadir pantallas o enlaces nuevos
+
+1. **No** construir `to={\`/ruta?companyId=${id}\`}` ni equivalentes con UUID.
+2. Si hace falta contexto entre rutas: **nueva clave** con prefijo `erp.saas.` en `sessionStorage` (documentar junto a `sessionStorageKeys.ts`), o estado global ya existente (stores), o **idempotente** query solo con valores no sensibles (p. ej. `?plan=starter`).
+3. Revisar enlaces viejos en `NavLink`, emails y documentación; al tocarlos, aplicar el mismo patrón.
+
+## Contraste
+
+| Evitar | Preferir |
+|--------|----------|
+| `?data=<uuid>`, `?tenantId=`, `?companyId=` | Claves `erp.saas.*` + ruta corta |
+| “Encriptar” el id solo en cliente en la URL | No exponerlo en la URL |

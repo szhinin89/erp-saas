@@ -1,0 +1,53 @@
+﻿{
+    "Generated":  "2026-07-20 19:16:09",
+    "Summary":  {
+                    "TotalFiles":  9
+                },
+    "Migrations":  [
+                       {
+                           "Name":  "20260719224014_InitialEnterpriseBaseline",
+                           "SizeKB":  320.42,
+                           "Modified":  "2026-07-19 17:40:14"
+                       },
+                       {
+                           "Name":  "20260719224014_InitialEnterpriseBaseline.Designer",
+                           "SizeKB":  464.18,
+                           "Modified":  "2026-07-19 17:40:14"
+                       },
+                       {
+                           "Name":  "20260720154430_AddCashRegisterDefaults",
+                           "SizeKB":  2.87,
+                           "Modified":  "2026-07-20 10:44:30"
+                       },
+                       {
+                           "Name":  "20260720154430_AddCashRegisterDefaults.Designer",
+                           "SizeKB":  465.37,
+                           "Modified":  "2026-07-20 10:44:30"
+                       },
+                       {
+                           "Name":  "20260720194803_AddPurchaseReceptionDocuments",
+                           "SizeKB":  8.14,
+                           "Modified":  "2026-07-20 14:48:03"
+                       },
+                       {
+                           "Name":  "20260720194803_AddPurchaseReceptionDocuments.Designer",
+                           "SizeKB":  474.63,
+                           "Modified":  "2026-07-20 14:48:03"
+                       },
+                       {
+                           "Name":  "20260720215708_AddPurchaseReceptionXmlFields",
+                           "SizeKB":  1.25,
+                           "Modified":  "2026-07-20 16:57:09"
+                       },
+                       {
+                           "Name":  "20260720215708_AddPurchaseReceptionXmlFields.Designer",
+                           "SizeKB":  475.05,
+                           "Modified":  "2026-07-20 16:57:09"
+                       },
+                       {
+                           "Name":  "ErpDbContextModelSnapshot",
+                           "SizeKB":  463.54,
+                           "Modified":  "2026-07-20 18:39:21"
+                       }
+                   ]
+}

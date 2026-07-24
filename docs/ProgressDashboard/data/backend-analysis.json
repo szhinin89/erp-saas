@@ -1,0 +1,576 @@
+﻿{
+    "Generated":  "2026-07-20 19:15:57",
+    "BackendRoot":  "C:\\ProyectCursor\\erp-saas\\backend\\src",
+    "ProjectCount":  12,
+    "ModuleCount":  29,
+    "Projects":  [
+                     {
+                         "Name":  "ERP.AI.Application",
+                         "Path":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.AI.Application",
+                         "Layer":  "Other",
+                         "Type":  "Production",
+                         "Modules":  [
+
+                                     ]
+                     },
+                     {
+                         "Name":  "ERP.AI.Infrastructure",
+                         "Path":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.AI.Infrastructure",
+                         "Layer":  "Other",
+                         "Type":  "Production",
+                         "Modules":  [
+
+                                     ]
+                     },
+                     {
+                         "Name":  "ERP.API",
+                         "Path":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.API",
+                         "Layer":  "API",
+                         "Type":  "Production",
+                         "Modules":  [
+
+                                     ]
+                     },
+                     {
+                         "Name":  "ERP.API.Tests",
+                         "Path":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.API.Tests",
+                         "Layer":  "Other",
+                         "Type":  "Test",
+                         "Modules":  [
+
+                                     ]
+                     },
+                     {
+                         "Name":  "ERP.Application",
+                         "Path":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Application",
+                         "Layer":  "Application",
+                         "Type":  "Production",
+                         "Modules":  [
+                                         {
+                                             "Name":  "Access",
+                                             "Path":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Application\\Modules\\Access"
+                                         },
+                                         {
+                                             "Name":  "Audit",
+                                             "Path":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Application\\Modules\\Audit"
+                                         },
+                                         {
+                                             "Name":  "Auth",
+                                             "Path":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Application\\Modules\\Auth"
+                                         },
+                                         {
+                                             "Name":  "Branches",
+                                             "Path":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Application\\Modules\\Branches"
+                                         },
+                                         {
+                                             "Name":  "Caja",
+                                             "Path":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Application\\Modules\\Caja"
+                                         },
+                                         {
+                                             "Name":  "Common",
+                                             "Path":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Application\\Modules\\Common"
+                                         },
+                                         {
+                                             "Name":  "Companies",
+                                             "Path":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Application\\Modules\\Companies"
+                                         },
+                                         {
+                                             "Name":  "Company",
+                                             "Path":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Application\\Modules\\Company"
+                                         },
+                                         {
+                                             "Name":  "Configuration",
+                                             "Path":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Application\\Modules\\Configuration"
+                                         },
+                                         {
+                                             "Name":  "Dashboard",
+                                             "Path":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Application\\Modules\\Dashboard"
+                                         },
+                                         {
+                                             "Name":  "ElectronicDocuments",
+                                             "Path":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Application\\Modules\\ElectronicDocuments"
+                                         },
+                                         {
+                                             "Name":  "ElectronicInvoicing",
+                                             "Path":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Application\\Modules\\ElectronicInvoicing"
+                                         },
+                                         {
+                                             "Name":  "Finance",
+                                             "Path":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Application\\Modules\\Finance"
+                                         },
+                                         {
+                                             "Name":  "Integration",
+                                             "Path":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Application\\Modules\\Integration"
+                                         },
+                                         {
+                                             "Name":  "Inventory",
+                                             "Path":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Application\\Modules\\Inventory"
+                                         },
+                                         {
+                                             "Name":  "Items",
+                                             "Path":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Application\\Modules\\Items"
+                                         },
+                                         {
+                                             "Name":  "Media",
+                                             "Path":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Application\\Modules\\Media"
+                                         },
+                                         {
+                                             "Name":  "Navigation",
+                                             "Path":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Application\\Modules\\Navigation"
+                                         },
+                                         {
+                                             "Name":  "OrgConfig",
+                                             "Path":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Application\\Modules\\OrgConfig"
+                                         },
+                                         {
+                                             "Name":  "Pricing",
+                                             "Path":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Application\\Modules\\Pricing"
+                                         },
+                                         {
+                                             "Name":  "Purchases",
+                                             "Path":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Application\\Modules\\Purchases"
+                                         },
+                                         {
+                                             "Name":  "Ride",
+                                             "Path":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Application\\Modules\\Ride"
+                                         },
+                                         {
+                                             "Name":  "Sales",
+                                             "Path":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Application\\Modules\\Sales"
+                                         },
+                                         {
+                                             "Name":  "Security",
+                                             "Path":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Application\\Modules\\Security"
+                                         },
+                                         {
+                                             "Name":  "Session",
+                                             "Path":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Application\\Modules\\Session"
+                                         }
+                                     ]
+                     },
+                     {
+                         "Name":  "ERP.Application.Tests",
+                         "Path":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Application.Tests",
+                         "Layer":  "Other",
+                         "Type":  "Test",
+                         "Modules":  [
+                                         {
+                                             "Name":  "Session",
+                                             "Path":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Application.Tests\\Modules\\Session"
+                                         }
+                                     ]
+                     },
+                     {
+                         "Name":  "ERP.Architecture.Tests",
+                         "Path":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Architecture.Tests",
+                         "Layer":  "Other",
+                         "Type":  "Test",
+                         "Modules":  [
+
+                                     ]
+                     },
+                     {
+                         "Name":  "ERP.Domain",
+                         "Path":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Domain",
+                         "Layer":  "Domain",
+                         "Type":  "Production",
+                         "Modules":  [
+                                         {
+                                             "Name":  "Access",
+                                             "Path":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Domain\\Modules\\Access"
+                                         },
+                                         {
+                                             "Name":  "Audit",
+                                             "Path":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Domain\\Modules\\Audit"
+                                         },
+                                         {
+                                             "Name":  "Auth",
+                                             "Path":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Domain\\Modules\\Auth"
+                                         },
+                                         {
+                                             "Name":  "Auxiliary",
+                                             "Path":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Domain\\Modules\\Auxiliary"
+                                         },
+                                         {
+                                             "Name":  "Caja",
+                                             "Path":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Domain\\Modules\\Caja"
+                                         },
+                                         {
+                                             "Name":  "Common",
+                                             "Path":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Domain\\Modules\\Common"
+                                         },
+                                         {
+                                             "Name":  "Company",
+                                             "Path":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Domain\\Modules\\Company"
+                                         },
+                                         {
+                                             "Name":  "Configuration",
+                                             "Path":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Domain\\Modules\\Configuration"
+                                         },
+                                         {
+                                             "Name":  "ElectronicDocuments",
+                                             "Path":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Domain\\Modules\\ElectronicDocuments"
+                                         },
+                                         {
+                                             "Name":  "Finance",
+                                             "Path":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Domain\\Modules\\Finance"
+                                         },
+                                         {
+                                             "Name":  "Inventory",
+                                             "Path":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Domain\\Modules\\Inventory"
+                                         },
+                                         {
+                                             "Name":  "Items",
+                                             "Path":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Domain\\Modules\\Items"
+                                         },
+                                         {
+                                             "Name":  "Media",
+                                             "Path":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Domain\\Modules\\Media"
+                                         },
+                                         {
+                                             "Name":  "Menu",
+                                             "Path":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Domain\\Modules\\Menu"
+                                         },
+                                         {
+                                             "Name":  "Navigation",
+                                             "Path":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Domain\\Modules\\Navigation"
+                                         },
+                                         {
+                                             "Name":  "Pricing",
+                                             "Path":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Domain\\Modules\\Pricing"
+                                         },
+                                         {
+                                             "Name":  "Purchases",
+                                             "Path":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Domain\\Modules\\Purchases"
+                                         },
+                                         {
+                                             "Name":  "Ride",
+                                             "Path":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Domain\\Modules\\Ride"
+                                         },
+                                         {
+                                             "Name":  "Sales",
+                                             "Path":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Domain\\Modules\\Sales"
+                                         },
+                                         {
+                                             "Name":  "Security",
+                                             "Path":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Domain\\Modules\\Security"
+                                         },
+                                         {
+                                             "Name":  "SriCatalogs",
+                                             "Path":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Domain\\Modules\\SriCatalogs"
+                                         },
+                                         {
+                                             "Name":  "Tenants",
+                                             "Path":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Domain\\Modules\\Tenants"
+                                         }
+                                     ]
+                     },
+                     {
+                         "Name":  "ERP.Domain.Tests",
+                         "Path":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Domain.Tests",
+                         "Layer":  "Other",
+                         "Type":  "Test",
+                         "Modules":  [
+
+                                     ]
+                     },
+                     {
+                         "Name":  "ERP.Infrastructure",
+                         "Path":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Infrastructure",
+                         "Layer":  "Infrastructure",
+                         "Type":  "Production",
+                         "Modules":  [
+                                         {
+                                             "Name":  "Purchases",
+                                             "Path":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Infrastructure\\Modules\\Purchases"
+                                         }
+                                     ]
+                     },
+                     {
+                         "Name":  "ERP.Infrastructure.Tests",
+                         "Path":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Infrastructure.Tests",
+                         "Layer":  "Other",
+                         "Type":  "Test",
+                         "Modules":  [
+                                         {
+                                             "Name":  "Purchases",
+                                             "Path":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Infrastructure.Tests\\Modules\\Purchases"
+                                         }
+                                     ]
+                     },
+                     {
+                         "Name":  "Platform.Contracts",
+                         "Path":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\Platform.Contracts",
+                         "Layer":  "Other",
+                         "Type":  "Production",
+                         "Modules":  [
+
+                                     ]
+                     }
+                 ],
+    "Modules":  [
+                    {
+                        "Name":  "Company",
+                        "Layers":  [
+                                       "Application",
+                                       "Domain"
+                                   ],
+                        "Projects":  [
+                                         "ERP.Application",
+                                         "ERP.Domain"
+                                     ]
+                    },
+                    {
+                        "Name":  "Dashboard",
+                        "Layers":  "Application",
+                        "Projects":  "ERP.Application"
+                    },
+                    {
+                        "Name":  "Purchases",
+                        "Layers":  [
+                                       "Application",
+                                       "Domain",
+                                       "Infrastructure",
+                                       "Other"
+                                   ],
+                        "Projects":  [
+                                         "ERP.Application",
+                                         "ERP.Domain",
+                                         "ERP.Infrastructure",
+                                         "ERP.Infrastructure.Tests"
+                                     ]
+                    },
+                    {
+                        "Name":  "Companies",
+                        "Layers":  "Application",
+                        "Projects":  "ERP.Application"
+                    },
+                    {
+                        "Name":  "Menu",
+                        "Layers":  "Domain",
+                        "Projects":  "ERP.Domain"
+                    },
+                    {
+                        "Name":  "Auth",
+                        "Layers":  [
+                                       "Application",
+                                       "Domain"
+                                   ],
+                        "Projects":  [
+                                         "ERP.Application",
+                                         "ERP.Domain"
+                                     ]
+                    },
+                    {
+                        "Name":  "Integration",
+                        "Layers":  "Application",
+                        "Projects":  "ERP.Application"
+                    },
+                    {
+                        "Name":  "Access",
+                        "Layers":  [
+                                       "Application",
+                                       "Domain"
+                                   ],
+                        "Projects":  [
+                                         "ERP.Application",
+                                         "ERP.Domain"
+                                     ]
+                    },
+                    {
+                        "Name":  "Sales",
+                        "Layers":  [
+                                       "Application",
+                                       "Domain"
+                                   ],
+                        "Projects":  [
+                                         "ERP.Application",
+                                         "ERP.Domain"
+                                     ]
+                    },
+                    {
+                        "Name":  "Items",
+                        "Layers":  [
+                                       "Application",
+                                       "Domain"
+                                   ],
+                        "Projects":  [
+                                         "ERP.Application",
+                                         "ERP.Domain"
+                                     ]
+                    },
+                    {
+                        "Name":  "Tenants",
+                        "Layers":  "Domain",
+                        "Projects":  "ERP.Domain"
+                    },
+                    {
+                        "Name":  "Session",
+                        "Layers":  [
+                                       "Application",
+                                       "Other"
+                                   ],
+                        "Projects":  [
+                                         "ERP.Application",
+                                         "ERP.Application.Tests"
+                                     ]
+                    },
+                    {
+                        "Name":  "Common",
+                        "Layers":  [
+                                       "Application",
+                                       "Domain"
+                                   ],
+                        "Projects":  [
+                                         "ERP.Application",
+                                         "ERP.Domain"
+                                     ]
+                    },
+                    {
+                        "Name":  "Inventory",
+                        "Layers":  [
+                                       "Application",
+                                       "Domain"
+                                   ],
+                        "Projects":  [
+                                         "ERP.Application",
+                                         "ERP.Domain"
+                                     ]
+                    },
+                    {
+                        "Name":  "Finance",
+                        "Layers":  [
+                                       "Application",
+                                       "Domain"
+                                   ],
+                        "Projects":  [
+                                         "ERP.Application",
+                                         "ERP.Domain"
+                                     ]
+                    },
+                    {
+                        "Name":  "Branches",
+                        "Layers":  "Application",
+                        "Projects":  "ERP.Application"
+                    },
+                    {
+                        "Name":  "Auxiliary",
+                        "Layers":  "Domain",
+                        "Projects":  "ERP.Domain"
+                    },
+                    {
+                        "Name":  "Pricing",
+                        "Layers":  [
+                                       "Application",
+                                       "Domain"
+                                   ],
+                        "Projects":  [
+                                         "ERP.Application",
+                                         "ERP.Domain"
+                                     ]
+                    },
+                    {
+                        "Name":  "Caja",
+                        "Layers":  [
+                                       "Application",
+                                       "Domain"
+                                   ],
+                        "Projects":  [
+                                         "ERP.Application",
+                                         "ERP.Domain"
+                                     ]
+                    },
+                    {
+                        "Name":  "ElectronicInvoicing",
+                        "Layers":  "Application",
+                        "Projects":  "ERP.Application"
+                    },
+                    {
+                        "Name":  "Configuration",
+                        "Layers":  [
+                                       "Application",
+                                       "Domain"
+                                   ],
+                        "Projects":  [
+                                         "ERP.Application",
+                                         "ERP.Domain"
+                                     ]
+                    },
+                    {
+                        "Name":  "Audit",
+                        "Layers":  [
+                                       "Application",
+                                       "Domain"
+                                   ],
+                        "Projects":  [
+                                         "ERP.Application",
+                                         "ERP.Domain"
+                                     ]
+                    },
+                    {
+                        "Name":  "Ride",
+                        "Layers":  [
+                                       "Application",
+                                       "Domain"
+                                   ],
+                        "Projects":  [
+                                         "ERP.Application",
+                                         "ERP.Domain"
+                                     ]
+                    },
+                    {
+                        "Name":  "Media",
+                        "Layers":  [
+                                       "Application",
+                                       "Domain"
+                                   ],
+                        "Projects":  [
+                                         "ERP.Application",
+                                         "ERP.Domain"
+                                     ]
+                    },
+                    {
+                        "Name":  "ElectronicDocuments",
+                        "Layers":  [
+                                       "Application",
+                                       "Domain"
+                                   ],
+                        "Projects":  [
+                                         "ERP.Application",
+                                         "ERP.Domain"
+                                     ]
+                    },
+                    {
+                        "Name":  "Security",
+                        "Layers":  [
+                                       "Application",
+                                       "Domain"
+                                   ],
+                        "Projects":  [
+                                         "ERP.Application",
+                                         "ERP.Domain"
+                                     ]
+                    },
+                    {
+                        "Name":  "SriCatalogs",
+                        "Layers":  "Domain",
+                        "Projects":  "ERP.Domain"
+                    },
+                    {
+                        "Name":  "OrgConfig",
+                        "Layers":  "Application",
+                        "Projects":  "ERP.Application"
+                    },
+                    {
+                        "Name":  "Navigation",
+                        "Layers":  [
+                                       "Application",
+                                       "Domain"
+                                   ],
+                        "Projects":  [
+                                         "ERP.Application",
+                                         "ERP.Domain"
+                                     ]
+                    }
+                ]
+}

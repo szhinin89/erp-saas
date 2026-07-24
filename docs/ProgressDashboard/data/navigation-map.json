@@ -1,0 +1,526 @@
+﻿{
+    "generated":  "2026-07-20 19:20:43",
+    "source":  "architecture-progress.json, modules.json, domains.json, database-analysis.json, migration-analysis.json, frontend-analysis.json, backend-analysis.json",
+    "method":  {
+                   "layerToStage":  "Contiguous-window search over stages[] (real array order); a window is a candidate only if its average pct exactly equals the already-published layers[].pct. If multiple window sizes match, the largest is preferred (a multi-stage exact match is far less likely to be coincidental than a single-stage one); accepted as verified only if that largest match is unique. Ambiguous cases are reported (candidateCount) instead of guessed.",
+                   "coreModuleToPhase":  "Substring match on phase name + exact pct equality against coreModules[].pct; accepted only if the match is unique",
+                   "coreModuleToRealModule":  "Explicit ES-\u003eEN translation table (same pattern as analyze-modules.ps1\u0027s module-\u003edomain table), validated against modules.json at runtime -- rejected (null) if the target module does not exist",
+                   "webDomains":  "domains.json[].layer field, used verbatim (already a real, declared relation)",
+                   "databaseFrontendAssociation":  "1:1 by topic: db\u003c-\u003edatabase-analysis.json/migration-analysis.json, web\u003c-\u003efrontend-analysis.json, intelligence\u003c-\u003ebackend-analysis.json projects matching \u0027AI\u0027"
+               },
+    "layers":  [
+                   {
+                       "id":  "web",
+                       "label":  "Web ERP",
+                       "pct":  84,
+                       "status":  "computed",
+                       "note":  "React SPA -- promedio de las etapas Core ERP + Operaciones + Fiscal/SRI",
+                       "composedOfStages":  [
+                                                {
+                                                    "name":  "Core ERP",
+                                                    "pct":  94,
+                                                    "done":  42.5,
+                                                    "totalTasks":  45
+                                                },
+                                                {
+                                                    "name":  "Operaciones",
+                                                    "pct":  84,
+                                                    "done":  70.5,
+                                                    "totalTasks":  84
+                                                },
+                                                {
+                                                    "name":  "Fiscal / SRI",
+                                                    "pct":  75,
+                                                    "done":  80,
+                                                    "totalTasks":  106
+                                                }
+                                            ],
+                       "coreModules":  [
+
+                                       ],
+                       "domains":  [
+                                       {
+                                           "id":  "configuration",
+                                           "name":  "Configuration"
+                                       },
+                                       {
+                                           "id":  "security",
+                                           "name":  "Security"
+                                       },
+                                       {
+                                           "id":  "business-partners",
+                                           "name":  "Business Partners"
+                                       },
+                                       {
+                                           "id":  "crm",
+                                           "name":  "CRM"
+                                       },
+                                       {
+                                           "id":  "purchases",
+                                           "name":  "Purchases"
+                                       },
+                                       {
+                                           "id":  "inventory",
+                                           "name":  "Inventory"
+                                       },
+                                       {
+                                           "id":  "sales",
+                                           "name":  "Sales"
+                                       },
+                                       {
+                                           "id":  "cash",
+                                           "name":  "Cash"
+                                       },
+                                       {
+                                           "id":  "accounting",
+                                           "name":  "Accounting"
+                                       },
+                                       {
+                                           "id":  "reports",
+                                           "name":  "Reports"
+                                       }
+                                   ],
+                       "realModuleIds":  [
+                                             "Access",
+                                             "Audit",
+                                             "Auth",
+                                             "Branches",
+                                             "Caja",
+                                             "Companies",
+                                             "Company",
+                                             "Configuration",
+                                             "Finance",
+                                             "Inventory",
+                                             "Items",
+                                             "OrgConfig",
+                                             "Pricing",
+                                             "Purchases",
+                                             "Sales",
+                                             "Security",
+                                             "Session",
+                                             "Tenants"
+                                         ],
+                       "databaseStats":  null,
+                       "migrations":  null,
+                       "frontendStats":  {
+                                             "statistics":  {
+                                                                "SourceFiles":  383,
+                                                                "Pages":  1,
+                                                                "Components":  52,
+                                                                "Hooks":  5,
+                                                                "Services":  0,
+                                                                "Stores":  0,
+                                                                "Routes":  1
+                                                            },
+                                             "modules":  [
+                                                             "access",
+                                                             "admin",
+                                                             "auth",
+                                                             "branches",
+                                                             "caja",
+                                                             "cashRegisters",
+                                                             "company-management",
+                                                             "config",
+                                                             "configuracion",
+                                                             "dashboard",
+                                                             "electronicDocuments",
+                                                             "emissionPoints",
+                                                             "establishments",
+                                                             "finance",
+                                                             "inventory",
+                                                             "items",
+                                                             "lib",
+                                                             "logistica",
+                                                             "masterData",
+                                                             "pricing",
+                                                             "purchases",
+                                                             "reportes",
+                                                             "ride",
+                                                             "sales",
+                                                             "security",
+                                                             "session",
+                                                             "settings",
+                                                             "shared"
+                                                         ]
+                                         },
+                       "aiBackendScaffold":  [
+
+                                             ],
+                       "gapReason":  null,
+                       "crossModelNote":  null
+                   },
+                   {
+                       "id":  "mobile",
+                       "label":  "Mobile App",
+                       "pct":  0,
+                       "status":  "not_started",
+                       "note":  "0% literal en PROGRESS.html -- \u0027Futuro\u0027",
+                       "composedOfStages":  [
+
+                                            ],
+                       "coreModules":  [
+
+                                       ],
+                       "domains":  [
+
+                                   ],
+                       "realModuleIds":  [
+
+                                         ],
+                       "databaseStats":  null,
+                       "migrations":  null,
+                       "frontendStats":  null,
+                       "aiBackendScaffold":  [
+
+                                             ],
+                       "gapReason":  "No modules, features, processes or tasks exist for this layer in any pipeline JSON. architecture-progress.json reports pct=0/status=not_started -- this is the full extent of available evidence.",
+                       "crossModelNote":  null
+                   },
+                   {
+                       "id":  "chat",
+                       "label":  "Chat Interface",
+                       "pct":  0,
+                       "status":  "not_started",
+                       "note":  "0% literal en PROGRESS.html -- \u0027Futuro\u0027",
+                       "composedOfStages":  [
+
+                                            ],
+                       "coreModules":  [
+
+                                       ],
+                       "domains":  [
+
+                                   ],
+                       "realModuleIds":  [
+
+                                         ],
+                       "databaseStats":  null,
+                       "migrations":  null,
+                       "frontendStats":  null,
+                       "aiBackendScaffold":  [
+
+                                             ],
+                       "gapReason":  "No modules, features, processes or tasks exist for this layer in any pipeline JSON. architecture-progress.json reports pct=0/status=not_started -- this is the full extent of available evidence.",
+                       "crossModelNote":  null
+                   },
+                   {
+                       "id":  "intelligence",
+                       "label":  "ERP Intelligence Layer",
+                       "pct":  0,
+                       "status":  "not_started",
+                       "note":  "0% literal en PROGRESS.html -- \u0027Futuro\u0027",
+                       "composedOfStages":  [
+
+                                            ],
+                       "coreModules":  [
+
+                                       ],
+                       "domains":  [
+
+                                   ],
+                       "realModuleIds":  [
+
+                                         ],
+                       "databaseStats":  null,
+                       "migrations":  null,
+                       "frontendStats":  null,
+                       "aiBackendScaffold":  [
+                                                 {
+                                                     "project":  "ERP.AI.Application",
+                                                     "layer":  "Other",
+                                                     "type":  "Production",
+                                                     "moduleCount":  0
+                                                 },
+                                                 {
+                                                     "project":  "ERP.AI.Infrastructure",
+                                                     "layer":  "Other",
+                                                     "type":  "Production",
+                                                     "moduleCount":  0
+                                                 }
+                                             ],
+                       "gapReason":  "No modules/features/tasks exist yet, but 2 backend project(s) matching \u0027AI\u0027 are already scaffolded in the solution with zero modules implemented (backend-analysis.json) -- confirms 0% is accurate, not missing data.",
+                       "crossModelNote":  null
+                   },
+                   {
+                       "id":  "ai-assistant",
+                       "label":  "User Assistant AI",
+                       "pct":  0,
+                       "status":  "not_started",
+                       "note":  "0% literal en PROGRESS.html -- \u0027Futuro\u0027",
+                       "composedOfStages":  [
+
+                                            ],
+                       "coreModules":  [
+
+                                       ],
+                       "domains":  [
+
+                                   ],
+                       "realModuleIds":  [
+
+                                         ],
+                       "databaseStats":  null,
+                       "migrations":  null,
+                       "frontendStats":  null,
+                       "aiBackendScaffold":  [
+
+                                             ],
+                       "gapReason":  "No modules, features, processes or tasks exist for this layer in any pipeline JSON. architecture-progress.json reports pct=0/status=not_started -- this is the full extent of available evidence.",
+                       "crossModelNote":  null
+                   },
+                   {
+                       "id":  "ai-analyst",
+                       "label":  "Business Analyst AI",
+                       "pct":  0,
+                       "status":  "not_started",
+                       "note":  "0% literal en PROGRESS.html -- \u0027Futuro\u0027",
+                       "composedOfStages":  [
+
+                                            ],
+                       "coreModules":  [
+
+                                       ],
+                       "domains":  [
+
+                                   ],
+                       "realModuleIds":  [
+
+                                         ],
+                       "databaseStats":  null,
+                       "migrations":  null,
+                       "frontendStats":  null,
+                       "aiBackendScaffold":  [
+
+                                             ],
+                       "gapReason":  "No modules, features, processes or tasks exist for this layer in any pipeline JSON. architecture-progress.json reports pct=0/status=not_started -- this is the full extent of available evidence.",
+                       "crossModelNote":  null
+                   },
+                   {
+                       "id":  "ai-automation",
+                       "label":  "Process Automation AI",
+                       "pct":  0,
+                       "status":  "not_started",
+                       "note":  "0% literal en PROGRESS.html -- \u0027Futuro\u0027",
+                       "composedOfStages":  [
+
+                                            ],
+                       "coreModules":  [
+
+                                       ],
+                       "domains":  [
+
+                                   ],
+                       "realModuleIds":  [
+
+                                         ],
+                       "databaseStats":  null,
+                       "migrations":  null,
+                       "frontendStats":  null,
+                       "aiBackendScaffold":  [
+
+                                             ],
+                       "gapReason":  "No modules, features, processes or tasks exist for this layer in any pipeline JSON. architecture-progress.json reports pct=0/status=not_started -- this is the full extent of available evidence.",
+                       "crossModelNote":  null
+                   },
+                   {
+                       "id":  "core",
+                       "label":  "ERP Core Services",
+                       "pct":  69,
+                       "status":  "computed",
+                       "note":  "Promedio de Ventas/Compras/Inventario/Caja/Contabilidad",
+                       "composedOfStages":  [
+
+                                            ],
+                       "coreModules":  [
+                                           {
+                                               "name":  "Ventas",
+                                               "pct":  84,
+                                               "matchedStage":  "Operaciones",
+                                               "matchedPhase":  "Ventas (Sales Invoice)",
+                                               "stagePhaseVerified":  true,
+                                               "realModuleId":  "Sales",
+                                               "realModuleVerified":  true,
+                                               "gapReason":  null
+                                           },
+                                           {
+                                               "name":  "Compras",
+                                               "pct":  89,
+                                               "matchedStage":  "Operaciones",
+                                               "matchedPhase":  "Compras (Purchases)",
+                                               "stagePhaseVerified":  true,
+                                               "realModuleId":  "Purchases",
+                                               "realModuleVerified":  true,
+                                               "gapReason":  null
+                                           },
+                                           {
+                                               "name":  "Inventario",
+                                               "pct":  89,
+                                               "matchedStage":  "Operaciones",
+                                               "matchedPhase":  "Inventario \u0026 Bodega",
+                                               "stagePhaseVerified":  true,
+                                               "realModuleId":  "Inventory",
+                                               "realModuleVerified":  true,
+                                               "gapReason":  null
+                                           },
+                                           {
+                                               "name":  "Caja",
+                                               "pct":  85,
+                                               "matchedStage":  "Futuro",
+                                               "matchedPhase":  "Caja (Cash Management)",
+                                               "stagePhaseVerified":  true,
+                                               "realModuleId":  "Caja",
+                                               "realModuleVerified":  true,
+                                               "gapReason":  null
+                                           },
+                                           {
+                                               "name":  "Contabilidad",
+                                               "pct":  0,
+                                               "matchedStage":  "Futuro",
+                                               "matchedPhase":  "Contabilidad (Accounting)",
+                                               "stagePhaseVerified":  true,
+                                               "realModuleId":  null,
+                                               "realModuleVerified":  false,
+                                               "gapReason":  "No code module exists yet for \u0027Contabilidad\u0027 -- no translation target is defined and 0% matches its \u0027Futuro\u0027 phase status (0% = not started)."
+                                           }
+                                       ],
+                       "domains":  [
+
+                                   ],
+                       "realModuleIds":  [
+                                             "Sales",
+                                             "Purchases",
+                                             "Inventory",
+                                             "Caja"
+                                         ],
+                       "databaseStats":  null,
+                       "migrations":  null,
+                       "frontendStats":  null,
+                       "aiBackendScaffold":  [
+
+                                             ],
+                       "gapReason":  null,
+                       "crossModelNote":  "layers.json/domains.json define su propio modelo de 7 capas donde \u0027core\u0027 = solo el dominio Electronic Documents. Ese id coincide textualmente con el layer \u0027core\u0027 de architecture-progress.json (ERP Core Services / coreModules) pero NO es la misma relacion -- se documenta aqui explicitamente y no se fusiona."
+                   },
+                   {
+                       "id":  "db",
+                       "label":  "Base de Datos",
+                       "pct":  93,
+                       "status":  "computed",
+                       "note":  "PostgreSQL -- progreso de la etapa Infraestructura",
+                       "composedOfStages":  [
+                                                {
+                                                    "name":  "Infraestructura",
+                                                    "pct":  93,
+                                                    "done":  19.5,
+                                                    "totalTasks":  21
+                                                }
+                                            ],
+                       "coreModules":  [
+
+                                       ],
+                       "domains":  [
+
+                                   ],
+                       "realModuleIds":  [
+
+                                         ],
+                       "databaseStats":  {
+                                             "DbContext":  55,
+                                             "DbSets":  115,
+                                             "EntityConfigurations":  0,
+                                             "Repositories":  50,
+                                             "Migrations":  9
+                                         },
+                       "migrations":  {
+                                          "totalFiles":  9,
+                                          "mostRecent":  [
+                                                             {
+                                                                 "name":  "ErpDbContextModelSnapshot",
+                                                                 "modified":  "2026-07-20 18:39:21",
+                                                                 "sizeKB":  463.54
+                                                             },
+                                                             {
+                                                                 "name":  "20260720215708_AddPurchaseReceptionXmlFields",
+                                                                 "modified":  "2026-07-20 16:57:09",
+                                                                 "sizeKB":  1.25
+                                                             },
+                                                             {
+                                                                 "name":  "20260720215708_AddPurchaseReceptionXmlFields.Designer",
+                                                                 "modified":  "2026-07-20 16:57:09",
+                                                                 "sizeKB":  475.05
+                                                             },
+                                                             {
+                                                                 "name":  "20260720194803_AddPurchaseReceptionDocuments.Designer",
+                                                                 "modified":  "2026-07-20 14:48:03",
+                                                                 "sizeKB":  474.63
+                                                             },
+                                                             {
+                                                                 "name":  "20260720194803_AddPurchaseReceptionDocuments",
+                                                                 "modified":  "2026-07-20 14:48:03",
+                                                                 "sizeKB":  8.14
+                                                             }
+                                                         ]
+                                      },
+                       "frontendStats":  null,
+                       "aiBackendScaffold":  [
+
+                                             ],
+                       "gapReason":  null,
+                       "crossModelNote":  null
+                   },
+                   {
+                       "id":  "data-warehouse",
+                       "label":  "Data Warehouse",
+                       "pct":  0,
+                       "status":  "not_started",
+                       "note":  "0% literal en PROGRESS.html -- \u0027Futuro\u0027",
+                       "composedOfStages":  [
+
+                                            ],
+                       "coreModules":  [
+
+                                       ],
+                       "domains":  [
+
+                                   ],
+                       "realModuleIds":  [
+
+                                         ],
+                       "databaseStats":  null,
+                       "migrations":  null,
+                       "frontendStats":  null,
+                       "aiBackendScaffold":  [
+
+                                             ],
+                       "gapReason":  "No modules, features, processes or tasks exist for this layer in any pipeline JSON. architecture-progress.json reports pct=0/status=not_started -- this is the full extent of available evidence.",
+                       "crossModelNote":  null
+                   },
+                   {
+                       "id":  "ai-advanced",
+                       "label":  "IA Modelos Avanzados",
+                       "pct":  0,
+                       "status":  "not_started",
+                       "note":  "0% literal en PROGRESS.html -- \u0027Futuro\u0027",
+                       "composedOfStages":  [
+
+                                            ],
+                       "coreModules":  [
+
+                                       ],
+                       "domains":  [
+
+                                   ],
+                       "realModuleIds":  [
+
+                                         ],
+                       "databaseStats":  null,
+                       "migrations":  null,
+                       "frontendStats":  null,
+                       "aiBackendScaffold":  [
+
+                                             ],
+                       "gapReason":  "No modules, features, processes or tasks exist for this layer in any pipeline JSON. architecture-progress.json reports pct=0/status=not_started -- this is the full extent of available evidence.",
+                       "crossModelNote":  null
+                   }
+               ]
+}

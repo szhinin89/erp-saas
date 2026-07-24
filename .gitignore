@@ -1,0 +1,94 @@
+tools/architecture/architecture-report.json
+
+# QA engine generated reports (CI artifacts)
+reports/
+
+# Build
+**/bin/
+**/obj/
+**/out/
+# Salida local de compilación aislada (no versionar)
+backend/src/_buildcheck/
+backend/_buildcheck/
+backend/_buildcheck2/
+_verify_build_out/
+
+# Visual Studio
+.vs/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+*.slnx.user
+*.lscache
+
+# Rider
+.idea/
+
+# NuGet
+**/packages/
+*.nupkg
+!**/[Pp]ackages/build/
+.nuget/
+
+# Dotnet tools
+.config/dotnet-tools.json
+
+# EF Core Migrations (mantener los archivos, ignorar snapshots temporales)
+# **/Migrations/
+
+# Logs
+*.log
+logs/
+
+# Cuotas de instancia editadas por SuperAdmin (no versionar)
+**/ERP.API/App_Data/instance-quota.json
+
+# Almacenamiento local de IFileStorage — XML de comprobantes electrónicos generados en runtime
+# (contienen certificado real, RUC y datos personales de pruebas reales SRI; nunca versionar)
+**/ERP.API/files/
+
+# Env / Secrets (rutas explícitas: el patrón sin / solo aplica al raíz del repo)
+**/appsettings.Development.json
+**/appsettings.Local.json
+frontend/.env.development
+*.env
+.env
+secrets.json
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Instaladores / artefactos locales (no versionar)
+*.exe
+.claude/
+
+# Artefactos
+backend/artifacts/
+backend/src/ERP.Domain/*.zip
+
+# Carpeta legacy local (bootstrap antiguo); no versionar — scripts canónicos en scripts/
+backend/scripts/
+
+# Node (para cuando agreguemos el frontend)
+node_modules/
+.next/
+.nuxt/
+dist/
+.vite/
+.env.local
+.env.production
+
+# Docker
+.dockerignore
+docker-compose.override.yml
+
+# Test results
+TestResults/
+coverage/
+frontend/e2e/artifacts/
+*.trx
+*.coveragexml
+.aider*

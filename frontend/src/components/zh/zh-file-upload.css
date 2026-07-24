@@ -1,0 +1,107 @@
+/* ZhFileUpload — prefijo zh-upload-* */
+
+.zh-upload {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.zh-upload-drop {
+  position: relative;
+  border: 2px dashed var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-5);
+  text-align: center;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.zh-upload-drop:hover {
+  border-color: var(--color-primary);
+}
+
+.zh-upload-drop--active {
+  border-color: var(--color-primary);
+  background: var(--color-primary-subtle);
+}
+
+.zh-upload-drop--disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.zh-upload-icon {
+  font-size: 32px;
+  color: var(--color-text-secondary);
+}
+
+.zh-upload-select {
+  margin: var(--space-2) 0 0;
+  font-weight: var(--text-label-md-weight);
+  font-size: var(--text-label-md-size);
+}
+
+.zh-upload-hint {
+  margin: var(--space-1) 0 0;
+  font-size: var(--text-help-size);
+  color: var(--color-text-secondary);
+}
+
+.zh-upload-input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.zh-upload-drop--disabled .zh-upload-input {
+  cursor: not-allowed;
+}
+
+.zh-upload-progress-wrap {
+  margin-top: var(--space-1);
+}
+
+.zh-upload-progress-bar {
+  height: 6px;
+  border-radius: var(--radius-sm);
+  background: var(--color-border);
+  overflow: hidden;
+}
+
+.zh-upload-progress-fill {
+  height: 100%;
+  background: var(--color-primary);
+  transition: width 0.2s ease;
+}
+
+.zh-upload-error {
+  margin: 0;
+  font-size: var(--text-help-size);
+  color: var(--color-error);
+}
+
+.zh-upload-current {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+}
+
+.zh-upload-current-icon {
+  color: var(--color-text-secondary);
+}
+
+.zh-upload-current-name {
+  margin: 0;
+  font-size: var(--text-label-md-size);
+  font-weight: var(--text-label-md-weight);
+}
+
+.zh-upload-current-meta {
+  margin: 0;
+  font-size: var(--text-help-size);
+  color: var(--color-text-secondary);
+}

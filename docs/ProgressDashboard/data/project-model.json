@@ -1,0 +1,62 @@
+﻿{
+    "Project":  "ZH ERP SaaS",
+    "Version":  "4.0",
+    "Layers":  [
+                   {
+                       "Domains":  [
+                                       {
+                                           "Id":  "configuration",
+                                           "Name":  "Configuration"
+                                       },
+                                       {
+                                           "Id":  "security",
+                                           "Name":  "Security"
+                                       },
+                                       {
+                                           "Id":  "business-partners",
+                                           "Name":  "Business Partners"
+                                       },
+                                       {
+                                           "Id":  "crm",
+                                           "Name":  "CRM"
+                                       },
+                                       {
+                                           "Id":  "purchases",
+                                           "Name":  "Purchases"
+                                       },
+                                       {
+                                           "Id":  "inventory",
+                                           "Name":  "Inventory"
+                                       },
+                                       {
+                                           "Id":  "sales",
+                                           "Name":  "Sales"
+                                       },
+                                       {
+                                           "Id":  "cash",
+                                           "Name":  "Cash"
+                                       },
+                                       {
+                                           "Id":  "accounting",
+                                           "Name":  "Accounting"
+                                       },
+                                       {
+                                           "Id":  "reports",
+                                           "Name":  "Reports"
+                                       }
+                                   ],
+                       "Name":  "Web ERP",
+                       "Id":  "web"
+                   },
+                   {
+                       "Domains":  [
+                                       {
+                                           "Id":  "electronic-documents",
+                                           "Name":  "Electronic Documents"
+                                       }
+                                   ],
+                       "Name":  "Core Services",
+                       "Id":  "core"
+                   }
+               ]
+}

@@ -1,0 +1,121 @@
+﻿[
+    {
+        "process":  "Venta",
+        "steps":  [
+                      {
+                          "name":  "Customer",
+                          "module":  "Sales",
+                          "status":  "verified",
+                          "evidence":  [
+                                           "backend/src/ERP.Application/Modules/Sales/SalesMapper.cs",
+                                           "backend/src/ERP.Application/Modules/Sales/DTOs/SalesDtos.cs",
+                                           "backend/src/ERP.Application/Modules/Sales/Services/SalesInvoiceElectronicDocumentDataProvider.cs"
+                                       ]
+                      },
+                      {
+                          "name":  "Quote / Draft",
+                          "module":  "Sales",
+                          "status":  "verified",
+                          "evidence":  [
+                                           "backend/src/ERP.Application/Modules/Sales/UseCases/AuthorizeSalesUseCases.cs",
+                                           "backend/src/ERP.Application/Modules/Sales/UseCases/SalesDraftUseCases.cs"
+                                       ]
+                      },
+                      {
+                          "name":  "Invoice",
+                          "module":  "Sales",
+                          "status":  "verified",
+                          "evidence":  [
+                                           "backend/src/ERP.Application/Modules/Sales/IInvoiceItemSearchRepository.cs",
+                                           "backend/src/ERP.Application/Modules/Sales/SalesMapper.cs",
+                                           "backend/src/ERP.Application/Modules/Sales/DTOs/SalesDtos.cs"
+                                       ]
+                      },
+                      {
+                          "name":  "Electronic Document",
+                          "module":  "Sales",
+                          "status":  "verified",
+                          "evidence":  [
+                                           "backend/src/ERP.Application/Modules/Sales/SalesMapper.cs",
+                                           "backend/src/ERP.Application/Modules/Sales/Services/ElectronicSalesInvoiceEmissionStrategy.cs",
+                                           "backend/src/ERP.Application/Modules/Sales/Services/ISalesInvoiceEmissionStrategy.cs"
+                                       ]
+                      },
+                      {
+                          "name":  "SRI Authorization",
+                          "module":  "Sales",
+                          "status":  "verified",
+                          "evidence":  [
+                                           "backend/src/ERP.Application/Modules/Sales/SalesMapper.cs",
+                                           "backend/src/ERP.Application/Modules/Sales/DTOs/SalesDtos.cs",
+                                           "backend/src/ERP.Application/Modules/Sales/Services/ISalesInvoiceEmissionStrategy.cs"
+                                       ]
+                      },
+                      {
+                          "name":  "Accounting",
+                          "module":  "Sales",
+                          "status":  "verified",
+                          "evidence":  [
+                                           "backend/src/ERP.Application/Modules/Sales/Services/SalesInvoiceElectronicDocumentDataProvider.cs",
+                                           "backend/src/ERP.Application/Modules/Sales/UseCases/AuthorizeSalesUseCases.cs",
+                                           "backend/src/ERP.Application/Modules/Sales/UseCases/CancelSalesUseCases.cs"
+                                       ]
+                      }
+                  ]
+    },
+    {
+        "process":  "Compra",
+        "steps":  [
+                      {
+                          "name":  "Supplier",
+                          "module":  "Purchases",
+                          "status":  "verified",
+                          "evidence":  [
+                                           "backend/src/ERP.Application/Modules/Purchases/PurchaseMapper.cs",
+                                           "backend/src/ERP.Application/Modules/Purchases/DTOs/PurchaseDtos.cs",
+                                           "backend/src/ERP.Application/Modules/Purchases/DTOs/PurchaseItemContextDto.cs"
+                                       ]
+                      },
+                      {
+                          "name":  "Purchase Order",
+                          "module":  "Purchases",
+                          "status":  "verified",
+                          "evidence":  [
+                                           "backend/src/ERP.Application/Modules/Purchases/PurchaseMapper.cs",
+                                           "backend/src/ERP.Application/Modules/Purchases/DTOs/PurchaseDtos.cs",
+                                           "backend/src/ERP.Application/Modules/Purchases/EventHandlers/PurchaseInvoiceAuditHandler.cs"
+                                       ]
+                      },
+                      {
+                          "name":  "Reception",
+                          "module":  "Purchases",
+                          "status":  "verified",
+                          "evidence":  [
+                                           "backend/src/ERP.Application/Modules/Purchases/PurchaseReception/DTOs/PurchaseDraftDto.cs",
+                                           "backend/src/ERP.Application/Modules/Purchases/PurchaseReception/DTOs/PurchaseReceptionDtos.cs",
+                                           "backend/src/ERP.Application/Modules/Purchases/PurchaseReception/Mapping/PurchaseReceptionMapper.cs"
+                                       ]
+                      },
+                      {
+                          "name":  "Inventory",
+                          "module":  "Purchases",
+                          "status":  "verified",
+                          "evidence":  [
+                                           "backend/src/ERP.Application/Modules/Purchases/PurchaseMapper.cs",
+                                           "backend/src/ERP.Application/Modules/Purchases/DTOs/PurchaseDtos.cs",
+                                           "backend/src/ERP.Application/Modules/Purchases/DTOs/PurchaseItemContextDto.cs"
+                                       ]
+                      },
+                      {
+                          "name":  "Accounting",
+                          "module":  "Purchases",
+                          "status":  "verified",
+                          "evidence":  [
+                                           "backend/src/ERP.Application/Modules/Purchases/PurchaseMapper.cs",
+                                           "backend/src/ERP.Application/Modules/Purchases/DTOs/PurchaseDtos.cs",
+                                           "backend/src/ERP.Application/Modules/Purchases/EventHandlers/IssuedWithholdingAuditHandler.cs"
+                                       ]
+                      }
+                  ]
+    }
+]

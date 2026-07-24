@@ -1,0 +1,43 @@
+﻿{
+    "Generated":  "2026-07-20 19:15:59",
+    "FrontendRoot":  "C:\\ProyectCursor\\erp-saas\\frontend\\src",
+    "Statistics":  {
+                       "SourceFiles":  383,
+                       "Pages":  1,
+                       "Components":  52,
+                       "Hooks":  5,
+                       "Services":  0,
+                       "Stores":  0,
+                       "Routes":  1
+                   },
+    "Modules":  [
+                    "access",
+                    "admin",
+                    "auth",
+                    "branches",
+                    "caja",
+                    "cashRegisters",
+                    "company-management",
+                    "config",
+                    "configuracion",
+                    "dashboard",
+                    "electronicDocuments",
+                    "emissionPoints",
+                    "establishments",
+                    "finance",
+                    "inventory",
+                    "items",
+                    "lib",
+                    "logistica",
+                    "masterData",
+                    "pricing",
+                    "purchases",
+                    "reportes",
+                    "ride",
+                    "sales",
+                    "security",
+                    "session",
+                    "settings",
+                    "shared"
+                ]
+}

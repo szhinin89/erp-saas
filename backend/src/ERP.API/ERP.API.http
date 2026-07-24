@@ -1,0 +1,7 @@
+@host = http://localhost:5003
+
+### Catálogo de países (requiere JWT de sesión en Authorization: Bearer …)
+GET {{host}}/api/geography/countries
+Accept: application/json
+
+###

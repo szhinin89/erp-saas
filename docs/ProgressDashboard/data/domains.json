@@ -1,0 +1,57 @@
+﻿[
+    {
+        "layer":  "web",
+        "name":  "Configuration",
+        "id":  "configuration"
+    },
+    {
+        "layer":  "web",
+        "name":  "Security",
+        "id":  "security"
+    },
+    {
+        "layer":  "web",
+        "name":  "Business Partners",
+        "id":  "business-partners"
+    },
+    {
+        "layer":  "web",
+        "name":  "CRM",
+        "id":  "crm"
+    },
+    {
+        "layer":  "web",
+        "name":  "Purchases",
+        "id":  "purchases"
+    },
+    {
+        "layer":  "web",
+        "name":  "Inventory",
+        "id":  "inventory"
+    },
+    {
+        "layer":  "web",
+        "name":  "Sales",
+        "id":  "sales"
+    },
+    {
+        "layer":  "web",
+        "name":  "Cash",
+        "id":  "cash"
+    },
+    {
+        "layer":  "web",
+        "name":  "Accounting",
+        "id":  "accounting"
+    },
+    {
+        "layer":  "web",
+        "name":  "Reports",
+        "id":  "reports"
+    },
+    {
+        "layer":  "core",
+        "name":  "Electronic Documents",
+        "id":  "electronic-documents"
+    }
+]

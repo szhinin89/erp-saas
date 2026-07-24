@@ -1,0 +1,292 @@
+﻿[
+    {
+        "id":  "Company",
+        "domainId":  "configuration",
+        "score":  77.75,
+        "architecture":  90,
+        "tests":  80,
+        "documentation":  70,
+        "backend":  65,
+        "frontend":  70
+    },
+    {
+        "id":  "Dashboard",
+        "domainId":  "unmapped",
+        "score":  81.5,
+        "architecture":  90,
+        "tests":  80,
+        "documentation":  70,
+        "backend":  90,
+        "frontend":  70
+    },
+    {
+        "id":  "Purchases",
+        "domainId":  "purchases",
+        "score":  81.5,
+        "architecture":  90,
+        "tests":  80,
+        "documentation":  70,
+        "backend":  90,
+        "frontend":  70
+    },
+    {
+        "id":  "Companies",
+        "domainId":  "configuration",
+        "score":  77.75,
+        "architecture":  90,
+        "tests":  80,
+        "documentation":  70,
+        "backend":  65,
+        "frontend":  70
+    },
+    {
+        "id":  "Menu",
+        "domainId":  "unmapped",
+        "score":  77.75,
+        "architecture":  90,
+        "tests":  80,
+        "documentation":  70,
+        "backend":  65,
+        "frontend":  70
+    },
+    {
+        "id":  "Auth",
+        "domainId":  "security",
+        "score":  81.5,
+        "architecture":  90,
+        "tests":  80,
+        "documentation":  70,
+        "backend":  90,
+        "frontend":  70
+    },
+    {
+        "id":  "Integration",
+        "domainId":  "unmapped",
+        "score":  77.75,
+        "architecture":  90,
+        "tests":  80,
+        "documentation":  70,
+        "backend":  65,
+        "frontend":  70
+    },
+    {
+        "id":  "Access",
+        "domainId":  "security",
+        "score":  81.5,
+        "architecture":  90,
+        "tests":  80,
+        "documentation":  70,
+        "backend":  90,
+        "frontend":  70
+    },
+    {
+        "id":  "Sales",
+        "domainId":  "sales",
+        "score":  81.5,
+        "architecture":  90,
+        "tests":  80,
+        "documentation":  70,
+        "backend":  90,
+        "frontend":  70
+    },
+    {
+        "id":  "Items",
+        "domainId":  "inventory",
+        "score":  81.5,
+        "architecture":  90,
+        "tests":  80,
+        "documentation":  70,
+        "backend":  90,
+        "frontend":  70
+    },
+    {
+        "id":  "Tenants",
+        "domainId":  "configuration",
+        "score":  77.75,
+        "architecture":  90,
+        "tests":  80,
+        "documentation":  70,
+        "backend":  65,
+        "frontend":  70
+    },
+    {
+        "id":  "Session",
+        "domainId":  "security",
+        "score":  81.5,
+        "architecture":  90,
+        "tests":  80,
+        "documentation":  70,
+        "backend":  90,
+        "frontend":  70
+    },
+    {
+        "id":  "Common",
+        "domainId":  "unmapped",
+        "score":  77.75,
+        "architecture":  90,
+        "tests":  80,
+        "documentation":  70,
+        "backend":  65,
+        "frontend":  70
+    },
+    {
+        "id":  "Inventory",
+        "domainId":  "inventory",
+        "score":  81.5,
+        "architecture":  90,
+        "tests":  80,
+        "documentation":  70,
+        "backend":  90,
+        "frontend":  70
+    },
+    {
+        "id":  "Finance",
+        "domainId":  "accounting",
+        "score":  81.5,
+        "architecture":  90,
+        "tests":  80,
+        "documentation":  70,
+        "backend":  90,
+        "frontend":  70
+    },
+    {
+        "id":  "Branches",
+        "domainId":  "configuration",
+        "score":  81.5,
+        "architecture":  90,
+        "tests":  80,
+        "documentation":  70,
+        "backend":  90,
+        "frontend":  70
+    },
+    {
+        "id":  "Auxiliary",
+        "domainId":  "unmapped",
+        "score":  77.75,
+        "architecture":  90,
+        "tests":  80,
+        "documentation":  70,
+        "backend":  65,
+        "frontend":  70
+    },
+    {
+        "id":  "Pricing",
+        "domainId":  "sales",
+        "score":  81.5,
+        "architecture":  90,
+        "tests":  80,
+        "documentation":  70,
+        "backend":  90,
+        "frontend":  70
+    },
+    {
+        "id":  "Caja",
+        "domainId":  "cash",
+        "score":  81.5,
+        "architecture":  90,
+        "tests":  80,
+        "documentation":  70,
+        "backend":  90,
+        "frontend":  70
+    },
+    {
+        "id":  "ElectronicInvoicing",
+        "domainId":  "electronic-documents",
+        "score":  77.75,
+        "architecture":  90,
+        "tests":  80,
+        "documentation":  70,
+        "backend":  65,
+        "frontend":  70
+    },
+    {
+        "id":  "Configuration",
+        "domainId":  "configuration",
+        "score":  77.75,
+        "architecture":  90,
+        "tests":  80,
+        "documentation":  70,
+        "backend":  65,
+        "frontend":  70
+    },
+    {
+        "id":  "Audit",
+        "domainId":  "security",
+        "score":  77.75,
+        "architecture":  90,
+        "tests":  80,
+        "documentation":  70,
+        "backend":  65,
+        "frontend":  70
+    },
+    {
+        "id":  "Ride",
+        "domainId":  "electronic-documents",
+        "score":  81.5,
+        "architecture":  90,
+        "tests":  80,
+        "documentation":  70,
+        "backend":  90,
+        "frontend":  70
+    },
+    {
+        "id":  "Media",
+        "domainId":  "unmapped",
+        "score":  77.75,
+        "architecture":  90,
+        "tests":  80,
+        "documentation":  70,
+        "backend":  65,
+        "frontend":  70
+    },
+    {
+        "id":  "ElectronicDocuments",
+        "domainId":  "electronic-documents",
+        "score":  81.5,
+        "architecture":  90,
+        "tests":  80,
+        "documentation":  70,
+        "backend":  90,
+        "frontend":  70
+    },
+    {
+        "id":  "Security",
+        "domainId":  "security",
+        "score":  81.5,
+        "architecture":  90,
+        "tests":  80,
+        "documentation":  70,
+        "backend":  90,
+        "frontend":  70
+    },
+    {
+        "id":  "SriCatalogs",
+        "domainId":  "electronic-documents",
+        "score":  77.75,
+        "architecture":  90,
+        "tests":  80,
+        "documentation":  70,
+        "backend":  65,
+        "frontend":  70
+    },
+    {
+        "id":  "OrgConfig",
+        "domainId":  "configuration",
+        "score":  77.75,
+        "architecture":  90,
+        "tests":  80,
+        "documentation":  70,
+        "backend":  65,
+        "frontend":  70
+    },
+    {
+        "id":  "Navigation",
+        "domainId":  "unmapped",
+        "score":  77.75,
+        "architecture":  90,
+        "tests":  80,
+        "documentation":  70,
+        "backend":  65,
+        "frontend":  70
+    }
+]

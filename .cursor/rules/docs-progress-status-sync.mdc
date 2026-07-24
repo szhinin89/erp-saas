@@ -1,0 +1,34 @@
+---
+description: Al actualizar docs/STATUS.md, sincronizar documentación de producto involucrada
+globs: "{docs/STATUS.md}"
+alwaysApply: false
+---
+
+# Sincronización de documentación de avance
+
+**Canónico:** [`AI-RULES/ENFORCEMENT.md`](../../AI-RULES/ENFORCEMENT.md#sincronización-docs-de-avance)
+
+Si editas **`docs/STATUS.md`**, trata el cambio como **actualización de estado del producto**, no como edición aislada.
+
+## Fuente de verdad
+
+1. **`docs/STATUS.md`** — estado operativo consolidado (única fuente oficial)
+2. **`docs/ROADMAP.md`** — prioridades y fases pendientes
+3. **`README.md`** (sección Producto) — resumen de negocio; tablas MVP en **`docs/STATUS.md`**
+
+## Checklist obligatorio (misma sesión de cambio)
+
+| Documento | Actualizar cuando… |
+|-----------|-------------------|
+| **`docs/ROADMAP.md`** | Cambian prioridades, fases o ítems diferidos |
+| **`README.md`** (Producto) + **`docs/STATUS.md`** | Cambia alcance MVP o pendientes comerciales |
+| **`README.md`** | Cambia la tabla de documentación o arranque |
+| **`CONTEXT.md`** | Cambia el mapa de docs |
+| **`docs/ARCHITECTURE.md`** | Decisión arquitectónica nueva |
+| **`docs/DATABASE.md`** | Schema, RLS o política de migraciones |
+
+No crear documentos fuera de la estructura oficial en `docs/`.
+
+## Estados de módulo
+
+Usar: `✅` completo, `🟡` parcial, `⏳` pendiente, `🚧` en progreso.

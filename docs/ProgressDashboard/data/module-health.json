@@ -1,0 +1,208 @@
+﻿{
+    "Generated":  "2026-07-20 19:20:05",
+    "Modules":  [
+                    {
+                        "Name":  "Company",
+                        "Domain":  true,
+                        "Application":  true,
+                        "Frontend":  false,
+                        "Score":  65
+                    },
+                    {
+                        "Name":  "Dashboard",
+                        "Domain":  false,
+                        "Application":  true,
+                        "Frontend":  true,
+                        "Score":  90
+                    },
+                    {
+                        "Name":  "Purchases",
+                        "Domain":  true,
+                        "Application":  true,
+                        "Frontend":  true,
+                        "Score":  90
+                    },
+                    {
+                        "Name":  "Companies",
+                        "Domain":  false,
+                        "Application":  true,
+                        "Frontend":  false,
+                        "Score":  65
+                    },
+                    {
+                        "Name":  "Menu",
+                        "Domain":  true,
+                        "Application":  false,
+                        "Frontend":  false,
+                        "Score":  65
+                    },
+                    {
+                        "Name":  "Auth",
+                        "Domain":  true,
+                        "Application":  true,
+                        "Frontend":  true,
+                        "Score":  90
+                    },
+                    {
+                        "Name":  "Integration",
+                        "Domain":  false,
+                        "Application":  true,
+                        "Frontend":  false,
+                        "Score":  65
+                    },
+                    {
+                        "Name":  "Access",
+                        "Domain":  true,
+                        "Application":  true,
+                        "Frontend":  true,
+                        "Score":  90
+                    },
+                    {
+                        "Name":  "Sales",
+                        "Domain":  true,
+                        "Application":  true,
+                        "Frontend":  true,
+                        "Score":  90
+                    },
+                    {
+                        "Name":  "Items",
+                        "Domain":  true,
+                        "Application":  true,
+                        "Frontend":  true,
+                        "Score":  90
+                    },
+                    {
+                        "Name":  "Tenants",
+                        "Domain":  true,
+                        "Application":  false,
+                        "Frontend":  false,
+                        "Score":  65
+                    },
+                    {
+                        "Name":  "Session",
+                        "Domain":  false,
+                        "Application":  true,
+                        "Frontend":  true,
+                        "Score":  90
+                    },
+                    {
+                        "Name":  "Common",
+                        "Domain":  true,
+                        "Application":  true,
+                        "Frontend":  false,
+                        "Score":  65
+                    },
+                    {
+                        "Name":  "Inventory",
+                        "Domain":  true,
+                        "Application":  true,
+                        "Frontend":  true,
+                        "Score":  90
+                    },
+                    {
+                        "Name":  "Finance",
+                        "Domain":  true,
+                        "Application":  true,
+                        "Frontend":  true,
+                        "Score":  90
+                    },
+                    {
+                        "Name":  "Branches",
+                        "Domain":  false,
+                        "Application":  true,
+                        "Frontend":  true,
+                        "Score":  90
+                    },
+                    {
+                        "Name":  "Auxiliary",
+                        "Domain":  true,
+                        "Application":  false,
+                        "Frontend":  false,
+                        "Score":  65
+                    },
+                    {
+                        "Name":  "Pricing",
+                        "Domain":  true,
+                        "Application":  true,
+                        "Frontend":  true,
+                        "Score":  90
+                    },
+                    {
+                        "Name":  "Caja",
+                        "Domain":  true,
+                        "Application":  true,
+                        "Frontend":  true,
+                        "Score":  90
+                    },
+                    {
+                        "Name":  "ElectronicInvoicing",
+                        "Domain":  false,
+                        "Application":  true,
+                        "Frontend":  false,
+                        "Score":  65
+                    },
+                    {
+                        "Name":  "Configuration",
+                        "Domain":  true,
+                        "Application":  true,
+                        "Frontend":  false,
+                        "Score":  65
+                    },
+                    {
+                        "Name":  "Audit",
+                        "Domain":  true,
+                        "Application":  true,
+                        "Frontend":  false,
+                        "Score":  65
+                    },
+                    {
+                        "Name":  "Ride",
+                        "Domain":  true,
+                        "Application":  true,
+                        "Frontend":  true,
+                        "Score":  90
+                    },
+                    {
+                        "Name":  "Media",
+                        "Domain":  true,
+                        "Application":  true,
+                        "Frontend":  false,
+                        "Score":  65
+                    },
+                    {
+                        "Name":  "ElectronicDocuments",
+                        "Domain":  true,
+                        "Application":  true,
+                        "Frontend":  true,
+                        "Score":  90
+                    },
+                    {
+                        "Name":  "Security",
+                        "Domain":  true,
+                        "Application":  true,
+                        "Frontend":  true,
+                        "Score":  90
+                    },
+                    {
+                        "Name":  "SriCatalogs",
+                        "Domain":  true,
+                        "Application":  false,
+                        "Frontend":  false,
+                        "Score":  65
+                    },
+                    {
+                        "Name":  "OrgConfig",
+                        "Domain":  false,
+                        "Application":  true,
+                        "Frontend":  false,
+                        "Score":  65
+                    },
+                    {
+                        "Name":  "Navigation",
+                        "Domain":  true,
+                        "Application":  true,
+                        "Frontend":  false,
+                        "Score":  65
+                    }
+                ]
+}

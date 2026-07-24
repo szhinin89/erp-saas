@@ -1,0 +1,108 @@
+﻿{
+    "generated":  "2026-07-20 19:20:45",
+    "source":  "dashboard-model-v12.json, completion-intelligence.json",
+    "method":  {
+                   "productionReadinessScore":  "avg(Architecture, ModuleHealth, Quality, Security, Dependencies) -- same formula analyze-completion.ps1 uses internally to derive its published band",
+                   "productionStatus":  "Reused verbatim from completion-intelligence.json.productionReadiness (READY/NEEDS REVIEW/NOT READY) -- not recomputed",
+                   "maturityBands":  "\u003e=90 Optimized, \u003e=80 Advanced, \u003e=60 Controlled, \u003e=40 Developing, else Initial (on EngineeringScore.Overall)",
+                   "confidenceWeights":  "Architecture 0.20, ModuleHealth 0.20, Quality 0.20, Security 0.25, Dependencies 0.15",
+                   "riskBands":  "score-based: \u003c40 CRITICAL, \u003c70 HIGH, \u003c90 MEDIUM, else LOW; findings-based: \u003e40 CRITICAL, \u003e20 HIGH, \u003e=10 MEDIUM, else LOW",
+                   "productionDecisionBands":  "confidenceScore \u003c70 NOT READY, \u003c90 NEEDS REVIEW, else READY"
+               },
+    "securityStatus":  "RED",
+    "debtStatus":  "RED",
+    "productionReadinessScore":  74.75,
+    "productionStatus":  "NOT READY",
+    "maturity":  "Controlled",
+    "confidenceScore":  71.7,
+    "risk":  {
+                 "architectureRisk":  "LOW",
+                 "securityRisk":  "CRITICAL",
+                 "qualityRisk":  "HIGH",
+                 "technicalDebtRisk":  "HIGH",
+                 "overallRisk":  "CRITICAL"
+             },
+    "productionDecision":  "NEEDS REVIEW",
+    "decisionBlockers":  [
+                             "Security blockers - Security score 39%",
+                             "Quality blockers - Quality score 55.05%",
+                             "Debt blockers - 31 critical findings"
+                         ],
+    "quickRecommendations":  [
+                                 "Remove detected secrets (155 found)",
+                                 "Improve automated tests and code quality (current: 55.05%)",
+                                 "Reduce critical findings (currently 31)",
+                                 "Review security configuration (9 anonymous access points detected)"
+                             ],
+    "qualityGateDetail":  {
+                              "testAverage":  80,
+                              "testStatus":  "GREEN",
+                              "buildStatus":  "N/A - Not tracked in current JSON model",
+                              "coverageStatus":  "N/A - Coverage integration pending",
+                              "staticAnalysisViolations":  0,
+                              "staticAnalysisStatus":  "PASS"
+                          },
+    "securityPosture":  {
+                            "level":  "Level 1",
+                            "label":  "Critical"
+                        },
+    "debtTrend":  {
+                      "status":  "Stable",
+                      "detail":  "No historical data available"
+                  },
+    "releaseRecommendation":  {
+                                  "summary":  "Conditional release - pending review",
+                                  "actions":  [
+                                                  "Resolve open blockers before scheduling release",
+                                                  "Re-run Engineering Confidence Score after fixes"
+                                              ]
+                              },
+    "roadmap":  [
+                    {
+                        "order":  1,
+                        "title":  "Security Hardening",
+                        "detail":  "Score: 39%",
+                        "priority":  "CRITICAL"
+                    },
+                    {
+                        "order":  2,
+                        "title":  "Quality Improvement",
+                        "detail":  "Score: 55.05%",
+                        "priority":  "HIGH"
+                    },
+                    {
+                        "order":  3,
+                        "title":  "Technical Debt Reduction",
+                        "detail":  "Findings: 31",
+                        "priority":  "HIGH"
+                    }
+                ],
+    "productionGate":  [
+                           {
+                               "gate":  "Security Gate",
+                               "status":  "FAILED",
+                               "detail":  "Score 39%"
+                           },
+                           {
+                               "gate":  "Quality Gate",
+                               "status":  "FAILED",
+                               "detail":  "Score 55.05%"
+                           },
+                           {
+                               "gate":  "Technical Debt Gate",
+                               "status":  "FAILED",
+                               "detail":  "31 critical findings"
+                           }
+                       ],
+    "trend":  {
+                  "current":  72.72,
+                  "previous":  73.4,
+                  "change":  -0.68,
+                  "status":  "Declining"
+              },
+    "executiveFlags":  {
+                           "securityHealth":  "NEEDS ATTENTION",
+                           "qualityHealth":  "NEEDS ATTENTION",
+                           "debtHealth":  "HIGH"
+                       }
+}

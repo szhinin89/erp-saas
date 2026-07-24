@@ -1,0 +1,65 @@
+/* ── ZH Inputs — prefixed inputs (phone, currency) ─────────── */
+
+.zh-prefixed-input {
+  display: flex;
+  align-items: stretch;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  overflow: hidden;
+  transition: border-color var(--transition), box-shadow var(--transition);
+  height: 38px;
+}
+
+.zh-prefixed-input:focus-within {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(58, 95, 132, 0.15);
+}
+
+.zh-prefixed-input:hover:not(:focus-within) {
+  border-color: var(--color-outline);
+}
+
+.zh-prefixed-input--disabled {
+  background: var(--color-surface-container-low);
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.zh-input-prefix {
+  display: flex;
+  align-items: center;
+  padding: 0 10px;
+  font-family: var(--font-family);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--color-text-secondary);
+  background: var(--color-surface-container-low);
+  border-right: 1px solid var(--color-border);
+  user-select: none;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+/* Reset inner input so the wrapper provides border/shadow/bg */
+.zh-prefixed-input input {
+  flex: 1;
+  min-width: 0;
+  border: none !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  background: transparent !important;
+  height: 100%;
+  padding-left: 10px;
+}
+
+.zh-prefixed-input input:hover,
+.zh-prefixed-input input:focus {
+  border: none !important;
+  box-shadow: none !important;
+}
+
+.zh-prefixed-input--disabled input {
+  cursor: not-allowed;
+  opacity: 1;
+}

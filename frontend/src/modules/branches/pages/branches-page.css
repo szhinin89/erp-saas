@@ -1,0 +1,7 @@
+/* BranchesManagementSection — prefijo br-* */
+/* Shared list utilities (br-actions-tight, br-list-*) live in items-catalog.css */
+
+.br-code-readonly {
+  color: var(--color-primary);
+  background: var(--color-surface-container);
+}

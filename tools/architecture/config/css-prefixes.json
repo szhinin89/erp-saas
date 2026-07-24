@@ -1,0 +1,68 @@
+{
+  "$schemaNote": "Prefijos CSS por área. Canónico: AI-RULES/NAMING.md",
+  "scanGlobs": [
+    "frontend/src/modules/**/*.css",
+    "frontend/src/styles/shared/**/*.css"
+  ],
+  "pathPrefixMap": [
+    { "glob": "**/superadmin/**", "prefixes": ["sa-", "sap-"] },
+    { "glob": "**/saas/**", "prefixes": ["saas-", "ssp-"] },
+    { "glob": "**/accounting/**", "prefixes": ["acc-"] },
+    { "glob": "**/inventario/**", "prefixes": ["inv-", "adj-", "bod-"] },
+    { "glob": "**/compras/**", "prefixes": ["pur-", "com-", "cf-", "oc-", "prv-"] },
+    { "glob": "**/ventas/**", "prefixes": ["vta-", "ventas-", "vf-", "cn-"] },
+    { "glob": "**/customers/**", "prefixes": ["cls-", "cust-"] },
+    { "glob": "**/products/**", "prefixes": ["prd-"] },
+    { "glob": "**/catalog/**", "prefixes": ["cat-", "ctl-"] },
+    { "glob": "**/branches/**", "prefixes": ["brn-", "branch-", "br-"] },
+    { "glob": "**/companies/**", "prefixes": ["co-", "cmp-"] },
+    { "glob": "**/dashboard/**", "prefixes": ["dsh-"] },
+    { "glob": "**/reportes/**", "prefixes": ["rpt-"] },
+    { "glob": "**/gastos/**", "prefixes": ["gst-"] },
+    { "glob": "**/access/**", "prefixes": ["acc-", "access-", "prf-"] },
+    { "glob": "**/auth/**", "prefixes": ["auth-", "lp-", "fp-", "pr-", "rp-", "ts-"] },
+    { "glob": "**/configuracion/**", "prefixes": ["cfg-", "sri-", "bill-"] }
+  ],
+  "globalAllowedPrefixes": [
+    "pg-",
+    "zh-",
+    "badge",
+    "table",
+    "card",
+    "zh-btn",
+    "zh-status",
+    "zh-input",
+    "zh-form-tabs",
+    "zh-modal",
+    "zh-inline",
+    "zh-avatar",
+    "is-",
+    "has-"
+  ],
+  "globalAllowedExactClasses": [
+    "table",
+    "card",
+    "badge",
+    "container",
+    "wrapper",
+    "material-symbols-outlined"
+  ],
+  "ambiguousClassNames": [
+    "card",
+    "table",
+    "wrapper",
+    "container",
+    "header",
+    "footer",
+    "content",
+    "body",
+    "title"
+  ],
+  "skipFiles": [
+    "frontend/src/styles/design-tokens.css",
+    "frontend/src/styles/zh-ui.css",
+    "frontend/src/styles/page-template.css",
+    "frontend/src/styles/ZHForm.css",
+    "frontend/src/styles/ZHFormTabs.css"
+  ]
+}

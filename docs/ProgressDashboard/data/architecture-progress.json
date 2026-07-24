@@ -1,0 +1,3030 @@
+﻿{
+    "source":  "PROGRESS.html",
+    "generated":  "2026-07-20 19:20:15",
+    "extractionMethod":  "Regex parsing of the embedded \u0027const D = [...]\u0027 JS data model, replicating PROGRESS.html\u0027s own calcPhase/calcStage/calcGlobal/countByStatus/findPhase formulas. No JavaScript executed; no data fabricated.",
+    "global":  {
+                   "totalTasks":  373,
+                   "done":  314,
+                   "pct":  84
+               },
+    "statusCounts":  {
+                         "d":  147,
+                         "f":  160,
+                         "p":  14,
+                         "n":  52
+                     },
+    "layers":  [
+                   {
+                       "id":  "web",
+                       "label":  "Web ERP",
+                       "pct":  84,
+                       "status":  "computed",
+                       "note":  "React SPA -- promedio de las etapas Core ERP + Operaciones + Fiscal/SRI"
+                   },
+                   {
+                       "id":  "mobile",
+                       "label":  "Mobile App",
+                       "pct":  0,
+                       "status":  "not_started",
+                       "note":  "0% literal en PROGRESS.html -- \u0027Futuro\u0027"
+                   },
+                   {
+                       "id":  "chat",
+                       "label":  "Chat Interface",
+                       "pct":  0,
+                       "status":  "not_started",
+                       "note":  "0% literal en PROGRESS.html -- \u0027Futuro\u0027"
+                   },
+                   {
+                       "id":  "intelligence",
+                       "label":  "ERP Intelligence Layer",
+                       "pct":  0,
+                       "status":  "not_started",
+                       "note":  "0% literal en PROGRESS.html -- \u0027Futuro\u0027"
+                   },
+                   {
+                       "id":  "ai-assistant",
+                       "label":  "User Assistant AI",
+                       "pct":  0,
+                       "status":  "not_started",
+                       "note":  "0% literal en PROGRESS.html -- \u0027Futuro\u0027"
+                   },
+                   {
+                       "id":  "ai-analyst",
+                       "label":  "Business Analyst AI",
+                       "pct":  0,
+                       "status":  "not_started",
+                       "note":  "0% literal en PROGRESS.html -- \u0027Futuro\u0027"
+                   },
+                   {
+                       "id":  "ai-automation",
+                       "label":  "Process Automation AI",
+                       "pct":  0,
+                       "status":  "not_started",
+                       "note":  "0% literal en PROGRESS.html -- \u0027Futuro\u0027"
+                   },
+                   {
+                       "id":  "core",
+                       "label":  "ERP Core Services",
+                       "pct":  69,
+                       "status":  "computed",
+                       "note":  "Promedio de Ventas/Compras/Inventario/Caja/Contabilidad"
+                   },
+                   {
+                       "id":  "db",
+                       "label":  "Base de Datos",
+                       "pct":  93,
+                       "status":  "computed",
+                       "note":  "PostgreSQL -- progreso de la etapa Infraestructura"
+                   },
+                   {
+                       "id":  "data-warehouse",
+                       "label":  "Data Warehouse",
+                       "pct":  0,
+                       "status":  "not_started",
+                       "note":  "0% literal en PROGRESS.html -- \u0027Futuro\u0027"
+                   },
+                   {
+                       "id":  "ai-advanced",
+                       "label":  "IA Modelos Avanzados",
+                       "pct":  0,
+                       "status":  "not_started",
+                       "note":  "0% literal en PROGRESS.html -- \u0027Futuro\u0027"
+                   }
+               ],
+    "coreModules":  [
+                        {
+                            "name":  "Ventas",
+                            "pct":  84
+                        },
+                        {
+                            "name":  "Compras",
+                            "pct":  89
+                        },
+                        {
+                            "name":  "Inventario",
+                            "pct":  89
+                        },
+                        {
+                            "name":  "Caja",
+                            "pct":  85
+                        },
+                        {
+                            "name":  "Contabilidad",
+                            "pct":  0
+                        }
+                    ],
+    "stages":  [
+                   {
+                       "name":  "Infraestructura",
+                       "totalTasks":  21,
+                       "done":  19.5,
+                       "pct":  93,
+                       "phases":  [
+                                      {
+                                          "name":  "Clean Architecture + CQRS",
+                                          "description":  "Monolito modular con separación de capas",
+                                          "totalTasks":  4,
+                                          "done":  4,
+                                          "pct":  100,
+                                          "statusLetter":  "f"
+                                      },
+                                      {
+                                          "name":  "Multi-Tenant \u0026 Company Isolation",
+                                          "description":  "Aislamiento de datos por tenant y empresa con fail-closed",
+                                          "totalTasks":  4,
+                                          "done":  4,
+                                          "pct":  100,
+                                          "statusLetter":  "f"
+                                      },
+                                      {
+                                          "name":  "Autenticación \u0026 Seguridad",
+                                          "description":  "JWT, refresh tokens, permisos, IAM completo",
+                                          "totalTasks":  6,
+                                          "done":  5.5,
+                                          "pct":  92,
+                                          "statusLetter":  "p"
+                                      },
+                                      {
+                                          "name":  "Kernel Cleanup (Eliminación SaaS)",
+                                          "description":  "Eliminación completa de Billing, Subscriptions, Platform del ERP",
+                                          "totalTasks":  4,
+                                          "done":  4,
+                                          "pct":  100,
+                                          "statusLetter":  "d"
+                                      },
+                                      {
+                                          "name":  "Frontera de Integración Platform",
+                                          "description":  "Boundary API para futura plataforma externa",
+                                          "totalTasks":  3,
+                                          "done":  2,
+                                          "pct":  67,
+                                          "statusLetter":  "p"
+                                      }
+                                  ]
+                   },
+                   {
+                       "name":  "Core ERP",
+                       "totalTasks":  45,
+                       "done":  42.5,
+                       "pct":  94,
+                       "phases":  [
+                                      {
+                                          "name":  "Business Partners V2 (Customer + Supplier)",
+                                          "description":  "Master data unificado de clientes y proveedores",
+                                          "totalTasks":  10,
+                                          "done":  10,
+                                          "pct":  100,
+                                          "statusLetter":  "f"
+                                      },
+                                      {
+                                          "name":  "Items / Catálogo v1.0",
+                                          "description":  "Catálogo maestro con variantes, atributos, conversiones",
+                                          "totalTasks":  11,
+                                          "done":  9.5,
+                                          "pct":  86,
+                                          "statusLetter":  "p"
+                                      },
+                                      {
+                                          "name":  "Empresas, Sucursales, Establecimientos",
+                                          "description":  "Estructura organizativa y fiscal",
+                                          "totalTasks":  5,
+                                          "done":  5,
+                                          "pct":  100,
+                                          "statusLetter":  "f"
+                                      },
+                                      {
+                                          "name":  "Pricing Engine v2 + Auditoría por Dominio",
+                                          "description":  "Item.BaseSalePrice SSOT + reglas de ajuste + infraestructura de auditoría reutilizable — Items Administration \u0026 Pricing Administration FROZEN 2026-07-07",
+                                          "totalTasks":  11,
+                                          "done":  10,
+                                          "pct":  91,
+                                          "statusLetter":  "p"
+                                      },
+                                      {
+                                          "name":  "Condiciones de Pago y Crédito",
+                                          "description":  "Payment Terms y Credit Terms configurables",
+                                          "totalTasks":  2,
+                                          "done":  2,
+                                          "pct":  100,
+                                          "statusLetter":  "d"
+                                      },
+                                      {
+                                          "name":  "Métodos de Pago (Multi-Pago)",
+                                          "description":  "Catálogo dinámico de formas de cobro",
+                                          "totalTasks":  3,
+                                          "done":  3,
+                                          "pct":  100,
+                                          "statusLetter":  "f"
+                                      },
+                                      {
+                                          "name":  "Menú \u0026 Navegación SPA",
+                                          "description":  "Registro de features y menú dinámico",
+                                          "totalTasks":  2,
+                                          "done":  2,
+                                          "pct":  100,
+                                          "statusLetter":  "d"
+                                      },
+                                      {
+                                          "name":  "Dashboard Unificado",
+                                          "description":  "KPIs de ventas, compras y métricas",
+                                          "totalTasks":  1,
+                                          "done":  1,
+                                          "pct":  100,
+                                          "statusLetter":  "d"
+                                      }
+                                  ]
+                   },
+                   {
+                       "name":  "Operaciones",
+                       "totalTasks":  84,
+                       "done":  70.5,
+                       "pct":  84,
+                       "phases":  [
+                                      {
+                                          "name":  "Inventario \u0026 Bodega",
+                                          "description":  "Stock, movimientos, transferencias, ajustes, kardex, lotes, series",
+                                          "totalTasks":  23,
+                                          "done":  20.5,
+                                          "pct":  89,
+                                          "statusLetter":  "p"
+                                      },
+                                      {
+                                          "name":  "Ventas (Sales Invoice)",
+                                          "description":  "Factura de venta completa: ciclo de vida, impuestos, cobros, FE",
+                                          "totalTasks":  25,
+                                          "done":  21,
+                                          "pct":  84,
+                                          "statusLetter":  "p"
+                                      },
+                                      {
+                                          "name":  "Cuentas por Cobrar (CxC)",
+                                          "description":  "Registro de deuda clientes — módulo pasivo",
+                                          "totalTasks":  6,
+                                          "done":  4,
+                                          "pct":  67,
+                                          "statusLetter":  "p"
+                                      },
+                                      {
+                                          "name":  "Compras (Purchases)",
+                                          "description":  "Factura compra completa: costos, retenciones, CxP, notas proveedor",
+                                          "totalTasks":  23,
+                                          "done":  20.5,
+                                          "pct":  89,
+                                          "statusLetter":  "p"
+                                      },
+                                      {
+                                          "name":  "Cuentas por Pagar (CxP)",
+                                          "description":  "Registro de deuda con proveedores",
+                                          "totalTasks":  5,
+                                          "done":  3,
+                                          "pct":  60,
+                                          "statusLetter":  "p"
+                                      },
+                                      {
+                                          "name":  "Reportes",
+                                          "description":  "Reportes de ventas, compras, inventario, kardex",
+                                          "totalTasks":  2,
+                                          "done":  1.5,
+                                          "pct":  75,
+                                          "statusLetter":  "p"
+                                      }
+                                  ]
+                   },
+                   {
+                       "name":  "Fiscal / SRI",
+                       "totalTasks":  106,
+                       "done":  80,
+                       "pct":  75,
+                       "phases":  [
+                                      {
+                                          "name":  "Catálogos SRI (Tablas Inmutables)",
+                                          "description":  "Tablas de referencia fiscal del SRI Ecuador",
+                                          "totalTasks":  3,
+                                          "done":  3,
+                                          "pct":  100,
+                                          "statusLetter":  "f"
+                                      },
+                                      {
+                                          "name":  "Módulo ElectronicDocuments v1.0 — FROZEN",
+                                          "description":  "Motor de comprobantes electrónicos desacoplado de Sales/Purchases/Inventory. CERRADO oficialmente el 2026-07-11 (ADR-023) tras 3 rondas de verificación: auditoría de robustez, cumplimiento del Anexo Técnico SRI verificado texto por texto contra el PDF oficial, y pruebas reales contra el ambiente de Pruebas del SRI con certificado real. Matriz de cobertura vs. Ficha Técnica SRI (Esquema Offline v2.32) — organizada por módulo funcional, no por fase cronológica.",
+                                          "totalTasks":  98,
+                                          "done":  74,
+                                          "pct":  76,
+                                          "statusLetter":  "p"
+                                      },
+                                      {
+                                          "name":  "Retenciones SRI",
+                                          "description":  "Retenciones emitidas y recibidas (IVA + IR)",
+                                          "totalTasks":  2,
+                                          "done":  1.5,
+                                          "pct":  75,
+                                          "statusLetter":  "p"
+                                      },
+                                      {
+                                          "name":  "Guía de Remisión",
+                                          "description":  "Documento de transporte para mercadería",
+                                          "totalTasks":  1,
+                                          "done":  0,
+                                          "pct":  0,
+                                          "statusLetter":  "p"
+                                      },
+                                      {
+                                          "name":  "Notas de Crédito / Débito",
+                                          "description":  "Documentos complementarios fiscales (tipo 04 y 05 SRI)",
+                                          "totalTasks":  2,
+                                          "done":  1.5,
+                                          "pct":  75,
+                                          "statusLetter":  "p"
+                                      }
+                                  ]
+                   },
+                   {
+                       "name":  "Estándares",
+                       "totalTasks":  67,
+                       "done":  66.5,
+                       "pct":  99,
+                       "phases":  [
+                                      {
+                                          "name":  "Precisión Numérica",
+                                          "description":  "Montos, cantidades, precios, porcentajes — inmutable",
+                                          "totalTasks":  3,
+                                          "done":  3,
+                                          "pct":  100,
+                                          "statusLetter":  "f"
+                                      },
+                                      {
+                                          "name":  "Fechas y Horas",
+                                          "description":  "dd/MM/yyyy, UTC, sin timezone offsets — inmutable",
+                                          "totalTasks":  2,
+                                          "done":  2,
+                                          "pct":  100,
+                                          "statusLetter":  "f"
+                                      },
+                                      {
+                                          "name":  "Validación de Formularios",
+                                          "description":  "RHF + Zod (frontend) + FluentValidation (backend)",
+                                          "totalTasks":  2,
+                                          "done":  2,
+                                          "pct":  100,
+                                          "statusLetter":  "f"
+                                      },
+                                      {
+                                          "name":  "Infraestructura de Mensajes Visuales",
+                                          "description":  "Toast, alerts, confirm — API pública message.*, store encapsulado",
+                                          "totalTasks":  7,
+                                          "done":  7,
+                                          "pct":  100,
+                                          "statusLetter":  "f"
+                                      },
+                                      {
+                                          "name":  "Infraestructura de Modales",
+                                          "description":  "ZHModal componente único con tamaños, scroll, ESC, animations",
+                                          "totalTasks":  6,
+                                          "done":  6,
+                                          "pct":  100,
+                                          "statusLetter":  "f"
+                                      },
+                                      {
+                                          "name":  "Infraestructura de Secuencias Documentales",
+                                          "description":  "Numeración SRI atómica por punto de emisión — ADR-019",
+                                          "totalTasks":  5,
+                                          "done":  5,
+                                          "pct":  100,
+                                          "statusLetter":  "f"
+                                      },
+                                      {
+                                          "name":  "Infraestructura de Entity Tracking",
+                                          "description":  "EF Core Change Tracking fix — ADR-020",
+                                          "totalTasks":  5,
+                                          "done":  5,
+                                          "pct":  100,
+                                          "statusLetter":  "f"
+                                      },
+                                      {
+                                          "name":  "Infraestructura Tributaria",
+                                          "description":  "Configuración tributaria por ítem — fuente única de verdad",
+                                          "totalTasks":  6,
+                                          "done":  6,
+                                          "pct":  100,
+                                          "statusLetter":  "f"
+                                      },
+                                      {
+                                          "name":  "Estandarización UI / Alineación",
+                                          "description":  "Checkboxes, inline styles, CSS compartido",
+                                          "totalTasks":  5,
+                                          "done":  5,
+                                          "pct":  100,
+                                          "statusLetter":  "d"
+                                      },
+                                      {
+                                          "name":  "Design System — Unificación y Consolidación",
+                                          "description":  "Tipografía/tokens unificados (Fase 2), auditoría de duplicados (Fase 3A) y eliminación de sistemas paralelos (Fase 3B)",
+                                          "totalTasks":  19,
+                                          "done":  19,
+                                          "pct":  100,
+                                          "statusLetter":  "d"
+                                      },
+                                      {
+                                          "name":  "Testing \u0026 Quality Assurance",
+                                          "description":  "400+ tests across 5 projects + frontend",
+                                          "totalTasks":  7,
+                                          "done":  6.5,
+                                          "pct":  93,
+                                          "statusLetter":  "p"
+                                      }
+                                  ]
+                   },
+                   {
+                       "name":  "Futuro",
+                       "totalTasks":  50,
+                       "done":  35,
+                       "pct":  70,
+                       "phases":  [
+                                      {
+                                          "name":  "Contabilidad (Accounting)",
+                                          "description":  "Libro mayor, asientos, plan de cuentas",
+                                          "totalTasks":  3,
+                                          "done":  0,
+                                          "pct":  0,
+                                          "statusLetter":  "p"
+                                      },
+                                      {
+                                          "name":  "Caja (Cash Management)",
+                                          "description":  "Sesiones de caja, apertura, movimientos, arqueo, cierre — módulo independiente",
+                                          "totalTasks":  41,
+                                          "done":  35,
+                                          "pct":  85,
+                                          "statusLetter":  "p"
+                                      },
+                                      {
+                                          "name":  "Bancos",
+                                          "description":  "Conciliación bancaria, cobros y pagos",
+                                          "totalTasks":  3,
+                                          "done":  0,
+                                          "pct":  0,
+                                          "statusLetter":  "p"
+                                      },
+                                      {
+                                          "name":  "CRM",
+                                          "description":  "Relaciones con clientes, oportunidades, seguimiento",
+                                          "totalTasks":  1,
+                                          "done":  0,
+                                          "pct":  0,
+                                          "statusLetter":  "p"
+                                      },
+                                      {
+                                          "name":  "RRHH / Nómina",
+                                          "description":  "Gestión personal, nómina, roles de pago",
+                                          "totalTasks":  1,
+                                          "done":  0,
+                                          "pct":  0,
+                                          "statusLetter":  "p"
+                                      },
+                                      {
+                                          "name":  "Producción / Manufactura",
+                                          "description":  "Órdenes de producción, BOM, costos",
+                                          "totalTasks":  1,
+                                          "done":  0,
+                                          "pct":  0,
+                                          "statusLetter":  "p"
+                                      }
+                                  ]
+                   }
+               ],
+    "components":  [
+                       {
+                           "stage":  "Infraestructura",
+                           "name":  "Clean Architecture + CQRS",
+                           "description":  "Monolito modular con separación de capas",
+                           "totalTasks":  4,
+                           "done":  4,
+                           "pct":  100
+                       },
+                       {
+                           "stage":  "Infraestructura",
+                           "name":  "Multi-Tenant \u0026 Company Isolation",
+                           "description":  "Aislamiento de datos por tenant y empresa con fail-closed",
+                           "totalTasks":  4,
+                           "done":  4,
+                           "pct":  100
+                       },
+                       {
+                           "stage":  "Infraestructura",
+                           "name":  "Autenticación \u0026 Seguridad",
+                           "description":  "JWT, refresh tokens, permisos, IAM completo",
+                           "totalTasks":  6,
+                           "done":  5.5,
+                           "pct":  92
+                       },
+                       {
+                           "stage":  "Infraestructura",
+                           "name":  "Kernel Cleanup (Eliminación SaaS)",
+                           "description":  "Eliminación completa de Billing, Subscriptions, Platform del ERP",
+                           "totalTasks":  4,
+                           "done":  4,
+                           "pct":  100
+                       },
+                       {
+                           "stage":  "Infraestructura",
+                           "name":  "Frontera de Integración Platform",
+                           "description":  "Boundary API para futura plataforma externa",
+                           "totalTasks":  3,
+                           "done":  2,
+                           "pct":  67
+                       },
+                       {
+                           "stage":  "Core ERP",
+                           "name":  "Business Partners V2 (Customer + Supplier)",
+                           "description":  "Master data unificado de clientes y proveedores",
+                           "totalTasks":  10,
+                           "done":  10,
+                           "pct":  100
+                       },
+                       {
+                           "stage":  "Core ERP",
+                           "name":  "Items / Catálogo v1.0",
+                           "description":  "Catálogo maestro con variantes, atributos, conversiones",
+                           "totalTasks":  11,
+                           "done":  9.5,
+                           "pct":  86
+                       },
+                       {
+                           "stage":  "Core ERP",
+                           "name":  "Empresas, Sucursales, Establecimientos",
+                           "description":  "Estructura organizativa y fiscal",
+                           "totalTasks":  5,
+                           "done":  5,
+                           "pct":  100
+                       },
+                       {
+                           "stage":  "Core ERP",
+                           "name":  "Pricing Engine v2 + Auditoría por Dominio",
+                           "description":  "Item.BaseSalePrice SSOT + reglas de ajuste + infraestructura de auditoría reutilizable — Items Administration \u0026 Pricing Administration FROZEN 2026-07-07",
+                           "totalTasks":  11,
+                           "done":  10,
+                           "pct":  91
+                       },
+                       {
+                           "stage":  "Core ERP",
+                           "name":  "Condiciones de Pago y Crédito",
+                           "description":  "Payment Terms y Credit Terms configurables",
+                           "totalTasks":  2,
+                           "done":  2,
+                           "pct":  100
+                       },
+                       {
+                           "stage":  "Core ERP",
+                           "name":  "Métodos de Pago (Multi-Pago)",
+                           "description":  "Catálogo dinámico de formas de cobro",
+                           "totalTasks":  3,
+                           "done":  3,
+                           "pct":  100
+                       },
+                       {
+                           "stage":  "Core ERP",
+                           "name":  "Menú \u0026 Navegación SPA",
+                           "description":  "Registro de features y menú dinámico",
+                           "totalTasks":  2,
+                           "done":  2,
+                           "pct":  100
+                       },
+                       {
+                           "stage":  "Core ERP",
+                           "name":  "Dashboard Unificado",
+                           "description":  "KPIs de ventas, compras y métricas",
+                           "totalTasks":  1,
+                           "done":  1,
+                           "pct":  100
+                       },
+                       {
+                           "stage":  "Operaciones",
+                           "name":  "Inventario \u0026 Bodega",
+                           "description":  "Stock, movimientos, transferencias, ajustes, kardex, lotes, series",
+                           "totalTasks":  23,
+                           "done":  20.5,
+                           "pct":  89
+                       },
+                       {
+                           "stage":  "Operaciones",
+                           "name":  "Ventas (Sales Invoice)",
+                           "description":  "Factura de venta completa: ciclo de vida, impuestos, cobros, FE",
+                           "totalTasks":  25,
+                           "done":  21,
+                           "pct":  84
+                       },
+                       {
+                           "stage":  "Operaciones",
+                           "name":  "Cuentas por Cobrar (CxC)",
+                           "description":  "Registro de deuda clientes — módulo pasivo",
+                           "totalTasks":  6,
+                           "done":  4,
+                           "pct":  67
+                       },
+                       {
+                           "stage":  "Operaciones",
+                           "name":  "Compras (Purchases)",
+                           "description":  "Factura compra completa: costos, retenciones, CxP, notas proveedor",
+                           "totalTasks":  23,
+                           "done":  20.5,
+                           "pct":  89
+                       },
+                       {
+                           "stage":  "Operaciones",
+                           "name":  "Cuentas por Pagar (CxP)",
+                           "description":  "Registro de deuda con proveedores",
+                           "totalTasks":  5,
+                           "done":  3,
+                           "pct":  60
+                       },
+                       {
+                           "stage":  "Operaciones",
+                           "name":  "Reportes",
+                           "description":  "Reportes de ventas, compras, inventario, kardex",
+                           "totalTasks":  2,
+                           "done":  1.5,
+                           "pct":  75
+                       },
+                       {
+                           "stage":  "Fiscal / SRI",
+                           "name":  "Catálogos SRI (Tablas Inmutables)",
+                           "description":  "Tablas de referencia fiscal del SRI Ecuador",
+                           "totalTasks":  3,
+                           "done":  3,
+                           "pct":  100
+                       },
+                       {
+                           "stage":  "Fiscal / SRI",
+                           "name":  "Módulo ElectronicDocuments v1.0 — FROZEN",
+                           "description":  "Motor de comprobantes electrónicos desacoplado de Sales/Purchases/Inventory. CERRADO oficialmente el 2026-07-11 (ADR-023) tras 3 rondas de verificación: auditoría de robustez, cumplimiento del Anexo Técnico SRI verificado texto por texto contra el PDF oficial, y pruebas reales contra el ambiente de Pruebas del SRI con certificado real. Matriz de cobertura vs. Ficha Técnica SRI (Esquema Offline v2.32) — organizada por módulo funcional, no por fase cronológica.",
+                           "totalTasks":  98,
+                           "done":  74,
+                           "pct":  76
+                       },
+                       {
+                           "stage":  "Fiscal / SRI",
+                           "name":  "Retenciones SRI",
+                           "description":  "Retenciones emitidas y recibidas (IVA + IR)",
+                           "totalTasks":  2,
+                           "done":  1.5,
+                           "pct":  75
+                       },
+                       {
+                           "stage":  "Fiscal / SRI",
+                           "name":  "Guía de Remisión",
+                           "description":  "Documento de transporte para mercadería",
+                           "totalTasks":  1,
+                           "done":  0,
+                           "pct":  0
+                       },
+                       {
+                           "stage":  "Fiscal / SRI",
+                           "name":  "Notas de Crédito / Débito",
+                           "description":  "Documentos complementarios fiscales (tipo 04 y 05 SRI)",
+                           "totalTasks":  2,
+                           "done":  1.5,
+                           "pct":  75
+                       },
+                       {
+                           "stage":  "Estándares",
+                           "name":  "Precisión Numérica",
+                           "description":  "Montos, cantidades, precios, porcentajes — inmutable",
+                           "totalTasks":  3,
+                           "done":  3,
+                           "pct":  100
+                       },
+                       {
+                           "stage":  "Estándares",
+                           "name":  "Fechas y Horas",
+                           "description":  "dd/MM/yyyy, UTC, sin timezone offsets — inmutable",
+                           "totalTasks":  2,
+                           "done":  2,
+                           "pct":  100
+                       },
+                       {
+                           "stage":  "Estándares",
+                           "name":  "Validación de Formularios",
+                           "description":  "RHF + Zod (frontend) + FluentValidation (backend)",
+                           "totalTasks":  2,
+                           "done":  2,
+                           "pct":  100
+                       },
+                       {
+                           "stage":  "Estándares",
+                           "name":  "Infraestructura de Mensajes Visuales",
+                           "description":  "Toast, alerts, confirm — API pública message.*, store encapsulado",
+                           "totalTasks":  7,
+                           "done":  7,
+                           "pct":  100
+                       },
+                       {
+                           "stage":  "Estándares",
+                           "name":  "Infraestructura de Modales",
+                           "description":  "ZHModal componente único con tamaños, scroll, ESC, animations",
+                           "totalTasks":  6,
+                           "done":  6,
+                           "pct":  100
+                       },
+                       {
+                           "stage":  "Estándares",
+                           "name":  "Infraestructura de Secuencias Documentales",
+                           "description":  "Numeración SRI atómica por punto de emisión — ADR-019",
+                           "totalTasks":  5,
+                           "done":  5,
+                           "pct":  100
+                       },
+                       {
+                           "stage":  "Estándares",
+                           "name":  "Infraestructura de Entity Tracking",
+                           "description":  "EF Core Change Tracking fix — ADR-020",
+                           "totalTasks":  5,
+                           "done":  5,
+                           "pct":  100
+                       },
+                       {
+                           "stage":  "Estándares",
+                           "name":  "Infraestructura Tributaria",
+                           "description":  "Configuración tributaria por ítem — fuente única de verdad",
+                           "totalTasks":  6,
+                           "done":  6,
+                           "pct":  100
+                       },
+                       {
+                           "stage":  "Estándares",
+                           "name":  "Estandarización UI / Alineación",
+                           "description":  "Checkboxes, inline styles, CSS compartido",
+                           "totalTasks":  5,
+                           "done":  5,
+                           "pct":  100
+                       },
+                       {
+                           "stage":  "Estándares",
+                           "name":  "Design System — Unificación y Consolidación",
+                           "description":  "Tipografía/tokens unificados (Fase 2), auditoría de duplicados (Fase 3A) y eliminación de sistemas paralelos (Fase 3B)",
+                           "totalTasks":  19,
+                           "done":  19,
+                           "pct":  100
+                       },
+                       {
+                           "stage":  "Estándares",
+                           "name":  "Testing \u0026 Quality Assurance",
+                           "description":  "400+ tests across 5 projects + frontend",
+                           "totalTasks":  7,
+                           "done":  6.5,
+                           "pct":  93
+                       },
+                       {
+                           "stage":  "Futuro",
+                           "name":  "Contabilidad (Accounting)",
+                           "description":  "Libro mayor, asientos, plan de cuentas",
+                           "totalTasks":  3,
+                           "done":  0,
+                           "pct":  0
+                       },
+                       {
+                           "stage":  "Futuro",
+                           "name":  "Caja (Cash Management)",
+                           "description":  "Sesiones de caja, apertura, movimientos, arqueo, cierre — módulo independiente",
+                           "totalTasks":  41,
+                           "done":  35,
+                           "pct":  85
+                       },
+                       {
+                           "stage":  "Futuro",
+                           "name":  "Bancos",
+                           "description":  "Conciliación bancaria, cobros y pagos",
+                           "totalTasks":  3,
+                           "done":  0,
+                           "pct":  0
+                       },
+                       {
+                           "stage":  "Futuro",
+                           "name":  "CRM",
+                           "description":  "Relaciones con clientes, oportunidades, seguimiento",
+                           "totalTasks":  1,
+                           "done":  0,
+                           "pct":  0
+                       },
+                       {
+                           "stage":  "Futuro",
+                           "name":  "RRHH / Nómina",
+                           "description":  "Gestión personal, nómina, roles de pago",
+                           "totalTasks":  1,
+                           "done":  0,
+                           "pct":  0
+                       },
+                       {
+                           "stage":  "Futuro",
+                           "name":  "Producción / Manufactura",
+                           "description":  "Órdenes de producción, BOM, costos",
+                           "totalTasks":  1,
+                           "done":  0,
+                           "pct":  0
+                       }
+                   ],
+    "completed":  [
+                      {
+                          "stage":  "Infraestructura",
+                          "phase":  "Clean Architecture + CQRS",
+                          "name":  "Capas: API → Application → Domain ← Infrastructure",
+                          "status":  "f"
+                      },
+                      {
+                          "stage":  "Infraestructura",
+                          "phase":  "Clean Architecture + CQRS",
+                          "name":  "CQRS con MediatR",
+                          "status":  "f"
+                      },
+                      {
+                          "stage":  "Infraestructura",
+                          "phase":  "Clean Architecture + CQRS",
+                          "name":  "EF Core 10 + PostgreSQL 15+",
+                          "status":  "f"
+                      },
+                      {
+                          "stage":  "Infraestructura",
+                          "phase":  "Clean Architecture + CQRS",
+                          "name":  "Architecture Tests (NetArchTest)",
+                          "status":  "f"
+                      },
+                      {
+                          "stage":  "Infraestructura",
+                          "phase":  "Multi-Tenant \u0026 Company Isolation",
+                          "name":  "Modelo Tenant → Company → Membership",
+                          "status":  "f"
+                      },
+                      {
+                          "stage":  "Infraestructura",
+                          "phase":  "Multi-Tenant \u0026 Company Isolation",
+                          "name":  "CompanyScopeBehavior (fail-closed)",
+                          "status":  "f"
+                      },
+                      {
+                          "stage":  "Infraestructura",
+                          "phase":  "Multi-Tenant \u0026 Company Isolation",
+                          "name":  "PostgreSQL RLS (Row-Level Security)",
+                          "status":  "f"
+                      },
+                      {
+                          "stage":  "Infraestructura",
+                          "phase":  "Multi-Tenant \u0026 Company Isolation",
+                          "name":  "EF Query Filters automáticos",
+                          "status":  "f"
+                      },
+                      {
+                          "stage":  "Infraestructura",
+                          "phase":  "Autenticación \u0026 Seguridad",
+                          "name":  "JWT + Refresh Token con rotación",
+                          "status":  "f"
+                      },
+                      {
+                          "stage":  "Infraestructura",
+                          "phase":  "Autenticación \u0026 Seguridad",
+                          "name":  "First-Run Setup (token-gated)",
+                          "status":  "f"
+                      },
+                      {
+                          "stage":  "Infraestructura",
+                          "phase":  "Autenticación \u0026 Seguridad",
+                          "name":  "Switch Company (multi-empresa)",
+                          "status":  "f"
+                      },
+                      {
+                          "stage":  "Infraestructura",
+                          "phase":  "Autenticación \u0026 Seguridad",
+                          "name":  "Access Profiles + Permission Grid",
+                          "status":  "f"
+                      },
+                      {
+                          "stage":  "Infraestructura",
+                          "phase":  "Autenticación \u0026 Seguridad",
+                          "name":  "SRI Certificate Encryption",
+                          "status":  "f"
+                      },
+                      {
+                          "stage":  "Infraestructura",
+                          "phase":  "Kernel Cleanup (Eliminación SaaS)",
+                          "name":  "Billing Domain eliminado",
+                          "status":  "d"
+                      },
+                      {
+                          "stage":  "Infraestructura",
+                          "phase":  "Kernel Cleanup (Eliminación SaaS)",
+                          "name":  "Platform Entities eliminadas",
+                          "status":  "d"
+                      },
+                      {
+                          "stage":  "Infraestructura",
+                          "phase":  "Kernel Cleanup (Eliminación SaaS)",
+                          "name":  "SaaS Controllers/Middleware eliminados",
+                          "status":  "d"
+                      },
+                      {
+                          "stage":  "Infraestructura",
+                          "phase":  "Kernel Cleanup (Eliminación SaaS)",
+                          "name":  "SubscriberId → TenantId consolidado",
+                          "status":  "d"
+                      },
+                      {
+                          "stage":  "Infraestructura",
+                          "phase":  "Frontera de Integración Platform",
+                          "name":  "Integration API (/api/integration/v1/*)",
+                          "status":  "f"
+                      },
+                      {
+                          "stage":  "Infraestructura",
+                          "phase":  "Frontera de Integración Platform",
+                          "name":  "Platform.Contracts (interface-only)",
+                          "status":  "f"
+                      },
+                      {
+                          "stage":  "Core ERP",
+                          "phase":  "Business Partners V2 (Customer + Supplier)",
+                          "name":  "BusinessPartner (Aggregate Root)",
+                          "status":  "f"
+                      },
+                      {
+                          "stage":  "Core ERP",
+                          "phase":  "Business Partners V2 (Customer + Supplier)",
+                          "name":  "Roles: Customer + Supplier",
+                          "status":  "f"
+                      },
+                      {
+                          "stage":  "Core ERP",
+                          "phase":  "Business Partners V2 (Customer + Supplier)",
+                          "name":  "Locations + Contacts CRUD",
+                          "status":  "f"
+                      },
+                      {
+                          "stage":  "Core ERP",
+                          "phase":  "Business Partners V2 (Customer + Supplier)",
+                          "name":  "CompanyBpTradingSettings",
+                          "status":  "f"
+                      },
+                      {
+                          "stage":  "Core ERP",
+                          "phase":  "Business Partners V2 (Customer + Supplier)",
+                          "name":  "31+ endpoints, 20 domain events",
+                          "status":  "f"
+                      },
+                      {
+                          "stage":  "Core ERP",
+                          "phase":  "Business Partners V2 (Customer + Supplier)",
+                          "name":  "UI completa: listado + wizard + detalle",
+                          "status":  "f"
+                      },
+                      {
+                          "stage":  "Core ERP",
+                          "phase":  "Business Partners V2 (Customer + Supplier)",
+                          "name":  "Catálogo global person_type (labels dinámicos)",
+                          "status":  "f"
+                      },
+                      {
+                          "stage":  "Core ERP",
+                          "phase":  "Business Partners V2 (Customer + Supplier)",
+                          "name":  "Catálogo global sri_supplier_type (Tabla 26 SRI)",
+                          "status":  "f"
+                      },
+                      {
+                          "stage":  "Core ERP",
+                          "phase":  "Business Partners V2 (Customer + Supplier)",
+                          "name":  "SupplierRoleConfig.RefundProviderTypeCode — persistencia real",
+                          "status":  "f"
+                      },
+                      {
+                          "stage":  "Core ERP",
+                          "phase":  "Business Partners V2 (Customer + Supplier)",
+                          "name":  "Selección obligatoria en el wizard de creación de Proveedor",
+                          "status":  "f"
+                      },
+                      {
+                          "stage":  "Core ERP",
+                          "phase":  "Items / Catálogo v1.0",
+                          "name":  "Item (AR) + 13 entidades hijas",
+                          "status":  "f"
+                      },
+                      {
+                          "stage":  "Core ERP",
+                          "phase":  "Items / Catálogo v1.0",
+                          "name":  "ItemTypeDefinition — catálogo tenant-editable",
+                          "status":  "f"
+                      },
+                      {
+                          "stage":  "Core ERP",
+                          "phase":  "Items / Catálogo v1.0",
+                          "name":  "56 endpoints + 20 validators",
+                          "status":  "f"
+                      },
+                      {
+                          "stage":  "Core ERP",
+                          "phase":  "Items / Catálogo v1.0",
+                          "name":  "ItemTypesController (CRUD completo)",
+                          "status":  "f"
+                      },
+                      {
+                          "stage":  "Core ERP",
+                          "phase":  "Items / Catálogo v1.0",
+                          "name":  "Detail page completa",
+                          "status":  "f"
+                      },
+                      {
+                          "stage":  "Core ERP",
+                          "phase":  "Items / Catálogo v1.0",
+                          "name":  "Formulario 100% dinámico (zero hardcode)",
+                          "status":  "f"
+                      },
+                      {
+                          "stage":  "Core ERP",
+                          "phase":  "Items / Catálogo v1.0",
+                          "name":  "ItemTypesPage — administración de tipos",
+                          "status":  "f"
+                      },
+                      {
+                          "stage":  "Core ERP",
+                          "phase":  "Items / Catálogo v1.0",
+                          "name":  "ItemAudit + ItemAuditHandler",
+                          "status":  "f"
+                      },
+                      {
+                          "stage":  "Core ERP",
+                          "phase":  "Items / Catálogo v1.0",
+                          "name":  "createdBy/updatedBy en entidades hijas de Item",
+                          "status":  "f"
+                      },
+                      {
+                          "stage":  "Core ERP",
+                          "phase":  "Empresas, Sucursales, Establecimientos",
+                          "name":  "Company (multi-empresa)",
+                          "status":  "f"
+                      },
+                      {
+                          "stage":  "Core ERP",
+                          "phase":  "Empresas, Sucursales, Establecimientos",
+                          "name":  "Sucursales (Branches)",
+                          "status":  "f"
+                      },
+                      {
+                          "stage":  "Core ERP",
+                          "phase":  "Empresas, Sucursales, Establecimientos",
+                          "name":  "Establecimientos SRI",
+                          "status":  "f"
+                      },
+                      {
+                          "stage":  "Core ERP",
+                          "phase":  "Empresas, Sucursales, Establecimientos",
+                          "name":  "Puntos de Emisión",
+                          "status":  "f"
+                      },
+                      {
+                          "stage":  "Core ERP",
+                          "phase":  "Empresas, Sucursales, Establecimientos",
+                          "name":  "DocumentSequence",
+                          "status":  "f"
+                      },
+                      {
+                          "stage":  "Core ERP",
+                          "phase":  "Pricing Engine v2 + Auditoría por Dominio",
+                          "name":  "Item.BaseSalePrice como SSOT",
+                          "status":  "f"
+                      },
+                      {
+                          "stage":  "Core ERP",
+                          "phase":  "Pricing Engine v2 + Auditoría por Dominio",
+                          "name":  "PricingRule + PriceListItem",
+                          "status":  "f"
+                      },
+                      {
+                          "stage":  "Core ERP",
+                          "phase":  "Pricing Engine v2 + Auditoría por Dominio",
+                          "name":  "IPricingResolver — API única de resolución",
+                          "status":  "f"
+                      },
+                      {
+                          "stage":  "Core ERP",
+                          "phase":  "Pricing Engine v2 + Auditoría por Dominio",
+                          "name":  "Invariante PricingRule ↔ PriceListItem",
+                          "status":  "f"
+                      },
+                      {
+                          "stage":  "Core ERP",
+                          "phase":  "Pricing Engine v2 + Auditoría por Dominio",
+                          "name":  "Infraestructura común de auditoría",
+                          "status":  "f"
+                      },
+                      {
+                          "stage":  "Core ERP",
+                          "phase":  "Pricing Engine v2 + Auditoría por Dominio",
+                          "name":  "PricingRuleAudit + PriceListItemAudit + PriceListAudit",
+                          "status":  "f"
+                      },
+                      {
+                          "stage":  "Core ERP",
+                          "phase":  "Pricing Engine v2 + Auditoría por Dominio",
+                          "name":  "AuditActor — único modelo del actor, snapshot histórico",
+                          "status":  "f"
+                      },
+                      {
+                          "stage":  "Core ERP",
+                          "phase":  "Pricing Engine v2 + Auditoría por Dominio",
+                          "name":  "Items Administration FROZEN",
+                          "status":  "f"
+                      },
+                      {
+                          "stage":  "Core ERP",
+                          "phase":  "Pricing Engine v2 + Auditoría por Dominio",
+                          "name":  "Pricing Administration FROZEN",
+                          "status":  "f"
+                      },
+                      {
+                          "stage":  "Core ERP",
+                          "phase":  "Condiciones de Pago y Crédito",
+                          "name":  "PaymentTerm CRUD",
+                          "status":  "d"
+                      },
+                      {
+                          "stage":  "Core ERP",
+                          "phase":  "Condiciones de Pago y Crédito",
+                          "name":  "CreditTerm + Installments",
+                          "status":  "d"
+                      },
+                      {
+                          "stage":  "Core ERP",
+                          "phase":  "Métodos de Pago (Multi-Pago)",
+                          "name":  "PaymentMethod catálogo dinámico",
+                          "status":  "f"
+                      },
+                      {
+                          "stage":  "Core ERP",
+                          "phase":  "Métodos de Pago (Multi-Pago)",
+                          "name":  "SalesInvoicePayment (N pagos/factura)",
+                          "status":  "f"
+                      },
+                      {
+                          "stage":  "Core ERP",
+                          "phase":  "Métodos de Pago (Multi-Pago)",
+                          "name":  "Validación Authorize() Sum == GrandTotal",
+                          "status":  "f"
+                      },
+                      {
+                          "stage":  "Core ERP",
+                          "phase":  "Menú \u0026 Navegación SPA",
+                          "name":  "KernelRegistry + Seeding reflexivo",
+                          "status":  "d"
+                      },
+                      {
+                          "stage":  "Core ERP",
+                          "phase":  "Menú \u0026 Navegación SPA",
+                          "name":  "App Launcher refinado",
+                          "status":  "d"
+                      },
+                      {
+                          "stage":  "Core ERP",
+                          "phase":  "Dashboard Unificado",
+                          "name":  "Dashboard con métricas",
+                          "status":  "d"
+                      },
+                      {
+                          "stage":  "Operaciones",
+                          "phase":  "Inventario \u0026 Bodega",
+                          "name":  "Bodegas (Warehouse CRUD)",
+                          "status":  "f"
+                      },
+                      {
+                          "stage":  "Operaciones",
+                          "phase":  "Inventario \u0026 Bodega",
+                          "name":  "Stock actual (CurrentStock)",
+                          "status":  "f"
+                      },
+                      {
+                          "stage":  "Operaciones",
+                          "phase":  "Inventario \u0026 Bodega",
+                          "name":  "Stock agregado por item",
+                          "status":  "f"
+                      },
+                      {
+                          "stage":  "Operaciones",
+                          "phase":  "Inventario \u0026 Bodega",
+                          "name":  "Movimientos de stock (audit trail)",
+                          "status":  "f"
+                      },
+                      {
+                          "stage":  "Operaciones",
+                          "phase":  "Inventario \u0026 Bodega",
+                          "name":  "Costo promedio ponderado",
+                          "status":  "f"
+                      },
+                      {
+                          "stage":  "Operaciones",
+                          "phase":  "Inventario \u0026 Bodega",
+                          "name":  "StockMovement: secuencia + costo/valor corridos",
+                          "status":  "f"
+                      },
+                      {
+                          "stage":  "Operaciones",
+                          "phase":  "Inventario \u0026 Bodega",
+                          "name":  "KardexController — GetByProduct / GetByDocument / GetMovementDetail",
+                          "status":  "f"
+                      },
+                      {
+                          "stage":  "Operaciones",
+                          "phase":  "Inventario \u0026 Bodega",
+                          "name":  "KardexPage — reporte con resumen + ledger tabular",
+                          "status":  "f"
+                      },
+                      {
+                          "stage":  "Operaciones",
+                          "phase":  "Inventario \u0026 Bodega",
+                          "name":  "KardexMovementDetailModal — expediente del movimiento",
+                          "status":  "f"
+                      },
+                      {
+                          "stage":  "Operaciones",
+                          "phase":  "Inventario \u0026 Bodega",
+                          "name":  "Columna Usuario sin N+1",
+                          "status":  "f"
+                      },
+                      {
+                          "stage":  "Operaciones",
+                          "phase":  "Inventario \u0026 Bodega",
+                          "name":  "SalesInvoiceDetail.WarehouseId",
+                          "status":  "f"
+                      },
+                      {
+                          "stage":  "Operaciones",
+                          "phase":  "Inventario \u0026 Bodega",
+                          "name":  "Fix: item de menú faltante",
+                          "status":  "f"
+                      },
+                      {
+                          "stage":  "Operaciones",
+                          "phase":  "Inventario \u0026 Bodega",
+                          "name":  "Fix: loop infinito GET /inventory/warehouses",
+                          "status":  "f"
+                      },
+                      {
+                          "stage":  "Operaciones",
+                          "phase":  "Inventario \u0026 Bodega",
+                          "name":  "Fix: 400 al filtrar por fecha (Kind=Unspecified)",
+                          "status":  "f"
+                      },
+                      {
+                          "stage":  "Operaciones",
+                          "phase":  "Inventario \u0026 Bodega",
+                          "name":  "Fix: CSS faltante en KardexPage",
+                          "status":  "f"
+                      },
+                      {
+                          "stage":  "Operaciones",
+                          "phase":  "Inventario \u0026 Bodega",
+                          "name":  "Transferencias entre bodegas",
+                          "status":  "f"
+                      },
+                      {
+                          "stage":  "Operaciones",
+                          "phase":  "Inventario \u0026 Bodega",
+                          "name":  "Ajustes de inventario (conteo físico)",
+                          "status":  "f"
+                      },
+                      {
+                          "stage":  "Operaciones",
+                          "phase":  "Inventario \u0026 Bodega",
+                          "name":  "Reservas de stock",
+                          "status":  "f"
+                      },
+                      {
+                          "stage":  "Operaciones",
+                          "phase":  "Inventario \u0026 Bodega",
+                          "name":  "Trazabilidad por lotes",
+                          "status":  "f"
+                      },
+                      {
+                          "stage":  "Operaciones",
+                          "phase":  "Inventario \u0026 Bodega",
+                          "name":  "Trazabilidad por número de serie",
+                          "status":  "f"
+                      },
+                      {
+                          "stage":  "Operaciones",
+                          "phase":  "Ventas (Sales Invoice)",
+                          "name":  "Crear borrador de factura",
+                          "status":  "f"
+                      },
+                      {
+                          "stage":  "Operaciones",
+                          "phase":  "Ventas (Sales Invoice)",
+                          "name":  "Editar borrador",
+                          "status":  "f"
+                      },
+                      {
+                          "stage":  "Operaciones",
+                          "phase":  "Ventas (Sales Invoice)",
+                          "name":  "Listar facturas (paginado + búsqueda)",
+                          "status":  "f"
+                      },
+                      {
+                          "stage":  "Operaciones",
+                          "phase":  "Ventas (Sales Invoice)",
+                          "name":  "Ver detalle de factura",
+                          "status":  "f"
+                      },
+                      {
+                          "stage":  "Operaciones",
+                          "phase":  "Ventas (Sales Invoice)",
+                          "name":  "Autorizar factura (emitir)",
+                          "status":  "f"
+                      },
+                      {
+                          "stage":  "Operaciones",
+                          "phase":  "Ventas (Sales Invoice)",
+                          "name":  "Anular factura",
+                          "status":  "f"
+                      },
+                      {
+                          "stage":  "Operaciones",
+                          "phase":  "Ventas (Sales Invoice)",
+                          "name":  "Líneas con impuestos SRI",
+                          "status":  "f"
+                      },
+                      {
+                          "stage":  "Operaciones",
+                          "phase":  "Ventas (Sales Invoice)",
+                          "name":  "Descuento global por factura",
+                          "status":  "f"
+                      },
+                      {
+                          "stage":  "Operaciones",
+                          "phase":  "Ventas (Sales Invoice)",
+                          "name":  "Freeze de líneas al autorizar",
+                          "status":  "f"
+                      },
+                      {
+                          "stage":  "Operaciones",
+                          "phase":  "Ventas (Sales Invoice)",
+                          "name":  "Múltiples formas de cobro por factura",
+                          "status":  "f"
+                      },
+                      {
+                          "stage":  "Operaciones",
+                          "phase":  "Ventas (Sales Invoice)",
+                          "name":  "Detalle por instrumento (Tarjeta)",
+                          "status":  "f"
+                      },
+                      {
+                          "stage":  "Operaciones",
+                          "phase":  "Ventas (Sales Invoice)",
+                          "name":  "Detalle por instrumento (Transferencia)",
+                          "status":  "f"
+                      },
+                      {
+                          "stage":  "Operaciones",
+                          "phase":  "Ventas (Sales Invoice)",
+                          "name":  "Detalle por instrumento (Cheque)",
+                          "status":  "f"
+                      },
+                      {
+                          "stage":  "Operaciones",
+                          "phase":  "Ventas (Sales Invoice)",
+                          "name":  "Simulación de cuotas crédito",
+                          "status":  "f"
+                      },
+                      {
+                          "stage":  "Operaciones",
+                          "phase":  "Ventas (Sales Invoice)",
+                          "name":  "Lifecycle electrónico independiente",
+                          "status":  "f"
+                      },
+                      {
+                          "stage":  "Operaciones",
+                          "phase":  "Ventas (Sales Invoice)",
+                          "name":  "Datos electrónicos SRI",
+                          "status":  "f"
+                      },
+                      {
+                          "stage":  "Operaciones",
+                          "phase":  "Ventas (Sales Invoice)",
+                          "name":  "Emisión física vs electrónica",
+                          "status":  "f"
+                      },
+                      {
+                          "stage":  "Operaciones",
+                          "phase":  "Ventas (Sales Invoice)",
+                          "name":  "Secuencial automático SRI",
+                          "status":  "f"
+                      },
+                      {
+                          "stage":  "Operaciones",
+                          "phase":  "Ventas (Sales Invoice)",
+                          "name":  "SalesPage POS interactivo",
+                          "status":  "f"
+                      },
+                      {
+                          "stage":  "Operaciones",
+                          "phase":  "Ventas (Sales Invoice)",
+                          "name":  "CustomerPicker con creación rápida",
+                          "status":  "f"
+                      },
+                      {
+                          "stage":  "Operaciones",
+                          "phase":  "Ventas (Sales Invoice)",
+                          "name":  "Cálculo local en tiempo real",
+                          "status":  "f"
+                      },
+                      {
+                          "stage":  "Operaciones",
+                          "phase":  "Cuentas por Cobrar (CxC)",
+                          "name":  "SalesReceivable automático",
+                          "status":  "f"
+                      },
+                      {
+                          "stage":  "Operaciones",
+                          "phase":  "Cuentas por Cobrar (CxC)",
+                          "name":  "Cuotas de cobro (Installments)",
+                          "status":  "f"
+                      },
+                      {
+                          "stage":  "Operaciones",
+                          "phase":  "Cuentas por Cobrar (CxC)",
+                          "name":  "Cancel cascada",
+                          "status":  "f"
+                      },
+                      {
+                          "stage":  "Operaciones",
+                          "phase":  "Cuentas por Cobrar (CxC)",
+                          "name":  "API consulta",
+                          "status":  "f"
+                      },
+                      {
+                          "stage":  "Operaciones",
+                          "phase":  "Compras (Purchases)",
+                          "name":  "Crear borrador de compra",
+                          "status":  "f"
+                      },
+                      {
+                          "stage":  "Operaciones",
+                          "phase":  "Compras (Purchases)",
+                          "name":  "Editar borrador",
+                          "status":  "f"
+                      },
+                      {
+                          "stage":  "Operaciones",
+                          "phase":  "Compras (Purchases)",
+                          "name":  "Listar compras (paginado + búsqueda)",
+                          "status":  "f"
+                      },
+                      {
+                          "stage":  "Operaciones",
+                          "phase":  "Compras (Purchases)",
+                          "name":  "Ver detalle de compra",
+                          "status":  "f"
+                      },
+                      {
+                          "stage":  "Operaciones",
+                          "phase":  "Compras (Purchases)",
+                          "name":  "Confirmar compra",
+                          "status":  "f"
+                      },
+                      {
+                          "stage":  "Operaciones",
+                          "phase":  "Compras (Purchases)",
+                          "name":  "Anular compra",
+                          "status":  "f"
+                      },
+                      {
+                          "stage":  "Operaciones",
+                          "phase":  "Compras (Purchases)",
+                          "name":  "Descuento global por compra",
+                          "status":  "f"
+                      },
+                      {
+                          "stage":  "Operaciones",
+                          "phase":  "Compras (Purchases)",
+                          "name":  "Distribución de flete y otros costos",
+                          "status":  "f"
+                      },
+                      {
+                          "stage":  "Operaciones",
+                          "phase":  "Compras (Purchases)",
+                          "name":  "Recálculo de compra",
+                          "status":  "f"
+                      },
+                      {
+                          "stage":  "Operaciones",
+                          "phase":  "Compras (Purchases)",
+                          "name":  "Cálculo de márgenes",
+                          "status":  "f"
+                      },
+                      {
+                          "stage":  "Operaciones",
+                          "phase":  "Compras (Purchases)",
+                          "name":  "Alerta costo fuera de rango",
+                          "status":  "f"
+                      },
+                      {
+                          "stage":  "Operaciones",
+                          "phase":  "Compras (Purchases)",
+                          "name":  "Cálculo preview de retención",
+                          "status":  "f"
+                      },
+                      {
+                          "stage":  "Operaciones",
+                          "phase":  "Compras (Purchases)",
+                          "name":  "Emitir retención",
+                          "status":  "f"
+                      },
+                      {
+                          "stage":  "Operaciones",
+                          "phase":  "Compras (Purchases)",
+                          "name":  "Anular retención",
+                          "status":  "f"
+                      },
+                      {
+                          "stage":  "Operaciones",
+                          "phase":  "Compras (Purchases)",
+                          "name":  "Retenciones recibidas (de clientes)",
+                          "status":  "f"
+                      },
+                      {
+                          "stage":  "Operaciones",
+                          "phase":  "Compras (Purchases)",
+                          "name":  "Entrada de stock al confirmar",
+                          "status":  "f"
+                      },
+                      {
+                          "stage":  "Operaciones",
+                          "phase":  "Compras (Purchases)",
+                          "name":  "Reverso de stock al anular",
+                          "status":  "f"
+                      },
+                      {
+                          "stage":  "Operaciones",
+                          "phase":  "Compras (Purchases)",
+                          "name":  "Actualización de PVP",
+                          "status":  "f"
+                      },
+                      {
+                          "stage":  "Operaciones",
+                          "phase":  "Compras (Purchases)",
+                          "name":  "PurchasesPage completa",
+                          "status":  "f"
+                      },
+                      {
+                          "stage":  "Operaciones",
+                          "phase":  "Compras (Purchases)",
+                          "name":  "purchaseCalc.ts testeado",
+                          "status":  "f"
+                      },
+                      {
+                          "stage":  "Operaciones",
+                          "phase":  "Cuentas por Pagar (CxP)",
+                          "name":  "PurchasePayable automático",
+                          "status":  "f"
+                      },
+                      {
+                          "stage":  "Operaciones",
+                          "phase":  "Cuentas por Pagar (CxP)",
+                          "name":  "Schedule de pagos (Installments)",
+                          "status":  "f"
+                      },
+                      {
+                          "stage":  "Operaciones",
+                          "phase":  "Cuentas por Pagar (CxP)",
+                          "name":  "Impacto de retenciones en CxP",
+                          "status":  "f"
+                      },
+                      {
+                          "stage":  "Operaciones",
+                          "phase":  "Reportes",
+                          "name":  "Reporte de Kardex (implementado)",
+                          "status":  "f"
+                      },
+                      {
+                          "stage":  "Fiscal / SRI",
+                          "phase":  "Catálogos SRI (Tablas Inmutables)",
+                          "name":  "Catálogos fiscales completos",
+                          "status":  "f"
+                      },
+                      {
+                          "stage":  "Fiscal / SRI",
+                          "phase":  "Catálogos SRI (Tablas Inmutables)",
+                          "name":  "SRI Lookups en frontend",
+                          "status":  "f"
+                      },
+                      {
+                          "stage":  "Fiscal / SRI",
+                          "phase":  "Catálogos SRI (Tablas Inmutables)",
+                          "name":  "Geografía Ecuador (INEC)",
+                          "status":  "f"
+                      },
+                      {
+                          "stage":  "Fiscal / SRI",
+                          "phase":  "Módulo ElectronicDocuments v1.0 — FROZEN",
+                          "name":  "Módulo desacoplado (sin dependencia de módulos de negocio)",
+                          "status":  "d"
+                      },
+                      {
+                          "stage":  "Fiscal / SRI",
+                          "phase":  "Módulo ElectronicDocuments v1.0 — FROZEN",
+                          "name":  "Single Source of Truth del estado electrónico",
+                          "status":  "d"
+                      },
+                      {
+                          "stage":  "Fiscal / SRI",
+                          "phase":  "Módulo ElectronicDocuments v1.0 — FROZEN",
+                          "name":  "Contrato de datos común (ElectronicDocumentData)",
+                          "status":  "d"
+                      },
+                      {
+                          "stage":  "Fiscal / SRI",
+                          "phase":  "Módulo ElectronicDocuments v1.0 — FROZEN",
+                          "name":  "Resolución de proveedores por DI (sin switch)",
+                          "status":  "d"
+                      },
+                      {
+                          "stage":  "Fiscal / SRI",
+                          "phase":  "Módulo ElectronicDocuments v1.0 — FROZEN",
+                          "name":  "Resolución de builders XML por DI",
+                          "status":  "d"
+                      },
+                      {
+                          "stage":  "Fiscal / SRI",
+                          "phase":  "Módulo ElectronicDocuments v1.0 — FROZEN",
+                          "name":  "Pipeline de 9 etapas end-to-end (Sales→Authorized)",
+                          "status":  "d"
+                      },
+                      {
+                          "stage":  "Fiscal / SRI",
+                          "phase":  "Módulo ElectronicDocuments v1.0 — FROZEN",
+                          "name":  "Disparo automático desde Ventas (único punto de entrada)",
+                          "status":  "d"
+                      },
+                      {
+                          "stage":  "Fiscal / SRI",
+                          "phase":  "Módulo ElectronicDocuments v1.0 — FROZEN",
+                          "name":  "Factura (codDoc 01)",
+                          "status":  "d"
+                      },
+                      {
+                          "stage":  "Fiscal / SRI",
+                          "phase":  "Módulo ElectronicDocuments v1.0 — FROZEN",
+                          "name":  "Generación XML de Factura (XElement/XDocument)",
+                          "status":  "d"
+                      },
+                      {
+                          "stage":  "Fiscal / SRI",
+                          "phase":  "Módulo ElectronicDocuments v1.0 — FROZEN",
+                          "name":  "Clave de acceso (49 dígitos, módulo 11)",
+                          "status":  "d"
+                      },
+                      {
+                          "stage":  "Fiscal / SRI",
+                          "phase":  "Módulo ElectronicDocuments v1.0 — FROZEN",
+                          "name":  "Resolución de categoría tributaria (2=IVA, 3=ICE)",
+                          "status":  "d"
+                      },
+                      {
+                          "stage":  "Fiscal / SRI",
+                          "phase":  "Módulo ElectronicDocuments v1.0 — FROZEN",
+                          "name":  "DocTypeCode validado contra catálogo real",
+                          "status":  "d"
+                      },
+                      {
+                          "stage":  "Fiscal / SRI",
+                          "phase":  "Módulo ElectronicDocuments v1.0 — FROZEN",
+                          "name":  "Infraestructura de validación XSD",
+                          "status":  "d"
+                      },
+                      {
+                          "stage":  "Fiscal / SRI",
+                          "phase":  "Módulo ElectronicDocuments v1.0 — FROZEN",
+                          "name":  "XSD oficiales de Factura (4 versiones: 1.0.0/1.1.0/2.0.0/2.1.0)",
+                          "status":  "d"
+                      },
+                      {
+                          "stage":  "Fiscal / SRI",
+                          "phase":  "Módulo ElectronicDocuments v1.0 — FROZEN",
+                          "name":  "XSD de NC/ND/Retención/Guía/Liquidación (recursos, sin builder activo)",
+                          "status":  "d"
+                      },
+                      {
+                          "stage":  "Fiscal / SRI",
+                          "phase":  "Módulo ElectronicDocuments v1.0 — FROZEN",
+                          "name":  "Firmado XAdES-BES conforme a Anexo 14 de la ficha SRI",
+                          "status":  "d"
+                      },
+                      {
+                          "stage":  "Fiscal / SRI",
+                          "phase":  "Módulo ElectronicDocuments v1.0 — FROZEN",
+                          "name":  "Carga de certificado P12",
+                          "status":  "d"
+                      },
+                      {
+                          "stage":  "Fiscal / SRI",
+                          "phase":  "Módulo ElectronicDocuments v1.0 — FROZEN",
+                          "name":  "Registro en DI (gap real corregido)",
+                          "status":  "d"
+                      },
+                      {
+                          "stage":  "Fiscal / SRI",
+                          "phase":  "Módulo ElectronicDocuments v1.0 — FROZEN",
+                          "name":  "Configuración de certificado sin hardcode",
+                          "status":  "d"
+                      },
+                      {
+                          "stage":  "Fiscal / SRI",
+                          "phase":  "Módulo ElectronicDocuments v1.0 — FROZEN",
+                          "name":  "Prueba de integración XML+Firma (sin envío real)",
+                          "status":  "d"
+                      },
+                      {
+                          "stage":  "Fiscal / SRI",
+                          "phase":  "Módulo ElectronicDocuments v1.0 — FROZEN",
+                          "name":  "Cliente SOAP (RecepcionComprobantesOffline) conectado",
+                          "status":  "d"
+                      },
+                      {
+                          "stage":  "Fiscal / SRI",
+                          "phase":  "Módulo ElectronicDocuments v1.0 — FROZEN",
+                          "name":  "Manejo de fallos de red / timeout",
+                          "status":  "d"
+                      },
+                      {
+                          "stage":  "Fiscal / SRI",
+                          "phase":  "Módulo ElectronicDocuments v1.0 — FROZEN",
+                          "name":  "Logging estructurado",
+                          "status":  "d"
+                      },
+                      {
+                          "stage":  "Fiscal / SRI",
+                          "phase":  "Módulo ElectronicDocuments v1.0 — FROZEN",
+                          "name":  "Manejo de respuesta RECIBIDA / DEVUELTA",
+                          "status":  "d"
+                      },
+                      {
+                          "stage":  "Fiscal / SRI",
+                          "phase":  "Módulo ElectronicDocuments v1.0 — FROZEN",
+                          "name":  "Fix: XmlException no capturada durante el parseo",
+                          "status":  "d"
+                      },
+                      {
+                          "stage":  "Fiscal / SRI",
+                          "phase":  "Módulo ElectronicDocuments v1.0 — FROZEN",
+                          "name":  "Reintento de recepción",
+                          "status":  "d"
+                      },
+                      {
+                          "stage":  "Fiscal / SRI",
+                          "phase":  "Módulo ElectronicDocuments v1.0 — FROZEN",
+                          "name":  "Conexión real al flujo de negocio",
+                          "status":  "d"
+                      },
+                      {
+                          "stage":  "Fiscal / SRI",
+                          "phase":  "Módulo ElectronicDocuments v1.0 — FROZEN",
+                          "name":  "Cliente SOAP (AutorizacionComprobantesOffline) conectado",
+                          "status":  "d"
+                      },
+                      {
+                          "stage":  "Fiscal / SRI",
+                          "phase":  "Módulo ElectronicDocuments v1.0 — FROZEN",
+                          "name":  "Transiciones de estado accionadas por el resultado real",
+                          "status":  "d"
+                      },
+                      {
+                          "stage":  "Fiscal / SRI",
+                          "phase":  "Módulo ElectronicDocuments v1.0 — FROZEN",
+                          "name":  "Polling de autorización (PPR → AUT/NAT)",
+                          "status":  "d"
+                      },
+                      {
+                          "stage":  "Fiscal / SRI",
+                          "phase":  "Módulo ElectronicDocuments v1.0 — FROZEN",
+                          "name":  "Fix: XmlException no capturada durante el polling",
+                          "status":  "d"
+                      },
+                      {
+                          "stage":  "Fiscal / SRI",
+                          "phase":  "Módulo ElectronicDocuments v1.0 — FROZEN",
+                          "name":  "Máquina de estados completa del ciclo electrónico",
+                          "status":  "d"
+                      },
+                      {
+                          "stage":  "Fiscal / SRI",
+                          "phase":  "Módulo ElectronicDocuments v1.0 — FROZEN",
+                          "name":  "Estado electrónico desacoplado del estado comercial",
+                          "status":  "d"
+                      },
+                      {
+                          "stage":  "Fiscal / SRI",
+                          "phase":  "Módulo ElectronicDocuments v1.0 — FROZEN",
+                          "name":  "Reflejo de PPR/AUT/NAT (estados oficiales SRI)",
+                          "status":  "d"
+                      },
+                      {
+                          "stage":  "Fiscal / SRI",
+                          "phase":  "Módulo ElectronicDocuments v1.0 — FROZEN",
+                          "name":  "Persistencia atómica Draft→XmlGenerated→Signed",
+                          "status":  "d"
+                      },
+                      {
+                          "stage":  "Fiscal / SRI",
+                          "phase":  "Módulo ElectronicDocuments v1.0 — FROZEN",
+                          "name":  "Almacenamiento de XML (borrador y firmado)",
+                          "status":  "d"
+                      },
+                      {
+                          "stage":  "Fiscal / SRI",
+                          "phase":  "Módulo ElectronicDocuments v1.0 — FROZEN",
+                          "name":  "Migración de columnas legacy en SalesInvoice",
+                          "status":  "d"
+                      },
+                      {
+                          "stage":  "Fiscal / SRI",
+                          "phase":  "Módulo ElectronicDocuments v1.0 — FROZEN",
+                          "name":  "Persistencia del XML autorizado",
+                          "status":  "d"
+                      },
+                      {
+                          "stage":  "Fiscal / SRI",
+                          "phase":  "Módulo ElectronicDocuments v1.0 — FROZEN",
+                          "name":  "Campo RetryCount",
+                          "status":  "d"
+                      },
+                      {
+                          "stage":  "Fiscal / SRI",
+                          "phase":  "Módulo ElectronicDocuments v1.0 — FROZEN",
+                          "name":  "Job de reintento (Hangfire) — ElectronicDocumentRetryJob",
+                          "status":  "d"
+                      },
+                      {
+                          "stage":  "Fiscal / SRI",
+                          "phase":  "Módulo ElectronicDocuments v1.0 — FROZEN",
+                          "name":  "Backoff / scheduling de reintentos — ElectronicDocumentRetryPolicy",
+                          "status":  "d"
+                      },
+                      {
+                          "stage":  "Fiscal / SRI",
+                          "phase":  "Módulo ElectronicDocuments v1.0 — FROZEN",
+                          "name":  "Dead-letter operable (cola de revisión manual)",
+                          "status":  "d"
+                      },
+                      {
+                          "stage":  "Fiscal / SRI",
+                          "phase":  "Módulo ElectronicDocuments v1.0 — FROZEN",
+                          "name":  "ElectronicDocumentAudit (Entity Audit)",
+                          "status":  "d"
+                      },
+                      {
+                          "stage":  "Fiscal / SRI",
+                          "phase":  "Módulo ElectronicDocuments v1.0 — FROZEN",
+                          "name":  "Auditoría de las 6 transiciones nuevas",
+                          "status":  "d"
+                      },
+                      {
+                          "stage":  "Fiscal / SRI",
+                          "phase":  "Módulo ElectronicDocuments v1.0 — FROZEN",
+                          "name":  "Snapshot de actor (AuditActor)",
+                          "status":  "d"
+                      },
+                      {
+                          "stage":  "Fiscal / SRI",
+                          "phase":  "Módulo ElectronicDocuments v1.0 — FROZEN",
+                          "name":  "Eventos de dominio por transición",
+                          "status":  "d"
+                      },
+                      {
+                          "stage":  "Fiscal / SRI",
+                          "phase":  "Módulo ElectronicDocuments v1.0 — FROZEN",
+                          "name":  "Dispatch vía Outbox + MediatR",
+                          "status":  "d"
+                      },
+                      {
+                          "stage":  "Fiscal / SRI",
+                          "phase":  "Módulo ElectronicDocuments v1.0 — FROZEN",
+                          "name":  "Visualización de XML en el Monitor (Draft/Signed/Authorized)",
+                          "status":  "d"
+                      },
+                      {
+                          "stage":  "Fiscal / SRI",
+                          "phase":  "Módulo ElectronicDocuments v1.0 — FROZEN",
+                          "name":  "Módulo Ride desacoplado (Domain/Application/Infrastructure)",
+                          "status":  "d"
+                      },
+                      {
+                          "stage":  "Fiscal / SRI",
+                          "phase":  "Módulo ElectronicDocuments v1.0 — FROZEN",
+                          "name":  "Renderizador visual con QuestPDF (QuestPdfRideRenderer + Sections)",
+                          "status":  "d"
+                      },
+                      {
+                          "stage":  "Fiscal / SRI",
+                          "phase":  "Módulo ElectronicDocuments v1.0 — FROZEN",
+                          "name":  "Building Block Codes — QR (IQrCodeGenerator/QrCodeGenerator)",
+                          "status":  "d"
+                      },
+                      {
+                          "stage":  "Fiscal / SRI",
+                          "phase":  "Módulo ElectronicDocuments v1.0 — FROZEN",
+                          "name":  "Building Block Codes — Código de barras Code128 (IBarcodeGenerator)",
+                          "status":  "d"
+                      },
+                      {
+                          "stage":  "Fiscal / SRI",
+                          "phase":  "Módulo ElectronicDocuments v1.0 — FROZEN",
+                          "name":  "Endpoint de contenido — GET /api/v1/ride/content",
+                          "status":  "d"
+                      },
+                      {
+                          "stage":  "Fiscal / SRI",
+                          "phase":  "Módulo ElectronicDocuments v1.0 — FROZEN",
+                          "name":  "Integración frontend en Ventas (Ver / Descargar / Regenerar RIDE)",
+                          "status":  "d"
+                      },
+                      {
+                          "stage":  "Fiscal / SRI",
+                          "phase":  "Módulo ElectronicDocuments v1.0 — FROZEN",
+                          "name":  "Architecture gates (RideCodesBoundaryTests)",
+                          "status":  "d"
+                      },
+                      {
+                          "stage":  "Fiscal / SRI",
+                          "phase":  "Módulo ElectronicDocuments v1.0 — FROZEN",
+                          "name":  "Golden file tests (comparación byte a byte)",
+                          "status":  "d"
+                      },
+                      {
+                          "stage":  "Fiscal / SRI",
+                          "phase":  "Módulo ElectronicDocuments v1.0 — FROZEN",
+                          "name":  "Auditoría final de hardening y code quality (2026-07-14)",
+                          "status":  "d"
+                      },
+                      {
+                          "stage":  "Fiscal / SRI",
+                          "phase":  "Módulo ElectronicDocuments v1.0 — FROZEN",
+                          "name":  "Transición de dominio MarkCancelled",
+                          "status":  "d"
+                      },
+                      {
+                          "stage":  "Fiscal / SRI",
+                          "phase":  "Módulo ElectronicDocuments v1.0 — FROZEN",
+                          "name":  "No aplica — esquema offline sin contingencia",
+                          "status":  "f"
+                      },
+                      {
+                          "stage":  "Fiscal / SRI",
+                          "phase":  "Módulo ElectronicDocuments v1.0 — FROZEN",
+                          "name":  "Campos de versión en el agregado",
+                          "status":  "d"
+                      },
+                      {
+                          "stage":  "Fiscal / SRI",
+                          "phase":  "Módulo ElectronicDocuments v1.0 — FROZEN",
+                          "name":  "Certificados P12 encriptados at rest",
+                          "status":  "d"
+                      },
+                      {
+                          "stage":  "Fiscal / SRI",
+                          "phase":  "Módulo ElectronicDocuments v1.0 — FROZEN",
+                          "name":  "Permisos dedicados del Monitor, separados de configuración SRI",
+                          "status":  "d"
+                      },
+                      {
+                          "stage":  "Fiscal / SRI",
+                          "phase":  "Módulo ElectronicDocuments v1.0 — FROZEN",
+                          "name":  "Configuración de certificado/contraseña sin hardcode",
+                          "status":  "d"
+                      },
+                      {
+                          "stage":  "Fiscal / SRI",
+                          "phase":  "Módulo ElectronicDocuments v1.0 — FROZEN",
+                          "name":  "Dashboard de conteos por estado",
+                          "status":  "d"
+                      },
+                      {
+                          "stage":  "Fiscal / SRI",
+                          "phase":  "Módulo ElectronicDocuments v1.0 — FROZEN",
+                          "name":  "Tabla paginada con filtros",
+                          "status":  "d"
+                      },
+                      {
+                          "stage":  "Fiscal / SRI",
+                          "phase":  "Módulo ElectronicDocuments v1.0 — FROZEN",
+                          "name":  "Timeline de eventos por documento",
+                          "status":  "d"
+                      },
+                      {
+                          "stage":  "Fiscal / SRI",
+                          "phase":  "Módulo ElectronicDocuments v1.0 — FROZEN",
+                          "name":  "Logging estructurado del cliente SOAP",
+                          "status":  "d"
+                      },
+                      {
+                          "stage":  "Fiscal / SRI",
+                          "phase":  "Módulo ElectronicDocuments v1.0 — FROZEN",
+                          "name":  "Auditoría de robustez (Fase H1 + H2)",
+                          "status":  "d"
+                      },
+                      {
+                          "stage":  "Fiscal / SRI",
+                          "phase":  "Módulo ElectronicDocuments v1.0 — FROZEN",
+                          "name":  "Estabilización completa de la suite (12 tests preexistentes rotos → 0)",
+                          "status":  "d"
+                      },
+                      {
+                          "stage":  "Fiscal / SRI",
+                          "phase":  "Módulo ElectronicDocuments v1.0 — FROZEN",
+                          "name":  "Validación de cumplimiento del Anexo Técnico SRI (10 categorías)",
+                          "status":  "d"
+                      },
+                      {
+                          "stage":  "Fiscal / SRI",
+                          "phase":  "Módulo ElectronicDocuments v1.0 — FROZEN",
+                          "name":  "Pruebas reales contra el ambiente de Pruebas del SRI",
+                          "status":  "d"
+                      },
+                      {
+                          "stage":  "Fiscal / SRI",
+                          "phase":  "Módulo ElectronicDocuments v1.0 — FROZEN",
+                          "name":  "Cierre oficial — ADR-023",
+                          "status":  "d"
+                      },
+                      {
+                          "stage":  "Fiscal / SRI",
+                          "phase":  "Retenciones SRI",
+                          "name":  "Backend completo",
+                          "status":  "d"
+                      },
+                      {
+                          "stage":  "Fiscal / SRI",
+                          "phase":  "Notas de Crédito / Débito",
+                          "name":  "SupplierNote (notas proveedor)",
+                          "status":  "d"
+                      },
+                      {
+                          "stage":  "Estándares",
+                          "phase":  "Precisión Numérica",
+                          "name":  "PostgreSQL: numeric(18,2)/(18,4)/(18,6)/(5,2)",
+                          "status":  "f"
+                      },
+                      {
+                          "stage":  "Estándares",
+                          "phase":  "Precisión Numérica",
+                          "name":  "Frontend: ZhDecimalInput obligatorio",
+                          "status":  "f"
+                      },
+                      {
+                          "stage":  "Estándares",
+                          "phase":  "Precisión Numérica",
+                          "name":  "Backend: InvariantCulture + decimal puro",
+                          "status":  "f"
+                      },
+                      {
+                          "stage":  "Estándares",
+                          "phase":  "Fechas y Horas",
+                          "name":  "Frontend: formatDate/DateTime/DateTimeSeconds",
+                          "status":  "f"
+                      },
+                      {
+                          "stage":  "Estándares",
+                          "phase":  "Fechas y Horas",
+                          "name":  "Backend: DateTime.UtcNow + timestamptz",
+                          "status":  "f"
+                      },
+                      {
+                          "stage":  "Estándares",
+                          "phase":  "Validación de Formularios",
+                          "name":  "Frontend: RHF + Zod + applyServerErrors",
+                          "status":  "f"
+                      },
+                      {
+                          "stage":  "Estándares",
+                          "phase":  "Validación de Formularios",
+                          "name":  "Backend: FluentValidation → 422",
+                          "status":  "f"
+                      },
+                      {
+                          "stage":  "Estándares",
+                          "phase":  "Infraestructura de Mensajes Visuales",
+                          "name":  "API pública message.* (fachada única)",
+                          "status":  "f"
+                      },
+                      {
+                          "stage":  "Estándares",
+                          "phase":  "Infraestructura de Mensajes Visuales",
+                          "name":  "Cola FIFO con deduplicación",
+                          "status":  "f"
+                      },
+                      {
+                          "stage":  "Estándares",
+                          "phase":  "Infraestructura de Mensajes Visuales",
+                          "name":  "Catálogo MSG reutilizable",
+                          "status":  "f"
+                      },
+                      {
+                          "stage":  "Estándares",
+                          "phase":  "Infraestructura de Mensajes Visuales",
+                          "name":  "ZHToast + ZHGlobalDialogs (montaje global)",
+                          "status":  "f"
+                      },
+                      {
+                          "stage":  "Estándares",
+                          "phase":  "Infraestructura de Mensajes Visuales",
+                          "name":  "ESLint no-restricted-imports",
+                          "status":  "f"
+                      },
+                      {
+                          "stage":  "Estándares",
+                          "phase":  "Infraestructura de Mensajes Visuales",
+                          "name":  "22 tests Vitest (cola, dedup, confirm, prompt, stress)",
+                          "status":  "f"
+                      },
+                      {
+                          "stage":  "Estándares",
+                          "phase":  "Infraestructura de Mensajes Visuales",
+                          "name":  "ADR-018 + AI-RULES/VISUAL-MESSAGES.md",
+                          "status":  "f"
+                      },
+                      {
+                          "stage":  "Estándares",
+                          "phase":  "Infraestructura de Modales",
+                          "name":  "ZHModal componente base",
+                          "status":  "f"
+                      },
+                      {
+                          "stage":  "Estándares",
+                          "phase":  "Infraestructura de Modales",
+                          "name":  "Sistema de tamaños (sm/md/lg/xl/2xl/full)",
+                          "status":  "f"
+                      },
+                      {
+                          "stage":  "Estándares",
+                          "phase":  "Infraestructura de Modales",
+                          "name":  "ZHConfirmModal migrado a zh-modal CSS",
+                          "status":  "f"
+                      },
+                      {
+                          "stage":  "Estándares",
+                          "phase":  "Infraestructura de Modales",
+                          "name":  "15 modales migrados a ZHModal",
+                          "status":  "f"
+                      },
+                      {
+                          "stage":  "Estándares",
+                          "phase":  "Infraestructura de Modales",
+                          "name":  "Eliminado ZHModalHeader + prd-modal + pg-modal--*",
+                          "status":  "f"
+                      },
+                      {
+                          "stage":  "Estándares",
+                          "phase":  "Infraestructura de Modales",
+                          "name":  "AI-RULES/MODAL-STANDARD.md",
+                          "status":  "f"
+                      },
+                      {
+                          "stage":  "Estándares",
+                          "phase":  "Infraestructura de Secuencias Documentales",
+                          "name":  "CaptureNextAsync() — única API autorizada",
+                          "status":  "f"
+                      },
+                      {
+                          "stage":  "Estándares",
+                          "phase":  "Infraestructura de Secuencias Documentales",
+                          "name":  "UNIQUE(tenant_id,company_id,emission_point_id,doc_type_code)",
+                          "status":  "f"
+                      },
+                      {
+                          "stage":  "Estándares",
+                          "phase":  "Infraestructura de Secuencias Documentales",
+                          "name":  "4 gates CI-bloqueantes (SEQ-GATE-01..04)",
+                          "status":  "f"
+                      },
+                      {
+                          "stage":  "Estándares",
+                          "phase":  "Infraestructura de Secuencias Documentales",
+                          "name":  "Suite concurrente PostgreSQL real",
+                          "status":  "f"
+                      },
+                      {
+                          "stage":  "Estándares",
+                          "phase":  "Infraestructura de Secuencias Documentales",
+                          "name":  "ADR-019 documentado",
+                          "status":  "f"
+                      },
+                      {
+                          "stage":  "Estándares",
+                          "phase":  "Infraestructura de Entity Tracking",
+                          "name":  "NewChildEntityTrackingInterceptor (ISaveChangesInterceptor)",
+                          "status":  "f"
+                      },
+                      {
+                          "stage":  "Estándares",
+                          "phase":  "Infraestructura de Entity Tracking",
+                          "name":  "ErpDbContext.WasTrackedFromQuery",
+                          "status":  "f"
+                      },
+                      {
+                          "stage":  "Estándares",
+                          "phase":  "Infraestructura de Entity Tracking",
+                          "name":  "ATT-GATE-01 CI-bloqueante",
+                          "status":  "f"
+                      },
+                      {
+                          "stage":  "Estándares",
+                          "phase":  "Infraestructura de Entity Tracking",
+                          "name":  "Regla permanente: no Attach() sin query previa",
+                          "status":  "f"
+                      },
+                      {
+                          "stage":  "Estándares",
+                          "phase":  "Infraestructura de Entity Tracking",
+                          "name":  "ADR-020 documentado",
+                          "status":  "f"
+                      },
+                      {
+                          "stage":  "Estándares",
+                          "phase":  "Infraestructura Tributaria",
+                          "name":  "Fuente de verdad: ítem, nunca documento",
+                          "status":  "f"
+                      },
+                      {
+                          "stage":  "Estándares",
+                          "phase":  "Infraestructura Tributaria",
+                          "name":  "Prohibición de fallback tributario",
+                          "status":  "f"
+                      },
+                      {
+                          "stage":  "Estándares",
+                          "phase":  "Infraestructura Tributaria",
+                          "name":  "Motor único de cálculo backend",
+                          "status":  "f"
+                      },
+                      {
+                          "stage":  "Estándares",
+                          "phase":  "Infraestructura Tributaria",
+                          "name":  "Motor único de cálculo frontend",
+                          "status":  "f"
+                      },
+                      {
+                          "stage":  "Estándares",
+                          "phase":  "Infraestructura Tributaria",
+                          "name":  "Catálogos SRI únicos",
+                          "status":  "f"
+                      },
+                      {
+                          "stage":  "Estándares",
+                          "phase":  "Infraestructura Tributaria",
+                          "name":  "FluentValidation + Zod obligatoriedad",
+                          "status":  "f"
+                      },
+                      {
+                          "stage":  "Estándares",
+                          "phase":  "Estandarización UI / Alineación",
+                          "name":  "Custom checkbox CSS (zh-checkbox-label)",
+                          "status":  "d"
+                      },
+                      {
+                          "stage":  "Estándares",
+                          "phase":  "Estandarización UI / Alineación",
+                          "name":  "17 ZHField label=\\\"\\\" eliminados",
+                          "status":  "d"
+                      },
+                      {
+                          "stage":  "Estándares",
+                          "phase":  "Estandarización UI / Alineación",
+                          "name":  "CajaPage: 43 inline styles → CSS",
+                          "status":  "d"
+                      },
+                      {
+                          "stage":  "Estándares",
+                          "phase":  "Estandarización UI / Alineación",
+                          "name":  "4 CRUD pages estandarizadas",
+                          "status":  "d"
+                      },
+                      {
+                          "stage":  "Estándares",
+                          "phase":  "Estandarización UI / Alineación",
+                          "name":  "398 → 242 inline styles (-39%)",
+                          "status":  "d"
+                      },
+                      {
+                          "stage":  "Estándares",
+                          "phase":  "Design System — Unificación y Consolidación",
+                          "name":  "Escala tipográfica única (H1–H3, body, label, help, badge)",
+                          "status":  "d"
+                      },
+                      {
+                          "stage":  "Estándares",
+                          "phase":  "Design System — Unificación y Consolidación",
+                          "name":  "Padding único de tarjetas y formularios",
+                          "status":  "d"
+                      },
+                      {
+                          "stage":  "Estándares",
+                          "phase":  "Design System — Unificación y Consolidación",
+                          "name":  "~230 colores hardcodeados eliminados (16 archivos)",
+                          "status":  "d"
+                      },
+                      {
+                          "stage":  "Estándares",
+                          "phase":  "Design System — Unificación y Consolidación",
+                          "name":  "Card.tsx consolidado en ZHCard",
+                          "status":  "d"
+                      },
+                      {
+                          "stage":  "Estándares",
+                          "phase":  "Design System — Unificación y Consolidación",
+                          "name":  "Hallazgo: ZHBtn vs botón crudo",
+                          "status":  "d"
+                      },
+                      {
+                          "stage":  "Estándares",
+                          "phase":  "Design System — Unificación y Consolidación",
+                          "name":  "Hallazgo: ZHField vs .pf-field (causa raíz real)",
+                          "status":  "d"
+                      },
+                      {
+                          "stage":  "Estándares",
+                          "phase":  "Design System — Unificación y Consolidación",
+                          "name":  "Hallazgo: Badge vs badge crudo (peor caso)",
+                          "status":  "d"
+                      },
+                      {
+                          "stage":  "Estándares",
+                          "phase":  "Design System — Unificación y Consolidación",
+                          "name":  "CSS duplicado detectado",
+                          "status":  "d"
+                      },
+                      {
+                          "stage":  "Estándares",
+                          "phase":  "Design System — Unificación y Consolidación",
+                          "name":  "ZHBtn: variant opcional + 51 migraciones",
+                          "status":  "d"
+                      },
+                      {
+                          "stage":  "Estándares",
+                          "phase":  "Design System — Unificación y Consolidación",
+                          "name":  "ZHField: density=\\\"compact\\\" + eliminación de .pf-field",
+                          "status":  "d"
+                      },
+                      {
+                          "stage":  "Estándares",
+                          "phase":  "Design System — Unificación y Consolidación",
+                          "name":  "Badge: API expandida + 31 migraciones",
+                          "status":  "d"
+                      },
+                      {
+                          "stage":  "Estándares",
+                          "phase":  "Design System — Unificación y Consolidación",
+                          "name":  "erp-form.css dividido: core compartido + Compras",
+                          "status":  "d"
+                      },
+                      {
+                          "stage":  "Estándares",
+                          "phase":  "Design System — Unificación y Consolidación",
+                          "name":  "legacy-pages.css: 68 → 11 clases",
+                          "status":  "d"
+                      },
+                      {
+                          "stage":  "Estándares",
+                          "phase":  "Design System — Unificación y Consolidación",
+                          "name":  "16 tokens fantasma/duplicados eliminados + bug --space-16 corregido",
+                          "status":  "d"
+                      },
+                      {
+                          "stage":  "Estándares",
+                          "phase":  "Design System — Unificación y Consolidación",
+                          "name":  "Gobernanza: 4 reglas nuevas en check-design-system.mjs",
+                          "status":  "d"
+                      },
+                      {
+                          "stage":  "Estándares",
+                          "phase":  "Design System — Unificación y Consolidación",
+                          "name":  "Accesibilidad: foco corregido en .pg-editable-input",
+                          "status":  "d"
+                      },
+                      {
+                          "stage":  "Estándares",
+                          "phase":  "Design System — Unificación y Consolidación",
+                          "name":  "0 errores TypeScript nuevos + build limpio",
+                          "status":  "d"
+                      },
+                      {
+                          "stage":  "Estándares",
+                          "phase":  "Design System — Unificación y Consolidación",
+                          "name":  "AI-RULES/FRONTEND-RULES.md: tabla + regla de reutilización",
+                          "status":  "d"
+                      },
+                      {
+                          "stage":  "Estándares",
+                          "phase":  "Design System — Unificación y Consolidación",
+                          "name":  "AI-RULES/CORE-ARCHITECTURE.md: rol de agente + checklist de 10 preguntas",
+                          "status":  "d"
+                      },
+                      {
+                          "stage":  "Estándares",
+                          "phase":  "Testing \u0026 Quality Assurance",
+                          "name":  "ERP.Domain.Tests",
+                          "status":  "d"
+                      },
+                      {
+                          "stage":  "Estándares",
+                          "phase":  "Testing \u0026 Quality Assurance",
+                          "name":  "ERP.Application.Tests",
+                          "status":  "d"
+                      },
+                      {
+                          "stage":  "Estándares",
+                          "phase":  "Testing \u0026 Quality Assurance",
+                          "name":  "ERP.API.Tests",
+                          "status":  "d"
+                      },
+                      {
+                          "stage":  "Estándares",
+                          "phase":  "Testing \u0026 Quality Assurance",
+                          "name":  "ERP.Architecture.Tests",
+                          "status":  "d"
+                      },
+                      {
+                          "stage":  "Estándares",
+                          "phase":  "Testing \u0026 Quality Assurance",
+                          "name":  "ERP.Infrastructure.Tests",
+                          "status":  "d"
+                      },
+                      {
+                          "stage":  "Estándares",
+                          "phase":  "Testing \u0026 Quality Assurance",
+                          "name":  "Vitest 74/74 + ESLint 0 errors",
+                          "status":  "d"
+                      },
+                      {
+                          "stage":  "Futuro",
+                          "phase":  "Caja (Cash Management)",
+                          "name":  "CashSession Aggregate Root",
+                          "status":  "d"
+                      },
+                      {
+                          "stage":  "Futuro",
+                          "phase":  "Caja (Cash Management)",
+                          "name":  "CashMovement (libro de movimientos)",
+                          "status":  "d"
+                      },
+                      {
+                          "stage":  "Futuro",
+                          "phase":  "Caja (Cash Management)",
+                          "name":  "CashClosingCount (arqueo físico)",
+                          "status":  "d"
+                      },
+                      {
+                          "stage":  "Futuro",
+                          "phase":  "Caja (Cash Management)",
+                          "name":  "Enums: CashSessionStatus, CashMovementType, CashReferenceType",
+                          "status":  "d"
+                      },
+                      {
+                          "stage":  "Futuro",
+                          "phase":  "Caja (Cash Management)",
+                          "name":  "CajaPermissions (caja.view/open/close/record)",
+                          "status":  "d"
+                      },
+                      {
+                          "stage":  "Futuro",
+                          "phase":  "Caja (Cash Management)",
+                          "name":  "EF Core Configurations (3 tablas)",
+                          "status":  "d"
+                      },
+                      {
+                          "stage":  "Futuro",
+                          "phase":  "Caja (Cash Management)",
+                          "name":  "CashSessionRepository + ForOperationalScope",
+                          "status":  "d"
+                      },
+                      {
+                          "stage":  "Futuro",
+                          "phase":  "Caja (Cash Management)",
+                          "name":  "Migration AddCashManagementModule",
+                          "status":  "d"
+                      },
+                      {
+                          "stage":  "Futuro",
+                          "phase":  "Caja (Cash Management)",
+                          "name":  "DI Registration + DbSets",
+                          "status":  "d"
+                      },
+                      {
+                          "stage":  "Futuro",
+                          "phase":  "Caja (Cash Management)",
+                          "name":  "OpenCashSession (Command + Validator + Handler)",
+                          "status":  "d"
+                      },
+                      {
+                          "stage":  "Futuro",
+                          "phase":  "Caja (Cash Management)",
+                          "name":  "CloseCashSession (Command + Validator + Handler)",
+                          "status":  "d"
+                      },
+                      {
+                          "stage":  "Futuro",
+                          "phase":  "Caja (Cash Management)",
+                          "name":  "RecordCashMovement (Command + Validator + Handler)",
+                          "status":  "d"
+                      },
+                      {
+                          "stage":  "Futuro",
+                          "phase":  "Caja (Cash Management)",
+                          "name":  "Queries: GetById, GetList, GetMy",
+                          "status":  "d"
+                      },
+                      {
+                          "stage":  "Futuro",
+                          "phase":  "Caja (Cash Management)",
+                          "name":  "CashSessionController (6 endpoints)",
+                          "status":  "d"
+                      },
+                      {
+                          "stage":  "Futuro",
+                          "phase":  "Caja (Cash Management)",
+                          "name":  "Permisos por endpoint",
+                          "status":  "d"
+                      },
+                      {
+                          "stage":  "Futuro",
+                          "phase":  "Caja (Cash Management)",
+                          "name":  "cajaService.ts (API service + DTOs)",
+                          "status":  "d"
+                      },
+                      {
+                          "stage":  "Futuro",
+                          "phase":  "Caja (Cash Management)",
+                          "name":  "cajaSchema.ts (Zod + denominaciones USD)",
+                          "status":  "d"
+                      },
+                      {
+                          "stage":  "Futuro",
+                          "phase":  "Caja (Cash Management)",
+                          "name":  "useCajaPage.ts (hook principal)",
+                          "status":  "d"
+                      },
+                      {
+                          "stage":  "Futuro",
+                          "phase":  "Caja (Cash Management)",
+                          "name":  "CajaPage.tsx (4 tabs UI)",
+                          "status":  "d"
+                      },
+                      {
+                          "stage":  "Futuro",
+                          "phase":  "Caja (Cash Management)",
+                          "name":  "Ruta /cash en catalogRoutes",
+                          "status":  "d"
+                      },
+                      {
+                          "stage":  "Futuro",
+                          "phase":  "Caja (Cash Management)",
+                          "name":  "Una sola caja abierta por usuario",
+                          "status":  "d"
+                      },
+                      {
+                          "stage":  "Futuro",
+                          "phase":  "Caja (Cash Management)",
+                          "name":  "Una sola caja abierta por punto de emisión",
+                          "status":  "d"
+                      },
+                      {
+                          "stage":  "Futuro",
+                          "phase":  "Caja (Cash Management)",
+                          "name":  "No movimientos en cajas cerradas",
+                          "status":  "d"
+                      },
+                      {
+                          "stage":  "Futuro",
+                          "phase":  "Caja (Cash Management)",
+                          "name":  "No reabrir cajas cerradas",
+                          "status":  "d"
+                      },
+                      {
+                          "stage":  "Futuro",
+                          "phase":  "Caja (Cash Management)",
+                          "name":  "Relación por CashSessionId, no por fecha",
+                          "status":  "d"
+                      },
+                      {
+                          "stage":  "Futuro",
+                          "phase":  "Caja (Cash Management)",
+                          "name":  "Asociar factura a sesión automáticamente",
+                          "status":  "d"
+                      },
+                      {
+                          "stage":  "Futuro",
+                          "phase":  "Caja (Cash Management)",
+                          "name":  "Movimientos automáticos por ventas",
+                          "status":  "d"
+                      },
+                      {
+                          "stage":  "Futuro",
+                          "phase":  "Caja (Cash Management)",
+                          "name":  "CashRegister.DefaultWarehouseId / DefaultCustomerId",
+                          "status":  "d"
+                      },
+                      {
+                          "stage":  "Futuro",
+                          "phase":  "Caja (Cash Management)",
+                          "name":  "EF Core: columnas, índices y FK",
+                          "status":  "d"
+                      },
+                      {
+                          "stage":  "Futuro",
+                          "phase":  "Caja (Cash Management)",
+                          "name":  "DTOs y mapeo (CashRegisterDto, CashSessionDto, CajaMapper)",
+                          "status":  "d"
+                      },
+                      {
+                          "stage":  "Futuro",
+                          "phase":  "Caja (Cash Management)",
+                          "name":  "Create/UpdateCashRegisterCommand con validación",
+                          "status":  "d"
+                      },
+                      {
+                          "stage":  "Futuro",
+                          "phase":  "Caja (Cash Management)",
+                          "name":  "Apertura de sesión expone la configuración de la Caja",
+                          "status":  "d"
+                      },
+                      {
+                          "stage":  "Futuro",
+                          "phase":  "Caja (Cash Management)",
+                          "name":  "Administración de Cajas: selectores Bodega/Cliente por defecto",
+                          "status":  "d"
+                      },
+                      {
+                          "stage":  "Futuro",
+                          "phase":  "Caja (Cash Management)",
+                          "name":  "Ventas/POS: precarga desde myCashSession",
+                          "status":  "d"
+                      },
+                      {
+                          "stage":  "Futuro",
+                          "phase":  "Caja (Cash Management)",
+                          "name":  "Decisión: configuración operativa, no restricción obligatoria",
+                          "status":  "d"
+                      }
+                  ],
+    "pending":  [
+                    {
+                        "stage":  "Fiscal / SRI",
+                        "phase":  "Guía de Remisión",
+                        "name":  "Módulo logística — placeholder",
+                        "status":  "n"
+                    },
+                    {
+                        "stage":  "Futuro",
+                        "phase":  "Contabilidad (Accounting)",
+                        "name":  "Plan de cuentas configurable",
+                        "status":  "n"
+                    },
+                    {
+                        "stage":  "Futuro",
+                        "phase":  "Contabilidad (Accounting)",
+                        "name":  "Asientos contables (Journal Entries)",
+                        "status":  "n"
+                    },
+                    {
+                        "stage":  "Futuro",
+                        "phase":  "Contabilidad (Accounting)",
+                        "name":  "Libro mayor y reportes contables",
+                        "status":  "n"
+                    },
+                    {
+                        "stage":  "Futuro",
+                        "phase":  "Bancos",
+                        "name":  "Cobros contra CxC (Payment Collection)",
+                        "status":  "n"
+                    },
+                    {
+                        "stage":  "Futuro",
+                        "phase":  "Bancos",
+                        "name":  "Pagos a proveedores contra CxP",
+                        "status":  "n"
+                    },
+                    {
+                        "stage":  "Futuro",
+                        "phase":  "Bancos",
+                        "name":  "Conciliación bancaria",
+                        "status":  "n"
+                    },
+                    {
+                        "stage":  "Futuro",
+                        "phase":  "CRM",
+                        "name":  "Pipeline ventas, oportunidades, seguimiento",
+                        "status":  "n"
+                    },
+                    {
+                        "stage":  "Futuro",
+                        "phase":  "RRHH / Nómina",
+                        "name":  "Empleados, contratos, nómina, IESS",
+                        "status":  "n"
+                    },
+                    {
+                        "stage":  "Futuro",
+                        "phase":  "Producción / Manufactura",
+                        "name":  "BOM, órdenes, costos producción",
+                        "status":  "n"
+                    }
+                ],
+    "nextSteps":  [
+                      {
+                          "stage":  "Infraestructura",
+                          "phase":  "Frontera de Integración Platform",
+                          "name":  "Platform externa (repositorio separado)",
+                          "status":  "n"
+                      },
+                      {
+                          "stage":  "Core ERP",
+                          "phase":  "Items / Catálogo v1.0",
+                          "name":  "Índice único compuesto TenantId+SKU (EF Core)",
+                          "status":  "n"
+                      },
+                      {
+                          "stage":  "Operaciones",
+                          "phase":  "Inventario \u0026 Bodega",
+                          "name":  "Guard silencioso: línea sin bodega no genera movimiento",
+                          "status":  "n"
+                      },
+                      {
+                          "stage":  "Operaciones",
+                          "phase":  "Inventario \u0026 Bodega",
+                          "name":  "Exportación Excel/PDF/Imprimir",
+                          "status":  "n"
+                      },
+                      {
+                          "stage":  "Operaciones",
+                          "phase":  "Ventas (Sales Invoice)",
+                          "name":  "Nota de Crédito Ventas",
+                          "status":  "n"
+                      },
+                      {
+                          "stage":  "Operaciones",
+                          "phase":  "Ventas (Sales Invoice)",
+                          "name":  "Nota de Débito Ventas",
+                          "status":  "n"
+                      },
+                      {
+                          "stage":  "Operaciones",
+                          "phase":  "Ventas (Sales Invoice)",
+                          "name":  "Cotizaciones (Quotes)",
+                          "status":  "n"
+                      },
+                      {
+                          "stage":  "Operaciones",
+                          "phase":  "Ventas (Sales Invoice)",
+                          "name":  "Pedidos de Venta (Sales Orders)",
+                          "status":  "n"
+                      },
+                      {
+                          "stage":  "Operaciones",
+                          "phase":  "Cuentas por Cobrar (CxC)",
+                          "name":  "Registro de cobros (Payment Collection)",
+                          "status":  "n"
+                      },
+                      {
+                          "stage":  "Operaciones",
+                          "phase":  "Cuentas por Cobrar (CxC)",
+                          "name":  "Reporte de cartera vencida",
+                          "status":  "n"
+                      },
+                      {
+                          "stage":  "Operaciones",
+                          "phase":  "Compras (Purchases)",
+                          "name":  "Importación XML de facturas",
+                          "status":  "n"
+                      },
+                      {
+                          "stage":  "Operaciones",
+                          "phase":  "Compras (Purchases)",
+                          "name":  "Órdenes de Compra",
+                          "status":  "n"
+                      },
+                      {
+                          "stage":  "Operaciones",
+                          "phase":  "Cuentas por Pagar (CxP)",
+                          "name":  "Registro de pagos a proveedores",
+                          "status":  "n"
+                      },
+                      {
+                          "stage":  "Operaciones",
+                          "phase":  "Cuentas por Pagar (CxP)",
+                          "name":  "Reporte de obligaciones pendientes",
+                          "status":  "n"
+                      },
+                      {
+                          "stage":  "Fiscal / SRI",
+                          "phase":  "Módulo ElectronicDocuments v1.0 — FROZEN",
+                          "name":  "Nota de Crédito (codDoc 04)",
+                          "status":  "n"
+                      },
+                      {
+                          "stage":  "Fiscal / SRI",
+                          "phase":  "Módulo ElectronicDocuments v1.0 — FROZEN",
+                          "name":  "Nota de Débito (codDoc 05)",
+                          "status":  "n"
+                      },
+                      {
+                          "stage":  "Fiscal / SRI",
+                          "phase":  "Módulo ElectronicDocuments v1.0 — FROZEN",
+                          "name":  "Comprobante de Retención (codDoc 07)",
+                          "status":  "n"
+                      },
+                      {
+                          "stage":  "Fiscal / SRI",
+                          "phase":  "Módulo ElectronicDocuments v1.0 — FROZEN",
+                          "name":  "Guía de Remisión (codDoc 06)",
+                          "status":  "n"
+                      },
+                      {
+                          "stage":  "Fiscal / SRI",
+                          "phase":  "Módulo ElectronicDocuments v1.0 — FROZEN",
+                          "name":  "Liquidación de Compra de Bienes y Servicios (codDoc 03)",
+                          "status":  "n"
+                      },
+                      {
+                          "stage":  "Fiscal / SRI",
+                          "phase":  "Módulo ElectronicDocuments v1.0 — FROZEN",
+                          "name":  "Variantes de Factura (exportación, reembolso, subsidios, rubros de terceros, sustitutiva de guía de remisión)",
+                          "status":  "n"
+                      },
+                      {
+                          "stage":  "Fiscal / SRI",
+                          "phase":  "Módulo ElectronicDocuments v1.0 — FROZEN",
+                          "name":  "Generación XML para NC/ND/Retención/Guía/Liquidación",
+                          "status":  "n"
+                      },
+                      {
+                          "stage":  "Fiscal / SRI",
+                          "phase":  "Módulo ElectronicDocuments v1.0 — FROZEN",
+                          "name":  "CorrelationId end-to-end",
+                          "status":  "n"
+                      },
+                      {
+                          "stage":  "Fiscal / SRI",
+                          "phase":  "Módulo ElectronicDocuments v1.0 — FROZEN",
+                          "name":  "WS de consulta de validez de comprobantes",
+                          "status":  "n"
+                      },
+                      {
+                          "stage":  "Fiscal / SRI",
+                          "phase":  "Módulo ElectronicDocuments v1.0 — FROZEN",
+                          "name":  "WS de consulta de factura comercial negociable",
+                          "status":  "n"
+                      },
+                      {
+                          "stage":  "Fiscal / SRI",
+                          "phase":  "Módulo ElectronicDocuments v1.0 — FROZEN",
+                          "name":  "Reenvío tras NAT (no autorizado)",
+                          "status":  "n"
+                      },
+                      {
+                          "stage":  "Fiscal / SRI",
+                          "phase":  "Módulo ElectronicDocuments v1.0 — FROZEN",
+                          "name":  "Process Audit para reintentos/envíos masivos",
+                          "status":  "n"
+                      },
+                      {
+                          "stage":  "Fiscal / SRI",
+                          "phase":  "Módulo ElectronicDocuments v1.0 — FROZEN",
+                          "name":  "Descarga de archivo XML (borrador/firmado/autorizado)",
+                          "status":  "n"
+                      },
+                      {
+                          "stage":  "Fiscal / SRI",
+                          "phase":  "Módulo ElectronicDocuments v1.0 — FROZEN",
+                          "name":  "Esquinas redondeadas en cajas del RIDE",
+                          "status":  "n"
+                      },
+                      {
+                          "stage":  "Fiscal / SRI",
+                          "phase":  "Módulo ElectronicDocuments v1.0 — FROZEN",
+                          "name":  "RIDE de otros tipos de comprobante (NC/ND/Retención/Guía/Liquidación)",
+                          "status":  "n"
+                      },
+                      {
+                          "stage":  "Fiscal / SRI",
+                          "phase":  "Módulo ElectronicDocuments v1.0 — FROZEN",
+                          "name":  "Envío de comprobante al receptor",
+                          "status":  "n"
+                      },
+                      {
+                          "stage":  "Fiscal / SRI",
+                          "phase":  "Módulo ElectronicDocuments v1.0 — FROZEN",
+                          "name":  "Reenvío manual",
+                          "status":  "n"
+                      },
+                      {
+                          "stage":  "Fiscal / SRI",
+                          "phase":  "Módulo ElectronicDocuments v1.0 — FROZEN",
+                          "name":  "Plantillas de notificación",
+                          "status":  "n"
+                      },
+                      {
+                          "stage":  "Fiscal / SRI",
+                          "phase":  "Módulo ElectronicDocuments v1.0 — FROZEN",
+                          "name":  "Proceso real de anulación ante el SRI",
+                          "status":  "n"
+                      },
+                      {
+                          "stage":  "Fiscal / SRI",
+                          "phase":  "Módulo ElectronicDocuments v1.0 — FROZEN",
+                          "name":  "Acción de anulación en UI",
+                          "status":  "n"
+                      },
+                      {
+                          "stage":  "Fiscal / SRI",
+                          "phase":  "Módulo ElectronicDocuments v1.0 — FROZEN",
+                          "name":  "Rotación/expiración de certificado monitoreada",
+                          "status":  "n"
+                      },
+                      {
+                          "stage":  "Fiscal / SRI",
+                          "phase":  "Módulo ElectronicDocuments v1.0 — FROZEN",
+                          "name":  "Trazabilidad end-to-end por CorrelationId",
+                          "status":  "n"
+                      },
+                      {
+                          "stage":  "Futuro",
+                          "phase":  "Caja (Cash Management)",
+                          "name":  "Impedir facturar sin caja abierta",
+                          "status":  "n"
+                      },
+                      {
+                          "stage":  "Futuro",
+                          "phase":  "Caja (Cash Management)",
+                          "name":  "Reportes de caja",
+                          "status":  "n"
+                      },
+                      {
+                          "stage":  "Futuro",
+                          "phase":  "Caja (Cash Management)",
+                          "name":  "Arqueo por forma de pago",
+                          "status":  "n"
+                      },
+                      {
+                          "stage":  "Futuro",
+                          "phase":  "Caja (Cash Management)",
+                          "name":  "Integración Cobros CxC / Anticipos",
+                          "status":  "n"
+                      },
+                      {
+                          "stage":  "Futuro",
+                          "phase":  "Caja (Cash Management)",
+                          "name":  "Integración Bancos / Tesorería",
+                          "status":  "n"
+                      },
+                      {
+                          "stage":  "Futuro",
+                          "phase":  "Caja (Cash Management)",
+                          "name":  "Fallback jerárquico Caja → Sucursal → Empresa (bodega/cliente por defecto)",
+                          "status":  "n"
+                      }
+                  ],
+    "possibleBlockers":  [
+                             {
+                                 "stage":  "Core ERP",
+                                 "phase":  "Empresas, Sucursales, Establecimientos",
+                                 "name":  "Establecimientos SRI",
+                                 "status":  "f",
+                                 "excerpt":  "Código fiscal SRI (001-999) único por empresa. Disable bloqueado si tiene PEs activos."
+                             },
+                             {
+                                 "stage":  "Operaciones",
+                                 "phase":  "Inventario \u0026 Bodega",
+                                 "name":  "Alertas automáticas vencimiento lotes",
+                                 "status":  "p",
+                                 "excerpt":  "Fecha expiración y status Expired existen en entidad. Falta notificación automática y bloqueo de despacho de lotes vencidos."
+                             },
+                             {
+                                 "stage":  "Fiscal / SRI",
+                                 "phase":  "Módulo ElectronicDocuments v1.0 — FROZEN",
+                                 "name":  "Pipeline de 9 etapas end-to-end (Sales→Authorized)",
+                                 "status":  "d",
+                                 "excerpt":  "Provider → Data → XmlBuilder → SchemaValidator → SigningService → Storage → Recepción SRI → Autorización SRI → Repository. Código completo y verificado con tests hasta Authorized/Rejected/DeadLetter. El primer envío real contra el SRI queda bloqueado únicamente por el XSD oficial faltante (ver Validación XSD) — el código en sí no tiene brechas."
+                             },
+                             {
+                                 "stage":  "Fiscal / SRI",
+                                 "phase":  "Módulo ElectronicDocuments v1.0 — FROZEN",
+                                 "name":  "Disparo automático desde Ventas (único punto de entrada)",
+                                 "status":  "d",
+                                 "excerpt":  "AuthorizeSalesInvoiceHandler invoca IElectronicDocumentIssuer.RegisterAsync tras confirmar (commit) la autorización comercial — nunca antes. Deliberadamente NO se dispara desde el domain event SalesInvoiceAuthorizedEvent: ese evento se despacha síncronamente dentro de la transacción de Ventas, antes del commit (auditado en ErpDbContext.SaveChangesAsync), y el pipeline electrónico hace E/S externa real (SOAP al SRI) — dispararlo ahí mantendría bloqueados los locks de la factura durante toda la espera del SRI. Gate: solo EmissionType Electronic + EmissionPointId con valor; fallos del ciclo electrónico se registran como warning y nunca hacen fallar la autorización comercial ya confirmada."
+                             },
+                             {
+                                 "stage":  "Fiscal / SRI",
+                                 "phase":  "Módulo ElectronicDocuments v1.0 — FROZEN",
+                                 "name":  "Resolución de categoría tributaria (2=IVA, 3=ICE)",
+                                 "status":  "d",
+                                 "excerpt":  "Antes un punto de extensión que devolvía null deliberadamente (bloqueo controlado); ahora resuelve contra la constante de protocolo fija de la Tabla 16 de la ficha SRI."
+                             },
+                             {
+                                 "stage":  "Fiscal / SRI",
+                                 "phase":  "Módulo ElectronicDocuments v1.0 — FROZEN",
+                                 "name":  "Manejo de respuesta RECIBIDA / DEVUELTA",
+                                 "status":  "d",
+                                 "excerpt":  "RECIBIDA → ElectronicDocument.MarkReceived(); DEVUELTA (o cualquier estado no-RECIBIDA) → MarkRejected(motivo oficial del SRI). Verificado con tests de parsing sobre el SOAP real de la ficha técnica — pendiente confirmar contra el ambiente de pruebas real del SRI (XSD oficial bloqueante)."
+                             }
+                         ],
+    "blockedFieldNote":  "PROGRESS.html\u0027s real data model has no explicit \u0027blocked\u0027 status (only d/f/p/n). \u0027possibleBlockers\u0027 above is a heuristic keyword match over real task descriptions, not an authoritative field."
+}

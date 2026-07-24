@@ -1,0 +1,718 @@
+{
+  "generatedAt": "2026-07-24T22:33:03.586Z",
+  "summary": {
+    "total": 81,
+    "allowed": 81,
+    "legacyViolations": 0,
+    "allowlistViolations": 0
+  },
+  "allowedPrefixes": [
+    "/api/platform",
+    "/api/auth",
+    "/api/master",
+    "/api/sales",
+    "/api/purchases",
+    "/api/admin/iam",
+    "/api/companies",
+    "/api/dashboard",
+    "/api/electronic-invoicing",
+    "/api/electronic-documents",
+    "/api/cash",
+    "/api/cash-registers",
+    "/api/cash-sessions",
+    "/api/config",
+    "/api/expenses",
+    "/api/finance",
+    "/api/inventory",
+    "/api/item-types",
+    "/api/logistics",
+    "/api/me",
+    "/api/org-config",
+    "/api/payment-methods",
+    "/api/ride",
+    "/api/saas",
+    "/api/security",
+    "/api/settings",
+    "/api/taxrates",
+    "/api/public",
+    "/api/catalog",
+    "/api/catalogs",
+    "/api/digital-items",
+    "/api/items",
+    "/api/kits",
+    "/api/onboarding",
+    "/api/pricing",
+    "/api/setup",
+    "/api/supplier-catalog",
+    "/api/session"
+  ],
+  "forbiddenPrefixes": [
+    "/api/superadmin"
+  ],
+  "endpoints": [
+    {
+      "endpoint": "/api/v1/admin/iam/memberships",
+      "files": [
+        "frontend/src/modules/access/users/api/membershipService.ts"
+      ],
+      "legacy": false,
+      "allowed": true
+    },
+    {
+      "endpoint": "/api/v1/admin/iam/memberships/lookup",
+      "files": [
+        "frontend/src/modules/access/users/api/membershipService.ts"
+      ],
+      "legacy": false,
+      "allowed": true
+    },
+    {
+      "endpoint": "/api/v1/admin/iam/memberships/revoke",
+      "files": [
+        "frontend/src/modules/access/users/api/membershipService.ts"
+      ],
+      "legacy": false,
+      "allowed": true
+    },
+    {
+      "endpoint": "/api/v1/admin/iam/profiles",
+      "files": [
+        "frontend/src/modules/access/api/profileService.ts"
+      ],
+      "legacy": false,
+      "allowed": true
+    },
+    {
+      "endpoint": "/api/v1/admin/iam/users",
+      "files": [
+        "frontend/src/modules/access/users/api/membershipService.ts"
+      ],
+      "legacy": false,
+      "allowed": true
+    },
+    {
+      "endpoint": "/api/v1/auth/complete-password-reset",
+      "files": [
+        "frontend/src/modules/auth/api/authService.ts"
+      ],
+      "legacy": false,
+      "allowed": true
+    },
+    {
+      "endpoint": "/api/v1/auth/forgot-password",
+      "files": [
+        "frontend/src/modules/auth/pages/ForgotPasswordPage.tsx",
+        "frontend/src/modules/lib/authRefreshPolicy.ts"
+      ],
+      "legacy": false,
+      "allowed": true
+    },
+    {
+      "endpoint": "/api/v1/auth/login",
+      "files": [
+        "frontend/src/modules/auth/api/authService.ts",
+        "frontend/src/modules/lib/authRefreshPolicy.test.ts",
+        "frontend/src/modules/lib/authRefreshPolicy.ts"
+      ],
+      "legacy": false,
+      "allowed": true
+    },
+    {
+      "endpoint": "/api/v1/auth/my-companies",
+      "files": [
+        "frontend/src/modules/auth/api/authService.ts"
+      ],
+      "legacy": false,
+      "allowed": true
+    },
+    {
+      "endpoint": "/api/v1/auth/refresh",
+      "files": [
+        "frontend/src/modules/auth/api/authService.ts",
+        "frontend/src/modules/lib/authRefreshPolicy.test.ts",
+        "frontend/src/modules/lib/authRefreshPolicy.ts"
+      ],
+      "legacy": false,
+      "allowed": true
+    },
+    {
+      "endpoint": "/api/v1/auth/reset-password",
+      "files": [
+        "frontend/src/modules/auth/pages/ResetPasswordPage.tsx",
+        "frontend/src/modules/lib/authRefreshPolicy.ts"
+      ],
+      "legacy": false,
+      "allowed": true
+    },
+    {
+      "endpoint": "/api/v1/auth/switch-company",
+      "files": [
+        "frontend/src/modules/auth/api/authService.ts"
+      ],
+      "legacy": false,
+      "allowed": true
+    },
+    {
+      "endpoint": "/api/v1/cash-registers",
+      "files": [
+        "frontend/src/modules/caja/api/cajaService.ts"
+      ],
+      "legacy": false,
+      "allowed": true
+    },
+    {
+      "endpoint": "/api/v1/cash-sessions",
+      "files": [
+        "frontend/src/modules/caja/api/cajaService.ts"
+      ],
+      "legacy": false,
+      "allowed": true
+    },
+    {
+      "endpoint": "/api/v1/catalog",
+      "files": [
+        "frontend/src/modules/items/catalog/api/catalogService.ts"
+      ],
+      "legacy": false,
+      "allowed": true
+    },
+    {
+      "endpoint": "/api/v1/catalog/barcode-types",
+      "files": [
+        "frontend/src/modules/items/components/ItemForm/ItemFormTabs.tsx",
+        "frontend/src/modules/items/detail/components/VariantsSection.tsx"
+      ],
+      "legacy": false,
+      "allowed": true
+    },
+    {
+      "endpoint": "/api/v1/catalog/brands",
+      "files": [
+        "frontend/src/modules/items/components/ItemForm/ItemFormTabs.tsx"
+      ],
+      "legacy": false,
+      "allowed": true
+    },
+    {
+      "endpoint": "/api/v1/catalog/category-nodes",
+      "files": [
+        "frontend/src/modules/items/catalog/api/categoryNodeService.ts",
+        "frontend/src/modules/items/components/ItemForm/ItemFormTabs.tsx"
+      ],
+      "legacy": false,
+      "allowed": true
+    },
+    {
+      "endpoint": "/api/v1/catalog/item-margin-statuses",
+      "files": [
+        "frontend/src/modules/items/detail/components/ProfitabilitySection.tsx"
+      ],
+      "legacy": false,
+      "allowed": true
+    },
+    {
+      "endpoint": "/api/v1/catalog/person-types",
+      "files": [
+        "frontend/src/modules/masterData/api/usePersonTypes.ts"
+      ],
+      "legacy": false,
+      "allowed": true
+    },
+    {
+      "endpoint": "/api/v1/catalog/sri-ice-rates",
+      "files": [
+        "frontend/src/modules/items/components/ItemForm/ItemFormTabs.tsx"
+      ],
+      "legacy": false,
+      "allowed": true
+    },
+    {
+      "endpoint": "/api/v1/catalog/sri-id-types",
+      "files": [
+        "frontend/src/modules/masterData/api/useSriIdTypes.ts"
+      ],
+      "legacy": false,
+      "allowed": true
+    },
+    {
+      "endpoint": "/api/v1/catalog/sri-supplier-types",
+      "files": [
+        "frontend/src/modules/masterData/api/useSriSupplierTypes.ts"
+      ],
+      "legacy": false,
+      "allowed": true
+    },
+    {
+      "endpoint": "/api/v1/catalog/sri-uom",
+      "files": [
+        "frontend/src/modules/items/components/ItemForm/ItemFormTabs.tsx"
+      ],
+      "legacy": false,
+      "allowed": true
+    },
+    {
+      "endpoint": "/api/v1/catalog/sri-vat-rates",
+      "files": [
+        "frontend/src/modules/items/components/ItemForm/ItemFormTabs.tsx"
+      ],
+      "legacy": false,
+      "allowed": true
+    },
+    {
+      "endpoint": "/api/v1/companies",
+      "files": [
+        "frontend/src/modules/company-management/api/companyManagementService.ts"
+      ],
+      "legacy": false,
+      "allowed": true
+    },
+    {
+      "endpoint": "/api/v1/companies/current",
+      "files": [
+        "frontend/src/modules/company-management/api/companyManagementService.ts"
+      ],
+      "legacy": false,
+      "allowed": true
+    },
+    {
+      "endpoint": "/api/v1/companies/profile",
+      "files": [
+        "frontend/src/modules/configuracion/empresa/api/companyProfileService.ts"
+      ],
+      "legacy": false,
+      "allowed": true
+    },
+    {
+      "endpoint": "/api/v1/companies/profile/branding",
+      "files": [
+        "frontend/src/modules/configuracion/empresa/api/companyProfileService.ts"
+      ],
+      "legacy": false,
+      "allowed": true
+    },
+    {
+      "endpoint": "/api/v1/companies/profile/documents",
+      "files": [
+        "frontend/src/modules/configuracion/empresa/api/companyProfileService.ts"
+      ],
+      "legacy": false,
+      "allowed": true
+    },
+    {
+      "endpoint": "/api/v1/companies/profile/fiscal",
+      "files": [
+        "frontend/src/modules/configuracion/empresa/api/companyProfileService.ts"
+      ],
+      "legacy": false,
+      "allowed": true
+    },
+    {
+      "endpoint": "/api/v1/companies/profile/logo",
+      "files": [
+        "frontend/src/modules/configuracion/empresa/api/companyProfileService.ts"
+      ],
+      "legacy": false,
+      "allowed": true
+    },
+    {
+      "endpoint": "/api/v1/companies/profile/logo-alt",
+      "files": [
+        "frontend/src/modules/configuracion/empresa/api/companyProfileService.ts"
+      ],
+      "legacy": false,
+      "allowed": true
+    },
+    {
+      "endpoint": "/api/v1/companies/profile/logo-alt/content",
+      "files": [
+        "frontend/src/modules/configuracion/empresa/api/companyProfileService.ts"
+      ],
+      "legacy": false,
+      "allowed": true
+    },
+    {
+      "endpoint": "/api/v1/companies/profile/logo/content",
+      "files": [
+        "frontend/src/hooks/useAuthenticatedImage.ts",
+        "frontend/src/modules/configuracion/empresa/api/companyProfileService.ts"
+      ],
+      "legacy": false,
+      "allowed": true
+    },
+    {
+      "endpoint": "/api/v1/companies/profile/operation",
+      "files": [
+        "frontend/src/modules/configuracion/empresa/api/companyProfileService.ts"
+      ],
+      "legacy": false,
+      "allowed": true
+    },
+    {
+      "endpoint": "/api/v1/config/decimals",
+      "files": [
+        "frontend/src/lib/config/decimal.config.ts"
+      ],
+      "legacy": false,
+      "allowed": true
+    },
+    {
+      "endpoint": "/api/v1/dashboard/kpis",
+      "files": [
+        "frontend/src/modules/dashboard/api/dashboardService.ts"
+      ],
+      "legacy": false,
+      "allowed": true
+    },
+    {
+      "endpoint": "/api/v1/electronic-documents",
+      "files": [
+        "frontend/src/modules/electronicDocuments/monitor/api/electronicDocumentsMonitorService.ts"
+      ],
+      "legacy": false,
+      "allowed": true
+    },
+    {
+      "endpoint": "/api/v1/electronic-documents/by-source",
+      "files": [
+        "frontend/src/components/zh/electronicDocuments/electronicDocumentDiagnosticService.ts"
+      ],
+      "legacy": false,
+      "allowed": true
+    },
+    {
+      "endpoint": "/api/v1/electronic-documents/dashboard",
+      "files": [
+        "frontend/src/modules/electronicDocuments/monitor/api/electronicDocumentsMonitorService.ts"
+      ],
+      "legacy": false,
+      "allowed": true
+    },
+    {
+      "endpoint": "/api/v1/electronic-documents/register",
+      "files": [
+        "frontend/src/modules/electronicDocuments/monitor/api/electronicDocumentsMonitorService.ts"
+      ],
+      "legacy": false,
+      "allowed": true
+    },
+    {
+      "endpoint": "/api/v1/electronic-documents/xml",
+      "files": [
+        "frontend/src/modules/electronicDocuments/monitor/api/electronicDocumentsMonitorService.ts"
+      ],
+      "legacy": false,
+      "allowed": true
+    },
+    {
+      "endpoint": "/api/v1/electronic-invoicing/sri-configuration",
+      "files": [
+        "frontend/src/modules/configuracion/facturacionElectronica/api/electronicInvoicingService.ts"
+      ],
+      "legacy": false,
+      "allowed": true
+    },
+    {
+      "endpoint": "/api/v1/electronic-invoicing/sri-configuration/certificate",
+      "files": [
+        "frontend/src/modules/configuracion/facturacionElectronica/api/electronicInvoicingService.ts"
+      ],
+      "legacy": false,
+      "allowed": true
+    },
+    {
+      "endpoint": "/api/v1/electronic-invoicing/sri-configuration/certificate/inspect",
+      "files": [
+        "frontend/src/modules/configuracion/facturacionElectronica/api/electronicInvoicingService.ts"
+      ],
+      "legacy": false,
+      "allowed": true
+    },
+    {
+      "endpoint": "/api/v1/electronic-invoicing/sri-configuration/validate",
+      "files": [
+        "frontend/src/modules/configuracion/facturacionElectronica/api/electronicInvoicingService.ts"
+      ],
+      "legacy": false,
+      "allowed": true
+    },
+    {
+      "endpoint": "/api/v1/electronic-invoicing/status",
+      "files": [
+        "frontend/src/modules/configuracion/facturacionElectronica/api/electronicInvoicingService.ts"
+      ],
+      "legacy": false,
+      "allowed": true
+    },
+    {
+      "endpoint": "/api/v1/finance/credit-terms",
+      "files": [
+        "frontend/src/modules/finance/api/creditTermService.ts"
+      ],
+      "legacy": false,
+      "allowed": true
+    },
+    {
+      "endpoint": "/api/v1/inventory/kardex",
+      "files": [
+        "frontend/src/modules/inventory/stock/api/kardexService.ts"
+      ],
+      "legacy": false,
+      "allowed": true
+    },
+    {
+      "endpoint": "/api/v1/inventory/stock",
+      "files": [
+        "frontend/src/modules/inventory/stock/api/stockService.ts"
+      ],
+      "legacy": false,
+      "allowed": true
+    },
+    {
+      "endpoint": "/api/v1/inventory/warehouses",
+      "files": [
+        "frontend/src/modules/inventory/warehouses/api/warehouseService.ts"
+      ],
+      "legacy": false,
+      "allowed": true
+    },
+    {
+      "endpoint": "/api/v1/item-types",
+      "files": [
+        "frontend/src/modules/items/api/itemTypeService.ts"
+      ],
+      "legacy": false,
+      "allowed": true
+    },
+    {
+      "endpoint": "/api/v1/items",
+      "files": [
+        "frontend/src/modules/items/api/itemService.ts",
+        "frontend/src/modules/lib/authRefreshPolicy.test.ts"
+      ],
+      "legacy": false,
+      "allowed": true
+    },
+    {
+      "endpoint": "/api/v1/items/pricing-simulation-preview",
+      "files": [
+        "frontend/src/modules/items/api/itemService.ts"
+      ],
+      "legacy": false,
+      "allowed": true
+    },
+    {
+      "endpoint": "/api/v1/logistics/carriers",
+      "files": [
+        "frontend/src/modules/logistica/transportistas/api/carrierService.ts"
+      ],
+      "legacy": false,
+      "allowed": true
+    },
+    {
+      "endpoint": "/api/v1/master/business-partners",
+      "files": [
+        "frontend/src/modules/lib/api.ts",
+        "frontend/src/modules/masterData/api/businessPartnerService.ts"
+      ],
+      "legacy": false,
+      "allowed": true
+    },
+    {
+      "endpoint": "/api/v1/master/payment-terms",
+      "files": [
+        "frontend/src/modules/masterData/api/paymentTermService.ts"
+      ],
+      "legacy": false,
+      "allowed": true
+    },
+    {
+      "endpoint": "/api/v1/me/menu",
+      "files": [
+        "frontend/src/modules/auth/api/accessService.ts"
+      ],
+      "legacy": false,
+      "allowed": true
+    },
+    {
+      "endpoint": "/api/v1/org-config",
+      "files": [
+        "frontend/src/modules/configuracion/empresa/api/orgConfigService.ts"
+      ],
+      "legacy": false,
+      "allowed": true
+    },
+    {
+      "endpoint": "/api/v1/payment-methods",
+      "files": [
+        "frontend/src/modules/sales/api/paymentMethodService.ts",
+        "frontend/src/modules/sales/api/salesService.ts"
+      ],
+      "legacy": false,
+      "allowed": true
+    },
+    {
+      "endpoint": "/api/v1/pricing",
+      "files": [
+        "frontend/src/modules/pricing/api/pricingService.ts"
+      ],
+      "legacy": false,
+      "allowed": true
+    },
+    {
+      "endpoint": "/api/v1/purchases",
+      "files": [
+        "frontend/src/modules/purchases/api/purchaseService.ts"
+      ],
+      "legacy": false,
+      "allowed": true
+    },
+    {
+      "endpoint": "/api/v1/purchases/reception",
+      "files": [
+        "frontend/src/modules/purchases/api/purchaseReceptionService.ts"
+      ],
+      "legacy": false,
+      "allowed": true
+    },
+    {
+      "endpoint": "/api/v1/ride",
+      "files": [
+        "frontend/src/modules/ride/api/rideService.test.ts",
+        "frontend/src/modules/ride/api/rideService.ts"
+      ],
+      "legacy": false,
+      "allowed": true
+    },
+    {
+      "endpoint": "/api/v1/ride/content",
+      "files": [
+        "frontend/src/modules/ride/api/rideService.test.ts"
+      ],
+      "legacy": false,
+      "allowed": true
+    },
+    {
+      "endpoint": "/api/v1/ride/regenerate",
+      "files": [
+        "frontend/src/modules/ride/api/rideService.test.ts"
+      ],
+      "legacy": false,
+      "allowed": true
+    },
+    {
+      "endpoint": "/api/v1/sales",
+      "files": [
+        "frontend/src/modules/sales/api/invoiceItemSearchService.ts",
+        "frontend/src/modules/sales/api/salesDefaultsService.ts",
+        "frontend/src/modules/sales/api/salesItemPricingService.ts",
+        "frontend/src/modules/sales/api/salesService.ts"
+      ],
+      "legacy": false,
+      "allowed": true
+    },
+    {
+      "endpoint": "/api/v1/security/admin-matrix",
+      "files": [
+        "frontend/src/modules/security/api/securityService.ts"
+      ],
+      "legacy": false,
+      "allowed": true
+    },
+    {
+      "endpoint": "/api/v1/security/admin-scopes",
+      "files": [
+        "frontend/src/modules/security/api/securityService.ts"
+      ],
+      "legacy": false,
+      "allowed": true
+    },
+    {
+      "endpoint": "/api/v1/session/available-branches",
+      "files": [
+        "frontend/src/modules/session/api/sessionService.ts"
+      ],
+      "legacy": false,
+      "allowed": true
+    },
+    {
+      "endpoint": "/api/v1/session/context",
+      "files": [
+        "frontend/src/modules/session/api/sessionService.ts"
+      ],
+      "legacy": false,
+      "allowed": true
+    },
+    {
+      "endpoint": "/api/v1/session/switch-branch",
+      "files": [
+        "frontend/src/modules/session/api/sessionService.ts"
+      ],
+      "legacy": false,
+      "allowed": true
+    },
+    {
+      "endpoint": "/api/v1/settings/branches",
+      "files": [
+        "frontend/src/modules/branches/api/branchService.ts"
+      ],
+      "legacy": false,
+      "allowed": true
+    },
+    {
+      "endpoint": "/api/v1/settings/emission-points",
+      "files": [
+        "frontend/src/modules/emissionPoints/api/emissionPointsService.ts"
+      ],
+      "legacy": false,
+      "allowed": true
+    },
+    {
+      "endpoint": "/api/v1/settings/establishments",
+      "files": [
+        "frontend/src/modules/establishments/api/establishmentService.ts"
+      ],
+      "legacy": false,
+      "allowed": true
+    },
+    {
+      "endpoint": "/api/v1/settings/establishments/lookups",
+      "files": [
+        "frontend/src/modules/emissionPoints/api/emissionPointsService.ts"
+      ],
+      "legacy": false,
+      "allowed": true
+    },
+    {
+      "endpoint": "/api/v1/settings/geography",
+      "files": [
+        "frontend/src/modules/masterData/api/geographyService.ts"
+      ],
+      "legacy": false,
+      "allowed": true
+    },
+    {
+      "endpoint": "/api/v1/settings/geography/countries",
+      "files": [
+        "frontend/src/modules/branches/api/branchService.ts"
+      ],
+      "legacy": false,
+      "allowed": true
+    },
+    {
+      "endpoint": "/api/v1/setup/admin",
+      "files": [
+        "frontend/src/pages/SetupPage.tsx"
+      ],
+      "legacy": false,
+      "allowed": true
+    },
+    {
+      "endpoint": "/api/v1/setup/status",
+      "files": [
+        "frontend/src/pages/SetupPage.tsx"
+      ],
+      "legacy": false,
+      "allowed": true
+    }
+  ]
+}

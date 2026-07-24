@@ -1,0 +1,1625 @@
+﻿{
+    "generated":  "2026-07-20 19:20:36",
+    "source":  "Static scan of backend/src/ERP.Application/Modules, ERP.Domain/Modules, ERP.Infrastructure (using ERP.* directives) + git log authorship per module folder",
+    "method":  {
+                   "edgeDetection":  "Regex match on \u0027using ERP.(Application|Domain|Infrastructure).(Modules.)?\u003cName\u003e\u0027 per .cs line; edge kept only if \u003cName\u003e matches an existing modules.json id",
+                   "fanIn":  "Count of distinct modules with an edge pointing TO this module (Afferent Coupling / Ca)",
+                   "fanOut":  "Count of distinct modules this module has an edge pointing TO (Efferent Coupling / Ce)",
+                   "coupling":  "fanIn + fanOut",
+                   "instability":  "fanOut / (fanIn + fanOut) (Robert C. Martin instability metric, 0 = fully stable, 1 = fully unstable)",
+                   "cohesionApprox":  "intra-module using references / total using ERP.* references found in the module\u0027s own files (approximation only -- not method-level cohesion)",
+                   "busFactor":  "Distinct count of git commit authors (git log --format=%an) across the module\u0027s real folders",
+                   "dependencyDepth":  "Longest outgoing dependency chain reachable from this module (cycle-safe DFS, memoized)"
+               },
+    "nodes":  [
+                  {
+                      "id":  "Company",
+                      "filesScanned":  44,
+                      "fanIn":  10,
+                      "fanOut":  3,
+                      "coupling":  13,
+                      "instability":  0.231,
+                      "cohesionApprox":  0.609,
+                      "busFactor":  1,
+                      "isolated":  false,
+                      "dependsOn":  [
+                                        "Branches",
+                                        "Common",
+                                        "SriCatalogs"
+                                    ],
+                      "dependedOnBy":  [
+                                           "Access",
+                                           "Auth",
+                                           "Caja",
+                                           "Companies",
+                                           "ElectronicDocuments",
+                                           "ElectronicInvoicing",
+                                           "Integration",
+                                           "Purchases",
+                                           "Sales",
+                                           "Session"
+                                       ]
+                  },
+                  {
+                      "id":  "Dashboard",
+                      "filesScanned":  3,
+                      "fanIn":  0,
+                      "fanOut":  1,
+                      "coupling":  1,
+                      "instability":  1,
+                      "cohesionApprox":  0,
+                      "busFactor":  1,
+                      "isolated":  false,
+                      "dependsOn":  [
+                                        "Common"
+                                    ],
+                      "dependedOnBy":  [
+
+                                       ]
+                  },
+                  {
+                      "id":  "Purchases",
+                      "filesScanned":  70,
+                      "fanIn":  1,
+                      "fanOut":  7,
+                      "coupling":  8,
+                      "instability":  0.875,
+                      "cohesionApprox":  0.542,
+                      "busFactor":  1,
+                      "isolated":  false,
+                      "dependsOn":  [
+                                        "Audit",
+                                        "Common",
+                                        "Companies",
+                                        "Company",
+                                        "Inventory",
+                                        "Items",
+                                        "Pricing"
+                                    ],
+                      "dependedOnBy":  [
+                                           "Inventory"
+                                       ]
+                  },
+                  {
+                      "id":  "Companies",
+                      "filesScanned":  43,
+                      "fanIn":  3,
+                      "fanOut":  4,
+                      "coupling":  7,
+                      "instability":  0.571,
+                      "cohesionApprox":  0.315,
+                      "busFactor":  1,
+                      "isolated":  false,
+                      "dependsOn":  [
+                                        "Access",
+                                        "Common",
+                                        "Company",
+                                        "Media"
+                                    ],
+                      "dependedOnBy":  [
+                                           "Items",
+                                           "Purchases",
+                                           "Session"
+                                       ]
+                  },
+                  {
+                      "id":  "Menu",
+                      "filesScanned":  2,
+                      "fanIn":  0,
+                      "fanOut":  0,
+                      "coupling":  0,
+                      "instability":  0,
+                      "cohesionApprox":  1,
+                      "busFactor":  1,
+                      "isolated":  true,
+                      "dependsOn":  [
+
+                                    ],
+                      "dependedOnBy":  [
+
+                                       ]
+                  },
+                  {
+                      "id":  "Auth",
+                      "filesScanned":  34,
+                      "fanIn":  2,
+                      "fanOut":  5,
+                      "coupling":  7,
+                      "instability":  0.714,
+                      "cohesionApprox":  0.301,
+                      "busFactor":  1,
+                      "isolated":  false,
+                      "dependsOn":  [
+                                        "Access",
+                                        "Branches",
+                                        "Common",
+                                        "Company",
+                                        "Tenants"
+                                    ],
+                      "dependedOnBy":  [
+                                           "Access",
+                                           "Session"
+                                       ]
+                  },
+                  {
+                      "id":  "Integration",
+                      "filesScanned":  3,
+                      "fanIn":  0,
+                      "fanOut":  3,
+                      "coupling":  3,
+                      "instability":  1,
+                      "cohesionApprox":  0,
+                      "busFactor":  1,
+                      "isolated":  false,
+                      "dependsOn":  [
+                                        "Common",
+                                        "Company",
+                                        "Tenants"
+                                    ],
+                      "dependedOnBy":  [
+
+                                       ]
+                  },
+                  {
+                      "id":  "Access",
+                      "filesScanned":  101,
+                      "fanIn":  5,
+                      "fanOut":  6,
+                      "coupling":  11,
+                      "instability":  0.545,
+                      "cohesionApprox":  0.585,
+                      "busFactor":  1,
+                      "isolated":  false,
+                      "dependsOn":  [
+                                        "Auth",
+                                        "Branches",
+                                        "Common",
+                                        "Company",
+                                        "Navigation",
+                                        "Tenants"
+                                    ],
+                      "dependedOnBy":  [
+                                           "Auth",
+                                           "Companies",
+                                           "Inventory",
+                                           "Security",
+                                           "Session"
+                                       ]
+                  },
+                  {
+                      "id":  "Sales",
+                      "filesScanned":  38,
+                      "fanIn":  2,
+                      "fanOut":  8,
+                      "coupling":  10,
+                      "instability":  0.8,
+                      "cohesionApprox":  0.381,
+                      "busFactor":  1,
+                      "isolated":  false,
+                      "dependsOn":  [
+                                        "Common",
+                                        "Company",
+                                        "Configuration",
+                                        "ElectronicDocuments",
+                                        "Inventory",
+                                        "Items",
+                                        "Pricing",
+                                        "SriCatalogs"
+                                    ],
+                      "dependedOnBy":  [
+                                           "Caja",
+                                           "Inventory"
+                                       ]
+                  },
+                  {
+                      "id":  "Items",
+                      "filesScanned":  69,
+                      "fanIn":  3,
+                      "fanOut":  6,
+                      "coupling":  9,
+                      "instability":  0.667,
+                      "cohesionApprox":  0.535,
+                      "busFactor":  1,
+                      "isolated":  false,
+                      "dependsOn":  [
+                                        "Audit",
+                                        "Common",
+                                        "Companies",
+                                        "Configuration",
+                                        "Inventory",
+                                        "Pricing"
+                                    ],
+                      "dependedOnBy":  [
+                                           "Pricing",
+                                           "Purchases",
+                                           "Sales"
+                                       ]
+                  },
+                  {
+                      "id":  "Tenants",
+                      "filesScanned":  2,
+                      "fanIn":  4,
+                      "fanOut":  1,
+                      "coupling":  5,
+                      "instability":  0.2,
+                      "cohesionApprox":  0.5,
+                      "busFactor":  1,
+                      "isolated":  false,
+                      "dependsOn":  [
+                                        "Common"
+                                    ],
+                      "dependedOnBy":  [
+                                           "Access",
+                                           "Auth",
+                                           "Integration",
+                                           "Session"
+                                       ]
+                  },
+                  {
+                      "id":  "Session",
+                      "filesScanned":  8,
+                      "fanIn":  0,
+                      "fanOut":  8,
+                      "coupling":  8,
+                      "instability":  1,
+                      "cohesionApprox":  0.222,
+                      "busFactor":  1,
+                      "isolated":  false,
+                      "dependsOn":  [
+                                        "Access",
+                                        "Auth",
+                                        "Branches",
+                                        "Common",
+                                        "Companies",
+                                        "Company",
+                                        "Media",
+                                        "Tenants"
+                                    ],
+                      "dependedOnBy":  [
+
+                                       ]
+                  },
+                  {
+                      "id":  "Common",
+                      "filesScanned":  22,
+                      "fanIn":  25,
+                      "fanOut":  0,
+                      "coupling":  25,
+                      "instability":  0,
+                      "cohesionApprox":  null,
+                      "busFactor":  1,
+                      "isolated":  false,
+                      "dependsOn":  [
+
+                                    ],
+                      "dependedOnBy":  [
+                                           "Access",
+                                           "Audit",
+                                           "Auth",
+                                           "Branches",
+                                           "Caja",
+                                           "Companies",
+                                           "Company",
+                                           "Configuration",
+                                           "Dashboard",
+                                           "ElectronicDocuments",
+                                           "ElectronicInvoicing",
+                                           "Finance",
+                                           "Integration",
+                                           "Inventory",
+                                           "Items",
+                                           "Media",
+                                           "Navigation",
+                                           "OrgConfig",
+                                           "Pricing",
+                                           "Purchases",
+                                           "Ride",
+                                           "Sales",
+                                           "Security",
+                                           "Session",
+                                           "Tenants"
+                                       ]
+                  },
+                  {
+                      "id":  "Inventory",
+                      "filesScanned":  61,
+                      "fanIn":  4,
+                      "fanOut":  6,
+                      "coupling":  10,
+                      "instability":  0.6,
+                      "cohesionApprox":  0.567,
+                      "busFactor":  1,
+                      "isolated":  false,
+                      "dependsOn":  [
+                                        "Access",
+                                        "Audit",
+                                        "Branches",
+                                        "Common",
+                                        "Purchases",
+                                        "Sales"
+                                    ],
+                      "dependedOnBy":  [
+                                           "Caja",
+                                           "Items",
+                                           "Purchases",
+                                           "Sales"
+                                       ]
+                  },
+                  {
+                      "id":  "Finance",
+                      "filesScanned":  6,
+                      "fanIn":  0,
+                      "fanOut":  1,
+                      "coupling":  1,
+                      "instability":  1,
+                      "cohesionApprox":  0.75,
+                      "busFactor":  1,
+                      "isolated":  false,
+                      "dependsOn":  [
+                                        "Common"
+                                    ],
+                      "dependedOnBy":  [
+
+                                       ]
+                  },
+                  {
+                      "id":  "Branches",
+                      "filesScanned":  28,
+                      "fanIn":  7,
+                      "fanOut":  2,
+                      "coupling":  9,
+                      "instability":  0.222,
+                      "cohesionApprox":  0.474,
+                      "busFactor":  1,
+                      "isolated":  false,
+                      "dependsOn":  [
+                                        "Audit",
+                                        "Common"
+                                    ],
+                      "dependedOnBy":  [
+                                           "Access",
+                                           "Auth",
+                                           "Caja",
+                                           "Company",
+                                           "Inventory",
+                                           "OrgConfig",
+                                           "Session"
+                                       ]
+                  },
+                  {
+                      "id":  "Auxiliary",
+                      "filesScanned":  3,
+                      "fanIn":  0,
+                      "fanOut":  0,
+                      "coupling":  0,
+                      "instability":  0,
+                      "cohesionApprox":  null,
+                      "busFactor":  1,
+                      "isolated":  true,
+                      "dependsOn":  [
+
+                                    ],
+                      "dependedOnBy":  [
+
+                                       ]
+                  },
+                  {
+                      "id":  "Pricing",
+                      "filesScanned":  30,
+                      "fanIn":  3,
+                      "fanOut":  3,
+                      "coupling":  6,
+                      "instability":  0.5,
+                      "cohesionApprox":  0.554,
+                      "busFactor":  1,
+                      "isolated":  false,
+                      "dependsOn":  [
+                                        "Audit",
+                                        "Common",
+                                        "Items"
+                                    ],
+                      "dependedOnBy":  [
+                                           "Items",
+                                           "Purchases",
+                                           "Sales"
+                                       ]
+                  },
+                  {
+                      "id":  "Caja",
+                      "filesScanned":  22,
+                      "fanIn":  0,
+                      "fanOut":  5,
+                      "coupling":  5,
+                      "instability":  1,
+                      "cohesionApprox":  0.526,
+                      "busFactor":  1,
+                      "isolated":  false,
+                      "dependsOn":  [
+                                        "Branches",
+                                        "Common",
+                                        "Company",
+                                        "Inventory",
+                                        "Sales"
+                                    ],
+                      "dependedOnBy":  [
+
+                                       ]
+                  },
+                  {
+                      "id":  "ElectronicInvoicing",
+                      "filesScanned":  23,
+                      "fanIn":  0,
+                      "fanOut":  3,
+                      "coupling":  3,
+                      "instability":  1,
+                      "cohesionApprox":  0.302,
+                      "busFactor":  1,
+                      "isolated":  false,
+                      "dependsOn":  [
+                                        "Common",
+                                        "Company",
+                                        "Configuration"
+                                    ],
+                      "dependedOnBy":  [
+
+                                       ]
+                  },
+                  {
+                      "id":  "Configuration",
+                      "filesScanned":  12,
+                      "fanIn":  6,
+                      "fanOut":  1,
+                      "coupling":  7,
+                      "instability":  0.143,
+                      "cohesionApprox":  0.5,
+                      "busFactor":  1,
+                      "isolated":  false,
+                      "dependsOn":  [
+                                        "Common"
+                                    ],
+                      "dependedOnBy":  [
+                                           "ElectronicDocuments",
+                                           "ElectronicInvoicing",
+                                           "Items",
+                                           "OrgConfig",
+                                           "Ride",
+                                           "Sales"
+                                       ]
+                  },
+                  {
+                      "id":  "Audit",
+                      "filesScanned":  12,
+                      "fanIn":  7,
+                      "fanOut":  1,
+                      "coupling":  8,
+                      "instability":  0.125,
+                      "cohesionApprox":  0.727,
+                      "busFactor":  1,
+                      "isolated":  false,
+                      "dependsOn":  [
+                                        "Common"
+                                    ],
+                      "dependedOnBy":  [
+                                           "Branches",
+                                           "ElectronicDocuments",
+                                           "Inventory",
+                                           "Items",
+                                           "Pricing",
+                                           "Purchases",
+                                           "Ride"
+                                       ]
+                  },
+                  {
+                      "id":  "Ride",
+                      "filesScanned":  65,
+                      "fanIn":  0,
+                      "fanOut":  4,
+                      "coupling":  4,
+                      "instability":  1,
+                      "cohesionApprox":  0.714,
+                      "busFactor":  1,
+                      "isolated":  false,
+                      "dependsOn":  [
+                                        "Audit",
+                                        "Common",
+                                        "Configuration",
+                                        "ElectronicDocuments"
+                                    ],
+                      "dependedOnBy":  [
+
+                                       ]
+                  },
+                  {
+                      "id":  "Media",
+                      "filesScanned":  10,
+                      "fanIn":  2,
+                      "fanOut":  1,
+                      "coupling":  3,
+                      "instability":  0.333,
+                      "cohesionApprox":  0.471,
+                      "busFactor":  1,
+                      "isolated":  false,
+                      "dependsOn":  [
+                                        "Common"
+                                    ],
+                      "dependedOnBy":  [
+                                           "Companies",
+                                           "Session"
+                                       ]
+                  },
+                  {
+                      "id":  "ElectronicDocuments",
+                      "filesScanned":  83,
+                      "fanIn":  2,
+                      "fanOut":  4,
+                      "coupling":  6,
+                      "instability":  0.667,
+                      "cohesionApprox":  0.564,
+                      "busFactor":  1,
+                      "isolated":  false,
+                      "dependsOn":  [
+                                        "Audit",
+                                        "Common",
+                                        "Company",
+                                        "Configuration"
+                                    ],
+                      "dependedOnBy":  [
+                                           "Ride",
+                                           "Sales"
+                                       ]
+                  },
+                  {
+                      "id":  "Security",
+                      "filesScanned":  11,
+                      "fanIn":  0,
+                      "fanOut":  2,
+                      "coupling":  2,
+                      "instability":  1,
+                      "cohesionApprox":  0.467,
+                      "busFactor":  1,
+                      "isolated":  false,
+                      "dependsOn":  [
+                                        "Access",
+                                        "Common"
+                                    ],
+                      "dependedOnBy":  [
+
+                                       ]
+                  },
+                  {
+                      "id":  "SriCatalogs",
+                      "filesScanned":  16,
+                      "fanIn":  2,
+                      "fanOut":  0,
+                      "coupling":  2,
+                      "instability":  0,
+                      "cohesionApprox":  1,
+                      "busFactor":  1,
+                      "isolated":  false,
+                      "dependsOn":  [
+
+                                    ],
+                      "dependedOnBy":  [
+                                           "Company",
+                                           "Sales"
+                                       ]
+                  },
+                  {
+                      "id":  "OrgConfig",
+                      "filesScanned":  12,
+                      "fanIn":  0,
+                      "fanOut":  3,
+                      "coupling":  3,
+                      "instability":  1,
+                      "cohesionApprox":  0.222,
+                      "busFactor":  1,
+                      "isolated":  false,
+                      "dependsOn":  [
+                                        "Branches",
+                                        "Common",
+                                        "Configuration"
+                                    ],
+                      "dependedOnBy":  [
+
+                                       ]
+                  },
+                  {
+                      "id":  "Navigation",
+                      "filesScanned":  10,
+                      "fanIn":  1,
+                      "fanOut":  1,
+                      "coupling":  2,
+                      "instability":  0.5,
+                      "cohesionApprox":  0.714,
+                      "busFactor":  1,
+                      "isolated":  false,
+                      "dependsOn":  [
+                                        "Common"
+                                    ],
+                      "dependedOnBy":  [
+                                           "Access"
+                                       ]
+                  }
+              ],
+    "edges":  [
+                  {
+                      "from":  "Companies",
+                      "to":  "Common",
+                      "referenceCount":  36,
+                      "evidence":  [
+                                       "backend/src/ERP.Application/Modules/Companies/ICompanyAccessGuard.cs",
+                                       "backend/src/ERP.Application/Modules/Companies/UseCases/CreateCompany/CreateCompanyCommand.cs",
+                                       "backend/src/ERP.Application/Modules/Companies/UseCases/CreateCompany/CreateCompanyHandler.cs",
+                                       "backend/src/ERP.Application/Modules/Companies/UseCases/CreateCompany/CreateCompanyHandler.cs",
+                                       "backend/src/ERP.Application/Modules/Companies/UseCases/DecimalConfig/DecimalConfigUseCases.cs"
+                                   ]
+                  },
+                  {
+                      "from":  "Inventory",
+                      "to":  "Access",
+                      "referenceCount":  4,
+                      "evidence":  [
+                                       "backend/src/ERP.Application/Modules/Inventory/Stock/UseCases/GetKardexByDocument/GetKardexByDocumentQueryHandler.cs",
+                                       "backend/src/ERP.Application/Modules/Inventory/Stock/UseCases/GetKardexByProduct/GetKardexByProductQueryHandler.cs",
+                                       "backend/src/ERP.Application/Modules/Inventory/Stock/UseCases/GetKardexMovementDetail/GetKardexMovementDetailQueryHandler.cs",
+                                       "backend/src/ERP.Application/Modules/Inventory/Stock/UseCases/GetStockMovements/GetStockMovementsQueryHandler.cs"
+                                   ]
+                  },
+                  {
+                      "from":  "ElectronicInvoicing",
+                      "to":  "Common",
+                      "referenceCount":  24,
+                      "evidence":  [
+                                       "backend/src/ERP.Application/Modules/ElectronicInvoicing/Services/SriCertificateStatusResolver.cs",
+                                       "backend/src/ERP.Application/Modules/ElectronicInvoicing/Services/SriCertificateStatusResolver.cs",
+                                       "backend/src/ERP.Application/Modules/ElectronicInvoicing/UseCases/GetElectronicInvoicingStatus/GetElectronicInvoicingStatusQuery.cs",
+                                       "backend/src/ERP.Application/Modules/ElectronicInvoicing/UseCases/GetElectronicInvoicingStatus/GetElectronicInvoicingStatusQueryHandler.cs",
+                                       "backend/src/ERP.Application/Modules/ElectronicInvoicing/UseCases/GetElectronicInvoicingStatus/GetElectronicInvoicingStatusQueryHandler.cs"
+                                   ]
+                  },
+                  {
+                      "from":  "Ride",
+                      "to":  "ElectronicDocuments",
+                      "referenceCount":  3,
+                      "evidence":  [
+                                       "backend/src/ERP.Infrastructure/Ride/ElectronicDocumentsAdapter/ElectronicDocumentRideSourceXmlProvider.cs",
+                                       "backend/src/ERP.Infrastructure/Ride/ElectronicDocumentsAdapter/ElectronicDocumentRideSourceXmlProvider.cs",
+                                       "backend/src/ERP.Infrastructure/Ride/ElectronicDocumentsAdapter/ElectronicDocumentRideSourceXmlProvider.cs"
+                                   ]
+                  },
+                  {
+                      "from":  "Security",
+                      "to":  "Access",
+                      "referenceCount":  1,
+                      "evidence":  [
+                                       "backend/src/ERP.Application/Modules/Security/UseCases/GetSecurityAdminMatrix/GetSecurityAdminMatrixHandler.cs"
+                                   ]
+                  },
+                  {
+                      "from":  "Sales",
+                      "to":  "SriCatalogs",
+                      "referenceCount":  1,
+                      "evidence":  [
+                                       "backend/src/ERP.Application/Modules/Sales/Services/SalesInvoiceElectronicDocumentDataProvider.cs"
+                                   ]
+                  },
+                  {
+                      "from":  "Session",
+                      "to":  "Branches",
+                      "referenceCount":  3,
+                      "evidence":  [
+                                       "backend/src/ERP.Application/Modules/Session/UseCases/GetMyAvailableBranches/GetMyAvailableBranchesHandler.cs",
+                                       "backend/src/ERP.Application/Modules/Session/UseCases/GetSessionContext/GetSessionContextHandler.cs",
+                                       "backend/src/ERP.Application/Modules/Session/UseCases/SwitchBranch/SwitchBranchHandler.cs"
+                                   ]
+                  },
+                  {
+                      "from":  "Items",
+                      "to":  "Audit",
+                      "referenceCount":  8,
+                      "evidence":  [
+                                       "backend/src/ERP.Application/Modules/Items/EventHandlers/ItemAuditHandler.cs",
+                                       "backend/src/ERP.Application/Modules/Items/EventHandlers/ItemAuditHandler.cs",
+                                       "backend/src/ERP.Domain/Modules/Items/Entities/ItemAudit.cs",
+                                       "backend/src/ERP.Domain/Modules/Items/Events/ItemCreatedEvent.cs",
+                                       "backend/src/ERP.Domain/Modules/Items/Events/ItemDisabledEvent.cs"
+                                   ]
+                  },
+                  {
+                      "from":  "Inventory",
+                      "to":  "Purchases",
+                      "referenceCount":  1,
+                      "evidence":  [
+                                       "backend/src/ERP.Application/Modules/Inventory/Stock/UseCases/GetKardexMovementDetail/GetKardexMovementDetailQueryHandler.cs"
+                                   ]
+                  },
+                  {
+                      "from":  "OrgConfig",
+                      "to":  "Configuration",
+                      "referenceCount":  15,
+                      "evidence":  [
+                                       "backend/src/ERP.Application/Modules/OrgConfig/UseCases/GetBranchInvoiceOrgSettings/GetBranchInvoiceOrgSettingsQueryHandler.cs",
+                                       "backend/src/ERP.Application/Modules/OrgConfig/UseCases/GetBranchInvoiceOrgSettings/GetBranchInvoiceOrgSettingsQueryHandler.cs",
+                                       "backend/src/ERP.Application/Modules/OrgConfig/UseCases/GetBranchInvoiceOrgSettings/GetBranchInvoiceOrgSettingsQueryHandler.cs",
+                                       "backend/src/ERP.Application/Modules/OrgConfig/UseCases/GetCompanyInvoiceOrgSettings/GetCompanyInvoiceOrgSettingsQueryHandler.cs",
+                                       "backend/src/ERP.Application/Modules/OrgConfig/UseCases/GetCompanyInvoiceOrgSettings/GetCompanyInvoiceOrgSettingsQueryHandler.cs"
+                                   ]
+                  },
+                  {
+                      "from":  "Dashboard",
+                      "to":  "Common",
+                      "referenceCount":  2,
+                      "evidence":  [
+                                       "backend/src/ERP.Application/Modules/Dashboard/GetDashboardKpisQuery.cs",
+                                       "backend/src/ERP.Application/Modules/Dashboard/GetDashboardKpisQueryHandler.cs"
+                                   ]
+                  },
+                  {
+                      "from":  "Access",
+                      "to":  "Auth",
+                      "referenceCount":  3,
+                      "evidence":  [
+                                       "backend/src/ERP.Application/Modules/Access/UseCases/AssignTemporaryPasswordAdmin/AssignTemporaryPasswordAdminCommandValidator.cs",
+                                       "backend/src/ERP.Application/Modules/Access/UseCases/CreateSystemUser/CreateSystemUserCommandValidator.cs",
+                                       "backend/src/ERP.Domain/Modules/Access/Entities/IdentityUser.cs"
+                                   ]
+                  },
+                  {
+                      "from":  "Media",
+                      "to":  "Common",
+                      "referenceCount":  9,
+                      "evidence":  [
+                                       "backend/src/ERP.Application/Modules/Media/IImageValidationService.cs",
+                                       "backend/src/ERP.Application/Modules/Media/IImageValidationService.cs",
+                                       "backend/src/ERP.Application/Modules/Media/ImageValidationService.cs",
+                                       "backend/src/ERP.Application/Modules/Media/ImageValidationService.cs",
+                                       "backend/src/ERP.Application/Modules/Media/IMediaService.cs"
+                                   ]
+                  },
+                  {
+                      "from":  "Sales",
+                      "to":  "Inventory",
+                      "referenceCount":  4,
+                      "evidence":  [
+                                       "backend/src/ERP.Application/Modules/Sales/UseCases/AuthorizeSalesUseCases.cs",
+                                       "backend/src/ERP.Application/Modules/Sales/UseCases/AuthorizeSalesUseCases.cs",
+                                       "backend/src/ERP.Application/Modules/Sales/UseCases/CancelSalesUseCases.cs",
+                                       "backend/src/ERP.Application/Modules/Sales/UseCases/CancelSalesUseCases.cs"
+                                   ]
+                  },
+                  {
+                      "from":  "Ride",
+                      "to":  "Configuration",
+                      "referenceCount":  3,
+                      "evidence":  [
+                                       "backend/src/ERP.Infrastructure/Ride/Branding/OrgSettingsRideBrandingProvider.cs",
+                                       "backend/src/ERP.Infrastructure/Ride/Branding/OrgSettingsRideBrandingProvider.cs",
+                                       "backend/src/ERP.Infrastructure/Ride/Branding/OrgSettingsRideBrandingProvider.cs"
+                                   ]
+                  },
+                  {
+                      "from":  "ElectronicInvoicing",
+                      "to":  "Company",
+                      "referenceCount":  1,
+                      "evidence":  [
+                                       "backend/src/ERP.Application/Modules/ElectronicInvoicing/UseCases/ValidateSriConfiguration/ValidateSriConfigurationQueryHandler.cs"
+                                   ]
+                  },
+                  {
+                      "from":  "Caja",
+                      "to":  "Inventory",
+                      "referenceCount":  3,
+                      "evidence":  [
+                                       "backend/src/ERP.Application/Modules/Caja/UseCases/CreateCashRegisterUseCases.cs",
+                                       "backend/src/ERP.Application/Modules/Caja/UseCases/UpdateCashRegisterUseCases.cs",
+                                       "backend/src/ERP.Domain/Modules/Caja/Entities/CashRegister.cs"
+                                   ]
+                  },
+                  {
+                      "from":  "Purchases",
+                      "to":  "Common",
+                      "referenceCount":  38,
+                      "evidence":  [
+                                       "backend/src/ERP.Application/Modules/Purchases/PurchaseReception/UseCases/CreatePurchaseReceptionDraft/CreatePurchaseReceptionDraftCommand.cs",
+                                       "backend/src/ERP.Application/Modules/Purchases/PurchaseReception/UseCases/CreatePurchaseReceptionDraft/CreatePurchaseReceptionDraftHandler.cs",
+                                       "backend/src/ERP.Application/Modules/Purchases/PurchaseReception/UseCases/DownloadPurchaseReceptionXml/DownloadPurchaseReceptionXmlCommand.cs",
+                                       "backend/src/ERP.Application/Modules/Purchases/PurchaseReception/UseCases/DownloadPurchaseReceptionXml/DownloadPurchaseReceptionXmlHandler.cs",
+                                       "backend/src/ERP.Application/Modules/Purchases/PurchaseReception/UseCases/ImportPurchaseReception/ImportPurchaseReceptionCommand.cs"
+                                   ]
+                  },
+                  {
+                      "from":  "Access",
+                      "to":  "Common",
+                      "referenceCount":  62,
+                      "evidence":  [
+                                       "backend/src/ERP.Application/Modules/Access/UseCases/CompanyAdministratorInvariant.cs",
+                                       "backend/src/ERP.Application/Modules/Access/UseCases/CompanyUserPreferencesDefaultBranchValidation.cs",
+                                       "backend/src/ERP.Application/Modules/Access/UseCases/AssignTemporaryPasswordAdmin/AssignTemporaryPasswordAdminCommand.cs",
+                                       "backend/src/ERP.Application/Modules/Access/UseCases/AssignTemporaryPasswordAdmin/AssignTemporaryPasswordAdminHandler.cs",
+                                       "backend/src/ERP.Application/Modules/Access/UseCases/AssignTemporaryPasswordAdmin/AssignTemporaryPasswordAdminHandler.cs"
+                                   ]
+                  },
+                  {
+                      "from":  "Purchases",
+                      "to":  "Company",
+                      "referenceCount":  1,
+                      "evidence":  [
+                                       "backend/src/ERP.Application/Modules/Purchases/UseCases/IssueWithholdingUseCases.cs"
+                                   ]
+                  },
+                  {
+                      "from":  "Auth",
+                      "to":  "Common",
+                      "referenceCount":  32,
+                      "evidence":  [
+                                       "backend/src/ERP.Application/Modules/Auth/UseCases/CompanyUserPreferencesLoginResolver.cs",
+                                       "backend/src/ERP.Application/Modules/Auth/UseCases/PasswordResetTokenConsumer.cs",
+                                       "backend/src/ERP.Application/Modules/Auth/UseCases/PasswordResetTokenIssuer.cs",
+                                       "backend/src/ERP.Application/Modules/Auth/UseCases/PasswordResetTokenIssuer.cs",
+                                       "backend/src/ERP.Application/Modules/Auth/UseCases/ChangeMyPassword/ChangeMyPasswordCommand.cs"
+                                   ]
+                  },
+                  {
+                      "from":  "Caja",
+                      "to":  "Company",
+                      "referenceCount":  7,
+                      "evidence":  [
+                                       "backend/src/ERP.Application/Modules/Caja/UseCases/CashRegisterQueryUseCases.cs",
+                                       "backend/src/ERP.Application/Modules/Caja/UseCases/CashSessionQueryUseCases.cs",
+                                       "backend/src/ERP.Application/Modules/Caja/UseCases/CloseCashSessionUseCases.cs",
+                                       "backend/src/ERP.Application/Modules/Caja/UseCases/CreateCashRegisterUseCases.cs",
+                                       "backend/src/ERP.Application/Modules/Caja/UseCases/OpenCashSessionUseCases.cs"
+                                   ]
+                  },
+                  {
+                      "from":  "OrgConfig",
+                      "to":  "Branches",
+                      "referenceCount":  1,
+                      "evidence":  [
+                                       "backend/src/ERP.Application/Modules/OrgConfig/UseCases/UpsertBranchInvoiceOrgSettings/UpsertBranchInvoiceOrgSettingsCommandHandler.cs"
+                                   ]
+                  },
+                  {
+                      "from":  "Pricing",
+                      "to":  "Common",
+                      "referenceCount":  18,
+                      "evidence":  [
+                                       "backend/src/ERP.Application/Modules/Pricing/Services/IPricingResolver.cs",
+                                       "backend/src/ERP.Application/Modules/Pricing/Services/PricingResolver.cs",
+                                       "backend/src/ERP.Application/Modules/Pricing/UseCases/ItemPricingSimulation/GetItemPricingSimulationQuery.cs",
+                                       "backend/src/ERP.Application/Modules/Pricing/UseCases/PriceListItems/PriceListItemUseCases.cs",
+                                       "backend/src/ERP.Application/Modules/Pricing/UseCases/PriceLists/PriceListUseCases.cs"
+                                   ]
+                  },
+                  {
+                      "from":  "Session",
+                      "to":  "Company",
+                      "referenceCount":  1,
+                      "evidence":  [
+                                       "backend/src/ERP.Application/Modules/Session/UseCases/GetSessionContext/GetSessionContextHandler.cs"
+                                   ]
+                  },
+                  {
+                      "from":  "Session",
+                      "to":  "Access",
+                      "referenceCount":  5,
+                      "evidence":  [
+                                       "backend/src/ERP.Application/Modules/Session/UseCases/GetMyAvailableBranches/GetMyAvailableBranchesHandler.cs",
+                                       "backend/src/ERP.Application/Modules/Session/UseCases/GetMyAvailableBranches/GetMyAvailableBranchesHandler.cs",
+                                       "backend/src/ERP.Application/Modules/Session/UseCases/GetSessionContext/GetSessionContextHandler.cs",
+                                       "backend/src/ERP.Application/Modules/Session/UseCases/GetSessionContext/GetSessionContextHandler.cs",
+                                       "backend/src/ERP.Application/Modules/Session/UseCases/GetSessionContext/GetSessionContextHandler.cs"
+                                   ]
+                  },
+                  {
+                      "from":  "Companies",
+                      "to":  "Media",
+                      "referenceCount":  11,
+                      "evidence":  [
+                                       "backend/src/ERP.Application/Modules/Companies/DTOs/CompanyProfileDto.cs",
+                                       "backend/src/ERP.Application/Modules/Companies/UseCases/GetCompanyLogoAltContent/GetCompanyLogoAltContentHandler.cs",
+                                       "backend/src/ERP.Application/Modules/Companies/UseCases/GetCompanyLogoAltContent/GetCompanyLogoAltContentHandler.cs",
+                                       "backend/src/ERP.Application/Modules/Companies/UseCases/GetCompanyLogoContent/GetCompanyLogoContentHandler.cs",
+                                       "backend/src/ERP.Application/Modules/Companies/UseCases/GetCompanyLogoContent/GetCompanyLogoContentHandler.cs"
+                                   ]
+                  },
+                  {
+                      "from":  "Auth",
+                      "to":  "Tenants",
+                      "referenceCount":  6,
+                      "evidence":  [
+                                       "backend/src/ERP.Application/Modules/Auth/UseCases/Login/LoginHandler.cs",
+                                       "backend/src/ERP.Application/Modules/Auth/UseCases/PasswordReset/ForgotPasswordHandler.cs",
+                                       "backend/src/ERP.Application/Modules/Auth/UseCases/PasswordReset/ForgotPasswordHandler.cs",
+                                       "backend/src/ERP.Application/Modules/Auth/UseCases/PasswordReset/ResetPasswordWithTokenHandler.cs",
+                                       "backend/src/ERP.Application/Modules/Auth/UseCases/RefreshToken/RefreshTokenHandler.cs"
+                                   ]
+                  },
+                  {
+                      "from":  "Items",
+                      "to":  "Companies",
+                      "referenceCount":  1,
+                      "evidence":  [
+                                       "backend/src/ERP.Application/Modules/Items/UseCases/Profitability/ItemProfitabilityUseCases.cs"
+                                   ]
+                  },
+                  {
+                      "from":  "Access",
+                      "to":  "Navigation",
+                      "referenceCount":  4,
+                      "evidence":  [
+                                       "backend/src/ERP.Application/Modules/Access/UseCases/Permissions/UpsertProfilePermissionsHandler.cs",
+                                       "backend/src/ERP.Application/Modules/Access/UseCases/Profiles/ProfilesHandlers.cs",
+                                       "backend/src/ERP.Application/Modules/Access/UseCases/RevokeCompanyUserMembership/RevokeCompanyUserMembershipHandler.cs",
+                                       "backend/src/ERP.Application/Modules/Access/UseCases/UpsertCompanyUserMembership/UpsertCompanyUserMembershipHandler.cs"
+                                   ]
+                  },
+                  {
+                      "from":  "Sales",
+                      "to":  "ElectronicDocuments",
+                      "referenceCount":  7,
+                      "evidence":  [
+                                       "backend/src/ERP.Application/Modules/Sales/SalesMapper.cs",
+                                       "backend/src/ERP.Application/Modules/Sales/Services/ElectronicSalesInvoiceEmissionStrategy.cs",
+                                       "backend/src/ERP.Application/Modules/Sales/Services/ElectronicSalesInvoiceEmissionStrategy.cs",
+                                       "backend/src/ERP.Application/Modules/Sales/Services/SalesInvoiceElectronicDocumentDataProvider.cs",
+                                       "backend/src/ERP.Application/Modules/Sales/Services/SalesInvoiceElectronicDocumentDataProvider.cs"
+                                   ]
+                  },
+                  {
+                      "from":  "Inventory",
+                      "to":  "Common",
+                      "referenceCount":  45,
+                      "evidence":  [
+                                       "backend/src/ERP.Application/Modules/Inventory/Stock/UseCases/ConfirmStockTransfer/ConfirmStockTransferCommand.cs",
+                                       "backend/src/ERP.Application/Modules/Inventory/Stock/UseCases/ConfirmStockTransfer/ConfirmStockTransferCommandHandler.cs",
+                                       "backend/src/ERP.Application/Modules/Inventory/Stock/UseCases/CreateStockAdjustment/CreateStockAdjustmentCommand.cs",
+                                       "backend/src/ERP.Application/Modules/Inventory/Stock/UseCases/CreateStockAdjustment/CreateStockAdjustmentCommandHandler.cs",
+                                       "backend/src/ERP.Application/Modules/Inventory/Stock/UseCases/CreateStockTransfer/CreateStockTransferCommand.cs"
+                                   ]
+                  },
+                  {
+                      "from":  "Items",
+                      "to":  "Common",
+                      "referenceCount":  52,
+                      "evidence":  [
+                                       "backend/src/ERP.Application/Modules/Items/ItemMappingService.cs",
+                                       "backend/src/ERP.Application/Modules/Items/UseCases/ItemTypeUseCases.cs",
+                                       "backend/src/ERP.Application/Modules/Items/UseCases/ItemTypeUseCases.cs",
+                                       "backend/src/ERP.Application/Modules/Items/UseCases/AddItemVariant/AddItemVariantCommand.cs",
+                                       "backend/src/ERP.Application/Modules/Items/UseCases/AttributeDefinitions/AttributeDefinitionUseCases.cs"
+                                   ]
+                  },
+                  {
+                      "from":  "Configuration",
+                      "to":  "Common",
+                      "referenceCount":  5,
+                      "evidence":  [
+                                       "backend/src/ERP.Domain/Modules/Configuration/Entities/ConfigFeature.cs",
+                                       "backend/src/ERP.Domain/Modules/Configuration/Entities/ConfigGlobal.cs",
+                                       "backend/src/ERP.Domain/Modules/Configuration/Entities/ConfigModule.cs",
+                                       "backend/src/ERP.Domain/Modules/Configuration/Entities/OrgSetting.cs",
+                                       "backend/src/ERP.Domain/Modules/Configuration/Entities/SriSettings.cs"
+                                   ]
+                  },
+                  {
+                      "from":  "Finance",
+                      "to":  "Common",
+                      "referenceCount":  2,
+                      "evidence":  [
+                                       "backend/src/ERP.Application/Modules/Finance/UseCases/CreditTerms/CreditTermUseCases.cs",
+                                       "backend/src/ERP.Domain/Modules/Finance/Entities/CreditTerm.cs"
+                                   ]
+                  },
+                  {
+                      "from":  "ElectronicDocuments",
+                      "to":  "Configuration",
+                      "referenceCount":  3,
+                      "evidence":  [
+                                       "backend/src/ERP.Application/Modules/ElectronicDocuments/Services/ElectronicDocumentAuthorizationService.cs",
+                                       "backend/src/ERP.Application/Modules/ElectronicDocuments/Services/ElectronicDocumentReceptionService.cs",
+                                       "backend/src/ERP.Application/Modules/ElectronicDocuments/Services/ElectronicDocumentSigningService.cs"
+                                   ]
+                  },
+                  {
+                      "from":  "Purchases",
+                      "to":  "Items",
+                      "referenceCount":  3,
+                      "evidence":  [
+                                       "backend/src/ERP.Application/Modules/Purchases/UseCases/ConfirmPurchaseUseCases.cs",
+                                       "backend/src/ERP.Application/Modules/Purchases/UseCases/PurchaseDraftUseCases.cs",
+                                       "backend/src/ERP.Application/Modules/Purchases/UseCases/GetPurchaseItemContext/GetPurchaseItemContextQueryHandler.cs"
+                                   ]
+                  },
+                  {
+                      "from":  "Access",
+                      "to":  "Branches",
+                      "referenceCount":  6,
+                      "evidence":  [
+                                       "backend/src/ERP.Application/Modules/Access/UseCases/CompanyUserPreferencesDefaultBranchValidation.cs",
+                                       "backend/src/ERP.Application/Modules/Access/UseCases/CreateCompanyUserPreferences/CreateCompanyUserPreferencesHandler.cs",
+                                       "backend/src/ERP.Application/Modules/Access/UseCases/GetCompanyUserBranchesAdmin/GetCompanyUserBranchesAdminHandler.cs",
+                                       "backend/src/ERP.Application/Modules/Access/UseCases/UpdateCompanyUserBranchesAdmin/UpdateCompanyUserBranchesAdminHandler.cs",
+                                       "backend/src/ERP.Application/Modules/Access/UseCases/UpdateCompanyUserPreferences/UpdateCompanyUserPreferencesHandler.cs"
+                                   ]
+                  },
+                  {
+                      "from":  "Purchases",
+                      "to":  "Audit",
+                      "referenceCount":  14,
+                      "evidence":  [
+                                       "backend/src/ERP.Application/Modules/Purchases/EventHandlers/IssuedWithholdingAuditHandler.cs",
+                                       "backend/src/ERP.Application/Modules/Purchases/EventHandlers/IssuedWithholdingAuditHandler.cs",
+                                       "backend/src/ERP.Application/Modules/Purchases/EventHandlers/PurchaseInvoiceAuditHandler.cs",
+                                       "backend/src/ERP.Application/Modules/Purchases/EventHandlers/PurchaseInvoiceAuditHandler.cs",
+                                       "backend/src/ERP.Application/Modules/Purchases/EventHandlers/PurchaseLinePvpAuditHandler.cs"
+                                   ]
+                  },
+                  {
+                      "from":  "Purchases",
+                      "to":  "Companies",
+                      "referenceCount":  1,
+                      "evidence":  [
+                                       "backend/src/ERP.Application/Modules/Purchases/UseCases/GetPurchaseItemContext/GetPurchaseItemContextQueryHandler.cs"
+                                   ]
+                  },
+                  {
+                      "from":  "Session",
+                      "to":  "Media",
+                      "referenceCount":  2,
+                      "evidence":  [
+                                       "backend/src/ERP.Application/Modules/Session/UseCases/GetSessionContext/GetSessionContextHandler.cs",
+                                       "backend/src/ERP.Application/Modules/Session/UseCases/GetSessionContext/GetSessionContextHandler.cs"
+                                   ]
+                  },
+                  {
+                      "from":  "ElectronicDocuments",
+                      "to":  "Audit",
+                      "referenceCount":  23,
+                      "evidence":  [
+                                       "backend/src/ERP.Application/Modules/ElectronicDocuments/EventHandlers/ElectronicDocumentAuditHandler.cs",
+                                       "backend/src/ERP.Application/Modules/ElectronicDocuments/EventHandlers/ElectronicDocumentAuditHandler.cs",
+                                       "backend/src/ERP.Application/Modules/ElectronicDocuments/EventHandlers/ElectronicDocumentSriMessageAuditHandler.cs",
+                                       "backend/src/ERP.Application/Modules/ElectronicDocuments/Services/ElectronicDocumentDiagnosticAssembler.cs",
+                                       "backend/src/ERP.Application/Modules/ElectronicDocuments/Services/ElectronicDocumentTimelineBuilder.cs"
+                                   ]
+                  },
+                  {
+                      "from":  "Pricing",
+                      "to":  "Audit",
+                      "referenceCount":  16,
+                      "evidence":  [
+                                       "backend/src/ERP.Application/Modules/Pricing/EventHandlers/PriceListAuditHandler.cs",
+                                       "backend/src/ERP.Application/Modules/Pricing/EventHandlers/PriceListAuditHandler.cs",
+                                       "backend/src/ERP.Application/Modules/Pricing/EventHandlers/PriceListItemAuditHandler.cs",
+                                       "backend/src/ERP.Application/Modules/Pricing/EventHandlers/PriceListItemAuditHandler.cs",
+                                       "backend/src/ERP.Application/Modules/Pricing/EventHandlers/PricingRuleAuditHandler.cs"
+                                   ]
+                  },
+                  {
+                      "from":  "Pricing",
+                      "to":  "Items",
+                      "referenceCount":  3,
+                      "evidence":  [
+                                       "backend/src/ERP.Application/Modules/Pricing/Services/PricingResolver.cs",
+                                       "backend/src/ERP.Application/Modules/Pricing/UseCases/ItemPricingSimulation/GetItemPricingSimulationQuery.cs",
+                                       "backend/src/ERP.Application/Modules/Pricing/UseCases/PriceListItems/PriceListItemUseCases.cs"
+                                   ]
+                  },
+                  {
+                      "from":  "Sales",
+                      "to":  "Pricing",
+                      "referenceCount":  2,
+                      "evidence":  [
+                                       "backend/src/ERP.Application/Modules/Sales/UseCases/SalesDraftUseCases.cs",
+                                       "backend/src/ERP.Application/Modules/Sales/UseCases/GetSalesItemPricing/GetSalesItemPricingQueryHandler.cs"
+                                   ]
+                  },
+                  {
+                      "from":  "Companies",
+                      "to":  "Access",
+                      "referenceCount":  1,
+                      "evidence":  [
+                                       "backend/src/ERP.Application/Modules/Companies/UseCases/ListCompanies/ListCompaniesHandler.cs"
+                                   ]
+                  },
+                  {
+                      "from":  "Session",
+                      "to":  "Auth",
+                      "referenceCount":  1,
+                      "evidence":  [
+                                       "backend/src/ERP.Application/Modules/Session/UseCases/GetSessionContext/GetSessionContextHandler.cs"
+                                   ]
+                  },
+                  {
+                      "from":  "Sales",
+                      "to":  "Items",
+                      "referenceCount":  2,
+                      "evidence":  [
+                                       "backend/src/ERP.Application/Modules/Sales/UseCases/SalesDraftUseCases.cs",
+                                       "backend/src/ERP.Application/Modules/Sales/UseCases/GetSalesItemPricing/GetSalesItemPricingQueryHandler.cs"
+                                   ]
+                  },
+                  {
+                      "from":  "ElectronicDocuments",
+                      "to":  "Company",
+                      "referenceCount":  3,
+                      "evidence":  [
+                                       "backend/src/ERP.Application/Modules/ElectronicDocuments/UseCases/GetElectronicDocumentDetail/GetElectronicDocumentDetailQueryHandler.cs",
+                                       "backend/src/ERP.Application/Modules/ElectronicDocuments/UseCases/GetElectronicDocumentsList/GetElectronicDocumentsListQueryHandler.cs",
+                                       "backend/src/ERP.Application/Modules/ElectronicDocuments/UseCases/RetryElectronicDocument/RetryElectronicDocumentCommandHandler.cs"
+                                   ]
+                  },
+                  {
+                      "from":  "Access",
+                      "to":  "Company",
+                      "referenceCount":  1,
+                      "evidence":  [
+                                       "backend/src/ERP.Application/Modules/Access/UseCases/CreateCompanyUserPreferences/CreateCompanyUserPreferencesHandler.cs"
+                                   ]
+                  },
+                  {
+                      "from":  "Access",
+                      "to":  "Tenants",
+                      "referenceCount":  5,
+                      "evidence":  [
+                                       "backend/src/ERP.Application/Modules/Access/UseCases/CreateSystemUserAdmin/CreateSystemUserAdminHandler.cs",
+                                       "backend/src/ERP.Application/Modules/Access/UseCases/RevokeCompanyUserMembership/RevokeCompanyUserMembershipHandler.cs",
+                                       "backend/src/ERP.Application/Modules/Access/UseCases/RevokeCompanyUserMembershipAdmin/RevokeCompanyUserMembershipAdminHandler.cs",
+                                       "backend/src/ERP.Application/Modules/Access/UseCases/UpsertCompanyUserMembership/UpsertCompanyUserMembershipHandler.cs",
+                                       "backend/src/ERP.Application/Modules/Access/UseCases/UpsertCompanyUserMembershipAdmin/UpsertCompanyUserMembershipAdminHandler.cs"
+                                   ]
+                  },
+                  {
+                      "from":  "Inventory",
+                      "to":  "Audit",
+                      "referenceCount":  8,
+                      "evidence":  [
+                                       "backend/src/ERP.Application/Modules/Inventory/Warehouses/UseCases/CreateWarehouse/CreateWarehouseCommandHandler.cs",
+                                       "backend/src/ERP.Application/Modules/Inventory/Warehouses/UseCases/CreateWarehouse/CreateWarehouseCommandHandler.cs",
+                                       "backend/src/ERP.Application/Modules/Inventory/Warehouses/UseCases/DisableWarehouse/DisableWarehouseCommandHandler.cs",
+                                       "backend/src/ERP.Application/Modules/Inventory/Warehouses/UseCases/DisableWarehouse/DisableWarehouseCommandHandler.cs",
+                                       "backend/src/ERP.Application/Modules/Inventory/Warehouses/UseCases/EnableWarehouse/EnableWarehouseCommandHandler.cs"
+                                   ]
+                  },
+                  {
+                      "from":  "Sales",
+                      "to":  "Common",
+                      "referenceCount":  26,
+                      "evidence":  [
+                                       "backend/src/ERP.Application/Modules/Sales/Services/SalesInvoiceElectronicDocumentDataProvider.cs",
+                                       "backend/src/ERP.Application/Modules/Sales/Services/SalesInvoiceElectronicDocumentDataProvider.cs",
+                                       "backend/src/ERP.Application/Modules/Sales/UseCases/AuthorizeSalesUseCases.cs",
+                                       "backend/src/ERP.Application/Modules/Sales/UseCases/AuthorizeSalesUseCases.cs",
+                                       "backend/src/ERP.Application/Modules/Sales/UseCases/CancelSalesUseCases.cs"
+                                   ]
+                  },
+                  {
+                      "from":  "Company",
+                      "to":  "Common",
+                      "referenceCount":  31,
+                      "evidence":  [
+                                       "backend/src/ERP.Application/Modules/Company/UseCases/CreateEmissionPoint/CreateEmissionPointCommand.cs",
+                                       "backend/src/ERP.Application/Modules/Company/UseCases/CreateEmissionPoint/CreateEmissionPointCommandHandler.cs",
+                                       "backend/src/ERP.Application/Modules/Company/UseCases/CreateEstablishment/CreateEstablishmentCommand.cs",
+                                       "backend/src/ERP.Application/Modules/Company/UseCases/CreateEstablishment/CreateEstablishmentCommandHandler.cs",
+                                       "backend/src/ERP.Application/Modules/Company/UseCases/DisableEmissionPoint/DisableEmissionPointCommand.cs"
+                                   ]
+                  },
+                  {
+                      "from":  "Branches",
+                      "to":  "Common",
+                      "referenceCount":  22,
+                      "evidence":  [
+                                       "backend/src/ERP.Application/Modules/Branches/IBranchAccessGuard.cs",
+                                       "backend/src/ERP.Application/Modules/Branches/IInterBranchAccessGuard.cs",
+                                       "backend/src/ERP.Application/Modules/Branches/UseCases/CreateBranch/CreateBranchCommand.cs",
+                                       "backend/src/ERP.Application/Modules/Branches/UseCases/CreateBranch/CreateBranchCommandHandler.cs",
+                                       "backend/src/ERP.Application/Modules/Branches/UseCases/DisableBranch/DisableBranchCommand.cs"
+                                   ]
+                  },
+                  {
+                      "from":  "Inventory",
+                      "to":  "Branches",
+                      "referenceCount":  2,
+                      "evidence":  [
+                                       "backend/src/ERP.Application/Modules/Inventory/Stock/UseCases/ConfirmStockTransfer/ConfirmStockTransferCommandHandler.cs",
+                                       "backend/src/ERP.Application/Modules/Inventory/Stock/UseCases/CreateStockTransfer/CreateStockTransferCommandHandler.cs"
+                                   ]
+                  },
+                  {
+                      "from":  "Integration",
+                      "to":  "Company",
+                      "referenceCount":  2,
+                      "evidence":  [
+                                       "backend/src/ERP.Application/Modules/Integration/IntegrationContracts.cs",
+                                       "backend/src/ERP.Application/Modules/Integration/UseCases/CompanyIntegrationUseCases.cs"
+                                   ]
+                  },
+                  {
+                      "from":  "Session",
+                      "to":  "Tenants",
+                      "referenceCount":  1,
+                      "evidence":  [
+                                       "backend/src/ERP.Application/Modules/Session/UseCases/GetSessionContext/GetSessionContextHandler.cs"
+                                   ]
+                  },
+                  {
+                      "from":  "Session",
+                      "to":  "Companies",
+                      "referenceCount":  2,
+                      "evidence":  [
+                                       "backend/src/ERP.Application/Modules/Session/DTOs/SessionContextDto.cs",
+                                       "backend/src/ERP.Application/Modules/Session/UseCases/GetSessionContext/GetSessionContextHandler.cs"
+                                   ]
+                  },
+                  {
+                      "from":  "Ride",
+                      "to":  "Audit",
+                      "referenceCount":  3,
+                      "evidence":  [
+                                       "backend/src/ERP.Domain/Modules/Ride/Events/RidePdfGeneratedEvent.cs",
+                                       "backend/src/ERP.Domain/Modules/Ride/Events/RidePdfGenerationFailedEvent.cs",
+                                       "backend/src/ERP.Domain/Modules/Ride/Events/RidePdfRegeneratedEvent.cs"
+                                   ]
+                  },
+                  {
+                      "from":  "Session",
+                      "to":  "Common",
+                      "referenceCount":  6,
+                      "evidence":  [
+                                       "backend/src/ERP.Application/Modules/Session/UseCases/GetMyAvailableBranches/GetMyAvailableBranchesHandler.cs",
+                                       "backend/src/ERP.Application/Modules/Session/UseCases/GetMyAvailableBranches/GetMyAvailableBranchesQuery.cs",
+                                       "backend/src/ERP.Application/Modules/Session/UseCases/GetSessionContext/GetSessionContextHandler.cs",
+                                       "backend/src/ERP.Application/Modules/Session/UseCases/GetSessionContext/GetSessionContextQuery.cs",
+                                       "backend/src/ERP.Application/Modules/Session/UseCases/SwitchBranch/SwitchBranchCommand.cs"
+                                   ]
+                  },
+                  {
+                      "from":  "Security",
+                      "to":  "Common",
+                      "referenceCount":  7,
+                      "evidence":  [
+                                       "backend/src/ERP.Application/Modules/Security/UseCases/GetSecurityAdminMatrix/GetSecurityAdminMatrixHandler.cs",
+                                       "backend/src/ERP.Application/Modules/Security/UseCases/GetSecurityAdminMatrix/GetSecurityAdminMatrixQuery.cs",
+                                       "backend/src/ERP.Application/Modules/Security/UseCases/UpsertSecurityAdminScopes/UpsertSecurityAdminScopesCommand.cs",
+                                       "backend/src/ERP.Application/Modules/Security/UseCases/UpsertSecurityAdminScopes/UpsertSecurityAdminScopesHandler.cs",
+                                       "backend/src/ERP.Domain/Modules/Security/Entities/SecurityAdminScopeAssignment.cs"
+                                   ]
+                  },
+                  {
+                      "from":  "Audit",
+                      "to":  "Common",
+                      "referenceCount":  6,
+                      "evidence":  [
+                                       "backend/src/ERP.Application/Modules/Audit/UseCases/GetEntityActivity/GetEntityActivityHandler.cs",
+                                       "backend/src/ERP.Application/Modules/Audit/UseCases/GetEntityActivity/GetEntityActivityQuery.cs",
+                                       "backend/src/ERP.Application/Modules/Audit/UseCases/GetMyActivity/GetMyActivityHandler.cs",
+                                       "backend/src/ERP.Application/Modules/Audit/UseCases/GetMyActivity/GetMyActivityQuery.cs",
+                                       "backend/src/ERP.Domain/Modules/Audit/Entities/UserActivity.cs"
+                                   ]
+                  },
+                  {
+                      "from":  "Auth",
+                      "to":  "Company",
+                      "referenceCount":  6,
+                      "evidence":  [
+                                       "backend/src/ERP.Application/Modules/Auth/DTOs/AuthDto.cs",
+                                       "backend/src/ERP.Application/Modules/Auth/UseCases/ListMyCompanies/ListMyCompaniesHandler.cs",
+                                       "backend/src/ERP.Application/Modules/Auth/UseCases/Login/LoginHandler.cs",
+                                       "backend/src/ERP.Application/Modules/Auth/UseCases/PasswordReset/ForgotPasswordHandler.cs",
+                                       "backend/src/ERP.Application/Modules/Auth/UseCases/RefreshToken/RefreshTokenHandler.cs"
+                                   ]
+                  },
+                  {
+                      "from":  "Caja",
+                      "to":  "Sales",
+                      "referenceCount":  1,
+                      "evidence":  [
+                                       "backend/src/ERP.Application/Modules/Caja/UseCases/SalesInvoiceAuthorizedHandler.cs"
+                                   ]
+                  },
+                  {
+                      "from":  "Navigation",
+                      "to":  "Common",
+                      "referenceCount":  2,
+                      "evidence":  [
+                                       "backend/src/ERP.Application/Modules/Navigation/UseCases/GetSessionMenu/GetSessionMenuHandler.cs",
+                                       "backend/src/ERP.Application/Modules/Navigation/UseCases/GetSessionMenu/GetSessionMenuQuery.cs"
+                                   ]
+                  },
+                  {
+                      "from":  "Purchases",
+                      "to":  "Pricing",
+                      "referenceCount":  2,
+                      "evidence":  [
+                                       "backend/src/ERP.Application/Modules/Purchases/UseCases/PurchaseMarginUseCases.cs",
+                                       "backend/src/ERP.Application/Modules/Purchases/UseCases/GetPurchaseItemContext/GetPurchaseItemContextQueryHandler.cs"
+                                   ]
+                  },
+                  {
+                      "from":  "Integration",
+                      "to":  "Common",
+                      "referenceCount":  2,
+                      "evidence":  [
+                                       "backend/src/ERP.Application/Modules/Integration/UseCases/CompanyIntegrationUseCases.cs",
+                                       "backend/src/ERP.Application/Modules/Integration/UseCases/TenantIntegrationUseCases.cs"
+                                   ]
+                  },
+                  {
+                      "from":  "Tenants",
+                      "to":  "Common",
+                      "referenceCount":  1,
+                      "evidence":  [
+                                       "backend/src/ERP.Domain/Modules/Tenants/Entities/Tenant.cs"
+                                   ]
+                  },
+                  {
+                      "from":  "ElectronicDocuments",
+                      "to":  "Common",
+                      "referenceCount":  56,
+                      "evidence":  [
+                                       "backend/src/ERP.Application/Modules/ElectronicDocuments/Services/ElectronicDocumentAuthorizationService.cs",
+                                       "backend/src/ERP.Application/Modules/ElectronicDocuments/Services/ElectronicDocumentAuthorizationService.cs",
+                                       "backend/src/ERP.Application/Modules/ElectronicDocuments/Services/ElectronicDocumentIssuer.cs",
+                                       "backend/src/ERP.Application/Modules/ElectronicDocuments/Services/ElectronicDocumentIssuer.cs",
+                                       "backend/src/ERP.Application/Modules/ElectronicDocuments/Services/ElectronicDocumentIssuer.cs"
+                                   ]
+                  },
+                  {
+                      "from":  "Items",
+                      "to":  "Configuration",
+                      "referenceCount":  3,
+                      "evidence":  [
+                                       "backend/src/ERP.Application/Modules/Items/UseCases/CategoryNodes/CategoryNodeUseCases.cs",
+                                       "backend/src/ERP.Application/Modules/Items/UseCases/CategoryNodes/CategoryNodeUseCases.cs",
+                                       "backend/src/ERP.Application/Modules/Items/UseCases/CategoryNodes/CategoryNodeUseCases.cs"
+                                   ]
+                  },
+                  {
+                      "from":  "Companies",
+                      "to":  "Company",
+                      "referenceCount":  15,
+                      "evidence":  [
+                                       "backend/src/ERP.Application/Modules/Companies/DTOs/CompanyProfileDto.cs",
+                                       "backend/src/ERP.Application/Modules/Companies/UseCases/GetCompanyById/GetCompanyByIdHandler.cs",
+                                       "backend/src/ERP.Application/Modules/Companies/UseCases/GetCompanyProfile/GetCompanyProfileHandler.cs",
+                                       "backend/src/ERP.Application/Modules/Companies/UseCases/GetCurrentCompany/GetCurrentCompanyHandler.cs",
+                                       "backend/src/ERP.Application/Modules/Companies/UseCases/ListCompanies/ListCompaniesHandler.cs"
+                                   ]
+                  },
+                  {
+                      "from":  "Sales",
+                      "to":  "Configuration",
+                      "referenceCount":  5,
+                      "evidence":  [
+                                       "backend/src/ERP.Application/Modules/Sales/Services/SalesInvoiceElectronicDocumentDataProvider.cs",
+                                       "backend/src/ERP.Application/Modules/Sales/UseCases/GetSalesInvoiceDefaults/GetSalesInvoiceDefaultsQueryHandler.cs",
+                                       "backend/src/ERP.Application/Modules/Sales/UseCases/GetSalesInvoiceDefaults/GetSalesInvoiceDefaultsQueryHandler.cs",
+                                       "backend/src/ERP.Application/Modules/Sales/UseCases/GetSalesInvoiceDefaults/GetSalesInvoiceDefaultsQueryHandler.cs",
+                                       "backend/src/ERP.Application/Modules/Sales/UseCases/GetSalesInvoiceDefaults/GetSalesInvoiceDefaultsQueryHandler.cs"
+                                   ]
+                  },
+                  {
+                      "from":  "Company",
+                      "to":  "Branches",
+                      "referenceCount":  2,
+                      "evidence":  [
+                                       "backend/src/ERP.Application/Modules/Company/UseCases/CreateEstablishment/CreateEstablishmentCommandHandler.cs",
+                                       "backend/src/ERP.Domain/Modules/Company/Entities/Establishment.cs"
+                                   ]
+                  },
+                  {
+                      "from":  "Caja",
+                      "to":  "Branches",
+                      "referenceCount":  2,
+                      "evidence":  [
+                                       "backend/src/ERP.Application/Modules/Caja/UseCases/CreateCashRegisterUseCases.cs",
+                                       "backend/src/ERP.Domain/Modules/Caja/Entities/CashRegister.cs"
+                                   ]
+                  },
+                  {
+                      "from":  "Auth",
+                      "to":  "Access",
+                      "referenceCount":  19,
+                      "evidence":  [
+                                       "backend/src/ERP.Application/Modules/Auth/UseCases/CompanyUserPreferencesLoginResolver.cs",
+                                       "backend/src/ERP.Application/Modules/Auth/UseCases/CompanyUserPreferencesLoginResolver.cs",
+                                       "backend/src/ERP.Application/Modules/Auth/UseCases/CompanyUserPreferencesLoginResolver.cs",
+                                       "backend/src/ERP.Application/Modules/Auth/UseCases/CompanyUserPreferencesLoginResolver.cs",
+                                       "backend/src/ERP.Application/Modules/Auth/UseCases/PasswordResetTokenConsumer.cs"
+                                   ]
+                  },
+                  {
+                      "from":  "Branches",
+                      "to":  "Audit",
+                      "referenceCount":  8,
+                      "evidence":  [
+                                       "backend/src/ERP.Application/Modules/Branches/UseCases/CreateBranch/CreateBranchCommandHandler.cs",
+                                       "backend/src/ERP.Application/Modules/Branches/UseCases/CreateBranch/CreateBranchCommandHandler.cs",
+                                       "backend/src/ERP.Application/Modules/Branches/UseCases/DisableBranch/DisableBranchCommandHandler.cs",
+                                       "backend/src/ERP.Application/Modules/Branches/UseCases/DisableBranch/DisableBranchCommandHandler.cs",
+                                       "backend/src/ERP.Application/Modules/Branches/UseCases/EnableBranch/EnableBranchCommandHandler.cs"
+                                   ]
+                  },
+                  {
+                      "from":  "Caja",
+                      "to":  "Common",
+                      "referenceCount":  14,
+                      "evidence":  [
+                                       "backend/src/ERP.Application/Modules/Caja/UseCases/CashRegisterQueryUseCases.cs",
+                                       "backend/src/ERP.Application/Modules/Caja/UseCases/CashSessionQueryUseCases.cs",
+                                       "backend/src/ERP.Application/Modules/Caja/UseCases/CloseCashSessionUseCases.cs",
+                                       "backend/src/ERP.Application/Modules/Caja/UseCases/CreateCashRegisterUseCases.cs",
+                                       "backend/src/ERP.Application/Modules/Caja/UseCases/DisableCashRegisterUseCases.cs"
+                                   ]
+                  },
+                  {
+                      "from":  "Sales",
+                      "to":  "Company",
+                      "referenceCount":  13,
+                      "evidence":  [
+                                       "backend/src/ERP.Application/Modules/Sales/Services/ElectronicSalesInvoiceEmissionStrategy.cs",
+                                       "backend/src/ERP.Application/Modules/Sales/Services/ISalesInvoiceEmissionStrategy.cs",
+                                       "backend/src/ERP.Application/Modules/Sales/Services/ISalesInvoiceEmissionStrategyResolver.cs",
+                                       "backend/src/ERP.Application/Modules/Sales/Services/PhysicalSalesInvoiceEmissionStrategy.cs",
+                                       "backend/src/ERP.Application/Modules/Sales/Services/SalesInvoiceElectronicDocumentDataProvider.cs"
+                                   ]
+                  },
+                  {
+                      "from":  "Ride",
+                      "to":  "Common",
+                      "referenceCount":  23,
+                      "evidence":  [
+                                       "backend/src/ERP.Application/Modules/Ride/Branding/IRideBrandingProvider.cs",
+                                       "backend/src/ERP.Application/Modules/Ride/Parsers/InvoiceRideXmlParser.cs",
+                                       "backend/src/ERP.Application/Modules/Ride/Parsers/IRideXmlParser.cs",
+                                       "backend/src/ERP.Application/Modules/Ride/Services/IRideCacheStrategy.cs",
+                                       "backend/src/ERP.Application/Modules/Ride/Services/IRideDocumentService.cs"
+                                   ]
+                  },
+                  {
+                      "from":  "Integration",
+                      "to":  "Tenants",
+                      "referenceCount":  2,
+                      "evidence":  [
+                                       "backend/src/ERP.Application/Modules/Integration/UseCases/TenantIntegrationUseCases.cs",
+                                       "backend/src/ERP.Application/Modules/Integration/UseCases/TenantIntegrationUseCases.cs"
+                                   ]
+                  },
+                  {
+                      "from":  "Items",
+                      "to":  "Inventory",
+                      "referenceCount":  1,
+                      "evidence":  [
+                                       "backend/src/ERP.Application/Modules/Items/UseCases/Profitability/ItemProfitabilityUseCases.cs"
+                                   ]
+                  },
+                  {
+                      "from":  "Items",
+                      "to":  "Pricing",
+                      "referenceCount":  1,
+                      "evidence":  [
+                                       "backend/src/ERP.Application/Modules/Items/UseCases/Profitability/ItemProfitabilityUseCases.cs"
+                                   ]
+                  },
+                  {
+                      "from":  "Auth",
+                      "to":  "Branches",
+                      "referenceCount":  2,
+                      "evidence":  [
+                                       "backend/src/ERP.Application/Modules/Auth/UseCases/Login/LoginHandler.cs",
+                                       "backend/src/ERP.Application/Modules/Auth/UseCases/SwitchCompany/SwitchCompanyHandler.cs"
+                                   ]
+                  },
+                  {
+                      "from":  "ElectronicInvoicing",
+                      "to":  "Configuration",
+                      "referenceCount":  12,
+                      "evidence":  [
+                                       "backend/src/ERP.Application/Modules/ElectronicInvoicing/Services/ISriCertificateStatusResolver.cs",
+                                       "backend/src/ERP.Application/Modules/ElectronicInvoicing/Services/SriCertificateStatusResolver.cs",
+                                       "backend/src/ERP.Application/Modules/ElectronicInvoicing/UseCases/GetElectronicInvoicingStatus/GetElectronicInvoicingStatusQueryHandler.cs",
+                                       "backend/src/ERP.Application/Modules/ElectronicInvoicing/UseCases/GetElectronicInvoicingStatus/GetElectronicInvoicingStatusQueryHandler.cs",
+                                       "backend/src/ERP.Application/Modules/ElectronicInvoicing/UseCases/GetSriConfiguration/GetSriConfigurationQueryHandler.cs"
+                                   ]
+                  },
+                  {
+                      "from":  "Company",
+                      "to":  "SriCatalogs",
+                      "referenceCount":  1,
+                      "evidence":  [
+                                       "backend/src/ERP.Domain/Modules/Company/Entities/Company.cs"
+                                   ]
+                  },
+                  {
+                      "from":  "Inventory",
+                      "to":  "Sales",
+                      "referenceCount":  1,
+                      "evidence":  [
+                                       "backend/src/ERP.Application/Modules/Inventory/Stock/UseCases/GetKardexMovementDetail/GetKardexMovementDetailQueryHandler.cs"
+                                   ]
+                  },
+                  {
+                      "from":  "OrgConfig",
+                      "to":  "Common",
+                      "referenceCount":  12,
+                      "evidence":  [
+                                       "backend/src/ERP.Application/Modules/OrgConfig/UseCases/GetBranchInvoiceOrgSettings/GetBranchInvoiceOrgSettingsQuery.cs",
+                                       "backend/src/ERP.Application/Modules/OrgConfig/UseCases/GetBranchInvoiceOrgSettings/GetBranchInvoiceOrgSettingsQueryHandler.cs",
+                                       "backend/src/ERP.Application/Modules/OrgConfig/UseCases/GetBranchInvoiceOrgSettings/GetBranchInvoiceOrgSettingsQueryHandler.cs",
+                                       "backend/src/ERP.Application/Modules/OrgConfig/UseCases/GetCompanyInvoiceOrgSettings/GetCompanyInvoiceOrgSettingsQuery.cs",
+                                       "backend/src/ERP.Application/Modules/OrgConfig/UseCases/GetCompanyInvoiceOrgSettings/GetCompanyInvoiceOrgSettingsQueryHandler.cs"
+                                   ]
+                  },
+                  {
+                      "from":  "Purchases",
+                      "to":  "Inventory",
+                      "referenceCount":  6,
+                      "evidence":  [
+                                       "backend/src/ERP.Application/Modules/Purchases/UseCases/CancelPurchaseUseCases.cs",
+                                       "backend/src/ERP.Application/Modules/Purchases/UseCases/CancelPurchaseUseCases.cs",
+                                       "backend/src/ERP.Application/Modules/Purchases/UseCases/ConfirmPurchaseUseCases.cs",
+                                       "backend/src/ERP.Application/Modules/Purchases/UseCases/ConfirmPurchaseUseCases.cs",
+                                       "backend/src/ERP.Application/Modules/Purchases/UseCases/PurchaseDraftUseCases.cs"
+                                   ]
+                  }
+              ],
+    "cycles":  [
+                   "Access -\u003e Auth -\u003e Access",
+                   "Purchases -\u003e Items -\u003e Inventory -\u003e Purchases",
+                   "Inventory -\u003e Sales -\u003e Inventory",
+                   "Items -\u003e Inventory -\u003e Sales -\u003e Pricing -\u003e Items",
+                   "Items -\u003e Inventory -\u003e Sales -\u003e Items"
+               ],
+    "depthByModule":  {
+                          "Company":  3,
+                          "Dashboard":  1,
+                          "Purchases":  8,
+                          "Companies":  6,
+                          "Menu":  0,
+                          "Auth":  4,
+                          "Integration":  4,
+                          "Access":  5,
+                          "Sales":  5,
+                          "Items":  7,
+                          "Tenants":  1,
+                          "Session":  7,
+                          "Common":  0,
+                          "Inventory":  6,
+                          "Finance":  1,
+                          "Branches":  2,
+                          "Auxiliary":  0,
+                          "Pricing":  2,
+                          "Caja":  7,
+                          "ElectronicInvoicing":  4,
+                          "Configuration":  1,
+                          "Audit":  1,
+                          "Ride":  5,
+                          "Media":  1,
+                          "ElectronicDocuments":  4,
+                          "Security":  6,
+                          "SriCatalogs":  0,
+                          "OrgConfig":  3,
+                          "Navigation":  1
+                      },
+    "maxDependencyDepth":  8,
+    "centralModules":  [
+                           "Common",
+                           "Company",
+                           "Access",
+                           "Inventory",
+                           "Sales"
+                       ],
+    "criticalModules":  [
+                            "Common",
+                            "Company",
+                            "Audit",
+                            "Branches",
+                            "Configuration"
+                        ],
+    "isolatedModules":  [
+                            "Menu",
+                            "Auxiliary"
+                        ]
+}

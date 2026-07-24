@@ -1,0 +1,73 @@
+﻿{
+    "Generated":  "2026-07-15 18:51:43",
+    "Branch":  {
+
+               },
+    "TotalCommits":  0,
+    "LastCommit":  {
+                       "Hash":  {
+
+                                },
+                       "Date":  {
+
+                                },
+                       "Message":  {
+
+                                   }
+                   },
+    "RecentCommits":  [
+                          {
+                              "Hash":  "0f9d0fb0",
+                              "Date":  "2026-07-13",
+                              "Message":  "feat(masterData,ride): cat├ílogo SRI de tipo de persona/proveedor + ajustes de renderizado RIDE"
+                          },
+                          {
+                              "Hash":  "0ee8acec",
+                              "Date":  "2026-07-13",
+                              "Message":  "fix(sales): corrige rechazo SRI [65] fecha emision extemporanea"
+                          },
+                          {
+                              "Hash":  "ab130947",
+                              "Date":  "2026-07-13",
+                              "Message":  "feat(ride): redise├▒o visual RIDE + Building Block Codes Barcode (Code128)"
+                          },
+                          {
+                              "Hash":  "0d2f0a2f",
+                              "Date":  "2026-07-13",
+                              "Message":  "feat(ride,codes): implementa Ride v1.0 (RIDE PDF) + Building Block Codes para QR"
+                          },
+                          {
+                              "Hash":  "60e30de9",
+                              "Date":  "2026-07-11",
+                              "Message":  "feat(electronic-documents): cierre oficial ElectronicDocuments v1.0 (ADR-023/024)"
+                          },
+                          {
+                              "Hash":  "f6eab30b",
+                              "Date":  "2026-07-10",
+                              "Message":  "commit"
+                          },
+                          {
+                              "Hash":  "e273acf3",
+                              "Date":  "2026-07-10",
+                              "Message":  "feat: gestion de certificado SRI por upload + estado oficial de facturacion electronica"
+                          },
+                          {
+                              "Hash":  "7960a81c",
+                              "Date":  "2026-07-10",
+                              "Message":  "chore: eliminar m├│dulo Fiscal legacy (c├│digo muerto)"
+                          },
+                          {
+                              "Hash":  "ec9d59e9",
+                              "Date":  "2026-07-10",
+                              "Message":  "feat: recursos oficiales XSD del SRI + resoluci├│n guiada por manifiesto"
+                          },
+                          {
+                              "Hash":  "3296e87b",
+                              "Date":  "2026-07-10",
+                              "Message":  "feat: completar factura electr├│nica para pruebas SRI reales (SOAP Fault, XML, Monitor)"
+                          }
+                      ],
+    "ModuleActivity":  {
+
+                       }
+}

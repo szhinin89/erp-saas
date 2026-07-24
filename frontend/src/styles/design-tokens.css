@@ -1,0 +1,159 @@
+/* ============================================================
+   ZH Technologies — Design Tokens (nueva paleta)
+   Fuente: ZH Material Design System
+   ============================================================ */
+:root {
+  /* ── Brand ──────────────────────────────────────────────── */
+  --color-primary:               #3a5f84;
+  --color-primary-dim:           #a5caf4;
+  --color-primary-container:     #53779e;
+  --color-on-primary:            #ffffff;
+  --color-secondary:             #3c6188;
+  --color-tertiary:              #555d64;
+
+  /* ── Semantic ────────────────────────────────────────────── */
+  --color-error:   #C0392B;
+  --color-success: #1A7A4A;
+  --color-warning: #BA7517;
+  /* Naranja distinto del ámbar de warning — estados intermedios (ni éxito ni aviso clásico). */
+  --color-attention: #C2540B;
+
+  /* ── Surface / Background ────────────────────────────────── */
+  --color-background:           #f8f9fb;
+  --color-surface:              #ffffff;
+  --color-surface-bright:       #f8f9fb;
+  --color-surface-dim:          #d9dadc;
+  --color-surface-container:        #edeef0;
+  --color-surface-container-low:    #f2f4f6;
+  --color-surface-container-high:   #e7e8ea;
+
+  /* ── Text ────────────────────────────────────────────────── */
+  --color-text-primary:       #1A1D23;
+  --color-text-secondary:     #6B7280;
+  --color-on-surface:         #191c1e;
+  --color-on-surface-variant: #42474e;
+  --color-outline:            #73777f;
+  --color-outline-variant:    #c2c7cf;
+
+  /* ── Border ──────────────────────────────────────────────── */
+  --color-border: rgba(0, 0, 0, 0.10);
+
+  /* ── Border Radius ────────────────────────────────────────── */
+  --radius-xs:   2px;
+  --radius-sm:   4px;
+  --radius-md:   7px;    /* inputs, buttons */
+  --radius-lg:   9px;    /* cards */
+  --radius-xl:   12px;   /* modals, large panels */
+  --radius-pill: 999px;
+
+  /* ── Spacing (4px grid) ──────────────────────────────────── */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+
+  /* ── App / platform shell content (LayoutFrame) ─────────── */
+  --shell-content-padding: var(--space-6);
+  --shell-content-padding-compact: var(--space-4);
+  --shell-content-max-width: 1440px;
+  --shell-content-gap: var(--space-6);
+
+  /* ── Typography ───────────────────────────────────────────── */
+  /* Escala tipográfica única del ERP. --text-headline-lg-* está reservada
+     exclusivamente para pantallas especiales (Login, First Run, Onboarding,
+     Wizards principales, Empty States) — nunca para pantallas CRUD. */
+  --font-family: 'Inter', system-ui, -apple-system, sans-serif;
+
+  --text-headline-lg-size:    28px;
+  --text-headline-lg-height:  36px;
+  --text-headline-lg-weight:  600;
+  --text-headline-lg-spacing: -0.02em;
+
+  /* H1 — títulos principales de páginas CRUD */
+  --text-headline-md-size:    20px;
+  --text-headline-md-height:  28px;
+  --text-headline-md-weight:  600;
+  --text-headline-md-spacing: -0.01em;
+
+  /* H2 — paneles, tarjetas, bloques */
+  --text-headline-sm-size:    18px;
+  --text-headline-sm-height:  26px;
+  --text-headline-sm-weight:  600;
+
+  /* H3 — subsecciones */
+  --text-title-sm-size:    16px;
+  --text-title-sm-height:  24px;
+  --text-title-sm-weight:  600;
+
+  --text-body-lg-size:   15px;
+
+  /* Body — párrafos, contenido, inputs, selects, textareas, celdas de tabla */
+  --text-body-md-size:   14px;
+  --text-body-md-height: 22px;
+  --text-body-md-weight: 400;
+
+  /* Label — único estilo oficial de etiqueta de campo */
+  --text-label-md-size:   14px;
+  --text-label-md-height: 20px;
+  --text-label-md-weight: 600;
+
+  /* Header de tabla */
+  --text-label-sm-size:    12px;
+  --text-label-sm-weight:  600;
+  --text-label-sm-spacing: 0.03em;
+
+  /* Help text — texto de ayuda bajo campos */
+  --text-help-size:    12px;
+  --text-help-height:  18px;
+  --text-help-weight:  400;
+
+  /* Badge — mismo tamaño que header de tabla pero peso distinto (500 vs 600) */
+  --text-badge-size:    12px;
+  --text-badge-height:  16px;
+  --text-badge-weight:  500;
+
+  /* ── Tinted surfaces ─────────────────────────────────────── */
+  --color-surface-primary-tint:  #e8f0f8;  /* table thead, subtle primary accent */
+
+  /* ── Inverse surface (tooltips, snackbars sobre fondo oscuro) ── */
+  --color-inverse-surface:    #2e3132;
+  --color-inverse-on-surface: #f0f1f3;
+
+  /* ── Gradients ────────────────────────────────────────────── */
+  --gradient-brand: linear-gradient(135deg, var(--color-secondary) 0%, var(--color-primary) 100%);
+
+  /* ── Shadows ──────────────────────────────────────────────── */
+  --shadow-xs: 0 1px 2px rgba(0,0,0,0.06);
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04);
+  --shadow-md: 0 4px 16px rgba(0,0,0,0.10), 0 1px 4px rgba(0,0,0,0.06);
+  --shadow-lg: 0 12px 32px rgba(0,0,0,0.12), 0 4px 8px rgba(0,0,0,0.06);
+
+  /* ── Transitions ──────────────────────────────────────────── */
+  --transition: 0.15s ease;
+  --transition-slow: 0.3s ease;
+
+  /* ── Token aliases (shorthand + missing refs) ─────────────── */
+  /* Typography shorthands */
+  --text-xs: var(--text-label-sm-size);
+  --text-sm: var(--text-body-md-size);
+
+  /* Help text — usado por páginas que referenciaban un token inexistente */
+  --text-body-sm-size: var(--text-help-size);
+
+  /* Surface aliases */
+  --color-border-light:     rgba(0, 0, 0, 0.06);                    /* lighter separator */
+  --color-text-tertiary:    var(--color-outline);                   /* most subtle text */
+
+  /* Color-fixed aliases (Material 3 pattern used in KPI icons, plan badges) */
+  --color-primary-fixed:             rgba(58, 95, 132, 0.10);
+  --color-secondary-fixed:           rgba(60, 97, 136, 0.10);
+  --color-tertiary-fixed:            #dbe3eb;
+
+  /* Semantic containers */
+  --color-error-container:         rgba(192, 57, 43, 0.10);
+  --color-primary-subtle:          rgba(58, 95, 132, 0.10);         /* used in permission badges */
+}

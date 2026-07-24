@@ -1,0 +1,59 @@
+/* Utilidades legacy — INFRAESTRUCTURA EN PROCESO DE RETIRO (Fase 3B).
+   Preferir tokens/clases ZH en código nuevo. No agregar clases nuevas aquí.
+
+   Auditoría Fase 3B: de 68 clases definidas originalmente, 57 no tenían
+   ninguna referencia en frontend/src/**/*.tsx y fueron eliminadas. Las 11
+   restantes siguen en uso real y se mantienen aquí como núcleo compartido
+   (multi-módulo) o pendientes de mover a su módulo específico:
+
+   - Reutilizadas por 5+ módulos (quedan aquí, no son "específicas" de nada):
+     .pg-overflow-x, .pg-pad-40, .pg-row-inactive, .pg-td-right, .pg-th-right
+   - Usadas por 2 módulos (candidatas a promoverse a zh-ui.css si se vuelven
+     a necesitar en un tercero):
+     .pg-icon-18
+   - Usadas por un único módulo — candidatas a moverse a su CSS de módulo en
+     una próxima pasada (no movidas ahora para no multiplicar archivos CSS
+     por 1-2 reglas cada uno): .pg-desc-subtle, .pg-state-pad, .pg-th-actions
+     (access/ProfilesPage.css), .pg-icon-primary (inventory/warehouses/BodegasPage.css),
+     .pg-text-muted-sm (settings/geography — sin CSS propio hoy). */
+
+.pg-th-right { text-align: right; }
+.pg-td-right { text-align: right; }
+
+.pg-row-inactive {
+  opacity: 0.65;
+}
+
+.pg-pad-40 {
+  padding: 40px;
+}
+
+.pg-overflow-x {
+  overflow-x: auto;
+}
+
+.pg-icon-18 {
+  font-size: 18px;
+}
+
+.pg-icon-primary {
+  color: var(--color-primary);
+}
+
+.pg-desc-subtle {
+  margin: 0;
+  font-size: var(--text-label-sm-size);
+}
+
+.pg-state-pad {
+  padding: var(--space-6);
+}
+
+.pg-text-muted-sm {
+  font-size: 12px;
+  color: var(--color-text-secondary);
+}
+
+.pg-th-actions {
+  width: 180px;
+}

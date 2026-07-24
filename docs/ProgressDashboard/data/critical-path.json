@@ -1,0 +1,1218 @@
+﻿{
+    "generated":  "2026-07-20 19:20:38",
+    "source":  "modules.json (completion proxy = module score), dependencies.json (real dependency graph), impact.json (features/processes/risk), tasks.json (evidence-matched tasks)",
+    "disclaimer":  "No effort/velocity data exists in this pipeline, so no completion dates or durations are estimated here -- only real relationship counts (dependents, features, processes).",
+    "method":  {
+                   "completionProxy":  "A module is considered \u0027incomplete\u0027 when modules.json score \u003c 100. This score is the existing composite (architecture/tests/documentation/backend/frontend) quality score -- not a literal feature-completion percentage.",
+                   "unblocks":  "direct = modules.dependedOnBy in dependencies.json; transitive = BFS over reverse edges of the real dependency graph",
+                   "percentOfErp":  "(own features + transitive dependents\u0027 features) / impact.json coverage.totalFeaturePoints * 100",
+                   "rankingRule":  "Incomplete modules sorted by transitiveUnblocks (desc), then by current score (asc) as tiebreak"
+               },
+    "moduleImpact":  [
+                         {
+                             "module":  "Company",
+                             "score":  77.75,
+                             "fanIn":  10,
+                             "fanOut":  3,
+                             "directDependents":  [
+                                                      "Access",
+                                                      "Auth",
+                                                      "Caja",
+                                                      "Companies",
+                                                      "ElectronicDocuments",
+                                                      "ElectronicInvoicing",
+                                                      "Integration",
+                                                      "Purchases",
+                                                      "Sales",
+                                                      "Session"
+                                                  ],
+                             "transitiveDependents":  [
+                                                          "Access",
+                                                          "Auth",
+                                                          "Caja",
+                                                          "Companies",
+                                                          "ElectronicDocuments",
+                                                          "ElectronicInvoicing",
+                                                          "Integration",
+                                                          "Inventory",
+                                                          "Items",
+                                                          "Pricing",
+                                                          "Purchases",
+                                                          "Ride",
+                                                          "Sales",
+                                                          "Security",
+                                                          "Session"
+                                                      ],
+                             "transitiveDependentCount":  15,
+                             "dependentProcesses":  [
+                                                        "Compra",
+                                                        "Venta"
+                                                    ],
+                             "ownFeatures":  10,
+                             "impactedFeaturePoints":  162,
+                             "percentOfErp":  89.5,
+                             "riskOfModifying":  "MEDIUM",
+                             "relatedTasks":  [
+
+                                              ]
+                         },
+                         {
+                             "module":  "Dashboard",
+                             "score":  81.5,
+                             "fanIn":  0,
+                             "fanOut":  1,
+                             "directDependents":  [
+
+                                                  ],
+                             "transitiveDependents":  [
+
+                                                      ],
+                             "transitiveDependentCount":  0,
+                             "dependentProcesses":  [
+
+                                                    ],
+                             "ownFeatures":  1,
+                             "impactedFeaturePoints":  1,
+                             "percentOfErp":  0.55,
+                             "riskOfModifying":  "MEDIUM",
+                             "relatedTasks":  [
+
+                                              ]
+                         },
+                         {
+                             "module":  "Purchases",
+                             "score":  81.5,
+                             "fanIn":  1,
+                             "fanOut":  7,
+                             "directDependents":  [
+                                                      "Inventory"
+                                                  ],
+                             "transitiveDependents":  [
+                                                          "Caja",
+                                                          "Inventory",
+                                                          "Items",
+                                                          "Pricing",
+                                                          "Purchases",
+                                                          "Sales"
+                                                      ],
+                             "transitiveDependentCount":  6,
+                             "dependentProcesses":  [
+                                                        "Compra",
+                                                        "Venta"
+                                                    ],
+                             "ownFeatures":  13,
+                             "impactedFeaturePoints":  89,
+                             "percentOfErp":  49.17,
+                             "riskOfModifying":  "MEDIUM",
+                             "relatedTasks":  [
+                                                  "Refactor large file (946 lines): frontend/src/modules/purchases/pages/PurchasesPage.tsx",
+                                                  "Refactor large file (782 lines): frontend/src/modules/purchases/hooks/usePurchasesPage.ts"
+                                              ]
+                         },
+                         {
+                             "module":  "Companies",
+                             "score":  77.75,
+                             "fanIn":  3,
+                             "fanOut":  4,
+                             "directDependents":  [
+                                                      "Items",
+                                                      "Purchases",
+                                                      "Session"
+                                                  ],
+                             "transitiveDependents":  [
+                                                          "Caja",
+                                                          "Inventory",
+                                                          "Items",
+                                                          "Pricing",
+                                                          "Purchases",
+                                                          "Sales",
+                                                          "Session"
+                                                      ],
+                             "transitiveDependentCount":  7,
+                             "dependentProcesses":  [
+                                                        "Compra",
+                                                        "Venta"
+                                                    ],
+                             "ownFeatures":  16,
+                             "impactedFeaturePoints":  95,
+                             "percentOfErp":  52.49,
+                             "riskOfModifying":  "MEDIUM",
+                             "relatedTasks":  [
+
+                                              ]
+                         },
+                         {
+                             "module":  "Menu",
+                             "score":  77.75,
+                             "fanIn":  0,
+                             "fanOut":  0,
+                             "directDependents":  [
+
+                                                  ],
+                             "transitiveDependents":  [
+
+                                                      ],
+                             "transitiveDependentCount":  0,
+                             "dependentProcesses":  [
+
+                                                    ],
+                             "ownFeatures":  0,
+                             "impactedFeaturePoints":  0,
+                             "percentOfErp":  0,
+                             "riskOfModifying":  "MEDIUM",
+                             "relatedTasks":  [
+
+                                              ]
+                         },
+                         {
+                             "module":  "Auth",
+                             "score":  81.5,
+                             "fanIn":  2,
+                             "fanOut":  5,
+                             "directDependents":  [
+                                                      "Access",
+                                                      "Session"
+                                                  ],
+                             "transitiveDependents":  [
+                                                          "Access",
+                                                          "Auth",
+                                                          "Caja",
+                                                          "Companies",
+                                                          "Inventory",
+                                                          "Items",
+                                                          "Pricing",
+                                                          "Purchases",
+                                                          "Sales",
+                                                          "Security",
+                                                          "Session"
+                                                      ],
+                             "transitiveDependentCount":  11,
+                             "dependentProcesses":  [
+                                                        "Compra",
+                                                        "Venta"
+                                                    ],
+                             "ownFeatures":  11,
+                             "impactedFeaturePoints":  144,
+                             "percentOfErp":  79.56,
+                             "riskOfModifying":  "HIGH",
+                             "relatedTasks":  [
+
+                                              ]
+                         },
+                         {
+                             "module":  "Integration",
+                             "score":  77.75,
+                             "fanIn":  0,
+                             "fanOut":  3,
+                             "directDependents":  [
+
+                                                  ],
+                             "transitiveDependents":  [
+
+                                                      ],
+                             "transitiveDependentCount":  0,
+                             "dependentProcesses":  [
+
+                                                    ],
+                             "ownFeatures":  2,
+                             "impactedFeaturePoints":  2,
+                             "percentOfErp":  1.1,
+                             "riskOfModifying":  "MEDIUM",
+                             "relatedTasks":  [
+
+                                              ]
+                         },
+                         {
+                             "module":  "Access",
+                             "score":  81.5,
+                             "fanIn":  5,
+                             "fanOut":  6,
+                             "directDependents":  [
+                                                      "Auth",
+                                                      "Companies",
+                                                      "Inventory",
+                                                      "Security",
+                                                      "Session"
+                                                  ],
+                             "transitiveDependents":  [
+                                                          "Access",
+                                                          "Auth",
+                                                          "Caja",
+                                                          "Companies",
+                                                          "Inventory",
+                                                          "Items",
+                                                          "Pricing",
+                                                          "Purchases",
+                                                          "Sales",
+                                                          "Security",
+                                                          "Session"
+                                                      ],
+                             "transitiveDependentCount":  11,
+                             "dependentProcesses":  [
+                                                        "Compra",
+                                                        "Venta"
+                                                    ],
+                             "ownFeatures":  25,
+                             "impactedFeaturePoints":  158,
+                             "percentOfErp":  87.29,
+                             "riskOfModifying":  "HIGH",
+                             "relatedTasks":  [
+                                                  "Refactor large file (507 lines): frontend/src/modules/access/pages/ProfilesPage.tsx",
+                                                  "Refactor large file (507 lines): backend/src/ERP.Application.Tests/Access/CompanyUserPreferencesTests.cs",
+                                                  "Review anonymous-access endpoints (9 found)"
+                                              ]
+                         },
+                         {
+                             "module":  "Sales",
+                             "score":  81.5,
+                             "fanIn":  2,
+                             "fanOut":  8,
+                             "directDependents":  [
+                                                      "Caja",
+                                                      "Inventory"
+                                                  ],
+                             "transitiveDependents":  [
+                                                          "Caja",
+                                                          "Inventory",
+                                                          "Items",
+                                                          "Pricing",
+                                                          "Purchases",
+                                                          "Sales"
+                                                      ],
+                             "transitiveDependentCount":  6,
+                             "dependentProcesses":  [
+                                                        "Compra",
+                                                        "Venta"
+                                                    ],
+                             "ownFeatures":  9,
+                             "impactedFeaturePoints":  85,
+                             "percentOfErp":  46.96,
+                             "riskOfModifying":  "MEDIUM",
+                             "relatedTasks":  [
+                                                  "Refactor large file (1007 lines): frontend/src/modules/sales/hooks/useSalesPage.ts",
+                                                  "Refactor large file (743 lines): frontend/src/modules/sales/pages/SalesPage.tsx",
+                                                  "Refactor large file (538 lines): backend/src/ERP.Application/Modules/Sales/UseCases/SalesDraftUseCases.cs"
+                                              ]
+                         },
+                         {
+                             "module":  "Items",
+                             "score":  81.5,
+                             "fanIn":  3,
+                             "fanOut":  6,
+                             "directDependents":  [
+                                                      "Pricing",
+                                                      "Purchases",
+                                                      "Sales"
+                                                  ],
+                             "transitiveDependents":  [
+                                                          "Caja",
+                                                          "Inventory",
+                                                          "Items",
+                                                          "Pricing",
+                                                          "Purchases",
+                                                          "Sales"
+                                                      ],
+                             "transitiveDependentCount":  6,
+                             "dependentProcesses":  [
+                                                        "Compra",
+                                                        "Venta"
+                                                    ],
+                             "ownFeatures":  23,
+                             "impactedFeaturePoints":  99,
+                             "percentOfErp":  54.7,
+                             "riskOfModifying":  "MEDIUM",
+                             "relatedTasks":  [
+
+                                              ]
+                         },
+                         {
+                             "module":  "Tenants",
+                             "score":  77.75,
+                             "fanIn":  4,
+                             "fanOut":  1,
+                             "directDependents":  [
+                                                      "Access",
+                                                      "Auth",
+                                                      "Integration",
+                                                      "Session"
+                                                  ],
+                             "transitiveDependents":  [
+                                                          "Access",
+                                                          "Auth",
+                                                          "Caja",
+                                                          "Companies",
+                                                          "Integration",
+                                                          "Inventory",
+                                                          "Items",
+                                                          "Pricing",
+                                                          "Purchases",
+                                                          "Sales",
+                                                          "Security",
+                                                          "Session"
+                                                      ],
+                             "transitiveDependentCount":  12,
+                             "dependentProcesses":  [
+                                                        "Compra",
+                                                        "Venta"
+                                                    ],
+                             "ownFeatures":  0,
+                             "impactedFeaturePoints":  135,
+                             "percentOfErp":  74.59,
+                             "riskOfModifying":  "MEDIUM",
+                             "relatedTasks":  [
+
+                                              ]
+                         },
+                         {
+                             "module":  "Session",
+                             "score":  81.5,
+                             "fanIn":  0,
+                             "fanOut":  8,
+                             "directDependents":  [
+
+                                                  ],
+                             "transitiveDependents":  [
+
+                                                      ],
+                             "transitiveDependentCount":  0,
+                             "dependentProcesses":  [
+
+                                                    ],
+                             "ownFeatures":  3,
+                             "impactedFeaturePoints":  3,
+                             "percentOfErp":  1.66,
+                             "riskOfModifying":  "MEDIUM",
+                             "relatedTasks":  [
+
+                                              ]
+                         },
+                         {
+                             "module":  "Common",
+                             "score":  77.75,
+                             "fanIn":  25,
+                             "fanOut":  0,
+                             "directDependents":  [
+                                                      "Access",
+                                                      "Audit",
+                                                      "Auth",
+                                                      "Branches",
+                                                      "Caja",
+                                                      "Companies",
+                                                      "Company",
+                                                      "Configuration",
+                                                      "Dashboard",
+                                                      "ElectronicDocuments",
+                                                      "ElectronicInvoicing",
+                                                      "Finance",
+                                                      "Integration",
+                                                      "Inventory",
+                                                      "Items",
+                                                      "Media",
+                                                      "Navigation",
+                                                      "OrgConfig",
+                                                      "Pricing",
+                                                      "Purchases",
+                                                      "Ride",
+                                                      "Sales",
+                                                      "Security",
+                                                      "Session",
+                                                      "Tenants"
+                                                  ],
+                             "transitiveDependents":  [
+                                                          "Access",
+                                                          "Audit",
+                                                          "Auth",
+                                                          "Branches",
+                                                          "Caja",
+                                                          "Companies",
+                                                          "Company",
+                                                          "Configuration",
+                                                          "Dashboard",
+                                                          "ElectronicDocuments",
+                                                          "ElectronicInvoicing",
+                                                          "Finance",
+                                                          "Integration",
+                                                          "Inventory",
+                                                          "Items",
+                                                          "Media",
+                                                          "Navigation",
+                                                          "OrgConfig",
+                                                          "Pricing",
+                                                          "Purchases",
+                                                          "Ride",
+                                                          "Sales",
+                                                          "Security",
+                                                          "Session",
+                                                          "Tenants"
+                                                      ],
+                             "transitiveDependentCount":  25,
+                             "dependentProcesses":  [
+                                                        "Compra",
+                                                        "Venta"
+                                                    ],
+                             "ownFeatures":  0,
+                             "impactedFeaturePoints":  181,
+                             "percentOfErp":  100,
+                             "riskOfModifying":  "MEDIUM",
+                             "relatedTasks":  [
+
+                                              ]
+                         },
+                         {
+                             "module":  "Inventory",
+                             "score":  81.5,
+                             "fanIn":  4,
+                             "fanOut":  6,
+                             "directDependents":  [
+                                                      "Caja",
+                                                      "Items",
+                                                      "Purchases",
+                                                      "Sales"
+                                                  ],
+                             "transitiveDependents":  [
+                                                          "Caja",
+                                                          "Inventory",
+                                                          "Items",
+                                                          "Pricing",
+                                                          "Purchases",
+                                                          "Sales"
+                                                      ],
+                             "transitiveDependentCount":  6,
+                             "dependentProcesses":  [
+                                                        "Compra",
+                                                        "Venta"
+                                                    ],
+                             "ownFeatures":  17,
+                             "impactedFeaturePoints":  93,
+                             "percentOfErp":  51.38,
+                             "riskOfModifying":  "MEDIUM",
+                             "relatedTasks":  [
+
+                                              ]
+                         },
+                         {
+                             "module":  "Finance",
+                             "score":  81.5,
+                             "fanIn":  0,
+                             "fanOut":  1,
+                             "directDependents":  [
+
+                                                  ],
+                             "transitiveDependents":  [
+
+                                                      ],
+                             "transitiveDependentCount":  0,
+                             "dependentProcesses":  [
+
+                                                    ],
+                             "ownFeatures":  1,
+                             "impactedFeaturePoints":  1,
+                             "percentOfErp":  0.55,
+                             "riskOfModifying":  "MEDIUM",
+                             "relatedTasks":  [
+
+                                              ]
+                         },
+                         {
+                             "module":  "Branches",
+                             "score":  81.5,
+                             "fanIn":  7,
+                             "fanOut":  2,
+                             "directDependents":  [
+                                                      "Access",
+                                                      "Auth",
+                                                      "Caja",
+                                                      "Company",
+                                                      "Inventory",
+                                                      "OrgConfig",
+                                                      "Session"
+                                                  ],
+                             "transitiveDependents":  [
+                                                          "Access",
+                                                          "Auth",
+                                                          "Caja",
+                                                          "Companies",
+                                                          "Company",
+                                                          "ElectronicDocuments",
+                                                          "ElectronicInvoicing",
+                                                          "Integration",
+                                                          "Inventory",
+                                                          "Items",
+                                                          "OrgConfig",
+                                                          "Pricing",
+                                                          "Purchases",
+                                                          "Ride",
+                                                          "Sales",
+                                                          "Security",
+                                                          "Session"
+                                                      ],
+                             "transitiveDependentCount":  17,
+                             "dependentProcesses":  [
+                                                        "Compra",
+                                                        "Venta"
+                                                    ],
+                             "ownFeatures":  10,
+                             "impactedFeaturePoints":  176,
+                             "percentOfErp":  97.24,
+                             "riskOfModifying":  "MEDIUM",
+                             "relatedTasks":  [
+
+                                              ]
+                         },
+                         {
+                             "module":  "Auxiliary",
+                             "score":  77.75,
+                             "fanIn":  0,
+                             "fanOut":  0,
+                             "directDependents":  [
+
+                                                  ],
+                             "transitiveDependents":  [
+
+                                                      ],
+                             "transitiveDependentCount":  0,
+                             "dependentProcesses":  [
+
+                                                    ],
+                             "ownFeatures":  0,
+                             "impactedFeaturePoints":  0,
+                             "percentOfErp":  0,
+                             "riskOfModifying":  "MEDIUM",
+                             "relatedTasks":  [
+
+                                              ]
+                         },
+                         {
+                             "module":  "Pricing",
+                             "score":  81.5,
+                             "fanIn":  3,
+                             "fanOut":  3,
+                             "directDependents":  [
+                                                      "Items",
+                                                      "Purchases",
+                                                      "Sales"
+                                                  ],
+                             "transitiveDependents":  [
+                                                          "Caja",
+                                                          "Inventory",
+                                                          "Items",
+                                                          "Pricing",
+                                                          "Purchases",
+                                                          "Sales"
+                                                      ],
+                             "transitiveDependentCount":  6,
+                             "dependentProcesses":  [
+                                                        "Compra",
+                                                        "Venta"
+                                                    ],
+                             "ownFeatures":  4,
+                             "impactedFeaturePoints":  80,
+                             "percentOfErp":  44.2,
+                             "riskOfModifying":  "MEDIUM",
+                             "relatedTasks":  [
+
+                                              ]
+                         },
+                         {
+                             "module":  "Caja",
+                             "score":  81.5,
+                             "fanIn":  0,
+                             "fanOut":  5,
+                             "directDependents":  [
+
+                                                  ],
+                             "transitiveDependents":  [
+
+                                                      ],
+                             "transitiveDependentCount":  0,
+                             "dependentProcesses":  [
+
+                                                    ],
+                             "ownFeatures":  10,
+                             "impactedFeaturePoints":  10,
+                             "percentOfErp":  5.52,
+                             "riskOfModifying":  "MEDIUM",
+                             "relatedTasks":  [
+
+                                              ]
+                         },
+                         {
+                             "module":  "ElectronicInvoicing",
+                             "score":  77.75,
+                             "fanIn":  0,
+                             "fanOut":  3,
+                             "directDependents":  [
+
+                                                  ],
+                             "transitiveDependents":  [
+
+                                                      ],
+                             "transitiveDependentCount":  0,
+                             "dependentProcesses":  [
+
+                                                    ],
+                             "ownFeatures":  6,
+                             "impactedFeaturePoints":  6,
+                             "percentOfErp":  3.31,
+                             "riskOfModifying":  "HIGH",
+                             "relatedTasks":  [
+
+                                              ]
+                         },
+                         {
+                             "module":  "Configuration",
+                             "score":  77.75,
+                             "fanIn":  6,
+                             "fanOut":  1,
+                             "directDependents":  [
+                                                      "ElectronicDocuments",
+                                                      "ElectronicInvoicing",
+                                                      "Items",
+                                                      "OrgConfig",
+                                                      "Ride",
+                                                      "Sales"
+                                                  ],
+                             "transitiveDependents":  [
+                                                          "Caja",
+                                                          "ElectronicDocuments",
+                                                          "ElectronicInvoicing",
+                                                          "Inventory",
+                                                          "Items",
+                                                          "OrgConfig",
+                                                          "Pricing",
+                                                          "Purchases",
+                                                          "Ride",
+                                                          "Sales"
+                                                      ],
+                             "transitiveDependentCount":  10,
+                             "dependentProcesses":  [
+                                                        "Compra",
+                                                        "Venta"
+                                                    ],
+                             "ownFeatures":  0,
+                             "impactedFeaturePoints":  97,
+                             "percentOfErp":  53.59,
+                             "riskOfModifying":  "HIGH",
+                             "relatedTasks":  [
+
+                                              ]
+                         },
+                         {
+                             "module":  "Audit",
+                             "score":  77.75,
+                             "fanIn":  7,
+                             "fanOut":  1,
+                             "directDependents":  [
+                                                      "Branches",
+                                                      "ElectronicDocuments",
+                                                      "Inventory",
+                                                      "Items",
+                                                      "Pricing",
+                                                      "Purchases",
+                                                      "Ride"
+                                                  ],
+                             "transitiveDependents":  [
+                                                          "Access",
+                                                          "Auth",
+                                                          "Branches",
+                                                          "Caja",
+                                                          "Companies",
+                                                          "Company",
+                                                          "ElectronicDocuments",
+                                                          "ElectronicInvoicing",
+                                                          "Integration",
+                                                          "Inventory",
+                                                          "Items",
+                                                          "OrgConfig",
+                                                          "Pricing",
+                                                          "Purchases",
+                                                          "Ride",
+                                                          "Sales",
+                                                          "Security",
+                                                          "Session"
+                                                      ],
+                             "transitiveDependentCount":  18,
+                             "dependentProcesses":  [
+                                                        "Compra",
+                                                        "Venta"
+                                                    ],
+                             "ownFeatures":  2,
+                             "impactedFeaturePoints":  178,
+                             "percentOfErp":  98.34,
+                             "riskOfModifying":  "MEDIUM",
+                             "relatedTasks":  [
+
+                                              ]
+                         },
+                         {
+                             "module":  "Ride",
+                             "score":  81.5,
+                             "fanIn":  0,
+                             "fanOut":  4,
+                             "directDependents":  [
+
+                                                  ],
+                             "transitiveDependents":  [
+
+                                                      ],
+                             "transitiveDependentCount":  0,
+                             "dependentProcesses":  [
+
+                                                    ],
+                             "ownFeatures":  2,
+                             "impactedFeaturePoints":  2,
+                             "percentOfErp":  1.1,
+                             "riskOfModifying":  "MEDIUM",
+                             "relatedTasks":  [
+
+                                              ]
+                         },
+                         {
+                             "module":  "Media",
+                             "score":  77.75,
+                             "fanIn":  2,
+                             "fanOut":  1,
+                             "directDependents":  [
+                                                      "Companies",
+                                                      "Session"
+                                                  ],
+                             "transitiveDependents":  [
+                                                          "Caja",
+                                                          "Companies",
+                                                          "Inventory",
+                                                          "Items",
+                                                          "Pricing",
+                                                          "Purchases",
+                                                          "Sales",
+                                                          "Session"
+                                                      ],
+                             "transitiveDependentCount":  8,
+                             "dependentProcesses":  [
+                                                        "Compra",
+                                                        "Venta"
+                                                    ],
+                             "ownFeatures":  0,
+                             "impactedFeaturePoints":  95,
+                             "percentOfErp":  52.49,
+                             "riskOfModifying":  "MEDIUM",
+                             "relatedTasks":  [
+
+                                              ]
+                         },
+                         {
+                             "module":  "ElectronicDocuments",
+                             "score":  81.5,
+                             "fanIn":  2,
+                             "fanOut":  4,
+                             "directDependents":  [
+                                                      "Ride",
+                                                      "Sales"
+                                                  ],
+                             "transitiveDependents":  [
+                                                          "Caja",
+                                                          "Inventory",
+                                                          "Items",
+                                                          "Pricing",
+                                                          "Purchases",
+                                                          "Ride",
+                                                          "Sales"
+                                                      ],
+                             "transitiveDependentCount":  7,
+                             "dependentProcesses":  [
+                                                        "Compra",
+                                                        "Venta"
+                                                    ],
+                             "ownFeatures":  9,
+                             "impactedFeaturePoints":  87,
+                             "percentOfErp":  48.07,
+                             "riskOfModifying":  "HIGH",
+                             "relatedTasks":  [
+                                                  "Refactor large file (610 lines): backend/src/ERP.Application/Modules/ElectronicDocuments/Services/ElectronicDocumentIssuer.cs",
+                                                  "Review possible secrets in source files (40 real matches, excluding node_modules)"
+                                              ]
+                         },
+                         {
+                             "module":  "Security",
+                             "score":  81.5,
+                             "fanIn":  0,
+                             "fanOut":  2,
+                             "directDependents":  [
+
+                                                  ],
+                             "transitiveDependents":  [
+
+                                                      ],
+                             "transitiveDependentCount":  0,
+                             "dependentProcesses":  [
+
+                                                    ],
+                             "ownFeatures":  2,
+                             "impactedFeaturePoints":  2,
+                             "percentOfErp":  1.1,
+                             "riskOfModifying":  "MEDIUM",
+                             "relatedTasks":  [
+
+                                              ]
+                         },
+                         {
+                             "module":  "SriCatalogs",
+                             "score":  77.75,
+                             "fanIn":  2,
+                             "fanOut":  0,
+                             "directDependents":  [
+                                                      "Company",
+                                                      "Sales"
+                                                  ],
+                             "transitiveDependents":  [
+                                                          "Access",
+                                                          "Auth",
+                                                          "Caja",
+                                                          "Companies",
+                                                          "Company",
+                                                          "ElectronicDocuments",
+                                                          "ElectronicInvoicing",
+                                                          "Integration",
+                                                          "Inventory",
+                                                          "Items",
+                                                          "Pricing",
+                                                          "Purchases",
+                                                          "Ride",
+                                                          "Sales",
+                                                          "Security",
+                                                          "Session"
+                                                      ],
+                             "transitiveDependentCount":  16,
+                             "dependentProcesses":  [
+                                                        "Compra",
+                                                        "Venta"
+                                                    ],
+                             "ownFeatures":  0,
+                             "impactedFeaturePoints":  162,
+                             "percentOfErp":  89.5,
+                             "riskOfModifying":  "MEDIUM",
+                             "relatedTasks":  [
+
+                                              ]
+                         },
+                         {
+                             "module":  "OrgConfig",
+                             "score":  77.75,
+                             "fanIn":  0,
+                             "fanOut":  3,
+                             "directDependents":  [
+
+                                                  ],
+                             "transitiveDependents":  [
+
+                                                      ],
+                             "transitiveDependentCount":  0,
+                             "dependentProcesses":  [
+
+                                                    ],
+                             "ownFeatures":  4,
+                             "impactedFeaturePoints":  4,
+                             "percentOfErp":  2.21,
+                             "riskOfModifying":  "MEDIUM",
+                             "relatedTasks":  [
+
+                                              ]
+                         },
+                         {
+                             "module":  "Navigation",
+                             "score":  77.75,
+                             "fanIn":  1,
+                             "fanOut":  1,
+                             "directDependents":  [
+                                                      "Access"
+                                                  ],
+                             "transitiveDependents":  [
+                                                          "Access",
+                                                          "Auth",
+                                                          "Caja",
+                                                          "Companies",
+                                                          "Inventory",
+                                                          "Items",
+                                                          "Pricing",
+                                                          "Purchases",
+                                                          "Sales",
+                                                          "Security",
+                                                          "Session"
+                                                      ],
+                             "transitiveDependentCount":  11,
+                             "dependentProcesses":  [
+                                                        "Compra",
+                                                        "Venta"
+                                                    ],
+                             "ownFeatures":  1,
+                             "impactedFeaturePoints":  134,
+                             "percentOfErp":  74.03,
+                             "riskOfModifying":  "MEDIUM",
+                             "relatedTasks":  [
+
+                                              ]
+                         }
+                     ],
+    "criticalPath":  [
+                         {
+                             "order":  1,
+                             "module":  "Common",
+                             "currentScore":  77.75,
+                             "directUnblocks":  25,
+                             "transitiveUnblocks":  25,
+                             "unlockedProcesses":  2,
+                             "rationale":  "Completing \u0027Common\u0027 (score 77.75%) removes it as a dependency blocker for 25 module(s) reachable via the real dependency graph (dependencies.json), touching 2 distinct process(es) (impact.json)."
+                         },
+                         {
+                             "order":  2,
+                             "module":  "Audit",
+                             "currentScore":  77.75,
+                             "directUnblocks":  7,
+                             "transitiveUnblocks":  18,
+                             "unlockedProcesses":  2,
+                             "rationale":  "Completing \u0027Audit\u0027 (score 77.75%) removes it as a dependency blocker for 18 module(s) reachable via the real dependency graph (dependencies.json), touching 2 distinct process(es) (impact.json)."
+                         },
+                         {
+                             "order":  3,
+                             "module":  "Branches",
+                             "currentScore":  81.5,
+                             "directUnblocks":  7,
+                             "transitiveUnblocks":  17,
+                             "unlockedProcesses":  2,
+                             "rationale":  "Completing \u0027Branches\u0027 (score 81.5%) removes it as a dependency blocker for 17 module(s) reachable via the real dependency graph (dependencies.json), touching 2 distinct process(es) (impact.json)."
+                         },
+                         {
+                             "order":  4,
+                             "module":  "SriCatalogs",
+                             "currentScore":  77.75,
+                             "directUnblocks":  2,
+                             "transitiveUnblocks":  16,
+                             "unlockedProcesses":  2,
+                             "rationale":  "Completing \u0027SriCatalogs\u0027 (score 77.75%) removes it as a dependency blocker for 16 module(s) reachable via the real dependency graph (dependencies.json), touching 2 distinct process(es) (impact.json)."
+                         },
+                         {
+                             "order":  5,
+                             "module":  "Company",
+                             "currentScore":  77.75,
+                             "directUnblocks":  10,
+                             "transitiveUnblocks":  15,
+                             "unlockedProcesses":  2,
+                             "rationale":  "Completing \u0027Company\u0027 (score 77.75%) removes it as a dependency blocker for 15 module(s) reachable via the real dependency graph (dependencies.json), touching 2 distinct process(es) (impact.json)."
+                         },
+                         {
+                             "order":  6,
+                             "module":  "Tenants",
+                             "currentScore":  77.75,
+                             "directUnblocks":  4,
+                             "transitiveUnblocks":  12,
+                             "unlockedProcesses":  2,
+                             "rationale":  "Completing \u0027Tenants\u0027 (score 77.75%) removes it as a dependency blocker for 12 module(s) reachable via the real dependency graph (dependencies.json), touching 2 distinct process(es) (impact.json)."
+                         },
+                         {
+                             "order":  7,
+                             "module":  "Navigation",
+                             "currentScore":  77.75,
+                             "directUnblocks":  1,
+                             "transitiveUnblocks":  11,
+                             "unlockedProcesses":  2,
+                             "rationale":  "Completing \u0027Navigation\u0027 (score 77.75%) removes it as a dependency blocker for 11 module(s) reachable via the real dependency graph (dependencies.json), touching 2 distinct process(es) (impact.json)."
+                         },
+                         {
+                             "order":  8,
+                             "module":  "Auth",
+                             "currentScore":  81.5,
+                             "directUnblocks":  2,
+                             "transitiveUnblocks":  11,
+                             "unlockedProcesses":  2,
+                             "rationale":  "Completing \u0027Auth\u0027 (score 81.5%) removes it as a dependency blocker for 11 module(s) reachable via the real dependency graph (dependencies.json), touching 2 distinct process(es) (impact.json)."
+                         },
+                         {
+                             "order":  9,
+                             "module":  "Access",
+                             "currentScore":  81.5,
+                             "directUnblocks":  5,
+                             "transitiveUnblocks":  11,
+                             "unlockedProcesses":  2,
+                             "rationale":  "Completing \u0027Access\u0027 (score 81.5%) removes it as a dependency blocker for 11 module(s) reachable via the real dependency graph (dependencies.json), touching 2 distinct process(es) (impact.json)."
+                         },
+                         {
+                             "order":  10,
+                             "module":  "Configuration",
+                             "currentScore":  77.75,
+                             "directUnblocks":  6,
+                             "transitiveUnblocks":  10,
+                             "unlockedProcesses":  2,
+                             "rationale":  "Completing \u0027Configuration\u0027 (score 77.75%) removes it as a dependency blocker for 10 module(s) reachable via the real dependency graph (dependencies.json), touching 2 distinct process(es) (impact.json)."
+                         },
+                         {
+                             "order":  11,
+                             "module":  "Media",
+                             "currentScore":  77.75,
+                             "directUnblocks":  2,
+                             "transitiveUnblocks":  8,
+                             "unlockedProcesses":  2,
+                             "rationale":  "Completing \u0027Media\u0027 (score 77.75%) removes it as a dependency blocker for 8 module(s) reachable via the real dependency graph (dependencies.json), touching 2 distinct process(es) (impact.json)."
+                         },
+                         {
+                             "order":  12,
+                             "module":  "Companies",
+                             "currentScore":  77.75,
+                             "directUnblocks":  3,
+                             "transitiveUnblocks":  7,
+                             "unlockedProcesses":  2,
+                             "rationale":  "Completing \u0027Companies\u0027 (score 77.75%) removes it as a dependency blocker for 7 module(s) reachable via the real dependency graph (dependencies.json), touching 2 distinct process(es) (impact.json)."
+                         },
+                         {
+                             "order":  13,
+                             "module":  "ElectronicDocuments",
+                             "currentScore":  81.5,
+                             "directUnblocks":  2,
+                             "transitiveUnblocks":  7,
+                             "unlockedProcesses":  2,
+                             "rationale":  "Completing \u0027ElectronicDocuments\u0027 (score 81.5%) removes it as a dependency blocker for 7 module(s) reachable via the real dependency graph (dependencies.json), touching 2 distinct process(es) (impact.json)."
+                         },
+                         {
+                             "order":  14,
+                             "module":  "Purchases",
+                             "currentScore":  81.5,
+                             "directUnblocks":  1,
+                             "transitiveUnblocks":  6,
+                             "unlockedProcesses":  2,
+                             "rationale":  "Completing \u0027Purchases\u0027 (score 81.5%) removes it as a dependency blocker for 6 module(s) reachable via the real dependency graph (dependencies.json), touching 2 distinct process(es) (impact.json)."
+                         },
+                         {
+                             "order":  15,
+                             "module":  "Pricing",
+                             "currentScore":  81.5,
+                             "directUnblocks":  3,
+                             "transitiveUnblocks":  6,
+                             "unlockedProcesses":  2,
+                             "rationale":  "Completing \u0027Pricing\u0027 (score 81.5%) removes it as a dependency blocker for 6 module(s) reachable via the real dependency graph (dependencies.json), touching 2 distinct process(es) (impact.json)."
+                         },
+                         {
+                             "order":  16,
+                             "module":  "Items",
+                             "currentScore":  81.5,
+                             "directUnblocks":  3,
+                             "transitiveUnblocks":  6,
+                             "unlockedProcesses":  2,
+                             "rationale":  "Completing \u0027Items\u0027 (score 81.5%) removes it as a dependency blocker for 6 module(s) reachable via the real dependency graph (dependencies.json), touching 2 distinct process(es) (impact.json)."
+                         },
+                         {
+                             "order":  17,
+                             "module":  "Sales",
+                             "currentScore":  81.5,
+                             "directUnblocks":  2,
+                             "transitiveUnblocks":  6,
+                             "unlockedProcesses":  2,
+                             "rationale":  "Completing \u0027Sales\u0027 (score 81.5%) removes it as a dependency blocker for 6 module(s) reachable via the real dependency graph (dependencies.json), touching 2 distinct process(es) (impact.json)."
+                         },
+                         {
+                             "order":  18,
+                             "module":  "Inventory",
+                             "currentScore":  81.5,
+                             "directUnblocks":  4,
+                             "transitiveUnblocks":  6,
+                             "unlockedProcesses":  2,
+                             "rationale":  "Completing \u0027Inventory\u0027 (score 81.5%) removes it as a dependency blocker for 6 module(s) reachable via the real dependency graph (dependencies.json), touching 2 distinct process(es) (impact.json)."
+                         },
+                         {
+                             "order":  19,
+                             "module":  "Integration",
+                             "currentScore":  77.75,
+                             "directUnblocks":  0,
+                             "transitiveUnblocks":  0,
+                             "unlockedProcesses":  0,
+                             "rationale":  "Completing \u0027Integration\u0027 (score 77.75%) removes it as a dependency blocker for 0 module(s) reachable via the real dependency graph (dependencies.json), touching 0 distinct process(es) (impact.json)."
+                         },
+                         {
+                             "order":  20,
+                             "module":  "OrgConfig",
+                             "currentScore":  77.75,
+                             "directUnblocks":  0,
+                             "transitiveUnblocks":  0,
+                             "unlockedProcesses":  0,
+                             "rationale":  "Completing \u0027OrgConfig\u0027 (score 77.75%) removes it as a dependency blocker for 0 module(s) reachable via the real dependency graph (dependencies.json), touching 0 distinct process(es) (impact.json)."
+                         },
+                         {
+                             "order":  21,
+                             "module":  "Menu",
+                             "currentScore":  77.75,
+                             "directUnblocks":  0,
+                             "transitiveUnblocks":  0,
+                             "unlockedProcesses":  0,
+                             "rationale":  "Completing \u0027Menu\u0027 (score 77.75%) removes it as a dependency blocker for 0 module(s) reachable via the real dependency graph (dependencies.json), touching 0 distinct process(es) (impact.json)."
+                         },
+                         {
+                             "order":  22,
+                             "module":  "ElectronicInvoicing",
+                             "currentScore":  77.75,
+                             "directUnblocks":  0,
+                             "transitiveUnblocks":  0,
+                             "unlockedProcesses":  0,
+                             "rationale":  "Completing \u0027ElectronicInvoicing\u0027 (score 77.75%) removes it as a dependency blocker for 0 module(s) reachable via the real dependency graph (dependencies.json), touching 0 distinct process(es) (impact.json)."
+                         },
+                         {
+                             "order":  23,
+                             "module":  "Auxiliary",
+                             "currentScore":  77.75,
+                             "directUnblocks":  0,
+                             "transitiveUnblocks":  0,
+                             "unlockedProcesses":  0,
+                             "rationale":  "Completing \u0027Auxiliary\u0027 (score 77.75%) removes it as a dependency blocker for 0 module(s) reachable via the real dependency graph (dependencies.json), touching 0 distinct process(es) (impact.json)."
+                         },
+                         {
+                             "order":  24,
+                             "module":  "Dashboard",
+                             "currentScore":  81.5,
+                             "directUnblocks":  0,
+                             "transitiveUnblocks":  0,
+                             "unlockedProcesses":  0,
+                             "rationale":  "Completing \u0027Dashboard\u0027 (score 81.5%) removes it as a dependency blocker for 0 module(s) reachable via the real dependency graph (dependencies.json), touching 0 distinct process(es) (impact.json)."
+                         },
+                         {
+                             "order":  25,
+                             "module":  "Finance",
+                             "currentScore":  81.5,
+                             "directUnblocks":  0,
+                             "transitiveUnblocks":  0,
+                             "unlockedProcesses":  0,
+                             "rationale":  "Completing \u0027Finance\u0027 (score 81.5%) removes it as a dependency blocker for 0 module(s) reachable via the real dependency graph (dependencies.json), touching 0 distinct process(es) (impact.json)."
+                         },
+                         {
+                             "order":  26,
+                             "module":  "Security",
+                             "currentScore":  81.5,
+                             "directUnblocks":  0,
+                             "transitiveUnblocks":  0,
+                             "unlockedProcesses":  0,
+                             "rationale":  "Completing \u0027Security\u0027 (score 81.5%) removes it as a dependency blocker for 0 module(s) reachable via the real dependency graph (dependencies.json), touching 0 distinct process(es) (impact.json)."
+                         },
+                         {
+                             "order":  27,
+                             "module":  "Ride",
+                             "currentScore":  81.5,
+                             "directUnblocks":  0,
+                             "transitiveUnblocks":  0,
+                             "unlockedProcesses":  0,
+                             "rationale":  "Completing \u0027Ride\u0027 (score 81.5%) removes it as a dependency blocker for 0 module(s) reachable via the real dependency graph (dependencies.json), touching 0 distinct process(es) (impact.json)."
+                         },
+                         {
+                             "order":  28,
+                             "module":  "Caja",
+                             "currentScore":  81.5,
+                             "directUnblocks":  0,
+                             "transitiveUnblocks":  0,
+                             "unlockedProcesses":  0,
+                             "rationale":  "Completing \u0027Caja\u0027 (score 81.5%) removes it as a dependency blocker for 0 module(s) reachable via the real dependency graph (dependencies.json), touching 0 distinct process(es) (impact.json)."
+                         },
+                         {
+                             "order":  29,
+                             "module":  "Session",
+                             "currentScore":  81.5,
+                             "directUnblocks":  0,
+                             "transitiveUnblocks":  0,
+                             "unlockedProcesses":  0,
+                             "rationale":  "Completing \u0027Session\u0027 (score 81.5%) removes it as a dependency blocker for 0 module(s) reachable via the real dependency graph (dependencies.json), touching 0 distinct process(es) (impact.json)."
+                         }
+                     ]
+}

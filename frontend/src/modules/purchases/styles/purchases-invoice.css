@@ -1,0 +1,395 @@
+/* ============================================================
+   Compra Directa — específico de PurchasesPage (Fase 3B)
+   Extraído de erp-form-core.css: estas clases (.pdl-topbar/__header/
+   __tag/__stock/__cost/__margin/__add/__empty/__costs-*, .pf-plazos-
+   resumen-grid, .pf-totals*, .pf-footer, .pf-retention*) solo se usan
+   en PurchasesPage.tsx — verificado por grep en frontend/src/**/*.tsx.
+   Las familias .pdl-line/.pdl-ctx/.pdl-search siguen en erp-form-core.css
+   porque también las consume Kardex/Sales.
+   ============================================================ */
+
+/* ── Totals Panel ───────────────────────────────────────────── */
+/* ── Plazos + Resumen Grid ──────────────────────────────────── */
+.pf-plazos-resumen-grid {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: var(--space-5);
+  align-items: start;
+}
+@media (max-width: 960px) {
+  .pf-plazos-resumen-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.pf-totals {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  overflow: hidden;
+  position: sticky;
+  top: var(--space-5);
+}
+.pf-totals__header {
+  padding: var(--space-4) var(--space-5);
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-surface-container-low);
+}
+.pf-totals__header h4 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+.pf-totals__body {
+  padding: var(--space-4) var(--space-5);
+}
+.pf-totals__row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--space-2) 0;
+}
+.pf-totals__label {
+  font-size: 13px;
+  color: var(--color-text-secondary);
+}
+.pf-totals__value {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text-primary);
+  font-family: 'SF Mono', 'Cascadia Code', monospace;
+}
+.pf-totals__divider {
+  height: 1px;
+  background: var(--color-border);
+  margin: var(--space-3) 0;
+}
+.pf-totals__grand {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--space-4) var(--space-5);
+  background: var(--color-surface-primary-tint);
+  border-top: 2px solid var(--color-primary);
+}
+.pf-totals__grand-label {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--color-text-primary);
+}
+.pf-totals__grand-value {
+  font-size: 22px;
+  font-weight: 800;
+  color: var(--color-primary);
+  font-family: 'SF Mono', 'Cascadia Code', monospace;
+  letter-spacing: -0.02em;
+}
+
+/* ── Footer Actions ─────────────────────────────────────────── */
+.pf-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-3);
+  padding: var(--space-5) 0;
+  border-top: 1px solid var(--color-border);
+  margin-top: var(--space-5);
+}
+
+/* ── Retention Section ──────────────────────────────────────── */
+.pf-retention {
+  margin-top: var(--space-5);
+}
+.pf-retention__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--space-4);
+}
+.pf-retention__skip {
+  padding: var(--space-3) var(--space-4);
+  background: rgba(186,117,23,.06);
+  border: 1px solid rgba(186,117,23,.2);
+  border-radius: var(--radius-md);
+  font-size: 13px;
+  color: var(--color-warning);
+  margin-bottom: var(--space-4);
+}
+.pf-retention__total {
+  /* NUM-001 (AI-RULES/PR-RULES-CATALOG.md#f-05) — total numérico, alineado a la derecha. */
+  text-align: right;
+  margin-top: var(--space-3);
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--color-text-primary);
+}
+.pf-retention__issued-meta {
+  display: flex;
+  gap: var(--space-5);
+  margin-bottom: var(--space-4);
+  flex-wrap: wrap;
+}
+.pf-retention__issued-item {
+  font-size: 12px;
+  color: var(--color-text-secondary);
+}
+.pf-retention__issued-totals {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-3);
+  margin-top: var(--space-4);
+}
+@media (max-width: 640px) {
+  .pf-retention__issued-totals { grid-template-columns: 1fr; }
+}
+
+/* ── Top Bar: Title (específico, distinto de .pdl-search__* que sí es compartido) ── */
+.pdl-topbar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  padding: var(--space-5) var(--space-5) var(--space-4);
+  flex-wrap: wrap;
+}
+.pdl-topbar__title {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--color-text-primary);
+  margin: 0;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.pdl-topbar__right {
+  position: relative;
+  margin-left: auto;
+}
+.pdl-costs-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border-radius: var(--radius-md);
+  border: none;
+  background: var(--color-text-primary);
+  color: var(--color-on-primary);
+  font-size: var(--text-body-md-size);
+  font-weight: 600;
+  cursor: pointer;
+  transition: background .15s;
+  white-space: nowrap;
+}
+.pdl-costs-toggle:hover { opacity: .9; }
+.pdl-costs-dropdown {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 50;
+  min-width: 280px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  padding: var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+.pdl-costs-dropdown__row {
+  display: flex;
+  gap: var(--space-3);
+}
+.pdl-costs-dropdown__btn {
+  width: 100%;
+  justify-content: center;
+}
+
+/* Column Headers */
+.pdl-header {
+  display: grid;
+  grid-template-columns: 40px 2fr 90px 1.2fr 1fr 110px 80px;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-5);
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--color-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border-top: 1px solid var(--color-border);
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-surface);
+}
+/* NUM-001 (AI-RULES/PR-RULES-CATALOG.md#f-05) — encabezados de columnas numéricas alineados con su dato (derecha). */
+.pdl-header__col--qty,
+.pdl-header__col--finance,
+.pdl-header__col--tax,
+.pdl-header__col--total { text-align: right; }
+.pdl-header__col--actions { text-align: center; }
+
+.pdl-tag {
+  display: inline-block;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: var(--radius-sm);
+  background: var(--color-primary-fixed);
+  color: var(--color-primary);
+  font-family: 'SF Mono', 'Cascadia Code', monospace;
+}
+.pdl-tag--accent {
+  background: rgba(186,117,23,.1);
+  color: var(--color-warning);
+}
+
+.pdl-ctx-col__stock {
+  display: flex;
+  gap: var(--space-4);
+}
+.pdl-stock-item {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+.pdl-stock-head {
+  font-size: 9px;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  text-transform: uppercase;
+}
+.pdl-stock-label {
+  font-size: 9px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+.pdl-stock-label--ok { color: var(--color-primary); }
+.pdl-stock-label--ok::before { content: '● '; }
+.pdl-stock-label--danger { color: var(--color-error); }
+.pdl-stock-label--danger::before { content: '● '; }
+.pdl-stock-val {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--color-text-primary);
+  font-family: 'SF Mono', 'Cascadia Code', monospace;
+}
+.pdl-ctx-col__costs > div {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 2px;
+}
+.pdl-cost-label {
+  font-size: 11px;
+  color: var(--color-text-secondary);
+  text-transform: uppercase;
+  font-weight: 600;
+}
+.pdl-cost-val {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--color-text-primary);
+  font-family: 'SF Mono', 'Cascadia Code', monospace;
+}
+.pdl-cost-alert {
+  margin-top: 6px;
+  padding: 4px 8px;
+  border-radius: var(--radius-sm);
+  background: rgba(186, 117, 23, 0.12);
+  border: 1px solid var(--color-warning);
+  color: var(--color-warning);
+  font-size: var(--text-help-size);
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.pdl-ctx-col__margin { }
+.pdl-margin-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: var(--space-1);
+}
+.pdl-margin-label {
+  font-size: 11px;
+  color: var(--color-text-secondary);
+  text-transform: uppercase;
+  font-weight: 600;
+}
+.pdl-margin-pct {
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--color-success);
+  font-family: 'SF Mono', 'Cascadia Code', monospace;
+}
+.pdl-margin-pct--neg { color: var(--color-error); }
+.pdl-margin-bar {
+  height: 4px;
+  background: var(--color-surface-container-high);
+  border-radius: 2px;
+  overflow: hidden;
+  margin-bottom: var(--space-2);
+}
+.pdl-margin-bar__fill {
+  height: 100%;
+  background: var(--color-primary);
+  border-radius: 2px;
+  transition: width 0.3s ease;
+}
+.pdl-margin-meta {
+  display: flex;
+  justify-content: space-between;
+  font-size: 10px;
+  color: var(--color-text-secondary);
+}
+
+/* ── Add Product (prominent) ── */
+.pdl-add-wrap {
+  padding: var(--space-5);
+  border-top: 1px solid var(--color-border);
+}
+.pdl-add {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  width: 100%;
+  padding: var(--space-6) var(--space-5);
+  background: var(--color-surface);
+  border: 2px dashed var(--color-border);
+  border-radius: var(--radius-xl);
+  cursor: pointer;
+  transition: all var(--transition);
+  color: var(--color-text-secondary);
+}
+.pdl-add:hover {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+  background: var(--color-primary-fixed);
+}
+.pdl-add__title {
+  font-size: 15px;
+  font-weight: 700;
+}
+.pdl-add__hint {
+  font-size: 12px;
+  opacity: 0.7;
+}
+.pdl-empty {
+  text-align: center;
+  padding: var(--space-8);
+  color: var(--color-text-secondary);
+  font-size: 13px;
+}
+
+/* ── Responsive (solo selectores exclusivos de Compras) ── */
+@media (max-width: 1100px) {
+  .pdl-header { display: none; }
+}
+@media (max-width: 640px) {
+  .pdl-costs-dropdown { min-width: 240px; }
+}

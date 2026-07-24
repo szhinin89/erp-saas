@@ -1,0 +1,223 @@
+/* Electronic Documents Monitor — prefijo edm-* */
+
+.edm-metric {
+  font-size: var(--text-headline-lg-size);
+  font-weight: 700;
+  color: var(--color-text-primary);
+}
+
+.edm-metric--success {
+  color: var(--color-success);
+}
+
+.edm-metric--danger {
+  color: var(--color-error);
+}
+
+.edm-kpi-card { padding: 0; }
+.edm-kpi-card .card-body { padding: 0; }
+.edm-kpi-card--active {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 1px var(--color-primary);
+}
+
+.edm-kpi-btn {
+  display: block;
+  width: 100%;
+  background: none;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  padding: var(--space-4);
+}
+.edm-kpi-btn:hover {
+  background: var(--color-surface-container-low);
+}
+
+.edm-state-badge-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.edm-retry-suffix {
+  font-weight: 400;
+  opacity: 0.85;
+}
+
+.edm-last-message {
+  display: block;
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--text-help-size);
+  color: var(--color-text-secondary);
+}
+
+.edm-access-key {
+  font-family: ui-monospace, Consolas, monospace;
+  font-size: var(--text-help-size);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.edm-retry-btn {
+  margin-left: 12px;
+}
+
+.edm-icon-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--color-text-secondary);
+  padding: 0;
+  line-height: 0;
+  display: inline-flex;
+}
+
+.edm-detail-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-3) var(--space-5);
+}
+
+.edm-detail-item-label {
+  font-size: var(--text-help-size);
+  color: var(--color-text-secondary);
+  margin-bottom: 2px;
+}
+
+.edm-detail-item-value {
+  font-size: var(--text-label-md-size);
+  word-break: break-word;
+}
+
+.edm-timeline {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.edm-timeline-item {
+  display: flex;
+  gap: var(--space-3);
+  align-items: flex-start;
+}
+
+.edm-timeline-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--color-primary);
+  margin-top: 6px;
+  flex-shrink: 0;
+}
+
+.edm-timeline-body {
+  flex: 1;
+}
+
+.edm-timeline-meta {
+  font-size: var(--text-help-size);
+  color: var(--color-text-secondary);
+}
+
+.edm-xml-viewer {
+  max-height: 360px;
+  overflow: auto;
+  background: var(--color-surface-container-low);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-3);
+  font-family: ui-monospace, Consolas, monospace;
+  font-size: 12px;
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
+.edm-hint-sm {
+  margin-top: var(--space-3);
+  font-size: var(--text-help-size);
+  color: var(--color-text-secondary);
+}
+
+.edm-xml-actions {
+  display: flex;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+  margin-bottom: var(--space-3);
+}
+
+.edm-xml-viewer-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+/* ── Diagnóstico SRI reutilizable (ADR-024) ────────────────────────────── */
+
+.edm-messages {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.edm-message-card {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-3);
+}
+
+.edm-message-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-bottom: var(--space-2);
+}
+
+.edm-message-code {
+  font-family: ui-monospace, Consolas, monospace;
+  font-size: var(--text-help-size);
+  color: var(--color-text-secondary);
+}
+
+.edm-message-text {
+  font-size: var(--text-label-md-size);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.edm-message-additional {
+  margin-top: var(--space-2);
+  font-size: var(--text-help-size);
+  color: var(--color-text-secondary);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.edm-tech-info summary {
+  cursor: pointer;
+  font-size: var(--text-label-md-size);
+  font-weight: 600;
+  padding: var(--space-2) 0;
+}
+
+.edm-tech-info-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-3) var(--space-5);
+  padding-top: var(--space-3);
+}
+
+.edm-tech-info-value {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  word-break: break-all;
+}

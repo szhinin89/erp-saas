@@ -1,0 +1,20 @@
+{
+  "$schemaNote": "Pesos para calculate-score.mjs",
+  "baseScore": 100,
+  "violationPenalty": 8,
+  "warningPenalty": 2,
+  "grandfatherEntryPenalty": 1,
+  "statusThresholds": {
+    "healthy": 90,
+    "warning": 70
+  },
+  "driftRisk": {
+    "lowMaxWarnings": 5,
+    "mediumMaxWarnings": 20,
+    "grandfatherHighCount": 10
+  },
+  "moduleScore": {
+    "frontendModulePenalty": 3,
+    "backendControllerWarningPenalty": 1
+  }
+}

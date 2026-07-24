@@ -1,0 +1,106 @@
+{
+  "$schema": "./platform-guard-config.schema.json",
+  "forbiddenPatterns": [
+    { "id": "api-superadmin-path", "pattern": "/api/superadmin/", "hint": "Use /api/platform/*" },
+    { "id": "superadmin-login", "pattern": "superadmin-login", "hint": "Use POST /api/platform/auth/login" },
+    { "id": "superadmin-controller", "pattern": "SuperAdminController", "hint": "Remove legacy SuperAdminController" },
+    { "id": "superadmin-service", "pattern": "SuperAdminService", "hint": "Use platform services under /api/platform" },
+    { "id": "use-superadmin-hook", "pattern": "useSuperAdmin", "hint": "Use usePlatformGate / platform hooks" },
+    { "id": "is-superadmin-identifier", "pattern": "isSuperAdmin", "hint": "Use isPlatformOperator / isJwtPlatformOperatorRole", "scanRoots": ["frontend"] },
+    { "id": "legacy-platform", "pattern": "LEGACY_PLATFORM", "hint": "Remove LEGACY_PLATFORM_* constants" },
+    { "id": "legacy-superadmin", "pattern": "LEGACY_SUPERADMIN", "hint": "Remove LEGACY_SUPERADMIN_* constants" },
+    { "id": "superadmin-service-camel", "pattern": "superAdminService", "hint": "Use platformService from modules/platform/api" },
+    { "id": "iam-superadmin-api", "pattern": "/api/admin/iam/superadmin", "hint": "Use /api/platform/* (Tenant Control Plane)" },
+    { "id": "company-service", "pattern": "companyService", "hint": "Legacy Subscriber-named services pending Tenant rename — see subscriberRuntimeApiAllowFiles for current exceptions", "scanRoots": ["frontend"] },
+    { "id": "company-service-get-subscribers", "pattern": "companyService.getSubscribers", "hint": "Use platformService.getTenants (Tenant Control Plane) — legacy getSubscribers pending rename", "scanRoots": ["frontend"] },
+    { "id": "subscribers-controller-frontend", "pattern": "SubscribersController", "hint": "Use platformService — no direct controller refs in frontend", "scanRoots": ["frontend"] },
+    { "id": "subscriber-service-wrapper", "pattern": "export const subscriberService", "hint": "Use platformService only for Platform Control Plane", "scanRoots": ["frontend"] },
+    { "id": "subscriber-service-import", "pattern": "import { subscriberService", "hint": "Use platformService only for Platform Control Plane", "scanRoots": ["frontend"] },
+    { "id": "menu-service-wrapper", "pattern": "menuService", "hint": "Use platformService only for Platform Control Plane", "scanRoots": ["frontend"] }
+  ],
+  "forbiddenImportPaths": [
+    { "id": "legacy-module-superadmin", "pattern": "modules/superadmin", "hint": "Use modules/platform" },
+    { "id": "legacy-components-superadmin", "pattern": "components/superadmin", "hint": "Use components/platform" },
+    { "id": "legacy-pages-superadmin", "pattern": "pages/SuperAdmin", "hint": "Use pages/Platform" },
+    { "id": "legacy-company-service", "pattern": "companies/api/companyService", "hint": "Use modules/platform/api/platformService" },
+    { "id": "legacy-subscriber-service", "pattern": "platform/api/subscriberService", "hint": "Use modules/platform/api/platformService" },
+    { "id": "legacy-menu-service", "pattern": "platform/api/menuService", "hint": "Use modules/platform/api/platformService" }
+  ],
+  "forbiddenFrontendImportTokens": [
+    { "id": "superadmin-service-import", "pattern": "superadminService", "hint": "Use platformService" },
+    { "id": "superadmin-service-import-camel", "pattern": "superAdminService", "hint": "Use platformService" }
+  ],
+  "forbiddenApiRoutePrefixes": [
+    "/api/superadmin"
+  ],
+  "allowedApiPrefixes": [
+    "/api/platform",
+    "/api/auth",
+    "/api/master",
+    "/api/sales",
+    "/api/purchases",
+    "/api/admin/iam",
+    "/api/companies",
+    "/api/dashboard",
+    "/api/electronic-invoicing",
+    "/api/electronic-documents",
+    "/api/cash",
+    "/api/cash-registers",
+    "/api/cash-sessions",
+    "/api/config",
+    "/api/expenses",
+    "/api/finance",
+    "/api/inventory",
+    "/api/item-types",
+    "/api/logistics",
+    "/api/me",
+    "/api/org-config",
+    "/api/payment-methods",
+    "/api/ride",
+    "/api/saas",
+    "/api/security",
+    "/api/settings",
+    "/api/taxrates",
+    "/api/public",
+    "/api/catalog",
+    "/api/catalogs",
+    "/api/digital-items",
+    "/api/items",
+    "/api/kits",
+    "/api/onboarding",
+    "/api/pricing",
+    "/api/setup",
+    "/api/supplier-catalog",
+    "/api/session"
+  ],
+  "allowedUiRoutePrefixes": [
+    "/platform",
+    "/saas",
+    "/login",
+    "/register",
+    "/forgot-password",
+    "/reset-password",
+    "/select-company"
+  ],
+  "scanRoots": {
+    "frontend": "frontend/src",
+    "backend": "backend/src"
+  },
+  "excludeDirectories": [
+    "docs",
+    "node_modules",
+    "bin",
+    "obj",
+    "dist"
+  ],
+  "excludeFiles": [
+    "backend/src/ERP.Architecture.Tests/PlatformControlPlaneGuardTests.cs",
+    "tools/ci/scan-forbidden-patterns.mjs",
+    "tools/ci/platform-guard-config.json",
+    "tools/ci/run-platform-guard.mjs",
+    "tools/ci/validate-subscriber-api-surface.mjs",
+    "tools/architecture/check-platform-legacy-surface.mjs",
+    "tools/architecture/extract-api-usage-graph.mjs"
+  ],
+  "sourceExtensions": [".ts", ".tsx", ".js", ".jsx", ".mjs", ".cs"]
+}

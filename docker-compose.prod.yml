@@ -1,0 +1,14 @@
+# Plantilla producción — NO usar tal cual en local.
+# Ajustar secrets, redes, volúmenes y réplicas antes de desplegar.
+# Ver docs/deployment/README.md e infrastructure/deployment/
+
+include:
+  - path: infrastructure/docker/compose.base.yml
+
+# Ejemplo futuro:
+# services:
+#   postgres:
+#     deploy:
+#       resources:
+#         limits:
+#           memory: 2G

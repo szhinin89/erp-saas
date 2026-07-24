@@ -1,0 +1,197 @@
+# QA Regression Bot — CI gate for auth, permissions, and tenant isolation.
+# Branch protection: require status check "QA Regression Bot"
+
+name: QA Regression Bot
+
+permissions:
+  contents: read
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main, develop, "release/*"]
+  workflow_dispatch:
+
+concurrency:
+  group: qa-regression-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  DOTNET_CLI_TELEMETRY_OPTOUT: 1
+  DOTNET_NOLOGO: 1
+  QA_API_URL: http://localhost:5003
+  QA_FRONTEND_URL: http://localhost:4173
+  QA_EMAIL: admin@erp.com
+  QA_PASSWORD: Admin123!
+  ConnectionStrings__DefaultConnection: Host=localhost;Port=5432;Database=erpsaas;Username=postgres;Password=postgres
+
+jobs:
+  qa-regression:
+    name: QA Regression Bot
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: erpsaas
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U postgres"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      # -------------------------
+      # .NET SETUP
+      # -------------------------
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v5
+        with:
+          global-json-file: backend/src/global.json
+          cache: true
+          cache-dependency-path: backend/src/**/*.csproj
+
+      # -------------------------
+      # NODE SETUP
+      # -------------------------
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      # -------------------------
+      # BACKEND BUILD
+      # -------------------------
+      - name: Restore backend
+        working-directory: backend/src
+        run: dotnet restore ERP.API/ERP.API.csproj
+
+      - name: Build backend
+        working-directory: backend/src
+        run: dotnet build ERP.API/ERP.API.csproj -c Release --no-restore
+
+      # -------------------------
+      # DATABASE MIGRATIONS
+      # -------------------------
+      - name: Run EF migrations
+        working-directory: backend/src
+        run: |
+          dotnet tool install --global dotnet-ef || true
+          export PATH="$PATH:$HOME/.dotnet/tools"
+          dotnet ef database update \
+            --project ERP.Infrastructure/ERP.Infrastructure.csproj \
+            --startup-project ERP.API/ERP.API.csproj \
+            --no-build
+
+      # -------------------------
+      # FRONTEND (build before starting services)
+      # -------------------------
+      - name: Install frontend deps
+        working-directory: frontend
+        run: npm ci
+
+      - name: Build frontend
+        working-directory: frontend
+        run: npm run build
+
+      - name: Install redis-tools
+        run: sudo apt-get update && sudo apt-get install -y redis-tools
+
+      # -------------------------
+      # START BACKEND
+      # -------------------------
+      - name: Start API
+        working-directory: backend/src
+        env:
+          ASPNETCORE_ENVIRONMENT: Development
+          ASPNETCORE_URLS: http://0.0.0.0:5003
+          ConnectionStrings__Redis: localhost:6379
+          Redis__ConnectionString: localhost:6379
+          Jwt__SecretKey: ci-qa-regression-jwt-secret-min-32-chars
+          Development__SeedDemoTenant: "true"
+        run: |
+          dotnet run --project ERP.API/ERP.API.csproj -c Release --no-build &
+          echo $! > /tmp/erp-api.pid
+
+      # -------------------------
+      # START FRONTEND
+      # -------------------------
+      - name: Start frontend preview
+        working-directory: frontend
+        run: |
+          npm run preview -- --host 127.0.0.1 --port 4173 &
+          echo $! > /tmp/erp-frontend.pid
+
+      # -------------------------
+      # QA ENGINE (readiness polling — no fixed sleeps)
+      # -------------------------
+      - name: Run QA Engine
+        env:
+          QA_REDIS_HOST: localhost
+          QA_REDIS_PORT: 6379
+          QA_READINESS_TIMEOUT_MS: 120000
+          QA_INFRA_RETRY_COUNT: 3
+        run: node qa-engine/run.js
+
+      # -------------------------
+      # ARTIFACTS
+      # -------------------------
+      - name: Upload QA reports
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: qa-regression-report
+          path: reports/
+          retention-days: 14
+          if-no-files-found: warn
+
+      # -------------------------
+      # FAIL PIPELINE IF NEEDED
+      # -------------------------
+      - name: Fail if regression detected
+        if: always()
+        run: |
+          if [ -f reports/regression.json ]; then
+            node -e "
+              const r=require('./reports/regression.json');
+              const block=r.status==='FAILED'||r.summary?.block_ci===true;
+              const types=r.diagnostics?.summary?.by_type||{};
+              if(types.AUTH_BYPASS||types.TENANT_ISOLATION_LEAK) process.exit(1);
+              if((r.summary?.max_risk_score||0)>=90) process.exit(1);
+              if(block) process.exit(1);
+            "
+          else
+            echo "Missing reports/regression.json"
+            exit 1
+          fi
+
+      - name: Stop background processes
+        if: always()
+        run: |
+          for f in /tmp/erp-api.pid /tmp/erp-frontend.pid; do
+            if [ -f "$f" ]; then
+              kill "$(cat "$f")" 2>/dev/null || true
+            fi
+          done

@@ -1,0 +1,1458 @@
+﻿{
+    "Generated":  "2026-07-15 18:46:29",
+    "Summary":  {
+                    "Projects":  12,
+                    "Modules":  29,
+                    "FrontendFiles":  null,
+                    "HealthAverage":  77.93,
+                    "DependencyIssues":  0,
+                    "APIEndpoints":  272,
+                    "Migrations":  89
+                },
+    "Backend":  {
+                    "Generated":  "2026-07-15 18:46:12",
+                    "BackendRoot":  "C:\\ProyectCursor\\erp-saas\\backend\\src",
+                    "ProjectCount":  12,
+                    "ModuleCount":  29,
+                    "Projects":  [
+                                     {
+                                         "Name":  "ERP.AI.Application",
+                                         "Path":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.AI.Application",
+                                         "Layer":  "Other",
+                                         "Type":  "Production",
+                                         "Modules":  [
+
+                                                     ]
+                                     },
+                                     {
+                                         "Name":  "ERP.AI.Infrastructure",
+                                         "Path":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.AI.Infrastructure",
+                                         "Layer":  "Other",
+                                         "Type":  "Production",
+                                         "Modules":  [
+
+                                                     ]
+                                     },
+                                     {
+                                         "Name":  "ERP.API",
+                                         "Path":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.API",
+                                         "Layer":  "API",
+                                         "Type":  "Production",
+                                         "Modules":  [
+
+                                                     ]
+                                     },
+                                     {
+                                         "Name":  "ERP.API.Tests",
+                                         "Path":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.API.Tests",
+                                         "Layer":  "Other",
+                                         "Type":  "Test",
+                                         "Modules":  [
+
+                                                     ]
+                                     },
+                                     {
+                                         "Name":  "ERP.Application",
+                                         "Path":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Application",
+                                         "Layer":  "Application",
+                                         "Type":  "Production",
+                                         "Modules":  [
+                                                         {
+                                                             "Name":  "Access",
+                                                             "Path":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Application\\Modules\\Access"
+                                                         },
+                                                         {
+                                                             "Name":  "Audit",
+                                                             "Path":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Application\\Modules\\Audit"
+                                                         },
+                                                         {
+                                                             "Name":  "Auth",
+                                                             "Path":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Application\\Modules\\Auth"
+                                                         },
+                                                         {
+                                                             "Name":  "Branches",
+                                                             "Path":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Application\\Modules\\Branches"
+                                                         },
+                                                         {
+                                                             "Name":  "Caja",
+                                                             "Path":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Application\\Modules\\Caja"
+                                                         },
+                                                         {
+                                                             "Name":  "Common",
+                                                             "Path":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Application\\Modules\\Common"
+                                                         },
+                                                         {
+                                                             "Name":  "Companies",
+                                                             "Path":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Application\\Modules\\Companies"
+                                                         },
+                                                         {
+                                                             "Name":  "Company",
+                                                             "Path":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Application\\Modules\\Company"
+                                                         },
+                                                         {
+                                                             "Name":  "Configuration",
+                                                             "Path":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Application\\Modules\\Configuration"
+                                                         },
+                                                         {
+                                                             "Name":  "Dashboard",
+                                                             "Path":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Application\\Modules\\Dashboard"
+                                                         },
+                                                         {
+                                                             "Name":  "ElectronicDocuments",
+                                                             "Path":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Application\\Modules\\ElectronicDocuments"
+                                                         },
+                                                         {
+                                                             "Name":  "ElectronicInvoicing",
+                                                             "Path":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Application\\Modules\\ElectronicInvoicing"
+                                                         },
+                                                         {
+                                                             "Name":  "Finance",
+                                                             "Path":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Application\\Modules\\Finance"
+                                                         },
+                                                         {
+                                                             "Name":  "Integration",
+                                                             "Path":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Application\\Modules\\Integration"
+                                                         },
+                                                         {
+                                                             "Name":  "Inventory",
+                                                             "Path":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Application\\Modules\\Inventory"
+                                                         },
+                                                         {
+                                                             "Name":  "Items",
+                                                             "Path":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Application\\Modules\\Items"
+                                                         },
+                                                         {
+                                                             "Name":  "Media",
+                                                             "Path":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Application\\Modules\\Media"
+                                                         },
+                                                         {
+                                                             "Name":  "Navigation",
+                                                             "Path":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Application\\Modules\\Navigation"
+                                                         },
+                                                         {
+                                                             "Name":  "OrgConfig",
+                                                             "Path":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Application\\Modules\\OrgConfig"
+                                                         },
+                                                         {
+                                                             "Name":  "Pricing",
+                                                             "Path":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Application\\Modules\\Pricing"
+                                                         },
+                                                         {
+                                                             "Name":  "Purchases",
+                                                             "Path":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Application\\Modules\\Purchases"
+                                                         },
+                                                         {
+                                                             "Name":  "Ride",
+                                                             "Path":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Application\\Modules\\Ride"
+                                                         },
+                                                         {
+                                                             "Name":  "Sales",
+                                                             "Path":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Application\\Modules\\Sales"
+                                                         },
+                                                         {
+                                                             "Name":  "Security",
+                                                             "Path":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Application\\Modules\\Security"
+                                                         },
+                                                         {
+                                                             "Name":  "Session",
+                                                             "Path":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Application\\Modules\\Session"
+                                                         }
+                                                     ]
+                                     },
+                                     {
+                                         "Name":  "ERP.Application.Tests",
+                                         "Path":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Application.Tests",
+                                         "Layer":  "Other",
+                                         "Type":  "Test",
+                                         "Modules":  [
+
+                                                     ]
+                                     },
+                                     {
+                                         "Name":  "ERP.Architecture.Tests",
+                                         "Path":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Architecture.Tests",
+                                         "Layer":  "Other",
+                                         "Type":  "Test",
+                                         "Modules":  [
+
+                                                     ]
+                                     },
+                                     {
+                                         "Name":  "ERP.Domain",
+                                         "Path":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Domain",
+                                         "Layer":  "Domain",
+                                         "Type":  "Production",
+                                         "Modules":  [
+                                                         {
+                                                             "Name":  "Access",
+                                                             "Path":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Domain\\Modules\\Access"
+                                                         },
+                                                         {
+                                                             "Name":  "Audit",
+                                                             "Path":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Domain\\Modules\\Audit"
+                                                         },
+                                                         {
+                                                             "Name":  "Auth",
+                                                             "Path":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Domain\\Modules\\Auth"
+                                                         },
+                                                         {
+                                                             "Name":  "Auxiliary",
+                                                             "Path":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Domain\\Modules\\Auxiliary"
+                                                         },
+                                                         {
+                                                             "Name":  "Caja",
+                                                             "Path":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Domain\\Modules\\Caja"
+                                                         },
+                                                         {
+                                                             "Name":  "Common",
+                                                             "Path":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Domain\\Modules\\Common"
+                                                         },
+                                                         {
+                                                             "Name":  "Company",
+                                                             "Path":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Domain\\Modules\\Company"
+                                                         },
+                                                         {
+                                                             "Name":  "Configuration",
+                                                             "Path":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Domain\\Modules\\Configuration"
+                                                         },
+                                                         {
+                                                             "Name":  "ElectronicDocuments",
+                                                             "Path":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Domain\\Modules\\ElectronicDocuments"
+                                                         },
+                                                         {
+                                                             "Name":  "Finance",
+                                                             "Path":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Domain\\Modules\\Finance"
+                                                         },
+                                                         {
+                                                             "Name":  "Inventory",
+                                                             "Path":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Domain\\Modules\\Inventory"
+                                                         },
+                                                         {
+                                                             "Name":  "Items",
+                                                             "Path":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Domain\\Modules\\Items"
+                                                         },
+                                                         {
+                                                             "Name":  "Media",
+                                                             "Path":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Domain\\Modules\\Media"
+                                                         },
+                                                         {
+                                                             "Name":  "Menu",
+                                                             "Path":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Domain\\Modules\\Menu"
+                                                         },
+                                                         {
+                                                             "Name":  "Navigation",
+                                                             "Path":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Domain\\Modules\\Navigation"
+                                                         },
+                                                         {
+                                                             "Name":  "Pricing",
+                                                             "Path":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Domain\\Modules\\Pricing"
+                                                         },
+                                                         {
+                                                             "Name":  "Purchases",
+                                                             "Path":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Domain\\Modules\\Purchases"
+                                                         },
+                                                         {
+                                                             "Name":  "Ride",
+                                                             "Path":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Domain\\Modules\\Ride"
+                                                         },
+                                                         {
+                                                             "Name":  "Sales",
+                                                             "Path":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Domain\\Modules\\Sales"
+                                                         },
+                                                         {
+                                                             "Name":  "Security",
+                                                             "Path":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Domain\\Modules\\Security"
+                                                         },
+                                                         {
+                                                             "Name":  "SriCatalogs",
+                                                             "Path":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Domain\\Modules\\SriCatalogs"
+                                                         },
+                                                         {
+                                                             "Name":  "Tenants",
+                                                             "Path":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Domain\\Modules\\Tenants"
+                                                         }
+                                                     ]
+                                     },
+                                     {
+                                         "Name":  "ERP.Domain.Tests",
+                                         "Path":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Domain.Tests",
+                                         "Layer":  "Other",
+                                         "Type":  "Test",
+                                         "Modules":  [
+
+                                                     ]
+                                     },
+                                     {
+                                         "Name":  "ERP.Infrastructure",
+                                         "Path":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Infrastructure",
+                                         "Layer":  "Infrastructure",
+                                         "Type":  "Production",
+                                         "Modules":  [
+
+                                                     ]
+                                     },
+                                     {
+                                         "Name":  "ERP.Infrastructure.Tests",
+                                         "Path":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Infrastructure.Tests",
+                                         "Layer":  "Other",
+                                         "Type":  "Test",
+                                         "Modules":  [
+
+                                                     ]
+                                     },
+                                     {
+                                         "Name":  "Platform.Contracts",
+                                         "Path":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\Platform.Contracts",
+                                         "Layer":  "Other",
+                                         "Type":  "Production",
+                                         "Modules":  [
+
+                                                     ]
+                                     }
+                                 ],
+                    "Modules":  [
+                                    {
+                                        "Name":  "Company",
+                                        "Layers":  [
+                                                       "Application",
+                                                       "Domain"
+                                                   ],
+                                        "Projects":  [
+                                                         "ERP.Application",
+                                                         "ERP.Domain"
+                                                     ]
+                                    },
+                                    {
+                                        "Name":  "Dashboard",
+                                        "Layers":  "Application",
+                                        "Projects":  "ERP.Application"
+                                    },
+                                    {
+                                        "Name":  "Purchases",
+                                        "Layers":  [
+                                                       "Application",
+                                                       "Domain"
+                                                   ],
+                                        "Projects":  [
+                                                         "ERP.Application",
+                                                         "ERP.Domain"
+                                                     ]
+                                    },
+                                    {
+                                        "Name":  "Companies",
+                                        "Layers":  "Application",
+                                        "Projects":  "ERP.Application"
+                                    },
+                                    {
+                                        "Name":  "Menu",
+                                        "Layers":  "Domain",
+                                        "Projects":  "ERP.Domain"
+                                    },
+                                    {
+                                        "Name":  "Auth",
+                                        "Layers":  [
+                                                       "Application",
+                                                       "Domain"
+                                                   ],
+                                        "Projects":  [
+                                                         "ERP.Application",
+                                                         "ERP.Domain"
+                                                     ]
+                                    },
+                                    {
+                                        "Name":  "Integration",
+                                        "Layers":  "Application",
+                                        "Projects":  "ERP.Application"
+                                    },
+                                    {
+                                        "Name":  "Access",
+                                        "Layers":  [
+                                                       "Application",
+                                                       "Domain"
+                                                   ],
+                                        "Projects":  [
+                                                         "ERP.Application",
+                                                         "ERP.Domain"
+                                                     ]
+                                    },
+                                    {
+                                        "Name":  "Sales",
+                                        "Layers":  [
+                                                       "Application",
+                                                       "Domain"
+                                                   ],
+                                        "Projects":  [
+                                                         "ERP.Application",
+                                                         "ERP.Domain"
+                                                     ]
+                                    },
+                                    {
+                                        "Name":  "Items",
+                                        "Layers":  [
+                                                       "Application",
+                                                       "Domain"
+                                                   ],
+                                        "Projects":  [
+                                                         "ERP.Application",
+                                                         "ERP.Domain"
+                                                     ]
+                                    },
+                                    {
+                                        "Name":  "Tenants",
+                                        "Layers":  "Domain",
+                                        "Projects":  "ERP.Domain"
+                                    },
+                                    {
+                                        "Name":  "Session",
+                                        "Layers":  "Application",
+                                        "Projects":  "ERP.Application"
+                                    },
+                                    {
+                                        "Name":  "Common",
+                                        "Layers":  [
+                                                       "Application",
+                                                       "Domain"
+                                                   ],
+                                        "Projects":  [
+                                                         "ERP.Application",
+                                                         "ERP.Domain"
+                                                     ]
+                                    },
+                                    {
+                                        "Name":  "Inventory",
+                                        "Layers":  [
+                                                       "Application",
+                                                       "Domain"
+                                                   ],
+                                        "Projects":  [
+                                                         "ERP.Application",
+                                                         "ERP.Domain"
+                                                     ]
+                                    },
+                                    {
+                                        "Name":  "Finance",
+                                        "Layers":  [
+                                                       "Application",
+                                                       "Domain"
+                                                   ],
+                                        "Projects":  [
+                                                         "ERP.Application",
+                                                         "ERP.Domain"
+                                                     ]
+                                    },
+                                    {
+                                        "Name":  "Branches",
+                                        "Layers":  "Application",
+                                        "Projects":  "ERP.Application"
+                                    },
+                                    {
+                                        "Name":  "Auxiliary",
+                                        "Layers":  "Domain",
+                                        "Projects":  "ERP.Domain"
+                                    },
+                                    {
+                                        "Name":  "Pricing",
+                                        "Layers":  [
+                                                       "Application",
+                                                       "Domain"
+                                                   ],
+                                        "Projects":  [
+                                                         "ERP.Application",
+                                                         "ERP.Domain"
+                                                     ]
+                                    },
+                                    {
+                                        "Name":  "Caja",
+                                        "Layers":  [
+                                                       "Application",
+                                                       "Domain"
+                                                   ],
+                                        "Projects":  [
+                                                         "ERP.Application",
+                                                         "ERP.Domain"
+                                                     ]
+                                    },
+                                    {
+                                        "Name":  "ElectronicInvoicing",
+                                        "Layers":  "Application",
+                                        "Projects":  "ERP.Application"
+                                    },
+                                    {
+                                        "Name":  "Configuration",
+                                        "Layers":  [
+                                                       "Application",
+                                                       "Domain"
+                                                   ],
+                                        "Projects":  [
+                                                         "ERP.Application",
+                                                         "ERP.Domain"
+                                                     ]
+                                    },
+                                    {
+                                        "Name":  "Audit",
+                                        "Layers":  [
+                                                       "Application",
+                                                       "Domain"
+                                                   ],
+                                        "Projects":  [
+                                                         "ERP.Application",
+                                                         "ERP.Domain"
+                                                     ]
+                                    },
+                                    {
+                                        "Name":  "Ride",
+                                        "Layers":  [
+                                                       "Application",
+                                                       "Domain"
+                                                   ],
+                                        "Projects":  [
+                                                         "ERP.Application",
+                                                         "ERP.Domain"
+                                                     ]
+                                    },
+                                    {
+                                        "Name":  "Media",
+                                        "Layers":  [
+                                                       "Application",
+                                                       "Domain"
+                                                   ],
+                                        "Projects":  [
+                                                         "ERP.Application",
+                                                         "ERP.Domain"
+                                                     ]
+                                    },
+                                    {
+                                        "Name":  "ElectronicDocuments",
+                                        "Layers":  [
+                                                       "Application",
+                                                       "Domain"
+                                                   ],
+                                        "Projects":  [
+                                                         "ERP.Application",
+                                                         "ERP.Domain"
+                                                     ]
+                                    },
+                                    {
+                                        "Name":  "Security",
+                                        "Layers":  [
+                                                       "Application",
+                                                       "Domain"
+                                                   ],
+                                        "Projects":  [
+                                                         "ERP.Application",
+                                                         "ERP.Domain"
+                                                     ]
+                                    },
+                                    {
+                                        "Name":  "SriCatalogs",
+                                        "Layers":  "Domain",
+                                        "Projects":  "ERP.Domain"
+                                    },
+                                    {
+                                        "Name":  "OrgConfig",
+                                        "Layers":  "Application",
+                                        "Projects":  "ERP.Application"
+                                    },
+                                    {
+                                        "Name":  "Navigation",
+                                        "Layers":  [
+                                                       "Application",
+                                                       "Domain"
+                                                   ],
+                                        "Projects":  [
+                                                         "ERP.Application",
+                                                         "ERP.Domain"
+                                                     ]
+                                    }
+                                ]
+                },
+    "Frontend":  {
+                     "Generated":  "2026-07-15 18:46:13",
+                     "FrontendRoot":  "C:\\ProyectCursor\\erp-saas\\frontend\\src",
+                     "Statistics":  {
+                                        "SourceFiles":  344,
+                                        "Pages":  1,
+                                        "Components":  50,
+                                        "Hooks":  5,
+                                        "Services":  0,
+                                        "Stores":  0,
+                                        "Routes":  1
+                                    },
+                     "Modules":  [
+                                     "access",
+                                     "admin",
+                                     "auth",
+                                     "branches",
+                                     "caja",
+                                     "company-management",
+                                     "config",
+                                     "configuracion",
+                                     "dashboard",
+                                     "electronicDocuments",
+                                     "emissionPoints",
+                                     "establishments",
+                                     "finance",
+                                     "inventory",
+                                     "items",
+                                     "lib",
+                                     "logistica",
+                                     "masterData",
+                                     "pricing",
+                                     "purchases",
+                                     "reportes",
+                                     "ride",
+                                     "sales",
+                                     "security",
+                                     "session",
+                                     "settings",
+                                     "shared"
+                                 ]
+                 },
+    "Tests":  {
+                  "Generated":  "2026-07-15 18:46:16",
+                  "Backend":  {
+                                  "TestProjects":  5,
+                                  "TestFiles":  135,
+                                  "Projects":  [
+                                                   {
+                                                       "Project":  "ERP.API.Tests",
+                                                       "Path":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.API.Tests",
+                                                       "TestFiles":  18
+                                                   },
+                                                   {
+                                                       "Project":  "ERP.Application.Tests",
+                                                       "Path":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Application.Tests",
+                                                       "TestFiles":  35
+                                                   },
+                                                   {
+                                                       "Project":  "ERP.Architecture.Tests",
+                                                       "Path":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Architecture.Tests",
+                                                       "TestFiles":  21
+                                                   },
+                                                   {
+                                                       "Project":  "ERP.Domain.Tests",
+                                                       "Path":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Domain.Tests",
+                                                       "TestFiles":  17
+                                                   },
+                                                   {
+                                                       "Project":  "ERP.Infrastructure.Tests",
+                                                       "Path":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Infrastructure.Tests",
+                                                       "TestFiles":  44
+                                                   }
+                                               ]
+                              },
+                  "Frontend":  {
+                                   "TestFiles":  178
+                               }
+              },
+    "Documentation":  {
+                          "Generated":  "2026-07-15 18:46:17",
+                          "RootDocuments":  [
+                                                {
+                                                    "Name":  "CLAUDE.md",
+                                                    "Exists":  true
+                                                },
+                                                {
+                                                    "Name":  "STATUS.md",
+                                                    "Exists":  false
+                                                },
+                                                {
+                                                    "Name":  "FEATURES.md",
+                                                    "Exists":  true
+                                                }
+                                            ],
+                          "Documentation":  {
+                                                "TotalMarkdownFiles":  106,
+                                                "ADRCount":  26
+                                            }
+                      },
+    "Architecture":  {
+                         "Generated":  "2026-07-15 18:46:18",
+                         "Layers":  {
+                                        "Domain":  {
+                                                       "Files":  332
+                                                   },
+                                        "Application":  {
+                                                            "Commands":  0,
+                                                            "Validators":  6,
+                                                            "Queries":  4,
+                                                            "Files":  577
+                                                        },
+                                        "Infrastructure":  {
+                                                               "DbContext":  95,
+                                                               "Files":  402,
+                                                               "Repository":  22
+                                                           },
+                                        "API":  {
+                                                    "Controllers":  219,
+                                                    "Files":  86
+                                                }
+                                    },
+                         "Violations":  [
+
+                                        ]
+                     },
+    "ModuleHealth":  {
+                         "Generated":  "2026-07-15 18:46:21",
+                         "Modules":  [
+                                         {
+                                             "Name":  "Company",
+                                             "Domain":  true,
+                                             "Application":  true,
+                                             "Frontend":  false,
+                                             "Score":  65
+                                         },
+                                         {
+                                             "Name":  "Dashboard",
+                                             "Domain":  false,
+                                             "Application":  true,
+                                             "Frontend":  true,
+                                             "Score":  90
+                                         },
+                                         {
+                                             "Name":  "Purchases",
+                                             "Domain":  true,
+                                             "Application":  true,
+                                             "Frontend":  true,
+                                             "Score":  90
+                                         },
+                                         {
+                                             "Name":  "Companies",
+                                             "Domain":  false,
+                                             "Application":  true,
+                                             "Frontend":  false,
+                                             "Score":  65
+                                         },
+                                         {
+                                             "Name":  "Menu",
+                                             "Domain":  true,
+                                             "Application":  false,
+                                             "Frontend":  false,
+                                             "Score":  65
+                                         },
+                                         {
+                                             "Name":  "Auth",
+                                             "Domain":  true,
+                                             "Application":  true,
+                                             "Frontend":  true,
+                                             "Score":  90
+                                         },
+                                         {
+                                             "Name":  "Integration",
+                                             "Domain":  false,
+                                             "Application":  true,
+                                             "Frontend":  false,
+                                             "Score":  65
+                                         },
+                                         {
+                                             "Name":  "Access",
+                                             "Domain":  true,
+                                             "Application":  true,
+                                             "Frontend":  true,
+                                             "Score":  90
+                                         },
+                                         {
+                                             "Name":  "Sales",
+                                             "Domain":  true,
+                                             "Application":  true,
+                                             "Frontend":  true,
+                                             "Score":  90
+                                         },
+                                         {
+                                             "Name":  "Items",
+                                             "Domain":  true,
+                                             "Application":  true,
+                                             "Frontend":  true,
+                                             "Score":  90
+                                         },
+                                         {
+                                             "Name":  "Tenants",
+                                             "Domain":  true,
+                                             "Application":  false,
+                                             "Frontend":  false,
+                                             "Score":  65
+                                         },
+                                         {
+                                             "Name":  "Session",
+                                             "Domain":  false,
+                                             "Application":  true,
+                                             "Frontend":  true,
+                                             "Score":  90
+                                         },
+                                         {
+                                             "Name":  "Common",
+                                             "Domain":  true,
+                                             "Application":  true,
+                                             "Frontend":  false,
+                                             "Score":  65
+                                         },
+                                         {
+                                             "Name":  "Inventory",
+                                             "Domain":  true,
+                                             "Application":  true,
+                                             "Frontend":  true,
+                                             "Score":  90
+                                         },
+                                         {
+                                             "Name":  "Finance",
+                                             "Domain":  true,
+                                             "Application":  true,
+                                             "Frontend":  true,
+                                             "Score":  90
+                                         },
+                                         {
+                                             "Name":  "Branches",
+                                             "Domain":  false,
+                                             "Application":  true,
+                                             "Frontend":  true,
+                                             "Score":  90
+                                         },
+                                         {
+                                             "Name":  "Auxiliary",
+                                             "Domain":  true,
+                                             "Application":  false,
+                                             "Frontend":  false,
+                                             "Score":  65
+                                         },
+                                         {
+                                             "Name":  "Pricing",
+                                             "Domain":  true,
+                                             "Application":  true,
+                                             "Frontend":  true,
+                                             "Score":  90
+                                         },
+                                         {
+                                             "Name":  "Caja",
+                                             "Domain":  true,
+                                             "Application":  true,
+                                             "Frontend":  true,
+                                             "Score":  90
+                                         },
+                                         {
+                                             "Name":  "ElectronicInvoicing",
+                                             "Domain":  false,
+                                             "Application":  true,
+                                             "Frontend":  false,
+                                             "Score":  65
+                                         },
+                                         {
+                                             "Name":  "Configuration",
+                                             "Domain":  true,
+                                             "Application":  true,
+                                             "Frontend":  false,
+                                             "Score":  65
+                                         },
+                                         {
+                                             "Name":  "Audit",
+                                             "Domain":  true,
+                                             "Application":  true,
+                                             "Frontend":  false,
+                                             "Score":  65
+                                         },
+                                         {
+                                             "Name":  "Ride",
+                                             "Domain":  true,
+                                             "Application":  true,
+                                             "Frontend":  true,
+                                             "Score":  90
+                                         },
+                                         {
+                                             "Name":  "Media",
+                                             "Domain":  true,
+                                             "Application":  true,
+                                             "Frontend":  false,
+                                             "Score":  65
+                                         },
+                                         {
+                                             "Name":  "ElectronicDocuments",
+                                             "Domain":  true,
+                                             "Application":  true,
+                                             "Frontend":  true,
+                                             "Score":  90
+                                         },
+                                         {
+                                             "Name":  "Security",
+                                             "Domain":  true,
+                                             "Application":  true,
+                                             "Frontend":  true,
+                                             "Score":  90
+                                         },
+                                         {
+                                             "Name":  "SriCatalogs",
+                                             "Domain":  true,
+                                             "Application":  false,
+                                             "Frontend":  false,
+                                             "Score":  65
+                                         },
+                                         {
+                                             "Name":  "OrgConfig",
+                                             "Domain":  false,
+                                             "Application":  true,
+                                             "Frontend":  false,
+                                             "Score":  65
+                                         },
+                                         {
+                                             "Name":  "Navigation",
+                                             "Domain":  true,
+                                             "Application":  true,
+                                             "Frontend":  false,
+                                             "Score":  65
+                                         }
+                                     ]
+                     },
+    "Dependencies":  {
+                         "Generated":  "2026-07-15 18:46:20",
+                         "Violations":  [
+
+                                        ],
+                         "Summary":  {
+                                         "Total":  0
+                                     }
+                     },
+    "Git":  {
+                "Generated":  "2026-07-15 18:46:24",
+                "Branch":  {
+
+                           },
+                "TotalCommits":  0,
+                "LastCommit":  {
+                                   "Hash":  {
+
+                                            },
+                                   "Date":  {
+
+                                            },
+                                   "Message":  {
+
+                                               }
+                               },
+                "RecentCommits":  [
+                                      {
+                                          "Hash":  "0f9d0fb0",
+                                          "Date":  "2026-07-13",
+                                          "Message":  "feat(masterData,ride): cat├ílogo SRI de tipo de persona/proveedor + ajustes de renderizado RIDE"
+                                      },
+                                      {
+                                          "Hash":  "0ee8acec",
+                                          "Date":  "2026-07-13",
+                                          "Message":  "fix(sales): corrige rechazo SRI [65] fecha emision extemporanea"
+                                      },
+                                      {
+                                          "Hash":  "ab130947",
+                                          "Date":  "2026-07-13",
+                                          "Message":  "feat(ride): redise├▒o visual RIDE + Building Block Codes Barcode (Code128)"
+                                      },
+                                      {
+                                          "Hash":  "0d2f0a2f",
+                                          "Date":  "2026-07-13",
+                                          "Message":  "feat(ride,codes): implementa Ride v1.0 (RIDE PDF) + Building Block Codes para QR"
+                                      },
+                                      {
+                                          "Hash":  "60e30de9",
+                                          "Date":  "2026-07-11",
+                                          "Message":  "feat(electronic-documents): cierre oficial ElectronicDocuments v1.0 (ADR-023/024)"
+                                      },
+                                      {
+                                          "Hash":  "f6eab30b",
+                                          "Date":  "2026-07-10",
+                                          "Message":  "commit"
+                                      },
+                                      {
+                                          "Hash":  "e273acf3",
+                                          "Date":  "2026-07-10",
+                                          "Message":  "feat: gestion de certificado SRI por upload + estado oficial de facturacion electronica"
+                                      },
+                                      {
+                                          "Hash":  "7960a81c",
+                                          "Date":  "2026-07-10",
+                                          "Message":  "chore: eliminar m├│dulo Fiscal legacy (c├│digo muerto)"
+                                      },
+                                      {
+                                          "Hash":  "ec9d59e9",
+                                          "Date":  "2026-07-10",
+                                          "Message":  "feat: recursos oficiales XSD del SRI + resoluci├│n guiada por manifiesto"
+                                      },
+                                      {
+                                          "Hash":  "3296e87b",
+                                          "Date":  "2026-07-10",
+                                          "Message":  "feat: completar factura electr├│nica para pruebas SRI reales (SOAP Fault, XML, Monitor)"
+                                      }
+                                  ],
+                "ModuleActivity":  {
+
+                                   }
+            },
+    "Database":  {
+                     "Generated":  "2026-07-15 18:46:27",
+                     "Database":  {
+                                      "DbContext":  95,
+                                      "DbSets":  109,
+                                      "EntityConfigurations":  0,
+                                      "Repositories":  22,
+                                      "Migrations":  89
+                                  }
+                 },
+    "API":  {
+                "Generated":  "2026-07-15 18:46:28",
+                "API":  {
+                            "Controllers":  219,
+                            "Endpoints":  272,
+                            "AuthorizeAttributes":  312,
+                            "SwaggerReferences":  6,
+                            "MiddlewareReferences":  39
+                        }
+            },
+    "Migrations":  {
+                       "Generated":  "2026-07-15 18:46:29",
+                       "Summary":  {
+                                       "TotalFiles":  89
+                                   },
+                       "Migrations":  [
+                                          {
+                                              "Name":  "20260619182216_InitialEnterpriseBaseline",
+                                              "SizeKB":  176.56,
+                                              "Modified":  "2026-06-19 13:22:16"
+                                          },
+                                          {
+                                              "Name":  "20260619182216_InitialEnterpriseBaseline.Designer",
+                                              "SizeKB":  269.31,
+                                              "Modified":  "2026-06-19 13:22:16"
+                                          },
+                                          {
+                                              "Name":  "20260622160114_AddMissingDatabaseObjects",
+                                              "SizeKB":  23.75,
+                                              "Modified":  "2026-06-22 11:01:14"
+                                          },
+                                          {
+                                              "Name":  "20260622160114_AddMissingDatabaseObjects.Designer",
+                                              "SizeKB":  293.34,
+                                              "Modified":  "2026-06-22 11:01:14"
+                                          },
+                                          {
+                                              "Name":  "20260622164942_AddStockMovementsAndCurrentStocks",
+                                              "SizeKB":  5.34,
+                                              "Modified":  "2026-06-22 11:49:42"
+                                          },
+                                          {
+                                              "Name":  "20260622164942_AddStockMovementsAndCurrentStocks.Designer",
+                                              "SizeKB":  300.04,
+                                              "Modified":  "2026-06-22 11:49:42"
+                                          },
+                                          {
+                                              "Name":  "20260622173057_CleanPurchaseInvoiceHeader",
+                                              "SizeKB":  1.91,
+                                              "Modified":  "2026-06-22 12:30:58"
+                                          },
+                                          {
+                                              "Name":  "20260622173057_CleanPurchaseInvoiceHeader.Designer",
+                                              "SizeKB":  299.71,
+                                              "Modified":  "2026-06-22 12:30:58"
+                                          },
+                                          {
+                                              "Name":  "20260622181835_AddPurchaseHeaderEnterpriseFields",
+                                              "SizeKB":  4.28,
+                                              "Modified":  "2026-06-22 13:19:51"
+                                          },
+                                          {
+                                              "Name":  "20260622181835_AddPurchaseHeaderEnterpriseFields.Designer",
+                                              "SizeKB":  301.54,
+                                              "Modified":  "2026-06-22 13:18:35"
+                                          },
+                                          {
+                                              "Name":  "20260622202312_AddConfirmedTotalsSnapshot",
+                                              "SizeKB":  1.85,
+                                              "Modified":  "2026-06-22 15:23:12"
+                                          },
+                                          {
+                                              "Name":  "20260622202312_AddConfirmedTotalsSnapshot.Designer",
+                                              "SizeKB":  302.27,
+                                              "Modified":  "2026-06-22 15:23:12"
+                                          },
+                                          {
+                                              "Name":  "20260622211231_AddPurchaseFKsAndAccessKeyUnique",
+                                              "SizeKB":  2.6,
+                                              "Modified":  "2026-06-22 16:12:31"
+                                          },
+                                          {
+                                              "Name":  "20260622211231_AddPurchaseFKsAndAccessKeyUnique.Designer",
+                                              "SizeKB":  303.16,
+                                              "Modified":  "2026-06-22 16:12:31"
+                                          },
+                                          {
+                                              "Name":  "20260622214536_AddEnterpriseFieldsToPurchaseInvoiceDetail",
+                                              "SizeKB":  8.17,
+                                              "Modified":  "2026-06-22 16:45:37"
+                                          },
+                                          {
+                                              "Name":  "20260622214536_AddEnterpriseFieldsToPurchaseInvoiceDetail.Designer",
+                                              "SizeKB":  307.02,
+                                              "Modified":  "2026-06-22 16:45:37"
+                                          },
+                                          {
+                                              "Name":  "20260622220922_AddIsFrozenToPurchaseInvoiceDetail",
+                                              "SizeKB":  0.83,
+                                              "Modified":  "2026-06-22 17:09:22"
+                                          },
+                                          {
+                                              "Name":  "20260622220922_AddIsFrozenToPurchaseInvoiceDetail.Designer",
+                                              "SizeKB":  307.25,
+                                              "Modified":  "2026-06-22 17:09:22"
+                                          },
+                                          {
+                                              "Name":  "20260622224920_CleanPurchaseInvoiceDetailEntity",
+                                              "SizeKB":  1.99,
+                                              "Modified":  "2026-06-22 17:49:20"
+                                          },
+                                          {
+                                              "Name":  "20260622224920_CleanPurchaseInvoiceDetailEntity.Designer",
+                                              "SizeKB":  306.63,
+                                              "Modified":  "2026-06-22 17:49:20"
+                                          },
+                                          {
+                                              "Name":  "20260622234146_SwitchToXminConcurrencyToken",
+                                              "SizeKB":  0.63,
+                                              "Modified":  "2026-06-22 18:42:05"
+                                          },
+                                          {
+                                              "Name":  "20260622234146_SwitchToXminConcurrencyToken.Designer",
+                                              "SizeKB":  307.01,
+                                              "Modified":  "2026-06-22 18:41:46"
+                                          },
+                                          {
+                                              "Name":  "20260623030313_AddSriElectronicFieldsToWithholding",
+                                              "SizeKB":  3.47,
+                                              "Modified":  "2026-06-22 22:03:13"
+                                          },
+                                          {
+                                              "Name":  "20260623030313_AddSriElectronicFieldsToWithholding.Designer",
+                                              "SizeKB":  308.8,
+                                              "Modified":  "2026-06-22 22:03:13"
+                                          },
+                                          {
+                                              "Name":  "20260623032545_ChangeAuthorizationDateToTimestamp",
+                                              "SizeKB":  1.16,
+                                              "Modified":  "2026-06-22 22:25:45"
+                                          },
+                                          {
+                                              "Name":  "20260623032545_ChangeAuthorizationDateToTimestamp.Designer",
+                                              "SizeKB":  308.82,
+                                              "Modified":  "2026-06-22 22:25:45"
+                                          },
+                                          {
+                                              "Name":  "20260623233039_AddPaymentScheduleNotesAndTermName",
+                                              "SizeKB":  1.67,
+                                              "Modified":  "2026-06-23 18:30:39"
+                                          },
+                                          {
+                                              "Name":  "20260623233039_AddPaymentScheduleNotesAndTermName.Designer",
+                                              "SizeKB":  309.45,
+                                              "Modified":  "2026-06-23 18:30:39"
+                                          },
+                                          {
+                                              "Name":  "20260624004401_ClosePaymentScheduleModule",
+                                              "SizeKB":  2,
+                                              "Modified":  "2026-06-23 19:44:01"
+                                          },
+                                          {
+                                              "Name":  "20260624004401_ClosePaymentScheduleModule.Designer",
+                                              "SizeKB":  309.19,
+                                              "Modified":  "2026-06-23 19:44:01"
+                                          },
+                                          {
+                                              "Name":  "20260624005556_FinalPaymentScheduleAdjustments",
+                                              "SizeKB":  0.83,
+                                              "Modified":  "2026-06-23 19:55:57"
+                                          },
+                                          {
+                                              "Name":  "20260624005556_FinalPaymentScheduleAdjustments.Designer",
+                                              "SizeKB":  309.38,
+                                              "Modified":  "2026-06-23 19:55:57"
+                                          },
+                                          {
+                                              "Name":  "20260624010649_AddUpdatedByToPaymentSchedule",
+                                              "SizeKB":  0.81,
+                                              "Modified":  "2026-06-23 20:06:49"
+                                          },
+                                          {
+                                              "Name":  "20260624010649_AddUpdatedByToPaymentSchedule.Designer",
+                                              "SizeKB":  309.53,
+                                              "Modified":  "2026-06-23 20:06:49"
+                                          },
+                                          {
+                                              "Name":  "20260624023630_AddStockAdjustmentsAndTransfers",
+                                              "SizeKB":  10.94,
+                                              "Modified":  "2026-06-23 21:36:30"
+                                          },
+                                          {
+                                              "Name":  "20260624023630_AddStockAdjustmentsAndTransfers.Designer",
+                                              "SizeKB":  324.47,
+                                              "Modified":  "2026-06-23 21:36:30"
+                                          },
+                                          {
+                                              "Name":  "20260624050809_FixCurrentStockXminConcurrency",
+                                              "SizeKB":  0.81,
+                                              "Modified":  "2026-06-24 00:09:07"
+                                          },
+                                          {
+                                              "Name":  "20260624050809_FixCurrentStockXminConcurrency.Designer",
+                                              "SizeKB":  324.45,
+                                              "Modified":  "2026-06-24 00:08:09"
+                                          },
+                                          {
+                                              "Name":  "20260624185457_AddSalesInvoiceModule",
+                                              "SizeKB":  11.69,
+                                              "Modified":  "2026-06-24 13:54:57"
+                                          },
+                                          {
+                                              "Name":  "20260624185457_AddSalesInvoiceModule.Designer",
+                                              "SizeKB":  339.71,
+                                              "Modified":  "2026-06-24 13:54:57"
+                                          },
+                                          {
+                                              "Name":  "20260624205958_RefactorSalesVOsCleanup",
+                                              "SizeKB":  1.74,
+                                              "Modified":  "2026-06-24 15:59:59"
+                                          },
+                                          {
+                                              "Name":  "20260624205958_RefactorSalesVOsCleanup.Designer",
+                                              "SizeKB":  341.24,
+                                              "Modified":  "2026-06-24 15:59:59"
+                                          },
+                                          {
+                                              "Name":  "20260624212124_AuditSalesInvoiceFinal",
+                                              "SizeKB":  1.22,
+                                              "Modified":  "2026-06-24 16:21:24"
+                                          },
+                                          {
+                                              "Name":  "20260624212124_AuditSalesInvoiceFinal.Designer",
+                                              "SizeKB":  341.8,
+                                              "Modified":  "2026-06-24 16:21:24"
+                                          },
+                                          {
+                                              "Name":  "20260624212530_AddAccessKeyUniqueIndex",
+                                              "SizeKB":  0.79,
+                                              "Modified":  "2026-06-24 16:25:54"
+                                          },
+                                          {
+                                              "Name":  "20260624212530_AddAccessKeyUniqueIndex.Designer",
+                                              "SizeKB":  341.81,
+                                              "Modified":  "2026-06-24 16:25:31"
+                                          },
+                                          {
+                                              "Name":  "20260625041431_AddPaymentMethodsAndInvoicePayments",
+                                              "SizeKB":  11.32,
+                                              "Modified":  "2026-06-24 23:22:10"
+                                          },
+                                          {
+                                              "Name":  "20260625041431_AddPaymentMethodsAndInvoicePayments.Designer",
+                                              "SizeKB":  353.38,
+                                              "Modified":  "2026-06-24 23:14:31"
+                                          },
+                                          {
+                                              "Name":  "20260625174105_AddPaymentTermFieldsToTradingSettings",
+                                              "SizeKB":  1.64,
+                                              "Modified":  "2026-06-25 12:41:05"
+                                          },
+                                          {
+                                              "Name":  "20260625174105_AddPaymentTermFieldsToTradingSettings.Designer",
+                                              "SizeKB":  354.07,
+                                              "Modified":  "2026-06-25 12:41:05"
+                                          },
+                                          {
+                                              "Name":  "20260625180828_AddPaymentDetailColumns",
+                                              "SizeKB":  4.29,
+                                              "Modified":  "2026-06-25 13:08:28"
+                                          },
+                                          {
+                                              "Name":  "20260625180828_AddPaymentDetailColumns.Designer",
+                                              "SizeKB":  356.12,
+                                              "Modified":  "2026-06-25 13:08:28"
+                                          },
+                                          {
+                                              "Name":  "20260625183330_ReplacePaymentDetailColumnsWithTables",
+                                              "SizeKB":  8.22,
+                                              "Modified":  "2026-06-25 13:33:30"
+                                          },
+                                          {
+                                              "Name":  "20260625183330_ReplacePaymentDetailColumnsWithTables.Designer",
+                                              "SizeKB":  358.81,
+                                              "Modified":  "2026-06-25 13:33:30"
+                                          },
+                                          {
+                                              "Name":  "20260626024546_AddSriPaymentMethodCodeToSalesInvoice",
+                                              "SizeKB":  0.85,
+                                              "Modified":  "2026-06-25 21:45:46"
+                                          },
+                                          {
+                                              "Name":  "20260626024546_AddSriPaymentMethodCodeToSalesInvoice.Designer",
+                                              "SizeKB":  359.05,
+                                              "Modified":  "2026-06-25 21:45:46"
+                                          },
+                                          {
+                                              "Name":  "20260626225538_AddEmissionTypeToSalesInvoice",
+                                              "SizeKB":  0.82,
+                                              "Modified":  "2026-06-26 17:55:38"
+                                          },
+                                          {
+                                              "Name":  "20260626225538_AddEmissionTypeToSalesInvoice.Designer",
+                                              "SizeKB":  359.29,
+                                              "Modified":  "2026-06-26 17:55:38"
+                                          },
+                                          {
+                                              "Name":  "20260628224554_AddCashManagementModule",
+                                              "SizeKB":  9.13,
+                                              "Modified":  "2026-06-28 17:45:54"
+                                          },
+                                          {
+                                              "Name":  "20260628224554_AddCashManagementModule.Designer",
+                                              "SizeKB":  369.96,
+                                              "Modified":  "2026-06-28 17:45:54"
+                                          },
+                                          {
+                                              "Name":  "20260629232210_AddCreatedAtToDocumentSequence",
+                                              "SizeKB":  1.31,
+                                              "Modified":  "2026-06-29 18:22:32"
+                                          },
+                                          {
+                                              "Name":  "20260629232210_AddCreatedAtToDocumentSequence.Designer",
+                                              "SizeKB":  370.15,
+                                              "Modified":  "2026-06-29 18:22:10"
+                                          },
+                                          {
+                                              "Name":  "20260629233953_HardenDocSeqConstraints",
+                                              "SizeKB":  2.16,
+                                              "Modified":  "2026-06-29 18:39:53"
+                                          },
+                                          {
+                                              "Name":  "20260629233953_HardenDocSeqConstraints.Designer",
+                                              "SizeKB":  370.25,
+                                              "Modified":  "2026-06-29 18:39:53"
+                                          },
+                                          {
+                                              "Name":  "20260630000000_AddInvoiceDefaultsToSriSettings",
+                                              "SizeKB":  1.53,
+                                              "Modified":  "2026-06-30 18:31:54"
+                                          },
+                                          {
+                                              "Name":  "20260630000001_AddSalesOperationalDefaultsToSriSettings",
+                                              "SizeKB":  1.1,
+                                              "Modified":  "2026-06-30 18:45:39"
+                                          },
+                                          {
+                                              "Name":  "20260702012054_AddOrgSettings",
+                                              "SizeKB":  2.67,
+                                              "Modified":  "2026-07-01 20:20:54"
+                                          },
+                                          {
+                                              "Name":  "20260702012054_AddOrgSettings.Designer",
+                                              "SizeKB":  374.17,
+                                              "Modified":  "2026-07-01 20:20:54"
+                                          },
+                                          {
+                                              "Name":  "20260702020924_RemoveSriSettingsInvoiceDefaults",
+                                              "SizeKB":  2.22,
+                                              "Modified":  "2026-07-01 21:12:17"
+                                          },
+                                          {
+                                              "Name":  "20260702020924_RemoveSriSettingsInvoiceDefaults.Designer",
+                                              "SizeKB":  373.2,
+                                              "Modified":  "2026-07-01 21:09:24"
+                                          },
+                                          {
+                                              "Name":  "20260702230305_RedesignItemsCreateFlow",
+                                              "SizeKB":  5.64,
+                                              "Modified":  "2026-07-02 18:09:55"
+                                          },
+                                          {
+                                              "Name":  "20260702230305_RedesignItemsCreateFlow.Designer",
+                                              "SizeKB":  366.71,
+                                              "Modified":  "2026-07-02 18:09:55"
+                                          },
+                                          {
+                                              "Name":  "20260703001952_Fase1ItemIdentityHardening",
+                                              "SizeKB":  2.35,
+                                              "Modified":  "2026-07-02 19:20:17"
+                                          },
+                                          {
+                                              "Name":  "20260703001952_Fase1ItemIdentityHardening.Designer",
+                                              "SizeKB":  376.29,
+                                              "Modified":  "2026-07-02 19:19:52"
+                                          },
+                                          {
+                                              "Name":  "20260703010345_Fase2ItemIdentificationGlobalUniqueness",
+                                              "SizeKB":  3.11,
+                                              "Modified":  "2026-07-02 20:03:46"
+                                          },
+                                          {
+                                              "Name":  "20260703010345_Fase2ItemIdentificationGlobalUniqueness.Designer",
+                                              "SizeKB":  376.19,
+                                              "Modified":  "2026-07-02 20:03:46"
+                                          },
+                                          {
+                                              "Name":  "20260703022448_Fase6VariantSkuGlobalUniqueness",
+                                              "SizeKB":  1.17,
+                                              "Modified":  "2026-07-02 21:24:48"
+                                          },
+                                          {
+                                              "Name":  "20260703022448_Fase6VariantSkuGlobalUniqueness.Designer",
+                                              "SizeKB":  376.18,
+                                              "Modified":  "2026-07-02 21:24:48"
+                                          },
+                                          {
+                                              "Name":  "20260703041324_DropItemPurchaseCode",
+                                              "SizeKB":  0.8,
+                                              "Modified":  "2026-07-02 23:13:24"
+                                          },
+                                          {
+                                              "Name":  "20260703041324_DropItemPurchaseCode.Designer",
+                                              "SizeKB":  375.91,
+                                              "Modified":  "2026-07-02 23:13:24"
+                                          },
+                                          {
+                                              "Name":  "20260704123530_AddItemDynamicCatalogs",
+                                              "SizeKB":  8.57,
+                                              "Modified":  "2026-07-04 07:35:53"
+                                          },
+                                          {
+                                              "Name":  "20260704123530_AddItemDynamicCatalogs.Designer",
+                                              "SizeKB":  383.24,
+                                              "Modified":  "2026-07-04 07:35:31"
+                                          },
+                                          {
+                                              "Name":  "20260704193028_AddItemTypeIdForeignKey",
+                                              "SizeKB":  5.55,
+                                              "Modified":  "2026-07-04 14:31:02"
+                                          },
+                                          {
+                                              "Name":  "20260704193028_AddItemTypeIdForeignKey.Designer",
+                                              "SizeKB":  383.13,
+                                              "Modified":  "2026-07-04 14:30:28"
+                                          },
+                                          {
+                                              "Name":  "20260707231845_AddKardexSequenceAndRunningCosts",
+                                              "SizeKB":  6.6,
+                                              "Modified":  "2026-07-07 18:19:18"
+                                          },
+                                          {
+                                              "Name":  "20260707231845_AddKardexSequenceAndRunningCosts.Designer",
+                                              "SizeKB":  416.04,
+                                              "Modified":  "2026-07-07 18:18:45"
+                                          },
+                                          {
+                                              "Name":  "20260707234212_AddWarehouseIdToSalesInvoiceDetail",
+                                              "SizeKB":  0.81,
+                                              "Modified":  "2026-07-07 18:42:12"
+                                          },
+                                          {
+                                              "Name":  "20260707234212_AddWarehouseIdToSalesInvoiceDetail.Designer",
+                                              "SizeKB":  416.2,
+                                              "Modified":  "2026-07-07 18:42:12"
+                                          },
+                                          {
+                                              "Name":  "ErpDbContextModelSnapshot",
+                                              "SizeKB":  428.16,
+                                              "Modified":  "2026-07-13 20:17:11"
+                                          }
+                                      ]
+                   }
+}

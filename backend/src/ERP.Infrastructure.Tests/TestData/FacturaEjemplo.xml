@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<factura id="comprobante" version="1.1.0">
+  <infoTributaria>
+    <ambiente>1</ambiente>
+    <tipoEmision>1</tipoEmision>
+    <razonSocial>EMPRESA EJEMPLO S.A.</razonSocial>
+    <nombreComercial>EJEMPLO</nombreComercial>
+    <ruc>__RUC__</ruc>
+    <claveAcceso>__CLAVE__</claveAcceso>
+    <codDoc>01</codDoc>
+    <estab>001</estab>
+    <ptoEmi>001</ptoEmi>
+    <secuencial>000000001</secuencial>
+    <dirMatriz>QUITO</dirMatriz>
+  </infoTributaria>
+  <infoFactura>
+    <fechaEmision>09/05/2026</fechaEmision>
+    <dirEstablecimiento>QUITO</dirEstablecimiento>
+    <obligadoContabilidad>SI</obligadoContabilidad>
+    <tipoIdentificacionComprador>04</tipoIdentificacionComprador>
+    <razonSocialComprador>CLIENTE PRUEBAS</razonSocialComprador>
+    <identificacionComprador>1722333444001</identificacionComprador>
+    <totalSinImpuestos>100.00</totalSinImpuestos>
+    <totalDescuento>0.00</totalDescuento>
+    <totalConImpuestos>
+      <totalImpuesto>
+        <codigo>2</codigo>
+        <codigoPorcentaje>2</codigoPorcentaje>
+        <baseImponible>100.00</baseImponible>
+        <valor>12.00</valor>
+      </totalImpuesto>
+    </totalConImpuestos>
+    <importeTotal>112.00</importeTotal>
+  </infoFactura>
+  <detalles>
+    <detalle>
+      <codigoPrincipal>SKU-1</codigoPrincipal>
+      <descripcion>Producto de prueba</descripcion>
+      <cantidad>1</cantidad>
+      <precioUnitario>100</precioUnitario>
+      <descuento>0</descuento>
+      <precioTotalSinImpuesto>100.00</precioTotalSinImpuesto>
+    </detalle>
+  </detalles>
+</factura>

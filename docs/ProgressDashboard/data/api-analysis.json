@@ -1,0 +1,10 @@
+﻿{
+    "Generated":  "2026-07-16 12:24:36",
+    "API":  {
+                "Controllers":  219,
+                "Endpoints":  272,
+                "AuthorizeAttributes":  312,
+                "SwaggerReferences":  6,
+                "MiddlewareReferences":  39
+            }
+}

@@ -1,0 +1,27 @@
+#!/bin/sh
+# Pre-commit hook — ejecuta guardrails locales antes de cada commit.
+# Solo valida archivos en el área de staging (no todo el repo).
+
+cd "$(git rev-parse --show-toplevel)"
+
+echo "🔍 [pre-commit] ESLint + TypeScript..."
+cd frontend && npm run lint --silent && npx tsc --noEmit --pretty false
+if [ $? -ne 0 ]; then
+  echo "❌ [pre-commit] Lint/TypeScript falló. Commit abortado."
+  exit 1
+fi
+
+echo "🏛  [pre-commit] Architecture checks..."
+node ../tools/architecture/check-naming-conventions.mjs
+if [ $? -ne 0 ]; then
+  echo "❌ [pre-commit] Naming conventions fallaron. Commit abortado."
+  exit 1
+fi
+
+node ../tools/architecture/check-i18n-keys.mjs
+if [ $? -ne 0 ]; then
+  echo "❌ [pre-commit] i18n keys inconsistentes. Revisa en/qu locales."
+  exit 1
+fi
+
+echo "✅ [pre-commit] OK"

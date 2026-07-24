@@ -1,0 +1,393 @@
+// CA1848/CA1873: Program.cs top-level statements cannot use [LoggerMessage] source generators
+#pragma warning disable CA1848, CA1873
+
+using Hangfire;
+using Hangfire.Dashboard;
+using Hangfire.PostgreSql;
+using ERP.API.Hangfire;
+using ERP.API.Health;
+using ERP.API.Extensions;
+using ERP.API.Middleware;
+using ERP.API.Services;
+using ERP.Infrastructure;
+using ERP.Infrastructure.Caching;
+using ERP.Application;
+using ERP.API.Authorization;
+using ERP.Infrastructure.Persistence;
+using HealthChecks.UI.Client;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Diagnostics.HealthChecks;
+using QuestPDF.Infrastructure;
+using System.Threading.RateLimiting;
+using Serilog;
+using OpenTelemetry.Metrics;
+using OpenTelemetry.Resources;
+using Hangfire.Common;
+
+// Licencia Community: libre para proyectos con ingresos anuales < 1 M USD.
+// Cambiar a LicenseType.Professional si aplica.
+QuestPDF.Settings.License = LicenseType.Community;
+
+var builder = WebApplication.CreateBuilder(args);
+
+// Asegura que los user-secrets del API ganen a appsettings.
+builder.Configuration.AddUserSecrets(typeof(Program).Assembly, optional: true);
+
+// Alias opcional en hosting: DB_CONNECTION_STRING → ConnectionStrings:DefaultConnection
+var dbFromEnv = Environment.GetEnvironmentVariable("DB_CONNECTION_STRING");
+if (!string.IsNullOrWhiteSpace(dbFromEnv))
+{
+    builder.Configuration.AddInMemoryCollection([
+        new KeyValuePair<string, string?>("ConnectionStrings:DefaultConnection", dbFromEnv)
+    ]);
+}
+
+builder.Host.UseSerilog((context, _, configuration) =>
+{
+    configuration
+        .ReadFrom.Configuration(context.Configuration)
+        .Enrich.FromLogContext()
+        .Enrich.WithProperty("Application", "ERP");
+});
+
+builder.Services.AddControllers()
+    .AddJsonOptions(opts =>
+    {
+        opts.JsonSerializerOptions.Converters.Add(
+            new System.Text.Json.Serialization.JsonStringEnumConverter());
+    });
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerWithJwt();
+
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("Frontend", policy =>
+    {
+        var origins = builder.Configuration
+            .GetSection("Cors:AllowedOrigins")
+            .Get<string[]>() ?? ["http://localhost:5173"];
+
+        policy.WithOrigins(origins)
+              .WithMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
+              .WithHeaders("Authorization", "Content-Type", "Accept")
+              .AllowCredentials();
+    });
+});
+
+builder.Services.AddJwtAuthentication(builder.Configuration);
+
+builder.Services.AddRateLimiter(options =>
+{
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+    options.AddPolicy("per-tenant", httpContext =>
+    {
+        var tenantId = httpContext.User.FindFirst("tenant_id")?.Value ?? "anonymous";
+        return RateLimitPartition.GetFixedWindowLimiter(
+            tenantId,
+            _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = 600,
+                Window = TimeSpan.FromMinutes(1),
+                QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+                QueueLimit = 0,
+            });
+    });
+
+    var refreshIpLimit = builder.Configuration.GetValue("Auth:RefreshRateLimitPerIpPerMinute", 60);
+    options.AddPolicy("auth-refresh-ip", httpContext =>
+    {
+        var ip = httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+        return RateLimitPartition.GetFixedWindowLimiter(
+            ip,
+            _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = refreshIpLimit,
+                Window = TimeSpan.FromMinutes(1),
+                QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+                QueueLimit = 0,
+            });
+    });
+});
+
+// IDistributedCache: Redis si Redis:ConnectionString o ConnectionStrings:Redis está definida;
+// en tests y producción sin Redis, memoria (no comparte entre instancias).
+var redisConnection = builder.Configuration["Redis:ConnectionString"]
+                      ?? builder.Configuration.GetConnectionString("Redis");
+var redisInstanceName = builder.Configuration["Redis:InstanceName"];
+if (string.IsNullOrWhiteSpace(redisInstanceName))
+    redisInstanceName = "ERP_";
+
+var redisConfigured = !string.IsNullOrWhiteSpace(redisConnection);
+if (redisConfigured)
+{
+    builder.Services.AddStackExchangeRedisCache(options =>
+    {
+        options.Configuration = redisConnection;
+        options.InstanceName = redisInstanceName;
+    });
+}
+else
+{
+    builder.Services.AddDistributedMemoryCache();
+}
+
+builder.Services.AddDistributedCacheInstrumentation(builder.Configuration, redisConfigured);
+
+builder.Services.AddInfrastructure(builder.Configuration);
+builder.Services.AddDataProtection();
+builder.Services.AddApplication();
+builder.Services.AddScoped<AppFeatureDiscoveryService>();
+
+// OpenTelemetry metrics (Prometheus scrape en /metrics cuando Observability:EnablePrometheus=true)
+var observabilityEnabled = builder.Configuration.GetValue("Observability:EnablePrometheus", true);
+if (observabilityEnabled && !builder.Environment.IsEnvironment("Testing"))
+{
+    builder.Services.AddOpenTelemetry()
+        .ConfigureResource(r => r.AddService("ERP",
+            serviceVersion: typeof(Program).Assembly.GetName().Version?.ToString() ?? "1.0.0"))
+        .WithMetrics(m => m
+            .AddAspNetCoreInstrumentation()
+            .AddMeter("ERP.Security")
+            .AddPrometheusExporter());
+}
+
+// Health: live = proceso arriba; ready = BD, Redis (si hay), URL externa opcional (SRI)
+var healthChecks = builder.Services.AddHealthChecks()
+    .AddCheck("self", () => HealthCheckResult.Healthy(), tags: ["live"])
+    .AddCheck<ErpDbContextReadyHealthCheck>("database", tags: ["ready"])
+    .AddCheck<SecurityContextHealthCheck>("security-context", tags: ["security"])
+    .AddCheck<MembershipConsistencyHealthCheck>("membership-consistency", tags: ["security", "ready"])
+    .AddCheck<MasterDataSyncHealthCheck>("masterdata-sync", tags: ["security", "ready"])
+    .AddCheck<BackgroundContextHealthCheck>("background-context", tags: ["security"])
+    .AddCheck<QueryFilterEnforcementHealthCheck>("query-filter-enforcement", tags: ["security"])
+    .AddCheck<MasterDataReconciliationHealthCheck>("masterdata-reconciliation", tags: ["security", "ready"]);
+
+builder.Services.AddHostedService<ErpScopeMarkerStartupValidator>();
+
+var enableRedisHealthCheck = builder.Configuration.GetValue("HealthChecks:EnableRedis", true);
+if (!builder.Environment.IsEnvironment("Testing")
+    && enableRedisHealthCheck
+    && redisConfigured)
+    healthChecks.AddRedis(redisConnection!, name: "redis", tags: ["ready"]);
+
+var sriProbeUrl = builder.Configuration["HealthChecks:SriProbeUrl"];
+if (!string.IsNullOrWhiteSpace(sriProbeUrl)
+    && Uri.TryCreate(sriProbeUrl, UriKind.Absolute, out var sriUri))
+{
+    var probeTimeout = TimeSpan.FromSeconds(
+        builder.Configuration.GetValue("HealthChecks:SriProbeTimeoutSeconds", 5));
+    healthChecks.AddUrlGroup(
+        sriUri,
+        name: "sri-external",
+        configureClient: (_, client) => client.Timeout = probeTimeout,
+        tags: ["ready"]);
+}
+
+var hangfireEnabled = builder.Configuration.GetValue("Hangfire:Enabled", false);
+if (hangfireEnabled)
+{
+    var hangfireConn = builder.Configuration["Hangfire:ConnectionString"]
+                       ?? builder.Configuration.GetConnectionString("DefaultConnection");
+    if (string.IsNullOrWhiteSpace(hangfireConn))
+        throw new InvalidOperationException(
+            "Hangfire:Enabled es true pero no hay cadena de conexión (Hangfire:ConnectionString o DefaultConnection).");
+
+    builder.Services.AddHangfire(configuration =>
+        configuration.UsePostgreSqlStorage(options =>
+            options.UseNpgsqlConnection(hangfireConn)));
+    builder.Services.AddHangfireServer();
+    builder.Services.AddScoped<IProcessOutboxJob, ProcessOutboxJob>();
+    builder.Services.AddScoped<IMasterDataReconciliationJob, MasterDataReconciliationJob>();
+    builder.Services.AddScoped<IElectronicDocumentRetryJob, ElectronicDocumentRetryJob>();
+    builder.Services.AddScoped<IExpireUserSessionsJob, ExpireUserSessionsJob>();
+}
+
+// Opciones del Kardex: registrar tanto como IOptions<> (convención .NET)
+// como plain class (inyectable directamente en Application handlers).
+var kardexSection = builder.Configuration.GetSection(
+    ERP.Application.Common.Config.KardexOptions.Section);
+builder.Services.Configure<ERP.Application.Common.Config.KardexOptions>(kardexSection);
+builder.Services.Configure<ERP.Application.Common.Config.PasswordResetOptions>(
+    builder.Configuration.GetSection(ERP.Application.Common.Config.PasswordResetOptions.SectionName));
+builder.Services.Configure<ERP.Application.Common.Config.AuthOptions>(
+    builder.Configuration.GetSection(ERP.Application.Common.Config.AuthOptions.Section));
+builder.Services.Configure<ERP.Application.Common.Config.SriPollingOptions>(
+    builder.Configuration.GetSection(ERP.Application.Common.Config.SriPollingOptions.Section));
+builder.Services.AddSingleton(sp =>
+    kardexSection.Get<ERP.Application.Common.Config.KardexOptions>()
+    ?? new ERP.Application.Common.Config.KardexOptions());
+
+// Política de expiración de UserSession (Fase 9) — mismo patrón que KardexOptions arriba:
+// plain class inyectable directamente en ExpireUserSessionsHandler (Application).
+var sessionExpirationSection = builder.Configuration.GetSection(
+    ERP.Application.Common.Config.SessionExpirationOptions.Section);
+builder.Services.Configure<ERP.Application.Common.Config.SessionExpirationOptions>(sessionExpirationSection);
+builder.Services.AddSingleton(sp =>
+    sessionExpirationSection.Get<ERP.Application.Common.Config.SessionExpirationOptions>()
+    ?? new ERP.Application.Common.Config.SessionExpirationOptions());
+
+// Authorization: por defecto SOLO permite tokens de sesión ERP (tenant_id válido).
+builder.Services.AddSingleton<IAuthorizationHandler, HasTenantHandler>();
+builder.Services.AddScoped<IAuthorizationHandler, PermissionHandler>();
+builder.Services.AddSingleton<IAuthorizationPolicyProvider, PermissionPolicyProvider>();
+builder.Services.AddAuthorization(options =>
+{
+    options.AddPolicy("Session", policy =>
+        policy.RequireAuthenticatedUser()
+              .AddRequirements(new HasTenantRequirement()));
+
+    options.AddPolicy("IntegrationApi", policy =>
+        policy.RequireAuthenticatedUser());
+
+    // Si el endpoint tiene [Authorize] sin policy, exigimos token de sesión.
+    options.DefaultPolicy = options.GetPolicy("Session")!;
+});
+
+var app = builder.Build();
+
+// Ensure schema is up to date before any startup queries. Migraciones + HasData() son
+// prerrequisito del bootstrap global (igual que crear la Company lo es del bootstrap de
+// empresa) — no un IGlobalBootstrapStep: no existe esquema utilizable antes de este punto.
+using (var migrationScope = app.Services.CreateScope())
+{
+    var db = migrationScope.ServiceProvider.GetRequiredService<ErpDbContext>();
+    if (db.Database.IsRelational())
+        await db.Database.MigrateAsync();
+}
+
+// Bootstrap global: único flujo oficial para datos de instalación (navegación + InstallData).
+// Ver ERP.Infrastructure.Seeding.Global.GlobalBootstrapOrchestrator.
+using (var globalBootstrapScope = app.Services.CreateScope())
+{
+    var globalBootstrap = globalBootstrapScope.ServiceProvider
+        .GetRequiredService<ERP.Infrastructure.Seeding.Global.IGlobalBootstrapOrchestrator>();
+    await globalBootstrap.RunAsync();
+}
+
+// First-run: while the system is uninitialized, issue a fresh setup token and print it.
+using (var firstRunScope = app.Services.CreateScope())
+{
+    var firstRun = firstRunScope.ServiceProvider.GetRequiredService<ERP.Application.Setup.IFirstRunSetupService>();
+    await firstRun.EnsureSetupTokenAsync();
+}
+
+if (app.Environment.IsDevelopment() &&
+    app.Configuration.GetValue("Development:SyncFuncionalidadesOnStartup", false))
+{
+    using var syncScope = app.Services.CreateScope();
+    await syncScope.ServiceProvider.GetRequiredService<AppFeatureDiscoveryService>().SyncFeaturesAsync();
+}
+
+if (app.Environment.IsDevelopment() || app.Environment.IsEnvironment("Testing"))
+{
+    app.UseSwagger();
+    app.UseSwaggerUI();
+}
+
+app.UseRequestCorrelation();
+app.UseSerilogRequestLogging();
+app.UseMiddleware<ExceptionMiddleware>();
+app.UseCors("Frontend");
+
+app.MapHealthChecks("/health/live", new HealthCheckOptions
+{
+    Predicate = r => r.Tags.Contains("live"),
+    ResponseWriter = UIResponseWriter.WriteHealthCheckUIResponse,
+});
+
+app.MapHealthChecks("/health/ready", new HealthCheckOptions
+{
+    Predicate = r => r.Tags.Contains("ready"),
+    ResponseWriter = UIResponseWriter.WriteHealthCheckUIResponse,
+});
+
+app.MapHealthChecks("/health/security-context", new HealthCheckOptions
+{
+    Predicate = r => r.Name == "security-context",
+    ResponseWriter = UIResponseWriter.WriteHealthCheckUIResponse,
+});
+app.MapHealthChecks("/health/membership-consistency", new HealthCheckOptions
+{
+    Predicate = r => r.Name == "membership-consistency",
+    ResponseWriter = UIResponseWriter.WriteHealthCheckUIResponse,
+});
+app.MapHealthChecks("/health/masterdata-sync", new HealthCheckOptions
+{
+    Predicate = r => r.Name == "masterdata-sync",
+    ResponseWriter = UIResponseWriter.WriteHealthCheckUIResponse,
+});
+app.MapHealthChecks("/health/background-context", new HealthCheckOptions
+{
+    Predicate = r => r.Name == "background-context",
+    ResponseWriter = UIResponseWriter.WriteHealthCheckUIResponse,
+});
+app.MapHealthChecks("/health/query-filter-enforcement", new HealthCheckOptions
+{
+    Predicate = r => r.Name == "query-filter-enforcement",
+    ResponseWriter = UIResponseWriter.WriteHealthCheckUIResponse,
+});
+app.MapHealthChecks("/health/masterdata-reconciliation", new HealthCheckOptions
+{
+    Predicate = r => r.Name == "masterdata-reconciliation",
+    ResponseWriter = UIResponseWriter.WriteHealthCheckUIResponse,
+});
+if (observabilityEnabled && !app.Environment.IsEnvironment("Testing"))
+    app.MapPrometheusScrapingEndpoint("/metrics");
+
+if (!app.Environment.IsDevelopment() && !app.Environment.IsEnvironment("Testing"))
+    app.UseHttpsRedirection();
+
+app.UseAuthentication();
+app.UseSecurityCorrelation();
+app.UseMiddleware<EnterpriseDiagnosticMiddleware>();
+app.UseAuthorization();
+app.UseRateLimiter();
+app.UseMiddleware<ForbiddenAccessLoggingMiddleware>();
+
+if (hangfireEnabled)
+{
+    var dashEnabled = app.Configuration.GetValue("Hangfire:Dashboard:Enabled", true);
+    if (dashEnabled)
+    {
+        var dashPath = app.Configuration["Hangfire:Dashboard:Path"] ?? "/hangfire";
+        app.UseHangfireDashboard(dashPath, new DashboardOptions
+        {
+            Authorization = [new HangfireDashboardAuthorizationFilter()],
+        });
+    }
+
+    RecurringJob.AddOrUpdate<IProcessOutboxJob>(
+        "process-outbox",
+        x => x.ExecuteAsync(CancellationToken.None),
+        "* * * * *");
+
+    RecurringJob.AddOrUpdate<IMasterDataReconciliationJob>(
+        "masterdata-reconciliation",
+        x => x.ExecuteAsync(CancellationToken.None),
+        Cron.Daily(hour: 3));
+
+    RecurringJob.AddOrUpdate<IElectronicDocumentRetryJob>(
+        "electronic-document-retry",
+        x => x.ExecuteAsync(CancellationToken.None),
+        "* * * * *");
+
+    RecurringJob.AddOrUpdate<IExpireUserSessionsJob>(
+        "expire-user-sessions",
+        x => x.ExecuteAsync(CancellationToken.None),
+        Cron.Daily(hour: 4));
+}
+
+app.MapControllers();
+
+try
+{
+    app.Run();
+}
+finally
+{
+    Log.CloseAndFlush();
+}
+
+public partial class Program { }

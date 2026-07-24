@@ -1,0 +1,141 @@
+﻿{
+    "Tree":  [
+                 {
+                     "Id":  "web",
+                     "Name":  "Web ERP",
+                     "Type":  "Layer",
+                     "Children":  [
+                                      {
+                                          "Id":  "configuration",
+                                          "Name":  "Configuration",
+                                          "Type":  "Domain",
+                                          "Progress":  0,
+                                          "Maturity":  0,
+                                          "Status":  "Pending",
+                                          "Children":  [
+
+                                                       ]
+                                      },
+                                      {
+                                          "Id":  "security",
+                                          "Name":  "Security",
+                                          "Type":  "Domain",
+                                          "Progress":  0,
+                                          "Maturity":  0,
+                                          "Status":  "Pending",
+                                          "Children":  [
+
+                                                       ]
+                                      },
+                                      {
+                                          "Id":  "business-partners",
+                                          "Name":  "Business Partners",
+                                          "Type":  "Domain",
+                                          "Progress":  0,
+                                          "Maturity":  0,
+                                          "Status":  "Pending",
+                                          "Children":  [
+
+                                                       ]
+                                      },
+                                      {
+                                          "Id":  "crm",
+                                          "Name":  "CRM",
+                                          "Type":  "Domain",
+                                          "Progress":  0,
+                                          "Maturity":  0,
+                                          "Status":  "Pending",
+                                          "Children":  [
+
+                                                       ]
+                                      },
+                                      {
+                                          "Id":  "purchases",
+                                          "Name":  "Purchases",
+                                          "Type":  "Domain",
+                                          "Progress":  0,
+                                          "Maturity":  0,
+                                          "Status":  "Pending",
+                                          "Children":  [
+
+                                                       ]
+                                      },
+                                      {
+                                          "Id":  "inventory",
+                                          "Name":  "Inventory",
+                                          "Type":  "Domain",
+                                          "Progress":  0,
+                                          "Maturity":  0,
+                                          "Status":  "Pending",
+                                          "Children":  [
+
+                                                       ]
+                                      },
+                                      {
+                                          "Id":  "sales",
+                                          "Name":  "Sales",
+                                          "Type":  "Domain",
+                                          "Progress":  0,
+                                          "Maturity":  0,
+                                          "Status":  "Pending",
+                                          "Children":  [
+
+                                                       ]
+                                      },
+                                      {
+                                          "Id":  "cash",
+                                          "Name":  "Cash",
+                                          "Type":  "Domain",
+                                          "Progress":  0,
+                                          "Maturity":  0,
+                                          "Status":  "Pending",
+                                          "Children":  [
+
+                                                       ]
+                                      },
+                                      {
+                                          "Id":  "accounting",
+                                          "Name":  "Accounting",
+                                          "Type":  "Domain",
+                                          "Progress":  0,
+                                          "Maturity":  0,
+                                          "Status":  "Pending",
+                                          "Children":  [
+
+                                                       ]
+                                      },
+                                      {
+                                          "Id":  "reports",
+                                          "Name":  "Reports",
+                                          "Type":  "Domain",
+                                          "Progress":  0,
+                                          "Maturity":  0,
+                                          "Status":  "Pending",
+                                          "Children":  [
+
+                                                       ]
+                                      }
+                                  ]
+                 },
+                 {
+                     "Id":  "core",
+                     "Name":  "Core Services",
+                     "Type":  "Layer",
+                     "Children":  [
+                                      {
+                                          "Id":  "electronic-documents",
+                                          "Name":  "Electronic Documents",
+                                          "Type":  "Domain",
+                                          "Progress":  0,
+                                          "Maturity":  0,
+                                          "Status":  "Pending",
+                                          "Children":  [
+
+                                                       ]
+                                      }
+                                  ]
+                 }
+             ],
+    "Root":  "ZH ERP SaaS",
+    "Generated":  "2026-07-15 17:51:42"
+}

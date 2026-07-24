@@ -1,0 +1,43 @@
+﻿{
+    "generated":  "2026-07-20 19:20:28",
+    "source":  "architecture-progress.json, dashboard-model-v12.json, model-health.json, modules.json, features.json, processes.json, tasks.json",
+    "erpCompletion":  84,
+    "engineeringHealth":  72.72,
+    "architectureHealth":  100,
+    "productionReadiness":  "NOT READY",
+    "overallStatus":  "NOT READY",
+    "criticalGaps":  [
+                         "Security Score bajo: 39% (Secrets detectados: 155, endpoints anonimos: 9)",
+                         "Quality Score bajo: 55.05%",
+                         "Technical Debt alta: 31 critical findings (TODO: 687, FIXME: 30)",
+                         "Etapa incompleta: Futuro al 70% (35 / 50 tareas)",
+                         "Etapa incompleta: Fiscal / SRI al 75% (80 / 106 tareas)",
+                         "Etapa incompleta: Operaciones al 84% (70.5 / 84 tareas)"
+                     ],
+    "recommendedOrder":  [
+                             "1. Resolver problemas de seguridad (Security Score 39%, 155 secretos, 9 endpoints anonimos)",
+                             "2. Reducir deuda tecnica (31 critical findings, 687 TODO, 30 FIXME)",
+                             "3. Completar fases parcialmente implementadas: 42 items abiertos, priorizar Futuro (70%), Fiscal / SRI (75%), Operaciones (84%)",
+                             "4. Completar fases sin iniciar (10 items en: Fiscal / SRI, Futuro)",
+                             "5. Revalidar el modelo (14 items sin mapear, integrityScore 100%)"
+                         ],
+    "quickWins":  [
+                      "Revisar 1 marcador(es) HACK",
+                      "Completar 1 ruta(s) de codigo NotImplementedException",
+                      "Resolver 30 marcador(es) FIXME",
+                      "Triaje y reduccion de 687 marcador(es) TODO",
+                      "Registrar dominio para 7 modulo(s) sin dominio asignado: Dashboard, Menu, Integration, Common, Auxiliary, Media, Navigation",
+                      "Completar fase cerca del 100%: Estándares esta al 99%",
+                      "Completar fase cerca del 100%: Core ERP esta al 94%",
+                      "Completar fase cerca del 100%: Infraestructura esta al 93%",
+                      "Completar fase cerca del 100%: Operaciones esta al 84%",
+                      "Fase con pocos items restantes: Frontera de Integración Platform (Infraestructura) - 1 item(s) pendientes",
+                      "Fase con pocos items restantes: Items / Catálogo v1.0 (Core ERP) - 1 item(s) pendientes",
+                      "Fase con pocos items restantes: Inventario \u0026 Bodega (Operaciones) - 2 item(s) pendientes",
+                      "Fase con pocos items restantes: Cuentas por Cobrar (CxC) (Operaciones) - 2 item(s) pendientes",
+                      "Fase con pocos items restantes: Compras (Purchases) (Operaciones) - 2 item(s) pendientes",
+                      "Fase con pocos items restantes: Cuentas por Pagar (CxP) (Operaciones) - 2 item(s) pendientes"
+                  ],
+    "nextMilestone":  "Complete remaining Fiscal / SRI phases (75% done, 80 / 106 tareas)",
+    "estimatedRemainingAreas":  15
+}

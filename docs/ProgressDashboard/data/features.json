@@ -1,0 +1,1456 @@
+﻿[
+    {
+        "module":  "Company",
+        "features":  [
+                         {
+                             "name":  "Create Emission Point",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Company/UseCases/CreateEmissionPoint"
+                                          ]
+                         },
+                         {
+                             "name":  "Create Establishment",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Company/UseCases/CreateEstablishment"
+                                          ]
+                         },
+                         {
+                             "name":  "Disable Emission Point",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Company/UseCases/DisableEmissionPoint"
+                                          ]
+                         },
+                         {
+                             "name":  "Disable Establishment",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Company/UseCases/DisableEstablishment"
+                                          ]
+                         },
+                         {
+                             "name":  "Enable Emission Point",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Company/UseCases/EnableEmissionPoint"
+                                          ]
+                         },
+                         {
+                             "name":  "Enable Establishment",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Company/UseCases/EnableEstablishment"
+                                          ]
+                         },
+                         {
+                             "name":  "Get Emission Points",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Company/UseCases/GetEmissionPoints"
+                                          ]
+                         },
+                         {
+                             "name":  "Get Establishments",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Company/UseCases/GetEstablishments"
+                                          ]
+                         },
+                         {
+                             "name":  "Update Emission Point",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Company/UseCases/UpdateEmissionPoint"
+                                          ]
+                         },
+                         {
+                             "name":  "Update Establishment",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Company/UseCases/UpdateEstablishment"
+                                          ]
+                         }
+                     ]
+    },
+    {
+        "module":  "Dashboard",
+        "features":  [
+                         {
+                             "name":  "Get Dashboard Kpis",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Dashboard/GetDashboardKpisQuery.cs"
+                                          ]
+                         }
+                     ]
+    },
+    {
+        "module":  "Purchases",
+        "features":  [
+                         {
+                             "name":  "Get Purchase Item Context",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Purchases/UseCases/GetPurchaseItemContext"
+                                          ]
+                         },
+                         {
+                             "name":  "Calculate Retention",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Purchases/UseCases/CalculateRetentionUseCases.cs"
+                                          ]
+                         },
+                         {
+                             "name":  "Cancel Purchase",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Purchases/UseCases/CancelPurchaseUseCases.cs"
+                                          ]
+                         },
+                         {
+                             "name":  "Cancel Withholding",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Purchases/UseCases/CancelWithholdingUseCases.cs"
+                                          ]
+                         },
+                         {
+                             "name":  "Confirm Purchase",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Purchases/UseCases/ConfirmPurchaseUseCases.cs"
+                                          ]
+                         },
+                         {
+                             "name":  "Get Withholding",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Purchases/UseCases/GetWithholdingUseCases.cs"
+                                          ]
+                         },
+                         {
+                             "name":  "Issue Withholding",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Purchases/UseCases/IssueWithholdingUseCases.cs"
+                                          ]
+                         },
+                         {
+                             "name":  "Purchase Cost",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Purchases/UseCases/PurchaseCostUseCases.cs"
+                                          ]
+                         },
+                         {
+                             "name":  "Purchase Draft",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Purchases/UseCases/PurchaseDraftUseCases.cs"
+                                          ]
+                         },
+                         {
+                             "name":  "Purchase Margin",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Purchases/UseCases/PurchaseMarginUseCases.cs"
+                                          ]
+                         },
+                         {
+                             "name":  "Create Purchase Reception Draft",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Purchases/PurchaseReception/UseCases/CreatePurchaseReceptionDraft"
+                                          ]
+                         },
+                         {
+                             "name":  "Download Purchase Reception Xml",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Purchases/PurchaseReception/UseCases/DownloadPurchaseReceptionXml"
+                                          ]
+                         },
+                         {
+                             "name":  "Import Purchase Reception",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Purchases/PurchaseReception/UseCases/ImportPurchaseReception"
+                                          ]
+                         }
+                     ]
+    },
+    {
+        "module":  "Companies",
+        "features":  [
+                         {
+                             "name":  "Create Company",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Companies/UseCases/CreateCompany"
+                                          ]
+                         },
+                         {
+                             "name":  "Decimal Config",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Companies/UseCases/DecimalConfig"
+                                          ]
+                         },
+                         {
+                             "name":  "Get Company By Id",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Companies/UseCases/GetCompanyById"
+                                          ]
+                         },
+                         {
+                             "name":  "Get Company Logo Alt Content",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Companies/UseCases/GetCompanyLogoAltContent"
+                                          ]
+                         },
+                         {
+                             "name":  "Get Company Logo Content",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Companies/UseCases/GetCompanyLogoContent"
+                                          ]
+                         },
+                         {
+                             "name":  "Get Company Profile",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Companies/UseCases/GetCompanyProfile"
+                                          ]
+                         },
+                         {
+                             "name":  "Get Current Company",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Companies/UseCases/GetCurrentCompany"
+                                          ]
+                         },
+                         {
+                             "name":  "List Companies",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Companies/UseCases/ListCompanies"
+                                          ]
+                         },
+                         {
+                             "name":  "Update Company",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Companies/UseCases/UpdateCompany"
+                                          ]
+                         },
+                         {
+                             "name":  "Update Company Branding",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Companies/UseCases/UpdateCompanyBranding"
+                                          ]
+                         },
+                         {
+                             "name":  "Update Company Documents",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Companies/UseCases/UpdateCompanyDocuments"
+                                          ]
+                         },
+                         {
+                             "name":  "Update Company Fiscal",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Companies/UseCases/UpdateCompanyFiscal"
+                                          ]
+                         },
+                         {
+                             "name":  "Update Company Operation",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Companies/UseCases/UpdateCompanyOperation"
+                                          ]
+                         },
+                         {
+                             "name":  "Update Company Profile",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Companies/UseCases/UpdateCompanyProfile"
+                                          ]
+                         },
+                         {
+                             "name":  "Upload Company Logo",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Companies/UseCases/UploadCompanyLogo"
+                                          ]
+                         },
+                         {
+                             "name":  "Upload Company Logo Alt",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Companies/UseCases/UploadCompanyLogoAlt"
+                                          ]
+                         }
+                     ]
+    },
+    {
+        "module":  "Menu",
+        "features":  [
+
+                     ],
+        "pending":  true,
+        "reason":  "Domain-only catalog module (no Application UseCases layer yet)",
+        "evidence":  [
+                         "backend/src/ERP.Domain/Modules/Menu"
+                     ]
+    },
+    {
+        "module":  "Auth",
+        "features":  [
+                         {
+                             "name":  "Change My Password",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Auth/UseCases/ChangeMyPassword"
+                                          ]
+                         },
+                         {
+                             "name":  "Complete Password Reset",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Auth/UseCases/CompletePasswordReset"
+                                          ]
+                         },
+                         {
+                             "name":  "List My Companies",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Auth/UseCases/ListMyCompanies"
+                                          ]
+                         },
+                         {
+                             "name":  "Login",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Auth/UseCases/Login"
+                                          ]
+                         },
+                         {
+                             "name":  "Logout",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Auth/UseCases/Logout"
+                                          ]
+                         },
+                         {
+                             "name":  "Password Reset",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Auth/UseCases/PasswordReset"
+                                          ]
+                         },
+                         {
+                             "name":  "Refresh Token",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Auth/UseCases/RefreshToken"
+                                          ]
+                         },
+                         {
+                             "name":  "Switch Company",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Auth/UseCases/SwitchCompany"
+                                          ]
+                         },
+                         {
+                             "name":  "Company User Preferences Login Resolver",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Auth/UseCases/CompanyUserPreferencesLoginResolver.cs"
+                                          ]
+                         },
+                         {
+                             "name":  "Password Reset Token Consumer",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Auth/UseCases/PasswordResetTokenConsumer.cs"
+                                          ]
+                         },
+                         {
+                             "name":  "Password Reset Token Issuer",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Auth/UseCases/PasswordResetTokenIssuer.cs"
+                                          ]
+                         }
+                     ]
+    },
+    {
+        "module":  "Integration",
+        "features":  [
+                         {
+                             "name":  "Company Integration",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Integration/UseCases/CompanyIntegrationUseCases.cs"
+                                          ]
+                         },
+                         {
+                             "name":  "Tenant Integration",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Integration/UseCases/TenantIntegrationUseCases.cs"
+                                          ]
+                         }
+                     ]
+    },
+    {
+        "module":  "Access",
+        "features":  [
+                         {
+                             "name":  "Assign Temporary Password Admin",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Access/UseCases/AssignTemporaryPasswordAdmin"
+                                          ]
+                         },
+                         {
+                             "name":  "Close User Session Admin",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Access/UseCases/CloseUserSessionAdmin"
+                                          ]
+                         },
+                         {
+                             "name":  "Create Authenticated Session",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Access/UseCases/CreateAuthenticatedSession"
+                                          ]
+                         },
+                         {
+                             "name":  "Create Company User Preferences",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Access/UseCases/CreateCompanyUserPreferences"
+                                          ]
+                         },
+                         {
+                             "name":  "Create System User",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Access/UseCases/CreateSystemUser"
+                                          ]
+                         },
+                         {
+                             "name":  "Create System User Admin",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Access/UseCases/CreateSystemUserAdmin"
+                                          ]
+                         },
+                         {
+                             "name":  "Expire User Sessions",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Access/UseCases/ExpireUserSessions"
+                                          ]
+                         },
+                         {
+                             "name":  "Get Company User Branches Admin",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Access/UseCases/GetCompanyUserBranchesAdmin"
+                                          ]
+                         },
+                         {
+                             "name":  "Get Company User Memberships Admin",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Access/UseCases/GetCompanyUserMembershipsAdmin"
+                                          ]
+                         },
+                         {
+                             "name":  "Get Company User Preferences",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Access/UseCases/GetCompanyUserPreferences"
+                                          ]
+                         },
+                         {
+                             "name":  "Get Company User Preferences Admin",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Access/UseCases/GetCompanyUserPreferencesAdmin"
+                                          ]
+                         },
+                         {
+                             "name":  "Get Session Statistics",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Access/UseCases/GetSessionStatistics"
+                                          ]
+                         },
+                         {
+                             "name":  "Get User Sessions Paged",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Access/UseCases/GetUserSessionsPaged"
+                                          ]
+                         },
+                         {
+                             "name":  "Lookup User By Username Admin",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Access/UseCases/LookupUserByUsernameAdmin"
+                                          ]
+                         },
+                         {
+                             "name":  "Permissions",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Access/UseCases/Permissions"
+                                          ]
+                         },
+                         {
+                             "name":  "Profiles",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Access/UseCases/Profiles"
+                                          ]
+                         },
+                         {
+                             "name":  "Revoke Company User Membership",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Access/UseCases/RevokeCompanyUserMembership"
+                                          ]
+                         },
+                         {
+                             "name":  "Revoke Company User Membership Admin",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Access/UseCases/RevokeCompanyUserMembershipAdmin"
+                                          ]
+                         },
+                         {
+                             "name":  "Update Company User Branches Admin",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Access/UseCases/UpdateCompanyUserBranchesAdmin"
+                                          ]
+                         },
+                         {
+                             "name":  "Update Company User Preferences",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Access/UseCases/UpdateCompanyUserPreferences"
+                                          ]
+                         },
+                         {
+                             "name":  "Update Company User Preferences Admin",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Access/UseCases/UpdateCompanyUserPreferencesAdmin"
+                                          ]
+                         },
+                         {
+                             "name":  "Upsert Company User Membership",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Access/UseCases/UpsertCompanyUserMembership"
+                                          ]
+                         },
+                         {
+                             "name":  "Upsert Company User Membership Admin",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Access/UseCases/UpsertCompanyUserMembershipAdmin"
+                                          ]
+                         },
+                         {
+                             "name":  "Company Administrator Invariant",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Access/UseCases/CompanyAdministratorInvariant.cs"
+                                          ]
+                         },
+                         {
+                             "name":  "Company User Preferences Default Branch Validation",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Access/UseCases/CompanyUserPreferencesDefaultBranchValidation.cs"
+                                          ]
+                         }
+                     ]
+    },
+    {
+        "module":  "Sales",
+        "features":  [
+                         {
+                             "name":  "Get Sales Invoice Defaults",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Sales/UseCases/GetSalesInvoiceDefaults"
+                                          ]
+                         },
+                         {
+                             "name":  "Get Sales Item Pricing",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Sales/UseCases/GetSalesItemPricing"
+                                          ]
+                         },
+                         {
+                             "name":  "Authorize Sales",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Sales/UseCases/AuthorizeSalesUseCases.cs"
+                                          ]
+                         },
+                         {
+                             "name":  "Cancel Sales",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Sales/UseCases/CancelSalesUseCases.cs"
+                                          ]
+                         },
+                         {
+                             "name":  "Invoice Item Search",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Sales/UseCases/InvoiceItemSearchUseCases.cs"
+                                          ]
+                         },
+                         {
+                             "name":  "Payment Method",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Sales/UseCases/PaymentMethodUseCases.cs"
+                                          ]
+                         },
+                         {
+                             "name":  "Sales Discount",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Sales/UseCases/SalesDiscountUseCases.cs"
+                                          ]
+                         },
+                         {
+                             "name":  "Sales Draft",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Sales/UseCases/SalesDraftUseCases.cs"
+                                          ]
+                         },
+                         {
+                             "name":  "Sales Receivable",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Sales/UseCases/SalesReceivableUseCases.cs"
+                                          ]
+                         }
+                     ]
+    },
+    {
+        "module":  "Items",
+        "features":  [
+                         {
+                             "name":  "Add Item Variant",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Items/UseCases/AddItemVariant"
+                                          ]
+                         },
+                         {
+                             "name":  "Attribute Definitions",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Items/UseCases/AttributeDefinitions"
+                                          ]
+                         },
+                         {
+                             "name":  "Attribute Groups",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Items/UseCases/AttributeGroups"
+                                          ]
+                         },
+                         {
+                             "name":  "Barcodes",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Items/UseCases/Barcodes"
+                                          ]
+                         },
+                         {
+                             "name":  "Brands",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Items/UseCases/Brands"
+                                          ]
+                         },
+                         {
+                             "name":  "Category Nodes",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Items/UseCases/CategoryNodes"
+                                          ]
+                         },
+                         {
+                             "name":  "Create Item",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Items/UseCases/CreateItem"
+                                          ]
+                         },
+                         {
+                             "name":  "Disable Item",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Items/UseCases/DisableItem"
+                                          ]
+                         },
+                         {
+                             "name":  "Disable Item Variant",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Items/UseCases/DisableItemVariant"
+                                          ]
+                         },
+                         {
+                             "name":  "Enable Item",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Items/UseCases/EnableItem"
+                                          ]
+                         },
+                         {
+                             "name":  "Enable Item Variant",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Items/UseCases/EnableItemVariant"
+                                          ]
+                         },
+                         {
+                             "name":  "Get Item By Id",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Items/UseCases/GetItemById"
+                                          ]
+                         },
+                         {
+                             "name":  "Get Item Report",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Items/UseCases/GetItemReport"
+                                          ]
+                         },
+                         {
+                             "name":  "Get Items",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Items/UseCases/GetItems"
+                                          ]
+                         },
+                         {
+                             "name":  "Item Images",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Items/UseCases/ItemImages"
+                                          ]
+                         },
+                         {
+                             "name":  "Item Packaging Levels",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Items/UseCases/ItemPackagingLevels"
+                                          ]
+                         },
+                         {
+                             "name":  "Item Substitutes",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Items/UseCases/ItemSubstitutes"
+                                          ]
+                         },
+                         {
+                             "name":  "Item Unit Conversions",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Items/UseCases/ItemUnitConversions"
+                                          ]
+                         },
+                         {
+                             "name":  "Profitability",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Items/UseCases/Profitability"
+                                          ]
+                         },
+                         {
+                             "name":  "Resolve Item",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Items/UseCases/ResolveItem"
+                                          ]
+                         },
+                         {
+                             "name":  "Update Item",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Items/UseCases/UpdateItem"
+                                          ]
+                         },
+                         {
+                             "name":  "Update Item Variant",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Items/UseCases/UpdateItemVariant"
+                                          ]
+                         },
+                         {
+                             "name":  "Item Type",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Items/UseCases/ItemTypeUseCases.cs"
+                                          ]
+                         }
+                     ]
+    },
+    {
+        "module":  "Tenants",
+        "features":  [
+
+                     ],
+        "pending":  true,
+        "reason":  "Domain-only catalog module (no Application UseCases layer yet)",
+        "evidence":  [
+                         "backend/src/ERP.Domain/Modules/Tenants"
+                     ]
+    },
+    {
+        "module":  "Session",
+        "features":  [
+                         {
+                             "name":  "Get My Available Branches",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Session/UseCases/GetMyAvailableBranches"
+                                          ]
+                         },
+                         {
+                             "name":  "Get Session Context",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Session/UseCases/GetSessionContext"
+                                          ]
+                         },
+                         {
+                             "name":  "Switch Branch",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Session/UseCases/SwitchBranch"
+                                          ]
+                         }
+                     ]
+    },
+    {
+        "module":  "Common",
+        "features":  [
+
+                     ],
+        "pending":  true,
+        "reason":  "Application module exists but exposes no discrete UseCases/Query/Command (likely shared/infrastructure module)",
+        "evidence":  [
+                         "backend/src/ERP.Application/Modules/Common"
+                     ]
+    },
+    {
+        "module":  "Inventory",
+        "features":  [
+                         {
+                             "name":  "Confirm Stock Transfer",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Inventory/Stock/UseCases/ConfirmStockTransfer"
+                                          ]
+                         },
+                         {
+                             "name":  "Create Stock Adjustment",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Inventory/Stock/UseCases/CreateStockAdjustment"
+                                          ]
+                         },
+                         {
+                             "name":  "Create Stock Transfer",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Inventory/Stock/UseCases/CreateStockTransfer"
+                                          ]
+                         },
+                         {
+                             "name":  "Execute Stock Adjustment",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Inventory/Stock/UseCases/ExecuteStockAdjustment"
+                                          ]
+                         },
+                         {
+                             "name":  "Get Aggregated Stock",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Inventory/Stock/UseCases/GetAggregatedStock"
+                                          ]
+                         },
+                         {
+                             "name":  "Get Item Warehouse Availability",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Inventory/Stock/UseCases/GetItemWarehouseAvailability"
+                                          ]
+                         },
+                         {
+                             "name":  "Get Kardex By Document",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Inventory/Stock/UseCases/GetKardexByDocument"
+                                          ]
+                         },
+                         {
+                             "name":  "Get Kardex By Product",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Inventory/Stock/UseCases/GetKardexByProduct"
+                                          ]
+                         },
+                         {
+                             "name":  "Get Kardex Movement Detail",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Inventory/Stock/UseCases/GetKardexMovementDetail"
+                                          ]
+                         },
+                         {
+                             "name":  "Get Stock",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Inventory/Stock/UseCases/GetStock"
+                                          ]
+                         },
+                         {
+                             "name":  "Get Stock Movements",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Inventory/Stock/UseCases/GetStockMovements"
+                                          ]
+                         },
+                         {
+                             "name":  "Create Warehouse",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Inventory/Warehouses/UseCases/CreateWarehouse"
+                                          ]
+                         },
+                         {
+                             "name":  "Disable Warehouse",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Inventory/Warehouses/UseCases/DisableWarehouse"
+                                          ]
+                         },
+                         {
+                             "name":  "Enable Warehouse",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Inventory/Warehouses/UseCases/EnableWarehouse"
+                                          ]
+                         },
+                         {
+                             "name":  "Get Warehouse By Id",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Inventory/Warehouses/UseCases/GetWarehouseById"
+                                          ]
+                         },
+                         {
+                             "name":  "Get Warehouses",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Inventory/Warehouses/UseCases/GetWarehouses"
+                                          ]
+                         },
+                         {
+                             "name":  "Update Warehouse",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Inventory/Warehouses/UseCases/UpdateWarehouse"
+                                          ]
+                         }
+                     ]
+    },
+    {
+        "module":  "Finance",
+        "features":  [
+                         {
+                             "name":  "Credit Terms",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Finance/UseCases/CreditTerms"
+                                          ]
+                         }
+                     ]
+    },
+    {
+        "module":  "Branches",
+        "features":  [
+                         {
+                             "name":  "Create Branch",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Branches/UseCases/CreateBranch"
+                                          ]
+                         },
+                         {
+                             "name":  "Disable Branch",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Branches/UseCases/DisableBranch"
+                                          ]
+                         },
+                         {
+                             "name":  "Enable Branch",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Branches/UseCases/EnableBranch"
+                                          ]
+                         },
+                         {
+                             "name":  "Get Branch By Id",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Branches/UseCases/GetBranchById"
+                                          ]
+                         },
+                         {
+                             "name":  "Get Branches",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Branches/UseCases/GetBranches"
+                                          ]
+                         },
+                         {
+                             "name":  "Get Geo Cantons",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Branches/UseCases/GetGeoCantons"
+                                          ]
+                         },
+                         {
+                             "name":  "Get Geo Countries",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Branches/UseCases/GetGeoCountries"
+                                          ]
+                         },
+                         {
+                             "name":  "Get Geo Parishes",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Branches/UseCases/GetGeoParishes"
+                                          ]
+                         },
+                         {
+                             "name":  "Get Geo Provinces",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Branches/UseCases/GetGeoProvinces"
+                                          ]
+                         },
+                         {
+                             "name":  "Update Branch",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Branches/UseCases/UpdateBranch"
+                                          ]
+                         }
+                     ]
+    },
+    {
+        "module":  "Auxiliary",
+        "features":  [
+
+                     ],
+        "pending":  true,
+        "reason":  "Domain-only catalog module (no Application UseCases layer yet)",
+        "evidence":  [
+                         "backend/src/ERP.Domain/Modules/Auxiliary"
+                     ]
+    },
+    {
+        "module":  "Pricing",
+        "features":  [
+                         {
+                             "name":  "Item Pricing Simulation",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Pricing/UseCases/ItemPricingSimulation"
+                                          ]
+                         },
+                         {
+                             "name":  "Price List Items",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Pricing/UseCases/PriceListItems"
+                                          ]
+                         },
+                         {
+                             "name":  "Price Lists",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Pricing/UseCases/PriceLists"
+                                          ]
+                         },
+                         {
+                             "name":  "Pricing Rules",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Pricing/UseCases/PricingRules"
+                                          ]
+                         }
+                     ]
+    },
+    {
+        "module":  "Caja",
+        "features":  [
+                         {
+                             "name":  "Cash Register",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Caja/UseCases/CashRegisterQueryUseCases.cs"
+                                          ]
+                         },
+                         {
+                             "name":  "Cash Session",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Caja/UseCases/CashSessionQueryUseCases.cs"
+                                          ]
+                         },
+                         {
+                             "name":  "Close Cash Session",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Caja/UseCases/CloseCashSessionUseCases.cs"
+                                          ]
+                         },
+                         {
+                             "name":  "Create Cash Register",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Caja/UseCases/CreateCashRegisterUseCases.cs"
+                                          ]
+                         },
+                         {
+                             "name":  "Disable Cash Register",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Caja/UseCases/DisableCashRegisterUseCases.cs"
+                                          ]
+                         },
+                         {
+                             "name":  "Enable Cash Register",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Caja/UseCases/EnableCashRegisterUseCases.cs"
+                                          ]
+                         },
+                         {
+                             "name":  "Open Cash Session",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Caja/UseCases/OpenCashSessionUseCases.cs"
+                                          ]
+                         },
+                         {
+                             "name":  "Record Cash Movement",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Caja/UseCases/RecordCashMovementUseCases.cs"
+                                          ]
+                         },
+                         {
+                             "name":  "Sales Invoice Authorized",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Caja/UseCases/SalesInvoiceAuthorizedHandler.cs"
+                                          ]
+                         },
+                         {
+                             "name":  "Update Cash Register",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Caja/UseCases/UpdateCashRegisterUseCases.cs"
+                                          ]
+                         }
+                     ]
+    },
+    {
+        "module":  "ElectronicInvoicing",
+        "features":  [
+                         {
+                             "name":  "Get Electronic Invoicing Status",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/ElectronicInvoicing/UseCases/GetElectronicInvoicingStatus"
+                                          ]
+                         },
+                         {
+                             "name":  "Get Sri Configuration",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/ElectronicInvoicing/UseCases/GetSriConfiguration"
+                                          ]
+                         },
+                         {
+                             "name":  "Inspect Sri Certificate",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/ElectronicInvoicing/UseCases/InspectSriCertificate"
+                                          ]
+                         },
+                         {
+                             "name":  "Upload Sri Certificate",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/ElectronicInvoicing/UseCases/UploadSriCertificate"
+                                          ]
+                         },
+                         {
+                             "name":  "Upsert Sri Configuration",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/ElectronicInvoicing/UseCases/UpsertSriConfiguration"
+                                          ]
+                         },
+                         {
+                             "name":  "Validate Sri Configuration",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/ElectronicInvoicing/UseCases/ValidateSriConfiguration"
+                                          ]
+                         }
+                     ]
+    },
+    {
+        "module":  "Configuration",
+        "features":  [
+
+                     ],
+        "pending":  true,
+        "reason":  "Application module exists but exposes no discrete UseCases/Query/Command (likely shared/infrastructure module)",
+        "evidence":  [
+                         "backend/src/ERP.Application/Modules/Configuration"
+                     ]
+    },
+    {
+        "module":  "Audit",
+        "features":  [
+                         {
+                             "name":  "Get Entity Activity",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Audit/UseCases/GetEntityActivity"
+                                          ]
+                         },
+                         {
+                             "name":  "Get My Activity",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Audit/UseCases/GetMyActivity"
+                                          ]
+                         }
+                     ]
+    },
+    {
+        "module":  "Ride",
+        "features":  [
+                         {
+                             "name":  "Get Or Generate Ride",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Ride/UseCases/GetOrGenerateRide"
+                                          ]
+                         },
+                         {
+                             "name":  "Regenerate Ride",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Ride/UseCases/RegenerateRide"
+                                          ]
+                         }
+                     ]
+    },
+    {
+        "module":  "Media",
+        "features":  [
+
+                     ],
+        "pending":  true,
+        "reason":  "Application module exists but exposes no discrete UseCases/Query/Command (likely shared/infrastructure module)",
+        "evidence":  [
+                         "backend/src/ERP.Application/Modules/Media"
+                     ]
+    },
+    {
+        "module":  "ElectronicDocuments",
+        "features":  [
+                         {
+                             "name":  "Create Electronic Document",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/ElectronicDocuments/UseCases/CreateElectronicDocument"
+                                          ]
+                         },
+                         {
+                             "name":  "Get Electronic Document",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/ElectronicDocuments/UseCases/GetElectronicDocument"
+                                          ]
+                         },
+                         {
+                             "name":  "Get Electronic Document Detail",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/ElectronicDocuments/UseCases/GetElectronicDocumentDetail"
+                                          ]
+                         },
+                         {
+                             "name":  "Get Electronic Document Diagnostic By Source",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/ElectronicDocuments/UseCases/GetElectronicDocumentDiagnosticBySource"
+                                          ]
+                         },
+                         {
+                             "name":  "Get Electronic Documents Dashboard",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/ElectronicDocuments/UseCases/GetElectronicDocumentsDashboard"
+                                          ]
+                         },
+                         {
+                             "name":  "Get Electronic Documents List",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/ElectronicDocuments/UseCases/GetElectronicDocumentsList"
+                                          ]
+                         },
+                         {
+                             "name":  "Get Electronic Document Timeline",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/ElectronicDocuments/UseCases/GetElectronicDocumentTimeline"
+                                          ]
+                         },
+                         {
+                             "name":  "Get Electronic Document Xml",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/ElectronicDocuments/UseCases/GetElectronicDocumentXml"
+                                          ]
+                         },
+                         {
+                             "name":  "Retry Electronic Document",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/ElectronicDocuments/UseCases/RetryElectronicDocument"
+                                          ]
+                         }
+                     ]
+    },
+    {
+        "module":  "Security",
+        "features":  [
+                         {
+                             "name":  "Get Security Admin Matrix",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Security/UseCases/GetSecurityAdminMatrix"
+                                          ]
+                         },
+                         {
+                             "name":  "Upsert Security Admin Scopes",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Security/UseCases/UpsertSecurityAdminScopes"
+                                          ]
+                         }
+                     ]
+    },
+    {
+        "module":  "SriCatalogs",
+        "features":  [
+
+                     ],
+        "pending":  true,
+        "reason":  "Domain-only catalog module (no Application UseCases layer yet)",
+        "evidence":  [
+                         "backend/src/ERP.Domain/Modules/SriCatalogs"
+                     ]
+    },
+    {
+        "module":  "OrgConfig",
+        "features":  [
+                         {
+                             "name":  "Get Branch Invoice Org Settings",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/OrgConfig/UseCases/GetBranchInvoiceOrgSettings"
+                                          ]
+                         },
+                         {
+                             "name":  "Get Company Invoice Org Settings",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/OrgConfig/UseCases/GetCompanyInvoiceOrgSettings"
+                                          ]
+                         },
+                         {
+                             "name":  "Upsert Branch Invoice Org Settings",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/OrgConfig/UseCases/UpsertBranchInvoiceOrgSettings"
+                                          ]
+                         },
+                         {
+                             "name":  "Upsert Company Invoice Org Settings",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/OrgConfig/UseCases/UpsertCompanyInvoiceOrgSettings"
+                                          ]
+                         }
+                     ]
+    },
+    {
+        "module":  "Navigation",
+        "features":  [
+                         {
+                             "name":  "Get Session Menu",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Navigation/UseCases/GetSessionMenu"
+                                          ]
+                         }
+                     ]
+    }
+]

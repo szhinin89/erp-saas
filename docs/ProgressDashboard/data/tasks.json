@@ -1,0 +1,190 @@
+﻿[
+    {
+        "task":  "Engineering score needs improvement",
+        "category":  "Quality Gate",
+        "priority":  "HIGH",
+        "source":  "QualityGate.Warnings",
+        "evidence":  [
+
+                     ]
+    },
+    {
+        "task":  "High number of possible secrets detected",
+        "category":  "Quality Gate",
+        "priority":  "HIGH",
+        "source":  "QualityGate.Warnings",
+        "evidence":  [
+
+                     ]
+    },
+    {
+        "task":  "High TODO count",
+        "category":  "Quality Gate",
+        "priority":  "HIGH",
+        "source":  "QualityGate.Warnings",
+        "evidence":  [
+
+                     ]
+    },
+    {
+        "task":  "Not implemented code detected",
+        "category":  "Quality Gate",
+        "priority":  "HIGH",
+        "source":  "QualityGate.Warnings",
+        "evidence":  [
+
+                     ]
+    },
+    {
+        "task":  "Refactor large file (1007 lines): frontend/src/modules/sales/hooks/useSalesPage.ts",
+        "category":  "Technical Debt",
+        "priority":  "HIGH",
+        "source":  "TechnicalDebt.LargeFiles",
+        "evidence":  [
+                         "frontend/src/modules/sales/hooks/useSalesPage.ts"
+                     ]
+    },
+    {
+        "task":  "Refactor large file (946 lines): frontend/src/modules/purchases/pages/PurchasesPage.tsx",
+        "category":  "Technical Debt",
+        "priority":  "HIGH",
+        "source":  "TechnicalDebt.LargeFiles",
+        "evidence":  [
+                         "frontend/src/modules/purchases/pages/PurchasesPage.tsx"
+                     ]
+    },
+    {
+        "task":  "Refactor large file (782 lines): frontend/src/modules/purchases/hooks/usePurchasesPage.ts",
+        "category":  "Technical Debt",
+        "priority":  "MEDIUM",
+        "source":  "TechnicalDebt.LargeFiles",
+        "evidence":  [
+                         "frontend/src/modules/purchases/hooks/usePurchasesPage.ts"
+                     ]
+    },
+    {
+        "task":  "Refactor large file (743 lines): frontend/src/modules/sales/pages/SalesPage.tsx",
+        "category":  "Technical Debt",
+        "priority":  "MEDIUM",
+        "source":  "TechnicalDebt.LargeFiles",
+        "evidence":  [
+                         "frontend/src/modules/sales/pages/SalesPage.tsx"
+                     ]
+    },
+    {
+        "task":  "Refactor large file (721 lines): frontend/src/modules/masterData/pages/MasterDataBusinessPartnerDetailPage.tsx",
+        "category":  "Technical Debt",
+        "priority":  "MEDIUM",
+        "source":  "TechnicalDebt.LargeFiles",
+        "evidence":  [
+                         "frontend/src/modules/masterData/pages/MasterDataBusinessPartnerDetailPage.tsx"
+                     ]
+    },
+    {
+        "task":  "Refactor large file (610 lines): backend/src/ERP.Application/Modules/ElectronicDocuments/Services/ElectronicDocumentIssuer.cs",
+        "category":  "Technical Debt",
+        "priority":  "MEDIUM",
+        "source":  "TechnicalDebt.LargeFiles",
+        "evidence":  [
+                         "backend/src/ERP.Application/Modules/ElectronicDocuments/Services/ElectronicDocumentIssuer.cs"
+                     ]
+    },
+    {
+        "task":  "Refactor large file (564 lines): backend/src/ERP.Infrastructure/Services/Sri/SriSoapClient.cs",
+        "category":  "Technical Debt",
+        "priority":  "MEDIUM",
+        "source":  "TechnicalDebt.LargeFiles",
+        "evidence":  [
+                         "backend/src/ERP.Infrastructure/Services/Sri/SriSoapClient.cs"
+                     ]
+    },
+    {
+        "task":  "Refactor large file (538 lines): backend/src/ERP.Application/Modules/Sales/UseCases/SalesDraftUseCases.cs",
+        "category":  "Technical Debt",
+        "priority":  "MEDIUM",
+        "source":  "TechnicalDebt.LargeFiles",
+        "evidence":  [
+                         "backend/src/ERP.Application/Modules/Sales/UseCases/SalesDraftUseCases.cs"
+                     ]
+    },
+    {
+        "task":  "Refactor large file (507 lines): frontend/src/modules/access/pages/ProfilesPage.tsx",
+        "category":  "Technical Debt",
+        "priority":  "MEDIUM",
+        "source":  "TechnicalDebt.LargeFiles",
+        "evidence":  [
+                         "frontend/src/modules/access/pages/ProfilesPage.tsx"
+                     ]
+    },
+    {
+        "task":  "Refactor large file (507 lines): backend/src/ERP.Application.Tests/Access/CompanyUserPreferencesTests.cs",
+        "category":  "Technical Debt",
+        "priority":  "MEDIUM",
+        "source":  "TechnicalDebt.LargeFiles",
+        "evidence":  [
+                         "backend/src/ERP.Application.Tests/Access/CompanyUserPreferencesTests.cs"
+                     ]
+    },
+    {
+        "task":  "Triage and reduce outstanding TODO markers (687 found)",
+        "category":  "Technical Debt",
+        "priority":  "MEDIUM",
+        "source":  "TechnicalDebt.TODO",
+        "evidence":  [
+
+                     ]
+    },
+    {
+        "task":  "Resolve outstanding FIXME markers (30 found)",
+        "category":  "Technical Debt",
+        "priority":  "HIGH",
+        "source":  "TechnicalDebt.FIXME",
+        "evidence":  [
+
+                     ]
+    },
+    {
+        "task":  "Review HACK markers (1 found)",
+        "category":  "Technical Debt",
+        "priority":  "MEDIUM",
+        "source":  "TechnicalDebt.HACK",
+        "evidence":  [
+
+                     ]
+    },
+    {
+        "task":  "Complete NotImplementedException code paths (1 found)",
+        "category":  "Technical Debt",
+        "priority":  "HIGH",
+        "source":  "TechnicalDebt.NotImplemented",
+        "evidence":  [
+
+                     ]
+    },
+    {
+        "task":  "Review possible secrets in source files (40 real matches, excluding node_modules)",
+        "category":  "Security",
+        "priority":  "HIGH",
+        "source":  "Security.SecretFiles",
+        "evidence":  [
+                         "backend/src/ERP.API/bin/Debug/net10.0/appsettings.Development.json",
+                         "backend/src/ERP.API/bin/Debug/net10.0/appsettings.json",
+                         "backend/src/ERP.API/appsettings.Development.json",
+                         "backend/src/ERP.API/appsettings.json",
+                         "backend/src/ERP.Application/Modules/ElectronicDocuments/Services/ElectronicDocumentSigningService.cs"
+                     ]
+    },
+    {
+        "task":  "Review anonymous-access endpoints (9 found)",
+        "category":  "Security",
+        "priority":  "HIGH",
+        "source":  "Security.AnonymousFiles",
+        "evidence":  [
+                         "backend/src/ERP.API/Controllers/AuthController.cs",
+                         "backend/src/ERP.API/Controllers/DevCacheController.cs",
+                         "backend/src/ERP.API/Controllers/PublicController.cs",
+                         "backend/src/ERP.API/Controllers/SetupController.cs",
+                         "backend/src/ERP.Domain/Modules/Access/Interfaces/IUserSessionRepository.cs"
+                     ]
+    }
+]

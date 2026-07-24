@@ -1,0 +1,9 @@
+# ERP SaaS — Docker Compose (entrada canónica desde la raíz del repo)
+# Uso: docker compose up -d
+# Apagar: docker compose down  (datos persisten hasta docker compose down -v)
+#
+# Definición de servicios: infrastructure/docker/compose.base.yml
+# Entornos: docker-compose.dev.yml (local) · docker-compose.prod.yml (plantilla)
+
+include:
+  - path: infrastructure/docker/compose.base.yml

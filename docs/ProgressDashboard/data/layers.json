@@ -1,0 +1,44 @@
+﻿[
+    {
+        "icon":  "globe",
+        "name":  "Web ERP",
+        "id":  "web",
+        "order":  1
+    },
+    {
+        "icon":  "smartphone",
+        "name":  "Mobile",
+        "id":  "mobile",
+        "order":  2
+    },
+    {
+        "icon":  "message-circle",
+        "name":  "Chat Interface",
+        "id":  "chat",
+        "order":  3
+    },
+    {
+        "icon":  "brain",
+        "name":  "Intelligence Layer",
+        "id":  "intelligence",
+        "order":  4
+    },
+    {
+        "icon":  "cpu",
+        "name":  "Core Services",
+        "id":  "core",
+        "order":  5
+    },
+    {
+        "icon":  "database",
+        "name":  "Database",
+        "id":  "database",
+        "order":  6
+    },
+    {
+        "icon":  "sparkles",
+        "name":  "AI",
+        "id":  "ai",
+        "order":  7
+    }
+]

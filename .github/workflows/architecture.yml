@@ -1,0 +1,67 @@
+name: Architecture & Stack Audit
+
+on:
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  stack-audit:
+    name: Stack Audit (allowlist)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v6
+      - name: Verify allowed stack
+        shell: pwsh
+        run: ./scripts/ci/verify-stack-allowlist.ps1
+
+  architecture-guardrails:
+    name: Architecture guardrails
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    needs: stack-audit
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+      - name: Backend architecture guardrails
+        shell: pwsh
+        run: |
+          $base = ''
+          if ($env:GITHUB_EVENT_NAME -eq 'pull_request') {
+            $base = "origin/$($env:GITHUB_BASE_REF)"
+          }
+          ./tools/architecture/check-architecture-guardrails.ps1 -SkipFrontendChunk -DiffBase $base
+      - name: Identity guardrails
+        shell: pwsh
+        run: ./tools/architecture/check-identity-guardrails.ps1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - name: Platform Control Plane guard (hard-gate)
+        working-directory: frontend
+        run: npm run platform:guard
+      - name: Upload Platform guard report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: platform-guard-report
+          path: docs/ci/PLATFORM_GUARD_REPORT.md
+          if-no-files-found: error
+      - name: Frontend + backend architecture checks (Node)
+        working-directory: frontend
+        run: npm run architecture:check
+        # Emite ::error/::warning annotations cuando GITHUB_ACTIONS=true (run-all.mjs)
+      - name: i18n key consistency (F-i18n)
+        working-directory: frontend
+        run: npm run architecture:i18n
+      - name: Duplicate DI service detection (B-duplicate-di)
+        working-directory: frontend
+        run: npm run architecture:duplicates
+      - name: Naming conventions (B/F-naming)
+        working-directory: frontend
+        run: npm run architecture:naming

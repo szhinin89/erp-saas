@@ -1,0 +1,25 @@
+---
+description: Contrato de respuestas HTTP para controllers ERP.API
+globs: backend/src/ERP.API/Controllers/**/*.cs
+alwaysApply: false
+---
+
+# Backend API Contracts
+
+**Canónico:** [`AI-RULES/BACKEND-RULES.md`](../../AI-RULES/BACKEND-RULES.md#controllers--apiresultextensions-obligatorio)
+
+- Usar `ApiResultExtensions` (`ToOkOrBadRequest`, `ToCreatedOrBadRequest`, `ToOkOrNotFound`, `ToOkOrUnauthorized`, `ApiOk`, `ApiBadRequest`, etc.).
+- Evitar `new ApiResponse<...>` manual en controllers.
+- No lógica de negocio en controller; solo orquestación HTTP + llamada a handler/mediator.
+
+## Status mínimos por endpoint
+
+- **GET list/detail:** `200`; si requiere auth, `401`; si hay rol/policy restrictiva, `403`; en detail por id, `404`.
+- **POST create:** `201` en éxito; `400` en error de negocio/comando; `401/403` si aplica auth.
+- **PUT/PATCH command:** `200` en éxito; `400` en input o regla de negocio; `401/403` si aplica.
+- **Validación de FluentValidation:** documentar `422` cuando el endpoint recibe body validable.
+
+## Middleware de errores
+
+- `ValidationException` debe mapear a `422`.
+- Mantener cuerpo de error uniforme (status + message + errors cuando aplique).
