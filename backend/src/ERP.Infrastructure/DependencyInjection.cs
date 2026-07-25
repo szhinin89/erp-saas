@@ -191,6 +191,18 @@ public static class DependencyInjection
         services.AddScoped<ERP.Domain.Modules.Pricing.Interfaces.IPriceListItemRepository,
             ERP.Infrastructure.Persistence.Repositories.Pricing.PriceListItemRepository>();
 
+        // ── Accounting BC (ADR-026 — fundamentos) ───────────────────────────────
+        services.AddScoped<ERP.Domain.Modules.Accounting.Interfaces.IAccountRepository,
+            ERP.Infrastructure.Accounting.Repositories.AccountRepository>();
+        services.AddScoped<ERP.Domain.Modules.Accounting.Interfaces.IAccountingPeriodRepository,
+            ERP.Infrastructure.Accounting.Repositories.AccountingPeriodRepository>();
+        services.AddScoped<ERP.Domain.Modules.Accounting.Interfaces.IJournalEntryRepository,
+            ERP.Infrastructure.Accounting.Repositories.JournalEntryRepository>();
+        services.AddScoped<ERP.Domain.Modules.Accounting.Interfaces.IPostingRuleRepository,
+            ERP.Infrastructure.Accounting.Repositories.PostingRuleRepository>();
+        services.AddScoped<ERP.Application.Modules.Accounting.Posting.IPostingEngine,
+            ERP.Application.Modules.Accounting.Posting.PostingEngine>();
+
         services.AddScoped<ERP.Domain.Modules.ElectronicDocuments.Interfaces.IElectronicDocumentRepository,
             ERP.Infrastructure.Persistence.Repositories.ElectronicDocuments.ElectronicDocumentRepository>();
         services.AddScoped<ERP.Application.Modules.ElectronicDocuments.Services.IElectronicDocumentIssuer,

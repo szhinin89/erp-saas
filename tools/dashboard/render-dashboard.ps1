@@ -2226,6 +2226,45 @@ Write-Host "Architecture Explorer home built: 11 diagram nodes, $($filePanelsMap
 
 
 # =============================================================================
+# FASE DASHBOARD 1.0 -- Estructura Maestra (placeholders)
+#
+# 10 secciones vacias que preparan el dashboard para convertirse en Dashboard
+# Maestro del ERP. Sin datos todavia: cada una queda pendiente de su propio
+# analizador (analyze-*.ps1 -> data/*.json) en una fase funcional futura.
+# No se crea CSS/JS nuevo -- se reutilizan 'panel', 'sub-card' y 'muted-note'
+# ya definidos en $cssHtml.
+# =============================================================================
+
+function Build-PlaceholderSection($id, $group, $title)
+{
+    return @"
+<section id='$id' class='panel' data-group='$group'>
+<h2>$title</h2>
+<div class='sub-card'>
+<p class='muted-note'>Seccion en construccion (Fase Dashboard 1.0). Pendiente de analizador de datos -- estructura preparada, sin contenido todavia.</p>
+</div>
+</section>
+"@
+}
+
+$erpCoreOverviewHtml = Build-PlaceholderSection "erp-core-overview" "business-capability" "ERP Core Overview"
+$moduleMaturityHtml = Build-PlaceholderSection "module-maturity" "business-capability" "Madurez por Modulo"
+$adrDecisionsHtml = Build-PlaceholderSection "adr-decisions" "business-capability" "Decisiones Arquitectonicas (ADR)"
+
+$archDependenciesHtml = Build-PlaceholderSection "arch-dependencies" "engineering" "Dependencias Arquitectonicas"
+
+$activeRisksHtml = Build-PlaceholderSection "active-risks" "production" "Riesgos Activos"
+
+$roadmapMaestroHtml = Build-PlaceholderSection "roadmap-maestro" "roadmap" "Roadmap Maestro"
+$currentPhasesHtml = Build-PlaceholderSection "current-phases" "roadmap" "Fases Actuales"
+$nextPhasesHtml = Build-PlaceholderSection "next-phases" "roadmap" "Proximas Fases"
+$projectKpisHtml = Build-PlaceholderSection "project-kpis" "roadmap" "KPIs del Proyecto"
+$globalStatusHtml = Build-PlaceholderSection "global-status" "roadmap" "Estado Global"
+
+Write-Host "Fase Dashboard 1.0: 10 secciones placeholder construidas (ERP Core Overview, Madurez por Modulo, Roadmap Maestro, Fases Actuales, Proximas Fases, Dependencias Arquitectonicas, Riesgos Activos, ADR, KPIs del Proyecto, Estado Global)"
+
+
+# =============================================================================
 # PAGE SHELL: Sidebar, Topbar, CSS, JS
 # =============================================================================
 
@@ -2714,6 +2753,9 @@ $businessCapabilityHtml,
 $architectureProgressSectionHtml,
 $dependencyExplorerHtml,
 $criticalPathHtml,
+$erpCoreOverviewHtml,
+$moduleMaturityHtml,
+$adrDecisionsHtml,
 "</div>",
 
 "<div class='groups-view' data-group-view='engineering'>",
@@ -2722,6 +2764,7 @@ $dependencyGraphHtml,
 $technicalDebtSectionHtml,
 $trendSectionHtml,
 $modelHealthSectionHtml,
+$archDependenciesHtml,
 "</div>",
 
 "<div class='groups-view' data-group-view='security'>",
@@ -2732,6 +2775,7 @@ $securitySectionHtml,
 $productionDecisionSectionHtml,
 $releaseSimulationHtml,
 $riskAssessmentSectionHtml,
+$activeRisksHtml,
 "</div>",
 
 "<div class='groups-view' data-group-view='roadmap'>",
@@ -2740,6 +2784,11 @@ $erpCompletionHtml,
 $roadmapSectionHtml,
 $recommendationsSectionHtml,
 $execDashboardHtml,
+$roadmapMaestroHtml,
+$currentPhasesHtml,
+$nextPhasesHtml,
+$projectKpisHtml,
+$globalStatusHtml,
 "</div>",
 
 $footerHtml,

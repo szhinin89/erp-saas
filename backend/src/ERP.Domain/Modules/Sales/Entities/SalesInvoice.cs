@@ -260,7 +260,9 @@ public sealed class SalesInvoice : AuditableEntity, ITenantScopedEntity, ICompan
         SetUpdated(updatedBy);
 
         RaiseDomainEvent(new SalesInvoiceAuthorizedEvent(
-            Id, InvoiceNumber, AuthorizedGrandTotal!.Value, updatedBy, CashSessionId));
+            Id, InvoiceNumber, AuthorizedGrandTotal!.Value, updatedBy, CashSessionId,
+            TenantId, CompanyId, IssueDate,
+            Subtotal, TotalVat, TotalIce, TotalDiscount));
     }
 
     public const string PendingNumberPlaceholder = "PENDING";

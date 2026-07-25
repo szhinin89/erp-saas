@@ -10,15 +10,34 @@ public sealed class PurchaseInvoiceConfirmedEvent : BaseDomainEvent, IAuditEvent
     public Guid SupplierId { get; }
     public string InvoiceNumber { get; }
     public decimal GrandTotal { get; }
+    public Guid CompanyId { get; }
+    public DateOnly IssueDate { get; }
+
+    /// <summary>
+    /// Montos ya resueltos por Purchases (Configuración Tributaria, infraestructura CLOSED) —
+    /// ADR-026 §4. Accounting los consume tal cual, nunca los recalcula.
+    /// </summary>
+    public decimal Subtotal { get; }
+    public decimal TotalVat { get; }
+    public decimal TotalIce { get; }
+    public decimal TotalDiscount { get; }
 
     public PurchaseInvoiceConfirmedEvent(
-        Guid tenantId, Guid invoiceId, Guid supplierId, string invoiceNumber, decimal grandTotal)
+        Guid tenantId, Guid invoiceId, Guid supplierId, string invoiceNumber, decimal grandTotal,
+        Guid companyId, DateOnly issueDate,
+        decimal subtotal, decimal totalVat, decimal totalIce, decimal totalDiscount)
     {
         TenantId = tenantId;
         InvoiceId = invoiceId;
         SupplierId = supplierId;
         InvoiceNumber = invoiceNumber;
         GrandTotal = grandTotal;
+        CompanyId = companyId;
+        IssueDate = issueDate;
+        Subtotal = subtotal;
+        TotalVat = totalVat;
+        TotalIce = totalIce;
+        TotalDiscount = totalDiscount;
     }
 
     Guid IAuditEvent.EntityId => InvoiceId;

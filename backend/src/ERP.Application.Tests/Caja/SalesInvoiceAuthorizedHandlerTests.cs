@@ -47,7 +47,10 @@ public sealed class SalesInvoiceAuthorizedHandlerTests
             .ReturnsAsync(session);
 
         var handler = BuildHandler(cashRepo);
-        var evt = new SalesInvoiceAuthorizedEvent(Guid.NewGuid(), "001-001-000000001", 115m, UserId, session.Id);
+        var evt = new SalesInvoiceAuthorizedEvent(
+            Guid.NewGuid(), "001-001-000000001", 115m, UserId, session.Id,
+            TenantId, CompanyId, new DateOnly(2026, 7, 25),
+            100m, 15m, 0m, 0m);
 
         await handler.Handle(evt, CancellationToken.None);
 
@@ -65,7 +68,10 @@ public sealed class SalesInvoiceAuthorizedHandlerTests
             .ReturnsAsync((CashSession?)null);
 
         var handler = BuildHandler(cashRepo);
-        var evt = new SalesInvoiceAuthorizedEvent(Guid.NewGuid(), "001-001-000000002", 50m, UserId, missingSessionId);
+        var evt = new SalesInvoiceAuthorizedEvent(
+            Guid.NewGuid(), "001-001-000000002", 50m, UserId, missingSessionId,
+            TenantId, CompanyId, new DateOnly(2026, 7, 25),
+            50m, 0m, 0m, 0m);
 
         var act = async () => await handler.Handle(evt, CancellationToken.None);
 

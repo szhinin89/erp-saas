@@ -334,7 +334,9 @@ public sealed class PurchaseInvoice : AuditableEntity, ITenantScopedEntity, ICom
 
         Status = PurchaseStatus.Confirmed;
         SetUpdated(updatedBy);
-        RaiseDomainEvent(new PurchaseInvoiceConfirmedEvent(TenantId, Id, SupplierId, InvoiceNumber, GrandTotal));
+        RaiseDomainEvent(new PurchaseInvoiceConfirmedEvent(
+            TenantId, Id, SupplierId, InvoiceNumber, GrandTotal, CompanyId, IssueDate,
+            Subtotal, TotalVat, TotalIce, TotalDiscount));
     }
 
     /// <summary>

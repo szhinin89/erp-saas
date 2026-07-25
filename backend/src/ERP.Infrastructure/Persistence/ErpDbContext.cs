@@ -18,6 +18,7 @@ using ERP.Domain.Modules.Company.Entities;
 using ERP.Domain.Modules.Items.Entities;
 using ERP.Domain.Modules.Inventory.Entities;
 using ERP.Domain.Modules.Pricing.Entities;
+using ERP.Domain.Modules.Accounting.Entities;
 using ERP.Domain.Modules.ElectronicDocuments.Entities;
 using ERP.Domain.Modules.Ride.Entities;
 using ERP.Domain.Modules.Finance.Entities;
@@ -241,6 +242,14 @@ public class ErpDbContext : DbContext
     public DbSet<PricingRuleAudit> PricingRuleAudits => Set<PricingRuleAudit>();
     public DbSet<PriceListItemAudit> PriceListItemAudits => Set<PriceListItemAudit>();
     public DbSet<PriceListAudit> PriceListAudits => Set<PriceListAudit>();
+
+    // ── Accounting BC (ADR-026 — fundamentos + Posting Engine, partida doble sin JournalFactory/JournalValidator reales) ─
+    public DbSet<Account> Accounts => Set<Account>();
+    public DbSet<AccountingPeriod> AccountingPeriods => Set<AccountingPeriod>();
+    public DbSet<JournalEntry> JournalEntries => Set<JournalEntry>();
+    public DbSet<JournalEntryLine> JournalEntryLines => Set<JournalEntryLine>();
+    public DbSet<PostingRule> PostingRules => Set<PostingRule>();
+    public DbSet<PostingRuleLine> PostingRuleLines => Set<PostingRuleLine>();
 
     // ── ElectronicDocuments BC (núcleo — sin SOAP/SRI, ver Fases 1-7) ──────
     public DbSet<ElectronicDocument> ElectronicDocuments => Set<ElectronicDocument>();
