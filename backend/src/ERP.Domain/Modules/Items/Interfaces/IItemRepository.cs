@@ -1,4 +1,5 @@
 ﻿using ERP.Domain.Modules.Items.Entities;
+using ERP.Domain.Modules.Items.Models;
 
 namespace ERP.Domain.Modules.Items.Interfaces;
 
@@ -43,6 +44,19 @@ public interface IItemRepository
     Task<IReadOnlyList<Item>> GetAllActiveAsync(Guid tenantId, CancellationToken cancellationToken = default);
 
     Task<Item?> ResolveByAnyCodeAsync(string code, Guid tenantId, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Item Matching (Purchase Reception): resuelve el ítem que ya tiene un código de proveedor
+    /// exacto registrado para (supplierId, code). Null si no hay ninguno activo.
+    /// </summary>
+    Task<Guid?> FindItemIdBySupplierCodeAsync(Guid supplierId, string code, Guid tenantId, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Item Matching (Purchase Reception): candidatos por similitud de texto (pg_trgm) contra
+    /// SKU/nombre corto/descripción, ordenados por score descendente. Solo activos.
+    /// </summary>
+    Task<IReadOnlyList<ItemSimilarityMatch>> SearchBySimilarityAsync(
+        string text, Guid tenantId, int maxResults, double minScore, CancellationToken cancellationToken = default);
 
     Task AddAsync(Item item, CancellationToken cancellationToken = default);
 

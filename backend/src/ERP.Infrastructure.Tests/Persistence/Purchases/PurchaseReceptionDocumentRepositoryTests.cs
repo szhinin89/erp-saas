@@ -118,7 +118,7 @@ public sealed class PurchaseReceptionDocumentRepositoryTests : IAsyncLifetime
         var downloadedAt = new DateTime(2026, 7, 1, 22, 0, 0, DateTimeKind.Utc);
         document.AttachSriAuthorization(
             document.AccessKey, new DateTime(2026, 7, 1, 21, 30, 0, DateTimeKind.Utc),
-            "<factura>contenido autorizado</factura>", downloadedAt, _createdBy);
+            "<factura>contenido autorizado</factura>", downloadedAt, [], _createdBy);
         await repo.SaveChangesAsync();
 
         await using var verifyDb = CreateContext();

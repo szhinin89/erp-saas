@@ -1,38 +1,43 @@
 using ERP.Domain.Common;
+using ERP.Domain.Modules.Purchases.PurchaseReception.Enums;
 
 namespace ERP.Domain.Modules.Purchases.PurchaseReception.Entities;
 
 /// <summary>
-/// Línea de detalle de un <see cref="PurchaseReceptionDocument"/>. Fase 2 no la carga desde el
-/// TXT (que solo trae totales de cabecera) — queda modelada para cuando exista una fuente con
-/// detalle de línea (XML del comprobante). <see cref="ItemId"/>/<see cref="MatchStatus"/> quedan
-/// reservados para la futura conciliación de productos — sin lógica de matching todavía.
+/// Línea de detalle de un <see cref="PurchaseReceptionDocument"/>, extraída del XML autorizado del
+/// comprobante al momento de la verificación SRI (ver <c>DownloadPurchaseReceptionXmlHandler</c>).
+/// <see cref="ItemId"/>/<see cref="MatchStatus"/> representan la conciliación contra el catálogo de
+/// Items — resuelta automáticamente por código de proveedor exacto, o manualmente por el usuario
+/// (individual o en lote) vía el motor de Item Matching.
 /// </summary>
 public sealed class PurchaseReceptionLine : IMustHaveTenant
 {
     public const int SupplierCodeMaxLen = 50;
     public const int DescriptionMaxLen  = 300;
-    public const int MatchStatusMaxLen  = 30;
 
     public Guid Id                          { get; private set; }
     public Guid TenantId                    { get; private set; }
     public Guid PurchaseReceptionDocumentId { get; private set; }
 
-    public string? SupplierCode { get; private set; }
-    public string  Description  { get; private set; } = null!;
-    public decimal Quantity     { get; private set; }
-    public decimal UnitPrice    { get; private set; }
+    public string? SupplierCode    { get; private set; }
+    public string? SupplierAuxCode { get; private set; }
+    public string  Description     { get; private set; } = null!;
+    public decimal Quantity        { get; private set; }
+    public decimal UnitPrice       { get; private set; }
 
-    /// <summary>Ítem del ERP ya conciliado con esta línea — null hasta que exista un matcher.</summary>
-    public Guid?   ItemId      { get; private set; }
-    /// <summary>Marcador libre para la futura fase de conciliación — sin vocabulario fijo todavía.</summary>
-    public string? MatchStatus { get; private set; }
+    /// <summary>Ítem del ERP ya conciliado con esta línea — null mientras <see cref="MatchStatus"/> no sea Auto/ManuallyMatched.</summary>
+    public Guid? ItemId { get; private set; }
+
+    public ItemMatchStatus MatchStatus { get; private set; } = ItemMatchStatus.Pending;
+    public DateTime?        MatchedAt   { get; private set; }
+    public Guid?             MatchedBy   { get; private set; }
 
     private PurchaseReceptionLine() { }
 
     public static PurchaseReceptionLine Create(
         Guid documentId, Guid tenantId, string description, decimal quantity, decimal unitPrice,
-        string? supplierCode = null, Guid? itemId = null, string? matchStatus = null)
+        string? supplierCode = null, string? supplierAuxCode = null,
+        Guid? itemId = null, ItemMatchStatus matchStatus = ItemMatchStatus.Pending)
     {
         if (documentId == Guid.Empty)
             throw new ArgumentException("El documento de recepción es obligatorio.", nameof(documentId));
@@ -42,6 +47,8 @@ public sealed class PurchaseReceptionLine : IMustHaveTenant
             throw new ArgumentException("La cantidad debe ser mayor a cero.", nameof(quantity));
         if (unitPrice < 0)
             throw new ArgumentException("El precio unitario no puede ser negativo.", nameof(unitPrice));
+        if (matchStatus is ItemMatchStatus.AutoMatched or ItemMatchStatus.ManuallyMatched && itemId is null)
+            throw new ArgumentException("Un estado de conciliación resuelto requiere un ítem.", nameof(itemId));
 
         return new PurchaseReceptionLine
         {
@@ -49,11 +56,49 @@ public sealed class PurchaseReceptionLine : IMustHaveTenant
             TenantId                    = tenantId,
             PurchaseReceptionDocumentId = documentId,
             SupplierCode                = supplierCode?.Trim(),
+            SupplierAuxCode             = supplierAuxCode?.Trim(),
             Description                 = description.Trim(),
             Quantity                    = quantity,
             UnitPrice                   = unitPrice,
             ItemId                      = itemId,
-            MatchStatus                 = matchStatus?.Trim(),
+            MatchStatus                 = matchStatus,
         };
+    }
+
+    /// <summary>Resolución automática al persistir la línea — solo por código de proveedor exacto, sin intervención del usuario.</summary>
+    public void AutoMatch(Guid itemId)
+    {
+        if (itemId == Guid.Empty)
+            throw new ArgumentException("El ítem es obligatorio.", nameof(itemId));
+
+        ItemId      = itemId;
+        MatchStatus = ItemMatchStatus.AutoMatched;
+        MatchedAt   = null;
+        MatchedBy   = null;
+    }
+
+    /// <summary>Marca la línea con sugerencias pendientes de revisión humana (sin código exacto).</summary>
+    public void MarkNeedsReview()
+    {
+        if (MatchStatus is ItemMatchStatus.AutoMatched or ItemMatchStatus.ManuallyMatched)
+            return;
+        MatchStatus = ItemMatchStatus.NeedsReview;
+    }
+
+    /// <summary>
+    /// Confirmación del usuario — individual o en lote. Permite re-vincular una línea ya
+    /// conciliada (el usuario puede corregir una sugerencia automática o una elección anterior).
+    /// </summary>
+    public void ManualMatch(Guid itemId, Guid matchedBy, DateTime matchedAtUtc)
+    {
+        if (itemId == Guid.Empty)
+            throw new ArgumentException("El ítem es obligatorio.", nameof(itemId));
+        if (matchedBy == Guid.Empty)
+            throw new ArgumentException("El usuario que concilia es obligatorio.", nameof(matchedBy));
+
+        ItemId      = itemId;
+        MatchStatus = ItemMatchStatus.ManuallyMatched;
+        MatchedAt   = matchedAtUtc;
+        MatchedBy   = matchedBy;
     }
 }

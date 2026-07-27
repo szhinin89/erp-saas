@@ -5,6 +5,10 @@ using Microsoft.AspNetCore.Mvc;
 using ERP.API.Attributes;
 using ERP.API.Extensions;
 using ERP.Application.Common.Models;
+using ERP.Application.Modules.Inventory.ItemMatching.DTOs;
+using ERP.Application.Modules.Inventory.ItemMatching.UseCases.BulkMatchItems;
+using ERP.Application.Modules.Inventory.ItemMatching.UseCases.FindItemMatches;
+using ERP.Application.Modules.Inventory.ItemMatching.UseCases.MatchItem;
 using ERP.Application.Modules.Purchases.PurchaseReception.DTOs;
 using ERP.Application.Modules.Purchases.PurchaseReception.UseCases.CreatePurchaseReceptionDraft;
 using ERP.Application.Modules.Purchases.PurchaseReception.UseCases.DownloadPurchaseReceptionXml;
@@ -52,4 +56,26 @@ public sealed class PurchaseReceptionController : ControllerBase
     [ProducesResponseType(typeof(Contracts.ApiResponse<PurchaseDraftDto>), StatusCodes.Status200OK)]
     public async Task<IActionResult> CreateDraft(Guid id, CancellationToken ct)
         => this.ToOkOrBadRequest(await _mediator.Send(new CreatePurchaseReceptionDraftCommand(id), ct));
+
+    // ── Item Matching ────────────────────────────────────────────────────
+
+    [HttpGet("{id:guid}/lines")]
+    [Authorize(Policy = $"perm:{PurchasePermissions.View}")]
+    [ProducesResponseType(typeof(Contracts.ApiResponse<IReadOnlyList<PurchaseReceptionLineMatchDto>>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetLines(Guid id, CancellationToken ct)
+        => this.ToOkOrBadRequest(await _mediator.Send(new FindItemMatchesQuery(id), ct));
+
+    [HttpPost("lines/{id:guid}/match-item")]
+    [Authorize(Policy = $"perm:{PurchasePermissions.View}")]
+    [ProducesResponseType(typeof(Contracts.ApiResponse<PurchaseReceptionLineMatchDto>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> MatchItem(Guid id, [FromBody] MatchItemRequest body, CancellationToken ct)
+        => this.ToOkOrBadRequest(await _mediator.Send(new MatchItemCommand(id, body.ItemId), ct));
+
+    [HttpPost("matching/bulk")]
+    [Authorize(Policy = $"perm:{PurchasePermissions.View}")]
+    [ProducesResponseType(typeof(Contracts.ApiResponse<BulkMatchItemsResultDto>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> BulkMatch([FromBody] IReadOnlyList<BulkMatchItemEntry> matches, CancellationToken ct)
+        => this.ToOkOrBadRequest(await _mediator.Send(new BulkMatchItemsCommand(matches), ct));
 }
+
+public sealed record MatchItemRequest(Guid ItemId);

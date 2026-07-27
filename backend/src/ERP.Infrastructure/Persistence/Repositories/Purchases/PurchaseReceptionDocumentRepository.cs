@@ -23,7 +23,10 @@ public sealed class PurchaseReceptionDocumentRepository : IPurchaseReceptionDocu
         => _db.PurchaseReceptionDocuments.AddAsync(document, ct).AsTask();
 
     public Task<PurchaseReceptionDocument?> GetByIdAsync(Guid tenantId, Guid id, CancellationToken ct = default)
-        => Scoped(tenantId).FirstOrDefaultAsync(x => x.Id == id, ct);
+        => Scoped(tenantId).Include(x => x.Lines).FirstOrDefaultAsync(x => x.Id == id, ct);
+
+    public Task<PurchaseReceptionDocument?> GetByLineIdAsync(Guid tenantId, Guid lineId, CancellationToken ct = default)
+        => Scoped(tenantId).Include(x => x.Lines).FirstOrDefaultAsync(x => x.Lines.Any(l => l.Id == lineId), ct);
 
     public async Task<(IReadOnlyList<PurchaseReceptionDocument> Items, int Total)> GetPagedAsync(
         Guid tenantId, int page, int pageSize, CancellationToken ct = default)

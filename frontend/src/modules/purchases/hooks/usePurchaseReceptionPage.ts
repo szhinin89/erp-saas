@@ -18,6 +18,8 @@ export function usePurchaseReceptionPage() {
   // Estado por fila de la consulta de XML — no viene del backend (que solo persiste el estado
   // previo cuando falla), es puramente de UI para mostrar "Consultando..."/"Error consulta".
   const [xmlRowState, setXmlRowState] = useState<Record<string, 'loading' | 'error'>>({});
+  // Panel de Item Matching (Vincular productos) — documento activo o null si está cerrado.
+  const [matchingDocumentId, setMatchingDocumentId] = useState<string | null>(null);
 
   const handleFileSelected = async (file: File) => {
     setUploading(true);
@@ -85,5 +87,8 @@ export function usePurchaseReceptionPage() {
     handleFileSelected,
     xmlRowState,
     handleDownloadXml,
+    matchingDocumentId,
+    openMatchingPanel: setMatchingDocumentId,
+    closeMatchingPanel: () => setMatchingDocumentId(null),
   };
 }

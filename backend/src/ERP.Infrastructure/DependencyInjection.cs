@@ -382,6 +382,13 @@ public static class DependencyInjection
         services.AddScoped<ERP.Application.Modules.Purchases.PurchaseReception.XmlParsing.IPurchaseXmlDraftParser,
             ERP.Application.Modules.Purchases.PurchaseReception.XmlParsing.PurchaseXmlDraftParser>();
 
+        // Item Matching (Inventory) — motor de conciliación de líneas de PurchaseReception contra el
+        // catálogo de Items; consume IItemRepository, no crea un repositorio propio.
+        services.AddScoped<ERP.Application.Modules.Inventory.ItemMatching.Services.IItemMatchFinder,
+            ERP.Application.Modules.Inventory.ItemMatching.Services.ItemMatchFinder>();
+        services.AddScoped<ERP.Application.Modules.Inventory.ItemMatching.Services.IItemMatchConfirmationService,
+            ERP.Application.Modules.Inventory.ItemMatching.Services.ItemMatchConfirmationService>();
+
         // ── Sales BC ─────────────────────────────────────────────────────────
         services.AddScoped<ERP.Domain.Modules.Sales.Interfaces.ISalesInvoiceRepository,
             ERP.Infrastructure.Persistence.Repositories.Sales.SalesInvoiceRepository>();

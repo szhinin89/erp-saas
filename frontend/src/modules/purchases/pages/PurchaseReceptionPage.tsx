@@ -8,6 +8,7 @@ import { formatDate, formatDateTime } from '../../../lib/formatters/dateFormatte
 import { formatMoneyWithSymbol } from '../../../lib/sanitizers';
 import { usePurchaseReceptionPage } from '../hooks/usePurchaseReceptionPage';
 import type { PurchaseReceptionItem } from '../api/purchaseReceptionService';
+import { ZHItemMatchingPanel } from '../components/ZHItemMatchingPanel';
 import '../styles/purchase-reception.css';
 
 const STATUS_LABEL: Record<PurchaseReceptionItem['status'], string> = {
@@ -86,6 +87,20 @@ export function PurchaseReceptionPage() {
       },
     },
     {
+      key: 'itemMatching', header: 'Productos', align: 'center',
+      render: (row) => {
+        if (row.documentStatus !== 'VERIFIED' && row.documentStatus !== 'PROCESSED') {
+          return null;
+        }
+        return (
+          <ZHBtn variant="secondary" size="xs" type="button"
+            onClick={() => ctx.openMatchingPanel(row.documentId)}>
+            Vincular productos
+          </ZHBtn>
+        );
+      },
+    },
+    {
       key: 'createPurchase', header: 'Compra', align: 'center',
       render: (row) => {
         if (row.documentStatus === 'PROCESSED') {
@@ -107,7 +122,7 @@ export function PurchaseReceptionPage() {
   return (
     <ErpPageTemplate
       title="Recepción electrónica"
-      subtitle="Importe el TXT de comprobantes recibidos del SRI. Cada factura queda guardada como documento de recepción y se compara contra los proveedores y compras ya registrados en el ERP — todavía no crea compras ni concilia productos."
+      subtitle="Importe el TXT de comprobantes recibidos del SRI. Cada factura queda guardada como documento de recepción y se compara contra los proveedores y compras ya registrados en el ERP. Al consultar el XML autorizado, sus líneas quedan disponibles para vincular con el catálogo de Items — todavía no crea compras automáticamente."
     >
       <div className="pg-section">
         <ZhFileUpload
@@ -158,6 +173,12 @@ export function PurchaseReceptionPage() {
           />
         )}
       </div>
+
+      <ZHItemMatchingPanel
+        open={ctx.matchingDocumentId !== null}
+        documentId={ctx.matchingDocumentId}
+        onClose={ctx.closeMatchingPanel}
+      />
     </ErpPageTemplate>
   );
 }

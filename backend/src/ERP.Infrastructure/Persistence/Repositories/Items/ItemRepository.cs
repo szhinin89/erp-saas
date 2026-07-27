@@ -1,6 +1,7 @@
 ﻿using ERP.Application.Common;
 using ERP.Domain.Modules.Items.Entities;
 using ERP.Domain.Modules.Items.Interfaces;
+using ERP.Domain.Modules.Items.Models;
 using Microsoft.EntityFrameworkCore;
 
 namespace ERP.Infrastructure.Persistence.Repositories.Items;
@@ -104,6 +105,37 @@ public sealed class ItemRepository : IItemRepository
             .ToListAsync(cancellationToken);
 
         return codes.FirstOrDefault(s => s.IsPrimary)?.Code ?? codes.FirstOrDefault()?.Code;
+    }
+
+    public async Task<Guid?> FindItemIdBySupplierCodeAsync(Guid supplierId, string code, Guid tenantId, CancellationToken cancellationToken = default)
+        => await _context.Set<ItemSupplierCode>()
+            .Where(s => s.TenantId == tenantId && s.SupplierId == supplierId && s.Code == code && s.IsActive)
+            .Select(s => (Guid?)s.ItemId)
+            .FirstOrDefaultAsync(cancellationToken);
+
+    public async Task<IReadOnlyList<ItemSimilarityMatch>> SearchBySimilarityAsync(
+        string text, Guid tenantId, int maxResults, double minScore, CancellationToken cancellationToken = default)
+    {
+        var results = await Scoped(tenantId)
+            .Where(x => x.IsActive)
+            .Select(x => new
+            {
+                x.Id,
+                x.Code.SKU,
+                x.Code.ShortName,
+                x.Code.Description,
+                Score = EF.Functions.TrigramsSimilarity(x.Code.Description, text) > EF.Functions.TrigramsSimilarity(x.Code.ShortName, text)
+                    ? EF.Functions.TrigramsSimilarity(x.Code.Description, text)
+                    : EF.Functions.TrigramsSimilarity(x.Code.ShortName, text),
+            })
+            .Where(x => x.Score >= minScore)
+            .OrderByDescending(x => x.Score)
+            .Take(maxResults)
+            .ToListAsync(cancellationToken);
+
+        return results
+            .Select(x => new ItemSimilarityMatch(x.Id, x.SKU, x.ShortName, x.Description, (double)x.Score))
+            .ToList();
     }
 
     public async Task<(IReadOnlyList<Item> Items, int TotalCount)> GetPageAsync(

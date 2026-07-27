@@ -59,7 +59,7 @@ public sealed class PurchaseReceptionDocument : AuditableEntity, ITenantScopedEn
     public string? XmlContent { get; private set; }
 
     private readonly List<PurchaseReceptionLine> _lines = new();
-    /// <summary>Reservado para la futura fuente con detalle de línea (XML) — vacío en Fase 2.</summary>
+    /// <summary>Líneas de detalle extraídas del XML autorizado — pobladas por <see cref="AttachSriAuthorization"/>, vacío hasta entonces.</summary>
     public IReadOnlyList<PurchaseReceptionLine> Lines => _lines.AsReadOnly();
 
     private PurchaseReceptionDocument() { }
@@ -150,22 +150,15 @@ public sealed class PurchaseReceptionDocument : AuditableEntity, ITenantScopedEn
         SetUpdated(updatedBy);
     }
 
-    /// <summary>Reservado para la futura fuente con detalle de línea (XML) — sin lógica de matcher.</summary>
-    public void ReplaceLines(IEnumerable<PurchaseReceptionLine> lines, Guid updatedBy)
-    {
-        EnsureImported();
-        _lines.Clear();
-        _lines.AddRange(lines);
-        SetUpdated(updatedBy);
-    }
-
     /// <summary>
-    /// Fase 3: adjunta el XML autorizado ya consultado en el SRI y transiciona el documento a
-    /// Verified. Solo válido desde Imported — si ya está Verified/Processed/Cancelled, el llamador
-    /// debe tratarlo como un error de estado, no reintentar la descarga silenciosamente.
+    /// Fase 3: adjunta el XML autorizado ya consultado en el SRI, persiste sus líneas de detalle
+    /// (Item Matching, ya conciliadas por código de proveedor exacto cuando aplica) y transiciona
+    /// el documento a Verified. Solo válido desde Imported — si ya está Verified/Processed/Cancelled,
+    /// el llamador debe tratarlo como un error de estado, no reintentar la descarga silenciosamente.
     /// </summary>
     public void AttachSriAuthorization(
-        string authorizationNumber, DateTime authorizationDate, string xmlContent, DateTime downloadedAtUtc, Guid updatedBy)
+        string authorizationNumber, DateTime authorizationDate, string xmlContent, DateTime downloadedAtUtc,
+        IEnumerable<PurchaseReceptionLine> lines, Guid updatedBy)
     {
         EnsureImported();
         if (string.IsNullOrWhiteSpace(authorizationNumber))
@@ -178,6 +171,8 @@ public sealed class PurchaseReceptionDocument : AuditableEntity, ITenantScopedEn
         XmlContent          = xmlContent;
         XmlDownloadedAt     = downloadedAtUtc;
         Status              = PurchaseReceptionDocumentStatus.Verified;
+        _lines.Clear();
+        _lines.AddRange(lines);
         SetUpdated(updatedBy);
     }
 }

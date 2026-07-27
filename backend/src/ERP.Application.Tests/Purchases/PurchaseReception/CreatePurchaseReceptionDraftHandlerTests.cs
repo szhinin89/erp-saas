@@ -51,7 +51,7 @@ public sealed class CreatePurchaseReceptionDraftHandlerTests
     public async Task Handle_builds_a_draft_from_the_stored_xml_of_a_verified_document()
     {
         var document = SampleDocument(SupplierId);
-        document.AttachSriAuthorization("1234567890", DateTime.UtcNow, SampleXml, DateTime.UtcNow, UserId);
+        document.AttachSriAuthorization("1234567890", DateTime.UtcNow, SampleXml, DateTime.UtcNow, [], UserId);
         var (handler, repo) = BuildHandler();
         repo.Setup(r => r.GetByIdAsync(TenantId, document.Id, It.IsAny<CancellationToken>())).ReturnsAsync(document);
 
@@ -77,7 +77,7 @@ public sealed class CreatePurchaseReceptionDraftHandlerTests
     public async Task Handle_leaves_supplier_null_when_the_reception_document_never_matched_one()
     {
         var document = SampleDocument(supplierId: null);
-        document.AttachSriAuthorization("1234567890", DateTime.UtcNow, SampleXml, DateTime.UtcNow, UserId);
+        document.AttachSriAuthorization("1234567890", DateTime.UtcNow, SampleXml, DateTime.UtcNow, [], UserId);
         var (handler, repo) = BuildHandler();
         repo.Setup(r => r.GetByIdAsync(TenantId, document.Id, It.IsAny<CancellationToken>())).ReturnsAsync(document);
 

@@ -1,6 +1,41 @@
-import { apiPost } from '../../lib/apiEnvelope';
+import { apiGet, apiPost } from '../../lib/apiEnvelope';
 
 const BASE = '/api/v1/purchases/reception';
+
+export type ItemMatchStatus = 'PENDING' | 'NEEDS_REVIEW' | 'AUTO_MATCHED' | 'MANUALLY_MATCHED';
+
+export interface ItemMatchCandidate {
+  itemId: string;
+  sku: string;
+  shortName: string;
+  description: string;
+  matchScore: number;
+  matchReason: string;
+}
+
+export interface PurchaseReceptionLineMatch {
+  lineId: string;
+  supplierCode: string | null;
+  supplierAuxCode: string | null;
+  description: string;
+  quantity: number;
+  unitPrice: number;
+  itemId: string | null;
+  matchStatus: ItemMatchStatus;
+  matchedAt: string | null;
+  suggestions: ItemMatchCandidate[];
+}
+
+export interface BulkMatchEntry {
+  purchaseReceptionLineId: string;
+  itemId: string;
+}
+
+export interface BulkMatchResultEntry {
+  purchaseReceptionLineId: string;
+  success: boolean;
+  error: string | null;
+}
 
 export interface PurchaseReceptionItem {
   supplierRuc: string;
@@ -94,5 +129,17 @@ export const purchaseReceptionService = {
 
   createDraft(documentId: string): Promise<PurchaseDraftDto> {
     return apiPost<PurchaseDraftDto>(`${BASE}/${documentId}/create-draft`, {});
+  },
+
+  getLines(documentId: string): Promise<PurchaseReceptionLineMatch[]> {
+    return apiGet<PurchaseReceptionLineMatch[]>(`${BASE}/${documentId}/lines`);
+  },
+
+  matchItem(lineId: string, itemId: string): Promise<PurchaseReceptionLineMatch> {
+    return apiPost<PurchaseReceptionLineMatch>(`${BASE}/lines/${lineId}/match-item`, { itemId });
+  },
+
+  bulkMatch(matches: BulkMatchEntry[]): Promise<{ results: BulkMatchResultEntry[] }> {
+    return apiPost<{ results: BulkMatchResultEntry[] }>(`${BASE}/matching/bulk`, matches);
   },
 };

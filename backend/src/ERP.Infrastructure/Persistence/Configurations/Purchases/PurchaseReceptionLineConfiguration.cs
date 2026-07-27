@@ -1,3 +1,4 @@
+using ERP.Domain.Modules.Items.Entities;
 using ERP.Domain.Modules.Purchases.PurchaseReception.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
@@ -17,6 +18,8 @@ public sealed class PurchaseReceptionLineConfiguration : IEntityTypeConfiguratio
 
         builder.Property(x => x.SupplierCode).HasColumnName("supplier_code")
             .HasMaxLength(PurchaseReceptionLine.SupplierCodeMaxLen);
+        builder.Property(x => x.SupplierAuxCode).HasColumnName("supplier_aux_code")
+            .HasMaxLength(PurchaseReceptionLine.SupplierCodeMaxLen);
         builder.Property(x => x.Description).HasColumnName("description")
             .HasMaxLength(PurchaseReceptionLine.DescriptionMaxLen).IsRequired();
         builder.Property(x => x.Quantity).HasColumnName("quantity")
@@ -26,13 +29,20 @@ public sealed class PurchaseReceptionLineConfiguration : IEntityTypeConfiguratio
 
         builder.Property(x => x.ItemId).HasColumnName("item_id");
         builder.Property(x => x.MatchStatus).HasColumnName("match_status")
-            .HasMaxLength(PurchaseReceptionLine.MatchStatusMaxLen);
+            .HasConversion<int>().IsRequired();
+        builder.Property(x => x.MatchedAt).HasColumnName("matched_at");
+        builder.Property(x => x.MatchedBy).HasColumnName("matched_by");
 
         builder.HasIndex(x => x.PurchaseReceptionDocumentId)
             .HasDatabaseName("ix_purchase_reception_lines_document");
 
-        // Referencia opcional a Items — no crea entidades duplicadas, solo el FK reservado para la
-        // futura conciliación. Sin cascada: un ítem no debe arrastrar líneas de recepción al eliminarse.
+        // FK real a Items: una línea conciliada siempre referencia un ítem existente del mismo
+        // tenant. Sin cascada: un ítem no debe arrastrar líneas de recepción al eliminarse.
+        builder.HasOne<Item>()
+            .WithMany()
+            .HasForeignKey(x => x.ItemId)
+            .OnDelete(DeleteBehavior.Restrict);
+
         builder.HasIndex(x => x.ItemId)
             .HasDatabaseName("ix_purchase_reception_lines_item")
             .HasFilter("item_id IS NOT NULL");

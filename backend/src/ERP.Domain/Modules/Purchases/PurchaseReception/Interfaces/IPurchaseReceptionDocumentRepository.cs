@@ -6,6 +6,8 @@ public interface IPurchaseReceptionDocumentRepository
 {
     Task AddAsync(PurchaseReceptionDocument document, CancellationToken ct = default);
     Task<PurchaseReceptionDocument?> GetByIdAsync(Guid tenantId, Guid id, CancellationToken ct = default);
+    /// <summary>Item Matching: resuelve el documento padre de una línea de recepción por su Id.</summary>
+    Task<PurchaseReceptionDocument?> GetByLineIdAsync(Guid tenantId, Guid lineId, CancellationToken ct = default);
     Task<(IReadOnlyList<PurchaseReceptionDocument> Items, int Total)> GetPagedAsync(
         Guid tenantId, int page, int pageSize, CancellationToken ct = default);
     Task<bool> ExistsByAccessKeyAsync(Guid tenantId, string accessKey, CancellationToken ct = default);
