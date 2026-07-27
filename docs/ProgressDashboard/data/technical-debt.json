@@ -1,6 +1,6 @@
 ﻿{
-    "Generated":  "2026-07-20 19:19:48",
-    "FilesAnalyzed":  9422,
+    "Generated":  "2026-07-26 17:06:01",
+    "FilesAnalyzed":  9511,
     "TODO":  687,
     "FIXME":  30,
     "HACK":  1,
@@ -39,8 +39,24 @@
                            "Lines":  11654
                        },
                        {
+                           "File":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Infrastructure\\Migrations\\20260724181613_AddBusinessPartnerIdentificationUniqueIndex.Designer.cs",
+                           "Lines":  11654
+                       },
+                       {
+                           "File":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Infrastructure\\Migrations\\20260725000917_AddAccountingCoreFoundations.Designer.cs",
+                           "Lines":  11950
+                       },
+                       {
+                           "File":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Infrastructure\\Migrations\\20260725013347_AddJournalEntryIdempotencyKey.Designer.cs",
+                           "Lines":  11951
+                       },
+                       {
+                           "File":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Infrastructure\\Migrations\\20260725165737_AddJournalEntryLineAndPostingRuleLine.Designer.cs",
+                           "Lines":  12076
+                       },
+                       {
                            "File":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Infrastructure\\Migrations\\ErpDbContextModelSnapshot.cs",
-                           "Lines":  11651
+                           "Lines":  12073
                        },
                        {
                            "File":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Infrastructure\\Services\\Sri\\SriSoapClient.cs",
@@ -1996,7 +2012,7 @@
                        },
                        {
                            "File":  "C:\\ProyectCursor\\erp-saas\\frontend\\src\\modules\\sales\\hooks\\useSalesPage.ts",
-                           "Lines":  1007
+                           "Lines":  1034
                        },
                        {
                            "File":  "C:\\ProyectCursor\\erp-saas\\frontend\\src\\modules\\sales\\pages\\SalesPage.tsx",

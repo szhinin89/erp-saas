@@ -1,17 +1,17 @@
 ﻿{
-    "source":  "PROGRESS.html",
-    "generated":  "2026-07-20 19:20:15",
-    "extractionMethod":  "Regex parsing of the embedded \u0027const D = [...]\u0027 JS data model, replicating PROGRESS.html\u0027s own calcPhase/calcStage/calcGlobal/countByStatus/findPhase formulas. No JavaScript executed; no data fabricated.",
+    "source":  "docs/ProgressDashboard/data/architecture-progress-source.json",
+    "generated":  "2026-07-26 17:06:30",
+    "extractionMethod":  "Direct load of architecture-progress-source.json (structured data, no HTML parsing), replicating PROGRESS.html\u0027s own calcPhase/calcStage/calcGlobal/countByStatus/findPhase formulas. No JavaScript executed; no data fabricated.",
     "global":  {
-                   "totalTasks":  373,
-                   "done":  314,
+                   "totalTasks":  387,
+                   "done":  324.5,
                    "pct":  84
                },
     "statusCounts":  {
-                         "d":  147,
-                         "f":  160,
-                         "p":  14,
-                         "n":  52
+                         "d":  148,
+                         "f":  169,
+                         "p":  15,
+                         "n":  55
                      },
     "layers":  [
                    {
@@ -66,7 +66,7 @@
                    {
                        "id":  "core",
                        "label":  "ERP Core Services",
-                       "pct":  69,
+                       "pct":  70,
                        "status":  "computed",
                        "note":  "Promedio de Ventas/Compras/Inventario/Caja/Contabilidad"
                    },
@@ -99,7 +99,7 @@
                         },
                         {
                             "name":  "Compras",
-                            "pct":  89
+                            "pct":  91
                         },
                         {
                             "name":  "Inventario",
@@ -237,9 +237,9 @@
                    },
                    {
                        "name":  "Operaciones",
-                       "totalTasks":  84,
-                       "done":  70.5,
-                       "pct":  84,
+                       "totalTasks":  98,
+                       "done":  81,
+                       "pct":  83,
                        "phases":  [
                                       {
                                           "name":  "Inventario \u0026 Bodega",
@@ -269,8 +269,16 @@
                                           "name":  "Compras (Purchases)",
                                           "description":  "Factura compra completa: costos, retenciones, CxP, notas proveedor",
                                           "totalTasks":  23,
-                                          "done":  20.5,
-                                          "pct":  89,
+                                          "done":  21,
+                                          "pct":  91,
+                                          "statusLetter":  "p"
+                                      },
+                                      {
+                                          "name":  "Recepción Electrónica de Compras (PurchaseReception)",
+                                          "description":  "Importación de comprobantes recibidos del SRI (TXT + XML) y precarga de compra — sin matcher de ítems todavía",
+                                          "totalTasks":  14,
+                                          "done":  10,
+                                          "pct":  71,
                                           "statusLetter":  "p"
                                       },
                                       {
@@ -626,8 +634,16 @@
                            "name":  "Compras (Purchases)",
                            "description":  "Factura compra completa: costos, retenciones, CxP, notas proveedor",
                            "totalTasks":  23,
-                           "done":  20.5,
-                           "pct":  89
+                           "done":  21,
+                           "pct":  91
+                       },
+                       {
+                           "stage":  "Operaciones",
+                           "name":  "Recepción Electrónica de Compras (PurchaseReception)",
+                           "description":  "Importación de comprobantes recibidos del SRI (TXT + XML) y precarga de compra — sin matcher de ítems todavía",
+                           "totalTasks":  14,
+                           "done":  10,
+                           "pct":  71
                        },
                        {
                            "stage":  "Operaciones",
@@ -1575,6 +1591,66 @@
                       },
                       {
                           "stage":  "Operaciones",
+                          "phase":  "Recepción Electrónica de Compras (PurchaseReception)",
+                          "name":  "Import TXT de recepción SRI",
+                          "status":  "f"
+                      },
+                      {
+                          "stage":  "Operaciones",
+                          "phase":  "Recepción Electrónica de Compras (PurchaseReception)",
+                          "name":  "PurchaseReceptionDocument (entidad persistida)",
+                          "status":  "f"
+                      },
+                      {
+                          "stage":  "Operaciones",
+                          "phase":  "Recepción Electrónica de Compras (PurchaseReception)",
+                          "name":  "PurchaseReceptionPage — listado + import",
+                          "status":  "f"
+                      },
+                      {
+                          "stage":  "Operaciones",
+                          "phase":  "Recepción Electrónica de Compras (PurchaseReception)",
+                          "name":  "Descarga XML autorizado desde el SRI",
+                          "status":  "f"
+                      },
+                      {
+                          "stage":  "Operaciones",
+                          "phase":  "Recepción Electrónica de Compras (PurchaseReception)",
+                          "name":  "Bug de propagación de XmlContent investigado y descartado",
+                          "status":  "d"
+                      },
+                      {
+                          "stage":  "Operaciones",
+                          "phase":  "Recepción Electrónica de Compras (PurchaseReception)",
+                          "name":  "PurchaseXmlDraftParser",
+                          "status":  "f"
+                      },
+                      {
+                          "stage":  "Operaciones",
+                          "phase":  "Recepción Electrónica de Compras (PurchaseReception)",
+                          "name":  "POST /purchases/reception/{id}/create-draft",
+                          "status":  "f"
+                      },
+                      {
+                          "stage":  "Operaciones",
+                          "phase":  "Recepción Electrónica de Compras (PurchaseReception)",
+                          "name":  "\u0027Crear compra\u0027 → precarga Nueva Compra",
+                          "status":  "f"
+                      },
+                      {
+                          "stage":  "Operaciones",
+                          "phase":  "Recepción Electrónica de Compras (PurchaseReception)",
+                          "name":  "Detalle XML visible antes del matcher",
+                          "status":  "f"
+                      },
+                      {
+                          "stage":  "Operaciones",
+                          "phase":  "Recepción Electrónica de Compras (PurchaseReception)",
+                          "name":  "Guardado reutiliza el flujo existente",
+                          "status":  "f"
+                      },
+                      {
+                          "stage":  "Operaciones",
                           "phase":  "Cuentas por Pagar (CxP)",
                           "name":  "PurchasePayable automático",
                           "status":  "f"
@@ -2284,7 +2360,7 @@
                       {
                           "stage":  "Estándares",
                           "phase":  "Estandarización UI / Alineación",
-                          "name":  "17 ZHField label=\\\"\\\" eliminados",
+                          "name":  "17 ZHField label=\"\" eliminados",
                           "status":  "d"
                       },
                       {
@@ -2362,7 +2438,7 @@
                       {
                           "stage":  "Estándares",
                           "phase":  "Design System — Unificación y Consolidación",
-                          "name":  "ZHField: density=\\\"compact\\\" + eliminación de .pf-field",
+                          "name":  "ZHField: density=\"compact\" + eliminación de .pf-field",
                           "status":  "d"
                       },
                       {
@@ -2792,13 +2868,31 @@
                       {
                           "stage":  "Operaciones",
                           "phase":  "Compras (Purchases)",
-                          "name":  "Importación XML de facturas",
+                          "name":  "Órdenes de Compra",
                           "status":  "n"
                       },
                       {
                           "stage":  "Operaciones",
-                          "phase":  "Compras (Purchases)",
-                          "name":  "Órdenes de Compra",
+                          "phase":  "Recepción Electrónica de Compras (PurchaseReception)",
+                          "name":  "Matcher de ítems por código de proveedor",
+                          "status":  "n"
+                      },
+                      {
+                          "stage":  "Operaciones",
+                          "phase":  "Recepción Electrónica de Compras (PurchaseReception)",
+                          "name":  "Creación automática de proveedores nuevos",
+                          "status":  "n"
+                      },
+                      {
+                          "stage":  "Operaciones",
+                          "phase":  "Recepción Electrónica de Compras (PurchaseReception)",
+                          "name":  "Creación automática de compra (sin revisión)",
+                          "status":  "n"
+                      },
+                      {
+                          "stage":  "Operaciones",
+                          "phase":  "Recepción Electrónica de Compras (PurchaseReception)",
+                          "name":  "Conciliación / vínculo PurchaseReceptionDocument↔PurchaseInvoice",
                           "status":  "n"
                       },
                       {
@@ -3026,5 +3120,5 @@
                                  "excerpt":  "RECIBIDA → ElectronicDocument.MarkReceived(); DEVUELTA (o cualquier estado no-RECIBIDA) → MarkRejected(motivo oficial del SRI). Verificado con tests de parsing sobre el SOAP real de la ficha técnica — pendiente confirmar contra el ambiente de pruebas real del SRI (XSD oficial bloqueante)."
                              }
                          ],
-    "blockedFieldNote":  "PROGRESS.html\u0027s real data model has no explicit \u0027blocked\u0027 status (only d/f/p/n). \u0027possibleBlockers\u0027 above is a heuristic keyword match over real task descriptions, not an authoritative field."
+    "blockedFieldNote":  "The data model has no explicit \u0027blocked\u0027 status (only d/f/p/n). \u0027possibleBlockers\u0027 above is a heuristic keyword match over real task descriptions, not an authoritative field."
 }

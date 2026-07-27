@@ -160,7 +160,7 @@
         "frontend":  70
     },
     {
-        "id":  "Auxiliary",
+        "id":  "Media",
         "domainId":  "unmapped",
         "score":  77.75,
         "architecture":  90,
@@ -200,6 +200,16 @@
         "frontend":  70
     },
     {
+        "id":  "Security",
+        "domainId":  "security",
+        "score":  81.5,
+        "architecture":  90,
+        "tests":  80,
+        "documentation":  70,
+        "backend":  90,
+        "frontend":  70
+    },
+    {
         "id":  "Configuration",
         "domainId":  "configuration",
         "score":  77.75,
@@ -230,7 +240,7 @@
         "frontend":  70
     },
     {
-        "id":  "Media",
+        "id":  "Catalog",
         "domainId":  "unmapped",
         "score":  77.75,
         "architecture":  90,
@@ -250,13 +260,23 @@
         "frontend":  70
     },
     {
-        "id":  "Security",
-        "domainId":  "security",
-        "score":  81.5,
+        "id":  "Auxiliary",
+        "domainId":  "unmapped",
+        "score":  77.75,
         "architecture":  90,
         "tests":  80,
         "documentation":  70,
-        "backend":  90,
+        "backend":  65,
+        "frontend":  70
+    },
+    {
+        "id":  "Accounting",
+        "domainId":  "unmapped",
+        "score":  77.75,
+        "architecture":  90,
+        "tests":  80,
+        "documentation":  70,
+        "backend":  65,
         "frontend":  70
     },
     {

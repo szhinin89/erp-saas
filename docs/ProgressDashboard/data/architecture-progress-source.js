@@ -1,0 +1,4159 @@
+﻿// AUTO-GENERADO por tools/dashboard/analyze-progress-map.ps1
+// desde docs/ProgressDashboard/data/architecture-progress-source.json.
+// NO editar a mano -- editar el .json fuente y volver a correr el script.
+window.__ARCHITECTURE_PROGRESS_SOURCE__ = [
+  {
+    "stage": "Infraestructura",
+    "stageIcon": "&#x1F3D7;",
+    "phases": [
+      {
+        "name": "Clean Architecture + CQRS",
+        "icon": "&#x1F3E0;",
+        "desc": "Monolito modular con separación de capas",
+        "groups": [
+          {
+            "title": "Tareas completadas",
+            "tasks": [
+              {
+                "s": "f",
+                "n": "Capas: API → Application → Domain ← Infrastructure",
+                "d": "Dependencias unidireccionales estrictas. Domain sin ProjectReference externas. Application sin dependencia de Infrastructure.",
+                "tags": [
+                  [
+                    "d",
+                    "2026-06-05"
+                  ]
+                ]
+              },
+              {
+                "s": "f",
+                "n": "CQRS con MediatR",
+                "d": "Pipeline: ValidationBehavior → CompanyScopeBehavior → CachingBehavior. Comandos/Queries en Modules/{Module}/UseCases/.",
+                "tags": [
+                  [
+                    "s",
+                    "MediatR Pipeline"
+                  ]
+                ]
+              },
+              {
+                "s": "f",
+                "n": "EF Core 10 + PostgreSQL 15+",
+                "d": "DbContext unificado (ErpDbContext), snake_case naming, single baseline migration, query filters automáticos.",
+                "tags": [
+                  [
+                    "d",
+                    "Baseline 2026-06-11"
+                  ]
+                ]
+              },
+              {
+                "s": "f",
+                "n": "Architecture Tests (NetArchTest)",
+                "d": "30-32 tests que validan dependencias entre capas, tamaño de controllers (≤150 líneas), handlers, naming.",
+                "tags": [
+                  [
+                    "t",
+                    "30+ tests"
+                  ]
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Multi-Tenant & Company Isolation",
+        "icon": "&#x1F512;",
+        "desc": "Aislamiento de datos por tenant y empresa con fail-closed",
+        "groups": [
+          {
+            "title": "Aislamiento de datos",
+            "tasks": [
+              {
+                "s": "f",
+                "n": "Modelo Tenant → Company → Membership",
+                "d": "Tenant como contenedor, Company como entidad fiscal, Membership como matriz de acceso. IDs en sessionStorage.",
+                "tags": [
+                  [
+                    "s",
+                    "tenant_id + company_id"
+                  ]
+                ]
+              },
+              {
+                "s": "f",
+                "n": "CompanyScopeBehavior (fail-closed)",
+                "d": "Sin scope marker → 403. Company_id inválido → 0 rows. Sin membership → 401. Cero namespace fallback.",
+                "tags": [
+                  [
+                    "t",
+                    "223/223 tests"
+                  ],
+                  [
+                    "d",
+                    "2026-06-05"
+                  ]
+                ]
+              },
+              {
+                "s": "f",
+                "n": "PostgreSQL RLS (Row-Level Security)",
+                "d": "Wave 1 en tablas inventario core. Session vars via PostgreSqlSessionContextInterceptor.",
+                "tags": []
+              },
+              {
+                "s": "f",
+                "n": "EF Query Filters automáticos",
+                "d": "EnterpriseQueryFilterConfigurator sobre ISubscriberScopedEntity e ICompanyOperationalEntity. Fail-closed.",
+                "tags": []
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Autenticación & Seguridad",
+        "icon": "&#x1F6E1;",
+        "desc": "JWT, refresh tokens, permisos, IAM completo",
+        "groups": [
+          {
+            "title": "Autenticación",
+            "tasks": [
+              {
+                "s": "f",
+                "n": "JWT + Refresh Token con rotación",
+                "d": "Login → JWT + RefreshToken. Rotación por familia, grace period configurable, rate limit IP/user/family. BCrypt.",
+                "tags": [
+                  [
+                    "a",
+                    "8 endpoints"
+                  ]
+                ]
+              },
+              {
+                "s": "f",
+                "n": "First-Run Setup (token-gated)",
+                "d": "GET /api/setup/status detecta primer arranque. POST /api/setup/admin crea admin inicial.",
+                "tags": []
+              },
+              {
+                "s": "f",
+                "n": "Switch Company (multi-empresa)",
+                "d": "POST /api/v1/auth/switch-company valida membership activo antes de emitir nuevo JWT.",
+                "tags": []
+              }
+            ]
+          },
+          {
+            "title": "IAM & Permisos",
+            "tasks": [
+              {
+                "s": "f",
+                "n": "Access Profiles + Permission Grid",
+                "d": "CRUD perfiles de acceso con asignación granular. SecurityAdminScopeAssignment. Frontend completo.",
+                "tags": [
+                  [
+                    "a",
+                    "5+ endpoints"
+                  ]
+                ]
+              },
+              {
+                "s": "f",
+                "n": "SRI Certificate Encryption",
+                "d": "Passwords de certificados P12 encriptados at rest con Data Protection API.",
+                "tags": []
+              },
+              {
+                "s": "p",
+                "n": "Permissions Cache (hot path)",
+                "d": "Servicio de cache distribuido registrado. Wiring parcial en hot path de validación.",
+                "tags": [
+                  [
+                    "s",
+                    "Parcial"
+                  ]
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Kernel Cleanup (Eliminación SaaS)",
+        "icon": "&#x1F9F9;",
+        "desc": "Eliminación completa de Billing, Subscriptions, Platform del ERP",
+        "groups": [
+          {
+            "title": "Eliminado del ERP Core",
+            "tasks": [
+              {
+                "s": "d",
+                "n": "Billing Domain eliminado",
+                "d": "Tablas subscriber_subscriptions, saas_billing_*, commercial_plan_* eliminadas.",
+                "tags": []
+              },
+              {
+                "s": "d",
+                "n": "Platform Entities eliminadas",
+                "d": "PlatformOperator, Marketplace, CommercialPlan, Entitlements — cero código activo.",
+                "tags": []
+              },
+              {
+                "s": "d",
+                "n": "SaaS Controllers/Middleware eliminados",
+                "d": "Rutas /api/platform/*, /api/saas/*, /api/superadmin/* eliminadas.",
+                "tags": []
+              },
+              {
+                "s": "d",
+                "n": "SubscriberId → TenantId consolidado",
+                "d": "FASE 4: Rename completo a TenantId como identificador canónico.",
+                "tags": []
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Frontera de Integración Platform",
+        "icon": "&#x1F517;",
+        "desc": "Boundary API para futura plataforma externa",
+        "groups": [
+          {
+            "title": "Contratos de integración",
+            "tasks": [
+              {
+                "s": "f",
+                "n": "Integration API (/api/integration/v1/*)",
+                "d": "Única frontera permitida. Tenants + Companies: crear, status, activate, suspend. ADR-ERP-002.",
+                "tags": [
+                  [
+                    "a",
+                    "6 endpoints"
+                  ]
+                ]
+              },
+              {
+                "s": "f",
+                "n": "Platform.Contracts (interface-only)",
+                "d": "Sin ProjectReference a/desde ERP.*. Solo interfaces y DTOs. Regla: ERP NEVER DEPENDS ON PLATFORM.",
+                "tags": []
+              },
+              {
+                "s": "n",
+                "n": "Platform externa (repositorio separado)",
+                "d": "Implementará planes, billing, entitlements. Consumirá ERP via /api/integration/v1/*. No iniciado.",
+                "tags": [
+                  [
+                    "s",
+                    "Futuro"
+                  ]
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "stage": "Core ERP",
+    "stageIcon": "&#x2699;",
+    "phases": [
+      {
+        "name": "Business Partners V2 (Customer + Supplier)",
+        "icon": "&#x1F465;",
+        "desc": "Master data unificado de clientes y proveedores",
+        "groups": [
+          {
+            "title": "Domain (6 entidades + 9 children)",
+            "tasks": [
+              {
+                "s": "f",
+                "n": "BusinessPartner (Aggregate Root)",
+                "d": "PersonName, TaxIdentification, PhysicalAddress, ContactInfo. PersonType. Subscriber-scoped.",
+                "tags": [
+                  [
+                    "e",
+                    "6 + 9 entidades"
+                  ],
+                  [
+                    "s",
+                    "subscriber-scoped"
+                  ]
+                ]
+              },
+              {
+                "s": "f",
+                "n": "Roles: Customer + Supplier",
+                "d": "BusinessPartnerRole con configs especializadas. Un BP puede tener ambos roles simultáneamente.",
+                "tags": []
+              },
+              {
+                "s": "f",
+                "n": "Locations + Contacts CRUD",
+                "d": "BusinessPartnerLocation + BusinessPartnerContact. CRUD completo con UI wizard + detalle.",
+                "tags": []
+              },
+              {
+                "s": "f",
+                "n": "CompanyBpTradingSettings",
+                "d": "Config comercial por empresa: días pago, cuotas, PaymentTermId. Scope: (company_id, bp_id).",
+                "tags": []
+              }
+            ]
+          },
+          {
+            "title": "Application & API",
+            "tasks": [
+              {
+                "s": "f",
+                "n": "31+ endpoints, 20 domain events",
+                "d": "CRUD, Activate/Deactivate/Block, AssignRole/RevokeRole, Search. FluentValidation completo.",
+                "tags": [
+                  [
+                    "a",
+                    "31+ endpoints"
+                  ],
+                  [
+                    "t",
+                    "190/190 tests"
+                  ]
+                ]
+              }
+            ]
+          },
+          {
+            "title": "Frontend",
+            "tasks": [
+              {
+                "s": "f",
+                "n": "UI completa: listado + wizard + detalle",
+                "d": "BpForm, ContactPanel, LocationPanel, RoleSelector, TradingSettingsPanel. RUC/CI SRI.",
+                "tags": []
+              }
+            ]
+          },
+          {
+            "title": "Catálogos dinámicos — Tipo de Persona + Tipo de Proveedor (2026-07-14)",
+            "tasks": [
+              {
+                "s": "f",
+                "n": "Catálogo global person_type (labels dinámicos)",
+                "d": "Nueva tabla global.person_type (4 filas, códigos 1-4 alineados 1:1 con el enum PersonType — el enum sigue siendo la fuente de verdad de almacenamiento/validación, sin cambios). El &lt;select&gt; \"Tipo de persona\" del formulario de Business Partner dejó de usar un array hardcodeado (PERSON_TYPE_OPTIONS) y ahora consume GET /api/v1/catalog/person-types vía hook usePersonTypes().",
+                "tags": [
+                  [
+                    "e",
+                    "1 tabla"
+                  ],
+                  [
+                    "a",
+                    "1 endpoint"
+                  ]
+                ]
+              },
+              {
+                "s": "f",
+                "n": "Catálogo global sri_supplier_type (Tabla 26 SRI)",
+                "d": "Tabla 26 de la Ficha Técnica SRI (\"Tipo Proveedor de Reembolso\": 01=Persona Natural, 02=Sociedad), mismo patrón que sri_vat_rate. GET /api/v1/catalog/sri-supplier-types, hook useSriSupplierTypes().",
+                "tags": [
+                  [
+                    "e",
+                    "1 tabla"
+                  ],
+                  [
+                    "a",
+                    "1 endpoint"
+                  ]
+                ]
+              },
+              {
+                "s": "f",
+                "n": "SupplierRoleConfig.RefundProviderTypeCode — persistencia real",
+                "d": "Columna refund_provider_type_code en master_bp_supplier_configs (1:1 con el rol Proveedor). Nombre del campo distinto al ya existente SupplierClassificationConfig.SupplierType (National/International/Both) para evitar colisión semántica — mismo criterio de nombrado que DefaultTaxSupportCode/DefaultRetentionVatCode (refleja el origen SRI real del dato).",
+                "tags": [
+                  [
+                    "d",
+                    "2026-07-14"
+                  ]
+                ]
+              },
+              {
+                "s": "f",
+                "n": "Selección obligatoria en el wizard de creación de Proveedor",
+                "d": "\"Tipo de Proveedor\" + \"Condición de Pago\" (esta última ya era obligatoria por regla de dominio de SupplierRoleConfig.Create) se seleccionan juntos en el paso 2 del wizard, solo cuando role=supplier — el Cliente nunca ve estos campos. Antes solo eran editables después de crear, vía el modal separado \"Config SRI\". businessPartnerSchema pasó de objeto fijo a factory por rol (businessPartnerSchema(role)) para validar ambos campos como obligatorios únicamente en el flujo de Proveedor.",
+                "tags": [
+                  [
+                    "d",
+                    "2026-07-14"
+                  ]
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Items / Catálogo v1.0",
+        "icon": "&#x1F4E6;",
+        "desc": "Catálogo maestro con variantes, atributos, conversiones",
+        "groups": [
+          {
+            "title": "Domain",
+            "tasks": [
+              {
+                "s": "f",
+                "n": "Item (AR) + 13 entidades hijas",
+                "d": "14 entidades: Item, Variant, Barcode, UnitConversion, Image, Packaging, Substitute, Brand, Category, AttributeGroup, AttributeDefinition.",
+                "tags": [
+                  [
+                    "e",
+                    "14 entidades"
+                  ],
+                  [
+                    "s",
+                    "tenant-scoped"
+                  ]
+                ]
+              },
+              {
+                "s": "f",
+                "n": "ItemTypeDefinition — catálogo tenant-editable",
+                "d": "Reemplaza el enum fijo Physical/Service/Digital/Kit/Bundle. items.item_type_id (Guid) FK física a item_types.id — nunca código ni nombre como relación. Migración con backfill verificada. BarcodeTypeDefinition + ItemMarginStatusDefinition como catálogos globales de solo lectura.",
+                "tags": [
+                  [
+                    "d",
+                    "2026-07-04"
+                  ],
+                  [
+                    "s",
+                    "FROZEN"
+                  ]
+                ]
+              }
+            ]
+          },
+          {
+            "title": "Application & API",
+            "tasks": [
+              {
+                "s": "f",
+                "n": "56 endpoints + 20 validators",
+                "d": "CRUD Items, Variants, Images, Conversions, Substitutes, Packaging. 6 catálogos. SRI lookups (UOM, VAT, ICE).",
+                "tags": [
+                  [
+                    "a",
+                    "56 endpoints"
+                  ]
+                ]
+              },
+              {
+                "s": "f",
+                "n": "ItemTypesController (CRUD completo)",
+                "d": "GET/POST/PUT/toggle api/v1/item-types. DTOs de Items exponen ItemTypeId + ItemTypeName resuelto en batch (sin N+1).",
+                "tags": [
+                  [
+                    "a",
+                    "5 endpoints"
+                  ],
+                  [
+                    "d",
+                    "2026-07-04"
+                  ]
+                ]
+              }
+            ]
+          },
+          {
+            "title": "Frontend",
+            "tasks": [
+              {
+                "s": "f",
+                "n": "Detail page completa",
+                "d": "ItemForm, VariantForm, ImageUpload, PriceList, CatalogEditor. Zustand store. PVP fix incluido.",
+                "tags": []
+              },
+              {
+                "s": "f",
+                "n": "Formulario 100% dinámico (zero hardcode)",
+                "d": "Auditoría en 10 fases: catálogos dinámicos, sin defaults de negocio hardcodeados, formatMoney/ZhNumberInput reemplazan toFixed/input-number, ZHTabBar unifica 4 barras de pestañas duplicadas, i18n completo, sin strings mágicos ni duplicaciones.",
+                "tags": [
+                  [
+                    "d",
+                    "2026-07-04"
+                  ]
+                ]
+              },
+              {
+                "s": "f",
+                "n": "ItemTypesPage — administración de tipos",
+                "d": "CRUD de tipos de ítem vía ConfigTabsLayout (sin modales), en /inventory/item-types. Hook useItemTypeOptions() con caché de módulo evita fetch duplicado entre ItemsPage, ItemFormTabs y el buscador de Compras.",
+                "tags": [
+                  [
+                    "d",
+                    "2026-07-04"
+                  ]
+                ]
+              }
+            ]
+          },
+          {
+            "title": "Auditoría de cierre — Items Administration FROZEN (2026-07-07)",
+            "tasks": [
+              {
+                "s": "f",
+                "n": "ItemAudit + ItemAuditHandler",
+                "d": "Auditoría de dominio de Item (creación, actualización, cambio de BaseSalePrice, activación, desactivación) vía ItemCreatedEvent/ItemUpdatedEvent/ItemPriceChangedEvent/ItemEnabledEvent/ItemDisabledEvent. Item es tenant-scoped únicamente — sin CompanyId en la auditoría, a diferencia de Pricing.",
+                "tags": [
+                  [
+                    "e",
+                    "1 tabla"
+                  ],
+                  [
+                    "d",
+                    "2026-07-07"
+                  ]
+                ]
+              },
+              {
+                "s": "f",
+                "n": "createdBy/updatedBy en entidades hijas de Item",
+                "d": "ItemSupplierCode, ItemVariantBarcode, ItemVariant, ItemVariantAttribute, ItemImage, ItemPackagingLevel, ItemSubstitute, ItemUnitConversion — factories Create() ahora exigen createdBy explícito (antes ausente). Call sites corregidos en Item.Replace*() y en los use cases dedicados (BarcodeUseCases, ItemImageUseCases, ItemPackagingLevelUseCases, ItemSubstituteUseCases, ItemUnitConversionUseCases).",
+                "tags": [
+                  [
+                    "d",
+                    "2026-07-07"
+                  ]
+                ]
+              },
+              {
+                "s": "n",
+                "n": "Índice único compuesto TenantId+SKU (EF Core)",
+                "d": "Confirmado como limitación real de EF Core 10: no es posible expresar un índice compuesto entre una propiedad del owner (TenantId) y una propiedad de un owned type mapeado a la misma tabla (Code.SKU) — ni lambda ni HasIndex string-based funcionan. Documentado con evidencia (stack trace de dotnet ef); requiere rediseño del value object ItemCode para resolverse. Enforcement actual vía migración SQL raw sin cambios.",
+                "tags": [
+                  [
+                    "s",
+                    "No corregible sin ADR"
+                  ]
+                ]
+              },
+              {
+                "s": "p",
+                "n": "Auditoría de variantes (ItemVariantAddedEvent/DisabledEvent)",
+                "d": "No implementan IAuditEvent (sin Action/Reason), a diferencia de los eventos de Item ya cableados en ItemAuditHandler. Cubrirlos exige modificar las clases de evento — documentado como deuda técnica explícita, no bloqueante para el freeze.",
+                "tags": [
+                  [
+                    "s",
+                    "Documentado, sin implementar"
+                  ]
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Empresas, Sucursales, Establecimientos",
+        "icon": "&#x1F3E2;",
+        "desc": "Estructura organizativa y fiscal",
+        "groups": [
+          {
+            "title": "Entidades organizativas",
+            "tasks": [
+              {
+                "s": "f",
+                "n": "Company (multi-empresa)",
+                "d": "Entidad fiscal base. CompanySwitcher. sessionStorage.",
+                "tags": [
+                  [
+                    "a",
+                    "4+ endpoints"
+                  ]
+                ]
+              },
+              {
+                "s": "f",
+                "n": "Sucursales (Branches)",
+                "d": "Organizativa (no fiscal). CRUD + soft-disable.",
+                "tags": []
+              },
+              {
+                "s": "f",
+                "n": "Establecimientos SRI",
+                "d": "Código fiscal SRI (001-999) único por empresa. Disable bloqueado si tiene PEs activos.",
+                "tags": []
+              },
+              {
+                "s": "f",
+                "n": "Puntos de Emisión",
+                "d": "Código 001-999 único por Establecimiento. EmissionType: Electronic / Physical. DocumentSequence automático.",
+                "tags": []
+              },
+              {
+                "s": "f",
+                "n": "DocumentSequence",
+                "d": "Secuencial por (EmissionPointId + DocTypeCode). SELECT FOR UPDATE. Formato D9.",
+                "tags": []
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Pricing Engine v2 + Auditoría por Dominio",
+        "icon": "&#x1F4B2;",
+        "desc": "Item.BaseSalePrice SSOT + reglas de ajuste + infraestructura de auditoría reutilizable — Items Administration &amp; Pricing Administration FROZEN 2026-07-07",
+        "groups": [
+          {
+            "title": "Pricing Engine v2 (ADR-021)",
+            "tasks": [
+              {
+                "s": "f",
+                "n": "Item.BaseSalePrice como SSOT",
+                "d": "Reemplaza el modelo anterior (PriceList + ItemPrice). PriceList gana una regla general opcional (RuleType/RuleValue). Dominio Items+Pricing cerrado definitivamente.",
+                "tags": [
+                  [
+                    "d",
+                    "2026-07-05"
+                  ],
+                  [
+                    "s",
+                    "CLOSED"
+                  ]
+                ]
+              },
+              {
+                "s": "f",
+                "n": "PricingRule + PriceListItem",
+                "d": "PricingRule: override de regla por ítem dentro de una lista (FixedPrice, PercentDiscount, PercentMarkup, FixedAdjustment). PriceListItem: asignación administrativa pura, sin reglas ni precios. Soporte de pricing por variante (ItemVariantId) evaluado y retirado deliberadamente — sin flujo funcional end-to-end; residuo de tipo en pricingService.ts (frontend) eliminado en la auditoría de cierre.",
+                "tags": [
+                  [
+                    "e",
+                    "2 agregados"
+                  ]
+                ]
+              },
+              {
+                "s": "f",
+                "n": "IPricingResolver — API única de resolución",
+                "d": "Centraliza la resolución de precio (antes duplicada en 4 lugares). Única API pública que el resto del ERP debe consumir. Integración real en Ventas/Compras/POS/Facturación queda para fases posteriores.",
+                "tags": [
+                  [
+                    "s",
+                    "IPricingResolver"
+                  ]
+                ]
+              },
+              {
+                "s": "f",
+                "n": "Invariante PricingRule ↔ PriceListItem",
+                "d": "SetPricingRuleHandler rechaza crear una excepción si no existe una PriceListItem activa para (PriceListId, ItemId). EnablePricingRuleHandler rechaza reactivar una excepción si la asignación ya no está activa. Sin reglas huérfanas en ningún sentido.",
+                "tags": [
+                  [
+                    "d",
+                    "2026-07-07"
+                  ]
+                ]
+              }
+            ]
+          },
+          {
+            "title": "Auditoría por Dominio — Entity Audit (ADR-022, FROZEN)",
+            "tasks": [
+              {
+                "s": "f",
+                "n": "Infraestructura común de auditoría",
+                "d": "AuditRecordBase, AuditActor, AuditSource, IAuditEvent (Domain); IAuditWriter&lt;T&gt;, IAuditReader&lt;T&gt;, IAuditService, IAuditContext (Application); EfAuditWriter&lt;T&gt;/EfAuditReader&lt;T&gt; open-generic + HttpAuditContext (Infrastructure). Reutiliza el pipeline de Domain Events + Outbox ya FROZEN (ADR-007/008).",
+                "tags": [
+                  [
+                    "d",
+                    "2026-07-07"
+                  ],
+                  [
+                    "s",
+                    "FROZEN"
+                  ]
+                ]
+              },
+              {
+                "s": "f",
+                "n": "PricingRuleAudit + PriceListItemAudit + PriceListAudit",
+                "d": "Paridad completa de auditoría en los 3 agregados de Pricing. PriceList sumó PriceListCreatedEvent/EnabledEvent/DisabledEvent (no existían) + PriceListAuditHandler + tabla price_list_audit. Old/new tipados por dominio, sin God table. Reemplaza el uso manual de UserActivity. Fix de N+1 en GetPricingRulesHandler vía lectura batch (GetLastByEntityIdsAsync).",
+                "tags": [
+                  [
+                    "e",
+                    "3 tablas"
+                  ],
+                  [
+                    "d",
+                    "2026-07-07"
+                  ]
+                ]
+              },
+              {
+                "s": "f",
+                "n": "AuditActor — único modelo del actor, snapshot histórico",
+                "d": "UserId (identidad) + UserName (snapshot obligatorio, no-nullable, fallback 'Unknown' con log de advertencia) + FullName/Email/RoleName (opcionales, additive). Poblado desde claims JWT (ClaimTypes.Email/Name) embebidas al emitir el token en AccessTokenService — nunca una consulta en vivo a Identity. Corregido uso incorrecto de ClaimTypes.GivenName (representa solo el nombre, no el nombre completo) → ClaimTypes.Name, con fallback transitorio de compatibilidad en CurrentUserService. Columna user_name migrada a NOT NULL. Regla Open/Closed nueva: prohibido agregar columnas de identidad del usuario en las entidades de auditoría de cada dominio.",
+                "tags": [
+                  [
+                    "d",
+                    "2026-07-07"
+                  ],
+                  [
+                    "t",
+                    "11 tests: claims, fallback, snapshot inmutable"
+                  ]
+                ]
+              },
+              {
+                "s": "p",
+                "n": "Process Audit (auditoría de procesos)",
+                "d": "Diseñado y documentado en AI-RULES/AUDIT-INFRASTRUCTURE.md — recálculos masivos, cierres, ETL, jobs. Reutilizará EntityId como ProcessRunId sintético, sin modificar los contratos FROZEN. No implementado todavía.",
+                "tags": [
+                  [
+                    "s",
+                    "Documentado, sin implementar"
+                  ]
+                ]
+              },
+              {
+                "s": "p",
+                "n": "Deuda técnica restante (no bloquea el freeze)",
+                "d": "Source hardcodeado a UserAction en HttpAuditContext (falta IAuditContext para jobs/sistema), CorrelationId/RequestId sin truncado antes de persistir en varchar(100). ItemVariantAddedEvent/ItemVariantDisabledEvent no implementan IAuditEvent — cubrirlos requiere modificar las clases de evento, decisión explícita futura. Fixes internos, no requieren tocar contratos FROZEN.",
+                "tags": [
+                  [
+                    "s",
+                    "Remediación pendiente"
+                  ]
+                ]
+              }
+            ]
+          },
+          {
+            "title": "Items Administration &amp; Pricing Administration — FROZEN",
+            "tasks": [
+              {
+                "s": "f",
+                "n": "Items Administration FROZEN",
+                "d": "Item CRUD, Item pricing base, Item child entities (14 entidades), Item audit. Ver docs/STATUS.md — Módulos FROZEN.",
+                "tags": [
+                  [
+                    "d",
+                    "2026-07-07"
+                  ],
+                  [
+                    "s",
+                    "FROZEN"
+                  ]
+                ]
+              },
+              {
+                "s": "f",
+                "n": "Pricing Administration FROZEN",
+                "d": "Price Lists, Price List assignments, Pricing Rules, Pricing resolution rules, Pricing audit. Restricciones: Pricing no calcula impuestos, no soporta ItemVariantId, PricingRule requiere PriceListItem activo, auditoría mediante Domain Events. Endpoint legacy /api/v1/pricing/item-prices fuera de este freeze (pendiente cierre de Compras).",
+                "tags": [
+                  [
+                    "d",
+                    "2026-07-07"
+                  ],
+                  [
+                    "s",
+                    "FROZEN"
+                  ]
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Condiciones de Pago y Crédito",
+        "icon": "&#x1F4B3;",
+        "desc": "Payment Terms y Credit Terms configurables",
+        "groups": [
+          {
+            "title": "Implementación",
+            "tasks": [
+              {
+                "s": "d",
+                "n": "PaymentTerm CRUD",
+                "d": "Nombre, totalDays, installments, daysBetweenInstallments. Vinculado a BP via CompanyBpTradingSettings.",
+                "tags": [
+                  [
+                    "a",
+                    "4 endpoints"
+                  ]
+                ]
+              },
+              {
+                "s": "d",
+                "n": "CreditTerm + Installments",
+                "d": "Generación automática de cuotas. Integrado en Sales (simulación modal) y Purchases.",
+                "tags": []
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Métodos de Pago (Multi-Pago)",
+        "icon": "&#x1F4B5;",
+        "desc": "Catálogo dinámico de formas de cobro",
+        "groups": [
+          {
+            "title": "Implementación",
+            "tasks": [
+              {
+                "s": "f",
+                "n": "PaymentMethod catálogo dinámico",
+                "d": "CRUD + Toggle, multi-tenant. Seed 5 métodos. RequiresReference y IsCreditAllowed flags.",
+                "tags": [
+                  [
+                    "a",
+                    "4 endpoints"
+                  ]
+                ]
+              },
+              {
+                "s": "f",
+                "n": "SalesInvoicePayment (N pagos/factura)",
+                "d": "Snapshot Code+Name, Amount>0, Reference condicional. Detalles: Card, Transfer, Cheque.",
+                "tags": []
+              },
+              {
+                "s": "f",
+                "n": "Validación Authorize() Sum == GrandTotal",
+                "d": "Requiere ≥1 pago + suma == GrandTotal (tolerancia 0.01). Sin enums, sin JSONB.",
+                "tags": []
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Menú & Navegación SPA",
+        "icon": "&#x2630;",
+        "desc": "Registro de features y menú dinámico",
+        "groups": [
+          {
+            "title": "Implementación",
+            "tasks": [
+              {
+                "s": "d",
+                "n": "KernelRegistry + Seeding reflexivo",
+                "d": "AppFeature, UiNavGroup, UiNavItem. Menú single source. SpaMenuCatalogController. Lazy routes.",
+                "tags": []
+              },
+              {
+                "s": "d",
+                "n": "App Launcher refinado",
+                "d": "Buscador con fondo + focus ring, skeleton loading, active state primary 10%, iconos 18px, panel border-radius 9px, header prominente.",
+                "tags": [
+                  [
+                    "d",
+                    "2026-06-29"
+                  ]
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Dashboard Unificado",
+        "icon": "&#x1F4CA;",
+        "desc": "KPIs de ventas, compras y métricas",
+        "groups": [
+          {
+            "title": "Implementación",
+            "tasks": [
+              {
+                "s": "d",
+                "n": "Dashboard con métricas",
+                "d": "MetricsCard, ChartWidget, KpiPanel. Sales + Purchase metrics. 2+ endpoints.",
+                "tags": []
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "stage": "Operaciones",
+    "stageIcon": "&#x1F4CA;",
+    "phases": [
+      {
+        "name": "Inventario & Bodega",
+        "icon": "&#x1F4E6;",
+        "desc": "Stock, movimientos, transferencias, ajustes, kardex, lotes, series",
+        "groups": [
+          {
+            "title": "Bodegas & Stock",
+            "tasks": [
+              {
+                "s": "f",
+                "n": "Bodegas (Warehouse CRUD)",
+                "d": "Alta, edición, enable/disable. Código, nombre, ubicación. Company-scoped. Frontend: WarehousesPage con tabs Resumen/Listado/Nuevo.",
+                "tags": [
+                  [
+                    "a",
+                    "4 endpoints"
+                  ]
+                ]
+              },
+              {
+                "s": "f",
+                "n": "Stock actual (CurrentStock)",
+                "d": "Cantidad por (item, warehouse). Cantidad reservada, disponible (qty - reserved), valor total, costo promedio. API: GET /inventory/stock.",
+                "tags": []
+              },
+              {
+                "s": "f",
+                "n": "Stock agregado por item",
+                "d": "Suma de stock en todas las bodegas para un ítem. API: GET /inventory/stock/aggregated/{itemId}.",
+                "tags": []
+              }
+            ]
+          },
+          {
+            "title": "Movimientos & Trazabilidad",
+            "tasks": [
+              {
+                "s": "f",
+                "n": "Movimientos de stock (audit trail)",
+                "d": "10 tipos: PurchaseEntry, PurchaseReturn, SaleExit, SaleReturn, TransferEntry, TransferExit, PositiveAdjust, NegativeAdjust, SupplierCreditNote, SupplierDebitNote. Qty anterior/resultado, costo, referencia documento, secuencia por (tenant, producto, bodega).",
+                "tags": []
+              },
+              {
+                "s": "f",
+                "n": "Costo promedio ponderado",
+                "d": "Tracked en CurrentStock, actualizado automáticamente en cada movimiento.",
+                "tags": []
+              }
+            ]
+          },
+          {
+            "title": "Reporte de Kardex — ledger + expediente (Fase 4B)",
+            "tasks": [
+              {
+                "s": "f",
+                "n": "StockMovement: secuencia + costo/valor corridos",
+                "d": "SequenceNumber (long, único por company+producto+bodega), RunningAverageCost, RunningStockValue, EffectiveDate, UomCode agregados a la entidad. IStockRepository.AppendMovementAsync es el único punto autorizado que los calcula — nunca recalculados desde CurrentStock. Migración 20260707231845_AddKardexSequenceAndRunningCosts.",
+                "tags": [
+                  [
+                    "d",
+                    "2026-07-07"
+                  ],
+                  [
+                    "e",
+                    "StockMovement"
+                  ]
+                ]
+              },
+              {
+                "s": "f",
+                "n": "KardexController — GetByProduct / GetByDocument / GetMovementDetail",
+                "d": "GET /inventory/kardex/{productId} (bodega y rango de fechas opcionales, todas las bodegas si se omite), GET /by-document/{sourceDocId}, GET /movement/{id}. KardexDtos compone documento origen (Purchases/Sales) + actor + cadena documental + relaciones anterior/siguiente sin duplicar datos comerciales en Inventory.",
+                "tags": [
+                  [
+                    "a",
+                    "3 endpoints"
+                  ],
+                  [
+                    "d",
+                    "2026-07-07"
+                  ]
+                ]
+              },
+              {
+                "s": "f",
+                "n": "KardexPage — reporte con resumen + ledger tabular",
+                "d": "Tarjetas resumen (stock actual, costo promedio, valor de inventario, último movimiento, cantidad de movimientos) + tabla con columnas Entrada/Salida separadas, Saldo, Costo Unit./Promedio, Valor Inventario, Usuario, Acciones. Botones Excel/PDF/Imprimir como placeholder (sin lógica de exportación aún). Filtros (bodega, fechas, tipo de movimiento) sincronizados con la URL para sobrevivir la navegación de ida y vuelta al documento origen.",
+                "tags": [
+                  [
+                    "d",
+                    "2026-07-08"
+                  ]
+                ]
+              },
+              {
+                "s": "f",
+                "n": "KardexMovementDetailModal — expediente del movimiento",
+                "d": "Secciones: Hecho de Inventario, Documento Origen (con link al documento real en Purchases/Sales), Cadena Documental, Relaciones (navegación prev/next), Auditoría (usuario, fechas), Contabilidad (placeholder — sin asiento generado aún).",
+                "tags": [
+                  [
+                    "d",
+                    "2026-07-07"
+                  ]
+                ]
+              },
+              {
+                "s": "f",
+                "n": "Columna Usuario sin N+1",
+                "d": "IAccessRepository.GetUsersByIdsAsync (nuevo método batch) + StockMovementDto.CreatedByName (campo aditivo, default null) resuelven el nombre del actor en un solo query para toda la lista de movimientos, tanto en GetKardexByProduct como en GetKardexByDocument.",
+                "tags": [
+                  [
+                    "d",
+                    "2026-07-08"
+                  ]
+                ]
+              },
+              {
+                "s": "f",
+                "n": "SalesInvoiceDetail.WarehouseId",
+                "d": "Ventas gana bodega por línea para poder generar el movimiento de salida (SaleExit) igual que Compras genera la entrada (PurchaseEntry). Migración 20260707234212_AddWarehouseIdToSalesInvoiceDetail.",
+                "tags": [
+                  [
+                    "d",
+                    "2026-07-07"
+                  ]
+                ]
+              },
+              {
+                "s": "f",
+                "n": "Fix: item de menú faltante",
+                "d": "KardexController tenía [AppFeature] (catálogo de permisos) pero nunca se agregó el [NavItem] correspondiente en InventoryModule.cs — el sidebar real se construye desde ahí, no desde [AppFeature]. Kardex no aparecía en el menú pese a estar completamente funcional.",
+                "tags": [
+                  [
+                    "d",
+                    "2026-07-08"
+                  ]
+                ]
+              },
+              {
+                "s": "f",
+                "n": "Fix: loop infinito GET /inventory/warehouses",
+                "d": "useEffect en KardexPage dependía del objeto completo devuelto por el hook (nueva referencia en cada render) en vez de un array de dependencias vacío — causaba refetch de bodegas en loop continuo.",
+                "tags": [
+                  [
+                    "d",
+                    "2026-07-08"
+                  ]
+                ]
+              },
+              {
+                "s": "f",
+                "n": "Fix: 400 al filtrar por fecha (Kind=Unspecified)",
+                "d": "Los parámetros from/to del query string llegan con DateTime.Kind=Unspecified; Npgsql exige UTC contra columnas timestamptz. Normalizado en StockRepository (AsUtc helper) antes de comparar contra CreatedAt.",
+                "tags": [
+                  [
+                    "d",
+                    "2026-07-08"
+                  ]
+                ]
+              },
+              {
+                "s": "f",
+                "n": "Fix: CSS faltante en KardexPage",
+                "d": "No importaba erp-form.css (de donde vienen pf-table/pf-badge/pf-mini-card/pf-field/pf-btn) — solo items-catalog.css. La tabla y filtros quedaban sin estilo si Kardex era la primera página visitada en la sesión.",
+                "tags": [
+                  [
+                    "d",
+                    "2026-07-08"
+                  ]
+                ]
+              },
+              {
+                "s": "n",
+                "n": "Guard silencioso: línea sin bodega no genera movimiento",
+                "d": "ConfirmPurchaseUseCases y AuthorizeSalesUseCases hacen `continue` sin log ni aviso si la línea no tiene ItemId/WarehouseId resoluble — una compra o venta confirmada sin bodega seleccionada no genera StockMovement y no aparece en Kardex, sin ningún error visible al usuario. Pendiente: validar/advertir en el formulario en vez de fallar en silencio.",
+                "tags": [
+                  [
+                    "s",
+                    "Detectado 2026-07-08, sin corregir"
+                  ]
+                ]
+              },
+              {
+                "s": "n",
+                "n": "Exportación Excel/PDF/Imprimir",
+                "d": "Botones ya en la UI pero deshabilitados — sin endpoint ni lógica de generación implementada.",
+                "tags": []
+              }
+            ]
+          },
+          {
+            "title": "Transferencias & Ajustes",
+            "tasks": [
+              {
+                "s": "f",
+                "n": "Transferencias entre bodegas",
+                "d": "StockTransfer + StockTransferLine. Draft → Confirmed. Decrementa origen, incrementa destino, crea movimientos ambos lados.",
+                "tags": [
+                  [
+                    "a",
+                    "2 endpoints"
+                  ]
+                ]
+              },
+              {
+                "s": "f",
+                "n": "Ajustes de inventario (conteo físico)",
+                "d": "StockAdjustment + AdjustmentLine. Qty esperada vs real, varianza, motivo (conteo físico, daño, pérdida). Recalcula stock al ejecutar.",
+                "tags": [
+                  [
+                    "a",
+                    "2 endpoints"
+                  ]
+                ]
+              }
+            ]
+          },
+          {
+            "title": "Control avanzado",
+            "tasks": [
+              {
+                "s": "f",
+                "n": "Reservas de stock",
+                "d": "StockReservation: item, bodega, cantidad, status (Pending/Fulfilled/Cancelled), fecha expiración, referencia de orden.",
+                "tags": []
+              },
+              {
+                "s": "f",
+                "n": "Trazabilidad por lotes",
+                "d": "Lot: número lote, fecha fabricación, fecha vencimiento, qty inicial/actual, status (Active/Expired/Depleted). ConsumeQty() para despacho.",
+                "tags": []
+              },
+              {
+                "s": "f",
+                "n": "Trazabilidad por número de serie",
+                "d": "SerialNumber: 6 estados (InStock, Sold, Returned, Defective, Lost, Disposed). Máquina de estados: Sell/Return/MarkDefective/MarkLost/Dispose.",
+                "tags": []
+              },
+              {
+                "s": "p",
+                "n": "Alertas automáticas vencimiento lotes",
+                "d": "Fecha expiración y status Expired existen en entidad. Falta notificación automática y bloqueo de despacho de lotes vencidos.",
+                "tags": []
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Ventas (Sales Invoice)",
+        "icon": "&#x1F6D2;",
+        "desc": "Factura de venta completa: ciclo de vida, impuestos, cobros, FE",
+        "groups": [
+          {
+            "title": "Factura de Venta — Ciclo de Vida",
+            "tasks": [
+              {
+                "s": "f",
+                "n": "Crear borrador de factura",
+                "d": "CreateSalesDraft: cliente, líneas (item, descripción, qty, precio, IVA, ICE, descuento), condición de pago, punto de emisión, tipo documento, forma pago SRI. Valida códigos IVA/ICE.",
+                "tags": []
+              },
+              {
+                "s": "f",
+                "n": "Editar borrador",
+                "d": "UpdateSalesDraft: cambio de cliente, reemplazo de líneas, actualización de términos de pago, fechas, notas. Solo en estado Draft.",
+                "tags": []
+              },
+              {
+                "s": "f",
+                "n": "Listar facturas (paginado + búsqueda)",
+                "d": "GetSalesInvoiceList: paginación, búsqueda por número o cliente, filtro por estado (Draft/Authorized/Cancelled).",
+                "tags": []
+              },
+              {
+                "s": "f",
+                "n": "Ver detalle de factura",
+                "d": "GetSalesInvoiceById: factura completa con líneas, pagos, datos electrónicos, snapshot cliente, totales.",
+                "tags": []
+              },
+              {
+                "s": "f",
+                "n": "Autorizar factura (emitir)",
+                "d": "AuthorizeSalesInvoice: recalcula impuestos con tasas SRI vigentes, genera número secuencial (est-ep-seq), congela líneas + snapshot totales, valida Sum(pagos)==Total. Irreversible.",
+                "tags": [
+                  [
+                    "a",
+                    "POST /authorize"
+                  ]
+                ]
+              },
+              {
+                "s": "f",
+                "n": "Anular factura",
+                "d": "CancelSalesInvoice: solo facturas autorizadas. Motivo obligatorio. Cascada: anula CxC asociada. Inmutable después.",
+                "tags": [
+                  [
+                    "a",
+                    "POST /cancel"
+                  ]
+                ]
+              }
+            ]
+          },
+          {
+            "title": "Líneas de Detalle",
+            "tasks": [
+              {
+                "s": "f",
+                "n": "Líneas con impuestos SRI",
+                "d": "SalesInvoiceDetail: cantidad, precio unitario, VatCode, IceCode, descuento %. Cálculos: LineSubtotal, TaxableBase, VatAmount, IceAmount, TaxInclusiveTotal.",
+                "tags": []
+              },
+              {
+                "s": "f",
+                "n": "Descuento global por factura",
+                "d": "ApplySalesDiscount: aplica % descuento a todas las líneas (0-100%). Actualiza audit trail.",
+                "tags": [
+                  [
+                    "a",
+                    "POST /apply-discount"
+                  ]
+                ]
+              },
+              {
+                "s": "f",
+                "n": "Freeze de líneas al autorizar",
+                "d": "Líneas se congelan irreversiblemente al autorizar. AuthorizedSubtotal/TotalTax/TotalDiscount/GrandTotal como snapshot.",
+                "tags": []
+              }
+            ]
+          },
+          {
+            "title": "Formas de Cobro",
+            "tasks": [
+              {
+                "s": "f",
+                "n": "Múltiples formas de cobro por factura",
+                "d": "SalesInvoicePayment: N pagos por factura. Snapshot Code+Name. Amount>0. Validación Sum==GrandTotal al autorizar.",
+                "tags": []
+              },
+              {
+                "s": "f",
+                "n": "Detalle por instrumento (Tarjeta)",
+                "d": "PaymentCardDetail: marca, últimos 4 dígitos, banco, código autorización, número lote.",
+                "tags": []
+              },
+              {
+                "s": "f",
+                "n": "Detalle por instrumento (Transferencia)",
+                "d": "PaymentTransferDetail: banco, número comprobante, fecha transferencia.",
+                "tags": []
+              },
+              {
+                "s": "f",
+                "n": "Detalle por instrumento (Cheque)",
+                "d": "PaymentChequeDetail: banco, número cheque, titular, fecha cobro.",
+                "tags": []
+              },
+              {
+                "s": "f",
+                "n": "Simulación de cuotas crédito",
+                "d": "Modal con tabla editable de cuotas: número, vencimiento, monto. Recalculable. Validación suma == total.",
+                "tags": []
+              }
+            ]
+          },
+          {
+            "title": "Facturación Electrónica",
+            "tasks": [
+              {
+                "s": "f",
+                "n": "Lifecycle electrónico independiente",
+                "d": "ElectronicStatus: None → Pending → Sent → Authorized | Rejected. Independiente del status de negocio.",
+                "tags": []
+              },
+              {
+                "s": "f",
+                "n": "Datos electrónicos SRI",
+                "d": "ElectronicInvoiceData (VO): AccessKey (49 dígitos), AuthorizationNumber, AuthorizationDate. OwnsOne aplanado en tabla.",
+                "tags": []
+              },
+              {
+                "s": "f",
+                "n": "Emisión física vs electrónica",
+                "d": "EmissionType en punto de emisión. Physical: ElectronicStatus=None, oculta clave acceso SRI en UI.",
+                "tags": [
+                  [
+                    "d",
+                    "2026-06-28"
+                  ]
+                ]
+              },
+              {
+                "s": "f",
+                "n": "Secuencial automático SRI",
+                "d": "DocumentSequence por (EmissionPointId + DocTypeCode). SELECT FOR UPDATE. Formato: est_code-ep_code-sequential.",
+                "tags": []
+              }
+            ]
+          },
+          {
+            "title": "Frontend",
+            "tasks": [
+              {
+                "s": "f",
+                "n": "SalesPage POS interactivo",
+                "d": "Layout punto de venta: sidebar (datos emisión, cliente, impuestos, cobros) + main (líneas detalle). Tabs listado/nuevo.",
+                "tags": []
+              },
+              {
+                "s": "f",
+                "n": "CustomerPicker con creación rápida",
+                "d": "Autocomplete de clientes. Botón crear/editar cliente inline. Carga perfil comercial (días pago, cuotas, condición).",
+                "tags": []
+              },
+              {
+                "s": "f",
+                "n": "Cálculo local en tiempo real",
+                "d": "salesCalc.ts: subtotal, impuestos (IVA/ICE por código), descuentos, total. Preview antes de guardar.",
+                "tags": []
+              }
+            ]
+          },
+          {
+            "title": "Pendiente Ventas",
+            "tasks": [
+              {
+                "s": "n",
+                "n": "Nota de Crédito Ventas",
+                "d": "Documento tipo 04 SRI. Reducción de factura emitida. Entidades y handlers no implementados. DocTypeCode 04 existe en catálogos SRI.",
+                "tags": []
+              },
+              {
+                "s": "n",
+                "n": "Nota de Débito Ventas",
+                "d": "Documento tipo 05 SRI. Ajuste de valores adicionales. No implementado.",
+                "tags": []
+              },
+              {
+                "s": "n",
+                "n": "Cotizaciones (Quotes)",
+                "d": "Pipeline comercial: Cotización → Aprobar → Pedido → Confirmar → Factura. Estructura API existía en versión anterior, removida en kernel cleanup.",
+                "tags": []
+              },
+              {
+                "s": "n",
+                "n": "Pedidos de Venta (Sales Orders)",
+                "d": "Confirmación de intención de compra del cliente. Genera reserva de stock. No implementado en versión actual.",
+                "tags": []
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Cuentas por Cobrar (CxC)",
+        "icon": "&#x1F4CB;",
+        "desc": "Registro de deuda clientes — módulo pasivo",
+        "groups": [
+          {
+            "title": "Implementado",
+            "tasks": [
+              {
+                "s": "f",
+                "n": "SalesReceivable automático",
+                "d": "Se genera automáticamente al autorizar factura a crédito (CreditTermDays>0 o Installments>1). Tracks monto original, pagado, saldo, status.",
+                "tags": []
+              },
+              {
+                "s": "f",
+                "n": "Cuotas de cobro (Installments)",
+                "d": "SalesReceivableInstallment: número, fecha vencimiento, monto, monto pagado, status. Auto-generadas desde PaymentTerm.",
+                "tags": []
+              },
+              {
+                "s": "f",
+                "n": "Cancel cascada",
+                "d": "Al anular factura, la CxC asociada se anula automáticamente.",
+                "tags": []
+              },
+              {
+                "s": "f",
+                "n": "API consulta",
+                "d": "GET /sales-receivables (lista paginada) + GET /sales-receivables/by-invoice/{id} (detalle con cuotas).",
+                "tags": [
+                  [
+                    "a",
+                    "2 endpoints GET"
+                  ]
+                ]
+              }
+            ]
+          },
+          {
+            "title": "Pendiente",
+            "tasks": [
+              {
+                "s": "n",
+                "n": "Registro de cobros (Payment Collection)",
+                "d": "Aplicar pagos parciales/totales contra cuotas de CxC. Actualizar PaidAmount. Infraestructura existe (PaidAmount=0). Requiere módulo Caja/Bancos.",
+                "tags": []
+              },
+              {
+                "s": "n",
+                "n": "Reporte de cartera vencida",
+                "d": "Listado de cuotas vencidas con aging (0-30, 30-60, 60-90, 90+ días). No implementado.",
+                "tags": []
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Compras (Purchases)",
+        "icon": "&#x1F4E5;",
+        "desc": "Factura compra completa: costos, retenciones, CxP, notas proveedor",
+        "groups": [
+          {
+            "title": "Factura de Compra — Ciclo de Vida",
+            "tasks": [
+              {
+                "s": "f",
+                "n": "Crear borrador de compra",
+                "d": "CreatePurchaseDraft: proveedor, líneas (item, descripción, qty, costo, IVA, ICE, descuento), condición de pago, bodega, tipo doc, número factura, clave acceso, datos autorización SRI.",
+                "tags": []
+              },
+              {
+                "s": "f",
+                "n": "Editar borrador",
+                "d": "UpdatePurchaseDraft: cambio proveedor, líneas, condición de pago, fechas, costos. Solo en estado Draft.",
+                "tags": []
+              },
+              {
+                "s": "f",
+                "n": "Listar compras (paginado + búsqueda)",
+                "d": "GetPurchaseList: paginación, búsqueda, filtro por estado (Draft/Confirmed/Cancelled).",
+                "tags": []
+              },
+              {
+                "s": "f",
+                "n": "Ver detalle de compra",
+                "d": "GetPurchaseById: compra completa con líneas, datos SRI, retenciones, notas.",
+                "tags": []
+              },
+              {
+                "s": "f",
+                "n": "Confirmar compra",
+                "d": "ConfirmPurchase: recalcula impuestos, congela costos, crea movimientos de stock (PurchaseEntry), asigna a bodega(s), crea CxP con schedule, actualiza PVP. Irreversible.",
+                "tags": [
+                  [
+                    "a",
+                    "POST /confirm"
+                  ]
+                ]
+              },
+              {
+                "s": "f",
+                "n": "Anular compra",
+                "d": "CancelPurchase: reversa movimientos de stock (PurchaseReturn), anula CxP, anula retenciones emitidas. Audit trail.",
+                "tags": [
+                  [
+                    "a",
+                    "POST /cancel"
+                  ]
+                ]
+              }
+            ]
+          },
+          {
+            "title": "Costos & Márgenes",
+            "tasks": [
+              {
+                "s": "f",
+                "n": "Descuento global por compra",
+                "d": "ApplyGlobalDiscount: aplica % descuento a todas las líneas (0-100%).",
+                "tags": [
+                  [
+                    "a",
+                    "POST /apply-discount"
+                  ]
+                ]
+              },
+              {
+                "s": "f",
+                "n": "Distribución de flete y otros costos",
+                "d": "AllocateFreight: distribuye flete y otros costos proporcionalmente entre líneas. Landed cost por línea.",
+                "tags": [
+                  [
+                    "a",
+                    "POST /allocate-freight"
+                  ]
+                ]
+              },
+              {
+                "s": "f",
+                "n": "Recálculo de compra",
+                "d": "RecalculatePurchase: recalcula impuestos y asignación de costos en borrador.",
+                "tags": [
+                  [
+                    "a",
+                    "POST /recalculate"
+                  ]
+                ]
+              },
+              {
+                "s": "f",
+                "n": "Cálculo de márgenes",
+                "d": "PurchaseMarginUseCases: calcula margen de compra y varianza de costos respecto a costo promedio.",
+                "tags": []
+              },
+              {
+                "s": "f",
+                "n": "Alerta costo fuera de rango",
+                "d": "Warning visual en frontend cuando costo difiere >20% del promedio SSOT. purchaseCalc.ts.",
+                "tags": []
+              }
+            ]
+          },
+          {
+            "title": "Retenciones SRI",
+            "tasks": [
+              {
+                "s": "f",
+                "n": "Cálculo preview de retención",
+                "d": "CalculateRetention: calcula retención IVA + Renta basado en config proveedor. Maneja exenciones (RISE). Preview detallado.",
+                "tags": [
+                  [
+                    "a",
+                    "GET /calculate-retention"
+                  ]
+                ]
+              },
+              {
+                "s": "f",
+                "n": "Emitir retención",
+                "d": "IssueWithholding: genera documento retención, número secuencial SRI, calcula montos por código (303, 721, etc.), actualiza CxP con monto retenido.",
+                "tags": [
+                  [
+                    "a",
+                    "POST /issue-withholding"
+                  ]
+                ]
+              },
+              {
+                "s": "f",
+                "n": "Anular retención",
+                "d": "CancelWithholding: reversa impacto en CxP. Audit trail.",
+                "tags": [
+                  [
+                    "a",
+                    "POST /cancel-withholding"
+                  ]
+                ]
+              },
+              {
+                "s": "f",
+                "n": "Retenciones recibidas (de clientes)",
+                "d": "ReceivedWithholding + ReceivedWhDetail: registro de retenciones que nos emiten. RUC emisor, clave acceso, montos, XML.",
+                "tags": []
+              }
+            ]
+          },
+          {
+            "title": "Impacto en Inventario",
+            "tasks": [
+              {
+                "s": "f",
+                "n": "Entrada de stock al confirmar",
+                "d": "Crea StockMovement tipo PurchaseEntry. Incrementa CurrentStock en bodega asignada. Actualiza costo promedio.",
+                "tags": []
+              },
+              {
+                "s": "f",
+                "n": "Reverso de stock al anular",
+                "d": "Crea StockMovement tipo PurchaseReturn. Decrementa stock. Reversa valores.",
+                "tags": []
+              },
+              {
+                "s": "f",
+                "n": "Actualización de PVP",
+                "d": "Al confirmar compra, actualiza precio de venta en módulo Pricing si corresponde. POST /load-pvp.",
+                "tags": []
+              }
+            ]
+          },
+          {
+            "title": "Frontend",
+            "tasks": [
+              {
+                "s": "f",
+                "n": "PurchasesPage completa",
+                "d": "Tabs listado/nuevo. SupplierPicker, ProductPicker, líneas editables, costos, flete, condición pago, campos SRI, retenciones. Secciones colapsables.",
+                "tags": []
+              },
+              {
+                "s": "f",
+                "n": "purchaseCalc.ts testeado",
+                "d": "Cálculo local: línea net, impuestos, landed cost, distribución flete, schedule pagos. 27 tests unitarios Vitest.",
+                "tags": [
+                  [
+                    "t",
+                    "27 tests"
+                  ]
+                ]
+              }
+            ]
+          },
+          {
+            "title": "Pendiente Compras",
+            "tasks": [
+              {
+                "s": "p",
+                "n": "Notas de proveedor (Supplier Notes)",
+                "d": "SupplierNote + SupplierNoteDetail entidades existen. NC/ND tipo 04/05 SRI. CRUD handlers parcial — entidad domain completa pero flujo UI dedicado incompleto.",
+                "tags": []
+              },
+              {
+                "s": "p",
+                "n": "Importación XML de facturas",
+                "d": "Ver fase dedicada 'Recepción Electrónica de Compras (PurchaseReception)': import TXT + descarga/parseo de XML ya implementados end-to-end hasta precargar el formulario de Nueva Compra. Falta matcher de ítems/proveedores y creación automática de la compra.",
+                "tags": []
+              },
+              {
+                "s": "n",
+                "n": "Órdenes de Compra",
+                "d": "Documento previo a factura de compra. Solicitud de mercadería al proveedor. No implementado.",
+                "tags": []
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Recepción Electrónica de Compras (PurchaseReception)",
+        "icon": "&#x1F4E8;",
+        "desc": "Importación de comprobantes recibidos del SRI (TXT + XML) y precarga de compra — sin matcher de ítems todavía",
+        "groups": [
+          {
+            "title": "Importación y verificación (Fase 1-2)",
+            "tasks": [
+              {
+                "s": "f",
+                "n": "Import TXT de recepción SRI",
+                "d": "POST /purchases/reception/import: parsea el TXT tab-delimited de comprobantes recibidos (PurchaseInvoiceTxtParser), compara contra proveedores/compras ya existentes (PurchaseReceptionVerifier) y persiste cada fila como PurchaseReceptionDocument (estado Imported).",
+                "tags": [
+                  [
+                    "a",
+                    "POST /import"
+                  ],
+                  [
+                    "d",
+                    "2026-07-20"
+                  ]
+                ]
+              },
+              {
+                "s": "f",
+                "n": "PurchaseReceptionDocument (entidad persistida)",
+                "d": "RUC/nombre proveedor, SupplierId si ya existía, AccessKey, InvoiceNumber, IssueDate, AuthorizationNumber/Date, totales, Status (Imported→Verified→Processed/Cancelled). Nunca crea/modifica PurchaseInvoice directamente — PurchaseId es solo referencia de lectura para una fase futura.",
+                "tags": [
+                  [
+                    "e",
+                    "PurchaseReceptionDocument"
+                  ]
+                ]
+              },
+              {
+                "s": "f",
+                "n": "PurchaseReceptionPage — listado + import",
+                "d": "Tabla de comprobantes importados con badges Proveedor ERP / Compra ERP / Estado / Documento, upload de TXT con progreso.",
+                "tags": []
+              }
+            ]
+          },
+          {
+            "title": "Descarga y almacenamiento del XML autorizado (Fase 3)",
+            "tasks": [
+              {
+                "s": "f",
+                "n": "Descarga XML autorizado desde el SRI",
+                "d": "POST /purchases/reception/{id}/download-xml: SriReceptionXmlProvider reutiliza ISriAuthorizationClient (mismo cliente SOAP que ElectronicDocuments, nunca uno nuevo) y AttachSriAuthorization persiste XmlContent + transición Imported→Verified de forma atómica.",
+                "tags": [
+                  [
+                    "a",
+                    "POST /download-xml"
+                  ]
+                ]
+              },
+              {
+                "s": "d",
+                "n": "Bug de propagación de XmlContent investigado y descartado",
+                "d": "Trazado completo SOAP→ISriAuthorizationClient→SriReceptionXmlProvider→Handler→Entidad→EF Core: el pipeline estaba correcto de punta a punta (DocumentXml se parsea y persiste bien); una falla real en producción vendría de precondiciones de datos (estado del documento, WSDL de la empresa), no de un bug de código.",
+                "tags": [
+                  [
+                    "d",
+                    "2026-07-20"
+                  ]
+                ]
+              }
+            ]
+          },
+          {
+            "title": "Parseo del XML a borrador de compra (Fase 4-5)",
+            "tasks": [
+              {
+                "s": "f",
+                "n": "PurchaseXmlDraftParser",
+                "d": "Lee únicamente PurchaseReceptionDocument.XmlContent (sin volver a consultar el SRI) y extrae cabecera + detalle completo por línea: código proveedor (codigoPrincipal), código auxiliar, descripción, cantidad, precio, descuento (monto y %), subtotal, impuesto IVA (código/tarifa/valor), ICE opcional y total de línea. Mismo esquema factura v1.1.0 que InvoiceXmlBuilder/InvoiceRideXmlParser ya validan.",
+                "tags": [
+                  [
+                    "s",
+                    "IPurchaseXmlDraftParser"
+                  ]
+                ]
+              },
+              {
+                "s": "f",
+                "n": "POST /purchases/reception/{id}/create-draft",
+                "d": "CreatePurchaseReceptionDraftHandler: solo lee y parsea (documento debe estar Verified con XmlContent), nunca persiste PurchaseInvoice ni modifica PurchaseReceptionDocument. Devuelve PurchaseDraftDto con SupplierId (null si no se resolvió al importar) + líneas con ItemId/WarehouseId en null.",
+                "tags": [
+                  [
+                    "a",
+                    "POST /create-draft"
+                  ],
+                  [
+                    "t",
+                    "7+11 tests"
+                  ]
+                ]
+              },
+              {
+                "s": "f",
+                "n": "'Crear compra' → precarga Nueva Compra",
+                "d": "Botón en Recepción Electrónica (documentos Verified) navega a /purchases?fromReceptionId=... — mismo mecanismo de query-param + fetch-on-mount que ya usa la página para 'Ver documento origen' desde Kardex, sin ruta ni formulario duplicado. usePurchasesPage.loadFromReception hace reset() del formulario existente.",
+                "tags": []
+              },
+              {
+                "s": "f",
+                "n": "Detalle XML visible antes del matcher",
+                "d": "Panel de solo lectura por línea (reutiliza clases CSS pdl-line__context/pdl-ctx-col ya existentes, sin CSS nuevo) con código proveedor, código auxiliar, descripción XML, cantidad, precio, descuento, IVA %, valor IVA y total — visible mientras ItemId sigue null.",
+                "tags": []
+              },
+              {
+                "s": "f",
+                "n": "Guardado reutiliza el flujo existente",
+                "d": "El botón Guardar de Nueva Compra sigue ejecutando exactamente CreatePurchaseDraftCommand/purchaseService.create — ningún segundo flujo de creación, PurchaseAggregate sin tocar.",
+                "tags": []
+              }
+            ]
+          },
+          {
+            "title": "Pendiente (fuera de alcance de las fases actuales)",
+            "tasks": [
+              {
+                "s": "n",
+                "n": "Matcher de ítems por código de proveedor",
+                "d": "Emparejar automáticamente codigoPrincipal/codigoAuxiliar del XML contra ItemSupplierCode del catálogo. Hoy el usuario asocia el producto manualmente en cada línea.",
+                "tags": []
+              },
+              {
+                "s": "n",
+                "n": "Creación automática de proveedores nuevos",
+                "d": "Cuando SupplierId es null (RUC del XML no matchea ningún proveedor existente), hoy el usuario debe crearlo/seleccionarlo manualmente — sin alta automática.",
+                "tags": []
+              },
+              {
+                "s": "n",
+                "n": "Creación automática de compra (sin revisión)",
+                "d": "El flujo actual siempre pasa por el formulario para revisión/edición antes de guardar — no hay creación directa de PurchaseInvoice desde el XML sin pasar por Nueva Compra.",
+                "tags": []
+              },
+              {
+                "s": "n",
+                "n": "Conciliación / vínculo PurchaseReceptionDocument↔PurchaseInvoice",
+                "d": "PurchaseReceptionDocument.PurchaseId y MarkProcessed() existen en el dominio pero ningún handler los invoca todavía — la compra creada desde el borrador no se re-vincula aún al documento de recepción de origen.",
+                "tags": []
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Cuentas por Pagar (CxP)",
+        "icon": "&#x1F4CB;",
+        "desc": "Registro de deuda con proveedores",
+        "groups": [
+          {
+            "title": "Implementado",
+            "tasks": [
+              {
+                "s": "f",
+                "n": "PurchasePayable automático",
+                "d": "Se genera automáticamente al confirmar compra. Tracks monto total, pagado, retenido (withholding), saldo, status.",
+                "tags": []
+              },
+              {
+                "s": "f",
+                "n": "Schedule de pagos (Installments)",
+                "d": "PurchasePayableInstallment: número, vencimiento, monto, pagado, status. Auto-generado desde PaymentTerm.",
+                "tags": []
+              },
+              {
+                "s": "f",
+                "n": "Impacto de retenciones en CxP",
+                "d": "Al emitir retención, el monto retenido se refleja en el saldo de la CxP reduciendo la deuda.",
+                "tags": []
+              }
+            ]
+          },
+          {
+            "title": "Pendiente",
+            "tasks": [
+              {
+                "s": "n",
+                "n": "Registro de pagos a proveedores",
+                "d": "Aplicar pagos parciales/totales contra CxP. Requiere módulo Caja/Bancos.",
+                "tags": []
+              },
+              {
+                "s": "n",
+                "n": "Reporte de obligaciones pendientes",
+                "d": "Listado de CxP vencidas con aging. No implementado.",
+                "tags": []
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Reportes",
+        "icon": "&#x1F4CA;",
+        "desc": "Reportes de ventas, compras, inventario, kardex",
+        "groups": [
+          {
+            "title": "Estado",
+            "tasks": [
+              {
+                "s": "f",
+                "n": "Reporte de Kardex (implementado)",
+                "d": "KardexPage: resumen + ledger tabular + expediente por movimiento. Ver detalle en fase Inventario & Bodega. Único reporte no-placeholder del módulo.",
+                "tags": [
+                  [
+                    "d",
+                    "2026-07-08"
+                  ]
+                ]
+              },
+              {
+                "s": "p",
+                "n": "Resto: páginas placeholder",
+                "d": "SalesReport, PurchaseReport, InventoryReport (stock valorizado, rotación, etc.). Componentes base: ReportGrid, ChartRenderer, FilterPanel — sin datos reales conectados.",
+                "tags": []
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "stage": "Fiscal / SRI",
+    "stageIcon": "&#x1F4C4;",
+    "phases": [
+      {
+        "name": "Catálogos SRI (Tablas Inmutables)",
+        "icon": "&#x1F4DA;",
+        "desc": "Tablas de referencia fiscal del SRI Ecuador",
+        "groups": [
+          {
+            "title": "14 entidades de referencia",
+            "tasks": [
+              {
+                "s": "f",
+                "n": "Catálogos fiscales completos",
+                "d": "SriEnvironment, SriDocType, SriIdType, SriVatRate, SriIceRate, SriPaymentMethod, SriRetentionCode, SriTaxRegime, SriTaxSupport, SriUom, SriCountry, SriErrorCode, SriEmissionType. Seeding INEC.",
+                "tags": [
+                  [
+                    "e",
+                    "14 entidades"
+                  ],
+                  [
+                    "s",
+                    "global inmutable"
+                  ]
+                ]
+              },
+              {
+                "s": "f",
+                "n": "SRI Lookups en frontend",
+                "d": "sriLookupService: vatRates, iceRates, paymentMethods, docTypes, retentionCodes. Combos dinámicos.",
+                "tags": []
+              },
+              {
+                "s": "f",
+                "n": "Geografía Ecuador (INEC)",
+                "d": "Provincias, cantones, parroquias. Read-only. Seeding SQL inmutable. 2 endpoints.",
+                "tags": []
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Módulo ElectronicDocuments v1.0 — FROZEN",
+        "icon": "&#x26A1;",
+        "desc": "Motor de comprobantes electrónicos desacoplado de Sales/Purchases/Inventory. CERRADO oficialmente el 2026-07-11 (ADR-023) tras 3 rondas de verificación: auditoría de robustez, cumplimiento del Anexo Técnico SRI verificado texto por texto contra el PDF oficial, y pruebas reales contra el ambiente de Pruebas del SRI con certificado real. Matriz de cobertura vs. Ficha Técnica SRI (Esquema Offline v2.32) — organizada por módulo funcional, no por fase cronológica.",
+        "groups": [
+          {
+            "title": "Arquitectura",
+            "tasks": [
+              {
+                "s": "d",
+                "n": "Módulo desacoplado (sin dependencia de módulos de negocio)",
+                "d": "ElectronicDocuments nunca referencia Sales/Purchases/Inventory ni por proyecto ni por namespace. Sales implementa el contrato (provider), el núcleo lo desconoce.",
+                "tags": [
+                  [
+                    "d",
+                    "2026-07-08"
+                  ]
+                ]
+              },
+              {
+                "s": "d",
+                "n": "Single Source of Truth del estado electrónico",
+                "d": "ElectronicDocument es la única fuente de verdad del ciclo de vida electrónico de todo el ERP. SalesInvoice.ElectronicStatus/ElectronicData (legacy) auditados, migrados y eliminados junto con sus columnas — SalesInvoice ya no administra ningún estado electrónico.",
+                "tags": [
+                  [
+                    "d",
+                    "2026-07-10"
+                  ],
+                  [
+                    "s",
+                    "FASE 10"
+                  ]
+                ]
+              },
+              {
+                "s": "d",
+                "n": "Contrato de datos común (ElectronicDocumentData)",
+                "d": "DTO SSOT que produce el proveedor de cada módulo de negocio. Totals nullable (Guía de Remisión no lleva totales), TaxRegime nullable (solo RIMPE) — sin campos especulativos.",
+                "tags": []
+              },
+              {
+                "s": "d",
+                "n": "Resolución de proveedores por DI (sin switch)",
+                "d": "IElectronicDocumentDataProviderResolver indexa IEnumerable&lt;IElectronicDocumentDataProvider&gt; por DocumentType. Agregar un comprobante nuevo = registrar un proveedor, cero cambios al núcleo.",
+                "tags": []
+              },
+              {
+                "s": "d",
+                "n": "Resolución de builders XML por DI",
+                "d": "Un builder por tipo de comprobante, mismo patrón sin switch que los providers. Hoy solo existe el builder de Factura.",
+                "tags": []
+              },
+              {
+                "s": "d",
+                "n": "Pipeline de 9 etapas end-to-end (Sales→Authorized)",
+                "d": "Provider → Data → XmlBuilder → SchemaValidator → SigningService → Storage → Recepción SRI → Autorización SRI → Repository. Código completo y verificado con tests hasta Authorized/Rejected/DeadLetter. El primer envío real contra el SRI queda bloqueado únicamente por el XSD oficial faltante (ver Validación XSD) — el código en sí no tiene brechas.",
+                "tags": [
+                  [
+                    "d",
+                    "2026-07-11"
+                  ]
+                ]
+              },
+              {
+                "s": "d",
+                "n": "Disparo automático desde Ventas (único punto de entrada)",
+                "d": "AuthorizeSalesInvoiceHandler invoca IElectronicDocumentIssuer.RegisterAsync tras confirmar (commit) la autorización comercial — nunca antes. Deliberadamente NO se dispara desde el domain event SalesInvoiceAuthorizedEvent: ese evento se despacha síncronamente dentro de la transacción de Ventas, antes del commit (auditado en ErpDbContext.SaveChangesAsync), y el pipeline electrónico hace E/S externa real (SOAP al SRI) — dispararlo ahí mantendría bloqueados los locks de la factura durante toda la espera del SRI. Gate: solo EmissionType Electronic + EmissionPointId con valor; fallos del ciclo electrónico se registran como warning y nunca hacen fallar la autorización comercial ya confirmada.",
+                "tags": [
+                  [
+                    "d",
+                    "2026-07-11"
+                  ]
+                ]
+              }
+            ]
+          },
+          {
+            "title": "Tipos de Comprobante (cobertura SRI)",
+            "tasks": [
+              {
+                "s": "d",
+                "n": "Factura (codDoc 01)",
+                "d": "Único comprobante con proveedor + builder + firma + recepción + autorización reales, conectado automáticamente al flujo de Ventas. XML v1.1.0 (Anexo 3 ficha SRI). Verificado con 8 envíos reales al ambiente de Pruebas del SRI (2026-07-11), incluido un rechazo real. Sin bloqueos funcionales.",
+                "tags": [
+                  [
+                    "s",
+                    "1.1.0 — verificado en producción de pruebas"
+                  ]
+                ]
+              },
+              {
+                "s": "n",
+                "n": "Nota de Crédito (codDoc 04)",
+                "d": "Sin provider ni builder en ElectronicDocuments. DocTypeCode 04 existe en catálogos SRI y DocumentSequence lo soporta, pero no hay generación de XML ni flujo electrónico.",
+                "tags": []
+              },
+              {
+                "s": "n",
+                "n": "Nota de Débito (codDoc 05)",
+                "d": "Sin provider ni builder en ElectronicDocuments. DocTypeCode 05 existe en catálogos SRI.",
+                "tags": []
+              },
+              {
+                "s": "n",
+                "n": "Comprobante de Retención (codDoc 07)",
+                "d": "Dominio de Retenciones existe en Compras (cálculo, emisión, CxP) pero no está conectado a ElectronicDocuments — no genera XML/firma/envío electrónico.",
+                "tags": []
+              },
+              {
+                "s": "n",
+                "n": "Guía de Remisión (codDoc 06)",
+                "d": "Directorio placeholder, sin domain, application ni endpoints. Sin provider en ElectronicDocuments.",
+                "tags": []
+              },
+              {
+                "s": "n",
+                "n": "Liquidación de Compra de Bienes y Servicios (codDoc 03)",
+                "d": "Sin implementación en ningún módulo del ERP. Sin provider en ElectronicDocuments.",
+                "tags": []
+              },
+              {
+                "s": "n",
+                "n": "Variantes de Factura (exportación, reembolso, subsidios, rubros de terceros, sustitutiva de guía de remisión)",
+                "d": "Anexos 4-9 de la ficha SRI. Ninguna variante tiene campos, provider ni builder — solo el flujo estándar de factura nacional está cubierto.",
+                "tags": []
+              }
+            ]
+          },
+          {
+            "title": "XML",
+            "tasks": [
+              {
+                "s": "d",
+                "n": "Generación XML de Factura (XElement/XDocument)",
+                "d": "Sin concatenación de strings. Estructura y orden de nodos alineados al Anexo 3 (v1.1.0) de la ficha SRI.",
+                "tags": [
+                  [
+                    "t",
+                    "7 tests unitarios"
+                  ]
+                ]
+              },
+              {
+                "s": "d",
+                "n": "Clave de acceso (49 dígitos, módulo 11)",
+                "d": "Algoritmo de dígito verificador real (Tabla 1 de la ficha SRI), verificado con tests.",
+                "tags": []
+              },
+              {
+                "s": "d",
+                "n": "Resolución de categoría tributaria (2=IVA, 3=ICE)",
+                "d": "Antes un punto de extensión que devolvía null deliberadamente (bloqueo controlado); ahora resuelve contra la constante de protocolo fija de la Tabla 16 de la ficha SRI.",
+                "tags": [
+                  [
+                    "d",
+                    "2026-07-09"
+                  ],
+                  [
+                    "s",
+                    "FASE 9"
+                  ]
+                ]
+              },
+              {
+                "s": "d",
+                "n": "DocTypeCode validado contra catálogo real",
+                "d": "Resuelto en el Provider (única capa con acceso legítimo a BD) vía ISriDocTypeCatalogResolver contra sri_doc_types, nunca hardcodeado en el builder.",
+                "tags": []
+              },
+              {
+                "s": "n",
+                "n": "Generación XML para NC/ND/Retención/Guía/Liquidación",
+                "d": "Sin builders — depende de que existan los providers de esos comprobantes (ver Tipos de Comprobante).",
+                "tags": []
+              }
+            ]
+          },
+          {
+            "title": "Validación (XSD)",
+            "tasks": [
+              {
+                "s": "d",
+                "n": "Infraestructura de validación XSD",
+                "d": "IElectronicDocumentSchemaValidator + EmbeddedXmlSchemaProvider guiado por manifest.json (nunca por convención de nombre — los XSD del SRI no siguen un patrón consistente entre comprobantes). Recursos embebidos reales bajo ElectronicDocuments/Resources/SRI/.",
+                "tags": [
+                  [
+                    "t",
+                    "8 tests"
+                  ]
+                ]
+              },
+              {
+                "s": "d",
+                "n": "XSD oficiales de Factura (4 versiones: 1.0.0/1.1.0/2.0.0/2.1.0)",
+                "d": "Incorporados como recursos oficiales reales del SRI (no reconstruidos). Bug real encontrado y corregido en la auditoría de cumplimiento (2026-07-11): 2 archivos (NotaCredito_V1.1.0.xsd, GuiaRemision_V1.1.0.xsd) declaraban &lt;?xml version=\"1.1\"?&gt; en vez de 1.0, inválido para XmlReader — dejaba esos 2 tipos con validación silenciosamente rota. Corregido, validado con 8 tests en verde.",
+                "tags": [
+                  [
+                    "d",
+                    "2026-07-11"
+                  ],
+                  [
+                    "s",
+                    "Bug real corregido"
+                  ]
+                ]
+              },
+              {
+                "s": "d",
+                "n": "XSD de NC/ND/Retención/Guía/Liquidación (recursos, sin builder activo)",
+                "d": "XSD oficiales de los 4 versiones y catálogo de manifiesto ya incorporados y resolubles — pero sin provider/builder/validador activo (activeVersion:null). Límite explícito documentado en ADR-023: extenderlos es funcionalidad nueva, no mantenimiento.",
+                "tags": []
+              }
+            ]
+          },
+          {
+            "title": "Firma (XAdES-BES)",
+            "tasks": [
+              {
+                "s": "d",
+                "n": "Firmado XAdES-BES conforme a Anexo 14 de la ficha SRI",
+                "d": "Enveloped, RSA-SHA1, Exclusive C14N para SignedProperties. 3 defectos reales corregidos y verificados: excepción por referencia mal formada (GetIdElement no buscaba en ObjectList), envoltorio QualifyingProperties descartado silenciosamente, y mismatch de digest por C14N inclusivo — las 3 correcciones auditadas y aprobadas explícitamente antes de aplicarse.",
+                "tags": [
+                  [
+                    "d",
+                    "2026-07-09"
+                  ],
+                  [
+                    "s",
+                    "FASE 9 — CheckSignature()==true verificado"
+                  ]
+                ]
+              },
+              {
+                "s": "d",
+                "n": "Carga de certificado P12",
+                "d": "X509CertificateLoader.LoadPkcs12FromFile. Excepción clara y controlada ante contraseña incorrecta (nunca produce una firma silenciosamente inválida).",
+                "tags": [
+                  [
+                    "t",
+                    "4 tests firmante"
+                  ]
+                ]
+              },
+              {
+                "s": "d",
+                "n": "Registro en DI (gap real corregido)",
+                "d": "IElectronicDocumentSigner/XadesBesSigner/ElectronicDocumentSignerAdapter existían pero nunca estaban registrados en el contenedor — ahora resueltos correctamente sin reescritura del motor de firma.",
+                "tags": []
+              },
+              {
+                "s": "d",
+                "n": "Configuración de certificado sin hardcode",
+                "d": "ElectronicDocumentSigningService resuelve SriSettings, valida certificado/contraseña antes de firmar.",
+                "tags": [
+                  [
+                    "t",
+                    "6 tests éxito/error"
+                  ]
+                ]
+              },
+              {
+                "s": "d",
+                "n": "Prueba de integración XML+Firma (sin envío real)",
+                "d": "Genera XML real de Factura, firma, verifica CheckSignature()==true. Explícitamente no invoca SendAsync/CheckAuthorizationAsync — validación aislada del pipeline de emisión, correcta para esta fase.",
+                "tags": [
+                  [
+                    "d",
+                    "2026-07-09"
+                  ]
+                ]
+              }
+            ]
+          },
+          {
+            "title": "Recepción (SOAP)",
+            "tasks": [
+              {
+                "s": "d",
+                "n": "Cliente SOAP (RecepcionComprobantesOffline) conectado",
+                "d": "ISriReceptionClient/SriReceptionClient (adaptador, Application nunca conoce SriSoapClient directo) invocado desde ElectronicDocumentIssuer inmediatamente después de firmar y almacenar el XML.",
+                "tags": [
+                  [
+                    "d",
+                    "2026-07-11"
+                  ]
+                ]
+              },
+              {
+                "s": "d",
+                "n": "Manejo de fallos de red / timeout",
+                "d": "Try/catch de HttpRequestException/TaskCanceledException; retorna resultado tipado con Status=\"ERROR_CONEXION\" en vez de propagar la excepción. Corregido bug real de Content-Type en StringContent detectado en pruebas.",
+                "tags": [
+                  [
+                    "d",
+                    "2026-07-09"
+                  ]
+                ]
+              },
+              {
+                "s": "d",
+                "n": "Logging estructurado",
+                "d": "[LoggerMessage] partial methods para fallos HTTP y timeouts — sin logging ad-hoc.",
+                "tags": []
+              },
+              {
+                "s": "d",
+                "n": "Manejo de respuesta RECIBIDA / DEVUELTA",
+                "d": "RECIBIDA → ElectronicDocument.MarkReceived(); DEVUELTA (o cualquier estado no-RECIBIDA) → MarkRejected(motivo oficial del SRI). Verificado con tests de parsing sobre el SOAP real de la ficha técnica — pendiente confirmar contra el ambiente de pruebas real del SRI (XSD oficial bloqueante).",
+                "tags": [
+                  [
+                    "t",
+                    "5 tests parsing"
+                  ]
+                ]
+              },
+              {
+                "s": "d",
+                "n": "Fix: XmlException no capturada durante el parseo",
+                "d": "Un cuerpo de respuesta no-XML (proxy/WAF) hacía que XmlDocument.LoadXml lanzara sin capturar. Ahora retorna Status=\"ERROR_RESPUESTA_INVALIDA\" de forma controlada.",
+                "tags": [
+                  [
+                    "d",
+                    "2026-07-11"
+                  ]
+                ]
+              },
+              {
+                "s": "d",
+                "n": "Reintento de recepción",
+                "d": "ElectronicDocumentRetryJob (Hangfire, cada minuto) reintenta documentos varados en Signed/Received respetando ElectronicDocumentRetryPolicy. Guard [DisableConcurrentExecution] agregado en la auditoría de robustez (2026-07-11) — antes el job podía solaparse consigo mismo si una corrida excedía 60s.",
+                "tags": [
+                  [
+                    "d",
+                    "2026-07-11"
+                  ]
+                ]
+              },
+              {
+                "s": "n",
+                "n": "CorrelationId end-to-end",
+                "d": "HttpAuditContext.Source está hardcodeado a UserAction (sin distinguir job/sistema) y CorrelationId/RequestId no se truncan antes de persistir — deuda técnica documentada, no bloqueante para otras fases.",
+                "tags": [
+                  [
+                    "s",
+                    "Deuda técnica documentada"
+                  ]
+                ]
+              },
+              {
+                "s": "d",
+                "n": "Conexión real al flujo de negocio",
+                "d": "AuthorizeSalesInvoiceHandler dispara automáticamente el pipeline completo (incluida recepción) tras confirmar la autorización comercial — único punto de disparo, sin Hangfire/BackgroundService/Task.Run.",
+                "tags": [
+                  [
+                    "d",
+                    "2026-07-11"
+                  ]
+                ]
+              }
+            ]
+          },
+          {
+            "title": "Autorización (SOAP)",
+            "tasks": [
+              {
+                "s": "d",
+                "n": "Cliente SOAP (AutorizacionComprobantesOffline) conectado",
+                "d": "ISriAuthorizationClient/SriAuthorizationClient (mismo patrón adaptador que recepción) invocado automáticamente en cuanto el documento llega a Received.",
+                "tags": [
+                  [
+                    "d",
+                    "2026-07-11"
+                  ]
+                ]
+              },
+              {
+                "s": "d",
+                "n": "Transiciones de estado accionadas por el resultado real",
+                "d": "AUTORIZADO → MarkAuthorized (con número, fecha y XML autorizado); RECHAZADO → MarkRejected (verificado real: código 65 exacto — fecha de emisión extemporánea). TIMEOUT ya no deadlettera de inmediato (bug crítico corregido 2026-07-11) — se trata igual que cualquier consulta sin respuesta definitiva: el documento permanece en Received y solo ApplyDeadLetterIfExhaustedAsync decide el DeadLetter, tras agotar los 5 intentos de la política. Filtrado por lista blanca de estados terminales.",
+                "tags": [
+                  [
+                    "d",
+                    "2026-07-11"
+                  ],
+                  [
+                    "t",
+                    "9 tests de interpretación"
+                  ]
+                ]
+              },
+              {
+                "s": "d",
+                "n": "Polling de autorización (PPR → AUT/NAT)",
+                "d": "Backoff exponencial (2s/4s/8s/16s, 5 intentos) ya existía en SriSoapClient.CheckAuthorizationAsync (intra-llamada, sin Timer/BackgroundService) — ahora conectado end-to-end desde Ventas.",
+                "tags": [
+                  [
+                    "d",
+                    "2026-07-11"
+                  ]
+                ]
+              },
+              {
+                "s": "d",
+                "n": "Fix: XmlException no capturada durante el polling",
+                "d": "Mismo defecto que en recepción, dentro del loop de CheckAuthorizationAsync — corregido con el mismo patrón (ERROR_RESPUESTA_INVALIDA).",
+                "tags": [
+                  [
+                    "d",
+                    "2026-07-11"
+                  ]
+                ]
+              },
+              {
+                "s": "n",
+                "n": "WS de consulta de validez de comprobantes",
+                "d": "consultarEstadoAutorizacionComprobante (nuevo en ficha v2.31) — no implementado.",
+                "tags": []
+              },
+              {
+                "s": "n",
+                "n": "WS de consulta de factura comercial negociable",
+                "d": "consultarEstadoConfirmacionFacturaComercialNegociable (nuevo en ficha v2.31) — no implementado.",
+                "tags": []
+              },
+              {
+                "s": "n",
+                "n": "Reenvío tras NAT (no autorizado)",
+                "d": "La ficha exige reenviar con la misma clave de acceso y secuencial tras corregir el motivo del rechazo — sin implementar.",
+                "tags": []
+              }
+            ]
+          },
+          {
+            "title": "Estados",
+            "tasks": [
+              {
+                "s": "d",
+                "n": "Máquina de estados completa del ciclo electrónico",
+                "d": "Draft → XmlGenerated → Signed → Sent → Received → Authorized | Rejected | DeadLetter, más Cancelled desde Authorized. Guard clauses por estado de origen en las 6 transiciones nuevas (MarkSent/MarkReceived/MarkAuthorized/MarkRejected/MarkDeadLetter/MarkCancelled).",
+                "tags": [
+                  [
+                    "d",
+                    "2026-07-10"
+                  ],
+                  [
+                    "t",
+                    "19 tests"
+                  ],
+                  [
+                    "s",
+                    "FASE 10"
+                  ]
+                ]
+              },
+              {
+                "s": "d",
+                "n": "Estado electrónico desacoplado del estado comercial",
+                "d": "La responsabilidad de SalesInvoice termina al quedar autorizada comercialmente; todo el ciclo electrónico posterior vive exclusivamente en ElectronicDocument.",
+                "tags": [
+                  [
+                    "d",
+                    "2026-07-10"
+                  ]
+                ]
+              },
+              {
+                "s": "d",
+                "n": "Reflejo de PPR/AUT/NAT (estados oficiales SRI)",
+                "d": "El modelo interno (más granular que los 3 estados de la ficha SRI, Sección 5.12) ahora se escribe automáticamente desde la respuesta real de recepción y autorización del SRI vía el pipeline conectado a Ventas.",
+                "tags": [
+                  [
+                    "d",
+                    "2026-07-11"
+                  ]
+                ]
+              }
+            ]
+          },
+          {
+            "title": "Persistencia",
+            "tasks": [
+              {
+                "s": "d",
+                "n": "Persistencia atómica Draft→XmlGenerated→Signed",
+                "d": "MarkXmlGenerated()/MarkSigned() en memoria; una única escritura a BD tras confirmar almacenamiento — sin registros parciales ni rutas inválidas si falla el storage.",
+                "tags": []
+              },
+              {
+                "s": "d",
+                "n": "Almacenamiento de XML (borrador y firmado)",
+                "d": "Vía IFileStorage existente (sin storage nuevo). Compensación best-effort: si falla el XML firmado, borra el borrador ya escrito.",
+                "tags": []
+              },
+              {
+                "s": "d",
+                "n": "Migración de columnas legacy en SalesInvoice",
+                "d": "electronic_status, access_key, authorization_number, authorization_date eliminadas de sales_invoices — el estado electrónico ya no tiene ninguna representación fuera de ElectronicDocument.",
+                "tags": [
+                  [
+                    "d",
+                    "2026-07-10"
+                  ],
+                  [
+                    "s",
+                    "FASE 10"
+                  ]
+                ]
+              },
+              {
+                "s": "d",
+                "n": "Persistencia del XML autorizado",
+                "d": "ElectronicDocumentXmlStorageService.StoreAuthorizedAsync (mismo servicio, mismo IFileStorage — sin storage nuevo) persiste el XML devuelto por el SRI; nueva variante ElectronicDocumentXmlVariant.Authorized servible por el endpoint genérico del Monitor sin cambios de contrato. Best-effort: si el almacenamiento falla, el documento se autoriza igual (número/fecha son el dato oficial mínimo).",
+                "tags": [
+                  [
+                    "d",
+                    "2026-07-11"
+                  ]
+                ]
+              }
+            ]
+          },
+          {
+            "title": "Reintentos",
+            "tasks": [
+              {
+                "s": "d",
+                "n": "Campo RetryCount",
+                "d": "Incrementado correctamente en cada intento (MarkFailed, MarkRetryAttempted). Base real del backoff y del gate de agotamiento hacia DeadLetter.",
+                "tags": []
+              },
+              {
+                "s": "d",
+                "n": "Job de reintento (Hangfire) — ElectronicDocumentRetryJob",
+                "d": "Recurring job cada minuto, cross-tenant (JobExecutionContext por documento, sin HttpContext), aislamiento por documento (un fallo no detiene el lote). Guard de concurrencia agregado 2026-07-11.",
+                "tags": [
+                  [
+                    "d",
+                    "2026-07-11"
+                  ]
+                ]
+              },
+              {
+                "s": "d",
+                "n": "Backoff / scheduling de reintentos — ElectronicDocumentRetryPolicy",
+                "d": "5 intentos, backoff 1/2/4/8/16 minutos. Bug crítico corregido en la auditoría de robustez: un único TIMEOUT de consulta de autorización deadletereaba el documento de inmediato, sin agotar la política — violaba la propia regla del SRI (24h de tolerancia antes de reenviar). Corregido y validado en vivo: un documento real que había quedado en DeadLetter antes del fix se recuperó correctamente tras el reintento (Received).",
+                "tags": [
+                  [
+                    "d",
+                    "2026-07-11"
+                  ],
+                  [
+                    "s",
+                    "Crítico corregido + validado en vivo"
+                  ]
+                ]
+              },
+              {
+                "s": "d",
+                "n": "Dead-letter operable (cola de revisión manual)",
+                "d": "Monitor expone reintento manual (POST /{id}/retry) que reactiva desde DeadLetter y reintenta — sin necesidad de esperar el job automático.",
+                "tags": []
+              }
+            ]
+          },
+          {
+            "title": "Auditoría",
+            "tasks": [
+              {
+                "s": "d",
+                "n": "ElectronicDocumentAudit (Entity Audit)",
+                "d": "Mismo patrón FROZEN que PricingRuleAudit/ItemAudit — DocumentType/FromState/ToState, cero dato comercial.",
+                "tags": [
+                  [
+                    "d",
+                    "2026-07-09"
+                  ]
+                ]
+              },
+              {
+                "s": "d",
+                "n": "Auditoría de las 6 transiciones nuevas",
+                "d": "Sent/Received/Authorized/Rejected/DeadLetter/Cancelled integradas en ElectronicDocumentAuditHandler sin modificar la infraestructura base (Open/Closed respetado). Rejected/DeadLetter/Cancelled auditan también el motivo (Reason).",
+                "tags": [
+                  [
+                    "d",
+                    "2026-07-10"
+                  ],
+                  [
+                    "s",
+                    "FASE 10"
+                  ]
+                ]
+              },
+              {
+                "s": "d",
+                "n": "Snapshot de actor (AuditActor)",
+                "d": "UserId + UserName (obligatorio, snapshot histórico) + FullName/Email/RoleName, reutilizado sin cambios desde la infraestructura común FROZEN.",
+                "tags": []
+              },
+              {
+                "s": "n",
+                "n": "Process Audit para reintentos/envíos masivos",
+                "d": "Diseñado en AI-RULES/AUDIT-INFRASTRUCTURE.md como extensión futura (pseudo-agregado de proceso), no implementado — aplicaría cuando exista un job real de reintento.",
+                "tags": []
+              }
+            ]
+          },
+          {
+            "title": "Eventos",
+            "tasks": [
+              {
+                "s": "d",
+                "n": "Eventos de dominio por transición",
+                "d": "ElectronicDocumentSignedEvent (previo) + 6 eventos nuevos: Sent/Received/Authorized/Rejected/DeadLetter/Cancelled — cada uno con FromState/ToState y, cuando aplica, Reason.",
+                "tags": [
+                  [
+                    "d",
+                    "2026-07-10"
+                  ],
+                  [
+                    "s",
+                    "FASE 10"
+                  ]
+                ]
+              },
+              {
+                "s": "d",
+                "n": "Dispatch vía Outbox + MediatR",
+                "d": "Reutiliza el pipeline FROZEN (ADR-007/008) sin ninguna modificación — RaiseDomainEvent → SaveChangesAsync → Outbox + dispatch síncrono → handlers.",
+                "tags": []
+              }
+            ]
+          },
+          {
+            "title": "Descarga XML",
+            "tasks": [
+              {
+                "s": "d",
+                "n": "Visualización de XML en el Monitor (Draft/Signed/Authorized)",
+                "d": "El panel de detalle del Monitor de Documentos Electrónicos incluye vista de XML de solo lectura. Extendido para servir también el XML autorizado sin cambios de UI ni de contrato (mismo endpoint genérico, nueva variante de enum).",
+                "tags": [
+                  [
+                    "d",
+                    "2026-07-08"
+                  ]
+                ]
+              },
+              {
+                "s": "n",
+                "n": "Descarga de archivo XML (borrador/firmado/autorizado)",
+                "d": "No existe acción de descarga — el Monitor limita deliberadamente las acciones a Ver detalle / Actualizar / Copiar clave de acceso, sin exportar archivos.",
+                "tags": []
+              }
+            ]
+          },
+          {
+            "title": "RIDE (Representación Impresa del Documento Electrónico) — ADR-025",
+            "tasks": [
+              {
+                "s": "d",
+                "n": "Módulo Ride desacoplado (Domain/Application/Infrastructure)",
+                "d": "RidePipeline, RideDocumentService, RideCacheStrategy, RideContentHasher, RidePdfStorageService, IRideXmlParser/InvoiceRideXmlParser, IRideTemplate/DefaultInvoiceRideTemplate, IRideRenderer — arquitectura congelada por ADR-025 (docs/adr/ADR-025-ride-design-freeze.md). Solo Factura (codDoc 01) soportada hoy.",
+                "tags": [
+                  [
+                    "d",
+                    "2026-07-12"
+                  ],
+                  [
+                    "s",
+                    "ADR-025"
+                  ]
+                ]
+              },
+              {
+                "s": "d",
+                "n": "Renderizador visual con QuestPDF (QuestPdfRideRenderer + Sections)",
+                "d": "Encabezado en 3 cajas (logo, datos emisor, datos comprobante), comprador, tabla de detalle, impuestos/totales, formas de pago, información adicional, QR + clave de acceso, pie legal. Rediseñado en varias rondas comparando byte a byte contra facturas reales del propio sistema — orden de filas de Totales (SUBTOTAL/IVA por tarifa, ICE, IRBPNR, PROPINA, VALOR TOTAL) fijo y sin ocultar filas en cero.",
+                "tags": [
+                  [
+                    "d",
+                    "2026-07-13"
+                  ]
+                ]
+              },
+              {
+                "s": "d",
+                "n": "Building Block Codes — QR (IQrCodeGenerator/QrCodeGenerator)",
+                "d": "Bloque transversal reutilizable (ERP.Application/Codes, ERP.Infrastructure/Codes) vía QRCoder. Ride consume únicamente IRideQrCodeGenerator (adaptador delgado) — nunca QRCoder directo.",
+                "tags": [
+                  [
+                    "s",
+                    "OCP"
+                  ]
+                ]
+              },
+              {
+                "s": "d",
+                "n": "Building Block Codes — Código de barras Code128 (IBarcodeGenerator)",
+                "d": "Extensión del mismo bloque (ERP.Application/Codes/Barcodes, ERP.Infrastructure/Codes/Barcodes) vía ZXing.Net + SkiaSharp, sin System.Drawing. Ride consume únicamente IRideBarcodeGenerator. Barcode se ajusta al ancho completo del panel (FitWidth) tras corrección de un recorte visual real.",
+                "tags": [
+                  [
+                    "d",
+                    "2026-07-13"
+                  ]
+                ]
+              },
+              {
+                "s": "d",
+                "n": "Endpoint de contenido — GET /api/v1/ride/content",
+                "d": "Único endpoint nuevo autorizado sobre RideController (resto de la arquitectura permanece frozen) para servir los bytes del PDF ya generado al frontend de Ventas.",
+                "tags": [
+                  [
+                    "a",
+                    "1 endpoint"
+                  ]
+                ]
+              },
+              {
+                "s": "d",
+                "n": "Integración frontend en Ventas (Ver / Descargar / Regenerar RIDE)",
+                "d": "rideService.ts, useRideActions hook, botones en SalesPage. Permisos dedicados ride.view/ride.regenerate en Access Profiles.",
+                "tags": []
+              },
+              {
+                "s": "d",
+                "n": "Architecture gates (RideCodesBoundaryTests)",
+                "d": "NetArchTest: Ride nunca depende de QRCoder/ZXing/SkiaSharp directamente ni de la implementación concreta de Codes — solo de las abstracciones IRideQrCodeGenerator/IRideBarcodeGenerator.",
+                "tags": [
+                  [
+                    "t",
+                    "4 gates"
+                  ]
+                ]
+              },
+              {
+                "s": "d",
+                "n": "Golden file tests (comparación byte a byte)",
+                "d": "6 escenarios (estándar, multilínea, IVA mixto, ICE, información adicional, pagos múltiples) contra PDF de referencia aprobado, normalizando CreationDate/ModDate. Regenerados y reaprobados en cada ronda de rediseño visual.",
+                "tags": [
+                  [
+                    "t",
+                    "6 golden files"
+                  ]
+                ]
+              },
+              {
+                "s": "p",
+                "n": "Cobertura visual completa vs. formato oficial",
+                "d": "Fidelidad visual validada contra múltiples facturas reales propias en varias rondas de comparación — sin acceso a herramienta de render de imagen en este entorno, la validación pixel-perfect final depende de inspección visual del usuario tras cada regeneración.",
+                "tags": []
+              },
+              {
+                "s": "n",
+                "n": "Esquinas redondeadas en cajas del RIDE",
+                "d": "Solicitado por el usuario; confirmado que QuestPDF 2025.4.0 (versión instalada) no expone ninguna API de corner-radius — requeriría cambiar de motor de renderizado PDF, fuera del alcance de esta fase.",
+                "tags": []
+              },
+              {
+                "s": "n",
+                "n": "RIDE de otros tipos de comprobante (NC/ND/Retención/Guía/Liquidación)",
+                "d": "Solo Factura tiene layout/renderer — el resto de tipos documentales no tiene RIDE (consistente con que tampoco tienen provider/builder XML en ElectronicDocuments).",
+                "tags": []
+              },
+              {
+                "s": "d",
+                "n": "Auditoría final de hardening y code quality (2026-07-14)",
+                "d": "Auditoría de cierre sobre Ride + Codes: sin código muerto, sin violaciones de Clean Architecture, sin hardcodes injustificados. 2 duplicaciones reales corregidas: extensión RideBoxBorderExtensions.RideBox() reemplaza 13 repeticiones literales de .Border(1).BorderColor(Colors.Black) en las 7 Sections; helpers CreateRenderer()/CreateBarcodeBytes()/CreateQrBytes() eliminan construcción repetida en QuestPdfRideRendererTests/RideRenderingSectionsTests. 3 usings sin uso eliminados tras el refactor. Golden files reverificados byte a byte (sin cambio visual). Veredicto: módulo cerrado para producción.",
+                "tags": [
+                  [
+                    "d",
+                    "2026-07-14"
+                  ],
+                  [
+                    "t",
+                    "74/74 Ride+Codes, 48/48 Architecture"
+                  ]
+                ]
+              }
+            ]
+          },
+          {
+            "title": "Email",
+            "tasks": [
+              {
+                "s": "n",
+                "n": "Envío de comprobante al receptor",
+                "d": "Obligación del emisor según la ficha SRI (Sección 4.7) — sin implementación de envío de correo.",
+                "tags": []
+              },
+              {
+                "s": "n",
+                "n": "Reenvío manual",
+                "d": "No implementado — depende de que exista el envío inicial.",
+                "tags": []
+              },
+              {
+                "s": "n",
+                "n": "Plantillas de notificación",
+                "d": "No implementado.",
+                "tags": []
+              }
+            ]
+          },
+          {
+            "title": "Anulación",
+            "tasks": [
+              {
+                "s": "d",
+                "n": "Transición de dominio MarkCancelled",
+                "d": "Authorized → Cancelled con motivo obligatorio, evento de dominio y auditoría — solo a nivel de modelo de dominio.",
+                "tags": [
+                  [
+                    "d",
+                    "2026-07-10"
+                  ],
+                  [
+                    "s",
+                    "FASE 10"
+                  ]
+                ]
+              },
+              {
+                "s": "n",
+                "n": "Proceso real de anulación ante el SRI",
+                "d": "El estado \"PENDIENTE DE ANULAR\"/\"ANULADO\" del WS de consulta de validez (Sección 8.4 de la ficha) no está conectado a ningún flujo — no existe solicitud de anulación real.",
+                "tags": []
+              },
+              {
+                "s": "n",
+                "n": "Acción de anulación en UI",
+                "d": "El Monitor excluye deliberadamente \"cancelar\"/\"anular\" de sus acciones permitidas (solo monitoreo de solo lectura).",
+                "tags": []
+              }
+            ]
+          },
+          {
+            "title": "Contingencia",
+            "tasks": [
+              {
+                "s": "f",
+                "n": "No aplica — esquema offline sin contingencia",
+                "d": "La propia ficha técnica del SRI (Tabla 2, nota al pie) establece que \"para el método de autorización offline, solo existe el tipo de emisión normal\" — no hay claves de uso complementario ni contingencia en este esquema. No es una funcionalidad pendiente, es una exclusión del propio estándar SRI para el modo elegido por el proyecto.",
+                "tags": [
+                  [
+                    "s",
+                    "Confirmado en auditoría documental"
+                  ]
+                ]
+              }
+            ]
+          },
+          {
+            "title": "Versionado",
+            "tasks": [
+              {
+                "s": "d",
+                "n": "Campos de versión en el agregado",
+                "d": "XmlVersion/SchemaVersion existen en ElectronicDocument y se completan al generar el XML (hoy fijo en \"1.1.0\" para Factura).",
+                "tags": []
+              },
+              {
+                "s": "p",
+                "n": "Soporte multi-versión de un mismo comprobante",
+                "d": "La ficha define 1.0.0/1.1.0 (decimales) y 2.0.0/2.1.0 (rubros de terceros, sustitutiva de guía) para Factura — el ERP solo emite contra 1.1.0, sin selección de versión.",
+                "tags": []
+              },
+              {
+                "s": "p",
+                "n": "Versionado de recursos XSD embebidos",
+                "d": "La infraestructura de recursos embebidos ya está versionada por carpeta (ElectronicDocuments/Xsd/Invoice/), pero solo contiene el placeholder — no el XSD oficial.",
+                "tags": []
+              }
+            ]
+          },
+          {
+            "title": "Seguridad",
+            "tasks": [
+              {
+                "s": "d",
+                "n": "Certificados P12 encriptados at rest",
+                "d": "Passwords de certificados encriptados con Data Protection API (ver Etapa 1 — Autenticación &amp; Seguridad).",
+                "tags": []
+              },
+              {
+                "s": "d",
+                "n": "Permisos dedicados del Monitor, separados de configuración SRI",
+                "d": "electronic-documents.view / electronic-documents.detail — permisos nuevos e independientes de los permisos de configuración de Facturación Electrónica.",
+                "tags": [
+                  [
+                    "d",
+                    "2026-07-08"
+                  ],
+                  [
+                    "s",
+                    "FASE 8"
+                  ]
+                ]
+              },
+              {
+                "s": "d",
+                "n": "Configuración de certificado/contraseña sin hardcode",
+                "d": "Resuelta siempre desde SriSettings, nunca embebida en código (ver Firma).",
+                "tags": []
+              },
+              {
+                "s": "n",
+                "n": "Rotación/expiración de certificado monitoreada",
+                "d": "Sin alerta de vencimiento de certificado digital — no implementado.",
+                "tags": []
+              }
+            ]
+          },
+          {
+            "title": "Monitoreo",
+            "tasks": [
+              {
+                "s": "d",
+                "n": "Dashboard de conteos por estado",
+                "d": "Pendientes / Firmados / Enviados / Autorizados / Rechazados / Con error, con promedio de minutos hasta autorización y conteo de pendientes de reintento.",
+                "tags": [
+                  [
+                    "d",
+                    "2026-07-08"
+                  ],
+                  [
+                    "s",
+                    "FASE 8"
+                  ]
+                ]
+              },
+              {
+                "s": "d",
+                "n": "Tabla paginada con filtros",
+                "d": "Filtros por fecha, empresa, estado, tipo de documento y texto libre.",
+                "tags": []
+              },
+              {
+                "s": "d",
+                "n": "Timeline de eventos por documento",
+                "d": "Construido a partir de Entity Audit — se beneficia automáticamente de los 6 eventos nuevos de Fase 10 sin cambios en el Monitor.",
+                "tags": []
+              },
+              {
+                "s": "d",
+                "n": "Logging estructurado del cliente SOAP",
+                "d": "[LoggerMessage] para fallos de conexión y timeout (ver Recepción).",
+                "tags": []
+              },
+              {
+                "s": "p",
+                "n": "Health check dedicado / métricas formales",
+                "d": "Sin IHealthCheck en /health/* para conectividad SRI ni contadores/histogramas de tasa de autorización o latencia — cubierto operativamente por el Monitor y el dashboard SQL-agregado, documentado como deuda aceptada conscientemente en ADR-023 (no bloqueante).",
+                "tags": [
+                  [
+                    "s",
+                    "Deuda aceptada — ADR-023"
+                  ]
+                ]
+              },
+              {
+                "s": "n",
+                "n": "Trazabilidad end-to-end por CorrelationId",
+                "d": "Sin un CorrelationId propagado entre recepción de la petición HTTP, el envío SOAP y la auditoría — deuda técnica documentada.",
+                "tags": []
+              }
+            ]
+          },
+          {
+            "title": "Cierre v1.0 — Estabilización y Producción (2026-07-11)",
+            "tasks": [
+              {
+                "s": "d",
+                "n": "Auditoría de robustez (Fase H1 + H2)",
+                "d": "2 críticos + 5 altos confirmados con evidencia y reproducción (test que falla antes del fix, pasa después), todos corregidos: (1) TIMEOUT deadleterreaba de inmediato, violando la regla SRI de 24h; (2) migración de certificado sin backfill posible (evaluado, sin fix necesario — dev-only, formato incompatible); (3) pipeline sin try/catch dejaba documentos sin MarkFailed ante una excepción real; (4) ElectronicDocumentRetryJob sin guard de concurrencia; (5) IDOR de Company Scope en retry manual (usuario de una empresa podía reintentar el documento de otra empresa del mismo tenant); (6) excepción 503 en vez de 409 en carrera de registro concurrente (TOCTOU). 1 hallazgo (A5, migración de catálogo de ambiente) reevaluado y descartado tras verificación — no había columna company.environment real.",
+                "tags": [
+                  [
+                    "d",
+                    "2026-07-11"
+                  ],
+                  [
+                    "t",
+                    "+15 tests de reproducción"
+                  ]
+                ]
+              },
+              {
+                "s": "d",
+                "n": "Estabilización completa de la suite (12 tests preexistentes rotos → 0)",
+                "d": "4 tests con conteo de SaveChangesAsync desalineado (checkpoint de Draft no contado), 2 tests de ElectronicInvoicingStatus con environment 1/2 invertido (test obsoleto, no el código), y 4 tests de EmbeddedXmlSchemaProviderTests con aserciones desactualizadas que ocultaban el bug real de los 2 XSD con XML 1.1 malformado — cada caso documentado con el marco ¿código correcto? ¿test obsoleto? ¿regresión? antes de tocar nada.",
+                "tags": [
+                  [
+                    "d",
+                    "2026-07-11"
+                  ],
+                  [
+                    "t",
+                    "156/156 en verde"
+                  ]
+                ]
+              },
+              {
+                "s": "d",
+                "n": "Validación de cumplimiento del Anexo Técnico SRI (10 categorías)",
+                "d": "Verificado texto por texto contra el PDF oficial (docs/FICHA TECNICA COMPROBANTES ELECTRONICOS ESQUEMA OFFLINE Versio232.pdf, extraído con pdftotext — no memoria): XML, Firma XAdES-BES, Clave de Acceso (algoritmo módulo 11 reproducido bit a bit contra el ejemplo oficial), XSD, Recepción, Autorización, Código 70, Errores, Estados, Catálogos. 9/10 categorías cumplían sin cambios. Catálogo sri_error_code reescrito: 6 códigos fabricados eliminados (72/73/90/102/300/301, sin equivalente en la Ficha Técnica), 33 códigos reales verificados uno por uno contra §11.",
+                "tags": [
+                  [
+                    "d",
+                    "2026-07-11"
+                  ],
+                  [
+                    "s",
+                    "ADR-023"
+                  ]
+                ]
+              },
+              {
+                "s": "d",
+                "n": "Pruebas reales contra el ambiente de Pruebas del SRI",
+                "d": "8 comprobantes reales emitidos vía la aplicación real (login → factura → autorizar, sin bypass del pipeline) contra celcer.sri.gob.ec con certificado real (RUC 0302126842001): factura válida, cliente Cédula, RUC, Consumidor Final, 3 tarifas IVA reales (0%/8%/13%), ICE real (2 impuestos calculados correctamente en el mismo detalle), descuento, y un rechazo real logrado intencionalmente (fecha de emisión futura) con motivo exacto \"[65] FECHA EMISIÓN EXTEMPORANEA\" — coincidente con el catálogo corregido en el paso anterior, cerrando el círculo evidencia-documento-comportamiento. Certificado vencido, timeout y código 70 (clave repetida) no reproducibles en vivo sin comprometer el sistema real — documentados con la cobertura de test unitario ya existente como evidencia sustituta.",
+                "tags": [
+                  [
+                    "d",
+                    "2026-07-11"
+                  ],
+                  [
+                    "s",
+                    "8 documentos reales + 1 rechazo real"
+                  ]
+                ]
+              },
+              {
+                "s": "d",
+                "n": "Cierre oficial — ADR-023",
+                "d": "ElectronicDocuments v1.0 declarado FROZEN. Documento de cierre completo (responsabilidades, límites, dependencias, interfaces públicas, estados, pipeline, eventos, restricciones, cambios permitidos/prohibidos) en docs/adr/ADR-023-electronic-documents-v1-closure.md, registrado en CLAUDE.md y docs/STATUS.md. A partir de ahora, cualquier cambio al núcleo requiere una de 4 causas: cambio obligatorio del SRI, bug demostrado, vulnerabilidad de seguridad, o rendimiento crítico — nunca \"mejora\" o \"refactor\".",
+                "tags": [
+                  [
+                    "d",
+                    "2026-07-11"
+                  ],
+                  [
+                    "s",
+                    "FROZEN"
+                  ]
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Retenciones SRI",
+        "icon": "&#x1F4DD;",
+        "desc": "Retenciones emitidas y recibidas (IVA + IR)",
+        "groups": [
+          {
+            "title": "Estado",
+            "tasks": [
+              {
+                "s": "d",
+                "n": "Backend completo",
+                "d": "CalculateRetention, IssueWithholding, GetWithholding, CancelWithholding. Issued + Received + Detail.",
+                "tags": []
+              },
+              {
+                "s": "p",
+                "n": "Frontend: UI placeholder",
+                "d": "Páginas placeholder. Cálculo integrado en compras pero UI dedicada incompleta.",
+                "tags": []
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Guía de Remisión",
+        "icon": "&#x1F69A;",
+        "desc": "Documento de transporte para mercadería",
+        "groups": [
+          {
+            "title": "Estado",
+            "tasks": [
+              {
+                "s": "n",
+                "n": "Módulo logística — placeholder",
+                "d": "Directorio existe con placeholder. Sin domain, application ni endpoints.",
+                "tags": []
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Notas de Crédito / Débito",
+        "icon": "&#x1F4C3;",
+        "desc": "Documentos complementarios fiscales (tipo 04 y 05 SRI)",
+        "groups": [
+          {
+            "title": "Estado",
+            "tasks": [
+              {
+                "s": "d",
+                "n": "SupplierNote (notas proveedor)",
+                "d": "SupplierNote + Detail implementado en Purchases. Parseo XML SRI.",
+                "tags": []
+              },
+              {
+                "s": "p",
+                "n": "Notas de crédito ventas",
+                "d": "DocTypeCode 04 configurado. DocumentSequence soporta múltiples tipos. Flujo NC ventas pendiente.",
+                "tags": []
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "stage": "Estándares",
+    "stageIcon": "&#x1F4CF;",
+    "phases": [
+      {
+        "name": "Precisión Numérica",
+        "icon": "&#x1F522;",
+        "desc": "Montos, cantidades, precios, porcentajes — inmutable",
+        "groups": [
+          {
+            "title": "Compliance 100% (73/73 columnas)",
+            "tasks": [
+              {
+                "s": "f",
+                "n": "PostgreSQL: numeric(18,2)/(18,4)/(18,6)/(5,2)",
+                "d": "Montos 18,2. Cantidades 18,4. Precios 18,6. Porcentajes 5,2. Gate: toda nueva columna requiere justificación.",
+                "tags": []
+              },
+              {
+                "s": "f",
+                "n": "Frontend: ZhDecimalInput obligatorio",
+                "d": "Solo punto (.) — coma prohibida. sanitizeDecimal(), parseDecimal(), formatMoney(). getDecimalConfig() por empresa.",
+                "tags": []
+              },
+              {
+                "s": "f",
+                "n": "Backend: InvariantCulture + decimal puro",
+                "d": "Solo decimal/int/long en Domain. Prohibido: toLocaleString(), Intl.NumberFormat(), decimal.Parse sin InvariantCulture.",
+                "tags": []
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Fechas y Horas",
+        "icon": "&#x1F4C5;",
+        "desc": "dd/MM/yyyy, UTC, sin timezone offsets — inmutable",
+        "groups": [
+          {
+            "title": "Compliance",
+            "tasks": [
+              {
+                "s": "f",
+                "n": "Frontend: formatDate/DateTime/DateTimeSeconds",
+                "d": "Fuente única: dateFormatters.ts. dd/MM/yyyy. Usa getUTC*(). Prohibido: toLocaleDateString().",
+                "tags": []
+              },
+              {
+                "s": "f",
+                "n": "Backend: DateTime.UtcNow + timestamptz",
+                "d": "Prohibido DateTime.Now. DateOnly para fechas sin hora. ISO 8601 en API. timestamptz PostgreSQL.",
+                "tags": []
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Validación de Formularios",
+        "icon": "&#x2705;",
+        "desc": "RHF + Zod (frontend) + FluentValidation (backend)",
+        "groups": [
+          {
+            "title": "Gate F-V1..F-V8 / B-V1..B-V5",
+            "tasks": [
+              {
+                "s": "f",
+                "n": "Frontend: RHF + Zod + applyServerErrors",
+                "d": "Todos los formularios usan RHF + zodResolver + FormProvider. Errores 422 exclusivamente con applyServerErrors&lt;T&gt;(). Prohibido: setError() manual.",
+                "tags": []
+              },
+              {
+                "s": "f",
+                "n": "Backend: FluentValidation → 422",
+                "d": "FluentValidation fuente de verdad. ExceptionMiddleware → HTTP 422 con mapa campo → [mensajes] camelCase. Prohibido: texto plano.",
+                "tags": []
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Infraestructura de Mensajes Visuales",
+        "icon": "&#x1F4E8;",
+        "desc": "Toast, alerts, confirm — API pública message.*, store encapsulado",
+        "groups": [
+          {
+            "title": "Arquitectura (CLOSED 2026-06-29)",
+            "tasks": [
+              {
+                "s": "f",
+                "n": "API pública message.* (fachada única)",
+                "d": "message.success/error/warning/info/confirm/prompt. Importar desde lib/messages. Store interno encapsulado en _internal/.",
+                "tags": [
+                  [
+                    "d",
+                    "2026-06-29"
+                  ]
+                ]
+              },
+              {
+                "s": "f",
+                "n": "Cola FIFO con deduplicación",
+                "d": "Max 3 visibles, política reset-timer, FIFO al exceder. Configuración en messageDefaults.ts.",
+                "tags": []
+              },
+              {
+                "s": "f",
+                "n": "Catálogo MSG reutilizable",
+                "d": "12 mensajes comunes: MSG.created, MSG.updated, MSG.deleted, MSG.unexpectedError, etc.",
+                "tags": []
+              },
+              {
+                "s": "f",
+                "n": "ZHToast + ZHGlobalDialogs (montaje global)",
+                "d": "AppLayout monta ambos. ZHToast renderiza cola. ZHGlobalDialogs renderiza confirm/prompt Promise-based.",
+                "tags": []
+              },
+              {
+                "s": "f",
+                "n": "ESLint no-restricted-imports",
+                "d": "Bloquea import de _internal/messageStore desde módulos. Regla automática.",
+                "tags": []
+              },
+              {
+                "s": "f",
+                "n": "22 tests Vitest (cola, dedup, confirm, prompt, stress)",
+                "d": "messageStore.test.ts: queue FIFO, dedup reset-timer, confirm/cancel, prompt value/cancel, 100-msg stress.",
+                "tags": [
+                  [
+                    "t",
+                    "22 tests"
+                  ]
+                ]
+              },
+              {
+                "s": "f",
+                "n": "ADR-018 + AI-RULES/VISUAL-MESSAGES.md",
+                "d": "Decisión arquitectónica documentada. Gates VM-1 a VM-9. Checklist de auditoría.",
+                "tags": []
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Infraestructura de Modales",
+        "icon": "&#x1F5D4;",
+        "desc": "ZHModal componente único con tamaños, scroll, ESC, animations",
+        "groups": [
+          {
+            "title": "Arquitectura (CLOSED 2026-06-29)",
+            "tasks": [
+              {
+                "s": "f",
+                "n": "ZHModal componente base",
+                "d": "Props: open, onClose, size, title, subtitle, children, footer. Body scroll lock, ESC, backdrop click, focus auto, animaciones entrada.",
+                "tags": [
+                  [
+                    "d",
+                    "2026-06-29"
+                  ]
+                ]
+              },
+              {
+                "s": "f",
+                "n": "Sistema de tamaños (sm/md/lg/xl/2xl/full)",
+                "d": "sm=420px, md=520px, lg=720px, xl=900px, 2xl=1080px, full=100vw-32px. Responsive @media ≤640px.",
+                "tags": []
+              },
+              {
+                "s": "f",
+                "n": "ZHConfirmModal migrado a zh-modal CSS",
+                "d": "Eliminado prd-modal CSS. ZHConfirmModal ahora usa zh-modal-overlay + zh-modal--sm + zh-confirm-*.",
+                "tags": []
+              },
+              {
+                "s": "f",
+                "n": "15 modales migrados a ZHModal",
+                "d": "Carriers, 3 Sales, Branches, Establishments, EmissionPoints, CatalogForm, Variants, TreeEditor, CompanySettings, BPDetail(2), Customers, Suppliers(2), Profiles.",
+                "tags": []
+              },
+              {
+                "s": "f",
+                "n": "Eliminado ZHModalHeader + prd-modal + pg-modal--*",
+                "d": "Componente muerto y CSS legacy eliminados. Cero implementaciones paralelas.",
+                "tags": []
+              },
+              {
+                "s": "f",
+                "n": "AI-RULES/MODAL-STANDARD.md",
+                "d": "Gates MOD-1 a MOD-6. Tamaños oficiales. Prohibiciones documentadas.",
+                "tags": []
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Infraestructura de Secuencias Documentales",
+        "icon": "&#x1F522;",
+        "desc": "Numeración SRI atómica por punto de emisión — ADR-019",
+        "groups": [
+          {
+            "title": "Arquitectura (CLOSED 2026-06-29)",
+            "tasks": [
+              {
+                "s": "f",
+                "n": "CaptureNextAsync() — única API autorizada",
+                "d": "advisory lock + transacción ReadCommitted. Atomicidad garantizada. Crea fila on-demand si no existe. Prohibido: acceso directo a document_sequence fuera del repositorio.",
+                "tags": [
+                  [
+                    "d",
+                    "2026-06-29"
+                  ]
+                ]
+              },
+              {
+                "s": "f",
+                "n": "UNIQUE(tenant_id,company_id,emission_point_id,doc_type_code)",
+                "d": "Constraint + CHECK(current_seq>=1). Garantía de unicidad en base de datos.",
+                "tags": []
+              },
+              {
+                "s": "f",
+                "n": "4 gates CI-bloqueantes (SEQ-GATE-01..04)",
+                "d": "Ningún módulo puede llamar a CaptureAndIncrement() directamente ni emitir SQL raw sobre document_sequence.",
+                "tags": [
+                  [
+                    "t",
+                    "8/8 tests"
+                  ]
+                ]
+              },
+              {
+                "s": "f",
+                "n": "Suite concurrente PostgreSQL real",
+                "d": "500 requests simultáneas, 0 duplicados. Testcontainers. DocumentSequenceRepository FROZEN.",
+                "tags": []
+              },
+              {
+                "s": "f",
+                "n": "ADR-019 documentado",
+                "d": "docs/adr/ADR-019-document-sequence-infrastructure.md. Componentes congelados declarados.",
+                "tags": []
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Infraestructura de Entity Tracking",
+        "icon": "&#x1F50D;",
+        "desc": "EF Core Change Tracking fix — ADR-020",
+        "groups": [
+          {
+            "title": "Arquitectura (CLOSED 2026-06-30)",
+            "tasks": [
+              {
+                "s": "f",
+                "n": "NewChildEntityTrackingInterceptor (ISaveChangesInterceptor)",
+                "d": "Corrige hijos nuevos mal clasificados como Modified por fixup de navegación sobre agregado ya trackeado. Regla: entidad Modified sin diferencia real de valores + nunca materializada por query → Added.",
+                "tags": [
+                  [
+                    "d",
+                    "2026-06-30"
+                  ]
+                ]
+              },
+              {
+                "s": "f",
+                "n": "ErpDbContext.WasTrackedFromQuery",
+                "d": "Señal booleana vía ChangeTracker.Tracked. Fail-fast (InvalidOperationException) ante combinación anómala: Modified sin diff real PERO sí materializada. No adivina ni autocorrige.",
+                "tags": []
+              },
+              {
+                "s": "f",
+                "n": "ATT-GATE-01 CI-bloqueante",
+                "d": "Lista blanca cerrada: solo PaymentTermRepository, PaymentMethodRepository, SriSettingsRepository pueden usar Attach()/Update() — catálogos sin colecciones hijas.",
+                "tags": [
+                  [
+                    "t",
+                    "6/6 tests"
+                  ]
+                ]
+              },
+              {
+                "s": "f",
+                "n": "Regla permanente: no Attach() sin query previa",
+                "d": "Ningún agregado se reatacha sin haber sido cargado por una query del mismo DbContext activo. Violación → excepción explícita.",
+                "tags": []
+              },
+              {
+                "s": "f",
+                "n": "ADR-020 documentado",
+                "d": "docs/adr/ADR-020-entity-tracking-infrastructure.md. Componentes congelados declarados.",
+                "tags": []
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Infraestructura Tributaria",
+        "icon": "&#x1F4B0;",
+        "desc": "Configuración tributaria por ítem — fuente única de verdad",
+        "groups": [
+          {
+            "title": "Arquitectura (CLOSED 2026-07-01)",
+            "tasks": [
+              {
+                "s": "f",
+                "n": "Fuente de verdad: ítem, nunca documento",
+                "d": "item.TaxConfig.SaleVatCode → SalesLineInput.VatCode. item.TaxConfig.ExciseTaxCode → SalesLineInput.IceCode. Los documentos transaccionales solo consumen.",
+                "tags": [
+                  [
+                    "d",
+                    "2026-07-01"
+                  ]
+                ]
+              },
+              {
+                "s": "f",
+                "n": "Prohibición de fallback tributario",
+                "d": "Eliminado vatCode ?? purchaseVatCode ?? '10'. vatCode vacío = error de configuración del maestro, nunca valor por defecto. Zod .min(1) + backend 422.",
+                "tags": []
+              },
+              {
+                "s": "f",
+                "n": "Motor único de cálculo backend",
+                "d": "ISriTaxResolver + SalesTaxHelper.ResolveTaxesAsync(). Catálogos oficiales sri_vat_rates / sri_ice_rates. Prohibido: listas hardcodeadas, reglas locales.",
+                "tags": []
+              },
+              {
+                "s": "f",
+                "n": "Motor único de cálculo frontend",
+                "d": "salesCalc.ts vía vatRatesMap + iceRatesMap de catálogo (sriLookupService). IVA base = net + ice (normativa SRI Ecuador). Preview best-effort, no fiscal.",
+                "tags": []
+              },
+              {
+                "s": "f",
+                "n": "Catálogos SRI únicos",
+                "d": "GET /api/v1/catalog/sri-vat-rates + /sri-ice-rates. Prohibido catálogos reconstruidos manualmente en ninguna capa.",
+                "tags": [
+                  [
+                    "a",
+                    "2 endpoints"
+                  ]
+                ]
+              },
+              {
+                "s": "f",
+                "n": "FluentValidation + Zod obligatoriedad",
+                "d": "VatCode.NotEmpty() backend. Zod vatCode z.string().min(1) frontend. Mensaje: 'El producto no tiene código IVA de venta configurado. Verifique el maestro de productos.'",
+                "tags": []
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Estandarización UI / Alineación",
+        "icon": "&#x1F3A8;",
+        "desc": "Checkboxes, inline styles, CSS compartido",
+        "groups": [
+          {
+            "title": "Limpieza completada",
+            "tasks": [
+              {
+                "s": "d",
+                "n": "Custom checkbox CSS (zh-checkbox-label)",
+                "d": "appearance:none, 18px, checkmark blanco, focus ring, disabled state, zh-checkbox-grid responsive.",
+                "tags": []
+              },
+              {
+                "s": "d",
+                "n": "17 ZHField label=\"\" eliminados",
+                "d": "TaxConfigTab(3), StockSaleTab(10), FiscalSettingsSection(4). Checkboxes alineados directamente.",
+                "tags": []
+              },
+              {
+                "s": "d",
+                "n": "CajaPage: 43 inline styles → CSS",
+                "d": "CajaPage.css con 25 clases cj-*. Zero inline styles.",
+                "tags": []
+              },
+              {
+                "s": "d",
+                "n": "4 CRUD pages estandarizadas",
+                "d": "PriceListsPage, PaymentTermsPage, CreditTermsPage, PaymentMethodsPage. Clases prd-crud-* compartidas.",
+                "tags": []
+              },
+              {
+                "s": "d",
+                "n": "398 → 242 inline styles (-39%)",
+                "d": "Restantes son Sales/Purchases POS (intencionalmente inline) y valores dinámicos (colores, transforms).",
+                "tags": []
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Design System — Unificación y Consolidación",
+        "icon": "&#x1F3A8;",
+        "desc": "Tipografía/tokens unificados (Fase 2), auditoría de duplicados (Fase 3A) y eliminación de sistemas paralelos (Fase 3B)",
+        "groups": [
+          {
+            "title": "Fase 2 — Tipografía, densidad y tokens",
+            "tasks": [
+              {
+                "s": "d",
+                "n": "Escala tipográfica única (H1–H3, body, label, help, badge)",
+                "d": "design-tokens.css: H1 20/600/28 (CRUD), H2 18/600/26, H3 16/600/24, body 14/400/22, label 14/600, help 12/400, header de tabla 12/600, badge 12/500. 24px+ reservado exclusivamente a Login/First Run/Onboarding/Wizards/Empty States.",
+                "tags": [
+                  [
+                    "d",
+                    "2026-07-08"
+                  ]
+                ]
+              },
+              {
+                "s": "d",
+                "n": "Padding único de tarjetas y formularios",
+                "d": "card-body/zh-card-section/pg-section-body unificados a var(--space-5). zh-form-body y zh-modal-body con el mismo padding compuesto.",
+                "tags": []
+              },
+              {
+                "s": "d",
+                "n": "~230 colores hardcodeados eliminados (16 archivos)",
+                "d": "catalog-wizard.css, masterdata-pages.css, sales-invoice.css, sales-product-card.css, ProfilesPage.css, sri-config-page.css, DashboardPage.css y otros — todo migrado a var(--color-*). Cero hex fuera de design-tokens.css verificado por grep.",
+                "tags": [
+                  [
+                    "e",
+                    "16 archivos"
+                  ]
+                ]
+              },
+              {
+                "s": "d",
+                "n": "Card.tsx consolidado en ZHCard",
+                "d": "Componente duplicado (mismo output, mismas clases) eliminado; 5 consumidores migrados a ZHCard.",
+                "tags": []
+              }
+            ]
+          },
+          {
+            "title": "Fase 3A — Auditoría de sistemas paralelos",
+            "tasks": [
+              {
+                "s": "d",
+                "n": "Hallazgo: ZHBtn vs botón crudo",
+                "d": "122 usos de &lt;ZHBtn&gt; vs 55 &lt;button className=\"zh-btn...\"&gt; en 18 archivos. Verificado con git blame: el bypass se escribió semanas después de que ZHBtn ya existiera — indisciplina, no limitación del componente.",
+                "tags": [
+                  [
+                    "d",
+                    "2026-07-08"
+                  ]
+                ]
+              },
+              {
+                "s": "d",
+                "n": "Hallazgo: ZHField vs .pf-field (causa raíz real)",
+                "d": ".pf-field nació en 'compra v1' para grillas densas de líneas de factura (label 11px uppercase) — vacío funcional real de ZHField (sin variante de densidad), no solo copy-paste. Propagado luego a Sales/Caja/Kardex/PaymentTerms sin verificar si lo necesitaban.",
+                "tags": []
+              },
+              {
+                "s": "d",
+                "n": "Hallazgo: Badge vs badge crudo (peor caso)",
+                "d": "&lt;Badge&gt; usado 1 sola vez contra 30 usos de className=\"badge badge--...\" crudo en 18 archivos — proporcionalmente peor que ZHBtn. ZHToggle usado como control positivo: 21 usos de componente, 0 bypass.",
+                "tags": []
+              },
+              {
+                "s": "d",
+                "n": "CSS duplicado detectado",
+                "d": "Badge 'soft' (4 implementaciones), status-pill con punto (3), empty-state (5 variantes), gradiente secondary→primary repetido 3 veces, tokens fantasma (--space-16 inexistente, --color-text-disabled).",
+                "tags": []
+              }
+            ]
+          },
+          {
+            "title": "Fase 3B — Consolidación de componentes base",
+            "tasks": [
+              {
+                "s": "d",
+                "n": "ZHBtn: variant opcional + 51 migraciones",
+                "d": "variant?: ZHBtnVariant = 'secondary'. ~51 botones crudos migrados en 18 archivos; 4 &lt;Link&gt; de navegación quedan como excepción documentada (ZHBtn solo renderiza &lt;button&gt;).",
+                "tags": [
+                  [
+                    "d",
+                    "2026-07-08"
+                  ],
+                  [
+                    "e",
+                    "18 archivos"
+                  ]
+                ]
+              },
+              {
+                "s": "d",
+                "n": "ZHField: density=\"compact\" + eliminación de .pf-field",
+                "d": "Nueva variante reproduce exactamente el tamaño de .pf-field (label 11px uppercase, control 13px). Migrado en Compras, Ventas, Caja, Kardex, PaymentTerms y ZHConfirmModal (7 archivos). CSS .pf-field/.pf-field__*/.pf-label eliminado de erp-form-core.css.",
+                "tags": []
+              },
+              {
+                "s": "d",
+                "n": "Badge: API expandida + 31 migraciones",
+                "d": "variant \"orange\" agregado, size=\"md\", upper, className/title/style vía spread. 31 usos crudos migrados al sistema .badge puro; pf-badge/prd-status-badge/pg-kpi-badge/md-badge documentados como variantes con semántica propia, no migradas (evita breaking visual sin revisión).",
+                "tags": []
+              },
+              {
+                "s": "d",
+                "n": "erp-form.css dividido: core compartido + Compras",
+                "d": "Renombrado a erp-form-core.css (usado por Purchases/Sales/Caja/Kardex/PaymentTerms/Pricing) + nuevo modules/purchases/styles/purchases-invoice.css con lo exclusivo de Compras. 8 bloques CSS muertos eliminados en el proceso.",
+                "tags": []
+              },
+              {
+                "s": "d",
+                "n": "legacy-pages.css: 68 → 11 clases",
+                "d": "52 clases sin ninguna referencia en frontend/src/**/*.tsx (código muerto real, verificado archivo por archivo) eliminadas. 11 clases vivas documentadas con su alcance de uso.",
+                "tags": []
+              },
+              {
+                "s": "d",
+                "n": "16 tokens fantasma/duplicados eliminados + bug --space-16 corregido",
+                "d": "design-tokens.css limpiado (--color-info, --color-on-secondary*, --color-tertiary-container, --icon-font, --text-lg, etc., todos verificados con 0 usos). var(--space-16) (inexistente) corregido a var(--space-10).",
+                "tags": []
+              },
+              {
+                "s": "d",
+                "n": "Gobernanza: 4 reglas nuevas en check-design-system.mjs",
+                "d": "F-04-btn, F-04-badge, F-04-pf-field, F-04-token (tokens CSS no definidos en design-tokens.css). Ya detectaron y permitieron corregir 2 regresiones reales introducidas durante la propia migración (un botón crudo con className dinámico y una mención literal en comentario).",
+                "tags": [
+                  [
+                    "d",
+                    "2026-07-08"
+                  ]
+                ]
+              },
+              {
+                "s": "d",
+                "n": "Accesibilidad: foco corregido en .pg-editable-input",
+                "d": "outline:none sin reemplazo (bug real WCAG 2.4.7) corregido con outline visible sin afectar layout. .prd-search-input auditado de nuevo: no era bug real, el contenedor ya tiene anillo de foco correcto.",
+                "tags": []
+              },
+              {
+                "s": "d",
+                "n": "0 errores TypeScript nuevos + build limpio",
+                "d": "Verificado con diff exacto de logs de tsc --noEmit contra baseline pre-Fase 3B (0 diferencias) y 4 corridas de vite build sin errores.",
+                "tags": []
+              }
+            ]
+          },
+          {
+            "title": "Gobernanza — Reutilización obligatoria del Design System",
+            "tasks": [
+              {
+                "s": "d",
+                "n": "AI-RULES/FRONTEND-RULES.md: tabla + regla de reutilización",
+                "d": "Tabla \"Design System — estándares únicos\" actualizada con ZHBtn/ZHField(density)/Badge. Nueva sección \"Reutilización obligatoria\": 5 pasos, orden de prioridad, prohibiciones y auditoría obligatoria para IA antes de crear UI.",
+                "tags": [
+                  [
+                    "d",
+                    "2026-07-08"
+                  ]
+                ]
+              },
+              {
+                "s": "d",
+                "n": "AI-RULES/CORE-ARCHITECTURE.md: rol de agente + checklist de 10 preguntas",
+                "d": "Encuadre de rol (arquitecto/auditor/protector de arquitectura) y checklist obligatorio antes de implementar cualquier código, con referencias cruzadas sin duplicar reglas ya existentes en otros archivos (política anti-drift).",
+                "tags": []
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Testing & Quality Assurance",
+        "icon": "&#x1F9EA;",
+        "desc": "400+ tests across 5 projects + frontend",
+        "groups": [
+          {
+            "title": "Backend (5 proyectos)",
+            "tasks": [
+              {
+                "s": "d",
+                "n": "ERP.Domain.Tests",
+                "d": "~54 tests: entidades, value objects, reglas domain.",
+                "tags": [
+                  [
+                    "t",
+                    "54 tests"
+                  ]
+                ]
+              },
+              {
+                "s": "d",
+                "n": "ERP.Application.Tests",
+                "d": "190/190: handlers, validators, authorization, integration.",
+                "tags": [
+                  [
+                    "t",
+                    "190 tests"
+                  ]
+                ]
+              },
+              {
+                "s": "d",
+                "n": "ERP.API.Tests",
+                "d": "33/33 SecurityTests + integration: controllers, HTTP codes, auth.",
+                "tags": [
+                  [
+                    "t",
+                    "33+ tests"
+                  ]
+                ]
+              },
+              {
+                "s": "d",
+                "n": "ERP.Architecture.Tests",
+                "d": "30-32 NetArchTest: capas, handlers ≤150, controllers, naming.",
+                "tags": [
+                  [
+                    "t",
+                    "30+ tests"
+                  ]
+                ]
+              },
+              {
+                "s": "d",
+                "n": "ERP.Infrastructure.Tests",
+                "d": "23 tests: repositories, transactions, RLS, concurrency (Testcontainers).",
+                "tags": [
+                  [
+                    "t",
+                    "23 tests"
+                  ]
+                ]
+              }
+            ]
+          },
+          {
+            "title": "Frontend",
+            "tasks": [
+              {
+                "s": "d",
+                "n": "Vitest 74/74 + ESLint 0 errors",
+                "d": "27 purchase calc + 20 utility + 22 messageStore + 6 sales calc ICE. Playwright smoke PASS. Build PASS. Enterprise E2E pendiente CI.",
+                "tags": [
+                  [
+                    "t",
+                    "74 tests"
+                  ]
+                ]
+              },
+              {
+                "s": "p",
+                "n": "Playwright Enterprise E2E en CI",
+                "d": "Diseño listo. Requiere API local para CI pipeline. Skip controlado sin backend.",
+                "tags": []
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "stage": "Futuro",
+    "stageIcon": "&#x1F680;",
+    "phases": [
+      {
+        "name": "Contabilidad (Accounting)",
+        "icon": "&#x1F4D2;",
+        "desc": "Libro mayor, asientos, plan de cuentas",
+        "groups": [
+          {
+            "title": "Requisitos identificados",
+            "tasks": [
+              {
+                "s": "n",
+                "n": "Plan de cuentas configurable",
+                "d": "Catálogo jerárquico por empresa. Cuentas madre/hija. Naturaleza deudora/acreedora. Grupo activo/pasivo/patrimonio/ingreso/gasto.",
+                "tags": []
+              },
+              {
+                "s": "n",
+                "n": "Asientos contables (Journal Entries)",
+                "d": "Partida doble. Vinculación automática desde facturas. Períodos contables. Cierre de período.",
+                "tags": []
+              },
+              {
+                "s": "n",
+                "n": "Libro mayor y reportes contables",
+                "d": "Balance general, estado de resultados, balance de comprobación. Consolidación multi-empresa.",
+                "tags": []
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Caja (Cash Management)",
+        "icon": "&#x1F4B0;",
+        "desc": "Sesiones de caja, apertura, movimientos, arqueo, cierre — módulo independiente",
+        "groups": [
+          {
+            "title": "Domain Layer (Fase 1)",
+            "tasks": [
+              {
+                "s": "d",
+                "n": "CashSession Aggregate Root",
+                "d": "Factory Open(), métodos RecordMovement(), Close(). Guards: EnsureOpen(). Propiedades calculadas: TotalIncome, TotalExpense, CurrentBalance.",
+                "tags": [
+                  [
+                    "e",
+                    "3 entidades"
+                  ],
+                  [
+                    "d",
+                    "2026-06-28"
+                  ]
+                ]
+              },
+              {
+                "s": "d",
+                "n": "CashMovement (libro de movimientos)",
+                "d": "Factory internal Create() — solo CashSession puede crear. ReferenceType+ReferenceId+ReferenceNumber desacoplado.",
+                "tags": []
+              },
+              {
+                "s": "d",
+                "n": "CashClosingCount (arqueo físico)",
+                "d": "Denominación valor+label, cantidad, total calculado. Soporte denominaciones USD completas.",
+                "tags": []
+              },
+              {
+                "s": "d",
+                "n": "Enums: CashSessionStatus, CashMovementType, CashReferenceType",
+                "d": "Extensibles sin romper: Opening, SaleIncome, ManualIncome, ManualExpense, Withdrawal. ReferenceType: None, SalesInvoice (futuro: ReceivablePayment, Advance, etc.).",
+                "tags": []
+              },
+              {
+                "s": "d",
+                "n": "CajaPermissions (caja.view/open/close/record)",
+                "d": "Permisos granulares por acción. Integrado en policy-based authorization.",
+                "tags": []
+              }
+            ]
+          },
+          {
+            "title": "Infrastructure Layer (Fase 2)",
+            "tasks": [
+              {
+                "s": "d",
+                "n": "EF Core Configurations (3 tablas)",
+                "d": "cash_sessions, cash_movements, cash_closing_counts. snake_case, numeric(18,2), xmin concurrency, FK Restrict a Company/EmissionPoint.",
+                "tags": []
+              },
+              {
+                "s": "d",
+                "n": "CashSessionRepository + ForOperationalScope",
+                "d": "GetOpenByUser, GetOpenByEmissionPoint para restricciones. Paginación con filtro status. Multi-tenant fail-closed.",
+                "tags": []
+              },
+              {
+                "s": "d",
+                "n": "Migration AddCashManagementModule",
+                "d": "3 tablas + 8 índices (tenant_user_status, tenant_ep_status, tenant_ref). Up/Down completo.",
+                "tags": [
+                  [
+                    "d",
+                    "2026-06-28"
+                  ]
+                ]
+              },
+              {
+                "s": "d",
+                "n": "DI Registration + DbSets",
+                "d": "ICashSessionRepository registrado en DependencyInjection.cs. 3 DbSets en ErpDbContext.",
+                "tags": []
+              }
+            ]
+          },
+          {
+            "title": "Application Layer (Fase 3)",
+            "tasks": [
+              {
+                "s": "d",
+                "n": "OpenCashSession (Command + Validator + Handler)",
+                "d": "Valida 1 caja/usuario y 1 caja/punto emisión. FluentValidation. Result&lt;T&gt; pattern.",
+                "tags": [
+                  [
+                    "a",
+                    "POST /open"
+                  ]
+                ]
+              },
+              {
+                "s": "d",
+                "n": "CloseCashSession (Command + Validator + Handler)",
+                "d": "Arqueo con denominaciones. Calcula ExpectedAmount, CountedAmount, Difference. Filtra qty>0.",
+                "tags": [
+                  [
+                    "a",
+                    "POST /{id}/close"
+                  ]
+                ]
+              },
+              {
+                "s": "d",
+                "n": "RecordCashMovement (Command + Validator + Handler)",
+                "d": "Registra movimiento manual. Parseo de enum desde string. Referencia externa desacoplada.",
+                "tags": [
+                  [
+                    "a",
+                    "POST /{id}/movements"
+                  ]
+                ]
+              },
+              {
+                "s": "d",
+                "n": "Queries: GetById, GetList, GetMy",
+                "d": "GetMy devuelve caja abierta del usuario actual. GetList con filtro status y paginación. CajaMapper manual.",
+                "tags": [
+                  [
+                    "a",
+                    "3 endpoints GET"
+                  ]
+                ]
+              }
+            ]
+          },
+          {
+            "title": "API Layer (Fase 4)",
+            "tasks": [
+              {
+                "s": "d",
+                "n": "CashSessionController (6 endpoints)",
+                "d": "POST open, POST close, POST movements, GET list, GET {id}, GET my. AppFeature registrado: Caja, /cash, orden 70.",
+                "tags": [
+                  [
+                    "a",
+                    "6 endpoints"
+                  ]
+                ]
+              },
+              {
+                "s": "d",
+                "n": "Permisos por endpoint",
+                "d": "caja.open, caja.close, caja.record, caja.view. Request DTOs desacoplados de commands.",
+                "tags": []
+              }
+            ]
+          },
+          {
+            "title": "Frontend (Fase 5)",
+            "tasks": [
+              {
+                "s": "d",
+                "n": "cajaService.ts (API service + DTOs)",
+                "d": "6 operaciones: list, getById, getMy, open, close, recordMovement. Interfaces TypeScript completas.",
+                "tags": []
+              },
+              {
+                "s": "d",
+                "n": "cajaSchema.ts (Zod + denominaciones USD)",
+                "d": "3 schemas: openCashSession, recordMovement, closeCashSession. 11 denominaciones USD predefinidas. Factories empty form.",
+                "tags": []
+              },
+              {
+                "s": "d",
+                "n": "useCajaPage.ts (hook principal)",
+                "d": "3 formularios RHF+Zod. State: tabs, lists, modals, mySession, viewing. applyServerErrors en todos los handlers.",
+                "tags": []
+              },
+              {
+                "s": "d",
+                "n": "CajaPage.tsx (4 tabs UI)",
+                "d": "Listado paginado, abrir caja, detalle con movimientos inline, cerrar con arqueo por denominación. SummaryCards, ZhDecimalInput.",
+                "tags": []
+              },
+              {
+                "s": "d",
+                "n": "Ruta /cash en catalogRoutes",
+                "d": "Lazy-loaded via lazyNamedPage(). Code splitting automático. Build Vite exitoso.",
+                "tags": []
+              }
+            ]
+          },
+          {
+            "title": "Restricciones implementadas",
+            "tasks": [
+              {
+                "s": "d",
+                "n": "Una sola caja abierta por usuario",
+                "d": "Validación en OpenCashSessionHandler + índice ix_cash_sessions_tenant_user_status.",
+                "tags": []
+              },
+              {
+                "s": "d",
+                "n": "Una sola caja abierta por punto de emisión",
+                "d": "Validación en OpenCashSessionHandler + índice ix_cash_sessions_tenant_ep_status.",
+                "tags": []
+              },
+              {
+                "s": "d",
+                "n": "No movimientos en cajas cerradas",
+                "d": "Guard EnsureOpen() en CashSession. InvalidOperationException capturada como ValidationFailure.",
+                "tags": []
+              },
+              {
+                "s": "d",
+                "n": "No reabrir cajas cerradas",
+                "d": "CashSessionStatus solo Open→Closed. No existe método Reopen().",
+                "tags": []
+              },
+              {
+                "s": "d",
+                "n": "Relación por CashSessionId, no por fecha",
+                "d": "CashMovement.CashSessionId es la relación directa. Sin dependencia de rangos de fecha.",
+                "tags": []
+              }
+            ]
+          },
+          {
+            "title": "Integración con Ventas",
+            "tasks": [
+              {
+                "s": "n",
+                "n": "Impedir facturar sin caja abierta",
+                "d": "Validar en AuthorizeSalesInvoice que el usuario tenga CashSession Open. Requiere integración cross-module.",
+                "tags": []
+              },
+              {
+                "s": "d",
+                "n": "Asociar factura a sesión automáticamente",
+                "d": "SalesInvoiceAuthorizedHandler (domain event) crea CashMovement tipo SaleIncome con ReferenceType=SalesInvoice. Transacción unificada (fix concurrencia 2026-07-01).",
+                "tags": [
+                  [
+                    "d",
+                    "2026-07-01"
+                  ]
+                ]
+              },
+              {
+                "s": "d",
+                "n": "Movimientos automáticos por ventas",
+                "d": "CashMovement generado en SalesInvoiceAuthorizedHandler al autorizar factura. Monto = GrandTotal. Persistencia en misma transacción DB.",
+                "tags": [
+                  [
+                    "d",
+                    "2026-07-01"
+                  ]
+                ]
+              }
+            ]
+          },
+          {
+            "title": "Configuración operativa de Caja — CashRegister Defaults (Fase 6)",
+            "tasks": [
+              {
+                "s": "d",
+                "n": "CashRegister.DefaultWarehouseId / DefaultCustomerId",
+                "d": "Campos nullable en el agregado CashRegister, con mutadores dedicados SetDefaultWarehouse()/SetDefaultCustomer() — siempre editables, sin el guard de historial que sí aplica a EmissionPointId.",
+                "tags": [
+                  [
+                    "d",
+                    "2026-07-20"
+                  ]
+                ]
+              },
+              {
+                "s": "d",
+                "n": "EF Core: columnas, índices y FK",
+                "d": "default_warehouse_id/default_customer_id nullable + FK a Warehouse/BusinessPartner (DeleteBehavior.Restrict) + índices. Migración AddCashRegisterDefaults.",
+                "tags": [
+                  [
+                    "e",
+                    "2 columnas + 2 FK"
+                  ]
+                ]
+              },
+              {
+                "s": "d",
+                "n": "DTOs y mapeo (CashRegisterDto, CashSessionDto, CajaMapper)",
+                "d": "Bodega y cliente por defecto expuestos por Id + código/nombre, tanto en administración de Cajas como en la sesión de caja abierta.",
+                "tags": []
+              },
+              {
+                "s": "d",
+                "n": "Create/UpdateCashRegisterCommand con validación",
+                "d": "La bodega por defecto debe pertenecer a la misma sucursal de la Caja; el cliente por defecto debe existir. Rechazo controlado (422) sin persistir datos inconsistentes.",
+                "tags": [
+                  [
+                    "t",
+                    "5 pruebas E2E (PostgreSQL real)"
+                  ]
+                ]
+              },
+              {
+                "s": "d",
+                "n": "Apertura de sesión expone la configuración de la Caja",
+                "d": "OpenCashSession/GetMy/GetById/CloseCashSession propagan DefaultWarehouseId/DefaultCustomerId de la Caja activa hacia CashSessionDto.",
+                "tags": []
+              },
+              {
+                "s": "d",
+                "n": "Administración de Cajas: selectores Bodega/Cliente por defecto",
+                "d": "Selector de bodega en cascada por sucursal + CustomerPicker reutilizado (sin componente nuevo). Ambos campos opcionales.",
+                "tags": []
+              },
+              {
+                "s": "d",
+                "n": "Ventas/POS: precarga desde myCashSession",
+                "d": "useSalesPage precarga bodega y cliente al abrir la pantalla; el usuario puede modificarlos libremente antes de confirmar la venta.",
+                "tags": []
+              },
+              {
+                "s": "d",
+                "n": "Decisión: configuración operativa, no restricción obligatoria",
+                "d": "DefaultWarehouseId/DefaultCustomerId agilizan la operación pero no bloquean nada — el usuario puede cambiar Cliente y Bodega durante la venta. No implementado (evolución futura, no pendiente crítico): resolución jerárquica automática Caja → Sucursal → Empresa.",
+                "tags": []
+              }
+            ]
+          },
+          {
+            "title": "Pendiente — Reportes y extensiones",
+            "tasks": [
+              {
+                "s": "n",
+                "n": "Reportes de caja",
+                "d": "Reporte apertura, cierre, arqueo, diferencias, movimientos, por usuario, por punto emisión, histórico.",
+                "tags": []
+              },
+              {
+                "s": "n",
+                "n": "Arqueo por forma de pago",
+                "d": "Total esperado y contado desglosado por método de pago (efectivo, tarjeta, transferencia).",
+                "tags": []
+              },
+              {
+                "s": "n",
+                "n": "Integración Cobros CxC / Anticipos",
+                "d": "Movimientos automáticos desde cobros de CxC y anticipos de clientes. Solo agregar nuevos CashMovementType.",
+                "tags": []
+              },
+              {
+                "s": "n",
+                "n": "Integración Bancos / Tesorería",
+                "d": "Conciliación de movimientos de caja con extractos bancarios. Módulo Bancos no iniciado.",
+                "tags": []
+              },
+              {
+                "s": "n",
+                "n": "Fallback jerárquico Caja → Sucursal → Empresa (bodega/cliente por defecto)",
+                "d": "Resolución automática en cascada cuando la Caja no tiene default propio. Hoy GetSalesInvoiceDefaultsQueryHandler retorna DefaultWarehouseId=null explícitamente sin contexto de sucursal — gap conocido, evolución futura, no bloqueante.",
+                "tags": []
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Bancos",
+        "icon": "&#x1F3E6;",
+        "desc": "Conciliación bancaria, cobros y pagos",
+        "groups": [
+          {
+            "title": "Requisitos identificados",
+            "tasks": [
+              {
+                "s": "n",
+                "n": "Cobros contra CxC (Payment Collection)",
+                "d": "Registro de pagos contra cuotas SalesReceivable. Infraestructura CxC existe (PaidAmount=0).",
+                "tags": []
+              },
+              {
+                "s": "n",
+                "n": "Pagos a proveedores contra CxP",
+                "d": "Registro pagos contra PurchasePayable/Schedule. Infraestructura CxP existe.",
+                "tags": []
+              },
+              {
+                "s": "n",
+                "n": "Conciliación bancaria",
+                "d": "Importación estados bancarios. Matching automático. Conciliación manual diferencias.",
+                "tags": []
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "CRM",
+        "icon": "&#x1F91D;",
+        "desc": "Relaciones con clientes, oportunidades, seguimiento",
+        "groups": [
+          {
+            "title": "Alcance futuro",
+            "tasks": [
+              {
+                "s": "n",
+                "n": "Pipeline ventas, oportunidades, seguimiento",
+                "d": "Leads, oportunidades, actividades, pronóstico. Base: BP V2 Customer role ya implementado.",
+                "tags": []
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "RRHH / Nómina",
+        "icon": "&#x1F477;",
+        "desc": "Gestión personal, nómina, roles de pago",
+        "groups": [
+          {
+            "title": "Alcance futuro",
+            "tasks": [
+              {
+                "s": "n",
+                "n": "Empleados, contratos, nómina, IESS",
+                "d": "Gestión personal, contratos, cálculo nómina tablas IESS Ecuador, roles pago, décimos, vacaciones.",
+                "tags": []
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Producción / Manufactura",
+        "icon": "&#x1F3ED;",
+        "desc": "Órdenes de producción, BOM, costos",
+        "groups": [
+          {
+            "title": "Alcance futuro",
+            "tasks": [
+              {
+                "s": "n",
+                "n": "BOM, órdenes, costos producción",
+                "d": "Bill of Materials, órdenes trabajo, costos, consumo materias primas desde inventario.",
+                "tags": []
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+];

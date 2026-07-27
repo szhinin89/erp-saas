@@ -1,5 +1,5 @@
 ﻿{
-    "Generated":  "2026-07-20 19:20:05",
+    "Generated":  "2026-07-26 17:06:25",
     "Modules":  [
                     {
                         "Name":  "Company",
@@ -114,9 +114,9 @@
                         "Score":  90
                     },
                     {
-                        "Name":  "Auxiliary",
+                        "Name":  "Media",
                         "Domain":  true,
-                        "Application":  false,
+                        "Application":  true,
                         "Frontend":  false,
                         "Score":  65
                     },
@@ -142,6 +142,13 @@
                         "Score":  65
                     },
                     {
+                        "Name":  "Security",
+                        "Domain":  true,
+                        "Application":  true,
+                        "Frontend":  true,
+                        "Score":  90
+                    },
+                    {
                         "Name":  "Configuration",
                         "Domain":  true,
                         "Application":  true,
@@ -163,8 +170,8 @@
                         "Score":  90
                     },
                     {
-                        "Name":  "Media",
-                        "Domain":  true,
+                        "Name":  "Catalog",
+                        "Domain":  false,
                         "Application":  true,
                         "Frontend":  false,
                         "Score":  65
@@ -177,11 +184,18 @@
                         "Score":  90
                     },
                     {
-                        "Name":  "Security",
+                        "Name":  "Auxiliary",
+                        "Domain":  true,
+                        "Application":  false,
+                        "Frontend":  false,
+                        "Score":  65
+                    },
+                    {
+                        "Name":  "Accounting",
                         "Domain":  true,
                         "Application":  true,
-                        "Frontend":  true,
-                        "Score":  90
+                        "Frontend":  false,
+                        "Score":  65
                     },
                     {
                         "Name":  "SriCatalogs",

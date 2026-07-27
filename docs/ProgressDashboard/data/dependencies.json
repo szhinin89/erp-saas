@@ -1,5 +1,5 @@
 ﻿{
-    "generated":  "2026-07-20 19:20:36",
+    "generated":  "2026-07-26 17:06:44",
     "source":  "Static scan of backend/src/ERP.Application/Modules, ERP.Domain/Modules, ERP.Infrastructure (using ERP.* directives) + git log authorship per module folder",
     "method":  {
                    "edgeDetection":  "Regex match on \u0027using ERP.(Application|Domain|Infrastructure).(Modules.)?\u003cName\u003e\u0027 per .cs line; edge kept only if \u003cName\u003e matches an existing modules.json id",
@@ -60,10 +60,10 @@
                   {
                       "id":  "Purchases",
                       "filesScanned":  70,
-                      "fanIn":  1,
+                      "fanIn":  2,
                       "fanOut":  7,
-                      "coupling":  8,
-                      "instability":  0.875,
+                      "coupling":  9,
+                      "instability":  0.778,
                       "cohesionApprox":  0.542,
                       "busFactor":  1,
                       "isolated":  false,
@@ -77,6 +77,7 @@
                                         "Pricing"
                                     ],
                       "dependedOnBy":  [
+                                           "Accounting",
                                            "Inventory"
                                        ]
                   },
@@ -189,10 +190,10 @@
                   {
                       "id":  "Sales",
                       "filesScanned":  38,
-                      "fanIn":  2,
+                      "fanIn":  3,
                       "fanOut":  8,
-                      "coupling":  10,
-                      "instability":  0.8,
+                      "coupling":  11,
+                      "instability":  0.727,
                       "cohesionApprox":  0.381,
                       "busFactor":  1,
                       "isolated":  false,
@@ -207,6 +208,7 @@
                                         "SriCatalogs"
                                     ],
                       "dependedOnBy":  [
+                                           "Accounting",
                                            "Caja",
                                            "Inventory"
                                        ]
@@ -214,10 +216,10 @@
                   {
                       "id":  "Items",
                       "filesScanned":  69,
-                      "fanIn":  3,
+                      "fanIn":  4,
                       "fanOut":  6,
-                      "coupling":  9,
-                      "instability":  0.667,
+                      "coupling":  10,
+                      "instability":  0.6,
                       "cohesionApprox":  0.535,
                       "busFactor":  1,
                       "isolated":  false,
@@ -232,7 +234,8 @@
                       "dependedOnBy":  [
                                            "Pricing",
                                            "Purchases",
-                                           "Sales"
+                                           "Sales",
+                                           "SriCatalogs"
                                        ]
                   },
                   {
@@ -282,9 +285,9 @@
                   {
                       "id":  "Common",
                       "filesScanned":  22,
-                      "fanIn":  25,
+                      "fanIn":  27,
                       "fanOut":  0,
-                      "coupling":  25,
+                      "coupling":  27,
                       "instability":  0,
                       "cohesionApprox":  null,
                       "busFactor":  1,
@@ -294,10 +297,12 @@
                                     ],
                       "dependedOnBy":  [
                                            "Access",
+                                           "Accounting",
                                            "Audit",
                                            "Auth",
                                            "Branches",
                                            "Caja",
+                                           "Catalog",
                                            "Companies",
                                            "Company",
                                            "Configuration",
@@ -387,20 +392,21 @@
                                        ]
                   },
                   {
-                      "id":  "Auxiliary",
-                      "filesScanned":  3,
-                      "fanIn":  0,
-                      "fanOut":  0,
-                      "coupling":  0,
-                      "instability":  0,
-                      "cohesionApprox":  null,
+                      "id":  "Media",
+                      "filesScanned":  10,
+                      "fanIn":  2,
+                      "fanOut":  1,
+                      "coupling":  3,
+                      "instability":  0.333,
+                      "cohesionApprox":  0.471,
                       "busFactor":  1,
-                      "isolated":  true,
+                      "isolated":  false,
                       "dependsOn":  [
-
+                                        "Common"
                                     ],
                       "dependedOnBy":  [
-
+                                           "Companies",
+                                           "Session"
                                        ]
                   },
                   {
@@ -465,6 +471,24 @@
                                        ]
                   },
                   {
+                      "id":  "Security",
+                      "filesScanned":  11,
+                      "fanIn":  0,
+                      "fanOut":  2,
+                      "coupling":  2,
+                      "instability":  1,
+                      "cohesionApprox":  0.467,
+                      "busFactor":  1,
+                      "isolated":  false,
+                      "dependsOn":  [
+                                        "Access",
+                                        "Common"
+                                    ],
+                      "dependedOnBy":  [
+
+                                       ]
+                  },
+                  {
                       "id":  "Configuration",
                       "filesScanned":  12,
                       "fanIn":  6,
@@ -489,10 +513,10 @@
                   {
                       "id":  "Audit",
                       "filesScanned":  12,
-                      "fanIn":  7,
+                      "fanIn":  8,
                       "fanOut":  1,
-                      "coupling":  8,
-                      "instability":  0.125,
+                      "coupling":  9,
+                      "instability":  0.111,
                       "cohesionApprox":  0.727,
                       "busFactor":  1,
                       "isolated":  false,
@@ -500,6 +524,7 @@
                                         "Common"
                                     ],
                       "dependedOnBy":  [
+                                           "Accounting",
                                            "Branches",
                                            "ElectronicDocuments",
                                            "Inventory",
@@ -530,21 +555,21 @@
                                        ]
                   },
                   {
-                      "id":  "Media",
-                      "filesScanned":  10,
-                      "fanIn":  2,
-                      "fanOut":  1,
-                      "coupling":  3,
-                      "instability":  0.333,
-                      "cohesionApprox":  0.471,
+                      "id":  "Catalog",
+                      "filesScanned":  1,
+                      "fanIn":  0,
+                      "fanOut":  2,
+                      "coupling":  2,
+                      "instability":  1,
+                      "cohesionApprox":  0,
                       "busFactor":  1,
                       "isolated":  false,
                       "dependsOn":  [
-                                        "Common"
+                                        "Common",
+                                        "SriCatalogs"
                                     ],
                       "dependedOnBy":  [
-                                           "Companies",
-                                           "Session"
+
                                        ]
                   },
                   {
@@ -569,18 +594,37 @@
                                        ]
                   },
                   {
-                      "id":  "Security",
-                      "filesScanned":  11,
+                      "id":  "Auxiliary",
+                      "filesScanned":  3,
                       "fanIn":  0,
-                      "fanOut":  2,
-                      "coupling":  2,
+                      "fanOut":  0,
+                      "coupling":  0,
+                      "instability":  0,
+                      "cohesionApprox":  null,
+                      "busFactor":  1,
+                      "isolated":  true,
+                      "dependsOn":  [
+
+                                    ],
+                      "dependedOnBy":  [
+
+                                       ]
+                  },
+                  {
+                      "id":  "Accounting",
+                      "filesScanned":  46,
+                      "fanIn":  0,
+                      "fanOut":  4,
+                      "coupling":  4,
                       "instability":  1,
-                      "cohesionApprox":  0.467,
+                      "cohesionApprox":  0.658,
                       "busFactor":  1,
                       "isolated":  false,
                       "dependsOn":  [
-                                        "Access",
-                                        "Common"
+                                        "Audit",
+                                        "Common",
+                                        "Purchases",
+                                        "Sales"
                                     ],
                       "dependedOnBy":  [
 
@@ -588,18 +632,19 @@
                   },
                   {
                       "id":  "SriCatalogs",
-                      "filesScanned":  16,
-                      "fanIn":  2,
-                      "fanOut":  0,
-                      "coupling":  2,
-                      "instability":  0,
-                      "cohesionApprox":  1,
+                      "filesScanned":  17,
+                      "fanIn":  3,
+                      "fanOut":  1,
+                      "coupling":  4,
+                      "instability":  0.25,
+                      "cohesionApprox":  0.75,
                       "busFactor":  1,
                       "isolated":  false,
                       "dependsOn":  [
-
+                                        "Items"
                                     ],
                       "dependedOnBy":  [
+                                           "Catalog",
                                            "Company",
                                            "Sales"
                                        ]
@@ -704,6 +749,18 @@
                                    ]
                   },
                   {
+                      "from":  "Caja",
+                      "to":  "Common",
+                      "referenceCount":  14,
+                      "evidence":  [
+                                       "backend/src/ERP.Application/Modules/Caja/UseCases/CashRegisterQueryUseCases.cs",
+                                       "backend/src/ERP.Application/Modules/Caja/UseCases/CashSessionQueryUseCases.cs",
+                                       "backend/src/ERP.Application/Modules/Caja/UseCases/CloseCashSessionUseCases.cs",
+                                       "backend/src/ERP.Application/Modules/Caja/UseCases/CreateCashRegisterUseCases.cs",
+                                       "backend/src/ERP.Application/Modules/Caja/UseCases/DisableCashRegisterUseCases.cs"
+                                   ]
+                  },
+                  {
                       "from":  "Session",
                       "to":  "Branches",
                       "referenceCount":  3,
@@ -762,18 +819,6 @@
                                        "backend/src/ERP.Application/Modules/Access/UseCases/AssignTemporaryPasswordAdmin/AssignTemporaryPasswordAdminCommandValidator.cs",
                                        "backend/src/ERP.Application/Modules/Access/UseCases/CreateSystemUser/CreateSystemUserCommandValidator.cs",
                                        "backend/src/ERP.Domain/Modules/Access/Entities/IdentityUser.cs"
-                                   ]
-                  },
-                  {
-                      "from":  "Media",
-                      "to":  "Common",
-                      "referenceCount":  9,
-                      "evidence":  [
-                                       "backend/src/ERP.Application/Modules/Media/IImageValidationService.cs",
-                                       "backend/src/ERP.Application/Modules/Media/IImageValidationService.cs",
-                                       "backend/src/ERP.Application/Modules/Media/ImageValidationService.cs",
-                                       "backend/src/ERP.Application/Modules/Media/ImageValidationService.cs",
-                                       "backend/src/ERP.Application/Modules/Media/IMediaService.cs"
                                    ]
                   },
                   {
@@ -900,6 +945,14 @@
                                    ]
                   },
                   {
+                      "from":  "Accounting",
+                      "to":  "Sales",
+                      "referenceCount":  1,
+                      "evidence":  [
+                                       "backend/src/ERP.Application/Modules/Accounting/Posting/Translators/SalesInvoiceAuthorizedPostingTranslator.cs"
+                                   ]
+                  },
+                  {
                       "from":  "Session",
                       "to":  "Access",
                       "referenceCount":  5,
@@ -955,6 +1008,24 @@
                                    ]
                   },
                   {
+                      "from":  "Navigation",
+                      "to":  "Common",
+                      "referenceCount":  2,
+                      "evidence":  [
+                                       "backend/src/ERP.Application/Modules/Navigation/UseCases/GetSessionMenu/GetSessionMenuHandler.cs",
+                                       "backend/src/ERP.Application/Modules/Navigation/UseCases/GetSessionMenu/GetSessionMenuQuery.cs"
+                                   ]
+                  },
+                  {
+                      "from":  "Catalog",
+                      "to":  "SriCatalogs",
+                      "referenceCount":  2,
+                      "evidence":  [
+                                       "backend/src/ERP.Application/Modules/Catalog/UseCases/CatalogLookupQueries.cs",
+                                       "backend/src/ERP.Application/Modules/Catalog/UseCases/CatalogLookupQueries.cs"
+                                   ]
+                  },
+                  {
                       "from":  "Sales",
                       "to":  "ElectronicDocuments",
                       "referenceCount":  7,
@@ -964,6 +1035,14 @@
                                        "backend/src/ERP.Application/Modules/Sales/Services/ElectronicSalesInvoiceEmissionStrategy.cs",
                                        "backend/src/ERP.Application/Modules/Sales/Services/SalesInvoiceElectronicDocumentDataProvider.cs",
                                        "backend/src/ERP.Application/Modules/Sales/Services/SalesInvoiceElectronicDocumentDataProvider.cs"
+                                   ]
+                  },
+                  {
+                      "from":  "Catalog",
+                      "to":  "Common",
+                      "referenceCount":  1,
+                      "evidence":  [
+                                       "backend/src/ERP.Application/Modules/Catalog/UseCases/CatalogLookupQueries.cs"
                                    ]
                   },
                   {
@@ -991,6 +1070,18 @@
                                    ]
                   },
                   {
+                      "from":  "Accounting",
+                      "to":  "Common",
+                      "referenceCount":  22,
+                      "evidence":  [
+                                       "backend/src/ERP.Application/Modules/Accounting/Posting/IPostingEngine.cs",
+                                       "backend/src/ERP.Application/Modules/Accounting/Posting/JournalValidator.cs",
+                                       "backend/src/ERP.Application/Modules/Accounting/Posting/PostingEngine.cs",
+                                       "backend/src/ERP.Application/Modules/Accounting/Posting/PostingPeriodGuard.cs",
+                                       "backend/src/ERP.Application/Modules/Accounting/Posting/PostingPeriodResolver.cs"
+                                   ]
+                  },
+                  {
                       "from":  "Configuration",
                       "to":  "Common",
                       "referenceCount":  5,
@@ -1000,6 +1091,14 @@
                                        "backend/src/ERP.Domain/Modules/Configuration/Entities/ConfigModule.cs",
                                        "backend/src/ERP.Domain/Modules/Configuration/Entities/OrgSetting.cs",
                                        "backend/src/ERP.Domain/Modules/Configuration/Entities/SriSettings.cs"
+                                   ]
+                  },
+                  {
+                      "from":  "Accounting",
+                      "to":  "Purchases",
+                      "referenceCount":  1,
+                      "evidence":  [
+                                       "backend/src/ERP.Application/Modules/Accounting/Posting/Translators/PurchaseInvoiceConfirmedPostingTranslator.cs"
                                    ]
                   },
                   {
@@ -1041,6 +1140,14 @@
                                        "backend/src/ERP.Application/Modules/Access/UseCases/GetCompanyUserBranchesAdmin/GetCompanyUserBranchesAdminHandler.cs",
                                        "backend/src/ERP.Application/Modules/Access/UseCases/UpdateCompanyUserBranchesAdmin/UpdateCompanyUserBranchesAdminHandler.cs",
                                        "backend/src/ERP.Application/Modules/Access/UseCases/UpdateCompanyUserPreferences/UpdateCompanyUserPreferencesHandler.cs"
+                                   ]
+                  },
+                  {
+                      "from":  "SriCatalogs",
+                      "to":  "Items",
+                      "referenceCount":  1,
+                      "evidence":  [
+                                       "backend/src/ERP.Domain/Modules/SriCatalogs/Interfaces/ISriCatalogLookupRepository.cs"
                                    ]
                   },
                   {
@@ -1320,12 +1427,13 @@
                                    ]
                   },
                   {
-                      "from":  "Navigation",
-                      "to":  "Common",
-                      "referenceCount":  2,
+                      "from":  "Accounting",
+                      "to":  "Audit",
+                      "referenceCount":  3,
                       "evidence":  [
-                                       "backend/src/ERP.Application/Modules/Navigation/UseCases/GetSessionMenu/GetSessionMenuHandler.cs",
-                                       "backend/src/ERP.Application/Modules/Navigation/UseCases/GetSessionMenu/GetSessionMenuQuery.cs"
+                                       "backend/src/ERP.Domain/Modules/Accounting/Events/AccountEvents.cs",
+                                       "backend/src/ERP.Domain/Modules/Accounting/Events/AccountingPeriodEvents.cs",
+                                       "backend/src/ERP.Domain/Modules/Accounting/Events/PostingRuleEvents.cs"
                                    ]
                   },
                   {
@@ -1443,15 +1551,15 @@
                                    ]
                   },
                   {
-                      "from":  "Caja",
+                      "from":  "Media",
                       "to":  "Common",
-                      "referenceCount":  14,
+                      "referenceCount":  9,
                       "evidence":  [
-                                       "backend/src/ERP.Application/Modules/Caja/UseCases/CashRegisterQueryUseCases.cs",
-                                       "backend/src/ERP.Application/Modules/Caja/UseCases/CashSessionQueryUseCases.cs",
-                                       "backend/src/ERP.Application/Modules/Caja/UseCases/CloseCashSessionUseCases.cs",
-                                       "backend/src/ERP.Application/Modules/Caja/UseCases/CreateCashRegisterUseCases.cs",
-                                       "backend/src/ERP.Application/Modules/Caja/UseCases/DisableCashRegisterUseCases.cs"
+                                       "backend/src/ERP.Application/Modules/Media/IImageValidationService.cs",
+                                       "backend/src/ERP.Application/Modules/Media/IImageValidationService.cs",
+                                       "backend/src/ERP.Application/Modules/Media/ImageValidationService.cs",
+                                       "backend/src/ERP.Application/Modules/Media/ImageValidationService.cs",
+                                       "backend/src/ERP.Application/Modules/Media/IMediaService.cs"
                                    ]
                   },
                   {
@@ -1566,50 +1674,60 @@
                   }
               ],
     "cycles":  [
+                   "Company -\u003e SriCatalogs -\u003e Items -\u003e Companies -\u003e Access -\u003e Auth -\u003e Company",
                    "Access -\u003e Auth -\u003e Access",
-                   "Purchases -\u003e Items -\u003e Inventory -\u003e Purchases",
+                   "Company -\u003e SriCatalogs -\u003e Items -\u003e Companies -\u003e Access -\u003e Company",
+                   "Company -\u003e SriCatalogs -\u003e Items -\u003e Companies -\u003e Company",
+                   "Company -\u003e SriCatalogs -\u003e Items -\u003e Inventory -\u003e Purchases -\u003e Company",
+                   "Items -\u003e Inventory -\u003e Purchases -\u003e Items",
+                   "Items -\u003e Inventory -\u003e Purchases -\u003e Pricing -\u003e Items",
+                   "Inventory -\u003e Purchases -\u003e Inventory",
+                   "SriCatalogs -\u003e Items -\u003e Inventory -\u003e Sales -\u003e SriCatalogs",
                    "Inventory -\u003e Sales -\u003e Inventory",
-                   "Items -\u003e Inventory -\u003e Sales -\u003e Pricing -\u003e Items",
-                   "Items -\u003e Inventory -\u003e Sales -\u003e Items"
+                   "Company -\u003e SriCatalogs -\u003e Items -\u003e Inventory -\u003e Sales -\u003e ElectronicDocuments -\u003e Company",
+                   "Items -\u003e Inventory -\u003e Sales -\u003e Items",
+                   "Company -\u003e SriCatalogs -\u003e Items -\u003e Inventory -\u003e Sales -\u003e Company"
                ],
     "depthByModule":  {
-                          "Company":  3,
+                          "Company":  10,
                           "Dashboard":  1,
-                          "Purchases":  8,
-                          "Companies":  6,
+                          "Purchases":  6,
+                          "Companies":  5,
                           "Menu":  0,
-                          "Auth":  4,
-                          "Integration":  4,
-                          "Access":  5,
-                          "Sales":  5,
-                          "Items":  7,
+                          "Auth":  3,
+                          "Integration":  11,
+                          "Access":  4,
+                          "Sales":  3,
+                          "Items":  8,
                           "Tenants":  1,
-                          "Session":  7,
+                          "Session":  11,
                           "Common":  0,
-                          "Inventory":  6,
+                          "Inventory":  7,
                           "Finance":  1,
                           "Branches":  2,
-                          "Auxiliary":  0,
+                          "Media":  1,
                           "Pricing":  2,
-                          "Caja":  7,
-                          "ElectronicInvoicing":  4,
+                          "Caja":  11,
+                          "ElectronicInvoicing":  11,
+                          "Security":  5,
                           "Configuration":  1,
                           "Audit":  1,
-                          "Ride":  5,
-                          "Media":  1,
-                          "ElectronicDocuments":  4,
-                          "Security":  6,
-                          "SriCatalogs":  0,
+                          "Ride":  3,
+                          "Catalog":  10,
+                          "ElectronicDocuments":  2,
+                          "Auxiliary":  0,
+                          "Accounting":  7,
+                          "SriCatalogs":  9,
                           "OrgConfig":  3,
                           "Navigation":  1
                       },
-    "maxDependencyDepth":  8,
+    "maxDependencyDepth":  11,
     "centralModules":  [
                            "Common",
                            "Company",
+                           "Sales",
                            "Access",
-                           "Inventory",
-                           "Sales"
+                           "Inventory"
                        ],
     "criticalModules":  [
                             "Common",

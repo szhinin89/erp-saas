@@ -1085,14 +1085,14 @@
                      ]
     },
     {
-        "module":  "Auxiliary",
+        "module":  "Media",
         "features":  [
 
                      ],
         "pending":  true,
-        "reason":  "Domain-only catalog module (no Application UseCases layer yet)",
+        "reason":  "Application module exists but exposes no discrete UseCases/Query/Command (likely shared/infrastructure module)",
         "evidence":  [
-                         "backend/src/ERP.Domain/Modules/Auxiliary"
+                         "backend/src/ERP.Application/Modules/Media"
                      ]
     },
     {
@@ -1251,6 +1251,25 @@
                      ]
     },
     {
+        "module":  "Security",
+        "features":  [
+                         {
+                             "name":  "Get Security Admin Matrix",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Security/UseCases/GetSecurityAdminMatrix"
+                                          ]
+                         },
+                         {
+                             "name":  "Upsert Security Admin Scopes",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Security/UseCases/UpsertSecurityAdminScopes"
+                                          ]
+                         }
+                     ]
+    },
+    {
         "module":  "Configuration",
         "features":  [
 
@@ -1300,14 +1319,15 @@
                      ]
     },
     {
-        "module":  "Media",
+        "module":  "Catalog",
         "features":  [
-
-                     ],
-        "pending":  true,
-        "reason":  "Application module exists but exposes no discrete UseCases/Query/Command (likely shared/infrastructure module)",
-        "evidence":  [
-                         "backend/src/ERP.Application/Modules/Media"
+                         {
+                             "name":  "Catalog Lookup Queries",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Catalog/UseCases/CatalogLookupQueries.cs"
+                                          ]
+                         }
                      ]
     },
     {
@@ -1379,20 +1399,38 @@
                      ]
     },
     {
-        "module":  "Security",
+        "module":  "Auxiliary",
+        "features":  [
+
+                     ],
+        "pending":  true,
+        "reason":  "Domain-only catalog module (no Application UseCases layer yet)",
+        "evidence":  [
+                         "backend/src/ERP.Domain/Modules/Auxiliary"
+                     ]
+    },
+    {
+        "module":  "Accounting",
         "features":  [
                          {
-                             "name":  "Get Security Admin Matrix",
+                             "name":  "Accounting Periods",
                              "status":  "implemented",
                              "evidence":  [
-                                              "backend/src/ERP.Application/Modules/Security/UseCases/GetSecurityAdminMatrix"
+                                              "backend/src/ERP.Application/Modules/Accounting/UseCases/AccountingPeriods"
                                           ]
                          },
                          {
-                             "name":  "Upsert Security Admin Scopes",
+                             "name":  "Accounts",
                              "status":  "implemented",
                              "evidence":  [
-                                              "backend/src/ERP.Application/Modules/Security/UseCases/UpsertSecurityAdminScopes"
+                                              "backend/src/ERP.Application/Modules/Accounting/UseCases/Accounts"
+                                          ]
+                         },
+                         {
+                             "name":  "Posting Rules",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Accounting/UseCases/PostingRules"
                                           ]
                          }
                      ]

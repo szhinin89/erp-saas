@@ -1,5 +1,5 @@
 ﻿{
-    "generated":  "2026-07-20 19:20:45",
+    "generated":  "2026-07-26 17:06:49",
     "source":  "dashboard-model-v12.json, completion-intelligence.json",
     "method":  {
                    "productionReadinessScore":  "avg(Architecture, ModuleHealth, Quality, Security, Dependencies) -- same formula analyze-completion.ps1 uses internally to derive its published band",
@@ -11,26 +11,26 @@
                },
     "securityStatus":  "RED",
     "debtStatus":  "RED",
-    "productionReadinessScore":  74.75,
+    "productionReadinessScore":  74.92,
     "productionStatus":  "NOT READY",
     "maturity":  "Controlled",
-    "confidenceScore":  71.7,
+    "confidenceScore":  71.93,
     "risk":  {
                  "architectureRisk":  "LOW",
-                 "securityRisk":  "CRITICAL",
+                 "securityRisk":  "HIGH",
                  "qualityRisk":  "HIGH",
                  "technicalDebtRisk":  "HIGH",
-                 "overallRisk":  "CRITICAL"
+                 "overallRisk":  "HIGH"
              },
     "productionDecision":  "NEEDS REVIEW",
     "decisionBlockers":  [
-                             "Security blockers - Security score 39%",
-                             "Quality blockers - Quality score 55.05%",
+                             "Security blockers - Security score 40.2%",
+                             "Quality blockers - Quality score 54.85%",
                              "Debt blockers - 31 critical findings"
                          ],
     "quickRecommendations":  [
-                                 "Remove detected secrets (155 found)",
-                                 "Improve automated tests and code quality (current: 55.05%)",
+                                 "Remove detected secrets (149 found)",
+                                 "Improve automated tests and code quality (current: 54.85%)",
                                  "Reduce critical findings (currently 31)",
                                  "Review security configuration (9 anonymous access points detected)"
                              ],
@@ -43,8 +43,8 @@
                               "staticAnalysisStatus":  "PASS"
                           },
     "securityPosture":  {
-                            "level":  "Level 1",
-                            "label":  "Critical"
+                            "level":  "Level 2",
+                            "label":  "Developing"
                         },
     "debtTrend":  {
                       "status":  "Stable",
@@ -61,13 +61,13 @@
                     {
                         "order":  1,
                         "title":  "Security Hardening",
-                        "detail":  "Score: 39%",
+                        "detail":  "Score: 40.2%",
                         "priority":  "CRITICAL"
                     },
                     {
                         "order":  2,
                         "title":  "Quality Improvement",
-                        "detail":  "Score: 55.05%",
+                        "detail":  "Score: 54.85%",
                         "priority":  "HIGH"
                     },
                     {
@@ -81,12 +81,12 @@
                            {
                                "gate":  "Security Gate",
                                "status":  "FAILED",
-                               "detail":  "Score 39%"
+                               "detail":  "Score 40.2%"
                            },
                            {
                                "gate":  "Quality Gate",
                                "status":  "FAILED",
-                               "detail":  "Score 55.05%"
+                               "detail":  "Score 54.85%"
                            },
                            {
                                "gate":  "Technical Debt Gate",
@@ -95,10 +95,10 @@
                            }
                        ],
     "trend":  {
-                  "current":  72.72,
-                  "previous":  73.4,
-                  "change":  -0.68,
-                  "status":  "Declining"
+                  "current":  72.88,
+                  "previous":  72.88,
+                  "change":  0,
+                  "status":  "Stable"
               },
     "executiveFlags":  {
                            "securityHealth":  "NEEDS ATTENTION",

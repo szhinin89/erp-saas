@@ -1,1 +1,177 @@
-﻿{}
+{
+  "generated": "2026-07-25",
+  "source": "docs/ROADMAP.md (Nivel 1, canonico) -- reestructurado 2026-07-25 (Fase Dashboard 4.0) de 10 'FASE N' a 7 Etapas con nombre propio. Este JSON es un espejo estructurado de ese documento -- toda edicion de contenido debe hacerse primero en docs/ROADMAP.md y luego reflejarse aqui, nunca al reves.",
+  "method": "Revision manual, no analizador automatizado. 'modulos' usa los ids del pipeline (explorer-index.json) cuando existen; si una etapa depende de un modulo todavia no trackeado (ej. 'Accounting', 'BusinessPartner'), se incluye igual -- el generador emite una advertencia, no inventa que el modulo existe.",
+  "etapaActualId": "etapa-1",
+  "stages": [
+    {
+      "id": "etapa-1",
+      "nombre": "Completar ERP Core Operativo",
+      "descripcion": "Cierre del MVP comercial del ERP Core: modulos ya FROZEN (Organizacion, IAM/Access, Items/Pricing, Ventas, Facturacion Electronica) mas los pendientes funcionales que faltan para considerar el nucleo operativo completo (Cobros, Liquidacion de compra, cierre formal de Caja, extension de Documentos Electronicos).",
+      "estado": "En progreso (cierre de MVP comercial, ~85-90%)",
+      "prioridad": "Alta",
+      "porcentaje": "85-90% (docs/ROADMAP.md, Resumen ejecutivo)",
+      "modulos": ["Company", "Branches", "Access", "Items", "Pricing", "Inventory", "Purchases", "Sales", "Caja", "ElectronicDocuments", "ElectronicInvoicing", "BusinessPartner"],
+      "dependencias": "Ninguna externa -- es la etapa actual, ya en ejecucion",
+      "bloqueadores": "Modulo de Cobros pendiente (hueco funcional mas visible); Liquidacion de compra (tipo SRI 03) + recepcion fisica sin factura pendientes (bloquean Retenciones); Cierre formal (ADR/freeze) de Caja pendiente; Validacion SRI en ambiente de produccion real pendiente (ya validado en Pruebas, celcer.sri.gob.ec)",
+      "hitos": [
+        "Modulo de Cobros: aplicar pago contra SalesReceivableInstallment",
+        "Liquidacion de compra (tipo SRI 03) + recepcion fisica sin factura",
+        "Cierre formal (ADR/freeze) de Caja",
+        "Validacion SRI en ambiente de produccion real",
+        "Notas de Credito/Debito, Guias de remision, Retenciones (extension aditiva de ElectronicDocuments bajo ADR-023)"
+      ],
+      "entregables": [
+        "SalesReceivable con cobros aplicados",
+        "PurchaseSettlement (tipo SRI 03)",
+        "Caja con ADR/freeze propio",
+        "Certificacion SRI produccion",
+        "Builders CreditNote/DebitNote/ShippingGuide/WithholdingReceipt activos"
+      ],
+      "observaciones": "Nota de BusinessPartner (BP V2): FROZEN segun docs/STATUS.md/ADR-017, pero su codigo vive en backend/src/ERP.Application/MasterData/ y NO esta trackeado por el pipeline del dashboard (uno de los '7 unmapped' del log de render-dashboard.ps1) -- se referencia igual en 'modulos' para que la validacion de esta seccion lo reporte explicitamente, en vez de omitirlo silenciosamente."
+    },
+    {
+      "id": "etapa-2",
+      "nombre": "Consolidar Plataforma Base",
+      "descripcion": "Hardening y deuda tecnica transversal, no bloqueante para el MVP comercial, requerida antes de escalar volumen transaccional real o abrir Accounting/BI: RLS PostgreSQL wave 2+, Permissions cache, limpieza de naming legacy, retencion/versionado de Outbox en produccion.",
+      "estado": "Parcial / pendiente (no bloqueante)",
+      "prioridad": "Pendiente de evaluacion (docs/ROADMAP.md no asigna Prioridad a esta seccion transversal, solo 'Bounded context')",
+      "porcentaje": "Pendiente de evaluacion",
+      "modulos": ["Access", "Security"],
+      "dependencias": "Ninguna bloqueante -- transversal a cualquier etapa",
+      "bloqueadores": "RLS PostgreSQL wave 2+ no implementado (aislamiento multi-tenant hoy 100% a nivel de aplicacion via CompanyScopeBehavior + EF query filters, FROZEN); Permissions cache con wiring parcial en RuntimePermissionAuthorizer",
+      "hitos": [
+        "RLS PostgreSQL wave 2+ (extender politicas a sales/purchasing/accounting)",
+        "Wire IPermissionsCacheService en RuntimePermissionAuthorizer hot path",
+        "Limpieza mecanica de naming legacy subscriber_*",
+        "Outbox retention / event versioning en produccion (ADR-010/011 aceptados, implementacion diferida)"
+      ],
+      "entregables": [
+        "Politicas RLS en tablas sales/purchasing/accounting",
+        "Permissions cache activo en el hot path de autorizacion",
+        "Variables/indices SQL renombrados a tenant_id",
+        "Politica de retencion de Outbox en produccion"
+      ],
+      "observaciones": "RLS/Outbox son transversales a todo el ERP, no propiedad de un modulo unico -- 'modulos' lista solo Access/Security por ser los mas directamente relacionados (Permissions cache). Ver docs/DATABASE.md#rls."
+    },
+    {
+      "id": "etapa-3",
+      "nombre": "Completar Accounting",
+      "descripcion": "Fundamentos de Accounting Core ya implementados y auditados: Plan de cuentas, Periodos contables, Reglas de contabilizacion. Diseno aprobado en ADR-026 (ACCEPTED). Reconciliado 2026-07-25 (Fase Gobernanza 1.0): Reglas de contabilizacion ya tiene consumidor real (Posting Engine, ver Etapa 4) -- verificado por lectura de JournalFactory.cs.",
+      "estado": "Parcial (Plan de cuentas y Periodos: fundamentos CRUD; Reglas de contabilizacion: implementado y consumido por Posting Engine real)",
+      "prioridad": "Alta",
+      "porcentaje": "Pendiente de evaluacion (sin porcentaje global de la etapa documentado en docs/ROADMAP.md)",
+      "modulos": ["Accounting", "Company"],
+      "dependencias": "Plan de cuentas depende de Company; Periodos contables y Reglas de contabilizacion dependen de Plan de cuentas",
+      "bloqueadores": "Sin definir si el contenido inicial del Plan de cuentas es catalogo tenant-editable o plantilla estandar NIIF PYMES Ecuador (decision de producto, no de arquitectura). Plan de cuentas sin validacion de ciclos en la jerarquia. Periodos contables sin EXCLUDE constraint en BD para solapamiento (riesgo de carrera de baja probabilidad, ya documentado).",
+      "hitos": [
+        "Plan de cuentas: validacion de ciclos en la jerarquia (todavia sin implementar)",
+        "Periodos contables: EXCLUDE constraint en BD para solapamiento (todavia sin implementar, riesgo de carrera de baja probabilidad ya documentado)",
+        "Decision de producto: catalogo tenant-editable vs plantilla NIIF PYMES Ecuador"
+      ],
+      "entregables": [
+        "Account (Plan de cuentas) CRUD -- ya implementado",
+        "AccountingPeriod (Create/Close/Lock) -- ya implementado",
+        "PostingRule/PostingRuleLine (configuracion de mapeo + partida doble) -- ya implementado, CON consumidor real (Posting Engine, Etapa 4)"
+      ],
+      "observaciones": "El modulo tecnico 'Accounting' (backend/src/ERP.Domain/Modules/Accounting, ERP.Application/Modules/Accounting, ERP.Infrastructure/Accounting, AccountingController) es nuevo y todavia NO esta trackeado por explorer-index.json -- referenciarlo aqui dispara deliberadamente la advertencia de 'modulo inexistente' del generador hasta que se incorpore al analisis estatico del pipeline. Reconciliacion 2026-07-25: el texto anterior de este campo decia que PostingRule no tenia consumidor real -- corregido tras verificar JournalFactory.cs por lectura directa de codigo, no solo de documentacion."
+    },
+    {
+      "id": "etapa-4",
+      "nombre": "Automatización Contable",
+      "descripcion": "Motor de generacion automatica de asientos contables (Posting Engine) desde eventos de dominio, mas Libro diario/Mayor, Balance/Estado de resultados y Cash & Banks. RECONCILIADO 2026-07-25 (Fase Gobernanza 1.0): el Posting Engine, la partida doble real (JournalEntryLine) y 2 de 4 consumidores planeados (Sales, Purchases) YA ESTAN IMPLEMENTADOS Y PROBADOS -- verificado por lectura directa de backend/src/ERP.Application/Modules/Accounting/Posting/ (JournalFactory.cs, JournalValidator.cs, PostingEngine.cs, Translators/). Post()/Reverse(), numeracion formal, reportes (Libro Mayor/Balance) e integracion con Caja/Inventory siguen sin iniciar.",
+      "estado": "Parcial (Posting Engine + partida doble + 2/4 consumidores implementados y probados; Post()/Reverse(), numeracion y reportes financieros sin iniciar)",
+      "prioridad": "Alta",
+      "porcentaje": "Pendiente de evaluacion (sin formula de % definida; ver desglose real por componente en docs/ROADMAP.md Etapa 4 -- 3 de 8 componentes principales implementados: Posting Engine, partida doble, consumidores Sales/Purchases)",
+      "modulos": ["Accounting", "Caja", "Sales", "Purchases", "Inventory"],
+      "dependencias": "Plan de cuentas (Etapa 3) + todos los documentos transaccionales (Ventas/Compras/Caja); Cash & Banks depende ademas de Caja y de los Asientos",
+      "bloqueadores": "Post()/Reverse() y numeracion (JournalEntrySequence) sin iniciar -- confirmado por comentario explicito en JournalEntry.cs ('quedan explicitamente fuera de esta fase, ADR-026 SS6/SS8'). Sin endpoint de consulta de asientos en AccountingController (solo CRUD de accounts/accounting-periods/posting-rules) -- Libro Mayor/Balance no pueden construirse todavia. Integracion Caja/Inventory sin iniciar (cero referencias a IPostingEngine/PostingFact en esos modulos, verificado). Precondicion recomendada: cerrar los pendientes de Etapa 1 (Cobros, Liquidacion de compra) antes de completar Post()/Reverse() y los reportes -- la parte ya implementada (Posting Engine + Sales/Purchases) no dependia de esta precondicion.",
+      "hitos": [
+        "Posting Engine (pipeline completo) -- IMPLEMENTADO y probado (unitarios + integracion PostgreSQL real)",
+        "JournalEntryLine (partida doble real, JournalFactory + JournalValidator) -- IMPLEMENTADO y probado",
+        "Consumidor real Sales (SalesInvoiceAuthorizedPostingTranslator) -- IMPLEMENTADO",
+        "Consumidor real Purchases (PurchaseInvoiceConfirmedPostingTranslator) -- IMPLEMENTADO",
+        "Consumidor real Caja -- NO INICIADO",
+        "Consumidor real Inventory -- NO INICIADO",
+        "JournalEntry: Post()/Reverse() -- NO INICIADO",
+        "JournalEntrySequence (numeracion) -- NO INICIADO",
+        "Libro diario / Mayor (consulta/endpoint) -- NO INICIADO",
+        "Balance / Estado de resultados -- NO INICIADO",
+        "Cash & Banks (cuentas bancarias, conciliacion) -- NO INICIADO"
+      ],
+      "entregables": [
+        "Posting Engine operativo consumiendo Domain Events -- ENTREGADO",
+        "JournalEntry con lineas de partida doble real -- ENTREGADO (Post()/Reverse() pendiente)",
+        "Libro diario / Mayor consultable -- PENDIENTE",
+        "Balance / Estado de resultados generado desde asientos reales -- PENDIENTE",
+        "Modulo Cash & Banks (cuentas bancarias, conciliacion) -- PENDIENTE"
+      ],
+      "observaciones": "Reconciliacion 2026-07-25 (Fase Gobernanza 1.0): el texto anterior de esta etapa decia 'No iniciado, 0%' y 'JournalEntry existe solo como tabla/aggregate de identidad, sin lineas ni Post()/Reverse()' -- ambas afirmaciones eran falsas para el Posting Engine y las lineas de asiento (verificado leyendo JournalFactory.cs/JournalValidator.cs directamente), aunque siguen siendo ciertas para Post()/Reverse(). No se infla ni se reduce el avance: cada hito/entregable de esta lista distingue explicitamente IMPLEMENTADO de NO INICIADO con evidencia de codigo real. Consistente con docs/adr/ADR-026-accounting-core.md, seccion 'Estado de implementacion (2026-07-25)', que ya tenia esta informacion correcta -- este documento estaba desactualizado respecto a esa ADR, no al reves."
+    },
+    {
+      "id": "etapa-5",
+      "nombre": "Business Intelligence",
+      "descripcion": "Dashboards y/o data warehouse sobre datos consolidados del ERP. Prematuro sin Accounting Core (Etapas 3+4) cerrado.",
+      "estado": "No iniciado",
+      "prioridad": "Baja hasta tener data contable consolidada",
+      "porcentaje": "0%",
+      "modulos": ["Accounting"],
+      "dependencias": "Accounting Core (Etapas 3+4) + historico transaccional real",
+      "bloqueadores": "Prematuro sin Etapas 3/4 cerradas",
+      "hitos": ["Pendiente de definicion (depende del alcance: dashboards operativos vs. data warehouse)"],
+      "entregables": ["Pendiente de definicion"],
+      "observaciones": "Complejidad depende del alcance elegido (dashboards operativos vs. data warehouse) -- decision de producto pendiente."
+    },
+    {
+      "id": "etapa-6",
+      "nombre": "Automatización",
+      "descripcion": "Automatizacion de procesos de Produccion y Manufactura (consumo de materiales, BOM/recetas). Ninguno de los dos ha iniciado.",
+      "estado": "No iniciado",
+      "prioridad": "Baja (decision de negocio del cliente)",
+      "porcentaje": "0%",
+      "modulos": ["Inventory", "Items"],
+      "dependencias": "Produccion depende de Inventario (consumo de materiales) e Items (BOM/recetas); Manufactura es superset de Produccion",
+      "bloqueadores": "Requiere extender Items mas alla de 'clasificacion pura sin comportamiento' (regla congelada, ver CLAUDE.md Infraestructura CLOSED -- Tipos de Item) -- exige ADR nueva, no una extension menor",
+      "hitos": ["Pendiente de definicion -- prioridad de negocio del cliente sin decidir"],
+      "entregables": ["Pendiente de definicion"],
+      "observaciones": "Antes 'FASE 7 -- Produccion' y 'FASE 8 -- Manufactura' en docs/ROADMAP.md, fusionadas en esta etapa por compartir la misma naturaleza (automatizacion de procesos fisicos/productivos) y el mismo riesgo (extender Items)."
+    },
+    {
+      "id": "etapa-7",
+      "nombre": "Inteligencia Artificial",
+      "descripcion": "Read-model de IA sobre eventos de dominio ya poblados por uso real del ERP. Existe diseno previo (ADR-009/010/012) pero ningun producto implementado.",
+      "estado": "Diseño previo, sin producto",
+      "prioridad": "Baja hasta tener datos reales",
+      "porcentaje": "0% de producto (diseño previo existente: ADR-009/010/012)",
+      "modulos": [],
+      "dependencias": "Outbox/eventos poblados por uso real (Etapas 1-4)",
+      "bloqueadores": "Prematuro sin volumen transaccional real que un read-model de IA pueda consumir",
+      "hitos": ["Pendiente de definicion -- condicionado a volumen transaccional real"],
+      "entregables": ["Pendiente de definicion"],
+      "observaciones": "ADR-009 (AI layer separation), ADR-010 (event versioning), ADR-012 (AI read-model strategy) ya existen como diseno arquitectonico aprobado, sin implementacion de producto todavia. Sin modulo tecnico propio en explorer-index.json -- 'modulos' se deja vacio deliberadamente en vez de inventar una asociacion."
+    }
+  ],
+  "sinEtapaAsignada": {
+    "nota": "CRM y RRHH no encajan con precision semantica en ninguna de las 7 etapas anteriores -- se documentan aparte en vez de forzar una categorizacion que no las describe correctamente (decision confirmada por el usuario, 2026-07-25).",
+    "modulos": [
+      {
+        "id": "crm",
+        "nombre": "CRM",
+        "estado": "No iniciado",
+        "prioridad": "Media (decision de negocio)",
+        "dependencias": "Business Partners V2 (FROZEN, base solida para extender a oportunidades/pipeline)",
+        "modulosInvolucrados": ["BusinessPartner"],
+        "bloqueadores": "Bajo -- se apoya en infraestructura ya cerrada (BP, Audit, Pricing)"
+      },
+      {
+        "id": "rrhh",
+        "nombre": "RRHH",
+        "estado": "No iniciado",
+        "prioridad": "Baja-Media (decision de negocio)",
+        "dependencias": "Organizacion / IAM",
+        "modulosInvolucrados": ["Access"],
+        "bloqueadores": "Sin dependencias fuertes de otros modulos ERP"
+      }
+    ]
+  }
+}

@@ -1,7 +1,7 @@
 ﻿{
-    "Generated":  "2026-07-20 19:20:03",
-    "FilesAnalyzed":  9470,
-    "SecretsFound":  155,
+    "Generated":  "2026-07-26 17:06:24",
+    "FilesAnalyzed":  9571,
+    "SecretsFound":  149,
     "SecretFiles":  [
                         "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.API\\bin\\Debug\\net10.0\\appsettings.Development.json",
                         "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.API\\bin\\Debug\\net10.0\\appsettings.json",
@@ -22,7 +22,6 @@
                         "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Infrastructure.Tests\\Services\\Sri\\TestP12CertificateFactory.cs",
                         "C:\\ProyectCursor\\erp-saas\\frontend\\e2e\\helpers\\api.ts",
                         "C:\\ProyectCursor\\erp-saas\\frontend\\node_modules\\.vite\\deps\\react-dom_client.js",
-                        "C:\\ProyectCursor\\erp-saas\\frontend\\node_modules\\@hookform\\resolvers\\ajv\\src\\__tests__\\__fixtures__\\data-errors.ts",
                         "C:\\ProyectCursor\\erp-saas\\frontend\\node_modules\\@hookform\\resolvers\\ajv\\src\\__tests__\\__fixtures__\\data.ts",
                         "C:\\ProyectCursor\\erp-saas\\frontend\\node_modules\\@hookform\\resolvers\\ajv\\src\\__tests__\\Form-native-validation.tsx",
                         "C:\\ProyectCursor\\erp-saas\\frontend\\node_modules\\@hookform\\resolvers\\ajv\\src\\__tests__\\Form.tsx",
@@ -50,9 +49,6 @@
                         "C:\\ProyectCursor\\erp-saas\\frontend\\node_modules\\@hookform\\resolvers\\nope\\src\\__tests__\\__fixtures__\\data.ts",
                         "C:\\ProyectCursor\\erp-saas\\frontend\\node_modules\\@hookform\\resolvers\\nope\\src\\__tests__\\Form-native-validation.tsx",
                         "C:\\ProyectCursor\\erp-saas\\frontend\\node_modules\\@hookform\\resolvers\\nope\\src\\__tests__\\Form.tsx",
-                        "C:\\ProyectCursor\\erp-saas\\frontend\\node_modules\\@hookform\\resolvers\\standard-schema\\src\\__tests__\\__fixtures__\\data.ts",
-                        "C:\\ProyectCursor\\erp-saas\\frontend\\node_modules\\@hookform\\resolvers\\standard-schema\\src\\__tests__\\Form-native-validation.tsx",
-                        "C:\\ProyectCursor\\erp-saas\\frontend\\node_modules\\@hookform\\resolvers\\standard-schema\\src\\__tests__\\Form.tsx",
                         "C:\\ProyectCursor\\erp-saas\\frontend\\node_modules\\@hookform\\resolvers\\superstruct\\src\\__tests__\\__fixtures__\\data.ts",
                         "C:\\ProyectCursor\\erp-saas\\frontend\\node_modules\\@hookform\\resolvers\\superstruct\\src\\__tests__\\Form-native-validation.tsx",
                         "C:\\ProyectCursor\\erp-saas\\frontend\\node_modules\\@hookform\\resolvers\\superstruct\\src\\__tests__\\Form.tsx",
@@ -79,9 +75,7 @@
                         "C:\\ProyectCursor\\erp-saas\\frontend\\node_modules\\@hookform\\resolvers\\yup\\src\\__tests__\\__fixtures__\\data.ts",
                         "C:\\ProyectCursor\\erp-saas\\frontend\\node_modules\\@hookform\\resolvers\\yup\\src\\__tests__\\Form-native-validation.tsx",
                         "C:\\ProyectCursor\\erp-saas\\frontend\\node_modules\\@hookform\\resolvers\\yup\\src\\__tests__\\Form.tsx",
-                        "C:\\ProyectCursor\\erp-saas\\frontend\\node_modules\\@hookform\\resolvers\\zod\\src\\__tests__\\__fixtures__\\data-v3.ts",
-                        "C:\\ProyectCursor\\erp-saas\\frontend\\node_modules\\@hookform\\resolvers\\zod\\src\\__tests__\\__fixtures__\\data-v4-mini.ts",
-                        "C:\\ProyectCursor\\erp-saas\\frontend\\node_modules\\@hookform\\resolvers\\zod\\src\\__tests__\\__fixtures__\\data-v4.ts",
+                        "C:\\ProyectCursor\\erp-saas\\frontend\\node_modules\\@hookform\\resolvers\\zod\\src\\__tests__\\__fixtures__\\data.ts",
                         "C:\\ProyectCursor\\erp-saas\\frontend\\node_modules\\@hookform\\resolvers\\zod\\src\\__tests__\\Form-native-validation.tsx",
                         "C:\\ProyectCursor\\erp-saas\\frontend\\node_modules\\@hookform\\resolvers\\zod\\src\\__tests__\\Form.tsx",
                         "C:\\ProyectCursor\\erp-saas\\frontend\\node_modules\\@types\\node\\crypto.d.ts",
@@ -180,5 +174,5 @@
                                   "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.API\\Program.cs",
                                   "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.API.Tests\\Support\\PostgreSqlTestWebAppFactory.cs"
                               ],
-    "Warnings":  170
+    "Warnings":  164
 }

@@ -36,7 +36,7 @@
                      ]
     },
     {
-        "task":  "Refactor large file (1007 lines): frontend/src/modules/sales/hooks/useSalesPage.ts",
+        "task":  "Refactor large file (1034 lines): frontend/src/modules/sales/hooks/useSalesPage.ts",
         "category":  "Technical Debt",
         "priority":  "HIGH",
         "source":  "TechnicalDebt.LargeFiles",

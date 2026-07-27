@@ -1,0 +1,127 @@
+{
+  "generated": "2026-07-25",
+  "source": "Derivado de docs/ROADMAP.md / docs/ProgressDashboard/data/roadmap.json (campo 'bloqueadores' de cada etapa) -- ningun bloqueador fue inventado, son los mismos pendientes ya documentados, reestructurados como registros individuales con severidad/estado/accion propios.",
+  "method": "Revision manual, no analizador automatizado. Actualizar 'estado' (Abierto/En progreso/Resuelto) cuando el pendiente correspondiente en docs/ROADMAP.md cambie -- editar siempre primero docs/ROADMAP.md, luego reflejar aqui.",
+  "blockers": [
+    {
+      "id": "BLK-001",
+      "titulo": "Modulo de Cobros pendiente",
+      "descripcion": "SalesReceivable (FROZEN) solo registra deuda, nunca cobra -- decision de diseno explicita, no un olvido, pero deja el ciclo de venta a credito incompleto.",
+      "severidad": "Alta",
+      "etapa": "etapa-1",
+      "modulosAfectados": ["Sales"],
+      "dependencias": "Ninguna",
+      "accionRequerida": "Implementar aplicacion de pago contra SalesReceivableInstallment",
+      "estado": "Abierto",
+      "observaciones": "docs/ROADMAP.md lo describe como 'el hueco funcional mas visible del MVP comercial actual'."
+    },
+    {
+      "id": "BLK-002",
+      "titulo": "Liquidacion de compra (SRI 03) y recepcion fisica sin factura pendientes",
+      "descripcion": "Sin liquidacion de compra tipo SRI 03 ni recepcion fisica sin factura -- bloquean el flujo de Retenciones (obligacion fiscal Ecuador).",
+      "severidad": "Alta",
+      "etapa": "etapa-1",
+      "modulosAfectados": ["Purchases"],
+      "dependencias": "Ninguna",
+      "accionRequerida": "Implementar PurchaseSettlement (tipo SRI 03) y recepcion fisica sin factura",
+      "estado": "Abierto",
+      "observaciones": "Bloquea a su vez el modulo de Retenciones dentro de Etapa 1 (extension de ElectronicDocuments)."
+    },
+    {
+      "id": "BLK-003",
+      "titulo": "Cierre formal (ADR/freeze) de Caja pendiente",
+      "descripcion": "Caja es funcional pero no tiene el mismo nivel de gobernanza arquitectonica que el resto de la Etapa 1 -- sin ADR ni freeze propio.",
+      "severidad": "Media",
+      "etapa": "etapa-1",
+      "modulosAfectados": ["Caja"],
+      "dependencias": "Ninguna",
+      "accionRequerida": "Redactar ADR de cierre de Caja",
+      "estado": "Abierto",
+      "observaciones": "docs/ROADMAP.md: 'evolucion no gobernada hasta que se cierre'."
+    },
+    {
+      "id": "BLK-004",
+      "titulo": "Validacion SRI en ambiente de produccion real pendiente",
+      "descripcion": "Ya validado en ambiente de Pruebas SRI (celcer.sri.gob.ec) con certificado real (ADR-023); falta el ambiente productivo.",
+      "severidad": "Media",
+      "etapa": "etapa-1",
+      "modulosAfectados": ["ElectronicDocuments"],
+      "dependencias": "Ninguna",
+      "accionRequerida": "Certificacion y validacion en ambiente de produccion SRI",
+      "estado": "Abierto",
+      "observaciones": "Sin hallazgos negativos conocidos en Pruebas -- es un paso administrativo/de certificacion, no una brecha funcional."
+    },
+    {
+      "id": "BLK-005",
+      "titulo": "RLS PostgreSQL wave 2+ no implementado",
+      "descripcion": "Aislamiento multi-tenant hoy 100% a nivel de aplicacion (CompanyScopeBehavior + EF query filters, FROZEN); RLS a nivel de base de datos sigue pendiente.",
+      "severidad": "Media",
+      "etapa": "etapa-2",
+      "modulosAfectados": ["Security", "Access"],
+      "dependencias": "Ninguna",
+      "accionRequerida": "Extender politicas RLS a tablas de sales/purchasing/accounting",
+      "estado": "Abierto",
+      "observaciones": "docs/ROADMAP.md lo marca explicitamente como 'no bloquea el MVP' -- hardening de defensa en profundidad, no un riesgo activo de produccion. Ver docs/DATABASE.md#rls."
+    },
+    {
+      "id": "BLK-006",
+      "titulo": "Permissions cache con wiring parcial",
+      "descripcion": "El servicio IPermissionsCacheService existe pero su wiring en el hot path de autorizacion (RuntimePermissionAuthorizer) es parcial.",
+      "severidad": "Baja",
+      "etapa": "etapa-2",
+      "modulosAfectados": ["Access"],
+      "dependencias": "Ninguna",
+      "accionRequerida": "Completar wiring de IPermissionsCacheService en RuntimePermissionAuthorizer",
+      "estado": "Abierto",
+      "observaciones": "Deuda tecnica no bloqueante, ya documentada en docs/ROADMAP.md."
+    },
+    {
+      "id": "BLK-007",
+      "titulo": "Posting Engine / Asientos contables sin iniciar",
+      "descripcion": "Motor de generacion automatica de asientos desde eventos de dominio -- maximo acoplamiento transversal del ERP (todo documento transaccional eventualmente debe generar un asiento).",
+      "severidad": "Alta",
+      "etapa": "etapa-4",
+      "modulosAfectados": ["Accounting", "Sales", "Purchases", "Caja", "Inventory"],
+      "dependencias": "Precondicion recomendada: cerrar BLK-001 (Cobros) y BLK-002 (Liquidacion de compra) antes de completar esta etapa, para no generar el motor de asientos contra un dominio transaccional todavia incompleto",
+      "accionRequerida": "Disenar el Posting Engine antes de codificar (unico punto de consumo de eventos de dominio, apoyado en Domain Events + Outbox ya FROZEN ADR-007/008 -- nunca disparadores ad-hoc por modulo)",
+      "estado": "Abierto",
+      "observaciones": "docs/ROADMAP.md lo describe como 'Riesgo estructural'. 'Accounting' referenciado aqui es un modulo real (ADR-026 ACCEPTED) todavia no trackeado por explorer-index.json -- ver advertencia de validacion del generador."
+    },
+    {
+      "id": "BLK-008",
+      "titulo": "Reglas de contabilizacion sin consumidor real",
+      "descripcion": "PostingRule existe como configuracion de mapeo pura pero no tiene ningun consumidor todavia (el Posting Engine no existe) -- hoy no produce ningun efecto contable real.",
+      "severidad": "Baja",
+      "etapa": "etapa-3",
+      "modulosAfectados": ["Accounting"],
+      "dependencias": "Depende de BLK-007 (Posting Engine) para tener efecto real",
+      "accionRequerida": "Ninguna accion inmediata -- queda a la espera del Posting Engine (Etapa 4)",
+      "estado": "Abierto",
+      "observaciones": "No es un bloqueador urgente por si mismo, es una consecuencia de la secuencia de etapas (Etapa 3 antes que Etapa 4)."
+    },
+    {
+      "id": "BLK-009",
+      "titulo": "Decision de producto: catalogo tenant-editable vs plantilla NIIF PYMES Ecuador",
+      "descripcion": "El Plan de cuentas (Account) tiene CRUD completo pero sigue sin definirse si el contenido inicial es un catalogo tenant-editable (patron ItemTypeDefinition) o una plantilla estandar NIIF PYMES Ecuador.",
+      "severidad": "Baja",
+      "etapa": "etapa-3",
+      "modulosAfectados": ["Accounting"],
+      "dependencias": "Ninguna",
+      "accionRequerida": "Decision de producto pendiente del cliente/negocio, no de arquitectura",
+      "estado": "Abierto",
+      "observaciones": "docs/ROADMAP.md lo marca explicitamente como decision de producto, no de arquitectura."
+    },
+    {
+      "id": "BLK-010",
+      "titulo": "Extender Items para Produccion/Manufactura requiere ADR nueva",
+      "descripcion": "Items tiene una regla congelada de 'clasificacion pura sin comportamiento' (CLAUDE.md, Infraestructura CLOSED Tipos de Item) -- extenderlo para soportar BOM/recetas de Produccion/Manufactura exige una ADR nueva, no una extension menor.",
+      "severidad": "Baja",
+      "etapa": "etapa-6",
+      "modulosAfectados": ["Items", "Inventory"],
+      "dependencias": "Ninguna",
+      "accionRequerida": "Redactar ADR de extension de Items antes de iniciar Produccion/Manufactura; prioridad de negocio del cliente sin decidir todavia",
+      "estado": "Abierto",
+      "observaciones": "docs/ROADMAP.md marca Etapa 6 como 'Baja (decision de negocio del cliente)' -- no urgente hoy."
+    }
+  ]
+}

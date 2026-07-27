@@ -1,5 +1,5 @@
 ﻿{
-    "generated":  "2026-07-20 19:20:40",
+    "generated":  "2026-07-26 17:06:46",
     "source":  "dashboard-model-v12.json (EngineeringScore, TechnicalDebt), architecture-progress.json (stage/phase weighted completion)",
     "disclaimer":  "This is a read-only simulation. No real JSON file is modified. Formulas are copied verbatim from calculate-engineering-score.ps1 and render-dashboard.ps1 -- see \u0027method\u0027 below.",
     "method":  {
@@ -10,10 +10,10 @@
                    "erpCompletionRecalc":  "(sum of done tasks across all stages, with the simulated stage/phase\u0027s done = its totalTasks) / architecture-progress.json global.totalTasks * 100"
                },
     "baseline":  {
-                     "engineeringScoreOverall":  72.72,
-                     "productionReadiness":  74.75,
+                     "engineeringScoreOverall":  72.88,
+                     "productionReadiness":  74.92,
                      "productionStatus":  "NOT READY",
-                     "overallRisk":  "CRITICAL",
+                     "overallRisk":  "HIGH",
                      "erpCompletion":  84
                  },
     "scenarios":  [
@@ -22,28 +22,28 @@
                           "basis":  "dashboard-model-v12.json EngineeringScore.Security set to 80, all other components held at current real values",
                           "inputs":  {
                                          "architecture":  100,
-                                         "moduleHealth":  79.69,
-                                         "quality":  55.05,
+                                         "moduleHealth":  79.56,
+                                         "quality":  54.85,
                                          "security":  80,
                                          "dependencies":  100,
                                          "criticalFindings":  31
                                      },
                           "engineeringScoreOverall":  {
-                                                          "baseline":  72.72,
-                                                          "simulated":  80.92,
-                                                          "delta":  8.20
+                                                          "baseline":  72.88,
+                                                          "simulated":  80.84,
+                                                          "delta":  7.96
                                                       },
                           "productionReadiness":  {
-                                                      "baseline":  74.75,
-                                                      "simulated":  82.95,
-                                                      "delta":  8.20
+                                                      "baseline":  74.92,
+                                                      "simulated":  82.88,
+                                                      "delta":  7.96
                                                   },
                           "productionStatus":  {
                                                    "baseline":  "NOT READY",
                                                    "simulated":  "NEEDS REVIEW"
                                                },
                           "overallRisk":  {
-                                              "baseline":  "CRITICAL",
+                                              "baseline":  "HIGH",
                                               "simulated":  "HIGH"
                                           }
                       },
@@ -52,29 +52,29 @@
                           "basis":  "dashboard-model-v12.json EngineeringScore.Quality set to 85, all other components held at current real values",
                           "inputs":  {
                                          "architecture":  100,
-                                         "moduleHealth":  79.69,
+                                         "moduleHealth":  79.56,
                                          "quality":  85,
-                                         "security":  39,
+                                         "security":  40.2,
                                          "dependencies":  100,
                                          "criticalFindings":  31
                                      },
                           "engineeringScoreOverall":  {
-                                                          "baseline":  72.72,
-                                                          "simulated":  78.71,
-                                                          "delta":  5.99
+                                                          "baseline":  72.88,
+                                                          "simulated":  78.91,
+                                                          "delta":  6.03
                                                       },
                           "productionReadiness":  {
-                                                      "baseline":  74.75,
-                                                      "simulated":  80.74,
-                                                      "delta":  5.99
+                                                      "baseline":  74.92,
+                                                      "simulated":  80.95,
+                                                      "delta":  6.03
                                                   },
                           "productionStatus":  {
                                                    "baseline":  "NOT READY",
                                                    "simulated":  "NEEDS REVIEW"
                                                },
                           "overallRisk":  {
-                                              "baseline":  "CRITICAL",
-                                              "simulated":  "CRITICAL"
+                                              "baseline":  "HIGH",
+                                              "simulated":  "HIGH"
                                           }
                       },
                       {
@@ -82,28 +82,28 @@
                           "basis":  "Both Security=80 and Quality=85 applied simultaneously to EngineeringScore components",
                           "inputs":  {
                                          "architecture":  100,
-                                         "moduleHealth":  79.69,
+                                         "moduleHealth":  79.56,
                                          "quality":  85,
                                          "security":  80,
                                          "dependencies":  100,
                                          "criticalFindings":  31
                                      },
                           "engineeringScoreOverall":  {
-                                                          "baseline":  72.72,
-                                                          "simulated":  86.91,
-                                                          "delta":  14.19
+                                                          "baseline":  72.88,
+                                                          "simulated":  86.87,
+                                                          "delta":  13.99
                                                       },
                           "productionReadiness":  {
-                                                      "baseline":  74.75,
-                                                      "simulated":  88.94,
-                                                      "delta":  14.19
+                                                      "baseline":  74.92,
+                                                      "simulated":  88.91,
+                                                      "delta":  13.99
                                                   },
                           "productionStatus":  {
                                                    "baseline":  "NOT READY",
                                                    "simulated":  "NEEDS REVIEW"
                                                },
                           "overallRisk":  {
-                                              "baseline":  "CRITICAL",
+                                              "baseline":  "HIGH",
                                               "simulated":  "HIGH"
                                           }
                       },
@@ -114,8 +114,8 @@
                           "remainingTasksCompleted":  3,
                           "erpCompletion":  {
                                                 "baseline":  84,
-                                                "simulated":  84.99,
-                                                "delta":  0.99
+                                                "simulated":  84.63,
+                                                "delta":  0.63
                                             },
                           "note":  "Engineering Score / Production Readiness / Overall Risk are NOT affected by this scenario -- they measure code quality, not PROGRESS.html feature completion (separate metric families in this pipeline)."
                       },
@@ -126,8 +126,8 @@
                           "remainingTasksCompleted":  26,
                           "erpCompletion":  {
                                                 "baseline":  84,
-                                                "simulated":  91.15,
-                                                "delta":  7.15
+                                                "simulated":  90.57,
+                                                "delta":  6.57
                                             },
                           "note":  "Engineering Score / Production Readiness / Overall Risk are NOT affected by this scenario -- they measure code quality, not PROGRESS.html feature completion (separate metric families in this pipeline)."
                       },
@@ -138,8 +138,8 @@
                           "remainingTasksCompleted":  4,
                           "erpCompletion":  {
                                                 "baseline":  84,
-                                                "simulated":  85.25,
-                                                "delta":  1.25
+                                                "simulated":  84.88,
+                                                "delta":  0.88
                                             },
                           "note":  "Engineering Score / Production Readiness / Overall Risk are NOT affected by this scenario -- they measure code quality, not PROGRESS.html feature completion (separate metric families in this pipeline)."
                       }

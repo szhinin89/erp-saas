@@ -1,9 +1,9 @@
 ﻿{
-    "generated":  "2026-07-20 19:20:26",
+    "generated":  "2026-07-26 17:06:36",
     "coverage":  {
                      "mappedFeaturePoints":  22,
-                     "totalFeaturePoints":  181,
-                     "percentage":  12.15
+                     "totalFeaturePoints":  185,
+                     "percentage":  11.89
                  },
     "domains":  [
                     {
@@ -124,8 +124,8 @@
                                             "risk":  "MEDIUM"
                                         },
                                         {
-                                            "name":  "Audit",
-                                            "score":  77.75,
+                                            "name":  "Security",
+                                            "score":  81.5,
                                             "features":  2,
                                             "processes":  [
 
@@ -136,8 +136,8 @@
                                             "risk":  "MEDIUM"
                                         },
                                         {
-                                            "name":  "Security",
-                                            "score":  81.5,
+                                            "name":  "Audit",
+                                            "score":  77.75,
                                             "features":  2,
                                             "processes":  [
 
@@ -372,6 +372,30 @@
                                             "risk":  "MEDIUM"
                                         },
                                         {
+                                            "name":  "Media",
+                                            "score":  77.75,
+                                            "features":  0,
+                                            "processes":  [
+
+                                                          ],
+                                            "risks":  [
+                                                          "Unmapped business domain - no domains.json relationship"
+                                                      ],
+                                            "risk":  "MEDIUM"
+                                        },
+                                        {
+                                            "name":  "Catalog",
+                                            "score":  77.75,
+                                            "features":  1,
+                                            "processes":  [
+
+                                                          ],
+                                            "risks":  [
+                                                          "Unmapped business domain - no domains.json relationship"
+                                                      ],
+                                            "risk":  "MEDIUM"
+                                        },
+                                        {
                                             "name":  "Auxiliary",
                                             "score":  77.75,
                                             "features":  0,
@@ -384,9 +408,9 @@
                                             "risk":  "MEDIUM"
                                         },
                                         {
-                                            "name":  "Media",
+                                            "name":  "Accounting",
                                             "score":  77.75,
-                                            "features":  0,
+                                            "features":  3,
                                             "processes":  [
 
                                                           ],

@@ -1,8 +1,8 @@
 ﻿{
-    "Generated":  "2026-07-20 19:15:57",
+    "Generated":  "2026-07-26 17:04:52",
     "BackendRoot":  "C:\\ProyectCursor\\erp-saas\\backend\\src",
     "ProjectCount":  12,
-    "ModuleCount":  29,
+    "ModuleCount":  31,
     "Projects":  [
                      {
                          "Name":  "ERP.AI.Application",
@@ -51,6 +51,10 @@
                                              "Path":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Application\\Modules\\Access"
                                          },
                                          {
+                                             "Name":  "Accounting",
+                                             "Path":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Application\\Modules\\Accounting"
+                                         },
+                                         {
                                              "Name":  "Audit",
                                              "Path":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Application\\Modules\\Audit"
                                          },
@@ -65,6 +69,10 @@
                                          {
                                              "Name":  "Caja",
                                              "Path":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Application\\Modules\\Caja"
+                                         },
+                                         {
+                                             "Name":  "Catalog",
+                                             "Path":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Application\\Modules\\Catalog"
                                          },
                                          {
                                              "Name":  "Common",
@@ -178,6 +186,10 @@
                                          {
                                              "Name":  "Access",
                                              "Path":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Domain\\Modules\\Access"
+                                         },
+                                         {
+                                             "Name":  "Accounting",
+                                             "Path":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Domain\\Modules\\Accounting"
                                          },
                                          {
                                              "Name":  "Audit",
@@ -454,9 +466,15 @@
                         "Projects":  "ERP.Application"
                     },
                     {
-                        "Name":  "Auxiliary",
-                        "Layers":  "Domain",
-                        "Projects":  "ERP.Domain"
+                        "Name":  "Media",
+                        "Layers":  [
+                                       "Application",
+                                       "Domain"
+                                   ],
+                        "Projects":  [
+                                         "ERP.Application",
+                                         "ERP.Domain"
+                                     ]
                     },
                     {
                         "Name":  "Pricing",
@@ -484,6 +502,17 @@
                         "Name":  "ElectronicInvoicing",
                         "Layers":  "Application",
                         "Projects":  "ERP.Application"
+                    },
+                    {
+                        "Name":  "Security",
+                        "Layers":  [
+                                       "Application",
+                                       "Domain"
+                                   ],
+                        "Projects":  [
+                                         "ERP.Application",
+                                         "ERP.Domain"
+                                     ]
                     },
                     {
                         "Name":  "Configuration",
@@ -519,15 +548,9 @@
                                      ]
                     },
                     {
-                        "Name":  "Media",
-                        "Layers":  [
-                                       "Application",
-                                       "Domain"
-                                   ],
-                        "Projects":  [
-                                         "ERP.Application",
-                                         "ERP.Domain"
-                                     ]
+                        "Name":  "Catalog",
+                        "Layers":  "Application",
+                        "Projects":  "ERP.Application"
                     },
                     {
                         "Name":  "ElectronicDocuments",
@@ -541,7 +564,12 @@
                                      ]
                     },
                     {
-                        "Name":  "Security",
+                        "Name":  "Auxiliary",
+                        "Layers":  "Domain",
+                        "Projects":  "ERP.Domain"
+                    },
+                    {
+                        "Name":  "Accounting",
                         "Layers":  [
                                        "Application",
                                        "Domain"

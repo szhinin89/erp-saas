@@ -1,10 +1,10 @@
 ﻿{
-    "generated":  "2026-07-20 19:20:24",
+    "generated":  "2026-07-26 17:06:35",
     "integrityScore":  100,
     "brokenReferences":  0,
     "missingEvidence":  0,
-    "unmappedItems":  14,
-    "totalReferenceChecks":  89,
+    "unmappedItems":  16,
+    "totalReferenceChecks":  93,
     "details":  {
                     "brokenReferences":  [
 
@@ -17,15 +17,17 @@
                                           "module \u0027Menu\u0027 has no domain assigned (domainId: unmapped)",
                                           "module \u0027Integration\u0027 has no domain assigned (domainId: unmapped)",
                                           "module \u0027Common\u0027 has no domain assigned (domainId: unmapped)",
-                                          "module \u0027Auxiliary\u0027 has no domain assigned (domainId: unmapped)",
                                           "module \u0027Media\u0027 has no domain assigned (domainId: unmapped)",
+                                          "module \u0027Catalog\u0027 has no domain assigned (domainId: unmapped)",
+                                          "module \u0027Auxiliary\u0027 has no domain assigned (domainId: unmapped)",
+                                          "module \u0027Accounting\u0027 has no domain assigned (domainId: unmapped)",
                                           "module \u0027Navigation\u0027 has no domain assigned (domainId: unmapped)",
                                           "module \u0027Menu\u0027 has zero features mapped (Domain-only catalog module (no Application UseCases layer yet))",
                                           "module \u0027Tenants\u0027 has zero features mapped (Domain-only catalog module (no Application UseCases layer yet))",
                                           "module \u0027Common\u0027 has zero features mapped (Application module exists but exposes no discrete UseCases/Query/Command (likely shared/infrastructure module))",
-                                          "module \u0027Auxiliary\u0027 has zero features mapped (Domain-only catalog module (no Application UseCases layer yet))",
-                                          "module \u0027Configuration\u0027 has zero features mapped (Application module exists but exposes no discrete UseCases/Query/Command (likely shared/infrastructure module))",
                                           "module \u0027Media\u0027 has zero features mapped (Application module exists but exposes no discrete UseCases/Query/Command (likely shared/infrastructure module))",
+                                          "module \u0027Configuration\u0027 has zero features mapped (Application module exists but exposes no discrete UseCases/Query/Command (likely shared/infrastructure module))",
+                                          "module \u0027Auxiliary\u0027 has zero features mapped (Domain-only catalog module (no Application UseCases layer yet))",
                                           "module \u0027SriCatalogs\u0027 has zero features mapped (Domain-only catalog module (no Application UseCases layer yet))"
                                       ]
                 }

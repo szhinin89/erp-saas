@@ -1,0 +1,673 @@
+﻿{
+    "timestamp":  "2026-07-26 17:06:57",
+    "totalChecks":  109,
+    "passed":  109,
+    "failed":  0,
+    "criticalErrors":  0,
+    "warnings":  0,
+    "score":  100,
+    "tiempoMs":  923,
+    "metodo":  "Checks 1/2/12 (existencia/JSON valido/no vacio) aplicados a las 25 fuentes que consume render-dashboard.ps1. Checks 3-11 (claves obligatorias, duplicados, referencias rotas, modulos vs codigo fuente, rangos 0-100, estados conocidos, fechas, nulls) aplicados solo a los 6 datasets con esquema de modulo verificado (modules-status.json/architecture-governance.json/roadmap.json/blockers.json/architecture-dependencies.json/module-coverage-audit.json) mas explorer-index.json como referencia de codigo fuente real. Score = 100 * passed / totalChecks.",
+    "errores":  [
+
+                ],
+    "advertencias":  [
+
+                     ],
+    "checksCompletos":  [
+                            {
+                                "check":  "1. Existe: dashboard-model-v12.json",
+                                "ok":  true,
+                                "severity":  "Critica",
+                                "detail":  "OK"
+                            },
+                            {
+                                "check":  "12. No vacio: dashboard-model-v12.json",
+                                "ok":  true,
+                                "severity":  "Critica",
+                                "detail":  "OK (207646 bytes)"
+                            },
+                            {
+                                "check":  "2. JSON valido: dashboard-model-v12.json",
+                                "ok":  true,
+                                "severity":  "Critica",
+                                "detail":  "OK"
+                            },
+                            {
+                                "check":  "12b. Contenido no trivial: dashboard-model-v12.json",
+                                "ok":  true,
+                                "severity":  "Alta",
+                                "detail":  "OK"
+                            },
+                            {
+                                "check":  "1. Existe: dashboard-summary.json",
+                                "ok":  true,
+                                "severity":  "Critica",
+                                "detail":  "OK"
+                            },
+                            {
+                                "check":  "12. No vacio: dashboard-summary.json",
+                                "ok":  true,
+                                "severity":  "Critica",
+                                "detail":  "OK (5490 bytes)"
+                            },
+                            {
+                                "check":  "2. JSON valido: dashboard-summary.json",
+                                "ok":  true,
+                                "severity":  "Critica",
+                                "detail":  "OK"
+                            },
+                            {
+                                "check":  "12b. Contenido no trivial: dashboard-summary.json",
+                                "ok":  true,
+                                "severity":  "Alta",
+                                "detail":  "OK"
+                            },
+                            {
+                                "check":  "1. Existe: erp.json",
+                                "ok":  true,
+                                "severity":  "Critica",
+                                "detail":  "OK"
+                            },
+                            {
+                                "check":  "12. No vacio: erp.json",
+                                "ok":  true,
+                                "severity":  "Critica",
+                                "detail":  "OK (113 bytes)"
+                            },
+                            {
+                                "check":  "2. JSON valido: erp.json",
+                                "ok":  true,
+                                "severity":  "Critica",
+                                "detail":  "OK"
+                            },
+                            {
+                                "check":  "12b. Contenido no trivial: erp.json",
+                                "ok":  true,
+                                "severity":  "Alta",
+                                "detail":  "OK"
+                            },
+                            {
+                                "check":  "1. Existe: layers.json",
+                                "ok":  true,
+                                "severity":  "Critica",
+                                "detail":  "OK"
+                            },
+                            {
+                                "check":  "12. No vacio: layers.json",
+                                "ok":  true,
+                                "severity":  "Critica",
+                                "detail":  "OK (868 bytes)"
+                            },
+                            {
+                                "check":  "2. JSON valido: layers.json",
+                                "ok":  true,
+                                "severity":  "Critica",
+                                "detail":  "OK"
+                            },
+                            {
+                                "check":  "12b. Contenido no trivial: layers.json",
+                                "ok":  true,
+                                "severity":  "Alta",
+                                "detail":  "OK"
+                            },
+                            {
+                                "check":  "1. Existe: domains.json",
+                                "ok":  true,
+                                "severity":  "Critica",
+                                "detail":  "OK"
+                            },
+                            {
+                                "check":  "12. No vacio: domains.json",
+                                "ok":  true,
+                                "severity":  "Critica",
+                                "detail":  "OK (1121 bytes)"
+                            },
+                            {
+                                "check":  "2. JSON valido: domains.json",
+                                "ok":  true,
+                                "severity":  "Critica",
+                                "detail":  "OK"
+                            },
+                            {
+                                "check":  "12b. Contenido no trivial: domains.json",
+                                "ok":  true,
+                                "severity":  "Alta",
+                                "detail":  "OK"
+                            },
+                            {
+                                "check":  "1. Existe: modules.json",
+                                "ok":  true,
+                                "severity":  "Critica",
+                                "detail":  "OK"
+                            },
+                            {
+                                "check":  "12. No vacio: modules.json",
+                                "ok":  true,
+                                "severity":  "Critica",
+                                "detail":  "OK (7418 bytes)"
+                            },
+                            {
+                                "check":  "2. JSON valido: modules.json",
+                                "ok":  true,
+                                "severity":  "Critica",
+                                "detail":  "OK"
+                            },
+                            {
+                                "check":  "12b. Contenido no trivial: modules.json",
+                                "ok":  true,
+                                "severity":  "Alta",
+                                "detail":  "OK"
+                            },
+                            {
+                                "check":  "1. Existe: features.json",
+                                "ok":  true,
+                                "severity":  "Critica",
+                                "detail":  "OK"
+                            },
+                            {
+                                "check":  "12. No vacio: features.json",
+                                "ok":  true,
+                                "severity":  "Critica",
+                                "detail":  "OK (77137 bytes)"
+                            },
+                            {
+                                "check":  "2. JSON valido: features.json",
+                                "ok":  true,
+                                "severity":  "Critica",
+                                "detail":  "OK"
+                            },
+                            {
+                                "check":  "12b. Contenido no trivial: features.json",
+                                "ok":  true,
+                                "severity":  "Alta",
+                                "detail":  "OK"
+                            },
+                            {
+                                "check":  "1. Existe: processes.json",
+                                "ok":  true,
+                                "severity":  "Critica",
+                                "detail":  "OK"
+                            },
+                            {
+                                "check":  "12. No vacio: processes.json",
+                                "ok":  true,
+                                "severity":  "Critica",
+                                "detail":  "OK (7192 bytes)"
+                            },
+                            {
+                                "check":  "2. JSON valido: processes.json",
+                                "ok":  true,
+                                "severity":  "Critica",
+                                "detail":  "OK"
+                            },
+                            {
+                                "check":  "12b. Contenido no trivial: processes.json",
+                                "ok":  true,
+                                "severity":  "Alta",
+                                "detail":  "OK"
+                            },
+                            {
+                                "check":  "1. Existe: tasks.json",
+                                "ok":  true,
+                                "severity":  "Critica",
+                                "detail":  "OK"
+                            },
+                            {
+                                "check":  "12. No vacio: tasks.json",
+                                "ok":  true,
+                                "severity":  "Critica",
+                                "detail":  "OK (7225 bytes)"
+                            },
+                            {
+                                "check":  "2. JSON valido: tasks.json",
+                                "ok":  true,
+                                "severity":  "Critica",
+                                "detail":  "OK"
+                            },
+                            {
+                                "check":  "12b. Contenido no trivial: tasks.json",
+                                "ok":  true,
+                                "severity":  "Alta",
+                                "detail":  "OK"
+                            },
+                            {
+                                "check":  "1. Existe: impact.json",
+                                "ok":  true,
+                                "severity":  "Critica",
+                                "detail":  "OK"
+                            },
+                            {
+                                "check":  "12. No vacio: impact.json",
+                                "ok":  true,
+                                "severity":  "Critica",
+                                "detail":  "OK (22476 bytes)"
+                            },
+                            {
+                                "check":  "2. JSON valido: impact.json",
+                                "ok":  true,
+                                "severity":  "Critica",
+                                "detail":  "OK"
+                            },
+                            {
+                                "check":  "12b. Contenido no trivial: impact.json",
+                                "ok":  true,
+                                "severity":  "Alta",
+                                "detail":  "OK"
+                            },
+                            {
+                                "check":  "1. Existe: model-health.json",
+                                "ok":  true,
+                                "severity":  "Critica",
+                                "detail":  "OK"
+                            },
+                            {
+                                "check":  "12. No vacio: model-health.json",
+                                "ok":  true,
+                                "severity":  "Critica",
+                                "detail":  "OK (2849 bytes)"
+                            },
+                            {
+                                "check":  "2. JSON valido: model-health.json",
+                                "ok":  true,
+                                "severity":  "Critica",
+                                "detail":  "OK"
+                            },
+                            {
+                                "check":  "12b. Contenido no trivial: model-health.json",
+                                "ok":  true,
+                                "severity":  "Alta",
+                                "detail":  "OK"
+                            },
+                            {
+                                "check":  "1. Existe: architecture-progress.json",
+                                "ok":  true,
+                                "severity":  "Critica",
+                                "detail":  "OK"
+                            },
+                            {
+                                "check":  "12. No vacio: architecture-progress.json",
+                                "ok":  true,
+                                "severity":  "Critica",
+                                "detail":  "OK (160577 bytes)"
+                            },
+                            {
+                                "check":  "2. JSON valido: architecture-progress.json",
+                                "ok":  true,
+                                "severity":  "Critica",
+                                "detail":  "OK"
+                            },
+                            {
+                                "check":  "12b. Contenido no trivial: architecture-progress.json",
+                                "ok":  true,
+                                "severity":  "Alta",
+                                "detail":  "OK"
+                            },
+                            {
+                                "check":  "1. Existe: completion-intelligence.json",
+                                "ok":  true,
+                                "severity":  "Critica",
+                                "detail":  "OK"
+                            },
+                            {
+                                "check":  "12. No vacio: completion-intelligence.json",
+                                "ok":  true,
+                                "severity":  "Critica",
+                                "detail":  "OK (3214 bytes)"
+                            },
+                            {
+                                "check":  "2. JSON valido: completion-intelligence.json",
+                                "ok":  true,
+                                "severity":  "Critica",
+                                "detail":  "OK"
+                            },
+                            {
+                                "check":  "12b. Contenido no trivial: completion-intelligence.json",
+                                "ok":  true,
+                                "severity":  "Alta",
+                                "detail":  "OK"
+                            },
+                            {
+                                "check":  "1. Existe: navigation-map.json",
+                                "ok":  true,
+                                "severity":  "Critica",
+                                "detail":  "OK"
+                            },
+                            {
+                                "check":  "12. No vacio: navigation-map.json",
+                                "ok":  true,
+                                "severity":  "Critica",
+                                "detail":  "OK (29500 bytes)"
+                            },
+                            {
+                                "check":  "2. JSON valido: navigation-map.json",
+                                "ok":  true,
+                                "severity":  "Critica",
+                                "detail":  "OK"
+                            },
+                            {
+                                "check":  "12b. Contenido no trivial: navigation-map.json",
+                                "ok":  true,
+                                "severity":  "Alta",
+                                "detail":  "OK"
+                            },
+                            {
+                                "check":  "1. Existe: explorer-index.json",
+                                "ok":  true,
+                                "severity":  "Critica",
+                                "detail":  "OK"
+                            },
+                            {
+                                "check":  "12. No vacio: explorer-index.json",
+                                "ok":  true,
+                                "severity":  "Critica",
+                                "detail":  "OK (890309 bytes)"
+                            },
+                            {
+                                "check":  "2. JSON valido: explorer-index.json",
+                                "ok":  true,
+                                "severity":  "Critica",
+                                "detail":  "OK"
+                            },
+                            {
+                                "check":  "12b. Contenido no trivial: explorer-index.json",
+                                "ok":  true,
+                                "severity":  "Alta",
+                                "detail":  "OK"
+                            },
+                            {
+                                "check":  "1. Existe: modules-status.json",
+                                "ok":  true,
+                                "severity":  "Critica",
+                                "detail":  "OK"
+                            },
+                            {
+                                "check":  "12. No vacio: modules-status.json",
+                                "ok":  true,
+                                "severity":  "Critica",
+                                "detail":  "OK (23470 bytes)"
+                            },
+                            {
+                                "check":  "2. JSON valido: modules-status.json",
+                                "ok":  true,
+                                "severity":  "Critica",
+                                "detail":  "OK"
+                            },
+                            {
+                                "check":  "12b. Contenido no trivial: modules-status.json",
+                                "ok":  true,
+                                "severity":  "Alta",
+                                "detail":  "OK"
+                            },
+                            {
+                                "check":  "1. Existe: dependencies.json",
+                                "ok":  true,
+                                "severity":  "Critica",
+                                "detail":  "OK"
+                            },
+                            {
+                                "check":  "12. No vacio: dependencies.json",
+                                "ok":  true,
+                                "severity":  "Critica",
+                                "detail":  "OK (100132 bytes)"
+                            },
+                            {
+                                "check":  "2. JSON valido: dependencies.json",
+                                "ok":  true,
+                                "severity":  "Critica",
+                                "detail":  "OK"
+                            },
+                            {
+                                "check":  "12b. Contenido no trivial: dependencies.json",
+                                "ok":  true,
+                                "severity":  "Alta",
+                                "detail":  "OK"
+                            },
+                            {
+                                "check":  "1. Existe: critical-path.json",
+                                "ok":  true,
+                                "severity":  "Critica",
+                                "detail":  "OK"
+                            },
+                            {
+                                "check":  "12. No vacio: critical-path.json",
+                                "ok":  true,
+                                "severity":  "Critica",
+                                "detail":  "OK (86035 bytes)"
+                            },
+                            {
+                                "check":  "2. JSON valido: critical-path.json",
+                                "ok":  true,
+                                "severity":  "Critica",
+                                "detail":  "OK"
+                            },
+                            {
+                                "check":  "12b. Contenido no trivial: critical-path.json",
+                                "ok":  true,
+                                "severity":  "Alta",
+                                "detail":  "OK"
+                            },
+                            {
+                                "check":  "1. Existe: release-simulation.json",
+                                "ok":  true,
+                                "severity":  "Critica",
+                                "detail":  "OK"
+                            },
+                            {
+                                "check":  "12. No vacio: release-simulation.json",
+                                "ok":  true,
+                                "severity":  "Critica",
+                                "detail":  "OK (10229 bytes)"
+                            },
+                            {
+                                "check":  "2. JSON valido: release-simulation.json",
+                                "ok":  true,
+                                "severity":  "Critica",
+                                "detail":  "OK"
+                            },
+                            {
+                                "check":  "12b. Contenido no trivial: release-simulation.json",
+                                "ok":  true,
+                                "severity":  "Alta",
+                                "detail":  "OK"
+                            },
+                            {
+                                "check":  "1. Existe: recommendations.json",
+                                "ok":  true,
+                                "severity":  "Critica",
+                                "detail":  "OK"
+                            },
+                            {
+                                "check":  "12. No vacio: recommendations.json",
+                                "ok":  true,
+                                "severity":  "Critica",
+                                "detail":  "OK (13078 bytes)"
+                            },
+                            {
+                                "check":  "2. JSON valido: recommendations.json",
+                                "ok":  true,
+                                "severity":  "Critica",
+                                "detail":  "OK"
+                            },
+                            {
+                                "check":  "12b. Contenido no trivial: recommendations.json",
+                                "ok":  true,
+                                "severity":  "Alta",
+                                "detail":  "OK"
+                            },
+                            {
+                                "check":  "1. Existe: roadmap.json",
+                                "ok":  true,
+                                "severity":  "Critica",
+                                "detail":  "OK"
+                            },
+                            {
+                                "check":  "12. No vacio: roadmap.json",
+                                "ok":  true,
+                                "severity":  "Critica",
+                                "detail":  "OK (15861 bytes)"
+                            },
+                            {
+                                "check":  "2. JSON valido: roadmap.json",
+                                "ok":  true,
+                                "severity":  "Critica",
+                                "detail":  "OK"
+                            },
+                            {
+                                "check":  "12b. Contenido no trivial: roadmap.json",
+                                "ok":  true,
+                                "severity":  "Alta",
+                                "detail":  "OK"
+                            },
+                            {
+                                "check":  "1. Existe: architecture-dependencies.json",
+                                "ok":  true,
+                                "severity":  "Critica",
+                                "detail":  "OK"
+                            },
+                            {
+                                "check":  "12. No vacio: architecture-dependencies.json",
+                                "ok":  true,
+                                "severity":  "Critica",
+                                "detail":  "OK (24983 bytes)"
+                            },
+                            {
+                                "check":  "2. JSON valido: architecture-dependencies.json",
+                                "ok":  true,
+                                "severity":  "Critica",
+                                "detail":  "OK"
+                            },
+                            {
+                                "check":  "12b. Contenido no trivial: architecture-dependencies.json",
+                                "ok":  true,
+                                "severity":  "Alta",
+                                "detail":  "OK"
+                            },
+                            {
+                                "check":  "1. Existe: blockers.json",
+                                "ok":  true,
+                                "severity":  "Critica",
+                                "detail":  "OK"
+                            },
+                            {
+                                "check":  "12. No vacio: blockers.json",
+                                "ok":  true,
+                                "severity":  "Critica",
+                                "detail":  "OK (7816 bytes)"
+                            },
+                            {
+                                "check":  "2. JSON valido: blockers.json",
+                                "ok":  true,
+                                "severity":  "Critica",
+                                "detail":  "OK"
+                            },
+                            {
+                                "check":  "12b. Contenido no trivial: blockers.json",
+                                "ok":  true,
+                                "severity":  "Alta",
+                                "detail":  "OK"
+                            },
+                            {
+                                "check":  "1. Existe: architecture-governance.json",
+                                "ok":  true,
+                                "severity":  "Critica",
+                                "detail":  "OK"
+                            },
+                            {
+                                "check":  "12. No vacio: architecture-governance.json",
+                                "ok":  true,
+                                "severity":  "Critica",
+                                "detail":  "OK (30330 bytes)"
+                            },
+                            {
+                                "check":  "2. JSON valido: architecture-governance.json",
+                                "ok":  true,
+                                "severity":  "Critica",
+                                "detail":  "OK"
+                            },
+                            {
+                                "check":  "12b. Contenido no trivial: architecture-governance.json",
+                                "ok":  true,
+                                "severity":  "Alta",
+                                "detail":  "OK"
+                            },
+                            {
+                                "check":  "1. Existe: module-coverage-audit.json",
+                                "ok":  true,
+                                "severity":  "Critica",
+                                "detail":  "OK"
+                            },
+                            {
+                                "check":  "12. No vacio: module-coverage-audit.json",
+                                "ok":  true,
+                                "severity":  "Critica",
+                                "detail":  "OK (19759 bytes)"
+                            },
+                            {
+                                "check":  "2. JSON valido: module-coverage-audit.json",
+                                "ok":  true,
+                                "severity":  "Critica",
+                                "detail":  "OK"
+                            },
+                            {
+                                "check":  "12b. Contenido no trivial: module-coverage-audit.json",
+                                "ok":  true,
+                                "severity":  "Alta",
+                                "detail":  "OK"
+                            },
+                            {
+                                "check":  "3. Claves obligatorias presentes",
+                                "ok":  true,
+                                "severity":  "Alta",
+                                "detail":  "OK"
+                            },
+                            {
+                                "check":  "4/5. Sin modulos/IDs duplicados",
+                                "ok":  true,
+                                "severity":  "Critica",
+                                "detail":  "OK"
+                            },
+                            {
+                                "check":  "6. Sin referencias rotas entre datasets",
+                                "ok":  true,
+                                "severity":  "Alta",
+                                "detail":  "OK"
+                            },
+                            {
+                                "check":  "7. Sin modulos inexistentes respecto al codigo fuente",
+                                "ok":  true,
+                                "severity":  "Critica",
+                                "detail":  "OK"
+                            },
+                            {
+                                "check":  "7b. Excepciones conocidas (fuera del arbol Modules/, ya documentadas)",
+                                "ok":  true,
+                                "severity":  "Informativa",
+                                "detail":  "BusinessPartner -- ver Fase Dashboard 3.0/10.0"
+                            },
+                            {
+                                "check":  "8. Porcentajes dentro de rango 0-100",
+                                "ok":  true,
+                                "severity":  "Alta",
+                                "detail":  "OK"
+                            },
+                            {
+                                "check":  "9. Sin estados desconocidos",
+                                "ok":  true,
+                                "severity":  "Media",
+                                "detail":  "OK"
+                            },
+                            {
+                                "check":  "10. Sin fechas invalidas",
+                                "ok":  true,
+                                "severity":  "Media",
+                                "detail":  "OK"
+                            },
+                            {
+                                "check":  "11. Sin nulls en campos obligatorios",
+                                "ok":  true,
+                                "severity":  "Alta",
+                                "detail":  "OK"
+                            }
+                        ]
+}

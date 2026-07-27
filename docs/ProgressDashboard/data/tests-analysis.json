@@ -1,33 +1,33 @@
 ﻿{
-    "Generated":  "2026-07-20 19:16:02",
+    "Generated":  "2026-07-26 17:04:58",
     "Backend":  {
                     "TestProjects":  5,
-                    "TestFiles":  208,
+                    "TestFiles":  229,
                     "Projects":  [
                                      {
                                          "Project":  "ERP.API.Tests",
                                          "Path":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.API.Tests",
-                                         "TestFiles":  26
+                                         "TestFiles":  28
                                      },
                                      {
                                          "Project":  "ERP.Application.Tests",
                                          "Path":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Application.Tests",
-                                         "TestFiles":  77
+                                         "TestFiles":  82
                                      },
                                      {
                                          "Project":  "ERP.Architecture.Tests",
                                          "Path":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Architecture.Tests",
-                                         "TestFiles":  20
+                                         "TestFiles":  22
                                      },
                                      {
                                          "Project":  "ERP.Domain.Tests",
                                          "Path":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Domain.Tests",
-                                         "TestFiles":  27
+                                         "TestFiles":  32
                                      },
                                      {
                                          "Project":  "ERP.Infrastructure.Tests",
                                          "Path":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Infrastructure.Tests",
-                                         "TestFiles":  58
+                                         "TestFiles":  65
                                      }
                                  ]
                 },

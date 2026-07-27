@@ -1,5 +1,5 @@
 ﻿{
-    "generated":  "2026-07-20 19:20:43",
+    "generated":  "2026-07-26 17:06:48",
     "source":  "architecture-progress.json, modules.json, domains.json, database-analysis.json, migration-analysis.json, frontend-analysis.json, backend-analysis.json",
     "method":  {
                    "layerToStage":  "Contiguous-window search over stages[] (real array order); a window is a candidate only if its average pct exactly equals the already-published layers[].pct. If multiple window sizes match, the largest is preferred (a multi-stage exact match is far less likely to be coincidental than a single-stage one); accepted as verified only if that largest match is unique. Ambiguous cases are reported (candidateCount) instead of guessed.",
@@ -24,9 +24,9 @@
                                                 },
                                                 {
                                                     "name":  "Operaciones",
-                                                    "pct":  84,
-                                                    "done":  70.5,
-                                                    "totalTasks":  84
+                                                    "pct":  83,
+                                                    "done":  81,
+                                                    "totalTasks":  98
                                                 },
                                                 {
                                                     "name":  "Fiscal / SRI",
@@ -104,7 +104,7 @@
                        "migrations":  null,
                        "frontendStats":  {
                                              "statistics":  {
-                                                                "SourceFiles":  383,
+                                                                "SourceFiles":  381,
                                                                 "Pages":  1,
                                                                 "Components":  52,
                                                                 "Hooks":  5,
@@ -325,7 +325,7 @@
                    {
                        "id":  "core",
                        "label":  "ERP Core Services",
-                       "pct":  69,
+                       "pct":  70,
                        "status":  "computed",
                        "note":  "Promedio de Ventas/Compras/Inventario/Caja/Contabilidad",
                        "composedOfStages":  [
@@ -344,7 +344,7 @@
                                            },
                                            {
                                                "name":  "Compras",
-                                               "pct":  89,
+                                               "pct":  91,
                                                "matchedStage":  "Operaciones",
                                                "matchedPhase":  "Compras (Purchases)",
                                                "stagePhaseVerified":  true,
@@ -425,39 +425,39 @@
 
                                          ],
                        "databaseStats":  {
-                                             "DbContext":  55,
-                                             "DbSets":  115,
+                                             "DbContext":  59,
+                                             "DbSets":  121,
                                              "EntityConfigurations":  0,
                                              "Repositories":  50,
-                                             "Migrations":  9
+                                             "Migrations":  17
                                          },
                        "migrations":  {
-                                          "totalFiles":  9,
+                                          "totalFiles":  17,
                                           "mostRecent":  [
                                                              {
+                                                                 "name":  "20260725165737_AddJournalEntryLineAndPostingRuleLine",
+                                                                 "modified":  "2026-07-25 11:57:37",
+                                                                 "sizeKB":  4.54
+                                                             },
+                                                             {
+                                                                 "name":  "20260725165737_AddJournalEntryLineAndPostingRuleLine.Designer",
+                                                                 "modified":  "2026-07-25 11:57:37",
+                                                                 "sizeKB":  491.88
+                                                             },
+                                                             {
                                                                  "name":  "ErpDbContextModelSnapshot",
-                                                                 "modified":  "2026-07-20 18:39:21",
-                                                                 "sizeKB":  463.54
+                                                                 "modified":  "2026-07-25 11:57:37",
+                                                                 "sizeKB":  491.73
                                                              },
                                                              {
-                                                                 "name":  "20260720215708_AddPurchaseReceptionXmlFields",
-                                                                 "modified":  "2026-07-20 16:57:09",
-                                                                 "sizeKB":  1.25
+                                                                 "name":  "20260725000917_AddAccountingCoreFoundations.Designer",
+                                                                 "modified":  "2026-07-25 11:47:23",
+                                                                 "sizeKB":  475.18
                                                              },
                                                              {
-                                                                 "name":  "20260720215708_AddPurchaseReceptionXmlFields.Designer",
-                                                                 "modified":  "2026-07-20 16:57:09",
-                                                                 "sizeKB":  475.05
-                                                             },
-                                                             {
-                                                                 "name":  "20260720194803_AddPurchaseReceptionDocuments.Designer",
-                                                                 "modified":  "2026-07-20 14:48:03",
-                                                                 "sizeKB":  474.63
-                                                             },
-                                                             {
-                                                                 "name":  "20260720194803_AddPurchaseReceptionDocuments",
-                                                                 "modified":  "2026-07-20 14:48:03",
-                                                                 "sizeKB":  8.14
+                                                                 "name":  "20260725000917_AddAccountingCoreFoundations",
+                                                                 "modified":  "2026-07-25 11:47:23",
+                                                                 "sizeKB":  8.64
                                                              }
                                                          ]
                                       },

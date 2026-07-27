@@ -1,5 +1,5 @@
 ﻿{
-    "Generated":  "2026-07-26 17:06:29",
+    "Generated":  "2026-07-26 17:06:27",
     "EngineeringScore":  {
                              "Generated":  "2026-07-26 17:06:27",
                              "Architecture":  100,
@@ -9,376 +9,287 @@
                              "Dependencies":  100,
                              "Overall":  72.88
                          },
-    "QualityGate":  {
-                        "Generated":  "2026-07-26 17:06:28",
-                        "Status":  "RED",
-                        "EngineeringScore":  72.88,
-                        "Warnings":  [
-                                         "Engineering score needs improvement",
-                                         "High number of possible secrets detected",
-                                         "High TODO count",
-                                         "Not implemented code detected"
-                                     ],
-                        "Strengths":  [
-                                          "Dependency rules respected",
-                                          "Module health above 75%"
-                                      ]
-                    },
-    "Trend":  {
-                  "Generated":  "2026-07-26 17:06:28",
-                  "Snapshots":  13,
-                  "History":  [
-                                  {
-                                      "Date":  "2026-07-15 20:38:00",
-                                      "File":  "dashboard-2026-07-15_210720.json",
-                                      "Score":  73.4
-                                  },
-                                  {
-                                      "Date":  "2026-07-15 20:38:00",
-                                      "File":  "dashboard-2026-07-15_211231.json",
-                                      "Score":  73.4
-                                  },
-                                  {
-                                      "Date":  "2026-07-15 20:20:34",
-                                      "File":  "dashboard-2026-07-15-2020-v2.json",
-                                      "Score":  73.4
-                                  },
-                                  {
-                                      "Date":  "2026-07-15 20:28:42",
-                                      "File":  "dashboard-2026-07-15-2028-v2.json",
-                                      "Score":  73.4
-                                  },
-                                  {
-                                      "Date":  "2026-07-15 20:37:59",
-                                      "File":  "dashboard-2026-07-15-2037-v2.json",
-                                      "Score":  73.4
-                                  },
-                                  {
-                                      "Date":  "2026-07-16 01:10:23",
-                                      "File":  "dashboard-2026-07-16-0110-v2.json",
-                                      "Score":  73.4
-                                  },
-                                  {
-                                      "Date":  "2026-07-16 12:13:06",
-                                      "File":  "dashboard-2026-07-16-1213-v2.json",
-                                      "Score":  73.4
-                                  },
-                                  {
-                                      "Date":  "2026-07-16 12:31:25",
-                                      "File":  "dashboard-2026-07-16-1231-v2.json",
-                                      "Score":  73.4
-                                  },
-                                  {
-                                      "Date":  "2026-07-20 19:20:09",
-                                      "File":  "dashboard-2026-07-20-1920-v2.json",
-                                      "Score":  72.72
-                                  },
-                                  {
-                                      "Date":  "2026-07-26 12:46:09",
-                                      "File":  "dashboard-2026-07-26-1246-v2.json",
-                                      "Score":  72.88
-                                  },
-                                  {
-                                      "Date":  "2026-07-26 15:01:14",
-                                      "File":  "dashboard-2026-07-26-1501-v2.json",
-                                      "Score":  72.88
-                                  },
-                                  {
-                                      "Date":  "2026-07-26 16:25:40",
-                                      "File":  "dashboard-2026-07-26-1625-v2.json",
-                                      "Score":  72.88
-                                  },
-                                  {
-                                      "Date":  "2026-07-26 17:06:27",
-                                      "File":  "dashboard-2026-07-26-1706-v2.json",
-                                      "Score":  72.88
-                                  }
-                              ]
-              },
-    "Health":  {
-                   "value":  [
-                                 {
-                                     "Module":  "Company",
-                                     "Architecture":  90,
-                                     "Tests":  80,
-                                     "Documentation":  70,
-                                     "Backend":  65,
-                                     "Frontend":  70,
-                                     "Score":  77.75
-                                 },
-                                 {
-                                     "Module":  "Dashboard",
-                                     "Architecture":  90,
-                                     "Tests":  80,
-                                     "Documentation":  70,
-                                     "Backend":  90,
-                                     "Frontend":  70,
-                                     "Score":  81.5
-                                 },
-                                 {
-                                     "Module":  "Purchases",
-                                     "Architecture":  90,
-                                     "Tests":  80,
-                                     "Documentation":  70,
-                                     "Backend":  90,
-                                     "Frontend":  70,
-                                     "Score":  81.5
-                                 },
-                                 {
-                                     "Module":  "Companies",
-                                     "Architecture":  90,
-                                     "Tests":  80,
-                                     "Documentation":  70,
-                                     "Backend":  65,
-                                     "Frontend":  70,
-                                     "Score":  77.75
-                                 },
-                                 {
-                                     "Module":  "Menu",
-                                     "Architecture":  90,
-                                     "Tests":  80,
-                                     "Documentation":  70,
-                                     "Backend":  65,
-                                     "Frontend":  70,
-                                     "Score":  77.75
-                                 },
-                                 {
-                                     "Module":  "Auth",
-                                     "Architecture":  90,
-                                     "Tests":  80,
-                                     "Documentation":  70,
-                                     "Backend":  90,
-                                     "Frontend":  70,
-                                     "Score":  81.5
-                                 },
-                                 {
-                                     "Module":  "Integration",
-                                     "Architecture":  90,
-                                     "Tests":  80,
-                                     "Documentation":  70,
-                                     "Backend":  65,
-                                     "Frontend":  70,
-                                     "Score":  77.75
-                                 },
-                                 {
-                                     "Module":  "Access",
-                                     "Architecture":  90,
-                                     "Tests":  80,
-                                     "Documentation":  70,
-                                     "Backend":  90,
-                                     "Frontend":  70,
-                                     "Score":  81.5
-                                 },
-                                 {
-                                     "Module":  "Sales",
-                                     "Architecture":  90,
-                                     "Tests":  80,
-                                     "Documentation":  70,
-                                     "Backend":  90,
-                                     "Frontend":  70,
-                                     "Score":  81.5
-                                 },
-                                 {
-                                     "Module":  "Items",
-                                     "Architecture":  90,
-                                     "Tests":  80,
-                                     "Documentation":  70,
-                                     "Backend":  90,
-                                     "Frontend":  70,
-                                     "Score":  81.5
-                                 },
-                                 {
-                                     "Module":  "Tenants",
-                                     "Architecture":  90,
-                                     "Tests":  80,
-                                     "Documentation":  70,
-                                     "Backend":  65,
-                                     "Frontend":  70,
-                                     "Score":  77.75
-                                 },
-                                 {
-                                     "Module":  "Session",
-                                     "Architecture":  90,
-                                     "Tests":  80,
-                                     "Documentation":  70,
-                                     "Backend":  90,
-                                     "Frontend":  70,
-                                     "Score":  81.5
-                                 },
-                                 {
-                                     "Module":  "Common",
-                                     "Architecture":  90,
-                                     "Tests":  80,
-                                     "Documentation":  70,
-                                     "Backend":  65,
-                                     "Frontend":  70,
-                                     "Score":  77.75
-                                 },
-                                 {
-                                     "Module":  "Inventory",
-                                     "Architecture":  90,
-                                     "Tests":  80,
-                                     "Documentation":  70,
-                                     "Backend":  90,
-                                     "Frontend":  70,
-                                     "Score":  81.5
-                                 },
-                                 {
-                                     "Module":  "Finance",
-                                     "Architecture":  90,
-                                     "Tests":  80,
-                                     "Documentation":  70,
-                                     "Backend":  90,
-                                     "Frontend":  70,
-                                     "Score":  81.5
-                                 },
-                                 {
-                                     "Module":  "Branches",
-                                     "Architecture":  90,
-                                     "Tests":  80,
-                                     "Documentation":  70,
-                                     "Backend":  90,
-                                     "Frontend":  70,
-                                     "Score":  81.5
-                                 },
-                                 {
-                                     "Module":  "Media",
-                                     "Architecture":  90,
-                                     "Tests":  80,
-                                     "Documentation":  70,
-                                     "Backend":  65,
-                                     "Frontend":  70,
-                                     "Score":  77.75
-                                 },
-                                 {
-                                     "Module":  "Pricing",
-                                     "Architecture":  90,
-                                     "Tests":  80,
-                                     "Documentation":  70,
-                                     "Backend":  90,
-                                     "Frontend":  70,
-                                     "Score":  81.5
-                                 },
-                                 {
-                                     "Module":  "Caja",
-                                     "Architecture":  90,
-                                     "Tests":  80,
-                                     "Documentation":  70,
-                                     "Backend":  90,
-                                     "Frontend":  70,
-                                     "Score":  81.5
-                                 },
-                                 {
-                                     "Module":  "ElectronicInvoicing",
-                                     "Architecture":  90,
-                                     "Tests":  80,
-                                     "Documentation":  70,
-                                     "Backend":  65,
-                                     "Frontend":  70,
-                                     "Score":  77.75
-                                 },
-                                 {
-                                     "Module":  "Security",
-                                     "Architecture":  90,
-                                     "Tests":  80,
-                                     "Documentation":  70,
-                                     "Backend":  90,
-                                     "Frontend":  70,
-                                     "Score":  81.5
-                                 },
-                                 {
-                                     "Module":  "Configuration",
-                                     "Architecture":  90,
-                                     "Tests":  80,
-                                     "Documentation":  70,
-                                     "Backend":  65,
-                                     "Frontend":  70,
-                                     "Score":  77.75
-                                 },
-                                 {
-                                     "Module":  "Audit",
-                                     "Architecture":  90,
-                                     "Tests":  80,
-                                     "Documentation":  70,
-                                     "Backend":  65,
-                                     "Frontend":  70,
-                                     "Score":  77.75
-                                 },
-                                 {
-                                     "Module":  "Ride",
-                                     "Architecture":  90,
-                                     "Tests":  80,
-                                     "Documentation":  70,
-                                     "Backend":  90,
-                                     "Frontend":  70,
-                                     "Score":  81.5
-                                 },
-                                 {
-                                     "Module":  "Catalog",
-                                     "Architecture":  90,
-                                     "Tests":  80,
-                                     "Documentation":  70,
-                                     "Backend":  65,
-                                     "Frontend":  70,
-                                     "Score":  77.75
-                                 },
-                                 {
-                                     "Module":  "ElectronicDocuments",
-                                     "Architecture":  90,
-                                     "Tests":  80,
-                                     "Documentation":  70,
-                                     "Backend":  90,
-                                     "Frontend":  70,
-                                     "Score":  81.5
-                                 },
-                                 {
-                                     "Module":  "Auxiliary",
-                                     "Architecture":  90,
-                                     "Tests":  80,
-                                     "Documentation":  70,
-                                     "Backend":  65,
-                                     "Frontend":  70,
-                                     "Score":  77.75
-                                 },
-                                 {
-                                     "Module":  "Accounting",
-                                     "Architecture":  90,
-                                     "Tests":  80,
-                                     "Documentation":  70,
-                                     "Backend":  65,
-                                     "Frontend":  70,
-                                     "Score":  77.75
-                                 },
-                                 {
-                                     "Module":  "SriCatalogs",
-                                     "Architecture":  90,
-                                     "Tests":  80,
-                                     "Documentation":  70,
-                                     "Backend":  65,
-                                     "Frontend":  70,
-                                     "Score":  77.75
-                                 },
-                                 {
-                                     "Module":  "OrgConfig",
-                                     "Architecture":  90,
-                                     "Tests":  80,
-                                     "Documentation":  70,
-                                     "Backend":  65,
-                                     "Frontend":  70,
-                                     "Score":  77.75
-                                 },
-                                 {
-                                     "Module":  "Navigation",
-                                     "Architecture":  90,
-                                     "Tests":  80,
-                                     "Documentation":  70,
-                                     "Backend":  65,
-                                     "Frontend":  70,
-                                     "Score":  77.75
-                                 }
-                             ],
-                   "Count":  31
-               },
+    "Health":  [
+                   {
+                       "Module":  "Company",
+                       "Architecture":  90,
+                       "Tests":  80,
+                       "Documentation":  70,
+                       "Backend":  65,
+                       "Frontend":  70,
+                       "Score":  77.75
+                   },
+                   {
+                       "Module":  "Dashboard",
+                       "Architecture":  90,
+                       "Tests":  80,
+                       "Documentation":  70,
+                       "Backend":  90,
+                       "Frontend":  70,
+                       "Score":  81.5
+                   },
+                   {
+                       "Module":  "Purchases",
+                       "Architecture":  90,
+                       "Tests":  80,
+                       "Documentation":  70,
+                       "Backend":  90,
+                       "Frontend":  70,
+                       "Score":  81.5
+                   },
+                   {
+                       "Module":  "Companies",
+                       "Architecture":  90,
+                       "Tests":  80,
+                       "Documentation":  70,
+                       "Backend":  65,
+                       "Frontend":  70,
+                       "Score":  77.75
+                   },
+                   {
+                       "Module":  "Menu",
+                       "Architecture":  90,
+                       "Tests":  80,
+                       "Documentation":  70,
+                       "Backend":  65,
+                       "Frontend":  70,
+                       "Score":  77.75
+                   },
+                   {
+                       "Module":  "Auth",
+                       "Architecture":  90,
+                       "Tests":  80,
+                       "Documentation":  70,
+                       "Backend":  90,
+                       "Frontend":  70,
+                       "Score":  81.5
+                   },
+                   {
+                       "Module":  "Integration",
+                       "Architecture":  90,
+                       "Tests":  80,
+                       "Documentation":  70,
+                       "Backend":  65,
+                       "Frontend":  70,
+                       "Score":  77.75
+                   },
+                   {
+                       "Module":  "Access",
+                       "Architecture":  90,
+                       "Tests":  80,
+                       "Documentation":  70,
+                       "Backend":  90,
+                       "Frontend":  70,
+                       "Score":  81.5
+                   },
+                   {
+                       "Module":  "Sales",
+                       "Architecture":  90,
+                       "Tests":  80,
+                       "Documentation":  70,
+                       "Backend":  90,
+                       "Frontend":  70,
+                       "Score":  81.5
+                   },
+                   {
+                       "Module":  "Items",
+                       "Architecture":  90,
+                       "Tests":  80,
+                       "Documentation":  70,
+                       "Backend":  90,
+                       "Frontend":  70,
+                       "Score":  81.5
+                   },
+                   {
+                       "Module":  "Tenants",
+                       "Architecture":  90,
+                       "Tests":  80,
+                       "Documentation":  70,
+                       "Backend":  65,
+                       "Frontend":  70,
+                       "Score":  77.75
+                   },
+                   {
+                       "Module":  "Session",
+                       "Architecture":  90,
+                       "Tests":  80,
+                       "Documentation":  70,
+                       "Backend":  90,
+                       "Frontend":  70,
+                       "Score":  81.5
+                   },
+                   {
+                       "Module":  "Common",
+                       "Architecture":  90,
+                       "Tests":  80,
+                       "Documentation":  70,
+                       "Backend":  65,
+                       "Frontend":  70,
+                       "Score":  77.75
+                   },
+                   {
+                       "Module":  "Inventory",
+                       "Architecture":  90,
+                       "Tests":  80,
+                       "Documentation":  70,
+                       "Backend":  90,
+                       "Frontend":  70,
+                       "Score":  81.5
+                   },
+                   {
+                       "Module":  "Finance",
+                       "Architecture":  90,
+                       "Tests":  80,
+                       "Documentation":  70,
+                       "Backend":  90,
+                       "Frontend":  70,
+                       "Score":  81.5
+                   },
+                   {
+                       "Module":  "Branches",
+                       "Architecture":  90,
+                       "Tests":  80,
+                       "Documentation":  70,
+                       "Backend":  90,
+                       "Frontend":  70,
+                       "Score":  81.5
+                   },
+                   {
+                       "Module":  "Media",
+                       "Architecture":  90,
+                       "Tests":  80,
+                       "Documentation":  70,
+                       "Backend":  65,
+                       "Frontend":  70,
+                       "Score":  77.75
+                   },
+                   {
+                       "Module":  "Pricing",
+                       "Architecture":  90,
+                       "Tests":  80,
+                       "Documentation":  70,
+                       "Backend":  90,
+                       "Frontend":  70,
+                       "Score":  81.5
+                   },
+                   {
+                       "Module":  "Caja",
+                       "Architecture":  90,
+                       "Tests":  80,
+                       "Documentation":  70,
+                       "Backend":  90,
+                       "Frontend":  70,
+                       "Score":  81.5
+                   },
+                   {
+                       "Module":  "ElectronicInvoicing",
+                       "Architecture":  90,
+                       "Tests":  80,
+                       "Documentation":  70,
+                       "Backend":  65,
+                       "Frontend":  70,
+                       "Score":  77.75
+                   },
+                   {
+                       "Module":  "Security",
+                       "Architecture":  90,
+                       "Tests":  80,
+                       "Documentation":  70,
+                       "Backend":  90,
+                       "Frontend":  70,
+                       "Score":  81.5
+                   },
+                   {
+                       "Module":  "Configuration",
+                       "Architecture":  90,
+                       "Tests":  80,
+                       "Documentation":  70,
+                       "Backend":  65,
+                       "Frontend":  70,
+                       "Score":  77.75
+                   },
+                   {
+                       "Module":  "Audit",
+                       "Architecture":  90,
+                       "Tests":  80,
+                       "Documentation":  70,
+                       "Backend":  65,
+                       "Frontend":  70,
+                       "Score":  77.75
+                   },
+                   {
+                       "Module":  "Ride",
+                       "Architecture":  90,
+                       "Tests":  80,
+                       "Documentation":  70,
+                       "Backend":  90,
+                       "Frontend":  70,
+                       "Score":  81.5
+                   },
+                   {
+                       "Module":  "Catalog",
+                       "Architecture":  90,
+                       "Tests":  80,
+                       "Documentation":  70,
+                       "Backend":  65,
+                       "Frontend":  70,
+                       "Score":  77.75
+                   },
+                   {
+                       "Module":  "ElectronicDocuments",
+                       "Architecture":  90,
+                       "Tests":  80,
+                       "Documentation":  70,
+                       "Backend":  90,
+                       "Frontend":  70,
+                       "Score":  81.5
+                   },
+                   {
+                       "Module":  "Auxiliary",
+                       "Architecture":  90,
+                       "Tests":  80,
+                       "Documentation":  70,
+                       "Backend":  65,
+                       "Frontend":  70,
+                       "Score":  77.75
+                   },
+                   {
+                       "Module":  "Accounting",
+                       "Architecture":  90,
+                       "Tests":  80,
+                       "Documentation":  70,
+                       "Backend":  65,
+                       "Frontend":  70,
+                       "Score":  77.75
+                   },
+                   {
+                       "Module":  "SriCatalogs",
+                       "Architecture":  90,
+                       "Tests":  80,
+                       "Documentation":  70,
+                       "Backend":  65,
+                       "Frontend":  70,
+                       "Score":  77.75
+                   },
+                   {
+                       "Module":  "OrgConfig",
+                       "Architecture":  90,
+                       "Tests":  80,
+                       "Documentation":  70,
+                       "Backend":  65,
+                       "Frontend":  70,
+                       "Score":  77.75
+                   },
+                   {
+                       "Module":  "Navigation",
+                       "Architecture":  90,
+                       "Tests":  80,
+                       "Documentation":  70,
+                       "Backend":  65,
+                       "Frontend":  70,
+                       "Score":  77.75
+                   }
+               ],
     "Security":  {
                      "Generated":  "2026-07-26 17:06:24",
                      "FilesAnalyzed":  9571,
@@ -2579,40 +2490,5 @@
                                              }
                                          ],
                           "CriticalFindings":  31
-                      },
-    "Architecture":  {
-                         "Generated":  "2026-07-26 17:04:59",
-                         "Layers":  {
-                                        "Domain":  {
-                                                       "Files":  383
-                                                   },
-                                        "Application":  {
-                                                            "Commands":  0,
-                                                            "Validators":  6,
-                                                            "Queries":  4,
-                                                            "Files":  701
-                                                        },
-                                        "Infrastructure":  {
-                                                               "DbContext":  59,
-                                                               "Files":  316,
-                                                               "Repository":  50
-                                                           },
-                                        "API":  {
-                                                    "Controllers":  260,
-                                                    "Files":  97
-                                                }
-                                    },
-                         "Violations":  [
-
-                                        ]
-                     },
-    "Dependencies":  {
-                         "Generated":  "2026-07-26 17:05:01",
-                         "Violations":  [
-
-                                        ],
-                         "Summary":  {
-                                         "Total":  0
-                                     }
-                     }
+                      }
 }

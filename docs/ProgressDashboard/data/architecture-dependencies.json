@@ -1,0 +1,630 @@
+{
+  "generated": "2026-07-25",
+  "source": "Derivado mecanicamente de docs/ProgressDashboard/data/explorer-index.json (modules[].dependencies.dependsOn/criticalDependencies/cyclesInvolved), que a su vez proviene de analisis estatico real de imports/referencias de codigo (analyze-module-graph.ps1). Ninguna arista fue inventada -- todas existen en el grafo tecnico real. NOTA: distinto de docs/ProgressDashboard/data/dependencies.json (analizador analyze-dependencies.ps1, formato {from,to,referenceCount,evidence} + nodes/cycles/isolatedModules ya consumido por el dependency graph del dashboard) -- este archivo es una capa de clasificacion arquitectonica adicional (Fase Dashboard 5.0), no un reemplazo.",
+  "method": "dependencyType es una clasificacion heuristica por dominio del modulo destino (documentada aqui, no una fuente oficial de Arquitectura): Core = identidad/organizacion/tenant/shared-kernel (Common, Access, Auth, Security, Session, Tenants, Branches, Company, Companies, Configuration, OrgConfig); Business = modulos de capacidad de negocio (Items, Pricing, Inventory, Sales, Purchases, Caja, ElectronicDocuments, ElectronicInvoicing, Ride, SriCatalogs); Infrastructure = Audit (ADR-022, infraestructura de auditoria transversal); Technical = el resto (Media, Menu, Navigation, Dashboard, Integration, Auxiliary, Finance). 'critical' es real, tomado de explorer-index.json.criticalDependencies (formula changeRisk ya documentada). Los ciclos referenciados en 'observaciones' son los ya detectados por analyze-module-graph.ps1 (cyclesInvolved) -- no un calculo nuevo.",
+  "edges": [
+    {
+      "sourceModule": "Access",
+      "targetModule": "Auth",
+      "dependencyType": "Core",
+      "critical": false,
+      "observaciones": "Participa en ciclo detectado: Access -> Auth -> Access"
+    },
+    {
+      "sourceModule": "Access",
+      "targetModule": "Branches",
+      "dependencyType": "Core",
+      "critical": true,
+      "observaciones": "Dependencia critica segun explorer-index.json (criticalDependencies, formula changeRisk)"
+    },
+    {
+      "sourceModule": "Access",
+      "targetModule": "Common",
+      "dependencyType": "Core",
+      "critical": true,
+      "observaciones": "Dependencia critica segun explorer-index.json (criticalDependencies, formula changeRisk)"
+    },
+    {
+      "sourceModule": "Access",
+      "targetModule": "Company",
+      "dependencyType": "Core",
+      "critical": true,
+      "observaciones": "Dependencia critica segun explorer-index.json (criticalDependencies, formula changeRisk)"
+    },
+    {
+      "sourceModule": "Access",
+      "targetModule": "Navigation",
+      "dependencyType": "Technical",
+      "critical": false,
+      "observaciones": "Dependencia tecnica estandar (import/reference), sin criticidad ni ciclo detectado"
+    },
+    {
+      "sourceModule": "Access",
+      "targetModule": "Tenants",
+      "dependencyType": "Core",
+      "critical": false,
+      "observaciones": "Dependencia tecnica estandar (import/reference), sin criticidad ni ciclo detectado"
+    },
+    {
+      "sourceModule": "Audit",
+      "targetModule": "Common",
+      "dependencyType": "Core",
+      "critical": true,
+      "observaciones": "Dependencia critica segun explorer-index.json (criticalDependencies, formula changeRisk)"
+    },
+    {
+      "sourceModule": "Auth",
+      "targetModule": "Access",
+      "dependencyType": "Core",
+      "critical": false,
+      "observaciones": "Participa en ciclo detectado: Access -> Auth -> Access"
+    },
+    {
+      "sourceModule": "Auth",
+      "targetModule": "Branches",
+      "dependencyType": "Core",
+      "critical": true,
+      "observaciones": "Dependencia critica segun explorer-index.json (criticalDependencies, formula changeRisk)"
+    },
+    {
+      "sourceModule": "Auth",
+      "targetModule": "Common",
+      "dependencyType": "Core",
+      "critical": true,
+      "observaciones": "Dependencia critica segun explorer-index.json (criticalDependencies, formula changeRisk)"
+    },
+    {
+      "sourceModule": "Auth",
+      "targetModule": "Company",
+      "dependencyType": "Core",
+      "critical": true,
+      "observaciones": "Dependencia critica segun explorer-index.json (criticalDependencies, formula changeRisk)"
+    },
+    {
+      "sourceModule": "Auth",
+      "targetModule": "Tenants",
+      "dependencyType": "Core",
+      "critical": false,
+      "observaciones": "Dependencia tecnica estandar (import/reference), sin criticidad ni ciclo detectado"
+    },
+    {
+      "sourceModule": "Branches",
+      "targetModule": "Audit",
+      "dependencyType": "Infrastructure",
+      "critical": true,
+      "observaciones": "Dependencia critica segun explorer-index.json (criticalDependencies, formula changeRisk)"
+    },
+    {
+      "sourceModule": "Branches",
+      "targetModule": "Common",
+      "dependencyType": "Core",
+      "critical": true,
+      "observaciones": "Dependencia critica segun explorer-index.json (criticalDependencies, formula changeRisk)"
+    },
+    {
+      "sourceModule": "Caja",
+      "targetModule": "Branches",
+      "dependencyType": "Core",
+      "critical": true,
+      "observaciones": "Dependencia critica segun explorer-index.json (criticalDependencies, formula changeRisk)"
+    },
+    {
+      "sourceModule": "Caja",
+      "targetModule": "Common",
+      "dependencyType": "Core",
+      "critical": true,
+      "observaciones": "Dependencia critica segun explorer-index.json (criticalDependencies, formula changeRisk)"
+    },
+    {
+      "sourceModule": "Caja",
+      "targetModule": "Company",
+      "dependencyType": "Core",
+      "critical": true,
+      "observaciones": "Dependencia critica segun explorer-index.json (criticalDependencies, formula changeRisk)"
+    },
+    {
+      "sourceModule": "Caja",
+      "targetModule": "Inventory",
+      "dependencyType": "Business",
+      "critical": false,
+      "observaciones": "Dependencia tecnica estandar (import/reference), sin criticidad ni ciclo detectado"
+    },
+    {
+      "sourceModule": "Caja",
+      "targetModule": "Sales",
+      "dependencyType": "Business",
+      "critical": false,
+      "observaciones": "Dependencia tecnica estandar (import/reference), sin criticidad ni ciclo detectado"
+    },
+    {
+      "sourceModule": "Companies",
+      "targetModule": "Access",
+      "dependencyType": "Core",
+      "critical": false,
+      "observaciones": "Dependencia tecnica estandar (import/reference), sin criticidad ni ciclo detectado"
+    },
+    {
+      "sourceModule": "Companies",
+      "targetModule": "Common",
+      "dependencyType": "Core",
+      "critical": true,
+      "observaciones": "Dependencia critica segun explorer-index.json (criticalDependencies, formula changeRisk)"
+    },
+    {
+      "sourceModule": "Companies",
+      "targetModule": "Company",
+      "dependencyType": "Core",
+      "critical": true,
+      "observaciones": "Dependencia critica segun explorer-index.json (criticalDependencies, formula changeRisk)"
+    },
+    {
+      "sourceModule": "Companies",
+      "targetModule": "Media",
+      "dependencyType": "Technical",
+      "critical": false,
+      "observaciones": "Dependencia tecnica estandar (import/reference), sin criticidad ni ciclo detectado"
+    },
+    {
+      "sourceModule": "Company",
+      "targetModule": "Branches",
+      "dependencyType": "Core",
+      "critical": true,
+      "observaciones": "Dependencia critica segun explorer-index.json (criticalDependencies, formula changeRisk)"
+    },
+    {
+      "sourceModule": "Company",
+      "targetModule": "Common",
+      "dependencyType": "Core",
+      "critical": true,
+      "observaciones": "Dependencia critica segun explorer-index.json (criticalDependencies, formula changeRisk)"
+    },
+    {
+      "sourceModule": "Company",
+      "targetModule": "SriCatalogs",
+      "dependencyType": "Business",
+      "critical": false,
+      "observaciones": "Dependencia tecnica estandar (import/reference), sin criticidad ni ciclo detectado"
+    },
+    {
+      "sourceModule": "Configuration",
+      "targetModule": "Common",
+      "dependencyType": "Core",
+      "critical": true,
+      "observaciones": "Dependencia critica segun explorer-index.json (criticalDependencies, formula changeRisk)"
+    },
+    {
+      "sourceModule": "Dashboard",
+      "targetModule": "Common",
+      "dependencyType": "Core",
+      "critical": true,
+      "observaciones": "Dependencia critica segun explorer-index.json (criticalDependencies, formula changeRisk)"
+    },
+    {
+      "sourceModule": "ElectronicDocuments",
+      "targetModule": "Audit",
+      "dependencyType": "Infrastructure",
+      "critical": true,
+      "observaciones": "Dependencia critica segun explorer-index.json (criticalDependencies, formula changeRisk)"
+    },
+    {
+      "sourceModule": "ElectronicDocuments",
+      "targetModule": "Common",
+      "dependencyType": "Core",
+      "critical": true,
+      "observaciones": "Dependencia critica segun explorer-index.json (criticalDependencies, formula changeRisk)"
+    },
+    {
+      "sourceModule": "ElectronicDocuments",
+      "targetModule": "Company",
+      "dependencyType": "Core",
+      "critical": true,
+      "observaciones": "Dependencia critica segun explorer-index.json (criticalDependencies, formula changeRisk)"
+    },
+    {
+      "sourceModule": "ElectronicDocuments",
+      "targetModule": "Configuration",
+      "dependencyType": "Core",
+      "critical": true,
+      "observaciones": "Dependencia critica segun explorer-index.json (criticalDependencies, formula changeRisk)"
+    },
+    {
+      "sourceModule": "ElectronicInvoicing",
+      "targetModule": "Common",
+      "dependencyType": "Core",
+      "critical": true,
+      "observaciones": "Dependencia critica segun explorer-index.json (criticalDependencies, formula changeRisk)"
+    },
+    {
+      "sourceModule": "ElectronicInvoicing",
+      "targetModule": "Company",
+      "dependencyType": "Core",
+      "critical": true,
+      "observaciones": "Dependencia critica segun explorer-index.json (criticalDependencies, formula changeRisk)"
+    },
+    {
+      "sourceModule": "ElectronicInvoicing",
+      "targetModule": "Configuration",
+      "dependencyType": "Core",
+      "critical": true,
+      "observaciones": "Dependencia critica segun explorer-index.json (criticalDependencies, formula changeRisk)"
+    },
+    {
+      "sourceModule": "Finance",
+      "targetModule": "Common",
+      "dependencyType": "Core",
+      "critical": true,
+      "observaciones": "Dependencia critica segun explorer-index.json (criticalDependencies, formula changeRisk)"
+    },
+    {
+      "sourceModule": "Integration",
+      "targetModule": "Common",
+      "dependencyType": "Core",
+      "critical": true,
+      "observaciones": "Dependencia critica segun explorer-index.json (criticalDependencies, formula changeRisk)"
+    },
+    {
+      "sourceModule": "Integration",
+      "targetModule": "Company",
+      "dependencyType": "Core",
+      "critical": true,
+      "observaciones": "Dependencia critica segun explorer-index.json (criticalDependencies, formula changeRisk)"
+    },
+    {
+      "sourceModule": "Integration",
+      "targetModule": "Tenants",
+      "dependencyType": "Core",
+      "critical": false,
+      "observaciones": "Dependencia tecnica estandar (import/reference), sin criticidad ni ciclo detectado"
+    },
+    {
+      "sourceModule": "Inventory",
+      "targetModule": "Access",
+      "dependencyType": "Core",
+      "critical": false,
+      "observaciones": "Dependencia tecnica estandar (import/reference), sin criticidad ni ciclo detectado"
+    },
+    {
+      "sourceModule": "Inventory",
+      "targetModule": "Audit",
+      "dependencyType": "Infrastructure",
+      "critical": true,
+      "observaciones": "Dependencia critica segun explorer-index.json (criticalDependencies, formula changeRisk)"
+    },
+    {
+      "sourceModule": "Inventory",
+      "targetModule": "Branches",
+      "dependencyType": "Core",
+      "critical": true,
+      "observaciones": "Dependencia critica segun explorer-index.json (criticalDependencies, formula changeRisk)"
+    },
+    {
+      "sourceModule": "Inventory",
+      "targetModule": "Common",
+      "dependencyType": "Core",
+      "critical": true,
+      "observaciones": "Dependencia critica segun explorer-index.json (criticalDependencies, formula changeRisk)"
+    },
+    {
+      "sourceModule": "Inventory",
+      "targetModule": "Purchases",
+      "dependencyType": "Business",
+      "critical": false,
+      "observaciones": "Participa en ciclo detectado: Purchases -> Items -> Inventory -> Purchases; Inventory -> Sales -> Inventory; Items -> Inventory -> Sales -> Pricing -> Items; Items -> Inventory -> Sales -> Items"
+    },
+    {
+      "sourceModule": "Inventory",
+      "targetModule": "Sales",
+      "dependencyType": "Business",
+      "critical": false,
+      "observaciones": "Participa en ciclo detectado: Purchases -> Items -> Inventory -> Purchases; Inventory -> Sales -> Inventory; Items -> Inventory -> Sales -> Pricing -> Items; Items -> Inventory -> Sales -> Items"
+    },
+    {
+      "sourceModule": "Items",
+      "targetModule": "Audit",
+      "dependencyType": "Infrastructure",
+      "critical": true,
+      "observaciones": "Dependencia critica segun explorer-index.json (criticalDependencies, formula changeRisk)"
+    },
+    {
+      "sourceModule": "Items",
+      "targetModule": "Common",
+      "dependencyType": "Core",
+      "critical": true,
+      "observaciones": "Dependencia critica segun explorer-index.json (criticalDependencies, formula changeRisk)"
+    },
+    {
+      "sourceModule": "Items",
+      "targetModule": "Companies",
+      "dependencyType": "Core",
+      "critical": false,
+      "observaciones": "Dependencia tecnica estandar (import/reference), sin criticidad ni ciclo detectado"
+    },
+    {
+      "sourceModule": "Items",
+      "targetModule": "Configuration",
+      "dependencyType": "Core",
+      "critical": true,
+      "observaciones": "Dependencia critica segun explorer-index.json (criticalDependencies, formula changeRisk)"
+    },
+    {
+      "sourceModule": "Items",
+      "targetModule": "Inventory",
+      "dependencyType": "Business",
+      "critical": false,
+      "observaciones": "Participa en ciclo detectado: Purchases -> Items -> Inventory -> Purchases; Items -> Inventory -> Sales -> Pricing -> Items; Items -> Inventory -> Sales -> Items"
+    },
+    {
+      "sourceModule": "Items",
+      "targetModule": "Pricing",
+      "dependencyType": "Business",
+      "critical": false,
+      "observaciones": "Participa en ciclo detectado: Purchases -> Items -> Inventory -> Purchases; Items -> Inventory -> Sales -> Pricing -> Items; Items -> Inventory -> Sales -> Items"
+    },
+    {
+      "sourceModule": "Media",
+      "targetModule": "Common",
+      "dependencyType": "Core",
+      "critical": true,
+      "observaciones": "Dependencia critica segun explorer-index.json (criticalDependencies, formula changeRisk)"
+    },
+    {
+      "sourceModule": "Navigation",
+      "targetModule": "Common",
+      "dependencyType": "Core",
+      "critical": true,
+      "observaciones": "Dependencia critica segun explorer-index.json (criticalDependencies, formula changeRisk)"
+    },
+    {
+      "sourceModule": "OrgConfig",
+      "targetModule": "Branches",
+      "dependencyType": "Core",
+      "critical": true,
+      "observaciones": "Dependencia critica segun explorer-index.json (criticalDependencies, formula changeRisk)"
+    },
+    {
+      "sourceModule": "OrgConfig",
+      "targetModule": "Common",
+      "dependencyType": "Core",
+      "critical": true,
+      "observaciones": "Dependencia critica segun explorer-index.json (criticalDependencies, formula changeRisk)"
+    },
+    {
+      "sourceModule": "OrgConfig",
+      "targetModule": "Configuration",
+      "dependencyType": "Core",
+      "critical": true,
+      "observaciones": "Dependencia critica segun explorer-index.json (criticalDependencies, formula changeRisk)"
+    },
+    {
+      "sourceModule": "Pricing",
+      "targetModule": "Audit",
+      "dependencyType": "Infrastructure",
+      "critical": true,
+      "observaciones": "Dependencia critica segun explorer-index.json (criticalDependencies, formula changeRisk)"
+    },
+    {
+      "sourceModule": "Pricing",
+      "targetModule": "Common",
+      "dependencyType": "Core",
+      "critical": true,
+      "observaciones": "Dependencia critica segun explorer-index.json (criticalDependencies, formula changeRisk)"
+    },
+    {
+      "sourceModule": "Pricing",
+      "targetModule": "Items",
+      "dependencyType": "Business",
+      "critical": false,
+      "observaciones": "Participa en ciclo detectado: Items -> Inventory -> Sales -> Pricing -> Items"
+    },
+    {
+      "sourceModule": "Purchases",
+      "targetModule": "Audit",
+      "dependencyType": "Infrastructure",
+      "critical": true,
+      "observaciones": "Dependencia critica segun explorer-index.json (criticalDependencies, formula changeRisk)"
+    },
+    {
+      "sourceModule": "Purchases",
+      "targetModule": "Common",
+      "dependencyType": "Core",
+      "critical": true,
+      "observaciones": "Dependencia critica segun explorer-index.json (criticalDependencies, formula changeRisk)"
+    },
+    {
+      "sourceModule": "Purchases",
+      "targetModule": "Companies",
+      "dependencyType": "Core",
+      "critical": false,
+      "observaciones": "Dependencia tecnica estandar (import/reference), sin criticidad ni ciclo detectado"
+    },
+    {
+      "sourceModule": "Purchases",
+      "targetModule": "Company",
+      "dependencyType": "Core",
+      "critical": true,
+      "observaciones": "Dependencia critica segun explorer-index.json (criticalDependencies, formula changeRisk)"
+    },
+    {
+      "sourceModule": "Purchases",
+      "targetModule": "Inventory",
+      "dependencyType": "Business",
+      "critical": false,
+      "observaciones": "Participa en ciclo detectado: Purchases -> Items -> Inventory -> Purchases"
+    },
+    {
+      "sourceModule": "Purchases",
+      "targetModule": "Items",
+      "dependencyType": "Business",
+      "critical": false,
+      "observaciones": "Participa en ciclo detectado: Purchases -> Items -> Inventory -> Purchases"
+    },
+    {
+      "sourceModule": "Purchases",
+      "targetModule": "Pricing",
+      "dependencyType": "Business",
+      "critical": false,
+      "observaciones": "Dependencia tecnica estandar (import/reference), sin criticidad ni ciclo detectado"
+    },
+    {
+      "sourceModule": "Ride",
+      "targetModule": "Audit",
+      "dependencyType": "Infrastructure",
+      "critical": true,
+      "observaciones": "Dependencia critica segun explorer-index.json (criticalDependencies, formula changeRisk)"
+    },
+    {
+      "sourceModule": "Ride",
+      "targetModule": "Common",
+      "dependencyType": "Core",
+      "critical": true,
+      "observaciones": "Dependencia critica segun explorer-index.json (criticalDependencies, formula changeRisk)"
+    },
+    {
+      "sourceModule": "Ride",
+      "targetModule": "Configuration",
+      "dependencyType": "Core",
+      "critical": true,
+      "observaciones": "Dependencia critica segun explorer-index.json (criticalDependencies, formula changeRisk)"
+    },
+    {
+      "sourceModule": "Ride",
+      "targetModule": "ElectronicDocuments",
+      "dependencyType": "Business",
+      "critical": false,
+      "observaciones": "Dependencia tecnica estandar (import/reference), sin criticidad ni ciclo detectado"
+    },
+    {
+      "sourceModule": "Sales",
+      "targetModule": "Common",
+      "dependencyType": "Core",
+      "critical": true,
+      "observaciones": "Dependencia critica segun explorer-index.json (criticalDependencies, formula changeRisk)"
+    },
+    {
+      "sourceModule": "Sales",
+      "targetModule": "Company",
+      "dependencyType": "Core",
+      "critical": true,
+      "observaciones": "Dependencia critica segun explorer-index.json (criticalDependencies, formula changeRisk)"
+    },
+    {
+      "sourceModule": "Sales",
+      "targetModule": "Configuration",
+      "dependencyType": "Core",
+      "critical": true,
+      "observaciones": "Dependencia critica segun explorer-index.json (criticalDependencies, formula changeRisk)"
+    },
+    {
+      "sourceModule": "Sales",
+      "targetModule": "ElectronicDocuments",
+      "dependencyType": "Business",
+      "critical": false,
+      "observaciones": "Dependencia tecnica estandar (import/reference), sin criticidad ni ciclo detectado"
+    },
+    {
+      "sourceModule": "Sales",
+      "targetModule": "Inventory",
+      "dependencyType": "Business",
+      "critical": false,
+      "observaciones": "Participa en ciclo detectado: Inventory -> Sales -> Inventory; Items -> Inventory -> Sales -> Pricing -> Items; Items -> Inventory -> Sales -> Items"
+    },
+    {
+      "sourceModule": "Sales",
+      "targetModule": "Items",
+      "dependencyType": "Business",
+      "critical": false,
+      "observaciones": "Participa en ciclo detectado: Inventory -> Sales -> Inventory; Items -> Inventory -> Sales -> Pricing -> Items; Items -> Inventory -> Sales -> Items"
+    },
+    {
+      "sourceModule": "Sales",
+      "targetModule": "Pricing",
+      "dependencyType": "Business",
+      "critical": false,
+      "observaciones": "Participa en ciclo detectado: Inventory -> Sales -> Inventory; Items -> Inventory -> Sales -> Pricing -> Items; Items -> Inventory -> Sales -> Items"
+    },
+    {
+      "sourceModule": "Sales",
+      "targetModule": "SriCatalogs",
+      "dependencyType": "Business",
+      "critical": false,
+      "observaciones": "Dependencia tecnica estandar (import/reference), sin criticidad ni ciclo detectado"
+    },
+    {
+      "sourceModule": "Security",
+      "targetModule": "Access",
+      "dependencyType": "Core",
+      "critical": false,
+      "observaciones": "Dependencia tecnica estandar (import/reference), sin criticidad ni ciclo detectado"
+    },
+    {
+      "sourceModule": "Security",
+      "targetModule": "Common",
+      "dependencyType": "Core",
+      "critical": true,
+      "observaciones": "Dependencia critica segun explorer-index.json (criticalDependencies, formula changeRisk)"
+    },
+    {
+      "sourceModule": "Session",
+      "targetModule": "Access",
+      "dependencyType": "Core",
+      "critical": false,
+      "observaciones": "Dependencia tecnica estandar (import/reference), sin criticidad ni ciclo detectado"
+    },
+    {
+      "sourceModule": "Session",
+      "targetModule": "Auth",
+      "dependencyType": "Core",
+      "critical": false,
+      "observaciones": "Dependencia tecnica estandar (import/reference), sin criticidad ni ciclo detectado"
+    },
+    {
+      "sourceModule": "Session",
+      "targetModule": "Branches",
+      "dependencyType": "Core",
+      "critical": true,
+      "observaciones": "Dependencia critica segun explorer-index.json (criticalDependencies, formula changeRisk)"
+    },
+    {
+      "sourceModule": "Session",
+      "targetModule": "Common",
+      "dependencyType": "Core",
+      "critical": true,
+      "observaciones": "Dependencia critica segun explorer-index.json (criticalDependencies, formula changeRisk)"
+    },
+    {
+      "sourceModule": "Session",
+      "targetModule": "Companies",
+      "dependencyType": "Core",
+      "critical": false,
+      "observaciones": "Dependencia tecnica estandar (import/reference), sin criticidad ni ciclo detectado"
+    },
+    {
+      "sourceModule": "Session",
+      "targetModule": "Company",
+      "dependencyType": "Core",
+      "critical": true,
+      "observaciones": "Dependencia critica segun explorer-index.json (criticalDependencies, formula changeRisk)"
+    },
+    {
+      "sourceModule": "Session",
+      "targetModule": "Media",
+      "dependencyType": "Technical",
+      "critical": false,
+      "observaciones": "Dependencia tecnica estandar (import/reference), sin criticidad ni ciclo detectado"
+    },
+    {
+      "sourceModule": "Session",
+      "targetModule": "Tenants",
+      "dependencyType": "Core",
+      "critical": false,
+      "observaciones": "Dependencia tecnica estandar (import/reference), sin criticidad ni ciclo detectado"
+    },
+    {
+      "sourceModule": "Tenants",
+      "targetModule": "Common",
+      "dependencyType": "Core",
+      "critical": true,
+      "observaciones": "Dependencia critica segun explorer-index.json (criticalDependencies, formula changeRisk)"
+    }
+  ]
+}

@@ -1,0 +1,371 @@
+{
+  "generated": "2026-07-26",
+  "source": "backend/src/ERP.Domain/Modules/ -- unica fuente de verdad, usada como lista real de carpetas (23 modulos), tal como pide la Fase Dashboard 10.0. Contrastado contra modules-status.json, architecture-governance.json, roadmap.json, architecture-dependencies.json y blockers.json (todos los datasets de gobernanza de modulo existentes que consume render-dashboard.ps1). 'module-analysis.json' y 'feature-coverage.json' (nombrados en el pedido de esta fase) fueron buscados explicitamente en docs/ProgressDashboard/data/ y NO existen -- no se inventaron ni se crearon, se documenta su ausencia como hallazgo.",
+  "method": "Comparacion mecanica de sets de ids por dataset via lectura directa de cada JSON -- sin heuristicas, sin analisis de texto libre. 'coverageGapReal' se calcula UNICAMENTE contra modules-status.json y architecture-governance.json (los 2 datasets disenados para cobertura exhaustiva de todos los modulos) -- la ausencia de un modulo en roadmap.json/blockers.json NO se cuenta como gap porque esos documentos son selectivos por diseno, y la ausencia en architecture-dependencies.json puede reflejar correctamente un nodo aislado real (ver Fase Dashboard 5.0), no necesariamente un error.",
+  "namedDatasetsNotFound": [
+    "module-analysis.json",
+    "feature-coverage.json"
+  ],
+  "domainModulesCount": 23,
+  "coveragePct": 95.65,
+  "coverageFormula": "22 de 23 modulos de ERP.Domain/Modules presentes en AMBOS modules-status.json y architecture-governance.json = 95.65%",
+  "modules": [
+    {
+      "id": "Access",
+      "existsInCode": true,
+      "inModulesStatus": true,
+      "inArchitectureGovernance": true,
+      "inRoadmap": true,
+      "inArchitectureDependencies": true,
+      "inBlockers": true,
+      "coverageGapReal": false,
+      "observaciones": "Presente en todos los datasets de gobernanza revisados."
+    },
+    {
+      "id": "Accounting",
+      "existsInCode": true,
+      "inModulesStatus": false,
+      "inArchitectureGovernance": false,
+      "inRoadmap": true,
+      "inArchitectureDependencies": false,
+      "inBlockers": true,
+      "coverageGapReal": true,
+      "observaciones": "Ausente de modules-status.json/architecture-governance.json -- estos 2 datasets estan disenados para cobertura exhaustiva de todos los modulos, por lo que esta ausencia SI es un gap real de gobernanza. Ausente de architecture-dependencies.json -- puede ser un nodo real aislado (sin dependencias entrantes ni salientes, ver Fase 5.0 'modulos sin dependencias') o un gap si el modulo si tiene relaciones tecnicas reales aun no reflejadas."
+    },
+    {
+      "id": "Audit",
+      "existsInCode": true,
+      "inModulesStatus": true,
+      "inArchitectureGovernance": true,
+      "inRoadmap": false,
+      "inArchitectureDependencies": true,
+      "inBlockers": false,
+      "coverageGapReal": false,
+      "observaciones": "Ausente de roadmap.json -- esperado por diseno: ese documento solo lista modulos relevantes a una etapa activa, no es un registro exhaustivo. Ausente de blockers.json -- esperado por diseno: ese documento solo lista modulos con un bloqueador activo real; su ausencia es una senal saludable (sin bloqueadores conocidos), no un gap."
+    },
+    {
+      "id": "Auth",
+      "existsInCode": true,
+      "inModulesStatus": true,
+      "inArchitectureGovernance": true,
+      "inRoadmap": false,
+      "inArchitectureDependencies": true,
+      "inBlockers": false,
+      "coverageGapReal": false,
+      "observaciones": "Ausente de roadmap.json -- esperado por diseno: ese documento solo lista modulos relevantes a una etapa activa, no es un registro exhaustivo. Ausente de blockers.json -- esperado por diseno: ese documento solo lista modulos con un bloqueador activo real; su ausencia es una senal saludable (sin bloqueadores conocidos), no un gap."
+    },
+    {
+      "id": "Auxiliary",
+      "existsInCode": true,
+      "inModulesStatus": true,
+      "inArchitectureGovernance": true,
+      "inRoadmap": false,
+      "inArchitectureDependencies": false,
+      "inBlockers": false,
+      "coverageGapReal": false,
+      "observaciones": "Ausente de roadmap.json -- esperado por diseno: ese documento solo lista modulos relevantes a una etapa activa, no es un registro exhaustivo. Ausente de blockers.json -- esperado por diseno: ese documento solo lista modulos con un bloqueador activo real; su ausencia es una senal saludable (sin bloqueadores conocidos), no un gap. Ausente de architecture-dependencies.json -- puede ser un nodo real aislado (sin dependencias entrantes ni salientes, ver Fase 5.0 'modulos sin dependencias') o un gap si el modulo si tiene relaciones tecnicas reales aun no reflejadas."
+    },
+    {
+      "id": "Caja",
+      "existsInCode": true,
+      "inModulesStatus": true,
+      "inArchitectureGovernance": true,
+      "inRoadmap": true,
+      "inArchitectureDependencies": true,
+      "inBlockers": true,
+      "coverageGapReal": false,
+      "observaciones": "Presente en todos los datasets de gobernanza revisados."
+    },
+    {
+      "id": "Common",
+      "existsInCode": true,
+      "inModulesStatus": true,
+      "inArchitectureGovernance": true,
+      "inRoadmap": false,
+      "inArchitectureDependencies": true,
+      "inBlockers": false,
+      "coverageGapReal": false,
+      "observaciones": "Ausente de roadmap.json -- esperado por diseno: ese documento solo lista modulos relevantes a una etapa activa, no es un registro exhaustivo. Ausente de blockers.json -- esperado por diseno: ese documento solo lista modulos con un bloqueador activo real; su ausencia es una senal saludable (sin bloqueadores conocidos), no un gap."
+    },
+    {
+      "id": "Company",
+      "existsInCode": true,
+      "inModulesStatus": true,
+      "inArchitectureGovernance": true,
+      "inRoadmap": true,
+      "inArchitectureDependencies": true,
+      "inBlockers": false,
+      "coverageGapReal": false,
+      "observaciones": "Ausente de blockers.json -- esperado por diseno: ese documento solo lista modulos con un bloqueador activo real; su ausencia es una senal saludable (sin bloqueadores conocidos), no un gap."
+    },
+    {
+      "id": "Configuration",
+      "existsInCode": true,
+      "inModulesStatus": true,
+      "inArchitectureGovernance": true,
+      "inRoadmap": false,
+      "inArchitectureDependencies": true,
+      "inBlockers": false,
+      "coverageGapReal": false,
+      "observaciones": "Ausente de roadmap.json -- esperado por diseno: ese documento solo lista modulos relevantes a una etapa activa, no es un registro exhaustivo. Ausente de blockers.json -- esperado por diseno: ese documento solo lista modulos con un bloqueador activo real; su ausencia es una senal saludable (sin bloqueadores conocidos), no un gap."
+    },
+    {
+      "id": "ElectronicDocuments",
+      "existsInCode": true,
+      "inModulesStatus": true,
+      "inArchitectureGovernance": true,
+      "inRoadmap": true,
+      "inArchitectureDependencies": true,
+      "inBlockers": true,
+      "coverageGapReal": false,
+      "observaciones": "Presente en todos los datasets de gobernanza revisados."
+    },
+    {
+      "id": "Finance",
+      "existsInCode": true,
+      "inModulesStatus": true,
+      "inArchitectureGovernance": true,
+      "inRoadmap": false,
+      "inArchitectureDependencies": true,
+      "inBlockers": false,
+      "coverageGapReal": false,
+      "observaciones": "Ausente de roadmap.json -- esperado por diseno: ese documento solo lista modulos relevantes a una etapa activa, no es un registro exhaustivo. Ausente de blockers.json -- esperado por diseno: ese documento solo lista modulos con un bloqueador activo real; su ausencia es una senal saludable (sin bloqueadores conocidos), no un gap."
+    },
+    {
+      "id": "Inventory",
+      "existsInCode": true,
+      "inModulesStatus": true,
+      "inArchitectureGovernance": true,
+      "inRoadmap": true,
+      "inArchitectureDependencies": true,
+      "inBlockers": true,
+      "coverageGapReal": false,
+      "observaciones": "Presente en todos los datasets de gobernanza revisados."
+    },
+    {
+      "id": "Items",
+      "existsInCode": true,
+      "inModulesStatus": true,
+      "inArchitectureGovernance": true,
+      "inRoadmap": true,
+      "inArchitectureDependencies": true,
+      "inBlockers": true,
+      "coverageGapReal": false,
+      "observaciones": "Presente en todos los datasets de gobernanza revisados."
+    },
+    {
+      "id": "Media",
+      "existsInCode": true,
+      "inModulesStatus": true,
+      "inArchitectureGovernance": true,
+      "inRoadmap": false,
+      "inArchitectureDependencies": true,
+      "inBlockers": false,
+      "coverageGapReal": false,
+      "observaciones": "Ausente de roadmap.json -- esperado por diseno: ese documento solo lista modulos relevantes a una etapa activa, no es un registro exhaustivo. Ausente de blockers.json -- esperado por diseno: ese documento solo lista modulos con un bloqueador activo real; su ausencia es una senal saludable (sin bloqueadores conocidos), no un gap."
+    },
+    {
+      "id": "Menu",
+      "existsInCode": true,
+      "inModulesStatus": true,
+      "inArchitectureGovernance": true,
+      "inRoadmap": false,
+      "inArchitectureDependencies": false,
+      "inBlockers": false,
+      "coverageGapReal": false,
+      "observaciones": "Ausente de roadmap.json -- esperado por diseno: ese documento solo lista modulos relevantes a una etapa activa, no es un registro exhaustivo. Ausente de blockers.json -- esperado por diseno: ese documento solo lista modulos con un bloqueador activo real; su ausencia es una senal saludable (sin bloqueadores conocidos), no un gap. Ausente de architecture-dependencies.json -- puede ser un nodo real aislado (sin dependencias entrantes ni salientes, ver Fase 5.0 'modulos sin dependencias') o un gap si el modulo si tiene relaciones tecnicas reales aun no reflejadas."
+    },
+    {
+      "id": "Navigation",
+      "existsInCode": true,
+      "inModulesStatus": true,
+      "inArchitectureGovernance": true,
+      "inRoadmap": false,
+      "inArchitectureDependencies": true,
+      "inBlockers": false,
+      "coverageGapReal": false,
+      "observaciones": "Ausente de roadmap.json -- esperado por diseno: ese documento solo lista modulos relevantes a una etapa activa, no es un registro exhaustivo. Ausente de blockers.json -- esperado por diseno: ese documento solo lista modulos con un bloqueador activo real; su ausencia es una senal saludable (sin bloqueadores conocidos), no un gap."
+    },
+    {
+      "id": "Pricing",
+      "existsInCode": true,
+      "inModulesStatus": true,
+      "inArchitectureGovernance": true,
+      "inRoadmap": true,
+      "inArchitectureDependencies": true,
+      "inBlockers": false,
+      "coverageGapReal": false,
+      "observaciones": "Ausente de blockers.json -- esperado por diseno: ese documento solo lista modulos con un bloqueador activo real; su ausencia es una senal saludable (sin bloqueadores conocidos), no un gap."
+    },
+    {
+      "id": "Purchases",
+      "existsInCode": true,
+      "inModulesStatus": true,
+      "inArchitectureGovernance": true,
+      "inRoadmap": true,
+      "inArchitectureDependencies": true,
+      "inBlockers": true,
+      "coverageGapReal": false,
+      "observaciones": "Presente en todos los datasets de gobernanza revisados."
+    },
+    {
+      "id": "Ride",
+      "existsInCode": true,
+      "inModulesStatus": true,
+      "inArchitectureGovernance": true,
+      "inRoadmap": false,
+      "inArchitectureDependencies": true,
+      "inBlockers": false,
+      "coverageGapReal": false,
+      "observaciones": "Ausente de roadmap.json -- esperado por diseno: ese documento solo lista modulos relevantes a una etapa activa, no es un registro exhaustivo. Ausente de blockers.json -- esperado por diseno: ese documento solo lista modulos con un bloqueador activo real; su ausencia es una senal saludable (sin bloqueadores conocidos), no un gap."
+    },
+    {
+      "id": "Sales",
+      "existsInCode": true,
+      "inModulesStatus": true,
+      "inArchitectureGovernance": true,
+      "inRoadmap": true,
+      "inArchitectureDependencies": true,
+      "inBlockers": true,
+      "coverageGapReal": false,
+      "observaciones": "Presente en todos los datasets de gobernanza revisados."
+    },
+    {
+      "id": "Security",
+      "existsInCode": true,
+      "inModulesStatus": true,
+      "inArchitectureGovernance": true,
+      "inRoadmap": true,
+      "inArchitectureDependencies": true,
+      "inBlockers": true,
+      "coverageGapReal": false,
+      "observaciones": "Presente en todos los datasets de gobernanza revisados."
+    },
+    {
+      "id": "SriCatalogs",
+      "existsInCode": true,
+      "inModulesStatus": true,
+      "inArchitectureGovernance": true,
+      "inRoadmap": false,
+      "inArchitectureDependencies": true,
+      "inBlockers": false,
+      "coverageGapReal": false,
+      "observaciones": "Ausente de roadmap.json -- esperado por diseno: ese documento solo lista modulos relevantes a una etapa activa, no es un registro exhaustivo. Ausente de blockers.json -- esperado por diseno: ese documento solo lista modulos con un bloqueador activo real; su ausencia es una senal saludable (sin bloqueadores conocidos), no un gap."
+    },
+    {
+      "id": "Tenants",
+      "existsInCode": true,
+      "inModulesStatus": true,
+      "inArchitectureGovernance": true,
+      "inRoadmap": false,
+      "inArchitectureDependencies": true,
+      "inBlockers": false,
+      "coverageGapReal": false,
+      "observaciones": "Ausente de roadmap.json -- esperado por diseno: ese documento solo lista modulos relevantes a una etapa activa, no es un registro exhaustivo. Ausente de blockers.json -- esperado por diseno: ese documento solo lista modulos con un bloqueador activo real; su ausencia es una senal saludable (sin bloqueadores conocidos), no un gap."
+    }
+  ],
+  "extraIdsNotInDomainFolders": [
+    {
+      "id": "Branches",
+      "existsAsErpDomainModuleFolder": false,
+      "referencedIn": [
+        "modules-status.json",
+        "architecture-governance.json",
+        "roadmap.json",
+        "architecture-dependencies.json"
+      ],
+      "clasificacion": "Concepto de Application layer sin carpeta Domain propia",
+      "observaciones": "Modulo de Aplicacion real (Sucursales, FROZEN 2026-06-16) sin carpeta propia en ERP.Domain/Modules -- vive dentro de Company/Configuration a nivel de dominio."
+    },
+    {
+      "id": "BusinessPartner",
+      "existsAsErpDomainModuleFolder": false,
+      "referencedIn": [
+        "roadmap.json"
+      ],
+      "clasificacion": "Concepto de Application layer sin carpeta Domain propia",
+      "observaciones": "Modulo real y FROZEN (BP V2, ADR-017) pero vive en backend/src/ERP.Application/MasterData/ (fuera de Modules/ por completo, ni Application/Modules ni Domain/Modules) -- ya documentado como '7 unmapped' desde el inicio del pipeline del dashboard."
+    },
+    {
+      "id": "Companies",
+      "existsAsErpDomainModuleFolder": false,
+      "referencedIn": [
+        "modules-status.json",
+        "architecture-governance.json",
+        "architecture-dependencies.json"
+      ],
+      "clasificacion": "Alias/nombre confuso con modulo Domain real",
+      "observaciones": "Modulo de Aplicacion real (perfil/configuracion de empresa tenant) sin carpeta propia en ERP.Domain/Modules. RIESGO DE ALIAS: nombre casi identico a 'Company' (carpeta Domain real de Establishment/EmissionPoint) -- ya documentado como fuente de confusion desde Fase Dashboard 3.0."
+    },
+    {
+      "id": "Dashboard",
+      "existsAsErpDomainModuleFolder": false,
+      "referencedIn": [
+        "modules-status.json",
+        "architecture-governance.json",
+        "architecture-dependencies.json"
+      ],
+      "clasificacion": "Concepto de Application layer sin carpeta Domain propia",
+      "observaciones": "Modulo de Aplicacion real (feature de UI) sin carpeta propia en ERP.Domain/Modules."
+    },
+    {
+      "id": "ElectronicInvoicing",
+      "existsAsErpDomainModuleFolder": false,
+      "referencedIn": [
+        "modules-status.json",
+        "architecture-governance.json",
+        "roadmap.json",
+        "architecture-dependencies.json"
+      ],
+      "clasificacion": "Concepto de Application layer sin carpeta Domain propia",
+      "observaciones": "Modulo de Aplicacion real (Sri Configuration/Certificado) sin carpeta propia en ERP.Domain/Modules -- distinto de ElectronicDocuments (que si tiene carpeta Domain), ya documentado como distincion real desde Fase Dashboard 3.0."
+    },
+    {
+      "id": "Integration",
+      "existsAsErpDomainModuleFolder": false,
+      "referencedIn": [
+        "modules-status.json",
+        "architecture-governance.json",
+        "architecture-dependencies.json"
+      ],
+      "clasificacion": "Concepto de Application layer sin carpeta Domain propia",
+      "observaciones": "Modulo de Aplicacion real sin carpeta propia en ERP.Domain/Modules."
+    },
+    {
+      "id": "OrgConfig",
+      "existsAsErpDomainModuleFolder": false,
+      "referencedIn": [
+        "modules-status.json",
+        "architecture-governance.json",
+        "architecture-dependencies.json"
+      ],
+      "clasificacion": "Concepto de Application layer sin carpeta Domain propia",
+      "observaciones": "Infraestructura real (Org Config Jerarquica, CLOSED 2026-07-01) sin carpeta propia en ERP.Domain/Modules."
+    },
+    {
+      "id": "Session",
+      "existsAsErpDomainModuleFolder": false,
+      "referencedIn": [
+        "modules-status.json",
+        "architecture-governance.json",
+        "architecture-dependencies.json"
+      ],
+      "clasificacion": "Concepto de Application layer sin carpeta Domain propia",
+      "observaciones": "Modulo de Aplicacion real (UserSession) sin carpeta propia en ERP.Domain/Modules."
+    }
+  ],
+  "duplicatesFound": [],
+  "duplicatesNote": "Verificado programaticamente: ningun id aparece repetido dentro de modules-status.json ni architecture-governance.json (29 ids unicos en ambos).",
+  "deletedButStillDocumented": [],
+  "deletedButStillDocumentedNote": "Sin evidencia de que alguno de los 8 ids en extraIdsNotInDomainFolders haya existido antes como carpeta ERP.Domain/Modules y luego se haya eliminado -- el repositorio tiene un unico commit inicial, sin historial de borrado verificable. Se documentan como conceptos de Application layer desde su origen, no como modulos eliminados.",
+  "datasetsAffected": [
+    "modules-status.json",
+    "architecture-governance.json"
+  ],
+  "recommendations": [
+    "Agregar Accounting a modules-status.json y architecture-governance.json (unico gap real de cobertura, 1 de 23 modulos) -- requiere investigacion tipo Fase Dashboard 3.0/6.0 (citas reales contra ADR-026/docs/STATUS.md), no una fila generica.",
+    "Aclarar en la documentacion (no en este reporte, que es solo auditoria) la distincion Company (carpeta Domain real) vs Companies (Application layer, perfil de empresa) para reducir el riesgo de alias -- ya esta documentado en modules-status.json pero vale la pena una nota mas visible.",
+    "Evaluar si BusinessPartner (FROZEN, ADR-017) deberia incorporarse al pipeline tecnico del dashboard (explorer-index.json) dado que es un modulo real de negocio, no solo una referencia de governance -- decision de alcance, no de esta auditoria.",
+    "Este reporte es de solo lectura -- no se modifico ningun dataset existente."
+  ]
+}

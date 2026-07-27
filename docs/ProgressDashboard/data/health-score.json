@@ -144,7 +144,7 @@
         "Score":  81.5
     },
     {
-        "Module":  "Auxiliary",
+        "Module":  "Media",
         "Architecture":  90,
         "Tests":  80,
         "Documentation":  70,
@@ -180,6 +180,15 @@
         "Score":  77.75
     },
     {
+        "Module":  "Security",
+        "Architecture":  90,
+        "Tests":  80,
+        "Documentation":  70,
+        "Backend":  90,
+        "Frontend":  70,
+        "Score":  81.5
+    },
+    {
         "Module":  "Configuration",
         "Architecture":  90,
         "Tests":  80,
@@ -207,7 +216,7 @@
         "Score":  81.5
     },
     {
-        "Module":  "Media",
+        "Module":  "Catalog",
         "Architecture":  90,
         "Tests":  80,
         "Documentation":  70,
@@ -225,13 +234,22 @@
         "Score":  81.5
     },
     {
-        "Module":  "Security",
+        "Module":  "Auxiliary",
         "Architecture":  90,
         "Tests":  80,
         "Documentation":  70,
-        "Backend":  90,
+        "Backend":  65,
         "Frontend":  70,
-        "Score":  81.5
+        "Score":  77.75
+    },
+    {
+        "Module":  "Accounting",
+        "Architecture":  90,
+        "Tests":  80,
+        "Documentation":  70,
+        "Backend":  65,
+        "Frontend":  70,
+        "Score":  77.75
     },
     {
         "Module":  "SriCatalogs",
