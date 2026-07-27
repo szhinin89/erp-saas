@@ -286,6 +286,8 @@ public class ErpDbContext : DbContext
     // ── Finance BC ─────────────────────────────────────────────────────────
     public DbSet<CreditTerm>        CreditTerms        => Set<CreditTerm>();
     public DbSet<CreditInstallment> CreditInstallments => Set<CreditInstallment>();
+    public DbSet<Payment>                 Payments               => Set<Payment>();
+    public DbSet<PaymentApplicationLine>  PaymentApplicationLines => Set<PaymentApplicationLine>();
 
     // ── Inventory (lots / serials / stock) ───────────────────────────────
     public DbSet<Lot>           Lots           => Set<Lot>();

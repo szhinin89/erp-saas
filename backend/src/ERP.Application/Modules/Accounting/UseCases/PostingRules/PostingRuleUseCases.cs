@@ -4,14 +4,25 @@ using ERP.Application.Common;
 using ERP.Application.Common.Persistence;
 using ERP.Application.Modules.Accounting.DTOs;
 using ERP.Domain.Modules.Accounting.Entities;
+using ERP.Domain.Modules.Accounting.Enums;
 using ERP.Domain.Modules.Accounting.Interfaces;
 
 namespace ERP.Application.Modules.Accounting.UseCases.PostingRules;
 
 // ── Commands ────────────────────────────────────────────────────────────
 
+/// <summary>
+/// Fase 5.6.2 — línea real que consumirá JournalFactory (<c>PostingRule.Lines</c>). Antes de esta
+/// fase, <c>CreatePostingRuleCommand</c> solo poblaba los campos planos legacy
+/// (DebitAccountId/CreditAccountId), que JournalFactory ya no lee — cualquier regla creada sin
+/// líneas producía asientos con cero líneas en producción. <c>Lines</c> es opcional para no
+/// romper la forma anterior del comando, pero es la única vía real de dejar una regla funcional.
+/// </summary>
+public sealed record PostingRuleLineInput(Guid AccountId, AccountNature Nature, PostingAmountKind AmountKind);
+
 public sealed record CreatePostingRuleCommand(
-    string SourceModule, string FactType, Guid? DebitAccountId, Guid? CreditAccountId, string? TaxCode)
+    string SourceModule, string FactType, Guid? DebitAccountId, Guid? CreditAccountId, string? TaxCode,
+    IReadOnlyList<PostingRuleLineInput>? Lines = null)
     : IRequest<Result<PostingRuleDto>>, ICompanyScopedRequest;
 
 public sealed record UpdatePostingRuleCommand(
@@ -30,6 +41,16 @@ public sealed record GetPostingRuleByIdQuery(Guid Id) : IRequest<Result<PostingR
 
 // ── Validators ──────────────────────────────────────────────────────────
 
+public sealed class PostingRuleLineInputValidator : AbstractValidator<PostingRuleLineInput>
+{
+    public PostingRuleLineInputValidator()
+    {
+        RuleFor(x => x.AccountId).NotEmpty();
+        RuleFor(x => x.Nature).IsInEnum();
+        RuleFor(x => x.AmountKind).IsInEnum();
+    }
+}
+
 public sealed class CreatePostingRuleCommandValidator : AbstractValidator<CreatePostingRuleCommand>
 {
     public CreatePostingRuleCommandValidator()
@@ -37,6 +58,7 @@ public sealed class CreatePostingRuleCommandValidator : AbstractValidator<Create
         RuleFor(x => x.SourceModule).NotEmpty().MaximumLength(50);
         RuleFor(x => x.FactType).NotEmpty().MaximumLength(100);
         RuleFor(x => x.TaxCode).MaximumLength(10).When(x => x.TaxCode is not null);
+        RuleForEach(x => x.Lines).SetValidator(new PostingRuleLineInputValidator()).When(x => x.Lines is not null);
     }
 }
 
@@ -93,6 +115,9 @@ public sealed class CreatePostingRuleHandler : IRequestHandler<CreatePostingRule
             var rule = PostingRule.Create(
                 tenantId, companyId, cmd.SourceModule, cmd.FactType,
                 cmd.DebitAccountId, cmd.CreditAccountId, cmd.TaxCode, _u.UserId);
+
+            foreach (var line in cmd.Lines ?? Array.Empty<PostingRuleLineInput>())
+                rule.AddLine(line.AccountId, line.Nature, line.AmountKind);
 
             await _repo.AddAsync(rule, ct);
             await _repo.SaveChangesAsync(ct);
@@ -234,5 +259,8 @@ file static class Map
 {
     public static PostingRuleDto ToDto(PostingRule r) => new(
         r.Id, r.SourceModule, r.FactType, r.DebitAccountId, r.CreditAccountId,
-        r.TaxCode, r.IsActive, r.CreatedAt, r.UpdatedAt);
+        r.TaxCode, r.IsActive,
+        r.Lines.Select(l => new PostingRuleLineDto(
+            l.Id, l.AccountId, l.Nature.ToString(), l.AmountKind.ToString(), l.SortOrder)).ToList(),
+        r.CreatedAt, r.UpdatedAt);
 }

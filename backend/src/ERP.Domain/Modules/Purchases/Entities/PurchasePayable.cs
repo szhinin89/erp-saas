@@ -57,6 +57,43 @@ public sealed class PurchasePayable : AuditableEntity, ITenantScopedEntity, ICom
     }
 
     /// <summary>
+    /// Registra un pago aplicado contra esta CxP (Fase 5.5.5.2) — invocado por el caso de uso de
+    /// Application (fase futura) que coordina un <c>Payment</c> (dirección Payment) ya
+    /// <c>Applied</c> contra una o más <c>PurchasePayable</c>. No levanta ningún evento propio:
+    /// el hecho de negocio "pago aplicado" ya lo publica <c>Payment.Apply()</c> — este método
+    /// solo mantiene el saldo de la CxP consistente con lo que ese pago registró.
+    /// </summary>
+    public void RegisterPayment(decimal amount, Guid updatedBy)
+    {
+        if (amount <= 0)
+            throw new ArgumentException("El monto del pago debe ser mayor a cero.", nameof(amount));
+        if (Status == "cancelled")
+            throw new InvalidOperationException("No se puede registrar un pago sobre una cuenta por pagar anulada.");
+        if (amount > BalanceDue)
+            throw new InvalidOperationException("El monto del pago excede el saldo pendiente de la cuenta por pagar.");
+
+        PaidAmount += amount;
+        SetUpdated(updatedBy);
+    }
+
+    /// <summary>
+    /// Reversa un pago previamente registrado (Fase 5.5.5.2) — invocado cuando el caso de uso de
+    /// Application procesa un <c>Payment.Reverse()</c> ya ejecutado. Sin evento propio, mismo
+    /// criterio que <see cref="RegisterPayment"/>. No confundir con <see cref="ReverseRetention"/>,
+    /// que reversa una retención tributaria, no un pago.
+    /// </summary>
+    public void ReversePayment(decimal amount, Guid updatedBy)
+    {
+        if (amount <= 0)
+            throw new ArgumentException("El monto a reversar debe ser mayor a cero.", nameof(amount));
+        if (amount > PaidAmount)
+            throw new InvalidOperationException("El monto a reversar excede el monto pagado registrado en la cuenta por pagar.");
+
+        PaidAmount -= amount;
+        SetUpdated(updatedBy);
+    }
+
+    /// <summary>
     /// Genera las cuotas de la CxP a partir del cronograma de pago ya confirmado en
     /// <see cref="PurchaseInvoice.PaymentSchedules"/> — misma fuente que ve y personaliza el
     /// usuario al confirmar, para que la CxP nunca diverja del cronograma mostrado.

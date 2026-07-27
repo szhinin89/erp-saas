@@ -81,4 +81,39 @@ public sealed class SalesReceivable : AuditableEntity, ITenantScopedEntity, ICom
         SetUpdated(updatedBy);
     }
 
+    /// <summary>
+    /// Registra un cobro aplicado contra esta CxC (Fase 5.5.5.2) — invocado por el caso de uso de
+    /// Application (fase futura) que coordina un <c>Payment</c> (dirección Collection) ya
+    /// <c>Applied</c> contra una o más <c>SalesReceivable</c>. No levanta ningún evento propio:
+    /// el hecho de negocio "cobro aplicado" ya lo publica <c>Payment.Apply()</c> — este método
+    /// solo mantiene el saldo de la CxC consistente con lo que ese pago registró.
+    /// </summary>
+    public void RegisterCollection(decimal amount, Guid updatedBy)
+    {
+        if (amount <= 0)
+            throw new ArgumentException("El monto del cobro debe ser mayor a cero.", nameof(amount));
+        if (Status == "cancelled")
+            throw new InvalidOperationException("No se puede registrar un cobro sobre una cuenta por cobrar cancelada.");
+        if (amount > BalanceDue)
+            throw new InvalidOperationException("El monto del cobro excede el saldo pendiente de la cuenta por cobrar.");
+
+        PaidAmount += amount;
+        SetUpdated(updatedBy);
+    }
+
+    /// <summary>
+    /// Reversa un cobro previamente registrado (Fase 5.5.5.2) — invocado cuando el caso de uso de
+    /// Application procesa un <c>Payment.Reverse()</c> ya ejecutado. Sin evento propio, mismo
+    /// criterio que <see cref="RegisterCollection"/>.
+    /// </summary>
+    public void ReverseCollection(decimal amount, Guid updatedBy)
+    {
+        if (amount <= 0)
+            throw new ArgumentException("El monto a reversar debe ser mayor a cero.", nameof(amount));
+        if (amount > PaidAmount)
+            throw new InvalidOperationException("El monto a reversar excede el monto cobrado registrado en la cuenta por cobrar.");
+
+        PaidAmount -= amount;
+        SetUpdated(updatedBy);
+    }
 }

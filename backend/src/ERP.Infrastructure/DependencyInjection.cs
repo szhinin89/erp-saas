@@ -361,6 +361,8 @@ public static class DependencyInjection
         // ── Purchases BC ─────────────────────────────────────────────────────
         services.AddScoped<ERP.Domain.Modules.Purchases.Interfaces.IPurchaseInvoiceRepository,
             ERP.Infrastructure.Persistence.Repositories.Purchases.PurchaseInvoiceRepository>();
+        services.AddScoped<ERP.Domain.Modules.Purchases.Interfaces.IPurchasePayableRepository,
+            ERP.Infrastructure.Persistence.Repositories.Purchases.PurchasePayableRepository>();
         services.AddScoped<ERP.Infrastructure.Persistence.Services.SriTaxResolver>();
         services.AddScoped<ERP.Application.Common.Services.ISriTaxResolver>(
             sp => sp.GetRequiredService<ERP.Infrastructure.Persistence.Services.SriTaxResolver>());
@@ -405,6 +407,8 @@ public static class DependencyInjection
         // ── Finance BC ───────────────────────────────────────────────────────
         services.AddScoped<ERP.Domain.Modules.Finance.Interfaces.ICreditTermRepository,
             ERP.Infrastructure.Persistence.Repositories.Finance.CreditTermRepository>();
+        services.AddScoped<ERP.Domain.Modules.Finance.Interfaces.IPaymentRepository,
+            ERP.Infrastructure.Persistence.Repositories.Finance.PaymentRepository>();
         services.AddScoped<IAppFeatureRepository, AppFeatureRepository>();
         services.AddSingleton<IPermissionsCacheDiagnostics, PermissionsCacheDiagnostics>();
         services.AddScoped<INavigationMenuReader, NavigationMenuReader>();
