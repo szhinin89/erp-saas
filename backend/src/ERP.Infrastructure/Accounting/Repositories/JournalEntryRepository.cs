@@ -1,6 +1,8 @@
 using Microsoft.EntityFrameworkCore;
 using ERP.Domain.Modules.Accounting.Entities;
+using ERP.Domain.Modules.Accounting.Enums;
 using ERP.Domain.Modules.Accounting.Interfaces;
+using ERP.Domain.Modules.Accounting.ValueObjects;
 using ERP.Infrastructure.Persistence;
 
 namespace ERP.Infrastructure.Accounting.Repositories;
@@ -15,7 +17,11 @@ public sealed class JournalEntryRepository : IJournalEntryRepository
     }
 
     public Task<JournalEntry?> GetByIdAsync(Guid tenantId, Guid companyId, Guid id, CancellationToken ct = default)
+        // Include(Lines) — Fase 5.4: ReverseJournalEntryHandler necesita las líneas del asiento
+        // original para construir el reverso (JournalEntry.Reverse invierte cada línea); sin este
+        // Include, la colección llegaría vacía (sin lazy loading, ver JournalFactory/PostingRule).
         => _context.JournalEntries
+            .Include(x => x.Lines)
             .Where(x => x.TenantId == tenantId && x.CompanyId == companyId && x.Id == id)
             .FirstOrDefaultAsync(ct);
 
@@ -60,4 +66,26 @@ public sealed class JournalEntryRepository : IJournalEntryRepository
 
     public Task SaveChangesAsync(CancellationToken ct = default)
         => _context.SaveChangesAsync(ct);
+
+    public async Task<JournalEntryClosureReadiness> GetClosureReadinessAsync(
+        Guid tenantId, Guid companyId, Guid accountingPeriodId, CancellationToken ct = default)
+    {
+        var scoped = _context.JournalEntries
+            .Where(x => x.TenantId == tenantId && x.CompanyId == companyId && x.AccountingPeriodId == accountingPeriodId);
+
+        // Cada AnyAsync se traduce a "SELECT EXISTS(...)" — nunca materializa JournalEntry
+        // completos, ni siquiera para contar (ADR-026 §6.1/§9: cierre es cross-aggregate, pero
+        // no debe cargar el período entero para decidir).
+        var hasDraftOrNonFinal = await scoped.AnyAsync(
+            x => x.Status != JournalEntryStatus.Posted && x.Status != JournalEntryStatus.Reversed, ct);
+
+        var hasWithoutEntryNumber = await scoped.AnyAsync(
+            x => x.Status != JournalEntryStatus.Draft && x.EntryNumber == null, ct);
+
+        var hasIncompleteReversals = await scoped.AnyAsync(x =>
+            (x.Status == JournalEntryStatus.Reversed && x.ReverseJournalEntryId == null) ||
+            (x.OriginalJournalEntryId != null && x.Status != JournalEntryStatus.Posted), ct);
+
+        return new JournalEntryClosureReadiness(hasDraftOrNonFinal, hasWithoutEntryNumber, hasIncompleteReversals);
+    }
 }

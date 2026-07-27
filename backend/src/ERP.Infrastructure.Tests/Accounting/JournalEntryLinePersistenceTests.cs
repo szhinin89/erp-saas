@@ -82,7 +82,7 @@ public sealed class JournalEntryLinePersistenceTests : IAsyncLifetime
     private JournalEntry BuildBalancedEntry()
     {
         var entry = JournalEntry.Create(
-            _tenantId, _companyId, new DateOnly(2026, 7, 25), _accountingPeriodId,
+            _tenantId, _companyId, new DateOnly(2026, 7, 25), _accountingPeriodId, 2026,
             "Sales", "InvoiceIssued", Guid.NewGuid(), "Asiento test", _createdBy);
 
         entry.AddLine(_debitAccountId, "Débito", 100m, 0m);
@@ -126,7 +126,7 @@ public sealed class JournalEntryLinePersistenceTests : IAsyncLifetime
     public async Task Insertar_linea_con_AccountId_inexistente_viola_integridad_referencial()
     {
         var entry = JournalEntry.Create(
-            _tenantId, _companyId, new DateOnly(2026, 7, 25), _accountingPeriodId,
+            _tenantId, _companyId, new DateOnly(2026, 7, 25), _accountingPeriodId, 2026,
             "Sales", "InvoiceIssued", Guid.NewGuid(), "Asiento con cuenta inexistente", _createdBy);
         entry.AddLine(Guid.NewGuid(), "Cuenta inexistente", 100m, 0m);
 

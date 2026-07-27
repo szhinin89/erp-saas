@@ -17,6 +17,7 @@ public sealed class JournalEntryConfiguration : IEntityTypeConfiguration<Journal
 
         builder.Property(x => x.EntryDate).HasColumnName("entry_date").HasColumnType("date").IsRequired();
         builder.Property(x => x.AccountingPeriodId).HasColumnName("accounting_period_id").IsRequired();
+        builder.Property(x => x.FiscalYear).HasColumnName("fiscal_year").IsRequired();
         builder.Property(x => x.SourceModule).HasColumnName("source_module").HasMaxLength(50).IsRequired();
         builder.Property(x => x.SourceEventType).HasColumnName("source_event_type").HasMaxLength(100).IsRequired();
 
@@ -27,6 +28,12 @@ public sealed class JournalEntryConfiguration : IEntityTypeConfiguration<Journal
 
         builder.Property(x => x.Description).HasColumnName("description").HasMaxLength(500).IsRequired();
         builder.Property(x => x.Status).HasColumnName("status").HasConversion<int>().IsRequired();
+        builder.Property(x => x.PostedAtUtc).HasColumnName("posted_at_utc");
+        builder.Property(x => x.EntryNumber).HasColumnName("entry_number");
+        builder.Property(x => x.OriginalJournalEntryId).HasColumnName("original_journal_entry_id");
+        builder.Property(x => x.ReverseJournalEntryId).HasColumnName("reverse_journal_entry_id");
+        builder.Property(x => x.ReversedAtUtc).HasColumnName("reversed_at_utc");
+        builder.Property(x => x.ReverseReason).HasColumnName("reverse_reason").HasMaxLength(500);
 
         builder.Property(x => x.CreatedAt).HasColumnName("created_at");
         builder.Property(x => x.UpdatedAt).HasColumnName("updated_at");
@@ -49,6 +56,34 @@ public sealed class JournalEntryConfiguration : IEntityTypeConfiguration<Journal
         builder.HasIndex(x => new { x.CompanyId, x.SourceModule, x.SourceEventId, x.SourceEventType })
             .IsUnique()
             .HasDatabaseName("uq_journal_entries_company_source_event_fact");
+
+        // Numeración definitiva (Fase 5.3, ADR-026 §7): un mismo (CompanyId, FiscalYear) nunca
+        // repite EntryNumber. PostgreSQL trata cada NULL como distinto en un índice único, por lo
+        // que los asientos aún en Draft (EntryNumber nulo) nunca colisionan entre sí — la
+        // restricción solo aplica una vez el asiento queda Posted.
+        builder.HasIndex(x => new { x.CompanyId, x.FiscalYear, x.EntryNumber })
+            .IsUnique()
+            .HasDatabaseName("uq_journal_entries_company_fiscal_year_entry_number");
+
+        // Reverso contable (Fase 5.4, ADR-026 §9): auto-FK sin navegación de dominio, mismo
+        // criterio que AccountingPeriodId. Único por OriginalJournalEntryId — un asiento original
+        // no puede tener más de un asiento de reverso (JournalEntry.Reverse ya lo impide en
+        // memoria vía el chequeo de Status==Posted; este índice es la garantía final de BD bajo
+        // concurrencia real). PostgreSQL trata cada NULL como distinto, por lo que los asientos
+        // que no son reverso de nada (la inmensa mayoría) nunca colisionan entre sí.
+        builder.HasOne<JournalEntry>()
+            .WithMany()
+            .HasForeignKey(x => x.OriginalJournalEntryId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        builder.HasOne<JournalEntry>()
+            .WithMany()
+            .HasForeignKey(x => x.ReverseJournalEntryId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        builder.HasIndex(x => x.OriginalJournalEntryId)
+            .IsUnique()
+            .HasDatabaseName("uq_journal_entries_original_journal_entry_id");
 
         // JournalEntryLine (partida doble) — persistencia agregada en Fase 3.5.4. FK configurada
         // desde el lado padre (mismo patrón que PurchaseInvoice→PurchaseInvoiceDetail): Cascade

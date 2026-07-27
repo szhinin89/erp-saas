@@ -105,21 +105,31 @@ public sealed class CloseAccountingPeriodHandler
     : IRequestHandler<CloseAccountingPeriodCommand, Result<AccountingPeriodDto>>
 {
     private readonly IAccountingPeriodRepository _repo;
+    private readonly IJournalEntryRepository _journalEntryRepository;
     private readonly ICurrentTenant _t;
     private readonly ICurrentCompany _c;
     private readonly ICurrentUser _u;
 
-    public CloseAccountingPeriodHandler(IAccountingPeriodRepository repo, ICurrentTenant t, ICurrentCompany c, ICurrentUser u)
+    public CloseAccountingPeriodHandler(
+        IAccountingPeriodRepository repo, IJournalEntryRepository journalEntryRepository,
+        ICurrentTenant t, ICurrentCompany c, ICurrentUser u)
     {
-        _repo = repo; _t = t; _c = c; _u = u;
+        _repo = repo; _journalEntryRepository = journalEntryRepository; _t = t; _c = c; _u = u;
     }
 
     public async Task<Result<AccountingPeriodDto>> Handle(CloseAccountingPeriodCommand cmd, CancellationToken ct)
     {
-        var period = await _repo.GetByIdAsync(_t.TenantId, _c.CompanyId, cmd.Id, ct);
+        var tenantId = _t.TenantId;
+        var companyId = _c.CompanyId;
+
+        var period = await _repo.GetByIdAsync(tenantId, companyId, cmd.Id, ct);
         if (period is null) return Result<AccountingPeriodDto>.NotFound("Período contable no encontrado.");
 
-        try { period.Close(_u.UserId); }
+        // Fase 5.5 (ADR-026 §6.1/§9): precondición cross-aggregate resuelta aquí (Application),
+        // nunca dentro de AccountingPeriod — el aggregate solo recibe el resumen ya calculado.
+        var readiness = await _journalEntryRepository.GetClosureReadinessAsync(tenantId, companyId, period.Id, ct);
+
+        try { period.Close(_u.UserId, readiness); }
         catch (InvalidOperationException ex) { return Result<AccountingPeriodDto>.ValidationFailure(ex.Message); }
 
         await _repo.SaveChangesAsync(ct);

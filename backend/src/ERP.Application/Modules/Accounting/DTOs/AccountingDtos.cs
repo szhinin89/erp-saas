@@ -34,3 +34,21 @@ public sealed record PostingRuleDto(
     bool IsActive,
     DateTime CreatedAt,
     DateTime? UpdatedAt);
+
+/// <summary>Fase 5.4 — expone el resultado de ReverseJournalEntryCommand.</summary>
+public sealed record JournalEntryDto(
+    Guid Id,
+    DateOnly EntryDate,
+    Guid AccountingPeriodId,
+    int FiscalYear,
+    string SourceModule,
+    string SourceEventType,
+    Guid SourceEventId,
+    string Description,
+    string Status,
+    int? EntryNumber,
+    DateTime? PostedAtUtc,
+    Guid? OriginalJournalEntryId,
+    Guid? ReverseJournalEntryId,
+    DateTime? ReversedAtUtc,
+    string? ReverseReason);

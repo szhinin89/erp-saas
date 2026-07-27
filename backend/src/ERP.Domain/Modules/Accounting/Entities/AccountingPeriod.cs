@@ -1,6 +1,7 @@
 using ERP.Domain.Common;
 using ERP.Domain.Modules.Accounting.Enums;
 using ERP.Domain.Modules.Accounting.Events;
+using ERP.Domain.Modules.Accounting.ValueObjects;
 
 namespace ERP.Domain.Modules.Accounting.Entities;
 
@@ -64,9 +65,24 @@ public sealed class AccountingPeriod : AuditableEntity, ITenantScopedEntity, ICo
                 $"El período {FiscalYear}-{PeriodNumber} no admite contabilización en estado {Status}.");
     }
 
-    public void Close(Guid closedBy)
+    /// <summary>
+    /// Cierre real del período (Fase 5.5, ADR-026 §6.1/§9). <paramref name="readiness"/> es
+    /// cross-aggregate — resuelto por <c>IJournalEntryRepository.GetClosureReadinessAsync</c> en
+    /// Application/Infrastructure antes de invocar este método (el aggregate no conoce
+    /// <c>JournalEntry</c> directamente, mismo criterio que el invariante "sin períodos
+    /// solapados"). Un cierre rechazado no muta ningún campo del período.
+    /// </summary>
+    public void Close(Guid closedBy, JournalEntryClosureReadiness readiness)
     {
         EnsureOpenForPosting();
+
+        if (!readiness.IsReady)
+        {
+            var reasons = string.Join("; ", readiness.BuildBlockingReasons());
+            throw new InvalidOperationException(
+                $"El período {FiscalYear}-{PeriodNumber} no puede cerrarse: {reasons}.");
+        }
+
         Status = PeriodStatus.Closed;
         ClosedAtUtc = DateTime.UtcNow;
         ClosedBy = closedBy;

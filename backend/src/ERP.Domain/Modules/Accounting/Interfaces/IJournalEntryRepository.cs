@@ -1,4 +1,5 @@
 using ERP.Domain.Modules.Accounting.Entities;
+using ERP.Domain.Modules.Accounting.ValueObjects;
 
 namespace ERP.Domain.Modules.Accounting.Interfaces;
 
@@ -22,4 +23,12 @@ public interface IJournalEntryRepository
 
     Task AddAsync(JournalEntry entry, CancellationToken ct = default);
     Task SaveChangesAsync(CancellationToken ct = default);
+
+    /// <summary>
+    /// Fase 5.5 (ADR-026 §6.1/§9): resuelve las precondiciones cross-aggregate para
+    /// <c>AccountingPeriod.Close</c> mediante consultas EXISTS — nunca materializa los
+    /// <c>JournalEntry</c> del período completo.
+    /// </summary>
+    Task<JournalEntryClosureReadiness> GetClosureReadinessAsync(
+        Guid tenantId, Guid companyId, Guid accountingPeriodId, CancellationToken ct = default);
 }

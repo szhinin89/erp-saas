@@ -2,6 +2,7 @@ using ERP.Application.Modules.Accounting.Posting;
 using ERP.Domain.Modules.Accounting.Entities;
 using ERP.Domain.Modules.Accounting.Enums;
 using ERP.Domain.Modules.Accounting.Interfaces;
+using ERP.Domain.Modules.Accounting.ValueObjects;
 using FluentAssertions;
 using Moq;
 
@@ -20,10 +21,12 @@ public sealed class PostingEngineTests
     private static AccountingPeriod OpenPeriod() => AccountingPeriod.Create(
         TenantId, CompanyId, 2026, 7, new DateOnly(2026, 7, 1), new DateOnly(2026, 7, 31), CreatedBy);
 
+    private static readonly JournalEntryClosureReadiness ReadyForClosure = new(false, false, false);
+
     private static AccountingPeriod ClosedPeriod()
     {
         var period = OpenPeriod();
-        period.Close(CreatedBy);
+        period.Close(CreatedBy, ReadyForClosure);
         return period;
     }
 
@@ -45,6 +48,7 @@ public sealed class PostingEngineTests
         public Mock<IJournalEntryRepository> JournalEntries { get; } = new();
         public Mock<IPostingRuleRepository> PostingRules { get; } = new();
         public Mock<IAccountingPeriodRepository> AccountingPeriods { get; } = new();
+        public Mock<IJournalEntrySequenceRepository> JournalEntrySequences { get; } = new();
 
         public Mocks()
         {
@@ -55,10 +59,19 @@ public sealed class PostingEngineTests
                 .Setup(r => r.AcquireIdempotencyLockAsync(
                     It.IsAny<Guid>(), It.IsAny<string>(), It.IsAny<Guid>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
                 .Returns(Task.CompletedTask);
+
+            // Fase 5.3: numeración correlativa por defecto — cada llamada devuelve el siguiente
+            // entero a partir de 1; suficiente para los tests que no ejercitan la secuencia en sí
+            // (esa cobertura vive en JournalEntrySequenceTests/PostingPipeline integration tests).
+            var nextNumber = 0;
+            JournalEntrySequences
+                .Setup(r => r.ReserveNextNumberAsync(
+                    It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<int>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(() => ++nextNumber);
         }
 
         public PostingEngine BuildEngine() => new(
-            JournalEntries.Object, PostingRules.Object, AccountingPeriods.Object);
+            JournalEntries.Object, PostingRules.Object, AccountingPeriods.Object, JournalEntrySequences.Object);
     }
 
     [Fact]
@@ -116,12 +129,28 @@ public sealed class PostingEngineTests
             .Setup(r => r.FindContainingDateAsync(TenantId, CompanyId, It.IsAny<DateOnly>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(OpenPeriod());
 
+        JournalEntry? captured = null;
+        m.JournalEntries
+            .Setup(r => r.AddAsync(It.IsAny<JournalEntry>(), It.IsAny<CancellationToken>()))
+            .Callback<JournalEntry, CancellationToken>((e, _) => captured = e)
+            .Returns(Task.CompletedTask);
+
         var engine = m.BuildEngine();
         var result = await engine.PostAsync(Fact());
 
         result.IsSuccess.Should().BeTrue();
         result.Value!.Status.Should().Be(PostingOutcomeStatus.Created);
         m.JournalEntries.Verify(r => r.AddAsync(It.IsAny<JournalEntry>(), It.IsAny<CancellationToken>()), Times.Once);
+
+        // Fase 5.2: el pipeline debe terminar con el asiento ya publicado (Post()) antes de
+        // pasarlo al repositorio para persistencia.
+        captured.Should().NotBeNull();
+        captured!.Status.Should().Be(JournalEntryStatus.Posted);
+        captured.PostedAtUtc.Should().NotBeNull();
+        // Fase 5.3: la numeración definitiva debe quedar asignada antes de AddAsync.
+        captured.EntryNumber.Should().Be(1);
+        m.JournalEntrySequences.Verify(
+            r => r.ReserveNextNumberAsync(TenantId, CompanyId, 2026, It.IsAny<CancellationToken>()), Times.Once);
         // PostingPipeline prepara (staging) pero nunca comitea — la persistencia pertenece al
         // ciclo externo de ErpDbContext.SaveChangesAsync (Fase 3.3.1/3.3.5).
         m.JournalEntries.Verify(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
@@ -140,7 +169,7 @@ public sealed class PostingEngineTests
     public async Task Hecho_ya_contabilizado_retorna_AlreadyProcessed_sin_resolver_regla_ni_periodo()
     {
         var existing = JournalEntry.Create(
-            TenantId, CompanyId, new DateOnly(2026, 7, 15), Guid.NewGuid(),
+            TenantId, CompanyId, new DateOnly(2026, 7, 15), Guid.NewGuid(), 2026,
             "Sales", "InvoiceIssued", Guid.NewGuid(), "Sales — InvoiceIssued — existing", Guid.Empty);
 
         var m = new Mocks();

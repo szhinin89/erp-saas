@@ -25,6 +25,7 @@ internal sealed class JournalFactory
             fact.CompanyId,
             fact.EntryDate,
             period.Id,
+            period.FiscalYear,
             fact.SourceModule,
             fact.FactType,
             fact.SourceEventId,

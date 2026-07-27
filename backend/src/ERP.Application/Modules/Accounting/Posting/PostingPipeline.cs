@@ -6,7 +6,7 @@ namespace ERP.Application.Modules.Accounting.Posting;
 /// <summary>
 /// Orden obligatorio del pipeline (ADR-026 §8): Idempotency → PostingRuleResolver →
 /// PostingPeriodResolver → PostingPeriodGuard → JournalFactory → JournalValidator →
-/// Persistencia. No se altera este orden.
+/// ReserveNextNumberAsync → Post() → Persistencia. No se altera este orden.
 /// </summary>
 /// <remarks>
 /// El pipeline solo prepara el asiento (AddAsync deja el JournalEntry en staging en el
@@ -19,6 +19,10 @@ namespace ERP.Application.Modules.Accounting.Posting;
 /// </remarks>
 internal sealed class PostingPipeline
 {
+    // Mismo actor de sistema usado por JournalFactory para Create() — el Posting Engine se
+    // dispara desde Domain Events, sin usuario interactivo en contexto (Fase 5.2).
+    private static readonly Guid SystemActor = Guid.Empty;
+
     private readonly PostingIdempotencyGuard _idempotencyGuard;
     private readonly PostingRuleResolver _ruleResolver;
     private readonly PostingPeriodResolver _periodResolver;
@@ -26,6 +30,7 @@ internal sealed class PostingPipeline
     private readonly JournalFactory _journalFactory;
     private readonly JournalValidator _journalValidator;
     private readonly IJournalEntryRepository _journalEntryRepository;
+    private readonly IJournalEntrySequenceRepository _journalEntrySequenceRepository;
 
     public PostingPipeline(
         PostingIdempotencyGuard idempotencyGuard,
@@ -34,7 +39,8 @@ internal sealed class PostingPipeline
         PostingPeriodGuard periodGuard,
         JournalFactory journalFactory,
         JournalValidator journalValidator,
-        IJournalEntryRepository journalEntryRepository)
+        IJournalEntryRepository journalEntryRepository,
+        IJournalEntrySequenceRepository journalEntrySequenceRepository)
     {
         _idempotencyGuard = idempotencyGuard;
         _ruleResolver = ruleResolver;
@@ -43,6 +49,7 @@ internal sealed class PostingPipeline
         _journalFactory = journalFactory;
         _journalValidator = journalValidator;
         _journalEntryRepository = journalEntryRepository;
+        _journalEntrySequenceRepository = journalEntrySequenceRepository;
     }
 
     public async Task<Result<PostingOutcomeDto>> ExecuteAsync(PostingFact fact, CancellationToken ct)
@@ -71,6 +78,15 @@ internal sealed class PostingPipeline
         var validationResult = _journalValidator.Validate(entry);
         if (!validationResult.IsSuccess)
             return Result<PostingOutcomeDto>.ValidationFailure(validationResult.Error!, validationResult.Code);
+
+        // Fase 5.3 (ADR-026 §7): la reserva del número corre bajo el advisory lock de
+        // ReserveNextNumberAsync sobre la misma transacción ambiente — se asigna aquí, recién
+        // validado el asiento, y queda en staging junto con el JournalEntry (ninguno de los dos
+        // se persiste hasta el SaveChangesAsync externo).
+        var entryNumber = await _journalEntrySequenceRepository.ReserveNextNumberAsync(
+            fact.TenantId, fact.CompanyId, entry.FiscalYear, ct);
+
+        entry.Post(SystemActor, entryNumber);
 
         await _journalEntryRepository.AddAsync(entry, ct);
         return Result<PostingOutcomeDto>.Success(new PostingOutcomeDto(entry.Id, PostingOutcomeStatus.Created));

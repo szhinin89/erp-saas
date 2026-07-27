@@ -200,6 +200,8 @@ public static class DependencyInjection
             ERP.Infrastructure.Accounting.Repositories.JournalEntryRepository>();
         services.AddScoped<ERP.Domain.Modules.Accounting.Interfaces.IPostingRuleRepository,
             ERP.Infrastructure.Accounting.Repositories.PostingRuleRepository>();
+        services.AddScoped<ERP.Domain.Modules.Accounting.Interfaces.IJournalEntrySequenceRepository,
+            ERP.Infrastructure.Accounting.Repositories.JournalEntrySequenceRepository>();
         services.AddScoped<ERP.Application.Modules.Accounting.Posting.IPostingEngine,
             ERP.Application.Modules.Accounting.Posting.PostingEngine>();
 

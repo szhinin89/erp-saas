@@ -37,6 +37,7 @@ public sealed class JournalFactoryTests
         public Mock<IJournalEntryRepository> JournalEntries { get; } = new();
         public Mock<IPostingRuleRepository> PostingRules { get; } = new();
         public Mock<IAccountingPeriodRepository> AccountingPeriods { get; } = new();
+        public Mock<IJournalEntrySequenceRepository> JournalEntrySequences { get; } = new();
         public JournalEntry? Captured { get; private set; }
 
         public Mocks()
@@ -55,13 +56,17 @@ public sealed class JournalFactoryTests
             AccountingPeriods
                 .Setup(r => r.FindContainingDateAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<DateOnly>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(OpenPeriod());
+            JournalEntrySequences
+                .Setup(r => r.ReserveNextNumberAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<int>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(1);
         }
 
         public void SetupRule(PostingRule rule) => PostingRules
             .Setup(r => r.FindByKeyAsync(TenantId, CompanyId, "Sales", "InvoiceIssued", It.IsAny<CancellationToken>()))
             .ReturnsAsync(rule);
 
-        public PostingEngine BuildEngine() => new(JournalEntries.Object, PostingRules.Object, AccountingPeriods.Object);
+        public PostingEngine BuildEngine() => new(
+            JournalEntries.Object, PostingRules.Object, AccountingPeriods.Object, JournalEntrySequences.Object);
     }
 
     [Fact]

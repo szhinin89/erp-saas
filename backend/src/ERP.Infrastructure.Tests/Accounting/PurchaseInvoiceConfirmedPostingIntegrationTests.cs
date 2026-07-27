@@ -129,6 +129,7 @@ public sealed class PurchaseInvoiceConfirmedPostingIntegrationTests : IAsyncLife
         services.AddScoped<IJournalEntryRepository, JournalEntryRepository>();
         services.AddScoped<IPostingRuleRepository, PostingRuleRepository>();
         services.AddScoped<IAccountingPeriodRepository, AccountingPeriodRepository>();
+        services.AddScoped<IJournalEntrySequenceRepository, JournalEntrySequenceRepository>();
         services.AddScoped<IPostingEngine, PostingEngine>();
         // PurchaseInvoiceAuditHandler (Entity Audit, ADR-022) también escucha
         // PurchaseInvoiceConfirmedEvent — el escaneo de ensamblado de AddMediatR lo descubre
@@ -189,7 +190,7 @@ public sealed class PurchaseInvoiceConfirmedPostingIntegrationTests : IAsyncLife
     }
 
     [Fact]
-    public async Task Confirmar_PurchaseInvoice_genera_JournalEntry_Draft()
+    public async Task Confirmar_PurchaseInvoice_genera_JournalEntry_Posted()
     {
         var issueDate = new DateOnly(2026, 7, 25);
         var (db, _) = BuildWiredContext(_tenantId, _companyId, _postgres);
@@ -206,7 +207,9 @@ public sealed class PurchaseInvoiceConfirmedPostingIntegrationTests : IAsyncLife
         var entry = await verifyDb.JournalEntries.FirstOrDefaultAsync(x => x.SourceEventId == inv.Id);
 
         entry.Should().NotBeNull();
-        entry!.Status.Should().Be(ERP.Domain.Modules.Accounting.Enums.JournalEntryStatus.Draft);
+        // Fase 5.2: el Posting Engine publica (Post()) el asiento antes de persistirlo.
+        entry!.Status.Should().Be(ERP.Domain.Modules.Accounting.Enums.JournalEntryStatus.Posted);
+        entry.PostedAtUtc.Should().NotBeNull();
         entry.SourceModule.Should().Be("Purchases");
         entry.SourceEventType.Should().Be("InvoiceReceived");
     }
@@ -281,14 +284,23 @@ public sealed class PurchaseInvoiceConfirmedPostingIntegrationTests : IAsyncLife
 
         // Dos redistribuciones concurrentes del mismo evento, cada una en su propio
         // ErpDbContext/transacción — ejercita el advisory lock de idempotencia entre ambas.
+        //
+        // Fase 5.5.1: la transacción se abre explícitamente ANTES de publisher.Publish() —
+        // replica el orden real de producción (ErpDbContext.SaveChangesAsync ya tiene su
+        // transacción abierta antes de publicar el Domain Event). Sin ella,
+        // AcquireIdempotencyLockAsync corre pg_advisory_xact_lock en un statement autocommit
+        // propio que se libera de inmediato, y el "advisory lock" deja de serializar nada —
+        // exactamente la causa raíz investigada en la Fase 5.5.1.
         var go = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
 
         Task RunAsync() => Task.Run(async () =>
         {
             await go.Task.ConfigureAwait(false);
             var (db, publisher) = BuildWiredContext(_tenantId, _companyId, _postgres);
+            await using var tx = await db.Database.BeginTransactionAsync();
             await publisher.Publish(evt, CancellationToken.None);
             await db.SaveChangesAsync();
+            await tx.CommitAsync();
         });
 
         var taskA = RunAsync();

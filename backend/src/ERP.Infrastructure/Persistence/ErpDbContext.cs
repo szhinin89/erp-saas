@@ -248,6 +248,7 @@ public class ErpDbContext : DbContext
     public DbSet<AccountingPeriod> AccountingPeriods => Set<AccountingPeriod>();
     public DbSet<JournalEntry> JournalEntries => Set<JournalEntry>();
     public DbSet<JournalEntryLine> JournalEntryLines => Set<JournalEntryLine>();
+    public DbSet<JournalEntrySequence> JournalEntrySequences => Set<JournalEntrySequence>();
     public DbSet<PostingRule> PostingRules => Set<PostingRule>();
     public DbSet<PostingRuleLine> PostingRuleLines => Set<PostingRuleLine>();
 

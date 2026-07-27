@@ -23,7 +23,8 @@ public sealed class PostingEngine : IPostingEngine
     public PostingEngine(
         IJournalEntryRepository journalEntryRepository,
         IPostingRuleRepository postingRuleRepository,
-        IAccountingPeriodRepository accountingPeriodRepository)
+        IAccountingPeriodRepository accountingPeriodRepository,
+        IJournalEntrySequenceRepository journalEntrySequenceRepository)
     {
         _pipeline = new PostingPipeline(
             new PostingIdempotencyGuard(journalEntryRepository),
@@ -32,7 +33,8 @@ public sealed class PostingEngine : IPostingEngine
             new PostingPeriodGuard(),
             new JournalFactory(),
             new JournalValidator(),
-            journalEntryRepository);
+            journalEntryRepository,
+            journalEntrySequenceRepository);
     }
 
     public Task<Result<PostingOutcomeDto>> PostAsync(PostingFact fact, CancellationToken cancellationToken = default)

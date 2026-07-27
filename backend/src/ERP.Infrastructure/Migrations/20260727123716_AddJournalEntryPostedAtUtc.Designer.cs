@@ -3,6 +3,7 @@ using System;
 using ERP.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace ERP.Infrastructure.Migrations
 {
     [DbContext(typeof(ErpDbContext))]
-    partial class ErpDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260727123716_AddJournalEntryPostedAtUtc")]
+    partial class AddJournalEntryPostedAtUtc
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -2003,34 +2006,9 @@ namespace ERP.Infrastructure.Migrations
                         .HasColumnType("date")
                         .HasColumnName("entry_date");
 
-                    b.Property<int?>("EntryNumber")
-                        .HasColumnType("integer")
-                        .HasColumnName("entry_number");
-
-                    b.Property<int>("FiscalYear")
-                        .HasColumnType("integer")
-                        .HasColumnName("fiscal_year");
-
-                    b.Property<Guid?>("OriginalJournalEntryId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("original_journal_entry_id");
-
                     b.Property<DateTime?>("PostedAtUtc")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("posted_at_utc");
-
-                    b.Property<Guid?>("ReverseJournalEntryId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("reverse_journal_entry_id");
-
-                    b.Property<string>("ReverseReason")
-                        .HasMaxLength(500)
-                        .HasColumnType("character varying(500)")
-                        .HasColumnName("reverse_reason");
-
-                    b.Property<DateTime?>("ReversedAtUtc")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("reversed_at_utc");
 
                     b.Property<Guid>("SourceEventId")
                         .HasColumnType("uuid")
@@ -2067,16 +2045,6 @@ namespace ERP.Infrastructure.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("AccountingPeriodId");
-
-                    b.HasIndex("OriginalJournalEntryId")
-                        .IsUnique()
-                        .HasDatabaseName("uq_journal_entries_original_journal_entry_id");
-
-                    b.HasIndex("ReverseJournalEntryId");
-
-                    b.HasIndex("CompanyId", "FiscalYear", "EntryNumber")
-                        .IsUnique()
-                        .HasDatabaseName("uq_journal_entries_company_fiscal_year_entry_number");
 
                     b.HasIndex("CompanyId", "SourceModule", "SourceEventId", "SourceEventType")
                         .IsUnique()
@@ -2132,49 +2100,6 @@ namespace ERP.Infrastructure.Migrations
                         .HasDatabaseName("ix_journal_entry_lines_tenant");
 
                     b.ToTable("journal_entry_lines", (string)null);
-                });
-
-            modelBuilder.Entity("ERP.Domain.Modules.Accounting.Entities.JournalEntrySequence", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid")
-                        .HasColumnName("id");
-
-                    b.Property<Guid>("CompanyId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("company_id");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
-
-                    b.Property<int>("FiscalYear")
-                        .HasColumnType("integer")
-                        .HasColumnName("fiscal_year");
-
-                    b.Property<int>("LastNumber")
-                        .HasColumnType("integer")
-                        .HasColumnName("last_number");
-
-                    b.Property<Guid>("TenantId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("tenant_id");
-
-                    b.Property<DateTime>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("TenantId", "CompanyId", "FiscalYear")
-                        .IsUnique()
-                        .HasDatabaseName("uq_journal_entry_sequences_company_fiscal_year");
-
-                    b.ToTable("journal_entry_sequences", null, t =>
-                        {
-                            t.HasCheckConstraint("chk_journal_entry_seq_non_negative", "last_number >= 0");
-                        });
                 });
 
             modelBuilder.Entity("ERP.Domain.Modules.Accounting.Entities.PostingRule", b =>
@@ -11049,16 +10974,6 @@ namespace ERP.Infrastructure.Migrations
                         .HasForeignKey("AccountingPeriodId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
-
-                    b.HasOne("ERP.Domain.Modules.Accounting.Entities.JournalEntry", null)
-                        .WithMany()
-                        .HasForeignKey("OriginalJournalEntryId")
-                        .OnDelete(DeleteBehavior.Restrict);
-
-                    b.HasOne("ERP.Domain.Modules.Accounting.Entities.JournalEntry", null)
-                        .WithMany()
-                        .HasForeignKey("ReverseJournalEntryId")
-                        .OnDelete(DeleteBehavior.Restrict);
                 });
 
             modelBuilder.Entity("ERP.Domain.Modules.Accounting.Entities.JournalEntryLine", b =>
