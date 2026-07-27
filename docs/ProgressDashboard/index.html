@@ -473,7 +473,7 @@ Technical Debt: <span class='pill pill-n'>HIGH</span></p>
 <tr><td>Documentacion</td><td style='color:#16a34a'><b>Bueno</b></td><td>Promedio pilar 'documentation' (explorer-index.json): 70%</td></tr>
 <tr><td>Cobertura de Auditorias</td><td style='color:#dc2626'><b>Critico</b></td><td>3/29 modulos auditados (10.3%)</td></tr>
 <tr><td>Roadmap</td><td style='color:#d97706'><b>Aceptable</b></td><td>0 completadas + 4 en progreso de 7 etapas (57.1%)</td></tr>
-<tr><td>Dependencias</td><td style='color:#d97706'><b>Aceptable</b></td><td>6 ciclo(s) + 0 advertencia(s) de validacion</td></tr>
+<tr><td>Dependencias</td><td style='color:#d97706'><b>Aceptable</b></td><td>5 ciclo(s) + 0 advertencia(s) de validacion</td></tr>
 <tr><td>Gobierno</td><td style='color:#dc2626'><b>Critico</b></td><td>3/29 modulos con ADR real (10.3%)</td></tr>
 <tr><td>Estado general</td><td style='color:#d97706'><b>Atencion</b></td><td>Promedio de los 6 indicadores anteriores</td></tr>
 <tr><td>Calidad de Datos (Quality Gate)</td><td style='color:#16a34a'><b>Excelente</b></td><td>109/109 checks OK, 0 error(es) critico(s), 0 advertencia(s) -- generado 2026-07-26 17:06:57 (tools/dashboard/validate-dashboard.ps1)</td></tr>
@@ -2453,7 +2453,7 @@ Technical Debt: <span class='pill pill-n'>HIGH</span></p>
 </section>
 <section id='arch-dependencies' class='panel' data-group='architecture' data-subgroup='dependencias'>
 <h2>Dependencias Arquitectonicas</h2>
-<p class='muted-note'>89 aristas derivadas mecanicamente de explorer-index.json (grafo tecnico real) mas una clasificacion heuristica por dominio ('dependencyType', ver architecture-dependencies.json.method). <span style='color:#d97706'>&#9888; 6 ciclo(s) detectado(s) -- ver Riesgos Activos.</span> </p>
+<p class='muted-note'>89 aristas derivadas mecanicamente de explorer-index.json (grafo tecnico real) mas una clasificacion heuristica por dominio ('dependencyType', ver architecture-dependencies.json.method). <span style='color:#d97706'>&#9888; 5 ciclo(s) detectado(s) -- ver Riesgos Activos.</span> </p>
 <p>Dependencias criticas: <b>55</b> &middot; Modulos sin dependencias: <b>Menu, Common, Auxiliary</b></p>
 <table class='sortable'>
 <tr><th>Modulo origen</th><th>Modulo destino</th><th>Tipo</th><th>Critica</th><th>Observaciones</th></tr>
@@ -2560,10 +2560,10 @@ Technical Debt: <span class='pill pill-n'>HIGH</span></p>
 <table class='sortable'>
 <tr><th>Documento</th><th>Estado</th><th>Detalle</th></tr>
 <tr><td>docs/STATUS.md (modules-status.json/architecture-governance.json)</td><td style='color:#d97706'>&#9888; Desactualizado</td><td>23 inconsistencia(s)</td></tr>
+<tr><td>docs/adr/*.md (architecture-governance.json)</td><td style='color:#16a34a'>&#10003; Sincronizado</td><td>0 inconsistencias</td></tr>
+<tr><td>FEATURES.md</td><td style='color:#d97706'>&#9888; Desactualizado</td><td>3 inconsistencia(s)</td></tr>
 <tr><td>explorer-index.json (Dashboard)</td><td style='color:#d97706'>&#9888; Desactualizado</td><td>2 inconsistencia(s)</td></tr>
 <tr><td>docs/ROADMAP.md (roadmap.json)</td><td style='color:#d97706'>&#9888; Desactualizado</td><td>17 inconsistencia(s)</td></tr>
-<tr><td>FEATURES.md</td><td style='color:#d97706'>&#9888; Desactualizado</td><td>3 inconsistencia(s)</td></tr>
-<tr><td>docs/adr/*.md (architecture-governance.json)</td><td style='color:#16a34a'>&#10003; Sincronizado</td><td>0 inconsistencias</td></tr>
 </table>
 
 <h3>Top 10 inconsistencias mas importantes</h3>
@@ -2576,9 +2576,9 @@ Technical Debt: <span class='pill pill-n'>HIGH</span></p>
 <tr><td>Companies</td><td>modules-status.json (functionalStatus)</td><td>explorer-index.json (featuresCount)</td><td>Pendiente de evaluacion</td><td>16 features reales</td><td style='color:#d97706'><b>Media</b></td><td>Codigo con features reales sin gobernanza documental</td></tr>
 <tr><td>BusinessPartner</td><td>roadmap.json</td><td>explorer-index.json (Dashboard)</td><td>Referenciado</td><td>No existe como modulo tecnico trackeado</td><td style='color:#d97706'><b>Media</b></td><td>Documentacion sin modulo (aparece en un documento, no en otro)</td></tr>
 <tr><td>Navigation</td><td>modules-status.json</td><td>CLAUDE.md / docs/STATUS.md / docs/ROADMAP.md / docs/adr/*</td><td>Pendiente de evaluacion</td><td>Sin cita textual encontrada (Fase 3.0)</td><td style='color:#2563eb'><b>Informativa</b></td><td>Modulo sin documentacion</td></tr>
-<tr><td>Finance</td><td>modules-status.json</td><td>CLAUDE.md / docs/STATUS.md / docs/ROADMAP.md / docs/adr/*</td><td>Pendiente de evaluacion</td><td>Sin cita textual encontrada (Fase 3.0)</td><td style='color:#2563eb'><b>Informativa</b></td><td>Modulo sin documentacion</td></tr>
-<tr><td>Session</td><td>modules-status.json</td><td>CLAUDE.md / docs/STATUS.md / docs/ROADMAP.md / docs/adr/*</td><td>Pendiente de evaluacion</td><td>Sin cita textual encontrada (Fase 3.0)</td><td style='color:#2563eb'><b>Informativa</b></td><td>Modulo sin documentacion</td></tr>
-<tr><td>SriCatalogs</td><td>modules-status.json</td><td>CLAUDE.md / docs/STATUS.md / docs/ROADMAP.md / docs/adr/*</td><td>Pendiente de evaluacion</td><td>Sin cita textual encontrada (Fase 3.0)</td><td style='color:#2563eb'><b>Informativa</b></td><td>Modulo sin documentacion</td></tr>
+<tr><td>Companies</td><td>modules-status.json</td><td>CLAUDE.md / docs/STATUS.md / docs/ROADMAP.md / docs/adr/*</td><td>Pendiente de evaluacion</td><td>Sin cita textual encontrada (Fase 3.0)</td><td style='color:#2563eb'><b>Informativa</b></td><td>Modulo sin documentacion</td></tr>
+<tr><td>Media</td><td>modules-status.json</td><td>CLAUDE.md / docs/STATUS.md / docs/ROADMAP.md / docs/adr/*</td><td>Pendiente de evaluacion</td><td>Sin cita textual encontrada (Fase 3.0)</td><td style='color:#2563eb'><b>Informativa</b></td><td>Modulo sin documentacion</td></tr>
+<tr><td>Menu</td><td>modules-status.json</td><td>CLAUDE.md / docs/STATUS.md / docs/ROADMAP.md / docs/adr/*</td><td>Pendiente de evaluacion</td><td>Sin cita textual encontrada (Fase 3.0)</td><td style='color:#2563eb'><b>Informativa</b></td><td>Modulo sin documentacion</td></tr>
 </table>
 
 <details class='card-section'><summary>Todos los hallazgos (23)</summary>
@@ -2589,21 +2589,21 @@ Technical Debt: <span class='pill pill-n'>HIGH</span></p>
 <tr><td>Ride</td><td>modules-status.json (functionalStatus)</td><td>explorer-index.json (score)</td><td>Skeleton (diseno congelado, implementacion NO iniciada)</td><td>81.5% (>= promedio ERP 79.56%)</td><td style='color:#dc2626'><b>Critica</b></td><td>Codigo mas adelantado que la documentacion</td></tr>
 <tr><td>Auth</td><td>modules-status.json (functionalStatus)</td><td>explorer-index.json (featuresCount)</td><td>Pendiente de evaluacion</td><td>11 features reales</td><td style='color:#d97706'><b>Media</b></td><td>Codigo con features reales sin gobernanza documental</td></tr>
 <tr><td>Companies</td><td>modules-status.json (functionalStatus)</td><td>explorer-index.json (featuresCount)</td><td>Pendiente de evaluacion</td><td>16 features reales</td><td style='color:#d97706'><b>Media</b></td><td>Codigo con features reales sin gobernanza documental</td></tr>
-<tr><td>Integration</td><td>modules-status.json</td><td>CLAUDE.md / docs/STATUS.md / docs/ROADMAP.md / docs/adr/*</td><td>Pendiente de evaluacion</td><td>Sin cita textual encontrada (Fase 3.0)</td><td style='color:#2563eb'><b>Informativa</b></td><td>Modulo sin documentacion</td></tr>
-<tr><td>Configuration</td><td>modules-status.json</td><td>CLAUDE.md / docs/STATUS.md / docs/ROADMAP.md / docs/adr/*</td><td>Pendiente de evaluacion</td><td>Sin cita textual encontrada (Fase 3.0)</td><td style='color:#2563eb'><b>Informativa</b></td><td>Modulo sin documentacion</td></tr>
+<tr><td>Session</td><td>modules-status.json</td><td>CLAUDE.md / docs/STATUS.md / docs/ROADMAP.md / docs/adr/*</td><td>Pendiente de evaluacion</td><td>Sin cita textual encontrada (Fase 3.0)</td><td style='color:#2563eb'><b>Informativa</b></td><td>Modulo sin documentacion</td></tr>
 <tr><td>Audit</td><td>modules-status.json</td><td>CLAUDE.md / docs/STATUS.md / docs/ROADMAP.md / docs/adr/*</td><td>Pendiente de evaluacion</td><td>Sin cita textual encontrada (Fase 3.0)</td><td style='color:#2563eb'><b>Informativa</b></td><td>Modulo sin documentacion</td></tr>
-<tr><td>Media</td><td>modules-status.json</td><td>CLAUDE.md / docs/STATUS.md / docs/ROADMAP.md / docs/adr/*</td><td>Pendiente de evaluacion</td><td>Sin cita textual encontrada (Fase 3.0)</td><td style='color:#2563eb'><b>Informativa</b></td><td>Modulo sin documentacion</td></tr>
-<tr><td>Tenants</td><td>modules-status.json</td><td>CLAUDE.md / docs/STATUS.md / docs/ROADMAP.md / docs/adr/*</td><td>Pendiente de evaluacion</td><td>Sin cita textual encontrada (Fase 3.0)</td><td style='color:#2563eb'><b>Informativa</b></td><td>Modulo sin documentacion</td></tr>
-<tr><td>Security</td><td>modules-status.json</td><td>CLAUDE.md / docs/STATUS.md / docs/ROADMAP.md / docs/adr/*</td><td>Pendiente de evaluacion</td><td>Sin cita textual encontrada (Fase 3.0)</td><td style='color:#2563eb'><b>Informativa</b></td><td>Modulo sin documentacion</td></tr>
-<tr><td>Dashboard</td><td>modules-status.json</td><td>CLAUDE.md / docs/STATUS.md / docs/ROADMAP.md / docs/adr/*</td><td>Pendiente de evaluacion</td><td>Sin cita textual encontrada (Fase 3.0)</td><td style='color:#2563eb'><b>Informativa</b></td><td>Modulo sin documentacion</td></tr>
+<tr><td>Integration</td><td>modules-status.json</td><td>CLAUDE.md / docs/STATUS.md / docs/ROADMAP.md / docs/adr/*</td><td>Pendiente de evaluacion</td><td>Sin cita textual encontrada (Fase 3.0)</td><td style='color:#2563eb'><b>Informativa</b></td><td>Modulo sin documentacion</td></tr>
 <tr><td>Common</td><td>modules-status.json</td><td>CLAUDE.md / docs/STATUS.md / docs/ROADMAP.md / docs/adr/*</td><td>Pendiente de evaluacion</td><td>Sin cita textual encontrada (Fase 3.0)</td><td style='color:#2563eb'><b>Informativa</b></td><td>Modulo sin documentacion</td></tr>
 <tr><td>Auxiliary</td><td>modules-status.json</td><td>CLAUDE.md / docs/STATUS.md / docs/ROADMAP.md / docs/adr/*</td><td>Pendiente de evaluacion</td><td>Sin cita textual encontrada (Fase 3.0)</td><td style='color:#2563eb'><b>Informativa</b></td><td>Modulo sin documentacion</td></tr>
+<tr><td>Security</td><td>modules-status.json</td><td>CLAUDE.md / docs/STATUS.md / docs/ROADMAP.md / docs/adr/*</td><td>Pendiente de evaluacion</td><td>Sin cita textual encontrada (Fase 3.0)</td><td style='color:#2563eb'><b>Informativa</b></td><td>Modulo sin documentacion</td></tr>
 <tr><td>Auth</td><td>modules-status.json</td><td>CLAUDE.md / docs/STATUS.md / docs/ROADMAP.md / docs/adr/*</td><td>Pendiente de evaluacion</td><td>Sin cita textual encontrada (Fase 3.0)</td><td style='color:#2563eb'><b>Informativa</b></td><td>Modulo sin documentacion</td></tr>
-<tr><td>Menu</td><td>modules-status.json</td><td>CLAUDE.md / docs/STATUS.md / docs/ROADMAP.md / docs/adr/*</td><td>Pendiente de evaluacion</td><td>Sin cita textual encontrada (Fase 3.0)</td><td style='color:#2563eb'><b>Informativa</b></td><td>Modulo sin documentacion</td></tr>
-<tr><td>Companies</td><td>modules-status.json</td><td>CLAUDE.md / docs/STATUS.md / docs/ROADMAP.md / docs/adr/*</td><td>Pendiente de evaluacion</td><td>Sin cita textual encontrada (Fase 3.0)</td><td style='color:#2563eb'><b>Informativa</b></td><td>Modulo sin documentacion</td></tr>
 <tr><td>SriCatalogs</td><td>modules-status.json</td><td>CLAUDE.md / docs/STATUS.md / docs/ROADMAP.md / docs/adr/*</td><td>Pendiente de evaluacion</td><td>Sin cita textual encontrada (Fase 3.0)</td><td style='color:#2563eb'><b>Informativa</b></td><td>Modulo sin documentacion</td></tr>
-<tr><td>Session</td><td>modules-status.json</td><td>CLAUDE.md / docs/STATUS.md / docs/ROADMAP.md / docs/adr/*</td><td>Pendiente de evaluacion</td><td>Sin cita textual encontrada (Fase 3.0)</td><td style='color:#2563eb'><b>Informativa</b></td><td>Modulo sin documentacion</td></tr>
+<tr><td>Configuration</td><td>modules-status.json</td><td>CLAUDE.md / docs/STATUS.md / docs/ROADMAP.md / docs/adr/*</td><td>Pendiente de evaluacion</td><td>Sin cita textual encontrada (Fase 3.0)</td><td style='color:#2563eb'><b>Informativa</b></td><td>Modulo sin documentacion</td></tr>
 <tr><td>Finance</td><td>modules-status.json</td><td>CLAUDE.md / docs/STATUS.md / docs/ROADMAP.md / docs/adr/*</td><td>Pendiente de evaluacion</td><td>Sin cita textual encontrada (Fase 3.0)</td><td style='color:#2563eb'><b>Informativa</b></td><td>Modulo sin documentacion</td></tr>
+<tr><td>Dashboard</td><td>modules-status.json</td><td>CLAUDE.md / docs/STATUS.md / docs/ROADMAP.md / docs/adr/*</td><td>Pendiente de evaluacion</td><td>Sin cita textual encontrada (Fase 3.0)</td><td style='color:#2563eb'><b>Informativa</b></td><td>Modulo sin documentacion</td></tr>
+<tr><td>Tenants</td><td>modules-status.json</td><td>CLAUDE.md / docs/STATUS.md / docs/ROADMAP.md / docs/adr/*</td><td>Pendiente de evaluacion</td><td>Sin cita textual encontrada (Fase 3.0)</td><td style='color:#2563eb'><b>Informativa</b></td><td>Modulo sin documentacion</td></tr>
+<tr><td>Menu</td><td>modules-status.json</td><td>CLAUDE.md / docs/STATUS.md / docs/ROADMAP.md / docs/adr/*</td><td>Pendiente de evaluacion</td><td>Sin cita textual encontrada (Fase 3.0)</td><td style='color:#2563eb'><b>Informativa</b></td><td>Modulo sin documentacion</td></tr>
+<tr><td>Media</td><td>modules-status.json</td><td>CLAUDE.md / docs/STATUS.md / docs/ROADMAP.md / docs/adr/*</td><td>Pendiente de evaluacion</td><td>Sin cita textual encontrada (Fase 3.0)</td><td style='color:#2563eb'><b>Informativa</b></td><td>Modulo sin documentacion</td></tr>
+<tr><td>Companies</td><td>modules-status.json</td><td>CLAUDE.md / docs/STATUS.md / docs/ROADMAP.md / docs/adr/*</td><td>Pendiente de evaluacion</td><td>Sin cita textual encontrada (Fase 3.0)</td><td style='color:#2563eb'><b>Informativa</b></td><td>Modulo sin documentacion</td></tr>
 <tr><td>Navigation</td><td>modules-status.json</td><td>CLAUDE.md / docs/STATUS.md / docs/ROADMAP.md / docs/adr/*</td><td>Pendiente de evaluacion</td><td>Sin cita textual encontrada (Fase 3.0)</td><td style='color:#2563eb'><b>Informativa</b></td><td>Modulo sin documentacion</td></tr>
 <tr><td>BusinessPartner</td><td>roadmap.json</td><td>explorer-index.json (Dashboard)</td><td>Referenciado</td><td>No existe como modulo tecnico trackeado</td><td style='color:#d97706'><b>Media</b></td><td>Documentacion sin modulo (aparece en un documento, no en otro)</td></tr>
 <tr><td>Auxiliary</td><td>FEATURES.md</td><td>docs/STATUS.md</td><td>Sin alias encontrado</td><td>Sin alias encontrado</td><td style='color:#2563eb'><b>Informativa</b></td><td>Ausente en FEATURES.md y STATUS.md (busqueda por alias, aproximada)</td></tr>
@@ -3049,8 +3049,8 @@ Overall: <b style='color:#dc2626'>HIGH</b></p>
 <p>Modulos sin dependencias: <b>3</b> (Menu, Common, Auxiliary)</p>
 </div>
 <div class='sub-card'>
-<h3>Ciclos de dependencia detectados (6)</h3>
-<ul><li>Auth -> Access -> Auth</li><li>Inventory -> Purchases -> Inventory</li><li>Items -> Inventory -> Purchases -> Items</li><li>Items -> Inventory -> Purchases -> Pricing -> Items</li><li>Inventory -> Sales -> Inventory</li><li>Items -> Inventory -> Sales -> Items</li></ul><p class='muted-note'>Un ciclo entre modulos no detiene la generacion -- se reporta para revision de Arquitectura, puede ser una dependencia bidireccional real ya conocida.</p>
+<h3>Ciclos de dependencia detectados (5)</h3>
+<ul><li>Access -> Auth -> Access</li><li>Inventory -> Purchases -> Inventory</li><li>Inventory -> Purchases -> Items -> Inventory</li><li>Items -> Pricing -> Items</li><li>Inventory -> Sales -> Inventory</li></ul><p class='muted-note'>Un ciclo entre modulos no detiene la generacion -- se reporta para revision de Arquitectura, puede ser una dependencia bidireccional real ya conocida.</p>
 </div>
 </section>
 <section id='project-blockers' class='panel' data-group='security' data-subgroup='riesgos'>
@@ -3467,7 +3467,7 @@ var SEARCH_INDEX = [{"type":"Module","label":"Company","target":"Company","kind"
   });
 })();
 
-var DEFAULT_SUBGROUP = {"security":"riesgos","roadmap":"roadmap","business":"business-capability","home":"kpis","engineering":"resumen","architecture":"resumen"};
+var DEFAULT_SUBGROUP = {"home":"kpis","business":"business-capability","architecture":"resumen","engineering":"resumen","security":"riesgos","roadmap":"roadmap"};
 var ACTIVE_SUBGROUP = {};
 
 function showSubGroup(group, sub){
@@ -3597,12 +3597,6 @@ function selectLayer(layerId){
   resetBreadcrumb();
   pushLevel('layer', layerId, label);
 }
-
-// Legacy aliases kept so evidence panels generated for other sections
-// (Dependency Explorer graph, search results, reverse-file navigation)
-// keep working through the same single breadcrumb-driven panel.
-function openModulePanel(moduleId){ pushLevel('module', moduleId, moduleId); }
-function openFilePanel(filePath){ pushLevel('file', filePath, filePath); }
 
 function highlightDepNode(moduleId){
   var svg = document.getElementById('depGraphSvg');

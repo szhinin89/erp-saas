@@ -1,8 +1,10 @@
 # ZH Engineering Dashboard
 
+**Estado: FROZEN v1.0** (Fase Dashboard 20.0). Este README es la guía operativa (comandos, tabla de analizadores). El contrato técnico completo — fuente de verdad de cada dataset, arquitectura de navegación, reglas y la sección **Mantenimiento** (qué cambios están permitidos a partir de FROZEN) — vive en [`docs/ProgressDashboard/DASHBOARD-CONTRACT.md`](../../docs/ProgressDashboard/DASHBOARD-CONTRACT.md). Ante cualquier contradicción entre este archivo y ese contrato, gana el contrato.
+
 Sistema de "Engineering Intelligence" que genera `docs/ProgressDashboard/index.html`: un reporte técnico que conecta arquitectura real, capacidades de negocio y métricas de ingeniería del ERP.
 
-No confundir con `PROGRESS.html` (raíz del repo) — el mapa maestro visual/arquitectónico, no generado por estos scripts y que estos scripts nunca modifican.
+No confundir con `PROGRESS.html` (raíz del repo) — el mapa maestro visual/arquitectónico, no generado por estos scripts y que estos scripts nunca modifican. Desde Fase Dashboard 13.0, `PROGRESS.html` carga sus datos desde `docs/ProgressDashboard/data/architecture-progress-source.js` (ya no un array embebido a mano).
 
 ## Archivo principal
 
@@ -18,7 +20,10 @@ Es la **única versión activa**. No crear nuevos scripts de render numerados (`
 Código real del ERP (backend/, frontend/)
         |
         v
-Analizadores (tools/dashboard/analyze-*.ps1)
+build-dashboard-data.ps1 (orquestador de datos, Fase 9.0)
+   -- corre los analizadores (tools/dashboard/analyze-*.ps1),
+      valida (sin regenerar) semillas + archivos manuales,
+      corre el Quality Gate (validate-dashboard.ps1) al final
         |
         v
 Modelo JSON (docs/ProgressDashboard/data/*.json)
@@ -29,6 +34,8 @@ render-dashboard.ps1
         v
 docs/ProgressDashboard/index.html
 ```
+
+`render-dashboard.ps1` invoca `build-dashboard-data.ps1` automáticamente solo si detecta datos faltantes/inválidos; si todo ya está al día, renderiza directo sin re-correr nada. Detalle completo de qué archivo es semilla/manual/generado/quality-gate: `DASHBOARD-CONTRACT.md` sección 3.
 
 El renderer **nunca infiere ni inventa** relaciones o riesgos — solo agrega y presenta lo que los analizadores ya calcularon con evidencia real (rutas de archivo, conteos de código, coincidencias de grep). Si un dato no existe todavía, el HTML lo dice explícitamente ("No features mapped yet", "N/A - pending") en vez de rellenar con contenido ficticio.
 
@@ -140,6 +147,22 @@ Si solo cambiaste código de negocio y quieres una corrida más rápida sin volv
 | `release-simulation.json` | Escenarios "qué pasaría si" (Security/Quality/Fiscal/Accounting/Sales) recalculados con las fórmulas reales, sin tocar datos reales (generado por `analyze-release-simulation.ps1`) |
 | `recommendations.json` | Recomendaciones de arquitectura con cita exacta de los datos que las justifican (generado por `analyze-recommendations.ps1`) |
 
+### Datasets manuales y de gobernanza (Fases Dashboard 3.0-14.0, no listados arriba)
+
+Agregados en fases posteriores a la tabla original de este README; contrato completo (campos, formato) en `DASHBOARD-CONTRACT.md` sección 3.2:
+
+| Archivo | Contenido | Origen |
+|---|---|---|
+| `modules-status.json` | Estado funcional/madurez/freeze por módulo | Manual, curado contra `docs/STATUS.md`/ADRs |
+| `roadmap.json` | 7 etapas del Roadmap Maestro | Manual, curado contra `docs/ROADMAP.md` |
+| `blockers.json` | Bloqueadores reales del proyecto | Manual |
+| `architecture-governance.json` | Estado de gobierno (freeze/accepted/draft) por módulo | Manual |
+| `architecture-dependencies.json` | Grafo de dependencias arquitectónicas + ciclos (DFS determinista desde Fase 19.0) | Manual (aristas) + `analyze-module-graph.ps1`-style derivación en `render-dashboard.ps1` |
+| `erp-closure.json` | Auditoría de cierre del ERP por módulo (Fase Dashboard 14.0) | Manual |
+| `architecture-progress-source.json` (+ espejo `.js`) | Progreso por etapas/fases/tareas — fuente que carga `PROGRESS.html` | Manual |
+| `module-coverage-audit.json` | Auditoría de cobertura de módulos reales vs. datasets nombrados (Fase Dashboard 10.0) | Manual — **sin generador ni validación en `build-dashboard-data.ps1`, gap conocido documentado en `DASHBOARD-CONTRACT.md` sección 3.2** |
+| `dashboard-validation.json` | Resultado del Quality Gate final | `validate-dashboard.ps1` |
+
 ## Generación del HTML
 
 `render-dashboard.ps1` carga los JSON de arriba, calcula únicamente derivaciones de presentación (Engineering Confidence Score ponderado, clasificación LOW/MEDIUM/HIGH/CRITICAL, agregados por dominio) y escribe **una sola vez**, al final:
@@ -148,7 +171,7 @@ Si solo cambiaste código de negocio y quieres una corrida más rápida sin volv
 $html | Out-File $Output -Encoding utf8
 ```
 
-Secciones del HTML generado, en orden: Executive Summary, Architecture & Domains (enlaza a `PROGRESS.html`), Business Capability Map (incluye Tasks), Architecture Risk Map (incluye Engineering Risk Coverage), Engineering Confidence, Risk Assessment, Production Decision, Recommended Next Actions, Production Gate Decision, Quality Gate Detail, Security Posture, Technical Debt Trend, Release Recommendation, Engineering Score, Quality Gate, Engineering Maturity, Production Readiness, Security Analysis, Technical Debt, Engineering Trend, Module Health, Engineering Roadmap.
+Desde Fase Dashboard 16.0/17.0, el HTML generado organiza sus 36 secciones en **6 categorías de navegación** (Estado General, Módulos y Negocio, Arquitectura, Calidad e Ingeniería, Seguridad y Riesgos, Roadmap), cada una con su propia sub-navegación — un panel visible a la vez. Detalle completo de qué sección vive en qué categoría/sub-categoría: `DASHBOARD-CONTRACT.md` sección 5. Esta navegación está **FROZEN** — no se agregan, mueven ni renombran secciones/categorías sin una decisión explícita (ver `DASHBOARD-CONTRACT.md` sección 9, Mantenimiento).
 
 ## Validación
 
@@ -157,3 +180,7 @@ powershell -ExecutionPolicy Bypass -File .\tools\dashboard\render-dashboard.ps1
 ```
 
 Debe terminar con `Dashboard generated successfully.` y escribir `docs\ProgressDashboard\index.html`.
+
+## Mantenimiento (FROZEN v1.0)
+
+Política completa en `DASHBOARD-CONTRACT.md` sección 9. Resumen: se permiten correcciones de bugs reales y datasets/módulos nuevos que reflejen crecimiento real del ERP; no se permiten métricas nuevas, secciones nuevas, cambios de navegación ni rediseños.

@@ -137,14 +137,9 @@ $model = LoadJson "dashboard-model-v12.json"
 
 $score = $model.EngineeringScore
 $gate = $model.QualityGate
-$architecture = $model.Architecture
-$dependencies = $model.Dependencies
 
 $security = $model.Security
 $technicalDebt = $model.TechnicalDebt
-
-$criticalFindings = $technicalDebt.CriticalFindings
-
 
 Write-Host "JSON loaded successfully" -ForegroundColor Green
 
@@ -728,11 +723,6 @@ function ConvertTo-SafeId($text)
     return $safe.ToLower()
 }
 
-function HtmlEncodeText($text)
-{
-    return [System.Net.WebUtility]::HtmlEncode([string]$text)
-}
-
 function Build-Gauge($pct, $color, $size, $labelSmall)
 {
     $r = 52
@@ -1291,20 +1281,6 @@ $sparklineHtml = Build-Sparkline $model.Trend.History
 
 Write-Host "Timeline and sparkline built"
 
-
-# =============================================================================
-# Production Gate HTML
-# =============================================================================
-
-$productionGateHtml = @"
-<div class='card'>
-<h2>Production Gate Decision</h2>
-<ul>
-$($productionGate -join "`n")
-</ul>
-</div>
-"@
-
 Write-Host "ProductionGate Final:" $productionGate.Count
 
 
@@ -1671,7 +1647,7 @@ foreach($n in $dependencyGraph.nodes) { $depNodesByModule[$n.id] = $n }
 # drawn comes straight from dependencies.json.edges. Node color reuses
 # explorer-index.json's already-computed changeRisk band when available.
 # Click a node -> highlights its direct edges and opens its module panel
-# (openModulePanel, already wired) so the user can keep drilling
+# (highlightDepNode, already wired) so the user can keep drilling
 # module -> its dependency -> that dependency's dependency, chained.
 # -----------------------------------------------------------------------------
 
@@ -2265,7 +2241,6 @@ $moduleSummaryMap = [ordered]@{}
 $featureLevelMap = [ordered]@{}
 $processLevelMap = [ordered]@{}
 
-function ConvertTo-LevelKey($text) { return [regex]::Replace([string]$text, "[^a-zA-Z0-9]", "_") }
 function ConvertTo-JsSafe($text) { return ([string]$text) -replace "\\", "\\\\" -replace "'", "\'" }
 
 foreach($mp in $explorerIndex.modules)
@@ -2331,29 +2306,6 @@ $featureLevelJson = ($featureLevelMap | ConvertTo-Json -Depth 4 -Compress)
 $processLevelJson = ($processLevelMap | ConvertTo-Json -Depth 4 -Compress)
 
 Write-Host "Architecture Explorer home built: 11 diagram nodes, $($filePanelsMap.Keys.Count) file panels, $($layerLevelMap.Keys.Count) layer levels, $($domainLevelMap.Keys.Count) domain levels, $($moduleSummaryMap.Keys.Count) module levels"
-
-
-# =============================================================================
-# FASE DASHBOARD 1.0 -- Estructura Maestra (placeholders)
-#
-# 10 secciones vacias que preparan el dashboard para convertirse en Dashboard
-# Maestro del ERP. Sin datos todavia: cada una queda pendiente de su propio
-# analizador (analyze-*.ps1 -> data/*.json) en una fase funcional futura.
-# No se crea CSS/JS nuevo -- se reutilizan 'panel', 'sub-card' y 'muted-note'
-# ya definidos en $cssHtml.
-# =============================================================================
-
-function Build-PlaceholderSection($id, $group, $title)
-{
-    return @"
-<section id='$id' class='panel' data-group='$group'>
-<h2>$title</h2>
-<div class='sub-card'>
-<p class='muted-note'>Seccion en construccion (Fase Dashboard 1.0). Pendiente de analizador de datos -- estructura preparada, sin contenido todavia.</p>
-</div>
-</section>
-"@
-}
 
 
 # =============================================================================
@@ -2800,12 +2752,23 @@ foreach($b in $blockersData.blockers)
 }
 
 # Deteccion de ciclos reales (DFS) sobre el grafo de architecture-dependencies.json.
+#
+# FASE DASHBOARD 19.0 -- determinismo: el hallazgo de ciclos dependia del orden
+# de enumeracion de un Hashtable no ordenado (@{}), cuyo orden de iteracion NO
+# esta garantizado por .NET entre procesos (hash de strings aleatorizado por
+# seguridad desde .NET Core). El algoritmo DFS en si NO cambia -- unicamente se
+# fuerza un orden de entrada estable y reproducible: aristas ordenadas por
+# (sourceModule, targetModule) antes de construir la adyacencia, y la
+# adyacencia como [ordered]@{} para que sus .Keys() respete ese orden de
+# insercion en vez de un orden de hash no determinista.
 function Find-DependencyCycles($edges)
 {
-    $script:depAdjacency = @{}
-    foreach($e in $edges)
+    $sortedEdges = @($edges | Sort-Object -Property sourceModule, targetModule)
+
+    $script:depAdjacency = [ordered]@{}
+    foreach($e in $sortedEdges)
     {
-        if(-not $script:depAdjacency.ContainsKey($e.sourceModule)) { $script:depAdjacency[$e.sourceModule] = New-Object System.Collections.Generic.List[string] }
+        if(-not $script:depAdjacency.Contains($e.sourceModule)) { $script:depAdjacency[$e.sourceModule] = New-Object System.Collections.Generic.List[string] }
         $script:depAdjacency[$e.sourceModule].Add($e.targetModule)
     }
 
@@ -2838,7 +2801,7 @@ function Visit-DependencyNode($node, $path)
     $script:depVisited[$node] = $true
     $script:depInStack[$node] = $true
     $newPath = @($path) + @($node)
-    if($script:depAdjacency.ContainsKey($node))
+    if($script:depAdjacency.Contains($node))
     {
         foreach($next in $script:depAdjacency[$node]) { Visit-DependencyNode $next $newPath }
     }
@@ -3080,7 +3043,6 @@ $erpCoreOverviewHtml = @"
 
 function Build-AuditRow($gm)
 {
-    $largeFiles = Get-ModuleLargeFilesCount $gm.id
     $riskBand = if($explorerModuleById.ContainsKey($gm.id)) { $explorerModuleById[$gm.id].changeRisk.band } else { "Pendiente de auditoria" }
     $riskColor = Get-RiskBandColor $riskBand
     return "<tr><td>$($gm.id)</td><td>$($gm.lastAudit)</td><td>$($gm.findingsOpen)</td><td>$($gm.findingsClosed)</td><td style='color:$riskColor'>$riskBand</td></tr>"
@@ -4012,7 +3974,7 @@ li{margin-bottom:4px}
 </style>
 "@
 
-$defaultSubgroupJson = (@{
+$defaultSubgroupJson = ([ordered]@{
     home = 'kpis'; business = 'business-capability'; architecture = 'resumen'
     engineering = 'resumen'; security = 'riesgos'; roadmap = 'roadmap'
 } | ConvertTo-Json -Compress)
@@ -4212,12 +4174,6 @@ function selectLayer(layerId){
   resetBreadcrumb();
   pushLevel('layer', layerId, label);
 }
-
-// Legacy aliases kept so evidence panels generated for other sections
-// (Dependency Explorer graph, search results, reverse-file navigation)
-// keep working through the same single breadcrumb-driven panel.
-function openModulePanel(moduleId){ pushLevel('module', moduleId, moduleId); }
-function openFilePanel(filePath){ pushLevel('file', filePath, filePath); }
 
 function highlightDepNode(moduleId){
   var svg = document.getElementById('depGraphSvg');
