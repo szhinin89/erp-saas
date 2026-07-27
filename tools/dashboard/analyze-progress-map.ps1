@@ -2,31 +2,24 @@
 # ZH Technologies
 # analyze-progress-map.ps1
 #
-# Lee PROGRESS.html (mapa maestro de arquitectura, en la raiz del repo) EN
-# MODO SOLO LECTURA y extrae su estructura real hacia
-# docs/ProgressDashboard/data/architecture-progress.json.
+# Lee docs/ProgressDashboard/data/architecture-progress-source.json (la fuente
+# oficial y estructurada del progreso manual, extraida 1:1 desde el antiguo
+# array embebido `const D = [...]` de PROGRESS.html) EN MODO SOLO LECTURA y
+# calcula hacia docs/ProgressDashboard/data/architecture-progress.json.
 #
-# PROGRESS.html no es HTML estatico: su verdadera fuente de datos es el
-# array JS `const D = [...]` embebido (linea ~360), que el propio archivo
-# usa en tiempo de ejecucion (funciones taskWeight/calcPhase/calcStage/
-# calcGlobal/countByStatus/findPhase) para calcular los porcentajes que
-# se ven en el diagrama de arquitectura y las tarjetas de etapa.
-#
-# Este script NO ejecuta JavaScript: parsea el array D con expresiones
-# regulares (formato consistente, generado a mano por el propio equipo) y
-# REPLICA exactamente los mismos calculos que el HTML ya hace en el
-# navegador (mismos pesos d/f=1, p=0.5, n=0; mismas formulas de porcentaje;
-# mismo lookup findPhase() para los 5 modulos core y los 3 stages que
-# alimentan el "Web ERP %"). Ningun numero se inventa: todo sale de tareas
-# reales con su status real (d/f/p/n) tal como estan escritas en el archivo.
-#
-# Si un dato no existe en PROGRESS.html (ej. no hay un estado "blocked"
-# explicito en el modelo real: solo d/f/p/n), este script NO LO INVENTA.
-# Ver seccion "possibleBlockers" mas abajo: es un hallazgo heuristico sobre
-# texto real, marcado explicitamente como tal, nunca como campo autoritativo.
+# PROGRESS.html ya NO es la fuente de datos de este pipeline (FASE DASHBOARD
+# 13.0): es unicamente una vista que carga el mismo
+# architecture-progress-source.json en el navegador. Este script consume
+# esa misma fuente y REPLICA exactamente los mismos calculos que la vista
+# hace en el navegador (mismos pesos d/f=1, p=0.5, n=0; mismas formulas de
+# porcentaje; mismo lookup findPhase() para los 5 modulos core y los 3
+# stages que alimentan el "Web ERP %"). Ningun numero se inventa: todo sale
+# de tareas reales con su status real (d/f/p/n) tal como estan escritas en
+# la fuente.
 #
 # NO modifica PROGRESS.html. NO modifica el ERP. NO modifica ningun otro
-# JSON existente en docs/ProgressDashboard/data/.
+# JSON existente en docs/ProgressDashboard/data/ salvo el output propio de
+# este script (architecture-progress.json).
 # =============================================================================
 
 $ErrorActionPreference = "Stop"
@@ -36,8 +29,12 @@ $ProjectRoot =
 (Resolve-Path (Join-Path $PSScriptRoot "..\..")).Path
 
 
-$ProgressHtmlPath =
-Join-Path $ProjectRoot "PROGRESS.html"
+$SourceJsonPath =
+Join-Path $ProjectRoot "docs\ProgressDashboard\data\architecture-progress-source.json"
+
+
+$SourceJsMirrorPath =
+Join-Path $ProjectRoot "docs\ProgressDashboard\data\architecture-progress-source.js"
 
 
 $OutputFile =
@@ -52,13 +49,10 @@ Write-Host "==============================================" -ForegroundColor Cya
 Write-Host ""
 
 
-if(!(Test-Path $ProgressHtmlPath))
+if(!(Test-Path $SourceJsonPath))
 {
-    throw "PROGRESS.html not found at: $ProgressHtmlPath"
+    throw "architecture-progress-source.json not found at: $SourceJsonPath"
 }
-
-
-$html = Get-Content $ProgressHtmlPath -Raw -Encoding UTF8
 
 
 function Decode-Entities($text)
@@ -70,131 +64,103 @@ function Decode-Entities($text)
 
 
 # -----------------------------------------------------------------------
-# Extraer el bloque "const D = [ ... ];" -- unica fuente real de datos
+# Cargar la fuente estructurada -- unica fuente real de datos
 # -----------------------------------------------------------------------
 
-$dBlockMatch = [regex]::Match($html, "(?s)const D = \[(.*?)\r?\n\];")
+$sourceD = Get-Content $SourceJsonPath -Raw -Encoding UTF8 | ConvertFrom-Json
 
-if(-not $dBlockMatch.Success)
+if($null -eq $sourceD -or $sourceD.Count -eq 0)
 {
-    throw "Could not locate 'const D = [ ... ];' data block in PROGRESS.html -- extraction aborted (no fabricated fallback)."
+    throw "architecture-progress-source.json parsed to zero stages -- aborting rather than emitting an empty/fabricated result."
 }
 
-$dBlock = $dBlockMatch.Groups[1].Value
-$dBlockOffset = $dBlockMatch.Groups[1].Index
-
-
-Write-Host "Data block located ($($dBlock.Length) chars)" -ForegroundColor Green
+Write-Host "Source loaded: $($sourceD.Count) top-level stages" -ForegroundColor Green
 
 
 # -----------------------------------------------------------------------
-# Regex de extraccion -- formato real y consistente del array D
+# Espejo .js para PROGRESS.html -- PROGRESS.html ya no embebe datos a mano
+# (FASE DASHBOARD 13.0): carga este archivo generado via <script src>, que
+# simplemente expone el mismo JSON como variable global. Un <script src>
+# local funciona igual bajo file:// y bajo http://; fetch()/XHR de un
+# archivo .json local son bloqueados por CORS en Chrome bajo file://, por
+# eso no se usa fetch() aqui. Este .js es 100% generado -- nunca se edita
+# a mano, se regenera en cada corrida desde architecture-progress-source.json.
 # -----------------------------------------------------------------------
 
-$stageRegex = [regex]'\{stage:"((?:[^"\\]|\\.)*)"'
-$phaseRegex = [regex]'\{name:"((?:[^"\\]|\\.)*)",icon:"(?:[^"\\]|\\.)*",desc:"((?:[^"\\]|\\.)*)",groups:\['
-$taskRegex  = [regex]'\{s:"([dfpn])",n:"((?:[^"\\]|\\.)*)",d:"((?:[^"\\]|\\.)*)"'
+$sourceRawJson = Get-Content $SourceJsonPath -Raw -Encoding UTF8
+$sourceRawJson = $sourceRawJson -replace "^\xEF\xBB\xBF", ""
 
-$stageMatches = $stageRegex.Matches($dBlock)
-$phaseMatches = $phaseRegex.Matches($dBlock)
-$taskMatches  = $taskRegex.Matches($dBlock)
+$jsMirrorContent =
+"// AUTO-GENERADO por tools/dashboard/analyze-progress-map.ps1`n" +
+"// desde docs/ProgressDashboard/data/architecture-progress-source.json.`n" +
+"// NO editar a mano -- editar el .json fuente y volver a correr el script.`n" +
+"window.__ARCHITECTURE_PROGRESS_SOURCE__ = $sourceRawJson;`n"
 
+$jsMirrorContent | Out-File $SourceJsMirrorPath -Encoding utf8 -NoNewline
 
-Write-Host "Parsed: $($stageMatches.Count) stages, $($phaseMatches.Count) phases, $($taskMatches.Count) tasks"
-
-
-if($stageMatches.Count -eq 0 -or $taskMatches.Count -eq 0)
-{
-    throw "Parsed zero stages/tasks from PROGRESS.html -- data model shape may have changed. Aborting rather than emitting an empty/fabricated result."
-}
+Write-Host "Browser mirror written: $SourceJsMirrorPath" -ForegroundColor Green
 
 
 # -----------------------------------------------------------------------
-# Asignar cada fase a su etapa contenedora, y cada tarea a su fase
-# contenedora, por posicion en el texto (el array esta estrictamente
-# anidado en orden de aparicion: stage -> phases -> groups -> tasks).
+# Reconstruir stages -> phases -> tasks (tareas aplanadas desde los
+# "groups" de cada fase, igual que hacia la extraccion por regex anterior)
 # -----------------------------------------------------------------------
-
-function Find-ContainerIndex($position, $containerMatches)
-{
-    $result = -1
-
-    for($i = 0; $i -lt $containerMatches.Count; $i++)
-    {
-        if($containerMatches[$i].Index -le $position)
-        {
-            $result = $i
-        }
-        else
-        {
-            break
-        }
-    }
-
-    return $result
-}
-
 
 $stages = @()
-
-for($i = 0; $i -lt $stageMatches.Count; $i++)
-{
-    $stages += [PSCustomObject]@{
-        index  = $i
-        name   = Decode-Entities $stageMatches[$i].Groups[1].Value
-        phases = @()
-    }
-}
-
-
-$phaseToStage = @{}
-
-for($i = 0; $i -lt $phaseMatches.Count; $i++)
-{
-    $stageIdx = Find-ContainerIndex $phaseMatches[$i].Index $stageMatches
-    $phaseToStage[$i] = $stageIdx
-
-    $phaseObj = [PSCustomObject]@{
-        index      = $i
-        stageIndex = $stageIdx
-        name       = Decode-Entities $phaseMatches[$i].Groups[1].Value
-        desc       = Decode-Entities $phaseMatches[$i].Groups[2].Value
-        tasks      = @()
-    }
-
-    if($stageIdx -ge 0)
-    {
-        $stages[$stageIdx].phases += $phaseObj
-    }
-}
-
-
-$taskWeight = @{ d = 1.0; f = 1.0; p = 0.5; n = 0.0 }
 $allTasksFlat = @()
 
-foreach($taskMatch in $taskMatches)
+for($si = 0; $si -lt $sourceD.Count; $si++)
 {
-    $phaseIdx = Find-ContainerIndex $taskMatch.Index $phaseMatches
+    $srcStage = $sourceD[$si]
 
-    if($phaseIdx -lt 0) { continue }
-
-    $status = $taskMatch.Groups[1].Value
-    $name = Decode-Entities $taskMatch.Groups[2].Value
-    $desc = Decode-Entities $taskMatch.Groups[3].Value
-
-    $stageIdx = $phaseToStage[$phaseIdx]
-
-    $taskObj = [PSCustomObject]@{
-        status      = $status
-        name        = $name
-        description = $desc
-        stageName   = $stages[$stageIdx].name
-        phaseName   = $stages[$stageIdx].phases | Where-Object { $_.index -eq $phaseIdx } | Select-Object -First 1 -ExpandProperty name
+    $stageObj = [PSCustomObject]@{
+        index  = $si
+        name   = Decode-Entities $srcStage.stage
+        phases = @()
     }
 
-    $allTasksFlat += $taskObj
+    for($pi = 0; $pi -lt $srcStage.phases.Count; $pi++)
+    {
+        $srcPhase = $srcStage.phases[$pi]
 
-    ($stages[$stageIdx].phases | Where-Object { $_.index -eq $phaseIdx } | Select-Object -First 1).tasks += $taskObj
+        $phaseObj = [PSCustomObject]@{
+            index      = $pi
+            stageIndex = $si
+            name       = Decode-Entities $srcPhase.name
+            desc       = Decode-Entities $srcPhase.desc
+            tasks      = @()
+        }
+
+        foreach($group in $srcPhase.groups)
+        {
+            foreach($task in $group.tasks)
+            {
+                $taskObj = [PSCustomObject]@{
+                    status      = $task.s
+                    name        = Decode-Entities $task.n
+                    description = Decode-Entities $task.d
+                    stageName   = $stageObj.name
+                    phaseName   = $phaseObj.name
+                }
+
+                $phaseObj.tasks += $taskObj
+                $allTasksFlat += $taskObj
+            }
+        }
+
+        $stageObj.phases += $phaseObj
+    }
+
+    $stages += $stageObj
+}
+
+$phaseCount = ($stages | ForEach-Object { $_.phases.Count } | Measure-Object -Sum).Sum
+
+Write-Host "Parsed: $($stages.Count) stages, $phaseCount phases, $($allTasksFlat.Count) tasks"
+
+if($stages.Count -eq 0 -or $allTasksFlat.Count -eq 0)
+{
+    throw "Parsed zero stages/tasks from architecture-progress-source.json -- data model shape may have changed. Aborting rather than emitting an empty/fabricated result."
 }
 
 
@@ -202,6 +168,8 @@ foreach($taskMatch in $taskMatches)
 # Replica exacta de calcPhase / calcStage / calcGlobal / countByStatus
 # (mismas formulas que PROGRESS.html usa en su propio JS)
 # -----------------------------------------------------------------------
+
+$taskWeight = @{ d = 1.0; f = 1.0; p = 0.5; n = 0.0 }
 
 function Calc-Phase($phase)
 {
@@ -313,7 +281,7 @@ Write-Host "Architecture diagram (replicated from PROGRESS.html's own formulas):
 # Layers -- extraidas literalmente de las cajas del diagrama de
 # arquitectura en el HTML estatico (<div class="abox-title">...). Las que
 # tienen un "0%" LITERAL en el HTML se marcan not_started (dato real). Las
-# que dependen del calculo JS (id="arch-*") se resuelven arriba con las
+# que dependen del calculo (id="arch-*") se resuelven arriba con las
 # mismas formulas reales; ninguna se inventa.
 # -----------------------------------------------------------------------
 
@@ -419,7 +387,7 @@ Write-Host "Completed: $($completed.Count) | Pending (not started phases): $($pe
 
 
 # -----------------------------------------------------------------------
-# possibleBlockers -- HEURISTICO, no un campo real del modelo (PROGRESS.html
+# possibleBlockers -- HEURISTICO, no un campo real del modelo (el modelo
 # no tiene un status "blocked" entre d/f/p/n). Busca en las DESCRIPCIONES
 # reales de las tareas formas de "bloqueado/bloqueante/bloqueo(s)" que NO
 # esten negadas ("no bloqueante", "sin bloqueos"). Se documenta como
@@ -517,9 +485,9 @@ foreach($stage in $stages)
 
 $output =
 [PSCustomObject]@{
-    source            = "PROGRESS.html"
+    source            = "docs/ProgressDashboard/data/architecture-progress-source.json"
     generated         = (Get-Date -Format "yyyy-MM-dd HH:mm:ss")
-    extractionMethod  = "Regex parsing of the embedded 'const D = [...]' JS data model, replicating PROGRESS.html's own calcPhase/calcStage/calcGlobal/countByStatus/findPhase formulas. No JavaScript executed; no data fabricated."
+    extractionMethod  = "Direct load of architecture-progress-source.json (structured data, no HTML parsing), replicating PROGRESS.html's own calcPhase/calcStage/calcGlobal/countByStatus/findPhase formulas. No JavaScript executed; no data fabricated."
     global            = [PSCustomObject]@{ totalTasks = $globalTotal; done = $globalDone; pct = $globalPct }
     statusCounts      = $statusCounts
     layers            = $layers
@@ -530,7 +498,7 @@ $output =
     pending           = $pending
     nextSteps         = $nextSteps
     possibleBlockers  = $possibleBlockers
-    blockedFieldNote  = "PROGRESS.html's real data model has no explicit 'blocked' status (only d/f/p/n). 'possibleBlockers' above is a heuristic keyword match over real task descriptions, not an authoritative field."
+    blockedFieldNote  = "The data model has no explicit 'blocked' status (only d/f/p/n). 'possibleBlockers' above is a heuristic keyword match over real task descriptions, not an authoritative field."
 }
 
 

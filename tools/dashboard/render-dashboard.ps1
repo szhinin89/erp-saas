@@ -69,6 +69,68 @@ function LoadJson($file)
     return (Get-Content $path -Raw | ConvertFrom-Json)
 }
 
+# =============================================================================
+# FASE DASHBOARD 9.0 -- Auto-regeneracion de datos
+#
+# Antes de renderizar, verifica que las 24 fuentes JSON que este script
+# consume existan, no esten vacias y sean JSON valido. Si TODO esta correcto,
+# no se ejecuta nada mas (no regenerar si ya esta correcto). Si falta algo,
+# esta vacio o es invalido, ejecuta tools/dashboard/build-dashboard-data.ps1
+# UNA vez para regenerar/validar todo el pipeline de datos, y vuelve a
+# verificar. Si sigue fallando despues de eso (tipico: un archivo mantenido
+# manualmente que nadie creo todavia), se detiene con un error explicito --
+# nunca renderiza con datos faltantes o corruptos.
+# =============================================================================
+
+function Test-DataFileReady($file)
+{
+    $path = Join-Path $DataRoot $file
+    if(!(Test-Path $path)) { return $false }
+    $info = Get-Item $path
+    if($info.Length -eq 0) { return $false }
+    $raw = Get-Content $path -Raw
+    if([string]::IsNullOrWhiteSpace($raw)) { return $false }
+    try { $parsed = $raw | ConvertFrom-Json } catch { return $false }
+    if($parsed -is [System.Array] -and $parsed.Count -eq 0) { return $false }
+    if($parsed -is [System.Management.Automation.PSCustomObject] -and (@($parsed.PSObject.Properties)).Count -eq 0) { return $false }
+    return $true
+}
+
+$requiredDataFiles = @(
+    "dashboard-model-v12.json", "dashboard-summary.json", "erp.json", "layers.json", "domains.json",
+    "modules.json", "features.json", "processes.json", "tasks.json", "impact.json",
+    "model-health.json", "architecture-progress.json", "completion-intelligence.json", "navigation-map.json",
+    "explorer-index.json", "modules-status.json", "dependencies.json", "critical-path.json",
+    "release-simulation.json", "recommendations.json", "roadmap.json", "architecture-dependencies.json",
+    "blockers.json", "architecture-governance.json"
+)
+
+$missingOrInvalid = @($requiredDataFiles | Where-Object { -not (Test-DataFileReady $_) })
+
+if($missingOrInvalid.Count -gt 0)
+{
+    Write-Host ""
+    Write-Host "$($missingOrInvalid.Count) fuente(s) de datos faltante(s)/vacia(s)/invalida(s): $($missingOrInvalid -join ', ')" -ForegroundColor Yellow
+    Write-Host "Ejecutando tools/dashboard/build-dashboard-data.ps1 para regenerar/validar el pipeline de datos..." -ForegroundColor Yellow
+    Write-Host ""
+
+    & (Join-Path $PSScriptRoot "build-dashboard-data.ps1")
+
+    $stillMissing = @($requiredDataFiles | Where-Object { -not (Test-DataFileReady $_) })
+    if($stillMissing.Count -gt 0)
+    {
+        throw "render-dashboard.ps1: $($stillMissing.Count) fuente(s) de datos siguen faltando/invalidas despues de build-dashboard-data.ps1: $($stillMissing -join ', '). Si son archivos mantenidos manualmente (modules-status.json/roadmap.json/blockers.json/architecture-governance.json/architecture-dependencies.json), deben crearse a mano citando evidencia real -- este pipeline no los inventa."
+    }
+
+    Write-Host ""
+    Write-Host "Datos regenerados y validados. Continuando con el render." -ForegroundColor Green
+    Write-Host ""
+}
+else
+{
+    Write-Host "Las $($requiredDataFiles.Count) fuentes de datos ya existen, no estan vacias y son JSON valido -- no se regenera nada." -ForegroundColor Green
+}
+
 
 
 $model = LoadJson "dashboard-model-v12.json"
@@ -399,12 +461,15 @@ Write-Host "Model Health: Integrity=$($modelHealth.integrityScore)% Broken=$($mo
 # =============================================================================
 
 # Lee architecture-progress.json (calculado por
-# tools/dashboard/analyze-progress-map.ps1 a partir de PROGRESS.html). El
-# renderer no vuelve a leer PROGRESS.html ni reinterpreta su estructura --
-# solo presenta lo que el analizador ya extrajo. PROGRESS.html usa "Etapas"
-# como unidad organizativa (no "Dominios" -- ese es un modelo distinto, ver
-# domains.json), asi que esta seccion muestra avance por Etapa, fiel a la
-# estructura real del mapa maestro.
+# tools/dashboard/analyze-progress-map.ps1 a partir de
+# docs/ProgressDashboard/data/architecture-progress-source.json -- FASE
+# DASHBOARD 13.0: esa fuente estructurada reemplazo al antiguo parseo por
+# regex del array embebido en PROGRESS.html; PROGRESS.html es ahora solo una
+# vista que carga la misma fuente). El renderer no lee PROGRESS.html ni
+# reinterpreta su estructura -- solo presenta lo que el analizador ya
+# extrajo. La fuente usa "Etapas" como unidad organizativa (no "Dominios" --
+# ese es un modelo distinto, ver domains.json), asi que esta seccion muestra
+# avance por Etapa, fiel a la estructura real del mapa maestro.
 
 $architectureProgress = LoadJson "architecture-progress.json"
 
@@ -497,6 +562,49 @@ $explorerIndex = LoadJson "explorer-index.json"
 # repetidamente cada vez que se necesita el perfil de un modulo.
 $explorerModuleById = @{}
 foreach($mp in $explorerIndex.modules) { $explorerModuleById[$mp.id] = $mp }
+
+# =============================================================================
+# modules-status.json (Fase Dashboard 3.0) -- fuente FUNCIONAL oficial,
+# mantenida por Arquitectura. Complementa a explorer-index.json (fuente
+# TECNICA, generada por analisis estatico) -- no la reemplaza. La fusion se
+# hace exclusivamente por "id" (nunca por nombre visible/domainName).
+#
+# Contrato de campos (por modulo): id, functionalStatus, maturityLevel,
+# freezeStatus, roadmapStage, nextStage, priority, blockers, adr,
+# observations. Cualquier campo sin respaldo documental real usa el literal
+# "Pendiente de evaluacion" -- nunca se infiere desde heuristicas de score
+# (ver razonamiento en Fase Dashboard 2.0, seccion Module Maturity Matrix).
+# =============================================================================
+
+$moduleStatusData = LoadJson "modules-status.json"
+
+$moduleStatusById = @{}
+foreach($ms in $moduleStatusData.modules) { $moduleStatusById[$ms.id] = $ms }
+
+# Validacion (Fase Dashboard 3.0, punto 6): todo modulo presente en
+# explorer-index.json (fuente tecnica) que no tenga fila en modules-status.json
+# (fuente funcional) genera una advertencia visible en consola -- nunca detiene
+# la generacion del dashboard.
+$moduleStatusMissing = @($explorerIndex.modules | Where-Object { -not $moduleStatusById.ContainsKey($_.id) } | ForEach-Object { $_.id })
+if($moduleStatusMissing.Count -gt 0)
+{
+    Write-Host ""
+    Write-Host "ADVERTENCIA: $($moduleStatusMissing.Count) modulo(s) en explorer-index.json sin fila en modules-status.json: $($moduleStatusMissing -join ', ')" -ForegroundColor Yellow
+    Write-Host "La generacion continua -- estos modulos mostraran 'Pendiente de evaluacion' en todas las columnas funcionales." -ForegroundColor Yellow
+    Write-Host ""
+}
+
+# Simetrico: fila en modules-status.json que ya no corresponde a ningun modulo
+# tecnico vivo (renombrado/eliminado) -- tambien advertencia, no error.
+$moduleStatusOrphaned = @($moduleStatusData.modules | Where-Object { -not $explorerModuleById.ContainsKey($_.id) } | ForEach-Object { $_.id })
+if($moduleStatusOrphaned.Count -gt 0)
+{
+    Write-Host ""
+    Write-Host "ADVERTENCIA: $($moduleStatusOrphaned.Count) fila(s) de modules-status.json sin modulo correspondiente en explorer-index.json (huerfanas): $($moduleStatusOrphaned -join ', ')" -ForegroundColor Yellow
+    Write-Host ""
+}
+
+Write-Host "modules-status.json loaded: $($moduleStatusData.modules.Count) filas funcionales indexadas por id"
 
 # Indice archivo -> referencias (para la navegacion inversa Archivo->Feature/
 # Process/Task->Module->Domain, Fase 5). Tambien construido una sola vez.
@@ -949,8 +1057,8 @@ $searchEntries = @($explorerIndex.searchEntries | ForEach-Object {
         "Module"  { $target = $entry.moduleId; $kind = "module-panel" }
         "Feature" { $target = $entry.moduleId; $kind = "module-panel" }
         "Process" { $target = $entry.moduleId; $kind = "module-panel" }
-        "Domain"  { $target = "business-capability"; $kind = "group" }
-        "Task"    { $target = "roadmap"; $kind = "group" }
+        "Domain"  { $target = "business"; $kind = "group" }
+        "Task"    { $target = "business"; $kind = "group" }
         "File"    { $target = $entry.label; $kind = "file-panel" }
     }
 
@@ -1212,7 +1320,7 @@ Write-Host "Executive summary flags: Security=$securityHealth Quality=$qualityHe
 # =============================================================================
 
 $execSummaryHtml = @"
-<section id='exec-summary' class='panel' data-group='roadmap'>
+<section id='exec-summary' class='panel' data-group='home' data-subgroup='executive-dashboard'>
 <h2>Executive Summary</h2>
 <div class='panel-grid-2'>
 <div class='sub-card'>
@@ -1246,7 +1354,7 @@ Technical Debt: <span class='pill $(if($debtHealth -eq "LOW"){"pill-d"}else{"pil
 # =============================================================================
 
 $erpCompletionHtml = @"
-<section id='erp-completion' class='panel' data-group='roadmap'>
+<section id='erp-completion' class='panel' data-group='roadmap' data-subgroup='roadmap'>
 <h2>ERP Completion Intelligence</h2>
 <div class='panel-grid-2'>
 <div class='sub-card center'>
@@ -1277,7 +1385,7 @@ $(Build-Gauge $completionIntelligence.erpCompletion (Get-ScoreColor $completionI
 # =============================================================================
 
 $architectureHtml = @"
-<section id='architecture' class='panel' data-group='business-capability'>
+<section id='architecture' class='panel' data-group='architecture' data-subgroup='resumen'>
 <h2>Architecture</h2>
 <p><a href='../../PROGRESS.html' class='ext-link'>&#9664; Ver Mapa Maestro de Arquitectura (PROGRESS.html)</a> &middot; ERP: $($erpInfo.name) v$($erpInfo.version) - $($erpInfo.status)</p>
 
@@ -1308,7 +1416,7 @@ $explorerTreeHtml
 # =============================================================================
 
 $engineeringScoreHtml = @"
-<section id='engineering-score' class='panel' data-group='engineering'>
+<section id='engineering-score' class='panel' data-group='engineering' data-subgroup='quality-gate'>
 <h2>Engineering Score</h2>
 <div class='panel-grid-2'>
 <div class='sub-card center'>
@@ -1348,7 +1456,7 @@ $($modulesHtml -join "`n")
 # =============================================================================
 
 $businessCapabilityHtml = @"
-<section id='business-capability' class='panel' data-group='business-capability'>
+<section id='business-capability' class='panel' data-group='business' data-subgroup='business-capability'>
 <h2>Business Capability</h2>
 <p>Domain &rarr; Modules &rarr; Features &rarr; Processes. Business Capability KPI = Engineering Risk Coverage: <b>$($impactData.coverage.percentage)%</b> ($($impactData.coverage.mappedFeaturePoints) / $($impactData.coverage.totalFeaturePoints) capability points mapped to a verified process).</p>
 <table class='sortable'>
@@ -1368,7 +1476,7 @@ $($capabilityMapHtml -join "`n")
 # =============================================================================
 
 $architectureProgressSectionHtml = @"
-<section id='architecture-progress' class='panel' data-group='business-capability'>
+<section id='architecture-progress' class='panel' data-group='architecture' data-subgroup='progreso'>
 <h2>Architecture Progress</h2>
 <p><a href='../../PROGRESS.html' class='ext-link'>&#9664; Ver Mapa Maestro de Arquitectura (PROGRESS.html)</a></p>
 <p>Global (PROGRESS.html): <b>$($architectureProgress.global.pct)%</b> ($($architectureProgress.global.done) / $($architectureProgress.global.totalTasks) tareas ponderadas) &mdash; extraido de $($architectureProgress.source)</p>
@@ -1401,7 +1509,7 @@ $($progressStagesHtml -join "`n")
 # =============================================================================
 
 $securitySectionHtml = @"
-<section id='security' class='panel' data-group='security'>
+<section id='security' class='panel' data-group='security' data-subgroup='seguridad'>
 <h2>Security</h2>
 <div class='panel-grid-2'>
 <div class='sub-card center'>
@@ -1424,7 +1532,7 @@ $securityHeatmap
 # =============================================================================
 
 $technicalDebtSectionHtml = @"
-<section id='technical-debt' class='panel' data-group='engineering'>
+<section id='technical-debt' class='panel' data-group='engineering' data-subgroup='technical-debt'>
 <h2>Technical Debt</h2>
 $technicalDebtHeatmap
 <p>Risk Level: <b style='color:$(Get-RiskColor $debtHealth)'>$debtHealth</b> &middot; Trend: $debtTrendStatus ($debtTrendDetail)</p>
@@ -1442,7 +1550,7 @@ $technicalDebtHeatmap
 # =============================================================================
 
 $trendSectionHtml = @"
-<section id='trend' class='panel' data-group='engineering'>
+<section id='trend' class='panel' data-group='engineering' data-subgroup='resumen'>
 <h2>Engineering Trend</h2>
 $sparklineHtml
 <p>Snapshots: $($model.Trend.Snapshots) &middot; Previous: $previousTrend% &middot; Current: $currentTrend% &middot; Change: $trendChange% &middot; Status: $trendStatus</p>
@@ -1459,7 +1567,7 @@ $sparklineHtml
 # =============================================================================
 
 $roadmapSectionHtml = @"
-<section id='roadmap' class='panel' data-group='roadmap'>
+<section id='roadmap' class='panel' data-group='roadmap' data-subgroup='roadmap'>
 <h2>Engineering Roadmap</h2>
 <ul>$($roadmapHtml -join "`n")</ul>
 <h3>Release Recommendation</h3>
@@ -1476,7 +1584,7 @@ $roadmapSectionHtml = @"
 # =============================================================================
 
 $modelHealthSectionHtml = @"
-<section id='model-health' class='panel' data-group='engineering'>
+<section id='model-health' class='panel' data-group='engineering' data-subgroup='resumen'>
 <h2>Model Health</h2>
 <div class='panel-grid-2'>
 <div class='sub-card center'>
@@ -1501,7 +1609,7 @@ $(Build-Gauge $modelHealth.integrityScore (Get-ScoreColor $modelHealth.integrity
 # =============================================================================
 
 $riskAssessmentSectionHtml = @"
-<section id='risk-assessment' class='panel' data-group='production'>
+<section id='risk-assessment' class='panel' data-group='security' data-subgroup='riesgos'>
 <h2>Risk Assessment</h2>
 $riskHeatmapHtml
 <table class='sortable'>
@@ -1518,7 +1626,7 @@ $($riskMapHtml -join "`n")
 # =============================================================================
 
 $productionDecisionSectionHtml = @"
-<section id='production-decision' class='panel' data-group='production'>
+<section id='production-decision' class='panel' data-group='home' data-subgroup='production-decision'>
 <h2>Production Decision</h2>
 <p class='big-status' style='color:$(Get-ScoreColor $productionReadiness)'>$productionDecision</p>
 <p>Production Readiness: <b>$productionReadiness%</b> ($productionStatus)</p>
@@ -1635,7 +1743,7 @@ $cyclesHtml = @($dependencyGraph.cycles | ForEach-Object { "<li>$_</li>" })
 if($cyclesHtml.Count -eq 0) { $cyclesHtml = @("<li>No circular dependencies detected</li>") }
 
 $dependencyGraphHtml = @"
-<section id='dependency-graph' class='panel' data-group='engineering'>
+<section id='dependency-graph' class='panel' data-group='architecture' data-subgroup='dependencias'>
 <h2>Dependency Graph &amp; Engineering Metrics</h2>
 <p class='muted-note'>Source: tools/dashboard/analyze-module-graph.ps1 -&gt; dependencies.json. Edges are 'using ERP.*' references between real module folders, kept only when the referenced name matches a real modules.json id. $($dependencyGraph.method.fanIn) / $($dependencyGraph.method.instability)</p>
 <h3>Dependency Explorer (graph view)</h3>
@@ -1716,7 +1824,7 @@ $filesHtml
 }
 
 $dependencyExplorerHtml = @"
-<section id='dependency-explorer' class='panel' data-group='business-capability'>
+<section id='dependency-explorer' class='panel' data-group='architecture' data-subgroup='explorer'>
 <h2>Dependency Explorer</h2>
 <p class='muted-note'>Module &rarr; Dependencies &rarr; Dependents &rarr; Impact &rarr; Risk &rarr; Evidence. Built exclusively from dependencies.json and critical-path.json.</p>
 <div class='explorer-tree'>
@@ -1735,7 +1843,7 @@ $criticalPathRowsHtml = @($criticalPathData.criticalPath | Select-Object -First 
 })
 
 $criticalPathHtml = @"
-<section id='critical-path' class='panel' data-group='business-capability'>
+<section id='critical-path' class='panel' data-group='architecture' data-subgroup='dependencias'>
 <h2>Critical Path &amp; Impact Analysis</h2>
 <p class='muted-note'>$($criticalPathData.disclaimer)</p>
 <p class='muted-note'>Completion proxy: $($criticalPathData.method.completionProxy)</p>
@@ -1769,7 +1877,7 @@ foreach($s in $releaseSimulation.scenarios)
 }
 
 $releaseSimulationHtml = @"
-<section id='release-simulation' class='panel' data-group='production'>
+<section id='release-simulation' class='panel' data-group='security' data-subgroup='release'>
 <h2>Release Simulation</h2>
 <p class='muted-note'>$($releaseSimulation.disclaimer)</p>
 <table class='sortable'>
@@ -1796,7 +1904,7 @@ $recommendationCardsHtml = @($recommendationsData.recommendations | ForEach-Obje
 })
 
 $recommendationsSectionHtml = @"
-<section id='recommendations' class='panel' data-group='roadmap'>
+<section id='recommendations' class='panel' data-group='roadmap' data-subgroup='roadmap'>
 <h2>Architecture Recommendations</h2>
 <p class='muted-note'>$($recommendationsData.rule)</p>
 $($recommendationCardsHtml -join "`n")
@@ -1818,7 +1926,7 @@ $execBlockersHtml = @($explorerIndex.executive.blockers | ForEach-Object { "<li>
 if($execBlockersHtml.Count -eq 0) { $execBlockersHtml = @("<li>No blockers detected (completion-intelligence.json)</li>") }
 
 $execDashboardHtml = @"
-<section id='executive-dashboard' class='panel' data-group='roadmap'>
+<section id='executive-dashboard' class='panel' data-group='home' data-subgroup='executive-dashboard'>
 <h2>Executive Dashboard (Vista Ejecutiva)</h2>
 <p class='muted-note'>Fuente: explorer-index.json.executive (analyze-explorer-index.ps1) -- sin recalculo, solo cross-references de datos ya publicados.</p>
 <div class='panel-grid-2'>
@@ -2247,21 +2355,1427 @@ function Build-PlaceholderSection($id, $group, $title)
 "@
 }
 
-$erpCoreOverviewHtml = Build-PlaceholderSection "erp-core-overview" "business-capability" "ERP Core Overview"
-$moduleMaturityHtml = Build-PlaceholderSection "module-maturity" "business-capability" "Madurez por Modulo"
-$adrDecisionsHtml = Build-PlaceholderSection "adr-decisions" "business-capability" "Decisiones Arquitectonicas (ADR)"
 
-$archDependenciesHtml = Build-PlaceholderSection "arch-dependencies" "engineering" "Dependencias Arquitectonicas"
+# =============================================================================
+# FASE DASHBOARD 2.0/3.0 -- Matriz de Madurez de Modulos
+#
+# Fuente unica: $moduleMaturityMatrix, un array con un [ordered] hashtable por
+# modulo, resultado de FUSIONAR (por id, nunca por nombre visible):
+#   - explorer-index.json  -> $explorerModuleById  (fuente TECNICA)
+#   - modules-status.json  -> $moduleStatusById     (fuente FUNCIONAL, Fase 3.0)
+# ambos ya cargados e indexados mas arriba en este script -- ningun archivo
+# nuevo se lee aqui.
+#
+# Campos con fuente TECNICA real (explorer-index.json):
+#   name            <- modules[].id
+#   maturityPct     <- modules[].score             (ya usado en el resto del dashboard)
+#   testQualityPct  <- modules[].tests              (pilar compuesto de analyze-tests.ps1;
+#                       explorer-index.json.method.knownGaps lo aclara textualmente: NO es
+#                       % de cobertura real -- no existe cobertura medida en el pipeline --
+#                       es un score compuesto. Etiquetarlo "Cobertura tests" seria inventar
+#                       una medicion que no existe, por eso la columna dice "Test Quality Score")
+#   dependencies    <- modules[].dependencies.dependsOn
+#   lastAudit       <- modules[].lastEvidenceDate
+#
+# Campos con fuente FUNCIONAL real (modules-status.json, mantenida por
+# Arquitectura -- ver validacion de modulos huerfanos/faltantes mas arriba):
+#   functionalStatus, maturityLevel, freezeStatus, priority, currentPhase
+#   (roadmapStage), nextPhase (nextStage), blockers, relatedAdrs (adr),
+#   observations
+# Si el modulo no tiene fila en modules-status.json, cada uno de estos campos
+# cae a "Pendiente de evaluacion" (mismo literal que usa modules-status.json
+# para lo que no tiene evidencia todavia) -- nunca se infiere desde
+# heuristicas de score, que podria contradecir el estado real documentado en
+# CLAUDE.md/docs/STATUS.md (p.ej. un modulo FROZEN con score bajo se veria
+# mal clasificado).
+#
+# Toda la presentacion (encabezados, orden de columnas, formato de celda)
+# vive UNICAMENTE en Build-ModuleMaturityRow -- un solo lugar, para que
+# alimentar estos campos despues no requiera tocar mas que esa funcion.
+# =============================================================================
 
-$activeRisksHtml = Build-PlaceholderSection "active-risks" "production" "Riesgos Activos"
+$noStatusSource = "Pendiente de evaluacion"
 
-$roadmapMaestroHtml = Build-PlaceholderSection "roadmap-maestro" "roadmap" "Roadmap Maestro"
-$currentPhasesHtml = Build-PlaceholderSection "current-phases" "roadmap" "Fases Actuales"
-$nextPhasesHtml = Build-PlaceholderSection "next-phases" "roadmap" "Proximas Fases"
-$projectKpisHtml = Build-PlaceholderSection "project-kpis" "roadmap" "KPIs del Proyecto"
-$globalStatusHtml = Build-PlaceholderSection "global-status" "roadmap" "Estado Global"
+$moduleMaturityMatrix = @($explorerIndex.modules | Sort-Object id | ForEach-Object {
+    $dependsOnList = @($_.dependencies.dependsOn)
+    $status = $moduleStatusById[$_.id]
+    [ordered]@{
+        name             = $_.id
+        functionalStatus = if($status) { $status.functionalStatus } else { $noStatusSource }
+        maturityLevel    = if($status) { $status.maturityLevel } else { $noStatusSource }
+        freezeStatus     = if($status) { $status.freezeStatus } else { $noStatusSource }
+        maturityPct      = $_.score
+        testQualityPct   = $_.tests
+        priority         = if($status) { $status.priority } else { $noStatusSource }
+        currentPhase     = if($status) { $status.roadmapStage } else { $noStatusSource }
+        nextPhase        = if($status) { $status.nextStage } else { $noStatusSource }
+        dependencies     = if($dependsOnList.Count -gt 0) { $dependsOnList -join ", " } else { "(ninguna)" }
+        blockers         = if($status) { $status.blockers } else { $noStatusSource }
+        relatedAdrs      = if($status) { $status.adr } else { $noStatusSource }
+        observations     = if($status) { $status.observations } else { $noStatusSource }
+        lastAudit        = $_.lastEvidenceDate
+    }
+})
 
-Write-Host "Fase Dashboard 1.0: 10 secciones placeholder construidas (ERP Core Overview, Madurez por Modulo, Roadmap Maestro, Fases Actuales, Proximas Fases, Dependencias Arquitectonicas, Riesgos Activos, ADR, KPIs del Proyecto, Estado Global)"
+function Build-ModuleMaturityRow($row)
+{
+    return "<tr><td>$($row.name)</td><td>$($row.functionalStatus)</td><td>$($row.maturityLevel)</td><td>$($row.freezeStatus)</td><td style='color:$(Get-ScoreColor $row.maturityPct)'>$($row.maturityPct)%</td><td>$($row.testQualityPct)%</td><td>$($row.priority)</td><td>$($row.currentPhase)</td><td>$($row.nextPhase)</td><td>$($row.dependencies)</td><td>$($row.blockers)</td><td>$($row.relatedAdrs)</td><td>$($row.observations)</td><td>$($row.lastAudit)</td></tr>"
+}
+
+$moduleMaturityRowsHtml = (@($moduleMaturityMatrix | ForEach-Object { Build-ModuleMaturityRow $_ })) -join "`n"
+
+$moduleStatusCoverageNote = if($moduleStatusMissing.Count -gt 0) { " &middot; <span style='color:$colorPending'>$($moduleStatusMissing.Count) modulo(s) sin fila funcional: $($moduleStatusMissing -join ', ')</span>" } else { "" }
+
+$moduleMaturityHtml = @"
+<section id='module-maturity' class='panel' data-group='business' data-subgroup='madurez'>
+<h2>Madurez por Modulo</h2>
+<p class='muted-note'>Matriz de los $($moduleMaturityMatrix.Count) modulos del ERP. Fuente tecnica: explorer-index.json (Madurez, Test Quality Score, Dependencias, Ultima auditoria). "Test Quality Score" es el score compuesto de analyze-tests.ps1 (modules[].tests) -- el pipeline no mide cobertura real, ver explorer-index.json.method.knownGaps. Fuente funcional: modules-status.json, mantenida por Arquitectura (Estado funcional, Nivel de madurez, Estado de congelamiento, Prioridad, Fase actual/siguiente, Bloqueadores, ADR, Observaciones) -- fusionadas por id. Campos marcados "$noStatusSource" no tienen evidencia documental todavia$moduleStatusCoverageNote.</p>
+<table class='sortable'>
+<tr><th>Modulo</th><th>Estado funcional</th><th>Nivel madurez</th><th>Congelamiento</th><th>Madurez</th><th>Test Quality Score</th><th>Prioridad</th><th>Fase actual</th><th>Proxima fase</th><th>Dependencias</th><th>Bloqueadores</th><th>ADR relacionados</th><th>Observaciones</th><th>Ultima auditoria</th></tr>
+$moduleMaturityRowsHtml
+</table>
+</section>
+"@
+
+Write-Host "Module Maturity Matrix built: $($moduleMaturityMatrix.Count) modulos"
+
+
+# =============================================================================
+# FASE DASHBOARD 4.0 -- Roadmap Maestro del ERP
+#
+# Fuente unica: docs/ProgressDashboard/data/roadmap.json, espejo estructurado
+# de docs/ROADMAP.md (Nivel 1, canonico). Editar contenido siempre primero en
+# docs/ROADMAP.md, nunca directamente en el JSON ni en este script.
+#
+# 7 etapas ($roadmapData.stages) + un bloque aparte "sinEtapaAsignada" (CRM/
+# RRHH, que no encajan con precision en ninguna de las 7 etapas -- decision
+# confirmada por el usuario en vez de forzar la categorizacion).
+#
+# Validacion (punto 6 del pedido): toda etapa que referencia un modulo que no
+# existe en explorer-index.json (ej. 'Accounting', todavia no trackeado por
+# el pipeline, o 'BusinessPartner', que vive fuera de Modules/) genera una
+# advertencia en consola -- nunca detiene la generacion del dashboard.
+# =============================================================================
+
+$roadmapData = LoadJson "roadmap.json"
+$etapaActualId = $roadmapData.etapaActualId
+
+$roadmapModuleWarnings = @()
+foreach($stage in $roadmapData.stages)
+{
+    foreach($modId in @($stage.modulos))
+    {
+        if(-not $explorerModuleById.ContainsKey($modId))
+        {
+            $roadmapModuleWarnings += "$($stage.id) ('$($stage.nombre)') -> '$modId'"
+        }
+    }
+}
+
+if($roadmapModuleWarnings.Count -gt 0)
+{
+    Write-Host ""
+    Write-Host "ADVERTENCIA: $($roadmapModuleWarnings.Count) referencia(s) a modulo(s) inexistente(s) en roadmap.json (no trackeados por explorer-index.json):" -ForegroundColor Yellow
+    foreach($w in $roadmapModuleWarnings) { Write-Host "  - $w" -ForegroundColor Yellow }
+    Write-Host "La generacion continua -- estas referencias se muestran igual en la tabla, sin enlace tecnico verificado." -ForegroundColor Yellow
+    Write-Host ""
+}
+
+function Format-RoadmapModuleList($modIds)
+{
+    if(@($modIds).Count -eq 0) { return "(ninguno)" }
+    return (@($modIds) | ForEach-Object {
+        if($explorerModuleById.ContainsKey($_)) { $_ } else { "$_ <span style='color:$colorPending' title='No trackeado por explorer-index.json'>&#9888;</span>" }
+    }) -join ", "
+}
+
+function Build-RoadmapStageRow($stage, $isCurrent)
+{
+    $rowStyle = if($isCurrent) { " style='background:$colorInfo" + "22'" } else { "" }
+    $marker = if($isCurrent) { "<b>&#9654; $($stage.nombre)</b> <span class='pill' style='background:$colorInfo;color:#fff'>ETAPA ACTUAL</span>" } else { $stage.nombre }
+    $hitosHtml = (@($stage.hitos) | ForEach-Object { "<li>$_</li>" }) -join ""
+    $entregablesHtml = (@($stage.entregables) | ForEach-Object { "<li>$_</li>" }) -join ""
+    return @"
+<tr$rowStyle>
+<td>$marker</td>
+<td>$($stage.estado)</td>
+<td>$($stage.prioridad)</td>
+<td>$($stage.porcentaje)</td>
+<td>$(Format-RoadmapModuleList $stage.modulos)</td>
+<td>$($stage.dependencias)</td>
+<td>$($stage.bloqueadores)</td>
+<td><details class='card-section'><summary>Hitos ($(@($stage.hitos).Count)) / Entregables ($(@($stage.entregables).Count))</summary><h5>Hitos</h5><ul>$hitosHtml</ul><h5>Entregables</h5><ul>$entregablesHtml</ul></details></td>
+<td>$($stage.observaciones)</td>
+</tr>
+"@
+}
+
+$roadmapStageRowsHtml = (@($roadmapData.stages | ForEach-Object { Build-RoadmapStageRow $_ ($_.id -eq $etapaActualId) })) -join "`n"
+
+$sinEtapaRowsHtml = (@($roadmapData.sinEtapaAsignada.modulos | ForEach-Object {
+    "<tr><td>$($_.nombre)</td><td>$($_.estado)</td><td>$($_.prioridad)</td><td>$(Format-RoadmapModuleList $_.modulosInvolucrados)</td><td>$($_.dependencias)</td><td>$($_.bloqueadores)</td></tr>"
+})) -join "`n"
+
+$roadmapMaestroHtml = @"
+<section id='roadmap-maestro' class='panel' data-group='roadmap' data-subgroup='roadmap'>
+<h2>Roadmap Maestro</h2>
+<p class='muted-note'>Espejo estructurado de docs/ROADMAP.md (Nivel 1) -- $($roadmapData.stages.Count) etapas. Editar contenido siempre primero en docs/ROADMAP.md, nunca en este JSON directamente. $(if($roadmapModuleWarnings.Count -gt 0){"<span style='color:$colorPending'>&#9888; $($roadmapModuleWarnings.Count) referencia(s) a modulo(s) no trackeados por el pipeline -- ver consola de generacion.</span>"}else{"Todas las referencias a modulos fueron validadas contra explorer-index.json sin advertencias."})</p>
+<table class='sortable'>
+<tr><th>Etapa</th><th>Estado</th><th>Prioridad</th><th>Avance</th><th>Modulos involucrados</th><th>Dependencias</th><th>Bloqueadores</th><th>Detalle</th><th>Observaciones</th></tr>
+$roadmapStageRowsHtml
+</table>
+<h3>Sin etapa asignada</h3>
+<p class='muted-note'>$($roadmapData.sinEtapaAsignada.nota)</p>
+<table class='sortable'>
+<tr><th>Modulo</th><th>Estado</th><th>Prioridad</th><th>Modulos involucrados</th><th>Dependencias</th><th>Bloqueadores</th></tr>
+$sinEtapaRowsHtml
+</table>
+</section>
+"@
+
+$etapaActual = $roadmapData.stages | Where-Object { $_.id -eq $etapaActualId } | Select-Object -First 1
+
+$currentPhasesHtml = @"
+<section id='current-phases' class='panel' data-group='roadmap' data-subgroup='ruta'>
+<h2>Fase Actual</h2>
+<div class='sub-card'>
+<h3>$($etapaActual.nombre)</h3>
+<p>$($etapaActual.descripcion)</p>
+<p>Estado: <b>$($etapaActual.estado)</b> &middot; Prioridad: <b>$($etapaActual.prioridad)</b> &middot; Avance: <b>$($etapaActual.porcentaje)</b></p>
+<p>Modulos involucrados: $(Format-RoadmapModuleList $etapaActual.modulos)</p>
+<h4>Bloqueadores</h4>
+<p>$($etapaActual.bloqueadores)</p>
+<h4>Hitos pendientes</h4>
+<ul>$(( @($etapaActual.hitos) | ForEach-Object { "<li>$_</li>" } ) -join "")</ul>
+</div>
+</section>
+"@
+
+$proximasEtapas = @($roadmapData.stages | Where-Object { $_.id -ne $etapaActualId })
+
+$nextPhasesHtml = @"
+<section id='next-phases' class='panel' data-group='roadmap' data-subgroup='ruta'>
+<h2>Proximas Fases</h2>
+<p class='muted-note'>Etapas siguientes a la etapa actual ($($etapaActual.nombre)), en el orden definido por docs/ROADMAP.md.</p>
+<table class='sortable'>
+<tr><th>Etapa</th><th>Estado</th><th>Prioridad</th><th>Dependencias</th></tr>
+$((@($proximasEtapas | ForEach-Object { "<tr><td>$($_.nombre)</td><td>$($_.estado)</td><td>$($_.prioridad)</td><td>$($_.dependencias)</td></tr>" })) -join "`n")
+</table>
+</section>
+"@
+
+$stageCountByBucket = @{ "No iniciado" = 0; "En progreso / Parcial" = 0; "Frozen / Cerrado" = 0; "Otro" = 0 }
+foreach($stage in $roadmapData.stages)
+{
+    if($stage.estado -match "No iniciado") { $stageCountByBucket["No iniciado"]++ }
+    elseif($stage.estado -match "En progreso|Parcial") { $stageCountByBucket["En progreso / Parcial"]++ }
+    elseif($stage.estado -match "Frozen|Cerrado") { $stageCountByBucket["Frozen / Cerrado"]++ }
+    else { $stageCountByBucket["Otro"]++ }
+}
+
+$globalStatusHtml = @"
+<section id='global-status' class='panel' data-group='home' data-subgroup='global-status'>
+<h2>Estado Global</h2>
+<div class='panel-grid-2'>
+<div class='sub-card'>
+<h3>Etapas del Roadmap Maestro ($($roadmapData.stages.Count))</h3>
+<p>No iniciado: <b>$($stageCountByBucket["No iniciado"])</b> &middot; En progreso / Parcial: <b>$($stageCountByBucket["En progreso / Parcial"])</b> &middot; Frozen / Cerrado: <b>$($stageCountByBucket["Frozen / Cerrado"])</b></p>
+<p>Etapa actual: <b>$($etapaActual.nombre)</b> ($($etapaActual.porcentaje))</p>
+</div>
+<div class='sub-card'>
+<h3>Consistencia tecnica</h3>
+<p>Referencias a modulos validadas contra explorer-index.json: <b>$(if($roadmapModuleWarnings.Count -eq 0){"OK, sin advertencias"}else{"$($roadmapModuleWarnings.Count) advertencia(s) -- ver seccion Roadmap Maestro"})</b></p>
+<p>Modulos sin fila funcional en modules-status.json: <b>$($moduleStatusMissing.Count)</b></p>
+</div>
+</div>
+<p class='muted-note'>Estado Global combina el Roadmap Maestro (planificacion, docs/ROADMAP.md) con la Matriz de Madurez de Modulos (ejecucion, modules-status.json) -- ver secciones 'Roadmap Maestro' y 'Madurez por Modulo'.</p>
+</section>
+"@
+
+Write-Host "Roadmap Maestro built: $($roadmapData.stages.Count) etapas, $($roadmapModuleWarnings.Count) advertencia(s) de modulo"
+Write-Host "Fase Dashboard 1.0/4.0: secciones del Dashboard Maestro construidas (ERP Core Overview, Madurez por Modulo, Roadmap Maestro, Fase Actual, Proximas Fases, ADR, KPIs del Proyecto, Estado Global)"
+
+# =============================================================================
+# FASE DASHBOARD 14.0 -- Vista Ejecutiva de Cierre del ERP
+#
+# Fuente unica: erp-closure.json (mantenido manualmente, ver metodo dentro del
+# propio JSON) -- una reestructuracion a JSON de la Auditoria Tecnica del ERP
+# (FASE ERP 4.0) y su Plan Maestro de Desarrollo (FASE ERP 4.1), ya
+# entregadas. Este renderer NO re-audita codigo, NO recalcula porcentajes de
+# madurez ni reinterpreta brechas -- solo presenta lo que erp-closure.json ya
+# declara, cruzando unicamente los "id" de modulo contra explorer-index.json
+# (igual que modules-status.json en Fase Dashboard 3.0) para detectar
+# referencias huerfanas o desactualizadas.
+# =============================================================================
+
+$erpClosureData = LoadJson "erp-closure.json"
+
+$erpClosureModuleWarnings = @()
+foreach($mc in $erpClosureData.moduleClosure)
+{
+    if(-not $explorerModuleById.ContainsKey($mc.id))
+    {
+        $erpClosureModuleWarnings += $mc.id
+    }
+}
+if($erpClosureModuleWarnings.Count -gt 0)
+{
+    Write-Host ""
+    Write-Host "ADVERTENCIA: $($erpClosureModuleWarnings.Count) modulo(s) en erp-closure.json sin correspondencia en explorer-index.json: $($erpClosureModuleWarnings -join ', ')" -ForegroundColor Yellow
+    Write-Host ""
+}
+
+function Get-ClosureBucketColor($bucket)
+{
+    switch($bucket)
+    {
+        "Completo" { return $colorDone }
+        "Parcial" { return $colorPending }
+        "Pendiente" { return $colorError }
+        default { return $colorInfo }
+    }
+}
+
+$closureModuleRowsHtml = (@($erpClosureData.moduleClosure | ForEach-Object {
+    $bColor = Get-ClosureBucketColor $_.bucket
+    $orphanFlag = if(-not $explorerModuleById.ContainsKey($_.id)) { " <span style='color:$colorPending' title='No trackeado por explorer-index.json'>&#9888;</span>" } else { "" }
+    "<tr><td>$($_.id)$orphanFlag</td><td>$($_.estadoAuditoria)</td><td style='color:$bColor'>$($_.bucket)</td><td>$($_.accountingIntegration)</td></tr>"
+})) -join "`n"
+
+$pendingFeaturesHtml = (@($erpClosureData.pendingFeatures | ForEach-Object { "<li><b>$($_.id)</b> &mdash; $($_.descripcion) <span class='muted-note'>($($_.modulo))</span></li>" })) -join "`n"
+
+$criticalBlockerRowsHtml = (@($erpClosureData.criticalBlockers | ForEach-Object {
+    "<tr><td>$($_.id)</td><td>$($_.descripcion)</td><td>$(($_.categorias) -join ', ')</td><td>$(Format-RoadmapModuleList $_.modulos)</td></tr>"
+})) -join "`n"
+
+$technicalDebtHtml = (@($erpClosureData.technicalDebt | ForEach-Object { "<li><b>$($_.id)</b> &mdash; $($_.descripcion) <span class='muted-note'>($($_.modulo))</span></li>" })) -join "`n"
+
+$acctRemaining = $erpClosureData.accountingIntegrationRemaining
+
+$erpClosureHtml = @"
+<section id='erp-closure' class='panel' data-group='business' data-subgroup='cierre-erp'>
+<h2>Cierre del ERP</h2>
+<p class='muted-note'>Fuente: docs/ProgressDashboard/data/erp-closure.json -- reestructuracion de FASE ERP 4.0 (Auditoria Tecnica) y FASE ERP 4.1 (Plan Maestro). Auditoria realizada: $($erpClosureData.auditDate). $(if($erpClosureModuleWarnings.Count -gt 0){"<span style='color:$colorPending'>&#9888; $($erpClosureModuleWarnings.Count) referencia(s) de modulo no trackeadas -- ver consola de generacion.</span>"}else{"Los 23 modulos referencian ids validos de explorer-index.json."})</p>
+<div class='panel-grid-2'>
+<div class='sub-card center'>
+$(Build-Gauge $erpClosureData.summary.erpCoreWeightedPct (Get-ScoreColor $erpClosureData.summary.erpCoreWeightedPct) 160 "%")
+<p>ERP Core -- % ponderado (ver metodo en erp-closure.json.method)</p>
+<p>Completos: <b style='color:$colorDone'>$($erpClosureData.summary.completos)</b> ($($erpClosureData.summary.pctCompletos)%) &middot; Parciales: <b style='color:$colorPending'>$($erpClosureData.summary.parciales)</b> ($($erpClosureData.summary.pctParciales)%) &middot; Pendientes: <b style='color:$colorError'>$($erpClosureData.summary.pendientes)</b> ($($erpClosureData.summary.pctPendientes)%)</p>
+<p>Modulos completos: $($erpClosureData.summary.completosIds -join ', ')</p>
+<p>Modulos pendientes: $($erpClosureData.summary.pendientesIds -join ', ')</p>
+</div>
+<div class='sub-card'>
+<h3>Integracion Contable Restante</h3>
+<p>Integrados hoy: <b style='color:$colorDone'>$($acctRemaining.integradosHoy -join ', ')</b></p>
+<p>Pendientes: <b style='color:$colorError'>$($acctRemaining.pendientes -join ', ')</b></p>
+<p>Reversos implementados: <b style='color:$(if($acctRemaining.reversosImplementados){$colorDone}else{$colorError})'>$(if($acctRemaining.reversosImplementados){"Si"}else{"No"})</b> &middot; Numeracion: <b style='color:$(if($acctRemaining.numeracionImplementada){$colorDone}else{$colorError})'>$(if($acctRemaining.numeracionImplementada){"Si"}else{"No"})</b> &middot; Endpoint de consulta: <b style='color:$(if($acctRemaining.endpointConsultaAsientosImplementado){$colorDone}else{$colorError})'>$(if($acctRemaining.endpointConsultaAsientosImplementado){"Si"}else{"No"})</b></p>
+<p class='muted-note'>$($acctRemaining.notaDiseno)</p>
+</div>
+</div>
+<h3>Estado por Modulo ($($erpClosureData.moduleClosure.Count))</h3>
+<table class='sortable'>
+<tr><th>Modulo</th><th>Estado (Auditoria FASE 4.0)</th><th>Bucket</th><th>Integra Accounting</th></tr>
+$closureModuleRowsHtml
+</table>
+<div class='panel-grid-2'>
+<div class='sub-card'>
+<h3>Funcionalidades Pendientes ($($erpClosureData.pendingFeatures.Count))</h3>
+<ul>$pendingFeaturesHtml</ul>
+</div>
+<div class='sub-card'>
+<h3>Deuda Tecnica Restante ($($erpClosureData.technicalDebt.Count))</h3>
+<ul>$technicalDebtHtml</ul>
+</div>
+</div>
+<h3>Bloqueantes Criticos ($($erpClosureData.criticalBlockers.Count))</h3>
+<table class='sortable'>
+<tr><th>ID</th><th>Descripcion</th><th>Categorias</th><th>Modulos</th></tr>
+$criticalBlockerRowsHtml
+</table>
+</section>
+"@
+
+function Get-MilestonePriorityColor($p)
+{
+    if($p -match "Critica") { return $colorError }
+    if($p -match "Alta") { return $colorPending }
+    if($p -match "Baja") { return $colorInfo }
+    return $colorPending
+}
+
+$milestoneRowsHtml = (@($erpClosureData.milestones | ForEach-Object {
+    $pColor = Get-MilestonePriorityColor $_.prioridad
+    "<tr><td>$($_.id)</td><td>$($_.nombre)</td><td>$(Format-RoadmapModuleList $_.modulosAfectados)</td><td>$($_.dependencias)</td><td style='color:$pColor'>$($_.prioridad)</td><td>$($_.esfuerzoEstimado)</td><td>$($_.estado)</td></tr>"
+})) -join "`n"
+
+$nextMilestonesHtml = @"
+<section id='next-milestones' class='panel' data-group='roadmap' data-subgroup='hitos'>
+<h2>Proximos Hitos</h2>
+<p class='muted-note'>Los 8 hitos son las 8 fases del roadmap tecnico de FASE ERP 4.1, construidas exclusivamente a partir del backlog priorizado de esa entrega -- ningun hito nuevo fue agregado.</p>
+<table class='sortable'>
+<tr><th>ID</th><th>Nombre</th><th>Modulos afectados</th><th>Dependencias</th><th>Prioridad</th><th>Esfuerzo estimado</th><th>Estado</th></tr>
+$milestoneRowsHtml
+</table>
+</section>
+"@
+
+$recommendedPathStepsHtml = (@($erpClosureData.recommendedPath | ForEach-Object {
+    @"
+<div class='sub-card'>
+<p class='pill' style='background:$colorInfo;color:#fff'>FASE SIGUIENTE</p>
+<h3>$($_.faseSiguiente)</h3>
+<p><b>Objetivo:</b> $($_.objetivo)</p>
+<p><b>Resultado esperado:</b> $($_.resultadoEsperado)</p>
+<p><b>Desbloquea:</b> $($_.desbloquea)</p>
+</div>
+<div style='text-align:center;font-size:20px;color:$colorInfo'>&#8595;</div>
+"@
+})) -join "`n"
+
+$recommendedPathHtml = @"
+<section id='recommended-path' class='panel' data-group='roadmap' data-subgroup='ruta'>
+<h2>Ruta Recomendada</h2>
+<p class='muted-note'>Camino critico secuencial (FASE ERP 4.1, seccion 8 -- Recomendacion final de ejecucion). $($erpClosureData.note)</p>
+$recommendedPathStepsHtml
+</section>
+"@
+
+Write-Host "Fase Dashboard 14.0: Cierre del ERP construido ($($erpClosureData.moduleClosure.Count) modulos, ERP Core ponderado $($erpClosureData.summary.erpCoreWeightedPct)%), Proximos Hitos ($($erpClosureData.milestones.Count)), Ruta Recomendada ($($erpClosureData.recommendedPath.Count) fases) -- $($erpClosureModuleWarnings.Count) advertencia(s) de modulo"
+
+# =============================================================================
+# FASE DASHBOARD 5.0 -- Dependencias Arquitectonicas y Bloqueadores
+#
+# Dos fuentes nuevas:
+#   architecture-dependencies.json -- 89 aristas derivadas MECANICAMENTE de
+#     explorer-index.json (modules[].dependencies.dependsOn/criticalDependencies/
+#     cyclesInvolved, ya real -- ninguna arista fue inventada). El unico campo
+#     curado es 'dependencyType', una clasificacion heuristica por dominio
+#     del modulo destino (documentada en architecture-dependencies.json.method).
+#   blockers.json -- 10 bloqueadores reales, cada uno trazable a un campo
+#     'bloqueadores' ya existente en roadmap.json / docs/ROADMAP.md.
+#
+# Validaciones (todas emiten advertencia en consola, ninguna detiene la
+# generacion):
+#   1. Todo sourceModule/targetModule de architecture-dependencies.json debe existir en
+#      explorer-index.json.
+#   2. Todo modulosAfectados de blockers.json debe existir en explorer-index.json.
+#   3. Todo blockers[].etapa debe existir en roadmap.json.stages.
+#   4. Toda referencia "BLK-NNN" dentro de blockers[].dependencias debe
+#      corresponder a un blocker real (evita referencias colgantes).
+#   5. Ciclos triviales (self-loop, source==target) y ciclos reales (DFS sobre
+#      el grafo de architecture-dependencies.json) -- se reportan, no se corrigen ni se
+#      eliminan aristas.
+# =============================================================================
+
+$dependenciesData = LoadJson "architecture-dependencies.json"
+$blockersData = LoadJson "blockers.json"
+
+$depValidationWarnings = @()
+
+foreach($edge in $dependenciesData.edges)
+{
+    if(-not $explorerModuleById.ContainsKey($edge.sourceModule)) { $depValidationWarnings += "architecture-dependencies.json: sourceModule '$($edge.sourceModule)' no existe en explorer-index.json" }
+    if(-not $explorerModuleById.ContainsKey($edge.targetModule)) { $depValidationWarnings += "architecture-dependencies.json: targetModule '$($edge.targetModule)' no existe en explorer-index.json" }
+    if($edge.sourceModule -eq $edge.targetModule) { $depValidationWarnings += "architecture-dependencies.json: ciclo trivial (self-loop) en '$($edge.sourceModule)'" }
+}
+
+$roadmapStageIds = @{}
+foreach($st in $roadmapData.stages) { $roadmapStageIds[$st.id] = $true }
+
+$blockerIds = @{}
+foreach($b in $blockersData.blockers) { $blockerIds[$b.id] = $true }
+
+foreach($b in $blockersData.blockers)
+{
+    foreach($modId in @($b.modulosAfectados))
+    {
+        if(-not $explorerModuleById.ContainsKey($modId)) { $depValidationWarnings += "blockers.json: '$($b.id)' referencia modulo inexistente '$modId'" }
+    }
+    if($b.etapa -and -not $roadmapStageIds.ContainsKey($b.etapa)) { $depValidationWarnings += "blockers.json: '$($b.id)' referencia etapa inexistente '$($b.etapa)'" }
+    $referencedBlkIds = [regex]::Matches($b.dependencias, "BLK-\d+") | ForEach-Object { $_.Value }
+    foreach($refId in $referencedBlkIds)
+    {
+        if(-not $blockerIds.ContainsKey($refId)) { $depValidationWarnings += "blockers.json: '$($b.id)' referencia bloqueador inexistente '$refId'" }
+    }
+}
+
+# Deteccion de ciclos reales (DFS) sobre el grafo de architecture-dependencies.json.
+function Find-DependencyCycles($edges)
+{
+    $script:depAdjacency = @{}
+    foreach($e in $edges)
+    {
+        if(-not $script:depAdjacency.ContainsKey($e.sourceModule)) { $script:depAdjacency[$e.sourceModule] = New-Object System.Collections.Generic.List[string] }
+        $script:depAdjacency[$e.sourceModule].Add($e.targetModule)
+    }
+
+    $script:depVisited = @{}
+    $script:depInStack = @{}
+    $script:depCyclesFound = New-Object System.Collections.Generic.List[string]
+
+    foreach($node in @($script:depAdjacency.Keys))
+    {
+        if(-not $script:depVisited.ContainsKey($node)) { Visit-DependencyNode $node @() }
+    }
+
+    return @($script:depCyclesFound | Select-Object -Unique)
+}
+
+function Visit-DependencyNode($node, $path)
+{
+    if($script:depInStack.ContainsKey($node))
+    {
+        $idx = [array]::IndexOf($path, $node)
+        if($idx -ge 0)
+        {
+            $cyclePath = @($path[$idx..($path.Count - 1)]) + @($node)
+            $script:depCyclesFound.Add(($cyclePath -join " -> "))
+        }
+        return
+    }
+    if($script:depVisited.ContainsKey($node)) { return }
+
+    $script:depVisited[$node] = $true
+    $script:depInStack[$node] = $true
+    $newPath = @($path) + @($node)
+    if($script:depAdjacency.ContainsKey($node))
+    {
+        foreach($next in $script:depAdjacency[$node]) { Visit-DependencyNode $next $newPath }
+    }
+    $script:depInStack.Remove($node)
+}
+
+$dependencyCycles = @(Find-DependencyCycles $dependenciesData.edges)
+
+if($depValidationWarnings.Count -gt 0)
+{
+    Write-Host ""
+    Write-Host "ADVERTENCIA: $($depValidationWarnings.Count) problema(s) de validacion en architecture-dependencies.json/blockers.json:" -ForegroundColor Yellow
+    foreach($w in $depValidationWarnings) { Write-Host "  - $w" -ForegroundColor Yellow }
+    Write-Host "La generacion continua -- estas referencias se muestran igual, marcadas en la tabla." -ForegroundColor Yellow
+    Write-Host ""
+}
+
+if($dependencyCycles.Count -gt 0)
+{
+    Write-Host ""
+    Write-Host "ADVERTENCIA: $($dependencyCycles.Count) ciclo(s) real(es) detectado(s) en el grafo de architecture-dependencies.json:" -ForegroundColor Yellow
+    foreach($c in $dependencyCycles) { Write-Host "  - $c" -ForegroundColor Yellow }
+    Write-Host "La generacion continua -- un ciclo entre modulos no es necesariamente un error (puede ser una dependencia bidireccional real ya conocida), se reporta para revision de Arquitectura." -ForegroundColor Yellow
+    Write-Host ""
+}
+
+function Build-DependencyEdgeRow($e)
+{
+    $srcOk = $explorerModuleById.ContainsKey($e.sourceModule)
+    $tgtOk = $explorerModuleById.ContainsKey($e.targetModule)
+    $srcCell = if($srcOk) { $e.sourceModule } else { "$($e.sourceModule) <span style='color:$colorError' title='No existe en explorer-index.json'>&#10060;</span>" }
+    $tgtCell = if($tgtOk) { $e.targetModule } else { "$($e.targetModule) <span style='color:$colorError' title='No existe en explorer-index.json'>&#10060;</span>" }
+    $critCell = if($e.critical) { "<span style='color:$colorError'>Si</span>" } else { "No" }
+    return "<tr><td>$srcCell</td><td>$tgtCell</td><td>$($e.dependencyType)</td><td>$critCell</td><td>$($e.observaciones)</td></tr>"
+}
+
+$dependencyEdgeRowsHtml = (@($dependenciesData.edges | ForEach-Object { Build-DependencyEdgeRow $_ })) -join "`n"
+
+$criticalEdges = @($dependenciesData.edges | Where-Object { $_.critical })
+# explorer-index.json serializa dependsOn vacio de dos formas distintas segun
+# el analizador de origen: '[]' (array real) o '{}' (PSCustomObject sin
+# propiedades, cuando el origen era una coleccion .NET vacia) -- @(...).Count
+# por si solo NO detecta el segundo caso (@() de un PSCustomObject-sin-props
+# da Count 1, no 0). Test-EmptyDependsOn normaliza ambas formas.
+function Test-EmptyDependsOn($val)
+{
+    if($null -eq $val) { return $true }
+    if($val -is [System.Management.Automation.PSCustomObject]) { return (@($val.PSObject.Properties)).Count -eq 0 }
+    return (@($val)).Count -eq 0
+}
+
+$modulesWithoutDependencies = @($explorerIndex.modules | Where-Object { Test-EmptyDependsOn $_.dependencies.dependsOn } | ForEach-Object { $_.id })
+
+$archDependenciesHtml = @"
+<section id='arch-dependencies' class='panel' data-group='architecture' data-subgroup='dependencias'>
+<h2>Dependencias Arquitectonicas</h2>
+<p class='muted-note'>$($dependenciesData.edges.Count) aristas derivadas mecanicamente de explorer-index.json (grafo tecnico real) mas una clasificacion heuristica por dominio ('dependencyType', ver architecture-dependencies.json.method). $(if($dependencyCycles.Count -gt 0){"<span style='color:$colorPending'>&#9888; $($dependencyCycles.Count) ciclo(s) detectado(s) -- ver Riesgos Activos.</span>"}else{"Sin ciclos detectados."}) $(if($depValidationWarnings.Count -gt 0){"<span style='color:$colorError'>&#9888; $($depValidationWarnings.Count) problema(s) de validacion -- ver consola de generacion.</span>"}else{""})</p>
+<p>Dependencias criticas: <b>$($criticalEdges.Count)</b> &middot; Modulos sin dependencias: <b>$($modulesWithoutDependencies -join ', ')</b></p>
+<table class='sortable'>
+<tr><th>Modulo origen</th><th>Modulo destino</th><th>Tipo</th><th>Critica</th><th>Observaciones</th></tr>
+$dependencyEdgeRowsHtml
+</table>
+</section>
+"@
+
+function Build-BlockerRow($b)
+{
+    $sevColor = switch($b.severidad) { "Critica" { $colorError }; "Alta" { $colorError }; "Media" { $colorPending }; default { $colorInfo } }
+    return "<tr><td>$($b.id)</td><td>$($b.titulo)</td><td style='color:$sevColor'>$($b.severidad)</td><td>$($b.etapa)</td><td>$(Format-RoadmapModuleList $b.modulosAfectados)</td><td>$($b.estado)</td><td>$($b.accionRequerida)</td></tr>"
+}
+
+$blockerRowsHtml = (@($blockersData.blockers | ForEach-Object { Build-BlockerRow $_ })) -join "`n"
+$criticalBlockers = @($blockersData.blockers | Where-Object { $_.severidad -eq "Critica" })
+$resolvedBlockers = @($blockersData.blockers | Where-Object { $_.estado -eq "Resuelto" })
+
+$projectBlockersHtml = @"
+<section id='project-blockers' class='panel' data-group='security' data-subgroup='riesgos'>
+<h2>Bloqueadores del Proyecto</h2>
+<p class='muted-note'>$($blockersData.blockers.Count) bloqueadores, cada uno trazable a un campo 'bloqueadores' ya documentado en roadmap.json / docs/ROADMAP.md -- ninguno inventado.</p>
+<table class='sortable'>
+<tr><th>ID</th><th>Titulo</th><th>Severidad</th><th>Etapa</th><th>Modulos afectados</th><th>Estado</th><th>Accion requerida</th></tr>
+$blockerRowsHtml
+</table>
+</section>
+"@
+
+# Resumen Ejecutivo (Fase 5.0): incrustado en Riesgos Activos -- combina
+# bloqueadores criticos, modulos desbloqueados recientemente, dependencias
+# criticas y modulos sin dependencias, todos ya calculados arriba.
+$activeRisksHtml = @"
+<section id='active-risks' class='panel' data-group='security' data-subgroup='riesgos'>
+<h2>Riesgos Activos</h2>
+<div class='sub-card'>
+<h3>Resumen Ejecutivo</h3>
+<p>Bloqueadores criticos: <b style='color:$colorError'>$($criticalBlockers.Count)</b>$(if($criticalBlockers.Count -gt 0){" (" + (($criticalBlockers | ForEach-Object { $_.id }) -join ", ") + ")"})</p>
+<p>Modulos desbloqueados recientemente: <b>$($resolvedBlockers.Count)</b>$(if($resolvedBlockers.Count -eq 0){" (ningun bloqueador con estado 'Resuelto' todavia)"})</p>
+<p>Dependencias criticas: <b>$($criticalEdges.Count)</b> de $($dependenciesData.edges.Count) aristas totales</p>
+<p>Modulos sin dependencias: <b>$($modulesWithoutDependencies.Count)</b> ($($modulesWithoutDependencies -join ', '))</p>
+</div>
+<div class='sub-card'>
+<h3>Ciclos de dependencia detectados ($($dependencyCycles.Count))</h3>
+$(if($dependencyCycles.Count -gt 0){ "<ul>" + ((@($dependencyCycles | ForEach-Object { "<li>$_</li>" })) -join "") + "</ul><p class='muted-note'>Un ciclo entre modulos no detiene la generacion -- se reporta para revision de Arquitectura, puede ser una dependencia bidireccional real ya conocida.</p>" } else { "<p>Sin ciclos detectados en el grafo de architecture-dependencies.json.</p>" })
+</div>
+</section>
+"@
+
+Write-Host "Fase Dashboard 5.0: Dependencias Arquitectonicas ($($dependenciesData.edges.Count) aristas), Riesgos Activos ($($dependencyCycles.Count) ciclos), Bloqueadores del Proyecto ($($blockersData.blockers.Count)) -- $($depValidationWarnings.Count) advertencia(s) de validacion"
+
+# =============================================================================
+# FASE DASHBOARD 6.0 -- Arquitectura, ADR y Evidencias
+#
+# Fuente nueva: architecture-governance.json. adr/freezeStatus son un espejo
+# de modules-status.json (Fase 3.0) -- no se reinvestigo desde cero, evita que
+# dos archivos den respuestas distintas a la misma pregunta. technicalDebt y
+# architectureRisk NO se materializan como numero estatico en el JSON -- se
+# fusionan en vivo aqui desde explorer-index.json (modules[].debt.largeFilesCount
+# / modules[].changeRisk.band), que ya son datos reales y ya vivos.
+#
+# Validaciones (advierten, nunca detienen la generacion):
+#   1. Cada ADR referenciado en 'adr' debe existir realmente en docs/adr/.
+#   2. Cada modulo de architecture-governance.json debe existir en explorer-index.json.
+#   3. Cada fecha de auditoria (lastAudit/nextAudit distinta de 'Pendiente de
+#      auditoria') debe ser una fecha valida.
+#   4. Modulos sin ADR (adr contiene 'Pendiente').
+#   5. Modulos Frozen sin auditoria (architectureStatus == 'Freeze' y
+#      lastAudit == 'Pendiente de auditoria').
+# =============================================================================
+
+$governanceData = LoadJson "architecture-governance.json"
+$PENDING_AUDIT_TEXT = "Pendiente de auditoria"
+$adrFilesOnDisk = @{}
+Get-ChildItem (Join-Path $ProjectRoot "docs\adr") -Filter "*.md" | ForEach-Object { $adrFilesOnDisk[$_.Name] = $true }
+
+$governanceWarnings = @()
+$modulesWithoutAdr = @()
+$frozenModulesWithoutAudit = @()
+
+foreach($gm in $governanceData.modules)
+{
+    if(-not $explorerModuleById.ContainsKey($gm.id)) { $governanceWarnings += "architecture-governance.json: modulo '$($gm.id)' no existe en explorer-index.json" }
+
+    $adrRefs = [regex]::Matches($gm.adr, "ADR-\d{3}[\w\-\.]*\.md") | ForEach-Object { $_.Value }
+    foreach($adrRef in $adrRefs)
+    {
+        if(-not $adrFilesOnDisk.ContainsKey($adrRef)) { $governanceWarnings += "architecture-governance.json: '$($gm.id)' referencia ADR inexistente '$adrRef'" }
+    }
+    if($adrRefs.Count -eq 0 -or $gm.adr -match "Pendiente") { $modulesWithoutAdr += $gm.id }
+
+    foreach($dateField in @("lastAudit", "nextAudit"))
+    {
+        $dateVal = $gm.$dateField
+        if($dateVal -ne $PENDING_AUDIT_TEXT -and $dateVal -notmatch "Pendiente")
+        {
+            $parsedDate = [DateTime]::MinValue
+            if(-not [DateTime]::TryParse($dateVal, [ref]$parsedDate)) { $governanceWarnings += "architecture-governance.json: '$($gm.id)'.$dateField ('$dateVal') no es una fecha valida" }
+        }
+    }
+
+    if($gm.architectureStatus -eq "Freeze" -and ($gm.lastAudit -match "Pendiente")) { $frozenModulesWithoutAudit += $gm.id }
+}
+
+if($governanceWarnings.Count -gt 0)
+{
+    Write-Host ""
+    Write-Host "ADVERTENCIA: $($governanceWarnings.Count) problema(s) de validacion en architecture-governance.json:" -ForegroundColor Yellow
+    foreach($w in $governanceWarnings) { Write-Host "  - $w" -ForegroundColor Yellow }
+    Write-Host "La generacion continua." -ForegroundColor Yellow
+    Write-Host ""
+}
+
+if($modulesWithoutAdr.Count -gt 0)
+{
+    Write-Host "ADVERTENCIA: $($modulesWithoutAdr.Count) modulo(s) sin ADR: $($modulesWithoutAdr -join ', ')" -ForegroundColor Yellow
+}
+if($frozenModulesWithoutAudit.Count -gt 0)
+{
+    Write-Host "ADVERTENCIA: $($frozenModulesWithoutAudit.Count) modulo(s) Frozen sin auditoria registrada: $($frozenModulesWithoutAudit -join ', ')" -ForegroundColor Yellow
+}
+
+function Get-ModuleLargeFilesCount($moduleId)
+{
+    $mp = $explorerModuleById[$moduleId]
+    if(-not $mp) { return 0 }
+    return [int]($mp.debt.largeFilesCount)
+}
+
+function Get-DebtSeverity($count)
+{
+    if($count -ge 3) { return "Alta" }
+    elseif($count -ge 1) { return "Media" }
+    else { return "Baja" }
+}
+
+function Build-AdrDecisionRow($gm)
+{
+    $adrCell = if($gm.adrVerified) { $gm.adr } else { "$($gm.adr) <span style='color:$colorError' title='Referencia a ADR no encontrada en docs/adr/'>&#10060;</span>" }
+    $freezeCell = if($gm.architectureStatus -eq "Freeze") { "<span style='color:$colorDone'>Si</span>" } else { "No" }
+    return "<tr><td>$($gm.id)</td><td>$adrCell</td><td>$($gm.architectureStatus)</td><td>$freezeCell</td><td>$($gm.lastAudit)</td></tr>"
+}
+
+$adrDecisionRowsHtml = (@($governanceData.modules | ForEach-Object { Build-AdrDecisionRow $_ })) -join "`n"
+
+$adrDecisionsHtml = @"
+<section id='adr-decisions' class='panel' data-group='architecture' data-subgroup='adr'>
+<h2>Decisiones Arquitectonicas (ADR)</h2>
+<p class='muted-note'>$($governanceData.modules.Count) modulos. adr/freezeStatus espejados de modules-status.json (Fase Dashboard 3.0). $(if($governanceWarnings.Count -gt 0){"<span style='color:$colorError'>&#9888; $($governanceWarnings.Count) problema(s) de validacion -- ver consola de generacion.</span>"}else{"Todas las referencias a ADR fueron verificadas contra docs/adr/."}) $(if($modulesWithoutAdr.Count -gt 0){"<span style='color:$colorPending'>&#9888; $($modulesWithoutAdr.Count) modulo(s) sin ADR.</span>"}) $(if($frozenModulesWithoutAudit.Count -gt 0){"<span style='color:$colorError'>&#9888; $($frozenModulesWithoutAudit.Count) modulo(s) Frozen sin auditoria registrada.</span>"})</p>
+<table class='sortable'>
+<tr><th>Modulo</th><th>ADR</th><th>Estado</th><th>Freeze</th><th>Ultima revision</th></tr>
+$adrDecisionRowsHtml
+</table>
+</section>
+"@
+
+$archStatusCounts = @{ "Freeze" = 0; "Accepted" = 0; "Draft" = 0; "Deprecated" = 0; "Experimental" = 0; "En construccion" = 0; "Pendiente de auditoria" = 0 }
+foreach($gm in $governanceData.modules)
+{
+    if($archStatusCounts.ContainsKey($gm.architectureStatus)) { $archStatusCounts[$gm.architectureStatus]++ } else { $archStatusCounts[$gm.architectureStatus] = 1 }
+}
+
+$erpCoreOverviewHtml = @"
+<section id='erp-core-overview' class='panel' data-group='architecture' data-subgroup='resumen'>
+<h2>ERP Core Overview &mdash; Arquitectura</h2>
+<p class='muted-note'>Distribucion de los $($governanceData.modules.Count) modulos del ERP por estado arquitectonico (architecture-governance.json, derivado de freezeStatus/functionalStatus de modules-status.json -- nunca de una heuristica de score).</p>
+<div class='panel-grid-2'>
+<div class='sub-card'>
+<p>Freeze: <b style='color:$colorDone'>$($archStatusCounts["Freeze"])</b></p>
+<p>Accepted: <b>$($archStatusCounts["Accepted"])</b></p>
+<p>Draft: <b>$($archStatusCounts["Draft"])</b></p>
+</div>
+<div class='sub-card'>
+<p>Deprecated: <b>$($archStatusCounts["Deprecated"])</b></p>
+<p>Experimental: <b>$($archStatusCounts["Experimental"])</b></p>
+<p>En construccion: <b style='color:$colorPending'>$($archStatusCounts["En construccion"])</b></p>
+</div>
+</div>
+<p>Pendiente de auditoria (sin evidencia documental de estado arquitectonico): <b>$($archStatusCounts["Pendiente de auditoria"])</b></p>
+</section>
+"@
+
+function Build-AuditRow($gm)
+{
+    $largeFiles = Get-ModuleLargeFilesCount $gm.id
+    $riskBand = if($explorerModuleById.ContainsKey($gm.id)) { $explorerModuleById[$gm.id].changeRisk.band } else { "Pendiente de auditoria" }
+    $riskColor = Get-RiskBandColor $riskBand
+    return "<tr><td>$($gm.id)</td><td>$($gm.lastAudit)</td><td>$($gm.findingsOpen)</td><td>$($gm.findingsClosed)</td><td style='color:$riskColor'>$riskBand</td></tr>"
+}
+
+$auditRowsHtml = (@($governanceData.modules | ForEach-Object { Build-AuditRow $_ })) -join "`n"
+
+$debtTotals = @{ "Alta" = 0; "Media" = 0; "Baja" = 0 }
+foreach($gm in $governanceData.modules)
+{
+    $sev = Get-DebtSeverity (Get-ModuleLargeFilesCount $gm.id)
+    $debtTotals[$sev]++
+}
+
+$architectureAuditsHtml = @"
+<section id='architecture-audits' class='panel' data-group='engineering' data-subgroup='technical-debt'>
+<h2>Auditorias</h2>
+<p class='muted-note'>Por modulo: Ultima auditoria, Hallazgos abiertos/cerrados (solo con evidencia documental real -- Items, Purchases, ElectronicDocuments; el resto es '$PENDING_AUDIT_TEXT'), Riesgo (explorer-index.json.changeRisk.band, fuente unica, fusionado en vivo).</p>
+<table class='sortable'>
+<tr><th>Modulo</th><th>Ultima auditoria</th><th>Hallazgos abiertos</th><th>Hallazgos cerrados</th><th>Riesgo</th></tr>
+$auditRowsHtml
+</table>
+<h3>Deuda Tecnica &mdash; Resumen General</h3>
+<p class='muted-note'>Clasificacion por modulo segun archivos grandes reales (explorer-index.json.debt.largeFilesCount): Alta (&gt;=3), Media (1-2), Baja (0). Distinto del conteo global TODO/FIXME/HACK ya mostrado en la seccion 'Technical Debt' existente -- esta es una vista por modulo, no un reemplazo.</p>
+<p>Total modulos evaluados: <b>$($governanceData.modules.Count)</b> &middot; Alta: <b style='color:$colorError'>$($debtTotals["Alta"])</b> &middot; Media: <b style='color:$colorPending'>$($debtTotals["Media"])</b> &middot; Baja: <b style='color:$colorDone'>$($debtTotals["Baja"])</b></p>
+</section>
+"@
+
+Write-Host "Fase Dashboard 6.0: ADR ($($governanceData.modules.Count) modulos, $($modulesWithoutAdr.Count) sin ADR, $($frozenModulesWithoutAudit.Count) Frozen sin auditoria), Auditorias, Deuda Tecnica -- $($governanceWarnings.Count) advertencia(s) de validacion"
+
+# =============================================================================
+# FASE DASHBOARD 7.0 -- KPIs automaticos del ERP Core
+#
+# A partir de esta fase, CERO archivos JSON nuevos para metricas -- todo se
+# calcula en vivo aqui mismo, reutilizando lo ya cargado en este script:
+# $explorerIndex (Fase 0, tecnico), $governanceData (Fase 6.0), $blockersData
+# (Fase 5.0), $roadmapData (Fase 4.0), $moduleStatusById (Fase 3.0, funcional).
+# Ningun KPI se inventa: si una fuente no permite calcularlo, el valor es el
+# literal "Pendiente de analizador".
+# =============================================================================
+
+$PENDING_ANALYZER_TEXT = "Pendiente de analizador"
+
+# Validacion (punto explicito del pedido): confirmar que las 4 fuentes que
+# alimentan estos KPIs existen en disco. Para cuando este bloque corre, ya
+# fueron cargadas exitosamente mas arriba (LoadJson lanza excepcion si falta
+# un archivo) -- este chequeo es una segunda linea de defensa explicita, no
+# teatro: si una fase futura desacopla la carga, esto sigue advirtiendo en
+# vez de fallar en silencio.
+$fase7RequiredFiles = @("roadmap.json", "blockers.json", "architecture-governance.json", "explorer-index.json")
+$fase7MissingFiles = @($fase7RequiredFiles | Where-Object { -not (Test-Path (Join-Path $DataRoot $_)) })
+if($fase7MissingFiles.Count -gt 0)
+{
+    Write-Host ""
+    Write-Host "ADVERTENCIA: $($fase7MissingFiles.Count) fuente(s) requerida(s) por los KPIs del ERP Core no se encuentran en disco: $($fase7MissingFiles -join ', ')" -ForegroundColor Yellow
+    Write-Host "La generacion continua -- los KPIs dependientes de esas fuentes mostraran '$PENDING_ANALYZER_TEXT'." -ForegroundColor Yellow
+    Write-Host ""
+}
+
+# Clasificacion funcional por modulo (modules-status.json via $moduleStatusById,
+# Fase 3.0) -- reglas explicitas por prioridad, documentadas aqui, nunca un
+# estado hardcodeado por nombre de modulo:
+#   1. contiene 'Frozen'    -> Frozen
+#   2. contiene 'Skeleton'  -> Skeleton
+#   3. contiene 'parcial'   -> Parcial
+#   4. contiene 'iniciad'   (No iniciado / sin iniciar) -> No iniciado
+#   5. contiene 'Operativo' -> Operativo
+#   6. ninguna              -> Sin clasificar (Pendiente de evaluacion) -- no se fuerza a ninguna de las 5 anteriores
+function Get-FunctionalStatusBucket($functionalStatusText)
+{
+    $t = "$functionalStatusText"
+    if($t -match "Frozen") { return "Frozen" }
+    if($t -match "(?i)skeleton") { return "Skeleton" }
+    if($t -match "(?i)parcial") { return "Parcial" }
+    if($t -match "(?i)iniciad") { return "No iniciado" }
+    if($t -match "(?i)operativo") { return "Operativo" }
+    return "Sin clasificar (Pendiente de evaluacion)"
+}
+
+# Clasificacion de etapas del roadmap (roadmap.json, Fase 4.0) -- reglas
+# explicitas por prioridad sobre el texto real de 'estado', nunca una etapa
+# hardcodeada por nombre:
+#   1. contiene 'No iniciado' o 'sin producto' -> Pendiente
+#   2. contiene 'Parcial' o 'En progreso'      -> En progreso
+#   3. contiene 'Frozen'/'Cerrado'/'Completad' -> Completada
+#   4. ninguna                                 -> Pendiente de evaluacion
+function Get-StageStatusBucket($estadoText)
+{
+    $t = "$estadoText"
+    if($t -match "(?i)no iniciado" -or $t -match "(?i)sin producto") { return "Pendiente" }
+    if($t -match "(?i)parcial" -or $t -match "(?i)en progreso") { return "En progreso" }
+    if($t -match "(?i)frozen" -or $t -match "(?i)cerrad" -or $t -match "(?i)completad") { return "Completada" }
+    return "Pendiente de evaluacion"
+}
+
+function Build-EngineeringKPIs($explorerIdx, $govData, $blkData, $rmData, $modStatusById)
+{
+    $kpis = [ordered]@{}
+
+    $modules = @($explorerIdx.modules)
+    $kpis["totalModulos"] = $modules.Count
+
+    $statusBuckets = @{ "Frozen" = 0; "Operativo" = 0; "Parcial" = 0; "Skeleton" = 0; "No iniciado" = 0; "Sin clasificar (Pendiente de evaluacion)" = 0 }
+    foreach($m in $modules)
+    {
+        $st = if($modStatusById.ContainsKey($m.id)) { $modStatusById[$m.id].functionalStatus } else { $null }
+        $bucket = Get-FunctionalStatusBucket $st
+        $statusBuckets[$bucket]++
+    }
+    $kpis["modulosFrozen"] = $statusBuckets["Frozen"]
+    $kpis["modulosOperativos"] = $statusBuckets["Operativo"]
+    $kpis["modulosParciales"] = $statusBuckets["Parcial"]
+    $kpis["modulosSkeleton"] = $statusBuckets["Skeleton"]
+    $kpis["modulosNoIniciados"] = $statusBuckets["No iniciado"]
+    $kpis["modulosSinClasificar"] = $statusBuckets["Sin clasificar (Pendiente de evaluacion)"]
+
+    $scores = @($modules | ForEach-Object { [double]$_.score } | Where-Object { $_ -ne $null })
+    $kpis["promedioMadurez"] = if($scores.Count -gt 0) { [math]::Round(($scores | Measure-Object -Average).Average, 2) } else { $PENDING_ANALYZER_TEXT }
+
+    $testScores = @($modules | ForEach-Object { [double]$_.tests } | Where-Object { $_ -ne $null })
+    $kpis["promedioTestQualityScore"] = if($testScores.Count -gt 0) { [math]::Round(($testScores | Measure-Object -Average).Average, 2) } else { $PENDING_ANALYZER_TEXT }
+
+    if($govData -and $govData.modules)
+    {
+        $conAdr = @($govData.modules | Where-Object { (@([regex]::Matches($_.adr, "ADR-\d{3}[\w\-\.]*\.md"))).Count -gt 0 -and $_.adr -notmatch "Pendiente" })
+        $kpis["modulosConAdr"] = $conAdr.Count
+        $kpis["modulosSinAdr"] = $govData.modules.Count - $conAdr.Count
+        $auditadas = @($govData.modules | Where-Object { $_.lastAudit -ne $PENDING_AUDIT_TEXT -and $_.lastAudit -notmatch "Pendiente" })
+        $kpis["auditoriasRealizadas"] = $auditadas.Count
+        $kpis["auditoriasPendientes"] = $govData.modules.Count - $auditadas.Count
+        $kpis["coberturaAuditoriaPct"] = [math]::Round(100.0 * $auditadas.Count / $govData.modules.Count, 1)
+    }
+    else
+    {
+        $kpis["modulosConAdr"] = $PENDING_ANALYZER_TEXT
+        $kpis["modulosSinAdr"] = $PENDING_ANALYZER_TEXT
+        $kpis["auditoriasRealizadas"] = $PENDING_ANALYZER_TEXT
+        $kpis["auditoriasPendientes"] = $PENDING_ANALYZER_TEXT
+        $kpis["coberturaAuditoriaPct"] = $PENDING_ANALYZER_TEXT
+    }
+
+    if($blkData -and $blkData.blockers)
+    {
+        $kpis["bloqueadoresActivos"] = (@($blkData.blockers | Where-Object { $_.estado -ne "Resuelto" })).Count
+    }
+    else
+    {
+        $kpis["bloqueadoresActivos"] = $PENDING_ANALYZER_TEXT
+    }
+
+    if($rmData -and $rmData.stages)
+    {
+        $stageBuckets = @{ "Completada" = 0; "En progreso" = 0; "Pendiente" = 0; "Pendiente de evaluacion" = 0 }
+        foreach($st in $rmData.stages) { $stageBuckets[(Get-StageStatusBucket $st.estado)]++ }
+        $kpis["etapasCompletadas"] = $stageBuckets["Completada"]
+        $kpis["etapasEnProgreso"] = $stageBuckets["En progreso"]
+        $kpis["etapasPendientes"] = $stageBuckets["Pendiente"] + $stageBuckets["Pendiente de evaluacion"]
+    }
+    else
+    {
+        $kpis["etapasCompletadas"] = $PENDING_ANALYZER_TEXT
+        $kpis["etapasEnProgreso"] = $PENDING_ANALYZER_TEXT
+        $kpis["etapasPendientes"] = $PENDING_ANALYZER_TEXT
+    }
+
+    return $kpis
+}
+
+$engineeringKpis = Build-EngineeringKPIs $explorerIndex $governanceData $blockersData $roadmapData $moduleStatusById
+
+Write-Host "Engineering KPIs built: $($engineeringKpis.totalModulos) modulos, madurez promedio $($engineeringKpis.promedioMadurez)%, $($engineeringKpis.bloqueadoresActivos) bloqueadores activos"
+
+# =============================================================================
+# Salud del ERP -- 7 indicadores tipo semaforo. Reglas de banda documentadas
+# aqui mismo (umbrales sobre porcentajes ya calculados arriba), NUNCA un
+# estado escrito a mano por modulo. 5 niveles: Excelente/Bueno/Aceptable/
+# Atencion/Critico.
+# =============================================================================
+
+function Get-HealthBand($pct)
+{
+    if($pct -eq $PENDING_ANALYZER_TEXT) { return $PENDING_ANALYZER_TEXT }
+    $v = [double]$pct
+    if($v -ge 80) { return "Excelente" }
+    elseif($v -ge 60) { return "Bueno" }
+    elseif($v -ge 40) { return "Aceptable" }
+    elseif($v -ge 20) { return "Atencion" }
+    else { return "Critico" }
+}
+
+function Get-HealthBandColor($band)
+{
+    switch($band)
+    {
+        "Excelente" { return $colorDone }
+        "Bueno"     { return $colorDone }
+        "Aceptable" { return $colorPending }
+        "Atencion"  { return $colorPending }
+        "Critico"   { return $colorError }
+        default     { return $colorInfo }
+    }
+}
+
+function Get-HealthBandScore($band)
+{
+    switch($band)
+    {
+        "Excelente" { return 5 }
+        "Bueno"     { return 4 }
+        "Aceptable" { return 3 }
+        "Atencion"  { return 2 }
+        "Critico"   { return 1 }
+        default     { return $null }
+    }
+}
+
+# Arquitectura: % de modulos en estado 'Freeze' (architecture-governance.json,
+# ya calculado como $archStatusCounts en Fase 6.0).
+$archHealthPct = if($governanceData.modules.Count -gt 0) { [math]::Round(100.0 * $archStatusCounts["Freeze"] / $governanceData.modules.Count, 1) } else { $PENDING_ANALYZER_TEXT }
+$archHealthBand = Get-HealthBand $archHealthPct
+
+# Documentacion: promedio del pilar 'documentation' de explorer-index.json
+# (score compuesto ya real, mismo tipo de campo que 'tests' -- ver Fase 2.0).
+$docScores = @($explorerIndex.modules | ForEach-Object { [double]$_.documentation } | Where-Object { $_ -ne $null })
+$docHealthPct = if($docScores.Count -gt 0) { [math]::Round(($docScores | Measure-Object -Average).Average, 1) } else { $PENDING_ANALYZER_TEXT }
+$docHealthBand = Get-HealthBand $docHealthPct
+
+# Cobertura de Auditorias: % de modulos con lastAudit real (ya calculado
+# arriba, coberturaAuditoriaPct).
+$auditHealthPct = $engineeringKpis["coberturaAuditoriaPct"]
+$auditHealthBand = Get-HealthBand $auditHealthPct
+
+# Roadmap: % de etapas Completada + En progreso sobre el total de etapas
+# (avance real de planificacion, no inventado).
+$roadmapHealthPct = if(($roadmapData.stages.Count) -gt 0 -and ($engineeringKpis["etapasCompletadas"] -ne $PENDING_ANALYZER_TEXT)) {
+    [math]::Round(100.0 * ($engineeringKpis["etapasCompletadas"] + $engineeringKpis["etapasEnProgreso"]) / $roadmapData.stages.Count, 1)
+} else { $PENDING_ANALYZER_TEXT }
+$roadmapHealthBand = Get-HealthBand $roadmapHealthPct
+
+# Dependencias: penaliza por ciclos reales detectados + advertencias de
+# validacion (Fase 5.0) -- 0 problemas = 100%, cada problema resta 10 puntos
+# (piso 0). Formula documentada aqui, no en otro lugar.
+$depProblems = $dependencyCycles.Count + $depValidationWarnings.Count
+$depHealthPct = [math]::Max(0, 100 - ($depProblems * 10))
+$depHealthBand = Get-HealthBand $depHealthPct
+
+# Gobierno: % de modulos con ADR real (ya calculado arriba, modulosConAdr).
+$govHealthPct = if($governanceData.modules.Count -gt 0 -and $engineeringKpis["modulosConAdr"] -ne $PENDING_ANALYZER_TEXT) {
+    [math]::Round(100.0 * $engineeringKpis["modulosConAdr"] / $governanceData.modules.Count, 1)
+} else { $PENDING_ANALYZER_TEXT }
+$govHealthBand = Get-HealthBand $govHealthPct
+
+# Estado general: promedio de los puntajes (1-5) de los 6 indicadores
+# anteriores, redondeado al banda mas cercana -- nunca un juicio manual.
+$bandScores = @($archHealthBand, $docHealthBand, $auditHealthBand, $roadmapHealthBand, $depHealthBand, $govHealthBand) | ForEach-Object { Get-HealthBandScore $_ } | Where-Object { $_ -ne $null }
+$overallHealthBand = if($bandScores.Count -gt 0) {
+    $avgScore = ($bandScores | Measure-Object -Average).Average
+    if($avgScore -ge 4.5) { "Excelente" } elseif($avgScore -ge 3.5) { "Bueno" } elseif($avgScore -ge 2.5) { "Aceptable" } elseif($avgScore -ge 1.5) { "Atencion" } else { "Critico" }
+} else { $PENDING_ANALYZER_TEXT }
+
+function Build-HealthIndicatorRow($label, $band, $detail)
+{
+    $color = Get-HealthBandColor $band
+    return "<tr><td>$label</td><td style='color:$color'><b>$band</b></td><td>$detail</td></tr>"
+}
+
+$healthRowsHtml = @(
+    (Build-HealthIndicatorRow "Arquitectura" $archHealthBand "$($archStatusCounts["Freeze"])/$($governanceData.modules.Count) modulos con architectureStatus='Freeze' ($archHealthPct%) -- concepto de gobierno (architecture-governance.json, incluye cierres de alcance acotado como ElectronicInvoicing); distinto del conteo funcional 'Frozen' del panel de Modulos ($($engineeringKpis.modulosFrozen)), que solo cuenta functionalStatus='Frozen' literal en modules-status.json"),
+    (Build-HealthIndicatorRow "Documentacion" $docHealthBand "Promedio pilar 'documentation' (explorer-index.json): $docHealthPct%"),
+    (Build-HealthIndicatorRow "Cobertura de Auditorias" $auditHealthBand "$($engineeringKpis["auditoriasRealizadas"])/$($governanceData.modules.Count) modulos auditados ($auditHealthPct%)"),
+    (Build-HealthIndicatorRow "Roadmap" $roadmapHealthBand "$($engineeringKpis["etapasCompletadas"]) completadas + $($engineeringKpis["etapasEnProgreso"]) en progreso de $($roadmapData.stages.Count) etapas ($roadmapHealthPct%)"),
+    (Build-HealthIndicatorRow "Dependencias" $depHealthBand "$($dependencyCycles.Count) ciclo(s) + $($depValidationWarnings.Count) advertencia(s) de validacion"),
+    (Build-HealthIndicatorRow "Gobierno" $govHealthBand "$($engineeringKpis["modulosConAdr"])/$($governanceData.modules.Count) modulos con ADR real ($govHealthPct%)"),
+    (Build-HealthIndicatorRow "Estado general" $overallHealthBand "Promedio de los 6 indicadores anteriores")
+) -join "`n"
+
+# =============================================================================
+# FASE DASHBOARD 11.0 -- Quality Gate (READ ONLY sobre el bloque ya existente)
+#
+# No cambia el comportamiento de render-dashboard.ps1: solo lee
+# dashboard-validation.json SI EXISTE y agrega una fila mas a la tabla de
+# Salud del ERP ya construida arriba (misma funcion Build-HealthIndicatorRow,
+# mismo formato de fila) -- no crea seccion nueva, no reestructura nada.
+# =============================================================================
+
+$qualityGatePath = Join-Path $DataRoot "dashboard-validation.json"
+if(Test-Path $qualityGatePath)
+{
+    try
+    {
+        $qualityGateData = Get-Content $qualityGatePath -Raw | ConvertFrom-Json
+        $qgBand = Get-HealthBand $qualityGateData.score
+        $qgDetail = "$($qualityGateData.passed)/$($qualityGateData.totalChecks) checks OK, $($qualityGateData.criticalErrors) error(es) critico(s), $($qualityGateData.warnings) advertencia(s) -- generado $($qualityGateData.timestamp) (tools/dashboard/validate-dashboard.ps1)"
+        $healthRowsHtml += "`n" + (Build-HealthIndicatorRow "Calidad de Datos (Quality Gate)" $qgBand $qgDetail)
+    }
+    catch
+    {
+        $healthRowsHtml += "`n" + (Build-HealthIndicatorRow "Calidad de Datos (Quality Gate)" "Pendiente de auditoria" "dashboard-validation.json existe pero no se pudo leer")
+    }
+}
+
+# =============================================================================
+# Resumen Ejecutivo (Fase 7.0) -- parrafo generado automaticamente a partir
+# unicamente de los KPIs ya calculados arriba. Distinto de la seccion
+# preexistente 'Executive Summary' (id='exec-summary', Engineering Score /
+# Production Decision) -- este resumen es especifico de los KPIs de esta fase.
+# =============================================================================
+
+$execKpiSummaryText = "El ERP contiene actualmente <b>$($engineeringKpis.totalModulos)</b> modulos. " +
+    "<b>$($engineeringKpis.modulosFrozen)</b> Frozen, <b>$($engineeringKpis.modulosOperativos)</b> Operativos, " +
+    "<b>$($engineeringKpis.modulosParciales)</b> Parciales, <b>$($engineeringKpis.modulosSkeleton)</b> Skeleton, " +
+    "<b>$($engineeringKpis.modulosNoIniciados)</b> No iniciados y <b>$($engineeringKpis.modulosSinClasificar)</b> sin clasificar todavia. " +
+    "Promedio de madurez: <b>$($engineeringKpis.promedioMadurez)%</b> &middot; Test Quality Score promedio: <b>$($engineeringKpis.promedioTestQualityScore)%</b>. " +
+    "Existen <b>$($engineeringKpis.bloqueadoresActivos)</b> bloqueadores activos (blockers.json). " +
+    "<b>$($engineeringKpis.etapasCompletadas)</b> etapas del roadmap completadas, <b>$($engineeringKpis.etapasEnProgreso)</b> en progreso y <b>$($engineeringKpis.etapasPendientes)</b> pendientes (roadmap.json, $($roadmapData.stages.Count) etapas totales). " +
+    "La cobertura de auditoria alcanza <b>$($engineeringKpis.coberturaAuditoriaPct)%</b> ($($engineeringKpis.auditoriasRealizadas) de $($governanceData.modules.Count) modulos con auditoria documentada; $($engineeringKpis.auditoriasPendientes) pendientes)."
+
+$projectKpisHtml = @"
+<section id='project-kpis' class='panel' data-group='home' data-subgroup='kpis'>
+<h2>KPIs del ERP Core</h2>
+<p class='muted-note'>Calculados en vivo durante esta generacion -- ningun valor es manual ni un archivo JSON dedicado (explorer-index.json + architecture-governance.json + blockers.json + roadmap.json + modules-status.json, todos ya cargados por fases anteriores). $(if($fase7MissingFiles.Count -gt 0){"<span style='color:$colorError'>&#9888; $($fase7MissingFiles.Count) fuente(s) faltante(s): $($fase7MissingFiles -join ', ')</span>"}else{"Las 4 fuentes requeridas fueron verificadas presentes."})</p>
+<div class='panel-grid-2'>
+<div class='sub-card'>
+<h3>Modulos</h3>
+<p>Total: <b>$($engineeringKpis.totalModulos)</b></p>
+<p>Frozen: <b style='color:$colorDone'>$($engineeringKpis.modulosFrozen)</b> &middot; Operativos: <b>$($engineeringKpis.modulosOperativos)</b> &middot; Parciales: <b>$($engineeringKpis.modulosParciales)</b></p>
+<p>Skeleton: <b>$($engineeringKpis.modulosSkeleton)</b> &middot; No iniciados: <b>$($engineeringKpis.modulosNoIniciados)</b> &middot; Sin clasificar: <b style='color:$colorPending'>$($engineeringKpis.modulosSinClasificar)</b></p>
+<p>Promedio de madurez: <b>$($engineeringKpis.promedioMadurez)%</b> &middot; Test Quality Score promedio: <b>$($engineeringKpis.promedioTestQualityScore)%</b></p>
+</div>
+<div class='sub-card'>
+<h3>Gobierno, Auditoria y Roadmap</h3>
+<p>Con ADR: <b>$($engineeringKpis.modulosConAdr)</b> &middot; Sin ADR: <b style='color:$colorPending'>$($engineeringKpis.modulosSinAdr)</b></p>
+<p>Auditorias realizadas: <b>$($engineeringKpis.auditoriasRealizadas)</b> &middot; Pendientes: <b style='color:$colorPending'>$($engineeringKpis.auditoriasPendientes)</b> (cobertura $($engineeringKpis.coberturaAuditoriaPct)%)</p>
+<p>Bloqueadores activos: <b style='color:$colorError'>$($engineeringKpis.bloqueadoresActivos)</b></p>
+<p>Etapas roadmap -- Completadas: <b>$($engineeringKpis.etapasCompletadas)</b> &middot; En progreso: <b>$($engineeringKpis.etapasEnProgreso)</b> &middot; Pendientes: <b>$($engineeringKpis.etapasPendientes)</b></p>
+</div>
+</div>
+<h3>Salud del ERP</h3>
+<p class='muted-note'>Bandas derivadas de umbrales documentados en render-dashboard.ps1 (Get-HealthBand: &gt;=80 Excelente, &gt;=60 Bueno, &gt;=40 Aceptable, &gt;=20 Atencion, &lt;20 Critico) sobre porcentajes ya calculados arriba -- ningun modulo tiene un estado de salud escrito a mano.</p>
+<table class='sortable'>
+<tr><th>Indicador</th><th>Estado</th><th>Detalle</th></tr>
+$healthRowsHtml
+</table>
+<h3>Resumen Ejecutivo</h3>
+<p>$execKpiSummaryText</p>
+</section>
+"@
+
+Write-Host "Fase Dashboard 7.0: KPIs del ERP Core + Salud del ERP (Estado general: $overallHealthBand) + Resumen Ejecutivo -- $($fase7MissingFiles.Count) fuente(s) faltante(s)"
+
+# =============================================================================
+# FASE DASHBOARD 8.0 -- Consistencia Arquitectonica (READ ONLY)
+#
+# No crea archivos nuevos, no modifica documentacion, no modifica JSON
+# existentes. Solo LEE lo ya cargado (modules-status.json, architecture-
+# governance.json, roadmap.json, explorer-index.json, blockers.json) mas dos
+# lecturas de texto crudo nuevas (FEATURES.md, docs/STATUS.md) para el
+# chequeo de presencia por alias -- y calcula inconsistencias en vivo.
+#
+# Diseno deliberado: los checks se apoyan en las fuentes JSON YA
+# INVESTIGADAS Y CITADAS en Fases 3.0/4.0/5.0/6.0 (modules-status.json en
+# particular ya es el resultado de una investigacion manual contra CLAUDE.md/
+# docs/STATUS.md/docs/ROADMAP.md/docs/adr/*.md/FEATURES.md) en vez de volver a
+# interpretar el texto de esos documentos con reglas nuevas -- evita que dos
+# mecanismos distintos den una segunda opinion divergente sobre el mismo
+# hecho. La UNICA lectura de texto nueva (FEATURES.md/STATUS.md) es una
+# busqueda de presencia por alias, explicitamente documentada como
+# aproximada (string search, no comprension semantica).
+#
+# Limite honesto declarado en la propia UI: esta maquina de reglas NO
+# reemplaza una auditoria de codigo real. El caso Ride (Fase ERP Core 1.0,
+# sesion anterior: ADR-025 dice "Implementacion: NO INICIADA" pero el codigo
+# tiene un pipeline RIDE completo y probado) fue encontrado leyendo codigo
+# directamente, no por este motor -- se incluye igual una heuristica
+# (check G) que en este caso puntual SI lo detecta indirectamente via el
+# score tecnico, pero eso no generaliza a todos los casos posibles de drift.
+# =============================================================================
+
+$rawStatusMd = Get-Content (Join-Path $ProjectRoot "docs\STATUS.md") -Raw
+$rawFeaturesMd = Get-Content (Join-Path $ProjectRoot "FEATURES.md") -Raw
+
+# Mapa de alias -- unico insumo curado manualmente de este motor (permite la
+# busqueda de texto, no afirma presencia/ausencia por si mismo). Documentado
+# y auditable aqui mismo; cualquier resultado de presencia depende de este
+# mapa siendo razonable, no de una fuente externa.
+$moduleAliases = @{
+    "Access" = @("Acceso", "IAM", "/admin/iam")
+    "Audit" = @("Auditoría", "Audit", "UserActivity")
+    "Auth" = @("Autenticación", "refresh token", "JWT")
+    "Auxiliary" = @("Auxiliar")
+    "Branches" = @("Sucursales")
+    "Caja" = @("Caja", "CashRegister", "CashSession")
+    "Common" = @("Common", "shared kernel")
+    "Companies" = @("Empresas", "Company Profile", "/companies")
+    "Company" = @("Establecimientos", "Puntos de Emisión", "EmissionPoint")
+    "Configuration" = @("Configuración / SRI")
+    "Dashboard" = @("Dashboard unificado")
+    "ElectronicDocuments" = @("Documentos Electrónicos", "ElectronicDocument", "Facturación Electrónica")
+    "ElectronicInvoicing" = @("ElectronicInvoicing", "Sri Configuration", "Certificado")
+    "Finance" = @("CreditTerm", "Condiciones de Pago")
+    "Integration" = @("Integration")
+    "Inventory" = @("Inventario")
+    "Items" = @("Catálogo", "Ítems", "Items")
+    "Media" = @("Media", "Logo")
+    "Menu" = @("Menú", "menu builder")
+    "Navigation" = @("Navegación", "NavigationMenu")
+    "OrgConfig" = @("Org Config", "OrgSetting")
+    "Pricing" = @("Pricing")
+    "Purchases" = @("Compras")
+    "Ride" = @("RIDE", "Ride")
+    "Sales" = @("Ventas", "Sales Invoice")
+    "Security" = @("Seguridad", "Security Hardening")
+    "Session" = @("Sesión", "UserSession")
+    "SriCatalogs" = @("Catálogos SRI", "sri_vat_rates", "sri_ice_rates")
+    "Tenants" = @("Tenant")
+}
+
+function Test-TextContainsAlias($text, $aliases)
+{
+    foreach($alias in $aliases) { if($text -match [regex]::Escape($alias)) { return $true } }
+    return $false
+}
+
+$consistencyFindings = New-Object System.Collections.Generic.List[object]
+
+function Add-ConsistencyFinding($modulo, $docA, $docB, $valorA, $valorB, $severidad, $categoria)
+{
+    $script:consistencyFindings.Add([ordered]@{
+        modulo = $modulo; docA = $docA; docB = $docB; valorA = $valorA; valorB = $valorB; severidad = $severidad; categoria = $categoria
+    })
+}
+
+# --- Check A: freezes inconsistentes entre modules-status.json (funcional) y
+#     architecture-governance.json (gobierno) -- deberian estar de acuerdo
+#     porque uno espeja al otro (Fase 6.0); esta validacion queda lista para
+#     detectar drift si alguno se edita manualmente sin el otro en el futuro.
+foreach($gm in $governanceData.modules)
+{
+    $ms = $moduleStatusById[$gm.id]
+    if(-not $ms) { continue }
+    $msFrozen = $ms.functionalStatus -match "Frozen"
+    $govFrozen = $gm.architectureStatus -eq "Freeze"
+    if($msFrozen -ne $govFrozen)
+    {
+        Add-ConsistencyFinding $gm.id "modules-status.json (functionalStatus)" "architecture-governance.json (architectureStatus)" $ms.functionalStatus $gm.architectureStatus "Alta" "Freeze inconsistente"
+    }
+}
+
+# --- Check B: ADR real (verificado) pero el modulo aparece en una etapa de
+#     roadmap.json marcada "No iniciado".
+foreach($gm in $governanceData.modules)
+{
+    $hasRealAdr = (@([regex]::Matches($gm.adr, "ADR-\d{3}[\w\-\.]*\.md"))).Count -gt 0 -and $gm.adr -notmatch "Pendiente"
+    if(-not $hasRealAdr) { continue }
+    foreach($stage in $roadmapData.stages)
+    {
+        if(@($stage.modulos) -contains $gm.id -and $stage.estado -match "(?i)no iniciado")
+        {
+            Add-ConsistencyFinding $gm.id "architecture-governance.json (adr)" "roadmap.json ($($stage.id))" $gm.adr $stage.estado "Critica" "ADR real vs roadmap No iniciado"
+        }
+    }
+}
+
+# --- Check C: roadmap dice que la etapa esta Completada/Frozen pero el
+#     modulo involucrado no esta Frozen/Operativo segun modules-status.json.
+foreach($stage in $roadmapData.stages)
+{
+    if($stage.estado -notmatch "(?i)completad" -and $stage.estado -notmatch "(?i)frozen") { continue }
+    foreach($modId in @($stage.modulos))
+    {
+        $ms = $moduleStatusById[$modId]
+        if(-not $ms) { continue }
+        if($ms.functionalStatus -notmatch "Frozen" -and $ms.functionalStatus -notmatch "Operativo")
+        {
+            Add-ConsistencyFinding $modId "roadmap.json ($($stage.id))" "modules-status.json (functionalStatus)" $stage.estado $ms.functionalStatus "Alta" "Roadmap mas adelantado que el codigo/documentacion"
+        }
+    }
+}
+
+# --- Check D: codigo mas adelantado que la documentacion -- funcionalStatus
+#     dice 'Skeleton' pero el score tecnico (explorer-index.json) esta en o
+#     por encima del promedio de madurez del ERP (umbral auto-referencial,
+#     no inventado -- ya calculado en Fase 7.0 como $engineeringKpis).
+foreach($ms in $moduleStatusById.Values)
+{
+    if($ms.functionalStatus -notmatch "(?i)skeleton") { continue }
+    $mp = $explorerModuleById[$ms.id]
+    if(-not $mp) { continue }
+    if([double]$mp.score -ge [double]$engineeringKpis.promedioMadurez)
+    {
+        Add-ConsistencyFinding $ms.id "modules-status.json (functionalStatus)" "explorer-index.json (score)" $ms.functionalStatus "$($mp.score)% (>= promedio ERP $($engineeringKpis.promedioMadurez)%)" "Critica" "Codigo mas adelantado que la documentacion"
+    }
+}
+
+# --- Check D2: modulos 'Pendiente de evaluacion' (sin gobernanza documental)
+#     con superficie de features tecnica considerable (>=10, explorer-index.json)
+#     -- senal mas debil que el Check D, por eso Informativa/Media, no Critica.
+foreach($ms in $moduleStatusById.Values)
+{
+    if($ms.functionalStatus -ne $noStatusSource -and $ms.functionalStatus -ne "Pendiente de evaluacion") { continue }
+    $mp = $explorerModuleById[$ms.id]
+    if(-not $mp) { continue }
+    if([int]$mp.featuresCount -ge 10)
+    {
+        Add-ConsistencyFinding $ms.id "modules-status.json (functionalStatus)" "explorer-index.json (featuresCount)" $ms.functionalStatus "$($mp.featuresCount) features reales" "Media" "Codigo con features reales sin gobernanza documental"
+    }
+}
+
+# --- Check E: modulos sin documentacion -- functionalStatus totalmente
+#     'Pendiente de evaluacion' en modules-status.json (16 de 29 por
+#     construccion, ya sabido desde Fase 3.0 -- se reporta aqui como
+#     categoria oficial de esta seccion, no se recalcula distinto).
+foreach($ms in $moduleStatusById.Values)
+{
+    if($ms.functionalStatus -eq "Pendiente de evaluacion")
+    {
+        Add-ConsistencyFinding $ms.id "modules-status.json" "CLAUDE.md / docs/STATUS.md / docs/ROADMAP.md / docs/adr/*" "Pendiente de evaluacion" "Sin cita textual encontrada (Fase 3.0)" "Informativa" "Modulo sin documentacion"
+    }
+}
+
+# --- Check F: documentacion sin modulo -- reutiliza las advertencias YA
+#     calculadas en Fase 4.0 (roadmap.json) y Fase 5.0 (blockers.json) en vez
+#     de recalcular una segunda vez la misma pregunta.
+foreach($w in $roadmapModuleWarnings)
+{
+    if($w -match "-> '([^']+)'") { $modId = $Matches[1] } else { $modId = $w }
+    Add-ConsistencyFinding $modId "roadmap.json" "explorer-index.json (Dashboard)" "Referenciado" "No existe como modulo tecnico trackeado" "Media" "Documentacion sin modulo (aparece en un documento, no en otro)"
+}
+foreach($w in $depValidationWarnings)
+{
+    if($w -match "blockers.json: '([^']+)' referencia modulo inexistente '([^']+)'")
+    {
+        Add-ConsistencyFinding $Matches[2] "blockers.json ($($Matches[1]))" "explorer-index.json (Dashboard)" "Referenciado" "No existe como modulo tecnico trackeado" "Media" "Documentacion sin modulo (aparece en un documento, no en otro)"
+    }
+}
+
+# --- Check G: presencia por alias en FEATURES.md/STATUS.md vs presencia real
+#     en explorer-index.json (Dashboard) -- solo reporta AUSENCIA total (cero
+#     alias encontrado en NINGUNO de los dos documentos de texto) para un
+#     modulo que si existe tecnicamente, como senal adicional e independiente
+#     de los checks basados en JSON de arriba.
+$docPresenceMissing = @()
+foreach($modId in $moduleAliases.Keys)
+{
+    if(-not $explorerModuleById.ContainsKey($modId)) { continue }
+    $aliases = $moduleAliases[$modId]
+    $inFeatures = Test-TextContainsAlias $rawFeaturesMd $aliases
+    $inStatus = Test-TextContainsAlias $rawStatusMd $aliases
+    if(-not $inFeatures -and -not $inStatus)
+    {
+        $docPresenceMissing += $modId
+        Add-ConsistencyFinding $modId "FEATURES.md" "docs/STATUS.md" "Sin alias encontrado" "Sin alias encontrado" "Informativa" "Ausente en FEATURES.md y STATUS.md (busqueda por alias, aproximada)"
+    }
+}
+
+$totalFindings = $consistencyFindings.Count
+$severityWeights = @{ "Critica" = 10; "Alta" = 5; "Media" = 2; "Informativa" = 0.5 }
+$totalPenalty = 0.0
+foreach($f in $consistencyFindings) { $totalPenalty += $severityWeights[$f.severidad] }
+$architectureConsistencyScore = [math]::Max(0, [math]::Round(100 - $totalPenalty, 1))
+
+# "Documentos sincronizados/desactualizados": para cada uno de los 5
+# documentos fuente, cuenta cuantos findings lo implican como docA o docB.
+$docImplicationCounts = @{ "docs/ROADMAP.md (roadmap.json)" = 0; "docs/STATUS.md (modules-status.json/architecture-governance.json)" = 0; "FEATURES.md" = 0; "docs/adr/*.md (architecture-governance.json)" = 0; "explorer-index.json (Dashboard)" = 0 }
+foreach($f in $consistencyFindings)
+{
+    foreach($docKey in @($f.docA, $f.docB))
+    {
+        if($docKey -match "roadmap") { $docImplicationCounts["docs/ROADMAP.md (roadmap.json)"]++ }
+        elseif($docKey -match "modules-status|architecture-governance") { $docImplicationCounts["docs/STATUS.md (modules-status.json/architecture-governance.json)"]++ }
+        elseif($docKey -match "FEATURES") { $docImplicationCounts["FEATURES.md"]++ }
+        elseif($docKey -match "adr") { $docImplicationCounts["docs/adr/*.md (architecture-governance.json)"]++ }
+        elseif($docKey -match "explorer-index|blockers") { $docImplicationCounts["explorer-index.json (Dashboard)"]++ }
+    }
+}
+
+$topFindings = @($consistencyFindings | Sort-Object -Property @{Expression={$severityWeights[$_.severidad]}; Descending=$true} | Select-Object -First 10)
+
+function Build-ConsistencyRow($f)
+{
+    $sevColor = switch($f.severidad) { "Critica" { $colorError }; "Alta" { $colorError }; "Media" { $colorPending }; default { $colorInfo } }
+    return "<tr><td>$($f.modulo)</td><td>$($f.docA)</td><td>$($f.docB)</td><td>$($f.valorA)</td><td>$($f.valorB)</td><td style='color:$sevColor'><b>$($f.severidad)</b></td><td>$($f.categoria)</td></tr>"
+}
+
+$allFindingsRowsHtml = (@($consistencyFindings | ForEach-Object { Build-ConsistencyRow $_ })) -join "`n"
+$topFindingsRowsHtml = (@($topFindings | ForEach-Object { Build-ConsistencyRow $_ })) -join "`n"
+
+$docSyncRowsHtml = (@($docImplicationCounts.Keys | ForEach-Object {
+    $count = $docImplicationCounts[$_]
+    if($count -eq 0) { "<tr><td>$_</td><td style='color:$colorDone'>&#10003; Sincronizado</td><td>0 inconsistencias</td></tr>" }
+    else { "<tr><td>$_</td><td style='color:$colorPending'>&#9888; Desactualizado</td><td>$count inconsistencia(s)</td></tr>" }
+})) -join "`n"
+
+$architectureConsistencyHtml = @"
+<section id='architecture-consistency' class='panel' data-group='architecture' data-subgroup='resumen'>
+<h2>Consistencia Arquitectonica</h2>
+<p class='muted-note'>Calculado en vivo, sin datos manuales: modules-status.json + architecture-governance.json + roadmap.json + blockers.json + explorer-index.json (ya cargados por fases anteriores) + una busqueda de presencia por alias en FEATURES.md y docs/STATUS.md (aproximada, string search -- no comprension semantica). Limite honesto: esta maquina de reglas no reemplaza una auditoria de codigo real -- casos de drift sutiles (ver Fase ERP Core 1.0, hallazgo de Ride) requieren lectura de codigo, no solo cruce de documentos.</p>
+
+<h3>Architecture Consistency Score</h3>
+<p class='big-status' style='color:$(Get-ScoreColor $architectureConsistencyScore)'>$architectureConsistencyScore%</p>
+<p class='muted-note'>Formula: 100 - Σ(peso por severidad), piso en 0. Pesos: Critica=10, Alta=5, Media=2, Informativa=0.5. $totalFindings hallazgo(s) totales -- penalizacion acumulada $totalPenalty puntos. Ningun umbral fue elegido para que el numero "se vea bien"; es la aplicacion literal de esta formula a los hallazgos reales de abajo.</p>
+
+<h3>Documentos sincronizados / desactualizados</h3>
+<table class='sortable'>
+<tr><th>Documento</th><th>Estado</th><th>Detalle</th></tr>
+$docSyncRowsHtml
+</table>
+
+<h3>Top 10 inconsistencias mas importantes</h3>
+<table class='sortable'>
+<tr><th>Modulo</th><th>Documento A</th><th>Documento B</th><th>Valor A</th><th>Valor B</th><th>Severidad</th><th>Categoria</th></tr>
+$topFindingsRowsHtml
+</table>
+
+<details class='card-section'><summary>Todos los hallazgos ($totalFindings)</summary>
+<table class='sortable'>
+<tr><th>Modulo</th><th>Documento A</th><th>Documento B</th><th>Valor A</th><th>Valor B</th><th>Severidad</th><th>Categoria</th></tr>
+$allFindingsRowsHtml
+</table>
+</details>
+</section>
+"@
+
+Write-Host "Fase Dashboard 8.0: Consistencia Arquitectonica -- Score $architectureConsistencyScore%, $totalFindings hallazgo(s) ($(($consistencyFindings | Where-Object { $_.severidad -eq 'Critica' }).Count) criticos)"
+
+# =============================================================================
+# FASE DASHBOARD 10.0 -- Cobertura de Modulos (READ ONLY)
+#
+# Lee unicamente docs/ProgressDashboard/data/module-coverage-audit.json,
+# generado aparte (fuente de verdad: carpetas reales de
+# backend/src/ERP.Domain/Modules/, comparadas mecanicamente contra
+# modules-status.json/architecture-governance.json/roadmap.json/
+# architecture-dependencies.json/blockers.json). Este bloque NO recalcula
+# nada -- solo formatea el reporte de auditoria ya generado. No se modifica
+# ningun dataset existente, no se toca documentacion, no se toca el pipeline
+# de la Fase 9.0.
+# =============================================================================
+
+$moduleCoverageData = LoadJson "module-coverage-audit.json"
+
+function Build-CoverageModuleRow($m)
+{
+    $flag = if($m.coverageGapReal) { "<span style='color:$colorError'>&#9888; GAP REAL</span>" } else { "<span style='color:$colorDone'>OK</span>" }
+    $cell = { param($v) if($v) { "<span style='color:$colorDone'>Si</span>" } else { "<span style='color:$colorPending'>No</span>" } }
+    return "<tr><td>$($m.id)</td><td>$flag</td><td>$(& $cell $m.inModulesStatus)</td><td>$(& $cell $m.inArchitectureGovernance)</td><td>$(& $cell $m.inRoadmap)</td><td>$(& $cell $m.inArchitectureDependencies)</td><td>$(& $cell $m.inBlockers)</td><td>$($m.observaciones)</td></tr>"
+}
+
+$coverageModuleRowsHtml = (@($moduleCoverageData.modules | ForEach-Object { Build-CoverageModuleRow $_ })) -join "`n"
+
+$extraIdsRowsHtml = (@($moduleCoverageData.extraIdsNotInDomainFolders | ForEach-Object {
+    "<tr><td>$($_.id)</td><td>$($_.clasificacion)</td><td>$($_.referencedIn -join ', ')</td><td>$($_.observaciones)</td></tr>"
+})) -join "`n"
+
+$coverageGapModules = @($moduleCoverageData.modules | Where-Object { $_.coverageGapReal })
+
+$moduleCoverageHtml = @"
+<section id='module-coverage' class='panel' data-group='engineering' data-subgroup='coverage'>
+<h2>Cobertura de Modulos</h2>
+<p class='muted-note'>Fuente de verdad unica: backend/src/ERP.Domain/Modules/ ($($moduleCoverageData.domainModulesCount) carpetas reales). Auditoria generada aparte (module-coverage-audit.json) -- este panel solo la muestra, no recalcula nada. $(if($moduleCoverageData.namedDatasetsNotFound.Count -gt 0){"<span style='color:$colorPending'>&#9888; Datasets solicitados pero inexistentes en disco: $($moduleCoverageData.namedDatasetsNotFound -join ', ')</span>"})</p>
+
+<div class='panel-grid-2'>
+<div class='sub-card center'>
+$(Build-Gauge $moduleCoverageData.coveragePct (Get-ScoreColor $moduleCoverageData.coveragePct) 140 "%")
+<p>$($moduleCoverageData.coverageFormula)</p>
+</div>
+<div class='sub-card'>
+<h3>Resumen</h3>
+<p>Modulos cubiertos: <b style='color:$colorDone'>$($moduleCoverageData.domainModulesCount - $coverageGapModules.Count)</b> de $($moduleCoverageData.domainModulesCount)</p>
+<p>Modulos faltantes (gap real en modules-status.json/architecture-governance.json): <b style='color:$colorError'>$($coverageGapModules.Count)</b>$(if($coverageGapModules.Count -gt 0){" (" + (($coverageGapModules | ForEach-Object { $_.id }) -join ", ") + ")"})</p>
+<p>Datasets afectados: <b>$($moduleCoverageData.datasetsAffected -join ', ')</b></p>
+<p>IDs referenciados que no son carpeta ERP.Domain/Modules: <b>$($moduleCoverageData.extraIdsNotInDomainFolders.Count)</b></p>
+<p>Duplicados encontrados: <b>$($moduleCoverageData.duplicatesFound.Count)</b> &middot; Modulos eliminados pero documentados: <b>$($moduleCoverageData.deletedButStillDocumented.Count)</b></p>
+</div>
+</div>
+
+<h3>Detalle por modulo real ($($moduleCoverageData.domainModulesCount))</h3>
+<table class='sortable'>
+<tr><th>Modulo</th><th>Cobertura</th><th>modules-status.json</th><th>architecture-governance.json</th><th>roadmap.json</th><th>architecture-dependencies.json</th><th>blockers.json</th><th>Observaciones</th></tr>
+$coverageModuleRowsHtml
+</table>
+
+<h3>IDs referenciados en datasets que NO son carpeta de ERP.Domain/Modules ($($moduleCoverageData.extraIdsNotInDomainFolders.Count))</h3>
+<p class='muted-note'>No son "modulos eliminados" ni bugs por si mismos -- son conceptos reales de capa Application sin carpeta Domain propia (ya documentados desde Fase Dashboard 3.0), salvo el caso marcado como alias.</p>
+<table class='sortable'>
+<tr><th>ID</th><th>Clasificacion</th><th>Referenciado en</th><th>Observaciones</th></tr>
+$extraIdsRowsHtml
+</table>
+
+<details class='card-section'><summary>Recomendaciones ($($moduleCoverageData.recommendations.Count))</summary>
+<ul>$((@($moduleCoverageData.recommendations | ForEach-Object { "<li>$_</li>" })) -join "")</ul>
+</details>
+</section>
+"@
+
+Write-Host "Fase Dashboard 10.0: Cobertura de Modulos -- $($moduleCoverageData.coveragePct)% ($($moduleCoverageData.domainModulesCount - $coverageGapModules.Count)/$($moduleCoverageData.domainModulesCount)), $($coverageGapModules.Count) gap(s) real(es), $($moduleCoverageData.extraIdsNotInDomainFolders.Count) id(s) fuera de ERP.Domain/Modules"
 
 
 # =============================================================================
@@ -2271,14 +3785,14 @@ Write-Host "Fase Dashboard 1.0: 10 secciones placeholder construidas (ERP Core O
 $sidebarHtml = @"
 <nav class='sidebar' id='sidebar'>
 <div class='brand'>ZH ERP<br/><small>Architecture Explorer</small></div>
+<a href='#' class='nav-link' data-nav='home' onclick="showGroup('home');return false;">Estado General</a>
+<a href='#' class='nav-link' data-nav='business' onclick="showGroup('business');return false;">Modulos y Negocio</a>
 <a href='#' class='nav-link' data-nav='architecture' onclick="showGroup('architecture');return false;">Arquitectura</a>
 <a href='#' class='nav-link' data-nav='architecture' onclick="showGroup('architecture');selectLayer('core');return false;">ERP Core</a>
 <a href='#' class='nav-link' data-nav='architecture' onclick="showGroup('architecture');selectLayer('web');return false;">Frontend</a>
 <a href='#' class='nav-link' data-nav='architecture' onclick="showGroup('architecture');selectLayer('db');return false;">Database</a>
-<a href='#' class='nav-link' data-nav='business-capability' onclick="showGroup('business-capability');return false;">Business Capability</a>
-<a href='#' class='nav-link' data-nav='engineering' onclick="showGroup('engineering');return false;">Engineering</a>
-<a href='#' class='nav-link' data-nav='security' onclick="showGroup('security');return false;">Security</a>
-<a href='#' class='nav-link' data-nav='production' onclick="showGroup('production');return false;">Production</a>
+<a href='#' class='nav-link' data-nav='engineering' onclick="showGroup('engineering');return false;">Calidad e Ingenieria</a>
+<a href='#' class='nav-link' data-nav='security' onclick="showGroup('security');return false;">Seguridad y Riesgos</a>
 <a href='#' class='nav-link' data-nav='roadmap' onclick="showGroup('roadmap');return false;">Roadmap</a>
 <div class='sidebar-footer'>
 <a href='../../PROGRESS.html' class='ext-link'>&#8599; PROGRESS.html</a>
@@ -2348,6 +3862,11 @@ a{color:var(--blue)}
 .nav-link{display:block;padding:9px 16px;font-size:12.5px;color:var(--text);text-decoration:none;border-left:3px solid transparent}
 .nav-link:hover{background:var(--bg)}
 .nav-link.active{border-left-color:var(--blue);color:var(--blue);font-weight:700;background:var(--bg)}
+.subnav{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 18px;padding-bottom:12px;border-bottom:1px solid var(--border)}
+.subnav-btn{font:inherit;font-size:12.5px;padding:7px 14px;border:1px solid var(--border);border-radius:16px;background:var(--card);color:var(--text);cursor:pointer}
+.subnav-btn:hover{background:var(--bg)}
+.subnav-btn.active{border-color:var(--blue);color:var(--blue);font-weight:700}
+.subnav-btn.subnav-shortcut{border-style:dashed;color:var(--muted);opacity:0.85}
 .sidebar-footer{margin-top:16px;padding:12px 16px 0;border-top:1px solid var(--border)}
 .ext-link{display:block;font-size:11px;margin-bottom:6px}
 .main{flex:1;min-width:0;padding:26px 30px 70px}
@@ -2488,8 +4007,15 @@ li{margin-bottom:4px}
 .dep-graph-legend i{width:10px;height:10px;border-radius:50%;display:inline-block}
 .groups-view{display:none}
 .groups-view.active{display:block}
+.groups-view .panel[data-subgroup]{display:none}
+.groups-view .panel[data-subgroup].subgroup-active{display:block}
 </style>
 "@
+
+$defaultSubgroupJson = (@{
+    home = 'kpis'; business = 'business-capability'; architecture = 'resumen'
+    engineering = 'resumen'; security = 'riesgos'; roadmap = 'roadmap'
+} | ConvertTo-Json -Compress)
 
 $jsHtml = @"
 <script>
@@ -2556,6 +4082,26 @@ var SEARCH_INDEX = $searchIndexJson;
   });
 })();
 
+var DEFAULT_SUBGROUP = $defaultSubgroupJson;
+var ACTIVE_SUBGROUP = {};
+
+function showSubGroup(group, sub){
+  var view = document.querySelector(".groups-view[data-group-view='" + group + "']");
+  if(!view) return;
+  ACTIVE_SUBGROUP[group] = sub;
+
+  var bar = view.querySelector(".subnav[data-subnav-for='" + group + "']");
+  if(bar){
+    bar.querySelectorAll('.subnav-btn').forEach(function(b){
+      b.classList.toggle('active', !b.classList.contains('subnav-shortcut') && b.getAttribute('data-sub') === sub);
+    });
+  }
+
+  view.querySelectorAll('.panel[data-subgroup]').forEach(function(p){
+    p.classList.toggle('subgroup-active', p.getAttribute('data-subgroup') === sub);
+  });
+}
+
 var FILE_PANELS = $filePanelsJson;
 var LAYER_LEVELS = $layerLevelJson;
 var DOMAIN_LEVELS = $domainLevelJson;
@@ -2574,14 +4120,17 @@ function showGroup(name){
 
   if(name === 'architecture'){
     archView.classList.remove('hidden');
-    groupViews.forEach(function(g){ g.classList.remove('active'); });
     resetBreadcrumb();
   } else {
     archView.classList.add('hidden');
-    groupViews.forEach(function(g){
-      if(g.getAttribute('data-group-view') === name) g.classList.add('active');
-      else g.classList.remove('active');
-    });
+  }
+  groupViews.forEach(function(g){
+    if(g.getAttribute('data-group-view') === name) g.classList.add('active');
+    else g.classList.remove('active');
+  });
+
+  if(DEFAULT_SUBGROUP[name]){
+    showSubGroup(name, ACTIVE_SUBGROUP[name] || DEFAULT_SUBGROUP[name]);
   }
 }
 
@@ -2685,7 +4234,7 @@ function highlightDepNode(moduleId){
 }
 
 document.addEventListener('DOMContentLoaded', function(){
-  showGroup('architecture');
+  showGroup('home');
 });
 
 (function(){
@@ -2713,6 +4262,67 @@ document.addEventListener('DOMContentLoaded', function(){
 })();
 </script>
 "@
+
+# =============================================================================
+# FASE DASHBOARD 17.0 -- Navegacion secundaria (subnav) por categoria
+# Filtra, dentro de cada groups-view ya existente, cual de sus secciones
+# (data-subgroup) queda visible. No mueve contenido, no crea secciones
+# nuevas -- solo agrupa las ya existentes bajo una etiqueta de pestana.
+# =============================================================================
+
+function Build-SubNavButton($group, $sub, $label)
+{
+    return "<button type='button' class='subnav-btn' data-sub='$sub' onclick=""showSubGroup('$group','$sub');return false;"">$label</button>"
+}
+
+function Build-SubNavShortcut($targetGroup, $targetSub, $label)
+{
+    return "<button type='button' class='subnav-btn subnav-shortcut' onclick=""showGroup('$targetGroup');showSubGroup('$targetGroup','$targetSub');return false;"">$label &#8599;</button>"
+}
+
+$subnavHome = "<div class='subnav' data-subnav-for='home'>" + `
+    (Build-SubNavButton 'home' 'kpis' 'KPIs') + `
+    (Build-SubNavButton 'home' 'executive-dashboard' 'Executive Dashboard') + `
+    (Build-SubNavButton 'home' 'global-status' 'Global Status') + `
+    (Build-SubNavButton 'home' 'production-decision' 'Production Decision') + `
+    "</div>"
+
+$subnavBusiness = "<div class='subnav' data-subnav-for='business'>" + `
+    (Build-SubNavButton 'business' 'business-capability' 'Business Capability') + `
+    (Build-SubNavButton 'business' 'madurez' 'Madurez') + `
+    (Build-SubNavButton 'business' 'cierre-erp' 'Cierre ERP') + `
+    "</div>"
+
+$subnavArchitecture = "<div class='subnav' data-subnav-for='architecture'>" + `
+    (Build-SubNavButton 'architecture' 'resumen' 'Resumen') + `
+    (Build-SubNavButton 'architecture' 'dependencias' 'Dependencias') + `
+    (Build-SubNavButton 'architecture' 'explorer' 'Explorer') + `
+    (Build-SubNavButton 'architecture' 'adr' 'ADR') + `
+    (Build-SubNavButton 'architecture' 'progreso' 'Progreso') + `
+    "</div>"
+
+$subnavEngineering = "<div class='subnav' data-subnav-for='engineering'>" + `
+    (Build-SubNavButton 'engineering' 'resumen' 'Resumen') + `
+    (Build-SubNavButton 'engineering' 'quality-gate' 'Quality Gate') + `
+    (Build-SubNavButton 'engineering' 'coverage' 'Coverage') + `
+    (Build-SubNavButton 'engineering' 'technical-debt' 'Technical Debt') + `
+    "</div>"
+
+$subnavSecurity = "<div class='subnav' data-subnav-for='security'>" + `
+    (Build-SubNavButton 'security' 'riesgos' 'Riesgos') + `
+    (Build-SubNavButton 'security' 'release' 'Release') + `
+    (Build-SubNavButton 'security' 'seguridad' 'Seguridad') + `
+    "</div>"
+
+$subnavRoadmap = "<div class='subnav' data-subnav-for='roadmap'>" + `
+    (Build-SubNavButton 'roadmap' 'roadmap' 'Roadmap') + `
+    (Build-SubNavButton 'roadmap' 'hitos' 'Hitos') + `
+    (Build-SubNavButton 'roadmap' 'ruta' 'Ruta') + `
+    (Build-SubNavShortcut 'business' 'cierre-erp' 'Cierre ERP') + `
+    "</div>"
+
+Write-Host "Fase Dashboard 17.0: Navegacion secundaria construida para 6 categorias"
+
 
 # =============================================================================
 # HTML RENDER
@@ -2747,48 +4357,64 @@ $diagramHtml,
 "</div>",
 "</div>",
 
-"<div class='groups-view' data-group-view='business-capability'>",
-$architectureHtml,
+"<div class='groups-view' data-group-view='home'>",
+$subnavHome,
+$execSummaryHtml,
+$productionDecisionSectionHtml,
+$execDashboardHtml,
+$globalStatusHtml,
+$projectKpisHtml,
+"</div>",
+
+"<div class='groups-view' data-group-view='business'>",
+$subnavBusiness,
 $businessCapabilityHtml,
+$moduleMaturityHtml,
+$erpClosureHtml,
+"</div>",
+
+"<div class='groups-view' data-group-view='architecture'>",
+$subnavArchitecture,
+$architectureHtml,
 $architectureProgressSectionHtml,
 $dependencyExplorerHtml,
+$dependencyGraphHtml,
 $criticalPathHtml,
 $erpCoreOverviewHtml,
-$moduleMaturityHtml,
 $adrDecisionsHtml,
+$archDependenciesHtml,
+$architectureConsistencyHtml,
 "</div>",
 
 "<div class='groups-view' data-group-view='engineering'>",
+$subnavEngineering,
 $engineeringScoreHtml,
-$dependencyGraphHtml,
 $technicalDebtSectionHtml,
 $trendSectionHtml,
 $modelHealthSectionHtml,
-$archDependenciesHtml,
+$architectureAuditsHtml,
+$moduleCoverageHtml,
 "</div>",
 
 "<div class='groups-view' data-group-view='security'>",
+$subnavSecurity,
 $securitySectionHtml,
-"</div>",
-
-"<div class='groups-view' data-group-view='production'>",
-$productionDecisionSectionHtml,
 $releaseSimulationHtml,
 $riskAssessmentSectionHtml,
 $activeRisksHtml,
+$projectBlockersHtml,
 "</div>",
 
 "<div class='groups-view' data-group-view='roadmap'>",
-$execSummaryHtml,
+$subnavRoadmap,
 $erpCompletionHtml,
 $roadmapSectionHtml,
 $recommendationsSectionHtml,
-$execDashboardHtml,
 $roadmapMaestroHtml,
 $currentPhasesHtml,
 $nextPhasesHtml,
-$projectKpisHtml,
-$globalStatusHtml,
+$nextMilestonesHtml,
+$recommendedPathHtml,
 "</div>",
 
 $footerHtml,
