@@ -4,7 +4,7 @@ import { Badge, EmptyState, ErrorState } from '../../../components/PageShell';
 import { ZHBtn } from '../../../components/zh/ZHForm';
 import { formatMoneyWithSymbol } from '../../../lib/sanitizers';
 import { ProductPicker, type ProductProfile } from './ProductPicker';
-import { CreateItemFromLineModal } from './CreateItemFromLineModal';
+import { CreateItemFromReceptionLineModal } from './CreateItemFromReceptionLineModal';
 import {
   purchaseReceptionService,
   type PurchaseReceptionLineMatch,
@@ -228,12 +228,15 @@ export function ZHItemMatchingPanel({ open, documentId, supplierName, onClose }:
         </>
       )}
 
-      <CreateItemFromLineModal
+      <CreateItemFromReceptionLineModal
         open={createItemLine !== null}
         line={createItemLine}
         supplierName={supplierName}
         onClose={() => setCreateItemLine(null)}
-        onCreated={() => { setCreateItemLine(null); void load(); }}
+        onCreated={(updatedLine) => {
+          setCreateItemLine(null);
+          setLines((prev) => prev.map((l) => (l.lineId === updatedLine.lineId ? updatedLine : l)));
+        }}
       />
     </ZHModal>
   );

@@ -6,6 +6,7 @@ public sealed record ItemMatchCandidateDto(
 
 public sealed record PurchaseReceptionLineMatchDto(
     Guid LineId,
+    Guid? SupplierId,
     string? SupplierCode,
     string? SupplierAuxCode,
     string Description,

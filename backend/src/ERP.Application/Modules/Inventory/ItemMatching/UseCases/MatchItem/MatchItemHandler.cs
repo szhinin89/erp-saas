@@ -42,6 +42,6 @@ public sealed class MatchItemHandler : IRequestHandler<MatchItemCommand, Result<
         await _confirmationService.ConfirmAsync(document, line, request.ItemId, _user.UserId, DateTime.UtcNow, cancellationToken);
         await _documentRepo.SaveChangesAsync(cancellationToken);
 
-        return Result<PurchaseReceptionLineMatchDto>.Success(ItemMatchingMapper.ToDto(line));
+        return Result<PurchaseReceptionLineMatchDto>.Success(ItemMatchingMapper.ToDto(line, document.SupplierId));
     }
 }

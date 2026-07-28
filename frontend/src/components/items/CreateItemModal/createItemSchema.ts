@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-export const createItemFromLineSchema = z.object({
+export const createItemModalSchema = z.object({
   sku: z.string().trim()
     .min(1, 'El SKU es obligatorio.')
     .max(50, 'El SKU no puede exceder 50 caracteres.')
@@ -11,7 +11,8 @@ export const createItemFromLineSchema = z.object({
   categoryNodeId: z.string().min(1, 'La categoría es obligatoria.'),
   brandId: z.string().min(1, 'La marca es obligatoria.'),
   defaultUomCode: z.string().min(1, 'La unidad de medida es obligatoria.'),
+  barcode: z.string().trim().min(1, 'El código de barras es obligatorio.').max(100, 'El código de barras no puede exceder 100 caracteres.'),
   barcodeType: z.string().min(1, 'El tipo de código de barras es obligatorio.'),
 });
 
-export type CreateItemFromLineFormValues = z.infer<typeof createItemFromLineSchema>;
+export type CreateItemModalFormValues = z.infer<typeof createItemModalSchema>;

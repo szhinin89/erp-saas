@@ -72,7 +72,8 @@ Todos bajo `PurchaseReceptionController` (`api/v1/purchases/reception`), permiso
 | `GET` | `/{id}/lines` | Lista las líneas del documento con estado + sugerencias para las no resueltas |
 | `POST` | `/lines/{id}/match-item` | Vinculación manual de una línea — body `{ itemId }` |
 | `POST` | `/matching/bulk` | Vinculación masiva — body `[{ purchaseReceptionLineId, itemId }]` |
-| `POST` | `/lines/{id}/create-item` | Crea un Item nuevo desde la línea y la vincula (sección 7) — body `{ sku, shortName, description, itemTypeId, categoryNodeId, brandId, defaultUomCode, barcodeType }` |
+
+La creación de Items desde una línea (sección 7) no tiene endpoint propio — compone `POST /api/v1/items` (Items, genérico) + `POST /lines/{id}/match-item` (arriba).
 
 ## 5. Estados (`ItemMatchStatus`)
 
@@ -85,25 +86,42 @@ Todos bajo `PurchaseReceptionController` (`api/v1/purchases/reception`), permiso
 
 ---
 
-## 7. Create Item From Purchase Reception (Fase 2.1)
+## 7. Create Item From Purchase Reception (Fase 2.1 / 2.1.1)
 
-Cierra el caso en que la línea no corresponde a ningún Item existente: en vez de dejarla `Pending` indefinidamente, el usuario puede crear el Item directamente desde el panel de matching (`ZHItemMatchingPanel` → botón "Crear Item" por línea).
+Cierra el caso en que la línea no corresponde a ningún Item existente: en vez de dejarla `Pending` indefinidamente, el usuario puede crear el Item directamente — desde el panel de matching de Recepción SRI (`ZHItemMatchingPanel`) **o** desde una línea de compra manual sin producto (`PurchasesPage.tsx`) — con el mismo componente reutilizable.
 
-### Flujo
+### Arquitectura (revisada en Fase 2.1.1 — sin backend propio)
 
-1. El usuario abre "Crear Item" sobre una línea `Pending`/`NeedsReview` sin `ItemId`.
-2. El modal (`CreateItemFromLineModal.tsx`) prellena SKU/nombre corto/descripción desde la línea y pide los campos que el XML no trae: Tipo de ítem, Categoría, Marca, Unidad de medida y Tipo de código de barras (catálogos ya existentes, `GET /api/v1/catalog/brands|category-nodes|barcode-types|sri-uom` + `useItemTypeOptions()` — los mismos que usa el formulario completo de Items).
-3. Al confirmar, `POST /api/v1/purchases/reception/lines/{id}/create-item` ejecuta `CreateItemFromReceptionLineCommandHandler`, que:
-   - Construye un `CreateItemCommand` (módulo Items) con el código de barras derivado en el propio backend — `SupplierAuxCode ?? SupplierCode` de la línea — y lo envía vía `IMediator.Send(...)`, heredando **toda** la validación y los conflictos (`SKU_DUPLICATE`, `BARCODE_DUPLICATE`, tipo/categoría/marca inexistentes) del módulo Items sin reimplementarlos.
-   - Si la creación del Item tiene éxito, llama a `ItemMatchConfirmationService.ConfirmAsync(...)` — el mismo servicio que usa la vinculación manual/masiva (Fase 2.0) — para crear `ItemSupplierCode` (si no existía ya para ese proveedor+código) y marcar la línea `ManuallyMatched` con `MatchedAt`/`MatchedBy`.
+La Fase 2.1 original introdujo un endpoint compuesto (`CreateItemFromReceptionLineCommand`) que creaba el Item y lo vinculaba a la línea en una sola llamada. La Fase 2.1.1 lo **eliminó** porque el requisito de reutilización ("`CreateItemModal` no debe conocer Compras") solo se cumple si el componente de creación depende exclusivamente del contrato genérico de Items — y ese endpoint compuesto ya asumía una `PurchaseReceptionLineId`. Se comprobó que no hacía falta: los dos primitivos ya existentes alcanzan.
+
+```
+frontend/src/components/items/CreateItemModal/   (genérico — no importa nada de Compras)
+        │  POST /api/v1/items  (CreateItemCommand, ya existente — acepta supplierCodes en el mismo alta)
+        ▼
+Item creado (+ ItemSupplierCode si initialData trajo supplierId+supplierCode)
+        │
+        │  (solo en el wrapper de Purchase Reception)
+        ▼
+POST /api/v1/purchases/reception/lines/{id}/match-item   (MatchItemCommand, Fase 2.0, ya existente)
+        │
+        ▼
+Línea ManuallyMatched (MatchedAt/MatchedBy) — ItemMatchConfirmationService no duplica el
+ItemSupplierCode porque SupplierCodeExistsAsync ya lo encuentra creado en el paso anterior.
+```
+
+- **Componente genérico** — `frontend/src/components/items/CreateItemModal/` (`CreateItemModal.tsx`, `CreateItemForm.tsx`, `createItemSchema.ts`, `types.ts`): recibe `CreateItemInitialData` opcional (nombre, código de barras, código/nombre/id de proveedor, UOM), llama únicamente `itemService.create(...)` (`POST /api/v1/items`), y devuelve el Item creado vía `onCreated`. No importa nada de `modules/purchases`.
+- **Wrapper de Recepción SRI** — `frontend/src/modules/purchases/components/CreateItemFromReceptionLineModal.tsx`: arma el `initialData` desde la línea (`barcode: supplierAuxCode ?? supplierCode`), y tras `onCreated` llama `purchaseReceptionService.matchItem(lineId, item.id)` para vincular — reutiliza el endpoint de vinculación manual de la Fase 2.0, no reimplementa nada.
+- **Integración en Compra manual** — `PurchasesPage.tsx` (`PurchaseLineCard`): usa el `CreateItemModal` **directamente**, sin wrapper — una línea de compra manual no tiene `PurchaseReceptionLineId`, así que no hay nada que vincular en el backend de Compras; el ítem creado simplemente se selecciona en la línea (mismo patrón que `ProductPicker.onSelect`).
 
 ### Restricciones (verificadas contra las reglas ya cerradas del módulo Items — no relajadas)
 
-- Solo permitido sobre líneas `Pending`/`NeedsReview` sin `ItemId` — una línea ya resuelta (`AutoMatched`/`ManuallyMatched`) responde `ITEM_ALREADY_MATCHED`.
-- **Código de barras**: derivado en el backend como `SupplierAuxCode ?? SupplierCode` de la línea (el auxiliar del XML suele ser el código de barras real; si no viene, se usa el principal) — el usuario solo elige el *tipo*. Si la línea no trae ningún código, la operación falla explícitamente (no se inventa un valor).
-- **Sin costo automático**: `Item` no tiene ningún campo de costo — `BaseSalePrice` (precio de **venta**, SSOT de Pricing Engine v2 CLOSED) nunca se completa desde `UnitPrice` de la línea. El costo se muestra en el modal como referencia informativa; el costo real del ítem se calculará más adelante vía `CurrentStock.AverageCost` cuando exista un movimiento de stock real (una compra).
+- Solo permitido sobre líneas sin `ItemId` — el botón "Crear Item" no aparece si la línea ya está `AutoMatched`/`ManuallyMatched`.
+- **Código de barras**: el *valor* lo decide quien invoca el modal (`initialData.barcode`, típicamente `supplierAuxCode ?? supplierCode` de la línea) — el usuario solo elige el *tipo* (catálogo tenant-editable, sin default seguro posible). Es un campo editable del formulario, no una inferencia oculta.
+- **Sin costo automático**: `Item` no tiene ningún campo de costo — `BaseSalePrice` (precio de **venta**, SSOT de Pricing Engine v2 CLOSED) nunca se completa desde el costo de compra. El costo real del ítem se calculará más adelante vía `CurrentStock.AverageCost` cuando exista un movimiento de stock real.
 - **Sin tax config automático**: `SaleVatCode`/`PurchaseVatCode`/`ExciseTaxCode` quedan `null` — no se infieren del XML (Infraestructura CLOSED — Configuración Tributaria). El usuario los completa después en la edición normal del Item.
-- **Reutilización, no reimplementación**: la validación de creación (`CreateItemCommandValidator`), la generación de la relación proveedor (`ItemSupplierCode`, vía `ItemMatchConfirmationService`) y los catálogos de selección (Tipo/Categoría/Marca/UOM/Barcode type) son exactamente los mismos que usa el alta manual de Items — no existe un segundo camino de creación.
+- **`ItemSupplierCode` sin duplicar**: se crea en el mismo alta del Item cuando `initialData` trae `supplierId`+`supplierCode`; si el wrapper de Recepción SRI además llama `matchItem`, `ItemMatchConfirmationService` detecta que ya existe (`SupplierCodeExistsAsync`) y no lo repite.
+- **Reutilización, no reimplementación**: validación de creación (`CreateItemCommandValidator`), catálogos de selección (Tipo/Categoría/Marca/UOM/Barcode type) y la relación proveedor son exactamente los mismos que usa el alta manual completa de Items.
+- **No atómico entre creación y vinculación** (solo aplica al wrapper de Recepción SRI): son dos llamadas HTTP separadas. Si la segunda (`matchItem`) falla tras crear el Item, se informa explícitamente ("Item creado, pero no se pudo vincular automáticamente") en vez de perder el Item o fingir una falla total — el usuario puede vincularlo manualmente después con "Vincular".
 
 ### Fuera de alcance — Fase 2.2 (Bulk Item Creation)
 

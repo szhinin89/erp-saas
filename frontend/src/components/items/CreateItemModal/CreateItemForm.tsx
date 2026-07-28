@@ -1,24 +1,13 @@
-import { useEffect } from 'react';
-import { useForm, FormProvider, useFormContext } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { ZHModal } from '../../../components/zh/ZHModal';
-import { ZHField, ZHFormActions, ZHFormAlert, ZHGrid } from '../../../components/zh/ZHForm';
+import { useFormContext } from 'react-hook-form';
+import { ZHField, ZHFormActions, ZHFormAlert, ZHGrid } from '../../zh/ZHForm';
 import { useAsync } from '../../../hooks/useAsync';
-import { apiGet } from '../../lib/apiEnvelope';
-import { applyServerErrors } from '../../lib/validationErrors';
-import { formatApiRequestError } from '../../lib/apiError';
-import { formatMoneyWithSymbol } from '../../../lib/sanitizers';
-import { useItemTypeOptions } from '../../items/hooks/useItemTypeOptions';
-import { purchaseReceptionService, type PurchaseReceptionLineMatch } from '../api/purchaseReceptionService';
-import { createItemFromLineSchema, type CreateItemFromLineFormValues } from '../schemas/createItemFromLineSchema';
-
-type Props = {
-  open: boolean;
-  line: PurchaseReceptionLineMatch | null;
-  supplierName: string;
-  onClose: () => void;
-  onCreated: () => void;
-};
+import { apiGet } from '../../../modules/lib/apiEnvelope';
+import { applyServerErrors } from '../../../modules/lib/validationErrors';
+import { formatApiRequestError } from '../../../modules/lib/apiError';
+import { useItemTypeOptions } from '../../../modules/items/hooks/useItemTypeOptions';
+import { itemService } from '../../../modules/items/api/itemService';
+import type { CreateItemModalFormValues } from './createItemSchema';
+import type { CreateItemInitialData, ItemCreatedResult } from './types';
 
 // CONTRACT: mismos catálogos ya consumidos por ItemFormTabs.tsx (formulario completo de Items) —
 // no se crea un segundo contrato, solo se reutilizan los GET ya existentes.
@@ -27,50 +16,14 @@ interface CategoryNodeApi { id: string; name: string; path: string; parentId: st
 interface UomOption { code: string; name: string; abbrev: string | null; }
 interface BarcodeTypeOption { code: string; name: string; }
 
-function buildDefaults(line: PurchaseReceptionLineMatch | null): CreateItemFromLineFormValues {
-  const code = (line?.supplierAuxCode ?? line?.supplierCode ?? '').trim().toUpperCase();
-  const description = line?.description ?? '';
-  return {
-    sku: code,
-    shortName: description.slice(0, 50),
-    description: description.slice(0, 254),
-    itemTypeId: '',
-    categoryNodeId: '',
-    brandId: '',
-    defaultUomCode: '',
-    barcodeType: '',
-  };
-}
+type Props = {
+  initialData?: CreateItemInitialData;
+  onClose: () => void;
+  onCreated: (item: ItemCreatedResult) => void;
+};
 
-export function CreateItemFromLineModal({ open, line, supplierName, onClose, onCreated }: Props) {
-  const form = useForm<CreateItemFromLineFormValues>({
-    resolver: zodResolver(createItemFromLineSchema),
-    defaultValues: buildDefaults(null),
-  });
-
-  useEffect(() => {
-    if (open) form.reset(buildDefaults(line));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, line]);
-
-  return (
-    <ZHModal open={open} onClose={onClose} size="md"
-      title="Crear producto desde recepción"
-      subtitle="El producto se crea en el catálogo de Items y queda vinculado automáticamente a esta línea."
-    >
-      {line && (
-        <FormProvider {...form}>
-          <CreateItemFromLineForm line={line} supplierName={supplierName} onClose={onClose} onCreated={onCreated} />
-        </FormProvider>
-      )}
-    </ZHModal>
-  );
-}
-
-function CreateItemFromLineForm({ line, supplierName, onClose, onCreated }: {
-  line: PurchaseReceptionLineMatch; supplierName: string; onClose: () => void; onCreated: () => void;
-}) {
-  const { register, handleSubmit, setError, formState: { errors, isSubmitting } } = useFormContext<CreateItemFromLineFormValues>();
+export function CreateItemForm({ initialData, onClose, onCreated }: Props) {
+  const { register, handleSubmit, setError, formState: { errors, isSubmitting } } = useFormContext<CreateItemModalFormValues>();
 
   const itemTypesState = useItemTypeOptions();
   const itemTypeOptions = itemTypesState.data ?? [];
@@ -96,8 +49,23 @@ function CreateItemFromLineForm({ line, supplierName, onClose, onCreated }: {
 
   const onSubmit = handleSubmit(async (values) => {
     try {
-      await purchaseReceptionService.createItemFromLine(line.lineId, values);
-      onCreated();
+      const item = await itemService.create({
+        sku: values.sku,
+        shortName: values.shortName,
+        description: values.description,
+        itemTypeId: values.itemTypeId,
+        categoryNodeId: values.categoryNodeId,
+        brandId: values.brandId,
+        defaultUomCode: values.defaultUomCode,
+        barcodes: [{ code: values.barcode, barcodeType: values.barcodeType, isPrimary: true }],
+        saleVatCode: null,
+        purchaseVatCode: null,
+        baseSalePrice: null,
+        supplierCodes: initialData?.supplierId && initialData?.supplierCode
+          ? [{ supplierId: initialData.supplierId, code: initialData.supplierCode, isPrimary: true }]
+          : undefined,
+      });
+      onCreated({ id: item.id, sku: item.sku, shortName: item.shortName });
     } catch (err) {
       applyServerErrors(err, setError, () => {
         setError('root', { type: 'server', message: formatApiRequestError(err, { generic: 'No se pudo crear el ítem.' }) });
@@ -111,14 +79,20 @@ function CreateItemFromLineForm({ line, supplierName, onClose, onCreated }: {
     <form onSubmit={onSubmit}>
       {rootError && <ZHFormAlert type="error" message={rootError} />}
 
-      <ZHGrid cols={2}>
-        <ZHField label="Proveedor" readOnly>
-          <input value={supplierName} disabled />
-        </ZHField>
-        <ZHField label="Costo de referencia" readOnly hint="Informativo — no se guarda en el ítem. El costo real se calculará al registrar la compra.">
-          <input value={formatMoneyWithSymbol(line.unitPrice)} disabled />
-        </ZHField>
-      </ZHGrid>
+      {(initialData?.supplierName || initialData?.supplierCode) && (
+        <ZHGrid cols={2}>
+          {initialData.supplierName && (
+            <ZHField label="Proveedor" readOnly>
+              <input value={initialData.supplierName} disabled />
+            </ZHField>
+          )}
+          {initialData.supplierCode && (
+            <ZHField label="Código proveedor" readOnly>
+              <input value={initialData.supplierCode} disabled />
+            </ZHField>
+          )}
+        </ZHGrid>
+      )}
 
       <ZHField label="SKU" required fieldError={errors.sku?.message}>
         <input {...register('sku')} />
@@ -155,15 +129,18 @@ function CreateItemFromLineForm({ line, supplierName, onClose, onCreated }: {
         </ZHField>
       </ZHGrid>
 
+      <ZHField label="Unidad de medida" required fieldError={errors.defaultUomCode?.message}>
+        <select {...register('defaultUomCode')}>
+          <option value="">Seleccione...</option>
+          {uomOptions.map(u => <option key={u.code} value={u.code}>{u.name}</option>)}
+        </select>
+      </ZHField>
+
       <ZHGrid cols={2}>
-        <ZHField label="Unidad de medida" required fieldError={errors.defaultUomCode?.message}>
-          <select {...register('defaultUomCode')}>
-            <option value="">Seleccione...</option>
-            {uomOptions.map(u => <option key={u.code} value={u.code}>{u.name}</option>)}
-          </select>
+        <ZHField label="Código de barras" required fieldError={errors.barcode?.message}>
+          <input {...register('barcode')} />
         </ZHField>
-        <ZHField label="Tipo de código de barras" required fieldError={errors.barcodeType?.message}
-          hint={`Código: ${line.supplierAuxCode ?? line.supplierCode ?? '—'}`}>
+        <ZHField label="Tipo de código de barras" required fieldError={errors.barcodeType?.message}>
           <select {...register('barcodeType')}>
             <option value="">Seleccione...</option>
             {barcodeTypeOptions.map(t => <option key={t.code} value={t.code}>{t.name}</option>)}

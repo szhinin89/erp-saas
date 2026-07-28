@@ -36,7 +36,7 @@ public sealed class FindItemMatchesHandler : IRequestHandler<FindItemMatchesQuer
         {
             if (line.MatchStatus is ItemMatchStatus.AutoMatched or ItemMatchStatus.ManuallyMatched)
             {
-                dtos.Add(ItemMatchingMapper.ToDto(line));
+                dtos.Add(ItemMatchingMapper.ToDto(line, document.SupplierId));
                 continue;
             }
 
@@ -44,7 +44,7 @@ public sealed class FindItemMatchesHandler : IRequestHandler<FindItemMatchesQuer
                 _tenant.TenantId, document.SupplierId, line.SupplierCode, line.SupplierAuxCode,
                 line.Description, MaxSuggestionsPerLine, cancellationToken);
 
-            dtos.Add(ItemMatchingMapper.ToDto(line, suggestions));
+            dtos.Add(ItemMatchingMapper.ToDto(line, document.SupplierId, suggestions));
         }
 
         return Result<IReadOnlyList<PurchaseReceptionLineMatchDto>>.Success(dtos);

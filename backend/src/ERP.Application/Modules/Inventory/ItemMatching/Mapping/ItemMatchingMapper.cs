@@ -6,8 +6,10 @@ namespace ERP.Application.Modules.Inventory.ItemMatching.Mapping;
 
 public static class ItemMatchingMapper
 {
-    public static PurchaseReceptionLineMatchDto ToDto(PurchaseReceptionLine line, IReadOnlyList<ItemMatchCandidateDto>? suggestions = null) => new(
+    public static PurchaseReceptionLineMatchDto ToDto(
+        PurchaseReceptionLine line, Guid? supplierId, IReadOnlyList<ItemMatchCandidateDto>? suggestions = null) => new(
         line.Id,
+        supplierId,
         line.SupplierCode,
         line.SupplierAuxCode,
         line.Description,

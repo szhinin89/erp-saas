@@ -15,6 +15,7 @@ export interface ItemMatchCandidate {
 
 export interface PurchaseReceptionLineMatch {
   lineId: string;
+  supplierId: string | null;
   supplierCode: string | null;
   supplierAuxCode: string | null;
   description: string;
@@ -35,24 +36,6 @@ export interface BulkMatchResultEntry {
   purchaseReceptionLineId: string;
   success: boolean;
   error: string | null;
-}
-
-export interface CreateItemFromLinePayload {
-  sku: string;
-  shortName: string;
-  description: string;
-  itemTypeId: string;
-  categoryNodeId: string;
-  brandId: string;
-  defaultUomCode: string;
-  barcodeType: string;
-}
-
-export interface CreateItemFromLineResult {
-  itemId: string;
-  itemName: string;
-  supplierCode: string | null;
-  status: string;
 }
 
 export interface PurchaseReceptionItem {
@@ -159,9 +142,5 @@ export const purchaseReceptionService = {
 
   bulkMatch(matches: BulkMatchEntry[]): Promise<{ results: BulkMatchResultEntry[] }> {
     return apiPost<{ results: BulkMatchResultEntry[] }>(`${BASE}/matching/bulk`, matches);
-  },
-
-  createItemFromLine(lineId: string, payload: CreateItemFromLinePayload): Promise<CreateItemFromLineResult> {
-    return apiPost<CreateItemFromLineResult>(`${BASE}/lines/${lineId}/create-item`, payload);
   },
 };

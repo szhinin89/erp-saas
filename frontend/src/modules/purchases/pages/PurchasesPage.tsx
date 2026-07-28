@@ -1,10 +1,12 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { ErpPageTemplate } from '../../../templates/ErpPageTemplate';
 import { ZHBtn, ZHField } from '../../../components/zh/ZHForm';
 import { SupplierPicker } from '../components/SupplierPicker';
 import { ProductPicker } from '../components/ProductPicker';
 import type { ProductProfile } from '../components/ProductPicker';
+import { CreateItemModal } from '../../../components/items/CreateItemModal/CreateItemModal';
+import type { ItemCreatedResult } from '../../../components/items/CreateItemModal/types';
 import { ZhDecimalInput } from '../../../components/zh/inputs/ZhDecimalInput';
 import { ZhNumberInput } from '../../../components/zh/inputs/ZhNumberInput';
 import { getDecimalConfig } from '../../../lib/config/decimal.config';
@@ -490,14 +492,17 @@ function PurchaseLineCard({ line: l, idx, ctx }: { line: any; idx: number; ctx: 
         <div className="pdl-line__num">{String(idx + 1).padStart(2, '0')}</div>
         <div className="pdl-line__product">
           {!l.itemId ? (
-            <ProductPicker disabled={ctx.fieldDisabled} vatRates={ctx.vatRatesMap} onSelect={(p: ProductProfile) => {
-              ctx.updateLine(l._key, 'itemId', p.id);
-              ctx.updateLine(l._key, 'description', `${p.sku} — ${p.name}`);
-              if (!l.vatCode) ctx.updateLine(l._key, 'vatCode', p.purchaseVatCode ?? '');
-              if (p.appliesExciseTax && p.exciseTaxCode) ctx.updateLine(l._key, 'iceCode', p.exciseTaxCode);
-              const wh = l.warehouseId || ctx.formWatch.globalWarehouseId;
-              if (wh) void ctx.fetchItemContext(l._key, p.id, wh);
-            }} />
+            <>
+              <ProductPicker disabled={ctx.fieldDisabled} vatRates={ctx.vatRatesMap} onSelect={(p: ProductProfile) => {
+                ctx.updateLine(l._key, 'itemId', p.id);
+                ctx.updateLine(l._key, 'description', `${p.sku} — ${p.name}`);
+                if (!l.vatCode) ctx.updateLine(l._key, 'vatCode', p.purchaseVatCode ?? '');
+                if (p.appliesExciseTax && p.exciseTaxCode) ctx.updateLine(l._key, 'iceCode', p.exciseTaxCode);
+                const wh = l.warehouseId || ctx.formWatch.globalWarehouseId;
+                if (wh) void ctx.fetchItemContext(l._key, p.id, wh);
+              }} />
+              <CreateItemLineAction line={l} ctx={ctx} disabled={ctx.fieldDisabled} />
+            </>
           ) : (
             <>
               <div className="pdl-line__product-name">
@@ -660,6 +665,44 @@ function PurchaseLineCard({ line: l, idx, ctx }: { line: any; idx: number; ctx: 
         </div>
       )}
     </div>
+  );
+}
+
+/**
+ * "Crear Item" para una línea de compra manual sin producto asignado — usa el CreateItemModal
+ * genérico directamente (sin wrapper): esta línea no tiene PurchaseReceptionLineId, por lo que no
+ * hay nada que vincular en el backend de Compras más allá de seleccionar el ítem en el formulario,
+ * igual que hace ProductPicker.onSelect.
+ */
+function CreateItemLineAction({ line: l, ctx, disabled }: { line: any; ctx: ReturnType<typeof usePurchasesPage>; disabled?: boolean }) {
+  const [open, setOpen] = useState(false);
+
+  const handleCreated = (item: ItemCreatedResult) => {
+    setOpen(false);
+    ctx.updateLine(l._key, 'itemId', item.id);
+    ctx.updateLine(l._key, 'description', `${item.sku} — ${item.shortName}`);
+    const wh = l.warehouseId || ctx.formWatch.globalWarehouseId;
+    if (wh) void ctx.fetchItemContext(l._key, item.id, wh);
+  };
+
+  return (
+    <>
+      <ZHBtn variant="ghost" size="xs" type="button" disabled={disabled} onClick={() => setOpen(true)}>
+        Crear Item
+      </ZHBtn>
+      <CreateItemModal
+        open={open}
+        initialData={{
+          name: l.description || undefined,
+          barcode: l.xmlSupplierAuxCode ?? l.xmlSupplierCode ?? undefined,
+          supplierCode: l.xmlSupplierCode ?? undefined,
+          supplierId: ctx.formWatch.supplierId || undefined,
+          source: l.xmlSupplierCode ? 'PurchaseReception' : 'Manual',
+        }}
+        onClose={() => setOpen(false)}
+        onCreated={handleCreated}
+      />
+    </>
   );
 }
 
