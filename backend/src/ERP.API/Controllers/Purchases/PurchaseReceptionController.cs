@@ -13,6 +13,7 @@ using ERP.Application.Modules.Purchases.PurchaseReception.DTOs;
 using ERP.Application.Modules.Purchases.PurchaseReception.UseCases.CreatePurchaseReceptionDraft;
 using ERP.Application.Modules.Purchases.PurchaseReception.UseCases.DownloadPurchaseReceptionXml;
 using ERP.Application.Modules.Purchases.PurchaseReception.UseCases.ImportPurchaseReception;
+using ERP.Application.Modules.Purchases.UseCases.PurchaseReception.CreateItemFromReceptionLine;
 using ERP.Domain.Kernel.Permissions;
 
 namespace ERP.API.Controllers.Purchases;
@@ -76,6 +77,18 @@ public sealed class PurchaseReceptionController : ControllerBase
     [ProducesResponseType(typeof(Contracts.ApiResponse<BulkMatchItemsResultDto>), StatusCodes.Status200OK)]
     public async Task<IActionResult> BulkMatch([FromBody] IReadOnlyList<BulkMatchItemEntry> matches, CancellationToken ct)
         => this.ToOkOrBadRequest(await _mediator.Send(new BulkMatchItemsCommand(matches), ct));
+
+    [HttpPost("lines/{id:guid}/create-item")]
+    [Authorize(Policy = $"perm:{PurchasePermissions.View}")]
+    [ProducesResponseType(typeof(Contracts.ApiResponse<CreateItemFromReceptionLineResultDto>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> CreateItemFromLine(Guid id, [FromBody] CreateItemFromReceptionLineRequest body, CancellationToken ct)
+        => this.ToOkOrBadRequest(await _mediator.Send(new CreateItemFromReceptionLineCommand(
+            id, body.Sku, body.ShortName, body.Description, body.ItemTypeId,
+            body.CategoryNodeId, body.BrandId, body.DefaultUomCode, body.BarcodeType), ct));
 }
 
 public sealed record MatchItemRequest(Guid ItemId);
+
+public sealed record CreateItemFromReceptionLineRequest(
+    string Sku, string ShortName, string Description, Guid ItemTypeId,
+    Guid CategoryNodeId, Guid BrandId, string DefaultUomCode, string BarcodeType);

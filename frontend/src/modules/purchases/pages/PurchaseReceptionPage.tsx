@@ -94,7 +94,7 @@ export function PurchaseReceptionPage() {
         }
         return (
           <ZHBtn variant="secondary" size="xs" type="button"
-            onClick={() => ctx.openMatchingPanel(row.documentId)}>
+            onClick={() => ctx.openMatchingPanel(row.documentId, row.supplierName)}>
             Vincular productos
           </ZHBtn>
         );
@@ -177,6 +177,7 @@ export function PurchaseReceptionPage() {
       <ZHItemMatchingPanel
         open={ctx.matchingDocumentId !== null}
         documentId={ctx.matchingDocumentId}
+        supplierName={ctx.matchingSupplierName}
         onClose={ctx.closeMatchingPanel}
       />
     </ErpPageTemplate>

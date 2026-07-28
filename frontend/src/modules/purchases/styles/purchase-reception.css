@@ -65,3 +65,9 @@
   color: var(--color-text-secondary);
   font-size: 13px;
 }
+
+.pur-matching-actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}

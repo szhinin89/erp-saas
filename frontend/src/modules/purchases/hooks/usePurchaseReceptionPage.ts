@@ -20,6 +20,7 @@ export function usePurchaseReceptionPage() {
   const [xmlRowState, setXmlRowState] = useState<Record<string, 'loading' | 'error'>>({});
   // Panel de Item Matching (Vincular productos) — documento activo o null si está cerrado.
   const [matchingDocumentId, setMatchingDocumentId] = useState<string | null>(null);
+  const [matchingSupplierName, setMatchingSupplierName] = useState<string>('');
 
   const handleFileSelected = async (file: File) => {
     setUploading(true);
@@ -88,7 +89,11 @@ export function usePurchaseReceptionPage() {
     xmlRowState,
     handleDownloadXml,
     matchingDocumentId,
-    openMatchingPanel: setMatchingDocumentId,
+    matchingSupplierName,
+    openMatchingPanel: (documentId: string, supplierName: string) => {
+      setMatchingDocumentId(documentId);
+      setMatchingSupplierName(supplierName);
+    },
     closeMatchingPanel: () => setMatchingDocumentId(null),
   };
 }

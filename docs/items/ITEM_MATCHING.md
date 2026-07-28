@@ -1,6 +1,6 @@
 # Item Matching — Vinculación de Items desde Purchase Reception
 
-**Estado**: ✅ Implementado (2026-07-27)
+**Estado**: ✅ Implementado (2026-07-27) — ampliado con "Create Item From Purchase Reception" (Fase 2.1, 2026-07-27)
 **Nivel documental**: 3 (detalle técnico especializado)
 **Precede a este documento**: [`docs/items/ITEM_MATCHING_AUDIT.md`](ITEM_MATCHING_AUDIT.md) — auditoría que identificó el vacío funcional cerrado aquí.
 
@@ -58,8 +58,8 @@ Una línea inválida dentro de un lote (ítem inexistente, línea ya no encontra
 - **Auto-resolución solo por código exacto de proveedor** — nunca por similitud, para no vincular un ítem incorrecto sin revisión humana.
 - **`ItemSupplierCode` se crea únicamente al confirmar** (automático o manual) — nunca de forma especulativa por una simple sugerencia.
 - **Umbral de similitud**: `0.35` (valor por defecto de `pg_trgm`) para que una línea pase de `Pending` a `NeedsReview`.
-- **No se crean Items nuevos en esta fase** — una línea sin candidato queda `Pending` indefinidamente hasta que el catálogo tenga el producto o el usuario lo busque manualmente.
 - **No se infieren impuestos desde el XML** — el motor de matching solo resuelve `ItemId`; los impuestos siguen viniendo exclusivamente de `Item.TaxConfig` (Infraestructura CLOSED — Configuración Tributaria).
+- **Creación de Items nuevos**: soportada desde una línea sin match (ver sección 7) — pero solo individual, nunca masiva ni con datos inferidos más allá de lo que documenta esa sección.
 
 ---
 
@@ -72,6 +72,7 @@ Todos bajo `PurchaseReceptionController` (`api/v1/purchases/reception`), permiso
 | `GET` | `/{id}/lines` | Lista las líneas del documento con estado + sugerencias para las no resueltas |
 | `POST` | `/lines/{id}/match-item` | Vinculación manual de una línea — body `{ itemId }` |
 | `POST` | `/matching/bulk` | Vinculación masiva — body `[{ purchaseReceptionLineId, itemId }]` |
+| `POST` | `/lines/{id}/create-item` | Crea un Item nuevo desde la línea y la vincula (sección 7) — body `{ sku, shortName, description, itemTypeId, categoryNodeId, brandId, defaultUomCode, barcodeType }` |
 
 ## 5. Estados (`ItemMatchStatus`)
 
@@ -84,8 +85,37 @@ Todos bajo `PurchaseReceptionController` (`api/v1/purchases/reception`), permiso
 
 ---
 
-## 6. Evolución futura (fuera de alcance de esta fase)
+## 7. Create Item From Purchase Reception (Fase 2.1)
 
-- **Creación rápida de Items desde una línea sin match**: hoy una línea `Pending` sin candidato queda así indefinidamente; una fase futura podría ofrecer un atajo para crear el Item directamente desde el panel de matching, precargando SKU/descripción/proveedor — requiere su propio diseño (validaciones, impuestos obligatorios, categoría) y no se implementa en esta fase por decisión explícita del alcance.
+Cierra el caso en que la línea no corresponde a ningún Item existente: en vez de dejarla `Pending` indefinidamente, el usuario puede crear el Item directamente desde el panel de matching (`ZHItemMatchingPanel` → botón "Crear Item" por línea).
+
+### Flujo
+
+1. El usuario abre "Crear Item" sobre una línea `Pending`/`NeedsReview` sin `ItemId`.
+2. El modal (`CreateItemFromLineModal.tsx`) prellena SKU/nombre corto/descripción desde la línea y pide los campos que el XML no trae: Tipo de ítem, Categoría, Marca, Unidad de medida y Tipo de código de barras (catálogos ya existentes, `GET /api/v1/catalog/brands|category-nodes|barcode-types|sri-uom` + `useItemTypeOptions()` — los mismos que usa el formulario completo de Items).
+3. Al confirmar, `POST /api/v1/purchases/reception/lines/{id}/create-item` ejecuta `CreateItemFromReceptionLineCommandHandler`, que:
+   - Construye un `CreateItemCommand` (módulo Items) con el código de barras derivado en el propio backend — `SupplierAuxCode ?? SupplierCode` de la línea — y lo envía vía `IMediator.Send(...)`, heredando **toda** la validación y los conflictos (`SKU_DUPLICATE`, `BARCODE_DUPLICATE`, tipo/categoría/marca inexistentes) del módulo Items sin reimplementarlos.
+   - Si la creación del Item tiene éxito, llama a `ItemMatchConfirmationService.ConfirmAsync(...)` — el mismo servicio que usa la vinculación manual/masiva (Fase 2.0) — para crear `ItemSupplierCode` (si no existía ya para ese proveedor+código) y marcar la línea `ManuallyMatched` con `MatchedAt`/`MatchedBy`.
+
+### Restricciones (verificadas contra las reglas ya cerradas del módulo Items — no relajadas)
+
+- Solo permitido sobre líneas `Pending`/`NeedsReview` sin `ItemId` — una línea ya resuelta (`AutoMatched`/`ManuallyMatched`) responde `ITEM_ALREADY_MATCHED`.
+- **Código de barras**: derivado en el backend como `SupplierAuxCode ?? SupplierCode` de la línea (el auxiliar del XML suele ser el código de barras real; si no viene, se usa el principal) — el usuario solo elige el *tipo*. Si la línea no trae ningún código, la operación falla explícitamente (no se inventa un valor).
+- **Sin costo automático**: `Item` no tiene ningún campo de costo — `BaseSalePrice` (precio de **venta**, SSOT de Pricing Engine v2 CLOSED) nunca se completa desde `UnitPrice` de la línea. El costo se muestra en el modal como referencia informativa; el costo real del ítem se calculará más adelante vía `CurrentStock.AverageCost` cuando exista un movimiento de stock real (una compra).
+- **Sin tax config automático**: `SaleVatCode`/`PurchaseVatCode`/`ExciseTaxCode` quedan `null` — no se infieren del XML (Infraestructura CLOSED — Configuración Tributaria). El usuario los completa después en la edición normal del Item.
+- **Reutilización, no reimplementación**: la validación de creación (`CreateItemCommandValidator`), la generación de la relación proveedor (`ItemSupplierCode`, vía `ItemMatchConfirmationService`) y los catálogos de selección (Tipo/Categoría/Marca/UOM/Barcode type) son exactamente los mismos que usa el alta manual de Items — no existe un segundo camino de creación.
+
+### Fuera de alcance — Fase 2.2 (Bulk Item Creation)
+
+- Creación masiva de Items desde múltiples líneas a la vez.
+- Detección avanzada de duplicados antes de crear (más allá del `SKU_DUPLICATE`/`BARCODE_DUPLICATE` ya heredado de Items).
+- Sugerencia automática de categoría/UOM a partir del historial del proveedor o de ítems similares.
+- Creación automática de precio de venta (`BaseSalePrice`) — permanece una decisión manual del usuario, ver Estándar de Precisión Numérica y Pricing Engine v2.
+
+---
+
+## 8. Evolución futura (fuera de alcance de esta fase)
+
 - **Historial de precio de compra por proveedor**: `ItemSupplierCode` sigue sin campo de precio (ver auditoría original) — Item Matching no lo introduce.
 - **Auditoría de dominio dedicada** (`PurchaseReceptionLineAudit`): evaluada y diferida — la infraestructura CLOSED de Entity Audit (`AI-RULES/AUDIT-INFRASTRUCTURE.md`) ya soporta agregarla sin tocar sus contratos FROZEN cuando el volumen de uso lo justifique.
+- **Bulk Item Creation** (Fase 2.2): ver sección 7.

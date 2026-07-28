@@ -4,6 +4,7 @@ import { Badge, EmptyState, ErrorState } from '../../../components/PageShell';
 import { ZHBtn } from '../../../components/zh/ZHForm';
 import { formatMoneyWithSymbol } from '../../../lib/sanitizers';
 import { ProductPicker, type ProductProfile } from './ProductPicker';
+import { CreateItemFromLineModal } from './CreateItemFromLineModal';
 import {
   purchaseReceptionService,
   type PurchaseReceptionLineMatch,
@@ -12,6 +13,7 @@ import {
 type Props = {
   open: boolean;
   documentId: string | null;
+  supplierName: string;
   onClose: () => void;
 };
 
@@ -31,7 +33,7 @@ const STATUS_VARIANT: Record<PurchaseReceptionLineMatch['matchStatus'], 'green' 
 
 type ChoiceLabel = { itemId: string; label: string } | null;
 
-export function ZHItemMatchingPanel({ open, documentId, onClose }: Props) {
+export function ZHItemMatchingPanel({ open, documentId, supplierName, onClose }: Props) {
   const [lines, setLines] = useState<PurchaseReceptionLineMatch[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -39,6 +41,7 @@ export function ZHItemMatchingPanel({ open, documentId, onClose }: Props) {
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [applyingId, setApplyingId] = useState<string | null>(null);
   const [bulkApplying, setBulkApplying] = useState(false);
+  const [createItemLine, setCreateItemLine] = useState<PurchaseReceptionLineMatch | null>(null);
 
   const load = useCallback(async () => {
     if (!documentId) return;
@@ -204,11 +207,17 @@ export function ZHItemMatchingPanel({ open, documentId, onClose }: Props) {
                     </td>
                     <td>
                       {!resolved && (
-                        <ZHBtn variant="secondary" size="xs" type="button"
-                          disabled={!choice || applyingId === line.lineId}
-                          onClick={() => void handleApplyOne(line.lineId)}>
-                          {applyingId === line.lineId ? 'Aplicando...' : 'Vincular'}
-                        </ZHBtn>
+                        <div className="pur-matching-actions">
+                          <ZHBtn variant="secondary" size="xs" type="button"
+                            disabled={!choice || applyingId === line.lineId}
+                            onClick={() => void handleApplyOne(line.lineId)}>
+                            {applyingId === line.lineId ? 'Aplicando...' : 'Vincular'}
+                          </ZHBtn>
+                          <ZHBtn variant="ghost" size="xs" type="button"
+                            onClick={() => setCreateItemLine(line)}>
+                            Crear Item
+                          </ZHBtn>
+                        </div>
                       )}
                     </td>
                   </tr>
@@ -218,6 +227,14 @@ export function ZHItemMatchingPanel({ open, documentId, onClose }: Props) {
           </table>
         </>
       )}
+
+      <CreateItemFromLineModal
+        open={createItemLine !== null}
+        line={createItemLine}
+        supplierName={supplierName}
+        onClose={() => setCreateItemLine(null)}
+        onCreated={() => { setCreateItemLine(null); void load(); }}
+      />
     </ZHModal>
   );
 }

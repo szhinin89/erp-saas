@@ -37,6 +37,24 @@ export interface BulkMatchResultEntry {
   error: string | null;
 }
 
+export interface CreateItemFromLinePayload {
+  sku: string;
+  shortName: string;
+  description: string;
+  itemTypeId: string;
+  categoryNodeId: string;
+  brandId: string;
+  defaultUomCode: string;
+  barcodeType: string;
+}
+
+export interface CreateItemFromLineResult {
+  itemId: string;
+  itemName: string;
+  supplierCode: string | null;
+  status: string;
+}
+
 export interface PurchaseReceptionItem {
   supplierRuc: string;
   supplierName: string;
@@ -141,5 +159,9 @@ export const purchaseReceptionService = {
 
   bulkMatch(matches: BulkMatchEntry[]): Promise<{ results: BulkMatchResultEntry[] }> {
     return apiPost<{ results: BulkMatchResultEntry[] }>(`${BASE}/matching/bulk`, matches);
+  },
+
+  createItemFromLine(lineId: string, payload: CreateItemFromLinePayload): Promise<CreateItemFromLineResult> {
+    return apiPost<CreateItemFromLineResult>(`${BASE}/lines/${lineId}/create-item`, payload);
   },
 };
