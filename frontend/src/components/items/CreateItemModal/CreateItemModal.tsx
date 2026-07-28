@@ -18,6 +18,8 @@ function buildDefaults(initialData?: CreateItemInitialData): CreateItemModalForm
     defaultUomCode: initialData?.defaultUomCode ?? '',
     barcode: initialData?.barcode ?? '',
     barcodeType: '',
+    salePrice: null,
+    updatePrice: false,
   };
 }
 
@@ -38,7 +40,7 @@ export function CreateItemModal({ open, initialData, onClose, onCreated }: Creat
   }, [open, initialData]);
 
   return (
-    <ZHModal open={open} onClose={onClose} size="md"
+    <ZHModal open={open} onClose={onClose} size="lg"
       title="Crear producto"
       subtitle="El producto se crea en el catálogo de Items."
     >

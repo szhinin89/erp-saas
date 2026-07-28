@@ -708,6 +708,12 @@
   letter-spacing: 0.05em;
   margin-bottom: var(--space-2);
 }
+.pdl-ctx-col__loading {
+  display: inline-flex;
+  align-items: center;
+  margin-left: var(--space-1);
+  color: var(--color-primary);
+}
 .pdl-ctx-col__badges {
   display: flex;
   gap: var(--space-1);
@@ -727,6 +733,55 @@
    .pdl-ctx-col__margin/.pdl-margin-*/.pdl-add*/.pdl-empty movidos a
    modules/purchases/styles/purchases-invoice.css */
 
+/* ── Bloques de presentación por línea (Producto XML / Item ERP / Info. Comercial) ── */
+.pdl-line__status {
+  display: flex;
+  margin: 0 var(--space-5) var(--space-2);
+}
+.pdl-blocks {
+  display: grid;
+  grid-template-columns: 1.3fr 1fr 1fr;
+  gap: var(--space-3);
+  margin: 0 var(--space-5) var(--space-4);
+}
+.pdl-block {
+  background: var(--color-surface-container-low);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-3) var(--space-4);
+}
+/* Bloque de análisis (stock/costos/rentabilidad): menor peso visual que Producto XML e Item ERP. */
+.pdl-block--muted {
+  background: transparent;
+  opacity: .85;
+}
+.pdl-block--muted .pdl-cost-val,
+.pdl-block--muted .pdl-stock-val {
+  font-size: 12px;
+}
+.pdl-block__header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  margin-bottom: var(--space-2);
+  color: var(--color-text-secondary);
+}
+.pdl-block__title {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin: 0;
+}
+.pdl-block__hint {
+  font-size: 11px;
+  color: var(--color-text-secondary);
+  font-style: italic;
+  margin: 0 0 var(--space-2);
+}
+.pdl-cost-label--strong { color: var(--color-text-primary); font-weight: 700; }
+.pdl-cost-val--strong { font-size: 15px; font-weight: 800; }
+
 /* ── Responsive (.pdl-line__*/.pdl-ctx compartidos con Kardex) ── */
 @media (max-width: 1100px) {
   .pdl-line__main {
@@ -734,9 +789,11 @@
     gap: var(--space-3);
   }
   .pdl-line__context { grid-template-columns: repeat(2, 1fr); }
+  .pdl-blocks { grid-template-columns: 1fr 1fr; }
 }
 @media (max-width: 640px) {
   .pdl-line__main { grid-template-columns: 1fr; }
+  .pdl-blocks { grid-template-columns: 1fr; }
   .pdl-line__context { grid-template-columns: 1fr; }
 }
 .pf-row-action--active {

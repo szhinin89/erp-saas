@@ -324,6 +324,19 @@ public sealed class PurchaseInvoice : AuditableEntity, ITenantScopedEntity, ICom
                 throw new InvalidOperationException($"Línea '{line.Description}': el producto requiere una bodega destino.");
         }
 
+        // Líneas que provienen de Recepción Electrónica (PurchaseReceptionLineId != null) y aún no
+        // tienen ItemId resuelto son, por construcción, Item Matching pendiente (Pending/NeedsReview)
+        // — no se confirma la compra, para no generar Inventario/Kardex/CxP/Contabilidad con un
+        // vínculo de producto sin resolver. Líneas manuales (PurchaseReceptionLineId == null) siguen
+        // permitiendo ItemId nulo, igual que antes — ese caso no es "matching pendiente".
+        var unresolved = _lines.Where(l => l.PurchaseReceptionLineId.HasValue && l.ItemId is null).ToList();
+        if (unresolved.Count > 0)
+        {
+            var names = string.Join(", ", unresolved.Select(l => l.Description));
+            throw new InvalidOperationException(
+                $"No se puede confirmar la compra: hay productos pendientes de vinculación ({names}).");
+        }
+
         foreach (var line in _lines)
             line.FreezeCosts();
 

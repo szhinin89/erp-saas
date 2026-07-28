@@ -13,6 +13,15 @@ export const createItemModalSchema = z.object({
   defaultUomCode: z.string().min(1, 'La unidad de medida es obligatoria.'),
   barcode: z.string().trim().min(1, 'El código de barras es obligatorio.').max(100, 'El código de barras no puede exceder 100 caracteres.'),
   barcodeType: z.string().min(1, 'El tipo de código de barras es obligatorio.'),
-});
+  // Precio de Venta — opcional; solo relevante cuando initialData.purchaseContext habilita la
+  // sección de simulación. `null` = campo vacío (nunca se infiere un valor). No impone reglas
+  // comerciales de margen — solo valida que, si se ingresa, no sea negativo.
+  salePrice: z.number().nullable().optional()
+    .refine(v => v === null || v === undefined || v >= 0, { message: 'El precio no puede ser negativo.' }),
+  updatePrice: z.boolean().default(false),
+}).refine(
+  data => !data.updatePrice || (data.salePrice != null && data.salePrice > 0),
+  { message: 'Ingrese un precio de venta válido para actualizar el precio del Item.', path: ['salePrice'] },
+);
 
 export type CreateItemModalFormValues = z.infer<typeof createItemModalSchema>;

@@ -304,6 +304,23 @@ public sealed class Item : MasterEntity, ITenantScopedEntity
         return supplierCode;
     }
 
+    /// <summary>
+    /// Desactiva (soft-disable, nunca elimina) un código de proveedor previamente registrado por
+    /// una conciliación automática de Item Matching que resultó incorrecta — nunca toca códigos
+    /// marcados como primarios, que se asumen curados manualmente por el usuario. No-op si el
+    /// código no existe o ya está inactivo.
+    /// </summary>
+    public void DisableSupplierCode(Guid supplierId, string code, Guid updatedBy)
+    {
+        var supplierCode = _supplierCodes.FirstOrDefault(sc =>
+            sc.SupplierId == supplierId && sc.Code == code.Trim() && sc.IsActive && !sc.IsPrimary);
+        if (supplierCode is null)
+            return;
+
+        supplierCode.Disable();
+        SetUpdated(updatedBy);
+    }
+
     // ── Disable / Enable con invariante de negocio ────────────────────────
 
     public new void Disable(Guid updatedBy)

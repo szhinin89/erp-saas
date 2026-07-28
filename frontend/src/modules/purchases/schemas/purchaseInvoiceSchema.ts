@@ -15,6 +15,10 @@ export const purchaseLineSchema = z.object({
   notes: z.string().nullable().optional(),
   purchaseOrderDetailId: z.string().nullable().optional(),
   orderedQuantity: z.number().nullable().optional(),
+  // Id de la PurchaseReceptionLine de origen — presente solo en líneas que vienen de Recepción
+  // Electrónica (recién cargadas con loadFromReception o reabiertas con loadForEdit). Permite que
+  // Vincular/Desvincular en /purchases reutilice el mismo backend de Item Matching de Recepción.
+  purchaseReceptionLineId: z.string().nullable().optional(),
   // Runtime-only context (not sent to API)
   context: z.custom<PurchaseItemContextDto>().optional(),
   _contextLoading: z.boolean().optional(),

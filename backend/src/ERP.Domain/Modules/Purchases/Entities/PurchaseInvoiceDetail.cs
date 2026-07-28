@@ -71,6 +71,17 @@ public sealed class PurchaseInvoiceDetail : IMustHaveTenant
     public Guid?    PurchaseOrderDetailId { get; private set; }
     public decimal? OrderedQuantity       { get; private set; }
 
+    // ── Purchase Reception Traceability ─────────────────────────────────
+    /// <summary>
+    /// Id de la <c>PurchaseReceptionLine</c> de origen cuando esta línea se precargó desde
+    /// Recepción Electrónica — null en líneas manuales. Permite que la pantalla de Compras
+    /// reutilice el mismo backend de Item Matching de Recepción (ADR-028) para vincular/
+    /// desvincular sin duplicar lógica. No implica ningún vínculo vivo de datos: el resto de
+    /// los campos de esta línea siguen siendo una copia congelada al momento de crear/actualizar
+    /// el borrador, igual que el resto del "Product Snapshot".
+    /// </summary>
+    public Guid?    PurchaseReceptionLineId { get; private set; }
+
     // ── Meta ────────────────────────────────────────────────────────────
     public string?  Notes     { get; private set; }
     public short    SortOrder { get; private set; }
@@ -103,7 +114,8 @@ public sealed class PurchaseInvoiceDetail : IMustHaveTenant
         decimal conversionFactor      = 1m,
         string? snapshotWarehouseCode = null,
         Guid?   purchaseOrderDetailId = null,
-        decimal? orderedQuantity      = null)
+        decimal? orderedQuantity      = null,
+        Guid?   purchaseReceptionLineId = null)
     {
         if (string.IsNullOrWhiteSpace(description))
             throw new ArgumentException("La descripción de la línea es obligatoria.", nameof(description));
@@ -142,6 +154,7 @@ public sealed class PurchaseInvoiceDetail : IMustHaveTenant
             SnapshotWarehouseCode = snapshotWarehouseCode?.Trim(),
             PurchaseOrderDetailId = purchaseOrderDetailId,
             OrderedQuantity       = orderedQuantity,
+            PurchaseReceptionLineId = purchaseReceptionLineId,
             Notes                 = notes?.Trim(),
             IsFrozen              = false,
         };

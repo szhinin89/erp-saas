@@ -18,7 +18,8 @@ public sealed record PurchaseLineInput(
     Guid? ItemId, string Description, decimal Quantity, decimal UnitPrice,
     string VatCode, Guid? WarehouseId = null, string? Notes = null,
     decimal DiscountPct = 0, string? IceCode = null,
-    Guid? PurchaseOrderDetailId = null, decimal? OrderedQuantity = null);
+    Guid? PurchaseOrderDetailId = null, decimal? OrderedQuantity = null,
+    Guid? PurchaseReceptionLineId = null);
 
 /// <summary>
 /// Resolución de código de proveedor compartida entre Create/UpdatePurchaseDraftHandler
@@ -255,7 +256,8 @@ public sealed class CreatePurchaseDraftHandler : IRequestHandler<CreatePurchaseD
                 conversionFactor: 1m,
                 snapshotWarehouseCode: snapshotWhCode,
                 purchaseOrderDetailId: l.PurchaseOrderDetailId,
-                orderedQuantity: l.OrderedQuantity);
+                orderedQuantity: l.OrderedQuantity,
+                purchaseReceptionLineId: l.PurchaseReceptionLineId);
 
             var taxResult = await TaxHelper.ResolveTaxesAsync(line, _tax, ct);
             if (taxResult is not null) return new(null!, taxResult);
@@ -368,7 +370,8 @@ public sealed class UpdatePurchaseDraftHandler : IRequestHandler<UpdatePurchaseD
                     conversionFactor: 1m,
                     snapshotWarehouseCode: snapshotWhCode,
                     purchaseOrderDetailId: l.PurchaseOrderDetailId,
-                    orderedQuantity: l.OrderedQuantity);
+                    orderedQuantity: l.OrderedQuantity,
+                    purchaseReceptionLineId: l.PurchaseReceptionLineId);
 
                 var taxResult = await TaxHelper.ResolveTaxesAsync(line, _tax, ct);
                 if (taxResult is not null) return taxResult;

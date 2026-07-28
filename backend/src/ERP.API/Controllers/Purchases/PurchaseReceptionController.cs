@@ -8,7 +8,9 @@ using ERP.Application.Common.Models;
 using ERP.Application.Modules.Inventory.ItemMatching.DTOs;
 using ERP.Application.Modules.Inventory.ItemMatching.UseCases.BulkMatchItems;
 using ERP.Application.Modules.Inventory.ItemMatching.UseCases.FindItemMatches;
+using ERP.Application.Modules.Inventory.ItemMatching.UseCases.GetLineMatch;
 using ERP.Application.Modules.Inventory.ItemMatching.UseCases.MatchItem;
+using ERP.Application.Modules.Inventory.ItemMatching.UseCases.UnmatchItem;
 using ERP.Application.Modules.Purchases.PurchaseReception.DTOs;
 using ERP.Application.Modules.Purchases.PurchaseReception.UseCases.CreatePurchaseReceptionDraft;
 using ERP.Application.Modules.Purchases.PurchaseReception.UseCases.DownloadPurchaseReceptionXml;
@@ -65,11 +67,23 @@ public sealed class PurchaseReceptionController : ControllerBase
     public async Task<IActionResult> GetLines(Guid id, CancellationToken ct)
         => this.ToOkOrBadRequest(await _mediator.Send(new FindItemMatchesQuery(id), ct));
 
+    [HttpGet("lines/{id:guid}")]
+    [Authorize(Policy = $"perm:{PurchasePermissions.View}")]
+    [ProducesResponseType(typeof(Contracts.ApiResponse<PurchaseReceptionLineMatchDto>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetLineMatch(Guid id, CancellationToken ct)
+        => this.ToOkOrBadRequest(await _mediator.Send(new GetPurchaseReceptionLineMatchQuery(id), ct));
+
     [HttpPost("lines/{id:guid}/match-item")]
     [Authorize(Policy = $"perm:{PurchasePermissions.View}")]
     [ProducesResponseType(typeof(Contracts.ApiResponse<PurchaseReceptionLineMatchDto>), StatusCodes.Status200OK)]
     public async Task<IActionResult> MatchItem(Guid id, [FromBody] MatchItemRequest body, CancellationToken ct)
         => this.ToOkOrBadRequest(await _mediator.Send(new MatchItemCommand(id, body.ItemId), ct));
+
+    [HttpPost("lines/{id:guid}/unmatch-item")]
+    [Authorize(Policy = $"perm:{PurchasePermissions.View}")]
+    [ProducesResponseType(typeof(Contracts.ApiResponse<PurchaseReceptionLineMatchDto>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> UnmatchItem(Guid id, CancellationToken ct)
+        => this.ToOkOrBadRequest(await _mediator.Send(new UnmatchPurchaseReceptionItemCommand(id), ct));
 
     [HttpPost("matching/bulk")]
     [Authorize(Policy = $"perm:{PurchasePermissions.View}")]

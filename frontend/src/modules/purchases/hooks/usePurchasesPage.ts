@@ -156,6 +156,14 @@ export function usePurchasesPage() {
     ? editing.grandTotal
     : localSummary.netSubtotal + localSummary.vat + localSummary.ice + formWatch.freightCost + formWatch.otherCosts;
 
+  // Líneas que vienen de Recepción Electrónica y todavía no tienen Item resuelto — bloquean
+  // Confirmar Compra (nunca Guardar Borrador) porque ahí es donde se generan Inventario/Kardex/
+  // CxP/Contabilidad. Líneas manuales sin Item quedan fuera: ese caso ya era válido antes.
+  const pendingReceptionItems = useMemo(
+    () => lines.filter(l => l.purchaseReceptionLineId && !l.itemId).map(l => l.description || '(sin descripción)'),
+    [lines],
+  );
+
   const ptRowsSum = ptRows.reduce((s, r) => s + r.amount, 0);
   const ptMismatch = ptRows.length > 0 && localTotal > 0 && roundToTotalAmount(ptRowsSum) !== roundToTotalAmount(localTotal);
 
@@ -273,6 +281,85 @@ export function usePurchasesPage() {
   const updateLine = useCallback((key: number, field: string, value: unknown) => {
     const currentLines = getValues('lines');
     setValue('lines', currentLines.map(l => l._key === key ? { ...l, [field]: value } : l));
+  }, [getValues, setValue]);
+
+  // ── Bodega de línea (ADR-030, regla de arquitectura permanente) ──────
+  // Una compra puede tener líneas en múltiples bodegas — WarehouseId pertenece a la
+  // línea, nunca al documento. updateLineWarehouse es el ÚNICO flujo de actualización
+  // (Single Source of Truth): asigna warehouseId y, si la línea ya tiene Item, refresca
+  // su contexto (stock/costos/indicadores). Cualquier lógica futura sobre "cambiar
+  // bodega de una línea" (reservas, disponibilidad, lotes, costos por bodega, etc.) se
+  // agrega acá una sola vez — nunca en applyGlobalWarehouse ni en ningún otro punto.
+  const updateLineWarehouse = useCallback((key: number, warehouseId: string | null) => {
+    const line = getValues('lines').find(l => l._key === key);
+    updateLine(key, 'warehouseId', warehouseId);
+    if (line?.itemId && warehouseId) void fetchItemContext(key, line.itemId, warehouseId);
+  }, [getValues, updateLine, fetchItemContext]);
+
+  // Aplicación masiva, NO sincronización permanente (ADR-030): corre una única vez, al
+  // clic. El selector general no implementa lógica propia — solo guarda el default del
+  // documento y delega en updateLineWarehouse línea por línea, exactamente igual que si
+  // el usuario hubiera cambiado cada línea manualmente. Un cambio posterior en una línea
+  // individual nunca es sobrescrito automáticamente (no hay watcher sobre este campo).
+  const applyGlobalWarehouse = useCallback((warehouseId: string) => {
+    setValue('globalWarehouseId', warehouseId);
+    const currentLines = getValues('lines');
+    for (const line of currentLines) {
+      updateLineWarehouse(line._key, warehouseId || null);
+    }
+  }, [setValue, getValues, updateLineWarehouse]);
+
+  // ── Item Matching (líneas que vienen de Recepción Electrónica) ────────
+  // Reutiliza el mismo backend que la pantalla de Recepción (MatchItemCommand /
+  // UnmatchPurchaseReceptionItemCommand) vía purchaseReceptionLineId — nunca duplica el motor de
+  // Item Matching. El resultado solo actualiza el formulario local; se persiste recién al Guardar.
+  const [matchingKey, setMatchingKey] = useState<number | null>(null);
+
+  const handleMatchItem = useCallback(async (key: number, itemId: string, itemLabel: string) => {
+    const currentLines = getValues('lines');
+    const line = currentLines.find(l => l._key === key);
+    if (!line?.purchaseReceptionLineId) return;
+
+    setMatchingKey(key);
+    try {
+      const updated = await purchaseReceptionService.matchItem(line.purchaseReceptionLineId, itemId);
+      const latest = getValues('lines');
+      setValue('lines', latest.map(l => l._key === key
+        ? { ...l, itemId: updated.itemId ?? undefined, itemMatchStatus: updated.matchStatus, description: itemLabel }
+        : l));
+      const wh = line.warehouseId || getValues('globalWarehouseId');
+      if (updated.itemId && wh) void fetchItemContext(key, updated.itemId, wh);
+    } catch (err) {
+      message.error(readApiErrorMessage(err) ?? 'No se pudo vincular el ítem.');
+    }
+    setMatchingKey(null);
+  }, [getValues, setValue, fetchItemContext]);
+
+  const handleUnmatchItem = useCallback(async (key: number) => {
+    const currentLines = getValues('lines');
+    const line = currentLines.find(l => l._key === key);
+    if (!line?.purchaseReceptionLineId) return;
+
+    const confirmed = await message.confirm({
+      title: 'Desvincular Item',
+      message: 'La línea volverá a estado Pendiente y podrá buscar o crear un ítem nuevamente. Esta acción no afecta compras ya confirmadas.',
+      confirmLabel: 'Desvincular',
+      variant: 'warning',
+    });
+    if (!confirmed) return;
+
+    setMatchingKey(key);
+    try {
+      const updated = await purchaseReceptionService.unmatchItem(line.purchaseReceptionLineId);
+      const latest = getValues('lines');
+      setValue('lines', latest.map(l => l._key === key
+        ? { ...l, itemId: undefined, itemMatchStatus: updated.matchStatus, description: '', context: undefined }
+        : l));
+      message.success('Item desvinculado. La línea está pendiente de matching.');
+    } catch (err) {
+      message.error(readApiErrorMessage(err) ?? 'No se pudo desvincular el ítem.');
+    }
+    setMatchingKey(null);
   }, [getValues, setValue]);
 
   const addLineWithItem = useCallback(async (item: ItemDto) => {
@@ -393,6 +480,7 @@ export function usePurchasesPage() {
         quantity: l.quantity, unitPrice: l.unitPrice, vatCode: l.vatCode,
         discountPct: l.discountPct, iceCode: l.iceCode,
         warehouseId: l.warehouseId, notes: l.notes,
+        purchaseReceptionLineId: l.purchaseReceptionLineId ?? undefined,
       }));
 
       // SRI codes
@@ -427,6 +515,18 @@ export function usePurchasesPage() {
         if (ml.itemId && wh) void fetchItemContext(ml._key, ml.itemId, wh);
       }
 
+      // Reconstruye el estado de Item Matching (badge Auto/Manual/Pendiente/Revisar) de las líneas
+      // que vienen de Recepción Electrónica — no se persiste en PurchaseInvoiceDetail, se lee en
+      // vivo desde PurchaseReceptionLine vía el mismo backend que usa la pantalla de Recepción.
+      for (const ml of mappedLines) {
+        if (!ml.purchaseReceptionLineId) continue;
+        const lineId = ml.purchaseReceptionLineId;
+        purchaseReceptionService.getLineMatch(lineId).then((match) => {
+          const current = getValues('lines');
+          setValue('lines', current.map(l => l._key === ml._key ? { ...l, itemMatchStatus: match.matchStatus } : l));
+        }).catch(() => { /* la línea sigue mostrando su estado sin badge de matching */ });
+      }
+
       // Payment schedule
       setPtInstallments(inv.paymentTermInstallments);
       setPtDaysBetween(inv.paymentTermDaysBetween);
@@ -450,7 +550,7 @@ export function usePurchasesPage() {
       setSaveError('Error al cargar la compra.');
       message.error('No se pudo cargar la compra.');
     }
-  }, [reset, fetchItemContext]);
+  }, [reset, fetchItemContext, getValues, setValue]);
 
   // ── Load from Recepción Electrónica (PurchaseReceptionDocument → draft) ────
   const loadFromReception = useCallback(async (receptionDocumentId: string) => {
@@ -489,6 +589,7 @@ export function usePurchasesPage() {
         quantity: l.quantity, unitPrice: l.unitPrice, vatCode: l.vatCode,
         discountPct: l.discountPct ?? 0, iceCode: l.iceCode ?? undefined,
         warehouseId: l.warehouseId ?? undefined, notes: l.notes ?? undefined,
+        purchaseReceptionLineId: l.purchaseReceptionLineId,
         itemMatchStatus: l.itemMatchStatus,
         xmlSupplierCode: l.supplierCode ?? undefined, xmlSupplierAuxCode: l.supplierAuxCode,
         xmlDiscount: l.discount, xmlLineSubtotal: l.lineSubtotal,
@@ -539,6 +640,7 @@ export function usePurchasesPage() {
           itemId: l.itemId, description: l.description, quantity: l.quantity,
           unitPrice: l.unitPrice, vatCode: l.vatCode, discountPct: l.discountPct ?? 0,
           iceCode: normalizeOptionalCode(l.iceCode), warehouseId: l.warehouseId, notes: l.notes,
+          purchaseReceptionLineId: l.purchaseReceptionLineId ?? undefined,
         })),
         accessKey: normalizeOptionalCode(data.accessKey),
         authorizationNumber: normalizeOptionalCode(data.authorizationNumber),
@@ -742,6 +844,8 @@ export function usePurchasesPage() {
 
     // Lines
     lines, addLine, removeLine, duplicateLine, updateLine, addLineWithItem, lineKey,
+    updateLineWarehouse, applyGlobalWarehouse,
+    matchingKey, handleMatchItem, handleUnmatchItem,
 
     // Supplier
     supplierProfile, handleSupplierChange,
@@ -752,6 +856,7 @@ export function usePurchasesPage() {
 
     // Derived
     isDraft, readOnly, fieldDisabled, localSummary, localTotal, hasPersistedSchedule,
+    pendingReceptionItems,
 
     // Schedule
     ptInstallments, setPtInstallments, ptDaysBetween, setPtDaysBetween,

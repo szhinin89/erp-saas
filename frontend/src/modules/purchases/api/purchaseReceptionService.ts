@@ -93,6 +93,7 @@ export interface DownloadXmlResult {
  * adelante son de solo lectura: exactamente lo que trae el XML, para mostrar el detalle completo.
  */
 export interface PurchaseDraftLineDto {
+  purchaseReceptionLineId: string;
   itemId: string | null;
   itemMatchStatus: ItemMatchStatus;
   description: string;
@@ -157,8 +158,17 @@ export const purchaseReceptionService = {
     return apiGet<PurchaseReceptionLineMatch[]>(`${BASE}/${documentId}/lines`);
   },
 
+  /** Estado actual de una única línea, por su Id — usado por /purchases al reabrir una compra ya guardada. */
+  getLineMatch(lineId: string): Promise<PurchaseReceptionLineMatch> {
+    return apiGet<PurchaseReceptionLineMatch>(`${BASE}/lines/${lineId}`);
+  },
+
   matchItem(lineId: string, itemId: string): Promise<PurchaseReceptionLineMatch> {
     return apiPost<PurchaseReceptionLineMatch>(`${BASE}/lines/${lineId}/match-item`, { itemId });
+  },
+
+  unmatchItem(lineId: string): Promise<PurchaseReceptionLineMatch> {
+    return apiPost<PurchaseReceptionLineMatch>(`${BASE}/lines/${lineId}/unmatch-item`, {});
   },
 
   bulkMatch(matches: BulkMatchEntry[]): Promise<{ results: BulkMatchResultEntry[] }> {

@@ -207,3 +207,99 @@ describe('CreateItemModal — envío', () => {
     await waitFor(() => expect(screen.getByText('No se pudo crear el ítem.')).toBeTruthy());
   });
 });
+
+describe('CreateItemModal — simulación de precio de compra (purchaseContext)', () => {
+  it('sin purchaseContext: no renderiza la sección de compra ni la de precio (compatibilidad total)', async () => {
+    renderModal({ initialData: { name: 'Aceite' } });
+    await waitForCatalogs();
+
+    expect(screen.queryByText('Información de Compra')).toBeNull();
+    expect(screen.queryByText('Precio de Venta')).toBeNull();
+  });
+
+  it('con purchaseContext: muestra costo, cantidad, descuento y costo final ya calculado', async () => {
+    renderModal({
+      initialData: {
+        name: 'Aceite',
+        purchaseContext: { unitCost: 8.5, quantity: 10, discountPct: 15 },
+      },
+    });
+    await waitForCatalogs();
+
+    expect(screen.getByText('Información de Compra')).toBeTruthy();
+    // Costo final = 8.50 * (1 - 15/100) = 7.225.
+    expect(screen.getByDisplayValue('$8.5000')).toBeTruthy();
+    expect(screen.getByDisplayValue('15.00%')).toBeTruthy();
+    expect(screen.getByDisplayValue('$7.2250')).toBeTruthy();
+  });
+
+  it('descuento desconocido (undefined): muestra "—", nunca "0%"', async () => {
+    renderModal({
+      initialData: { name: 'Aceite', purchaseContext: { unitCost: 8.5, quantity: 10 } },
+    });
+    await waitForCatalogs();
+
+    expect(screen.getByDisplayValue('—')).toBeTruthy();
+  });
+
+  it('la simulación de margen se actualiza en vivo al escribir el precio, sin backend', async () => {
+    const { container } = renderModal({
+      initialData: { name: 'Aceite', purchaseContext: { unitCost: 8.5, quantity: 10 } },
+    });
+    await waitForCatalogs();
+
+    fireEvent.change(fieldByName(container, 'salePrice'), { target: { value: '12' } });
+
+    // Margen = (12 - 8.5) / 12 * 100 = 29.166...% → mismo criterio que GetPurchaseItemContextQueryHandler.
+    await waitFor(() => expect(screen.getByText('29.17%')).toBeTruthy());
+    expect(itemService.create).not.toHaveBeenCalled();
+  });
+
+  it('updatePrice desmarcado (default): guarda baseSalePrice=null aunque haya un precio escrito', async () => {
+    vi.mocked(itemService.create).mockResolvedValue({ id: 'item-1', sku: 'SKU-1', shortName: 'Aceite', baseSalePrice: null } as never);
+    const { container } = renderModal({
+      initialData: { name: 'Aceite', purchaseContext: { unitCost: 8.5, quantity: 10 } },
+    });
+    await waitForCatalogs();
+
+    fireEvent.change(fieldByName(container, 'salePrice'), { target: { value: '12' } });
+    await fillRequiredFields(container, { barcode: '00125' });
+    fireEvent.click(screen.getByRole('button', { name: 'Crear Producto' }));
+
+    await waitFor(() => {
+      expect(itemService.create).toHaveBeenCalledWith(expect.objectContaining({ baseSalePrice: null }));
+    });
+  });
+
+  it('updatePrice marcado: guarda baseSalePrice con el precio ingresado', async () => {
+    vi.mocked(itemService.create).mockResolvedValue({ id: 'item-1', sku: 'SKU-1', shortName: 'Aceite', baseSalePrice: 12 } as never);
+    const { container, onCreated } = renderModal({
+      initialData: { name: 'Aceite', purchaseContext: { unitCost: 8.5, quantity: 10 } },
+    });
+    await waitForCatalogs();
+
+    fireEvent.change(fieldByName(container, 'salePrice'), { target: { value: '12' } });
+    fireEvent.click(fieldByName(container, 'updatePrice'));
+    await fillRequiredFields(container, { barcode: '00125' });
+    fireEvent.click(screen.getByRole('button', { name: 'Crear Producto' }));
+
+    await waitFor(() => {
+      expect(itemService.create).toHaveBeenCalledWith(expect.objectContaining({ baseSalePrice: 12 }));
+      expect(onCreated).toHaveBeenCalledWith(expect.objectContaining({ baseSalePrice: 12 }));
+    });
+  });
+
+  it('updatePrice marcado sin precio válido: bloquea el envío con un error de validación', async () => {
+    const { container } = renderModal({
+      initialData: { name: 'Aceite', purchaseContext: { unitCost: 8.5, quantity: 10 } },
+    });
+    await waitForCatalogs();
+
+    fireEvent.click(fieldByName(container, 'updatePrice'));
+    await fillRequiredFields(container, { barcode: '00125' });
+    fireEvent.click(screen.getByRole('button', { name: 'Crear Producto' }));
+
+    await waitFor(() => expect(screen.getByText('Ingrese un precio de venta válido para actualizar el precio del Item.')).toBeTruthy());
+    expect(itemService.create).not.toHaveBeenCalled();
+  });
+});

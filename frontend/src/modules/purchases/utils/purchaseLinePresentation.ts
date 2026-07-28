@@ -1,0 +1,173 @@
+import type { PurchaseLineFormValues } from '../schemas/purchaseInvoiceSchema';
+import type { ItemMatchStatus } from '../api/purchaseReceptionService';
+import { getDecimalConfig } from '../../../lib/config/decimal.config';
+import { formatMoney, formatMoneyWithSymbol } from '../../../lib/sanitizers';
+import { calcMarginPercent } from '../../../lib/margin';
+
+/** Dato desconocido — nunca se confunde con un valor real (p. ej. stock 0). */
+const UNKNOWN = '—';
+
+export type LineStatusTone = 'success' | 'warning' | 'danger';
+
+/**
+ * View model de presentación de una línea de compra — responde, en este orden, "qué llegó del
+ * proveedor", "con qué Item del ERP está relacionado", "qué impacto tiene para el negocio" y "qué
+ * acción está pendiente". Centraliza toda la lógica de null-check y de distinguir "valor real"
+ * (p. ej. 0 unidades de stock) de "valor desconocido" (contexto aún no cargado / sin Item) — el
+ * JSX de `PurchaseLineCard` solo consume campos ya resueltos, nunca vuelve a preguntar `?.`/`??`.
+ */
+export interface PurchaseLinePresentationVM {
+  /** 1. Qué llegó del proveedor — "Producto recibido (XML)". */
+  xml: {
+    /** false en una línea de compra manual — el bloque igual se muestra, con nota + "—". */
+    hasOrigin: boolean;
+    supplierCode: string;
+    supplierAuxCode: string;
+    hasSupplierAuxCode: boolean;
+    description: string;
+    quantity: string;
+    unitPrice: string;
+    discount: string;
+    vatPercentage: string;
+    taxValue: string;
+    totalLine: string;
+  };
+  /** 2. Con qué Item del ERP está relacionado — siempre visible, incluso sin Item aún. */
+  item: {
+    hasItem: boolean;
+    isLoading: boolean;
+    sku: string;
+    name: string;
+    /** No existe en PurchaseItemContextDto hoy — se muestra "—" a propósito, nunca "0" ni inventado. */
+    uom: string;
+    matchStatus: ItemMatchStatus | null;
+  };
+  /** 3. Impacto para el negocio — "Información Comercial", menor peso visual, solo si hay contexto real. */
+  commercial: {
+    /** Contexto realmente cargado (Item + datos resueltos) — controla real vs "—", nunca 0 falso. */
+    hasContext: boolean;
+    stock: {
+      current: string;
+      available: string;
+      reserved: string;
+      statusLabel: string;
+      isCritical: boolean;
+    };
+    costs: {
+      average: string;
+      last: string;
+      showDeviationAlert: boolean;
+      deviationLabel: string;
+    };
+    profitability: {
+      pvp: string;
+      marginPct: string;
+      marginPctValue: number;
+      maxDiscountPercent: string;
+    };
+  };
+  /** 4. Resumen de estado de la línea — solo interpreta visualmente estados ya existentes. */
+  status: {
+    icon: string;
+    label: string;
+    tone: LineStatusTone;
+  };
+}
+
+export function buildPurchaseLinePresentation(
+  line: PurchaseLineFormValues,
+): PurchaseLinePresentationVM {
+  const decimals = getDecimalConfig();
+  const ctx = line.context;
+  const hasItem = !!line.itemId;
+  const isLoading = !!line._contextLoading;
+  const hasContext = hasItem && !isLoading && !!ctx;
+  const hasOrigin = !!line.purchaseReceptionLineId || !!line.xmlSupplierCode;
+
+  const quantity = line.quantity ?? 0;
+  const unitPrice = line.unitPrice ?? 0;
+
+  const shortName = ctx?.shortName || '';
+  const displayName = shortName || line.description?.split(' — ')[1] || line.description || '';
+
+  const currentStock = ctx?.currentStock ?? 0;
+  const averageCost = ctx?.averageCost ?? 0;
+  const pvp = ctx?.pvp ?? 0;
+  const marginPctValue = hasContext ? calcMarginPercent(unitPrice, pvp) : 0;
+
+  const deviationRatio = hasContext && averageCost > 0 && unitPrice > 0
+    ? Math.abs(unitPrice - averageCost) / averageCost
+    : 0;
+  const showDeviationAlert = hasContext && deviationRatio > 0.2;
+  const deviationLabel = showDeviationAlert
+    ? (unitPrice > averageCost
+      ? `Costo ${formatMoney((unitPrice - averageCost) / averageCost * 100, decimals.percentage)}% sobre el promedio`
+      : `Costo ${formatMoney((averageCost - unitPrice) / averageCost * 100, decimals.percentage)}% bajo el promedio`)
+    : '';
+
+  const missingRequiredData = hasItem && !isLoading && (!hasContext || !line.vatCode);
+
+  return {
+    xml: {
+      hasOrigin,
+      supplierCode: line.xmlSupplierCode || UNKNOWN,
+      supplierAuxCode: line.xmlSupplierAuxCode || UNKNOWN,
+      hasSupplierAuxCode: !!line.xmlSupplierAuxCode,
+      description: line.description || UNKNOWN,
+      quantity: formatMoney(quantity, decimals.quantity),
+      unitPrice: formatMoneyWithSymbol(unitPrice, decimals.purchaseUnitPrice),
+      discount: hasOrigin ? formatMoneyWithSymbol(line.xmlDiscount ?? 0, decimals.totalAmount) : UNKNOWN,
+      vatPercentage: hasOrigin ? formatMoney(line.xmlVatPercentage ?? 0, decimals.percentage) : UNKNOWN,
+      taxValue: hasOrigin ? formatMoneyWithSymbol(line.xmlTaxValue ?? 0, decimals.totalAmount) : UNKNOWN,
+      totalLine: hasOrigin ? formatMoneyWithSymbol(line.xmlTotalLine ?? 0, decimals.totalAmount) : UNKNOWN,
+    },
+    item: {
+      hasItem,
+      isLoading,
+      sku: (hasItem && (ctx?.sku || line.description?.split(' — ')[0])) || UNKNOWN,
+      name: (hasItem && displayName) || UNKNOWN,
+      uom: UNKNOWN,
+      matchStatus: line.itemMatchStatus ?? null,
+    },
+    commercial: {
+      hasContext,
+      stock: {
+        current: hasContext ? formatMoney(currentStock, decimals.quantity) : UNKNOWN,
+        available: hasContext ? formatMoney(ctx!.availableStock, decimals.quantity) : UNKNOWN,
+        reserved: hasContext ? formatMoney(ctx!.reservedStock, decimals.quantity) : UNKNOWN,
+        statusLabel: hasContext ? (currentStock <= 0 ? 'Crítico' : 'OK') : UNKNOWN,
+        isCritical: hasContext && currentStock <= 0,
+      },
+      costs: {
+        average: hasContext ? formatMoneyWithSymbol(averageCost, decimals.purchaseUnitPrice) : UNKNOWN,
+        last: hasContext ? formatMoneyWithSymbol(ctx!.lastPurchaseCost, decimals.purchaseUnitPrice) : UNKNOWN,
+        showDeviationAlert,
+        deviationLabel,
+      },
+      profitability: {
+        pvp: hasContext ? formatMoneyWithSymbol(pvp, decimals.salesUnitPrice) : UNKNOWN,
+        marginPct: hasContext ? formatMoney(marginPctValue, decimals.percentage) : UNKNOWN,
+        marginPctValue,
+        maxDiscountPercent: hasContext ? formatMoney(ctx!.maxDiscountPercent, decimals.percentage) : UNKNOWN,
+      },
+    },
+    status: buildLineStatus({ hasItem, isLoading, missingRequiredData }),
+  };
+}
+
+function buildLineStatus(input: {
+  hasItem: boolean;
+  isLoading: boolean;
+  missingRequiredData: boolean;
+}): PurchaseLinePresentationVM['status'] {
+  if (!input.hasItem) {
+    return { icon: '🟡', label: 'Pendiente de vincular Item', tone: 'warning' };
+  }
+  if (input.isLoading) {
+    return { icon: '🟡', label: 'Contexto cargando', tone: 'warning' };
+  }
+  if (input.missingRequiredData) {
+    return { icon: '🔴', label: 'Información incompleta', tone: 'danger' };
+  }
+  return { icon: '🟢', label: 'Item vinculado', tone: 'success' };
+}

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { ErpPageTemplate } from '../../../templates/ErpPageTemplate';
+import { Badge, type BadgeVariant } from '../../../components/PageShell';
 import { ZHBtn, ZHField } from '../../../components/zh/ZHForm';
 import { SupplierPicker } from '../components/SupplierPicker';
 import { ProductPicker } from '../components/ProductPicker';
@@ -17,6 +18,10 @@ import { ZHPageNotice } from '../../../components/zh/ZHPageNotice';
 import { lineNet, calcLineTax, roundToTotalAmount } from '../utils/purchaseCalc';
 import { usePurchasesPage, type Tab } from '../hooks/usePurchasesPage';
 import { ItemMatchStatusBadge, useViewMatchedItem } from '../components/ItemMatchStatusBadge';
+import { CreateItemFromReceptionLineModal } from '../components/CreateItemFromReceptionLineModal';
+import type { PurchaseReceptionLineMatch } from '../api/purchaseReceptionService';
+import type { PurchaseLineFormValues } from '../schemas/purchaseInvoiceSchema';
+import { buildPurchaseLinePresentation, type LineStatusTone } from '../utils/purchaseLinePresentation';
 import '../../../styles/shared/items-catalog.css';
 import '../../../styles/shared/erp-form-core.css';
 import '../styles/purchases-invoice.css';
@@ -290,7 +295,7 @@ export function PurchasesPage() {
               </h4>
               <div className="pf-mini-card__body">
                 <ZHField density="compact" label="Bodega Destino">
-                  <select value={ctx.formWatch.globalWarehouseId} onChange={e => ctx.setValue('globalWarehouseId', e.target.value)} disabled={ctx.fieldDisabled}>
+                  <select value={ctx.formWatch.globalWarehouseId} onChange={e => ctx.applyGlobalWarehouse(e.target.value)} disabled={ctx.fieldDisabled}>
                     <option value="">— Seleccionar bodega —</option>
                     {ctx.warehouses.map(w => (
                       <option key={w.id} value={w.id}>{w.code ? `${w.code} — ${w.name}` : w.name}</option>
@@ -420,6 +425,12 @@ export function PurchasesPage() {
             </div>
           </div>
 
+          {ctx.editing && ctx.editing.status === 'Draft' && ctx.pendingReceptionItems.length > 0 && (
+            <ZHPageNotice variant="warning"
+              message="No se puede confirmar la compra: productos pendientes de vinculación"
+              detail={ctx.pendingReceptionItems.join(', ')} />
+          )}
+
           {/* Footer Actions */}
           <div className="pf-footer">
             <button className="pf-btn" onClick={() => { ctx.resetForm(); ctx.setTab('listado'); }}>
@@ -432,7 +443,9 @@ export function PurchasesPage() {
               {ctx.saving ? 'Guardando...' : ctx.editing ? 'Actualizar Borrador' : 'Guardar Borrador'}
             </button>
             {ctx.editing && ctx.editing.status === 'Draft' && (
-              <button className="pf-btn pf-btn--success" onClick={() => ctx.setModalConfirm(true)} disabled={ctx.fieldDisabled}>
+              <button className="pf-btn pf-btn--success" onClick={() => ctx.setModalConfirm(true)}
+                disabled={ctx.fieldDisabled || ctx.pendingReceptionItems.length > 0}
+                title={ctx.pendingReceptionItems.length > 0 ? 'Resuelva los productos pendientes de vinculación antes de confirmar.' : undefined}>
                 <span className="material-symbols-outlined pf-btn__icon">check_circle</span>
                 Confirmar Compra
               </button>
@@ -480,6 +493,12 @@ export function PurchasesPage() {
 
 // ── Internal Components ────────────────────────────────────────────────
 
+const STATUS_TONE_VARIANT: Record<LineStatusTone, BadgeVariant> = {
+  success: 'green',
+  warning: 'orange',
+  danger: 'red',
+};
+
 function PurchaseLineCard({ line: l, idx, ctx }: { line: any; idx: number; ctx: ReturnType<typeof usePurchasesPage> }) {
   const viewMatchedItem = useViewMatchedItem();
   const sub = lineNet(l);
@@ -490,6 +509,7 @@ function PurchaseLineCard({ line: l, idx, ctx }: { line: any; idx: number; ctx: 
   const total = editLine ? (editLine.totalLineCost ?? sub) + editLine.vatAmount + editLine.iceAmount : sub + localTax.vat + localTax.ice;
   const ctxData = l.context;
   const vatPct = ctxData?.vatPercent ?? ctx.vatRatesMap[l.vatCode] ?? 0;
+  const vm = buildPurchaseLinePresentation(l);
 
   return (
     <div className="pdl-line">
@@ -498,15 +518,24 @@ function PurchaseLineCard({ line: l, idx, ctx }: { line: any; idx: number; ctx: 
         <div className="pdl-line__product">
           {!l.itemId ? (
             <>
-              <ProductPicker disabled={ctx.fieldDisabled} vatRates={ctx.vatRatesMap} onSelect={(p: ProductProfile) => {
-                ctx.updateLine(l._key, 'itemId', p.id);
-                ctx.updateLine(l._key, 'description', `${p.sku} — ${p.name}`);
+              <ProductPicker disabled={ctx.fieldDisabled || ctx.matchingKey === l._key} vatRates={ctx.vatRatesMap} onSelect={(p: ProductProfile) => {
                 if (!l.vatCode) ctx.updateLine(l._key, 'vatCode', p.purchaseVatCode ?? '');
                 if (p.appliesExciseTax && p.exciseTaxCode) ctx.updateLine(l._key, 'iceCode', p.exciseTaxCode);
+                if (l.purchaseReceptionLineId) {
+                  void ctx.handleMatchItem(l._key, p.id, `${p.sku} — ${p.name}`);
+                  return;
+                }
+                ctx.updateLine(l._key, 'itemId', p.id);
+                ctx.updateLine(l._key, 'description', `${p.sku} — ${p.name}`);
                 const wh = l.warehouseId || ctx.formWatch.globalWarehouseId;
                 if (wh) void ctx.fetchItemContext(l._key, p.id, wh);
               }} />
-              <CreateItemLineAction line={l} ctx={ctx} disabled={ctx.fieldDisabled} />
+              {l.purchaseReceptionLineId ? (
+                <ReceptionCreateItemAction line={l} ctx={ctx} disabled={ctx.fieldDisabled} />
+              ) : (
+                <CreateItemLineAction line={l} ctx={ctx} disabled={ctx.fieldDisabled} />
+              )}
+              {l.itemMatchStatus && <ItemMatchStatusBadge status={l.itemMatchStatus} />}
             </>
           ) : (
             <>
@@ -516,18 +545,22 @@ function PurchaseLineCard({ line: l, idx, ctx }: { line: any; idx: number; ctx: 
                 <ZHBtn variant="ghost" size="xs" type="button" onClick={() => viewMatchedItem(l.itemId)}>
                   Ver Item
                 </ZHBtn>
-                {!ctx.fieldDisabled && (
+                {!ctx.fieldDisabled && l.purchaseReceptionLineId && (
+                  <ZHBtn variant="ghost" size="xs" type="button"
+                    disabled={ctx.matchingKey === l._key}
+                    onClick={() => void ctx.handleUnmatchItem(l._key)}>
+                    {ctx.matchingKey === l._key ? 'Desvinculando...' : 'Desvincular Item'}
+                  </ZHBtn>
+                )}
+                {!ctx.fieldDisabled && !l.purchaseReceptionLineId && (
                   <button type="button" className="pdl-line__clear" title="Cambiar producto"
                     onClick={() => { ctx.updateLine(l._key, 'itemId', undefined); ctx.updateLine(l._key, 'description', ''); ctx.updateLine(l._key, 'context', undefined); }}>
                     <span className="material-symbols-outlined" style={{ fontSize: 14 }}>close</span>
                   </button>
                 )}
               </div>
-              <select className="pdl-line__wh-select" value={l.warehouseId ?? ctx.formWatch.globalWarehouseId ?? ''} onChange={e => {
-                const newWh = e.target.value || null;
-                ctx.updateLine(l._key, 'warehouseId', newWh);
-                if (l.itemId && newWh) void ctx.fetchItemContext(l._key, l.itemId, newWh);
-              }} disabled={ctx.fieldDisabled}>
+              <select className="pdl-line__wh-select" value={l.warehouseId ?? ctx.formWatch.globalWarehouseId ?? ''}
+                onChange={e => ctx.updateLineWarehouse(l._key, e.target.value || null)} disabled={ctx.fieldDisabled}>
                 <option value="">— Seleccionar bodega —</option>
                 {ctx.warehouses.map(w => (
                   <option key={w.id} value={w.id}>{w.code ? `${w.code} — ${w.name}` : w.name}</option>
@@ -568,111 +601,98 @@ function PurchaseLineCard({ line: l, idx, ctx }: { line: any; idx: number; ctx: 
         </div>
       </div>
 
-      {/* Detalle XML (Recepción Electrónica) — solo lectura, hasta que exista el matcher de ítems */}
-      {l.xmlSupplierCode && (
-        <div className="pdl-line__context">
-          <div className="pdl-ctx-col">
-            <div className="pdl-ctx-col__title"><span className="material-symbols-outlined" style={{ fontSize: 14 }}>description</span> Identificación XML</div>
-            <div className="pdl-ctx-col__badges">
-              <span className="pdl-tag">Cód. proveedor: {l.xmlSupplierCode}</span>
-              {l.xmlSupplierAuxCode && <span className="pdl-tag pdl-tag--accent">Cód. auxiliar: {l.xmlSupplierAuxCode}</span>}
-            </div>
-            <div className="pdl-ctx-col__desc">{l.description}</div>
-          </div>
-          <div className="pdl-ctx-col">
-            <div className="pdl-ctx-col__title"><span className="material-symbols-outlined" style={{ fontSize: 14 }}>numbers</span> Cantidad / Precio</div>
-            <div className="pdl-ctx-col__costs">
-              <div><span className="pdl-cost-label">Cantidad</span><span className="pdl-cost-val">{formatMoney(l.quantity, getDecimalConfig().quantity)}</span></div>
-              <div><span className="pdl-cost-label">Precio</span><span className="pdl-cost-val">{formatMoneyWithSymbol(l.unitPrice, getDecimalConfig().purchaseUnitPrice)}</span></div>
-            </div>
-          </div>
-          <div className="pdl-ctx-col">
-            <div className="pdl-ctx-col__title"><span className="material-symbols-outlined" style={{ fontSize: 14 }}>percent</span> Descuento / IVA</div>
-            <div className="pdl-ctx-col__costs">
-              <div><span className="pdl-cost-label">Descuento</span><span className="pdl-cost-val">{formatMoneyWithSymbol(l.xmlDiscount ?? 0, getDecimalConfig().totalAmount)}</span></div>
-              <div><span className="pdl-cost-label">IVA ({formatMoney(l.xmlVatPercentage ?? 0, getDecimalConfig().percentage)}%)</span><span className="pdl-cost-val">{formatMoneyWithSymbol(l.xmlTaxValue ?? 0, getDecimalConfig().totalAmount)}</span></div>
-            </div>
-          </div>
-          <div className="pdl-ctx-col">
-            <div className="pdl-ctx-col__title"><span className="material-symbols-outlined" style={{ fontSize: 14 }}>summarize</span> Total línea (XML)</div>
-            <div className="pdl-cost-val" style={{ fontSize: 16, fontWeight: 800 }}>{formatMoneyWithSymbol(l.xmlTotalLine ?? 0, getDecimalConfig().totalAmount)}</div>
-          </div>
-        </div>
-      )}
+      {/* Resumen de estado — interpreta visualmente estados ya existentes, ninguno nuevo. */}
+      <div className="pdl-line__status">
+        <Badge variant={STATUS_TONE_VARIANT[vm.status.tone]} label={`${vm.status.icon} ${vm.status.label}`} />
+      </div>
 
-      {/* Context Panel */}
-      {l.itemId && ctxData && (
-        <div className="pdl-line__context">
-          <div className="pdl-ctx-col">
-            <div className="pdl-ctx-col__title"><span className="material-symbols-outlined" style={{ fontSize: 14 }}>badge</span> Identificación</div>
-            <div className="pdl-ctx-col__badges">
-              <span className="pdl-tag">SKU: {ctxData.sku}</span>
-              {ctxData.supplierCode && <span className="pdl-tag pdl-tag--accent">Proveedor: {ctxData.supplierCode}</span>}
+      {/* 1. Qué llegó del proveedor — siempre visible, con nota cuando la línea no viene de XML. */}
+      <div className="pdl-blocks">
+        <section className="pdl-block">
+          <header className="pdl-block__header">
+            <span className="material-symbols-outlined" style={{ fontSize: 16 }}>description</span>
+            <h4 className="pdl-block__title">Producto recibido (XML)</h4>
+          </header>
+          {!vm.xml.hasOrigin && (
+            <p className="pdl-block__hint">Compra manual — no proviene de Recepción Electrónica.</p>
+          )}
+          <div className="pdl-ctx-col__badges">
+            <span className="pdl-tag">Cód. proveedor: {vm.xml.supplierCode}</span>
+            <span className={`pdl-tag ${vm.xml.hasSupplierAuxCode ? 'pdl-tag--accent' : ''}`}>Cód. auxiliar: {vm.xml.supplierAuxCode}</span>
+          </div>
+          <div className="pdl-ctx-col__desc">{vm.xml.description}</div>
+          <div className="pdl-ctx-col__costs">
+            <div><span className="pdl-cost-label">Cantidad</span><span className="pdl-cost-val">{vm.xml.quantity}</span></div>
+            <div><span className="pdl-cost-label">Precio</span><span className="pdl-cost-val">{vm.xml.unitPrice}</span></div>
+            <div><span className="pdl-cost-label">Descuento</span><span className="pdl-cost-val">{vm.xml.discount}</span></div>
+            <div><span className="pdl-cost-label">IVA ({vm.xml.vatPercentage}%)</span><span className="pdl-cost-val">{vm.xml.taxValue}</span></div>
+            <div><span className="pdl-cost-label pdl-cost-label--strong">Total línea</span><span className="pdl-cost-val pdl-cost-val--strong">{vm.xml.totalLine}</span></div>
+          </div>
+        </section>
+
+        {/* 2. Con qué Item del ERP está relacionado — siempre visible, incluso sin Item aún. */}
+        <section className="pdl-block">
+          <header className="pdl-block__header">
+            <span className="material-symbols-outlined" style={{ fontSize: 16 }}>badge</span>
+            <h4 className="pdl-block__title">Item ERP</h4>
+            {vm.item.isLoading && <span className="pdl-ctx-col__loading" title="Cargando contexto...">
+              <span className="material-symbols-outlined" style={{ fontSize: 13 }}>hourglass_empty</span>
+            </span>}
+          </header>
+          {vm.item.matchStatus ? (
+            <ItemMatchStatusBadge status={vm.item.matchStatus} />
+          ) : (
+            <Badge variant={vm.item.hasItem ? 'green' : 'orange'}
+              label={vm.item.hasItem ? '🟢 Item seleccionado' : '🟡 Pendiente de vincular Item'} />
+          )}
+          <div className="pdl-ctx-col__costs">
+            <div><span className="pdl-cost-label">SKU</span><span className="pdl-cost-val">{vm.item.sku}</span></div>
+            <div><span className="pdl-cost-label">Nombre</span><span className="pdl-cost-val">{vm.item.name}</span></div>
+            <div><span className="pdl-cost-label">Unidad</span><span className="pdl-cost-val">{vm.item.uom}</span></div>
+          </div>
+        </section>
+
+        {/* 3. Impacto para el negocio — información de análisis, menor peso visual que los bloques anteriores. */}
+        <section className="pdl-block pdl-block--muted">
+          <header className="pdl-block__header">
+            <span className="material-symbols-outlined" style={{ fontSize: 16 }}>insights</span>
+            <h4 className="pdl-block__title">Información Comercial</h4>
+          </header>
+          <div className="pdl-ctx-col__stock">
+            <div className="pdl-stock-item">
+              <span className={`pdl-stock-label ${vm.commercial.hasContext ? (vm.commercial.stock.isCritical ? 'pdl-stock-label--danger' : 'pdl-stock-label--ok') : ''}`}>
+                {vm.commercial.stock.statusLabel}
+              </span>
+              <span className="pdl-stock-val">{vm.commercial.stock.current}</span>
             </div>
-            {ctxData.description && ctxData.description !== ctxData.shortName && (
-              <div className="pdl-ctx-col__desc">{ctxData.description}</div>
-            )}
+            <div className="pdl-stock-item"><span className="pdl-stock-head">Disp.</span><span className="pdl-stock-val">{vm.commercial.stock.available}</span></div>
+            <div className="pdl-stock-item"><span className="pdl-stock-head">Reserva</span><span className="pdl-stock-val">{vm.commercial.stock.reserved}</span></div>
           </div>
-          <div className="pdl-ctx-col">
-            <div className="pdl-ctx-col__title"><span className="material-symbols-outlined" style={{ fontSize: 14 }}>inventory_2</span> Stock</div>
-            <div className="pdl-ctx-col__stock">
-              <div className="pdl-stock-item">
-                <span className={`pdl-stock-label ${ctxData.currentStock <= 0 ? 'pdl-stock-label--danger' : 'pdl-stock-label--ok'}`}>
-                  {ctxData.currentStock <= 0 ? 'Crítico' : 'OK'}
-                </span>
-                <span className="pdl-stock-val">{formatMoney(ctxData.currentStock, getDecimalConfig().quantity)}</span>
-              </div>
-              <div className="pdl-stock-item"><span className="pdl-stock-head">Disp.</span><span className="pdl-stock-val">{formatMoney(ctxData.availableStock, getDecimalConfig().quantity)}</span></div>
-              <div className="pdl-stock-item"><span className="pdl-stock-head">Reserva</span><span className="pdl-stock-val">{formatMoney(ctxData.reservedStock, getDecimalConfig().quantity)}</span></div>
+          <div className="pdl-ctx-col__costs">
+            <div><span className="pdl-cost-label">Costo promedio</span><span className="pdl-cost-val">{vm.commercial.costs.average}</span></div>
+            <div><span className="pdl-cost-label">Último costo</span><span className="pdl-cost-val">{vm.commercial.costs.last}</span></div>
+          </div>
+          {vm.commercial.costs.showDeviationAlert && (
+            <div className="pdl-cost-alert">
+              <span className="material-symbols-outlined" style={{ fontSize: 13 }}>warning</span>
+              {vm.commercial.costs.deviationLabel}
+            </div>
+          )}
+          <div className="pdl-ctx-col__margin">
+            <div className="pdl-margin-row">
+              <span className="pdl-margin-label">Rentabilidad (margen neto)</span>
+              <span className={`pdl-margin-pct ${vm.commercial.profitability.marginPctValue >= 0 ? '' : 'pdl-margin-pct--neg'}`}>{vm.commercial.profitability.marginPct}%</span>
+            </div>
+            <div className="pdl-margin-bar">
+              <div className="pdl-margin-bar__fill" style={{ width: `${Math.min(100, Math.max(0, vm.commercial.profitability.marginPctValue))}%` }} />
+            </div>
+            <div className="pdl-margin-meta">
+              <span>Precio de venta: {vm.commercial.profitability.pvp}</span>
+              <span>Desc Máx: {vm.commercial.profitability.maxDiscountPercent}%</span>
             </div>
           </div>
-          <div className="pdl-ctx-col">
-            <div className="pdl-ctx-col__title"><span className="material-symbols-outlined" style={{ fontSize: 14 }}>payments</span> Costos Históricos</div>
-            <div className="pdl-ctx-col__costs">
-              <div><span className="pdl-cost-label">Promedio</span><span className="pdl-cost-val">{formatMoneyWithSymbol(ctxData.averageCost, getDecimalConfig().purchaseUnitPrice)}</span></div>
-              <div><span className="pdl-cost-label">Última</span><span className="pdl-cost-val">{formatMoneyWithSymbol(ctxData.lastPurchaseCost, getDecimalConfig().purchaseUnitPrice)}</span></div>
-            </div>
-            {ctxData.averageCost > 0 && l.unitPrice > 0 && Math.abs(l.unitPrice - ctxData.averageCost) / ctxData.averageCost > 0.2 && (
-              <div className="pdl-cost-alert">
-                <span className="material-symbols-outlined" style={{ fontSize: 13 }}>warning</span>
-                {l.unitPrice > ctxData.averageCost
-                  ? `Costo ${formatMoney((l.unitPrice - ctxData.averageCost) / ctxData.averageCost * 100, getDecimalConfig().percentage)}% sobre el promedio`
-                  : `Costo ${formatMoney((ctxData.averageCost - l.unitPrice) / ctxData.averageCost * 100, getDecimalConfig().percentage)}% bajo el promedio`}
-              </div>
-            )}
-          </div>
-          <div className="pdl-ctx-col">
-            <div className="pdl-ctx-col__title"><span className="material-symbols-outlined" style={{ fontSize: 14 }}>trending_up</span> Rentabilidad</div>
-            {(() => {
-              const costInput = l.unitPrice || 0;
-              const pvp = ctxData.pvp;
-              const margin = pvp - costInput;
-              const marginPct = pvp > 0 ? (margin / pvp) * 100 : 0;
-              return (
-                <div className="pdl-ctx-col__margin">
-                  <div className="pdl-margin-row">
-                    <span className="pdl-margin-label">Margen Neto</span>
-                    <span className={`pdl-margin-pct ${marginPct >= 0 ? '' : 'pdl-margin-pct--neg'}`}>{formatMoney(marginPct, getDecimalConfig().percentage)}%</span>
-                  </div>
-                  <div className="pdl-margin-bar">
-                    <div className="pdl-margin-bar__fill" style={{ width: `${Math.min(100, Math.max(0, marginPct))}%` }} />
-                  </div>
-                  <div className="pdl-margin-meta">
-                    <span>PVP: {formatMoneyWithSymbol(pvp, getDecimalConfig().salesUnitPrice)}</span>
-                    <span>Desc Máx: {formatMoney(ctxData.maxDiscountPercent, getDecimalConfig().percentage)}%</span>
-                  </div>
-                </div>
-              );
-            })()}
-          </div>
-        </div>
-      )}
-      {l.itemId && l._contextLoading && (
-        <div className="pdl-line__context pdl-line__context--loading">
-          <span className="material-symbols-outlined" style={{ fontSize: 18, color: 'var(--color-primary)' }}>hourglass_empty</span>
-          Cargando contexto...
-        </div>
-      )}
+        </section>
+      </div>
     </div>
   );
 }
@@ -707,9 +727,66 @@ function CreateItemLineAction({ line: l, ctx, disabled }: { line: any; ctx: Retu
           supplierCode: l.xmlSupplierCode ?? undefined,
           supplierId: ctx.formWatch.supplierId || undefined,
           source: l.xmlSupplierCode ? 'PurchaseReception' : 'Manual',
+          purchaseContext: l.unitPrice > 0
+            ? { unitCost: l.unitPrice, quantity: l.quantity, discountPct: l.discountPct ?? undefined }
+            : undefined,
         }}
         onClose={() => setOpen(false)}
         onCreated={handleCreated}
+      />
+    </>
+  );
+}
+
+/**
+ * "Crear Item" para una línea que sí tiene PurchaseReceptionLineId — reutiliza el mismo wrapper
+ * que usa la pantalla de Recepción (`CreateItemFromReceptionLineModal`), que crea el Item y lo
+ * vincula server-side con `matchItem` en un solo paso, sin reimplementar esa lógica aquí.
+ */
+function ReceptionCreateItemAction({ line: l, ctx, disabled }: { line: any; ctx: ReturnType<typeof usePurchasesPage>; disabled?: boolean }) {
+  const [open, setOpen] = useState(false);
+
+  const receptionLine: PurchaseReceptionLineMatch = {
+    lineId: l.purchaseReceptionLineId,
+    supplierId: ctx.formWatch.supplierId || null,
+    supplierCode: l.xmlSupplierCode ?? null,
+    supplierAuxCode: l.xmlSupplierAuxCode ?? null,
+    description: l.description,
+    quantity: l.quantity,
+    unitPrice: l.unitPrice,
+    itemId: l.itemId ?? null,
+    matchStatus: l.itemMatchStatus ?? 'PENDING',
+    matchedAt: null,
+    suggestions: [],
+  };
+
+  const applyLinked = (itemId: string, matchStatus: string, label: string) => {
+    const current = ctx.getValues('lines');
+    ctx.setValue('lines', current.map((x: PurchaseLineFormValues) => x._key === l._key
+      ? { ...x, itemId, itemMatchStatus: matchStatus, description: label }
+      : x));
+    const wh = l.warehouseId || ctx.formWatch.globalWarehouseId;
+    if (wh) void ctx.fetchItemContext(l._key, itemId, wh);
+  };
+
+  return (
+    <>
+      <ZHBtn variant="ghost" size="xs" type="button" disabled={disabled} onClick={() => setOpen(true)}>
+        Crear Item
+      </ZHBtn>
+      <CreateItemFromReceptionLineModal
+        open={open}
+        line={receptionLine}
+        supplierName={ctx.supplierProfile?.name ?? ''}
+        purchaseContext={l.unitPrice > 0
+          ? { unitCost: l.unitPrice, quantity: l.quantity, discountPct: l.discountPct ?? undefined }
+          : undefined}
+        onClose={() => setOpen(false)}
+        onCreated={(updatedLine, item) => {
+          setOpen(false);
+          if (updatedLine.itemId) applyLinked(updatedLine.itemId, updatedLine.matchStatus, `${item.sku} — ${item.shortName}`);
+        }}
+        onCreatedButNotLinked={() => setOpen(false)}
       />
     </>
   );

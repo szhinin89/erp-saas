@@ -12,6 +12,7 @@ public static class PurchaseDraftMapper
         draft.AccessKey, draft.AuthorizationNumber, draft.AuthorizationDate,
         draft.SriPaymentMethodCode,
         draft.Lines.Select(l => new PurchaseDraftLineDto(
+            PurchaseReceptionLineId: l.Id,
             ItemId: l.ItemId, ItemMatchStatus: ItemMatchingMapper.ToStatusCode(l.MatchStatus),
             Description: l.Description, Quantity: l.Quantity, UnitPrice: l.UnitPrice,
             VatCode: l.VatCode, WarehouseId: null, Notes: null,

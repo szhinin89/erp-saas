@@ -8,6 +8,7 @@ namespace ERP.Application.Modules.Purchases.PurchaseReception.DTOs;
 /// siguen null porque no existen en la línea de recepción — el usuario los completa manualmente.
 /// </summary>
 public sealed record PurchaseDraftLineDto(
+    Guid PurchaseReceptionLineId,
     Guid? ItemId, string ItemMatchStatus, string Description, decimal Quantity, decimal UnitPrice,
     string VatCode, Guid? WarehouseId, string? Notes, decimal DiscountPct, string? IceCode,
     string? SupplierCode, string? SupplierAuxCode, decimal Discount, decimal LineSubtotal,

@@ -136,4 +136,21 @@ public sealed class PurchaseReceptionLine : IMustHaveTenant
         MatchedAt   = matchedAtUtc;
         MatchedBy   = matchedBy;
     }
+
+    /// <summary>
+    /// Revierte una conciliación resuelta incorrectamente — Auto o Manual — de vuelta a
+    /// <see cref="ItemMatchStatus.Pending"/>, para que el usuario pueda rehacer el matching desde
+    /// cero. No toca ningún campo del snapshot tributario/XML: solo <see cref="ItemId"/>,
+    /// <see cref="MatchStatus"/>, <see cref="MatchedAt"/> y <see cref="MatchedBy"/>.
+    /// </summary>
+    public void UnmatchItem()
+    {
+        if (MatchStatus is not (ItemMatchStatus.AutoMatched or ItemMatchStatus.ManuallyMatched) || ItemId is null)
+            throw new InvalidOperationException("La línea no tiene un ítem asociado para desvincular.");
+
+        ItemId      = null;
+        MatchStatus = ItemMatchStatus.Pending;
+        MatchedAt   = null;
+        MatchedBy   = null;
+    }
 }

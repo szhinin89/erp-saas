@@ -96,6 +96,9 @@ public sealed class PurchaseInvoiceDetailConfiguration : IEntityTypeConfiguratio
         builder.Property(x => x.OrderedQuantity).HasColumnName("ordered_quantity")
             .HasColumnType("numeric(18,4)");
 
+        // ── Purchase Reception Traceability ──────────────────────────────
+        builder.Property(x => x.PurchaseReceptionLineId).HasColumnName("purchase_reception_line_id");
+
         // ── Meta ────────────────────────────────────────────────────────
         builder.Property(x => x.Notes).HasColumnName("notes")
             .HasMaxLength(PurchaseInvoiceDetail.NotesMaxLen);
@@ -132,5 +135,9 @@ public sealed class PurchaseInvoiceDetailConfiguration : IEntityTypeConfiguratio
         builder.HasIndex(x => x.PurchaseOrderDetailId)
             .HasDatabaseName("ix_purchase_invoice_details_po_detail")
             .HasFilter("purchase_order_detail_id IS NOT NULL");
+
+        builder.HasIndex(x => x.PurchaseReceptionLineId)
+            .HasDatabaseName("ix_purchase_invoice_details_reception_line")
+            .HasFilter("purchase_reception_line_id IS NOT NULL");
     }
 }

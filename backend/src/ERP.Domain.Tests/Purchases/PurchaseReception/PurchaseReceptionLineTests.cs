@@ -94,6 +94,67 @@ public sealed class PurchaseReceptionLineTests
     }
 
     [Fact]
+    public void UnmatchItem_reverts_an_auto_matched_line_to_pending()
+    {
+        var line = CreateLine();
+        line.AutoMatch(Guid.NewGuid());
+
+        line.UnmatchItem();
+
+        line.ItemId.Should().BeNull();
+        line.MatchStatus.Should().Be(ItemMatchStatus.Pending);
+        line.MatchedAt.Should().BeNull();
+        line.MatchedBy.Should().BeNull();
+    }
+
+    [Fact]
+    public void UnmatchItem_reverts_a_manually_matched_line_to_pending()
+    {
+        var line = CreateLine();
+        line.ManualMatch(Guid.NewGuid(), Guid.NewGuid(), DateTime.UtcNow);
+
+        line.UnmatchItem();
+
+        line.ItemId.Should().BeNull();
+        line.MatchStatus.Should().Be(ItemMatchStatus.Pending);
+        line.MatchedAt.Should().BeNull();
+        line.MatchedBy.Should().BeNull();
+    }
+
+    [Fact]
+    public void UnmatchItem_throws_when_the_line_has_no_item_associated()
+    {
+        var line = CreateLine();
+
+        var act = () => line.UnmatchItem();
+
+        act.Should().Throw<InvalidOperationException>();
+    }
+
+    [Fact]
+    public void UnmatchItem_does_not_touch_the_xml_snapshot_fields()
+    {
+        var line = CreateLine();
+        line.AutoMatch(Guid.NewGuid());
+
+        line.UnmatchItem();
+
+        line.Description.Should().Be("COCA COLA 500 ML");
+        line.SupplierCode.Should().Be("PROV-001");
+        line.SupplierAuxCode.Should().Be("AUX-1");
+        line.Quantity.Should().Be(10m);
+        line.UnitPrice.Should().Be(0.5m);
+        line.VatCode.Should().Be("2");
+        line.TaxCode.Should().Be("2");
+        line.VatPercentage.Should().Be(15m);
+        line.TaxValue.Should().Be(0.75m);
+        line.DiscountPct.Should().Be(0m);
+        line.Discount.Should().Be(0m);
+        line.LineSubtotal.Should().Be(5m);
+        line.TotalLine.Should().Be(5.75m);
+    }
+
+    [Fact]
     public void Create_throws_when_a_resolved_status_has_no_item()
     {
         var act = () => PurchaseReceptionLine.Create(

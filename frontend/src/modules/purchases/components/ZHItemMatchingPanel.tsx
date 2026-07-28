@@ -5,6 +5,7 @@ import { ZHBtn } from '../../../components/zh/ZHForm';
 import { ZHTabBar, type ZHTab } from '../../../components/zh/ZHTabBar';
 import { formatMoneyWithSymbol } from '../../../lib/sanitizers';
 import { formatApiRequestError } from '../../lib/apiError';
+import { message } from '../../../lib/messages';
 import { itemService } from '../../items/api/itemService';
 import { ProductPicker, type ProductProfile } from './ProductPicker';
 import { CreateItemFromReceptionLineModal } from './CreateItemFromReceptionLineModal';
@@ -47,6 +48,7 @@ export function ZHItemMatchingPanel({ open, documentId, supplierName, onClose }:
   const [itemLabels, setItemLabels] = useState<Record<string, ItemLabel>>({});
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [applyingId, setApplyingId] = useState<string | null>(null);
+  const [unmatchingId, setUnmatchingId] = useState<string | null>(null);
   const [bulkApplying, setBulkApplying] = useState(false);
   const [createItemLine, setCreateItemLine] = useState<PurchaseReceptionLineMatch | null>(null);
   const [filter, setFilter] = useState<FilterId>('all');
@@ -167,6 +169,33 @@ export function ZHItemMatchingPanel({ open, documentId, supplierName, onClose }:
       setError(formatApiRequestError(err, { generic: 'No se pudo vincular la línea. Intente nuevamente.' }));
     } finally {
       setApplyingId(null);
+    }
+  };
+
+  const handleUnmatch = async (lineId: string) => {
+    const confirmed = await message.confirm({
+      title: 'Desvincular Item',
+      message: 'La línea volverá a estado Pendiente y podrá buscar o crear un ítem nuevamente. Esta acción no afecta el XML ni compras ya generadas.',
+      confirmLabel: 'Desvincular',
+      variant: 'warning',
+    });
+    if (!confirmed) return;
+
+    setUnmatchingId(lineId);
+    try {
+      const updated = await purchaseReceptionService.unmatchItem(lineId);
+      setLines((prev) => prev.map((l) => (l.lineId === lineId ? updated : l)));
+      setItemLabels((prev) => {
+        const next = { ...prev };
+        delete next[lineId];
+        return next;
+      });
+      setChoices((prev) => ({ ...prev, [lineId]: null }));
+      message.success('Item desvinculado. La línea está pendiente de matching.');
+    } catch (err) {
+      setError(formatApiRequestError(err, { generic: 'No se pudo desvincular el ítem. Intente nuevamente.' }));
+    } finally {
+      setUnmatchingId(null);
     }
   };
 
@@ -309,6 +338,11 @@ export function ZHItemMatchingPanel({ open, documentId, supplierName, onClose }:
                               Ver Item
                             </ZHBtn>
                           )}
+                          <ZHBtn variant="ghost" size="xs" type="button"
+                            disabled={unmatchingId === line.lineId}
+                            onClick={() => void handleUnmatch(line.lineId)}>
+                            {unmatchingId === line.lineId ? 'Desvinculando...' : 'Desvincular Item'}
+                          </ZHBtn>
                         </div>
                       ) : (
                         <div className="pur-matching-actions">

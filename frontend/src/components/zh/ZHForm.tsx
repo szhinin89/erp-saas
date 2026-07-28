@@ -67,7 +67,7 @@ export function ZHFormSection(props: { title?: string; description?: string; chi
   );
 }
 
-export function ZHGrid(props: { cols: 1 | 2 | 3; children: React.ReactNode }) {
+export function ZHGrid(props: { cols: 1 | 2 | 3 | 4; children: React.ReactNode }) {
   return <div className={`zh-grid zh-grid--${props.cols}`}>{props.children}</div>;
 }
 

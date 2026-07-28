@@ -46,6 +46,8 @@ public sealed record PurchaseInvoiceDetailDto(
     Guid? WarehouseId, string? SnapshotWarehouseCode,
     // ── PO Traceability ─────────────────────────────────────────────
     Guid? PurchaseOrderDetailId, decimal? OrderedQuantity,
+    // ── Purchase Reception Traceability ──────────────────────────────
+    Guid? PurchaseReceptionLineId,
     // ── Meta ────────────────────────────────────────────────────────
     string? Notes, short SortOrder);
 

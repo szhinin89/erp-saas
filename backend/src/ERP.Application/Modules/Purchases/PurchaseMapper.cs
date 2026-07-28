@@ -35,6 +35,7 @@ internal static class PurchaseMapper
         l.SnapshotItemPvp,
         l.WarehouseId, l.SnapshotWarehouseCode,
         l.PurchaseOrderDetailId, l.OrderedQuantity,
+        l.PurchaseReceptionLineId,
         l.Notes, l.SortOrder);
 
     public static PurchasePaymentScheduleDto MapSchedule(PurchasePaymentSchedule s) => new(

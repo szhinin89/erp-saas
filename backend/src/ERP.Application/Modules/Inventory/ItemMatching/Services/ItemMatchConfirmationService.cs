@@ -14,6 +14,15 @@ public interface IItemMatchConfirmationService
     Task ConfirmAsync(
         PurchaseReceptionDocument document, PurchaseReceptionLine line, Guid itemId,
         Guid matchedBy, DateTime matchedAtUtc, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Efecto inverso de <see cref="ConfirmAsync"/>: antes de desvincular la línea, revierte el
+    /// <c>ItemSupplierCode</c> que pudo haberse creado automáticamente para el ítem incorrecto —
+    /// para que el motor de sugerencias (<see cref="IItemMatchFinder"/>) no lo vuelva a proponer.
+    /// </summary>
+    Task UnconfirmAsync(
+        PurchaseReceptionDocument document, PurchaseReceptionLine line, Guid unmatchedBy,
+        CancellationToken cancellationToken = default);
 }
 
 public sealed class ItemMatchConfirmationService : IItemMatchConfirmationService
@@ -41,5 +50,22 @@ public sealed class ItemMatchConfirmationService : IItemMatchConfirmationService
         }
 
         line.ManualMatch(itemId, matchedBy, matchedAtUtc);
+    }
+
+    public async Task UnconfirmAsync(
+        PurchaseReceptionDocument document, PurchaseReceptionLine line, Guid unmatchedBy,
+        CancellationToken cancellationToken = default)
+    {
+        if (document.SupplierId is { } supplierId && !string.IsNullOrWhiteSpace(line.SupplierCode) && line.ItemId is { } previousItemId)
+        {
+            var item = await _itemRepo.GetByIdAsync(previousItemId, document.TenantId, cancellationToken);
+            if (item is not null)
+            {
+                item.DisableSupplierCode(supplierId, line.SupplierCode, unmatchedBy);
+                await _itemRepo.SaveChangesAsync(cancellationToken);
+            }
+        }
+
+        line.UnmatchItem();
     }
 }

@@ -47,6 +47,8 @@ export interface PurchaseLineDto {
   // ── PO Traceability ─────────────────────────────────────────────
   purchaseOrderDetailId: string | null;
   orderedQuantity: number | null;
+  // ── Purchase Reception Traceability ──────────────────────────────
+  purchaseReceptionLineId: string | null;
   // ── Meta ────────────────────────────────────────────────────────
   notes: string | null;
   sortOrder: number;
@@ -134,6 +136,7 @@ export interface PurchaseLineInput {
   notes?: string | null;
   purchaseOrderDetailId?: string | null;
   orderedQuantity?: number | null;
+  purchaseReceptionLineId?: string | null;
 }
 
 export interface CreatePurchasePayload {

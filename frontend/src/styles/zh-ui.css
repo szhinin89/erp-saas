@@ -362,10 +362,16 @@ input[type="date"] { appearance: none; }
 .zh-grid--1 { grid-template-columns: 1fr; }
 .zh-grid--2 { grid-template-columns: 1fr 1fr; }
 .zh-grid--3 { grid-template-columns: 1fr 1fr 1fr; }
+.zh-grid--4 { grid-template-columns: repeat(4, 1fr); }
+
+@media (max-width: 720px) {
+  .zh-grid--4 { grid-template-columns: 1fr 1fr; }
+}
 
 @media (max-width: 560px) {
   .zh-grid--2,
-  .zh-grid--3 { grid-template-columns: 1fr; }
+  .zh-grid--3,
+  .zh-grid--4 { grid-template-columns: 1fr; }
 }
 
 .zh-col-span-2 { grid-column: 1 / span 2; }
@@ -590,6 +596,39 @@ input[type="date"] { appearance: none; }
   font-size: 12px;
   color: var(--color-text-secondary);
 }
+
+/* ── Simulador de precio/margen (CreateItemModal — Compras) ──────────────
+   Misma grilla oficial (.zh-grid--4) que el resto del modal — esta clase
+   solo agrega el fondo de "tarjeta de resultado" alrededor de esa grilla,
+   nunca un sistema de alineación paralelo. */
+.citm-margin-sim {
+  margin-top: var(--space-3);
+  padding: var(--space-4);
+  background: var(--color-surface-container-low);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+}
+.citm-margin-sim__item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  min-width: 0;
+}
+.citm-margin-sim__label {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-text-secondary);
+}
+.citm-margin-sim__value {
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--color-text-primary);
+}
+.citm-margin-sim__value--pct { font-size: 20px; color: var(--color-primary); }
+.citm-margin-sim__value--neg { color: var(--color-error); }
 
 @media (max-width: 520px) {
   .zh-form-body { padding: 18px; }

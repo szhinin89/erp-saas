@@ -1,5 +1,5 @@
 import { CreateItemModal } from '../../../components/items/CreateItemModal/CreateItemModal';
-import type { ItemCreatedResult } from '../../../components/items/CreateItemModal/types';
+import type { CreateItemInitialData, ItemCreatedResult } from '../../../components/items/CreateItemModal/types';
 import { message } from '../../../lib/messages';
 import { logApiDevError } from '../../lib/apiError';
 import { purchaseReceptionService, type PurchaseReceptionLineMatch } from '../api/purchaseReceptionService';
@@ -13,6 +13,13 @@ type Props = {
   onCreated: (line: PurchaseReceptionLineMatch, item: ItemCreatedResult) => void;
   /** El Item se creó pero el auto-vínculo falló — el llamador puede precargarlo como sugerencia para "Vincular Item". */
   onCreatedButNotLinked?: (lineId: string, item: ItemCreatedResult) => void;
+  /**
+   * Habilita, opcionalmente, la sección "Información de Compra" + simulador de precio/margen del
+   * modal genérico (ver `CreateItemModal/types.ts`). `PurchaseReceptionLineMatch` no trae
+   * descuento — quien invoca desde una línea con datos más completos (p. ej. `/purchases`) puede
+   * pasarlo acá; si se omite, el modal se comporta exactamente igual que antes de esta mejora.
+   */
+  purchaseContext?: CreateItemInitialData['purchaseContext'];
 };
 
 /**
@@ -21,7 +28,7 @@ type Props = {
  * endpoint de vinculación manual (`matchItem`) ya existente — no reimplementa la relación
  * proveedor↔ítem ni la actualización de la línea.
  */
-export function CreateItemFromReceptionLineModal({ open, line, supplierName, onClose, onCreated, onCreatedButNotLinked }: Props) {
+export function CreateItemFromReceptionLineModal({ open, line, supplierName, onClose, onCreated, onCreatedButNotLinked, purchaseContext }: Props) {
   const handleCreated = async (item: ItemCreatedResult) => {
     if (!line) return;
     onClose();
@@ -49,6 +56,7 @@ export function CreateItemFromReceptionLineModal({ open, line, supplierName, onC
         supplierName,
         supplierId: line.supplierId ?? undefined,
         source: 'PurchaseReception',
+        purchaseContext,
       } : undefined}
       onClose={onClose}
       onCreated={(item) => void handleCreated(item)}
