@@ -3,8 +3,10 @@ using ERP.Domain.Branches.Entities;
 using ERP.Domain.Modules.Company.Entities;
 using ERP.Domain.Modules.Purchases.PurchaseReception.Entities;
 using ERP.Domain.Modules.Purchases.PurchaseReception.Enums;
+using ERP.Domain.Modules.Purchases.PurchaseReception.Models;
 using ERP.Domain.Tenants.Entities;
 using ERP.Infrastructure.Persistence;
+using ERP.Infrastructure.Persistence.Interceptors;
 using ERP.Infrastructure.Persistence.Repositories.Purchases;
 using FluentAssertions;
 using MediatR;
@@ -65,8 +67,13 @@ public sealed class PurchaseReceptionDocumentRepositoryTests : IAsyncLifetime
 
     private ErpDbContext CreateContext(Guid tenantId, Guid companyId)
     {
+        // AddInterceptors(NewChildEntityTrackingInterceptor) replica la configuración real de
+        // AddInfrastructure() (DependencyInjection.cs) — sin él, agregar líneas nuevas a un
+        // PurchaseReceptionDocument ya cargado por query dispara la clasificación errónea de EF
+        // Core que esa infraestructura FROZEN corrige (ver ADR-020).
         var options = new DbContextOptionsBuilder<ErpDbContext>()
             .UseNpgsql(_postgres.GetConnectionString())
+            .AddInterceptors(new NewChildEntityTrackingInterceptor())
             .Options;
 
         return new ErpDbContext(options, new FixedCurrentTenant(tenantId), new NoOpPublisher(), new FixedCurrentCompany(companyId));
@@ -116,9 +123,18 @@ public sealed class PurchaseReceptionDocumentRepositoryTests : IAsyncLifetime
         await repo.SaveChangesAsync();
 
         var downloadedAt = new DateTime(2026, 7, 1, 22, 0, 0, DateTimeKind.Utc);
+        var line = PurchaseReceptionLine.Create(
+            document.Id, _tenantId, "Producto de prueba", quantity: 2m, unitPrice: 10m,
+            vatCode: "2", taxCode: "2", vatPercentage: 15m, taxValue: 3m,
+            discountPct: 0m, discount: 0m, lineSubtotal: 20m, totalLine: 23m,
+            iceCode: "3020", iceValue: 1.5m, supplierCode: "PROV-001");
         document.AttachSriAuthorization(
             document.AccessKey, new DateTime(2026, 7, 1, 21, 30, 0, DateTimeKind.Utc),
-            "<factura>contenido autorizado</factura>", downloadedAt, [], _createdBy);
+            "<factura>contenido autorizado</factura>", downloadedAt, [line], _createdBy,
+            docTypeCode: "01", sriPaymentMethodCode: "20",
+            processing: new PurchaseReceptionProcessingOutcome(
+                PurchaseReceptionProcessingStatus.ProcessedWithWarnings, LinesDetected: 2, LinesProcessed: 1,
+                Notes: "Línea 2 (PROV-999): La línea no tiene impuesto IVA. — línea omitida."));
         await repo.SaveChangesAsync();
 
         await using var verifyDb = CreateContext();
@@ -130,6 +146,15 @@ public sealed class PurchaseReceptionDocumentRepositoryTests : IAsyncLifetime
         stored.XmlContent.Should().Be("<factura>contenido autorizado</factura>");
         stored.AuthorizationNumber.Should().Be(document.AccessKey);
         stored.XmlDownloadedAt.Should().Be(downloadedAt);
+
+        // Fase 4/7: trazabilidad de procesamiento persiste y se recupera completa.
+        stored.ProcessingStatus.Should().Be(PurchaseReceptionProcessingStatus.ProcessedWithWarnings);
+        stored.LinesDetectedCount.Should().Be(2);
+        stored.LinesProcessedCount.Should().Be(1);
+        stored.ProcessingNotes.Should().Contain("PROV-999");
+        stored.Lines.Should().ContainSingle();
+        stored.Lines[0].IceCode.Should().Be("3020");
+        stored.Lines[0].IceValue.Should().Be(1.5m);
     }
 
     [Fact]

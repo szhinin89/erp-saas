@@ -47,7 +47,12 @@ export function usePurchaseReceptionPage() {
       setResult((prev) => prev === null ? prev : {
         ...prev,
         items: prev.items.map((item) => item.documentId === documentId
-          ? { ...item, documentStatus: download.status }
+          ? {
+            ...item,
+            documentStatus: download.status,
+            processingStatus: download.processingStatus,
+            processingNotes: download.processingNotes,
+          }
           : item),
       });
       setXmlRowState((prev) => {

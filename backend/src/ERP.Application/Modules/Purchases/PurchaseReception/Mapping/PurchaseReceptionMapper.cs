@@ -19,7 +19,9 @@ public static class PurchaseReceptionMapper
         item.PurchaseExists,
         ToStatusCode(item.Status),
         document.Id,
-        ToDocumentStatusCode(document.Status));
+        ToDocumentStatusCode(document.Status),
+        ToProcessingStatusCode(document.ProcessingStatus),
+        document.ProcessingNotes);
 
     private static string ToStatusCode(PurchaseReceptionStatus status) => status switch
     {
@@ -35,6 +37,15 @@ public static class PurchaseReceptionMapper
         PurchaseReceptionDocumentStatus.Verified => "VERIFIED",
         PurchaseReceptionDocumentStatus.Processed => "PROCESSED",
         PurchaseReceptionDocumentStatus.Cancelled => "CANCELLED",
+        _ => throw new ArgumentOutOfRangeException(nameof(status), status, null),
+    };
+
+    public static string ToProcessingStatusCode(PurchaseReceptionProcessingStatus status) => status switch
+    {
+        PurchaseReceptionProcessingStatus.Pending => "PENDING",
+        PurchaseReceptionProcessingStatus.Processed => "PROCESSED",
+        PurchaseReceptionProcessingStatus.ProcessedWithWarnings => "PROCESSED_WITH_WARNINGS",
+        PurchaseReceptionProcessingStatus.Failed => "FAILED",
         _ => throw new ArgumentOutOfRangeException(nameof(status), status, null),
     };
 }

@@ -19,6 +19,9 @@ export const purchaseLineSchema = z.object({
   context: z.custom<PurchaseItemContextDto>().optional(),
   _contextLoading: z.boolean().optional(),
   // Detalle XML de solo lectura (Recepción Electrónica → Crear compra) — nunca se envía al API.
+  // itemMatchStatus solo viene informado en líneas de Recepción ya conciliadas (Item Matching);
+  // las líneas de Compra Manual nunca lo traen.
+  itemMatchStatus: z.enum(['PENDING', 'NEEDS_REVIEW', 'AUTO_MATCHED', 'MANUALLY_MATCHED']).optional(),
   xmlSupplierCode: z.string().optional(),
   xmlSupplierAuxCode: z.string().nullable().optional(),
   xmlDiscount: z.number().optional(),

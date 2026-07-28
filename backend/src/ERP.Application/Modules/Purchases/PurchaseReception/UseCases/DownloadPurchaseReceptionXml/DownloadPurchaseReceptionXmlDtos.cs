@@ -5,4 +5,8 @@ public sealed record DownloadPurchaseReceptionXmlResultDto(
     string Status,
     bool XmlDownloaded,
     string? AuthorizationNumber,
-    DateTime? AuthorizationDate);
+    DateTime? AuthorizationDate,
+    string ProcessingStatus,
+    int LinesDetectedCount,
+    int LinesProcessedCount,
+    string? ProcessingNotes);

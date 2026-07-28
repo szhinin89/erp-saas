@@ -1,5 +1,6 @@
 using ERP.Domain.Common;
 using ERP.Domain.Modules.Purchases.PurchaseReception.Enums;
+using ERP.Domain.Modules.Purchases.PurchaseReception.Models;
 
 namespace ERP.Domain.Modules.Purchases.PurchaseReception.Entities;
 
@@ -18,6 +19,9 @@ public sealed class PurchaseReceptionDocument : AuditableEntity, ITenantScopedEn
     public const int AccessKeyMaxLen           = 49;
     public const int InvoiceNumberMaxLen       = 30;
     public const int AuthorizationNumberMaxLen = 49;
+    public const int DocTypeCodeMaxLen         = 10;
+    public const int SriPaymentMethodCodeMaxLen = 10;
+    public const int ProcessingNotesMaxLen     = 2000;
 
     public Guid CompanyId { get; private set; }
 
@@ -45,6 +49,29 @@ public sealed class PurchaseReceptionDocument : AuditableEntity, ITenantScopedEn
 
     /// <summary>Momento en que se descargó/almacenó el XML autorizado — null mientras no se haya consultado el SRI.</summary>
     public DateTime? XmlDownloadedAt { get; private set; }
+
+    /// <summary>Código de tipo de comprobante SRI (p. ej. "01" Factura) — null hasta que se descarga y parsea el XML.</summary>
+    public string? DocTypeCode { get; private set; }
+
+    /// <summary>Código de forma de pago SRI leído del XML — null hasta que se descarga y parsea el XML.</summary>
+    public string? SriPaymentMethodCode { get; private set; }
+
+    /// <summary>
+    /// Eje independiente del ciclo de vida fiscal (<see cref="Status"/>): mide si pudimos
+    /// interpretar el CONTENIDO del XML ya autorizado. Un documento <see cref="PurchaseReceptionDocumentStatus.Verified"/>
+    /// puede tener <see cref="PurchaseReceptionProcessingStatus.Failed"/> — el comprobante es
+    /// fiscalmente válido independientemente de nuestra capacidad de parsear su detalle.
+    /// </summary>
+    public PurchaseReceptionProcessingStatus ProcessingStatus { get; private set; } = PurchaseReceptionProcessingStatus.Pending;
+
+    /// <summary>Cantidad de elementos &lt;detalle&gt; detectados en el XML — 0 mientras no se procese.</summary>
+    public int LinesDetectedCount { get; private set; }
+
+    /// <summary>Cantidad de líneas que efectivamente se lograron interpretar y persistir.</summary>
+    public int LinesProcessedCount { get; private set; }
+
+    /// <summary>Resumen legible de advertencias/errores de procesamiento — para soporte técnico.</summary>
+    public string? ProcessingNotes { get; private set; }
 
     public decimal Subtotal    { get; private set; }
     public decimal VatAmount   { get; private set; }
@@ -156,23 +183,90 @@ public sealed class PurchaseReceptionDocument : AuditableEntity, ITenantScopedEn
     /// el documento a Verified. Solo válido desde Imported — si ya está Verified/Processed/Cancelled,
     /// el llamador debe tratarlo como un error de estado, no reintentar la descarga silenciosamente.
     /// </summary>
+    /// <summary>
+    /// <paramref name="docTypeCode"/> es null cuando el XML se autorizó pero no pudo interpretarse
+    /// (comprobante sin detalle parseable) — el documento igual se verifica con líneas vacías;
+    /// en ese caso <c>CreatePurchaseReceptionDraftHandler</c> no podrá generar un borrador completo.
+    /// </summary>
     public void AttachSriAuthorization(
         string authorizationNumber, DateTime authorizationDate, string xmlContent, DateTime downloadedAtUtc,
-        IEnumerable<PurchaseReceptionLine> lines, Guid updatedBy)
+        IEnumerable<PurchaseReceptionLine> lines, Guid updatedBy,
+        string? docTypeCode, string? sriPaymentMethodCode,
+        PurchaseReceptionProcessingOutcome processing)
     {
         EnsureImported();
         if (string.IsNullOrWhiteSpace(authorizationNumber))
             throw new ArgumentException("El número de autorización es obligatorio.", nameof(authorizationNumber));
         if (string.IsNullOrWhiteSpace(xmlContent))
             throw new ArgumentException("El contenido XML no puede estar vacío.", nameof(xmlContent));
+        ValidateProcessingOutcome(processing);
 
         AuthorizationNumber = authorizationNumber.Trim();
         AuthorizationDate   = authorizationDate;
         XmlContent          = xmlContent;
         XmlDownloadedAt     = downloadedAtUtc;
+        DocTypeCode         = docTypeCode?.Trim();
+        SriPaymentMethodCode = sriPaymentMethodCode?.Trim();
         Status              = PurchaseReceptionDocumentStatus.Verified;
+        ApplyProcessingOutcome(processing, docTypeCode, sriPaymentMethodCode, overwriteHeaderWhenNull: true);
         _lines.Clear();
         _lines.AddRange(lines);
         SetUpdated(updatedBy);
+    }
+
+    /// <summary>
+    /// Reintenta interpretar el detalle sobre el XML YA GUARDADO en <see cref="XmlContent"/> — nunca
+    /// vuelve a consultar el SRI (ver <c>CreatePurchaseReceptionDraftHandler</c>, único invocador). Solo válido
+    /// cuando el intento anterior falló por completo (<see cref="PurchaseReceptionProcessingStatus.Failed"/>):
+    /// esa condición garantiza que nunca hay Item Matching previo que perder — si el documento ya
+    /// tiene líneas conciliadas, reprocesar las reemplazaría silenciosamente, algo que esta
+    /// infraestructura nunca permite.
+    /// </summary>
+    public void ReprocessDetail(
+        IEnumerable<PurchaseReceptionLine> lines, PurchaseReceptionProcessingOutcome processing,
+        string? docTypeCode, string? sriPaymentMethodCode, Guid updatedBy)
+    {
+        EnsureVerified();
+        if (string.IsNullOrWhiteSpace(XmlContent))
+            throw new InvalidOperationException("El documento no tiene XML guardado para reprocesar.");
+        if (ProcessingStatus != PurchaseReceptionProcessingStatus.Failed)
+            throw new InvalidOperationException(
+                "Solo se puede reprocesar un documento cuyo procesamiento anterior fue Failed — evita sobrescribir Item Matching ya resuelto.");
+        ValidateProcessingOutcome(processing);
+
+        ApplyProcessingOutcome(processing, docTypeCode, sriPaymentMethodCode, overwriteHeaderWhenNull: false);
+        _lines.Clear();
+        _lines.AddRange(lines);
+        SetUpdated(updatedBy);
+    }
+
+    private static void ValidateProcessingOutcome(PurchaseReceptionProcessingOutcome processing)
+    {
+        if (processing.Status == PurchaseReceptionProcessingStatus.Failed && processing.LinesProcessed != 0)
+            throw new ArgumentException(
+                "Un procesamiento Failed no puede reportar líneas procesadas.", nameof(processing));
+        if (processing.Status != PurchaseReceptionProcessingStatus.Failed && processing.LinesProcessed == 0
+            && processing.Status != PurchaseReceptionProcessingStatus.Pending)
+            throw new ArgumentException(
+                "Un procesamiento Processed/ProcessedWithWarnings requiere al menos una línea procesada.", nameof(processing));
+    }
+
+    private void ApplyProcessingOutcome(
+        PurchaseReceptionProcessingOutcome processing, string? docTypeCode, string? sriPaymentMethodCode,
+        bool overwriteHeaderWhenNull)
+    {
+        ProcessingStatus    = processing.Status;
+        LinesDetectedCount  = processing.LinesDetected;
+        LinesProcessedCount = processing.LinesProcessed;
+        ProcessingNotes     = processing.Notes?.Trim();
+
+        // En la primera descarga, un docTypeCode/sriPaymentMethodCode null refleja fielmente que no
+        // se pudo interpretar (overwriteHeaderWhenNull=true). En un reprocesamiento, un null solo
+        // significa "esta vez tampoco se pudo leer la cabecera" — nunca debe borrar un valor bueno
+        // que ya estaba guardado de un intento anterior.
+        if (overwriteHeaderWhenNull || docTypeCode is not null)
+            DocTypeCode = docTypeCode?.Trim();
+        if (overwriteHeaderWhenNull || sriPaymentMethodCode is not null)
+            SriPaymentMethodCode = sriPaymentMethodCode?.Trim();
     }
 }

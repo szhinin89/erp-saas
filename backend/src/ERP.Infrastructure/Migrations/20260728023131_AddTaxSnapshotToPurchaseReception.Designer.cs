@@ -3,6 +3,7 @@ using System;
 using ERP.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace ERP.Infrastructure.Migrations
 {
     [DbContext(typeof(ErpDbContext))]
-    partial class ErpDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260728023131_AddTaxSnapshotToPurchaseReception")]
+    partial class AddTaxSnapshotToPurchaseReception
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -7578,23 +7581,6 @@ namespace ERP.Infrastructure.Migrations
                         .HasColumnType("date")
                         .HasColumnName("issue_date");
 
-                    b.Property<int>("LinesDetectedCount")
-                        .HasColumnType("integer")
-                        .HasColumnName("lines_detected_count");
-
-                    b.Property<int>("LinesProcessedCount")
-                        .HasColumnType("integer")
-                        .HasColumnName("lines_processed_count");
-
-                    b.Property<string>("ProcessingNotes")
-                        .HasMaxLength(2000)
-                        .HasColumnType("character varying(2000)")
-                        .HasColumnName("processing_notes");
-
-                    b.Property<int>("ProcessingStatus")
-                        .HasColumnType("integer")
-                        .HasColumnName("processing_status");
-
                     b.Property<Guid?>("PurchaseId")
                         .HasColumnType("uuid")
                         .HasColumnName("purchase_id");
@@ -7683,9 +7669,6 @@ namespace ERP.Infrastructure.Migrations
                     b.HasIndex("TenantId", "CompanyId")
                         .HasDatabaseName("ix_purchase_reception_documents_tenant_company");
 
-                    b.HasIndex("TenantId", "ProcessingStatus")
-                        .HasDatabaseName("ix_purchase_reception_documents_tenant_processing_status");
-
                     b.HasIndex("TenantId", "Status")
                         .HasDatabaseName("ix_purchase_reception_documents_tenant_status");
 
@@ -7717,10 +7700,6 @@ namespace ERP.Infrastructure.Migrations
                         .HasMaxLength(10)
                         .HasColumnType("character varying(10)")
                         .HasColumnName("ice_code");
-
-                    b.Property<decimal>("IceValue")
-                        .HasColumnType("numeric(18,2)")
-                        .HasColumnName("ice_value");
 
                     b.Property<Guid?>("ItemId")
                         .HasColumnType("uuid")

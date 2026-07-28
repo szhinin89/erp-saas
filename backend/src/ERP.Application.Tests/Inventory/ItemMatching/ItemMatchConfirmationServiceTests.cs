@@ -26,7 +26,11 @@ public sealed class ItemMatchConfirmationServiceTests
         "001-001-000000001", new DateOnly(2026, 7, 1), null, 10m, 1.5m, 11.5m, UserId);
 
     private static PurchaseReceptionLine CreateLine(Guid documentId, string supplierCode) =>
-        PurchaseReceptionLine.Create(documentId, TenantId, "Coca Cola 500ML", 10m, 0.5m, supplierCode);
+        PurchaseReceptionLine.Create(
+            documentId, TenantId, "Coca Cola 500ML", 10m, 0.5m,
+            vatCode: "2", taxCode: "2", vatPercentage: 15m, taxValue: 0.75m,
+            discountPct: 0m, discount: 0m, lineSubtotal: 5m, totalLine: 5.75m,
+            supplierCode: supplierCode);
 
     private static Item CreateItem() => Item.Create(
         TenantId, "SKU-001", "Coca Cola 500ML", "Coca Cola botella 500ML", ItemTypeId, "UNIT",
@@ -80,7 +84,10 @@ public sealed class ItemMatchConfirmationServiceTests
     public async Task ConfirmAsync_skips_ItemSupplierCode_creation_when_the_line_has_no_supplier_code()
     {
         var document = CreateDocument();
-        var line = PurchaseReceptionLine.Create(document.Id, TenantId, "Producto sin código", 1m, 1m);
+        var line = PurchaseReceptionLine.Create(
+            document.Id, TenantId, "Producto sin código", 1m, 1m,
+            vatCode: "2", taxCode: "2", vatPercentage: 15m, taxValue: 0.15m,
+            discountPct: 0m, discount: 0m, lineSubtotal: 1m, totalLine: 1.15m);
         var item = CreateItem();
 
         var itemRepo = new Mock<IItemRepository>();

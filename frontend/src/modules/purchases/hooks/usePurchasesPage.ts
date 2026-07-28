@@ -22,6 +22,7 @@ import { sriLookupService } from '../../items/catalog/api/catalogService';
 import type { SriDocTypeLookup, SriPaymentMethodLookup, SriTaxSupportLookup } from '../../items/catalog/api/catalogService';
 import { calcSummary, generateScheduleRows, roundToTotalAmount } from '../utils/purchaseCalc';
 import { applyServerErrors } from '../../lib/validationErrors';
+import { readApiErrorMessage } from '../../lib/apiError';
 import { message } from '../../../lib/messages';
 import { todayIso, toLocalIsoDate } from '../../../lib/formatters/dateFormatters';
 import { normalizeOptionalCode } from '../../../lib/sanitizers';
@@ -64,6 +65,9 @@ export function usePurchasesPage() {
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState('');
   const [editing, setEditing] = useState<PurchaseInvoiceDto | null>(null);
+  // Aviso no bloqueante cuando el borrador viene de una Recepción Electrónica con
+  // ProcessingStatus PROCESSED_WITH_WARNINGS (algunas líneas del XML no se pudieron interpretar).
+  const [receptionProcessingNotice, setReceptionProcessingNotice] = useState<string | null>(null);
 
   // ── Supplier ───────────────────────────────────────────────────────
   const [supplierProfile, setSupplierProfile] = useState<SupplierProfile | null>(null);
@@ -450,9 +454,14 @@ export function usePurchasesPage() {
 
   // ── Load from Recepción Electrónica (PurchaseReceptionDocument → draft) ────
   const loadFromReception = useCallback(async (receptionDocumentId: string) => {
+    setReceptionProcessingNotice(null);
     try {
       const draft: PurchaseDraftDto = await purchaseReceptionService.createDraft(receptionDocumentId);
       setEditing(null);
+      if (draft.processingStatus === 'PROCESSED_WITH_WARNINGS' && draft.processingNotes) {
+        setReceptionProcessingNotice(
+          `Algunas líneas del XML no se pudieron interpretar y quedaron fuera del borrador: ${draft.processingNotes}`);
+      }
 
       if (draft.supplierId) {
         const cached = profileCache.current.get(draft.supplierId);
@@ -480,7 +489,8 @@ export function usePurchasesPage() {
         quantity: l.quantity, unitPrice: l.unitPrice, vatCode: l.vatCode,
         discountPct: l.discountPct ?? 0, iceCode: l.iceCode ?? undefined,
         warehouseId: l.warehouseId ?? undefined, notes: l.notes ?? undefined,
-        xmlSupplierCode: l.supplierCode, xmlSupplierAuxCode: l.supplierAuxCode,
+        itemMatchStatus: l.itemMatchStatus,
+        xmlSupplierCode: l.supplierCode ?? undefined, xmlSupplierAuxCode: l.supplierAuxCode,
         xmlDiscount: l.discount, xmlLineSubtotal: l.lineSubtotal,
         xmlTaxCode: l.taxCode, xmlVatPercentage: l.vatPercentage,
         xmlTaxValue: l.taxValue, xmlTotalLine: l.totalLine,
@@ -508,9 +518,10 @@ export function usePurchasesPage() {
       setWhPreview(null);
       setWithholding(null);
       setTab('nuevo');
-    } catch {
-      setSaveError('No se pudo generar el borrador de compra desde el documento de recepción.');
-      message.error('No se pudo generar el borrador de compra.');
+    } catch (err) {
+      const backendMessage = readApiErrorMessage(err);
+      setSaveError(backendMessage ?? 'No se pudo generar el borrador de compra desde el documento de recepción.');
+      message.error(backendMessage ?? 'No se pudo generar el borrador de compra.');
     }
   }, [reset]);
 
@@ -724,6 +735,7 @@ export function usePurchasesPage() {
     listSearchInput, setListSearchInput, listStatus, setListStatus,
     listPage, setListPage, listTotal, listPageSize,
     saving, saveError, setSaveError, editing,
+    receptionProcessingNotice, setReceptionProcessingNotice,
 
     // Form (RHF)
     form, register, control, errors, formWatch, setValue, getValues, reset,

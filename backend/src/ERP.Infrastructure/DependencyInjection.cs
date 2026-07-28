@@ -381,6 +381,10 @@ public static class DependencyInjection
             ERP.Infrastructure.Modules.Purchases.PurchaseReception.SriReceptionXmlProvider>();
         services.AddScoped<ERP.Application.Modules.Purchases.PurchaseReception.XmlParsing.IPurchaseXmlDraftParser,
             ERP.Application.Modules.Purchases.PurchaseReception.XmlParsing.PurchaseXmlDraftParser>();
+        // Única implementación de "XML -> líneas + Item Matching" — compartida por la descarga
+        // inicial y la reconstrucción transparente del snapshot dentro de CreatePurchaseReceptionDraft.
+        services.AddScoped<ERP.Application.Modules.Purchases.PurchaseReception.Services.IPurchaseReceptionDetailProcessor,
+            ERP.Application.Modules.Purchases.PurchaseReception.Services.PurchaseReceptionDetailProcessor>();
 
         // Item Matching (Inventory) — motor de conciliación de líneas de PurchaseReception contra el
         // catálogo de Items; consume IItemRepository, no crea un repositorio propio.

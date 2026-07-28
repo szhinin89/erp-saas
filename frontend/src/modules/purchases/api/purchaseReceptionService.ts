@@ -4,6 +4,13 @@ const BASE = '/api/v1/purchases/reception';
 
 export type ItemMatchStatus = 'PENDING' | 'NEEDS_REVIEW' | 'AUTO_MATCHED' | 'MANUALLY_MATCHED';
 
+/**
+ * Eje independiente del estado fiscal (`documentStatus`): mide si pudimos interpretar el
+ * CONTENIDO del XML ya autorizado. Un documento `VERIFIED` puede tener `processingStatus` `FAILED`
+ * — el comprobante es fiscalmente válido aunque su detalle no se haya podido interpretar.
+ */
+export type ProcessingStatus = 'PENDING' | 'PROCESSED' | 'PROCESSED_WITH_WARNINGS' | 'FAILED';
+
 export interface ItemMatchCandidate {
   itemId: string;
   sku: string;
@@ -53,6 +60,10 @@ export interface PurchaseReceptionItem {
   documentId: string;
   /** Estado de ciclo de vida del documento persistido, no confundir con `status` (verificación proveedor/compra). */
   documentStatus: 'IMPORTED' | 'VERIFIED' | 'PROCESSED' | 'CANCELLED';
+  /** Estado de interpretación del detalle XML — independiente de `documentStatus`. */
+  processingStatus: ProcessingStatus;
+  /** Resumen legible de advertencias/errores de procesamiento — null si no hay ninguna. */
+  processingNotes: string | null;
 }
 
 export interface PurchaseReceptionImportResult {
@@ -68,15 +79,22 @@ export interface DownloadXmlResult {
   xmlDownloaded: boolean;
   authorizationNumber: string | null;
   authorizationDate: string | null;
+  processingStatus: ProcessingStatus;
+  linesDetectedCount: number;
+  linesProcessedCount: number;
+  processingNotes: string | null;
 }
 
 /**
- * Línea del borrador — `itemId`/`warehouseId` siempre null en esta fase (sin matcher de ítems).
- * Los campos desde `supplierCode` en adelante son de solo lectura: exactamente lo que trae el XML,
- * para mostrar el detalle completo antes de emparejar el producto.
+ * Línea del borrador — proviene 1:1 de la `PurchaseReceptionLine` ya persistida y conciliada
+ * (Item Matching): `itemId`/`itemMatchStatus` reflejan el estado real de conciliación, nunca se
+ * pierden al pasar de Recepción a Compra. `warehouseId`/`notes` siguen null porque no existen en
+ * la línea de recepción — el usuario los completa manualmente. Los campos desde `supplierCode` en
+ * adelante son de solo lectura: exactamente lo que trae el XML, para mostrar el detalle completo.
  */
 export interface PurchaseDraftLineDto {
   itemId: string | null;
+  itemMatchStatus: ItemMatchStatus;
   description: string;
   quantity: number;
   unitPrice: number;
@@ -85,7 +103,7 @@ export interface PurchaseDraftLineDto {
   notes: string | null;
   discountPct: number;
   iceCode: string | null;
-  supplierCode: string;
+  supplierCode: string | null;
   supplierAuxCode: string | null;
   discount: number;
   lineSubtotal: number;
@@ -95,12 +113,12 @@ export interface PurchaseDraftLineDto {
   totalLine: number;
 }
 
-/** Borrador de compra parseado del XML almacenado — para precargar el formulario de Nueva Compra. */
+/** Borrador de compra armado desde el PurchaseReceptionDocument ya verificado — para precargar el formulario de Nueva Compra. */
 export interface PurchaseDraftDto {
   supplierId: string | null;
   supplierRuc: string;
   supplierName: string;
-  docTypeCode: string;
+  docTypeCode: string | null;
   invoiceNumber: string;
   issueDate: string;
   accessKey: string | null;
@@ -108,6 +126,9 @@ export interface PurchaseDraftDto {
   authorizationDate: string | null;
   sriPaymentMethodCode: string | null;
   lines: PurchaseDraftLineDto[];
+  /** Siempre PROCESSED o PROCESSED_WITH_WARNINGS — un draft FAILED nunca llega aquí (createDraft lo rechaza). */
+  processingStatus: ProcessingStatus;
+  processingNotes: string | null;
 }
 
 export const purchaseReceptionService = {

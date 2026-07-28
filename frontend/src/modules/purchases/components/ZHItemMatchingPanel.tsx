@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { ZHModal } from '../../../components/zh/ZHModal';
 import { Badge, EmptyState, ErrorState } from '../../../components/PageShell';
 import { ZHBtn } from '../../../components/zh/ZHForm';
@@ -7,9 +6,9 @@ import { ZHTabBar, type ZHTab } from '../../../components/zh/ZHTabBar';
 import { formatMoneyWithSymbol } from '../../../lib/sanitizers';
 import { formatApiRequestError } from '../../lib/apiError';
 import { itemService } from '../../items/api/itemService';
-import { useItemUiStore } from '../../items/store/itemUiStore';
 import { ProductPicker, type ProductProfile } from './ProductPicker';
 import { CreateItemFromReceptionLineModal } from './CreateItemFromReceptionLineModal';
+import { ItemMatchStatusBadge, useViewMatchedItem } from './ItemMatchStatusBadge';
 import {
   purchaseReceptionService,
   type PurchaseReceptionLineMatch,
@@ -23,39 +22,6 @@ type Props = {
   supplierName: string;
   onClose: () => void;
 };
-
-type MatchStatus = PurchaseReceptionLineMatch['matchStatus'];
-
-// Estado nunca depende solo del color: badge + icono + texto siempre juntos (accesibilidad).
-const STATUS_LABEL: Record<MatchStatus, string> = {
-  PENDING: 'Sin Item',
-  NEEDS_REVIEW: 'Revisar',
-  AUTO_MATCHED: 'Auto',
-  MANUALLY_MATCHED: 'Manual',
-};
-
-const STATUS_ICON: Record<MatchStatus, string> = {
-  PENDING: '🔴',
-  NEEDS_REVIEW: '🟡',
-  AUTO_MATCHED: '🟢',
-  MANUALLY_MATCHED: '🔵',
-};
-
-const STATUS_VARIANT: Record<MatchStatus, 'green' | 'red' | 'blue' | 'orange'> = {
-  PENDING: 'red',
-  NEEDS_REVIEW: 'orange',
-  AUTO_MATCHED: 'green',
-  MANUALLY_MATCHED: 'blue',
-};
-
-function StatusBadge({ status }: { status: MatchStatus }) {
-  return (
-    <Badge
-      variant={STATUS_VARIANT[status]}
-      label={`${STATUS_ICON[status]} ${STATUS_LABEL[status]}`}
-    />
-  );
-}
 
 type ChoiceValue = { itemId: string; sku: string; name: string } | null;
 type ItemLabel = { sku: string; shortName: string };
@@ -72,8 +38,7 @@ const FILTER_TABS: ZHTab<FilterId>[] = [
 const ITEM_LOOKUP_CONCURRENCY = 6;
 
 export function ZHItemMatchingPanel({ open, documentId, supplierName, onClose }: Props) {
-  const navigate = useNavigate();
-  const startViewItem = useItemUiStore((s) => s.startView);
+  const viewMatchedItem = useViewMatchedItem(onClose);
 
   const [lines, setLines] = useState<PurchaseReceptionLineMatch[]>([]);
   const [loading, setLoading] = useState(false);
@@ -239,12 +204,6 @@ export function ZHItemMatchingPanel({ open, documentId, supplierName, onClose }:
     }
   };
 
-  const handleViewItem = (itemId: string) => {
-    startViewItem(itemId);
-    onClose();
-    navigate('/inventory/items');
-  };
-
   const selectableCount = [...selected].filter((id) => choices[id]).length;
 
   return (
@@ -340,13 +299,13 @@ export function ZHItemMatchingPanel({ open, documentId, supplierName, onClose }:
                       )}
                     </td>
                     <td>
-                      <StatusBadge status={line.matchStatus} />
+                      <ItemMatchStatusBadge status={line.matchStatus} />
                     </td>
                     <td>
                       {resolved ? (
                         <div className="pur-matching-actions">
                           {line.itemId && (
-                            <ZHBtn variant="ghost" size="xs" type="button" onClick={() => handleViewItem(line.itemId!)}>
+                            <ZHBtn variant="ghost" size="xs" type="button" onClick={() => viewMatchedItem(line.itemId!)}>
                               Ver Item
                             </ZHBtn>
                           )}

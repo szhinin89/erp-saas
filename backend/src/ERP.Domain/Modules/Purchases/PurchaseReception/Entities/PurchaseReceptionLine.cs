@@ -14,6 +14,9 @@ public sealed class PurchaseReceptionLine : IMustHaveTenant
 {
     public const int SupplierCodeMaxLen = 50;
     public const int DescriptionMaxLen  = 300;
+    public const int VatCodeMaxLen      = 10;
+    public const int TaxCodeMaxLen      = 10;
+    public const int IceCodeMaxLen      = 10;
 
     public Guid Id                          { get; private set; }
     public Guid TenantId                    { get; private set; }
@@ -24,6 +27,21 @@ public sealed class PurchaseReceptionLine : IMustHaveTenant
     public string  Description     { get; private set; } = null!;
     public decimal Quantity        { get; private set; }
     public decimal UnitPrice       { get; private set; }
+
+    /// <summary>
+    /// Snapshot tributario y de descuento extraído del XML autorizado — persistido para que
+    /// <c>CreatePurchaseReceptionDraftHandler</c> nunca necesite volver a parsear el XML.
+    /// </summary>
+    public string  VatCode       { get; private set; } = null!;
+    public string  TaxCode       { get; private set; } = null!;
+    public decimal VatPercentage { get; private set; }
+    public decimal TaxValue      { get; private set; }
+    public string? IceCode       { get; private set; }
+    public decimal IceValue      { get; private set; }
+    public decimal DiscountPct   { get; private set; }
+    public decimal Discount      { get; private set; }
+    public decimal LineSubtotal  { get; private set; }
+    public decimal TotalLine     { get; private set; }
 
     /// <summary>Ítem del ERP ya conciliado con esta línea — null mientras <see cref="MatchStatus"/> no sea Auto/ManuallyMatched.</summary>
     public Guid? ItemId { get; private set; }
@@ -36,6 +54,9 @@ public sealed class PurchaseReceptionLine : IMustHaveTenant
 
     public static PurchaseReceptionLine Create(
         Guid documentId, Guid tenantId, string description, decimal quantity, decimal unitPrice,
+        string vatCode, string taxCode, decimal vatPercentage, decimal taxValue,
+        decimal discountPct, decimal discount, decimal lineSubtotal, decimal totalLine,
+        string? iceCode = null, decimal iceValue = 0m,
         string? supplierCode = null, string? supplierAuxCode = null,
         Guid? itemId = null, ItemMatchStatus matchStatus = ItemMatchStatus.Pending)
     {
@@ -47,6 +68,10 @@ public sealed class PurchaseReceptionLine : IMustHaveTenant
             throw new ArgumentException("La cantidad debe ser mayor a cero.", nameof(quantity));
         if (unitPrice < 0)
             throw new ArgumentException("El precio unitario no puede ser negativo.", nameof(unitPrice));
+        if (string.IsNullOrWhiteSpace(vatCode))
+            throw new ArgumentException("El código de IVA es obligatorio.", nameof(vatCode));
+        if (string.IsNullOrWhiteSpace(taxCode))
+            throw new ArgumentException("El código de impuesto es obligatorio.", nameof(taxCode));
         if (matchStatus is ItemMatchStatus.AutoMatched or ItemMatchStatus.ManuallyMatched && itemId is null)
             throw new ArgumentException("Un estado de conciliación resuelto requiere un ítem.", nameof(itemId));
 
@@ -60,6 +85,16 @@ public sealed class PurchaseReceptionLine : IMustHaveTenant
             Description                 = description.Trim(),
             Quantity                    = quantity,
             UnitPrice                   = unitPrice,
+            VatCode                     = vatCode.Trim(),
+            TaxCode                     = taxCode.Trim(),
+            VatPercentage               = vatPercentage,
+            TaxValue                    = taxValue,
+            IceCode                     = iceCode?.Trim(),
+            IceValue                    = iceValue,
+            DiscountPct                 = discountPct,
+            Discount                    = discount,
+            LineSubtotal                = lineSubtotal,
+            TotalLine                   = totalLine,
             ItemId                      = itemId,
             MatchStatus                 = matchStatus,
         };

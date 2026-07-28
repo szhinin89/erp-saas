@@ -31,6 +31,8 @@ Documentan el **por qué** de decisiones arquitectónicas. Las reglas ejecutable
 | [ADR-025](./ADR-025-ride-design-freeze.md) | Ride v1.0 — Design Freeze (RIDE, pre-implementación) | Design Frozen |
 | [ADR-026](./ADR-026-accounting-core.md) | Accounting Core | Accepted |
 | [ADR-027](./ADR-027-error-handling-architecture.md) | Arquitectura Unificada de Manejo de Errores — contrato Backend↔Frontend, categorías, mapeo HTTP, auditoría | Accepted (arquitectura) — migración pendiente |
+| [ADR-028](./ADR-028-purchase-reception-to-purchase-flow-freeze.md) | Recepción XML de Compras → Compra — Cierre de flujo (XML evidencia fiscal, Snapshot operativo, Item Matching único) | Frozen |
+| [ADR-029](./ADR-029-purchase-approval-workflow-future-evolution.md) | Purchase Approval Workflow — Guía de evolución futura (Direct/Approval/MultiApproval, no implementado) | Accepted — guía, no implementado |
 
 Seguimiento de migración de ADRs aceptados con implementación pendiente: [`docs/architecture/ARCHITECTURE-BACKLOG.md`](../architecture/ARCHITECTURE-BACKLOG.md) (iniciativas `GOV-xxx`).
 

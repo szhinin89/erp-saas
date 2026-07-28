@@ -8,6 +8,7 @@ using ERP.Domain.Modules.Items.ValueObjects;
 using ERP.Domain.Modules.Purchases.PurchaseReception.Entities;
 using ERP.Domain.Modules.Purchases.PurchaseReception.Enums;
 using ERP.Domain.Modules.Purchases.PurchaseReception.Interfaces;
+using ERP.Domain.Modules.Purchases.PurchaseReception.Models;
 using FluentAssertions;
 using Moq;
 using Xunit;
@@ -29,8 +30,15 @@ public sealed class BulkMatchItemsHandlerTests
             "1791352688001", "Proveedor S.A.", Guid.NewGuid(),
             "clave-de-acceso-000000000000000000000000000000000000000000000",
             "001-001-000000001", new DateOnly(2026, 7, 1), null, 10m, 1.5m, 11.5m, UserId);
-        line = PurchaseReceptionLine.Create(document.Id, TenantId, "Línea de prueba", 1m, 1m, supplierCode);
-        document.AttachSriAuthorization("AUTH-1", DateTime.UtcNow, "<factura/>", DateTime.UtcNow, [line], UserId);
+        line = PurchaseReceptionLine.Create(
+            document.Id, TenantId, "Línea de prueba", 1m, 1m,
+            vatCode: "2", taxCode: "2", vatPercentage: 15m, taxValue: 0.15m,
+            discountPct: 0m, discount: 0m, lineSubtotal: 1m, totalLine: 1.15m,
+            supplierCode: supplierCode);
+        document.AttachSriAuthorization(
+            "AUTH-1", DateTime.UtcNow, "<factura/>", DateTime.UtcNow, [line], UserId,
+            docTypeCode: "01", sriPaymentMethodCode: "20",
+            processing: new PurchaseReceptionProcessingOutcome(PurchaseReceptionProcessingStatus.Processed, 1, 1, null));
         return document;
     }
 

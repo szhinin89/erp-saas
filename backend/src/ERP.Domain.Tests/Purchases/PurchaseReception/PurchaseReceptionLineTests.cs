@@ -11,6 +11,8 @@ public sealed class PurchaseReceptionLineTests
         PurchaseReceptionLine.Create(
             documentId: Guid.NewGuid(), tenantId: Guid.NewGuid(),
             description: "COCA COLA 500 ML", quantity: 10m, unitPrice: 0.5m,
+            vatCode: "2", taxCode: "2", vatPercentage: 15m, taxValue: 0.75m,
+            discountPct: 0m, discount: 0m, lineSubtotal: 5m, totalLine: 5.75m,
             supplierCode: "PROV-001", supplierAuxCode: "AUX-1");
 
     [Fact]
@@ -97,6 +99,8 @@ public sealed class PurchaseReceptionLineTests
         var act = () => PurchaseReceptionLine.Create(
             documentId: Guid.NewGuid(), tenantId: Guid.NewGuid(),
             description: "Línea test", quantity: 1m, unitPrice: 1m,
+            vatCode: "2", taxCode: "2", vatPercentage: 15m, taxValue: 0.15m,
+            discountPct: 0m, discount: 0m, lineSubtotal: 1m, totalLine: 1.15m,
             matchStatus: ItemMatchStatus.AutoMatched);
 
         act.Should().Throw<ArgumentException>();

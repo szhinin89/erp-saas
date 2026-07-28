@@ -16,6 +16,7 @@ import { ZHConfirmModal, ZHPromptModal } from '../../../components/zh/ZHConfirmM
 import { ZHPageNotice } from '../../../components/zh/ZHPageNotice';
 import { lineNet, calcLineTax, roundToTotalAmount } from '../utils/purchaseCalc';
 import { usePurchasesPage, type Tab } from '../hooks/usePurchasesPage';
+import { ItemMatchStatusBadge, useViewMatchedItem } from '../components/ItemMatchStatusBadge';
 import '../../../styles/shared/items-catalog.css';
 import '../../../styles/shared/erp-form-core.css';
 import '../styles/purchases-invoice.css';
@@ -132,6 +133,9 @@ export function PurchasesPage() {
           {/* Error/Validation Banners */}
           {ctx.saveError && (
             <ZHPageNotice variant="error" message={ctx.saveError} />
+          )}
+          {ctx.receptionProcessingNotice && (
+            <ZHPageNotice variant="warning" message={ctx.receptionProcessingNotice} />
           )}
           {ctx.errors.supplierId && (
             <ZHPageNotice variant="error" message={ctx.errors.supplierId.message ?? ''} />
@@ -477,6 +481,7 @@ export function PurchasesPage() {
 // ── Internal Components ────────────────────────────────────────────────
 
 function PurchaseLineCard({ line: l, idx, ctx }: { line: any; idx: number; ctx: ReturnType<typeof usePurchasesPage> }) {
+  const viewMatchedItem = useViewMatchedItem();
   const sub = lineNet(l);
   const editLine = ctx.editing?.lines?.[idx];
   const localTax = calcLineTax(l, ctx.vatRatesMap, ctx.iceRatesMap);
@@ -507,6 +512,10 @@ function PurchaseLineCard({ line: l, idx, ctx }: { line: any; idx: number; ctx: 
             <>
               <div className="pdl-line__product-name">
                 {ctxData?.shortName || l.description?.split(' — ')[1] || l.description}
+                {l.itemMatchStatus && <ItemMatchStatusBadge status={l.itemMatchStatus} />}
+                <ZHBtn variant="ghost" size="xs" type="button" onClick={() => viewMatchedItem(l.itemId)}>
+                  Ver Item
+                </ZHBtn>
                 {!ctx.fieldDisabled && (
                   <button type="button" className="pdl-line__clear" title="Cambiar producto"
                     onClick={() => { ctx.updateLine(l._key, 'itemId', undefined); ctx.updateLine(l._key, 'description', ''); ctx.updateLine(l._key, 'context', undefined); }}>

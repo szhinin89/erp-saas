@@ -27,6 +27,27 @@ public sealed class PurchaseReceptionLineConfiguration : IEntityTypeConfiguratio
         builder.Property(x => x.UnitPrice).HasColumnName("unit_price")
             .HasColumnType("numeric(18,6)").IsRequired();
 
+        builder.Property(x => x.VatCode).HasColumnName("vat_code")
+            .HasMaxLength(PurchaseReceptionLine.VatCodeMaxLen).IsRequired();
+        builder.Property(x => x.TaxCode).HasColumnName("tax_code")
+            .HasMaxLength(PurchaseReceptionLine.TaxCodeMaxLen).IsRequired();
+        builder.Property(x => x.VatPercentage).HasColumnName("vat_percentage")
+            .HasColumnType("numeric(5,2)").IsRequired();
+        builder.Property(x => x.TaxValue).HasColumnName("tax_value")
+            .HasColumnType("numeric(18,2)").IsRequired();
+        builder.Property(x => x.IceCode).HasColumnName("ice_code")
+            .HasMaxLength(PurchaseReceptionLine.IceCodeMaxLen);
+        builder.Property(x => x.IceValue).HasColumnName("ice_value")
+            .HasColumnType("numeric(18,2)").IsRequired();
+        builder.Property(x => x.DiscountPct).HasColumnName("discount_pct")
+            .HasColumnType("numeric(5,2)").IsRequired();
+        builder.Property(x => x.Discount).HasColumnName("discount")
+            .HasColumnType("numeric(18,2)").IsRequired();
+        builder.Property(x => x.LineSubtotal).HasColumnName("line_subtotal")
+            .HasColumnType("numeric(18,2)").IsRequired();
+        builder.Property(x => x.TotalLine).HasColumnName("total_line")
+            .HasColumnType("numeric(18,2)").IsRequired();
+
         builder.Property(x => x.ItemId).HasColumnName("item_id");
         builder.Property(x => x.MatchStatus).HasColumnName("match_status")
             .HasConversion<int>().IsRequired();

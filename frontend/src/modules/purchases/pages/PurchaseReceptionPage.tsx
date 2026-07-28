@@ -30,6 +30,20 @@ const DOCUMENT_STATUS_LABEL: Record<PurchaseReceptionItem['documentStatus'], str
   CANCELLED: 'Anulado',
 };
 
+const PROCESSING_STATUS_LABEL: Record<PurchaseReceptionItem['processingStatus'], string> = {
+  PENDING: 'Sin procesar',
+  PROCESSED: 'Detalle OK',
+  PROCESSED_WITH_WARNINGS: 'Con advertencias',
+  FAILED: 'No interpretado',
+};
+
+const PROCESSING_STATUS_VARIANT: Record<PurchaseReceptionItem['processingStatus'], 'green' | 'orange' | 'red' | 'gray'> = {
+  PENDING: 'gray',
+  PROCESSED: 'green',
+  PROCESSED_WITH_WARNINGS: 'orange',
+  FAILED: 'red',
+};
+
 export function PurchaseReceptionPage() {
   const ctx = usePurchaseReceptionPage();
   const navigate = useNavigate();
@@ -65,6 +79,17 @@ export function PurchaseReceptionPage() {
       ),
     },
     {
+      key: 'processingStatus', header: 'Procesamiento', align: 'center',
+      render: (row) => {
+        if (row.documentStatus === 'IMPORTED') return null;
+        return (
+          <Badge variant={PROCESSING_STATUS_VARIANT[row.processingStatus]}
+            label={PROCESSING_STATUS_LABEL[row.processingStatus]}
+            title={row.processingNotes ?? 'El detalle del XML se interpretó sin advertencias.'} />
+        );
+      },
+    },
+    {
       key: 'xmlSri', header: 'XML SRI', align: 'center',
       render: (row) => {
         const rowState = ctx.xmlRowState[row.documentId];
@@ -92,6 +117,9 @@ export function PurchaseReceptionPage() {
         if (row.documentStatus !== 'VERIFIED' && row.documentStatus !== 'PROCESSED') {
           return null;
         }
+        if (row.processingStatus === 'FAILED') {
+          return null;
+        }
         return (
           <ZHBtn variant="secondary" size="xs" type="button"
             onClick={() => ctx.openMatchingPanel(row.documentId, row.supplierName)}>
@@ -109,6 +137,10 @@ export function PurchaseReceptionPage() {
         if (row.documentStatus !== 'VERIFIED') {
           return null;
         }
+        // Un único botón para todos los documentos Verificados, sin excepciones visibles: la
+        // reconstrucción del detalle cuando el intento anterior falló (o el rechazo si el XML
+        // sigue sin poder interpretarse) ocurre de forma transparente dentro de create-draft — el
+        // usuario nunca ve un paso, label ni concepto distinto de "Crear Compra".
         return (
           <ZHBtn variant="primary" size="xs" type="button"
             onClick={() => navigate(`/purchases?fromReceptionId=${row.documentId}`)}>

@@ -38,6 +38,17 @@ public sealed class PurchaseReceptionDocumentConfiguration : IEntityTypeConfigur
         builder.Property(x => x.AuthorizationNumber).HasColumnName("authorization_number")
             .HasMaxLength(PurchaseReceptionDocument.AuthorizationNumberMaxLen);
         builder.Property(x => x.XmlDownloadedAt).HasColumnName("xml_downloaded_at");
+        builder.Property(x => x.DocTypeCode).HasColumnName("doc_type_code")
+            .HasMaxLength(PurchaseReceptionDocument.DocTypeCodeMaxLen);
+        builder.Property(x => x.SriPaymentMethodCode).HasColumnName("sri_payment_method_code")
+            .HasMaxLength(PurchaseReceptionDocument.SriPaymentMethodCodeMaxLen);
+
+        builder.Property(x => x.ProcessingStatus).HasColumnName("processing_status")
+            .HasConversion<int>().IsRequired();
+        builder.Property(x => x.LinesDetectedCount).HasColumnName("lines_detected_count").IsRequired();
+        builder.Property(x => x.LinesProcessedCount).HasColumnName("lines_processed_count").IsRequired();
+        builder.Property(x => x.ProcessingNotes).HasColumnName("processing_notes")
+            .HasMaxLength(PurchaseReceptionDocument.ProcessingNotesMaxLen);
 
         builder.Property(x => x.Subtotal).HasColumnName("subtotal")
             .HasColumnType("numeric(18,2)").IsRequired();
@@ -102,5 +113,9 @@ public sealed class PurchaseReceptionDocumentConfiguration : IEntityTypeConfigur
 
         builder.HasIndex(x => new { x.TenantId, x.Status })
             .HasDatabaseName("ix_purchase_reception_documents_tenant_status");
+
+        // Soporte técnico: localizar rápidamente comprobantes con detalle no interpretado.
+        builder.HasIndex(x => new { x.TenantId, x.ProcessingStatus })
+            .HasDatabaseName("ix_purchase_reception_documents_tenant_processing_status");
     }
 }

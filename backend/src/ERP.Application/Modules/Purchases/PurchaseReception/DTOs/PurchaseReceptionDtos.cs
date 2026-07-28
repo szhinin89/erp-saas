@@ -12,7 +12,9 @@ public sealed record PurchaseReceptionItemDto(
     bool PurchaseExists,
     string Status,
     Guid DocumentId,
-    string DocumentStatus);
+    string DocumentStatus,
+    string ProcessingStatus,
+    string? ProcessingNotes);
 
 public sealed record PurchaseReceptionImportResultDto(
     IReadOnlyList<PurchaseReceptionItemDto> Items,
