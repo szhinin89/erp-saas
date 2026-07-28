@@ -1,6 +1,7 @@
 import { CreateItemModal } from '../../../components/items/CreateItemModal/CreateItemModal';
 import type { ItemCreatedResult } from '../../../components/items/CreateItemModal/types';
 import { message } from '../../../lib/messages';
+import { logApiDevError } from '../../lib/apiError';
 import { purchaseReceptionService, type PurchaseReceptionLineMatch } from '../api/purchaseReceptionService';
 
 type Props = {
@@ -9,7 +10,9 @@ type Props = {
   supplierName: string;
   onClose: () => void;
   /** La línea actualizada tras crear y vincular el ítem — el llamador la aplica sin recargar la lista. */
-  onCreated: (line: PurchaseReceptionLineMatch) => void;
+  onCreated: (line: PurchaseReceptionLineMatch, item: ItemCreatedResult) => void;
+  /** El Item se creó pero el auto-vínculo falló — el llamador puede precargarlo como sugerencia para "Vincular Item". */
+  onCreatedButNotLinked?: (lineId: string, item: ItemCreatedResult) => void;
 };
 
 /**
@@ -18,16 +21,21 @@ type Props = {
  * endpoint de vinculación manual (`matchItem`) ya existente — no reimplementa la relación
  * proveedor↔ítem ni la actualización de la línea.
  */
-export function CreateItemFromReceptionLineModal({ open, line, supplierName, onClose, onCreated }: Props) {
+export function CreateItemFromReceptionLineModal({ open, line, supplierName, onClose, onCreated, onCreatedButNotLinked }: Props) {
   const handleCreated = async (item: ItemCreatedResult) => {
     if (!line) return;
     onClose();
     try {
       const updatedLine = await purchaseReceptionService.matchItem(line.lineId, item.id);
       message.success('Item creado correctamente.');
-      onCreated(updatedLine);
-    } catch {
-      message.warning('Item creado, pero no se pudo vincular automáticamente a la línea. Use "Vincular" para asociarlo.');
+      onCreated(updatedLine, item);
+    } catch (err) {
+      logApiDevError(err);
+      onCreatedButNotLinked?.(line.lineId, item);
+      message.warning(
+        'El Item fue creado correctamente, pero no pudo asociarse automáticamente a esta línea. ' +
+        'Puede intentar nuevamente desde "Vincular Item".',
+      );
     }
   };
 

@@ -139,4 +139,71 @@ describe('CreateItemModal — envío', () => {
     expect(onClose).not.toHaveBeenCalled();
     expect(onCreated).not.toHaveBeenCalled();
   });
+
+  // Reproduce el envelope real de un Conflict con código no registrado en MessageCatalog
+  // (SKU_DUPLICATE/BARCODE_DUPLICATE): status 400, sin mapa de campos, mensaje específico
+  // solo en `data.errors` (array plano) y `message.user` genérico ("Ocurrió un error inesperado.").
+  it('SKU_DUPLICATE (data.errors plano, no 422): muestra el mensaje específico del backend, no el genérico', async () => {
+    const skuDuplicateError = {
+      isAxiosError: true,
+      response: {
+        status: 400,
+        data: {
+          code: 'SKU_DUPLICATE',
+          message: { user: 'Ocurrió un error inesperado.', dev: 'Unmapped response code.' },
+          data: { errors: ["Ya existe un ítem con SKU '10001204'."] },
+        },
+      },
+    };
+    vi.mocked(itemService.create).mockRejectedValue(skuDuplicateError);
+    const { container, onClose, onCreated } = renderModal({ initialData: { name: 'Aceite' } });
+    await waitForCatalogs();
+
+    await fillRequiredFields(container, { sku: '10001204', barcode: '00125' });
+    fireEvent.click(screen.getByRole('button', { name: 'Crear Producto' }));
+
+    await waitFor(() => expect(screen.getByText("Ya existe un ítem con SKU '10001204'.")).toBeTruthy());
+    expect(screen.queryByText('Ocurrió un error inesperado.')).toBeNull();
+    expect(onClose).not.toHaveBeenCalled();
+    expect(onCreated).not.toHaveBeenCalled();
+  });
+
+  it('BARCODE_DUPLICATE (data.errors plano, no 422): muestra el mensaje específico del backend', async () => {
+    const barcodeDuplicateError = {
+      isAxiosError: true,
+      response: {
+        status: 400,
+        data: {
+          code: 'BARCODE_DUPLICATE',
+          message: { user: 'Ocurrió un error inesperado.', dev: 'Unmapped response code.' },
+          data: { errors: ["El código de barras '00125' ya está asignado a otro ítem."] },
+        },
+      },
+    };
+    vi.mocked(itemService.create).mockRejectedValue(barcodeDuplicateError);
+    const { container } = renderModal({ initialData: { name: 'Aceite' } });
+    await waitForCatalogs();
+
+    await fillRequiredFields(container, { barcode: '00125' });
+    fireEvent.click(screen.getByRole('button', { name: 'Crear Producto' }));
+
+    await waitFor(() =>
+      expect(screen.getByText("El código de barras '00125' ya está asignado a otro ítem.")).toBeTruthy(),
+    );
+  });
+
+  it('error inesperado sin mensaje funcional: recién ahí muestra el texto genérico', async () => {
+    const unexpectedError = {
+      isAxiosError: true,
+      response: { status: 500, data: {} },
+    };
+    vi.mocked(itemService.create).mockRejectedValue(unexpectedError);
+    const { container } = renderModal({ initialData: { name: 'Aceite' } });
+    await waitForCatalogs();
+
+    await fillRequiredFields(container, { barcode: '00125' });
+    fireEvent.click(screen.getByRole('button', { name: 'Crear Producto' }));
+
+    await waitFor(() => expect(screen.getByText('No se pudo crear el ítem.')).toBeTruthy());
+  });
 });

@@ -1,14 +1,21 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { ZHModal } from '../../../components/zh/ZHModal';
 import { Badge, EmptyState, ErrorState } from '../../../components/PageShell';
 import { ZHBtn } from '../../../components/zh/ZHForm';
+import { ZHTabBar, type ZHTab } from '../../../components/zh/ZHTabBar';
 import { formatMoneyWithSymbol } from '../../../lib/sanitizers';
+import { formatApiRequestError } from '../../lib/apiError';
+import { itemService } from '../../items/api/itemService';
+import { useItemUiStore } from '../../items/store/itemUiStore';
 import { ProductPicker, type ProductProfile } from './ProductPicker';
 import { CreateItemFromReceptionLineModal } from './CreateItemFromReceptionLineModal';
 import {
   purchaseReceptionService,
   type PurchaseReceptionLineMatch,
 } from '../api/purchaseReceptionService';
+import '../../../styles/shared/items-catalog.css';
+import '../styles/purchase-reception.css';
 
 type Props = {
   open: boolean;
@@ -17,31 +24,67 @@ type Props = {
   onClose: () => void;
 };
 
-const STATUS_LABEL: Record<PurchaseReceptionLineMatch['matchStatus'], string> = {
-  PENDING: 'Pendiente',
-  NEEDS_REVIEW: 'Sugerido',
-  AUTO_MATCHED: 'Vinculado (auto)',
-  MANUALLY_MATCHED: 'Vinculado',
+type MatchStatus = PurchaseReceptionLineMatch['matchStatus'];
+
+// Estado nunca depende solo del color: badge + icono + texto siempre juntos (accesibilidad).
+const STATUS_LABEL: Record<MatchStatus, string> = {
+  PENDING: 'Sin Item',
+  NEEDS_REVIEW: 'Revisar',
+  AUTO_MATCHED: 'Auto',
+  MANUALLY_MATCHED: 'Manual',
 };
 
-const STATUS_VARIANT: Record<PurchaseReceptionLineMatch['matchStatus'], 'green' | 'gray' | 'blue'> = {
-  PENDING: 'gray',
-  NEEDS_REVIEW: 'blue',
+const STATUS_ICON: Record<MatchStatus, string> = {
+  PENDING: '🔴',
+  NEEDS_REVIEW: '🟡',
+  AUTO_MATCHED: '🟢',
+  MANUALLY_MATCHED: '🔵',
+};
+
+const STATUS_VARIANT: Record<MatchStatus, 'green' | 'red' | 'blue' | 'orange'> = {
+  PENDING: 'red',
+  NEEDS_REVIEW: 'orange',
   AUTO_MATCHED: 'green',
-  MANUALLY_MATCHED: 'green',
+  MANUALLY_MATCHED: 'blue',
 };
 
-type ChoiceLabel = { itemId: string; label: string } | null;
+function StatusBadge({ status }: { status: MatchStatus }) {
+  return (
+    <Badge
+      variant={STATUS_VARIANT[status]}
+      label={`${STATUS_ICON[status]} ${STATUS_LABEL[status]}`}
+    />
+  );
+}
+
+type ChoiceValue = { itemId: string; sku: string; name: string } | null;
+type ItemLabel = { sku: string; shortName: string };
+
+type FilterId = 'all' | 'pending' | 'review' | 'linked';
+
+const FILTER_TABS: ZHTab<FilterId>[] = [
+  { id: 'all', label: 'Todos' },
+  { id: 'pending', label: 'Pendientes' },
+  { id: 'review', label: 'Revisar' },
+  { id: 'linked', label: 'Asociados' },
+];
+
+const ITEM_LOOKUP_CONCURRENCY = 6;
 
 export function ZHItemMatchingPanel({ open, documentId, supplierName, onClose }: Props) {
+  const navigate = useNavigate();
+  const startViewItem = useItemUiStore((s) => s.startView);
+
   const [lines, setLines] = useState<PurchaseReceptionLineMatch[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [choices, setChoices] = useState<Record<string, ChoiceLabel>>({});
+  const [choices, setChoices] = useState<Record<string, ChoiceValue>>({});
+  const [itemLabels, setItemLabels] = useState<Record<string, ItemLabel>>({});
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [applyingId, setApplyingId] = useState<string | null>(null);
   const [bulkApplying, setBulkApplying] = useState(false);
   const [createItemLine, setCreateItemLine] = useState<PurchaseReceptionLineMatch | null>(null);
+  const [filter, setFilter] = useState<FilterId>('all');
 
   const load = useCallback(async () => {
     if (!documentId) return;
@@ -50,17 +93,17 @@ export function ZHItemMatchingPanel({ open, documentId, supplierName, onClose }:
     try {
       const result = await purchaseReceptionService.getLines(documentId);
       setLines(result);
-      const initialChoices: Record<string, ChoiceLabel> = {};
+      const initialChoices: Record<string, ChoiceValue> = {};
       for (const line of result) {
         const top = line.suggestions[0];
-        initialChoices[line.lineId] = top
-          ? { itemId: top.itemId, label: `${top.sku} — ${top.shortName}` }
-          : null;
+        initialChoices[line.lineId] = top ? { itemId: top.itemId, sku: top.sku, name: top.shortName } : null;
       }
       setChoices(initialChoices);
+      setItemLabels({});
       setSelected(new Set());
-    } catch {
-      setError('No se pudieron cargar las líneas del comprobante.');
+      setFilter('all');
+    } catch (err) {
+      setError(formatApiRequestError(err, { generic: 'No se pudieron cargar las líneas del comprobante.' }));
     } finally {
       setLoading(false);
     }
@@ -70,13 +113,76 @@ export function ZHItemMatchingPanel({ open, documentId, supplierName, onClose }:
     if (open) void load();
   }, [open, load]);
 
-  const pendingCount = useMemo(
-    () => lines.filter((l) => l.matchStatus === 'PENDING' || l.matchStatus === 'NEEDS_REVIEW').length,
-    [lines],
-  );
+  // Los ítems que ya llegaron vinculados (AUTO_MATCHED / MANUALLY_MATCHED) al abrir el panel no traen
+  // nombre/SKU en la respuesta — se resuelven en background con el mismo endpoint que ya usa ProductPicker,
+  // con concurrencia acotada para no bloquear la carga con cientos de líneas.
+  useEffect(() => {
+    if (!open) return;
+    const missing = lines.filter(
+      (l) =>
+        (l.matchStatus === 'AUTO_MATCHED' || l.matchStatus === 'MANUALLY_MATCHED') &&
+        l.itemId &&
+        !itemLabels[l.lineId],
+    );
+    if (missing.length === 0) return;
+
+    let cancelled = false;
+    const cache = new Map<string, ItemLabel>();
+    const queue = [...missing];
+
+    const worker = async () => {
+      while (queue.length > 0 && !cancelled) {
+        const line = queue.shift();
+        if (!line?.itemId) continue;
+        try {
+          let info = cache.get(line.itemId);
+          if (!info) {
+            const detail = await itemService.getById(line.itemId);
+            info = { sku: detail.sku, shortName: detail.shortName };
+            cache.set(line.itemId, info);
+          }
+          if (!cancelled) {
+            const resolved = info;
+            setItemLabels((prev) => (prev[line.lineId] ? prev : { ...prev, [line.lineId]: resolved }));
+          }
+        } catch {
+          // Silencioso: la línea sigue mostrando el badge de estado sin nombre/SKU.
+        }
+      }
+    };
+
+    void Promise.all(Array.from({ length: Math.min(ITEM_LOOKUP_CONCURRENCY, missing.length) }, worker));
+    return () => {
+      cancelled = true;
+    };
+  }, [open, lines, itemLabels]);
+
+  const counts = useMemo(() => {
+    const c = { pending: 0, review: 0, auto: 0, manual: 0 };
+    for (const line of lines) {
+      if (line.matchStatus === 'PENDING') c.pending += 1;
+      else if (line.matchStatus === 'NEEDS_REVIEW') c.review += 1;
+      else if (line.matchStatus === 'AUTO_MATCHED') c.auto += 1;
+      else if (line.matchStatus === 'MANUALLY_MATCHED') c.manual += 1;
+    }
+    return c;
+  }, [lines]);
+
+  const visibleLines = useMemo(() => {
+    switch (filter) {
+      case 'pending':
+        return lines.filter((l) => l.matchStatus === 'PENDING');
+      case 'review':
+        return lines.filter((l) => l.matchStatus === 'NEEDS_REVIEW');
+      case 'linked':
+        return lines.filter((l) => l.matchStatus === 'AUTO_MATCHED' || l.matchStatus === 'MANUALLY_MATCHED');
+      default:
+        return lines;
+    }
+  }, [lines, filter]);
 
   const handlePick = (lineId: string, profile: ProductProfile) => {
-    setChoices((prev) => ({ ...prev, [lineId]: { itemId: profile.id, label: `${profile.sku} — ${profile.name}` } }));
+    setChoices((prev) => ({ ...prev, [lineId]: { itemId: profile.id, sku: profile.sku, name: profile.name } }));
   };
 
   const handleApplyOne = async (lineId: string) => {
@@ -86,13 +192,14 @@ export function ZHItemMatchingPanel({ open, documentId, supplierName, onClose }:
     try {
       const updated = await purchaseReceptionService.matchItem(lineId, choice.itemId);
       setLines((prev) => prev.map((l) => (l.lineId === lineId ? updated : l)));
+      setItemLabels((prev) => ({ ...prev, [lineId]: { sku: choice.sku, shortName: choice.name } }));
       setSelected((prev) => {
         const next = new Set(prev);
         next.delete(lineId);
         return next;
       });
-    } catch {
-      setError('No se pudo vincular la línea. Intente nuevamente.');
+    } catch (err) {
+      setError(formatApiRequestError(err, { generic: 'No se pudo vincular la línea. Intente nuevamente.' }));
     } finally {
       setApplyingId(null);
     }
@@ -116,13 +223,26 @@ export function ZHItemMatchingPanel({ open, documentId, supplierName, onClose }:
     setBulkApplying(true);
     setError(null);
     try {
-      await purchaseReceptionService.bulkMatch(matches);
+      const { results } = await purchaseReceptionService.bulkMatch(matches);
+      const newLabels: Record<string, ItemLabel> = {};
+      for (const result of results) {
+        if (!result.success) continue;
+        const choice = choices[result.purchaseReceptionLineId];
+        if (choice) newLabels[result.purchaseReceptionLineId] = { sku: choice.sku, shortName: choice.name };
+      }
+      setItemLabels((prev) => ({ ...prev, ...newLabels }));
       await load();
-    } catch {
-      setError('No se pudo aplicar la vinculación masiva. Intente nuevamente.');
+    } catch (err) {
+      setError(formatApiRequestError(err, { generic: 'No se pudo aplicar la vinculación masiva. Intente nuevamente.' }));
     } finally {
       setBulkApplying(false);
     }
+  };
+
+  const handleViewItem = (itemId: string) => {
+    startViewItem(itemId);
+    onClose();
+    navigate('/inventory/items');
   };
 
   const selectableCount = [...selected].filter((id) => choices[id]).length;
@@ -150,8 +270,14 @@ export function ZHItemMatchingPanel({ open, documentId, supplierName, onClose }:
       {!loading && lines.length > 0 && (
         <>
           <div className="pur-matching-summary">
-            <Badge variant="gray" label={`Por vincular: ${pendingCount}`} />
-            <Badge variant="green" label={`Vinculadas: ${lines.length - pendingCount}`} />
+            <Badge variant="red" label={`🔴 Pendientes: ${counts.pending}`} />
+            <Badge variant="orange" label={`🟡 Revisar: ${counts.review}`} />
+            <Badge variant="green" label={`🟢 Auto: ${counts.auto}`} />
+            <Badge variant="blue" label={`🔵 Manual: ${counts.manual}`} />
+          </div>
+
+          <div className="pur-matching-toolbar">
+            <ZHTabBar tabs={FILTER_TABS} activeTab={filter} onChange={setFilter} ariaLabel="Filtrar líneas" />
           </div>
 
           <table className="pur-matching-table">
@@ -165,9 +291,17 @@ export function ZHItemMatchingPanel({ open, documentId, supplierName, onClose }:
               </tr>
             </thead>
             <tbody>
-              {lines.map((line) => {
+              {visibleLines.length === 0 && (
+                <tr>
+                  <td colSpan={5}>
+                    <EmptyState message="No hay líneas para este filtro." />
+                  </td>
+                </tr>
+              )}
+              {visibleLines.map((line) => {
                 const resolved = line.matchStatus === 'AUTO_MATCHED' || line.matchStatus === 'MANUALLY_MATCHED';
                 const choice = choices[line.lineId];
+                const label = itemLabels[line.lineId];
                 const topScore = line.suggestions[0]?.matchScore;
 
                 return (
@@ -189,12 +323,15 @@ export function ZHItemMatchingPanel({ open, documentId, supplierName, onClose }:
                     </td>
                     <td>
                       {resolved ? (
-                        <span className="pur-matching-resolved">Ítem vinculado</span>
+                        <div className="pur-matching-resolved-item">
+                          <div className="pur-matching-resolved-name">{label ? label.shortName : 'Cargando ítem...'}</div>
+                          {label && <div className="pur-matching-resolved-sku">SKU: {label.sku}</div>}
+                        </div>
                       ) : (
                         <div className="pur-matching-pick">
                           {choice && (
                             <div className="pur-matching-choice">
-                              {choice.label}
+                              {choice.sku} — {choice.name}
                               {topScore !== undefined && <Badge variant="blue" label={`${Math.round(topScore)}%`} />}
                             </div>
                           )}
@@ -203,15 +340,23 @@ export function ZHItemMatchingPanel({ open, documentId, supplierName, onClose }:
                       )}
                     </td>
                     <td>
-                      <Badge variant={STATUS_VARIANT[line.matchStatus]} label={STATUS_LABEL[line.matchStatus]} />
+                      <StatusBadge status={line.matchStatus} />
                     </td>
                     <td>
-                      {!resolved && (
+                      {resolved ? (
+                        <div className="pur-matching-actions">
+                          {line.itemId && (
+                            <ZHBtn variant="ghost" size="xs" type="button" onClick={() => handleViewItem(line.itemId!)}>
+                              Ver Item
+                            </ZHBtn>
+                          )}
+                        </div>
+                      ) : (
                         <div className="pur-matching-actions">
                           <ZHBtn variant="secondary" size="xs" type="button"
                             disabled={!choice || applyingId === line.lineId}
                             onClick={() => void handleApplyOne(line.lineId)}>
-                            {applyingId === line.lineId ? 'Aplicando...' : 'Vincular'}
+                            {applyingId === line.lineId ? 'Aplicando...' : 'Vincular Item'}
                           </ZHBtn>
                           <ZHBtn variant="ghost" size="xs" type="button"
                             onClick={() => setCreateItemLine(line)}>
@@ -233,9 +378,13 @@ export function ZHItemMatchingPanel({ open, documentId, supplierName, onClose }:
         line={createItemLine}
         supplierName={supplierName}
         onClose={() => setCreateItemLine(null)}
-        onCreated={(updatedLine) => {
+        onCreated={(updatedLine, item) => {
           setCreateItemLine(null);
           setLines((prev) => prev.map((l) => (l.lineId === updatedLine.lineId ? updatedLine : l)));
+          setItemLabels((prev) => ({ ...prev, [updatedLine.lineId]: { sku: item.sku, shortName: item.shortName } }));
+        }}
+        onCreatedButNotLinked={(lineId, item) => {
+          setChoices((prev) => ({ ...prev, [lineId]: { itemId: item.id, sku: item.sku, name: item.shortName } }));
         }}
       />
     </ZHModal>

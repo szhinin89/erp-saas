@@ -71,3 +71,22 @@
   flex-direction: column;
   gap: var(--space-1);
 }
+
+.pur-matching-toolbar {
+  margin-bottom: var(--space-3);
+}
+
+.pur-matching-resolved-item {
+  font-size: 13px;
+}
+
+.pur-matching-resolved-name {
+  font-weight: 500;
+  color: var(--color-text-primary);
+}
+
+.pur-matching-resolved-sku {
+  color: var(--color-text-secondary);
+  font-size: 12px;
+  margin-top: 2px;
+}

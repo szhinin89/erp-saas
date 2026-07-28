@@ -144,11 +144,35 @@ function messageFromProblemDetails(o: Record<string, unknown>): string | null {
   return null;
 }
 
+/**
+ * Registra `message.dev` (o `Message.Dev`) en consola para diagnóstico — nunca se muestra al usuario.
+ * No-op si la respuesta no trae ese campo.
+ */
+export function logApiDevError(err: unknown): void {
+  if (!axios.isAxiosError(err) || !err.response) return;
+  const data = err.response.data;
+  let record: Record<string, unknown> | null = null;
+  if (data && typeof data === 'object' && !Array.isArray(data)) {
+    record = data as Record<string, unknown>;
+  } else if (typeof data === 'string') {
+    try {
+      const parsed = JSON.parse(data) as unknown;
+      if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) record = parsed as Record<string, unknown>;
+    } catch {
+      return;
+    }
+  }
+  if (!record) return;
+  const dev = pickNestedString(record, 'message', 'dev') ?? pickNestedString(record, 'Message', 'Dev');
+  if (dev) console.error('[API]', dev);
+}
+
 /** Mensaje para mostrar en UI: cuerpo de error, red sin respuesta, o texto genérico. */
 export function formatApiRequestError(
   err: unknown,
   labels: { offline?: string; generic: string },
 ): string {
+  logApiDevError(err);
   const fromApi = readApiErrorMessage(err);
   if (fromApi) return fromApi;
 

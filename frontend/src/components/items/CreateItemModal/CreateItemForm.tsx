@@ -67,9 +67,13 @@ export function CreateItemForm({ initialData, onClose, onCreated }: Props) {
       });
       onCreated({ id: item.id, sku: item.sku, shortName: item.shortName });
     } catch (err) {
-      applyServerErrors(err, setError, () => {
+      // applyServerErrors solo mapea 422 con mapa de campos. Cualquier otro caso (400/409 con
+      // data.errors plano, p.ej. SKU_DUPLICATE/BARCODE_DUPLICATE, o error inesperado) no dispara
+      // su fallback interno — hay que revisar el resultado y formatear el mensaje aquí siempre.
+      const handledAsFieldErrors = applyServerErrors(err, setError);
+      if (!handledAsFieldErrors) {
         setError('root', { type: 'server', message: formatApiRequestError(err, { generic: 'No se pudo crear el ítem.' }) });
-      });
+      }
     }
   });
 
