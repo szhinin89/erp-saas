@@ -228,13 +228,18 @@ tests de `ApiResponseContractTests.cs`,
 |------|--------|
 | Éxito lectura | 200 |
 | Éxito creación | 201 |
-| Regla negocio / entrada inválida | 400 |
+| Regla de negocio (`BusinessRule`) | 400 |
 | Sin autenticación | 401 |
 | Sin permiso | 403 |
 | No encontrado | 404 |
-| `ValidationException` FluentValidation | **422** (ExceptionMiddleware) |
+| `ValidationException` FluentValidation / categoría `Validation` | **422** (ExceptionMiddleware) |
+| Conflicto de unicidad (categoría `Duplicate`) | **409** |
+| Falla técnica interna (categoría `Infrastructure`) | 503 |
+| Falla de sistema externo (SRI, categoría `Integration`) | 502 |
 
 Declarar `[ProducesResponseType]` por cada status que aplique.
+
+**Tabla canónica completa (categorías, `Result<T>.Code` obligatorio desde `ApiResponseCodes`, reglas E-B1..E-B8):** ver [`AI-RULES/ERROR-HANDLING.md`](./ERROR-HANDLING.md) (ADR-027). Ningún handler/controller decide su propio status a mano — se deriva de la categoría del código.
 
 ---
 

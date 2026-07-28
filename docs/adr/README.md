@@ -29,6 +29,10 @@ Documentan el **por qué** de decisiones arquitectónicas. Las reglas ejecutable
 | [ADR-023](./ADR-023-electronic-documents-v1-closure.md) | ElectronicDocuments v1.0 — Cierre de módulo (facturación electrónica SRI) | Frozen |
 | [ADR-024](./ADR-024-electronic-document-diagnostic-infrastructure.md) | Infraestructura de Diagnóstico SRI reutilizable (extensión controlada de ADR-023) | Accepted |
 | [ADR-025](./ADR-025-ride-design-freeze.md) | Ride v1.0 — Design Freeze (RIDE, pre-implementación) | Design Frozen |
+| [ADR-026](./ADR-026-accounting-core.md) | Accounting Core | Accepted |
+| [ADR-027](./ADR-027-error-handling-architecture.md) | Arquitectura Unificada de Manejo de Errores — contrato Backend↔Frontend, categorías, mapeo HTTP, auditoría | Accepted (arquitectura) — migración pendiente |
+
+Seguimiento de migración de ADRs aceptados con implementación pendiente: [`docs/architecture/ARCHITECTURE-BACKLOG.md`](../architecture/ARCHITECTURE-BACKLOG.md) (iniciativas `GOV-xxx`).
 
 **Formato:** Status · Context · Decision · Consequences · Alternatives Considered
 

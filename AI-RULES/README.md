@@ -30,6 +30,7 @@ Cursor, Claude y futuros agentes deben leer **estos archivos** antes de inventar
 | [AUDIT-INFRASTRUCTURE.md](./AUDIT-INFRASTRUCTURE.md) | **FROZEN** — Entity Audit (contratos, dispatcher, extensión) + diseño de Process Audit futuro |
 | [VISUAL-MESSAGES.md](./VISUAL-MESSAGES.md) | **FROZEN** — API `message.*`, store encapsulado (ADR-018) |
 | [MODAL-STANDARD.md](./MODAL-STANDARD.md) | **FROZEN** — Componente oficial `ZHModal` |
+| [ERROR-HANDLING.md](./ERROR-HANDLING.md) | Contrato único de errores Backend↔Frontend, categorías, mapeo HTTP, reglas E-B/E-F (ADR-027) |
 | [docs/adr/](../docs/adr/README.md) | ADRs — rationale arquitectónico (no duplicar reglas de enforcement) |
 
 ---

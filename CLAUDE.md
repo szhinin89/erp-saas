@@ -55,6 +55,7 @@ Documentación congelada: releases pasadas, auditorías de limpieza ya ejecutada
 | PR bloqueante (B-xx/F-xx) | [AI-RULES/PR-RULES-CATALOG.md](AI-RULES/PR-RULES-CATALOG.md) |
 | Validación de formularios | [CLAUDE.md#estándar-de-validación-de-formularios](CLAUDE.md#estándar-de-validación-de-formularios) |
 | Mensajes visuales | [AI-RULES/VISUAL-MESSAGES.md](AI-RULES/VISUAL-MESSAGES.md) |
+| Manejo de errores (Backend↔Frontend) | [AI-RULES/ERROR-HANDLING.md](AI-RULES/ERROR-HANDLING.md) |
 | Modales | [AI-RULES/MODAL-STANDARD.md](AI-RULES/MODAL-STANDARD.md) |
 | Auditoría (Entity Audit / Process Audit) | [AI-RULES/AUDIT-INFRASTRUCTURE.md](AI-RULES/AUDIT-INFRASTRUCTURE.md) |
 | Branch Ownership (TenantId/CompanyId/BranchId en aggregates operativos) | [AI-RULES/CORE-ARCHITECTURE.md#branch-ownership-rule-obligatoria](AI-RULES/CORE-ARCHITECTURE.md#branch-ownership-rule-obligatoria) |

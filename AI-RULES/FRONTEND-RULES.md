@@ -286,6 +286,12 @@ Zod + `zodResolver` + react-hook-form. Schema en `schemas/{modulo}/`. Ver [ENFOR
 
 ---
 
+## Manejo de errores API
+
+Ningún componente/página interpreta `error.response.data` directamente. Pipeline obligatorio: `normalizeApiError`/`apiError.ts` → `applyServerErrors<T>()` (errores de campo) → `formatApiRequestError()` (fallback general) → `ZHFormAlert`/`ZHToast`/`ZHPageNotice`/modal según contexto (nunca `catch` vacío en una mutación). Reglas E-F1..E-F7 y tabla de canal de presentación: [`AI-RULES/ERROR-HANDLING.md`](./ERROR-HANDLING.md) (ADR-027).
+
+---
+
 ## CI frontend
 
 `npm run lint`, `npx tsc --noEmit`, `npm run build`, Playwright smoke (`.github/workflows/frontend-ci.yml`).
