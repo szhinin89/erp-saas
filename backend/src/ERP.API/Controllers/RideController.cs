@@ -1,12 +1,12 @@
-using MediatR;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Mvc;
 using ERP.API.Extensions;
 using ERP.Application.Common.Interfaces;
 using ERP.Application.Modules.Ride.DTOs;
 using ERP.Application.Modules.Ride.UseCases.GetOrGenerateRide;
 using ERP.Application.Modules.Ride.UseCases.RegenerateRide;
 using ERP.Domain.Kernel.Permissions;
+using MediatR;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 
 namespace ERP.API.Controllers;
 

@@ -1,12 +1,12 @@
-﻿using ERP.API.Contracts;
+using ERP.API.Contracts;
 using ERP.API.Contracts.MasterData;
 using ERP.API.Extensions;
-using ERP.Domain.Kernel.Permissions;
 using ERP.Application.MasterData.DTOs;
 using ERP.Application.MasterData.UseCases.BlockBusinessPartner;
 using ERP.Application.MasterData.UseCases.GetCompanyBpTradingSettings;
 using ERP.Application.MasterData.UseCases.UnblockBusinessPartner;
 using ERP.Application.MasterData.UseCases.UpsertCompanyBpTradingSettings;
+using ERP.Domain.Kernel.Permissions;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -65,8 +65,8 @@ public sealed class CompanyBpTradingSettingsController : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status409Conflict)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status422UnprocessableEntity)]
     public async Task<IActionResult> UpsertSettings(
-        [FromRoute] Guid                       bpId,
-        [FromBody]  UpsertTradingSettingsRequest body,
+        [FromRoute] Guid bpId,
+        [FromBody] UpsertTradingSettingsRequest body,
         CancellationToken cancellationToken = default)
     {
         var cmd = new UpsertCompanyBpTradingSettingsCommand(
@@ -87,8 +87,8 @@ public sealed class CompanyBpTradingSettingsController : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status422UnprocessableEntity)]
     public async Task<IActionResult> Block(
-        [FromRoute] Guid         bpId,
-        [FromBody]  BlockRequest body,
+        [FromRoute] Guid bpId,
+        [FromBody] BlockRequest body,
         CancellationToken cancellationToken = default)
     {
         var result = await _mediator.Send(new BlockBusinessPartnerCommand(bpId, body.Reason), cancellationToken);

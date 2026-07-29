@@ -1,6 +1,6 @@
-using MediatR;
 using ERP.Application.Common;
 using ERP.Application.Modules.ElectronicDocuments.DTOs;
+using MediatR;
 
 namespace ERP.Application.Modules.ElectronicDocuments.UseCases.GetElectronicDocumentTimeline;
 

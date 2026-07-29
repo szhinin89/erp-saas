@@ -8,7 +8,7 @@ namespace ERP.Domain.Modules.Company.Enums;
 /// </summary>
 public enum CompanyOperationalStatus
 {
-    PendingSetup  = 1,
-    Operational   = 2,
-    Suspended     = 3,
+    PendingSetup = 1,
+    Operational = 2,
+    Suspended = 3,
 }

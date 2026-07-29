@@ -8,7 +8,6 @@ using ERP.Domain.Modules.Purchases.PurchaseReception.Models;
 using FluentAssertions;
 using Microsoft.Extensions.Logging;
 using Moq;
-using Xunit;
 
 namespace ERP.Application.Tests.Purchases.PurchaseReception;
 
@@ -20,10 +19,10 @@ namespace ERP.Application.Tests.Purchases.PurchaseReception;
 /// </summary>
 public sealed class DownloadPurchaseReceptionXmlHandlerTests
 {
-    private static readonly Guid TenantId  = Guid.NewGuid();
+    private static readonly Guid TenantId = Guid.NewGuid();
     private static readonly Guid CompanyId = Guid.NewGuid();
-    private static readonly Guid BranchId  = Guid.NewGuid();
-    private static readonly Guid UserId    = Guid.NewGuid();
+    private static readonly Guid BranchId = Guid.NewGuid();
+    private static readonly Guid UserId = Guid.NewGuid();
 
     private static PurchaseReceptionDocument SampleDocument(Guid? supplierId = null) => PurchaseReceptionDocument.Create(
         TenantId, CompanyId, BranchId, PurchaseReceptionSourceDocType.Invoice,

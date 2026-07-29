@@ -1,12 +1,12 @@
-﻿using ERP.API.Contracts;
+using ERP.API.Contracts;
 using ERP.API.Contracts.MasterData;
 using ERP.API.Extensions;
-using ERP.Domain.Kernel.Permissions;
 using ERP.Application.MasterData.DTOs;
 using ERP.Application.MasterData.UseCases.AssignBusinessPartnerRole;
 using ERP.Application.MasterData.UseCases.GetBusinessPartnerRoles;
 using ERP.Application.MasterData.UseCases.RevokeBusinessPartnerRole;
 using ERP.Application.MasterData.UseCases.UpdateRoleConfig;
+using ERP.Domain.Kernel.Permissions;
 using ERP.Domain.MasterData.ValueObjects;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
@@ -40,7 +40,7 @@ public sealed class BusinessPartnerRolesController : ControllerBase
     [Authorize(Policy = $"perm:{MasterDataPermissions.BusinessPartnersView}")]
     [ProducesResponseType(typeof(ApiResponse<IReadOnlyList<BusinessPartnerRoleDto>>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetRoles(
-        [FromRoute] Guid  bpId,
+        [FromRoute] Guid bpId,
         [FromQuery] bool? onlyActive = true,
         CancellationToken cancellationToken = default)
     {
@@ -61,8 +61,8 @@ public sealed class BusinessPartnerRolesController : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status409Conflict)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status422UnprocessableEntity)]
     public async Task<IActionResult> AssignRole(
-        [FromRoute] Guid              bpId,
-        [FromBody]  AssignRoleRequest body,
+        [FromRoute] Guid bpId,
+        [FromBody] AssignRoleRequest body,
         CancellationToken cancellationToken = default)
     {
         var supplierConfig = body.SupplierConfig is not null
@@ -146,9 +146,9 @@ public sealed class BusinessPartnerRolesController : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<BusinessPartnerRoleDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status422UnprocessableEntity)]
     public async Task<IActionResult> UpdateSupplierConfig(
-        [FromRoute] Guid                 bpId,
-        [FromRoute] Guid                 roleId,
-        [FromBody]  SupplierConfigRequest body,
+        [FromRoute] Guid bpId,
+        [FromRoute] Guid roleId,
+        [FromBody] SupplierConfigRequest body,
         CancellationToken cancellationToken = default)
     {
         _ = bpId;
@@ -180,9 +180,9 @@ public sealed class BusinessPartnerRolesController : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<BusinessPartnerRoleDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status422UnprocessableEntity)]
     public async Task<IActionResult> UpdateSupplierClassification(
-        [FromRoute] Guid                          bpId,
-        [FromRoute] Guid                          roleId,
-        [FromBody]  SupplierClassificationRequest body,
+        [FromRoute] Guid bpId,
+        [FromRoute] Guid roleId,
+        [FromBody] SupplierClassificationRequest body,
         CancellationToken cancellationToken = default)
     {
         _ = bpId;
@@ -210,9 +210,9 @@ public sealed class BusinessPartnerRolesController : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<BusinessPartnerRoleDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status422UnprocessableEntity)]
     public async Task<IActionResult> UpdateCarrierConfig(
-        [FromRoute] Guid                bpId,
-        [FromRoute] Guid                roleId,
-        [FromBody]  CarrierConfigRequest body,
+        [FromRoute] Guid bpId,
+        [FromRoute] Guid roleId,
+        [FromBody] CarrierConfigRequest body,
         CancellationToken cancellationToken = default)
     {
         _ = bpId;
@@ -239,9 +239,9 @@ public sealed class BusinessPartnerRolesController : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<BusinessPartnerRoleDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status422UnprocessableEntity)]
     public async Task<IActionResult> UpdateCustomerConfig(
-        [FromRoute] Guid                 bpId,
-        [FromRoute] Guid                 roleId,
-        [FromBody]  CustomerConfigRequest body,
+        [FromRoute] Guid bpId,
+        [FromRoute] Guid roleId,
+        [FromBody] CustomerConfigRequest body,
         CancellationToken cancellationToken = default)
     {
         _ = bpId;
@@ -268,9 +268,9 @@ public sealed class BusinessPartnerRolesController : ControllerBase
     [Authorize(Policy = $"perm:{MasterDataPermissions.BusinessPartnersUpdate}")]
     [ProducesResponseType(typeof(ApiResponse<bool>), StatusCodes.Status200OK)]
     public async Task<IActionResult> UpdateNotes(
-        [FromRoute] Guid                  bpId,
-        [FromRoute] Guid                  roleId,
-        [FromBody]  UpdateRoleNotesRequest body,
+        [FromRoute] Guid bpId,
+        [FromRoute] Guid roleId,
+        [FromBody] UpdateRoleNotesRequest body,
         CancellationToken cancellationToken = default)
     {
         _ = bpId;

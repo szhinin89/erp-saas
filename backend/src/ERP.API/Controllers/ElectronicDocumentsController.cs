@@ -1,6 +1,3 @@
-using MediatR;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Mvc;
 using ERP.API.Attributes;
 using ERP.API.Extensions;
 using ERP.Application.Modules.ElectronicDocuments.UseCases.CreateElectronicDocument;
@@ -13,6 +10,9 @@ using ERP.Application.Modules.ElectronicDocuments.UseCases.GetElectronicDocument
 using ERP.Application.Modules.ElectronicDocuments.UseCases.RetryElectronicDocument;
 using ERP.Domain.Kernel.Permissions;
 using ERP.Domain.Modules.ElectronicDocuments.Enums;
+using MediatR;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 
 namespace ERP.API.Controllers;
 

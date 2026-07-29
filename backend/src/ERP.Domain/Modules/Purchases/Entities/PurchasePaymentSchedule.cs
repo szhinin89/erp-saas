@@ -6,16 +6,16 @@ public sealed class PurchasePaymentSchedule : IMustHaveTenant
 {
     public const int NotesMaxLen = 500;
 
-    public Guid      Id                { get; private set; }
-    public Guid      TenantId          { get; private set; }
-    public Guid      PurchaseInvoiceId { get; private set; }
-    public int       InstallmentNumber { get; private set; }
-    public DateOnly  DueDate           { get; private set; }
-    public decimal   Amount            { get; private set; }
-    public string?   Notes             { get; private set; }
-    public DateTime  CreatedAt         { get; private set; }
-    public DateTime? UpdatedAt         { get; private set; }
-    public Guid?     UpdatedBy         { get; private set; }
+    public Guid Id { get; private set; }
+    public Guid TenantId { get; private set; }
+    public Guid PurchaseInvoiceId { get; private set; }
+    public int InstallmentNumber { get; private set; }
+    public DateOnly DueDate { get; private set; }
+    public decimal Amount { get; private set; }
+    public string? Notes { get; private set; }
+    public DateTime CreatedAt { get; private set; }
+    public DateTime? UpdatedAt { get; private set; }
+    public Guid? UpdatedBy { get; private set; }
 
     private PurchasePaymentSchedule() { }
 
@@ -31,14 +31,14 @@ public sealed class PurchasePaymentSchedule : IMustHaveTenant
 
         return new PurchasePaymentSchedule
         {
-            Id                = Guid.NewGuid(),
-            TenantId          = tenantId,
+            Id = Guid.NewGuid(),
+            TenantId = tenantId,
             PurchaseInvoiceId = purchaseInvoiceId,
             InstallmentNumber = installmentNumber,
-            DueDate           = dueDate,
-            Amount            = amount,
-            Notes             = notes?.Trim(),
-            CreatedAt         = DateTime.UtcNow,
+            DueDate = dueDate,
+            Amount = amount,
+            Notes = notes?.Trim(),
+            CreatedAt = DateTime.UtcNow,
         };
     }
 }

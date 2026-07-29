@@ -1,7 +1,7 @@
-using MediatR;
 using ERP.Application.Common;
 using ERP.Application.Items.DTOs;
 using ERP.Domain.Modules.Items.Interfaces;
+using MediatR;
 
 namespace ERP.Application.Items.UseCases.ResolveItem;
 
@@ -10,8 +10,8 @@ public sealed record ResolveItemQuery(string Code)
 
 public sealed class ResolveItemQueryHandler : IRequestHandler<ResolveItemQuery, Result<ItemDto?>>
 {
-    private readonly IItemRepository     _repo;
-    private readonly ICurrentTenant      _t;
+    private readonly IItemRepository _repo;
+    private readonly ICurrentTenant _t;
     private readonly ISriCatalogResolver _sri;
     private readonly IItemTypeRepository _itemTypeRepo;
 

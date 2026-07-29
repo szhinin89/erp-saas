@@ -1,6 +1,6 @@
-﻿using System.Text.Json;
-using System.Text.Json.Serialization;
 using ERP.Domain.Common;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace ERP.Infrastructure.Persistence.Outbox;
 
@@ -13,9 +13,9 @@ public sealed class OutboxMessage
 {
     private static readonly JsonSerializerOptions SerializerOptions = new()
     {
-        PropertyNamingPolicy        = JsonNamingPolicy.CamelCase,
-        DefaultIgnoreCondition      = JsonIgnoreCondition.WhenWritingNull,
-        WriteIndented               = false,
+        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+        DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
+        WriteIndented = false,
     };
 
     public Guid Id { get; private set; }
@@ -65,20 +65,20 @@ public sealed class OutboxMessage
 
     public static OutboxMessage From(IDomainEvent domainEvent, string? metadataJson = null)
     {
-        var eventType  = domainEvent.GetType();
+        var eventType = domainEvent.GetType();
         var tenantId = domainEvent is BaseDomainEvent b ? b.TenantId : null;
         var correlation = domainEvent is BaseDomainEvent b2 ? b2.CorrelationId : null;
 
         return new OutboxMessage
         {
-            Id            = Guid.NewGuid(),
-            Type          = eventType.AssemblyQualifiedName!,
-            EventName     = eventType.Name,
-            EventVersion  = 1,
-            Payload       = JsonSerializer.Serialize(domainEvent, eventType, SerializerOptions),
-            MetadataJson  = metadataJson,
+            Id = Guid.NewGuid(),
+            Type = eventType.AssemblyQualifiedName!,
+            EventName = eventType.Name,
+            EventVersion = 1,
+            Payload = JsonSerializer.Serialize(domainEvent, eventType, SerializerOptions),
+            MetadataJson = metadataJson,
             OccurredOnUtc = domainEvent.OccurredOn,
-            TenantId  = tenantId,
+            TenantId = tenantId,
             CorrelationId = correlation,
         };
     }
@@ -86,7 +86,7 @@ public sealed class OutboxMessage
     public void MarkProcessed()
     {
         ProcessedOnUtc = DateTime.UtcNow;
-        Error          = null;
+        Error = null;
     }
 
     public void MarkFailed(string error)

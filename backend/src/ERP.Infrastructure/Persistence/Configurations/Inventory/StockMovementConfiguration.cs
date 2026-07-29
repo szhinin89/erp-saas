@@ -1,6 +1,4 @@
-using ERP.Domain.Branches.Entities;
 using ERP.Domain.Modules.Inventory.Entities;
-using ERP.Domain.Modules.Inventory.Enums;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 

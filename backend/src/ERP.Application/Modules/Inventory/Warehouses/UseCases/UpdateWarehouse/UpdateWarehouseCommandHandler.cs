@@ -1,10 +1,10 @@
-using MediatR;
 using ERP.Application.Common;
 using ERP.Application.Modules.Inventory.Warehouses.DTOs;
 using ERP.Application.Modules.Inventory.Warehouses.UseCases.GetWarehouses;
 using ERP.Domain.Audit.Entities;
 using ERP.Domain.Audit.Interfaces;
 using ERP.Domain.Modules.Inventory.Interfaces;
+using MediatR;
 
 namespace ERP.Application.Modules.Inventory.Warehouses.UseCases.UpdateWarehouse;
 
@@ -22,10 +22,10 @@ public sealed class UpdateWarehouseCommandHandler
         ICurrentTenant currentTenant,
         ICurrentUser user)
     {
-        _repo          = repo;
-        _activity      = activity;
+        _repo = repo;
+        _activity = activity;
         _currentTenant = currentTenant;
-        _user          = user;
+        _user = user;
     }
 
     public async Task<Result<WarehouseListItemDto>> Handle(
@@ -38,18 +38,18 @@ public sealed class UpdateWarehouseCommandHandler
             return Result<WarehouseListItemDto>.NotFound("Bodega no encontrada.");
 
         entity.Update(
-            branchId:         command.BranchId,
-            name:             command.Name,
-            storageType:      command.StorageType,
-            address:          command.Address,
-            phone:            command.Phone,
-            email:            command.Email,
-            manager:          command.Manager,
-            latitude:         command.Latitude,
-            longitude:        command.Longitude,
-            capacity:         command.Capacity,
+            branchId: command.BranchId,
+            name: command.Name,
+            storageType: command.StorageType,
+            address: command.Address,
+            phone: command.Phone,
+            email: command.Email,
+            manager: command.Manager,
+            latitude: command.Latitude,
+            longitude: command.Longitude,
+            capacity: command.Capacity,
             dailyDispatchGoal: command.DailyDispatchGoal,
-            updatedBy:        _user.UserId);
+            updatedBy: _user.UserId);
 
         await _activity.AddAsync(UserActivity.Create(
             tenantId,

@@ -8,7 +8,6 @@ using FluentAssertions;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Testcontainers.PostgreSql;
-using Xunit;
 
 namespace ERP.Infrastructure.Tests.Accounting;
 

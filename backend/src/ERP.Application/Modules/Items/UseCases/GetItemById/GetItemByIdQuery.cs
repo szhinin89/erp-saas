@@ -1,7 +1,7 @@
-using MediatR;
 using ERP.Application.Common;
 using ERP.Application.Items.DTOs;
 using ERP.Domain.Modules.Items.Interfaces;
+using MediatR;
 
 namespace ERP.Application.Items.UseCases.GetItemById;
 
@@ -11,8 +11,8 @@ public sealed record GetItemByIdQuery(Guid Id)
 public sealed class GetItemByIdQueryHandler
     : IRequestHandler<GetItemByIdQuery, Result<ItemDetailDto>>
 {
-    private readonly IItemRepository     _repository;
-    private readonly ICurrentTenant      _currentTenant;
+    private readonly IItemRepository _repository;
+    private readonly ICurrentTenant _currentTenant;
     private readonly ISriCatalogResolver _sri;
     private readonly IItemTypeRepository _itemTypeRepo;
 
@@ -22,10 +22,10 @@ public sealed class GetItemByIdQueryHandler
         ISriCatalogResolver sri,
         IItemTypeRepository itemTypeRepo)
     {
-        _repository    = repository;
+        _repository = repository;
         _currentTenant = tenant;
-        _sri           = sri;
-        _itemTypeRepo  = itemTypeRepo;
+        _sri = sri;
+        _itemTypeRepo = itemTypeRepo;
     }
 
     public async Task<Result<ItemDetailDto>> Handle(GetItemByIdQuery query, CancellationToken cancellationToken)

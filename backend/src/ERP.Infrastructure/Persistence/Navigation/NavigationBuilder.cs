@@ -1,4 +1,3 @@
-using System.Text.Json;
 using ERP.Application.Access;
 using ERP.Application.Access.Caching;
 using ERP.Application.Common;
@@ -6,9 +5,9 @@ using ERP.Application.Navigation;
 using ERP.Application.Navigation.DTOs;
 using ERP.Domain.Kernel.Security;
 using ERP.Domain.Navigation.Entities;
-using ERP.Domain.Tenants.Interfaces;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
+using System.Text.Json;
 
 namespace ERP.Infrastructure.Persistence.Navigation;
 
@@ -41,12 +40,12 @@ public sealed class NavigationBuilder : INavigationBuilder
         IEffectivePermissionKeysProvider permKeys,
         IMemoryCache cache)
     {
-        _db         = db;
-        _tenant     = tenant;
-        _user       = user;
+        _db = db;
+        _tenant = tenant;
+        _user = user;
         _companyCtx = companyCtx;
-        _permKeys   = permKeys;
-        _cache      = cache;
+        _permKeys = permKeys;
+        _cache = cache;
     }
 
     public void InvalidateCache(Guid tenantId, Guid companyId, Guid userId)
@@ -58,8 +57,8 @@ public sealed class NavigationBuilder : INavigationBuilder
     public async Task<IReadOnlyList<NavMenuGroupDto>> BuildMenuAsync(CancellationToken cancellationToken = default)
     {
         var tenantId = _tenant.TenantId;
-        var userId   = _user.UserId;
-        var role     = _user.Role ?? string.Empty;
+        var userId = _user.UserId;
+        var role = _user.Role ?? string.Empty;
 
         // CompanyId del contexto operativo de la sesión autenticada (membresía validada),
         // nunca un valor crudo enviado por el frontend sin validar.
@@ -179,7 +178,7 @@ public sealed class NavigationBuilder : INavigationBuilder
 
         // Items with no permission requirement are visible to all authenticated users.
         var hasSingle = !string.IsNullOrWhiteSpace(item.PermissionKey);
-        var hasAny    = !string.IsNullOrWhiteSpace(item.PermissionKeysAnyJson);
+        var hasAny = !string.IsNullOrWhiteSpace(item.PermissionKeysAnyJson);
 
         if (!hasSingle && !hasAny) return true;
 

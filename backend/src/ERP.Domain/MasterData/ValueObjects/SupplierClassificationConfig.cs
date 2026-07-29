@@ -15,12 +15,12 @@ namespace ERP.Domain.MasterData.ValueObjects;
 public sealed record SupplierClassificationConfig
 {
     // ── Longitudes máximas ────────────────────────────────────────────────────
-    public const int CategoryMaxLen   = 50;
-    public const int TypeMaxLen       = 30;
-    public const int RiskMaxLen       = 20;
-    public const int RatingMaxLen     = 10;
-    public const int GoodTypeMaxLen   = 30;
-    public const int SegmentMaxLen    = 30;
+    public const int CategoryMaxLen = 50;
+    public const int TypeMaxLen = 30;
+    public const int RiskMaxLen = 20;
+    public const int RatingMaxLen = 10;
+    public const int GoodTypeMaxLen = 30;
+    public const int SegmentMaxLen = 30;
     public const int PaymentPrefMaxLen = 100;
 
     // ── Valores válidos ───────────────────────────────────────────────────────
@@ -58,22 +58,22 @@ public sealed record SupplierClassificationConfig
     // ── Propiedades ───────────────────────────────────────────────────────────
 
     /// <summary>Tipo estratégico: Manufacturer | Distributor | ServiceProvider | Agent | Retailer | Other</summary>
-    public string? SupplierCategory       { get; }
+    public string? SupplierCategory { get; }
 
     /// <summary>Origen: National | International | Both</summary>
-    public string? SupplierType           { get; }
+    public string? SupplierType { get; }
 
     /// <summary>Riesgo operativo: Low | Medium | High | Critical</summary>
-    public string? SupplierRisk           { get; }
+    public string? SupplierRisk { get; }
 
     /// <summary>Calificación de calidad/confiabilidad: AAA | AA | A | BBB | B | C | D | NR</summary>
-    public string? SupplierRating         { get; }
+    public string? SupplierRating { get; }
 
     /// <summary>Tipo de bien principal: Goods | Services | Both | Digital</summary>
-    public string? PrimaryGoodType        { get; }
+    public string? PrimaryGoodType { get; }
 
     /// <summary>Segmento estratégico: Strategic | Preferred | Approved | Transactional</summary>
-    public string? SupplierSegment        { get; }
+    public string? SupplierSegment { get; }
 
     /// <summary>Método de pago preferido operativo interno (texto libre, no código SRI).</summary>
     public string? PaymentMethodPreference { get; }
@@ -87,31 +87,31 @@ public sealed record SupplierClassificationConfig
         string? supplierSegment,
         string? paymentMethodPreference)
     {
-        SupplierCategory        = supplierCategory;
-        SupplierType            = supplierType;
-        SupplierRisk            = supplierRisk;
-        SupplierRating          = supplierRating;
-        PrimaryGoodType         = primaryGoodType;
-        SupplierSegment         = supplierSegment;
+        SupplierCategory = supplierCategory;
+        SupplierType = supplierType;
+        SupplierRisk = supplierRisk;
+        SupplierRating = supplierRating;
+        PrimaryGoodType = primaryGoodType;
+        SupplierSegment = supplierSegment;
         PaymentMethodPreference = paymentMethodPreference;
     }
 
     public static SupplierClassificationConfig Create(
-        string? supplierCategory        = null,
-        string? supplierType            = null,
-        string? supplierRisk            = null,
-        string? supplierRating          = null,
-        string? primaryGoodType         = null,
-        string? supplierSegment         = null,
+        string? supplierCategory = null,
+        string? supplierType = null,
+        string? supplierRisk = null,
+        string? supplierRating = null,
+        string? primaryGoodType = null,
+        string? supplierSegment = null,
         string? paymentMethodPreference = null)
     {
         return new SupplierClassificationConfig(
-            ValidateEnum(supplierCategory,        ValidCategories, CategoryMaxLen, nameof(supplierCategory)),
-            ValidateEnum(supplierType,            ValidTypes,      TypeMaxLen,     nameof(supplierType)),
-            ValidateEnum(supplierRisk,            ValidRisks,      RiskMaxLen,     nameof(supplierRisk)),
-            ValidateEnum(supplierRating,          ValidRatings,    RatingMaxLen,   nameof(supplierRating)),
-            ValidateEnum(primaryGoodType,         ValidGoodTypes,  GoodTypeMaxLen, nameof(primaryGoodType)),
-            ValidateEnum(supplierSegment,         ValidSegments,   SegmentMaxLen,  nameof(supplierSegment)),
+            ValidateEnum(supplierCategory, ValidCategories, CategoryMaxLen, nameof(supplierCategory)),
+            ValidateEnum(supplierType, ValidTypes, TypeMaxLen, nameof(supplierType)),
+            ValidateEnum(supplierRisk, ValidRisks, RiskMaxLen, nameof(supplierRisk)),
+            ValidateEnum(supplierRating, ValidRatings, RatingMaxLen, nameof(supplierRating)),
+            ValidateEnum(primaryGoodType, ValidGoodTypes, GoodTypeMaxLen, nameof(primaryGoodType)),
+            ValidateEnum(supplierSegment, ValidSegments, SegmentMaxLen, nameof(supplierSegment)),
             NormalizeText(paymentMethodPreference, PaymentPrefMaxLen, nameof(paymentMethodPreference)));
     }
 

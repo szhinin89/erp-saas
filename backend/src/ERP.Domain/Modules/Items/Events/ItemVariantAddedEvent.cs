@@ -10,9 +10,9 @@ public sealed class ItemVariantAddedEvent : BaseDomainEvent
 
     public ItemVariantAddedEvent(Guid itemId, Guid variantId, string variantSku, Guid tenantId)
     {
-        ItemId       = itemId;
-        VariantId    = variantId;
-        VariantSKU   = variantSku;
+        ItemId = itemId;
+        VariantId = variantId;
+        VariantSKU = variantSku;
         TenantId = tenantId;
     }
 }

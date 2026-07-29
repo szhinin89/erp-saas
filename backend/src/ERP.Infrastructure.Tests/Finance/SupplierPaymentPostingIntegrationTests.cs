@@ -12,9 +12,7 @@ using ERP.Domain.Modules.Accounting.ValueObjects;
 using ERP.Domain.Modules.Company.Entities;
 using ERP.Domain.Modules.Finance.Enums;
 using ERP.Domain.Modules.Finance.Events;
-using ERP.Domain.Modules.Finance.Interfaces;
 using ERP.Domain.Modules.Purchases.Entities;
-using ERP.Domain.Modules.Purchases.Interfaces;
 using ERP.Domain.Tenants.Entities;
 using ERP.Infrastructure.Accounting.Repositories;
 using ERP.Infrastructure.Persistence;
@@ -25,7 +23,6 @@ using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Testcontainers.PostgreSql;
-using Xunit;
 
 namespace ERP.Infrastructure.Tests.Finance;
 

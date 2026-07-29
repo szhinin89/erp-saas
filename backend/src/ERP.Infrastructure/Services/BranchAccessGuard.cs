@@ -19,10 +19,10 @@ public sealed class BranchAccessGuard : IBranchAccessGuard
         ICompanyUserBranchRepository companyUserBranchRepository,
         IAccessRepository accessRepository)
     {
-        _companyAccessGuard          = companyAccessGuard;
-        _branchRepository            = branchRepository;
+        _companyAccessGuard = companyAccessGuard;
+        _branchRepository = branchRepository;
         _companyUserBranchRepository = companyUserBranchRepository;
-        _accessRepository            = accessRepository;
+        _accessRepository = accessRepository;
     }
 
     public async Task<Result<BranchAccessContext>> RequireBranchAsync(

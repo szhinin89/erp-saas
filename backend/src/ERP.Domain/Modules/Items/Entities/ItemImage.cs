@@ -1,4 +1,4 @@
-﻿using ERP.Domain.Common;
+using ERP.Domain.Common;
 
 namespace ERP.Domain.Modules.Items.Entities;
 
@@ -24,16 +24,16 @@ public sealed class ItemImage : AuditableEntity
     {
         var entity = new ItemImage
         {
-            Id              = Guid.NewGuid(),
-            TenantId    = tenantId,
-            ItemId          = itemId,
-            VariantId       = variantId,
+            Id = Guid.NewGuid(),
+            TenantId = tenantId,
+            ItemId = itemId,
+            VariantId = variantId,
             StorageObjectId = storageObjectId,
-            AltText         = altText?.Trim(),
-            IsMain          = isMain,
-            IsEcommerce     = isEcommerce,
-            SortOrder       = sortOrder,
-            IsActive        = true,
+            AltText = altText?.Trim(),
+            IsMain = isMain,
+            IsEcommerce = isEcommerce,
+            SortOrder = sortOrder,
+            IsActive = true,
         };
         entity.SetCreated(createdBy);
         return entity;

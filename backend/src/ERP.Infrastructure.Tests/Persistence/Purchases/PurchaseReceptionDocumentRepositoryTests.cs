@@ -13,7 +13,6 @@ using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Npgsql;
 using Testcontainers.PostgreSql;
-using Xunit;
 
 namespace ERP.Infrastructure.Tests.Persistence.Purchases;
 

@@ -1,23 +1,22 @@
-﻿using FluentValidation;
-using MediatR;
 using ERP.Application.Common;
-using ERP.Application.Items;
 using ERP.Application.Items.DTOs;
 using ERP.Domain.Modules.Items.Entities;
 using ERP.Domain.Modules.Items.Interfaces;
+using FluentValidation;
+using MediatR;
 
 namespace ERP.Application.Items.UseCases.ItemPackagingLevels;
 
 public record PackagingLevelInput(
-    string   Name,
-    int      Level,
-    decimal  BaseQuantity,
-    string   UomCode,
-    string?  Barcode           = null,
-    decimal? Weight            = null,
-    bool     IsBaseUnit        = false,
-    bool     IsPurchaseDefault = false,
-    bool     IsSaleDefault     = false
+    string Name,
+    int Level,
+    decimal BaseQuantity,
+    string UomCode,
+    string? Barcode = null,
+    decimal? Weight = null,
+    bool IsBaseUnit = false,
+    bool IsPurchaseDefault = false,
+    bool IsSaleDefault = false
 );
 
 public sealed record ReplaceItemPackagingLevelsCommand(

@@ -7,14 +7,14 @@ namespace ERP.Domain.Modules.Auxiliary.Entities;
 /// </summary>
 public class RetryControl
 {
-    public Guid     Id            { get; set; }
-    public Guid     CompanyId     { get; set; }
-    public Guid     DocId         { get; set; }
-    public short    RetryCount    { get; set; }
-    public short    MaxRetries    { get; set; } = 5;
+    public Guid Id { get; set; }
+    public Guid CompanyId { get; set; }
+    public Guid DocId { get; set; }
+    public short RetryCount { get; set; }
+    public short MaxRetries { get; set; } = 5;
     public DateTime? LastAttemptAt { get; set; }
-    public DateTime? NextRetryAt   { get; set; }
-    public string?  LastError     { get; set; }
-    public bool     IsExhausted   { get; set; }
-    public DateTime CreatedAt     { get; set; }
+    public DateTime? NextRetryAt { get; set; }
+    public string? LastError { get; set; }
+    public bool IsExhausted { get; set; }
+    public DateTime CreatedAt { get; set; }
 }

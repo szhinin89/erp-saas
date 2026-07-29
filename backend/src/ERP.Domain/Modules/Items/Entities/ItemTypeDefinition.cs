@@ -12,18 +12,18 @@ public sealed class ItemTypeDefinition : MasterEntity, ITenantScopedEntity
     public const int MaxCodeLength = 30;
     public const int MaxNameLength = 100;
 
-    public string Code      { get; private set; } = null!;
-    public string Name      { get; private set; } = null!;
-    public int    SortOrder { get; private set; }
+    public string Code { get; private set; } = null!;
+    public string Name { get; private set; } = null!;
+    public int SortOrder { get; private set; }
 
     private ItemTypeDefinition() { }
 
     public static ItemTypeDefinition Create(
-        Guid   tenantId,
+        Guid tenantId,
         string code,
         string name,
-        int    sortOrder,
-        Guid   createdBy)
+        int sortOrder,
+        Guid createdBy)
     {
         if (string.IsNullOrWhiteSpace(code))
             throw new ArgumentException("El código es obligatorio.", nameof(code));
@@ -36,10 +36,10 @@ public sealed class ItemTypeDefinition : MasterEntity, ITenantScopedEntity
 
         var entity = new ItemTypeDefinition
         {
-            Id        = Guid.NewGuid(),
-            TenantId  = tenantId,
-            Code      = code.Trim(),
-            Name      = name.Trim(),
+            Id = Guid.NewGuid(),
+            TenantId = tenantId,
+            Code = code.Trim(),
+            Name = name.Trim(),
             SortOrder = sortOrder,
         };
         entity.SetCreated(createdBy);
@@ -56,11 +56,11 @@ public sealed class ItemTypeDefinition : MasterEntity, ITenantScopedEntity
     /// <see cref="SystemSeedGuard.EnsureEditable"/>.
     /// </summary>
     public static ItemTypeDefinition CreateSystemSeeded(
-        Guid   tenantId,
+        Guid tenantId,
         string code,
         string name,
-        int    sortOrder,
-        Guid   createdBy)
+        int sortOrder,
+        Guid createdBy)
     {
         var entity = Create(tenantId, code, name, sortOrder, createdBy);
         entity.MarkAsSystemSeeded();
@@ -72,7 +72,7 @@ public sealed class ItemTypeDefinition : MasterEntity, ITenantScopedEntity
         if (string.IsNullOrWhiteSpace(name))
             throw new ArgumentException("El nombre es obligatorio.", nameof(name));
 
-        Name      = name.Trim();
+        Name = name.Trim();
         SortOrder = sortOrder;
         SetUpdated(updatedBy);
     }

@@ -1,9 +1,9 @@
-using MediatR;
 using ERP.Application.Common;
 using ERP.Application.Modules.Branches;
 using ERP.Application.Modules.Inventory.Stock.DTOs;
 using ERP.Domain.Modules.Inventory.Entities;
 using ERP.Domain.Modules.Inventory.Interfaces;
+using MediatR;
 
 namespace ERP.Application.Modules.Inventory.Stock.UseCases.CreateStockTransfer;
 
@@ -11,18 +11,18 @@ public sealed class CreateStockTransferCommandHandler
     : IRequestHandler<CreateStockTransferCommand, Result<StockTransferDto>>
 {
     private readonly IStockTransferRepository _repo;
-    private readonly IInterBranchAccessGuard  _interBranchGuard;
-    private readonly ICurrentTenant           _tenant;
-    private readonly ICurrentUser             _user;
+    private readonly IInterBranchAccessGuard _interBranchGuard;
+    private readonly ICurrentTenant _tenant;
+    private readonly ICurrentUser _user;
 
     public CreateStockTransferCommandHandler(
         IStockTransferRepository repo, IInterBranchAccessGuard interBranchGuard,
         ICurrentTenant tenant, ICurrentUser user)
     {
-        _repo             = repo;
+        _repo = repo;
         _interBranchGuard = interBranchGuard;
-        _tenant           = tenant;
-        _user             = user;
+        _tenant = tenant;
+        _user = user;
     }
 
     public async Task<Result<StockTransferDto>> Handle(

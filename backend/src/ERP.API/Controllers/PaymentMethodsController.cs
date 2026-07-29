@@ -1,10 +1,10 @@
-using MediatR;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Mvc;
 using ERP.API.Attributes;
 using ERP.API.Extensions;
 using ERP.Application.Modules.Sales.UseCases;
 using ERP.Domain.Kernel.Permissions;
+using MediatR;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 
 namespace ERP.API.Controllers;
 

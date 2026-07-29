@@ -1,10 +1,9 @@
-﻿using MediatR;
 using ERP.Application.Common;
 using ERP.Application.Common.Persistence;
-using ERP.Application.Items;
 using ERP.Application.Items.DTOs;
 using ERP.Domain.Modules.Items.Interfaces;
 using ERP.Domain.Modules.Items.ValueObjects;
+using MediatR;
 
 namespace ERP.Application.Items.UseCases.UpdateItem;
 
@@ -32,15 +31,15 @@ public sealed class UpdateItemCommandHandler
         _categoryNodeRepo = categoryNodeRepo;
         _itemTypeRepo = itemTypeRepo;
         _currentTenant = tenant;
-        _user       = user;
-        _sri        = sri;
-        _dbEx       = dbEx;
+        _user = user;
+        _sri = sri;
+        _dbEx = dbEx;
     }
 
     public async Task<Result<ItemDto>> Handle(UpdateItemCommand cmd, CancellationToken cancellationToken)
     {
         var tenantId = _currentTenant.TenantId;
-        var userId       = _user.UserId;
+        var userId = _user.UserId;
 
         var item = await _repository.GetByIdLightAsync(cmd.Id, tenantId, cancellationToken);
         if (item is null)

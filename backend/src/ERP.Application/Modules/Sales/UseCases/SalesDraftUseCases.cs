@@ -1,16 +1,16 @@
-using FluentValidation;
-using MediatR;
 using ERP.Application.Common;
-using ERP.Application.Modules.Sales.DTOs;
 using ERP.Application.Common.Services;
+using ERP.Application.Modules.Pricing.Services;
+using ERP.Application.Modules.Sales.DTOs;
 using ERP.Domain.MasterData.Interfaces;
 using ERP.Domain.Modules.Company.Enums;
 using ERP.Domain.Modules.Company.Interfaces;
+using ERP.Domain.Modules.Items.Interfaces;
 using ERP.Domain.Modules.Sales.Entities;
 using ERP.Domain.Modules.Sales.Interfaces;
 using ERP.Domain.Modules.Sales.ValueObjects;
-using ERP.Domain.Modules.Items.Interfaces;
-using ERP.Application.Modules.Pricing.Services;
+using FluentValidation;
+using MediatR;
 
 namespace ERP.Application.Modules.Sales.UseCases;
 

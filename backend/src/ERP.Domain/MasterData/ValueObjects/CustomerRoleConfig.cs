@@ -22,12 +22,12 @@ namespace ERP.Domain.MasterData.ValueObjects;
 public sealed record CustomerRoleConfig
 {
     // ── Longitudes máximas ────────────────────────────────────────────────────
-    public const int CategoryMaxLen       = 50;
-    public const int SegmentMaxLen        = 50;
-    public const int SalesZoneMaxLen      = 100;
-    public const int CreditRatingMaxLen   = 10;
-    public const int LoyaltyTierMaxLen    = 20;
-    public const int InvoiceFormatMaxLen  = 20;
+    public const int CategoryMaxLen = 50;
+    public const int SegmentMaxLen = 50;
+    public const int SalesZoneMaxLen = 100;
+    public const int CreditRatingMaxLen = 10;
+    public const int LoyaltyTierMaxLen = 20;
+    public const int InvoiceFormatMaxLen = 20;
     public const int ClassificationMaxLen = 50;
 
     // ── Valores válidos (validación en Application layer vía FluentValidation) ─
@@ -105,31 +105,31 @@ public sealed record CustomerRoleConfig
         string? preferredInvoiceFormat,
         string? customerClassification)
     {
-        CustomerCategory       = customerCategory;
-        CustomerSegment        = customerSegment;
-        SalesZone              = salesZone;
-        CreditRating           = creditRating;
-        LoyaltyTier            = loyaltyTier;
+        CustomerCategory = customerCategory;
+        CustomerSegment = customerSegment;
+        SalesZone = salesZone;
+        CreditRating = creditRating;
+        LoyaltyTier = loyaltyTier;
         PreferredInvoiceFormat = preferredInvoiceFormat;
         CustomerClassification = customerClassification;
     }
 
     public static CustomerRoleConfig Create(
-        string? customerCategory       = null,
-        string? customerSegment        = null,
-        string? salesZone              = null,
-        string? creditRating           = null,
-        string? loyaltyTier            = null,
+        string? customerCategory = null,
+        string? customerSegment = null,
+        string? salesZone = null,
+        string? creditRating = null,
+        string? loyaltyTier = null,
         string? preferredInvoiceFormat = null,
         string? customerClassification = null)
     {
         return new CustomerRoleConfig(
-            Normalize(customerCategory,       CategoryMaxLen,       nameof(customerCategory)),
-            Normalize(customerSegment,        SegmentMaxLen,        nameof(customerSegment)),
-            Normalize(salesZone,              SalesZoneMaxLen,      nameof(salesZone)),
-            Normalize(creditRating,           CreditRatingMaxLen,   nameof(creditRating)),
-            Normalize(loyaltyTier,            LoyaltyTierMaxLen,    nameof(loyaltyTier)),
-            Normalize(preferredInvoiceFormat, InvoiceFormatMaxLen,  nameof(preferredInvoiceFormat)),
+            Normalize(customerCategory, CategoryMaxLen, nameof(customerCategory)),
+            Normalize(customerSegment, SegmentMaxLen, nameof(customerSegment)),
+            Normalize(salesZone, SalesZoneMaxLen, nameof(salesZone)),
+            Normalize(creditRating, CreditRatingMaxLen, nameof(creditRating)),
+            Normalize(loyaltyTier, LoyaltyTierMaxLen, nameof(loyaltyTier)),
+            Normalize(preferredInvoiceFormat, InvoiceFormatMaxLen, nameof(preferredInvoiceFormat)),
             Normalize(customerClassification, ClassificationMaxLen, nameof(customerClassification)));
     }
 

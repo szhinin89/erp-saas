@@ -1,4 +1,4 @@
-﻿using ERP.Domain.MasterData.Entities;
+using ERP.Domain.MasterData.Entities;
 using ERP.Domain.MasterData.Enums;
 using ERP.Domain.MasterData.Interfaces;
 using ERP.Infrastructure.Persistence;
@@ -42,7 +42,7 @@ public sealed class BusinessPartnerLocationRepository : IBusinessPartnerLocation
               .FirstOrDefaultAsync(l => l.Id == id, cancellationToken);
 
     public async Task<IReadOnlyList<BusinessPartnerLocation>> GetByBusinessPartnerAsync(
-        Guid  businessPartnerId,
+        Guid businessPartnerId,
         bool? onlyActive = true,
         CancellationToken cancellationToken = default)
     {
@@ -65,7 +65,7 @@ public sealed class BusinessPartnerLocationRepository : IBusinessPartnerLocation
     /// EF Core + Npgsql traduce el operador & correctamente a SQL de PostgreSQL.
     /// </summary>
     public async Task<IReadOnlyList<BusinessPartnerLocation>> GetByPurposeAsync(
-        Guid            businessPartnerId,
+        Guid businessPartnerId,
         LocationPurpose purpose,
         CancellationToken cancellationToken = default)
     {

@@ -38,13 +38,13 @@ public sealed class ItemVariant : MasterEntity, ITenantScopedEntity
 
         var variant = new ItemVariant
         {
-            Id           = Guid.NewGuid(),
+            Id = Guid.NewGuid(),
             TenantId = tenantId,
-            ItemId       = itemId,
-            SKU          = sku.Trim().ToUpperInvariant(),
-            Name         = name,
-            IsDefault    = isDefault,
-            SortOrder    = sortOrder,
+            ItemId = itemId,
+            SKU = sku.Trim().ToUpperInvariant(),
+            Name = name,
+            IsDefault = isDefault,
+            SortOrder = sortOrder,
         };
         variant.SetCreated(createdBy);
 
@@ -70,7 +70,7 @@ public sealed class ItemVariant : MasterEntity, ITenantScopedEntity
         bc.Disable(updatedBy);
     }
 
-    public void SetAsDefault()  => IsDefault = true;
-    public void ClearDefault()  => IsDefault = false;
+    public void SetAsDefault() => IsDefault = true;
+    public void ClearDefault() => IsDefault = false;
     public void UpdateSortOrder(int order) => SortOrder = order;
 }

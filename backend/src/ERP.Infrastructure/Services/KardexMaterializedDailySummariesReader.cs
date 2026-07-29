@@ -1,9 +1,9 @@
+using ERP.Application.Common.Interfaces;
+using ERP.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Npgsql;
-using ERP.Application.Common.Interfaces;
-using ERP.Infrastructure.Persistence;
 
 namespace ERP.Infrastructure.Services;
 
@@ -18,9 +18,9 @@ public sealed partial class KardexMaterializedDailySummariesReader : IKardexMate
         IConfiguration configuration,
         ILogger<KardexMaterializedDailySummariesReader> logger)
     {
-        _db            = db;
+        _db = db;
         _configuration = configuration;
-        _logger        = logger;
+        _logger = logger;
     }
 
     public async Task<IReadOnlyList<KardexMvDayAggregate>?> TryGetDailyAggregatesAsync(
@@ -63,9 +63,9 @@ public sealed partial class KardexMaterializedDailySummariesReader : IKardexMate
                 """,
                 conn);
 
-            cmd.Parameters.AddWithValue("t",  tenantId);
-            cmd.Parameters.AddWithValue("p",  productId);
-            cmd.Parameters.AddWithValue("b",  warehouseId);
+            cmd.Parameters.AddWithValue("t", tenantId);
+            cmd.Parameters.AddWithValue("p", productId);
+            cmd.Parameters.AddWithValue("b", warehouseId);
             cmd.Parameters.AddWithValue("d0", fromInclusive);
             cmd.Parameters.AddWithValue("d1", toInclusive);
 

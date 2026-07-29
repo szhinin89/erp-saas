@@ -17,12 +17,12 @@ public sealed class FirstRunSetupService : IFirstRunSetupService
     private const int DefaultExpiryMinutes = 15;
 
     private readonly ISystemSetupRepository _repo;
-    private readonly IConfiguration         _config;
+    private readonly IConfiguration _config;
     private readonly ILogger<FirstRunSetupService> _logger;
 
     public FirstRunSetupService(ISystemSetupRepository repo, IConfiguration config, ILogger<FirstRunSetupService> logger)
     {
-        _repo   = repo;
+        _repo = repo;
         _config = config;
         _logger = logger;
     }
@@ -44,8 +44,8 @@ public sealed class FirstRunSetupService : IFirstRunSetupService
             return;
 
         var expiryMinutes = _config.GetValue("Setup:TokenExpiryMinutes", DefaultExpiryMinutes);
-        var rawToken      = SetupTokenCrypto.CreateRawToken();
-        var expiryUtc     = now.AddMinutes(expiryMinutes);
+        var rawToken = SetupTokenCrypto.CreateRawToken();
+        var expiryUtc = now.AddMinutes(expiryMinutes);
 
         state.IssueSetupToken(SetupTokenCrypto.Hash(rawToken), expiryUtc);
         await _repo.SaveChangesAsync(cancellationToken);

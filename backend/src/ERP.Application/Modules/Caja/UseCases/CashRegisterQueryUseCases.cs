@@ -1,8 +1,8 @@
-using MediatR;
 using ERP.Application.Common;
 using ERP.Application.Modules.Caja.DTOs;
 using ERP.Domain.Modules.Caja.Interfaces;
 using ERP.Domain.Modules.Company.Interfaces;
+using MediatR;
 
 namespace ERP.Application.Modules.Caja.UseCases;
 

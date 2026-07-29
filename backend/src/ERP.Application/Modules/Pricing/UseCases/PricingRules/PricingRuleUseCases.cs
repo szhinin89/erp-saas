@@ -1,11 +1,11 @@
-using FluentValidation;
-using MediatR;
 using ERP.Application.Audit;
 using ERP.Application.Common;
 using ERP.Application.Modules.Pricing.DTOs;
 using ERP.Domain.Modules.Pricing.Entities;
 using ERP.Domain.Modules.Pricing.Enums;
 using ERP.Domain.Modules.Pricing.Interfaces;
+using FluentValidation;
+using MediatR;
 
 namespace ERP.Application.Modules.Pricing.UseCases.PricingRules;
 

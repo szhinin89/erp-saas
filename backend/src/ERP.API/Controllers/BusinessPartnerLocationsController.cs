@@ -1,9 +1,9 @@
-﻿using ERP.API.Contracts;
+using ERP.API.Contracts;
 using ERP.API.Contracts.MasterData;
 using ERP.API.Extensions;
-using ERP.Domain.Kernel.Permissions;
 using ERP.Application.MasterData.DTOs;
 using ERP.Application.MasterData.UseCases.BpLocations;
+using ERP.Domain.Kernel.Permissions;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -37,7 +37,7 @@ public sealed class BusinessPartnerLocationsController : ControllerBase
     [Authorize(Policy = $"perm:{MasterDataPermissions.BusinessPartnersView}")]
     [ProducesResponseType(typeof(ApiResponse<IReadOnlyList<BpLocationDto>>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetLocations(
-        [FromRoute] Guid  bpId,
+        [FromRoute] Guid bpId,
         [FromQuery] bool? onlyActive = true,
         CancellationToken cancellationToken = default)
     {
@@ -71,8 +71,8 @@ public sealed class BusinessPartnerLocationsController : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<BpLocationDto>), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status422UnprocessableEntity)]
     public async Task<IActionResult> CreateLocation(
-        [FromRoute] Guid                  bpId,
-        [FromBody]  CreateLocationRequest body,
+        [FromRoute] Guid bpId,
+        [FromBody] CreateLocationRequest body,
         CancellationToken cancellationToken = default)
     {
         var cmd = new CreateBpLocationCommand(
@@ -93,9 +93,9 @@ public sealed class BusinessPartnerLocationsController : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status422UnprocessableEntity)]
     public async Task<IActionResult> UpdateLocation(
-        [FromRoute] Guid                  bpId,
-        [FromRoute] Guid                  locationId,
-        [FromBody]  UpdateLocationRequest body,
+        [FromRoute] Guid bpId,
+        [FromRoute] Guid locationId,
+        [FromBody] UpdateLocationRequest body,
         CancellationToken cancellationToken = default)
     {
         _ = bpId;

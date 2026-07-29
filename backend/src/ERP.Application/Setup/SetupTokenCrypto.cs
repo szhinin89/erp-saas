@@ -21,7 +21,7 @@ public static class SetupTokenCrypto
     public static string Hash(string raw)
     {
         var inputBytes = Encoding.UTF8.GetBytes(raw);
-        var hashBytes  = SHA256.HashData(inputBytes);
+        var hashBytes = SHA256.HashData(inputBytes);
         return Convert.ToHexString(hashBytes);
     }
 

@@ -135,30 +135,30 @@ public sealed class ImageValidationService : IImageValidationService
         switch (fourCc)
         {
             case "VP8X":
-            {
-                var width = 1 + (b[24] | (b[25] << 8) | (b[26] << 16));
-                var height = 1 + (b[27] | (b[28] << 8) | (b[29] << 16));
-                return new ImageMetadata("image/webp", "webp", width, height);
-            }
+                {
+                    var width = 1 + (b[24] | (b[25] << 8) | (b[26] << 16));
+                    var height = 1 + (b[27] | (b[28] << 8) | (b[29] << 16));
+                    return new ImageMetadata("image/webp", "webp", width, height);
+                }
             case "VP8L":
-            {
-                if (b[20] != 0x2F)
-                    return null;
+                {
+                    if (b[20] != 0x2F)
+                        return null;
 
-                var bits = b[21] | (b[22] << 8) | (b[23] << 16) | (b[24] << 24);
-                var width = (bits & 0x3FFF) + 1;
-                var height = ((bits >> 14) & 0x3FFF) + 1;
-                return new ImageMetadata("image/webp", "webp", width, height);
-            }
+                    var bits = b[21] | (b[22] << 8) | (b[23] << 16) | (b[24] << 24);
+                    var width = (bits & 0x3FFF) + 1;
+                    var height = ((bits >> 14) & 0x3FFF) + 1;
+                    return new ImageMetadata("image/webp", "webp", width, height);
+                }
             case "VP8 ":
-            {
-                if (b[23] != 0x9D || b[24] != 0x01 || b[25] != 0x2A)
-                    return null;
+                {
+                    if (b[23] != 0x9D || b[24] != 0x01 || b[25] != 0x2A)
+                        return null;
 
-                var width = (b[26] | (b[27] << 8)) & 0x3FFF;
-                var height = (b[28] | (b[29] << 8)) & 0x3FFF;
-                return new ImageMetadata("image/webp", "webp", width, height);
-            }
+                    var width = (b[26] | (b[27] << 8)) & 0x3FFF;
+                    var height = (b[28] | (b[29] << 8)) & 0x3FFF;
+                    return new ImageMetadata("image/webp", "webp", width, height);
+                }
             default:
                 return null;
         }

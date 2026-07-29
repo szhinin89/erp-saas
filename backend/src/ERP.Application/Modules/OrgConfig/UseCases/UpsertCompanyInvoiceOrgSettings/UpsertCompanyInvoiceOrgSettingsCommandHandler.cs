@@ -1,11 +1,10 @@
-using MediatR;
 using ERP.Application.Common;
-using ERP.Application.Common.Interfaces;
 using ERP.Application.Modules.OrgConfig.DTOs;
 using ERP.Domain.Configuration.Constants;
 using ERP.Domain.Configuration.Entities;
 using ERP.Domain.Configuration.Enums;
 using ERP.Domain.Configuration.Interfaces;
+using MediatR;
 
 namespace ERP.Application.Modules.OrgConfig.UseCases.UpsertCompanyInvoiceOrgSettings;
 
@@ -13,28 +12,28 @@ public sealed class UpsertCompanyInvoiceOrgSettingsCommandHandler
     : IRequestHandler<UpsertCompanyInvoiceOrgSettingsCommand, Result<CompanyInvoiceOrgSettingsDto>>
 {
     private readonly IOrgSettingsRepository _repo;
-    private readonly ICurrentTenant         _currentTenant;
-    private readonly ICurrentCompany        _currentCompany;
-    private readonly ICurrentUser           _currentUser;
+    private readonly ICurrentTenant _currentTenant;
+    private readonly ICurrentCompany _currentCompany;
+    private readonly ICurrentUser _currentUser;
 
     public UpsertCompanyInvoiceOrgSettingsCommandHandler(
         IOrgSettingsRepository repo,
-        ICurrentTenant         currentTenant,
-        ICurrentCompany        currentCompany,
-        ICurrentUser           currentUser)
+        ICurrentTenant currentTenant,
+        ICurrentCompany currentCompany,
+        ICurrentUser currentUser)
     {
-        _repo           = repo;
-        _currentTenant  = currentTenant;
+        _repo = repo;
+        _currentTenant = currentTenant;
         _currentCompany = currentCompany;
-        _currentUser    = currentUser;
+        _currentUser = currentUser;
     }
 
     public async Task<Result<CompanyInvoiceOrgSettingsDto>> Handle(
         UpsertCompanyInvoiceOrgSettingsCommand command, CancellationToken cancellationToken)
     {
-        var tenantId  = _currentTenant.TenantId;
+        var tenantId = _currentTenant.TenantId;
         var companyId = _currentCompany.CompanyId;
-        var userId    = _currentUser.UserId;
+        var userId = _currentUser.UserId;
 
         await UpsertAsync(tenantId, companyId, OrgSettingKeys.Invoice.DefaultDocTypeCode,
             command.DefaultDocTypeCode, SettingDataType.String, userId, cancellationToken);

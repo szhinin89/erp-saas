@@ -1,7 +1,7 @@
-using System.Globalization;
-using Microsoft.EntityFrameworkCore;
 using ERP.Domain.Modules.Company.Entities;
 using ERP.Domain.Modules.Company.Interfaces;
+using Microsoft.EntityFrameworkCore;
+using System.Globalization;
 
 namespace ERP.Infrastructure.Persistence.Repositories;
 
@@ -21,7 +21,7 @@ public sealed class DocumentSequenceRepository : IDocumentSequenceRepository
         // Advisory lock de transacción — serializa concurrentes para el mismo
         // (emissionPointId, docTypeCode) sin bloquear otros puntos/tipos.
         // pg_advisory_xact_lock(int4, int4) se libera automáticamente al hacer COMMIT/ROLLBACK.
-        var epHash  = StableHash(emissionPointId.ToByteArray());
+        var epHash = StableHash(emissionPointId.ToByteArray());
         var docHash = StableHash(System.Text.Encoding.UTF8.GetBytes(docTypeCode));
         await _db.Database.ExecuteSqlInterpolatedAsync(
             $"SELECT pg_advisory_xact_lock({epHash}, {docHash})", ct);
@@ -39,8 +39,8 @@ public sealed class DocumentSequenceRepository : IDocumentSequenceRepository
         {
             // Crear secuencia on-demand; primer valor de CurrentSeq es 1 → primer documento = "000000001".
             var newId = Guid.NewGuid();
-            var now   = DateTime.UtcNow;
-            seqValue  = 1;
+            var now = DateTime.UtcNow;
+            seqValue = 1;
             var nextSeq = 2;
             await _db.Database.ExecuteSqlInterpolatedAsync(
                 $"""
@@ -55,7 +55,7 @@ public sealed class DocumentSequenceRepository : IDocumentSequenceRepository
             // GREATEST(CurrentSeq, 1): protección defensiva contra filas antiguas con 0.
             seqValue = Math.Max(existing.CurrentSeq, 1);
             var nextSeq = seqValue + 1;
-            var now     = DateTime.UtcNow;
+            var now = DateTime.UtcNow;
             await _db.Database.ExecuteSqlInterpolatedAsync(
                 $"UPDATE document_sequence SET current_seq = {nextSeq}, updated_at = {now} WHERE id = {existing.Id}",
                 ct);

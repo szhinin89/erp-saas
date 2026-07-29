@@ -1,6 +1,5 @@
 using ERP.Domain.Configuration.Entities;
 using ERP.Domain.Configuration.Interfaces;
-using ERP.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 
 namespace ERP.Infrastructure.Persistence.Repositories;

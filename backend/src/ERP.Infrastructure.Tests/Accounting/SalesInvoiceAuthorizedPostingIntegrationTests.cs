@@ -18,13 +18,11 @@ using ERP.Domain.Modules.Sales.ValueObjects;
 using ERP.Domain.Tenants.Entities;
 using ERP.Infrastructure.Accounting.Repositories;
 using ERP.Infrastructure.Persistence;
-using ERP.Infrastructure.Persistence.Repositories.Caja;
 using FluentAssertions;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Testcontainers.PostgreSql;
-using Xunit;
 
 namespace ERP.Infrastructure.Tests.Accounting;
 

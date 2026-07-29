@@ -28,14 +28,14 @@ public sealed class ItemVariantBarcode : AuditableEntity
 
         var entity = new ItemVariantBarcode
         {
-            Id          = Guid.NewGuid(),
+            Id = Guid.NewGuid(),
             TenantId = tenantId,
-            ItemId      = itemId,
-            VariantId   = variantId,
-            Code        = code.Trim(),
+            ItemId = itemId,
+            VariantId = variantId,
+            Code = code.Trim(),
             BarcodeType = barcodeType.Trim(),
-            IsPrimary   = isPrimary,
-            IsActive    = true,
+            IsPrimary = isPrimary,
+            IsActive = true,
         };
         entity.SetCreated(createdBy);
         return entity;
@@ -47,7 +47,7 @@ public sealed class ItemVariantBarcode : AuditableEntity
         SetUpdated(updatedBy);
     }
 
-    public void Enable()  => IsActive = true;
+    public void Enable() => IsActive = true;
     public void MarkAsPrimary() => IsPrimary = true;
     public void UnmarkAsPrimary() => IsPrimary = false;
 }

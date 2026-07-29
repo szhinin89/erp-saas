@@ -1,8 +1,8 @@
+using ERP.API.Extensions;
+using ERP.Application.Modules.Companies.UseCases.DecimalConfig;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using ERP.API.Extensions;
-using ERP.Application.Modules.Companies.UseCases.DecimalConfig;
 
 namespace ERP.API.Controllers;
 

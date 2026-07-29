@@ -1,4 +1,4 @@
-﻿using ERP.Application.Access.Caching;
+using ERP.Application.Access.Caching;
 using ERP.Application.Common;
 using ERP.Domain.Kernel.Security;
 using ERP.Domain.Tenants.Interfaces;
@@ -18,10 +18,10 @@ public sealed class RuntimePermissionAuthorizer : IRuntimePermissionAuthorizer
         ICompanyContextProvider companyContext,
         IEffectivePermissionKeysProvider permissionKeys)
     {
-        _currentTenant  = currentTenant;
+        _currentTenant = currentTenant;
         _tenantRepository = TenantRepository;
-        _companyContext     = companyContext;
-        _permissionKeys     = permissionKeys;
+        _companyContext = companyContext;
+        _permissionKeys = permissionKeys;
     }
 
     public async Task<bool> IsAuthorizedAsync(

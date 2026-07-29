@@ -7,8 +7,8 @@ namespace ERP.Domain.Modules.Pricing.Enums;
 /// </summary>
 public enum PricingRuleType
 {
-    FixedPrice       = 1,
-    PercentDiscount  = 2,
-    PercentMarkup    = 3,
-    FixedAdjustment  = 4,
+    FixedPrice = 1,
+    PercentDiscount = 2,
+    PercentMarkup = 3,
+    FixedAdjustment = 4,
 }

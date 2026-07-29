@@ -19,10 +19,10 @@ public sealed class Tenant : SystemAuditableEntity
     {
         var tenant = new Tenant
         {
-            Id                = Guid.NewGuid(),
-            Name              = name,
-            Slug              = slug.ToLowerInvariant(),
-            IsActive          = true,
+            Id = Guid.NewGuid(),
+            Name = name,
+            Slug = slug.ToLowerInvariant(),
+            IsActive = true,
             PreferredLanguage = string.IsNullOrWhiteSpace(preferredLanguage) ? "es" : preferredLanguage.Trim().ToLowerInvariant(),
         };
         tenant.SetCreated(createdBy);
@@ -31,8 +31,8 @@ public sealed class Tenant : SystemAuditableEntity
 
     public void UpdateProfile(string name, string slug, string? preferredLanguage, Guid updatedBy)
     {
-        Name              = name;
-        Slug              = slug.ToLowerInvariant();
+        Name = name;
+        Slug = slug.ToLowerInvariant();
         PreferredLanguage = string.IsNullOrWhiteSpace(preferredLanguage) ? "es" : preferredLanguage!.Trim().ToLowerInvariant();
         SetUpdated(updatedBy);
     }

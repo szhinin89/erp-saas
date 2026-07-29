@@ -1,11 +1,9 @@
+using ERP.Application.Common;
+using ERP.Application.Modules.Purchases.DTOs;
+using ERP.Application.Modules.Purchases.Services;
+using ERP.Domain.Modules.Purchases.Interfaces;
 using FluentValidation;
 using MediatR;
-using ERP.Application.Common;
-using ERP.Application.Modules.Purchases;
-using ERP.Application.Modules.Purchases.DTOs;
-using ERP.Domain.Modules.Purchases.Entities;
-using ERP.Domain.Modules.Purchases.Interfaces;
-using ERP.Application.Modules.Purchases.Services;
 
 namespace ERP.Application.Modules.Purchases.UseCases;
 

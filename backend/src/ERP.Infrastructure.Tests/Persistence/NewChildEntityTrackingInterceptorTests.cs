@@ -10,7 +10,6 @@ using ERP.Infrastructure.Persistence.Interceptors;
 using FluentAssertions;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Testcontainers.PostgreSql;
 
 namespace ERP.Infrastructure.Tests.Persistence;

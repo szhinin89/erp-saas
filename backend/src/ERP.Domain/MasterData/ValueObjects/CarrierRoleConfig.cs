@@ -12,18 +12,18 @@ public sealed record CarrierRoleConfig
 {
     public const int AuthNumberMaxLen = 50;
 
-    public string?  TransportAuthorizationNumber { get; }
-    public decimal? VehicleCapacityTons          { get; }
+    public string? TransportAuthorizationNumber { get; }
+    public decimal? VehicleCapacityTons { get; }
 
     private CarrierRoleConfig(string? transportAuthorizationNumber, decimal? vehicleCapacityTons)
     {
         TransportAuthorizationNumber = transportAuthorizationNumber;
-        VehicleCapacityTons          = vehicleCapacityTons;
+        VehicleCapacityTons = vehicleCapacityTons;
     }
 
     public static CarrierRoleConfig Create(
-        string?  transportAuthorizationNumber = null,
-        decimal? vehicleCapacityTons          = null)
+        string? transportAuthorizationNumber = null,
+        decimal? vehicleCapacityTons = null)
     {
         var auth = transportAuthorizationNumber?.Trim();
         if (auth is { Length: 0 }) auth = null;

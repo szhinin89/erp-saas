@@ -1,4 +1,3 @@
-using System.Linq;
 using ERP.Domain.Modules.Purchases.Entities;
 using FluentAssertions;
 

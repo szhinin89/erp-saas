@@ -95,10 +95,10 @@ public static class ApiResultExtensions
             ApiResponseCodes.Common.UniqueViolation or ApiResponseCodes.Common.Conflict or ApiResponseCodes.Common.CompanyRucAlreadyExists
                 => controller.Conflict(response),
             ApiResponseCodes.Common.ValidationError => controller.UnprocessableEntity(response),
-            ApiResponseCodes.Common.NotFound        => controller.NotFound(response),
-            ApiResponseCodes.Common.Forbidden       => controller.StatusCode(StatusCodes.Status403Forbidden, response),
-            ApiResponseCodes.Common.Unauthorized    => controller.Unauthorized(response),
-            _                                 => controller.BadRequest(response),
+            ApiResponseCodes.Common.NotFound => controller.NotFound(response),
+            ApiResponseCodes.Common.Forbidden => controller.StatusCode(StatusCodes.Status403Forbidden, response),
+            ApiResponseCodes.Common.Unauthorized => controller.Unauthorized(response),
+            _ => controller.BadRequest(response),
         };
     }
 

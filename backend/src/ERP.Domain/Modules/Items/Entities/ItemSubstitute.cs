@@ -1,4 +1,4 @@
-﻿using ERP.Domain.Common;
+using ERP.Domain.Common;
 
 namespace ERP.Domain.Modules.Items.Entities;
 
@@ -21,13 +21,13 @@ public sealed class ItemSubstitute : AuditableEntity
 
         var entity = new ItemSubstitute
         {
-            Id               = Guid.NewGuid(),
-            TenantId     = tenantId,
-            ItemId           = itemId,
+            Id = Guid.NewGuid(),
+            TenantId = tenantId,
+            ItemId = itemId,
             SubstituteItemId = substituteItemId,
-            Priority         = priority,
-            Note             = note?.Trim(),
-            IsActive         = true,
+            Priority = priority,
+            Note = note?.Trim(),
+            IsActive = true,
         };
         entity.SetCreated(createdBy);
         return entity;

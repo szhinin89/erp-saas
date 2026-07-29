@@ -1,16 +1,16 @@
-﻿using MediatR;
 using ERP.Application.Common;
 using ERP.Application.Items.DTOs;
 using ERP.Domain.Modules.Items.Interfaces;
 using FluentValidation;
+using MediatR;
 
 namespace ERP.Application.Items.UseCases.AddItemVariant;
 
 public sealed record AddItemVariantCommand(
-    Guid                                   ItemId,
-    IReadOnlyList<VariantAttributeInput>   Attributes,
-    string?                                SkuOverride = null,
-    int                                    SortOrder   = 0
+    Guid ItemId,
+    IReadOnlyList<VariantAttributeInput> Attributes,
+    string? SkuOverride = null,
+    int SortOrder = 0
 ) : IRequest<Result<ItemVariantDto>>, ICompanyScopedRequest;
 
 public record VariantAttributeInput(Guid AttributeDefinitionId, string Value);
@@ -50,7 +50,7 @@ public sealed class AddItemVariantCommandHandler
     {
         _repository = repository;
         _currentTenant = tenant;
-        _user       = user;
+        _user = user;
     }
 
     public async Task<Result<ItemVariantDto>> Handle(AddItemVariantCommand cmd, CancellationToken cancellationToken)

@@ -10,7 +10,7 @@ namespace ERP.Application.MasterData.UseCases.UpdateRoleConfig;
 /// Incluye (S3-A): DefaultTaxSupportCode, RetentionCodes, DefaultPaymentMethodCode, IsRetentionExempt.
 /// </summary>
 public sealed record UpdateSupplierRoleConfigCommand(
-    Guid               RoleId,
+    Guid RoleId,
     SupplierRoleConfig Config)
     : IRequest<Result<BusinessPartnerRoleDto>>, ITenantScopedRequest;
 
@@ -20,24 +20,24 @@ public sealed record UpdateSupplierRoleConfigCommand(
 /// Simétrico a UpdateCustomerRoleConfigCommand.
 /// </summary>
 public sealed record UpdateSupplierClassificationConfigCommand(
-    Guid                         RoleId,
+    Guid RoleId,
     SupplierClassificationConfig Config)
     : IRequest<Result<BusinessPartnerRoleDto>>, ITenantScopedRequest;
 
 /// <summary>Actualiza la config del rol Carrier (número autorización transporte, capacidad).</summary>
 public sealed record UpdateCarrierRoleConfigCommand(
-    Guid              RoleId,
+    Guid RoleId,
     CarrierRoleConfig Config)
     : IRequest<Result<BusinessPartnerRoleDto>>, ITenantScopedRequest;
 
 /// <summary>Actualiza la config del rol Customer (CRM fields).</summary>
 public sealed record UpdateCustomerRoleConfigCommand(
-    Guid               RoleId,
+    Guid RoleId,
     CustomerRoleConfig Config)
     : IRequest<Result<BusinessPartnerRoleDto>>, ITenantScopedRequest;
 
 /// <summary>Actualiza las notas internas de cualquier rol.</summary>
 public sealed record UpdateRoleNotesCommand(
-    Guid    RoleId,
+    Guid RoleId,
     string? Notes)
     : IRequest<Result<bool>>, ITenantScopedRequest;

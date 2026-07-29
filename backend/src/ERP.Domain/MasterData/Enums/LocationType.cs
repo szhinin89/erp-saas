@@ -1,4 +1,4 @@
-﻿namespace ERP.Domain.MasterData.Enums;
+namespace ERP.Domain.MasterData.Enums;
 
 /// <summary>
 /// Tipo físico de la ubicación del BusinessPartner.
@@ -9,10 +9,10 @@
 /// </summary>
 public enum LocationType : short
 {
-    Matrix        = 1,
-    Branch        = 2,
-    Office        = 3,
-    Warehouse     = 4,
+    Matrix = 1,
+    Branch = 2,
+    Office = 3,
+    Warehouse = 4,
     DeliveryPoint = 5,
-    Other         = 99,
+    Other = 99,
 }

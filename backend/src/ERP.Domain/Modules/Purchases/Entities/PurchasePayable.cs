@@ -5,14 +5,14 @@ namespace ERP.Domain.Modules.Purchases.Entities;
 
 public sealed class PurchasePayable : AuditableEntity, ITenantScopedEntity, ICompanyOperationalEntity
 {
-    public Guid    CompanyId       { get; private set; }
-    public Guid    PurchaseId      { get; private set; }
-    public Guid    SupplierId      { get; private set; }
-    public decimal TotalAmount     { get; private set; }
-    public decimal PaidAmount      { get; private set; }
-    public decimal TotalRetained   { get; private set; }
-    public decimal BalanceDue      => TotalAmount - PaidAmount - TotalRetained;
-    public string  Status          { get; private set; } = "pending";
+    public Guid CompanyId { get; private set; }
+    public Guid PurchaseId { get; private set; }
+    public Guid SupplierId { get; private set; }
+    public decimal TotalAmount { get; private set; }
+    public decimal PaidAmount { get; private set; }
+    public decimal TotalRetained { get; private set; }
+    public decimal BalanceDue => TotalAmount - PaidAmount - TotalRetained;
+    public string Status { get; private set; } = "pending";
 
     private readonly List<PurchasePayableInstallment> _installments = new();
     public IReadOnlyList<PurchasePayableInstallment> Installments => _installments.AsReadOnly();
@@ -28,14 +28,14 @@ public sealed class PurchasePayable : AuditableEntity, ITenantScopedEntity, ICom
 
         var p = new PurchasePayable
         {
-            Id          = Guid.NewGuid(),
-            TenantId    = tenantId,
-            CompanyId   = companyId,
-            PurchaseId  = purchaseId,
-            SupplierId  = supplierId,
+            Id = Guid.NewGuid(),
+            TenantId = tenantId,
+            CompanyId = companyId,
+            PurchaseId = purchaseId,
+            SupplierId = supplierId,
             TotalAmount = totalAmount,
-            PaidAmount  = 0,
-            Status      = "pending",
+            PaidAmount = 0,
+            Status = "pending",
         };
         p.SetCreated(createdBy);
         return p;

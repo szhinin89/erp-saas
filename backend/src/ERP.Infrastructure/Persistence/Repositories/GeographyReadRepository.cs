@@ -1,7 +1,7 @@
-﻿using Microsoft.EntityFrameworkCore;
 using ERP.Domain.Geography.Entities;
 using ERP.Domain.Geography.Interfaces;
 using ERP.Domain.Modules.SriCatalogs.Entities;
+using Microsoft.EntityFrameworkCore;
 
 namespace ERP.Infrastructure.Persistence.Repositories;
 

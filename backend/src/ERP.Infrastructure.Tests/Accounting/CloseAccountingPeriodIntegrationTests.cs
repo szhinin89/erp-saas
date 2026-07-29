@@ -2,7 +2,6 @@ using ERP.Application.Common;
 using ERP.Application.Modules.Accounting.UseCases.AccountingPeriods;
 using ERP.Domain.Modules.Accounting.Entities;
 using ERP.Domain.Modules.Accounting.Enums;
-using ERP.Domain.Modules.Accounting.ValueObjects;
 using ERP.Domain.Modules.Company.Entities;
 using ERP.Domain.Tenants.Entities;
 using ERP.Infrastructure.Accounting.Repositories;
@@ -11,7 +10,6 @@ using FluentAssertions;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Testcontainers.PostgreSql;
-using Xunit;
 
 namespace ERP.Infrastructure.Tests.Accounting;
 

@@ -1,6 +1,4 @@
-﻿using MediatR;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Mvc;
+using ERP.API.Attributes;
 using ERP.API.Contracts;
 using ERP.API.Extensions;
 using ERP.Application.Modules.Branches.DTOs;
@@ -8,8 +6,10 @@ using ERP.Application.Modules.Branches.UseCases.GetGeoCantons;
 using ERP.Application.Modules.Branches.UseCases.GetGeoCountries;
 using ERP.Application.Modules.Branches.UseCases.GetGeoParishes;
 using ERP.Application.Modules.Branches.UseCases.GetGeoProvinces;
-using ERP.API.Attributes;
 using ERP.Domain.Kernel.Permissions;
+using MediatR;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 
 namespace ERP.API.Controllers;
 

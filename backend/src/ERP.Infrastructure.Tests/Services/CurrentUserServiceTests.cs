@@ -1,7 +1,7 @@
-using System.Security.Claims;
 using ERP.Infrastructure.Services;
 using FluentAssertions;
 using Microsoft.AspNetCore.Http;
+using System.Security.Claims;
 
 namespace ERP.Infrastructure.Tests.Services;
 

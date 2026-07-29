@@ -16,6 +16,6 @@ public static class InventoryPermissions
     public const string WarehousesUpdate = "inventory.warehouses.update";
     public const string WarehousesDelete = "inventory.warehouses.delete";
 
-    public const string StockView   = "inventory.stock.view";
+    public const string StockView = "inventory.stock.view";
     public const string StockManage = "inventory.stock.manage";
 }

@@ -1,4 +1,4 @@
-﻿using ERP.Domain.Modules.Company.Enums;
+using ERP.Domain.Modules.Company.Enums;
 
 namespace ERP.Application.Auth.DTOs;
 
@@ -17,13 +17,13 @@ public record LoginDto(
 );
 
 public record AuthResponseDto(
-    Guid    UserId,
-    string  FullName,
-    string  Username,
+    Guid UserId,
+    string FullName,
+    string Username,
     string? Email,
-    string  Role,
-    Guid    TenantId,
-    string  Token)
+    string Role,
+    Guid TenantId,
+    string Token)
 {
     /// <summary>Empresa operativa activa. Null si RequiresCompanySelection=true.</summary>
     public Guid? CompanyId { get; init; }
@@ -34,7 +34,7 @@ public record AuthResponseDto(
     /// </summary>
     public bool RequiresCompanySelection { get; init; }
 
-    public string?   RefreshToken       { get; init; }
+    public string? RefreshToken { get; init; }
     public DateTime? RefreshTokenExpiry { get; init; }
 
     public bool OnboardingCompleted { get; init; }

@@ -1,9 +1,9 @@
-﻿using FluentValidation;
-using MediatR;
 using ERP.Application.Common;
 using ERP.Application.Items.DTOs;
 using ERP.Domain.Modules.Items.Entities;
 using ERP.Domain.Modules.Items.Interfaces;
+using FluentValidation;
+using MediatR;
 
 namespace ERP.Application.Items.UseCases.Brands;
 
@@ -28,7 +28,7 @@ public sealed class UpdateBrandCommandValidator : AbstractValidator<UpdateBrandC
 public sealed class CreateBrandCommandHandler : IRequestHandler<CreateBrandCommand, Result<BrandDto>>
 {
     private readonly IItemCatalogRepository _c; private readonly ICurrentTenant _s; private readonly ICurrentUser _u;
-    public CreateBrandCommandHandler(IItemCatalogRepository c, ICurrentTenant s, ICurrentUser u) { _c=c;_s=s;_u=u; }
+    public CreateBrandCommandHandler(IItemCatalogRepository c, ICurrentTenant s, ICurrentUser u) { _c = c; _s = s; _u = u; }
     public async Task<Result<BrandDto>> Handle(CreateBrandCommand cmd, CancellationToken cancellationToken)
     {
         var sid = _s.TenantId;
@@ -42,7 +42,7 @@ public sealed class CreateBrandCommandHandler : IRequestHandler<CreateBrandComma
 public sealed class UpdateBrandCommandHandler : IRequestHandler<UpdateBrandCommand, Result<BrandDto>>
 {
     private readonly IItemCatalogRepository _c; private readonly ICurrentUser _u;
-    public UpdateBrandCommandHandler(IItemCatalogRepository c, ICurrentUser u) { _c=c;_u=u; }
+    public UpdateBrandCommandHandler(IItemCatalogRepository c, ICurrentUser u) { _c = c; _u = u; }
     public async Task<Result<BrandDto>> Handle(UpdateBrandCommand cmd, CancellationToken cancellationToken)
     {
         var b = await _c.GetBrandByIdAsync(cmd.Id, cancellationToken); if (b is null) return Result<BrandDto>.NotFound("Marca no encontrada.");
@@ -57,7 +57,7 @@ public sealed class UpdateBrandCommandHandler : IRequestHandler<UpdateBrandComma
 public sealed class EnableBrandCommandHandler : IRequestHandler<EnableBrandCommand, Result<bool>>
 {
     private readonly IItemCatalogRepository _c; private readonly ICurrentUser _u;
-    public EnableBrandCommandHandler(IItemCatalogRepository c, ICurrentUser u) { _c=c;_u=u; }
+    public EnableBrandCommandHandler(IItemCatalogRepository c, ICurrentUser u) { _c = c; _u = u; }
     public async Task<Result<bool>> Handle(EnableBrandCommand cmd, CancellationToken cancellationToken)
     {
         var b = await _c.GetBrandByIdAsync(cmd.Id, cancellationToken); if (b is null) return Result<bool>.NotFound("No encontrada.");
@@ -69,7 +69,7 @@ public sealed class EnableBrandCommandHandler : IRequestHandler<EnableBrandComma
 public sealed class DisableBrandCommandHandler : IRequestHandler<DisableBrandCommand, Result<bool>>
 {
     private readonly IItemCatalogRepository _c; private readonly ICurrentUser _u;
-    public DisableBrandCommandHandler(IItemCatalogRepository c, ICurrentUser u) { _c=c;_u=u; }
+    public DisableBrandCommandHandler(IItemCatalogRepository c, ICurrentUser u) { _c = c; _u = u; }
     public async Task<Result<bool>> Handle(DisableBrandCommand cmd, CancellationToken cancellationToken)
     {
         var b = await _c.GetBrandByIdAsync(cmd.Id, cancellationToken); if (b is null) return Result<bool>.NotFound("No encontrada.");
@@ -92,7 +92,7 @@ public sealed class GetBrandByIdQueryHandler : IRequestHandler<GetBrandByIdQuery
 public sealed class GetBrandsQueryHandler : IRequestHandler<GetBrandsQuery, Result<IReadOnlyList<BrandDto>>>
 {
     private readonly IItemCatalogRepository _c; private readonly ICurrentTenant _s;
-    public GetBrandsQueryHandler(IItemCatalogRepository c, ICurrentTenant s) { _c=c;_s=s; }
+    public GetBrandsQueryHandler(IItemCatalogRepository c, ICurrentTenant s) { _c = c; _s = s; }
     public async Task<Result<IReadOnlyList<BrandDto>>> Handle(GetBrandsQuery q, CancellationToken cancellationToken)
     {
         var all = await _c.GetBrandsAsync(_s.TenantId, cancellationToken);

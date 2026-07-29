@@ -8,7 +8,7 @@ namespace ERP.Domain.Modules.Items.Entities;
 /// </summary>
 public class ItemMarginStatusDefinition
 {
-    public string Code       { get; set; } = null!;
-    public string Label      { get; set; } = null!;
+    public string Code { get; set; } = null!;
+    public string Label { get; set; } = null!;
     public string ColorToken { get; set; } = null!;
 }

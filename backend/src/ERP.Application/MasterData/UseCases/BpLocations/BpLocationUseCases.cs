@@ -1,5 +1,4 @@
 using ERP.Application.Common;
-using ERP.Application.Common.Persistence;
 using ERP.Application.MasterData.DTOs;
 using ERP.Domain.MasterData.Entities;
 using ERP.Domain.MasterData.Enums;
@@ -18,32 +17,32 @@ namespace ERP.Application.MasterData.UseCases.BpLocations;
 /// OtherDescription es obligatorio si LocationType = Other (validado en dominio).
 /// </summary>
 public sealed record CreateBpLocationCommand(
-    Guid            BusinessPartnerId,
-    string          Name,
-    LocationType    Type,
+    Guid BusinessPartnerId,
+    string Name,
+    LocationType Type,
     LocationPurpose Purpose,
-    string          AddressLine,
-    string?         ProvinceCode     = null,
-    string?         CantonCode       = null,
-    string?         ParishCode       = null,
-    string?         Phone            = null,
-    string?         Email            = null,
-    bool            IsPrimary        = false,
-    string?         OtherDescription = null)
+    string AddressLine,
+    string? ProvinceCode = null,
+    string? CantonCode = null,
+    string? ParishCode = null,
+    string? Phone = null,
+    string? Email = null,
+    bool IsPrimary = false,
+    string? OtherDescription = null)
     : IRequest<Result<BpLocationDto>>, ITenantScopedRequest;
 
 public sealed record UpdateBpLocationCommand(
-    Guid            LocationId,
-    string          Name,
-    LocationType    Type,
+    Guid LocationId,
+    string Name,
+    LocationType Type,
     LocationPurpose Purpose,
-    string          AddressLine,
-    string?         ProvinceCode     = null,
-    string?         CantonCode       = null,
-    string?         ParishCode       = null,
-    string?         Phone            = null,
-    string?         Email            = null,
-    string?         OtherDescription = null)
+    string AddressLine,
+    string? ProvinceCode = null,
+    string? CantonCode = null,
+    string? ParishCode = null,
+    string? Phone = null,
+    string? Email = null,
+    string? OtherDescription = null)
     : IRequest<Result<BpLocationDto>>, ITenantScopedRequest;
 
 public sealed record SetPrimaryBpLocationCommand(Guid LocationId)
@@ -58,7 +57,7 @@ public sealed record ActivateBpLocationCommand(Guid LocationId)
 // ── Queries ───────────────────────────────────────────────────────────────────
 
 public sealed record GetBpLocationsQuery(
-    Guid  BusinessPartnerId,
+    Guid BusinessPartnerId,
     bool? OnlyActive = true)
     : IRequest<Result<IReadOnlyList<BpLocationDto>>>, ITenantScopedRequest;
 
@@ -112,7 +111,7 @@ public sealed class CreateBpLocationHandler
     : IRequestHandler<CreateBpLocationCommand, Result<BpLocationDto>>
 {
     private readonly IBusinessPartnerLocationRepository _locRepo;
-    private readonly IOperationalContext                _ctx;
+    private readonly IOperationalContext _ctx;
 
     public CreateBpLocationHandler(IBusinessPartnerLocationRepository locRepo, IOperationalContext ctx)
         => (_locRepo, _ctx) = (locRepo, ctx);
@@ -143,7 +142,7 @@ public sealed class UpdateBpLocationHandler
     : IRequestHandler<UpdateBpLocationCommand, Result<BpLocationDto>>
 {
     private readonly IBusinessPartnerLocationRepository _locRepo;
-    private readonly IOperationalContext                _ctx;
+    private readonly IOperationalContext _ctx;
 
     public UpdateBpLocationHandler(IBusinessPartnerLocationRepository locRepo, IOperationalContext ctx)
         => (_locRepo, _ctx) = (locRepo, ctx);
@@ -159,7 +158,7 @@ public sealed class UpdateBpLocationHandler
                 cmd.ProvinceCode, cmd.CantonCode, cmd.ParishCode,
                 cmd.Phone, cmd.Email, cmd.OtherDescription);
         }
-        catch (ArgumentException ex)        { return Result<BpLocationDto>.ValidationFailure(ex.Message); }
+        catch (ArgumentException ex) { return Result<BpLocationDto>.ValidationFailure(ex.Message); }
         catch (InvalidOperationException ex) { return Result<BpLocationDto>.ValidationFailure(ex.Message); }
 
         await _locRepo.SaveChangesAsync(cancellationToken);
@@ -171,7 +170,7 @@ public sealed class SetPrimaryBpLocationHandler
     : IRequestHandler<SetPrimaryBpLocationCommand, Result<bool>>
 {
     private readonly IBusinessPartnerLocationRepository _locRepo;
-    private readonly IOperationalContext                _ctx;
+    private readonly IOperationalContext _ctx;
 
     public SetPrimaryBpLocationHandler(IBusinessPartnerLocationRepository locRepo, IOperationalContext ctx)
         => (_locRepo, _ctx) = (locRepo, ctx);
@@ -195,7 +194,7 @@ public sealed class DeactivateBpLocationHandler
     : IRequestHandler<DeactivateBpLocationCommand, Result<bool>>
 {
     private readonly IBusinessPartnerLocationRepository _locRepo;
-    private readonly IOperationalContext                _ctx;
+    private readonly IOperationalContext _ctx;
 
     public DeactivateBpLocationHandler(IBusinessPartnerLocationRepository locRepo, IOperationalContext ctx)
         => (_locRepo, _ctx) = (locRepo, ctx);
@@ -223,7 +222,7 @@ public sealed class ActivateBpLocationHandler
     : IRequestHandler<ActivateBpLocationCommand, Result<bool>>
 {
     private readonly IBusinessPartnerLocationRepository _locRepo;
-    private readonly IOperationalContext                _ctx;
+    private readonly IOperationalContext _ctx;
 
     public ActivateBpLocationHandler(IBusinessPartnerLocationRepository locRepo, IOperationalContext ctx)
         => (_locRepo, _ctx) = (locRepo, ctx);

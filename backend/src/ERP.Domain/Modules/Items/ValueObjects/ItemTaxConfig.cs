@@ -17,9 +17,9 @@ public sealed class ItemTaxConfig
     {
         return new ItemTaxConfig
         {
-            SaleVatCode     = OptionalCode.Normalize(saleVatCode),
+            SaleVatCode = OptionalCode.Normalize(saleVatCode),
             PurchaseVatCode = OptionalCode.Normalize(purchaseVatCode),
-            ExciseTaxCode   = OptionalCode.Normalize(exciseTaxCode),
+            ExciseTaxCode = OptionalCode.Normalize(exciseTaxCode),
         };
     }
 }

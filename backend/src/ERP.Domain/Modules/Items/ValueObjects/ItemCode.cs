@@ -28,8 +28,8 @@ public sealed class ItemCode
 
         return new ItemCode
         {
-            SKU         = sku.Trim().ToUpperInvariant(),
-            ShortName   = shortName.Trim(),
+            SKU = sku.Trim().ToUpperInvariant(),
+            ShortName = shortName.Trim(),
             Description = description.Trim(),
         };
     }

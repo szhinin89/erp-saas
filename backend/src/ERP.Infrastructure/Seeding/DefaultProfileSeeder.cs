@@ -24,7 +24,7 @@ public sealed partial class DefaultProfileSeeder : IDefaultProfileSeeder
         ErpDbContext db,
         ILogger<DefaultProfileSeeder> logger)
     {
-        _db     = db;
+        _db = db;
         _logger = logger;
     }
 
@@ -44,20 +44,20 @@ public sealed partial class DefaultProfileSeeder : IDefaultProfileSeeder
             {
                 profile = AccessProfile.Create(
                     tenantId: tenantId,
-                    name:         name,
-                    description:  description,
-                    createdBy:    actorId);
+                    name: name,
+                    description: description,
+                    createdBy: actorId);
 
                 _db.AccessProfiles.Add(profile);
                 await _db.SaveChangesAsync(cancellationToken);
 
                 var newPermissions = permKeys.Select(key =>
                     AccessProfilePermission.Create(
-                        tenantId:  tenantId,
-                        profileId:     profile.Id,
+                        tenantId: tenantId,
+                        profileId: profile.Id,
                         permissionKey: key,
-                        isAllowed:     true,
-                        createdBy:     actorId));
+                        isAllowed: true,
+                        createdBy: actorId));
 
                 _db.AccessProfilePermissions.AddRange(newPermissions);
                 await _db.SaveChangesAsync(cancellationToken);
@@ -82,11 +82,11 @@ public sealed partial class DefaultProfileSeeder : IDefaultProfileSeeder
 
                 var addedPermissions = missing.Select(key =>
                     AccessProfilePermission.Create(
-                        tenantId:  tenantId,
-                        profileId:     profile.Id,
+                        tenantId: tenantId,
+                        profileId: profile.Id,
                         permissionKey: key,
-                        isAllowed:     true,
-                        createdBy:     actorId));
+                        isAllowed: true,
+                        createdBy: actorId));
 
                 _db.AccessProfilePermissions.AddRange(addedPermissions);
                 await _db.SaveChangesAsync(cancellationToken);

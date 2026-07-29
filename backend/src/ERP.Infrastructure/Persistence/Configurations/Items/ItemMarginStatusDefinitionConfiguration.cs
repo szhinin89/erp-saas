@@ -15,10 +15,10 @@ public sealed class ItemMarginStatusDefinitionConfiguration : IEntityTypeConfigu
         builder.Property(x => x.ColorToken).HasColumnName("color_token").HasMaxLength(20).IsRequired();
 
         builder.HasData(
-            new ItemMarginStatusDefinition { Code = "SALUDABLE",  Label = "Saludable",  ColorToken = "success" },
-            new ItemMarginStatusDefinition { Code = "BAJO",       Label = "Bajo",       ColorToken = "warning" },
-            new ItemMarginStatusDefinition { Code = "NEGATIVO",   Label = "Negativo",   ColorToken = "error" },
-            new ItemMarginStatusDefinition { Code = "CERO",       Label = "Sin margen", ColorToken = "neutral" },
+            new ItemMarginStatusDefinition { Code = "SALUDABLE", Label = "Saludable", ColorToken = "success" },
+            new ItemMarginStatusDefinition { Code = "BAJO", Label = "Bajo", ColorToken = "warning" },
+            new ItemMarginStatusDefinition { Code = "NEGATIVO", Label = "Negativo", ColorToken = "error" },
+            new ItemMarginStatusDefinition { Code = "CERO", Label = "Sin margen", ColorToken = "neutral" },
             new ItemMarginStatusDefinition { Code = "SIN_PRECIO", Label = "Sin precio", ColorToken = "neutral" }
         );
     }

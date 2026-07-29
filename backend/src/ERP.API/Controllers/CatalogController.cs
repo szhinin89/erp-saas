@@ -1,17 +1,15 @@
-using MediatR;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Mvc;
 using ERP.API.Attributes;
-using ERP.API.Contracts;
 using ERP.API.Extensions;
-using ERP.Application.Items.DTOs;
-using ERP.Application.Items.UseCases.Brands;
-using ERP.Application.Items.UseCases.AttributeGroups;
 using ERP.Application.Items.UseCases.AttributeDefinitions;
+using ERP.Application.Items.UseCases.AttributeGroups;
+using ERP.Application.Items.UseCases.Brands;
 using ERP.Application.Items.UseCases.CategoryNodes;
 using ERP.Application.Modules.Catalog.UseCases;
 using ERP.Domain.Kernel.Permissions;
 using ERP.Domain.Modules.SriCatalogs.Enums;
+using MediatR;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 
 namespace ERP.API.Controllers;
 

@@ -10,11 +10,11 @@ namespace ERP.Application.MasterData.UseCases.UpdateBusinessPartner;
 /// No modifica la identificación fiscal — usar UpdateBusinessPartnerIdentificationCommand para eso.
 /// </summary>
 public sealed record UpdateBusinessPartnerCommand(
-    Guid       Id,
-    string     LegalName,
+    Guid Id,
+    string LegalName,
     PersonType PersonType,
-    string?    TradeName   = null,
-    string?    CountryCode = null)
+    string? TradeName = null,
+    string? CountryCode = null)
     : IRequest<Result<BusinessPartnerSummaryDto>>, ITenantScopedRequest;
 
 /// <summary>
@@ -22,7 +22,7 @@ public sealed record UpdateBusinessPartnerCommand(
 /// Validación algoritmo RUC/CI delegada al dominio.
 /// </summary>
 public sealed record UpdateBusinessPartnerIdentificationCommand(
-    Guid   Id,
+    Guid Id,
     string IdentificationType,
     string IdentificationNumber)
     : IRequest<Result<BusinessPartnerSummaryDto>>, ITenantScopedRequest;

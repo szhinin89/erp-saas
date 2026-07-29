@@ -11,20 +11,20 @@ public sealed record ContactInfo
     public const int PhoneMaxLen = 20;
     public const int EmailMaxLen = 254;
 
-    public string? Phone  { get; }
+    public string? Phone { get; }
     public string? Mobile { get; }
-    public string? Email  { get; }
+    public string? Email { get; }
 
     private ContactInfo(string? phone, string? mobile, string? email)
     {
-        Phone  = phone;
+        Phone = phone;
         Mobile = mobile;
-        Email  = email;
+        Email = email;
     }
 
     public static ContactInfo Create(string? phone = null, string? mobile = null, string? email = null)
     {
-        var p = Normalize(phone,  PhoneMaxLen, nameof(phone));
+        var p = Normalize(phone, PhoneMaxLen, nameof(phone));
         var m = Normalize(mobile, PhoneMaxLen, nameof(mobile));
         var e = NormalizeEmail(email);
 

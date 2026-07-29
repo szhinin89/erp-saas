@@ -1,7 +1,7 @@
-﻿using MediatR;
 using ERP.Application.Audit.DTOs;
 using ERP.Application.Common;
 using ERP.Domain.Audit.Interfaces;
+using MediatR;
 
 namespace ERP.Application.Audit.UseCases.GetMyActivity;
 

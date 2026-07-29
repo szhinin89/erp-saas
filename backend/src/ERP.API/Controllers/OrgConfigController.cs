@@ -1,6 +1,3 @@
-using MediatR;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Mvc;
 using ERP.API.Contracts;
 using ERP.API.Extensions;
 using ERP.Application.Modules.OrgConfig.DTOs;
@@ -9,6 +6,9 @@ using ERP.Application.Modules.OrgConfig.UseCases.GetCompanyInvoiceOrgSettings;
 using ERP.Application.Modules.OrgConfig.UseCases.UpsertBranchInvoiceOrgSettings;
 using ERP.Application.Modules.OrgConfig.UseCases.UpsertCompanyInvoiceOrgSettings;
 using ERP.Domain.Kernel.Permissions;
+using MediatR;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 
 namespace ERP.API.Controllers;
 

@@ -1,6 +1,5 @@
-﻿using System.Reflection;
-using Microsoft.AspNetCore.Http;
 using Microsoft.OpenApi.Models;
+using System.Reflection;
 
 namespace ERP.API.Extensions;
 
@@ -15,14 +14,14 @@ public static class SwaggerExtensions
 
             options.MapType<IFormFile>(() => new OpenApiSchema
             {
-                Type   = "string",
+                Type = "string",
                 Format = "binary",
             });
 
             options.SwaggerDoc("v1", new OpenApiInfo
             {
-                Title       = "ERP SaaS API",
-                Version     = "v1",
+                Title = "ERP SaaS API",
+                Version = "v1",
                 Description = """
                     API multi-tenant para el sistema ERP SaaS de ZH Technologies.
 
@@ -42,12 +41,12 @@ public static class SwaggerExtensions
             // Botón Authorize en Swagger UI para pegar el JWT
             var securityScheme = new OpenApiSecurityScheme
             {
-                Name         = "Authorization",
-                Type         = SecuritySchemeType.Http,
-                Scheme       = "bearer",
+                Name = "Authorization",
+                Type = SecuritySchemeType.Http,
+                Scheme = "bearer",
                 BearerFormat = "JWT",
-                In           = ParameterLocation.Header,
-                Description  = "Ingresa el token JWT (sin el prefijo 'Bearer')."
+                In = ParameterLocation.Header,
+                Description = "Ingresa el token JWT (sin el prefijo 'Bearer')."
             };
 
             options.AddSecurityDefinition("Bearer", securityScheme);

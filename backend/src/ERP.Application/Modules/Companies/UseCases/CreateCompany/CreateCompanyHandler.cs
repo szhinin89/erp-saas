@@ -1,5 +1,4 @@
 using ERP.Application.Common;
-using ERP.Application.Common.Interfaces;
 using ERP.Application.Modules.Companies.DTOs;
 using ERP.Domain.Kernel.Security;
 using MediatR;
@@ -8,18 +7,18 @@ namespace ERP.Application.Modules.Companies.UseCases.CreateCompany;
 
 public sealed class CreateCompanyHandler : IRequestHandler<CreateCompanyCommand, Result<CompanyDetailDto>>
 {
-    private readonly ICompanyAccessGuard         _accessGuard;
+    private readonly ICompanyAccessGuard _accessGuard;
     private readonly ICompanyProvisioningService _provisioning;
-    private readonly ICurrentUser                _currentUser;
+    private readonly ICurrentUser _currentUser;
 
     public CreateCompanyHandler(
         ICompanyAccessGuard accessGuard,
         ICompanyProvisioningService provisioning,
         ICurrentUser currentUser)
     {
-        _accessGuard  = accessGuard;
+        _accessGuard = accessGuard;
         _provisioning = provisioning;
-        _currentUser  = currentUser;
+        _currentUser = currentUser;
     }
 
     public async Task<Result<CompanyDetailDto>> Handle(CreateCompanyCommand command, CancellationToken cancellationToken)

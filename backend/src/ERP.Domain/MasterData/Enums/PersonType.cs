@@ -7,8 +7,8 @@ namespace ERP.Domain.MasterData.Enums;
 /// </summary>
 public enum PersonType : short
 {
-    Natural      = 1,
-    Legal        = 2,
-    Government   = 3,
+    Natural = 1,
+    Legal = 2,
+    Government = 3,
     Organization = 4,
 }

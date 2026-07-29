@@ -6,15 +6,15 @@ namespace ERP.Domain.Modules.Auxiliary.Entities;
 /// </summary>
 public class VatRefund
 {
-    public Guid     Id           { get; set; }
-    public Guid     CompanyId    { get; set; }
-    public Guid     BusinessPartnerId   { get; set; }
-    public Guid     SourceDocumentId { get; set; }
-    public decimal  RefundAmount { get; set; }
+    public Guid Id { get; set; }
+    public Guid CompanyId { get; set; }
+    public Guid BusinessPartnerId { get; set; }
+    public Guid SourceDocumentId { get; set; }
+    public decimal RefundAmount { get; set; }
     public DateOnly? AppliedDate { get; set; }
     /// <summary>Estado: pending | applied | rejected.</summary>
-    public string   Status       { get; set; } = "pending";
-    public string?  SriReference { get; set; }
-    public string?  Notes        { get; set; }
-    public DateTime CreatedAt    { get; set; }
+    public string Status { get; set; } = "pending";
+    public string? SriReference { get; set; }
+    public string? Notes { get; set; }
+    public DateTime CreatedAt { get; set; }
 }

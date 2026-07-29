@@ -1,16 +1,15 @@
 using ERP.Domain.Modules.Purchases.Entities;
 using FluentAssertions;
-using Xunit;
 
 namespace ERP.Application.Tests.Purchases;
 
 public sealed class PurchasePayableTests
 {
-    private static readonly Guid TenantId   = Guid.NewGuid();
-    private static readonly Guid CompanyId  = Guid.NewGuid();
+    private static readonly Guid TenantId = Guid.NewGuid();
+    private static readonly Guid CompanyId = Guid.NewGuid();
     private static readonly Guid PurchaseId = Guid.NewGuid();
     private static readonly Guid SupplierId = Guid.NewGuid();
-    private static readonly Guid UserId     = Guid.NewGuid();
+    private static readonly Guid UserId = Guid.NewGuid();
 
     private static List<PurchasePaymentSchedule> ThreeInstallmentSchedule(decimal total)
     {

@@ -1,6 +1,6 @@
+using ERP.Domain.Tenants.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
-using ERP.Domain.Tenants.Entities;
 
 namespace ERP.Infrastructure.Persistence.Configurations;
 

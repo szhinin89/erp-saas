@@ -9,45 +9,45 @@ public sealed class Branch : MasterEntity, ICompanyOperationalEntity
     public Guid CompanyId { get; private set; }
 
     // Identificación
-    public string  Name         { get; private set; } = null!;
-    public string? Code         { get; private set; }
-    public string? Description  { get; private set; }
-    public bool    IsMainBranch { get; private set; }
+    public string Name { get; private set; } = null!;
+    public string? Code { get; private set; }
+    public string? Description { get; private set; }
+    public bool IsMainBranch { get; private set; }
 
     // Dirección
-    public string  Address    { get; private set; } = null!;
-    public string? CountryId  { get; private set; }
+    public string Address { get; private set; } = null!;
+    public string? CountryId { get; private set; }
     public string? ProvinceId { get; private set; }
-    public string? CantonId   { get; private set; }
-    public string? ParishId   { get; private set; }
-    public string? Reference  { get; private set; }
+    public string? CantonId { get; private set; }
+    public string? ParishId { get; private set; }
+    public string? Reference { get; private set; }
     public string? PostalCode { get; private set; }
-    public string? Latitude   { get; private set; }
-    public string? Longitude  { get; private set; }
+    public string? Latitude { get; private set; }
+    public string? Longitude { get; private set; }
 
     // Contacto
-    public string? Phone          { get; private set; }
+    public string? Phone { get; private set; }
     public string? SecondaryPhone { get; private set; }
-    public string? Email          { get; private set; }
-    public string? Website        { get; private set; }
+    public string? Email { get; private set; }
+    public string? Website { get; private set; }
 
     // Responsable (información libre, sin vínculo a empleados/usuarios)
-    public string? ManagerName     { get; private set; }
+    public string? ManagerName { get; private set; }
     public string? ManagerPosition { get; private set; }
-    public string? ManagerEmail    { get; private set; }
-    public string? ManagerPhone    { get; private set; }
+    public string? ManagerEmail { get; private set; }
+    public string? ManagerPhone { get; private set; }
 
     // Operación
-    public DateOnly? OpeningDate   { get; private set; }
-    public string?   InternalNotes { get; private set; }
+    public DateOnly? OpeningDate { get; private set; }
+    public string? InternalNotes { get; private set; }
 
     private Branch() { }
 
     public static Branch Create(
-        Guid    tenantId,
-        string  name,
-        string  address,
-        string  code,
+        Guid tenantId,
+        string name,
+        string address,
+        string code,
         string? description,
         string? reference,
         string? postalCode,
@@ -67,38 +67,38 @@ public sealed class Branch : MasterEntity, ICompanyOperationalEntity
         string? longitude,
         DateOnly? openingDate,
         string? internalNotes,
-        bool    isMainBranch,
-        Guid    createdBy,
+        bool isMainBranch,
+        Guid createdBy,
         Guid companyId = default)
     {
         var b = new Branch
         {
-            Id              = Guid.NewGuid(),
-            TenantId        = tenantId,
-            CompanyId       = companyId,
-            Name            = name.Trim(),
-            Address         = address.Trim(),
-            Code            = code,
-            Description     = string.IsNullOrWhiteSpace(description)     ? null : description.Trim(),
-            Reference       = string.IsNullOrWhiteSpace(reference)       ? null : reference.Trim(),
-            PostalCode      = string.IsNullOrWhiteSpace(postalCode)      ? null : postalCode.Trim(),
-            Phone           = string.IsNullOrWhiteSpace(phone)           ? null : phone.Trim(),
-            SecondaryPhone  = string.IsNullOrWhiteSpace(secondaryPhone)  ? null : secondaryPhone.Trim(),
-            Email           = string.IsNullOrWhiteSpace(email)           ? null : email.Trim(),
-            Website         = string.IsNullOrWhiteSpace(website)         ? null : website.Trim(),
-            ManagerName     = string.IsNullOrWhiteSpace(managerName)     ? null : managerName.Trim(),
+            Id = Guid.NewGuid(),
+            TenantId = tenantId,
+            CompanyId = companyId,
+            Name = name.Trim(),
+            Address = address.Trim(),
+            Code = code,
+            Description = string.IsNullOrWhiteSpace(description) ? null : description.Trim(),
+            Reference = string.IsNullOrWhiteSpace(reference) ? null : reference.Trim(),
+            PostalCode = string.IsNullOrWhiteSpace(postalCode) ? null : postalCode.Trim(),
+            Phone = string.IsNullOrWhiteSpace(phone) ? null : phone.Trim(),
+            SecondaryPhone = string.IsNullOrWhiteSpace(secondaryPhone) ? null : secondaryPhone.Trim(),
+            Email = string.IsNullOrWhiteSpace(email) ? null : email.Trim(),
+            Website = string.IsNullOrWhiteSpace(website) ? null : website.Trim(),
+            ManagerName = string.IsNullOrWhiteSpace(managerName) ? null : managerName.Trim(),
             ManagerPosition = string.IsNullOrWhiteSpace(managerPosition) ? null : managerPosition.Trim(),
-            ManagerEmail    = string.IsNullOrWhiteSpace(managerEmail)    ? null : managerEmail.Trim(),
-            ManagerPhone    = string.IsNullOrWhiteSpace(managerPhone)    ? null : managerPhone.Trim(),
-            CountryId       = string.IsNullOrWhiteSpace(countryId)       ? null : countryId.Trim(),
-            ProvinceId      = string.IsNullOrWhiteSpace(provinceId)      ? null : provinceId.Trim(),
-            CantonId        = string.IsNullOrWhiteSpace(cantonId)        ? null : cantonId.Trim(),
-            ParishId        = string.IsNullOrWhiteSpace(parishId)        ? null : parishId.Trim(),
-            Latitude        = string.IsNullOrWhiteSpace(latitude)        ? null : latitude.Trim(),
-            Longitude       = string.IsNullOrWhiteSpace(longitude)       ? null : longitude.Trim(),
-            OpeningDate     = openingDate,
-            InternalNotes   = string.IsNullOrWhiteSpace(internalNotes)   ? null : internalNotes.Trim(),
-            IsMainBranch    = isMainBranch,
+            ManagerEmail = string.IsNullOrWhiteSpace(managerEmail) ? null : managerEmail.Trim(),
+            ManagerPhone = string.IsNullOrWhiteSpace(managerPhone) ? null : managerPhone.Trim(),
+            CountryId = string.IsNullOrWhiteSpace(countryId) ? null : countryId.Trim(),
+            ProvinceId = string.IsNullOrWhiteSpace(provinceId) ? null : provinceId.Trim(),
+            CantonId = string.IsNullOrWhiteSpace(cantonId) ? null : cantonId.Trim(),
+            ParishId = string.IsNullOrWhiteSpace(parishId) ? null : parishId.Trim(),
+            Latitude = string.IsNullOrWhiteSpace(latitude) ? null : latitude.Trim(),
+            Longitude = string.IsNullOrWhiteSpace(longitude) ? null : longitude.Trim(),
+            OpeningDate = openingDate,
+            InternalNotes = string.IsNullOrWhiteSpace(internalNotes) ? null : internalNotes.Trim(),
+            IsMainBranch = isMainBranch,
         };
         b.SetCreated(createdBy);
         return b;
@@ -112,10 +112,10 @@ public sealed class Branch : MasterEntity, ICompanyOperationalEntity
     /// administrador complete la información propia de la empresa (Tipo B) sobre esta sucursal.
     /// </summary>
     public static Branch CreateSystemSeeded(
-        Guid    tenantId,
-        string  name,
-        string  address,
-        string  code,
+        Guid tenantId,
+        string name,
+        string address,
+        string code,
         string? description,
         string? reference,
         string? postalCode,
@@ -135,8 +135,8 @@ public sealed class Branch : MasterEntity, ICompanyOperationalEntity
         string? longitude,
         DateOnly? openingDate,
         string? internalNotes,
-        bool    isMainBranch,
-        Guid    createdBy,
+        bool isMainBranch,
+        Guid createdBy,
         Guid companyId = default)
     {
         var b = Create(
@@ -149,52 +149,52 @@ public sealed class Branch : MasterEntity, ICompanyOperationalEntity
     }
 
     public void Update(
-        string   name,
-        string   address,
-        string?  description,
-        string?  reference,
-        string?  postalCode,
-        string?  phone,
-        string?  secondaryPhone,
-        string?  email,
-        string?  website,
-        string?  managerName,
-        string?  managerPosition,
-        string?  managerEmail,
-        string?  managerPhone,
-        string?  countryId,
-        string?  provinceId,
-        string?  cantonId,
-        string?  parishId,
-        string?  latitude,
-        string?  longitude,
+        string name,
+        string address,
+        string? description,
+        string? reference,
+        string? postalCode,
+        string? phone,
+        string? secondaryPhone,
+        string? email,
+        string? website,
+        string? managerName,
+        string? managerPosition,
+        string? managerEmail,
+        string? managerPhone,
+        string? countryId,
+        string? provinceId,
+        string? cantonId,
+        string? parishId,
+        string? latitude,
+        string? longitude,
         DateOnly? openingDate,
-        string?  internalNotes,
-        bool     isMainBranch,
-        Guid     updatedBy)
+        string? internalNotes,
+        bool isMainBranch,
+        Guid updatedBy)
     {
-        Name            = name.Trim();
-        Address         = address.Trim();
-        Description     = string.IsNullOrWhiteSpace(description)     ? null : description.Trim();
-        Reference       = string.IsNullOrWhiteSpace(reference)       ? null : reference.Trim();
-        PostalCode      = string.IsNullOrWhiteSpace(postalCode)      ? null : postalCode.Trim();
-        Phone           = string.IsNullOrWhiteSpace(phone)           ? null : phone.Trim();
-        SecondaryPhone  = string.IsNullOrWhiteSpace(secondaryPhone)  ? null : secondaryPhone.Trim();
-        Email           = string.IsNullOrWhiteSpace(email)           ? null : email.Trim();
-        Website         = string.IsNullOrWhiteSpace(website)         ? null : website.Trim();
-        ManagerName     = string.IsNullOrWhiteSpace(managerName)     ? null : managerName.Trim();
+        Name = name.Trim();
+        Address = address.Trim();
+        Description = string.IsNullOrWhiteSpace(description) ? null : description.Trim();
+        Reference = string.IsNullOrWhiteSpace(reference) ? null : reference.Trim();
+        PostalCode = string.IsNullOrWhiteSpace(postalCode) ? null : postalCode.Trim();
+        Phone = string.IsNullOrWhiteSpace(phone) ? null : phone.Trim();
+        SecondaryPhone = string.IsNullOrWhiteSpace(secondaryPhone) ? null : secondaryPhone.Trim();
+        Email = string.IsNullOrWhiteSpace(email) ? null : email.Trim();
+        Website = string.IsNullOrWhiteSpace(website) ? null : website.Trim();
+        ManagerName = string.IsNullOrWhiteSpace(managerName) ? null : managerName.Trim();
         ManagerPosition = string.IsNullOrWhiteSpace(managerPosition) ? null : managerPosition.Trim();
-        ManagerEmail    = string.IsNullOrWhiteSpace(managerEmail)    ? null : managerEmail.Trim();
-        ManagerPhone    = string.IsNullOrWhiteSpace(managerPhone)    ? null : managerPhone.Trim();
-        CountryId       = string.IsNullOrWhiteSpace(countryId)       ? null : countryId.Trim();
-        ProvinceId      = string.IsNullOrWhiteSpace(provinceId)      ? null : provinceId.Trim();
-        CantonId        = string.IsNullOrWhiteSpace(cantonId)        ? null : cantonId.Trim();
-        ParishId        = string.IsNullOrWhiteSpace(parishId)        ? null : parishId.Trim();
-        Latitude        = string.IsNullOrWhiteSpace(latitude)        ? null : latitude.Trim();
-        Longitude       = string.IsNullOrWhiteSpace(longitude)       ? null : longitude.Trim();
-        OpeningDate     = openingDate;
-        InternalNotes   = string.IsNullOrWhiteSpace(internalNotes)   ? null : internalNotes.Trim();
-        IsMainBranch    = isMainBranch;
+        ManagerEmail = string.IsNullOrWhiteSpace(managerEmail) ? null : managerEmail.Trim();
+        ManagerPhone = string.IsNullOrWhiteSpace(managerPhone) ? null : managerPhone.Trim();
+        CountryId = string.IsNullOrWhiteSpace(countryId) ? null : countryId.Trim();
+        ProvinceId = string.IsNullOrWhiteSpace(provinceId) ? null : provinceId.Trim();
+        CantonId = string.IsNullOrWhiteSpace(cantonId) ? null : cantonId.Trim();
+        ParishId = string.IsNullOrWhiteSpace(parishId) ? null : parishId.Trim();
+        Latitude = string.IsNullOrWhiteSpace(latitude) ? null : latitude.Trim();
+        Longitude = string.IsNullOrWhiteSpace(longitude) ? null : longitude.Trim();
+        OpeningDate = openingDate;
+        InternalNotes = string.IsNullOrWhiteSpace(internalNotes) ? null : internalNotes.Trim();
+        IsMainBranch = isMainBranch;
         SetUpdated(updatedBy);
     }
 

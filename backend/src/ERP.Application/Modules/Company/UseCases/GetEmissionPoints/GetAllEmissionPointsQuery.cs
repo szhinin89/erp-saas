@@ -1,6 +1,6 @@
-using MediatR;
 using ERP.Application.Common;
 using ERP.Application.Modules.Company.DTOs;
+using MediatR;
 
 namespace ERP.Application.Modules.Company.UseCases.GetEmissionPoints;
 
@@ -9,6 +9,6 @@ namespace ERP.Application.Modules.Company.UseCases.GetEmissionPoints;
 /// establecimiento para mostrar en la pantalla independiente /settings/emission-points.
 /// </summary>
 public record GetAllEmissionPointsQuery(
-    bool?   ActiveFilter = null,
-    string? Search       = null
+    bool? ActiveFilter = null,
+    string? Search = null
 ) : IRequest<Result<IReadOnlyList<EmissionPointListItemDto>>>, ICompanyScopedRequest;

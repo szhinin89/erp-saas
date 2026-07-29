@@ -1,5 +1,4 @@
 using ERP.Application.Common;
-using ERP.Application.Modules.Purchases.DTOs;
 using ERP.Application.Modules.Purchases.Services;
 using ERP.Application.Modules.Purchases.UseCases;
 using ERP.Domain.Modules.Inventory.Entities;
@@ -16,15 +15,15 @@ namespace ERP.Application.Tests.Purchases;
 
 public sealed class ConfirmPurchaseHandlerTests
 {
-    private static readonly Guid TenantId   = Guid.NewGuid();
-    private static readonly Guid CompanyId  = Guid.NewGuid();
-    private static readonly Guid BranchId   = Guid.NewGuid();
-    private static readonly Guid UserId     = Guid.NewGuid();
+    private static readonly Guid TenantId = Guid.NewGuid();
+    private static readonly Guid CompanyId = Guid.NewGuid();
+    private static readonly Guid BranchId = Guid.NewGuid();
+    private static readonly Guid UserId = Guid.NewGuid();
     private static readonly Guid SupplierId = Guid.NewGuid();
-    private static readonly Guid ItemId1    = Guid.NewGuid();
-    private static readonly Guid ItemId2    = Guid.NewGuid();
-    private static readonly Guid WhId       = Guid.NewGuid();
-    private static readonly Guid PtId       = Guid.NewGuid();
+    private static readonly Guid ItemId1 = Guid.NewGuid();
+    private static readonly Guid ItemId2 = Guid.NewGuid();
+    private static readonly Guid WhId = Guid.NewGuid();
+    private static readonly Guid PtId = Guid.NewGuid();
 
     private static PurchaseInvoice CreateDraftInvoice(int lineCount = 1, bool sameItem = false)
     {

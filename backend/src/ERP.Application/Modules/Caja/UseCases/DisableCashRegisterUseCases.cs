@@ -1,6 +1,6 @@
-using MediatR;
 using ERP.Application.Common;
 using ERP.Domain.Modules.Caja.Interfaces;
+using MediatR;
 
 namespace ERP.Application.Modules.Caja.UseCases;
 

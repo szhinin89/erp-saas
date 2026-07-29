@@ -1,4 +1,4 @@
-﻿namespace ERP.Application.Modules.Dashboard;
+namespace ERP.Application.Modules.Dashboard;
 
 /// <summary>
 /// Lector de KPIs operativos para el dashboard. Implementación en Infrastructure
@@ -7,8 +7,8 @@
 public interface IDashboardKpiReader
 {
     Task<DashboardKpisDto> ReadAsync(
-        Guid     tenantId,
-        Guid     companyId,
+        Guid tenantId,
+        Guid companyId,
         DateTime asOf,
         CancellationToken cancellationToken = default);
 }

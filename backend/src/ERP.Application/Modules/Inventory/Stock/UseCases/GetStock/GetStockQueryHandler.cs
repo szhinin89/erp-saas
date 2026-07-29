@@ -1,8 +1,8 @@
-using MediatR;
 using ERP.Application.Common;
 using ERP.Application.Modules.Inventory.Stock.DTOs;
 using ERP.Domain.Modules.Inventory.Entities;
 using ERP.Domain.Modules.Inventory.Interfaces;
+using MediatR;
 
 namespace ERP.Application.Modules.Inventory.Stock.UseCases.GetStock;
 
@@ -10,11 +10,11 @@ public sealed class GetStockQueryHandler
     : IRequestHandler<GetStockQuery, Result<IReadOnlyList<CurrentStockDto>>>
 {
     private readonly IStockRepository _repo;
-    private readonly ICurrentTenant   _tenant;
+    private readonly ICurrentTenant _tenant;
 
     public GetStockQueryHandler(IStockRepository repo, ICurrentTenant tenant)
     {
-        _repo   = repo;
+        _repo = repo;
         _tenant = tenant;
     }
 

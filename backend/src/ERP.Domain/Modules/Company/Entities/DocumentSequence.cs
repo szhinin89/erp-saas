@@ -1,5 +1,5 @@
-using System.Globalization;
 using ERP.Domain.Common;
+using System.Globalization;
 
 namespace ERP.Domain.Modules.Company.Entities;
 
@@ -10,21 +10,21 @@ namespace ERP.Domain.Modules.Company.Entities;
 /// </summary>
 public sealed class DocumentSequence : BaseEntity, ITenantScopedEntity, ICompanyScopedEntity
 {
-    public Guid     CompanyId       { get; private set; }
-    public Guid     EmissionPointId { get; private set; }
+    public Guid CompanyId { get; private set; }
+    public Guid EmissionPointId { get; private set; }
     /// <summary>Código de tipo documental SRI: "01" Factura, "04" NC, "05" ND, "07" Retención.</summary>
-    public string   DocTypeCode     { get; private set; } = null!;
+    public string DocTypeCode { get; private set; } = null!;
     /// <summary>Próximo número a emitir. Empieza en 1 para que el primer documento sea "000000001".</summary>
-    public int      CurrentSeq      { get; private set; }
-    public DateTime CreatedAt       { get; private set; }
-    public DateTime UpdatedAt       { get; private set; }
+    public int CurrentSeq { get; private set; }
+    public DateTime CreatedAt { get; private set; }
+    public DateTime UpdatedAt { get; private set; }
 
     private DocumentSequence() { }
 
     public static DocumentSequence Create(
-        Guid   tenantId,
-        Guid   companyId,
-        Guid   emissionPointId,
+        Guid tenantId,
+        Guid companyId,
+        Guid emissionPointId,
         string docTypeCode)
     {
         if (string.IsNullOrWhiteSpace(docTypeCode))
@@ -33,14 +33,14 @@ public sealed class DocumentSequence : BaseEntity, ITenantScopedEntity, ICompany
         var now = DateTime.UtcNow;
         return new DocumentSequence
         {
-            Id              = Guid.NewGuid(),
-            TenantId        = tenantId,
-            CompanyId       = companyId,
+            Id = Guid.NewGuid(),
+            TenantId = tenantId,
+            CompanyId = companyId,
             EmissionPointId = emissionPointId,
-            DocTypeCode     = docTypeCode.Trim(),
-            CurrentSeq      = 1,   // primer documento → "000000001" (SRI válido)
-            CreatedAt       = now,
-            UpdatedAt       = now,
+            DocTypeCode = docTypeCode.Trim(),
+            CurrentSeq = 1,   // primer documento → "000000001" (SRI válido)
+            CreatedAt = now,
+            UpdatedAt = now,
         };
     }
 

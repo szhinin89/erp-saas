@@ -1,4 +1,4 @@
-﻿using ERP.Application.Common;
+using ERP.Application.Common;
 using ERP.Application.MasterData.DTOs;
 using ERP.Domain.MasterData.Interfaces;
 using MediatR;
@@ -16,7 +16,7 @@ public sealed class GetBusinessPartnerRolesHandler
         GetBusinessPartnerRolesQuery q, CancellationToken cancellationToken)
     {
         var roles = await _roleRepo.GetByBusinessPartnerAsync(q.BusinessPartnerId, q.OnlyActive, cancellationToken);
-        var dtos  = (IReadOnlyList<BusinessPartnerRoleDto>)roles.Select(BusinessPartnerRoleDto.From).ToList();
+        var dtos = (IReadOnlyList<BusinessPartnerRoleDto>)roles.Select(BusinessPartnerRoleDto.From).ToList();
         return Result<IReadOnlyList<BusinessPartnerRoleDto>>.Success(dtos);
     }
 }

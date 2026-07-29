@@ -1,4 +1,4 @@
-﻿using ERP.Domain.Common;
+using ERP.Domain.Common;
 using ERP.Domain.Modules.Items.Events;
 using ERP.Domain.Modules.Items.ValueObjects;
 
@@ -80,17 +80,17 @@ public sealed class Item : MasterEntity, ITenantScopedEntity
 
         var item = new Item
         {
-            TenantId     = tenantId,
-            Code             = code,
-            ItemTypeId       = itemTypeId,
-            DefaultUomCode   = defaultUomCode.Trim().ToUpperInvariant(),
-            TaxConfig        = taxConfig,
-            SaleConfig       = saleConfig,
-            StockConfig      = stockConfig,
-            CategoryNodeId   = categoryNodeId,
-            BrandId          = brandId,
-            Observations     = observations?.Trim(),
-            BaseSalePrice    = baseSalePrice,
+            TenantId = tenantId,
+            Code = code,
+            ItemTypeId = itemTypeId,
+            DefaultUomCode = defaultUomCode.Trim().ToUpperInvariant(),
+            TaxConfig = taxConfig,
+            SaleConfig = saleConfig,
+            StockConfig = stockConfig,
+            CategoryNodeId = categoryNodeId,
+            BrandId = brandId,
+            Observations = observations?.Trim(),
+            BaseSalePrice = baseSalePrice,
         };
 
         item.SetCreated(createdBy);
@@ -109,7 +109,7 @@ public sealed class Item : MasterEntity, ITenantScopedEntity
     public void UpdateIdentity(
         string shortName, string description, string? observations, Guid updatedBy)
     {
-        Code         = ItemCode.Create(Code.SKU, shortName, description);
+        Code = ItemCode.Create(Code.SKU, shortName, description);
         Observations = observations?.Trim();
         SetUpdated(updatedBy);
         RaiseDomainEvent(new ItemUpdatedEvent(Id, TenantId));
@@ -130,7 +130,7 @@ public sealed class Item : MasterEntity, ITenantScopedEntity
     public void UpdateClassification(Guid? categoryNodeId, Guid? brandId, Guid updatedBy)
     {
         CategoryNodeId = categoryNodeId;
-        BrandId        = brandId;
+        BrandId = brandId;
         SetUpdated(updatedBy);
     }
 

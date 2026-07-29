@@ -22,7 +22,7 @@ public sealed partial class CompanyBootstrapOrchestrator : ICompanyBootstrapServ
         IEnumerable<ICompanyBootstrapStep> steps,
         ILogger<CompanyBootstrapOrchestrator> logger)
     {
-        _steps  = steps.OrderBy(s => s.Order).ToList();
+        _steps = steps.OrderBy(s => s.Order).ToList();
         _logger = logger;
     }
 

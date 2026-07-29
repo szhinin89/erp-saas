@@ -1,8 +1,6 @@
-using System.Linq.Expressions;
 using ERP.Domain.Common;
-using ERP.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Metadata;
+using System.Linq.Expressions;
 
 namespace ERP.Infrastructure.Persistence;
 
@@ -52,15 +50,15 @@ internal static class EnterpriseQueryFilterConfigurator
 
     private static LambdaExpression BuildTenantFilter(Type clrType, ErpDbContext dbContext)
     {
-        var parameter  = Expression.Parameter(clrType, "e");
+        var parameter = Expression.Parameter(clrType, "e");
         var dbConstant = Expression.Constant(dbContext);
 
-        var currentTenant    = Expression.Property(dbConstant, nameof(ErpDbContext.FilterTenantId));
-        var emptyGuid        = Expression.Constant(Guid.Empty);
+        var currentTenant = Expression.Property(dbConstant, nameof(ErpDbContext.FilterTenantId));
+        var emptyGuid = Expression.Constant(Guid.Empty);
         var hasTenantContext = Expression.NotEqual(currentTenant, emptyGuid);
 
         var tenantProperty = Expression.Property(parameter, nameof(ITenantScopedEntity.TenantId));
-        var tenantMatch    = Expression.Equal(tenantProperty, currentTenant);
+        var tenantMatch = Expression.Equal(tenantProperty, currentTenant);
 
         var body = Expression.AndAlso(hasTenantContext, tenantMatch);
         return Expression.Lambda(body, parameter);
@@ -74,20 +72,20 @@ internal static class EnterpriseQueryFilterConfigurator
 
     private static LambdaExpression BuildOperationalScopedFilter(Type clrType, ErpDbContext dbContext)
     {
-        var parameter  = Expression.Parameter(clrType, "e");
+        var parameter = Expression.Parameter(clrType, "e");
         var dbConstant = Expression.Constant(dbContext);
 
         var currentTenant = Expression.Property(dbConstant, nameof(ErpDbContext.FilterTenantId));
-        var emptyGuid     = Expression.Constant(Guid.Empty);
-        var hasTenantCtx  = Expression.NotEqual(currentTenant, emptyGuid);
-        var tenantProp    = Expression.Property(parameter, nameof(ITenantScopedEntity.TenantId));
-        var tenantMatch   = Expression.AndAlso(hasTenantCtx,
+        var emptyGuid = Expression.Constant(Guid.Empty);
+        var hasTenantCtx = Expression.NotEqual(currentTenant, emptyGuid);
+        var tenantProp = Expression.Property(parameter, nameof(ITenantScopedEntity.TenantId));
+        var tenantMatch = Expression.AndAlso(hasTenantCtx,
                               Expression.Equal(tenantProp, currentTenant));
 
-        var hasCompanyCtx  = Expression.Property(dbConstant, nameof(ErpDbContext.FilterHasCompanyContext));
+        var hasCompanyCtx = Expression.Property(dbConstant, nameof(ErpDbContext.FilterHasCompanyContext));
         var currentCompany = Expression.Property(dbConstant, nameof(ErpDbContext.FilterCompanyId));
-        var companyProp    = Expression.Property(parameter, nameof(ICompanyOperationalEntity.CompanyId));
-        var companyMatch   = Expression.AndAlso(hasCompanyCtx,
+        var companyProp = Expression.Property(parameter, nameof(ICompanyOperationalEntity.CompanyId));
+        var companyMatch = Expression.AndAlso(hasCompanyCtx,
                                Expression.Equal(companyProp, currentCompany));
 
         return Expression.Lambda(Expression.AndAlso(tenantMatch, companyMatch), parameter);
@@ -95,20 +93,20 @@ internal static class EnterpriseQueryFilterConfigurator
 
     private static LambdaExpression BuildStrictCompanyScopedFilter(Type clrType, ErpDbContext dbContext)
     {
-        var parameter  = Expression.Parameter(clrType, "e");
+        var parameter = Expression.Parameter(clrType, "e");
         var dbConstant = Expression.Constant(dbContext);
 
         var currentTenant = Expression.Property(dbConstant, nameof(ErpDbContext.FilterTenantId));
-        var emptyGuid     = Expression.Constant(Guid.Empty);
-        var hasTenantCtx  = Expression.NotEqual(currentTenant, emptyGuid);
-        var tenantProp    = Expression.Property(parameter, nameof(ITenantScopedEntity.TenantId));
-        var tenantMatch   = Expression.AndAlso(hasTenantCtx,
+        var emptyGuid = Expression.Constant(Guid.Empty);
+        var hasTenantCtx = Expression.NotEqual(currentTenant, emptyGuid);
+        var tenantProp = Expression.Property(parameter, nameof(ITenantScopedEntity.TenantId));
+        var tenantMatch = Expression.AndAlso(hasTenantCtx,
                               Expression.Equal(tenantProp, currentTenant));
 
-        var hasCompanyCtx  = Expression.Property(dbConstant, nameof(ErpDbContext.FilterHasCompanyContext));
+        var hasCompanyCtx = Expression.Property(dbConstant, nameof(ErpDbContext.FilterHasCompanyContext));
         var currentCompany = Expression.Property(dbConstant, nameof(ErpDbContext.FilterCompanyId));
-        var companyProp    = Expression.Property(parameter, nameof(ICompanyScopedEntity.CompanyId));
-        var companyMatch   = Expression.AndAlso(hasCompanyCtx,
+        var companyProp = Expression.Property(parameter, nameof(ICompanyScopedEntity.CompanyId));
+        var companyMatch = Expression.AndAlso(hasCompanyCtx,
                                Expression.Equal(companyProp, currentCompany));
 
         return Expression.Lambda(Expression.AndAlso(tenantMatch, companyMatch), parameter);

@@ -1,4 +1,4 @@
-﻿using ERP.Application.Common;
+using ERP.Application.Common;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Design;
 using Microsoft.EntityFrameworkCore.Diagnostics;
@@ -27,12 +27,12 @@ internal sealed class ErpDbContextFactory : IDesignTimeDbContextFactory<ErpDbCon
     private sealed class DesignTimeTenant : ICurrentTenant
     {
         public Guid TenantId => Guid.Empty;
-        public string? Slug  => null;
+        public string? Slug => null;
     }
 
     private sealed class DesignTimeCompany : ICurrentCompany
     {
-        public Guid CompanyId       => Guid.Empty;
+        public Guid CompanyId => Guid.Empty;
         public bool IsAuthenticated => false;
         public bool HasCompanyContext => false;
     }

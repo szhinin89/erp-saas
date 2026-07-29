@@ -9,10 +9,10 @@ public interface IEstablishmentRepository
 
     /// <summary>Devuelve establecimientos filtrados con navegación Branch e EmissionPoints incluidos (para el listado de la pantalla independiente).</summary>
     Task<IReadOnlyList<Establishment>> GetFilteredAsync(
-        Guid    tenantId,
-        Guid    companyId,
-        Guid?   branchId,
-        bool?   isActive,
+        Guid tenantId,
+        Guid companyId,
+        Guid? branchId,
+        bool? isActive,
         string? search,
         CancellationToken cancellationToken = default);
 

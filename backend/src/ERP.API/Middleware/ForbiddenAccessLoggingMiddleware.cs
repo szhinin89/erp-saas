@@ -1,5 +1,4 @@
 using ERP.Application.Common.Security;
-using System.Security.Claims;
 
 namespace ERP.API.Middleware;
 

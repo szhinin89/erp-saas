@@ -1,6 +1,6 @@
-using MediatR;
 using ERP.Application.Common;
 using ERP.Application.Security.DTOs;
+using MediatR;
 
 namespace ERP.Application.Security.UseCases.GetSecurityAdminMatrix;
 

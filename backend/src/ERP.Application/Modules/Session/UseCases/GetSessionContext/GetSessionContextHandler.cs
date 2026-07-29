@@ -48,18 +48,18 @@ public sealed class GetSessionContextHandler : IRequestHandler<GetSessionContext
         IBranchRepository branchRepository,
         IMediator mediator)
     {
-        _currentUser       = currentUser;
-        _currentTenant     = currentTenant;
-        _currentBranch     = currentBranch;
-        _accessRepository  = accessRepository;
-        _tenantRepository  = tenantRepository;
+        _currentUser = currentUser;
+        _currentTenant = currentTenant;
+        _currentBranch = currentBranch;
+        _accessRepository = accessRepository;
+        _tenantRepository = tenantRepository;
         _companyRepository = companyRepository;
-        _companyContext    = companyContext;
-        _permissionKeys    = permissionKeys;
-        _media             = media;
+        _companyContext = companyContext;
+        _permissionKeys = permissionKeys;
+        _media = media;
         _userSessionRepository = userSessionRepository;
-        _branchRepository      = branchRepository;
-        _mediator              = mediator;
+        _branchRepository = branchRepository;
+        _mediator = mediator;
     }
 
     public async Task<Result<SessionContextDto>> Handle(GetSessionContextQuery request, CancellationToken cancellationToken)
@@ -68,7 +68,7 @@ public sealed class GetSessionContextHandler : IRequestHandler<GetSessionContext
             return Result<SessionContextDto>.Failure("No autenticado.");
 
         var identityUser = await _accessRepository.GetUserByIdAsync(_currentUser.UserId, cancellationToken);
-        var tenant       = await _tenantRepository.GetByIdAsync(_currentTenant.TenantId, cancellationToken);
+        var tenant = await _tenantRepository.GetByIdAsync(_currentTenant.TenantId, cancellationToken);
 
         var operationalContext = await _companyContext.ResolveOperationalForCurrentUserAsync(cancellationToken);
 

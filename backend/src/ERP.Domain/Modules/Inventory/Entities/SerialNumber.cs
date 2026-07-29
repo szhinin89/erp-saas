@@ -1,4 +1,4 @@
-﻿using ERP.Domain.Common;
+using ERP.Domain.Common;
 using ERP.Domain.Modules.Inventory.Enums;
 
 namespace ERP.Domain.Modules.Inventory.Entities;
@@ -43,16 +43,16 @@ public sealed class SerialNumber : AuditableEntity, ITenantScopedEntity, ICompan
 
         var sn = new SerialNumber
         {
-            TenantId  = tenantId,
-            CompanyId     = companyId,
-            Serial        = serial.Trim(),
-            ItemId        = itemId,
-            VariantId     = variantId,
-            WarehouseId   = warehouseId,
-            LotId         = lotId,
-            Status        = SerialStatus.InStock,
-            AcquiredAt    = DateTime.UtcNow,
-            Notes         = notes?.Trim(),
+            TenantId = tenantId,
+            CompanyId = companyId,
+            Serial = serial.Trim(),
+            ItemId = itemId,
+            VariantId = variantId,
+            WarehouseId = warehouseId,
+            LotId = lotId,
+            Status = SerialStatus.InStock,
+            AcquiredAt = DateTime.UtcNow,
+            Notes = notes?.Trim(),
             ReceiptLineId = receiptLineId,
         };
         sn.SetCreated(createdBy);
@@ -64,8 +64,8 @@ public sealed class SerialNumber : AuditableEntity, ITenantScopedEntity, ICompan
         if (Status != SerialStatus.InStock)
             throw new InvalidOperationException($"El serial '{Serial}' no está disponible (estado: {Status}).");
 
-        Status      = SerialStatus.Sold;
-        SoldAt      = DateTime.UtcNow;
+        Status = SerialStatus.Sold;
+        SoldAt = DateTime.UtcNow;
         DocumentRef = documentRef.Trim();
         SetUpdated(updatedBy);
     }
@@ -75,8 +75,8 @@ public sealed class SerialNumber : AuditableEntity, ITenantScopedEntity, ICompan
         if (Status != SerialStatus.Sold)
             throw new InvalidOperationException($"El serial '{Serial}' no puede devolverse (estado: {Status}).");
 
-        Status  = SerialStatus.Returned;
-        SoldAt  = null;
+        Status = SerialStatus.Returned;
+        SoldAt = null;
         SetUpdated(updatedBy);
     }
 

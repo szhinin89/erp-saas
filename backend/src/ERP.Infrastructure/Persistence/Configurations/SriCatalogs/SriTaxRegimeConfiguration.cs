@@ -16,10 +16,10 @@ public class SriTaxRegimeConfiguration : IEntityTypeConfiguration<SriTaxRegime>
         builder.Property(x => x.IsActive).HasColumnName("is_active").HasDefaultValue(true);
 
         builder.HasData(
-            new SriTaxRegime { Code = "01", Name = "Régimen General",                   Abbrev = "GENERAL",  IsActive = true },
-            new SriTaxRegime { Code = "02", Name = "RIMPE – Régimen de Microempresas",  Abbrev = "RIMPE_ME", IsActive = true },
-            new SriTaxRegime { Code = "03", Name = "RIMPE – Negocio Popular",           Abbrev = "RIMPE_NP", IsActive = true },
-            new SriTaxRegime { Code = "04", Name = "Contribuyente Especial",            Abbrev = "ESP",      IsActive = true }
+            new SriTaxRegime { Code = "01", Name = "Régimen General", Abbrev = "GENERAL", IsActive = true },
+            new SriTaxRegime { Code = "02", Name = "RIMPE – Régimen de Microempresas", Abbrev = "RIMPE_ME", IsActive = true },
+            new SriTaxRegime { Code = "03", Name = "RIMPE – Negocio Popular", Abbrev = "RIMPE_NP", IsActive = true },
+            new SriTaxRegime { Code = "04", Name = "Contribuyente Especial", Abbrev = "ESP", IsActive = true }
         );
     }
 }

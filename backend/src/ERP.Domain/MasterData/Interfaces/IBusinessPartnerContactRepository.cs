@@ -1,4 +1,4 @@
-﻿using ERP.Domain.MasterData.Entities;
+using ERP.Domain.MasterData.Entities;
 using ERP.Domain.MasterData.Enums;
 
 namespace ERP.Domain.MasterData.Interfaces;
@@ -14,12 +14,12 @@ public interface IBusinessPartnerContactRepository
     Task<BusinessPartnerContact?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default);
 
     Task<IReadOnlyList<BusinessPartnerContact>> GetByBusinessPartnerAsync(
-        Guid  businessPartnerId,
+        Guid businessPartnerId,
         bool? onlyActive = true,
         CancellationToken cancellationToken = default);
 
     Task<IReadOnlyList<BusinessPartnerContact>> GetByRoleAsync(
-        Guid        businessPartnerId,
+        Guid businessPartnerId,
         ContactRole role,
         CancellationToken cancellationToken = default);
 

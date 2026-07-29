@@ -1,21 +1,20 @@
-﻿using ERP.Application.Access;
 using ERP.Application.Access.Caching;
 using ERP.Application.Common;
 using ERP.Application.Navigation;
-using MediatR;
 using ERP.Domain.Access.Entities;
 using ERP.Domain.Access.Interfaces;
+using MediatR;
 
 namespace ERP.Application.Access.UseCases.Permissions;
 
 public class UpsertProfilePermissionsHandler
     : IRequestHandler<UpsertProfilePermissionsCommand, Result<PermissionUpsertResultDto>>
 {
-    private readonly IAccessRepository            _repo;
-    private readonly ICurrentTenant           _currentTenant;
-    private readonly ICurrentUser                 _currentUser;
+    private readonly IAccessRepository _repo;
+    private readonly ICurrentTenant _currentTenant;
+    private readonly ICurrentUser _currentUser;
     private readonly IPermissionsCacheInvalidator _permissionsCache;
-    private readonly INavigationBuilder           _navigationBuilder;
+    private readonly INavigationBuilder _navigationBuilder;
 
     public UpsertProfilePermissionsHandler(
         IAccessRepository repo,
@@ -24,10 +23,10 @@ public class UpsertProfilePermissionsHandler
         IPermissionsCacheInvalidator permissionsCache,
         INavigationBuilder navigationBuilder)
     {
-        _repo              = repo;
+        _repo = repo;
         _currentTenant = currentTenant;
-        _currentUser       = currentUser;
-        _permissionsCache  = permissionsCache;
+        _currentUser = currentUser;
+        _permissionsCache = permissionsCache;
         _navigationBuilder = navigationBuilder;
     }
 
@@ -49,23 +48,23 @@ public class UpsertProfilePermissionsHandler
             return Result<PermissionUpsertResultDto>.Failure("Perfil no existe.");
 
         var tenantId = _currentTenant.TenantId;
-        var actorId      = _currentUser.UserId;
-        var saved        = new List<string>();
-        var rejected     = new List<RejectedPermission>();
+        var actorId = _currentUser.UserId;
+        var saved = new List<string>();
+        var rejected = new List<RejectedPermission>();
 
         foreach (var item in command.Items.Where(i => !string.IsNullOrWhiteSpace(i.PermissionKey)))
         {
-            var key      = item.PermissionKey.Trim();
+            var key = item.PermissionKey.Trim();
             var existing = await _repo.GetProfilePermissionAsync(tenantId, command.ProfileId, key, cancellationToken);
 
             if (existing is null)
             {
                 var created = AccessProfilePermission.Create(
-                    tenantId:  tenantId,
-                    profileId:     command.ProfileId,
+                    tenantId: tenantId,
+                    profileId: command.ProfileId,
                     permissionKey: key,
-                    isAllowed:     item.IsAllowed,
-                    createdBy:     actorId);
+                    isAllowed: item.IsAllowed,
+                    createdBy: actorId);
                 await _repo.AddProfilePermissionAsync(created, cancellationToken);
             }
             else

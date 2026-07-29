@@ -20,36 +20,36 @@ namespace ERP.Domain.Modules.Pricing.Entities;
 /// </summary>
 public sealed class PricingRule : AuditableEntity, ITenantScopedEntity, ICompanyOperationalEntity
 {
-    public Guid            CompanyId     { get; private set; }
-    public Guid            PriceListId   { get; private set; }
-    public Guid            ItemId        { get; private set; }
-    public PricingRuleType RuleType      { get; private set; }
-    public decimal         RuleValue     { get; private set; }
-    public bool            IsActive      { get; private set; } = true;
+    public Guid CompanyId { get; private set; }
+    public Guid PriceListId { get; private set; }
+    public Guid ItemId { get; private set; }
+    public PricingRuleType RuleType { get; private set; }
+    public decimal RuleValue { get; private set; }
+    public bool IsActive { get; private set; } = true;
 
     private PricingRule() { }
 
     public static PricingRule Create(
-        Guid            tenantId,
-        Guid            companyId,
-        Guid            priceListId,
-        Guid            itemId,
+        Guid tenantId,
+        Guid companyId,
+        Guid priceListId,
+        Guid itemId,
         PricingRuleType ruleType,
-        decimal         ruleValue,
-        Guid            createdBy)
+        decimal ruleValue,
+        Guid createdBy)
     {
         ValidateRule(ruleType, ruleValue);
 
         var rule = new PricingRule
         {
-            Id            = Guid.NewGuid(),
-            TenantId      = tenantId,
-            CompanyId     = companyId,
-            PriceListId   = priceListId,
-            ItemId        = itemId,
-            RuleType      = ruleType,
-            RuleValue     = ruleValue,
-            IsActive      = true,
+            Id = Guid.NewGuid(),
+            TenantId = tenantId,
+            CompanyId = companyId,
+            PriceListId = priceListId,
+            ItemId = itemId,
+            RuleType = ruleType,
+            RuleValue = ruleValue,
+            IsActive = true,
         };
         rule.SetCreated(createdBy);
         return rule;
@@ -58,9 +58,9 @@ public sealed class PricingRule : AuditableEntity, ITenantScopedEntity, ICompany
     public void UpdateRule(PricingRuleType ruleType, decimal ruleValue, Guid updatedBy)
     {
         ValidateRule(ruleType, ruleValue);
-        var oldRuleType  = RuleType;
+        var oldRuleType = RuleType;
         var oldRuleValue = RuleValue;
-        RuleType  = ruleType;
+        RuleType = ruleType;
         RuleValue = ruleValue;
         SetUpdated(updatedBy);
         RaiseDomainEvent(new PricingRuleUpdatedEvent(

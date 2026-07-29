@@ -6,15 +6,15 @@ namespace ERP.Application.Modules.Inventory.Stock.DTOs;
 /// Inventory) — nunca duplicada ni persistida en StockMovement.
 /// </summary>
 public sealed record KardexSourceDocumentDto(
-    string   DocType,
-    string?  DocNumber,
-    string?  PartnerName,
+    string DocType,
+    string? DocNumber,
+    string? PartnerName,
     decimal? UnitPrice,
     decimal? DiscountPct,
-    string?  VatCode,
+    string? VatCode,
     decimal? VatRate,
-    string?  Reason,
-    string?  Notes);
+    string? Reason,
+    string? Notes);
 
 public sealed record KardexActorDto(Guid UserId, string UserName);
 
@@ -24,11 +24,11 @@ public sealed record KardexActorDto(Guid UserId, string UserName);
 /// eslabones (orden de compra, nota de crédito, asiento contable...) sin cambiar de forma.
 /// </summary>
 public sealed record KardexDocumentChainLinkDto(
-    string  RelationType,
-    string  DocType,
+    string RelationType,
+    string DocType,
     string? DocNumber,
-    Guid?   DocId,
-    bool    IsCurrent);
+    Guid? DocId,
+    bool IsCurrent);
 
 public sealed record KardexDocumentChainDto(
     IReadOnlyList<KardexDocumentChainLinkDto> Links);

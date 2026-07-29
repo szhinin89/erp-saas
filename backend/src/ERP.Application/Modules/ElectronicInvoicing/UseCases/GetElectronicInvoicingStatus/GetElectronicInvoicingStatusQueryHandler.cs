@@ -1,13 +1,12 @@
-using MediatR;
-using Microsoft.Extensions.Logging;
 using ERP.Application.Common;
-using ERP.Application.Common.Interfaces;
 using ERP.Application.Common.Interfaces.SRI;
 using ERP.Application.Modules.ElectronicInvoicing.DTOs;
 using ERP.Application.Modules.ElectronicInvoicing.Enums;
 using ERP.Application.Modules.ElectronicInvoicing.Services;
 using ERP.Domain.Configuration.Entities;
 using ERP.Domain.Configuration.Interfaces;
+using MediatR;
+using Microsoft.Extensions.Logging;
 
 namespace ERP.Application.Modules.ElectronicInvoicing.UseCases.GetElectronicInvoicingStatus;
 
@@ -35,11 +34,11 @@ public sealed partial class GetElectronicInvoicingStatusQueryHandler
         ISriConnectivityChecker connectivityChecker,
         ILogger<GetElectronicInvoicingStatusQueryHandler> logger)
     {
-        _repo               = repo;
-        _currentCompany     = currentCompany;
+        _repo = repo;
+        _currentCompany = currentCompany;
         _certStatusResolver = certStatusResolver;
         _connectivityChecker = connectivityChecker;
-        _logger             = logger;
+        _logger = logger;
     }
 
     public async Task<Result<ElectronicInvoicingStatusDto>> Handle(

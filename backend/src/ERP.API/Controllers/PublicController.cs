@@ -15,10 +15,10 @@ public sealed class PublicController : ControllerBase
     public IActionResult GetDeploymentInfo()
         => this.ApiOk(new
         {
-            platformPanelEnabled            = false,
-            dedicatedSingleClientInstance   = true,
-            maxActiveSubscribers            = (int?)null,
-            maxIdentityUsers                = (int?)null,
-            maxUsersPerSubscriber           = (int?)null,
+            platformPanelEnabled = false,
+            dedicatedSingleClientInstance = true,
+            maxActiveSubscribers = (int?)null,
+            maxIdentityUsers = (int?)null,
+            maxUsersPerSubscriber = (int?)null,
         });
 }

@@ -17,7 +17,7 @@ public class SriSupplierTypeConfiguration : IEntityTypeConfiguration<SriSupplier
         // Tabla 26 (Tipo Proveedor de Reembolso) de la Ficha Técnica del SRI — Esquema Offline.
         builder.HasData(
             new SriSupplierType { Code = "01", Name = "Persona Natural", IsActive = true },
-            new SriSupplierType { Code = "02", Name = "Sociedad",        IsActive = true }
+            new SriSupplierType { Code = "02", Name = "Sociedad", IsActive = true }
         );
     }
 }

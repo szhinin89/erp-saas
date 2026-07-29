@@ -1,4 +1,4 @@
-﻿using ERP.Domain.Common;
+using ERP.Domain.Common;
 using ERP.Domain.Modules.Inventory.Enums;
 
 namespace ERP.Domain.Modules.Inventory.Entities;
@@ -48,19 +48,19 @@ public sealed class Lot : AuditableEntity, ITenantScopedEntity, ICompanyOperatio
 
         var lot = new Lot
         {
-            TenantId    = tenantId,
-            CompanyId       = companyId,
-            LotNumber       = lotNumber.Trim(),
-            ItemId          = itemId,
-            VariantId       = variantId,
-            WarehouseId     = warehouseId,
+            TenantId = tenantId,
+            CompanyId = companyId,
+            LotNumber = lotNumber.Trim(),
+            ItemId = itemId,
+            VariantId = variantId,
+            WarehouseId = warehouseId,
             ManufactureDate = manufactureDate,
-            ExpirationDate  = expirationDate,
-            InitialQty      = initialQty,
-            CurrentQty      = initialQty,
-            Status          = LotStatus.Active,
-            Notes           = notes?.Trim(),
-            ReceiptLineId   = receiptLineId,
+            ExpirationDate = expirationDate,
+            InitialQty = initialQty,
+            CurrentQty = initialQty,
+            Status = LotStatus.Active,
+            Notes = notes?.Trim(),
+            ReceiptLineId = receiptLineId,
         };
         lot.SetCreated(createdBy);
         return lot;

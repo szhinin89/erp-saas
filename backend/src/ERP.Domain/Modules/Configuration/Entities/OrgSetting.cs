@@ -11,37 +11,37 @@ namespace ERP.Domain.Configuration.Entities;
 /// </summary>
 public sealed class OrgSetting : AuditableEntity, ITenantScopedEntity, ICompanyScopedEntity
 {
-    public const int KeyMaxLength   = 200;
+    public const int KeyMaxLength = 200;
     public const int ValueMaxLength = 4000;
 
-    public Guid            CompanyId    { get; private set; }
-    public OrgScope        Scope        { get; private set; }
-    public Guid            ScopeId      { get; private set; }
-    public string          Key          { get; private set; } = null!;
-    public string?         Value        { get; private set; }
-    public SettingDataType DataType     { get; private set; }
+    public Guid CompanyId { get; private set; }
+    public OrgScope Scope { get; private set; }
+    public Guid ScopeId { get; private set; }
+    public string Key { get; private set; } = null!;
+    public string? Value { get; private set; }
+    public SettingDataType DataType { get; private set; }
 
     private OrgSetting() { }
 
     public static OrgSetting Create(
-        Guid            tenantId,
-        Guid            companyId,
-        OrgScope        scope,
-        Guid            scopeId,
-        string          key,
-        string?         value,
+        Guid tenantId,
+        Guid companyId,
+        OrgScope scope,
+        Guid scopeId,
+        string key,
+        string? value,
         SettingDataType dataType,
-        Guid            createdBy)
+        Guid createdBy)
     {
         var s = new OrgSetting
         {
-            TenantId  = tenantId,
+            TenantId = tenantId,
             CompanyId = companyId,
-            Scope     = scope,
-            ScopeId   = scopeId,
-            Key       = key.Trim().ToLowerInvariant(),
-            Value     = NormalizeValue(value),
-            DataType  = dataType,
+            Scope = scope,
+            ScopeId = scopeId,
+            Key = key.Trim().ToLowerInvariant(),
+            Value = NormalizeValue(value),
+            DataType = dataType,
         };
         s.SetCreated(createdBy);
         return s;

@@ -8,7 +8,7 @@ namespace ERP.Domain.Modules.SriCatalogs.Entities;
 /// </summary>
 public class SriSupplierType
 {
-    public string Code     { get; set; } = null!;
-    public string Name     { get; set; } = null!;
-    public bool   IsActive { get; set; } = true;
+    public string Code { get; set; } = null!;
+    public string Name { get; set; } = null!;
+    public bool IsActive { get; set; } = true;
 }

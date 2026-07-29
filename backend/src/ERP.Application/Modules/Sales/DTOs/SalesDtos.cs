@@ -8,13 +8,13 @@ namespace ERP.Application.Modules.Sales.DTOs;
 /// para campos obligatorios cuyo catálogo siempre debe tener un valor seleccionado.
 /// </summary>
 public sealed record SalesInvoiceDefaultsDto(
-    string?  DefaultDocTypeCode,
-    string?  DefaultSriPaymentMethodCode,
-    Guid?    DefaultEmissionPointId,
-    Guid?    DefaultWarehouseId,
-    Guid?    DefaultPaymentTermId,
-    string   FallbackDocTypeCode,
-    string   FallbackSriPaymentMethodCode);
+    string? DefaultDocTypeCode,
+    string? DefaultSriPaymentMethodCode,
+    Guid? DefaultEmissionPointId,
+    Guid? DefaultWarehouseId,
+    Guid? DefaultPaymentTermId,
+    string FallbackDocTypeCode,
+    string FallbackSriPaymentMethodCode);
 
 public sealed record SalesInvoiceDto(
     Guid Id, Guid CustomerId, string CustomerName, string CustomerTaxId,
@@ -92,32 +92,32 @@ public sealed record SalesListDto(
 /// + SriTaxCalculator to guarantee a single source of truth.
 /// </summary>
 public sealed record InvoiceItemMatch(
-    Guid     Id,
-    string   Sku,
-    string   Description,
-    string?  ProductFamilyName,
-    string   UomAbbrev,
-    bool     TracksStock,
-    string?  WarehouseName,
+    Guid Id,
+    string Sku,
+    string Description,
+    string? ProductFamilyName,
+    string UomAbbrev,
+    bool TracksStock,
+    string? WarehouseName,
     decimal? AvailableStock,
     decimal? AverageCost,
     decimal? SalePriceWithoutTax,
-    string?  VatCode,
-    string?  IceCode);
+    string? VatCode,
+    string? IceCode);
 
 public sealed record InvoiceItemSearchResultDto(
-    Guid     Id,
-    string   Sku,
-    string   Description,
-    string?  ProductFamilyName,
-    string   UomAbbrev,
-    bool     TracksStock,
-    string?  WarehouseName,
+    Guid Id,
+    string Sku,
+    string Description,
+    string? ProductFamilyName,
+    string UomAbbrev,
+    bool TracksStock,
+    string? WarehouseName,
     decimal? AvailableStock,
     decimal? AverageCost,
     decimal? SalePriceWithoutTax,
     decimal? FinalSalePrice,
-    string   VatDisplay,
-    string   IceDisplay,
-    string?  VatCode,
-    string?  IceCode);
+    string VatDisplay,
+    string IceDisplay,
+    string? VatCode,
+    string? IceCode);

@@ -12,11 +12,11 @@ namespace ERP.Domain.Modules.Pricing.Entities;
 /// </summary>
 public sealed class PriceListAudit : AuditRecordBase, ICompanyOperationalEntity
 {
-    public Guid             CompanyId    { get; private set; }
-    public PricingRuleType? OldRuleType  { get; private set; }
-    public decimal?         OldRuleValue { get; private set; }
-    public PricingRuleType? NewRuleType  { get; private set; }
-    public decimal?         NewRuleValue { get; private set; }
+    public Guid CompanyId { get; private set; }
+    public PricingRuleType? OldRuleType { get; private set; }
+    public decimal? OldRuleValue { get; private set; }
+    public PricingRuleType? NewRuleType { get; private set; }
+    public decimal? NewRuleValue { get; private set; }
 
     private PriceListAudit() { }
 
@@ -30,10 +30,10 @@ public sealed class PriceListAudit : AuditRecordBase, ICompanyOperationalEntity
 
         var audit = new PriceListAudit
         {
-            CompanyId    = companyId,
-            OldRuleType  = oldRuleType,
+            CompanyId = companyId,
+            OldRuleType = oldRuleType,
             OldRuleValue = oldRuleValue,
-            NewRuleType  = newRuleType,
+            NewRuleType = newRuleType,
             NewRuleValue = newRuleValue,
         };
         audit.SetCommon(actor, priceListId, action, reason);

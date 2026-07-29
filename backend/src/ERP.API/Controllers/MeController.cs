@@ -1,5 +1,5 @@
-using ERP.API.Contracts;
 using ERP.API.Attributes;
+using ERP.API.Contracts;
 using ERP.API.Extensions;
 using ERP.Application.Navigation.DTOs;
 using ERP.Application.Navigation.UseCases.GetSessionMenu;

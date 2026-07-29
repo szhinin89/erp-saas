@@ -18,14 +18,14 @@ public sealed partial class OrganizationBootstrapStep : ICompanyBootstrapStep
 {
     public int Order => CompanyBootstrapStepOrder.Organization;
 
-    private const string MainBranchName        = "Sucursal Principal";
+    private const string MainBranchName = "Sucursal Principal";
     /// <summary>
     /// Dirección real de la empresa (Tipo B): nunca se inventa. Se persiste vacía porque
     /// <c>Branch.Address</c> es <c>NOT NULL</c> a nivel de columna — el admin la completa después
     /// desde <c>UpdateBranch</c>. Ver política de Bootstrap en <c>CLAUDE.md</c>.
     /// </summary>
-    private const string PendingAddress        = "";
-    private const string MainWarehouseName     = "Bodega Principal";
+    private const string PendingAddress = "";
+    private const string MainWarehouseName = "Bodega Principal";
     private const string MainEstablishmentCode = "001";
     private const string MainEstablishmentName = "Establecimiento Principal";
     private const string MainEmissionPointCode = "001";
@@ -36,7 +36,7 @@ public sealed partial class OrganizationBootstrapStep : ICompanyBootstrapStep
 
     public OrganizationBootstrapStep(ErpDbContext db, ILogger<OrganizationBootstrapStep> logger)
     {
-        _db     = db;
+        _db = db;
         _logger = logger;
     }
 
@@ -44,7 +44,7 @@ public sealed partial class OrganizationBootstrapStep : ICompanyBootstrapStep
     {
         var (tenantId, companyId, actorId) = context;
 
-        var branchId        = await SeedMainBranchAsync(tenantId, companyId, actorId, cancellationToken);
+        var branchId = await SeedMainBranchAsync(tenantId, companyId, actorId, cancellationToken);
         await SeedMainWarehouseAsync(tenantId, companyId, branchId, actorId, cancellationToken);
 
         var establishmentId = await SeedMainEstablishmentAsync(tenantId, companyId, branchId, actorId, cancellationToken);
@@ -67,32 +67,32 @@ public sealed partial class OrganizationBootstrapStep : ICompanyBootstrapStep
         }
 
         var branch = Branch.CreateSystemSeeded(
-            tenantId:        tenantId,
-            name:            MainBranchName,
-            address:         PendingAddress,
-            code:            branchCode,
-            description:     null,
-            reference:       null,
-            postalCode:      null,
-            phone:           null,
-            secondaryPhone:  null,
-            email:           null,
-            website:         null,
-            managerName:     null,
+            tenantId: tenantId,
+            name: MainBranchName,
+            address: PendingAddress,
+            code: branchCode,
+            description: null,
+            reference: null,
+            postalCode: null,
+            phone: null,
+            secondaryPhone: null,
+            email: null,
+            website: null,
+            managerName: null,
             managerPosition: null,
-            managerEmail:    null,
-            managerPhone:    null,
-            countryId:       null,
-            provinceId:      null,
-            cantonId:        null,
-            parishId:        null,
-            latitude:        null,
-            longitude:       null,
-            openingDate:     null,
-            internalNotes:   null,
-            isMainBranch:    true,
-            createdBy:       actorId,
-            companyId:       companyId);
+            managerEmail: null,
+            managerPhone: null,
+            countryId: null,
+            provinceId: null,
+            cantonId: null,
+            parishId: null,
+            latitude: null,
+            longitude: null,
+            openingDate: null,
+            internalNotes: null,
+            isMainBranch: true,
+            createdBy: actorId,
+            companyId: companyId);
 
         _db.Branches.Add(branch);
         await _db.SaveChangesAsync(cancellationToken);
@@ -115,22 +115,22 @@ public sealed partial class OrganizationBootstrapStep : ICompanyBootstrapStep
         }
 
         var warehouse = Warehouse.CreateSystemSeeded(
-            tenantId:          tenantId,
-            branchId:          branchId,
-            name:              MainWarehouseName,
-            code:              warehouseCode,
-            storageType:       null,
-            address:           null,
-            phone:             null,
-            email:             null,
-            manager:           null,
-            latitude:          null,
-            longitude:         null,
-            capacity:          null,
+            tenantId: tenantId,
+            branchId: branchId,
+            name: MainWarehouseName,
+            code: warehouseCode,
+            storageType: null,
+            address: null,
+            phone: null,
+            email: null,
+            manager: null,
+            latitude: null,
+            longitude: null,
+            capacity: null,
             dailyDispatchGoal: null,
-            createdBy:         actorId,
-            companyId:         companyId,
-            isMain:            true);
+            createdBy: actorId,
+            companyId: companyId,
+            isMain: true);
 
         _db.Warehouses.Add(warehouse);
         await _db.SaveChangesAsync(cancellationToken);
@@ -142,8 +142,8 @@ public sealed partial class OrganizationBootstrapStep : ICompanyBootstrapStep
     {
         var existing = await _db.Establishments.IgnoreQueryFilters()
             .Where(e => e.TenantId == tenantId
-                     && e.BranchId     == branchId
-                     && e.Code         == MainEstablishmentCode)
+                     && e.BranchId == branchId
+                     && e.Code == MainEstablishmentCode)
             .Select(e => (Guid?)e.Id)
             .FirstOrDefaultAsync(cancellationToken);
 
@@ -155,14 +155,14 @@ public sealed partial class OrganizationBootstrapStep : ICompanyBootstrapStep
 
         var establishment = Establishment.CreateSystemSeeded(
             tenantId: tenantId,
-            branchId:     branchId,
-            companyId:    companyId,
-            code:         MainEstablishmentCode,
-            name:         MainEstablishmentName,
-            address:      PendingAddress,
-            phone:        null,
-            isMain:       true,
-            createdBy:    actorId);
+            branchId: branchId,
+            companyId: companyId,
+            code: MainEstablishmentCode,
+            name: MainEstablishmentName,
+            address: PendingAddress,
+            phone: null,
+            isMain: true,
+            createdBy: actorId);
 
         _db.Establishments.Add(establishment);
         await _db.SaveChangesAsync(cancellationToken);
@@ -174,9 +174,9 @@ public sealed partial class OrganizationBootstrapStep : ICompanyBootstrapStep
     private async Task<Guid> SeedMainEmissionPointAsync(Guid tenantId, Guid companyId, Guid establishmentId, Guid actorId, CancellationToken cancellationToken)
     {
         var existing = await _db.EmissionPoints.IgnoreQueryFilters()
-            .Where(ep => ep.TenantId    == tenantId
+            .Where(ep => ep.TenantId == tenantId
                       && ep.EstablishmentId == establishmentId
-                      && ep.Code            == MainEmissionPointCode)
+                      && ep.Code == MainEmissionPointCode)
             .Select(ep => (Guid?)ep.Id)
             .FirstOrDefaultAsync(cancellationToken);
 
@@ -187,14 +187,14 @@ public sealed partial class OrganizationBootstrapStep : ICompanyBootstrapStep
         }
 
         var emissionPoint = EmissionPoint.CreateSystemSeeded(
-            tenantId:        tenantId,
-            companyId:       companyId,
+            tenantId: tenantId,
+            companyId: companyId,
             establishmentId: establishmentId,
-            code:            MainEmissionPointCode,
-            name:            MainEmissionPointName,
-            emissionType:    ERP.Domain.Modules.Company.Enums.EmissionType.Electronic,
-            isDefault:       true,
-            createdBy:       actorId);
+            code: MainEmissionPointCode,
+            name: MainEmissionPointName,
+            emissionType: ERP.Domain.Modules.Company.Enums.EmissionType.Electronic,
+            isDefault: true,
+            createdBy: actorId);
 
         _db.EmissionPoints.Add(emissionPoint);
         await _db.SaveChangesAsync(cancellationToken);

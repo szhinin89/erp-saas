@@ -1,8 +1,7 @@
-﻿using ERP.API.Contracts;
+using ERP.API.Contracts;
 using ERP.API.Contracts.MasterData;
 using ERP.API.Extensions;
 using ERP.Application.Common;
-using ERP.Domain.Kernel.Permissions;
 using ERP.Application.MasterData.DTOs;
 using ERP.Application.MasterData.UseCases.ActivateBusinessPartner;
 using ERP.Application.MasterData.UseCases.CreateBusinessPartner;
@@ -10,6 +9,7 @@ using ERP.Application.MasterData.UseCases.DeactivateBusinessPartner;
 using ERP.Application.MasterData.UseCases.GetBusinessPartner;
 using ERP.Application.MasterData.UseCases.SearchBusinessPartners;
 using ERP.Application.MasterData.UseCases.UpdateBusinessPartner;
+using ERP.Domain.Kernel.Permissions;
 using ERP.Domain.MasterData.Enums;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
@@ -48,11 +48,11 @@ public sealed class BusinessPartnersController : ControllerBase
     [Authorize(Policy = $"perm:{MasterDataPermissions.BusinessPartnersView}")]
     [ProducesResponseType(typeof(ApiResponse<PagedResult<BusinessPartnerSummaryDto>>), StatusCodes.Status200OK)]
     public async Task<IActionResult> Search(
-        [FromQuery] string?     q        = null,
-        [FromQuery] bool?       isActive = true,
-        [FromQuery] RoleType[]? roles    = null,
-        [FromQuery] int         skip     = 0,
-        [FromQuery] int         take     = 50,
+        [FromQuery] string? q = null,
+        [FromQuery] bool? isActive = true,
+        [FromQuery] RoleType[]? roles = null,
+        [FromQuery] int skip = 0,
+        [FromQuery] int take = 50,
         CancellationToken cancellationToken = default)
     {
         var result = await _mediator.Send(
@@ -112,7 +112,7 @@ public sealed class BusinessPartnersController : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status422UnprocessableEntity)]
     public async Task<IActionResult> UpdateProfile(
         [FromRoute] Guid id,
-        [FromBody]  UpdateBusinessPartnerRequest body,
+        [FromBody] UpdateBusinessPartnerRequest body,
         CancellationToken cancellationToken = default)
     {
         var cmd = new UpdateBusinessPartnerCommand(
@@ -132,7 +132,7 @@ public sealed class BusinessPartnersController : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status422UnprocessableEntity)]
     public async Task<IActionResult> UpdateIdentification(
         [FromRoute] Guid id,
-        [FromBody]  UpdateIdentificationRequest body,
+        [FromBody] UpdateIdentificationRequest body,
         CancellationToken cancellationToken = default)
     {
         var cmd = new UpdateBusinessPartnerIdentificationCommand(

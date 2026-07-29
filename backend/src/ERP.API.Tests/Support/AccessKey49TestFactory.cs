@@ -1,4 +1,4 @@
-﻿namespace ERP.API.Tests.Support;
+namespace ERP.API.Tests.Support;
 
 /// <summary>Genera clave de acceso de 49 dígitos con dígito verificador válido (regla SRI módulo 11).</summary>
 internal static class AccessKey49TestFactory
@@ -25,7 +25,7 @@ internal static class AccessKey49TestFactory
         for (var i = 47; i >= 0; i--)
             sum += (clave[i] - '0') * weights[(47 - i) % 6];
 
-        var residuo     = sum % 11;
+        var residuo = sum % 11;
         var verificador = residuo == 0 ? 0 : residuo == 1 ? 1 : 11 - residuo;
         return verificador == (clave[48] - '0');
     }

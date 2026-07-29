@@ -1,4 +1,5 @@
 using ERP.Application.Common;
+using ERP.Application.Common.Interfaces;
 using ERP.Application.Common.Interfaces.SRI;
 using ERP.Application.Common.Persistence;
 using ERP.Application.Modules.ElectronicDocuments.DTOs;
@@ -7,7 +8,6 @@ using ERP.Application.Modules.ElectronicDocuments.Services;
 using ERP.Application.Modules.ElectronicDocuments.XmlBuilders;
 using ERP.Domain.Modules.ElectronicDocuments.Entities;
 using ERP.Domain.Modules.ElectronicDocuments.Enums;
-using ERP.Application.Common.Interfaces;
 using ERP.Domain.Modules.ElectronicDocuments.Interfaces;
 using FluentAssertions;
 using Microsoft.Extensions.Logging.Abstractions;

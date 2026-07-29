@@ -29,44 +29,44 @@ public sealed class SalesInvoice : AuditableEntity, ITenantScopedEntity, ICompan
     public Guid CashSessionId { get; private set; }
 
     public const int InvoiceNumberMaxLen = 30;
-    public const int DocTypeCodeMaxLen   = 5;
-    public const int NotesMaxLen         = 500;
-    public const int CurrencyCodeMaxLen  = 3;
-    public const int CancelReasonMaxLen  = 500;
+    public const int DocTypeCodeMaxLen = 5;
+    public const int NotesMaxLen = 500;
+    public const int CurrencyCodeMaxLen = 3;
+    public const int CancelReasonMaxLen = 500;
 
     // ── Documento ───────────────────────────────────────────────────
     // Default: SRI código "01" = Factura (fuente de verdad: tabla sri_doc_types)
-    public string            DocTypeCode       { get; private set; } = "01";
-    public string            InvoiceNumber     { get; private set; } = null!;
-    public DateOnly          IssueDate         { get; private set; }
-    public Guid?             EmissionPointId   { get; private set; }
-    public EmissionType      EmissionType      { get; private set; }
+    public string DocTypeCode { get; private set; } = "01";
+    public string InvoiceNumber { get; private set; } = null!;
+    public DateOnly IssueDate { get; private set; }
+    public Guid? EmissionPointId { get; private set; }
+    public EmissionType EmissionType { get; private set; }
 
     // ── Método de pago SRI (fiscal — fuente de verdad: tabla sri_payment_methods) ──
-    public string?           SriPaymentMethodCode { get; private set; }
+    public string? SriPaymentMethodCode { get; private set; }
 
     // ── Cliente (snapshot fiscal — SRI exige datos al momento de emisión) ──
-    public Guid              CustomerId        { get; private set; }
-    public CustomerSnapshot  Customer          { get; private set; } = null!;
+    public Guid CustomerId { get; private set; }
+    public CustomerSnapshot Customer { get; private set; } = null!;
 
     // ── Moneda ──────────────────────────────────────────────────────
-    public string            CurrencyCode      { get; private set; } = "USD";
-    public decimal           ExchangeRate      { get; private set; } = 1m;
+    public string CurrencyCode { get; private set; } = "USD";
+    public decimal ExchangeRate { get; private set; } = 1m;
 
     // ── Condición de pago (snapshot) ────────────────────────────────
-    public PaymentTermSnapshot PaymentTerm     { get; private set; } = null!;
+    public PaymentTermSnapshot PaymentTerm { get; private set; } = null!;
 
-    public DateOnly?         DueDate           { get; private set; }
-    public string?           Notes             { get; private set; }
+    public DateOnly? DueDate { get; private set; }
+    public string? Notes { get; private set; }
 
     // ── Estado interno (ciclo de vida del documento) ────────────────
-    public SalesInvoiceStatus Status           { get; private set; } = SalesInvoiceStatus.Draft;
+    public SalesInvoiceStatus Status { get; private set; } = SalesInvoiceStatus.Draft;
 
     // ── Totales snapshot (congelados al autorizar) ──────────────────
-    public decimal?          AuthorizedSubtotal       { get; private set; }
-    public decimal?          AuthorizedTotalTax       { get; private set; }
-    public decimal?          AuthorizedTotalDiscount  { get; private set; }
-    public decimal?          AuthorizedGrandTotal     { get; private set; }
+    public decimal? AuthorizedSubtotal { get; private set; }
+    public decimal? AuthorizedTotalTax { get; private set; }
+    public decimal? AuthorizedTotalDiscount { get; private set; }
+    public decimal? AuthorizedGrandTotal { get; private set; }
 
     private readonly List<SalesInvoiceDetail> _lines = new();
     public IReadOnlyList<SalesInvoiceDetail> Lines => _lines.AsReadOnly();
@@ -75,41 +75,41 @@ public sealed class SalesInvoice : AuditableEntity, ITenantScopedEntity, ICompan
     public IReadOnlyList<SalesInvoicePayment> Payments => _payments.AsReadOnly();
 
     // ── Calculated (NOT persisted) ──────────────────────────────────
-    public decimal Subtotal      => AuthorizedSubtotal ?? _lines.Sum(l => l.LineSubtotal);
+    public decimal Subtotal => AuthorizedSubtotal ?? _lines.Sum(l => l.LineSubtotal);
     public decimal TotalDiscount => AuthorizedTotalDiscount ?? _lines.Sum(l => l.DiscountAmount);
-    public decimal TotalIce      => _lines.Sum(l => l.IceAmount);
-    public decimal TotalVat      => _lines.Sum(l => l.VatAmount);
-    public decimal TotalTax      => AuthorizedTotalTax ?? (TotalIce + TotalVat);
-    public decimal GrandTotal    => AuthorizedGrandTotal ?? _lines.Sum(l => l.TaxInclusiveTotal);
-    public int     CreditTermDays => PaymentTerm.CreditTermDays;
+    public decimal TotalIce => _lines.Sum(l => l.IceAmount);
+    public decimal TotalVat => _lines.Sum(l => l.VatAmount);
+    public decimal TotalTax => AuthorizedTotalTax ?? (TotalIce + TotalVat);
+    public decimal GrandTotal => AuthorizedGrandTotal ?? _lines.Sum(l => l.TaxInclusiveTotal);
+    public int CreditTermDays => PaymentTerm.CreditTermDays;
 
     // ── Anulación ───────────────────────────────────────────────────
-    public string?   CancelReason  { get; private set; }
-    public DateTime? CancelledAt   { get; private set; }
-    public Guid?     CancelledBy   { get; private set; }
+    public string? CancelReason { get; private set; }
+    public DateTime? CancelledAt { get; private set; }
+    public Guid? CancelledBy { get; private set; }
 
     private SalesInvoice() { }
 
     // ── Factory ─────────────────────────────────────────────────────
     public static SalesInvoice CreateDraft(
-        Guid               tenantId,
-        Guid               companyId,
-        Guid               branchId,
-        Guid               customerId,
-        CustomerSnapshot   customer,
-        string             invoiceNumber,
-        DateOnly           issueDate,
-        Guid               createdBy,
+        Guid tenantId,
+        Guid companyId,
+        Guid branchId,
+        Guid customerId,
+        CustomerSnapshot customer,
+        string invoiceNumber,
+        DateOnly issueDate,
+        Guid createdBy,
         PaymentTermSnapshot paymentTerm,
-        Guid               cashSessionId,
-        string             docTypeCode     = "01",
-        Guid?              emissionPointId = null,
-        EmissionType       emissionType    = EmissionType.Electronic,
-        DateOnly?          dueDate         = null,
-        string?            notes           = null,
-        string             currencyCode    = "USD",
-        decimal            exchangeRate    = 1m,
-        string?            sriPaymentMethodCode = null)
+        Guid cashSessionId,
+        string docTypeCode = "01",
+        Guid? emissionPointId = null,
+        EmissionType emissionType = EmissionType.Electronic,
+        DateOnly? dueDate = null,
+        string? notes = null,
+        string currencyCode = "USD",
+        decimal exchangeRate = 1m,
+        string? sriPaymentMethodCode = null)
     {
         if (branchId == Guid.Empty)
             throw new ArgumentException("La sucursal es obligatoria.", nameof(branchId));
@@ -126,25 +126,25 @@ public sealed class SalesInvoice : AuditableEntity, ITenantScopedEntity, ICompan
 
         var inv = new SalesInvoice
         {
-            Id               = Guid.NewGuid(),
-            TenantId         = tenantId,
-            CompanyId        = companyId,
-            BranchId         = branchId,
-            CashSessionId    = cashSessionId,
-            DocTypeCode      = docTypeCode.Trim(),
-            InvoiceNumber    = invoiceNumber.Trim(),
-            IssueDate        = issueDate,
-            EmissionPointId  = emissionPointId,
-            EmissionType     = emissionType,
-            CustomerId       = customerId,
-            Customer         = customer,
-            CurrencyCode     = currencyCode.Trim().ToUpperInvariant(),
-            ExchangeRate     = exchangeRate,
-            PaymentTerm      = paymentTerm,
+            Id = Guid.NewGuid(),
+            TenantId = tenantId,
+            CompanyId = companyId,
+            BranchId = branchId,
+            CashSessionId = cashSessionId,
+            DocTypeCode = docTypeCode.Trim(),
+            InvoiceNumber = invoiceNumber.Trim(),
+            IssueDate = issueDate,
+            EmissionPointId = emissionPointId,
+            EmissionType = emissionType,
+            CustomerId = customerId,
+            Customer = customer,
+            CurrencyCode = currencyCode.Trim().ToUpperInvariant(),
+            ExchangeRate = exchangeRate,
+            PaymentTerm = paymentTerm,
             SriPaymentMethodCode = OptionalCode.Normalize(sriPaymentMethodCode),
-            DueDate          = dueDate,
-            Notes            = notes?.Trim(),
-            Status           = SalesInvoiceStatus.Draft,
+            DueDate = dueDate,
+            Notes = notes?.Trim(),
+            Status = SalesInvoiceStatus.Draft,
         };
         inv.SetCreated(createdBy);
         return inv;
@@ -152,14 +152,14 @@ public sealed class SalesInvoice : AuditableEntity, ITenantScopedEntity, ICompan
 
     // ── Update Draft ────────────────────────────────────────────────
     public void UpdateDraft(
-        Guid             customerId,
+        Guid customerId,
         CustomerSnapshot customer,
-        DateOnly         issueDate,
-        Guid             updatedBy,
-        DateOnly?        dueDate      = null,
-        string?          notes        = null,
-        string           currencyCode = "USD",
-        decimal          exchangeRate = 1m)
+        DateOnly issueDate,
+        Guid updatedBy,
+        DateOnly? dueDate = null,
+        string? notes = null,
+        string currencyCode = "USD",
+        decimal exchangeRate = 1m)
     {
         EnsureDraft();
         if (customerId == Guid.Empty)
@@ -167,13 +167,13 @@ public sealed class SalesInvoice : AuditableEntity, ITenantScopedEntity, ICompan
         if (exchangeRate <= 0)
             throw new ArgumentException("El tipo de cambio debe ser mayor a cero.", nameof(exchangeRate));
 
-        CustomerId   = customerId;
-        Customer     = customer;
-        IssueDate    = issueDate;
+        CustomerId = customerId;
+        Customer = customer;
+        IssueDate = issueDate;
         CurrencyCode = currencyCode.Trim().ToUpperInvariant();
         ExchangeRate = exchangeRate;
-        DueDate      = dueDate;
-        Notes        = notes?.Trim();
+        DueDate = dueDate;
+        Notes = notes?.Trim();
         SetUpdated(updatedBy);
     }
 
@@ -241,10 +241,10 @@ public sealed class SalesInvoice : AuditableEntity, ITenantScopedEntity, ICompan
         foreach (var line in _lines)
             line.Freeze();
 
-        AuthorizedSubtotal      = _lines.Sum(l => l.LineSubtotal);
+        AuthorizedSubtotal = _lines.Sum(l => l.LineSubtotal);
         AuthorizedTotalDiscount = _lines.Sum(l => l.DiscountAmount);
-        AuthorizedTotalTax      = _lines.Sum(l => l.IceAmount) + _lines.Sum(l => l.VatAmount);
-        AuthorizedGrandTotal    = _lines.Sum(l => l.TaxInclusiveTotal);
+        AuthorizedTotalTax = _lines.Sum(l => l.IceAmount) + _lines.Sum(l => l.VatAmount);
+        AuthorizedGrandTotal = _lines.Sum(l => l.TaxInclusiveTotal);
 
         if (AuthorizedGrandTotal <= 0)
             throw new InvalidOperationException(
@@ -289,10 +289,10 @@ public sealed class SalesInvoice : AuditableEntity, ITenantScopedEntity, ICompan
         if (string.IsNullOrWhiteSpace(reason))
             throw new ArgumentException("El motivo de anulación es obligatorio.", nameof(reason));
 
-        Status       = SalesInvoiceStatus.Cancelled;
+        Status = SalesInvoiceStatus.Cancelled;
         CancelReason = reason.Trim();
-        CancelledAt  = DateTime.UtcNow;
-        CancelledBy  = cancelledBy;
+        CancelledAt = DateTime.UtcNow;
+        CancelledBy = cancelledBy;
         SetUpdated(cancelledBy);
     }
 

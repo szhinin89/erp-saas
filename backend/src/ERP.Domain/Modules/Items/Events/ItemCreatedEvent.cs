@@ -11,9 +11,9 @@ public sealed class ItemCreatedEvent : BaseDomainEvent, IIntegrationEvent, IAudi
 
     public ItemCreatedEvent(Guid itemId, string sku, Guid itemTypeId, Guid tenantId)
     {
-        ItemId      = itemId;
-        SKU         = sku;
-        ItemTypeId  = itemTypeId;
+        ItemId = itemId;
+        SKU = sku;
+        ItemTypeId = itemTypeId;
         TenantId = tenantId;
     }
 

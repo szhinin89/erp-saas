@@ -1,6 +1,6 @@
-using System.Text.RegularExpressions;
 using ERP.Application.Modules.Inventory.ItemMatching.DTOs;
 using ERP.Domain.Modules.Items.Interfaces;
+using System.Text.RegularExpressions;
 
 namespace ERP.Application.Modules.Inventory.ItemMatching.Services;
 
@@ -54,123 +54,123 @@ public sealed class ItemMatchFinder : IItemMatchFinder
     string description,
     int maxResults,
     CancellationToken cancellationToken = default)
-{
-    var candidates = new Dictionary<Guid, ItemMatchCandidateDto>();
-    // 1. Código de proveedor exacto.
-    if (supplierId is { } sId1 && !string.IsNullOrWhiteSpace(supplierCode))
     {
-        var itemId = await _itemRepo.FindItemIdBySupplierCodeAsync(
-            sId1,
-            supplierCode,
-            tenantId,
-            cancellationToken);
-
-        if (itemId is { } id1)
+        var candidates = new Dictionary<Guid, ItemMatchCandidateDto>();
+        // 1. Código de proveedor exacto.
+        if (supplierId is { } sId1 && !string.IsNullOrWhiteSpace(supplierCode))
         {
-            await AddExactAsync(
-                candidates,
-                id1,
-                100m,
-                ReasonSupplierCodeExact,
+            var itemId = await _itemRepo.FindItemIdBySupplierCodeAsync(
+                sId1,
+                supplierCode,
                 tenantId,
                 cancellationToken);
-        }
-    }
-    // 2. Código auxiliar exacto.
-    if (supplierId is { } sId2 && !string.IsNullOrWhiteSpace(supplierAuxCode))
-    {
-        var itemId = await _itemRepo.FindItemIdBySupplierCodeAsync(
-            sId2,
-            supplierAuxCode,
-            tenantId,
-            cancellationToken);
 
-        if (itemId is { } id2 && !candidates.ContainsKey(id2))
+            if (itemId is { } id1)
+            {
+                await AddExactAsync(
+                    candidates,
+                    id1,
+                    100m,
+                    ReasonSupplierCodeExact,
+                    tenantId,
+                    cancellationToken);
+            }
+        }
+        // 2. Código auxiliar exacto.
+        if (supplierId is { } sId2 && !string.IsNullOrWhiteSpace(supplierAuxCode))
         {
-            await AddExactAsync(
-                candidates,
-                id2,
-                95m,
-                ReasonSupplierAuxCodeExact,
+            var itemId = await _itemRepo.FindItemIdBySupplierCodeAsync(
+                sId2,
+                supplierAuxCode,
                 tenantId,
                 cancellationToken);
-        }
-    }
-    /*
-       REGLA IMPORTANTE:
-       En compras el código del proveedor es la identidad del producto.
-       Si existe código proveedor en el XML:
-          - encontrado -> AutoMatch
-          - no encontrado -> revisión manual
-       Nunca usar descripción para reemplazar un código desconocido.
-    */
-    var hasSupplierCode =
-        !string.IsNullOrWhiteSpace(supplierCode) ||
-        !string.IsNullOrWhiteSpace(supplierAuxCode);
 
-    if (hasSupplierCode)
-    {
+            if (itemId is { } id2 && !candidates.ContainsKey(id2))
+            {
+                await AddExactAsync(
+                    candidates,
+                    id2,
+                    95m,
+                    ReasonSupplierAuxCodeExact,
+                    tenantId,
+                    cancellationToken);
+            }
+        }
+        /*
+           REGLA IMPORTANTE:
+           En compras el código del proveedor es la identidad del producto.
+           Si existe código proveedor en el XML:
+              - encontrado -> AutoMatch
+              - no encontrado -> revisión manual
+           Nunca usar descripción para reemplazar un código desconocido.
+        */
+        var hasSupplierCode =
+            !string.IsNullOrWhiteSpace(supplierCode) ||
+            !string.IsNullOrWhiteSpace(supplierAuxCode);
+
+        if (hasSupplierCode)
+        {
+            return candidates.Values
+                .OrderByDescending(c => c.MatchScore)
+                .Take(maxResults)
+                .ToList();
+        }
+
+
+        // 3. Solo sin código proveedor:
+        // búsqueda por descripción como ayuda manual.
+        var normalizedTarget = Normalize(description);
+
+        var similar = await _itemRepo.SearchBySimilarityAsync(
+            description,
+            tenantId,
+            maxResults,
+            MinSimilarityScore,
+            cancellationToken);
+        foreach (var match in similar)
+        {
+            if (candidates.ContainsKey(match.ItemId))
+                continue;
+
+            var isNormalizedEqual =
+                Normalize(match.ShortName) == normalizedTarget ||
+                Normalize(match.Description) == normalizedTarget;
+
+            var score = Math.Round((decimal)match.Score * 100, 2);
+
+
+            if (!isNormalizedEqual &&
+                !HasEnoughWordsMatch(description, match.ShortName))
+            {
+                continue;
+            }
+
+            if (score < MinSuggestionScore)
+                continue;
+
+            candidates[match.ItemId] = isNormalizedEqual
+                ? new ItemMatchCandidateDto(
+                    match.ItemId,
+                    match.Sku,
+                    match.ShortName,
+                    match.Description,
+                    95m,
+                    ReasonDescriptionNormalized)
+
+                : new ItemMatchCandidateDto(
+                    match.ItemId,
+                    match.Sku,
+                    match.ShortName,
+                    match.Description,
+                    score,
+                    ReasonDescriptionSimilarity);
+        }
+
         return candidates.Values
             .OrderByDescending(c => c.MatchScore)
             .Take(maxResults)
             .ToList();
     }
-
-
-    // 3. Solo sin código proveedor:
-    // búsqueda por descripción como ayuda manual.
-    var normalizedTarget = Normalize(description);
-
-    var similar = await _itemRepo.SearchBySimilarityAsync(
-        description,
-        tenantId,
-        maxResults,
-        MinSimilarityScore,
-        cancellationToken);
-    foreach (var match in similar)
-    {
-        if (candidates.ContainsKey(match.ItemId))
-            continue;
-
-        var isNormalizedEqual =
-            Normalize(match.ShortName) == normalizedTarget ||
-            Normalize(match.Description) == normalizedTarget;
-
-        var score = Math.Round((decimal)match.Score * 100, 2);
-
-
-        if (!isNormalizedEqual &&
-            !HasEnoughWordsMatch(description, match.ShortName))
-        {
-            continue;
-        }
-
-        if (score < MinSuggestionScore)
-            continue;
-
-        candidates[match.ItemId] = isNormalizedEqual
-            ? new ItemMatchCandidateDto(
-                match.ItemId,
-                match.Sku,
-                match.ShortName,
-                match.Description,
-                95m,
-                ReasonDescriptionNormalized)
-
-            : new ItemMatchCandidateDto(
-                match.ItemId,
-                match.Sku,
-                match.ShortName,
-                match.Description,
-                score,
-                ReasonDescriptionSimilarity);
-    }
-
-    return candidates.Values
-        .OrderByDescending(c => c.MatchScore)
-        .Take(maxResults)
-        .ToList();
-}
     private async Task AddExactAsync(
         Dictionary<Guid, ItemMatchCandidateDto> candidates, Guid itemId, decimal score, string reason,
         Guid tenantId, CancellationToken cancellationToken)
@@ -189,17 +189,17 @@ public sealed class ItemMatchFinder : IItemMatchFinder
         return MultipleSpaces.Replace(noSpecial, " ").Trim();
     }
     private static bool HasEnoughWordsMatch(string source, string target)
-{
-    var sourceWords = Normalize(source)
-        .Split(' ', StringSplitOptions.RemoveEmptyEntries)
-        .ToHashSet();
+    {
+        var sourceWords = Normalize(source)
+            .Split(' ', StringSplitOptions.RemoveEmptyEntries)
+            .ToHashSet();
 
-    var targetWords = Normalize(target)
-        .Split(' ', StringSplitOptions.RemoveEmptyEntries)
-        .ToHashSet();
+        var targetWords = Normalize(target)
+            .Split(' ', StringSplitOptions.RemoveEmptyEntries)
+            .ToHashSet();
 
-    var common = sourceWords.Intersect(targetWords).Count();
+        var common = sourceWords.Intersect(targetWords).Count();
 
-    return common >= 2;
-}
+        return common >= 2;
+    }
 }

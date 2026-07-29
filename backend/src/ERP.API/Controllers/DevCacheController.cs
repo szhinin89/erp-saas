@@ -1,8 +1,7 @@
-﻿using ERP.Application.Access.Caching;
 using ERP.API.Contracts;
 using ERP.API.Extensions;
+using ERP.Application.Access.Caching;
 using ERP.Application.Common.Interfaces;
-using ERP.Infrastructure.Caching;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Caching.Distributed;

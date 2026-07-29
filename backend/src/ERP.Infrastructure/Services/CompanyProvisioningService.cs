@@ -1,4 +1,4 @@
-﻿using ERP.Application.Common;
+using ERP.Application.Common;
 using ERP.Application.Common.Interfaces;
 using ERP.Domain.Access.Entities;
 using ERP.Domain.Access.Interfaces;
@@ -19,9 +19,9 @@ namespace ERP.Infrastructure.Services;
 /// </summary>
 public sealed class CompanyProvisioningService : ICompanyProvisioningService
 {
-    private readonly ICompanyRepository        _companies;
-    private readonly IAccessRepository         _access;
-    private readonly ICompanyBootstrapService  _bootstrap;
+    private readonly ICompanyRepository _companies;
+    private readonly IAccessRepository _access;
+    private readonly ICompanyBootstrapService _bootstrap;
 
     public CompanyProvisioningService(
         ICompanyRepository companies,
@@ -29,7 +29,7 @@ public sealed class CompanyProvisioningService : ICompanyProvisioningService
         ICompanyBootstrapService bootstrap)
     {
         _companies = companies;
-        _access    = access;
+        _access = access;
         _bootstrap = bootstrap;
     }
 
@@ -61,7 +61,7 @@ public sealed class CompanyProvisioningService : ICompanyProvisioningService
     public async Task<Company> CreateDefaultCompanyForTenantAsync(
         Tenant tenant,
         string? countryCode = "ECU",
-        string? timezone    = "America/Guayaquil",
+        string? timezone = "America/Guayaquil",
         CancellationToken cancellationToken = default)
     {
         var (taxId, isProvisional, status) = await ResolveTaxIdAsync(null, cancellationToken);
@@ -69,14 +69,14 @@ public sealed class CompanyProvisioningService : ICompanyProvisioningService
         return Company.CreateManaged(
             tenant.Id,
             taxId,
-            legalName:    tenant.Name,
-            tradeName:    null,
+            legalName: tenant.Name,
+            tradeName: null,
             corporateEmail: null,
-            countryCode:  string.IsNullOrWhiteSpace(countryCode) ? "ECU" : countryCode,
-            timezone:     string.IsNullOrWhiteSpace(timezone) ? "America/Guayaquil" : timezone,
+            countryCode: string.IsNullOrWhiteSpace(countryCode) ? "ECU" : countryCode,
+            timezone: string.IsNullOrWhiteSpace(timezone) ? "America/Guayaquil" : timezone,
             currencyCode: "USD",
             isTemporaryTaxIdentification: isProvisional,
-            taxIdentificationStatus:  status);
+            taxIdentificationStatus: status);
     }
 
     /// <summary>
@@ -91,14 +91,14 @@ public sealed class CompanyProvisioningService : ICompanyProvisioningService
         string mainAddress,
         Guid createdByUserId,
         string creatorRole,
-        string? tradeName    = null,
-        string? email        = null,
-        string? phone        = null,
-        string countryCode   = "ECU",
-        string timezone      = "America/Guayaquil",
-        string currencyCode  = "USD",
+        string? tradeName = null,
+        string? email = null,
+        string? phone = null,
+        string countryCode = "ECU",
+        string timezone = "America/Guayaquil",
+        string currencyCode = "USD",
         string? brandingJson = null,
-        string? website      = null,
+        string? website = null,
         CancellationToken cancellationToken = default)
     {
         var normalized = NormalizeProvidedTaxId(ruc);

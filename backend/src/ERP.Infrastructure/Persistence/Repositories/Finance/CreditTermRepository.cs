@@ -1,7 +1,7 @@
-using Microsoft.EntityFrameworkCore;
 using ERP.Application.Common;
 using ERP.Domain.Modules.Finance.Entities;
 using ERP.Domain.Modules.Finance.Interfaces;
+using Microsoft.EntityFrameworkCore;
 
 namespace ERP.Infrastructure.Persistence.Repositories.Finance;
 
@@ -27,7 +27,7 @@ public sealed class CreditTermRepository : ICreditTermRepository
     {
         var q = Scoped(tenantId);
 
-        if (activeFilter is true)       q = q.Where(t => t.IsActive);
+        if (activeFilter is true) q = q.Where(t => t.IsActive);
         else if (activeFilter is false) q = q.Where(t => !t.IsActive);
 
         if (!string.IsNullOrWhiteSpace(search))

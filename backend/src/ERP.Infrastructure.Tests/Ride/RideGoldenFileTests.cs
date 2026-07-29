@@ -1,7 +1,7 @@
-using System.Text;
-using System.Text.RegularExpressions;
 using ERP.Infrastructure.Ride.Rendering;
 using FluentAssertions;
+using System.Text;
+using System.Text.RegularExpressions;
 
 namespace ERP.Infrastructure.Tests.Ride;
 

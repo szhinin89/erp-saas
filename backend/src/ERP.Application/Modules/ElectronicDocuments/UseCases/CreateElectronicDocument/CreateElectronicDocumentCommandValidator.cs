@@ -1,5 +1,5 @@
-using FluentValidation;
 using ERP.Domain.Modules.ElectronicDocuments.Entities;
+using FluentValidation;
 
 namespace ERP.Application.Modules.ElectronicDocuments.UseCases.CreateElectronicDocument;
 

@@ -10,10 +10,10 @@ namespace ERP.Domain.Modules.Pricing.Entities;
 /// </summary>
 public sealed class PriceListItem : AuditableEntity, ITenantScopedEntity, ICompanyOperationalEntity
 {
-    public Guid CompanyId   { get; private set; }
+    public Guid CompanyId { get; private set; }
     public Guid PriceListId { get; private set; }
-    public Guid ItemId      { get; private set; }
-    public bool IsActive    { get; private set; } = true;
+    public Guid ItemId { get; private set; }
+    public bool IsActive { get; private set; } = true;
 
     private PriceListItem() { }
 
@@ -22,12 +22,12 @@ public sealed class PriceListItem : AuditableEntity, ITenantScopedEntity, ICompa
     {
         var assignment = new PriceListItem
         {
-            Id          = Guid.NewGuid(),
-            TenantId    = tenantId,
-            CompanyId   = companyId,
+            Id = Guid.NewGuid(),
+            TenantId = tenantId,
+            CompanyId = companyId,
             PriceListId = priceListId,
-            ItemId      = itemId,
-            IsActive    = true,
+            ItemId = itemId,
+            IsActive = true,
         };
         assignment.SetCreated(createdBy);
         assignment.RaiseDomainEvent(new PriceListItemAssignedEvent

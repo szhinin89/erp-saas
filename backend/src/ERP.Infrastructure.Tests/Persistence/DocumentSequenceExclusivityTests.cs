@@ -159,7 +159,7 @@ public sealed class DocumentSequenceExclusivityTests
     {
         var backendRoot = ResolveBackendRoot();
         var patternArray = patterns.ToArray();
-        var violations   = new List<string>();
+        var violations = new List<string>();
 
         foreach (var file in Directory.EnumerateFiles(backendRoot, "*.cs", SearchOption.AllDirectories))
         {

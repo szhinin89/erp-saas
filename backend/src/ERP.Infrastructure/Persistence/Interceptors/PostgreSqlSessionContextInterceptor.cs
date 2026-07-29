@@ -1,6 +1,6 @@
-using System.Data.Common;
 using ERP.Application.Common;
 using Microsoft.EntityFrameworkCore.Diagnostics;
+using System.Data.Common;
 
 namespace ERP.Infrastructure.Persistence.Interceptors;
 

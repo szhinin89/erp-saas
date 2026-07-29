@@ -2,7 +2,6 @@ using ERP.Application.Access.DTOs;
 using ERP.Application.Access.UseCases.CreateAuthenticatedSession;
 using ERP.Application.Access.UseCases.GetCompanyUserPreferences;
 using ERP.Application.Access.UseCases.UpdateCompanyUserPreferences;
-using ERP.Application.Auth.DTOs;
 using ERP.Application.Auth.UseCases.SwitchCompany;
 using ERP.Application.Common;
 using ERP.Application.Common.Interfaces;

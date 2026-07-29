@@ -1,4 +1,4 @@
-﻿// CA1711: Name reflects business domain semantics; renaming would break EF mappings, DTOs and handlers.
+// CA1711: Name reflects business domain semantics; renaming would break EF mappings, DTOs and handlers.
 #pragma warning disable CA1711
 using ERP.Domain.Common;
 
@@ -21,11 +21,11 @@ public sealed class ItemVariantAttribute : AuditableEntity
 
         var entity = new ItemVariantAttribute
         {
-            Id                   = Guid.NewGuid(),
-            TenantId         = tenantId,
-            VariantId            = variantId,
+            Id = Guid.NewGuid(),
+            TenantId = tenantId,
+            VariantId = variantId,
             AttributeDefinitionId = attributeDefinitionId,
-            Value                = value.Trim(),
+            Value = value.Trim(),
         };
         entity.SetCreated(createdBy);
         return entity;

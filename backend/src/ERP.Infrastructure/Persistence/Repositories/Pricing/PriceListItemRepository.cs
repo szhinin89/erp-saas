@@ -1,7 +1,7 @@
-using Microsoft.EntityFrameworkCore;
 using ERP.Application.Common;
 using ERP.Domain.Modules.Pricing.Entities;
 using ERP.Domain.Modules.Pricing.Interfaces;
+using Microsoft.EntityFrameworkCore;
 
 namespace ERP.Infrastructure.Persistence.Repositories.Pricing;
 

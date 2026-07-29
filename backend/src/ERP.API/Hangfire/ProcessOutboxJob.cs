@@ -1,5 +1,4 @@
 using ERP.Infrastructure.Persistence.Outbox;
-using Microsoft.Extensions.Logging;
 
 namespace ERP.API.Hangfire;
 

@@ -1,4 +1,4 @@
-﻿using ERP.Application.Auth.DTOs;
+using ERP.Application.Auth.DTOs;
 using ERP.Application.Common;
 using ERP.Domain.Access.Interfaces;
 using ERP.Domain.Modules.Company.Interfaces;
@@ -9,9 +9,9 @@ namespace ERP.Application.Auth.UseCases.ListMyCompanies;
 public sealed class ListMyCompaniesHandler
     : IRequestHandler<ListMyCompaniesQuery, Result<IReadOnlyList<AccessibleCompanyDto>>>
 {
-    private readonly IAccessRepository  _accessRepository;
+    private readonly IAccessRepository _accessRepository;
     private readonly ICompanyRepository _companyRepository;
-    private readonly ICurrentUser       _currentUser;
+    private readonly ICurrentUser _currentUser;
     private readonly ICurrentTenant _currentTenant;
 
     public ListMyCompaniesHandler(
@@ -20,9 +20,9 @@ public sealed class ListMyCompaniesHandler
         ICurrentUser currentUser,
         ICurrentTenant currentTenant)
     {
-        _accessRepository  = accessRepository;
+        _accessRepository = accessRepository;
         _companyRepository = companyRepository;
-        _currentUser       = currentUser;
+        _currentUser = currentUser;
         _currentTenant = currentTenant;
     }
 
@@ -40,8 +40,8 @@ public sealed class ListMyCompaniesHandler
         if (memberships.Count == 0)
             return Result<IReadOnlyList<AccessibleCompanyDto>>.Success(Array.Empty<AccessibleCompanyDto>());
 
-        var companyIds      = memberships.Select(m => m.CompanyId).Distinct().ToList();
-        var companies       = await _companyRepository.GetByIdsAsync(companyIds, cancellationToken);
+        var companyIds = memberships.Select(m => m.CompanyId).Distinct().ToList();
+        var companies = await _companyRepository.GetByIdsAsync(companyIds, cancellationToken);
         var membershipByCompany = memberships.ToDictionary(m => m.CompanyId);
 
         var items = companies

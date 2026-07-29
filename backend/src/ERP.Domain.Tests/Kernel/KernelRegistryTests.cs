@@ -1,6 +1,5 @@
 using ERP.Domain.Kernel;
 using FluentAssertions;
-using Xunit;
 
 namespace ERP.Domain.Tests.Kernel;
 

@@ -1,6 +1,6 @@
-﻿using Microsoft.EntityFrameworkCore;
 using ERP.Domain.Tenants.Entities;
 using ERP.Domain.Tenants.Interfaces;
+using Microsoft.EntityFrameworkCore;
 
 namespace ERP.Infrastructure.Persistence.Repositories;
 

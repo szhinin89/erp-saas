@@ -7,16 +7,15 @@ using ERP.Domain.Modules.Purchases.PurchaseReception.Interfaces;
 using ERP.Domain.Modules.Purchases.PurchaseReception.Models;
 using FluentAssertions;
 using Moq;
-using Xunit;
 
 namespace ERP.Application.Tests.Purchases.PurchaseReception;
 
 public sealed class ImportPurchaseReceptionHandlerTests
 {
-    private static readonly Guid TenantId  = Guid.NewGuid();
+    private static readonly Guid TenantId = Guid.NewGuid();
     private static readonly Guid CompanyId = Guid.NewGuid();
-    private static readonly Guid BranchId  = Guid.NewGuid();
-    private static readonly Guid UserId    = Guid.NewGuid();
+    private static readonly Guid BranchId = Guid.NewGuid();
+    private static readonly Guid UserId = Guid.NewGuid();
 
     private static PurchaseReceptionRecord SampleRecord(string accessKey = "0107202601179135268800120150270001617400016174011") => new(
         2, PurchaseReceptionSourceDocType.Invoice, "1791352688001", "QUALA ECUADOR S A",

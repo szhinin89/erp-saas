@@ -12,8 +12,8 @@ public static class MasterDataPermissions
     public const string BusinessPartnersDisable = "masterdata.businesspartners.disable";
     public const string BusinessPartnersConfigureCompany = "masterdata.businesspartners.configure-company";
 
-    public const string PaymentTermsView    = "masterdata.payment-terms.view";
-    public const string PaymentTermsManage  = "masterdata.payment-terms.manage";
+    public const string PaymentTermsView = "masterdata.payment-terms.view";
+    public const string PaymentTermsManage = "masterdata.payment-terms.manage";
 
     public static IReadOnlyList<string> BusinessPartnersAll { get; } =
     [

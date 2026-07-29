@@ -1,4 +1,4 @@
-﻿using ERP.Domain.MasterData.Entities;
+using ERP.Domain.MasterData.Entities;
 using ERP.Domain.MasterData.Enums;
 using ERP.Domain.MasterData.Interfaces;
 using ERP.Infrastructure.Persistence;
@@ -42,7 +42,7 @@ public sealed class BusinessPartnerRepository : IBusinessPartnerRepository
         => _db.BusinessPartners
               .AsNoTracking()
               .FirstOrDefaultAsync(x =>
-                  x.Identification.Type   == identificationType &&
+                  x.Identification.Type == identificationType &&
                   x.Identification.Number == identificationNumber, cancellationToken);
 
     public Task<bool> ExistsByIdentificationAsync(
@@ -54,7 +54,7 @@ public sealed class BusinessPartnerRepository : IBusinessPartnerRepository
         var query = _db.BusinessPartners
             .AsNoTracking()
             .Where(x =>
-                x.Identification.Type   == identificationType &&
+                x.Identification.Type == identificationType &&
                 x.Identification.Number == identificationNumber);
 
         if (excludeId.HasValue)
@@ -68,11 +68,11 @@ public sealed class BusinessPartnerRepository : IBusinessPartnerRepository
     /// Reemplaza el patrón obsoleto isCustomer/isSupplier con RoleType[] extensible.
     /// </summary>
     public async Task<IReadOnlyList<BusinessPartner>> SearchAsync(
-        string?     query    = null,
-        bool?       isActive = true,
-        RoleType[]? roles    = null,
-        int         skip     = 0,
-        int         take     = 50,
+        string? query = null,
+        bool? isActive = true,
+        RoleType[]? roles = null,
+        int skip = 0,
+        int take = 50,
         CancellationToken cancellationToken = default)
     {
         return await BuildQuery(query, isActive, roles)
@@ -83,9 +83,9 @@ public sealed class BusinessPartnerRepository : IBusinessPartnerRepository
     }
 
     public Task<int> CountAsync(
-        string?     query    = null,
-        bool?       isActive = true,
-        RoleType[]? roles    = null,
+        string? query = null,
+        bool? isActive = true,
+        RoleType[]? roles = null,
         CancellationToken cancellationToken = default)
         => BuildQuery(query, isActive, roles).CountAsync(cancellationToken);
 

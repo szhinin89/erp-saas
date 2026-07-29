@@ -1,10 +1,10 @@
-using FluentValidation;
-using MediatR;
 using ERP.Application.Common;
 using ERP.Application.Modules.Caja.DTOs;
 using ERP.Domain.Modules.Caja.Entities;
 using ERP.Domain.Modules.Caja.Enums;
 using ERP.Domain.Modules.Caja.Interfaces;
+using FluentValidation;
+using MediatR;
 
 namespace ERP.Application.Modules.Caja.UseCases;
 

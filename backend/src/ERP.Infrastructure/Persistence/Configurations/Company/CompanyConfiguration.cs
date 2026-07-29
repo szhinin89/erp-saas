@@ -1,5 +1,4 @@
-﻿using ERP.Domain.Modules.Company.Entities;
-using ERP.Domain.Modules.SriCatalogs.Entities;
+using ERP.Domain.Modules.Company.Entities;
 using ERP.Domain.Tenants.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;

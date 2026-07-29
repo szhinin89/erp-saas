@@ -6,13 +6,13 @@ namespace ERP.Domain.Setup;
 /// </summary>
 public sealed class SystemSetupState
 {
-    public int       Id                  { get; private set; } = 1;
-    public bool      IsInitialized       { get; private set; }
-    public DateTime? InitializedAtUtc    { get; private set; }
-    public string?   AdminEmail          { get; private set; }
+    public int Id { get; private set; } = 1;
+    public bool IsInitialized { get; private set; }
+    public DateTime? InitializedAtUtc { get; private set; }
+    public string? AdminEmail { get; private set; }
 
-    public bool      IsFirstRun          { get; private set; } = true;
-    public string?   SetupTokenHash      { get; private set; }
+    public bool IsFirstRun { get; private set; } = true;
+    public string? SetupTokenHash { get; private set; }
     public DateTime? SetupTokenExpiryUtc { get; private set; }
 
     private SystemSetupState() { }
@@ -25,9 +25,9 @@ public sealed class SystemSetupState
         if (IsInitialized)
             throw new InvalidOperationException("El sistema ya ha sido inicializado.");
 
-        SetupTokenHash      = tokenHash;
+        SetupTokenHash = tokenHash;
         SetupTokenExpiryUtc = expiryUtc;
-        IsFirstRun          = true;
+        IsFirstRun = true;
     }
 
     public bool HasActiveSetupToken(DateTime utcNow)
@@ -38,13 +38,13 @@ public sealed class SystemSetupState
 
     public void MarkInitialized(string adminEmail)
     {
-        IsInitialized       = true;
-        InitializedAtUtc    = DateTime.UtcNow;
-        AdminEmail          = adminEmail;
+        IsInitialized = true;
+        InitializedAtUtc = DateTime.UtcNow;
+        AdminEmail = adminEmail;
 
         // Setup token is single-use — invalidate permanently.
-        IsFirstRun          = false;
-        SetupTokenHash      = null;
+        IsFirstRun = false;
+        SetupTokenHash = null;
         SetupTokenExpiryUtc = null;
     }
 }

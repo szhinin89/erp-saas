@@ -6,9 +6,9 @@ namespace ERP.Domain.Configuration.Enums;
 /// </summary>
 public enum OrgScope
 {
-    Company        = 1,
-    Branch         = 2,
-    Establishment  = 3,
-    EmissionPoint  = 4,
-    Warehouse      = 5,
+    Company = 1,
+    Branch = 2,
+    Establishment = 3,
+    EmissionPoint = 4,
+    Warehouse = 5,
 }

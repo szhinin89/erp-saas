@@ -1,6 +1,5 @@
 using ERP.API.Contracts;
 using ERP.API.Extensions;
-using ERP.Application.Common;
 using ERP.Application.Setup.CreateInitialAdmin;
 using ERP.Application.Setup.GetSetupStatus;
 using MediatR;

@@ -1,5 +1,5 @@
-using Microsoft.EntityFrameworkCore;
 using ERP.Application.Modules.Purchases.Services;
+using Microsoft.EntityFrameworkCore;
 
 namespace ERP.Infrastructure.Persistence.Services;
 

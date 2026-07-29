@@ -1,6 +1,5 @@
 using ERP.Application.Common;
 using ERP.Domain.Access.Entities;
-using ERP.Domain.Access.Enums;
 using ERP.Domain.Branches.Entities;
 using ERP.Domain.Modules.Company.Entities;
 using ERP.Domain.Tenants.Entities;

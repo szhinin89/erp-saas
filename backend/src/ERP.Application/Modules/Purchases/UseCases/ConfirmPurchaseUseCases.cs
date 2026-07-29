@@ -1,7 +1,4 @@
-using MediatR;
-using Microsoft.Extensions.Logging;
 using ERP.Application.Common;
-using ERP.Application.Modules.Purchases;
 using ERP.Application.Modules.Purchases.DTOs;
 using ERP.Application.Modules.Purchases.Services;
 using ERP.Domain.Modules.Inventory.Enums;
@@ -9,6 +6,8 @@ using ERP.Domain.Modules.Inventory.Interfaces;
 using ERP.Domain.Modules.Items.Interfaces;
 using ERP.Domain.Modules.Purchases.Entities;
 using ERP.Domain.Modules.Purchases.Interfaces;
+using MediatR;
+using Microsoft.Extensions.Logging;
 
 namespace ERP.Application.Modules.Purchases.UseCases;
 

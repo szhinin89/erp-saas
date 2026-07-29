@@ -12,20 +12,20 @@ public interface IXmlInvoiceParser
 }
 
 public sealed record InvoiceParseResult(
-    string                    AccessKey,
-    string                    InvoiceNumber,
-    DateTime                  IssueDate,
-    string                    SupplierRuc,
-    string                    SupplierLegalName,
-    decimal                   Subtotal,
-    decimal                   VatTotal,
-    decimal                   Total,
+    string AccessKey,
+    string InvoiceNumber,
+    DateTime IssueDate,
+    string SupplierRuc,
+    string SupplierLegalName,
+    decimal Subtotal,
+    decimal VatTotal,
+    decimal Total,
     IReadOnlyList<InvoiceLineItem> Items
 );
 
 public sealed record InvoiceLineItem(
-    string  ProductCode,
-    string  Description,
+    string ProductCode,
+    string Description,
     decimal Quantity,
     decimal UnitPrice,
     decimal Discount,
@@ -33,25 +33,25 @@ public sealed record InvoiceLineItem(
 );
 
 public sealed record SupplierNoteParseResult(
-    NoteType                  NoteType,
-    string                    Reason,
-    string                    AccessKey,
-    string                    EstabCode,
-    string                    EmPointCode,
-    string                    Sequential,
-    string                    NoteNumber,
-    DateTime                  IssueDate,
-    string                    SupplierRuc,
-    string                    SupplierLegalName,
-    decimal                   Subtotal,
-    decimal                   VatTotal,
-    decimal                   Total,
+    NoteType NoteType,
+    string Reason,
+    string AccessKey,
+    string EstabCode,
+    string EmPointCode,
+    string Sequential,
+    string NoteNumber,
+    DateTime IssueDate,
+    string SupplierRuc,
+    string SupplierLegalName,
+    decimal Subtotal,
+    decimal VatTotal,
+    decimal Total,
     IReadOnlyList<SupplierNoteItem> Items
 );
 
 public sealed record SupplierNoteItem(
-    string  ProductCode,
-    string  Description,
+    string ProductCode,
+    string Description,
     decimal Quantity,
     decimal UnitPrice,
     decimal Discount,

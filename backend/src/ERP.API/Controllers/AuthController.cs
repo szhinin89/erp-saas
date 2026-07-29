@@ -1,5 +1,5 @@
-﻿using ERP.API.Auth;
 using ERP.API.Attributes;
+using ERP.API.Auth;
 using ERP.API.Contracts;
 using ERP.API.Extensions;
 using ERP.Application.Auth.DTOs;
@@ -11,11 +11,11 @@ using ERP.Application.Auth.UseCases.PasswordReset;
 using ERP.Application.Auth.UseCases.RefreshToken;
 using ERP.Application.Auth.UseCases.SwitchCompany;
 using ERP.Application.Common;
-using AccessibleCompanyDto = ERP.Application.Auth.DTOs.AccessibleCompanyDto;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
+using AccessibleCompanyDto = ERP.Application.Auth.DTOs.AccessibleCompanyDto;
 
 namespace ERP.API.Controllers;
 

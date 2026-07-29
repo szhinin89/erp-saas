@@ -1,7 +1,7 @@
-﻿using MediatR;
 using ERP.Application.Common;
 using ERP.Application.Modules.Company.DTOs;
 using ERP.Domain.Modules.Company.Interfaces;
+using MediatR;
 
 namespace ERP.Application.Modules.Company.UseCases.GetEmissionPoints;
 
@@ -9,7 +9,7 @@ public sealed class GetEmissionPointsByEstablishmentQueryHandler
     : IRequestHandler<GetEmissionPointsByEstablishmentQuery, Result<IReadOnlyList<EmissionPointDto>>>
 {
     private readonly IEmissionPointRepository _repo;
-    private readonly ICurrentTenant       _currentTenant;
+    private readonly ICurrentTenant _currentTenant;
 
     public GetEmissionPointsByEstablishmentQueryHandler(IEmissionPointRepository repo, ICurrentTenant tenant)
     {

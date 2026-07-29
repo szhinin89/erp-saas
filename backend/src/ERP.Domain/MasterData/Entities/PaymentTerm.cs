@@ -8,30 +8,30 @@ public sealed class PaymentTerm : MasterEntity, ITenantScopedEntity
     public const int MaxNameLength = 120;
     public const int MaxInstallments = 60;
 
-    public string Code                   { get; private set; } = null!;
-    public string Name                   { get; private set; } = null!;
-    public int    Installments           { get; private set; }
-    public int    DaysBetweenInstallments { get; private set; }
+    public string Code { get; private set; } = null!;
+    public string Name { get; private set; } = null!;
+    public int Installments { get; private set; }
+    public int DaysBetweenInstallments { get; private set; }
 
     private PaymentTerm() { }
 
     public static PaymentTerm Create(
-        Guid   tenantId,
+        Guid tenantId,
         string code,
         string name,
-        int    installments,
-        int    daysBetweenInstallments,
-        Guid   createdBy)
+        int installments,
+        int daysBetweenInstallments,
+        Guid createdBy)
     {
         Validate(code, name, installments, daysBetweenInstallments);
 
         var pt = new PaymentTerm
         {
-            Id                      = Guid.NewGuid(),
-            TenantId                = tenantId,
-            Code                    = code.Trim().ToUpperInvariant(),
-            Name                    = name.Trim(),
-            Installments            = installments,
+            Id = Guid.NewGuid(),
+            TenantId = tenantId,
+            Code = code.Trim().ToUpperInvariant(),
+            Name = name.Trim(),
+            Installments = installments,
             DaysBetweenInstallments = daysBetweenInstallments,
         };
         pt.SetCreated(createdBy);
@@ -45,12 +45,12 @@ public sealed class PaymentTerm : MasterEntity, ITenantScopedEntity
     /// <see cref="Update"/> permanece abierto.
     /// </summary>
     public static PaymentTerm CreateSystemSeeded(
-        Guid   tenantId,
+        Guid tenantId,
         string code,
         string name,
-        int    installments,
-        int    daysBetweenInstallments,
-        Guid   createdBy)
+        int installments,
+        int daysBetweenInstallments,
+        Guid createdBy)
     {
         var pt = Create(tenantId, code, name, installments, daysBetweenInstallments, createdBy);
         pt.MarkAsSystemSeeded();
@@ -73,8 +73,8 @@ public sealed class PaymentTerm : MasterEntity, ITenantScopedEntity
         if (daysBetweenInstallments < 0)
             throw new ArgumentException("Los días entre cuotas no pueden ser negativos.", nameof(daysBetweenInstallments));
 
-        Name                    = name.Trim();
-        Installments            = installments;
+        Name = name.Trim();
+        Installments = installments;
         DaysBetweenInstallments = daysBetweenInstallments;
         SetUpdated(updatedBy);
     }

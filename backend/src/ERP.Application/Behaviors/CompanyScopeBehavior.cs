@@ -1,5 +1,4 @@
 using ERP.Application.Common;
-using ERP.Application.Common.Security;
 using ERP.Application.Modules.Companies;
 using ERP.Domain.Exceptions;
 using MediatR;
@@ -14,14 +13,14 @@ public sealed class CompanyScopeBehavior<TRequest, TResponse> : IPipelineBehavio
     where TRequest : notnull
 {
     private readonly ICompanyAccessGuard _accessGuard;
-    private readonly ICurrentCompany     _company;
+    private readonly ICurrentCompany _company;
 
     public CompanyScopeBehavior(
         ICompanyAccessGuard accessGuard,
         ICurrentCompany company)
     {
         _accessGuard = accessGuard;
-        _company     = company;
+        _company = company;
     }
 
     public async Task<TResponse> Handle(TRequest request, RequestHandlerDelegate<TResponse> next, CancellationToken cancellationToken)

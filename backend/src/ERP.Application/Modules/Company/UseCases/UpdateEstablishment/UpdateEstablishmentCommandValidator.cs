@@ -1,5 +1,5 @@
-using FluentValidation;
 using ERP.Domain.Modules.Company.Entities;
+using FluentValidation;
 
 namespace ERP.Application.Modules.Company.UseCases.UpdateEstablishment;
 

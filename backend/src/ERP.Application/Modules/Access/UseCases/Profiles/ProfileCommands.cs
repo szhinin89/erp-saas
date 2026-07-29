@@ -1,6 +1,5 @@
-using MediatR;
 using ERP.Application.Common;
-using ERP.Application.Access.DTOs;
+using MediatR;
 
 namespace ERP.Application.Access.UseCases.Profiles;
 

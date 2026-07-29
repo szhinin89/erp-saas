@@ -4,19 +4,19 @@ public sealed record PaymentTermSnapshot
 {
     public const int NameMaxLen = 120;
 
-    public Guid   Id           { get; }
-    public string Name         { get; }
-    public int    Installments { get; }
-    public int    DaysBetween  { get; }
+    public Guid Id { get; }
+    public string Name { get; }
+    public int Installments { get; }
+    public int DaysBetween { get; }
 
     public int CreditTermDays => Installments * DaysBetween;
 
     private PaymentTermSnapshot(Guid id, string name, int installments, int daysBetween)
     {
-        Id           = id;
-        Name         = name;
+        Id = id;
+        Name = name;
         Installments = installments;
-        DaysBetween  = daysBetween;
+        DaysBetween = daysBetween;
     }
 
     public static PaymentTermSnapshot Create(

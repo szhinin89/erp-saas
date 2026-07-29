@@ -1,5 +1,5 @@
-using FluentValidation;
 using ERP.Domain.Modules.Inventory.Entities;
+using FluentValidation;
 
 namespace ERP.Application.Modules.Inventory.Warehouses.UseCases.UpdateWarehouse;
 

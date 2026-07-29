@@ -1,9 +1,9 @@
 namespace ERP.Domain.Modules.Purchases.Services;
 
 public sealed record RetentionLineResult(
-    string  TaxType,
-    string  RetentionCode,
-    string  RetentionCodeName,
+    string TaxType,
+    string RetentionCode,
+    string RetentionCodeName,
     decimal TaxableBase,
     decimal RetentionPct,
     decimal AmountRetained);

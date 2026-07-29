@@ -1,6 +1,5 @@
-﻿using ERP.Application.Access.UseCases.CreateAuthenticatedSession;
+using ERP.Application.Access.UseCases.CreateAuthenticatedSession;
 using ERP.Application.Auth.DTOs;
-using ERP.Application.Auth.UseCases;
 using ERP.Application.Common;
 using ERP.Application.Common.Interfaces;
 using ERP.Domain.Access.Interfaces;
@@ -43,12 +42,12 @@ public sealed class SwitchCompanyHandler : IRequestHandler<SwitchCompanyCommand,
         IBranchRepository branchRepository,
         IMediator mediator)
     {
-        _accessRepository     = accessRepository;
-        _companyRepository    = companyRepository;
-        _tokenService         = tokenService;
-        _currentUser          = currentUser;
-        _currentTenant    = currentTenant;
-        _refreshTokenService  = refreshTokenService;
+        _accessRepository = accessRepository;
+        _companyRepository = companyRepository;
+        _tokenService = tokenService;
+        _currentUser = currentUser;
+        _currentTenant = currentTenant;
+        _refreshTokenService = refreshTokenService;
         _tenantRepository = TenantRepository;
         _branchRepository = branchRepository;
         _mediator = mediator;
@@ -102,7 +101,7 @@ public sealed class SwitchCompanyHandler : IRequestHandler<SwitchCompanyCommand,
                     : Result<AuthResponseDto>.Failure(
                         sessionResult.Error ?? "No se pudo cambiar de empresa.");
 
-            refresh       = sessionResult.Value!.RefreshToken;
+            refresh = sessionResult.Value!.RefreshToken;
             refreshExpiry = sessionResult.Value.RefreshTokenExpiry;
         }
         else
@@ -122,12 +121,12 @@ public sealed class SwitchCompanyHandler : IRequestHandler<SwitchCompanyCommand,
             user.Id, user.FullName, user.Username, user.Email?.Value,
             membership.Role, tenantId, token)
         {
-            CompanyId                = company.Id,
+            CompanyId = company.Id,
             RequiresCompanySelection = false,
-            OnboardingCompleted      = company.OnboardingCompleted,
-            OperationalStatus        = company.OperationalStatus,
-            RefreshToken             = refresh,
-            RefreshTokenExpiry       = refreshExpiry,
+            OnboardingCompleted = company.OnboardingCompleted,
+            OperationalStatus = company.OperationalStatus,
+            RefreshToken = refresh,
+            RefreshTokenExpiry = refreshExpiry,
         });
     }
 

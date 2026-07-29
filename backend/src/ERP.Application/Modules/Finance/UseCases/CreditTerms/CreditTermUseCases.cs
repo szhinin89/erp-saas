@@ -1,10 +1,10 @@
-using FluentValidation;
-using MediatR;
 using ERP.Application.Common;
 using ERP.Application.Modules.Finance.DTOs;
 using ERP.Domain.Modules.Finance.Entities;
 using ERP.Domain.Modules.Finance.Enums;
 using ERP.Domain.Modules.Finance.Interfaces;
+using FluentValidation;
+using MediatR;
 
 namespace ERP.Application.Modules.Finance.UseCases.CreditTerms;
 

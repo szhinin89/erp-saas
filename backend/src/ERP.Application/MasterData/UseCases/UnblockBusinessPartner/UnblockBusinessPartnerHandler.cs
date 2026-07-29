@@ -1,4 +1,4 @@
-﻿using ERP.Application.Common;
+using ERP.Application.Common;
 using ERP.Domain.MasterData.Interfaces;
 using MediatR;
 
@@ -8,7 +8,7 @@ public sealed class UnblockBusinessPartnerHandler
     : IRequestHandler<UnblockBusinessPartnerCommand, Result<bool>>
 {
     private readonly ICompanyBpTradingSettingsRepository _settingsRepo;
-    private readonly IOperationalContext                 _ctx;
+    private readonly IOperationalContext _ctx;
 
     public UnblockBusinessPartnerHandler(
         ICompanyBpTradingSettingsRepository settingsRepo, IOperationalContext ctx)

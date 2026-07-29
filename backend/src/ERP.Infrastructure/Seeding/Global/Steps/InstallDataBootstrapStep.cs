@@ -21,7 +21,7 @@ public sealed partial class InstallDataBootstrapStep : IGlobalBootstrapStep
     public InstallDataBootstrapStep(IInstallDataBootstrapService installData, ILogger<InstallDataBootstrapStep> logger)
     {
         _installData = installData;
-        _logger      = logger;
+        _logger = logger;
     }
 
     public async Task ExecuteAsync(CancellationToken cancellationToken = default)

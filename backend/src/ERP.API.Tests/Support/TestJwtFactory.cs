@@ -1,7 +1,7 @@
+using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
-using Microsoft.IdentityModel.Tokens;
 
 namespace ERP.API.Tests.Support;
 
@@ -26,10 +26,10 @@ internal static class TestJwtFactory
         var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
         var token = new JwtSecurityToken(
-            issuer:             "ZHTechnologies",
-            audience:           "ERPUsers",
-            claims:             claims.ToArray(),
-            expires:            DateTime.UtcNow.AddHours(1),
+            issuer: "ZHTechnologies",
+            audience: "ERPUsers",
+            claims: claims.ToArray(),
+            expires: DateTime.UtcNow.AddHours(1),
             signingCredentials: creds);
 
         return new JwtSecurityTokenHandler().WriteToken(token);

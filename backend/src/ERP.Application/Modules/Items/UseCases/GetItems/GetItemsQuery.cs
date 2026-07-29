@@ -1,30 +1,30 @@
-using MediatR;
 using ERP.Application.Common;
 using ERP.Application.Items.DTOs;
 using ERP.Domain.Modules.Items.Interfaces;
+using MediatR;
 
 namespace ERP.Application.Items.UseCases.GetItems;
 
 public sealed record GetItemsQuery(
-    string?   Search         = null,
-    string?   Sku            = null,
-    bool?     IsActive       = null,
-    bool?     IsForSale      = null,
-    bool?     IsFavorite     = null,
-    bool?     IsEcommerce    = null,
-    Guid?     ItemTypeId     = null,
-    Guid?     CategoryNodeId = null,
-    Guid?     BrandId        = null,
-    string?   Barcode        = null,
-    int       PageNumber     = 1,
-    int       PageSize       = 20
+    string? Search = null,
+    string? Sku = null,
+    bool? IsActive = null,
+    bool? IsForSale = null,
+    bool? IsFavorite = null,
+    bool? IsEcommerce = null,
+    Guid? ItemTypeId = null,
+    Guid? CategoryNodeId = null,
+    Guid? BrandId = null,
+    string? Barcode = null,
+    int PageNumber = 1,
+    int PageSize = 20
 ) : IRequest<Result<GetItemsResponse>>, ICompanyScopedRequest;
 
 public sealed class GetItemsQueryHandler
     : IRequestHandler<GetItemsQuery, Result<GetItemsResponse>>
 {
-    private readonly IItemRepository     _repository;
-    private readonly ICurrentTenant      _currentTenant;
+    private readonly IItemRepository _repository;
+    private readonly ICurrentTenant _currentTenant;
     private readonly ISriCatalogResolver _sri;
     private readonly IItemTypeRepository _itemTypeRepo;
 
@@ -34,10 +34,10 @@ public sealed class GetItemsQueryHandler
         ISriCatalogResolver sri,
         IItemTypeRepository itemTypeRepo)
     {
-        _repository    = repository;
+        _repository = repository;
         _currentTenant = tenant;
-        _sri           = sri;
-        _itemTypeRepo  = itemTypeRepo;
+        _sri = sri;
+        _itemTypeRepo = itemTypeRepo;
     }
 
     public async Task<Result<GetItemsResponse>> Handle(GetItemsQuery query, CancellationToken cancellationToken)

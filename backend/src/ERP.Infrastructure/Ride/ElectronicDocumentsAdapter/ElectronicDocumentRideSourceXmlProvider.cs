@@ -1,10 +1,10 @@
-using MediatR;
 using ERP.Application.Common;
 using ERP.Application.Modules.ElectronicDocuments.UseCases.GetElectronicDocument;
 using ERP.Application.Modules.ElectronicDocuments.UseCases.GetElectronicDocumentXml;
 using ERP.Application.Modules.Ride.Services;
 using ERP.Domain.Modules.ElectronicDocuments.Enums;
 using ERP.Domain.Modules.Ride.Enums;
+using MediatR;
 
 namespace ERP.Infrastructure.Ride.ElectronicDocumentsAdapter;
 

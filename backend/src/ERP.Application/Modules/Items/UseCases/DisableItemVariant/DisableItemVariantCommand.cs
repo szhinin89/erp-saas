@@ -1,6 +1,6 @@
-﻿using MediatR;
 using ERP.Application.Common;
 using ERP.Domain.Modules.Items.Interfaces;
+using MediatR;
 
 namespace ERP.Application.Items.UseCases.DisableItemVariant;
 
@@ -19,7 +19,7 @@ public sealed class DisableItemVariantCommandHandler
     {
         _repository = repository;
         _currentTenant = tenant;
-        _user       = user;
+        _user = user;
     }
 
     public async Task<Result<bool>> Handle(DisableItemVariantCommand cmd, CancellationToken cancellationToken)

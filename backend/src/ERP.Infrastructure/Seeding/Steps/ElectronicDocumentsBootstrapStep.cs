@@ -22,7 +22,7 @@ public sealed partial class ElectronicDocumentsBootstrapStep : ICompanyBootstrap
 
     public ElectronicDocumentsBootstrapStep(ErpDbContext db, ILogger<ElectronicDocumentsBootstrapStep> logger)
     {
-        _db     = db;
+        _db = db;
         _logger = logger;
     }
 
@@ -50,7 +50,7 @@ public sealed partial class ElectronicDocumentsBootstrapStep : ICompanyBootstrap
         {
             var exists = await _db.DocumentSequences.IgnoreQueryFilters()
                 .AnyAsync(ds => ds.EmissionPointId == emissionPointId.Value
-                             && ds.DocTypeCode     == docTypeCode, cancellationToken);
+                             && ds.DocTypeCode == docTypeCode, cancellationToken);
 
             if (exists)
             {
@@ -59,10 +59,10 @@ public sealed partial class ElectronicDocumentsBootstrapStep : ICompanyBootstrap
             }
 
             var sequence = DocumentSequence.Create(
-                tenantId:        tenantId,
-                companyId:       companyId,
+                tenantId: tenantId,
+                companyId: companyId,
                 emissionPointId: emissionPointId.Value,
-                docTypeCode:     docTypeCode);
+                docTypeCode: docTypeCode);
 
             _db.DocumentSequences.Add(sequence);
             LogDocSequenceSeeded(docTypeCode, emissionPointId.Value);

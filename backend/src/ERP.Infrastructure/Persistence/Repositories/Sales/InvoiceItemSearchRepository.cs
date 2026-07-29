@@ -33,8 +33,8 @@ public sealed class InvoiceItemSearchRepository : IInvoiceItemSearchRepository
             .Where(i => i.TenantId == tenantId
                      && i.IsActive
                      && i.SaleConfig.IsForSale
-                     && (EF.Functions.ILike(i.Code.SKU,         pattern)
-                      || EF.Functions.ILike(i.Code.ShortName,   pattern)
+                     && (EF.Functions.ILike(i.Code.SKU, pattern)
+                      || EF.Functions.ILike(i.Code.ShortName, pattern)
                       || EF.Functions.ILike(i.Code.Description, pattern)))
             .OrderBy(i => i.Code.ShortName)
             .Take(pageSize)
@@ -67,7 +67,7 @@ public sealed class InvoiceItemSearchRepository : IInvoiceItemSearchRepository
                                   && cs.TenantId == tenantId)
                         .Select(cs => (decimal?)(cs.Quantity - cs.ReservedQuantity))
                         .FirstOrDefault()
-                    : (decimal?) null,
+                    : (decimal?)null,
 
                 warehouseId != null
                     ? _db.CurrentStocks
@@ -78,7 +78,7 @@ public sealed class InvoiceItemSearchRepository : IInvoiceItemSearchRepository
                                   && cs.Quantity > 0)
                         .Select(cs => (decimal?)(cs.TotalStockValue / cs.Quantity))
                         .FirstOrDefault()
-                    : (decimal?) null,
+                    : (decimal?)null,
 
                 // Precio base (SSOT, Motor de Pricing v2). NOTA: este dropdown de búsqueda
                 // muestra el precio base sin resolver reglas de PriceList/PricingRule —

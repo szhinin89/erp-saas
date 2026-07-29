@@ -1,4 +1,3 @@
-using ERP.Application.Access.DTOs;
 using ERP.Application.Access.UseCases.CreateCompanyUserPreferences;
 using ERP.Application.Access.UseCases.GetCompanyUserPreferences;
 using ERP.Application.Access.UseCases.UpdateCompanyUserPreferences;

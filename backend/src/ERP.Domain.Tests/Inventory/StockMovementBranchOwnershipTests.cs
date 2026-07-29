@@ -1,4 +1,3 @@
-using System.Linq;
 using ERP.Domain.Modules.Inventory.Entities;
 using ERP.Domain.Modules.Inventory.Enums;
 using FluentAssertions;

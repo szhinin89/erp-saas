@@ -1,8 +1,8 @@
-using MediatR;
 using ERP.Application.Common;
 using ERP.Application.Modules.Inventory.Stock.DTOs;
 using ERP.Domain.Modules.Inventory.Enums;
 using ERP.Domain.Modules.Inventory.Interfaces;
+using MediatR;
 
 namespace ERP.Application.Modules.Inventory.Stock.UseCases.ExecuteStockAdjustment;
 
@@ -10,18 +10,18 @@ public sealed class ExecuteStockAdjustmentCommandHandler
     : IRequestHandler<ExecuteStockAdjustmentCommand, Result<StockAdjustmentDto>>
 {
     private readonly IStockAdjustmentRepository _adjRepo;
-    private readonly IStockRepository           _stockRepo;
-    private readonly ICurrentTenant             _tenant;
-    private readonly ICurrentUser               _user;
+    private readonly IStockRepository _stockRepo;
+    private readonly ICurrentTenant _tenant;
+    private readonly ICurrentUser _user;
 
     public ExecuteStockAdjustmentCommandHandler(
         IStockAdjustmentRepository adjRepo, IStockRepository stockRepo,
         ICurrentTenant tenant, ICurrentUser user)
     {
-        _adjRepo   = adjRepo;
+        _adjRepo = adjRepo;
         _stockRepo = stockRepo;
-        _tenant    = tenant;
-        _user      = user;
+        _tenant = tenant;
+        _user = user;
     }
 
     public async Task<Result<StockAdjustmentDto>> Handle(

@@ -1,10 +1,9 @@
-using FluentValidation;
-using MediatR;
 using ERP.Application.Common;
-using ERP.Application.Common.Services;
 using ERP.Domain.Modules.Sales.Entities;
 using ERP.Domain.Modules.Sales.Enums;
 using ERP.Domain.Modules.Sales.Interfaces;
+using FluentValidation;
+using MediatR;
 
 namespace ERP.Application.Modules.Sales.UseCases;
 

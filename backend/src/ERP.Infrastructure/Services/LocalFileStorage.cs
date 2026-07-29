@@ -1,5 +1,5 @@
-﻿using Microsoft.Extensions.Configuration;
 using ERP.Application.Common.Interfaces;
+using Microsoft.Extensions.Configuration;
 
 namespace ERP.Infrastructure.Services;
 

@@ -1,23 +1,23 @@
-using MediatR;
 using ERP.Application.Common;
 using ERP.Application.Modules.Companies.UseCases.DecimalConfig;
+using ERP.Application.Modules.Pricing.Services;
 using ERP.Application.Modules.Purchases.DTOs;
 using ERP.Application.Modules.Purchases.Services;
-using ERP.Application.Modules.Pricing.Services;
 using ERP.Domain.Modules.Inventory.Interfaces;
 using ERP.Domain.Modules.Items.Interfaces;
+using MediatR;
 
 namespace ERP.Application.Modules.Purchases.UseCases.GetPurchaseItemContext;
 
 public sealed class GetPurchaseItemContextQueryHandler
     : IRequestHandler<GetPurchaseItemContextQuery, Result<PurchaseItemContextDto>>
 {
-    private readonly IItemRepository          _itemRepo;
-    private readonly IStockRepository         _stockRepo;
-    private readonly IPricingResolver         _pricingResolver;
-    private readonly ISriTaxResolver          _taxResolver;
-    private readonly ICurrentTenant           _tenant;
-    private readonly ICurrentCompany          _company;
+    private readonly IItemRepository _itemRepo;
+    private readonly IStockRepository _stockRepo;
+    private readonly IPricingResolver _pricingResolver;
+    private readonly ISriTaxResolver _taxResolver;
+    private readonly ICurrentTenant _tenant;
+    private readonly ICurrentCompany _company;
     private readonly IDecimalConfigRepository _decimalConfigRepo;
 
     public GetPurchaseItemContextQueryHandler(
@@ -29,12 +29,12 @@ public sealed class GetPurchaseItemContextQueryHandler
         ICurrentCompany company,
         IDecimalConfigRepository decimalConfigRepo)
     {
-        _itemRepo          = itemRepo;
-        _stockRepo         = stockRepo;
-        _pricingResolver   = pricingResolver;
-        _taxResolver       = taxResolver;
-        _tenant            = tenant;
-        _company           = company;
+        _itemRepo = itemRepo;
+        _stockRepo = stockRepo;
+        _pricingResolver = pricingResolver;
+        _taxResolver = taxResolver;
+        _tenant = tenant;
+        _company = company;
         _decimalConfigRepo = decimalConfigRepo;
     }
 
@@ -59,10 +59,10 @@ public sealed class GetPurchaseItemContextQueryHandler
 
         // 2. STOCK — SSOT desde CurrentStock
         var stock = await _stockRepo.GetStockAsync(tid, request.WarehouseId, request.ItemId, ct);
-        var currentQty   = stock?.Quantity ?? 0m;
+        var currentQty = stock?.Quantity ?? 0m;
         var availableQty = stock?.AvailableQuantity ?? 0m;
-        var reservedQty  = stock?.ReservedQuantity ?? 0m;
-        var averageCost  = stock?.AverageCost ?? 0m;
+        var reservedQty = stock?.ReservedQuantity ?? 0m;
+        var averageCost = stock?.AverageCost ?? 0m;
 
         // 3. ÚLTIMO COSTO — desde StockMovement (PurchaseEntry más reciente)
         var lastCost = await _stockRepo.GetLastPurchaseCostAsync(
@@ -99,32 +99,32 @@ public sealed class GetPurchaseItemContextQueryHandler
 
         return Result<PurchaseItemContextDto>.Success(new PurchaseItemContextDto
         {
-            ItemId             = item.Id,
-            Sku                = item.Code.SKU,
-            ShortName          = item.Code.ShortName,
-            Description        = item.Code.Description,
-            SupplierCode       = supplierCode,
+            ItemId = item.Id,
+            Sku = item.Code.SKU,
+            ShortName = item.Code.ShortName,
+            Description = item.Code.Description,
+            SupplierCode = supplierCode,
 
-            CurrentStock       = currentQty,
-            AvailableStock     = availableQty,
-            ReservedStock      = reservedQty,
+            CurrentStock = currentQty,
+            AvailableStock = availableQty,
+            ReservedStock = reservedQty,
 
-            AverageCost        = Math.Round(averageCost, decimalConfig.PurchaseUnitPrice),
-            LastPurchaseCost   = Math.Round(lastCost, decimalConfig.PurchaseUnitPrice),
+            AverageCost = Math.Round(averageCost, decimalConfig.PurchaseUnitPrice),
+            LastPurchaseCost = Math.Round(lastCost, decimalConfig.PurchaseUnitPrice),
 
-            Pvp                = Math.Round(pvp, decimalConfig.SalesUnitPrice),
-            PreviousPrice      = Math.Round(pvp, decimalConfig.SalesUnitPrice),
+            Pvp = Math.Round(pvp, decimalConfig.SalesUnitPrice),
+            PreviousPrice = Math.Round(pvp, decimalConfig.SalesUnitPrice),
             MaxDiscountPercent = maxDiscount,
 
-            PurchaseVatCode    = item.TaxConfig.PurchaseVatCode,
-            VatPercent         = vatPct,
-            ExciseTaxCode      = item.TaxConfig.ExciseTaxCode,
-            IcePercent         = icePct,
-            HasVat             = hasVat,
-            HasIce             = hasIce,
+            PurchaseVatCode = item.TaxConfig.PurchaseVatCode,
+            VatPercent = vatPct,
+            ExciseTaxCode = item.TaxConfig.ExciseTaxCode,
+            IcePercent = icePct,
+            HasVat = hasVat,
+            HasIce = hasIce,
 
-            CostMargin         = Math.Round(costMargin, decimalConfig.TotalAmount),
-            CostMarginPercent  = Math.Round(costMarginPct, decimalConfig.Percentage),
+            CostMargin = Math.Round(costMargin, decimalConfig.TotalAmount),
+            CostMarginPercent = Math.Round(costMarginPct, decimalConfig.Percentage),
         });
     }
 }

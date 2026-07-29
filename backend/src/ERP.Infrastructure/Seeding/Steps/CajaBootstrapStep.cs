@@ -24,7 +24,7 @@ public sealed partial class CajaBootstrapStep : ICompanyBootstrapStep
 
     public CajaBootstrapStep(ErpDbContext db, ILogger<CajaBootstrapStep> logger)
     {
-        _db     = db;
+        _db = db;
         _logger = logger;
     }
 
@@ -46,7 +46,7 @@ public sealed partial class CajaBootstrapStep : ICompanyBootstrapStep
         var exists = await _db.CashRegisters.IgnoreQueryFilters()
             .AnyAsync(cr => cr.TenantId == tenantId
                          && cr.BranchId == branchId.Value
-                         && cr.Code     == MainCashRegisterCode, cancellationToken);
+                         && cr.Code == MainCashRegisterCode, cancellationToken);
 
         if (exists)
         {
@@ -60,12 +60,12 @@ public sealed partial class CajaBootstrapStep : ICompanyBootstrapStep
             .FirstOrDefaultAsync(cancellationToken);
 
         var cashRegister = CashRegister.CreateSystemSeeded(
-            tenantId:        tenantId,
-            companyId:       companyId,
-            branchId:        branchId.Value,
-            code:            MainCashRegisterCode,
-            name:            MainCashRegisterName,
-            createdBy:       actorId,
+            tenantId: tenantId,
+            companyId: companyId,
+            branchId: branchId.Value,
+            code: MainCashRegisterCode,
+            name: MainCashRegisterName,
+            createdBy: actorId,
             emissionPointId: emissionPointId);
 
         _db.CashRegisters.Add(cashRegister);

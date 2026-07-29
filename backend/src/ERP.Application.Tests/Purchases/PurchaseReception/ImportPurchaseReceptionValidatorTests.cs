@@ -1,7 +1,6 @@
 using ERP.Application.Common.Models;
 using ERP.Application.Modules.Purchases.PurchaseReception.UseCases.ImportPurchaseReception;
 using FluentAssertions;
-using Xunit;
 
 namespace ERP.Application.Tests.Purchases.PurchaseReception;
 

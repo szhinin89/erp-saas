@@ -1,7 +1,7 @@
-using MediatR;
 using ERP.Application.Common;
 using ERP.Application.Modules.Sales.DTOs;
 using ERP.Domain.Modules.Sales.Services;
+using MediatR;
 
 namespace ERP.Application.Modules.Sales.UseCases;
 
@@ -13,17 +13,17 @@ public sealed class SearchItemsForInvoiceHandler
     : IRequestHandler<SearchItemsForInvoiceQuery, Result<IReadOnlyList<InvoiceItemSearchResultDto>>>
 {
     private readonly IInvoiceItemSearchRepository _repo;
-    private readonly ISriCatalogResolver          _sri;
-    private readonly ICurrentTenant               _tenant;
-    private readonly ICurrentCompany              _company;
+    private readonly ISriCatalogResolver _sri;
+    private readonly ICurrentTenant _tenant;
+    private readonly ICurrentCompany _company;
 
     public SearchItemsForInvoiceHandler(
         IInvoiceItemSearchRepository repo, ISriCatalogResolver sri,
         ICurrentTenant tenant, ICurrentCompany company)
     {
-        _repo    = repo;
-        _sri     = sri;
-        _tenant  = tenant;
+        _repo = repo;
+        _sri = sri;
+        _tenant = tenant;
         _company = company;
     }
 

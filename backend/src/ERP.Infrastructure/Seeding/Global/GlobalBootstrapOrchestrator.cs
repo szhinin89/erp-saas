@@ -19,7 +19,7 @@ public sealed partial class GlobalBootstrapOrchestrator : IGlobalBootstrapOrches
         IEnumerable<IGlobalBootstrapStep> steps,
         ILogger<GlobalBootstrapOrchestrator> logger)
     {
-        _steps  = steps.OrderBy(s => s.Order).ToList();
+        _steps = steps.OrderBy(s => s.Order).ToList();
         _logger = logger;
     }
 

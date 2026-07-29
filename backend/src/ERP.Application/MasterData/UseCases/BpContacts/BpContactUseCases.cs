@@ -16,32 +16,32 @@ namespace ERP.Application.MasterData.UseCases.BpContacts;
 /// LocationId debe pertenecer al mismo BusinessPartner (validado en handler).
 /// </summary>
 public sealed record CreateBpContactCommand(
-    Guid        BusinessPartnerId,
-    string      FirstName,
+    Guid BusinessPartnerId,
+    string FirstName,
     ContactRole Role,
-    Guid?       LocationId       = null,
-    string?     LastName         = null,
-    string?     Position         = null,
-    string?     Phone            = null,
-    string?     Mobile           = null,
-    string?     Email            = null,
-    string?     Notes            = null,
-    bool        IsPrimary        = false,
-    string?     OtherDescription = null)
+    Guid? LocationId = null,
+    string? LastName = null,
+    string? Position = null,
+    string? Phone = null,
+    string? Mobile = null,
+    string? Email = null,
+    string? Notes = null,
+    bool IsPrimary = false,
+    string? OtherDescription = null)
     : IRequest<Result<BpContactDto>>, ITenantScopedRequest;
 
 public sealed record UpdateBpContactCommand(
-    Guid        ContactId,
-    string      FirstName,
+    Guid ContactId,
+    string FirstName,
     ContactRole Role,
-    Guid?       LocationId       = null,
-    string?     LastName         = null,
-    string?     Position         = null,
-    string?     Phone            = null,
-    string?     Mobile           = null,
-    string?     Email            = null,
-    string?     Notes            = null,
-    string?     OtherDescription = null)
+    Guid? LocationId = null,
+    string? LastName = null,
+    string? Position = null,
+    string? Phone = null,
+    string? Mobile = null,
+    string? Email = null,
+    string? Notes = null,
+    string? OtherDescription = null)
     : IRequest<Result<BpContactDto>>, ITenantScopedRequest;
 
 public sealed record SetPrimaryBpContactCommand(Guid ContactId)
@@ -56,7 +56,7 @@ public sealed record ActivateBpContactCommand(Guid ContactId)
 // ── Queries ───────────────────────────────────────────────────────────────────
 
 public sealed record GetBpContactsQuery(
-    Guid  BusinessPartnerId,
+    Guid BusinessPartnerId,
     bool? OnlyActive = true)
     : IRequest<Result<IReadOnlyList<BpContactDto>>>, ITenantScopedRequest;
 
@@ -102,7 +102,7 @@ public sealed class CreateBpContactHandler
     : IRequestHandler<CreateBpContactCommand, Result<BpContactDto>>
 {
     private readonly IBusinessPartnerContactRepository _contactRepo;
-    private readonly IOperationalContext               _ctx;
+    private readonly IOperationalContext _ctx;
 
     public CreateBpContactHandler(IBusinessPartnerContactRepository contactRepo, IOperationalContext ctx)
         => (_contactRepo, _ctx) = (contactRepo, ctx);
@@ -134,7 +134,7 @@ public sealed class UpdateBpContactHandler
     : IRequestHandler<UpdateBpContactCommand, Result<BpContactDto>>
 {
     private readonly IBusinessPartnerContactRepository _contactRepo;
-    private readonly IOperationalContext               _ctx;
+    private readonly IOperationalContext _ctx;
 
     public UpdateBpContactHandler(IBusinessPartnerContactRepository contactRepo, IOperationalContext ctx)
         => (_contactRepo, _ctx) = (contactRepo, ctx);
@@ -150,7 +150,7 @@ public sealed class UpdateBpContactHandler
                 cmd.LocationId, cmd.LastName, cmd.Position,
                 cmd.Phone, cmd.Mobile, cmd.Email, cmd.Notes, cmd.OtherDescription);
         }
-        catch (ArgumentException ex)        { return Result<BpContactDto>.ValidationFailure(ex.Message); }
+        catch (ArgumentException ex) { return Result<BpContactDto>.ValidationFailure(ex.Message); }
         catch (InvalidOperationException ex) { return Result<BpContactDto>.ValidationFailure(ex.Message); }
 
         await _contactRepo.SaveChangesAsync(cancellationToken);
@@ -162,7 +162,7 @@ public sealed class SetPrimaryBpContactHandler
     : IRequestHandler<SetPrimaryBpContactCommand, Result<bool>>
 {
     private readonly IBusinessPartnerContactRepository _contactRepo;
-    private readonly IOperationalContext               _ctx;
+    private readonly IOperationalContext _ctx;
 
     public SetPrimaryBpContactHandler(IBusinessPartnerContactRepository contactRepo, IOperationalContext ctx)
         => (_contactRepo, _ctx) = (contactRepo, ctx);
@@ -186,7 +186,7 @@ public sealed class DeactivateBpContactHandler
     : IRequestHandler<DeactivateBpContactCommand, Result<bool>>
 {
     private readonly IBusinessPartnerContactRepository _contactRepo;
-    private readonly IOperationalContext               _ctx;
+    private readonly IOperationalContext _ctx;
 
     public DeactivateBpContactHandler(IBusinessPartnerContactRepository contactRepo, IOperationalContext ctx)
         => (_contactRepo, _ctx) = (contactRepo, ctx);
@@ -208,7 +208,7 @@ public sealed class ActivateBpContactHandler
     : IRequestHandler<ActivateBpContactCommand, Result<bool>>
 {
     private readonly IBusinessPartnerContactRepository _contactRepo;
-    private readonly IOperationalContext               _ctx;
+    private readonly IOperationalContext _ctx;
 
     public ActivateBpContactHandler(IBusinessPartnerContactRepository contactRepo, IOperationalContext ctx)
         => (_contactRepo, _ctx) = (contactRepo, ctx);

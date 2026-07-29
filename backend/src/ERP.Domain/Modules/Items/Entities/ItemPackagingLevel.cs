@@ -1,4 +1,4 @@
-﻿using ERP.Domain.Common;
+using ERP.Domain.Common;
 
 namespace ERP.Domain.Modules.Items.Entities;
 
@@ -37,19 +37,19 @@ public sealed class ItemPackagingLevel : AuditableEntity
 
         var entity = new ItemPackagingLevel
         {
-            Id                = Guid.NewGuid(),
-            TenantId      = tenantId,
-            ItemId            = itemId,
-            Name              = name.Trim(),
-            Level             = level,
-            BaseQuantity      = baseQuantity,
-            UomCode           = uomCode.Trim().ToUpperInvariant(),
-            Barcode           = barcode?.Trim(),
-            Weight            = weight,
-            IsBaseUnit        = isBaseUnit,
+            Id = Guid.NewGuid(),
+            TenantId = tenantId,
+            ItemId = itemId,
+            Name = name.Trim(),
+            Level = level,
+            BaseQuantity = baseQuantity,
+            UomCode = uomCode.Trim().ToUpperInvariant(),
+            Barcode = barcode?.Trim(),
+            Weight = weight,
+            IsBaseUnit = isBaseUnit,
             IsPurchaseDefault = isPurchaseDefault,
-            IsSaleDefault     = isSaleDefault,
-            IsActive          = true,
+            IsSaleDefault = isSaleDefault,
+            IsActive = true,
         };
         entity.SetCreated(createdBy);
         return entity;

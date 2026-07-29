@@ -6,8 +6,8 @@ namespace ERP.Application.Modules.Companies.UseCases.UpdateCompanyFiscal;
 
 public sealed record UpdateCompanyFiscalCommand(
     string? TaxRegimeCode,
-    bool    IsAccountingReq,
+    bool IsAccountingReq,
     string? SpecialTaxpayerNo,
-    bool    IsForeignTrade,
-    bool    WithholdsRenta,
-    bool    WithholdsVat) : IRequest<Result<CompanyProfileDto>>;
+    bool IsForeignTrade,
+    bool WithholdsRenta,
+    bool WithholdsVat) : IRequest<Result<CompanyProfileDto>>;

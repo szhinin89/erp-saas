@@ -15,12 +15,12 @@ public sealed class BarcodeTypeDefinitionConfiguration : IEntityTypeConfiguratio
         builder.Property(x => x.IsActive).HasColumnName("is_active").HasDefaultValue(true);
 
         builder.HasData(
-            new BarcodeTypeDefinition { Code = "EAN13",    Name = "EAN-13",   IsActive = true },
-            new BarcodeTypeDefinition { Code = "EAN8",     Name = "EAN-8",    IsActive = true },
-            new BarcodeTypeDefinition { Code = "QR",       Name = "QR",       IsActive = true },
-            new BarcodeTypeDefinition { Code = "Code128",  Name = "Code 128", IsActive = true },
-            new BarcodeTypeDefinition { Code = "Internal", Name = "Interno",  IsActive = true },
-            new BarcodeTypeDefinition { Code = "Other",    Name = "Otro",     IsActive = true }
+            new BarcodeTypeDefinition { Code = "EAN13", Name = "EAN-13", IsActive = true },
+            new BarcodeTypeDefinition { Code = "EAN8", Name = "EAN-8", IsActive = true },
+            new BarcodeTypeDefinition { Code = "QR", Name = "QR", IsActive = true },
+            new BarcodeTypeDefinition { Code = "Code128", Name = "Code 128", IsActive = true },
+            new BarcodeTypeDefinition { Code = "Internal", Name = "Interno", IsActive = true },
+            new BarcodeTypeDefinition { Code = "Other", Name = "Otro", IsActive = true }
         );
     }
 }

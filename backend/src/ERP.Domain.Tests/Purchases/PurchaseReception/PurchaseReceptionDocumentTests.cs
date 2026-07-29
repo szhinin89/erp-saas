@@ -2,7 +2,6 @@ using ERP.Domain.Modules.Purchases.PurchaseReception.Entities;
 using ERP.Domain.Modules.Purchases.PurchaseReception.Enums;
 using ERP.Domain.Modules.Purchases.PurchaseReception.Models;
 using FluentAssertions;
-using Xunit;
 
 namespace ERP.Domain.Tests.Purchases.PurchaseReception;
 

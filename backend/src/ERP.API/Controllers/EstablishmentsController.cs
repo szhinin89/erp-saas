@@ -1,6 +1,3 @@
-using MediatR;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Mvc;
 using ERP.API.Attributes;
 using ERP.API.Contracts;
 using ERP.API.Extensions;
@@ -11,6 +8,9 @@ using ERP.Application.Modules.Company.UseCases.EnableEstablishment;
 using ERP.Application.Modules.Company.UseCases.GetEstablishments;
 using ERP.Application.Modules.Company.UseCases.UpdateEstablishment;
 using ERP.Domain.Kernel.Permissions;
+using MediatR;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 
 namespace ERP.API.Controllers;
 
@@ -35,8 +35,8 @@ public sealed class EstablishmentsController : ControllerBase
     public async Task<IActionResult> GetAll(CancellationToken cancellationToken = default)
     {
         var activeFilter = CatalogQueryParameters.ParseActiveFilter(Request.Query);
-        var search       = CatalogQueryParameters.ParseSearch(Request.Query);
-        Guid? branchId   = null;
+        var search = CatalogQueryParameters.ParseSearch(Request.Query);
+        Guid? branchId = null;
         if (Request.Query.TryGetValue("branchId", out var rawBranchId)
             && Guid.TryParse(rawBranchId, out var parsedBranchId))
         {

@@ -1,14 +1,11 @@
-using System.Reflection;
-using FluentValidation;
-using MediatR;
-using Microsoft.Extensions.DependencyInjection;
 using ERP.Application.Access;
 using ERP.Application.Access.Authorization;
 using ERP.Application.Access.Caching;
 using ERP.Application.Behaviors;
-using ERP.Application.Common;
-using ERP.Application.Common.Config;
-using ERP.Application.Common.Interfaces;
+using FluentValidation;
+using MediatR;
+using Microsoft.Extensions.DependencyInjection;
+using System.Reflection;
 
 namespace ERP.Application;
 

@@ -10,6 +10,6 @@ namespace ERP.Domain.MasterData.Entities;
 /// </summary>
 public class PersonTypeCatalog
 {
-    public short  Code { get; set; }
+    public short Code { get; set; }
     public string Name { get; set; } = null!;
 }

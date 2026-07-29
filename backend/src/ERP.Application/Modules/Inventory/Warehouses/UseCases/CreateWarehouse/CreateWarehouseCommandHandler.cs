@@ -1,4 +1,3 @@
-using MediatR;
 using ERP.Application.Common;
 using ERP.Application.Modules.Inventory.Warehouses.DTOs;
 using ERP.Application.Modules.Inventory.Warehouses.UseCases.GetWarehouses;
@@ -6,6 +5,7 @@ using ERP.Domain.Audit.Entities;
 using ERP.Domain.Audit.Interfaces;
 using ERP.Domain.Modules.Inventory.Entities;
 using ERP.Domain.Modules.Inventory.Interfaces;
+using MediatR;
 
 namespace ERP.Application.Modules.Inventory.Warehouses.UseCases.CreateWarehouse;
 
@@ -25,17 +25,17 @@ public sealed class CreateWarehouseCommandHandler
         ICurrentCompany company,
         ICurrentUser user)
     {
-        _repo          = repo;
-        _activity      = activity;
+        _repo = repo;
+        _activity = activity;
         _currentTenant = currentTenant;
-        _company       = company;
-        _user          = user;
+        _company = company;
+        _user = user;
     }
 
     public async Task<Result<WarehouseListItemDto>> Handle(
         CreateWarehouseCommand command, CancellationToken cancellationToken)
     {
-        var tenantId  = _currentTenant.TenantId;
+        var tenantId = _currentTenant.TenantId;
         var companyId = _company.CompanyId;
 
         var code = $"WH-{Guid.NewGuid():N}"[..Warehouse.CodeMaxLen];
@@ -45,21 +45,21 @@ public sealed class CreateWarehouseCommandHandler
             return Result<WarehouseListItemDto>.Conflict("Ya existe una bodega con ese código en la sucursal.");
 
         var entity = Warehouse.Create(
-            tenantId:         tenantId,
-            branchId:         command.BranchId,
-            name:             command.Name,
-            code:             code,
-            storageType:      command.StorageType,
-            address:          command.Address,
-            phone:            command.Phone,
-            email:            command.Email,
-            manager:          command.Manager,
-            latitude:         command.Latitude,
-            longitude:        command.Longitude,
-            capacity:         command.Capacity,
+            tenantId: tenantId,
+            branchId: command.BranchId,
+            name: command.Name,
+            code: code,
+            storageType: command.StorageType,
+            address: command.Address,
+            phone: command.Phone,
+            email: command.Email,
+            manager: command.Manager,
+            latitude: command.Latitude,
+            longitude: command.Longitude,
+            capacity: command.Capacity,
             dailyDispatchGoal: command.DailyDispatchGoal,
-            createdBy:        _user.UserId,
-            companyId:        companyId);
+            createdBy: _user.UserId,
+            companyId: companyId);
 
         await _repo.AddAsync(entity, cancellationToken);
         await _activity.AddAsync(UserActivity.Create(

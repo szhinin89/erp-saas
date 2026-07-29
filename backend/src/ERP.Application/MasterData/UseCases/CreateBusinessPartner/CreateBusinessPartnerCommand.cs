@@ -13,10 +13,10 @@ namespace ERP.Application.MasterData.UseCases.CreateBusinessPartner;
 /// ELIMINADO: LegalRepresentativeName, Email, Phone → usar CreateBpContactCommand después de crear.
 /// </summary>
 public sealed record CreateBusinessPartnerCommand(
-    string     IdentificationType,
-    string     IdentificationNumber,
+    string IdentificationType,
+    string IdentificationNumber,
     PersonType PersonType,
-    string     LegalName,
-    string?    TradeName   = null,
-    string?    CountryCode = null)
+    string LegalName,
+    string? TradeName = null,
+    string? CountryCode = null)
     : IRequest<Result<BusinessPartnerSummaryDto>>, ITenantScopedRequest;

@@ -1,5 +1,4 @@
 using ERP.Application.Common;
-using ERP.Application.Modules.Companies;
 using ERP.Application.Modules.Media;
 using ERP.Domain.Modules.Media.Enums;
 using MediatR;

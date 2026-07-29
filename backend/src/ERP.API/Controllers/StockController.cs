@@ -1,17 +1,17 @@
+using ERP.API.Extensions;
+using ERP.Application.Modules.Inventory.Stock.DTOs;
+using ERP.Application.Modules.Inventory.Stock.UseCases.ConfirmStockTransfer;
+using ERP.Application.Modules.Inventory.Stock.UseCases.CreateStockAdjustment;
+using ERP.Application.Modules.Inventory.Stock.UseCases.CreateStockTransfer;
+using ERP.Application.Modules.Inventory.Stock.UseCases.ExecuteStockAdjustment;
+using ERP.Application.Modules.Inventory.Stock.UseCases.GetAggregatedStock;
+using ERP.Application.Modules.Inventory.Stock.UseCases.GetItemWarehouseAvailability;
+using ERP.Application.Modules.Inventory.Stock.UseCases.GetStock;
+using ERP.Application.Modules.Inventory.Stock.UseCases.GetStockMovements;
+using ERP.Domain.Kernel.Permissions;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using ERP.API.Extensions;
-using ERP.Application.Modules.Inventory.Stock.DTOs;
-using ERP.Application.Modules.Inventory.Stock.UseCases.GetAggregatedStock;
-using ERP.Application.Modules.Inventory.Stock.UseCases.GetStock;
-using ERP.Application.Modules.Inventory.Stock.UseCases.GetItemWarehouseAvailability;
-using ERP.Application.Modules.Inventory.Stock.UseCases.GetStockMovements;
-using ERP.Application.Modules.Inventory.Stock.UseCases.CreateStockAdjustment;
-using ERP.Application.Modules.Inventory.Stock.UseCases.ExecuteStockAdjustment;
-using ERP.Application.Modules.Inventory.Stock.UseCases.CreateStockTransfer;
-using ERP.Application.Modules.Inventory.Stock.UseCases.ConfirmStockTransfer;
-using ERP.Domain.Kernel.Permissions;
 
 namespace ERP.API.Controllers;
 

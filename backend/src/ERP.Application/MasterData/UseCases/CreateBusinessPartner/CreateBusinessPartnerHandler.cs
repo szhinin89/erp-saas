@@ -1,4 +1,4 @@
-﻿using ERP.Application.Common;
+using ERP.Application.Common;
 using ERP.Application.Common.Persistence;
 using ERP.Application.MasterData.DTOs;
 using ERP.Domain.Audit.Entities;
@@ -20,24 +20,24 @@ namespace ERP.Application.MasterData.UseCases.CreateBusinessPartner;
 public sealed class CreateBusinessPartnerHandler
     : IRequestHandler<CreateBusinessPartnerCommand, Result<BusinessPartnerSummaryDto>>
 {
-    private readonly IBusinessPartnerRepository  _bpRepo;
-    private readonly IUserActivityRepository     _activity;
-    private readonly IOperationalContext         _ctx;
-    private readonly ICurrentUser                _currentUser;
+    private readonly IBusinessPartnerRepository _bpRepo;
+    private readonly IUserActivityRepository _activity;
+    private readonly IOperationalContext _ctx;
+    private readonly ICurrentUser _currentUser;
     private readonly IDatabaseExceptionTranslator _dbEx;
 
     public CreateBusinessPartnerHandler(
-        IBusinessPartnerRepository   bpRepo,
-        IUserActivityRepository      activity,
-        IOperationalContext          ctx,
-        ICurrentUser                 currentUser,
+        IBusinessPartnerRepository bpRepo,
+        IUserActivityRepository activity,
+        IOperationalContext ctx,
+        ICurrentUser currentUser,
         IDatabaseExceptionTranslator dbEx)
     {
-        _bpRepo      = bpRepo;
-        _activity    = activity;
-        _ctx         = ctx;
+        _bpRepo = bpRepo;
+        _activity = activity;
+        _ctx = ctx;
         _currentUser = currentUser;
-        _dbEx        = dbEx;
+        _dbEx = dbEx;
     }
 
     public async Task<Result<BusinessPartnerSummaryDto>> Handle(

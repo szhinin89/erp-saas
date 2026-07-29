@@ -15,58 +15,58 @@ public sealed class PurchaseInvoice : AuditableEntity, ITenantScopedEntity, ICom
     /// </summary>
     public Guid BranchId { get; private set; }
 
-    public const int InvoiceNumberMaxLen    = 30;
-    public const int AccessKeyLen           = 49;
-    public const int DocTypeCodeMaxLen      = 5;
-    public const int SriPaymentMethodMaxLen     = 5;
+    public const int InvoiceNumberMaxLen = 30;
+    public const int AccessKeyLen = 49;
+    public const int DocTypeCodeMaxLen = 5;
+    public const int SriPaymentMethodMaxLen = 5;
     public const int SriPaymentMethodNameMaxLen = 100;
-    public const int NotesMaxLen            = 500;
-    public const int CurrencyCodeMaxLen     = 3;
-    public const int SupplierNameMaxLen     = 200;
-    public const int SupplierTaxIdMaxLen    = 20;
+    public const int NotesMaxLen = 500;
+    public const int CurrencyCodeMaxLen = 3;
+    public const int SupplierNameMaxLen = 200;
+    public const int SupplierTaxIdMaxLen = 20;
     public const int PurchaseOrderNumMaxLen = 30;
 
-    public Guid            SupplierId          { get; private set; }
-    public string          DocTypeCode         { get; private set; } = null!;
-    public string          InvoiceNumber       { get; private set; } = null!;
-    public DateOnly        IssueDate           { get; private set; }
-    public string?         AccessKey           { get; private set; }
-    public string?         AuthorizationNumber { get; private set; }
-    public DateTime?       AuthorizationDate   { get; private set; }
-    public string?         TaxSupportCode      { get; private set; }
-    public string?         SriPaymentMethodCode { get; private set; }
-    public string?         SriPaymentMethodName { get; private set; }
+    public Guid SupplierId { get; private set; }
+    public string DocTypeCode { get; private set; } = null!;
+    public string InvoiceNumber { get; private set; } = null!;
+    public DateOnly IssueDate { get; private set; }
+    public string? AccessKey { get; private set; }
+    public string? AuthorizationNumber { get; private set; }
+    public DateTime? AuthorizationDate { get; private set; }
+    public string? TaxSupportCode { get; private set; }
+    public string? SriPaymentMethodCode { get; private set; }
+    public string? SriPaymentMethodName { get; private set; }
 
     // ── Snapshot proveedor (trazabilidad fiscal) ──────────────────────
-    public string          SupplierName        { get; private set; } = null!;
-    public string          SupplierTaxId       { get; private set; } = null!;
+    public string SupplierName { get; private set; } = null!;
+    public string SupplierTaxId { get; private set; } = null!;
 
     // ── Moneda ───────────────────────────────────────────────────────
-    public string          CurrencyCode        { get; private set; } = "USD";
-    public decimal         ExchangeRate        { get; private set; } = 1m;
+    public string CurrencyCode { get; private set; } = "USD";
+    public decimal ExchangeRate { get; private set; } = 1m;
 
     // ── Referencia a Orden de Compra ─────────────────────────────────
-    public Guid?           PurchaseOrderId     { get; private set; }
-    public string?         PurchaseOrderNumber { get; private set; }
+    public Guid? PurchaseOrderId { get; private set; }
+    public string? PurchaseOrderNumber { get; private set; }
 
-    public Guid?           GlobalWarehouseId   { get; private set; }
+    public Guid? GlobalWarehouseId { get; private set; }
 
     public const int PaymentTermNameMaxLen = 120;
 
-    public Guid            PaymentTermId               { get; private set; }
-    public string          PaymentTermName             { get; private set; } = null!;
-    public int             PaymentTermInstallments      { get; private set; }
-    public int             PaymentTermDaysBetween       { get; private set; }
+    public Guid PaymentTermId { get; private set; }
+    public string PaymentTermName { get; private set; } = null!;
+    public int PaymentTermInstallments { get; private set; }
+    public int PaymentTermDaysBetween { get; private set; }
 
-    public DateOnly?       DueDate             { get; private set; }
-    public string?         Notes               { get; private set; }
-    public PurchaseStatus  Status              { get; private set; } = PurchaseStatus.Draft;
+    public DateOnly? DueDate { get; private set; }
+    public string? Notes { get; private set; }
+    public PurchaseStatus Status { get; private set; } = PurchaseStatus.Draft;
 
     // ── Totales snapshot (congelados al confirmar) ────────────────────
-    public decimal?        ConfirmedSubtotal   { get; private set; }
-    public decimal?        ConfirmedTotalTax   { get; private set; }
-    public decimal?        ConfirmedTotalDiscount { get; private set; }
-    public decimal?        ConfirmedGrandTotal { get; private set; }
+    public decimal? ConfirmedSubtotal { get; private set; }
+    public decimal? ConfirmedTotalTax { get; private set; }
+    public decimal? ConfirmedTotalDiscount { get; private set; }
+    public decimal? ConfirmedGrandTotal { get; private set; }
 
     private readonly List<PurchaseInvoiceDetail> _lines = new();
     public IReadOnlyList<PurchaseInvoiceDetail> Lines => _lines.AsReadOnly();
@@ -74,14 +74,14 @@ public sealed class PurchaseInvoice : AuditableEntity, ITenantScopedEntity, ICom
     private readonly List<PurchasePaymentSchedule> _paymentSchedules = new();
     public IReadOnlyList<PurchasePaymentSchedule> PaymentSchedules => _paymentSchedules.AsReadOnly();
 
-    public decimal Subtotal        => ConfirmedSubtotal ?? _lines.Sum(l => l.LineSubtotal);
-    public decimal TotalDiscount   => ConfirmedTotalDiscount ?? _lines.Sum(l => l.DiscountAmount);
-    public decimal TotalIce        => _lines.Sum(l => l.IceAmount);
-    public decimal TotalVat        => _lines.Sum(l => l.VatAmount);
-    public decimal TotalTax        => TotalIce + TotalVat;
-    public decimal TotalFreight    => _lines.Sum(l => l.FreightAllocated);
+    public decimal Subtotal => ConfirmedSubtotal ?? _lines.Sum(l => l.LineSubtotal);
+    public decimal TotalDiscount => ConfirmedTotalDiscount ?? _lines.Sum(l => l.DiscountAmount);
+    public decimal TotalIce => _lines.Sum(l => l.IceAmount);
+    public decimal TotalVat => _lines.Sum(l => l.VatAmount);
+    public decimal TotalTax => TotalIce + TotalVat;
+    public decimal TotalFreight => _lines.Sum(l => l.FreightAllocated);
     public decimal TotalOtherCosts => _lines.Sum(l => l.OtherCostsAllocated);
-    public decimal GrandTotal      => ConfirmedGrandTotal
+    public decimal GrandTotal => ConfirmedGrandTotal
         ?? (_lines.Sum(l => l.TaxInclusiveTotal) + TotalFreight + TotalOtherCosts);
 
     public decimal TotalCostValue => _lines.Sum(l => l.TotalLineCost);
@@ -91,33 +91,33 @@ public sealed class PurchaseInvoice : AuditableEntity, ITenantScopedEntity, ICom
     private PurchaseInvoice() { }
 
     public static PurchaseInvoice CreateDraft(
-        Guid     tenantId,
-        Guid     companyId,
-        Guid     branchId,
-        Guid     supplierId,
-        string   supplierName,
-        string   supplierTaxId,
-        string   docTypeCode,
-        string   invoiceNumber,
+        Guid tenantId,
+        Guid companyId,
+        Guid branchId,
+        Guid supplierId,
+        string supplierName,
+        string supplierTaxId,
+        string docTypeCode,
+        string invoiceNumber,
         DateOnly issueDate,
-        Guid     createdBy,
-        Guid     paymentTermId,
-        string   paymentTermName,
-        int      paymentTermInstallments,
-        int      paymentTermDaysBetween,
-        string?  accessKey           = null,
-        string?  authorizationNumber = null,
-        DateTime? authorizationDate  = null,
-        string?  taxSupportCode      = null,
-        string?  sriPaymentMethodCode = null,
-        string?  sriPaymentMethodName = null,
-        Guid?    globalWarehouseId   = null,
-        DateOnly? dueDate            = null,
-        string?  notes               = null,
-        string   currencyCode        = "USD",
-        decimal  exchangeRate        = 1m,
-        Guid?    purchaseOrderId     = null,
-        string?  purchaseOrderNumber = null)
+        Guid createdBy,
+        Guid paymentTermId,
+        string paymentTermName,
+        int paymentTermInstallments,
+        int paymentTermDaysBetween,
+        string? accessKey = null,
+        string? authorizationNumber = null,
+        DateTime? authorizationDate = null,
+        string? taxSupportCode = null,
+        string? sriPaymentMethodCode = null,
+        string? sriPaymentMethodName = null,
+        Guid? globalWarehouseId = null,
+        DateOnly? dueDate = null,
+        string? notes = null,
+        string currencyCode = "USD",
+        decimal exchangeRate = 1m,
+        Guid? purchaseOrderId = null,
+        string? purchaseOrderNumber = null)
     {
         if (branchId == Guid.Empty)
             throw new ArgumentException("La sucursal es obligatoria.", nameof(branchId));
@@ -140,60 +140,60 @@ public sealed class PurchaseInvoice : AuditableEntity, ITenantScopedEntity, ICom
 
         var inv = new PurchaseInvoice
         {
-            Id                        = Guid.NewGuid(),
-            TenantId                  = tenantId,
-            CompanyId                 = companyId,
-            BranchId                  = branchId,
-            SupplierId                = supplierId,
-            SupplierName              = supplierName.Trim(),
-            SupplierTaxId             = supplierTaxId.Trim(),
-            DocTypeCode               = docTypeCode.Trim(),
-            InvoiceNumber             = invoiceNumber.Trim(),
-            IssueDate                 = issueDate,
-            AccessKey                 = OptionalCode.Normalize(accessKey),
-            AuthorizationNumber       = OptionalCode.Normalize(authorizationNumber),
-            AuthorizationDate         = authorizationDate,
-            TaxSupportCode            = OptionalCode.Normalize(taxSupportCode),
-            SriPaymentMethodCode      = OptionalCode.Normalize(sriPaymentMethodCode),
-            SriPaymentMethodName      = OptionalCode.Normalize(sriPaymentMethodName),
-            CurrencyCode              = currencyCode.Trim().ToUpperInvariant(),
-            ExchangeRate              = exchangeRate,
-            PurchaseOrderId           = purchaseOrderId,
-            PurchaseOrderNumber       = purchaseOrderNumber?.Trim(),
-            GlobalWarehouseId         = globalWarehouseId,
-            PaymentTermId             = paymentTermId,
-            PaymentTermName           = paymentTermName.Trim(),
-            PaymentTermInstallments   = paymentTermInstallments,
-            PaymentTermDaysBetween    = paymentTermDaysBetween,
-            DueDate                   = dueDate,
-            Notes                     = notes?.Trim(),
-            Status                    = PurchaseStatus.Draft,
+            Id = Guid.NewGuid(),
+            TenantId = tenantId,
+            CompanyId = companyId,
+            BranchId = branchId,
+            SupplierId = supplierId,
+            SupplierName = supplierName.Trim(),
+            SupplierTaxId = supplierTaxId.Trim(),
+            DocTypeCode = docTypeCode.Trim(),
+            InvoiceNumber = invoiceNumber.Trim(),
+            IssueDate = issueDate,
+            AccessKey = OptionalCode.Normalize(accessKey),
+            AuthorizationNumber = OptionalCode.Normalize(authorizationNumber),
+            AuthorizationDate = authorizationDate,
+            TaxSupportCode = OptionalCode.Normalize(taxSupportCode),
+            SriPaymentMethodCode = OptionalCode.Normalize(sriPaymentMethodCode),
+            SriPaymentMethodName = OptionalCode.Normalize(sriPaymentMethodName),
+            CurrencyCode = currencyCode.Trim().ToUpperInvariant(),
+            ExchangeRate = exchangeRate,
+            PurchaseOrderId = purchaseOrderId,
+            PurchaseOrderNumber = purchaseOrderNumber?.Trim(),
+            GlobalWarehouseId = globalWarehouseId,
+            PaymentTermId = paymentTermId,
+            PaymentTermName = paymentTermName.Trim(),
+            PaymentTermInstallments = paymentTermInstallments,
+            PaymentTermDaysBetween = paymentTermDaysBetween,
+            DueDate = dueDate,
+            Notes = notes?.Trim(),
+            Status = PurchaseStatus.Draft,
         };
         inv.SetCreated(createdBy);
         return inv;
     }
 
     public void UpdateDraft(
-        Guid     supplierId,
-        string   supplierName,
-        string   supplierTaxId,
-        string   docTypeCode,
-        string   invoiceNumber,
+        Guid supplierId,
+        string supplierName,
+        string supplierTaxId,
+        string docTypeCode,
+        string invoiceNumber,
         DateOnly issueDate,
-        Guid     updatedBy,
-        string?  accessKey           = null,
-        string?  authorizationNumber = null,
-        DateTime? authorizationDate  = null,
-        string?  taxSupportCode      = null,
-        string?  sriPaymentMethodCode = null,
-        string?  sriPaymentMethodName = null,
-        Guid?    globalWarehouseId   = null,
-        DateOnly? dueDate            = null,
-        string?  notes               = null,
-        string   currencyCode        = "USD",
-        decimal  exchangeRate        = 1m,
-        Guid?    purchaseOrderId     = null,
-        string?  purchaseOrderNumber = null)
+        Guid updatedBy,
+        string? accessKey = null,
+        string? authorizationNumber = null,
+        DateTime? authorizationDate = null,
+        string? taxSupportCode = null,
+        string? sriPaymentMethodCode = null,
+        string? sriPaymentMethodName = null,
+        Guid? globalWarehouseId = null,
+        DateOnly? dueDate = null,
+        string? notes = null,
+        string currencyCode = "USD",
+        decimal exchangeRate = 1m,
+        Guid? purchaseOrderId = null,
+        string? purchaseOrderNumber = null)
     {
         if (Status != PurchaseStatus.Draft)
             throw new InvalidOperationException("Solo se pueden editar compras en estado borrador.");
@@ -204,25 +204,25 @@ public sealed class PurchaseInvoice : AuditableEntity, ITenantScopedEntity, ICom
         if (exchangeRate <= 0)
             throw new ArgumentException("El tipo de cambio debe ser mayor a cero.", nameof(exchangeRate));
 
-        SupplierId          = supplierId;
-        SupplierName        = supplierName.Trim();
-        SupplierTaxId       = supplierTaxId.Trim();
-        DocTypeCode         = docTypeCode.Trim();
-        InvoiceNumber       = invoiceNumber.Trim();
-        IssueDate           = issueDate;
-        AccessKey           = OptionalCode.Normalize(accessKey);
+        SupplierId = supplierId;
+        SupplierName = supplierName.Trim();
+        SupplierTaxId = supplierTaxId.Trim();
+        DocTypeCode = docTypeCode.Trim();
+        InvoiceNumber = invoiceNumber.Trim();
+        IssueDate = issueDate;
+        AccessKey = OptionalCode.Normalize(accessKey);
         AuthorizationNumber = OptionalCode.Normalize(authorizationNumber);
-        AuthorizationDate   = authorizationDate;
-        TaxSupportCode      = OptionalCode.Normalize(taxSupportCode);
+        AuthorizationDate = authorizationDate;
+        TaxSupportCode = OptionalCode.Normalize(taxSupportCode);
         SriPaymentMethodCode = OptionalCode.Normalize(sriPaymentMethodCode);
         SriPaymentMethodName = OptionalCode.Normalize(sriPaymentMethodName);
-        CurrencyCode        = currencyCode.Trim().ToUpperInvariant();
-        ExchangeRate        = exchangeRate;
-        PurchaseOrderId     = purchaseOrderId;
+        CurrencyCode = currencyCode.Trim().ToUpperInvariant();
+        ExchangeRate = exchangeRate;
+        PurchaseOrderId = purchaseOrderId;
         PurchaseOrderNumber = purchaseOrderNumber?.Trim();
-        GlobalWarehouseId   = globalWarehouseId;
-        DueDate             = dueDate;
-        Notes               = notes?.Trim();
+        GlobalWarehouseId = globalWarehouseId;
+        DueDate = dueDate;
+        Notes = notes?.Trim();
         SetUpdated(updatedBy);
     }
 
@@ -340,10 +340,10 @@ public sealed class PurchaseInvoice : AuditableEntity, ITenantScopedEntity, ICom
         foreach (var line in _lines)
             line.FreezeCosts();
 
-        ConfirmedSubtotal      = _lines.Sum(l => l.LineSubtotal);
+        ConfirmedSubtotal = _lines.Sum(l => l.LineSubtotal);
         ConfirmedTotalDiscount = _lines.Sum(l => l.DiscountAmount);
-        ConfirmedTotalTax      = _lines.Sum(l => l.IceAmount) + _lines.Sum(l => l.VatAmount);
-        ConfirmedGrandTotal    = _lines.Sum(l => l.TaxInclusiveTotal) + TotalFreight + TotalOtherCosts;
+        ConfirmedTotalTax = _lines.Sum(l => l.IceAmount) + _lines.Sum(l => l.VatAmount);
+        ConfirmedGrandTotal = _lines.Sum(l => l.TaxInclusiveTotal) + TotalFreight + TotalOtherCosts;
 
         Status = PurchaseStatus.Confirmed;
         SetUpdated(updatedBy);
@@ -383,9 +383,9 @@ public sealed class PurchaseInvoice : AuditableEntity, ITenantScopedEntity, ICom
 
     public const int CancelReasonMaxLen = 500;
 
-    public string?   CancelReason  { get; private set; }
-    public DateTime? CancelledAt   { get; private set; }
-    public Guid?     CancelledBy   { get; private set; }
+    public string? CancelReason { get; private set; }
+    public DateTime? CancelledAt { get; private set; }
+    public Guid? CancelledBy { get; private set; }
 
     public void Cancel(string reason, Guid cancelledBy)
     {
@@ -394,10 +394,10 @@ public sealed class PurchaseInvoice : AuditableEntity, ITenantScopedEntity, ICom
         if (string.IsNullOrWhiteSpace(reason))
             throw new ArgumentException("El motivo de anulación es obligatorio.", nameof(reason));
 
-        Status       = PurchaseStatus.Cancelled;
+        Status = PurchaseStatus.Cancelled;
         CancelReason = reason.Trim();
-        CancelledAt  = DateTime.UtcNow;
-        CancelledBy  = cancelledBy;
+        CancelledAt = DateTime.UtcNow;
+        CancelledBy = cancelledBy;
         SetUpdated(cancelledBy);
         RaiseDomainEvent(new PurchaseInvoiceCancelledEvent(TenantId, Id, SupplierId, InvoiceNumber, GrandTotal, CancelReason));
     }
@@ -408,10 +408,10 @@ public sealed class PurchaseInvoice : AuditableEntity, ITenantScopedEntity, ICom
         if (_paymentSchedules.Count > 0)
             throw new InvalidOperationException("No se puede cambiar la condición de pago después de generar el cronograma.");
 
-        PaymentTermId           = paymentTermId;
-        PaymentTermName         = paymentTermName.Trim();
+        PaymentTermId = paymentTermId;
+        PaymentTermName = paymentTermName.Trim();
         PaymentTermInstallments = installments;
-        PaymentTermDaysBetween  = daysBetween;
+        PaymentTermDaysBetween = daysBetween;
     }
 
     public void GeneratePaymentSchedule()

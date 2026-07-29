@@ -10,7 +10,7 @@ public interface IStockRepository
         CancellationToken cancellationToken = default);
 
     Task<IReadOnlyList<CurrentStock>> GetStockByWarehouseAsync(
-        Guid  tenantId, Guid warehouseId, Guid? productId,
+        Guid tenantId, Guid warehouseId, Guid? productId,
         CancellationToken cancellationToken = default);
 
     Task AddCurrentStockAsync(CurrentStock entity, CancellationToken cancellationToken = default);
@@ -40,9 +40,9 @@ public interface IStockRepository
     Task<int> SaveChangesWithSequenceRetryAsync(CancellationToken cancellationToken = default);
 
     Task<IReadOnlyList<StockMovement>> GetMovementsAsync(
-        Guid      tenantId,
-        Guid      productId,
-        Guid      warehouseId,
+        Guid tenantId,
+        Guid productId,
+        Guid warehouseId,
         DateTime? fromUtc,
         DateTime? toUtc,
         CancellationToken cancellationToken = default);
@@ -53,9 +53,9 @@ public interface IStockRepository
     /// por bodega — el Kardex nunca mezcla saldos entre bodegas).
     /// </summary>
     Task<IReadOnlyList<StockMovement>> GetMovementsByProductAsync(
-        Guid      tenantId,
-        Guid      productId,
-        Guid?     warehouseId,
+        Guid tenantId,
+        Guid productId,
+        Guid? warehouseId,
         DateTime? fromUtc,
         DateTime? toUtc,
         CancellationToken cancellationToken = default);

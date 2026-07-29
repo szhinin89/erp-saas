@@ -5,7 +5,6 @@ using ERP.Domain.Modules.ElectronicDocuments.Entities;
 using ERP.Domain.Modules.ElectronicDocuments.Enums;
 using ERP.Domain.Modules.ElectronicDocuments.Events;
 using ERP.Domain.Modules.ElectronicDocuments.ValueObjects;
-using FluentAssertions;
 using Moq;
 
 namespace ERP.Application.Tests.ElectronicDocuments;

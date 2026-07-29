@@ -10,7 +10,6 @@ using ERP.Domain.Modules.Purchases.PurchaseReception.Models;
 using ERP.Infrastructure.Modules.Purchases.PurchaseReception;
 using FluentAssertions;
 using Moq;
-using Xunit;
 
 namespace ERP.Infrastructure.Tests.Modules.Purchases.PurchaseReception;
 

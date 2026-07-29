@@ -10,8 +10,8 @@ namespace ERP.Application.MasterData.UseCases.UpsertCompanyBpTradingSettings;
 /// Semántica Upsert: si ya existe → Update, si no → Create.
 /// </summary>
 public sealed record UpsertCompanyBpTradingSettingsCommand(
-    Guid    BusinessPartnerId,
+    Guid BusinessPartnerId,
     decimal CreditLimit,
-    int     PaymentDays,
-    string  CreditCurrencyCode = "USD")
+    int PaymentDays,
+    string CreditCurrencyCode = "USD")
     : IRequest<Result<CompanyBpTradingSettingsDto>>, ICompanyScopedRequest;

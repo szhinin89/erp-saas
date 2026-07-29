@@ -1,7 +1,7 @@
-using Microsoft.EntityFrameworkCore;
 using ERP.Application.Common;
 using ERP.Domain.Modules.Pricing.Entities;
 using ERP.Domain.Modules.Pricing.Interfaces;
+using Microsoft.EntityFrameworkCore;
 
 namespace ERP.Infrastructure.Persistence.Repositories.Pricing;
 
@@ -27,7 +27,7 @@ public sealed class PriceListRepository : IPriceListRepository
     {
         var q = Scoped(tenantId);
 
-        if (activeFilter is true)       q = q.Where(p => p.IsActive);
+        if (activeFilter is true) q = q.Where(p => p.IsActive);
         else if (activeFilter is false) q = q.Where(p => !p.IsActive);
 
         if (!string.IsNullOrWhiteSpace(search))

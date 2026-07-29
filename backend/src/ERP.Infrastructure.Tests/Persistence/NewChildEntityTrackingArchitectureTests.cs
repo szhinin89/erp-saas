@@ -1,5 +1,5 @@
-using System.Text.RegularExpressions;
 using FluentAssertions;
+using System.Text.RegularExpressions;
 
 namespace ERP.Infrastructure.Tests.Persistence;
 
@@ -70,7 +70,7 @@ public sealed class NewChildEntityTrackingArchitectureTests
     private static List<string> ScanForRegex(Regex pattern, HashSet<string> allowedPaths)
     {
         var backendRoot = ResolveBackendRoot();
-        var violations   = new List<string>();
+        var violations = new List<string>();
 
         foreach (var file in Directory.EnumerateFiles(backendRoot, "*.cs", SearchOption.AllDirectories))
         {

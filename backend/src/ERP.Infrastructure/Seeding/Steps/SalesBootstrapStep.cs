@@ -20,11 +20,11 @@ public sealed partial class SalesBootstrapStep : ICompanyBootstrapStep
 {
     public int Order => CompanyBootstrapStepOrder.Sales;
 
-    private const string DefaultPriceListCode   = "GENERAL";
-    private const string DefaultPriceListName   = "Lista General";
+    private const string DefaultPriceListCode = "GENERAL";
+    private const string DefaultPriceListName = "Lista General";
     private const string DefaultPaymentTermCode = "CONTADO";
     private const string DefaultPaymentTermName = "Contado";
-    private const string ConsumidorFinalName    = "Consumidor Final";
+    private const string ConsumidorFinalName = "Consumidor Final";
 
     private static readonly (string Code, string Name, bool RequiresRef, bool CreditAllowed, int Sort, PaymentMethodDetailType DetailType)[] DefaultPaymentMethods =
     [
@@ -41,8 +41,8 @@ public sealed partial class SalesBootstrapStep : ICompanyBootstrapStep
 
     public SalesBootstrapStep(ErpDbContext db, IDatabaseExceptionTranslator dbEx, ILogger<SalesBootstrapStep> logger)
     {
-        _db     = db;
-        _dbEx   = dbEx;
+        _db = db;
+        _dbEx = dbEx;
         _logger = logger;
     }
 
@@ -90,7 +90,7 @@ public sealed partial class SalesBootstrapStep : ICompanyBootstrapStep
     {
         var exists = await _db.BusinessPartners.IgnoreQueryFilters()
             .AnyAsync(bp => bp.TenantId == tenantId
-                         && bp.Identification.Type   == TaxIdentification.SriConsumidorFinal
+                         && bp.Identification.Type == TaxIdentification.SriConsumidorFinal
                          && bp.Identification.Number == TaxIdentification.ConsumidorFinalNumber, ct);
 
         if (exists)
@@ -116,13 +116,13 @@ public sealed partial class SalesBootstrapStep : ICompanyBootstrapStep
                 .FirstOrDefaultAsync(ct);
 
         var bp = BusinessPartner.CreateSystemSeeded(
-            tenantId:             tenantId,
-            identificationType:   TaxIdentification.SriConsumidorFinal,
+            tenantId: tenantId,
+            identificationType: TaxIdentification.SriConsumidorFinal,
             identificationNumber: TaxIdentification.ConsumidorFinalNumber,
-            personType:           PersonType.Natural,
-            legalName:            ConsumidorFinalName,
-            createdBy:            actorId,
-            countryCode:          iso2CountryCode);
+            personType: PersonType.Natural,
+            legalName: ConsumidorFinalName,
+            createdBy: actorId,
+            countryCode: iso2CountryCode);
 
         _db.BusinessPartners.Add(bp);
         try
@@ -140,10 +140,10 @@ public sealed partial class SalesBootstrapStep : ICompanyBootstrapStep
         }
 
         var role = BusinessPartnerRole.Create(
-            tenantId:          tenantId,
+            tenantId: tenantId,
             businessPartnerId: bp.Id,
-            roleType:          RoleType.Customer,
-            assignedBy:        actorId);
+            roleType: RoleType.Customer,
+            assignedBy: actorId);
 
         _db.BusinessPartnerRoles.Add(role);
         await _db.SaveChangesAsync(ct);
@@ -156,7 +156,7 @@ public sealed partial class SalesBootstrapStep : ICompanyBootstrapStep
         var exists = await _db.PriceLists.IgnoreQueryFilters()
             .AnyAsync(pl => pl.TenantId == tenantId
                          && pl.CompanyId == companyId
-                         && pl.Code      == DefaultPriceListCode, ct);
+                         && pl.Code == DefaultPriceListCode, ct);
 
         if (exists)
         {
@@ -170,13 +170,13 @@ public sealed partial class SalesBootstrapStep : ICompanyBootstrapStep
             .FirstAsync(ct);
 
         var priceList = PriceList.CreateSystemSeeded(
-            tenantId:     tenantId,
-            companyId:    companyId,
-            code:         DefaultPriceListCode,
-            name:         DefaultPriceListName,
+            tenantId: tenantId,
+            companyId: companyId,
+            code: DefaultPriceListCode,
+            name: DefaultPriceListName,
             currencyCode: currencyCode,
-            isDefault:    true,
-            createdBy:    actorId);
+            isDefault: true,
+            createdBy: actorId);
 
         _db.PriceLists.Add(priceList);
         await _db.SaveChangesAsync(ct);
@@ -196,12 +196,12 @@ public sealed partial class SalesBootstrapStep : ICompanyBootstrapStep
         }
 
         var paymentTerm = PaymentTerm.CreateSystemSeeded(
-            tenantId:                tenantId,
-            code:                    DefaultPaymentTermCode,
-            name:                    DefaultPaymentTermName,
-            installments:            1,
+            tenantId: tenantId,
+            code: DefaultPaymentTermCode,
+            name: DefaultPaymentTermName,
+            installments: 1,
             daysBetweenInstallments: 0,
-            createdBy:               actorId);
+            createdBy: actorId);
 
         _db.PaymentTerms.Add(paymentTerm);
         await _db.SaveChangesAsync(ct);

@@ -1,4 +1,4 @@
-﻿using ERP.Application.Access;
+using ERP.Application.Access;
 using ERP.Domain.Access.Entities;
 using ERP.Domain.Access.Interfaces;
 using ERP.Domain.Modules.Company.Interfaces;
@@ -11,12 +11,12 @@ namespace ERP.Infrastructure.Services;
 /// </summary>
 public sealed class MembershipAuthority : IMembershipAuthority
 {
-    private readonly IAccessRepository   _access;
-    private readonly ICompanyRepository  _companies;
+    private readonly IAccessRepository _access;
+    private readonly ICompanyRepository _companies;
 
     public MembershipAuthority(IAccessRepository access, ICompanyRepository companies)
     {
-        _access    = access;
+        _access = access;
         _companies = companies;
     }
 
@@ -36,7 +36,7 @@ public sealed class MembershipAuthority : IMembershipAuthority
         if (memberships.Count == 0) return false;
 
         var companyIds = memberships.Select(m => m.CompanyId).Distinct().ToList();
-        var companies  = await _companies.GetByIdsAsync(companyIds, cancellationToken);
+        var companies = await _companies.GetByIdsAsync(companyIds, cancellationToken);
         return companies.Any(c => c.TenantId == tenantId);
     }
 }

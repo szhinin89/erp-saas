@@ -21,8 +21,8 @@ namespace ERP.Domain.MasterData.ValueObjects;
 public sealed record SupplierRoleConfig
 {
     // ── Longitudes máximas ────────────────────────────────────────────────────
-    public const int SriCodeMaxLen           = 5;
-    public const int PaymentTermsMaxLen      = 200;
+    public const int SriCodeMaxLen = 5;
+    public const int PaymentTermsMaxLen = 200;
     public const int PaymentMethodCodeMaxLen = 5;
 
     /// <summary>
@@ -35,41 +35,41 @@ public sealed record SupplierRoleConfig
         new HashSet<string>(StringComparer.OrdinalIgnoreCase)
         { "01", "15", "16", "17", "18", "19", "20", "21" };
 
-    public string? DefaultTaxSupportCode       { get; }
-    public string? DefaultRetentionVatCode     { get; }
-    public string? DefaultRetentionIncomeCode  { get; }
+    public string? DefaultTaxSupportCode { get; }
+    public string? DefaultRetentionVatCode { get; }
+    public string? DefaultRetentionIncomeCode { get; }
 
     /// <summary>[LEGACY] Texto libre — será eliminado. Usar PaymentTermId.</summary>
-    public string? PaymentTerms                { get; }
+    public string? PaymentTerms { get; }
 
     /// <summary>Condición de pago obligatoria — FK a master_payment_terms.</summary>
-    public Guid    PaymentTermId               { get; }
+    public Guid PaymentTermId { get; }
 
     /// <summary>
     /// Método de pago SRI por defecto (código global.sri_payment_method).
     /// Pre-llenado en documentos de compra. NULL = sin preferencia.
     /// </summary>
-    public string? DefaultPaymentMethodCode    { get; }
+    public string? DefaultPaymentMethodCode { get; }
 
     /// <summary>
     /// Tipo Proveedor de Reembolso (Tabla 26 Ficha Técnica SRI: 01=Persona Natural, 02=Sociedad),
     /// código de global.sri_supplier_type. NULL = sin clasificar.
     /// </summary>
-    public string? RefundProviderTypeCode      { get; }
+    public string? RefundProviderTypeCode { get; }
 
     /// <summary>
     /// Proveedor exento de retención en la fuente (RISE, microempresa calificada, sector público).
     /// Cuando true el proceso de generación de retención debe alertar al operador.
     /// Default: false.
     /// </summary>
-    public bool    IsRetentionExempt           { get; }
+    public bool IsRetentionExempt { get; }
 
     /// <summary>
     /// Obligado a llevar contabilidad según SRI Ecuador.
     /// Afecta porcentajes de retención (IVA 30% vs 70%, Renta 1% vs 2%).
     /// Requerido para ATS y cálculo de retenciones.
     /// </summary>
-    public bool    IsRequiredToKeepAccounting  { get; }
+    public bool IsRequiredToKeepAccounting { get; }
 
     private SupplierRoleConfig(
         string? defaultTaxSupportCode,
@@ -78,31 +78,31 @@ public sealed record SupplierRoleConfig
         string? paymentTerms,
         string? defaultPaymentMethodCode,
         string? refundProviderTypeCode,
-        bool    isRetentionExempt,
-        bool    isRequiredToKeepAccounting,
-        Guid    paymentTermId)
+        bool isRetentionExempt,
+        bool isRequiredToKeepAccounting,
+        Guid paymentTermId)
     {
-        DefaultTaxSupportCode      = defaultTaxSupportCode;
-        DefaultRetentionVatCode    = defaultRetentionVatCode;
+        DefaultTaxSupportCode = defaultTaxSupportCode;
+        DefaultRetentionVatCode = defaultRetentionVatCode;
         DefaultRetentionIncomeCode = defaultRetentionIncomeCode;
-        PaymentTerms               = paymentTerms;
-        DefaultPaymentMethodCode   = defaultPaymentMethodCode;
-        RefundProviderTypeCode     = refundProviderTypeCode;
-        IsRetentionExempt          = isRetentionExempt;
+        PaymentTerms = paymentTerms;
+        DefaultPaymentMethodCode = defaultPaymentMethodCode;
+        RefundProviderTypeCode = refundProviderTypeCode;
+        IsRetentionExempt = isRetentionExempt;
         IsRequiredToKeepAccounting = isRequiredToKeepAccounting;
-        PaymentTermId              = paymentTermId;
+        PaymentTermId = paymentTermId;
     }
 
     public static SupplierRoleConfig Create(
-        Guid    paymentTermId,
-        string? defaultTaxSupportCode      = null,
-        string? defaultRetentionVatCode    = null,
+        Guid paymentTermId,
+        string? defaultTaxSupportCode = null,
+        string? defaultRetentionVatCode = null,
         string? defaultRetentionIncomeCode = null,
-        string? paymentTerms               = null,
-        string? defaultPaymentMethodCode   = null,
-        string? refundProviderTypeCode     = null,
-        bool    isRetentionExempt          = false,
-        bool    isRequiredToKeepAccounting = false)
+        string? paymentTerms = null,
+        string? defaultPaymentMethodCode = null,
+        string? refundProviderTypeCode = null,
+        bool isRetentionExempt = false,
+        bool isRequiredToKeepAccounting = false)
     {
         if (paymentTermId == Guid.Empty)
             throw new ArgumentException(
@@ -118,8 +118,8 @@ public sealed record SupplierRoleConfig
                 nameof(defaultPaymentMethodCode));
 
         return new SupplierRoleConfig(
-            NormalizeSriCode(defaultTaxSupportCode,      nameof(defaultTaxSupportCode)),
-            NormalizeSriCode(defaultRetentionVatCode,    nameof(defaultRetentionVatCode)),
+            NormalizeSriCode(defaultTaxSupportCode, nameof(defaultTaxSupportCode)),
+            NormalizeSriCode(defaultRetentionVatCode, nameof(defaultRetentionVatCode)),
             NormalizeSriCode(defaultRetentionIncomeCode, nameof(defaultRetentionIncomeCode)),
             NormalizeText(paymentTerms, PaymentTermsMaxLen, nameof(paymentTerms)),
             string.IsNullOrEmpty(paymentMethodCode) ? null : paymentMethodCode,

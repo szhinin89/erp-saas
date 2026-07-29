@@ -1,5 +1,5 @@
-using Microsoft.EntityFrameworkCore;
 using ERP.Application.Common.Services;
+using Microsoft.EntityFrameworkCore;
 
 namespace ERP.Infrastructure.Persistence.Services;
 

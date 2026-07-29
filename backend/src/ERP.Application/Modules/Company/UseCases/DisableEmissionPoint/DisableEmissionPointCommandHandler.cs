@@ -1,14 +1,14 @@
-﻿using MediatR;
 using ERP.Application.Common;
 using ERP.Domain.Modules.Company.Interfaces;
+using MediatR;
 
 namespace ERP.Application.Modules.Company.UseCases.DisableEmissionPoint;
 
 public sealed class DisableEmissionPointCommandHandler : IRequestHandler<DisableEmissionPointCommand, Result<bool>>
 {
     private readonly IEmissionPointRepository _repo;
-    private readonly ICurrentTenant       _currentTenant;
-    private readonly ICurrentUser             _user;
+    private readonly ICurrentTenant _currentTenant;
+    private readonly ICurrentUser _user;
 
     public DisableEmissionPointCommandHandler(IEmissionPointRepository repo, ICurrentTenant tenant, ICurrentUser user)
     {

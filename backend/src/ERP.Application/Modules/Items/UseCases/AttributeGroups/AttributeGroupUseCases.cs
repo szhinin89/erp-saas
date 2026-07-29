@@ -1,8 +1,8 @@
-﻿using FluentValidation;
-using MediatR;
 using ERP.Application.Common;
 using ERP.Application.Items.DTOs;
 using ERP.Domain.Modules.Items.Entities;
+using FluentValidation;
+using MediatR;
 
 namespace ERP.Application.Items.UseCases.AttributeGroups;
 
@@ -34,7 +34,7 @@ public interface IAttributeGroupRepository
 public sealed class CreateAttributeGroupCommandHandler : IRequestHandler<CreateAttributeGroupCommand, Result<AttributeGroupDto>>
 {
     private readonly IAttributeGroupRepository _r; private readonly ICurrentTenant _s; private readonly ICurrentUser _u;
-    public CreateAttributeGroupCommandHandler(IAttributeGroupRepository r, ICurrentTenant s, ICurrentUser u) { _r=r;_s=s;_u=u; }
+    public CreateAttributeGroupCommandHandler(IAttributeGroupRepository r, ICurrentTenant s, ICurrentUser u) { _r = r; _s = s; _u = u; }
     public async Task<Result<AttributeGroupDto>> Handle(CreateAttributeGroupCommand cmd, CancellationToken cancellationToken)
     {
         var sid = _s.TenantId;
@@ -48,7 +48,7 @@ public sealed class CreateAttributeGroupCommandHandler : IRequestHandler<CreateA
 public sealed class UpdateAttributeGroupCommandHandler : IRequestHandler<UpdateAttributeGroupCommand, Result<AttributeGroupDto>>
 {
     private readonly IAttributeGroupRepository _r; private readonly ICurrentTenant _s; private readonly ICurrentUser _u;
-    public UpdateAttributeGroupCommandHandler(IAttributeGroupRepository r, ICurrentTenant s, ICurrentUser u) { _r=r;_s=s;_u=u; }
+    public UpdateAttributeGroupCommandHandler(IAttributeGroupRepository r, ICurrentTenant s, ICurrentUser u) { _r = r; _s = s; _u = u; }
     public async Task<Result<AttributeGroupDto>> Handle(UpdateAttributeGroupCommand cmd, CancellationToken cancellationToken)
     {
         var g = await _r.GetByIdAsync(cmd.Id, _s.TenantId, cancellationToken); if (g is null) return Result<AttributeGroupDto>.NotFound("No encontrado.");
@@ -60,7 +60,7 @@ public sealed class UpdateAttributeGroupCommandHandler : IRequestHandler<UpdateA
 public sealed class EnableAttributeGroupCommandHandler : IRequestHandler<EnableAttributeGroupCommand, Result<bool>>
 {
     private readonly IAttributeGroupRepository _r; private readonly ICurrentTenant _s; private readonly ICurrentUser _u;
-    public EnableAttributeGroupCommandHandler(IAttributeGroupRepository r, ICurrentTenant s, ICurrentUser u) { _r=r;_s=s;_u=u; }
+    public EnableAttributeGroupCommandHandler(IAttributeGroupRepository r, ICurrentTenant s, ICurrentUser u) { _r = r; _s = s; _u = u; }
     public async Task<Result<bool>> Handle(EnableAttributeGroupCommand cmd, CancellationToken cancellationToken)
     {
         var g = await _r.GetByIdAsync(cmd.Id, _s.TenantId, cancellationToken); if (g is null) return Result<bool>.NotFound("No encontrado.");
@@ -72,7 +72,7 @@ public sealed class EnableAttributeGroupCommandHandler : IRequestHandler<EnableA
 public sealed class DisableAttributeGroupCommandHandler : IRequestHandler<DisableAttributeGroupCommand, Result<bool>>
 {
     private readonly IAttributeGroupRepository _r; private readonly ICurrentTenant _s; private readonly ICurrentUser _u;
-    public DisableAttributeGroupCommandHandler(IAttributeGroupRepository r, ICurrentTenant s, ICurrentUser u) { _r=r;_s=s;_u=u; }
+    public DisableAttributeGroupCommandHandler(IAttributeGroupRepository r, ICurrentTenant s, ICurrentUser u) { _r = r; _s = s; _u = u; }
     public async Task<Result<bool>> Handle(DisableAttributeGroupCommand cmd, CancellationToken cancellationToken)
     {
         var g = await _r.GetByIdAsync(cmd.Id, _s.TenantId, cancellationToken); if (g is null) return Result<bool>.NotFound("No encontrado.");
@@ -84,7 +84,7 @@ public sealed class DisableAttributeGroupCommandHandler : IRequestHandler<Disabl
 public sealed class GetAttributeGroupsQueryHandler : IRequestHandler<GetAttributeGroupsQuery, Result<IReadOnlyList<AttributeGroupDto>>>
 {
     private readonly IAttributeGroupRepository _r; private readonly ICurrentTenant _s;
-    public GetAttributeGroupsQueryHandler(IAttributeGroupRepository r, ICurrentTenant s) { _r=r;_s=s; }
+    public GetAttributeGroupsQueryHandler(IAttributeGroupRepository r, ICurrentTenant s) { _r = r; _s = s; }
     public async Task<Result<IReadOnlyList<AttributeGroupDto>>> Handle(GetAttributeGroupsQuery q, CancellationToken cancellationToken)
     {
         var all = await _r.GetAllAsync(_s.TenantId, cancellationToken);
@@ -97,7 +97,7 @@ public sealed class GetAttributeGroupsQueryHandler : IRequestHandler<GetAttribut
 public sealed class GetAttributeGroupByIdQueryHandler : IRequestHandler<GetAttributeGroupByIdQuery, Result<AttributeGroupDto>>
 {
     private readonly IAttributeGroupRepository _r; private readonly ICurrentTenant _s;
-    public GetAttributeGroupByIdQueryHandler(IAttributeGroupRepository r, ICurrentTenant s) { _r=r;_s=s; }
+    public GetAttributeGroupByIdQueryHandler(IAttributeGroupRepository r, ICurrentTenant s) { _r = r; _s = s; }
     public async Task<Result<AttributeGroupDto>> Handle(GetAttributeGroupByIdQuery q, CancellationToken cancellationToken)
     {
         var g = await _r.GetByIdAsync(q.Id, _s.TenantId, cancellationToken);

@@ -12,9 +12,9 @@ public sealed class GetSetupStatusHandler : IRequestHandler<GetSetupStatusQuery,
     public async Task<Result<SetupStatusDto>> Handle(GetSetupStatusQuery request, CancellationToken cancellationToken)
     {
         var state = await _repo.GetAsync(cancellationToken);
-        var dto   = new SetupStatusDto(
+        var dto = new SetupStatusDto(
             IsInitialized: state?.IsInitialized ?? false,
-            AdminEmail:    state?.IsInitialized == true ? state.AdminEmail : null);
+            AdminEmail: state?.IsInitialized == true ? state.AdminEmail : null);
         return Result<SetupStatusDto>.Success(dto);
     }
 }

@@ -1,13 +1,13 @@
-﻿using MediatR;
+using ERP.API.Attributes;
 using ERP.API.Contracts;
 using ERP.API.Extensions;
 using ERP.Application.Audit.DTOs;
 using ERP.Application.Audit.UseCases.GetEntityActivity;
 using ERP.Application.Audit.UseCases.GetMyActivity;
+using ERP.Domain.Kernel.Permissions;
+using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using ERP.API.Attributes;
-using ERP.Domain.Kernel.Permissions;
 
 namespace ERP.API.Controllers;
 

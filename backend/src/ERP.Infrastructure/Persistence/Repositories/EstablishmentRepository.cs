@@ -30,10 +30,10 @@ public sealed class EstablishmentRepository : IEstablishmentRepository
             .ContinueWith(t => (IReadOnlyList<Establishment>)t.Result, cancellationToken);
 
     public async Task<IReadOnlyList<Establishment>> GetFilteredAsync(
-        Guid    tenantId,
-        Guid    companyId,
-        Guid?   branchId,
-        bool?   isActive,
+        Guid tenantId,
+        Guid companyId,
+        Guid? branchId,
+        bool? isActive,
         string? search,
         CancellationToken cancellationToken = default)
     {
@@ -70,7 +70,7 @@ public sealed class EstablishmentRepository : IEstablishmentRepository
         => _db.Establishments
             .AsNoTracking()
             .FirstOrDefaultAsync(e => e.TenantId == tenantId
-                                   && e.BranchId  == branchId
+                                   && e.BranchId == branchId
                                    && e.IsMain
                                    && e.IsActive, cancellationToken);
 
@@ -84,14 +84,14 @@ public sealed class EstablishmentRepository : IEstablishmentRepository
 
     public Task<bool> ExistsAsync(Guid tenantId, Guid companyId, string code, CancellationToken cancellationToken = default)
         => _db.Establishments.IgnoreQueryFilters()
-            .AnyAsync(e => e.TenantId  == tenantId
+            .AnyAsync(e => e.TenantId == tenantId
                         && e.CompanyId == companyId
-                        && e.Code      == code, cancellationToken);
+                        && e.Code == code, cancellationToken);
 
     public Task<bool> HasActiveEmissionPointsAsync(Guid tenantId, Guid establishmentId, CancellationToken cancellationToken = default)
         => _db.EmissionPoints
             .AsNoTracking()
-            .AnyAsync(ep => ep.TenantId        == tenantId
+            .AnyAsync(ep => ep.TenantId == tenantId
                          && ep.EstablishmentId == establishmentId
                          && ep.IsActive, cancellationToken);
 

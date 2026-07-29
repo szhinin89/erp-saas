@@ -1,7 +1,7 @@
-using MediatR;
 using ERP.Application.Common;
 using ERP.Domain.Modules.Purchases.Entities;
 using ERP.Domain.Modules.Purchases.Interfaces;
+using MediatR;
 
 namespace ERP.Application.Modules.Purchases.UseCases;
 

@@ -1,4 +1,4 @@
-﻿using ERP.Domain.MasterData.Entities;
+using ERP.Domain.MasterData.Entities;
 using ERP.Domain.MasterData.Enums;
 
 namespace ERP.Domain.MasterData.Interfaces;
@@ -41,17 +41,17 @@ public interface IBusinessPartnerRepository
     /// Reemplaza los obsoletos isCustomer/isSupplier booleans.
     /// </summary>
     Task<IReadOnlyList<BusinessPartner>> SearchAsync(
-        string?      query    = null,
-        bool?        isActive = true,
-        RoleType[]?  roles    = null,
-        int          skip     = 0,
-        int          take     = 50,
-        CancellationToken cancellationToken  = default);
+        string? query = null,
+        bool? isActive = true,
+        RoleType[]? roles = null,
+        int skip = 0,
+        int take = 50,
+        CancellationToken cancellationToken = default);
 
     Task<int> CountAsync(
-        string?     query    = null,
-        bool?       isActive = true,
-        RoleType[]? roles    = null,
+        string? query = null,
+        bool? isActive = true,
+        RoleType[]? roles = null,
         CancellationToken cancellationToken = default);
 
     Task AddAsync(BusinessPartner businessPartner, CancellationToken cancellationToken = default);

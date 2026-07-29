@@ -1,6 +1,5 @@
-﻿using System.Collections.Concurrent;
-using ERP.Application.Common;
 using ERP.Domain.Access.Interfaces;
+using System.Collections.Concurrent;
 
 namespace ERP.Application.Access.Caching;
 
@@ -18,9 +17,9 @@ public sealed class EffectivePermissionKeysProvider : IEffectivePermissionKeysPr
         IPermissionsCacheDiagnostics diagnostics,
         IAccessRepository repo)
     {
-        _cache       = cache;
+        _cache = cache;
         _diagnostics = diagnostics;
-        _repo        = repo;
+        _repo = repo;
     }
 
     public async Task<IReadOnlyList<string>> GetAllowedKeysAsync(
@@ -34,7 +33,7 @@ public sealed class EffectivePermissionKeysProvider : IEffectivePermissionKeysPr
             return cached.Keys;
         }
 
-        var sem      = StampedeLocks.GetOrAdd(StampedeLockKey(companyId, userId), _ => new SemaphoreSlim(1, 1));
+        var sem = StampedeLocks.GetOrAdd(StampedeLockKey(companyId, userId), _ => new SemaphoreSlim(1, 1));
         var acquired = await sem.WaitAsync(StampedeLockWait, cancellationToken);
         if (!acquired)
         {

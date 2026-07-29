@@ -1,6 +1,3 @@
-﻿using ERP.Application.Common;
-using ERP.Domain.Modules.Inventory.Enums;
-
 namespace ERP.Application.Common.Inventory;
 
 public sealed record InventoryPostingLine(Guid ProductId, decimal Quantity);

@@ -9,7 +9,7 @@ public sealed class ItemEnabledEvent : BaseDomainEvent, IAuditEvent
 
     public ItemEnabledEvent(Guid itemId, Guid tenantId)
     {
-        ItemId       = itemId;
+        ItemId = itemId;
         TenantId = tenantId;
     }
 

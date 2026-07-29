@@ -1,4 +1,4 @@
-﻿using ERP.Application.Common;
+using ERP.Application.Common;
 using ERP.Application.MasterData.DTOs;
 using ERP.Domain.MasterData.Interfaces;
 using MediatR;
@@ -8,11 +8,11 @@ namespace ERP.Application.MasterData.UseCases.GetBusinessPartner;
 public sealed class GetBusinessPartnerHandler
     : IRequestHandler<GetBusinessPartnerQuery, Result<BusinessPartnerDetailDto>>
 {
-    private readonly IBusinessPartnerRepository     _bpRepo;
+    private readonly IBusinessPartnerRepository _bpRepo;
     private readonly IBusinessPartnerRoleRepository _roleRepo;
 
     public GetBusinessPartnerHandler(
-        IBusinessPartnerRepository     bpRepo,
+        IBusinessPartnerRepository bpRepo,
         IBusinessPartnerRoleRepository roleRepo)
         => (_bpRepo, _roleRepo) = (bpRepo, roleRepo);
 

@@ -8,7 +8,6 @@ using ERP.Application.Modules.Ride.Rendering;
 using ERP.Application.Modules.Ride.Services;
 using ERP.Application.Modules.Ride.Templates;
 using ERP.Domain.Modules.Ride.Enums;
-using ERP.Domain.Modules.Ride.Interfaces;
 using ERP.Infrastructure.Persistence;
 using ERP.Infrastructure.Persistence.Repositories.Ride;
 using ERP.Infrastructure.Ride.Rendering;

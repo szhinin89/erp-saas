@@ -1,8 +1,8 @@
+using ERP.API.Extensions;
+using ERP.Application.Modules.Dashboard;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using ERP.API.Extensions;
-using ERP.Application.Modules.Dashboard;
 
 namespace ERP.API.Controllers;
 

@@ -1,7 +1,7 @@
-using MediatR;
 using ERP.Application.Common;
 using ERP.Application.Modules.ElectronicInvoicing.DTOs;
 using ERP.Domain.Configuration.Interfaces;
+using MediatR;
 
 namespace ERP.Application.Modules.ElectronicInvoicing.UseCases.GetSriConfiguration;
 
@@ -15,7 +15,7 @@ public sealed class GetSriConfigurationQueryHandler
         ISriSettingsRepository repo,
         ICurrentCompany currentCompany)
     {
-        _repo           = repo;
+        _repo = repo;
         _currentCompany = currentCompany;
     }
 

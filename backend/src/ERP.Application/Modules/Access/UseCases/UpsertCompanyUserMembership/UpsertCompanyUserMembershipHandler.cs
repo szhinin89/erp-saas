@@ -1,31 +1,31 @@
-﻿using ERP.Application.Access.Caching;
+using ERP.Application.Access.Caching;
 using ERP.Application.Access.DTOs;
 using ERP.Application.Access.UseCases.CreateCompanyUserPreferences;
 using ERP.Application.Access.UseCases.GetCompanyUserPreferences;
 using ERP.Application.Access.UseCases.UpdateCompanyUserPreferences;
 using ERP.Application.Common;
 using ERP.Application.Navigation;
-using MediatR;
 using ERP.Domain.Access.Entities;
 using ERP.Domain.Access.Enums;
 using ERP.Domain.Access.Interfaces;
 using ERP.Domain.Branches.Interfaces;
 using ERP.Domain.Tenants.Interfaces;
+using MediatR;
 
 namespace ERP.Application.Access.UseCases.UpsertCompanyUserMembership;
 
 public class UpsertCompanyUserMembershipHandler
     : IRequestHandler<UpsertCompanyUserMembershipCommand, Result<object>>
 {
-    private readonly IAccessRepository            _accessRepository;
-    private readonly ICurrentUser                 _currentUser;
-    private readonly ITenantRepository        _tenantRepository;
-    private readonly ICompanyProvisioningService  _companyProvisioning;
+    private readonly IAccessRepository _accessRepository;
+    private readonly ICurrentUser _currentUser;
+    private readonly ITenantRepository _tenantRepository;
+    private readonly ICompanyProvisioningService _companyProvisioning;
     private readonly IPermissionsCacheInvalidator _permissionsCache;
-    private readonly INavigationBuilder           _navigationBuilder;
-    private readonly IBranchRepository            _branchRepository;
+    private readonly INavigationBuilder _navigationBuilder;
+    private readonly IBranchRepository _branchRepository;
     private readonly ICompanyUserBranchRepository _companyUserBranchRepository;
-    private readonly IMediator                    _mediator;
+    private readonly IMediator _mediator;
 
     public UpsertCompanyUserMembershipHandler(
         IAccessRepository accessRepository,
@@ -38,15 +38,15 @@ public class UpsertCompanyUserMembershipHandler
         ICompanyUserBranchRepository companyUserBranchRepository,
         IMediator mediator)
     {
-        _accessRepository    = accessRepository;
-        _currentUser         = currentUser;
+        _accessRepository = accessRepository;
+        _currentUser = currentUser;
         _tenantRepository = TenantRepository;
         _companyProvisioning = companyProvisioning;
-        _permissionsCache    = permissionsCache;
-        _navigationBuilder   = navigationBuilder;
-        _branchRepository    = branchRepository;
+        _permissionsCache = permissionsCache;
+        _navigationBuilder = navigationBuilder;
+        _branchRepository = branchRepository;
         _companyUserBranchRepository = companyUserBranchRepository;
-        _mediator            = mediator;
+        _mediator = mediator;
     }
 
     public Task<Result<object>> HandleAsync(UpsertCompanyUserMembershipCommand command, CancellationToken cancellationToken = default)
@@ -61,7 +61,7 @@ public class UpsertCompanyUserMembershipHandler
         var company = await _companyProvisioning.EnsureDefaultCompanyAsync(tenant, cancellationToken);
 
         var username = command.Username.Trim().ToLowerInvariant();
-        var user  = await _accessRepository.GetUserByUsernameAsync(username, cancellationToken);
+        var user = await _accessRepository.GetUserByUsernameAsync(username, cancellationToken);
         if (user is null)
             return Result<object>.Failure("Usuario no existe.");
 

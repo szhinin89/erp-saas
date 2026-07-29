@@ -1,7 +1,6 @@
-using MediatR;
 using ERP.Application.Common;
-using ERP.Application.Common.Services;
 using ERP.Domain.Modules.Sales.Interfaces;
+using MediatR;
 
 namespace ERP.Application.Modules.Sales.UseCases;
 

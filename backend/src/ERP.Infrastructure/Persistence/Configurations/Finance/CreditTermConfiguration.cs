@@ -1,5 +1,4 @@
 using ERP.Domain.Modules.Finance.Entities;
-using ERP.Domain.Modules.Finance.Enums;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 

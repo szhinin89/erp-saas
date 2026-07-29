@@ -3,7 +3,6 @@ using ERP.Domain.MasterData.Entities;
 using ERP.Domain.Modules.Company.Entities;
 using ERP.Domain.Modules.Inventory.Entities;
 using ERP.Domain.Modules.Purchases.Entities;
-using ERP.Domain.Modules.Purchases.Enums;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 

@@ -1,4 +1,3 @@
-using MediatR;
 using ERP.Application.Audit;
 using ERP.Application.Common;
 using ERP.Application.Modules.ElectronicDocuments.DTOs;
@@ -6,6 +5,7 @@ using ERP.Application.Modules.ElectronicDocuments.Services;
 using ERP.Domain.Modules.Company.Interfaces;
 using ERP.Domain.Modules.ElectronicDocuments.Entities;
 using ERP.Domain.Modules.ElectronicDocuments.Interfaces;
+using MediatR;
 
 namespace ERP.Application.Modules.ElectronicDocuments.UseCases.RetryElectronicDocument;
 

@@ -1,6 +1,5 @@
-using MediatR;
 using ERP.Application.Common;
-using ERP.Application.Common.Services;
+using MediatR;
 
 namespace ERP.Application.Modules.Companies.UseCases.DecimalConfig;
 

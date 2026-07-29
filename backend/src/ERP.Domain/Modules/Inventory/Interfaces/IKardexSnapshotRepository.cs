@@ -1,13 +1,13 @@
-﻿using ERP.Domain.Modules.Inventory.Entities;
+using ERP.Domain.Modules.Inventory.Entities;
 
 namespace ERP.Domain.Modules.Inventory.Interfaces;
 
 public interface IKardexSnapshotRepository
 {
     Task<KardexSnapshot?> GetLatestBeforeAsync(
-        Guid     tenantId,
-        Guid     productId,
-        Guid     warehouseId,
+        Guid tenantId,
+        Guid productId,
+        Guid warehouseId,
         DateTime toUtc,
         CancellationToken cancellationToken = default);
 

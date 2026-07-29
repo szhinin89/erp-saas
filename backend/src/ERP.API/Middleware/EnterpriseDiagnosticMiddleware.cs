@@ -1,5 +1,4 @@
 using ERP.Application.Common;
-using Microsoft.Extensions.Logging;
 using Serilog.Context;
 
 namespace ERP.API.Middleware;
@@ -34,7 +33,7 @@ public sealed partial class EnterpriseDiagnosticMiddleware
         RequestDelegate next,
         ILogger<EnterpriseDiagnosticMiddleware> logger)
     {
-        _next   = next;
+        _next = next;
         _logger = logger;
     }
 

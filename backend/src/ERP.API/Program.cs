@@ -1,30 +1,28 @@
 // CA1848/CA1873: Program.cs top-level statements cannot use [LoggerMessage] source generators
 #pragma warning disable CA1848, CA1873
 
-using Hangfire;
-using Hangfire.Dashboard;
-using Hangfire.PostgreSql;
+using ERP.API.Authorization;
+using ERP.API.Extensions;
 using ERP.API.Hangfire;
 using ERP.API.Health;
-using ERP.API.Extensions;
 using ERP.API.Middleware;
 using ERP.API.Services;
+using ERP.Application;
 using ERP.Infrastructure;
 using ERP.Infrastructure.Caching;
-using ERP.Application;
-using ERP.API.Authorization;
 using ERP.Infrastructure.Persistence;
+using Hangfire;
+using Hangfire.PostgreSql;
 using HealthChecks.UI.Client;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
-using QuestPDF.Infrastructure;
-using System.Threading.RateLimiting;
-using Serilog;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
-using Hangfire.Common;
+using QuestPDF.Infrastructure;
+using Serilog;
+using System.Threading.RateLimiting;
 
 // Licencia Community: libre para proyectos con ingresos anuales < 1 M USD.
 // Cambiar a LicenseType.Professional si aplica.

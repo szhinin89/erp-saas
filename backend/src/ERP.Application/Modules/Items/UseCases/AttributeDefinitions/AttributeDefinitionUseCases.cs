@@ -1,9 +1,9 @@
-﻿using FluentValidation;
-using MediatR;
 using ERP.Application.Common;
 using ERP.Application.Items.DTOs;
 using ERP.Domain.Modules.Items.Entities;
 using ERP.Domain.Modules.Items.Enums;
+using FluentValidation;
+using MediatR;
 
 namespace ERP.Application.Items.UseCases.AttributeDefinitions;
 
@@ -12,23 +12,23 @@ namespace ERP.Application.Items.UseCases.AttributeDefinitions;
 // ══════════════════════════════════════════════════════════════════════════
 
 public sealed record CreateAttributeDefinitionCommand(
-    Guid              GroupId,
-    string            Code,
-    string            Name,
+    Guid GroupId,
+    string Code,
+    string Name,
     AttributeDataType DataType,
-    bool              IsVariantAxis  = false,
-    string?           AllowedValues  = null,
-    bool              IsRequired     = false,
-    int               SortOrder      = 0)
+    bool IsVariantAxis = false,
+    string? AllowedValues = null,
+    bool IsRequired = false,
+    int SortOrder = 0)
     : IRequest<Result<AttributeDefinitionDto>>, ICompanyScopedRequest;
 
 public sealed record UpdateAttributeDefinitionCommand(
-    Guid    Id,
-    string  Name,
-    bool    IsVariantAxis,
+    Guid Id,
+    string Name,
+    bool IsVariantAxis,
     string? AllowedValues,
-    bool    IsRequired,
-    int     SortOrder)
+    bool IsRequired,
+    int SortOrder)
     : IRequest<Result<AttributeDefinitionDto>>, ICompanyScopedRequest;
 
 public sealed record EnableAttributeDefinitionCommand(Guid Id)

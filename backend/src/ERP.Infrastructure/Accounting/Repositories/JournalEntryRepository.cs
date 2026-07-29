@@ -1,9 +1,9 @@
-using Microsoft.EntityFrameworkCore;
 using ERP.Domain.Modules.Accounting.Entities;
 using ERP.Domain.Modules.Accounting.Enums;
 using ERP.Domain.Modules.Accounting.Interfaces;
 using ERP.Domain.Modules.Accounting.ValueObjects;
 using ERP.Infrastructure.Persistence;
+using Microsoft.EntityFrameworkCore;
 
 namespace ERP.Infrastructure.Accounting.Repositories;
 

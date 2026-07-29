@@ -1,12 +1,12 @@
-using MediatR;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Mvc;
 using ERP.API.Attributes;
 using ERP.API.Extensions;
 using ERP.Application.Modules.Sales.UseCases;
 using ERP.Application.Modules.Sales.UseCases.GetSalesInvoiceDefaults;
 using ERP.Application.Modules.Sales.UseCases.GetSalesItemPricing;
 using ERP.Domain.Kernel.Permissions;
+using MediatR;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 
 namespace ERP.API.Controllers;
 
@@ -79,9 +79,9 @@ public sealed class SalesController : ControllerBase
     [Authorize(Policy = $"perm:{SalesPermissions.View}")]
     public async Task<IActionResult> SearchItems(
         [FromQuery] string? q,
-        [FromQuery] Guid?   warehouseId,
-        [FromQuery] int     pageSize = 10,
-        CancellationToken   ct = default)
+        [FromQuery] Guid? warehouseId,
+        [FromQuery] int pageSize = 10,
+        CancellationToken ct = default)
         => this.ToOkOrBadRequest(await _mediator.Send(
             new SearchItemsForInvoiceQuery(q ?? string.Empty, warehouseId, pageSize), ct), "OK");
 

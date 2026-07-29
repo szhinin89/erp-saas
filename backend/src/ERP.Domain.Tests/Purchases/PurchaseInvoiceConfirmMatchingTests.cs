@@ -11,14 +11,14 @@ namespace ERP.Domain.Tests.Purchases;
 /// </summary>
 public sealed class PurchaseInvoiceConfirmMatchingTests
 {
-    private static readonly Guid TenantId   = Guid.NewGuid();
-    private static readonly Guid CompanyId  = Guid.NewGuid();
-    private static readonly Guid BranchId   = Guid.NewGuid();
-    private static readonly Guid UserId     = Guid.NewGuid();
+    private static readonly Guid TenantId = Guid.NewGuid();
+    private static readonly Guid CompanyId = Guid.NewGuid();
+    private static readonly Guid BranchId = Guid.NewGuid();
+    private static readonly Guid UserId = Guid.NewGuid();
     private static readonly Guid SupplierId = Guid.NewGuid();
-    private static readonly Guid WhId       = Guid.NewGuid();
-    private static readonly Guid PtId       = Guid.NewGuid();
-    private static readonly Guid ItemId     = Guid.NewGuid();
+    private static readonly Guid WhId = Guid.NewGuid();
+    private static readonly Guid PtId = Guid.NewGuid();
+    private static readonly Guid ItemId = Guid.NewGuid();
 
     private static PurchaseInvoice CreateDraftInvoice() =>
         PurchaseInvoice.CreateDraft(

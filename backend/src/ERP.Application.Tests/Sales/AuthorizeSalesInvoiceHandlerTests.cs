@@ -2,10 +2,10 @@ using ERP.Application.Common;
 using ERP.Application.Common.Services;
 using ERP.Application.Modules.Sales.Services;
 using ERP.Application.Modules.Sales.UseCases;
+using ERP.Domain.Modules.Company.Interfaces;
 using ERP.Domain.Modules.ElectronicDocuments.Entities;
 using ERP.Domain.Modules.ElectronicDocuments.Interfaces;
 using ERP.Domain.Modules.Inventory.Interfaces;
-using ERP.Domain.Modules.Company.Interfaces;
 using ERP.Domain.Modules.Sales.Entities;
 using ERP.Domain.Modules.Sales.Interfaces;
 using ERP.Domain.Modules.Sales.ValueObjects;
@@ -25,14 +25,14 @@ namespace ERP.Application.Tests.Sales;
 /// </summary>
 public sealed class AuthorizeSalesInvoiceHandlerTests
 {
-    private static readonly Guid TenantId         = Guid.NewGuid();
-    private static readonly Guid CompanyId        = Guid.NewGuid();
-    private static readonly Guid BranchId         = Guid.NewGuid();
-    private static readonly Guid UserId           = Guid.NewGuid();
-    private static readonly Guid CustomerId       = Guid.NewGuid();
-    private static readonly Guid PaymentTermId    = Guid.NewGuid();
-    private static readonly Guid PaymentMethodId  = Guid.NewGuid();
-    private static readonly Guid CashSessionId    = Guid.NewGuid();
+    private static readonly Guid TenantId = Guid.NewGuid();
+    private static readonly Guid CompanyId = Guid.NewGuid();
+    private static readonly Guid BranchId = Guid.NewGuid();
+    private static readonly Guid UserId = Guid.NewGuid();
+    private static readonly Guid CustomerId = Guid.NewGuid();
+    private static readonly Guid PaymentTermId = Guid.NewGuid();
+    private static readonly Guid PaymentMethodId = Guid.NewGuid();
+    private static readonly Guid CashSessionId = Guid.NewGuid();
 
     /// <summary>Factura de contado, sin punto de emisión (evita mockear captura de secuencial /
     /// emisión electrónica — fuera del alcance de esta regresión) y sin ítem/bodega en la línea

@@ -7,7 +7,6 @@ using ERP.Domain.Modules.Purchases.PurchaseReception.Enums;
 using FluentAssertions;
 using Microsoft.Extensions.Logging;
 using Moq;
-using Xunit;
 
 namespace ERP.Application.Tests.Purchases.PurchaseReception;
 

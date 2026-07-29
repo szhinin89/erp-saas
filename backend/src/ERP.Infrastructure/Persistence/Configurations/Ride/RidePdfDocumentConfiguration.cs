@@ -62,15 +62,15 @@ public sealed class RidePdfDocumentConfiguration : IEntityTypeConfiguration<Ride
         // literal de H4 (4 columnas) para cubrir los 5 valores que la propia ADR define como
         // determinantes de la validez del cache; documentado en la auditoría de la Fase 4.
         builder.HasIndex(x => new
-            {
-                x.TenantId,
-                x.ElectronicDocumentId,
-                x.SourceXmlHash,
-                x.TemplateVersion,
-                x.BrandingVersion,
-                x.RendererVersion,
-                x.RideSpecificationVersion,
-            })
+        {
+            x.TenantId,
+            x.ElectronicDocumentId,
+            x.SourceXmlHash,
+            x.TemplateVersion,
+            x.BrandingVersion,
+            x.RendererVersion,
+            x.RideSpecificationVersion,
+        })
             .IsUnique()
             .HasDatabaseName("uq_ride_pdf_document_fingerprint");
 

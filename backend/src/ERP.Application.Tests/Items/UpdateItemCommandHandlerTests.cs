@@ -16,9 +16,9 @@ namespace ERP.Application.Tests.Items;
 /// </summary>
 public sealed class UpdateItemCommandHandlerTests
 {
-    private static readonly Guid TenantId    = Guid.NewGuid();
-    private static readonly Guid UserId      = Guid.NewGuid();
-    private static readonly Guid ItemTypeId  = Guid.NewGuid();
+    private static readonly Guid TenantId = Guid.NewGuid();
+    private static readonly Guid UserId = Guid.NewGuid();
+    private static readonly Guid ItemTypeId = Guid.NewGuid();
 
     private static Item CreateItem(bool isFavorite, decimal? baseSalePrice = 10m)
     {

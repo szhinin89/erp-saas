@@ -14,7 +14,7 @@ namespace ERP.Infrastructure.Services.Sri;
 /// </summary>
 public sealed class XadesBesSigner
 {
-    private const string DsNs    = "http://www.w3.org/2000/09/xmldsig#";
+    private const string DsNs = "http://www.w3.org/2000/09/xmldsig#";
     private const string XadesNs = "http://uri.etsi.org/01903/v1.3.2#";
 
     /// <summary>
@@ -60,13 +60,13 @@ public sealed class XadesBesSigner
         xmlDoc.LoadXml(xmlUtf8);
 
         // 3. Construir elemento XAdES SignedProperties
-        var signedPropsId     = "SignedPropertiesId";
-        var sigId             = "Signature";
-        var sigValueId        = "SignatureValue";
-        var certId            = "Certificate";
-        var docRefId          = "Reference-ID-comprobante";
+        var signedPropsId = "SignedPropertiesId";
+        var sigId = "Signature";
+        var sigValueId = "SignatureValue";
+        var certId = "Certificate";
+        var docRefId = "Reference-ID-comprobante";
         var qualifyingPropsId = "QualifyingPropertiesId";
-        var objectId          = "XadesObjectId";
+        var objectId = "XadesObjectId";
 
         var signedPropsXml = BuildXadesSignedProperties(cert, signedPropsId, sigId, docRefId);
 
@@ -79,7 +79,7 @@ public sealed class XadesBesSigner
             SigningKey = rsa,
         };
         signedXml.SignedInfo!.CanonicalizationMethod = SignedXml.XmlDsigC14NTransformUrl;
-        signedXml.SignedInfo!.SignatureMethod        = SignedXml.XmlDsigRSASHA1Url;
+        signedXml.SignedInfo!.SignatureMethod = SignedXml.XmlDsigRSASHA1Url;
 
         // FIRMA-04 (rechazo real del SRI, 2026-07-11, segunda ronda): las 3 referencias de abajo,
         // el CertDigest y el KeyInfo se verificaron byte a byte contra una factura real AUTORIZADA
@@ -107,8 +107,8 @@ public sealed class XadesBesSigner
 
         // KeyInfo con el certificado X509 + RSAKeyValue (la factura real autorizada incluye ambos
         // dentro de KeyInfo, no solo X509Data).
-        var keyInfo   = new KeyInfo { Id = certId };
-        var x509Data  = new KeyInfoX509Data(cert);
+        var keyInfo = new KeyInfo { Id = certId };
+        var x509Data = new KeyInfoX509Data(cert);
         keyInfo.AddClause(x509Data);
         keyInfo.AddClause(new RSAKeyValue(rsa));
         signedXml.KeyInfo = keyInfo;
@@ -132,7 +132,7 @@ public sealed class XadesBesSigner
         // nodo.
         var refProps = new Reference
         {
-            Uri  = "#" + signedPropsId,
+            Uri = "#" + signedPropsId,
             Type = "http://uri.etsi.org/01903#SignedProperties",
         };
         refProps.AddTransform(new XmlDsigExcC14NTransform());
@@ -149,7 +149,7 @@ public sealed class XadesBesSigner
         var dataObj = new DataObject
         {
             Data = qualifyingProps.SelectNodes(".")!,
-            Id   = objectId,
+            Id = objectId,
         };
         signedXml.AddObject(dataObj);
 
@@ -170,7 +170,7 @@ public sealed class XadesBesSigner
 
         // 8. Serializar a UTF-8 sin BOM
         using var ms = new MemoryStream();
-        using var w  = new XmlTextWriter(ms, new UTF8Encoding(false));
+        using var w = new XmlTextWriter(ms, new UTF8Encoding(false));
         w.Formatting = Formatting.None;
         xmlDoc.Save(w);
         w.Flush();
@@ -181,12 +181,12 @@ public sealed class XadesBesSigner
 
     private static XmlElement BuildXadesSignedProperties(
         X509Certificate2 cert,
-        string           signedPropsId,
-        string           sigId,
-        string           docRefId)
+        string signedPropsId,
+        string sigId,
+        string docRefId)
     {
         var doc = new XmlDocument();
-        var sp  = doc.CreateElement("xades", "SignedProperties", XadesNs);
+        var sp = doc.CreateElement("xades", "SignedProperties", XadesNs);
         sp.SetAttribute("Id", signedPropsId);
 
         var ssp = doc.CreateElement("xades", "SignedSignatureProperties", XadesNs);
@@ -200,21 +200,21 @@ public sealed class XadesBesSigner
         ssp.AppendChild(st);
 
         // SigningCertificate
-        var sc   = doc.CreateElement("xades", "SigningCertificate", XadesNs);
-        var c    = doc.CreateElement("xades", "Cert", XadesNs);
-        var cd   = doc.CreateElement("xades", "CertDigest", XadesNs);
-        var dm   = doc.CreateElement("ds", "DigestMethod", DsNs);
+        var sc = doc.CreateElement("xades", "SigningCertificate", XadesNs);
+        var c = doc.CreateElement("xades", "Cert", XadesNs);
+        var cd = doc.CreateElement("xades", "CertDigest", XadesNs);
+        var dm = doc.CreateElement("ds", "DigestMethod", DsNs);
         dm.SetAttribute("Algorithm", "http://www.w3.org/2001/04/xmlenc#sha256");
-        var dv   = doc.CreateElement("ds", "DigestValue", DsNs);
+        var dv = doc.CreateElement("ds", "DigestValue", DsNs);
         dv.InnerText = Convert.ToBase64String(SHA256.HashData(cert.RawData));
         cd.AppendChild(dm);
         cd.AppendChild(dv);
         c.AppendChild(cd);
 
         var isSer = doc.CreateElement("xades", "IssuerSerial", XadesNs);
-        var iss   = doc.CreateElement("ds", "X509IssuerName",   DsNs);
+        var iss = doc.CreateElement("ds", "X509IssuerName", DsNs);
         iss.InnerText = cert.Issuer;
-        var ser   = doc.CreateElement("ds", "X509SerialNumber",  DsNs);
+        var ser = doc.CreateElement("ds", "X509SerialNumber", DsNs);
         // FIRMA-05 (rechazo real del SRI 2026-07-11, código 39 "FIRMA INVALIDA" / "La información
         // sobre el certificado de firma no se ajusta a XAdES"): el esquema XAdES declara
         // ds:X509SerialNumber como xsd:integer (decimal) — cert.SerialNumber es la representación
@@ -234,11 +234,11 @@ public sealed class XadesBesSigner
         // autorizada por el SRI usada como fuente de verdad (FIRMA-04). Hermano de
         // SignedSignatureProperties dentro de SignedProperties, no dentro de él.
         var sdop = doc.CreateElement("xades", "SignedDataObjectProperties", XadesNs);
-        var dof  = doc.CreateElement("xades", "DataObjectFormat", XadesNs);
+        var dof = doc.CreateElement("xades", "DataObjectFormat", XadesNs);
         dof.SetAttribute("ObjectReference", "#" + docRefId);
         var mime = doc.CreateElement("xades", "MimeType", XadesNs);
         mime.InnerText = "text/xml";
-        var enc  = doc.CreateElement("xades", "Encoding", XadesNs);
+        var enc = doc.CreateElement("xades", "Encoding", XadesNs);
         enc.InnerText = "UTF-8";
         dof.AppendChild(mime);
         dof.AppendChild(enc);
@@ -250,13 +250,13 @@ public sealed class XadesBesSigner
 
     private static XmlElement BuildQualifyingProperties(
         X509Certificate2 cert,
-        string           signedPropsId,
-        string           sigId,
-        string           qualifyingPropsId,
-        XmlElement       signedProps)
+        string signedPropsId,
+        string sigId,
+        string qualifyingPropsId,
+        XmlElement signedProps)
     {
         var doc = new XmlDocument();
-        var qp  = doc.CreateElement("xades", "QualifyingProperties", XadesNs);
+        var qp = doc.CreateElement("xades", "QualifyingProperties", XadesNs);
         qp.SetAttribute("Id", qualifyingPropsId);
         qp.SetAttribute("Target", "#" + sigId);
         qp.AppendChild(doc.ImportNode(signedProps, true));

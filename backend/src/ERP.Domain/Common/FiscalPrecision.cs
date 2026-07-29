@@ -6,8 +6,8 @@ namespace ERP.Domain.Common;
 /// </summary>
 public static class FiscalPrecision
 {
-    public const int TaxAmount  = 2; // numeric(18,2): VatAmount, IceAmount, TaxableBase, TaxInclusiveTotal
-    public const int Quantity   = 4; // numeric(18,4): QuantityInBaseUom
-    public const int UnitCost   = 6; // numeric(18,6): DiscountAmount, TotalLineCost, LandedUnitCost
+    public const int TaxAmount = 2; // numeric(18,2): VatAmount, IceAmount, TaxableBase, TaxInclusiveTotal
+    public const int Quantity = 4; // numeric(18,4): QuantityInBaseUom
+    public const int UnitCost = 6; // numeric(18,6): DiscountAmount, TotalLineCost, LandedUnitCost
     public const int Percentage = 2; // numeric(5,2)
 }

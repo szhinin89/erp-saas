@@ -1,4 +1,4 @@
-﻿using ERP.Domain.Common;
+using ERP.Domain.Common;
 using ERP.Domain.MasterData.Enums;
 using ERP.Domain.MasterData.Events;
 using ERP.Domain.MasterData.ValueObjects;
@@ -21,43 +21,43 @@ namespace ERP.Domain.MasterData.Entities;
 /// </summary>
 public sealed class BusinessPartnerContact : AuditableEntity, ITenantScopedEntity
 {
-    public const int FirstNameMaxLen        = 100;
-    public const int LastNameMaxLen         = 100;
-    public const int PositionMaxLen         = 150;
-    public const int NotesMaxLen            = 2000;
+    public const int FirstNameMaxLen = 100;
+    public const int LastNameMaxLen = 100;
+    public const int PositionMaxLen = 150;
+    public const int NotesMaxLen = 2000;
     public const int OtherDescriptionMaxLen = 100;
 
-    public Guid        BusinessPartnerId { get; private set; }
-    public Guid?       LocationId        { get; private set; }
-    public string      FirstName         { get; private set; } = null!;
-    public string?     LastName          { get; private set; }
-    public string?     Position          { get; private set; }
-    public ContactRole Role              { get; private set; }
-    public string?     OtherDescription  { get; private set; }
-    public ContactInfo Contact           { get; private set; } = null!;
-    public string?     Notes             { get; private set; }
-    public bool        IsPrimary         { get; private set; }
-    public bool        IsActive          { get; private set; } = true;
+    public Guid BusinessPartnerId { get; private set; }
+    public Guid? LocationId { get; private set; }
+    public string FirstName { get; private set; } = null!;
+    public string? LastName { get; private set; }
+    public string? Position { get; private set; }
+    public ContactRole Role { get; private set; }
+    public string? OtherDescription { get; private set; }
+    public ContactInfo Contact { get; private set; } = null!;
+    public string? Notes { get; private set; }
+    public bool IsPrimary { get; private set; }
+    public bool IsActive { get; private set; } = true;
 
     public string FullName => LastName is not null ? $"{FirstName} {LastName}" : FirstName;
 
     private BusinessPartnerContact() { }
 
     public static BusinessPartnerContact Create(
-        Guid        tenantId,
-        Guid        businessPartnerId,
-        string      firstName,
+        Guid tenantId,
+        Guid businessPartnerId,
+        string firstName,
         ContactRole role,
-        Guid        createdBy,
-        Guid?       locationId       = null,
-        string?     lastName         = null,
-        string?     position         = null,
-        string?     phone            = null,
-        string?     mobile           = null,
-        string?     email            = null,
-        string?     notes            = null,
-        bool        isPrimary        = false,
-        string?     otherDescription = null)
+        Guid createdBy,
+        Guid? locationId = null,
+        string? lastName = null,
+        string? position = null,
+        string? phone = null,
+        string? mobile = null,
+        string? email = null,
+        string? notes = null,
+        bool isPrimary = false,
+        string? otherDescription = null)
     {
         if (tenantId == Guid.Empty)
             throw new ArgumentException("tenantId es obligatorio.", nameof(tenantId));
@@ -66,62 +66,62 @@ public sealed class BusinessPartnerContact : AuditableEntity, ITenantScopedEntit
 
         var contact = new BusinessPartnerContact
         {
-            Id                = Guid.NewGuid(),
-            TenantId      = tenantId,
+            Id = Guid.NewGuid(),
+            TenantId = tenantId,
             BusinessPartnerId = businessPartnerId,
-            LocationId        = locationId,
-            FirstName         = NormalizeName(firstName, FirstNameMaxLen, nameof(firstName)),
-            LastName          = NormalizeOptional(lastName, LastNameMaxLen, nameof(lastName)),
-            Position          = NormalizeOptional(position, PositionMaxLen, nameof(position)),
-            Role              = role,
-            OtherDescription  = ValidateOtherDescription(role, otherDescription),
-            Contact           = ContactInfo.Create(phone, mobile, email),
-            Notes             = NormalizeOptional(notes, NotesMaxLen, nameof(notes)),
-            IsPrimary         = isPrimary,
-            IsActive          = true,
+            LocationId = locationId,
+            FirstName = NormalizeName(firstName, FirstNameMaxLen, nameof(firstName)),
+            LastName = NormalizeOptional(lastName, LastNameMaxLen, nameof(lastName)),
+            Position = NormalizeOptional(position, PositionMaxLen, nameof(position)),
+            Role = role,
+            OtherDescription = ValidateOtherDescription(role, otherDescription),
+            Contact = ContactInfo.Create(phone, mobile, email),
+            Notes = NormalizeOptional(notes, NotesMaxLen, nameof(notes)),
+            IsPrimary = isPrimary,
+            IsActive = true,
         };
         contact.SetCreated(createdBy);
         contact.RaiseDomainEvent(new BusinessPartnerContactCreatedEvent
         {
-            TenantId      = tenantId,
-            ContactId         = contact.Id,
+            TenantId = tenantId,
+            ContactId = contact.Id,
             BusinessPartnerId = businessPartnerId,
-            ContactRole       = role,
-            CreatedBy         = createdBy,
+            ContactRole = role,
+            CreatedBy = createdBy,
         });
         return contact;
     }
 
     public void Update(
-        string      firstName,
+        string firstName,
         ContactRole role,
-        Guid        updatedBy,
-        Guid?       locationId       = null,
-        string?     lastName         = null,
-        string?     position         = null,
-        string?     phone            = null,
-        string?     mobile           = null,
-        string?     email            = null,
-        string?     notes            = null,
-        string?     otherDescription = null)
+        Guid updatedBy,
+        Guid? locationId = null,
+        string? lastName = null,
+        string? position = null,
+        string? phone = null,
+        string? mobile = null,
+        string? email = null,
+        string? notes = null,
+        string? otherDescription = null)
     {
         if (!IsActive)
             throw new InvalidOperationException("No se puede actualizar un contacto inactivo.");
 
-        LocationId       = locationId;
-        FirstName        = NormalizeName(firstName, FirstNameMaxLen, nameof(firstName));
-        LastName         = NormalizeOptional(lastName, LastNameMaxLen, nameof(lastName));
-        Position         = NormalizeOptional(position, PositionMaxLen, nameof(position));
-        Role             = role;
+        LocationId = locationId;
+        FirstName = NormalizeName(firstName, FirstNameMaxLen, nameof(firstName));
+        LastName = NormalizeOptional(lastName, LastNameMaxLen, nameof(lastName));
+        Position = NormalizeOptional(position, PositionMaxLen, nameof(position));
+        Role = role;
         OtherDescription = ValidateOtherDescription(role, otherDescription);
-        Contact          = ContactInfo.Create(phone, mobile, email);
-        Notes            = NormalizeOptional(notes, NotesMaxLen, nameof(notes));
+        Contact = ContactInfo.Create(phone, mobile, email);
+        Notes = NormalizeOptional(notes, NotesMaxLen, nameof(notes));
         SetUpdated(updatedBy);
         RaiseDomainEvent(new BusinessPartnerContactUpdatedEvent
         {
             TenantId = TenantId,
-            ContactId    = Id,
-            UpdatedBy    = updatedBy,
+            ContactId = Id,
+            UpdatedBy = updatedBy,
         });
     }
 
@@ -140,8 +140,8 @@ public sealed class BusinessPartnerContact : AuditableEntity, ITenantScopedEntit
         {
             TenantId = TenantId,
             NewPrimaryContactId = Id,
-            BusinessPartnerId   = BusinessPartnerId,
-            ChangedBy           = updatedBy,
+            BusinessPartnerId = BusinessPartnerId,
+            ChangedBy = updatedBy,
         });
     }
 
@@ -160,9 +160,9 @@ public sealed class BusinessPartnerContact : AuditableEntity, ITenantScopedEntit
         RaiseDomainEvent(new BusinessPartnerContactDeactivatedEvent
         {
             TenantId = TenantId,
-            ContactId         = Id,
+            ContactId = Id,
             BusinessPartnerId = BusinessPartnerId,
-            DeactivatedBy     = updatedBy,
+            DeactivatedBy = updatedBy,
         });
     }
 

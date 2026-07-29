@@ -1,5 +1,5 @@
-using MediatR;
 using ERP.Application.Common;
+using MediatR;
 
 namespace ERP.Application.Modules.Company.UseCases.EnableEmissionPoint;
 

@@ -22,23 +22,23 @@ public static class ApiResponseCodes
     /// <summary>Códigos transversales (éxito genérico, errores HTTP comunes, infraestructura).</summary>
     public static class Common
     {
-        public const string Ok                      = "OK";
-        public const string Created                 = "CREATED";
-        public const string ValidationError        = "VALIDATION_ERROR";
-        public const string NotFound                = "NOT_FOUND";
-        public const string Conflict                = "CONFLICT";
-        public const string UniqueViolation         = "UNIQUE_VIOLATION";
-        public const string Forbidden               = "FORBIDDEN";
-        public const string Unauthorized            = "UNAUTHORIZED";
-        public const string DomainRuleViolation     = "DOMAIN_RULE_VIOLATION";
-        public const string ConcurrencyConflict     = "CONCURRENCY_CONFLICT";
-        public const string DatabaseUnavailable     = "DATABASE_UNAVAILABLE";
-        public const string SriCommunicationError   = "SRI_COMMUNICATION_ERROR";
-        public const string CompanyScopeForbidden   = "COMPANY_SCOPE_FORBIDDEN";
-        public const string BranchScopeForbidden    = "BRANCH_SCOPE_FORBIDDEN";
+        public const string Ok = "OK";
+        public const string Created = "CREATED";
+        public const string ValidationError = "VALIDATION_ERROR";
+        public const string NotFound = "NOT_FOUND";
+        public const string Conflict = "CONFLICT";
+        public const string UniqueViolation = "UNIQUE_VIOLATION";
+        public const string Forbidden = "FORBIDDEN";
+        public const string Unauthorized = "UNAUTHORIZED";
+        public const string DomainRuleViolation = "DOMAIN_RULE_VIOLATION";
+        public const string ConcurrencyConflict = "CONCURRENCY_CONFLICT";
+        public const string DatabaseUnavailable = "DATABASE_UNAVAILABLE";
+        public const string SriCommunicationError = "SRI_COMMUNICATION_ERROR";
+        public const string CompanyScopeForbidden = "COMPANY_SCOPE_FORBIDDEN";
+        public const string BranchScopeForbidden = "BRANCH_SCOPE_FORBIDDEN";
         public const string CompanyRucAlreadyExists = "COMPANY_RUC_ALREADY_EXISTS";
-        public const string BadRequest              = "BAD_REQUEST";
-        public const string InternalError           = "INTERNAL_ERROR";
-        public const string RateLimited             = "RATE_LIMITED";
+        public const string BadRequest = "BAD_REQUEST";
+        public const string InternalError = "INTERNAL_ERROR";
+        public const string RateLimited = "RATE_LIMITED";
     }
 }

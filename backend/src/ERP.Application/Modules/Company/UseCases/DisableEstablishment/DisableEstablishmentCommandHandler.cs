@@ -1,14 +1,14 @@
-﻿using MediatR;
 using ERP.Application.Common;
 using ERP.Domain.Modules.Company.Interfaces;
+using MediatR;
 
 namespace ERP.Application.Modules.Company.UseCases.DisableEstablishment;
 
 public sealed class DisableEstablishmentCommandHandler : IRequestHandler<DisableEstablishmentCommand, Result<bool>>
 {
     private readonly IEstablishmentRepository _repo;
-    private readonly ICurrentTenant       _currentTenant;
-    private readonly ICurrentUser             _user;
+    private readonly ICurrentTenant _currentTenant;
+    private readonly ICurrentUser _user;
 
     public DisableEstablishmentCommandHandler(IEstablishmentRepository repo, ICurrentTenant tenant, ICurrentUser user)
     {

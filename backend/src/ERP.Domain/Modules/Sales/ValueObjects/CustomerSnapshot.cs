@@ -2,26 +2,26 @@ namespace ERP.Domain.Modules.Sales.ValueObjects;
 
 public sealed record CustomerSnapshot
 {
-    public const int NameMaxLen    = 200;
-    public const int TaxIdMaxLen   = 20;
-    public const int IdTypeMaxLen  = 5;
-    public const int EmailMaxLen   = 254;
+    public const int NameMaxLen = 200;
+    public const int TaxIdMaxLen = 20;
+    public const int IdTypeMaxLen = 5;
+    public const int EmailMaxLen = 254;
     public const int AddressMaxLen = 300;
 
-    public string  Name              { get; }
-    public string  TaxId             { get; }
-    public string  IdentificationType { get; }
-    public string? Email             { get; }
-    public string? Address           { get; }
+    public string Name { get; }
+    public string TaxId { get; }
+    public string IdentificationType { get; }
+    public string? Email { get; }
+    public string? Address { get; }
 
     private CustomerSnapshot(string name, string taxId, string identificationType,
         string? email, string? address)
     {
-        Name               = name;
-        TaxId              = taxId;
+        Name = name;
+        TaxId = taxId;
         IdentificationType = identificationType;
-        Email              = email;
-        Address            = address;
+        Email = email;
+        Address = address;
     }
 
     public static CustomerSnapshot Create(

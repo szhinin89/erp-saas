@@ -1,7 +1,7 @@
-using MediatR;
 using ERP.Application.Common;
 using ERP.Application.Common.Models;
 using ERP.Application.Modules.ElectronicInvoicing.DTOs;
+using MediatR;
 
 namespace ERP.Application.Modules.ElectronicInvoicing.UseCases.UploadSriCertificate;
 

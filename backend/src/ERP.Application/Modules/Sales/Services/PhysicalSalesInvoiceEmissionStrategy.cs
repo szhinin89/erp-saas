@@ -1,5 +1,5 @@
-using Microsoft.Extensions.Logging;
 using ERP.Domain.Modules.Company.Enums;
+using Microsoft.Extensions.Logging;
 
 namespace ERP.Application.Modules.Sales.Services;
 

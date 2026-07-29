@@ -5,6 +5,6 @@ using MediatR;
 namespace ERP.Application.MasterData.UseCases.GetBusinessPartnerRoles;
 
 public sealed record GetBusinessPartnerRolesQuery(
-    Guid  BusinessPartnerId,
+    Guid BusinessPartnerId,
     bool? OnlyActive = true)
     : IRequest<Result<IReadOnlyList<BusinessPartnerRoleDto>>>, ITenantScopedRequest;

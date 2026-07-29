@@ -8,29 +8,29 @@ namespace ERP.Domain.Modules.Inventory.Entities;
 /// </summary>
 public sealed class StockReservation : AuditableEntity, ITenantScopedEntity
 {
-    public const string StatusPending   = "Pending";
+    public const string StatusPending = "Pending";
     public const string StatusFulfilled = "Fulfilled";
     public const string StatusCancelled = "Cancelled";
 
-    public Guid    ProductId   { get; private set; }
-    public Guid    WarehouseId { get; private set; }
-    public Guid?   OrderId     { get; private set; }
-    public decimal Quantity    { get; private set; }
-    public string  Status      { get; private set; } = StatusPending;
-    public DateTime ExpiresAt  { get; private set; }
-    public string?  Notes      { get; private set; }
+    public Guid ProductId { get; private set; }
+    public Guid WarehouseId { get; private set; }
+    public Guid? OrderId { get; private set; }
+    public decimal Quantity { get; private set; }
+    public string Status { get; private set; } = StatusPending;
+    public DateTime ExpiresAt { get; private set; }
+    public string? Notes { get; private set; }
 
     private StockReservation() { }
 
     public static StockReservation Create(
-        Guid     tenantId,
-        Guid     productId,
-        Guid     warehouseId,
-        decimal  quantity,
+        Guid tenantId,
+        Guid productId,
+        Guid warehouseId,
+        decimal quantity,
         DateTime expiresAt,
-        Guid     createdBy,
-        Guid?    orderId = null,
-        string?  notes   = null)
+        Guid createdBy,
+        Guid? orderId = null,
+        string? notes = null)
     {
         if (quantity <= 0)
             throw new ArgumentException("La cantidad a reservar debe ser mayor a cero.", nameof(quantity));
@@ -39,15 +39,15 @@ public sealed class StockReservation : AuditableEntity, ITenantScopedEntity
 
         var r = new StockReservation
         {
-            Id           = Guid.NewGuid(),
+            Id = Guid.NewGuid(),
             TenantId = tenantId,
-            ProductId    = productId,
-            WarehouseId  = warehouseId,
-            OrderId      = orderId,
-            Quantity     = quantity,
-            Status       = StatusPending,
-            ExpiresAt    = expiresAt,
-            Notes        = string.IsNullOrWhiteSpace(notes) ? null : notes.Trim(),
+            ProductId = productId,
+            WarehouseId = warehouseId,
+            OrderId = orderId,
+            Quantity = quantity,
+            Status = StatusPending,
+            ExpiresAt = expiresAt,
+            Notes = string.IsNullOrWhiteSpace(notes) ? null : notes.Trim(),
         };
         r.SetCreated(createdBy);
         return r;

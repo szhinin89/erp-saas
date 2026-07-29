@@ -70,8 +70,8 @@ public static class PricingCalculation
     private static string DescribeRule(PricingRuleType type, decimal value) => type switch
     {
         PricingRuleType.PercentDiscount => $"Descuento {value:0.##}%",
-        PricingRuleType.PercentMarkup   => $"Recargo {value:0.##}%",
-        PricingRuleType.FixedPrice      => $"Precio fijo {value:0.##}",
+        PricingRuleType.PercentMarkup => $"Recargo {value:0.##}%",
+        PricingRuleType.FixedPrice => $"Precio fijo {value:0.##}",
         PricingRuleType.FixedAdjustment => $"Ajuste {(value >= 0 ? "+" : "")}{value:0.##}",
         _ => type.ToString(),
     };

@@ -1,4 +1,4 @@
-﻿using ERP.Domain.MasterData.Entities;
+using ERP.Domain.MasterData.Entities;
 using ERP.Domain.MasterData.Enums;
 
 namespace ERP.Domain.MasterData.Interfaces;
@@ -17,19 +17,19 @@ public interface IBusinessPartnerRoleRepository
 
     /// <summary>Busca un rol por tipo para un BP específico (activo o revocado).</summary>
     Task<BusinessPartnerRole?> GetByTypeAsync(
-        Guid      businessPartnerId,
-        RoleType  roleType,
+        Guid businessPartnerId,
+        RoleType roleType,
         CancellationToken cancellationToken = default);
 
     /// <summary>Todos los roles de un BP (activos + revocados).</summary>
     Task<IReadOnlyList<BusinessPartnerRole>> GetByBusinessPartnerAsync(
-        Guid  businessPartnerId,
+        Guid businessPartnerId,
         bool? onlyActive = true,
         CancellationToken cancellationToken = default);
 
     /// <summary>Verifica si el BP tiene un rol activo de un tipo dado.</summary>
     Task<bool> HasActiveRoleAsync(
-        Guid     businessPartnerId,
+        Guid businessPartnerId,
         RoleType roleType,
         CancellationToken cancellationToken = default);
 

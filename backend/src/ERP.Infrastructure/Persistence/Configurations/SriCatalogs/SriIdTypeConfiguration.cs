@@ -15,12 +15,12 @@ public class SriIdTypeConfiguration : IEntityTypeConfiguration<SriIdType>
         builder.Property(x => x.Digits).HasColumnName("digits");
 
         builder.HasData(
-            new SriIdType { Code = "04", Name = "Registro Único de Contribuyentes", Digits = 13   },
-            new SriIdType { Code = "05", Name = "Cédula de ciudadanía",             Digits = 10   },
-            new SriIdType { Code = "06", Name = "Pasaporte",                        Digits = null },
-            new SriIdType { Code = "07", Name = "Consumidor Final",                 Digits = null },
-            new SriIdType { Code = "08", Name = "Identificación del exterior",      Digits = null },
-            new SriIdType { Code = "09", Name = "Placa",                            Digits = null }
+            new SriIdType { Code = "04", Name = "Registro Único de Contribuyentes", Digits = 13 },
+            new SriIdType { Code = "05", Name = "Cédula de ciudadanía", Digits = 10 },
+            new SriIdType { Code = "06", Name = "Pasaporte", Digits = null },
+            new SriIdType { Code = "07", Name = "Consumidor Final", Digits = null },
+            new SriIdType { Code = "08", Name = "Identificación del exterior", Digits = null },
+            new SriIdType { Code = "09", Name = "Placa", Digits = null }
         );
     }
 }

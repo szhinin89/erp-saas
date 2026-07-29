@@ -1,11 +1,11 @@
-using System.Globalization;
-using System.IdentityModel.Tokens.Jwt;
-using System.Security.Claims;
-using System.Text;
 using ERP.Domain.Access.Entities;
 using ERP.Domain.Access.Interfaces;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
+using System.Globalization;
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
+using System.Text;
 
 namespace ERP.Infrastructure.Services;
 
@@ -61,8 +61,8 @@ public class AccessTokenService : IAccessTokenService
         IEnumerable<Claim> extraClaims)
     {
         var secretKey = _configuration["Jwt:SecretKey"]!;
-        var issuer    = _configuration["Jwt:Issuer"]!;
-        var audience  = _configuration["Jwt:Audience"]!;
+        var issuer = _configuration["Jwt:Issuer"]!;
+        var audience = _configuration["Jwt:Audience"]!;
 
         var claims = new List<Claim>
         {
@@ -73,7 +73,7 @@ public class AccessTokenService : IAccessTokenService
 
         claims.AddRange(extraClaims);
 
-        var key   = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey));
+        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey));
         var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
         var token = new JwtSecurityToken(issuer, audience, claims,
             expires: expiresAtUtc, signingCredentials: creds);

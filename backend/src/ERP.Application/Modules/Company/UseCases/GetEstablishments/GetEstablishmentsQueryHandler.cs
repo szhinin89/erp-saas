@@ -1,8 +1,8 @@
-using MediatR;
 using ERP.Application.Common;
 using ERP.Application.Modules.Company.DTOs;
 using ERP.Domain.Modules.Company.Entities;
 using ERP.Domain.Modules.Company.Interfaces;
+using MediatR;
 
 namespace ERP.Application.Modules.Company.UseCases.GetEstablishments;
 
@@ -10,17 +10,17 @@ public sealed class GetEstablishmentsQueryHandler
     : IRequestHandler<GetEstablishmentsQuery, Result<IReadOnlyList<EstablishmentListItemDto>>>
 {
     private readonly IEstablishmentRepository _repo;
-    private readonly ICurrentTenant           _currentTenant;
-    private readonly ICurrentCompany          _company;
+    private readonly ICurrentTenant _currentTenant;
+    private readonly ICurrentCompany _company;
 
     public GetEstablishmentsQueryHandler(
         IEstablishmentRepository repo,
-        ICurrentTenant           currentTenant,
-        ICurrentCompany          company)
+        ICurrentTenant currentTenant,
+        ICurrentCompany company)
     {
-        _repo          = repo;
+        _repo = repo;
         _currentTenant = currentTenant;
-        _company       = company;
+        _company = company;
     }
 
     public async Task<Result<IReadOnlyList<EstablishmentListItemDto>>> Handle(

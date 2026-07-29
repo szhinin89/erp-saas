@@ -4,7 +4,6 @@ using ERP.Domain.Configuration.Interfaces;
 using ERP.Infrastructure.Modules.Purchases.PurchaseReception;
 using FluentAssertions;
 using Moq;
-using Xunit;
 
 namespace ERP.Infrastructure.Tests.Modules.Purchases.PurchaseReception;
 
@@ -15,7 +14,7 @@ namespace ERP.Infrastructure.Tests.Modules.Purchases.PurchaseReception;
 /// </summary>
 public sealed class SriReceptionXmlProviderTests
 {
-    private static readonly Guid TenantId  = Guid.NewGuid();
+    private static readonly Guid TenantId = Guid.NewGuid();
     private static readonly Guid CompanyId = Guid.NewGuid();
     private const string AccessKey = "0107202601179135268800120150270001617400016174011";
 

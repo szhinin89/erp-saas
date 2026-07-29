@@ -1,9 +1,9 @@
-using MediatR;
 using ERP.Application.Common;
 using ERP.Application.Modules.Companies.UseCases.DecimalConfig;
 using ERP.Application.Modules.Pricing.Services;
 using ERP.Domain.Modules.Inventory.Interfaces;
 using ERP.Domain.Modules.Items.Interfaces;
+using MediatR;
 
 namespace ERP.Application.Modules.Items.UseCases.Profitability;
 

@@ -4,10 +4,10 @@ namespace ERP.Domain.Modules.Items.Entities;
 
 public class Brand : MasterEntity, ITenantScopedEntity
 {
-    public const int MaxCodeLength         = 20;
-    public const int MaxNameLength         = 120;
+    public const int MaxCodeLength = 20;
+    public const int MaxNameLength = 120;
     public const int MaxManufacturerLength = 120;
-    public const int MaxCountryLength      = 80;
+    public const int MaxCountryLength = 80;
 
     /// <summary>
     /// Código reservado del registro "No aplica" que crea el Bootstrap de empresa (catálogo Tipo
@@ -16,10 +16,10 @@ public class Brand : MasterEntity, ITenantScopedEntity
     /// </summary>
     public const string NoAplicaCode = "NO_APLICA";
 
-    public string  Code             { get; private set; } = null!;
-    public string  Name             { get; private set; } = null!;
-    public string? Manufacturer     { get; private set; }
-    public string? CountryOfOrigin  { get; private set; }
+    public string Code { get; private set; } = null!;
+    public string Name { get; private set; } = null!;
+    public string? Manufacturer { get; private set; }
+    public string? CountryOfOrigin { get; private set; }
 
     private Brand() { }
 
@@ -29,11 +29,11 @@ public class Brand : MasterEntity, ITenantScopedEntity
     {
         var brand = new Brand
         {
-            Id              = Guid.NewGuid(),
-            TenantId        = tenantId,
-            Code            = code.Trim().ToUpperInvariant(),
-            Name            = name.Trim(),
-            Manufacturer    = manufacturer?.Trim() is { Length: > 0 } m ? m : null,
+            Id = Guid.NewGuid(),
+            TenantId = tenantId,
+            Code = code.Trim().ToUpperInvariant(),
+            Name = name.Trim(),
+            Manufacturer = manufacturer?.Trim() is { Length: > 0 } m ? m : null,
             CountryOfOrigin = countryOfOrigin?.Trim() is { Length: > 0 } c ? c : null,
         };
         brand.SetCreated(createdBy);
@@ -61,9 +61,9 @@ public class Brand : MasterEntity, ITenantScopedEntity
     {
         this.EnsureEditable("La marca", "modificarse");
 
-        Code            = code.Trim().ToUpperInvariant();
-        Name            = name.Trim();
-        Manufacturer    = manufacturer?.Trim() is { Length: > 0 } m ? m : null;
+        Code = code.Trim().ToUpperInvariant();
+        Name = name.Trim();
+        Manufacturer = manufacturer?.Trim() is { Length: > 0 } m ? m : null;
         CountryOfOrigin = countryOfOrigin?.Trim() is { Length: > 0 } c ? c : null;
         SetUpdated(updatedBy);
     }

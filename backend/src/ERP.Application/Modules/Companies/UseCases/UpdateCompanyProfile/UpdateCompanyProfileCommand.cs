@@ -5,14 +5,14 @@ using MediatR;
 namespace ERP.Application.Modules.Companies.UseCases.UpdateCompanyProfile;
 
 public sealed record UpdateCompanyProfileCommand(
-    string  LegalName,
+    string LegalName,
     string? TradeName,
     string? TaxIdentificationNumber,
     string? CorporateEmail,
     string? Phone,
     string? Website,
-    string  CurrencyCode,
-    string  Timezone,
+    string CurrencyCode,
+    string Timezone,
     string? LegalRepName,
     string? LegalRepPosition,
     string? LegalRepIdNumber,

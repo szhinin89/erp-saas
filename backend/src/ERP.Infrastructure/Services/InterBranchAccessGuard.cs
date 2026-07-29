@@ -8,9 +8,9 @@ namespace ERP.Infrastructure.Services;
 public sealed class InterBranchAccessGuard : IInterBranchAccessGuard
 {
     private readonly ICompanyAccessGuard _companyAccessGuard;
-    private readonly IBranchAccessGuard  _branchAccessGuard;
+    private readonly IBranchAccessGuard _branchAccessGuard;
     private readonly IWarehouseRepository _warehouseRepository;
-    private readonly ICurrentBranch      _currentBranch;
+    private readonly ICurrentBranch _currentBranch;
 
     public InterBranchAccessGuard(
         ICompanyAccessGuard companyAccessGuard,
@@ -18,10 +18,10 @@ public sealed class InterBranchAccessGuard : IInterBranchAccessGuard
         IWarehouseRepository warehouseRepository,
         ICurrentBranch currentBranch)
     {
-        _companyAccessGuard  = companyAccessGuard;
-        _branchAccessGuard   = branchAccessGuard;
+        _companyAccessGuard = companyAccessGuard;
+        _branchAccessGuard = branchAccessGuard;
         _warehouseRepository = warehouseRepository;
-        _currentBranch       = currentBranch;
+        _currentBranch = currentBranch;
     }
 
     public async Task<Result<InterBranchAccessContext>> RequireInterBranchAccessAsync(

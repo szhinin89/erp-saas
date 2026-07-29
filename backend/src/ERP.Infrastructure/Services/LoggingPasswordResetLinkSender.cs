@@ -1,5 +1,5 @@
-using Microsoft.Extensions.Logging;
 using ERP.Application.Common.Interfaces;
+using Microsoft.Extensions.Logging;
 
 namespace ERP.Infrastructure.Services;
 

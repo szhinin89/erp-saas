@@ -1,8 +1,8 @@
+using ERP.Domain.MasterData.Entities;
 using ERP.Domain.Modules.Items.Entities;
 using ERP.Domain.Modules.SriCatalogs.Entities;
 using ERP.Domain.Modules.SriCatalogs.Enums;
 using ERP.Domain.Modules.SriCatalogs.Interfaces;
-using ERP.Domain.MasterData.Entities;
 using Microsoft.EntityFrameworkCore;
 
 namespace ERP.Infrastructure.Persistence.Repositories.SriCatalogs;

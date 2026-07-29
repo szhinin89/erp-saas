@@ -1,10 +1,10 @@
-using MediatR;
 using ERP.Application.Common;
 using ERP.Application.Modules.Pricing.DTOs;
 using ERP.Application.Modules.Pricing.Services;
 using ERP.Domain.Modules.Items.Interfaces;
 using ERP.Domain.Modules.Pricing.Entities;
 using ERP.Domain.Modules.Pricing.Interfaces;
+using MediatR;
 
 namespace ERP.Application.Modules.Pricing.UseCases.ItemPricingSimulation;
 

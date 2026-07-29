@@ -1,7 +1,7 @@
-using MediatR;
 using ERP.Application.Common;
 using ERP.Application.Items.DTOs;
 using ERP.Domain.Modules.Items.Interfaces;
+using MediatR;
 
 namespace ERP.Application.Items.UseCases.GetItemReport;
 
@@ -15,9 +15,9 @@ public sealed record GetItemFullReportQuery(Guid Id)
 public sealed class GetItemFullReportQueryHandler
     : IRequestHandler<GetItemFullReportQuery, Result<ItemFullReportDto>>
 {
-    private readonly IItemRepository     _repository;
+    private readonly IItemRepository _repository;
     private readonly IItemCatalogRepository _catalog;
-    private readonly ICurrentTenant      _currentTenant;
+    private readonly ICurrentTenant _currentTenant;
     private readonly ISriCatalogResolver _sri;
     private readonly IItemTypeRepository _itemTypeRepo;
 
@@ -46,7 +46,7 @@ public sealed class GetItemFullReportQueryHandler
             ? new[] { item.TaxConfig.ExciseTaxCode }
             : [];
 
-        var brand  = item.BrandId.HasValue
+        var brand = item.BrandId.HasValue
             ? await _catalog.GetBrandByIdAsync(item.BrandId.Value, cancellationToken)
             : null;
 
@@ -59,7 +59,7 @@ public sealed class GetItemFullReportQueryHandler
             ? new Dictionary<Guid, string>()
             : new Dictionary<Guid, string> { [itemType.Id] = itemType.Name };
 
-        var detail  = ItemMappingService.ToDetailDto(item, uomMap, vatMap, iceMap, itemTypeNames);
+        var detail = ItemMappingService.ToDetailDto(item, uomMap, vatMap, iceMap, itemTypeNames);
 
         uomMap.TryGetValue(item.DefaultUomCode, out var uomInfo);
 
@@ -76,7 +76,7 @@ public sealed class GetItemFullReportQueryHandler
             brand?.Name,
             item.DefaultUomCode,
             uomInfo?.Abbrev ?? item.DefaultUomCode,
-            uomInfo?.Name   ?? item.DefaultUomCode,
+            uomInfo?.Name ?? item.DefaultUomCode,
             detail.TaxConfig,
             detail.SaleConfig,
             detail.StockConfig,

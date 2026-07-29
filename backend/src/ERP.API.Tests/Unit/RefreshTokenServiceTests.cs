@@ -1,14 +1,14 @@
+using ERP.Application.Common.Config;
+using ERP.Application.Common.Interfaces;
+using ERP.Application.Common.Security;
+using ERP.Domain.Auth.Entities;
+using ERP.Domain.Auth.Interfaces;
+using ERP.Infrastructure.Services;
 using FluentAssertions;
 using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
-using ERP.Application.Common.Config;
-using ERP.Application.Common.Interfaces;
-using ERP.Domain.Auth.Entities;
-using ERP.Domain.Auth.Interfaces;
-using ERP.Application.Common.Security;
-using ERP.Infrastructure.Services;
 
 namespace ERP.API.Tests.Unit;
 
@@ -22,9 +22,9 @@ public sealed class RefreshTokenServiceTests
     [Fact]
     public async Task Create_persiste_hash_SHA256_y_familyId()
     {
-        var repo    = new FakeRefreshTokenRepository();
+        var repo = new FakeRefreshTokenRepository();
         var service = Build(repo);
-        var userId  = Guid.NewGuid();
+        var userId = Guid.NewGuid();
         var tenantId = Guid.NewGuid();
 
         var (rawToken, expiry) = await service.CreateAsync(userId, tenantId, null, RefreshUserType.Legacy);
@@ -43,9 +43,9 @@ public sealed class RefreshTokenServiceTests
     [Fact]
     public async Task ValidateAndRotate_token_valido_rota_y_hereda_familia()
     {
-        var repo     = new FakeRefreshTokenRepository();
-        var service  = Build(repo);
-        var userId   = Guid.NewGuid();
+        var repo = new FakeRefreshTokenRepository();
+        var service = Build(repo);
+        var userId = Guid.NewGuid();
         var tenantId = Guid.NewGuid();
 
         var (rawToken1, _) = await service.CreateAsync(userId, tenantId, null, RefreshUserType.Legacy);
@@ -68,7 +68,7 @@ public sealed class RefreshTokenServiceTests
     public async Task ValidateAndRotate_token_inexistente_falla()
     {
         var service = Build(new FakeRefreshTokenRepository());
-        var result  = await service.ValidateAndRotateAsync("token-que-no-existe");
+        var result = await service.ValidateAndRotateAsync("token-que-no-existe");
 
         result.IsValid.Should().BeFalse();
         result.Error.Should().Contain("no válido");
@@ -77,9 +77,9 @@ public sealed class RefreshTokenServiceTests
     [Fact]
     public async Task ValidateAndRotate_reuso_sospechoso_revoca_solo_familia()
     {
-        var repo     = new FakeRefreshTokenRepository();
-        var service  = Build(repo);
-        var userId   = Guid.NewGuid();
+        var repo = new FakeRefreshTokenRepository();
+        var service = Build(repo);
+        var userId = Guid.NewGuid();
         var tenantId = Guid.NewGuid();
 
         var revocado = RefreshToken.Create(userId, tenantId, null, RefreshUserType.Legacy, "hash-revocado");
@@ -100,9 +100,9 @@ public sealed class RefreshTokenServiceTests
     [Fact]
     public async Task ValidateAndRotate_reuso_benigno_no_revoca_familia()
     {
-        var repo     = new FakeRefreshTokenRepository();
-        var service  = Build(repo);
-        var userId   = Guid.NewGuid();
+        var repo = new FakeRefreshTokenRepository();
+        var service = Build(repo);
+        var userId = Guid.NewGuid();
         var tenantId = Guid.NewGuid();
 
         var (raw, _) = await service.CreateAsync(userId, tenantId, null, RefreshUserType.Legacy);
@@ -120,9 +120,9 @@ public sealed class RefreshTokenServiceTests
     [Fact]
     public async Task RevokeAll_revoca_todos_los_tokens_activos()
     {
-        var repo     = new FakeRefreshTokenRepository();
-        var service  = Build(repo);
-        var userId   = Guid.NewGuid();
+        var repo = new FakeRefreshTokenRepository();
+        var service = Build(repo);
+        var userId = Guid.NewGuid();
         var tenantId = Guid.NewGuid();
 
         await service.CreateAsync(userId, tenantId, null, RefreshUserType.Legacy);

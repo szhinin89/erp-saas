@@ -1,4 +1,4 @@
-﻿using System.Globalization;
+using System.Globalization;
 
 namespace ERP.Domain.Common.Validators;
 
@@ -14,9 +14,9 @@ namespace ERP.Domain.Common.Validators;
 public static class RucValidator
 {
     // ── Coefficients SRI ──────────────────────────────────────────────────
-    private static readonly int[] CoefPersonaNatural  = { 2, 1, 2, 1, 2, 1, 2, 1, 2 };
+    private static readonly int[] CoefPersonaNatural = { 2, 1, 2, 1, 2, 1, 2, 1, 2 };
     private static readonly int[] CoefSociedadPrivada = { 4, 3, 2, 7, 6, 5, 4, 3, 2 };
-    private static readonly int[] CoefEntidadPublica  = { 3, 2, 7, 6, 5, 4, 3, 2 };
+    private static readonly int[] CoefEntidadPublica = { 3, 2, 7, 6, 5, 4, 3, 2 };
 
     /// <summary>
     /// Retorna <c>true</c> si el RUC supera todas las validaciones estructurales y de dígito verificador.
@@ -38,9 +38,9 @@ public static class RucValidator
         return tercerDigito switch
         {
             >= 0 and <= 5 => ValidarPersonaNatural(ruc),
-            6             => ValidarEntidadPublica(ruc),
-            9             => ValidarSociedadPrivada(ruc),
-            _             => false   // 7 y 8 no asignados
+            6 => ValidarEntidadPublica(ruc),
+            9 => ValidarSociedadPrivada(ruc),
+            _ => false   // 7 y 8 no asignados
         };
     }
 

@@ -2,11 +2,11 @@ namespace ERP.Domain.Modules.Finance.Entities;
 
 public sealed class CreditInstallment
 {
-    public Guid    Id                { get; private set; }
-    public Guid    CreditTermId      { get; private set; }
-    public int     InstallmentNumber { get; private set; }
-    public int     DaysOffset        { get; private set; }
-    public decimal Percentage        { get; private set; }
+    public Guid Id { get; private set; }
+    public Guid CreditTermId { get; private set; }
+    public int InstallmentNumber { get; private set; }
+    public int DaysOffset { get; private set; }
+    public decimal Percentage { get; private set; }
 
     private CreditInstallment() { }
 
@@ -24,11 +24,11 @@ public sealed class CreditInstallment
 
         return new CreditInstallment
         {
-            Id                = Guid.NewGuid(),
-            CreditTermId      = creditTermId,
+            Id = Guid.NewGuid(),
+            CreditTermId = creditTermId,
             InstallmentNumber = number,
-            DaysOffset        = daysOffset,
-            Percentage        = percentage,
+            DaysOffset = daysOffset,
+            Percentage = percentage,
         };
     }
 }

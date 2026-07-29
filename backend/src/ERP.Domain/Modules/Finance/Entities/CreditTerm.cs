@@ -10,10 +10,10 @@ public sealed class CreditTerm : MasterEntity, ITenantScopedEntity, ICompanyOper
     public const int MaxCodeLength = 20;
     public const int MaxNameLength = 120;
 
-    public string         Code      { get; private set; } = null!;
-    public string         Name      { get; private set; } = null!;
-    public CreditTermMode Mode      { get; private set; }
-    public int            TotalDays { get; private set; }
+    public string Code { get; private set; } = null!;
+    public string Name { get; private set; } = null!;
+    public CreditTermMode Mode { get; private set; }
+    public int TotalDays { get; private set; }
 
     private readonly List<CreditInstallment> _installments = new();
     public IReadOnlyList<CreditInstallment> Installments => _installments.AsReadOnly();
@@ -21,13 +21,13 @@ public sealed class CreditTerm : MasterEntity, ITenantScopedEntity, ICompanyOper
     private CreditTerm() { }
 
     public static CreditTerm Create(
-        Guid           tenantId,
-        Guid           companyId,
-        string         code,
-        string         name,
+        Guid tenantId,
+        Guid companyId,
+        string code,
+        string name,
         CreditTermMode mode,
-        int            totalDays,
-        Guid           createdBy,
+        int totalDays,
+        Guid createdBy,
         IEnumerable<(int Number, int DaysOffset, decimal Percentage)>? installments = null)
     {
         if (string.IsNullOrWhiteSpace(code))
@@ -39,12 +39,12 @@ public sealed class CreditTerm : MasterEntity, ITenantScopedEntity, ICompanyOper
 
         var ct = new CreditTerm
         {
-            Id        = Guid.NewGuid(),
-            TenantId  = tenantId,
+            Id = Guid.NewGuid(),
+            TenantId = tenantId,
             CompanyId = companyId,
-            Code      = code.Trim().ToUpperInvariant(),
-            Name      = name.Trim(),
-            Mode      = mode,
+            Code = code.Trim().ToUpperInvariant(),
+            Name = name.Trim(),
+            Mode = mode,
             TotalDays = totalDays,
         };
         ct.SetCreated(createdBy);
@@ -53,10 +53,10 @@ public sealed class CreditTerm : MasterEntity, ITenantScopedEntity, ICompanyOper
     }
 
     public void Update(
-        string         name,
+        string name,
         CreditTermMode mode,
-        int            totalDays,
-        Guid           updatedBy,
+        int totalDays,
+        Guid updatedBy,
         IEnumerable<(int Number, int DaysOffset, decimal Percentage)>? installments = null)
     {
         if (string.IsNullOrWhiteSpace(name))
@@ -64,8 +64,8 @@ public sealed class CreditTerm : MasterEntity, ITenantScopedEntity, ICompanyOper
         if (totalDays < 0)
             throw new ArgumentException("El plazo total no puede ser negativo.", nameof(totalDays));
 
-        Name      = name.Trim();
-        Mode      = mode;
+        Name = name.Trim();
+        Mode = mode;
         TotalDays = totalDays;
         SetUpdated(updatedBy);
         ApplyInstallments(installments);

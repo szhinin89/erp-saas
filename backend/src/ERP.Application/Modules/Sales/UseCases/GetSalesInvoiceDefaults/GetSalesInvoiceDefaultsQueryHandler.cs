@@ -1,39 +1,38 @@
-using MediatR;
 using ERP.Application.Common;
-using ERP.Application.Common.Interfaces;
 using ERP.Application.Modules.Sales.DTOs;
 using ERP.Domain.Configuration.Constants;
 using ERP.Domain.Configuration.Entities;
 using ERP.Domain.Configuration.Enums;
 using ERP.Domain.Configuration.Interfaces;
 using ERP.Domain.Modules.Company.Interfaces;
+using MediatR;
 
 namespace ERP.Application.Modules.Sales.UseCases.GetSalesInvoiceDefaults;
 
 public sealed class GetSalesInvoiceDefaultsQueryHandler
     : IRequestHandler<GetSalesInvoiceDefaultsQuery, Result<SalesInvoiceDefaultsDto>>
 {
-    private readonly IOrgSettingsRepository   _orgRepo;
+    private readonly IOrgSettingsRepository _orgRepo;
     private readonly IEmissionPointRepository _epRepo;
-    private readonly ICurrentTenant           _currentTenant;
-    private readonly ICurrentCompany          _currentCompany;
+    private readonly ICurrentTenant _currentTenant;
+    private readonly ICurrentCompany _currentCompany;
 
     public GetSalesInvoiceDefaultsQueryHandler(
-        IOrgSettingsRepository   orgRepo,
+        IOrgSettingsRepository orgRepo,
         IEmissionPointRepository epRepo,
-        ICurrentTenant           currentTenant,
-        ICurrentCompany          currentCompany)
+        ICurrentTenant currentTenant,
+        ICurrentCompany currentCompany)
     {
-        _orgRepo        = orgRepo;
-        _epRepo         = epRepo;
-        _currentTenant  = currentTenant;
+        _orgRepo = orgRepo;
+        _epRepo = epRepo;
+        _currentTenant = currentTenant;
         _currentCompany = currentCompany;
     }
 
     public async Task<Result<SalesInvoiceDefaultsDto>> Handle(
         GetSalesInvoiceDefaultsQuery query, CancellationToken cancellationToken)
     {
-        var tenantId  = _currentTenant.TenantId;
+        var tenantId = _currentTenant.TenantId;
         var companyId = _currentCompany.CompanyId;
 
         // Leer configuración de empresa: DocTypeCode, PaymentMethodCode, PaymentTermId
@@ -51,7 +50,7 @@ public sealed class GetSalesInvoiceDefaultsQueryHandler
             return null;
         }
 
-        var docTypeCode   = Resolve(OrgSettingKeys.Invoice.DefaultDocTypeCode);
+        var docTypeCode = Resolve(OrgSettingKeys.Invoice.DefaultDocTypeCode);
         var payMethodCode = Resolve(OrgSettingKeys.Invoice.DefaultPaymentMethodCode);
         var paymentTermId = ResolveGuid(OrgSettingKeys.Invoice.DefaultPaymentTermId);
 
@@ -63,12 +62,12 @@ public sealed class GetSalesInvoiceDefaultsQueryHandler
         // No hay contexto de sucursal en esta query → null; el frontend usa whsData[0] como fallback.
 
         return Result<SalesInvoiceDefaultsDto>.Success(new SalesInvoiceDefaultsDto(
-            DefaultDocTypeCode:          docTypeCode,
+            DefaultDocTypeCode: docTypeCode,
             DefaultSriPaymentMethodCode: payMethodCode,
-            DefaultEmissionPointId:      emissionPointId,
-            DefaultWarehouseId:          null,
-            DefaultPaymentTermId:        paymentTermId,
-            FallbackDocTypeCode:          SriSettings.FallbackDocTypeCode,
+            DefaultEmissionPointId: emissionPointId,
+            DefaultWarehouseId: null,
+            DefaultPaymentTermId: paymentTermId,
+            FallbackDocTypeCode: SriSettings.FallbackDocTypeCode,
             FallbackSriPaymentMethodCode: SriSettings.FallbackSriPaymentMethodCode));
     }
 }

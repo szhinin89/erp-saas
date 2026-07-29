@@ -11,9 +11,9 @@ public sealed class ListCompaniesHandler
     : IRequestHandler<ListCompaniesQuery, Result<IReadOnlyList<CompanyListItemDto>>>
 {
     private readonly ICompanyAccessGuard _accessGuard;
-    private readonly IAccessRepository   _access;
-    private readonly ICompanyRepository  _companies;
-    private readonly ICurrentUser        _currentUser;
+    private readonly IAccessRepository _access;
+    private readonly ICompanyRepository _companies;
+    private readonly ICurrentUser _currentUser;
 
     public ListCompaniesHandler(
         ICompanyAccessGuard accessGuard,
@@ -21,10 +21,10 @@ public sealed class ListCompaniesHandler
         ICompanyRepository companies,
         ICurrentUser currentUser)
     {
-        _accessGuard  = accessGuard;
-        _access       = access;
-        _companies    = companies;
-        _currentUser  = currentUser;
+        _accessGuard = accessGuard;
+        _access = access;
+        _companies = companies;
+        _currentUser = currentUser;
     }
 
     public async Task<Result<IReadOnlyList<CompanyListItemDto>>> Handle(
@@ -35,12 +35,12 @@ public sealed class ListCompaniesHandler
             return Result<IReadOnlyList<CompanyListItemDto>>.Failure(subResult.Error!);
 
         var tenantId = subResult.Value!;
-        var memberships  = await _access.GetActiveCompanyUserMembershipsForUserSystemAsync(_currentUser.UserId, cancellationToken);
+        var memberships = await _access.GetActiveCompanyUserMembershipsForUserSystemAsync(_currentUser.UserId, cancellationToken);
         if (memberships.Count == 0)
             return Result<IReadOnlyList<CompanyListItemDto>>.Success(Array.Empty<CompanyListItemDto>());
 
-        var companyIds    = memberships.Select(m => m.CompanyId).Distinct().ToList();
-        var rows          = await _companies.GetByIdsForManagementAsync(companyIds, tenantId, cancellationToken);
+        var companyIds = memberships.Select(m => m.CompanyId).Distinct().ToList();
+        var rows = await _companies.GetByIdsForManagementAsync(companyIds, tenantId, cancellationToken);
         var roleByCompany = memberships.ToDictionary(m => m.CompanyId, m => m.Role);
 
         var items = rows

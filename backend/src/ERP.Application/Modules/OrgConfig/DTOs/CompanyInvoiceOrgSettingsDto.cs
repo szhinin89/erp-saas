@@ -9,5 +9,5 @@ namespace ERP.Application.Modules.OrgConfig.DTOs;
 public sealed record CompanyInvoiceOrgSettingsDto(
     string? DefaultDocTypeCode,
     string? DefaultSriPaymentMethodCode,
-    Guid?   DefaultPaymentTermId
+    Guid? DefaultPaymentTermId
 );

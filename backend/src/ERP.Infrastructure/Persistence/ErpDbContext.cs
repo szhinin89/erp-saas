@@ -1,35 +1,34 @@
-﻿using ERP.Infrastructure.Persistence.Outbox;
-using MediatR;
-using Microsoft.EntityFrameworkCore;
-using ERP.Domain.Common;
-using ERP.Domain.Auth.Entities;
-using ERP.Domain.Auth.Interfaces;
-using ERP.Domain.Tenants.Entities;
-using ERP.Domain.Security.Entities;
+using ERP.Application.Common;
 using ERP.Domain.Access.Entities;
-using ERP.Domain.Branches.Entities;
-using ERP.Domain.Geography.Entities;
 using ERP.Domain.Audit.Entities;
-using ERP.Domain.Modules.Menu.Entities;
-using ERP.Domain.Navigation.Entities;
+using ERP.Domain.Auth.Entities;
+using ERP.Domain.Branches.Entities;
+using ERP.Domain.Common;
 using ERP.Domain.Configuration.Entities;
-using ERP.Domain.Modules.SriCatalogs.Entities;
-using ERP.Domain.Modules.Company.Entities;
-using ERP.Domain.Modules.Items.Entities;
-using ERP.Domain.Modules.Inventory.Entities;
-using ERP.Domain.Modules.Pricing.Entities;
+using ERP.Domain.Geography.Entities;
+using ERP.Domain.MasterData.Entities;
 using ERP.Domain.Modules.Accounting.Entities;
+using ERP.Domain.Modules.Caja.Entities;
+using ERP.Domain.Modules.Company.Entities;
 using ERP.Domain.Modules.ElectronicDocuments.Entities;
-using ERP.Domain.Modules.Ride.Entities;
 using ERP.Domain.Modules.Finance.Entities;
+using ERP.Domain.Modules.Inventory.Entities;
+using ERP.Domain.Modules.Items.Entities;
+using ERP.Domain.Modules.Media.Entities;
+using ERP.Domain.Modules.Menu.Entities;
+using ERP.Domain.Modules.Pricing.Entities;
 using ERP.Domain.Modules.Purchases.Entities;
 using ERP.Domain.Modules.Purchases.PurchaseReception.Entities;
+using ERP.Domain.Modules.Ride.Entities;
 using ERP.Domain.Modules.Sales.Entities;
-using ERP.Domain.Modules.Caja.Entities;
-using ERP.Domain.Modules.Media.Entities;
-using ERP.Application.Common;
-using ERP.Domain.MasterData.Entities;
+using ERP.Domain.Modules.SriCatalogs.Entities;
+using ERP.Domain.Navigation.Entities;
+using ERP.Domain.Security.Entities;
 using ERP.Domain.Setup;
+using ERP.Domain.Tenants.Entities;
+using ERP.Infrastructure.Persistence.Outbox;
+using MediatR;
+using Microsoft.EntityFrameworkCore;
 
 
 namespace ERP.Infrastructure.Persistence;
@@ -55,9 +54,9 @@ public class ErpDbContext : DbContext
         IPublisher publisher,
         ICurrentCompany currentCompany) : base(options)
     {
-        _currentTenant  = currentTenant;
+        _currentTenant = currentTenant;
         _currentCompany = currentCompany;
-        _publisher      = publisher;
+        _publisher = publisher;
 
         ChangeTracker.Tracked += (_, e) =>
         {
@@ -145,17 +144,17 @@ public class ErpDbContext : DbContext
     public DbSet<Brand> Brands => Set<Brand>();
 
     // ── Auth ──────────────────────────────────────────────────────────────
-    public DbSet<RefreshToken>          RefreshTokens          => Set<RefreshToken>();
-    public DbSet<PasswordResetToken>    PasswordResetTokens    => Set<PasswordResetToken>();
-    public DbSet<IdentityUser>          IdentityUsers          => Set<IdentityUser>();
+    public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
+    public DbSet<PasswordResetToken> PasswordResetTokens => Set<PasswordResetToken>();
+    public DbSet<IdentityUser> IdentityUsers => Set<IdentityUser>();
     public DbSet<CompanyUserMembership> CompanyUserMemberships => Set<CompanyUserMembership>();
-    public DbSet<UserSession>           UserSessions            => Set<UserSession>();
-    public DbSet<CompanyUserBranch>     CompanyUserBranches     => Set<CompanyUserBranch>();
+    public DbSet<UserSession> UserSessions => Set<UserSession>();
+    public DbSet<CompanyUserBranch> CompanyUserBranches => Set<CompanyUserBranch>();
     public DbSet<CompanyUserPreferences> CompanyUserPreferences => Set<CompanyUserPreferences>();
 
     // ── Access / RBAC ─────────────────────────────────────────────────────
-    public DbSet<AccessProfile>            AccessProfiles            => Set<AccessProfile>();
-    public DbSet<AccessProfilePermission>  AccessProfilePermissions  => Set<AccessProfilePermission>();
+    public DbSet<AccessProfile> AccessProfiles => Set<AccessProfile>();
+    public DbSet<AccessProfilePermission> AccessProfilePermissions => Set<AccessProfilePermission>();
     public DbSet<SecurityAdminScopeAssignment> SecurityAdminScopeAssignments => Set<SecurityAdminScopeAssignment>();
 
     // ── Tenants ───────────────────────────────────────────────────────────
@@ -163,81 +162,81 @@ public class ErpDbContext : DbContext
 
     // ── Geography ─────────────────────────────────────────────────────────
     public DbSet<GeoProvince> GeoProvinces => Set<GeoProvince>();
-    public DbSet<GeoCanton>   GeoCantons   => Set<GeoCanton>();
-    public DbSet<GeoParish>   GeoParishes  => Set<GeoParish>();
+    public DbSet<GeoCanton> GeoCantons => Set<GeoCanton>();
+    public DbSet<GeoParish> GeoParishes => Set<GeoParish>();
 
     // ── Branches / Warehouses ─────────────────────────────────────────────
-    public DbSet<Branch>    Branches    => Set<Branch>();
-    public DbSet<Warehouse> Warehouses  => Set<Warehouse>();
+    public DbSet<Branch> Branches => Set<Branch>();
+    public DbSet<Warehouse> Warehouses => Set<Warehouse>();
 
     // ── Audit ─────────────────────────────────────────────────────────────
     public DbSet<UserActivity> UserActivities => Set<UserActivity>();
 
     // ── MasterData BC ─────────────────────────────────────────────────────
-    public DbSet<BusinessPartner>          BusinessPartners         => Set<BusinessPartner>();
-    public DbSet<BusinessPartnerRole>      BusinessPartnerRoles     => Set<BusinessPartnerRole>();
+    public DbSet<BusinessPartner> BusinessPartners => Set<BusinessPartner>();
+    public DbSet<BusinessPartnerRole> BusinessPartnerRoles => Set<BusinessPartnerRole>();
     public DbSet<CompanyBpTradingSettings> CompanyBpTradingSettings => Set<CompanyBpTradingSettings>();
-    public DbSet<BusinessPartnerLocation>  BusinessPartnerLocations => Set<BusinessPartnerLocation>();
-    public DbSet<BusinessPartnerContact>   BusinessPartnerContacts  => Set<BusinessPartnerContact>();
-    public DbSet<PaymentTerm>              PaymentTerms             => Set<PaymentTerm>();
-    public DbSet<PersonTypeCatalog>        PersonTypeCatalogs       => Set<PersonTypeCatalog>();
+    public DbSet<BusinessPartnerLocation> BusinessPartnerLocations => Set<BusinessPartnerLocation>();
+    public DbSet<BusinessPartnerContact> BusinessPartnerContacts => Set<BusinessPartnerContact>();
+    public DbSet<PaymentTerm> PaymentTerms => Set<PaymentTerm>();
+    public DbSet<PersonTypeCatalog> PersonTypeCatalogs => Set<PersonTypeCatalog>();
 
     // ── Navigation / UI ───────────────────────────────────────────────────
-    public DbSet<UiNavGroup>          UiNavGroups          => Set<UiNavGroup>();
-    public DbSet<UiNavItem>           UiNavItems           => Set<UiNavItem>();
+    public DbSet<UiNavGroup> UiNavGroups => Set<UiNavGroup>();
+    public DbSet<UiNavItem> UiNavItems => Set<UiNavItem>();
     public DbSet<TenantCustomMenu> TenantCustomMenus => Set<TenantCustomMenu>();
-    public DbSet<AppFeature>          AppFeatures          => Set<AppFeature>();
+    public DbSet<AppFeature> AppFeatures => Set<AppFeature>();
 
     // ── Configuration ─────────────────────────────────────────────────────
-    public DbSet<ConfigGlobal>  ConfigGlobals  => Set<ConfigGlobal>();
-    public DbSet<ConfigModule>  ConfigModules  => Set<ConfigModule>();
+    public DbSet<ConfigGlobal> ConfigGlobals => Set<ConfigGlobal>();
+    public DbSet<ConfigModule> ConfigModules => Set<ConfigModule>();
     public DbSet<ConfigFeature> ConfigFeatures => Set<ConfigFeature>();
-    public DbSet<OrgSetting>    OrgSettings    => Set<OrgSetting>();
+    public DbSet<OrgSetting> OrgSettings => Set<OrgSetting>();
 
     // ── SRI Catalogs (global reference data) ─────────────────────────────
-    public DbSet<SriEnvironment>   SriEnvironments   => Set<SriEnvironment>();
-    public DbSet<SriEmissionType>  SriEmissionTypes  => Set<SriEmissionType>();
-    public DbSet<SriDocType>       SriDocTypes       => Set<SriDocType>();
-    public DbSet<SriIdType>        SriIdTypes        => Set<SriIdType>();
-    public DbSet<SriIdTypeUsage>   SriIdTypeUsages   => Set<SriIdTypeUsage>();
-    public DbSet<SriVatRate>       SriVatRates       => Set<SriVatRate>();
-    public DbSet<SriIceRate>       SriIceRates       => Set<SriIceRate>();
+    public DbSet<SriEnvironment> SriEnvironments => Set<SriEnvironment>();
+    public DbSet<SriEmissionType> SriEmissionTypes => Set<SriEmissionType>();
+    public DbSet<SriDocType> SriDocTypes => Set<SriDocType>();
+    public DbSet<SriIdType> SriIdTypes => Set<SriIdType>();
+    public DbSet<SriIdTypeUsage> SriIdTypeUsages => Set<SriIdTypeUsage>();
+    public DbSet<SriVatRate> SriVatRates => Set<SriVatRate>();
+    public DbSet<SriIceRate> SriIceRates => Set<SriIceRate>();
     public DbSet<SriRetentionCode> SriRetentionCodes => Set<SriRetentionCode>();
     public DbSet<SriPaymentMethod> SriPaymentMethods => Set<SriPaymentMethod>();
-    public DbSet<SriTaxRegime>     SriTaxRegimes     => Set<SriTaxRegime>();
-    public DbSet<SriTaxSupport>    SriTaxSupports    => Set<SriTaxSupport>();
-    public DbSet<SriUom>           SriUoms           => Set<SriUom>();
-    public DbSet<SriErrorCode>     SriErrorCodes     => Set<SriErrorCode>();
-    public DbSet<SriCountry>       SriCountries      => Set<SriCountry>();
-    public DbSet<SriSupplierType>  SriSupplierTypes  => Set<SriSupplierType>();
+    public DbSet<SriTaxRegime> SriTaxRegimes => Set<SriTaxRegime>();
+    public DbSet<SriTaxSupport> SriTaxSupports => Set<SriTaxSupport>();
+    public DbSet<SriUom> SriUoms => Set<SriUom>();
+    public DbSet<SriErrorCode> SriErrorCodes => Set<SriErrorCode>();
+    public DbSet<SriCountry> SriCountries => Set<SriCountry>();
+    public DbSet<SriSupplierType> SriSupplierTypes => Set<SriSupplierType>();
 
     // ── Company setup ─────────────────────────────────────────────────────
-    public DbSet<Company>           Companies          => Set<Company>();
-    public DbSet<Establishment>     Establishments     => Set<Establishment>();
-    public DbSet<EmissionPoint>     EmissionPoints     => Set<EmissionPoint>();
-    public DbSet<DocumentSequence>  DocumentSequences  => Set<DocumentSequence>();
-    public DbSet<GeneralParameter>  GeneralParameters  => Set<GeneralParameter>();
+    public DbSet<Company> Companies => Set<Company>();
+    public DbSet<Establishment> Establishments => Set<Establishment>();
+    public DbSet<EmissionPoint> EmissionPoints => Set<EmissionPoint>();
+    public DbSet<DocumentSequence> DocumentSequences => Set<DocumentSequence>();
+    public DbSet<GeneralParameter> GeneralParameters => Set<GeneralParameter>();
 
     // ── Items BC (canonical catalog) ──────────────────────────────────────
-    public DbSet<ItemCategoryNode>     ItemCategoryNodes     => Set<ItemCategoryNode>();
-    public DbSet<Item>                 Items                 => Set<Item>();
-    public DbSet<ItemVariant>          ItemVariants          => Set<ItemVariant>();
+    public DbSet<ItemCategoryNode> ItemCategoryNodes => Set<ItemCategoryNode>();
+    public DbSet<Item> Items => Set<Item>();
+    public DbSet<ItemVariant> ItemVariants => Set<ItemVariant>();
     public DbSet<ItemVariantAttribute> ItemVariantAttributes => Set<ItemVariantAttribute>();
-    public DbSet<ItemVariantBarcode>   ItemVariantBarcodes   => Set<ItemVariantBarcode>();
-    public DbSet<ItemImage>            ItemImages            => Set<ItemImage>();
-    public DbSet<ItemUnitConversion>   ItemUnitConversions   => Set<ItemUnitConversion>();
-    public DbSet<ItemSubstitute>       ItemSubstitutes       => Set<ItemSubstitute>();
-    public DbSet<ItemPackagingLevel>   ItemPackagingLevels   => Set<ItemPackagingLevel>();
-    public DbSet<AttributeGroup>       AttributeGroups       => Set<AttributeGroup>();
-    public DbSet<AttributeDefinition>  AttributeDefinitions  => Set<AttributeDefinition>();
-    public DbSet<ItemTypeDefinition>         ItemTypes              => Set<ItemTypeDefinition>();
-    public DbSet<BarcodeTypeDefinition>      BarcodeTypes           => Set<BarcodeTypeDefinition>();
-    public DbSet<ItemMarginStatusDefinition> ItemMarginStatuses     => Set<ItemMarginStatusDefinition>();
-    public DbSet<ItemAudit>                  ItemAudits             => Set<ItemAudit>();
+    public DbSet<ItemVariantBarcode> ItemVariantBarcodes => Set<ItemVariantBarcode>();
+    public DbSet<ItemImage> ItemImages => Set<ItemImage>();
+    public DbSet<ItemUnitConversion> ItemUnitConversions => Set<ItemUnitConversion>();
+    public DbSet<ItemSubstitute> ItemSubstitutes => Set<ItemSubstitute>();
+    public DbSet<ItemPackagingLevel> ItemPackagingLevels => Set<ItemPackagingLevel>();
+    public DbSet<AttributeGroup> AttributeGroups => Set<AttributeGroup>();
+    public DbSet<AttributeDefinition> AttributeDefinitions => Set<AttributeDefinition>();
+    public DbSet<ItemTypeDefinition> ItemTypes => Set<ItemTypeDefinition>();
+    public DbSet<BarcodeTypeDefinition> BarcodeTypes => Set<BarcodeTypeDefinition>();
+    public DbSet<ItemMarginStatusDefinition> ItemMarginStatuses => Set<ItemMarginStatusDefinition>();
+    public DbSet<ItemAudit> ItemAudits => Set<ItemAudit>();
 
     // ── Pricing BC ────────────────────────────────────────────────────────
-    public DbSet<PriceList>     PriceLists     => Set<PriceList>();
-    public DbSet<PricingRule>   PricingRules   => Set<PricingRule>();
+    public DbSet<PriceList> PriceLists => Set<PriceList>();
+    public DbSet<PricingRule> PricingRules => Set<PricingRule>();
     public DbSet<PriceListItem> PriceListItems => Set<PriceListItem>();
     public DbSet<PricingRuleAudit> PricingRuleAudits => Set<PricingRuleAudit>();
     public DbSet<PriceListItemAudit> PriceListItemAudits => Set<PriceListItemAudit>();
@@ -261,43 +260,43 @@ public class ErpDbContext : DbContext
     public DbSet<RidePdfDocument> RidePdfDocuments => Set<RidePdfDocument>();
 
     // ── Purchases BC ───────────────────────────────────────────────────────
-    public DbSet<PurchaseInvoice>            PurchaseInvoices            => Set<PurchaseInvoice>();
-    public DbSet<PurchaseInvoiceDetail>      PurchaseInvoiceDetails      => Set<PurchaseInvoiceDetail>();
-    public DbSet<PurchasePaymentSchedule>    PurchasePaymentSchedules    => Set<PurchasePaymentSchedule>();
-    public DbSet<PurchasePayable>             PurchasePayables             => Set<PurchasePayable>();
-    public DbSet<PurchasePayableInstallment>  PurchasePayableInstallments  => Set<PurchasePayableInstallment>();
-    public DbSet<PurchaseCommunication>       PurchaseCommunications       => Set<PurchaseCommunication>();
-    public DbSet<PurchaseInvoiceAudit>        PurchaseInvoiceAudits        => Set<PurchaseInvoiceAudit>();
-    public DbSet<PurchaseLinePvpAudit>        PurchaseLinePvpAudits        => Set<PurchaseLinePvpAudit>();
-    public DbSet<IssuedWithholdingAudit>      IssuedWithholdingAudits      => Set<IssuedWithholdingAudit>();
-    public DbSet<IssuedWithholding>           IssuedWithholdings           => Set<IssuedWithholding>();
-    public DbSet<IssuedWithholdingDetail>     IssuedWithholdingDetails     => Set<IssuedWithholdingDetail>();
-    public DbSet<PurchaseReceptionDocument>   PurchaseReceptionDocuments   => Set<PurchaseReceptionDocument>();
-    public DbSet<PurchaseReceptionLine>       PurchaseReceptionLines       => Set<PurchaseReceptionLine>();
+    public DbSet<PurchaseInvoice> PurchaseInvoices => Set<PurchaseInvoice>();
+    public DbSet<PurchaseInvoiceDetail> PurchaseInvoiceDetails => Set<PurchaseInvoiceDetail>();
+    public DbSet<PurchasePaymentSchedule> PurchasePaymentSchedules => Set<PurchasePaymentSchedule>();
+    public DbSet<PurchasePayable> PurchasePayables => Set<PurchasePayable>();
+    public DbSet<PurchasePayableInstallment> PurchasePayableInstallments => Set<PurchasePayableInstallment>();
+    public DbSet<PurchaseCommunication> PurchaseCommunications => Set<PurchaseCommunication>();
+    public DbSet<PurchaseInvoiceAudit> PurchaseInvoiceAudits => Set<PurchaseInvoiceAudit>();
+    public DbSet<PurchaseLinePvpAudit> PurchaseLinePvpAudits => Set<PurchaseLinePvpAudit>();
+    public DbSet<IssuedWithholdingAudit> IssuedWithholdingAudits => Set<IssuedWithholdingAudit>();
+    public DbSet<IssuedWithholding> IssuedWithholdings => Set<IssuedWithholding>();
+    public DbSet<IssuedWithholdingDetail> IssuedWithholdingDetails => Set<IssuedWithholdingDetail>();
+    public DbSet<PurchaseReceptionDocument> PurchaseReceptionDocuments => Set<PurchaseReceptionDocument>();
+    public DbSet<PurchaseReceptionLine> PurchaseReceptionLines => Set<PurchaseReceptionLine>();
 
     // ── Sales BC ──────────────────────────────────────────────────────────
-    public DbSet<SalesInvoice>        SalesInvoices        => Set<SalesInvoice>();
-    public DbSet<SalesInvoiceDetail>  SalesInvoiceDetails  => Set<SalesInvoiceDetail>();
+    public DbSet<SalesInvoice> SalesInvoices => Set<SalesInvoice>();
+    public DbSet<SalesInvoiceDetail> SalesInvoiceDetails => Set<SalesInvoiceDetail>();
     public DbSet<SalesInvoicePayment> SalesInvoicePayments => Set<SalesInvoicePayment>();
-    public DbSet<PaymentMethod>       PaymentMethods       => Set<PaymentMethod>();
-    public DbSet<SalesReceivable>            SalesReceivables            => Set<SalesReceivable>();
+    public DbSet<PaymentMethod> PaymentMethods => Set<PaymentMethod>();
+    public DbSet<SalesReceivable> SalesReceivables => Set<SalesReceivable>();
     public DbSet<SalesReceivableInstallment> SalesReceivableInstallments => Set<SalesReceivableInstallment>();
 
     // ── Finance BC ─────────────────────────────────────────────────────────
-    public DbSet<CreditTerm>        CreditTerms        => Set<CreditTerm>();
+    public DbSet<CreditTerm> CreditTerms => Set<CreditTerm>();
     public DbSet<CreditInstallment> CreditInstallments => Set<CreditInstallment>();
-    public DbSet<Payment>                 Payments               => Set<Payment>();
-    public DbSet<PaymentApplicationLine>  PaymentApplicationLines => Set<PaymentApplicationLine>();
+    public DbSet<Payment> Payments => Set<Payment>();
+    public DbSet<PaymentApplicationLine> PaymentApplicationLines => Set<PaymentApplicationLine>();
 
     // ── Inventory (lots / serials / stock) ───────────────────────────────
-    public DbSet<Lot>           Lots           => Set<Lot>();
-    public DbSet<SerialNumber>  SerialNumbers  => Set<SerialNumber>();
-    public DbSet<StockMovement>      StockMovements      => Set<StockMovement>();
-    public DbSet<CurrentStock>       CurrentStocks       => Set<CurrentStock>();
-    public DbSet<StockAdjustment>    StockAdjustments    => Set<StockAdjustment>();
+    public DbSet<Lot> Lots => Set<Lot>();
+    public DbSet<SerialNumber> SerialNumbers => Set<SerialNumber>();
+    public DbSet<StockMovement> StockMovements => Set<StockMovement>();
+    public DbSet<CurrentStock> CurrentStocks => Set<CurrentStock>();
+    public DbSet<StockAdjustment> StockAdjustments => Set<StockAdjustment>();
     public DbSet<StockAdjustmentLine> StockAdjustmentLines => Set<StockAdjustmentLine>();
-    public DbSet<StockTransfer>      StockTransfers      => Set<StockTransfer>();
-    public DbSet<StockTransferLine>  StockTransferLines  => Set<StockTransferLine>();
+    public DbSet<StockTransfer> StockTransfers => Set<StockTransfer>();
+    public DbSet<StockTransferLine> StockTransferLines => Set<StockTransferLine>();
 
     // ── Media ──────────────────────────────────────────────────────────────
     public DbSet<MediaFile> MediaFiles => Set<MediaFile>();
@@ -312,10 +311,10 @@ public class ErpDbContext : DbContext
     public DbSet<OutboxMessage> OutboxMessages => Set<OutboxMessage>();
 
     // ── Caja (Cash Management) ──────────────────────────────────────────
-    public DbSet<CashRegister>     CashRegisters      => Set<CashRegister>();
-    public DbSet<CashSession>      CashSessions      => Set<CashSession>();
-    public DbSet<CashMovement>     CashMovements      => Set<CashMovement>();
-    public DbSet<CashClosingCount> CashClosingCounts  => Set<CashClosingCount>();
+    public DbSet<CashRegister> CashRegisters => Set<CashRegister>();
+    public DbSet<CashSession> CashSessions => Set<CashSession>();
+    public DbSet<CashMovement> CashMovements => Set<CashMovement>();
+    public DbSet<CashClosingCount> CashClosingCounts => Set<CashClosingCount>();
 
     private Guid CurrentTenantId => FilterTenantId;
 

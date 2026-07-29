@@ -3,7 +3,6 @@ using ERP.Application.Common.Interfaces;
 using ERP.Domain.Access.Entities;
 using ERP.Domain.Access.Interfaces;
 using ERP.Domain.Kernel.Security;
-using ERP.Domain.Setup;
 using ERP.Domain.Tenants.Entities;
 using ERP.Domain.Tenants.Interfaces;
 using MediatR;
@@ -12,27 +11,27 @@ namespace ERP.Application.Setup.CreateInitialAdmin;
 
 public sealed class CreateInitialAdminHandler : IRequestHandler<CreateInitialAdminCommand, Result<string>>
 {
-    private readonly ISystemSetupRepository       _setupRepo;
-    private readonly ITenantRepository            _tenants;
-    private readonly IAccessRepository            _access;
-    private readonly IPasswordHasher              _hasher;
-    private readonly ICompanyProvisioningService  _companyProvisioning;
-    private readonly IUnitOfWork                  _unitOfWork;
+    private readonly ISystemSetupRepository _setupRepo;
+    private readonly ITenantRepository _tenants;
+    private readonly IAccessRepository _access;
+    private readonly IPasswordHasher _hasher;
+    private readonly ICompanyProvisioningService _companyProvisioning;
+    private readonly IUnitOfWork _unitOfWork;
 
     public CreateInitialAdminHandler(
-        ISystemSetupRepository      setupRepo,
-        ITenantRepository           tenants,
-        IAccessRepository           access,
-        IPasswordHasher             hasher,
+        ISystemSetupRepository setupRepo,
+        ITenantRepository tenants,
+        IAccessRepository access,
+        IPasswordHasher hasher,
         ICompanyProvisioningService companyProvisioning,
-        IUnitOfWork                 unitOfWork)
+        IUnitOfWork unitOfWork)
     {
-        _setupRepo           = setupRepo;
-        _tenants             = tenants;
-        _access              = access;
-        _hasher              = hasher;
+        _setupRepo = setupRepo;
+        _tenants = tenants;
+        _access = access;
+        _hasher = hasher;
         _companyProvisioning = companyProvisioning;
-        _unitOfWork          = unitOfWork;
+        _unitOfWork = unitOfWork;
     }
 
     public async Task<Result<string>> Handle(CreateInitialAdminCommand cmd, CancellationToken cancellationToken)
@@ -79,15 +78,15 @@ public sealed class CreateInitialAdminHandler : IRequestHandler<CreateInitialAdm
         // posterior falla, el rollback deshace también lo que esos SaveChanges internos ya escribieron.
         await _unitOfWork.ExecuteInTransactionAsync(async ct =>
         {
-            var bootstrapId  = Guid.NewGuid();
+            var bootstrapId = Guid.NewGuid();
             // "Principal"/"principal" es el único tenant que este flujo puede crear — First Run solo
             // corre una vez (bloqueado por state.IsInitialized) y, gracias a esta transacción, un
             // intento fallido nunca deja el slug ocupado para el siguiente — no hace falta generarlo
             // dinámicamente ni reutilizar uno existente (ver Regla 5: no introducir idempotencia aquí,
             // la atomicidad ya impide el estado parcial que la idempotencia intentaría reparar).
-            var tenant       = Tenant.Create("Principal", "principal", bootstrapId);
+            var tenant = Tenant.Create("Principal", "principal", bootstrapId);
             var passwordHash = _hasher.HashPassword(cmd.Password);
-            var user         = IdentityUser.Create(
+            var user = IdentityUser.Create(
                 username, cmd.FirstName.Trim(), cmd.LastName.Trim(), email, passwordHash, bootstrapId);
 
             await _tenants.AddAsync(tenant, ct);

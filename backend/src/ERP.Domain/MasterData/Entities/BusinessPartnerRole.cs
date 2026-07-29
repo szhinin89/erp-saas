@@ -1,4 +1,4 @@
-﻿using ERP.Domain.Common;
+using ERP.Domain.Common;
 using ERP.Domain.MasterData.Enums;
 using ERP.Domain.MasterData.Events;
 using ERP.Domain.MasterData.ValueObjects;
@@ -22,22 +22,22 @@ public sealed class BusinessPartnerRole : AuditableEntity, ITenantScopedEntity
 {
     public const int NotesMaxLen = 2000;
 
-    public Guid     BusinessPartnerId { get; private set; }
-    public RoleType RoleType          { get; private set; }
-    public bool     IsActive          { get; private set; } = true;
-    public string?  Notes             { get; private set; }
-    public DateTime AssignedAt        { get; private set; }
-    public Guid     AssignedBy        { get; private set; }
-    public DateTime? RevokedAt        { get; private set; }
-    public Guid?    RevokedBy         { get; private set; }
+    public Guid BusinessPartnerId { get; private set; }
+    public RoleType RoleType { get; private set; }
+    public bool IsActive { get; private set; } = true;
+    public string? Notes { get; private set; }
+    public DateTime AssignedAt { get; private set; }
+    public Guid AssignedBy { get; private set; }
+    public DateTime? RevokedAt { get; private set; }
+    public Guid? RevokedBy { get; private set; }
 
     // ── Configs específicas por tipo de rol ───────────────────────────────────
     // Solo la config correspondiente al RoleType puede estar populated.
     // La validación de coherencia tipo↔config está en Create() y UpdateXxxConfig().
-    public SupplierRoleConfig?          SupplierConfig          { get; private set; }
-    public SupplierClassificationConfig? ClassificationConfig   { get; private set; }
-    public CarrierRoleConfig?           CarrierConfig           { get; private set; }
-    public CustomerRoleConfig?          CustomerConfig          { get; private set; }
+    public SupplierRoleConfig? SupplierConfig { get; private set; }
+    public SupplierClassificationConfig? ClassificationConfig { get; private set; }
+    public CarrierRoleConfig? CarrierConfig { get; private set; }
+    public CustomerRoleConfig? CustomerConfig { get; private set; }
 
     private BusinessPartnerRole() { }
 
@@ -51,14 +51,14 @@ public sealed class BusinessPartnerRole : AuditableEntity, ITenantScopedEntity
     /// PRECONDICIÓN (garantizada por BD): no puede existir otro rol del mismo tipo para este BP.
     /// </summary>
     public static BusinessPartnerRole Create(
-        Guid                          tenantId,
-        Guid                          businessPartnerId,
-        RoleType                      roleType,
-        Guid                          assignedBy,
-        SupplierRoleConfig?            supplierConfig         = null,
-        CarrierRoleConfig?             carrierConfig          = null,
-        CustomerRoleConfig?            customerConfig         = null,
-        SupplierClassificationConfig?  classificationConfig   = null)
+        Guid tenantId,
+        Guid businessPartnerId,
+        RoleType roleType,
+        Guid assignedBy,
+        SupplierRoleConfig? supplierConfig = null,
+        CarrierRoleConfig? carrierConfig = null,
+        CustomerRoleConfig? customerConfig = null,
+        SupplierClassificationConfig? classificationConfig = null)
     {
         if (tenantId == Guid.Empty)
             throw new ArgumentException("tenantId es obligatorio.", nameof(tenantId));
@@ -69,29 +69,29 @@ public sealed class BusinessPartnerRole : AuditableEntity, ITenantScopedEntity
 
         ValidateConfigCoherence(roleType, supplierConfig, carrierConfig, customerConfig, classificationConfig);
 
-        var now  = DateTime.UtcNow;
+        var now = DateTime.UtcNow;
         var role = new BusinessPartnerRole
         {
-            Id                   = Guid.NewGuid(),
-            TenantId         = tenantId,
-            BusinessPartnerId    = businessPartnerId,
-            RoleType             = roleType,
-            IsActive             = true,
-            AssignedAt           = now,
-            AssignedBy           = assignedBy,
-            SupplierConfig       = supplierConfig,
+            Id = Guid.NewGuid(),
+            TenantId = tenantId,
+            BusinessPartnerId = businessPartnerId,
+            RoleType = roleType,
+            IsActive = true,
+            AssignedAt = now,
+            AssignedBy = assignedBy,
+            SupplierConfig = supplierConfig,
             ClassificationConfig = classificationConfig,
-            CarrierConfig        = carrierConfig,
-            CustomerConfig       = customerConfig,
+            CarrierConfig = carrierConfig,
+            CustomerConfig = customerConfig,
         };
         role.SetCreated(assignedBy);
         role.RaiseDomainEvent(new BusinessPartnerRoleAssignedEvent
         {
-            TenantId      = tenantId,
-            RoleId            = role.Id,
+            TenantId = tenantId,
+            RoleId = role.Id,
             BusinessPartnerId = businessPartnerId,
-            RoleType          = roleType,
-            AssignedBy        = assignedBy,
+            RoleType = roleType,
+            AssignedBy = assignedBy,
         });
         return role;
     }
@@ -108,19 +108,19 @@ public sealed class BusinessPartnerRole : AuditableEntity, ITenantScopedEntity
         if (reactivatedBy == Guid.Empty)
             throw new ArgumentException("ReactivatedBy es obligatorio.", nameof(reactivatedBy));
 
-        IsActive   = true;
+        IsActive = true;
         AssignedAt = DateTime.UtcNow;
         AssignedBy = reactivatedBy;
-        RevokedAt  = null;
-        RevokedBy  = null;
+        RevokedAt = null;
+        RevokedBy = null;
         SetUpdated(reactivatedBy);
         RaiseDomainEvent(new BusinessPartnerRoleReactivatedEvent
         {
             TenantId = TenantId,
-            RoleId            = Id,
+            RoleId = Id,
             BusinessPartnerId = BusinessPartnerId,
-            RoleType          = RoleType,
-            ReactivatedBy     = reactivatedBy,
+            RoleType = RoleType,
+            ReactivatedBy = reactivatedBy,
         });
     }
 
@@ -138,17 +138,17 @@ public sealed class BusinessPartnerRole : AuditableEntity, ITenantScopedEntity
         if (revokedBy == Guid.Empty)
             throw new ArgumentException("RevokedBy es obligatorio.", nameof(revokedBy));
 
-        IsActive  = false;
+        IsActive = false;
         RevokedAt = DateTime.UtcNow;
         RevokedBy = revokedBy;
         SetUpdated(revokedBy);
         RaiseDomainEvent(new BusinessPartnerRoleRevokedEvent
         {
             TenantId = TenantId,
-            RoleId            = Id,
+            RoleId = Id,
             BusinessPartnerId = BusinessPartnerId,
-            RoleType          = RoleType,
-            RevokedBy         = revokedBy,
+            RoleType = RoleType,
+            RevokedBy = revokedBy,
         });
     }
 
@@ -182,10 +182,10 @@ public sealed class BusinessPartnerRole : AuditableEntity, ITenantScopedEntity
         RaiseDomainEvent(new BusinessPartnerRoleConfigUpdatedEvent
         {
             TenantId = TenantId,
-            RoleId            = Id,
+            RoleId = Id,
             BusinessPartnerId = BusinessPartnerId,
-            RoleType          = RoleType,
-            UpdatedBy         = updatedBy,
+            RoleType = RoleType,
+            UpdatedBy = updatedBy,
         });
     }
 
@@ -205,10 +205,10 @@ public sealed class BusinessPartnerRole : AuditableEntity, ITenantScopedEntity
         RaiseDomainEvent(new BusinessPartnerRoleConfigUpdatedEvent
         {
             TenantId = TenantId,
-            RoleId            = Id,
+            RoleId = Id,
             BusinessPartnerId = BusinessPartnerId,
-            RoleType          = RoleType,
-            UpdatedBy         = updatedBy,
+            RoleType = RoleType,
+            UpdatedBy = updatedBy,
         });
     }
 
@@ -228,10 +228,10 @@ public sealed class BusinessPartnerRole : AuditableEntity, ITenantScopedEntity
         RaiseDomainEvent(new BusinessPartnerRoleConfigUpdatedEvent
         {
             TenantId = TenantId,
-            RoleId            = Id,
+            RoleId = Id,
             BusinessPartnerId = BusinessPartnerId,
-            RoleType          = RoleType,
-            UpdatedBy         = updatedBy,
+            RoleType = RoleType,
+            UpdatedBy = updatedBy,
         });
     }
 
@@ -251,21 +251,21 @@ public sealed class BusinessPartnerRole : AuditableEntity, ITenantScopedEntity
         RaiseDomainEvent(new BusinessPartnerRoleConfigUpdatedEvent
         {
             TenantId = TenantId,
-            RoleId            = Id,
+            RoleId = Id,
             BusinessPartnerId = BusinessPartnerId,
-            RoleType          = RoleType,
-            UpdatedBy         = updatedBy,
+            RoleType = RoleType,
+            UpdatedBy = updatedBy,
         });
     }
 
     // ── Validación de coherencia tipo↔config ─────────────────────────────────
     // ÚNICA instancia de condicional sobre RoleType en todo el sistema. Ver ADR-BP-11.
     private static void ValidateConfigCoherence(
-        RoleType                       roleType,
-        SupplierRoleConfig?            supplierConfig,
-        CarrierRoleConfig?             carrierConfig,
-        CustomerRoleConfig?            customerConfig,
-        SupplierClassificationConfig?  classificationConfig = null)
+        RoleType roleType,
+        SupplierRoleConfig? supplierConfig,
+        CarrierRoleConfig? carrierConfig,
+        CustomerRoleConfig? customerConfig,
+        SupplierClassificationConfig? classificationConfig = null)
     {
         if (supplierConfig is not null && roleType != RoleType.Supplier)
             throw new ArgumentException(

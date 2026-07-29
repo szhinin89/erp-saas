@@ -4,8 +4,8 @@ using ERP.Application.Modules.Purchases.PurchaseReception.Services;
 using ERP.Domain.Modules.Purchases.PurchaseReception.Enums;
 using ERP.Domain.Modules.Purchases.PurchaseReception.Interfaces;
 using MediatR;
-using DraftModel = ERP.Application.Modules.Purchases.PurchaseReception.PurchaseDraft.PurchaseDraft;
 using DraftMapper = ERP.Application.Modules.Purchases.PurchaseReception.PurchaseDraft.PurchaseDraftMapper;
+using DraftModel = ERP.Application.Modules.Purchases.PurchaseReception.PurchaseDraft.PurchaseDraft;
 
 namespace ERP.Application.Modules.Purchases.PurchaseReception.UseCases.CreatePurchaseReceptionDraft;
 

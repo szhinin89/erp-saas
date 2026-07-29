@@ -1,9 +1,9 @@
-using Microsoft.EntityFrameworkCore;
 using ERP.Application.Common;
 using ERP.Application.Common.Persistence;
 using ERP.Domain.Modules.Inventory.Entities;
 using ERP.Domain.Modules.Inventory.Enums;
 using ERP.Domain.Modules.Inventory.Interfaces;
+using Microsoft.EntityFrameworkCore;
 
 namespace ERP.Infrastructure.Persistence.Repositories.Inventory;
 
@@ -111,15 +111,15 @@ public sealed class StockRepository : IStockRepository
             .Select(m => new { m.SequenceNumber, m.RunningAverageCost, m.RunningStockValue })
             .FirstOrDefaultAsync(ct);
 
-        var nextSeq          = (last?.SequenceNumber ?? 0) + 1;
+        var nextSeq = (last?.SequenceNumber ?? 0) + 1;
         var lastRunningValue = last?.RunningStockValue ?? 0m;
-        var lastRunningAvg   = last?.RunningAverageCost ?? 0m;
+        var lastRunningAvg = last?.RunningAverageCost ?? 0m;
 
         // Salidas sin costo explícito consumen el costo promedio corrido del propio Kardex
         // (nunca CurrentStock.AverageCost, que es solo una proyección derivada).
         var resolvedUnitCost = r.UnitCost ?? lastRunningAvg;
-        var resultQty             = previousQty + r.Quantity;
-        var newRunningStockValue  = Math.Max(0m, lastRunningValue + r.Quantity * resolvedUnitCost);
+        var resultQty = previousQty + r.Quantity;
+        var newRunningStockValue = Math.Max(0m, lastRunningValue + r.Quantity * resolvedUnitCost);
         var newRunningAverageCost = resultQty > 0m ? newRunningStockValue / resultQty : 0m;
 
         // Branch Ownership: el movimiento pertenece a la sucursal dueña de la bodega afectada,

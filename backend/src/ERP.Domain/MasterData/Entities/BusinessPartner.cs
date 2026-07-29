@@ -1,4 +1,4 @@
-﻿using ERP.Domain.Common;
+using ERP.Domain.Common;
 using ERP.Domain.MasterData.Enums;
 using ERP.Domain.MasterData.Events;
 using ERP.Domain.MasterData.ValueObjects;
@@ -22,10 +22,10 @@ public sealed class BusinessPartner : AuditableEntity, ITenantScopedEntity, ISys
     public const int CountryCodeLen = 2;
 
     public TaxIdentification Identification { get; private set; } = null!;
-    public PersonName        Name           { get; private set; } = null!;
-    public PersonType        PersonType     { get; private set; }
-    public string?           CountryCode    { get; private set; }
-    public bool              IsActive       { get; private set; } = true;
+    public PersonName Name { get; private set; } = null!;
+    public PersonType PersonType { get; private set; }
+    public string? CountryCode { get; private set; }
+    public bool IsActive { get; private set; } = true;
 
     /// <summary>
     /// Ver <see cref="ISystemSeeded"/>. <see cref="BusinessPartner"/> no deriva de
@@ -37,14 +37,14 @@ public sealed class BusinessPartner : AuditableEntity, ITenantScopedEntity, ISys
     private BusinessPartner() { }
 
     public static BusinessPartner Create(
-        Guid       tenantId,
-        string     identificationType,
-        string     identificationNumber,
+        Guid tenantId,
+        string identificationType,
+        string identificationNumber,
         PersonType personType,
-        string     legalName,
-        Guid       createdBy,
-        string?    tradeName   = null,
-        string?    countryCode = null)
+        string legalName,
+        Guid createdBy,
+        string? tradeName = null,
+        string? countryCode = null)
     {
         if (tenantId == Guid.Empty)
             throw new ArgumentException("tenantId es obligatorio.", nameof(tenantId));
@@ -53,23 +53,23 @@ public sealed class BusinessPartner : AuditableEntity, ITenantScopedEntity, ISys
 
         var bp = new BusinessPartner
         {
-            Id             = Guid.NewGuid(),
-            TenantId   = tenantId,
+            Id = Guid.NewGuid(),
+            TenantId = tenantId,
             Identification = TaxIdentification.Create(identificationType, identificationNumber),
-            Name           = PersonName.Create(legalName, tradeName),
-            PersonType     = personType,
-            CountryCode    = NormalizeCountryCode(countryCode),
-            IsActive       = true,
+            Name = PersonName.Create(legalName, tradeName),
+            PersonType = personType,
+            CountryCode = NormalizeCountryCode(countryCode),
+            IsActive = true,
         };
         bp.SetCreated(createdBy);
         bp.RaiseDomainEvent(new BusinessPartnerCreatedEvent
         {
-            TenantId           = tenantId,
-            BusinessPartnerId      = bp.Id,
-            IdentificationType     = bp.Identification.Type,
-            IdentificationNumber   = bp.Identification.Number,
-            LegalName              = bp.Name.LegalName,
-            CreatedBy              = createdBy,
+            TenantId = tenantId,
+            BusinessPartnerId = bp.Id,
+            IdentificationType = bp.Identification.Type,
+            IdentificationNumber = bp.Identification.Number,
+            LegalName = bp.Name.LegalName,
+            CreatedBy = createdBy,
         });
         return bp;
     }
@@ -82,14 +82,14 @@ public sealed class BusinessPartner : AuditableEntity, ITenantScopedEntity, ISys
     /// <c>CLAUDE.md</c>. <see cref="UpdateProfile"/> permanece abierto (nombre/país son cosméticos).
     /// </summary>
     public static BusinessPartner CreateSystemSeeded(
-        Guid       tenantId,
-        string     identificationType,
-        string     identificationNumber,
+        Guid tenantId,
+        string identificationType,
+        string identificationNumber,
         PersonType personType,
-        string     legalName,
-        Guid       createdBy,
-        string?    tradeName   = null,
-        string?    countryCode = null)
+        string legalName,
+        Guid createdBy,
+        string? tradeName = null,
+        string? countryCode = null)
     {
         var bp = Create(tenantId, identificationType, identificationNumber, personType, legalName, createdBy, tradeName, countryCode);
         bp.IsSystemSeeded = true;
@@ -101,25 +101,25 @@ public sealed class BusinessPartner : AuditableEntity, ITenantScopedEntity, ISys
     /// No modifica la identificación fiscal — use UpdateIdentification() para eso.
     /// </summary>
     public void UpdateProfile(
-        string     legalName,
+        string legalName,
         PersonType personType,
-        Guid       updatedBy,
-        string?    tradeName   = null,
-        string?    countryCode = null)
+        Guid updatedBy,
+        string? tradeName = null,
+        string? countryCode = null)
     {
         if (!IsActive)
             throw new InvalidOperationException("No se puede actualizar un BusinessPartner inactivo.");
 
-        Name        = PersonName.Create(legalName, tradeName);
-        PersonType  = personType;
+        Name = PersonName.Create(legalName, tradeName);
+        PersonType = personType;
         CountryCode = NormalizeCountryCode(countryCode);
         SetUpdated(updatedBy);
         RaiseDomainEvent(new BusinessPartnerProfileUpdatedEvent
         {
             TenantId = TenantId,
             BusinessPartnerId = Id,
-            LegalName         = Name.LegalName,
-            UpdatedBy         = updatedBy,
+            LegalName = Name.LegalName,
+            UpdatedBy = updatedBy,
         });
     }
 
@@ -134,7 +134,7 @@ public sealed class BusinessPartner : AuditableEntity, ITenantScopedEntity, ISys
         if (!IsActive)
             throw new InvalidOperationException("No se puede modificar la identificación de un BusinessPartner inactivo.");
 
-        var oldType   = Identification.Type;
+        var oldType = Identification.Type;
         var oldNumber = Identification.Number;
 
         Identification = TaxIdentification.Create(type, number);
@@ -142,12 +142,12 @@ public sealed class BusinessPartner : AuditableEntity, ITenantScopedEntity, ISys
         RaiseDomainEvent(new BusinessPartnerIdentificationChangedEvent
         {
             TenantId = TenantId,
-            BusinessPartnerId  = Id,
-            OldType            = oldType,
-            OldNumber          = oldNumber,
-            NewType            = Identification.Type,
-            NewNumber          = Identification.Number,
-            ChangedBy          = updatedBy,
+            BusinessPartnerId = Id,
+            OldType = oldType,
+            OldNumber = oldNumber,
+            NewType = Identification.Type,
+            NewNumber = Identification.Number,
+            ChangedBy = updatedBy,
         });
     }
 
@@ -162,7 +162,7 @@ public sealed class BusinessPartner : AuditableEntity, ITenantScopedEntity, ISys
         {
             TenantId = TenantId,
             BusinessPartnerId = Id,
-            DeactivatedBy     = updatedBy,
+            DeactivatedBy = updatedBy,
         });
     }
 
@@ -176,7 +176,7 @@ public sealed class BusinessPartner : AuditableEntity, ITenantScopedEntity, ISys
         {
             TenantId = TenantId,
             BusinessPartnerId = Id,
-            ActivatedBy       = updatedBy,
+            ActivatedBy = updatedBy,
         });
     }
 

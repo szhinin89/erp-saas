@@ -5,28 +5,28 @@ namespace ERP.Domain.Modules.Purchases.Entities;
 
 public sealed class IssuedWithholdingDetail : IMustHaveTenant
 {
-    public const int TaxTypeMaxLen        = 10;
-    public const int RetentionCodeMaxLen  = 10;
-    public const int CodeDescMaxLen       = 200;
+    public const int TaxTypeMaxLen = 10;
+    public const int RetentionCodeMaxLen = 10;
+    public const int CodeDescMaxLen = 200;
 
-    public Guid     Id                     { get; private set; }
-    public Guid     TenantId               { get; private set; }
-    public Guid     WithholdingId          { get; private set; }
-    public string   TaxType                { get; private set; } = null!;
-    public string   RetentionCode          { get; private set; } = null!;
-    public string   RetentionCodeDescription { get; private set; } = null!;
-    public decimal  TaxableBase            { get; private set; }
-    public decimal  RetentionPct           { get; private set; }
-    public decimal  AmountRetained         { get; private set; }
+    public Guid Id { get; private set; }
+    public Guid TenantId { get; private set; }
+    public Guid WithholdingId { get; private set; }
+    public string TaxType { get; private set; } = null!;
+    public string RetentionCode { get; private set; } = null!;
+    public string RetentionCodeDescription { get; private set; } = null!;
+    public decimal TaxableBase { get; private set; }
+    public decimal RetentionPct { get; private set; }
+    public decimal AmountRetained { get; private set; }
 
     private IssuedWithholdingDetail() { }
 
     public static IssuedWithholdingDetail Create(
-        Guid    withholdingId,
-        Guid    tenantId,
-        string  taxType,
-        string  retentionCode,
-        string  retentionCodeDescription,
+        Guid withholdingId,
+        Guid tenantId,
+        string taxType,
+        string retentionCode,
+        string retentionCodeDescription,
         decimal taxableBase,
         decimal retentionPct)
     {
@@ -41,15 +41,15 @@ public sealed class IssuedWithholdingDetail : IMustHaveTenant
 
         return new IssuedWithholdingDetail
         {
-            Id                       = Guid.NewGuid(),
-            TenantId                 = tenantId,
-            WithholdingId            = withholdingId,
-            TaxType                  = taxType.Trim().ToUpperInvariant(),
-            RetentionCode            = retentionCode.Trim(),
+            Id = Guid.NewGuid(),
+            TenantId = tenantId,
+            WithholdingId = withholdingId,
+            TaxType = taxType.Trim().ToUpperInvariant(),
+            RetentionCode = retentionCode.Trim(),
             RetentionCodeDescription = retentionCodeDescription.Trim(),
-            TaxableBase              = taxableBase,
-            RetentionPct             = retentionPct,
-            AmountRetained           = Math.Round(taxableBase * retentionPct / 100m, TaxAmount, MidpointRounding.AwayFromZero),
+            TaxableBase = taxableBase,
+            RetentionPct = retentionPct,
+            AmountRetained = Math.Round(taxableBase * retentionPct / 100m, TaxAmount, MidpointRounding.AwayFromZero),
         };
     }
 }

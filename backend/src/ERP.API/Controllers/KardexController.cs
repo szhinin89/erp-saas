@@ -1,6 +1,3 @@
-using MediatR;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Mvc;
 using ERP.API.Attributes;
 using ERP.API.Extensions;
 using ERP.Application.Modules.Inventory.Stock.DTOs;
@@ -8,6 +5,9 @@ using ERP.Application.Modules.Inventory.Stock.UseCases.GetKardexByDocument;
 using ERP.Application.Modules.Inventory.Stock.UseCases.GetKardexByProduct;
 using ERP.Application.Modules.Inventory.Stock.UseCases.GetKardexMovementDetail;
 using ERP.Domain.Kernel.Permissions;
+using MediatR;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 
 namespace ERP.API.Controllers;
 

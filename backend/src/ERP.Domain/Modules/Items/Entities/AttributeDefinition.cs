@@ -1,4 +1,4 @@
-﻿using ERP.Domain.Common;
+using ERP.Domain.Common;
 using ERP.Domain.Modules.Items.Enums;
 
 namespace ERP.Domain.Modules.Items.Entities;
@@ -43,15 +43,15 @@ public sealed class AttributeDefinition : MasterEntity, ITenantScopedEntity
 
         var def = new AttributeDefinition
         {
-            TenantId  = tenantId,
-            GroupId       = groupId,
-            Code          = code.Trim().ToUpperInvariant(),
-            Name          = name.Trim(),
-            DataType      = dataType,
+            TenantId = tenantId,
+            GroupId = groupId,
+            Code = code.Trim().ToUpperInvariant(),
+            Name = name.Trim(),
+            DataType = dataType,
             IsVariantAxis = isVariantAxis,
             AllowedValues = allowedValues,
-            IsRequired    = isRequired,
-            SortOrder     = sortOrder,
+            IsRequired = isRequired,
+            SortOrder = sortOrder,
         };
         def.SetCreated(tenantId);
         return def;
@@ -64,11 +64,11 @@ public sealed class AttributeDefinition : MasterEntity, ITenantScopedEntity
         if (DataType == AttributeDataType.List && string.IsNullOrWhiteSpace(allowedValues))
             throw new ArgumentException("Debe especificar los valores permitidos para atributos de tipo List.", nameof(allowedValues));
 
-        Name          = name.Trim();
+        Name = name.Trim();
         IsVariantAxis = isVariantAxis;
         AllowedValues = allowedValues;
-        IsRequired    = isRequired;
-        SortOrder     = sortOrder;
+        IsRequired = isRequired;
+        SortOrder = sortOrder;
         SetUpdated(updatedBy);
     }
 }

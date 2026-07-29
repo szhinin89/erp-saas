@@ -1,7 +1,7 @@
-using System.Globalization;
 using ERP.Application.Common;
 using ERP.Domain.Configuration.Enums;
 using ERP.Domain.Configuration.Interfaces;
+using System.Globalization;
 
 namespace ERP.Infrastructure.Services;
 
@@ -13,16 +13,16 @@ namespace ERP.Infrastructure.Services;
 public sealed class OrgConfigResolver : IOrgConfigResolver
 {
     private readonly IOrgSettingsRepository _repo;
-    private readonly ICurrentTenant         _currentTenant;
-    private readonly ICurrentCompany        _currentCompany;
+    private readonly ICurrentTenant _currentTenant;
+    private readonly ICurrentCompany _currentCompany;
 
     public OrgConfigResolver(
         IOrgSettingsRepository repo,
-        ICurrentTenant         currentTenant,
-        ICurrentCompany        currentCompany)
+        ICurrentTenant currentTenant,
+        ICurrentCompany currentCompany)
     {
-        _repo           = repo;
-        _currentTenant  = currentTenant;
+        _repo = repo;
+        _currentTenant = currentTenant;
         _currentCompany = currentCompany;
     }
 

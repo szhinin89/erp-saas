@@ -1,6 +1,6 @@
-using MediatR;
 using ERP.Application.Common;
 using ERP.Application.Modules.Ride.DTOs;
+using MediatR;
 
 namespace ERP.Application.Modules.Ride.UseCases.GetOrGenerateRide;
 

@@ -19,11 +19,11 @@ public sealed class OrgSettingsRepository : IOrgSettingsRepository
         => _db.OrgSettings
             .IgnoreQueryFilters()
             .FirstOrDefaultAsync(s =>
-                s.TenantId  == tenantId  &&
+                s.TenantId == tenantId &&
                 s.CompanyId == companyId &&
-                s.Scope     == scope     &&
-                s.ScopeId   == scopeId   &&
-                s.Key       == key.Trim().ToLowerInvariant(), ct);
+                s.Scope == scope &&
+                s.ScopeId == scopeId &&
+                s.Key == key.Trim().ToLowerInvariant(), ct);
 
     public async Task<IReadOnlyList<OrgSetting>> GetAllForScopeAsync(
         Guid tenantId, Guid companyId,
@@ -33,10 +33,10 @@ public sealed class OrgSettingsRepository : IOrgSettingsRepository
         var list = await _db.OrgSettings
             .IgnoreQueryFilters()
             .Where(s =>
-                s.TenantId  == tenantId  &&
+                s.TenantId == tenantId &&
                 s.CompanyId == companyId &&
-                s.Scope     == scope     &&
-                s.ScopeId   == scopeId)
+                s.Scope == scope &&
+                s.ScopeId == scopeId)
             .ToListAsync(ct);
 
         return list.AsReadOnly();

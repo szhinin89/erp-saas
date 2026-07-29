@@ -1,4 +1,3 @@
-using MediatR;
 using ERP.Application.Auth.DTOs;
 using ERP.Application.Common;
 using ERP.Application.Common.Interfaces;
@@ -7,6 +6,7 @@ using ERP.Domain.Access.Interfaces;
 using ERP.Domain.Kernel.Security;
 using ERP.Domain.Modules.Company.Interfaces;
 using ERP.Domain.Tenants.Interfaces;
+using MediatR;
 
 namespace ERP.Application.Auth.UseCases.RefreshToken;
 
@@ -25,11 +25,11 @@ public sealed class RefreshTokenHandler : IRequestHandler<RefreshTokenCommand, R
         IAccessTokenService accessTokenService,
         ICompanyRepository companyRepository)
     {
-        _refreshTokenService  = refreshTokenService;
-        _accessRepository     = accessRepository;
+        _refreshTokenService = refreshTokenService;
+        _accessRepository = accessRepository;
         _tenantRepository = TenantRepository;
-        _accessTokenService   = accessTokenService;
-        _companyRepository    = companyRepository;
+        _accessTokenService = accessTokenService;
+        _companyRepository = companyRepository;
     }
 
     public async Task<Result<AuthResponseDto>> Handle(RefreshTokenCommand command, CancellationToken cancellationToken)
@@ -71,14 +71,14 @@ public sealed class RefreshTokenHandler : IRequestHandler<RefreshTokenCommand, R
         else
         {
             var memberships = await _accessRepository.GetActiveCompanyUserMembershipsForUserSystemAsync(user.Id, cancellationToken);
-            var companies   = await _companyRepository.GetByIdsAsync(memberships.Select(m => m.CompanyId).ToList(), cancellationToken);
+            var companies = await _companyRepository.GetByIdsAsync(memberships.Select(m => m.CompanyId).ToList(), cancellationToken);
             var inTenant = companies.Where(c => c.TenantId == v.TenantId).ToList();
 
             if (inTenant.Count == 1)
             {
                 resolvedCompany = inTenant[0];
-                companyId       = resolvedCompany.Id;
-                membership      = memberships.First(m => m.CompanyId == companyId);
+                companyId = resolvedCompany.Id;
+                membership = memberships.First(m => m.CompanyId == companyId);
             }
             else if (inTenant.Count == 0)
             {
@@ -95,10 +95,10 @@ public sealed class RefreshTokenHandler : IRequestHandler<RefreshTokenCommand, R
                     user.Id, user.FullName, user.Username, user.Email?.Value,
                     pendingCompanyRole, v.TenantId, accessTokenPartial)
                 {
-                    CompanyId                = null,
+                    CompanyId = null,
                     RequiresCompanySelection = true,
-                    RefreshToken             = v.NewToken,
-                    RefreshTokenExpiry       = v.NewExpiry,
+                    RefreshToken = v.NewToken,
+                    RefreshTokenExpiry = v.NewExpiry,
                 });
             }
         }
@@ -114,11 +114,11 @@ public sealed class RefreshTokenHandler : IRequestHandler<RefreshTokenCommand, R
             user.Id, user.FullName, user.Username, user.Email?.Value,
             membership.Role, v.TenantId, accessToken)
         {
-            CompanyId           = companyId,
+            CompanyId = companyId,
             OnboardingCompleted = resolvedCompany?.OnboardingCompleted ?? false,
-            OperationalStatus   = resolvedCompany?.OperationalStatus,
-            RefreshToken        = v.NewToken,
-            RefreshTokenExpiry  = v.NewExpiry,
+            OperationalStatus = resolvedCompany?.OperationalStatus,
+            RefreshToken = v.NewToken,
+            RefreshTokenExpiry = v.NewExpiry,
         });
     }
 }

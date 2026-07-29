@@ -1,6 +1,6 @@
-using MediatR;
 using ERP.Application.Common;
 using ERP.Application.Modules.Sales.DTOs;
+using MediatR;
 
 namespace ERP.Application.Modules.Sales.UseCases.GetSalesItemPricing;
 

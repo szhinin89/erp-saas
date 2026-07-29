@@ -1,5 +1,4 @@
 using ERP.Application.Common;
-using ERP.Domain.Common;
 using ERP.Domain.MasterData.Entities;
 using ERP.Domain.MasterData.Interfaces;
 using FluentValidation;
@@ -10,14 +9,14 @@ namespace ERP.Application.MasterData.UseCases.PaymentTerms;
 // ── DTOs ─────────────────────────────────────────────────────────────────────
 
 public sealed record PaymentTermDto(
-    Guid   Id,
+    Guid Id,
     string Code,
     string Name,
-    int    Installments,
-    int    DaysBetweenInstallments,
-    int    TotalDays,
+    int Installments,
+    int DaysBetweenInstallments,
+    int TotalDays,
     string Summary,
-    bool   IsActive)
+    bool IsActive)
 {
     public static PaymentTermDto From(PaymentTerm e) => new(
         e.Id, e.Code, e.Name, e.Installments, e.DaysBetweenInstallments,
@@ -37,15 +36,15 @@ public sealed record GetPaymentTermByIdQuery(Guid Id)
 public sealed record CreatePaymentTermCommand(
     string Code,
     string Name,
-    int    Installments,
-    int    DaysBetweenInstallments)
+    int Installments,
+    int DaysBetweenInstallments)
     : IRequest<Result<PaymentTermDto>>, ITenantScopedRequest;
 
 public sealed record UpdatePaymentTermCommand(
-    Guid   Id,
+    Guid Id,
     string Name,
-    int    Installments,
-    int    DaysBetweenInstallments)
+    int Installments,
+    int DaysBetweenInstallments)
     : IRequest<Result<PaymentTermDto>>, ITenantScopedRequest;
 
 public sealed record EnablePaymentTermCommand(Guid Id)

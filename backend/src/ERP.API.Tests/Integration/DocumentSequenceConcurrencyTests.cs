@@ -21,10 +21,10 @@ public sealed class DocSeqConcurrencyFixture : IAsyncLifetime
 {
     private readonly PostgreSqlTestWebAppFactory _factory = new();
 
-    public IServiceProvider Services  => _factory.Services;
-    public Guid             TenantId  { get; private set; }
-    public Guid             CompanyId { get; private set; }
-    public Guid             EstablishmentId { get; private set; }
+    public IServiceProvider Services => _factory.Services;
+    public Guid TenantId { get; private set; }
+    public Guid CompanyId { get; private set; }
+    public Guid EstablishmentId { get; private set; }
 
     // Contador thread-safe para generar códigos únicos de EmissionPoint por test.
     private int _epCodeCounter;
@@ -46,7 +46,7 @@ public sealed class DocSeqConcurrencyFixture : IAsyncLifetime
         var db = scope.ServiceProvider.GetRequiredService<ErpDbContext>();
 
         var adminId = Guid.NewGuid();
-        var tenant  = Tenant.Create("ZH-Concurrency-Test", $"zh-concurrency-{Guid.NewGuid():N}", adminId);
+        var tenant = Tenant.Create("ZH-Concurrency-Test", $"zh-concurrency-{Guid.NewGuid():N}", adminId);
         db.Tenants.Add(tenant);
         await db.SaveChangesAsync();
         TenantId = tenant.Id;
@@ -76,7 +76,7 @@ public sealed class DocSeqConcurrencyFixture : IAsyncLifetime
     public async Task<Guid> CreateEmissionPointAsync()
     {
         var counter = Interlocked.Increment(ref _epCodeCounter);
-        var code    = counter.ToString("D3", System.Globalization.CultureInfo.InvariantCulture);
+        var code = counter.ToString("D3", System.Globalization.CultureInfo.InvariantCulture);
 
         using var scope = Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<ErpDbContext>();
@@ -105,12 +105,12 @@ public sealed class DocSeqConcurrencyFixture : IAsyncLifetime
 public sealed class DocumentSequenceConcurrencyTests : IClassFixture<DocSeqConcurrencyFixture>
 {
     private readonly DocSeqConcurrencyFixture _f;
-    private readonly ITestOutputHelper        _out;
+    private readonly ITestOutputHelper _out;
     private const string DocType = "01";
 
     public DocumentSequenceConcurrencyTests(DocSeqConcurrencyFixture fixture, ITestOutputHelper output)
     {
-        _f   = fixture;
+        _f = fixture;
         _out = output;
     }
 
@@ -136,7 +136,7 @@ public sealed class DocumentSequenceConcurrencyTests : IClassFixture<DocSeqConcu
     [Fact]
     public async Task CaptureNext_repeated_20_iterations_never_produces_duplicates()
     {
-        const int iterations    = 20;
+        const int iterations = 20;
         const int requestsPerIt = 20;
 
         var epId = await _f.CreateEmissionPointAsync();
@@ -228,12 +228,12 @@ public sealed class DocumentSequenceConcurrencyTests : IClassFixture<DocSeqConcu
 
     private async Task<ConcurrencyResult> RunConcurrentCapturesAsync(
         Guid emissionPointId,
-        int  n,
+        int n,
         string docType = DocType,
         CancellationToken ct = default)
     {
         // Barrera de inicio: todos los tasks esperan la señal antes de llamar al repo.
-        var go      = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+        var go = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
         var metrics = new long[n];
 
         var tasks = Enumerable.Range(0, n).Select(i => Task.Run(async () =>
@@ -294,14 +294,14 @@ public sealed class DocumentSequenceConcurrencyTests : IClassFixture<DocSeqConcu
 
     private void PrintMetrics(int n, long[] metrics)
     {
-        var valid  = metrics.Where(m => m >= 0).ToArray();
+        var valid = metrics.Where(m => m >= 0).ToArray();
         var errors = metrics.Count(m => m < 0);
         if (valid.Length == 0) { _out.WriteLine($"[{n} req] TODOS fallaron."); return; }
 
-        var avgMs    = valid.Average();
-        var maxMs    = valid.Max();
-        var minMs    = valid.Min();
-        var totalMs  = valid.Sum(); // suma real (no wallclock)
+        var avgMs = valid.Average();
+        var maxMs = valid.Max();
+        var minMs = valid.Min();
+        var totalMs = valid.Sum(); // suma real (no wallclock)
         // El throughput se mide sobre el tiempo total de ejecución wallclock (en ConcurrencyResult).
         _out.WriteLine(
             $"[{n,4} req] avg={avgMs:F1}ms  max={maxMs}ms  min={minMs}ms  " +

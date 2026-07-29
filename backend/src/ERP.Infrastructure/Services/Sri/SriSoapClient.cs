@@ -1,9 +1,9 @@
-using System.Text;
-using System.Xml;
 using ERP.Application.Common.Config;
 using ERP.Domain.Modules.ElectronicDocuments.ValueObjects;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using System.Text;
+using System.Xml;
 
 namespace ERP.Infrastructure.Services.Sri;
 
@@ -14,7 +14,7 @@ namespace ERP.Infrastructure.Services.Sri;
 /// </summary>
 public sealed partial class SriSoapClient
 {
-    private const string SoapAction  = "\"\"";
+    private const string SoapAction = "\"\"";
     // Solo el media type: StringContent(string, Encoding, string) construye el header
     // "Content-Type: text/xml; charset=utf-8" a partir de Encoding — pasar aquí el charset ya
     // incluido produce un valor duplicado/mal formado y StringContent lanza FormatException en
@@ -23,19 +23,19 @@ public sealed partial class SriSoapClient
     private const string ContentType = "text/xml";
 
     // Namespaces WSDL SRI
-    private const string NsRecepcion    = "http://ec.gob.sri.ws.recepcion";
+    private const string NsRecepcion = "http://ec.gob.sri.ws.recepcion";
     private const string NsAutorizacion = "http://ec.gob.sri.ws.autorizacion";
-    private const string NsSoap        = "http://schemas.xmlsoap.org/soap/envelope/";
+    private const string NsSoap = "http://schemas.xmlsoap.org/soap/envelope/";
 
-    private readonly IHttpClientFactory                _factory;
-    private readonly ILogger<SriSoapClient>            _logger;
-    private readonly SriPollingOptions                 _pollingOptions;
+    private readonly IHttpClientFactory _factory;
+    private readonly ILogger<SriSoapClient> _logger;
+    private readonly SriPollingOptions _pollingOptions;
 
     public SriSoapClient(
         IHttpClientFactory factory, ILogger<SriSoapClient> logger, IOptions<SriPollingOptions>? pollingOptions = null)
     {
         _factory = factory;
-        _logger  = logger;
+        _logger = logger;
         _pollingOptions = pollingOptions?.Value ?? new SriPollingOptions();
     }
 
@@ -46,13 +46,13 @@ public sealed partial class SriSoapClient
     /// Retorna estado RECIBIDA o DEVUELTA + lista de errores si aplica.
     /// </summary>
     public async Task<SriRecepcionResult> SendAsync(
-        byte[]          signedXmlBytes,
-        string          wsdlUrl,
+        byte[] signedXmlBytes,
+        string wsdlUrl,
         CancellationToken cancellationToken = default)
     {
         var endpointUrl = RecepcionEndpoint(wsdlUrl);
-        var b64Xml      = Convert.ToBase64String(signedXmlBytes);
-        var envelope    = BuildRecepcionEnvelope(b64Xml);
+        var b64Xml = Convert.ToBase64String(signedXmlBytes);
+        var envelope = BuildRecepcionEnvelope(b64Xml);
 
         LogSriSending(endpointUrl);
 
@@ -111,13 +111,13 @@ public sealed partial class SriSoapClient
     /// entre reintentos (2s, 4s, 8s, 16s).
     /// </summary>
     public async Task<SriAutorizacionResult> CheckAuthorizationAsync(
-        string          accessKey,
-        string          wsdlUrl,
-        int             maxAttempts  = 5,
+        string accessKey,
+        string wsdlUrl,
+        int maxAttempts = 5,
         CancellationToken cancellationToken = default)
     {
         var endpointUrl = AutorizacionEndpoint(wsdlUrl);
-        var envelope    = BuildAutorizacionEnvelope(accessKey);
+        var envelope = BuildAutorizacionEnvelope(accessKey);
 
         if (_pollingOptions.InitialAuthorizationDelaySeconds > 0)
         {
@@ -272,7 +272,7 @@ public sealed partial class SriSoapClient
         {
             try
             {
-                using var client  = _factory.CreateClient("sri");
+                using var client = _factory.CreateClient("sri");
                 using var content = new StringContent(envelope, Encoding.UTF8, ContentType);
                 content.Headers.TryAddWithoutValidation("SOAPAction", SoapAction);
 
@@ -360,7 +360,7 @@ public sealed partial class SriSoapClient
 
     private static SriRecepcionResult ParseRecepcionResponse(string soap)
     {
-        var doc    = LoadXml(soap);
+        var doc = LoadXml(soap);
         var status = NodeText(doc, "estado") ?? "DESCONOCIDO";
 
         var mensajeNodes = SelectMensajeNodes(doc);
@@ -420,10 +420,10 @@ public sealed partial class SriSoapClient
         if (autorizacion is null)
             return new SriAutorizacionResult { Status = "SIN_RESPUESTA", ErrorMessage = "No se encontró el nodo <autorizacion>." };
 
-        var status   = NodeText(autorizacion, "estado")               ?? "DESCONOCIDO";
-        var number   = NodeText(autorizacion, "numeroAutorizacion")   ?? "";
-        var dateStr  = NodeText(autorizacion, "fechaAutorizacion")    ?? "";
-        var xmlDoc   = NodeText(autorizacion, "comprobante")          ?? "";
+        var status = NodeText(autorizacion, "estado") ?? "DESCONOCIDO";
+        var number = NodeText(autorizacion, "numeroAutorizacion") ?? "";
+        var dateStr = NodeText(autorizacion, "fechaAutorizacion") ?? "";
+        var xmlDoc = NodeText(autorizacion, "comprobante") ?? "";
 
         // FECHA-01 (rechazo real del SRI 2026-07-11, segunda ronda — este bug se manifestó recién
         // tras la primera AUTORIZADO real): DateTime.TryParse sin estilos, al recibir un offset
@@ -452,13 +452,13 @@ public sealed partial class SriSoapClient
 
         return new SriAutorizacionResult
         {
-            Status              = status,
+            Status = status,
             AuthorizationNumber = number,
-            AuthorizationDate   = authDate,
-            DocumentXml         = xmlDoc,
-            Messages            = messages,
-            StructuredMessages  = structuredMessages,
-            ErrorMessage        = status != "AUTORIZADO" ? string.Join("; ", messages) : null,
+            AuthorizationDate = authDate,
+            DocumentXml = xmlDoc,
+            Messages = messages,
+            StructuredMessages = structuredMessages,
+            ErrorMessage = status != "AUTORIZADO" ? string.Join("; ", messages) : null,
         };
     }
 
@@ -542,22 +542,22 @@ internal sealed class SriSoapFaultException : Exception
 
 public sealed class SriRecepcionResult
 {
-    public string           Status              { get; init; } = "";
-    public List<string>     Errors              { get; init; } = new();
+    public string Status { get; init; } = "";
+    public List<string> Errors { get; init; } = new();
     /// <summary>Mismos mensajes de <see cref="Errors"/>, sin aplanar — código/tipo/mensaje/información adicional por separado.</summary>
-    public List<SriMessage> StructuredMessages  { get; init; } = new();
-    public bool              Received => Status.Equals("RECIBIDA", StringComparison.OrdinalIgnoreCase);
+    public List<SriMessage> StructuredMessages { get; init; } = new();
+    public bool Received => Status.Equals("RECIBIDA", StringComparison.OrdinalIgnoreCase);
 }
 
 public sealed class SriAutorizacionResult
 {
-    public string           Status              { get; init; } = "";
-    public string           AuthorizationNumber { get; init; } = "";
-    public DateTime         AuthorizationDate   { get; init; }
-    public string           DocumentXml         { get; init; } = "";
-    public List<string>     Messages            { get; init; } = new();
+    public string Status { get; init; } = "";
+    public string AuthorizationNumber { get; init; } = "";
+    public DateTime AuthorizationDate { get; init; }
+    public string DocumentXml { get; init; } = "";
+    public List<string> Messages { get; init; } = new();
     /// <summary>Mismos mensajes de <see cref="Messages"/>, sin aplanar — código/tipo/mensaje/información adicional por separado.</summary>
-    public List<SriMessage> StructuredMessages  { get; init; } = new();
-    public string?          ErrorMessage        { get; set;  }
-    public bool              Authorized => Status.Equals("AUTORIZADO", StringComparison.OrdinalIgnoreCase);
+    public List<SriMessage> StructuredMessages { get; init; } = new();
+    public string? ErrorMessage { get; set; }
+    public bool Authorized => Status.Equals("AUTORIZADO", StringComparison.OrdinalIgnoreCase);
 }

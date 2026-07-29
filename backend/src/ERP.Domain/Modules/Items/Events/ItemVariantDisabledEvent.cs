@@ -9,8 +9,8 @@ public sealed class ItemVariantDisabledEvent : BaseDomainEvent
 
     public ItemVariantDisabledEvent(Guid itemId, Guid variantId, Guid tenantId)
     {
-        ItemId       = itemId;
-        VariantId    = variantId;
+        ItemId = itemId;
+        VariantId = variantId;
         TenantId = tenantId;
     }
 }

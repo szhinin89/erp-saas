@@ -32,7 +32,7 @@ public sealed partial class InventoryBootstrapStep : ICompanyBootstrapStep
 
     public InventoryBootstrapStep(ErpDbContext db, ILogger<InventoryBootstrapStep> logger)
     {
-        _db     = db;
+        _db = db;
         _logger = logger;
     }
 
@@ -106,9 +106,9 @@ public sealed partial class InventoryBootstrapStep : ICompanyBootstrapStep
 
         var category = ItemCategoryNode.CreateSystemSeeded(
             tenantId: tenantId,
-            code:     ItemCategoryNode.NoAplicaCode,
-            name:     NoAplicaName,
-            level:    CategoryNodeLevel.Family,
+            code: ItemCategoryNode.NoAplicaCode,
+            name: NoAplicaName,
+            level: CategoryNodeLevel.Family,
             createdBy: actorId);
         category.SetPath($"/{category.Id}");
 

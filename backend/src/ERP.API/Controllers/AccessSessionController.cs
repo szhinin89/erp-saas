@@ -1,9 +1,7 @@
-﻿using ERP.API.Authorization;
 using ERP.API.Contracts;
 using ERP.API.Extensions;
 using ERP.Application.Access.DTOs;
 using ERP.Application.Access.UseCases.Permissions;
-using ERP.Application.Access.UseCases.Profiles;
 using ERP.Application.Auth.UseCases.ChangeMyPassword;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;

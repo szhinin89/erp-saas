@@ -1,7 +1,6 @@
-using Microsoft.EntityFrameworkCore;
 using ERP.Domain.Modules.Finance.Entities;
 using ERP.Domain.Modules.Finance.Interfaces;
-using ERP.Infrastructure.Persistence;
+using Microsoft.EntityFrameworkCore;
 
 namespace ERP.Infrastructure.Persistence.Repositories.Finance;
 

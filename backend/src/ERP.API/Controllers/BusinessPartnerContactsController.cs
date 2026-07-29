@@ -1,9 +1,9 @@
-﻿using ERP.API.Contracts;
+using ERP.API.Contracts;
 using ERP.API.Contracts.MasterData;
 using ERP.API.Extensions;
-using ERP.Domain.Kernel.Permissions;
 using ERP.Application.MasterData.DTOs;
 using ERP.Application.MasterData.UseCases.BpContacts;
+using ERP.Domain.Kernel.Permissions;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -41,7 +41,7 @@ public sealed class BusinessPartnerContactsController : ControllerBase
     [Authorize(Policy = $"perm:{MasterDataPermissions.BusinessPartnersView}")]
     [ProducesResponseType(typeof(ApiResponse<IReadOnlyList<BpContactDto>>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetContacts(
-        [FromRoute] Guid  bpId,
+        [FromRoute] Guid bpId,
         [FromQuery] bool? onlyActive = true,
         CancellationToken cancellationToken = default)
     {
@@ -74,8 +74,8 @@ public sealed class BusinessPartnerContactsController : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<BpContactDto>), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status422UnprocessableEntity)]
     public async Task<IActionResult> CreateContact(
-        [FromRoute] Guid                 bpId,
-        [FromBody]  CreateContactRequest body,
+        [FromRoute] Guid bpId,
+        [FromBody] CreateContactRequest body,
         CancellationToken cancellationToken = default)
     {
         var cmd = new CreateBpContactCommand(
@@ -97,9 +97,9 @@ public sealed class BusinessPartnerContactsController : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status422UnprocessableEntity)]
     public async Task<IActionResult> UpdateContact(
-        [FromRoute] Guid                 bpId,
-        [FromRoute] Guid                 contactId,
-        [FromBody]  UpdateContactRequest body,
+        [FromRoute] Guid bpId,
+        [FromRoute] Guid contactId,
+        [FromBody] UpdateContactRequest body,
         CancellationToken cancellationToken = default)
     {
         _ = bpId;

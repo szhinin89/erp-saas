@@ -1,5 +1,5 @@
-using FluentValidation;
 using ERP.Domain.Security.Entities;
+using FluentValidation;
 
 namespace ERP.Application.Security.UseCases.UpsertSecurityAdminScopes;
 

@@ -1,6 +1,3 @@
-using MediatR;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Mvc;
 using ERP.API.Attributes;
 using ERP.API.Contracts;
 using ERP.API.Extensions;
@@ -11,6 +8,9 @@ using ERP.Application.Modules.Company.UseCases.EnableEmissionPoint;
 using ERP.Application.Modules.Company.UseCases.GetEmissionPoints;
 using ERP.Application.Modules.Company.UseCases.UpdateEmissionPoint;
 using ERP.Domain.Kernel.Permissions;
+using MediatR;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 
 namespace ERP.API.Controllers;
 
@@ -35,7 +35,7 @@ public sealed class EmissionPointsController : ControllerBase
     public async Task<IActionResult> GetAll(CancellationToken cancellationToken = default)
     {
         var activeFilter = CatalogQueryParameters.ParseActiveFilter(Request.Query);
-        var search       = CatalogQueryParameters.ParseSearch(Request.Query);
+        var search = CatalogQueryParameters.ParseSearch(Request.Query);
         var result = await _mediator.Send(new GetAllEmissionPointsQuery(activeFilter, search), cancellationToken);
         return this.ToOkOrBadRequest(result, "OK", () => Array.Empty<EmissionPointListItemDto>());
     }

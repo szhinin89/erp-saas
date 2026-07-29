@@ -1,4 +1,4 @@
-﻿namespace ERP.Domain.Auth.Entities;
+namespace ERP.Domain.Auth.Entities;
 
 /// <summary>
 /// Token opaco de un solo uso para restablecer contraseña (hash en BD).
@@ -7,7 +7,7 @@
 public sealed class PasswordResetToken
 {
     public const string KindIdentity = "Identity";
-    public const string KindLegacy   = "Legacy";
+    public const string KindLegacy = "Legacy";
 
     public Guid Id { get; private set; }
     public string TokenHash { get; private set; } = null!;

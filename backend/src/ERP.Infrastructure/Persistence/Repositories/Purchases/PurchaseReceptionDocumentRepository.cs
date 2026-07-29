@@ -1,7 +1,7 @@
-using Microsoft.EntityFrameworkCore;
 using ERP.Application.Common;
 using ERP.Domain.Modules.Purchases.PurchaseReception.Entities;
 using ERP.Domain.Modules.Purchases.PurchaseReception.Interfaces;
+using Microsoft.EntityFrameworkCore;
 
 namespace ERP.Infrastructure.Persistence.Repositories.Purchases;
 

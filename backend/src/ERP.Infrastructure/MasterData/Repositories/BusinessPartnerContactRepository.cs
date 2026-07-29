@@ -1,4 +1,4 @@
-﻿using ERP.Domain.MasterData.Entities;
+using ERP.Domain.MasterData.Entities;
 using ERP.Domain.MasterData.Enums;
 using ERP.Domain.MasterData.Interfaces;
 using ERP.Infrastructure.Persistence;
@@ -37,7 +37,7 @@ public sealed class BusinessPartnerContactRepository : IBusinessPartnerContactRe
               .FirstOrDefaultAsync(c => c.Id == id, cancellationToken);
 
     public async Task<IReadOnlyList<BusinessPartnerContact>> GetByBusinessPartnerAsync(
-        Guid  businessPartnerId,
+        Guid businessPartnerId,
         bool? onlyActive = true,
         CancellationToken cancellationToken = default)
     {
@@ -59,14 +59,14 @@ public sealed class BusinessPartnerContactRepository : IBusinessPartnerContactRe
     /// Usa el índice ix_bpc_subscriber_bp_role para eficiencia.
     /// </summary>
     public async Task<IReadOnlyList<BusinessPartnerContact>> GetByRoleAsync(
-        Guid        businessPartnerId,
+        Guid businessPartnerId,
         ContactRole role,
         CancellationToken cancellationToken = default)
     {
         return await _db.BusinessPartnerContacts
             .AsNoTracking()
             .Where(c => c.BusinessPartnerId == businessPartnerId
-                     && c.Role             == role
+                     && c.Role == role
                      && c.IsActive)
             .OrderByDescending(c => c.IsPrimary)
             .ThenBy(c => c.FirstName)

@@ -1,7 +1,7 @@
-﻿using MediatR;
 using ERP.Application.Common;
 using ERP.Domain.Security.Entities;
 using ERP.Domain.Security.Interfaces;
+using MediatR;
 
 namespace ERP.Application.Security.UseCases.UpsertSecurityAdminScopes;
 

@@ -1,4 +1,3 @@
-using ERP.Application.Auth;
 using FluentValidation;
 
 namespace ERP.Application.Auth.UseCases.ChangeMyPassword;

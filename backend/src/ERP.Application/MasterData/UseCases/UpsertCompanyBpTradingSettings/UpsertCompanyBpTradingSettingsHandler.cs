@@ -1,4 +1,4 @@
-﻿using ERP.Application.Common;
+using ERP.Application.Common;
 using ERP.Application.Common.Persistence;
 using ERP.Application.MasterData.DTOs;
 using ERP.Domain.MasterData.Entities;
@@ -11,13 +11,13 @@ public sealed class UpsertCompanyBpTradingSettingsHandler
     : IRequestHandler<UpsertCompanyBpTradingSettingsCommand, Result<CompanyBpTradingSettingsDto>>
 {
     private readonly ICompanyBpTradingSettingsRepository _settingsRepo;
-    private readonly IOperationalContext                 _ctx;
-    private readonly IDatabaseExceptionTranslator        _dbEx;
+    private readonly IOperationalContext _ctx;
+    private readonly IDatabaseExceptionTranslator _dbEx;
 
     public UpsertCompanyBpTradingSettingsHandler(
         ICompanyBpTradingSettingsRepository settingsRepo,
-        IOperationalContext                 ctx,
-        IDatabaseExceptionTranslator        dbEx)
+        IOperationalContext ctx,
+        IDatabaseExceptionTranslator dbEx)
         => (_settingsRepo, _ctx, _dbEx) = (settingsRepo, ctx, dbEx);
 
     public async Task<Result<CompanyBpTradingSettingsDto>> Handle(

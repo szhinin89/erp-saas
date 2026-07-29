@@ -1,9 +1,9 @@
-﻿using ERP.Application.Access.Caching;
+using ERP.Application.Access.Caching;
 using ERP.Application.Common;
 using ERP.Application.Navigation;
-using MediatR;
 using ERP.Domain.Access.Interfaces;
 using ERP.Domain.Tenants.Interfaces;
+using MediatR;
 
 namespace ERP.Application.Access.UseCases.RevokeCompanyUserMembership;
 

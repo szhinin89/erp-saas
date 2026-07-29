@@ -15,10 +15,10 @@ public static class OrgSettingKeys
     /// </summary>
     public static class Invoice
     {
-        public const string DefaultDocTypeCode       = "invoice.default_doc_type_code";
+        public const string DefaultDocTypeCode = "invoice.default_doc_type_code";
         public const string DefaultPaymentMethodCode = "invoice.default_payment_method_code";
-        public const string DefaultWarehouseId       = "invoice.default_warehouse_id";
-        public const string DefaultPaymentTermId     = "invoice.default_payment_term_id";
+        public const string DefaultWarehouseId = "invoice.default_warehouse_id";
+        public const string DefaultPaymentTermId = "invoice.default_payment_term_id";
     }
 
     /// <summary>
@@ -41,9 +41,9 @@ public static class OrgSettingKeys
     /// </summary>
     public static class Ride
     {
-        public const string LogoStoragePath   = "ride.branding.logo_storage_path";
-        public const string PrimaryColorHex   = "ride.branding.primary_color_hex";
+        public const string LogoStoragePath = "ride.branding.logo_storage_path";
+        public const string PrimaryColorHex = "ride.branding.primary_color_hex";
         public const string SecondaryColorHex = "ride.branding.secondary_color_hex";
-        public const string FooterText        = "ride.branding.footer_text";
+        public const string FooterText = "ride.branding.footer_text";
     }
 }

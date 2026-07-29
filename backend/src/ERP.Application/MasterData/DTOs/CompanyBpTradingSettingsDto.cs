@@ -3,18 +3,18 @@ using ERP.Domain.MasterData.Entities;
 namespace ERP.Application.MasterData.DTOs;
 
 public sealed record CompanyBpTradingSettingsDto(
-    Guid      Id,
-    Guid      BusinessPartnerId,
-    decimal   CreditLimit,
-    string    CreditCurrencyCode,
-    int       PaymentDays,
-    Guid?     PaymentTermId,
-    int       Installments,
-    int       DaysBetweenInstallments,
-    bool      IsBlocked,
-    string?   BlockedReason,
+    Guid Id,
+    Guid BusinessPartnerId,
+    decimal CreditLimit,
+    string CreditCurrencyCode,
+    int PaymentDays,
+    Guid? PaymentTermId,
+    int Installments,
+    int DaysBetweenInstallments,
+    bool IsBlocked,
+    string? BlockedReason,
     DateTime? BlockedAt,
-    bool      HasCustomConfiguration)
+    bool HasCustomConfiguration)
 {
     public static CompanyBpTradingSettingsDto From(CompanyBpTradingSettings s) => new(
         s.Id,

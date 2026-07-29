@@ -1,6 +1,5 @@
 using ERP.Domain.Branches.Entities;
 using ERP.Domain.Modules.Caja.Entities;
-using ERP.Domain.Modules.Caja.Enums;
 using ERP.Domain.Modules.Company.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;

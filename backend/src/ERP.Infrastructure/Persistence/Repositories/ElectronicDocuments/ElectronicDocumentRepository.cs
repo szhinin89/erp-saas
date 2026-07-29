@@ -1,8 +1,8 @@
-using Microsoft.EntityFrameworkCore;
 using ERP.Application.Common.Services;
 using ERP.Domain.Modules.ElectronicDocuments.Entities;
 using ERP.Domain.Modules.ElectronicDocuments.Enums;
 using ERP.Domain.Modules.ElectronicDocuments.Interfaces;
+using Microsoft.EntityFrameworkCore;
 
 namespace ERP.Infrastructure.Persistence.Repositories.ElectronicDocuments;
 

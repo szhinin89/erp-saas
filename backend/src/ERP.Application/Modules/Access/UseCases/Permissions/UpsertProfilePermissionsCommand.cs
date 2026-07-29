@@ -1,8 +1,8 @@
 // CA1711: 'RejectedPermission' suffix matches business domain semantics.
 #pragma warning disable CA1711
-using MediatR;
-using ERP.Application.Common;
 using ERP.Application.Access.DTOs;
+using ERP.Application.Common;
+using MediatR;
 
 namespace ERP.Application.Access.UseCases.Permissions;
 
@@ -22,7 +22,7 @@ public record PermissionUpsertItem(
 /// some permissions are rejected — partial success is the norm (admin gets full feedback).
 /// </summary>
 public sealed record PermissionUpsertResultDto(
-    IReadOnlyList<string>             Saved,
+    IReadOnlyList<string> Saved,
     IReadOnlyList<RejectedPermission> Rejected)
 {
     /// <summary>True when every submitted permission was saved successfully.</summary>
@@ -36,9 +36,9 @@ public sealed record RejectedPermission(
 
 public static class RejectionCodes
 {
-    public const string BlockedByPlan  = "blocked_by_plan";
-    public const string UnknownPrefix  = "unknown_prefix";
-    public const string InvalidKey     = "invalid_key";
+    public const string BlockedByPlan = "blocked_by_plan";
+    public const string UnknownPrefix = "unknown_prefix";
+    public const string InvalidKey = "invalid_key";
 }
 
 public record GetProfilePermissionsQuery(Guid ProfileId) : IRequest<Result<ProfilePermissionsDto>>;

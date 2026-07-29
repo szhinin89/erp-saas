@@ -1,5 +1,4 @@
 using ERP.Infrastructure.Persistence;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 
 namespace ERP.API.Health;

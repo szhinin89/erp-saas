@@ -1,6 +1,3 @@
-using MediatR;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Mvc;
 using ERP.API.Attributes;
 using ERP.API.Contracts;
 using ERP.API.Extensions;
@@ -12,6 +9,9 @@ using ERP.Application.Modules.Inventory.Warehouses.UseCases.GetWarehouseById;
 using ERP.Application.Modules.Inventory.Warehouses.UseCases.GetWarehouses;
 using ERP.Application.Modules.Inventory.Warehouses.UseCases.UpdateWarehouse;
 using ERP.Domain.Kernel.Permissions;
+using MediatR;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 
 namespace ERP.API.Controllers;
 
@@ -36,8 +36,8 @@ public sealed class WarehousesController : ControllerBase
     public async Task<IActionResult> GetAll(CancellationToken cancellationToken = default)
     {
         var activeFilter = CatalogQueryParameters.ParseActiveFilter(Request.Query);
-        var search       = CatalogQueryParameters.ParseSearch(Request.Query);
-        var branchId     = ParseBranchId(Request.Query);
+        var search = CatalogQueryParameters.ParseSearch(Request.Query);
+        var branchId = ParseBranchId(Request.Query);
 
         var result = await _mediator.Send(
             new GetWarehousesQuery(activeFilter, search, branchId), cancellationToken);

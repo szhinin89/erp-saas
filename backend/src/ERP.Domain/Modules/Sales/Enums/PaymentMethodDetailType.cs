@@ -8,8 +8,8 @@ namespace ERP.Domain.Modules.Sales.Enums;
 /// </summary>
 public enum PaymentMethodDetailType
 {
-    None     = 0,
-    Card     = 1,
+    None = 0,
+    Card = 1,
     Transfer = 2,
-    Check    = 3,
+    Check = 3,
 }

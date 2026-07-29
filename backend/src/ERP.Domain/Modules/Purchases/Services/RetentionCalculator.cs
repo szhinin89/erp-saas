@@ -29,7 +29,7 @@ public static class RetentionCalculator
     public static RetentionCalculationResult Calculate(
         decimal totalVat,
         decimal taxableBaseIncome,
-        bool    isRetentionExempt,
+        bool isRetentionExempt,
         string? vatRetentionCode,
         decimal vatRetentionPct,
         string? vatRetentionName,
@@ -62,7 +62,7 @@ public static class RetentionCalculator
                 taxableBaseIncome, incomeRetentionPct, amount));
         }
 
-        var totalRetVat    = lines.Where(l => l.TaxType == "IVA").Sum(l => l.AmountRetained);
+        var totalRetVat = lines.Where(l => l.TaxType == "IVA").Sum(l => l.AmountRetained);
         var totalRetIncome = lines.Where(l => l.TaxType == "RENTA").Sum(l => l.AmountRetained);
 
         return new RetentionCalculationResult(

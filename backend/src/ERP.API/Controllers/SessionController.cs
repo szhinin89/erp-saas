@@ -1,12 +1,12 @@
-using MediatR;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Mvc;
 using ERP.API.Contracts;
 using ERP.API.Extensions;
 using ERP.Application.Modules.Session.DTOs;
 using ERP.Application.Modules.Session.UseCases.GetMyAvailableBranches;
 using ERP.Application.Modules.Session.UseCases.GetSessionContext;
 using ERP.Application.Modules.Session.UseCases.SwitchBranch;
+using MediatR;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 
 namespace ERP.API.Controllers;
 

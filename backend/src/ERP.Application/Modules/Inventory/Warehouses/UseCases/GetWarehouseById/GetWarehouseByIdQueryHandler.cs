@@ -1,7 +1,7 @@
-using MediatR;
 using ERP.Application.Common;
 using ERP.Application.Modules.Inventory.Warehouses.DTOs;
 using ERP.Domain.Modules.Inventory.Interfaces;
+using MediatR;
 
 namespace ERP.Application.Modules.Inventory.Warehouses.UseCases.GetWarehouseById;
 
@@ -13,7 +13,7 @@ public sealed class GetWarehouseByIdQueryHandler
 
     public GetWarehouseByIdQueryHandler(IWarehouseRepository repo, ICurrentTenant currentTenant)
     {
-        _repo          = repo;
+        _repo = repo;
         _currentTenant = currentTenant;
     }
 

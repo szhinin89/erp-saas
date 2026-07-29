@@ -7,16 +7,15 @@ using ERP.Domain.Modules.Purchases.PurchaseReception.Interfaces;
 using ERP.Domain.Modules.Purchases.PurchaseReception.Models;
 using FluentAssertions;
 using Moq;
-using Xunit;
 
 namespace ERP.Application.Tests.Purchases.PurchaseReception;
 
 public sealed class CreatePurchaseReceptionDraftHandlerTests
 {
-    private static readonly Guid TenantId  = Guid.NewGuid();
+    private static readonly Guid TenantId = Guid.NewGuid();
     private static readonly Guid CompanyId = Guid.NewGuid();
-    private static readonly Guid BranchId  = Guid.NewGuid();
-    private static readonly Guid UserId    = Guid.NewGuid();
+    private static readonly Guid BranchId = Guid.NewGuid();
+    private static readonly Guid UserId = Guid.NewGuid();
     private static readonly Guid SupplierId = Guid.NewGuid();
 
     private static PurchaseReceptionDocument SampleDocument(Guid? supplierId = null) => PurchaseReceptionDocument.Create(

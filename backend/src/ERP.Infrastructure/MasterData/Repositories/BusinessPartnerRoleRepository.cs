@@ -1,4 +1,4 @@
-﻿using ERP.Domain.MasterData.Entities;
+using ERP.Domain.MasterData.Entities;
 using ERP.Domain.MasterData.Enums;
 using ERP.Domain.MasterData.Interfaces;
 using ERP.Infrastructure.Persistence;
@@ -48,17 +48,17 @@ public sealed class BusinessPartnerRoleRepository : IBusinessPartnerRoleReposito
     /// Devuelve entidad tracked para permitir Reactivate() o actualización de config.
     /// </summary>
     public Task<BusinessPartnerRole?> GetByTypeAsync(
-        Guid      businessPartnerId,
-        RoleType  roleType,
+        Guid businessPartnerId,
+        RoleType roleType,
         CancellationToken cancellationToken = default)
         => _db.BusinessPartnerRoles
               .FirstOrDefaultAsync(r =>
                   r.BusinessPartnerId == businessPartnerId &&
-                  r.RoleType          == roleType, cancellationToken);
+                  r.RoleType == roleType, cancellationToken);
 
     /// <summary>Todos los roles de un BP (activos + revocados según filtro).</summary>
     public async Task<IReadOnlyList<BusinessPartnerRole>> GetByBusinessPartnerAsync(
-        Guid  businessPartnerId,
+        Guid businessPartnerId,
         bool? onlyActive = true,
         CancellationToken cancellationToken = default)
     {
@@ -79,13 +79,13 @@ public sealed class BusinessPartnerRoleRepository : IBusinessPartnerRoleReposito
     /// Usado en handlers para validar prerrequisitos antes de crear documentos.
     /// </summary>
     public Task<bool> HasActiveRoleAsync(
-        Guid     businessPartnerId,
+        Guid businessPartnerId,
         RoleType roleType,
         CancellationToken cancellationToken = default)
         => _db.BusinessPartnerRoles
               .AnyAsync(r =>
                   r.BusinessPartnerId == businessPartnerId &&
-                  r.RoleType          == roleType &&
+                  r.RoleType == roleType &&
                   r.IsActive, cancellationToken);
 
     public async Task AddAsync(BusinessPartnerRole role, CancellationToken cancellationToken = default)

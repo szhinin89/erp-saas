@@ -1,7 +1,7 @@
+using ERP.Domain.MasterData.Entities;
 using ERP.Domain.Modules.Items.Entities;
 using ERP.Domain.Modules.SriCatalogs.Entities;
 using ERP.Domain.Modules.SriCatalogs.Enums;
-using ERP.Domain.MasterData.Entities;
 
 namespace ERP.Domain.Modules.SriCatalogs.Interfaces;
 

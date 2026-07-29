@@ -26,7 +26,7 @@ public sealed class BranchScopeBehavior<TRequest, TResponse> : IPipelineBehavior
         ICurrentBranch branch)
     {
         _accessGuard = accessGuard;
-        _branch      = branch;
+        _branch = branch;
     }
 
     public async Task<TResponse> Handle(TRequest request, RequestHandlerDelegate<TResponse> next, CancellationToken cancellationToken)

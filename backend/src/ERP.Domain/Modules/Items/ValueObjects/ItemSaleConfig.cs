@@ -26,13 +26,13 @@ public sealed class ItemSaleConfig
 
         return new ItemSaleConfig
         {
-            IsForSale           = isForSale,
-            MaxDiscountPercent  = maxDiscountPercent,
-            IsAvailableOnWeb    = isAvailableOnWeb,
-            IsAvailableOnPOS    = isAvailableOnPOS,
+            IsForSale = isForSale,
+            MaxDiscountPercent = maxDiscountPercent,
+            IsAvailableOnWeb = isAvailableOnWeb,
+            IsAvailableOnPOS = isAvailableOnPOS,
             IsAvailableOnMobile = isAvailableOnMobile,
-            IsEcommerceActive   = isEcommerceActive,
-            IsFavorite          = isFavorite,
+            IsEcommerceActive = isEcommerceActive,
+            IsFavorite = isFavorite,
         };
     }
 }

@@ -29,13 +29,13 @@ public sealed class ItemUnitConversion : AuditableEntity
 
         var entity = new ItemUnitConversion
         {
-            Id           = Guid.NewGuid(),
+            Id = Guid.NewGuid(),
             TenantId = tenantId,
-            ItemId       = itemId,
-            FromUomCode  = fromUomCode.Trim().ToUpperInvariant(),
-            ToUomCode    = toUomCode.Trim().ToUpperInvariant(),
-            Factor       = factor,
-            IsActive     = true,
+            ItemId = itemId,
+            FromUomCode = fromUomCode.Trim().ToUpperInvariant(),
+            ToUomCode = toUomCode.Trim().ToUpperInvariant(),
+            Factor = factor,
+            IsActive = true,
         };
         entity.SetCreated(createdBy);
         return entity;

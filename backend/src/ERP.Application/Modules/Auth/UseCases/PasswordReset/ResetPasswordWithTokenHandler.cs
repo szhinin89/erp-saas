@@ -1,11 +1,9 @@
-﻿using System.Linq;
-using FluentValidation;
-using ERP.Application.Auth.UseCases;
 using ERP.Application.Common;
 using ERP.Application.Common.Interfaces;
 using ERP.Domain.Access.Interfaces;
 using ERP.Domain.Auth.Entities;
 using ERP.Domain.Tenants.Interfaces;
+using FluentValidation;
 using MediatR;
 
 namespace ERP.Application.Auth.UseCases.PasswordReset;

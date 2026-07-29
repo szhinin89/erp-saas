@@ -26,8 +26,8 @@ internal static class PasswordResetTokenIssuer
     {
         await tokenRepository.InvalidateActiveForUserAsync(userId, userKind, tenantId, cancellationToken);
 
-        var raw     = PasswordResetTokenCrypto.CreateRawToken();
-        var hash    = PasswordResetTokenCrypto.Hash(raw);
+        var raw = PasswordResetTokenCrypto.CreateRawToken();
+        var hash = PasswordResetTokenCrypto.Hash(raw);
         var minutes = Math.Clamp(overrideLifetimeMinutes ?? options.Value.TokenLifetimeMinutes, 5, 24 * 60);
         var expires = DateTime.UtcNow.AddMinutes(minutes);
 

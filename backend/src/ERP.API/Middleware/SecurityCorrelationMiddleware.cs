@@ -16,7 +16,7 @@ public sealed class SecurityCorrelationMiddleware
         RequestDelegate next,
         ILogger<SecurityCorrelationMiddleware> logger)
     {
-        _next   = next;
+        _next = next;
         _logger = logger;
     }
 
@@ -24,18 +24,18 @@ public sealed class SecurityCorrelationMiddleware
     {
         var user = context.User;
 
-        var tenantId  = user.FindFirst("tenant_id")?.Value ?? "none";
+        var tenantId = user.FindFirst("tenant_id")?.Value ?? "none";
         var companyId = context.Request.Headers["X-Company-Id"].FirstOrDefault() ?? "none";
-        var userId    = user.FindFirst(ClaimTypes.NameIdentifier)?.Value
+        var userId = user.FindFirst(ClaimTypes.NameIdentifier)?.Value
                      ?? user.FindFirst("sub")?.Value
                      ?? "none";
         var requestId = RequestCorrelationMiddleware.Resolve(context);
 
         using (_logger.BeginScope(new Dictionary<string, object>
         {
-            ["TenantId"]  = tenantId,
+            ["TenantId"] = tenantId,
             ["CompanyId"] = companyId,
-            ["UserId"]    = userId,
+            ["UserId"] = userId,
             ["RequestId"] = requestId,
         }))
         {

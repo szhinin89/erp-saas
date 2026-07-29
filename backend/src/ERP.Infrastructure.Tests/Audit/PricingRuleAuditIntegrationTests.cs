@@ -1,15 +1,13 @@
 using ERP.Application;
 using ERP.Application.Audit;
 using ERP.Application.Common;
+using ERP.Domain.Modules.Company.Entities;
 using ERP.Domain.Modules.Pricing.Entities;
 using ERP.Domain.Modules.Pricing.Enums;
 using ERP.Domain.Tenants.Entities;
-using ERP.Domain.Modules.Company.Entities;
-using ERP.Domain.Modules.Company.Enums;
 using ERP.Infrastructure.Audit;
 using ERP.Infrastructure.Persistence;
 using FluentAssertions;
-using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Testcontainers.PostgreSql;

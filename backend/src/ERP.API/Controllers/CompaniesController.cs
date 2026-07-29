@@ -21,7 +21,6 @@ using ERP.Application.Modules.Companies.UseCases.UploadCompanyLogoAlt;
 using ERP.Domain.Kernel.Permissions;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
 namespace ERP.API.Controllers;

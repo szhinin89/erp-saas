@@ -1,7 +1,5 @@
-using ERP.Application.Access.DTOs;
 using ERP.Application.Access.UseCases.CreateAuthenticatedSession;
 using ERP.Application.Auth.DTOs;
-using ERP.Application.Auth.UseCases;
 using ERP.Application.Common;
 using ERP.Application.Common.Config;
 using ERP.Application.Common.Interfaces;
@@ -52,16 +50,16 @@ public class LoginHandler : IRequestHandler<LoginCommand, Result<AuthResponseDto
         IOptions<PasswordResetOptions> passwordResetOptions)
     {
         _tenantRepository = TenantRepository;
-        _companyRepository    = companyRepository;
-        _accessRepository     = accessRepository;
-        _accessTokenService   = accessTokenService;
-        _passwordHasher       = passwordHasher;
-        _refreshTokenService  = refreshTokenService;
-        _companyProvisioning  = companyProvisioning;
-        _branchRepository     = branchRepository;
-        _mediator             = mediator;
+        _companyRepository = companyRepository;
+        _accessRepository = accessRepository;
+        _accessTokenService = accessTokenService;
+        _passwordHasher = passwordHasher;
+        _refreshTokenService = refreshTokenService;
+        _companyProvisioning = companyProvisioning;
+        _branchRepository = branchRepository;
+        _mediator = mediator;
         _passwordResetTokenRepository = passwordResetTokenRepository;
-        _passwordResetOptions         = passwordResetOptions;
+        _passwordResetOptions = passwordResetOptions;
     }
 
     public async Task<Result<AuthResponseDto>> Handle(LoginCommand command, CancellationToken cancellationToken)
@@ -83,7 +81,7 @@ public class LoginHandler : IRequestHandler<LoginCommand, Result<AuthResponseDto
             return Result<AuthResponseDto>.Failure("No estás registrado a una empresa. Comunícate con el administrador.");
 
         var companyIds = memberships.Select(m => m.CompanyId).Distinct().ToList();
-        var companies  = await _companyRepository.GetByIdsAsync(companyIds, cancellationToken);
+        var companies = await _companyRepository.GetByIdsAsync(companyIds, cancellationToken);
         var membershipByCompany = memberships.ToDictionary(m => m.CompanyId);
 
         var tenantGroups = companies.GroupBy(c => c.TenantId).ToList();
@@ -114,8 +112,8 @@ public class LoginHandler : IRequestHandler<LoginCommand, Result<AuthResponseDto
                 identityUser.Id, identityUser.FullName, identityUser.Username, identityUser.Email?.Value,
                 Role: string.Empty, tenantId, Token: string.Empty)
             {
-                RequiresPasswordReset      = true,
-                PasswordResetToken         = rawToken,
+                RequiresPasswordReset = true,
+                PasswordResetToken = rawToken,
                 PasswordResetTokenExpiresIn = (int)Math.Round((expiresAtUtc - DateTime.UtcNow).TotalSeconds),
             });
         }
@@ -135,10 +133,10 @@ public class LoginHandler : IRequestHandler<LoginCommand, Result<AuthResponseDto
 
             return Result<AuthResponseDto>.Success(new AuthResponseDto(identityUser.Id, identityUser.FullName, identityUser.Username, identityUser.Email?.Value, pendingCompanyRole, tenantId, tokenWithoutCompany)
             {
-                CompanyId                = null,
+                CompanyId = null,
                 RequiresCompanySelection = true,
-                RefreshToken             = refreshMulti,
-                RefreshTokenExpiry       = refreshExpiryMulti,
+                RefreshToken = refreshMulti,
+                RefreshTokenExpiry = refreshExpiryMulti,
             });
         }
 
@@ -176,7 +174,7 @@ public class LoginHandler : IRequestHandler<LoginCommand, Result<AuthResponseDto
                     : Result<AuthResponseDto>.Failure(
                         sessionResult.Error ?? "No se pudo iniciar la sesión.");
 
-            identityRefresh       = sessionResult.Value!.RefreshToken;
+            identityRefresh = sessionResult.Value!.RefreshToken;
             identityRefreshExpiry = sessionResult.Value.RefreshTokenExpiry;
         }
         else
@@ -191,12 +189,12 @@ public class LoginHandler : IRequestHandler<LoginCommand, Result<AuthResponseDto
 
         return Result<AuthResponseDto>.Success(new AuthResponseDto(identityUser.Id, identityUser.FullName, identityUser.Username, identityUser.Email?.Value, membership.Role, tenantId, identityToken)
         {
-            CompanyId               = company.Id,
+            CompanyId = company.Id,
             RequiresCompanySelection = false,
-            OnboardingCompleted     = company.OnboardingCompleted,
-            OperationalStatus       = company.OperationalStatus,
-            RefreshToken            = identityRefresh,
-            RefreshTokenExpiry      = identityRefreshExpiry,
+            OnboardingCompleted = company.OnboardingCompleted,
+            OperationalStatus = company.OperationalStatus,
+            RefreshToken = identityRefresh,
+            RefreshTokenExpiry = identityRefreshExpiry,
         });
     }
 

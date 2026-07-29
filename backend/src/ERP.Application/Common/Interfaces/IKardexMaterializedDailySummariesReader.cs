@@ -1,11 +1,11 @@
-﻿namespace ERP.Application.Common.Interfaces;
+namespace ERP.Application.Common.Interfaces;
 
 public sealed record KardexMvDayAggregate(
     DateOnly Date,
-    decimal  EntryQty,
-    decimal  EntryValue,
-    decimal  ExitQty,
-    decimal  ExitValue);
+    decimal EntryQty,
+    decimal EntryValue,
+    decimal ExitQty,
+    decimal ExitValue);
 
 public interface IKardexMaterializedDailySummariesReader
 {

@@ -1,6 +1,6 @@
+using ERP.Domain.Modules.Finance.Events;
 using MediatR;
 using Microsoft.Extensions.Logging;
-using ERP.Domain.Modules.Finance.Events;
 
 namespace ERP.Application.Modules.Accounting.Posting.Translators;
 

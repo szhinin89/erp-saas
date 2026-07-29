@@ -1,8 +1,8 @@
-using Microsoft.EntityFrameworkCore;
 using ERP.Application.Common.Persistence;
 using ERP.Domain.Modules.Ride.Entities;
 using ERP.Domain.Modules.Ride.Interfaces;
 using ERP.Domain.Modules.Ride.ValueObjects;
+using Microsoft.EntityFrameworkCore;
 
 namespace ERP.Infrastructure.Persistence.Repositories.Ride;
 

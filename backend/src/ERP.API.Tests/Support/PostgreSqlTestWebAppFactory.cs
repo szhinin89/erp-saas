@@ -1,12 +1,11 @@
+using ERP.Application.Common;
+using ERP.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using ERP.Application.Common;
-using ERP.Application.Common.Interfaces;
-using ERP.Infrastructure.Persistence;
 using Testcontainers.PostgreSql;
 
 namespace ERP.API.Tests.Support;

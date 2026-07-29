@@ -10,9 +10,9 @@ namespace ERP.Domain.Modules.Pricing.Entities;
 /// </summary>
 public sealed class PriceListItemAudit : AuditRecordBase, ICompanyOperationalEntity
 {
-    public Guid CompanyId   { get; private set; }
+    public Guid CompanyId { get; private set; }
     public Guid PriceListId { get; private set; }
-    public Guid ItemId      { get; private set; }
+    public Guid ItemId { get; private set; }
 
     private PriceListItemAudit() { }
 

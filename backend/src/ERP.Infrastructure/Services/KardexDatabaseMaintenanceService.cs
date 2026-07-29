@@ -1,7 +1,7 @@
+using ERP.Application.Common.Interfaces;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Npgsql;
-using ERP.Application.Common.Interfaces;
 
 namespace ERP.Infrastructure.Services;
 
@@ -15,7 +15,7 @@ public sealed partial class KardexDatabaseMaintenanceService : IKardexDatabaseMa
         ILogger<KardexDatabaseMaintenanceService> logger)
     {
         _configuration = configuration;
-        _logger        = logger;
+        _logger = logger;
     }
 
     public async Task RefreshDailyBalancesMaterializedViewAsync(CancellationToken cancellationToken = default)

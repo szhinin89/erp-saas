@@ -14,14 +14,14 @@ namespace ERP.Domain.Modules.Purchases.PurchaseReception.Entities;
 /// </summary>
 public sealed class PurchaseReceptionDocument : AuditableEntity, ITenantScopedEntity, ICompanyOperationalEntity
 {
-    public const int SupplierRucMaxLen         = 20;
-    public const int SupplierNameMaxLen        = 200;
-    public const int AccessKeyMaxLen           = 49;
-    public const int InvoiceNumberMaxLen       = 30;
+    public const int SupplierRucMaxLen = 20;
+    public const int SupplierNameMaxLen = 200;
+    public const int AccessKeyMaxLen = 49;
+    public const int InvoiceNumberMaxLen = 30;
     public const int AuthorizationNumberMaxLen = 49;
-    public const int DocTypeCodeMaxLen         = 10;
+    public const int DocTypeCodeMaxLen = 10;
     public const int SriPaymentMethodCodeMaxLen = 10;
-    public const int ProcessingNotesMaxLen     = 2000;
+    public const int ProcessingNotesMaxLen = 2000;
 
     public Guid CompanyId { get; private set; }
 
@@ -31,15 +31,15 @@ public sealed class PurchaseReceptionDocument : AuditableEntity, ITenantScopedEn
     /// <summary>Tipo de comprobante de origen — Fase 2 solo persiste <c>Invoice</c> (Factura).</summary>
     public PurchaseReceptionSourceDocType SourceDocType { get; private set; }
 
-    public string SupplierRuc  { get; private set; } = null!;
+    public string SupplierRuc { get; private set; } = null!;
     public string SupplierName { get; private set; } = null!;
 
     /// <summary>BusinessPartner ya resuelto como proveedor, si existía al momento de importar.</summary>
     public Guid? SupplierId { get; private set; }
 
-    public string   AccessKey         { get; private set; } = null!;
-    public string   InvoiceNumber     { get; private set; } = null!;
-    public DateOnly IssueDate         { get; private set; }
+    public string AccessKey { get; private set; } = null!;
+    public string InvoiceNumber { get; private set; } = null!;
+    public DateOnly IssueDate { get; private set; }
 
     /// <summary>Fecha de autorización — inicialmente la del TXT; se sobrescribe con la del SRI al descargar el XML.</summary>
     public DateTime? AuthorizationDate { get; private set; }
@@ -73,8 +73,8 @@ public sealed class PurchaseReceptionDocument : AuditableEntity, ITenantScopedEn
     /// <summary>Resumen legible de advertencias/errores de procesamiento — para soporte técnico.</summary>
     public string? ProcessingNotes { get; private set; }
 
-    public decimal Subtotal    { get; private set; }
-    public decimal VatAmount   { get; private set; }
+    public decimal Subtotal { get; private set; }
+    public decimal VatAmount { get; private set; }
     public decimal TotalAmount { get; private set; }
 
     public PurchaseReceptionDocumentStatus Status { get; private set; }
@@ -114,23 +114,23 @@ public sealed class PurchaseReceptionDocument : AuditableEntity, ITenantScopedEn
 
         var doc = new PurchaseReceptionDocument
         {
-            Id                = Guid.NewGuid(),
-            TenantId          = tenantId,
-            CompanyId         = companyId,
-            BranchId          = branchId,
-            SourceDocType     = sourceDocType,
-            SupplierRuc       = supplierRuc.Trim(),
-            SupplierName      = supplierName.Trim(),
-            SupplierId        = supplierId,
-            AccessKey         = accessKey.Trim(),
-            InvoiceNumber     = invoiceNumber.Trim(),
-            IssueDate         = issueDate,
+            Id = Guid.NewGuid(),
+            TenantId = tenantId,
+            CompanyId = companyId,
+            BranchId = branchId,
+            SourceDocType = sourceDocType,
+            SupplierRuc = supplierRuc.Trim(),
+            SupplierName = supplierName.Trim(),
+            SupplierId = supplierId,
+            AccessKey = accessKey.Trim(),
+            InvoiceNumber = invoiceNumber.Trim(),
+            IssueDate = issueDate,
             AuthorizationDate = authorizationDate,
-            Subtotal          = subtotal,
-            VatAmount         = vatAmount,
-            TotalAmount       = totalAmount,
-            Status            = PurchaseReceptionDocumentStatus.Imported,
-            PurchaseId        = purchaseId,
+            Subtotal = subtotal,
+            VatAmount = vatAmount,
+            TotalAmount = totalAmount,
+            Status = PurchaseReceptionDocumentStatus.Imported,
+            PurchaseId = purchaseId,
         };
         doc.SetCreated(createdBy);
         return doc;
@@ -202,12 +202,12 @@ public sealed class PurchaseReceptionDocument : AuditableEntity, ITenantScopedEn
         ValidateProcessingOutcome(processing);
 
         AuthorizationNumber = authorizationNumber.Trim();
-        AuthorizationDate   = authorizationDate;
-        XmlContent          = xmlContent;
-        XmlDownloadedAt     = downloadedAtUtc;
-        DocTypeCode         = docTypeCode?.Trim();
+        AuthorizationDate = authorizationDate;
+        XmlContent = xmlContent;
+        XmlDownloadedAt = downloadedAtUtc;
+        DocTypeCode = docTypeCode?.Trim();
         SriPaymentMethodCode = sriPaymentMethodCode?.Trim();
-        Status              = PurchaseReceptionDocumentStatus.Verified;
+        Status = PurchaseReceptionDocumentStatus.Verified;
         ApplyProcessingOutcome(processing, docTypeCode, sriPaymentMethodCode, overwriteHeaderWhenNull: true);
         _lines.Clear();
         _lines.AddRange(lines);
@@ -255,10 +255,10 @@ public sealed class PurchaseReceptionDocument : AuditableEntity, ITenantScopedEn
         PurchaseReceptionProcessingOutcome processing, string? docTypeCode, string? sriPaymentMethodCode,
         bool overwriteHeaderWhenNull)
     {
-        ProcessingStatus    = processing.Status;
-        LinesDetectedCount  = processing.LinesDetected;
+        ProcessingStatus = processing.Status;
+        LinesDetectedCount = processing.LinesDetected;
         LinesProcessedCount = processing.LinesProcessed;
-        ProcessingNotes     = processing.Notes?.Trim();
+        ProcessingNotes = processing.Notes?.Trim();
 
         // En la primera descarga, un docTypeCode/sriPaymentMethodCode null refleja fielmente que no
         // se pudo interpretar (overwriteHeaderWhenNull=true). En un reprocesamiento, un null solo

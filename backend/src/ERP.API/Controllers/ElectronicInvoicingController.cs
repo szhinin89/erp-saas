@@ -1,9 +1,6 @@
-using MediatR;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Mvc;
+using ERP.API.Attributes;
 using ERP.API.Contracts;
 using ERP.API.Extensions;
-using ERP.API.Attributes;
 using ERP.Application.Common.Models;
 using ERP.Application.Modules.ElectronicInvoicing.DTOs;
 using ERP.Application.Modules.ElectronicInvoicing.UseCases.GetElectronicInvoicingStatus;
@@ -13,6 +10,9 @@ using ERP.Application.Modules.ElectronicInvoicing.UseCases.UploadSriCertificate;
 using ERP.Application.Modules.ElectronicInvoicing.UseCases.UpsertSriConfiguration;
 using ERP.Application.Modules.ElectronicInvoicing.UseCases.ValidateSriConfiguration;
 using ERP.Domain.Kernel.Permissions;
+using MediatR;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 
 namespace ERP.API.Controllers;
 

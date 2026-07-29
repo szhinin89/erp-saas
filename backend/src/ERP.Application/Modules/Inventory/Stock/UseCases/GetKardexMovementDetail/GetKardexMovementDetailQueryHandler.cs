@@ -1,4 +1,3 @@
-using MediatR;
 using ERP.Application.Common;
 using ERP.Application.Modules.Inventory.Stock.DTOs;
 using ERP.Domain.Access.Interfaces;
@@ -6,6 +5,7 @@ using ERP.Domain.Modules.Inventory.Entities;
 using ERP.Domain.Modules.Inventory.Interfaces;
 using ERP.Domain.Modules.Purchases.Interfaces;
 using ERP.Domain.Modules.Sales.Interfaces;
+using MediatR;
 using static ERP.Application.Modules.Inventory.Stock.UseCases.GetStockMovements.GetStockMovementsQueryHandler;
 
 namespace ERP.Application.Modules.Inventory.Stock.UseCases.GetKardexMovementDetail;
@@ -95,45 +95,45 @@ public sealed class GetKardexMovementDetailQueryHandler
         switch (sourceDocType)
         {
             case "PurchaseInvoice":
-            {
-                var inv = await _purchaseRepo.GetByIdAsync(tenantId, sourceDocId.Value, ct);
-                if (inv is null) return null;
-                var line = inv.Lines.FirstOrDefault(l =>
-                    l.ItemId == productId && (l.WarehouseId is null || l.WarehouseId == warehouseId))
-                    ?? inv.Lines.FirstOrDefault(l => l.ItemId == productId);
-                return new KardexSourceDocumentDto(
-                    "PurchaseInvoice", inv.InvoiceNumber, inv.SupplierName,
-                    line?.UnitPrice, line?.DiscountPct, line?.VatCode, line?.VatRate,
-                    null, null);
-            }
+                {
+                    var inv = await _purchaseRepo.GetByIdAsync(tenantId, sourceDocId.Value, ct);
+                    if (inv is null) return null;
+                    var line = inv.Lines.FirstOrDefault(l =>
+                        l.ItemId == productId && (l.WarehouseId is null || l.WarehouseId == warehouseId))
+                        ?? inv.Lines.FirstOrDefault(l => l.ItemId == productId);
+                    return new KardexSourceDocumentDto(
+                        "PurchaseInvoice", inv.InvoiceNumber, inv.SupplierName,
+                        line?.UnitPrice, line?.DiscountPct, line?.VatCode, line?.VatRate,
+                        null, null);
+                }
             case "SalesInvoice":
-            {
-                var inv = await _salesRepo.GetByIdAsync(tenantId, sourceDocId.Value, ct);
-                if (inv is null) return null;
-                var line = inv.Lines.FirstOrDefault(l =>
-                    l.ItemId == productId && l.WarehouseId == warehouseId)
-                    ?? inv.Lines.FirstOrDefault(l => l.ItemId == productId);
-                return new KardexSourceDocumentDto(
-                    "SalesInvoice", inv.InvoiceNumber, inv.Customer.Name,
-                    line?.UnitPrice, line?.DiscountPct, line?.VatCode, line?.VatRate,
-                    null, null);
-            }
+                {
+                    var inv = await _salesRepo.GetByIdAsync(tenantId, sourceDocId.Value, ct);
+                    if (inv is null) return null;
+                    var line = inv.Lines.FirstOrDefault(l =>
+                        l.ItemId == productId && l.WarehouseId == warehouseId)
+                        ?? inv.Lines.FirstOrDefault(l => l.ItemId == productId);
+                    return new KardexSourceDocumentDto(
+                        "SalesInvoice", inv.InvoiceNumber, inv.Customer.Name,
+                        line?.UnitPrice, line?.DiscountPct, line?.VatCode, line?.VatRate,
+                        null, null);
+                }
             case "StockAdjustment":
-            {
-                var adj = await _adjRepo.GetByIdAsync(tenantId, sourceDocId.Value, ct);
-                if (adj is null) return null;
-                return new KardexSourceDocumentDto(
-                    "StockAdjustment", adj.AdjustmentNumber, null,
-                    null, null, null, null, adj.Reason, adj.Notes);
-            }
+                {
+                    var adj = await _adjRepo.GetByIdAsync(tenantId, sourceDocId.Value, ct);
+                    if (adj is null) return null;
+                    return new KardexSourceDocumentDto(
+                        "StockAdjustment", adj.AdjustmentNumber, null,
+                        null, null, null, null, adj.Reason, adj.Notes);
+                }
             case "StockTransfer":
-            {
-                var tr = await _transferRepo.GetByIdAsync(tenantId, companyId, sourceDocId.Value, ct);
-                if (tr is null) return null;
-                return new KardexSourceDocumentDto(
-                    "StockTransfer", tr.TransferNumber, null,
-                    null, null, null, null, tr.Reason, tr.Notes);
-            }
+                {
+                    var tr = await _transferRepo.GetByIdAsync(tenantId, companyId, sourceDocId.Value, ct);
+                    if (tr is null) return null;
+                    return new KardexSourceDocumentDto(
+                        "StockTransfer", tr.TransferNumber, null,
+                        null, null, null, null, tr.Reason, tr.Notes);
+                }
             default:
                 return null;
         }

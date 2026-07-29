@@ -1,4 +1,3 @@
-using ERP.Application.Access;
 using ERP.Application.Access.Caching;
 using ERP.Application.Access.DTOs;
 using ERP.Application.Common;
@@ -21,8 +20,8 @@ public class GetMyPermissionsHandler : IRequestHandler<GetMyPermissionsQuery, Re
         IEffectivePermissionKeysProvider permissionKeys,
         ICompanyContextProvider companyContext)
     {
-        _currentUser    = currentUser;
-        _currentTenant  = currentTenant;
+        _currentUser = currentUser;
+        _currentTenant = currentTenant;
         _permissionKeys = permissionKeys;
         _companyContext = companyContext;
     }

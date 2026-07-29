@@ -1,22 +1,22 @@
-using Microsoft.EntityFrameworkCore;
 using ERP.Application.Modules.Companies.UseCases.DecimalConfig;
 using ERP.Domain.Modules.Company.Entities;
+using Microsoft.EntityFrameworkCore;
 
 namespace ERP.Infrastructure.Persistence.Repositories.CompanyConfig;
 
 public sealed class DecimalConfigRepository : IDecimalConfigRepository
 {
-    private const string KeySalesPrice    = "decimal.sales.unitPrice";
+    private const string KeySalesPrice = "decimal.sales.unitPrice";
     private const string KeyPurchasePrice = "decimal.purchases.unitPrice";
-    private const string KeyQuantity      = "decimal.quantity";
-    private const string KeyPercentage    = "decimal.percentage";
-    private const string KeyTotalAmount   = "decimal.totalAmount";
+    private const string KeyQuantity = "decimal.quantity";
+    private const string KeyPercentage = "decimal.percentage";
+    private const string KeyTotalAmount = "decimal.totalAmount";
 
-    private const int DefaultSalesPrice    = 2;
+    private const int DefaultSalesPrice = 2;
     private const int DefaultPurchasePrice = 4;
-    private const int DefaultQuantity      = 4;
-    private const int DefaultPercentage    = 2;
-    private const int DefaultTotalAmount   = 2;
+    private const int DefaultQuantity = 4;
+    private const int DefaultPercentage = 2;
+    private const int DefaultTotalAmount = 2;
 
     private readonly ErpDbContext _db;
     public DecimalConfigRepository(ErpDbContext db) => _db = db;

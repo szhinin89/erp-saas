@@ -1,6 +1,6 @@
-﻿using System.Text.RegularExpressions;
-using ERP.Domain.Common;
 using ERP.Domain.Auth.ValueObjects;
+using ERP.Domain.Common;
+using System.Text.RegularExpressions;
 
 namespace ERP.Domain.Access.Entities;
 

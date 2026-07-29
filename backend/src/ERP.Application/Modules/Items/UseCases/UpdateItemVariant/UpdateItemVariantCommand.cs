@@ -1,15 +1,15 @@
-﻿using FluentValidation;
-using MediatR;
 using ERP.Application.Common;
 using ERP.Application.Items.DTOs;
 using ERP.Domain.Modules.Items.Interfaces;
+using FluentValidation;
+using MediatR;
 
 namespace ERP.Application.Items.UseCases.UpdateItemVariant;
 
 public sealed record UpdateItemVariantCommand(
     Guid ItemId,
     Guid VariantId,
-    int  SortOrder,
+    int SortOrder,
     bool IsDefault = false)
     : IRequest<Result<ItemVariantDto>>, ICompanyScopedRequest;
 

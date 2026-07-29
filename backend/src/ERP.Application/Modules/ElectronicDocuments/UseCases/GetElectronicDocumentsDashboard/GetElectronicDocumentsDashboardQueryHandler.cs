@@ -1,8 +1,8 @@
-using MediatR;
 using ERP.Application.Common;
 using ERP.Application.Modules.ElectronicDocuments.DTOs;
 using ERP.Domain.Modules.ElectronicDocuments.Enums;
 using ERP.Domain.Modules.ElectronicDocuments.Interfaces;
+using MediatR;
 
 namespace ERP.Application.Modules.ElectronicDocuments.UseCases.GetElectronicDocumentsDashboard;
 

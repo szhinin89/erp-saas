@@ -1,4 +1,4 @@
-﻿using ERP.Domain.Common.Validators;
+using ERP.Domain.Common.Validators;
 
 namespace ERP.Domain.MasterData.ValueObjects;
 
@@ -18,15 +18,15 @@ namespace ERP.Domain.MasterData.ValueObjects;
 /// </summary>
 public sealed record TaxIdentification
 {
-    public const int TypeMaxLen      = 5;
-    public const int NumberMaxLen    = 32;
+    public const int TypeMaxLen = 5;
+    public const int NumberMaxLen = 32;
 
-    public const string SriRuc             = "04";
-    public const string SriCi              = "05";
-    public const string SriPassport        = "06";
+    public const string SriRuc = "04";
+    public const string SriCi = "05";
+    public const string SriPassport = "06";
     public const string SriConsumidorFinal = "07";
-    public const string SriExterior        = "08";
-    public const string SriPlaca           = "09";
+    public const string SriExterior = "08";
+    public const string SriPlaca = "09";
 
     // Número estándar para Consumidor Final (usado en facturas sin identificación)
     public const string ConsumidorFinalNumber = "9999999999999";
@@ -34,12 +34,12 @@ public sealed record TaxIdentification
     private static readonly HashSet<string> _validTypes =
         [SriRuc, SriCi, SriPassport, SriConsumidorFinal, SriExterior, SriPlaca];
 
-    public string Type   { get; }
+    public string Type { get; }
     public string Number { get; }
 
     private TaxIdentification(string type, string number)
     {
-        Type   = type;
+        Type = type;
         Number = number;
     }
 

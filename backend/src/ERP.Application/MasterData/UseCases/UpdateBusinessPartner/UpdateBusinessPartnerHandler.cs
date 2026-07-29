@@ -1,4 +1,4 @@
-﻿using ERP.Application.Common;
+using ERP.Application.Common;
 using ERP.Application.Common.Persistence;
 using ERP.Application.MasterData.DTOs;
 using ERP.Domain.MasterData.Enums;
@@ -12,7 +12,7 @@ public sealed class UpdateBusinessPartnerHandler
     : IRequestHandler<UpdateBusinessPartnerCommand, Result<BusinessPartnerSummaryDto>>
 {
     private readonly IBusinessPartnerRepository _bpRepo;
-    private readonly IOperationalContext        _ctx;
+    private readonly IOperationalContext _ctx;
 
     public UpdateBusinessPartnerHandler(IBusinessPartnerRepository bpRepo, IOperationalContext ctx)
         => (_bpRepo, _ctx) = (bpRepo, ctx);
@@ -28,7 +28,7 @@ public sealed class UpdateBusinessPartnerHandler
         {
             bp.UpdateProfile(cmd.LegalName, cmd.PersonType, _ctx.UserId, cmd.TradeName, cmd.CountryCode);
         }
-        catch (ArgumentException ex)        { return Result<BusinessPartnerSummaryDto>.ValidationFailure(ex.Message); }
+        catch (ArgumentException ex) { return Result<BusinessPartnerSummaryDto>.ValidationFailure(ex.Message); }
         catch (InvalidOperationException ex) { return Result<BusinessPartnerSummaryDto>.ValidationFailure(ex.Message); }
 
         await _bpRepo.SaveChangesAsync(cancellationToken);
@@ -39,11 +39,11 @@ public sealed class UpdateBusinessPartnerHandler
 public sealed class UpdateBusinessPartnerIdentificationHandler
     : IRequestHandler<UpdateBusinessPartnerIdentificationCommand, Result<BusinessPartnerSummaryDto>>
 {
-    private readonly IBusinessPartnerRepository     _bpRepo;
+    private readonly IBusinessPartnerRepository _bpRepo;
     private readonly IBusinessPartnerRoleRepository _roleRepo;
-    private readonly IIdentificationUsageValidator   _usageValidator;
-    private readonly IOperationalContext             _ctx;
-    private readonly IDatabaseExceptionTranslator    _dbEx;
+    private readonly IIdentificationUsageValidator _usageValidator;
+    private readonly IOperationalContext _ctx;
+    private readonly IDatabaseExceptionTranslator _dbEx;
 
     public UpdateBusinessPartnerIdentificationHandler(
         IBusinessPartnerRepository bpRepo,
@@ -82,7 +82,7 @@ public sealed class UpdateBusinessPartnerIdentificationHandler
         {
             bp.UpdateIdentification(cmd.IdentificationType, cmd.IdentificationNumber, _ctx.UserId);
         }
-        catch (ArgumentException ex)        { return Result<BusinessPartnerSummaryDto>.ValidationFailure(ex.Message); }
+        catch (ArgumentException ex) { return Result<BusinessPartnerSummaryDto>.ValidationFailure(ex.Message); }
         catch (InvalidOperationException ex) { return Result<BusinessPartnerSummaryDto>.ValidationFailure(ex.Message); }
 
         try
@@ -100,10 +100,10 @@ public sealed class UpdateBusinessPartnerIdentificationHandler
 
     private static IdentificationUsageType? MapRoleToUsage(RoleType role) => role switch
     {
-        RoleType.Customer    => IdentificationUsageType.Customer,
-        RoleType.Supplier    => IdentificationUsageType.Supplier,
-        RoleType.Employee    => IdentificationUsageType.Employee,
-        RoleType.Carrier     => IdentificationUsageType.Carrier,
+        RoleType.Customer => IdentificationUsageType.Customer,
+        RoleType.Supplier => IdentificationUsageType.Supplier,
+        RoleType.Employee => IdentificationUsageType.Employee,
+        RoleType.Carrier => IdentificationUsageType.Carrier,
         _ => null,
     };
 }

@@ -1,7 +1,7 @@
-using MediatR;
 using ERP.Application.Common;
 using ERP.Application.Modules.Ride.DTOs;
 using ERP.Application.Modules.Ride.Services;
+using MediatR;
 
 namespace ERP.Application.Modules.Ride.UseCases.RegenerateRide;
 

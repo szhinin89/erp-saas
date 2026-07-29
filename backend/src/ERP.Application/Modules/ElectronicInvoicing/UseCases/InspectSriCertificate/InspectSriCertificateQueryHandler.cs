@@ -1,9 +1,9 @@
-using MediatR;
 using ERP.Application.Common;
 using ERP.Application.Common.Interfaces;
 using ERP.Application.Common.Interfaces.SRI;
 using ERP.Application.Modules.ElectronicInvoicing.DTOs;
 using ERP.Domain.Configuration.Interfaces;
+using MediatR;
 
 namespace ERP.Application.Modules.ElectronicInvoicing.UseCases.InspectSriCertificate;
 
@@ -21,10 +21,10 @@ public sealed class InspectSriCertificateQueryHandler
         ISriCertificateInspector certInspector,
         IFileStorage fileStorage)
     {
-        _repo           = repo;
+        _repo = repo;
         _currentCompany = currentCompany;
-        _certInspector  = certInspector;
-        _fileStorage    = fileStorage;
+        _certInspector = certInspector;
+        _fileStorage = fileStorage;
     }
 
     public async Task<Result<SriCertificateInfoDto>> Handle(

@@ -8,24 +8,24 @@ public sealed class PaymentMethod : MasterEntity, ITenantScopedEntity
     public const int MaxCodeLength = 20;
     public const int MaxNameLength = 100;
 
-    public string                  Code              { get; private set; } = null!;
-    public string                  Name              { get; private set; } = null!;
-    public bool                    RequiresReference { get; private set; }
-    public bool                    IsCreditAllowed   { get; private set; }
-    public int                     SortOrder         { get; private set; }
+    public string Code { get; private set; } = null!;
+    public string Name { get; private set; } = null!;
+    public bool RequiresReference { get; private set; }
+    public bool IsCreditAllowed { get; private set; }
+    public int SortOrder { get; private set; }
     /// <summary>Esquema de detalle que la UI debe capturar para este método (tarjeta/transferencia/cheque/ninguno).</summary>
-    public PaymentMethodDetailType DetailType        { get; private set; }
+    public PaymentMethodDetailType DetailType { get; private set; }
 
     private PaymentMethod() { }
 
     public static PaymentMethod Create(
-        Guid                    tenantId,
-        string                  code,
-        string                  name,
-        bool                    requiresReference,
-        bool                    isCreditAllowed,
-        int                     sortOrder,
-        Guid                    createdBy,
+        Guid tenantId,
+        string code,
+        string name,
+        bool requiresReference,
+        bool isCreditAllowed,
+        int sortOrder,
+        Guid createdBy,
         PaymentMethodDetailType detailType = PaymentMethodDetailType.None)
     {
         if (string.IsNullOrWhiteSpace(code))
@@ -39,14 +39,14 @@ public sealed class PaymentMethod : MasterEntity, ITenantScopedEntity
 
         var pm = new PaymentMethod
         {
-            Id                = Guid.NewGuid(),
-            TenantId          = tenantId,
-            Code              = code.Trim().ToUpperInvariant(),
-            Name              = name.Trim(),
+            Id = Guid.NewGuid(),
+            TenantId = tenantId,
+            Code = code.Trim().ToUpperInvariant(),
+            Name = name.Trim(),
             RequiresReference = requiresReference,
-            IsCreditAllowed   = isCreditAllowed,
-            SortOrder         = sortOrder,
-            DetailType        = detailType,
+            IsCreditAllowed = isCreditAllowed,
+            SortOrder = sortOrder,
+            DetailType = detailType,
         };
         pm.SetCreated(createdBy);
         return pm;
@@ -62,13 +62,13 @@ public sealed class PaymentMethod : MasterEntity, ITenantScopedEntity
     /// entidad invoca <see cref="SystemSeedGuard.EnsureEditable"/>.
     /// </summary>
     public static PaymentMethod CreateSystemSeeded(
-        Guid                    tenantId,
-        string                  code,
-        string                  name,
-        bool                    requiresReference,
-        bool                    isCreditAllowed,
-        int                     sortOrder,
-        Guid                    createdBy,
+        Guid tenantId,
+        string code,
+        string name,
+        bool requiresReference,
+        bool isCreditAllowed,
+        int sortOrder,
+        Guid createdBy,
         PaymentMethodDetailType detailType = PaymentMethodDetailType.None)
     {
         var pm = Create(tenantId, code, name, requiresReference, isCreditAllowed, sortOrder, createdBy, detailType);
@@ -77,21 +77,21 @@ public sealed class PaymentMethod : MasterEntity, ITenantScopedEntity
     }
 
     public void Update(
-        string                  name,
-        bool                    requiresReference,
-        bool                    isCreditAllowed,
-        int                     sortOrder,
-        Guid                    updatedBy,
+        string name,
+        bool requiresReference,
+        bool isCreditAllowed,
+        int sortOrder,
+        Guid updatedBy,
         PaymentMethodDetailType detailType)
     {
         if (string.IsNullOrWhiteSpace(name))
             throw new ArgumentException("El nombre es obligatorio.", nameof(name));
 
-        Name              = name.Trim();
+        Name = name.Trim();
         RequiresReference = requiresReference;
-        IsCreditAllowed   = isCreditAllowed;
-        SortOrder         = sortOrder;
-        DetailType        = detailType;
+        IsCreditAllowed = isCreditAllowed;
+        SortOrder = sortOrder;
+        DetailType = detailType;
         SetUpdated(updatedBy);
     }
 }

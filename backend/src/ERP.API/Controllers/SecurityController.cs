@@ -1,10 +1,10 @@
-﻿using MediatR;
-using ERP.API.Contracts;
 using ERP.API.Attributes;
+using ERP.API.Contracts;
 using ERP.API.Extensions;
 using ERP.Application.Security.UseCases.GetSecurityAdminMatrix;
 using ERP.Application.Security.UseCases.UpsertSecurityAdminScopes;
 using ERP.Domain.Kernel.Security;
+using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 

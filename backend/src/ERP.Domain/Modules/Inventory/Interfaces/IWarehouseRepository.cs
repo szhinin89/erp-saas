@@ -9,17 +9,17 @@ public interface IWarehouseRepository
 
     /// <summary>Verifica si ya existe una bodega con el mismo código dentro de la misma sucursal.</summary>
     Task<bool> ExistsCodeAsync(
-        Guid    tenantId,
-        Guid    branchId,
-        string  code,
-        Guid?   excludeId,
+        Guid tenantId,
+        Guid branchId,
+        string code,
+        Guid? excludeId,
         CancellationToken cancellationToken = default);
 
     Task<IReadOnlyList<Warehouse>> GetAsync(
-        Guid    tenantId,
-        bool?   activeFilter,
+        Guid tenantId,
+        bool? activeFilter,
         string? search,
-        Guid?   branchId,
+        Guid? branchId,
         CancellationToken cancellationToken = default);
 
     Task SaveChangesAsync(CancellationToken cancellationToken = default);

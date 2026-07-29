@@ -1,5 +1,5 @@
-using FluentAssertions;
 using ERP.Domain.Common.Validators;
+using FluentAssertions;
 
 namespace ERP.Domain.Tests.Validators;
 

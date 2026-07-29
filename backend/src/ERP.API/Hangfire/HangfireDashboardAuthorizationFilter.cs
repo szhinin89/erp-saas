@@ -1,8 +1,6 @@
+using Hangfire.Dashboard;
 using System.Net;
 using System.Net.Sockets;
-using Hangfire.Dashboard;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
 
 namespace ERP.API.Hangfire;
 
@@ -16,7 +14,7 @@ public sealed class HangfireDashboardAuthorizationFilter : IDashboardAuthorizati
     {
         var http = context.GetHttpContext();
         var config = http.RequestServices.GetRequiredService<IConfiguration>();
-        var section  = config.GetSection("Hangfire:Dashboard");
+        var section = config.GetSection("Hangfire:Dashboard");
 
         if (!section.GetValue("Enabled", true))
             return false;

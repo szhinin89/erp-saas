@@ -1,4 +1,4 @@
-﻿using ERP.Domain.Modules.Company.Entities;
+using ERP.Domain.Modules.Company.Entities;
 using ERP.Domain.Modules.Company.Interfaces;
 using Microsoft.EntityFrameworkCore;
 
@@ -22,9 +22,9 @@ public sealed class EmissionPointRepository : IEmissionPointRepository
             .ContinueWith(t => (IReadOnlyList<EmissionPoint>)t.Result, cancellationToken);
 
     public async Task<IReadOnlyList<EmissionPoint>> GetAllByCompanyAsync(
-        Guid    tenantId,
-        Guid    companyId,
-        bool?   activeFilter,
+        Guid tenantId,
+        Guid companyId,
+        bool? activeFilter,
         string? search,
         CancellationToken cancellationToken = default)
     {
@@ -71,7 +71,7 @@ public sealed class EmissionPointRepository : IEmissionPointRepository
     {
         var establishmentId = await _db.Establishments
             .Where(e => e.TenantId == tenantId
-                     && e.BranchId     == branchId
+                     && e.BranchId == branchId
                      && e.IsMain
                      && e.IsActive)
             .Select(e => (Guid?)e.Id)
@@ -92,7 +92,7 @@ public sealed class EmissionPointRepository : IEmissionPointRepository
     {
         var establishmentId = await _db.Establishments
             .Where(e => e.TenantId == tenantId
-                     && e.CompanyId    == companyId
+                     && e.CompanyId == companyId
                      && e.IsMain
                      && e.IsActive)
             .Select(e => (Guid?)e.Id)
@@ -111,7 +111,7 @@ public sealed class EmissionPointRepository : IEmissionPointRepository
     public async Task ClearDefaultExceptAsync(Guid tenantId, Guid establishmentId, Guid? exceptId, Guid updatedBy, CancellationToken cancellationToken = default)
     {
         var others = await _db.EmissionPoints
-            .Where(ep => ep.TenantId    == tenantId
+            .Where(ep => ep.TenantId == tenantId
                       && ep.EstablishmentId == establishmentId
                       && ep.IsDefault
                       && (exceptId == null || ep.Id != exceptId))
@@ -123,9 +123,9 @@ public sealed class EmissionPointRepository : IEmissionPointRepository
 
     public Task<bool> ExistsAsync(Guid tenantId, Guid establishmentId, string code, CancellationToken cancellationToken = default)
         => _db.EmissionPoints.IgnoreQueryFilters()
-            .AnyAsync(ep => ep.TenantId    == tenantId
+            .AnyAsync(ep => ep.TenantId == tenantId
                          && ep.EstablishmentId == establishmentId
-                         && ep.Code            == code, cancellationToken);
+                         && ep.Code == code, cancellationToken);
 
     public Task AddAsync(EmissionPoint emissionPoint, CancellationToken cancellationToken = default)
     {

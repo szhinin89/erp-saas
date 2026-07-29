@@ -1,9 +1,9 @@
-using MediatR;
-using Microsoft.Extensions.Logging;
 using ERP.Application.Common;
 using ERP.Domain.Modules.Caja.Enums;
 using ERP.Domain.Modules.Caja.Interfaces;
 using ERP.Domain.Modules.Sales.Events;
+using MediatR;
+using Microsoft.Extensions.Logging;
 
 namespace ERP.Application.Modules.Caja.UseCases;
 

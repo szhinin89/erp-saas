@@ -1,5 +1,5 @@
-using MediatR;
 using ERP.Application.Common;
+using MediatR;
 
 namespace ERP.Application.Modules.Dashboard;
 
@@ -13,26 +13,26 @@ public sealed record GetDashboardKpisQuery(DateTime? AsOf = null)
 public sealed record DashboardKpisDto(
     // ── Sales ─────────────────────────────────────────────────────────────
     decimal SalesMtd,
-    int     InvoicesMtd,
+    int InvoicesMtd,
     decimal SalesYtd,
 
     // ── AR ────────────────────────────────────────────────────────────────
     decimal PendingArTotal,
-    int     PendingArCount,
+    int PendingArCount,
     decimal OverdueArTotal,
-    int     OverdueArCount,
+    int OverdueArCount,
 
     // ── AP ────────────────────────────────────────────────────────────────
     decimal PendingApTotal,
-    int     PendingApCount,
+    int PendingApCount,
     decimal OverdueApTotal,
-    int     OverdueApCount,
+    int OverdueApCount,
 
     // ── Inventory ─────────────────────────────────────────────────────────
-    int     LowStockSkuCount,
-    int     OutOfStockSkuCount,
+    int LowStockSkuCount,
+    int OutOfStockSkuCount,
 
     // ── Meta ──────────────────────────────────────────────────────────────
     DateTime AsOf,
-    int      Month,
-    int      Year);
+    int Month,
+    int Year);

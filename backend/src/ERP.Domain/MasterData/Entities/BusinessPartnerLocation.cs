@@ -1,4 +1,4 @@
-﻿using ERP.Domain.Common;
+using ERP.Domain.Common;
 using ERP.Domain.MasterData.Enums;
 using ERP.Domain.MasterData.Events;
 using ERP.Domain.MasterData.ValueObjects;
@@ -20,37 +20,37 @@ namespace ERP.Domain.MasterData.Entities;
 /// </summary>
 public sealed class BusinessPartnerLocation : AuditableEntity, ITenantScopedEntity
 {
-    public const int NameMaxLen             = 150;
+    public const int NameMaxLen = 150;
     public const int OtherDescriptionMaxLen = 100;
 
-    public Guid            BusinessPartnerId    { get; private set; }
-    public string          Name                 { get; private set; } = null!;
-    public LocationType    Type                 { get; private set; }
-    public LocationPurpose Purpose              { get; private set; }
-    public PhysicalAddress Address              { get; private set; } = null!;
-    public string?         Phone                { get; private set; }
-    public string?         Email                { get; private set; }
-    public string?         OtherDescription     { get; private set; }
-    public bool            IsPrimary            { get; private set; }
-    public bool            IsActive             { get; private set; } = true;
+    public Guid BusinessPartnerId { get; private set; }
+    public string Name { get; private set; } = null!;
+    public LocationType Type { get; private set; }
+    public LocationPurpose Purpose { get; private set; }
+    public PhysicalAddress Address { get; private set; } = null!;
+    public string? Phone { get; private set; }
+    public string? Email { get; private set; }
+    public string? OtherDescription { get; private set; }
+    public bool IsPrimary { get; private set; }
+    public bool IsActive { get; private set; } = true;
 
     private BusinessPartnerLocation() { }
 
     public static BusinessPartnerLocation Create(
-        Guid            tenantId,
-        Guid            businessPartnerId,
-        string          name,
-        LocationType    type,
+        Guid tenantId,
+        Guid businessPartnerId,
+        string name,
+        LocationType type,
         LocationPurpose purpose,
-        string          addressLine,
-        Guid            createdBy,
-        string?         provinceCode      = null,
-        string?         cantonCode        = null,
-        string?         parishCode        = null,
-        string?         phone             = null,
-        string?         email             = null,
-        bool            isPrimary         = false,
-        string?         otherDescription  = null)
+        string addressLine,
+        Guid createdBy,
+        string? provinceCode = null,
+        string? cantonCode = null,
+        string? parishCode = null,
+        string? phone = null,
+        string? email = null,
+        bool isPrimary = false,
+        string? otherDescription = null)
     {
         if (tenantId == Guid.Empty)
             throw new ArgumentException("tenantId es obligatorio.", nameof(tenantId));
@@ -59,60 +59,60 @@ public sealed class BusinessPartnerLocation : AuditableEntity, ITenantScopedEnti
 
         var loc = new BusinessPartnerLocation
         {
-            Id                = Guid.NewGuid(),
-            TenantId      = tenantId,
+            Id = Guid.NewGuid(),
+            TenantId = tenantId,
             BusinessPartnerId = businessPartnerId,
-            Name              = NormalizeName(name),
-            Type              = type,
-            Purpose           = purpose,
-            Address           = PhysicalAddress.Create(addressLine, provinceCode, cantonCode, parishCode),
-            Phone             = NormalizeOptional(phone, 20, nameof(phone)),
-            Email             = NormalizeEmail(email),
-            OtherDescription  = ValidateOtherDescription(type, otherDescription),
-            IsPrimary         = isPrimary,
-            IsActive          = true,
+            Name = NormalizeName(name),
+            Type = type,
+            Purpose = purpose,
+            Address = PhysicalAddress.Create(addressLine, provinceCode, cantonCode, parishCode),
+            Phone = NormalizeOptional(phone, 20, nameof(phone)),
+            Email = NormalizeEmail(email),
+            OtherDescription = ValidateOtherDescription(type, otherDescription),
+            IsPrimary = isPrimary,
+            IsActive = true,
         };
         loc.SetCreated(createdBy);
         loc.RaiseDomainEvent(new BusinessPartnerLocationCreatedEvent
         {
-            TenantId      = tenantId,
-            LocationId        = loc.Id,
+            TenantId = tenantId,
+            LocationId = loc.Id,
             BusinessPartnerId = businessPartnerId,
-            LocationType      = type,
-            CreatedBy         = createdBy,
+            LocationType = type,
+            CreatedBy = createdBy,
         });
         return loc;
     }
 
     public void Update(
-        string          name,
-        LocationType    type,
+        string name,
+        LocationType type,
         LocationPurpose purpose,
-        string          addressLine,
-        Guid            updatedBy,
-        string?         provinceCode     = null,
-        string?         cantonCode       = null,
-        string?         parishCode       = null,
-        string?         phone            = null,
-        string?         email            = null,
-        string?         otherDescription = null)
+        string addressLine,
+        Guid updatedBy,
+        string? provinceCode = null,
+        string? cantonCode = null,
+        string? parishCode = null,
+        string? phone = null,
+        string? email = null,
+        string? otherDescription = null)
     {
         if (!IsActive)
             throw new InvalidOperationException("No se puede actualizar una ubicación inactiva.");
 
-        Name             = NormalizeName(name);
-        Type             = type;
-        Purpose          = purpose;
-        Address          = PhysicalAddress.Create(addressLine, provinceCode, cantonCode, parishCode);
-        Phone            = NormalizeOptional(phone, 20, nameof(phone));
-        Email            = NormalizeEmail(email);
+        Name = NormalizeName(name);
+        Type = type;
+        Purpose = purpose;
+        Address = PhysicalAddress.Create(addressLine, provinceCode, cantonCode, parishCode);
+        Phone = NormalizeOptional(phone, 20, nameof(phone));
+        Email = NormalizeEmail(email);
         OtherDescription = ValidateOtherDescription(type, otherDescription);
         SetUpdated(updatedBy);
         RaiseDomainEvent(new BusinessPartnerLocationUpdatedEvent
         {
             TenantId = TenantId,
-            LocationId   = Id,
-            UpdatedBy    = updatedBy,
+            LocationId = Id,
+            UpdatedBy = updatedBy,
         });
     }
 
@@ -132,8 +132,8 @@ public sealed class BusinessPartnerLocation : AuditableEntity, ITenantScopedEnti
         {
             TenantId = TenantId,
             NewPrimaryLocationId = Id,
-            BusinessPartnerId    = BusinessPartnerId,
-            ChangedBy            = updatedBy,
+            BusinessPartnerId = BusinessPartnerId,
+            ChangedBy = updatedBy,
         });
     }
 
@@ -161,9 +161,9 @@ public sealed class BusinessPartnerLocation : AuditableEntity, ITenantScopedEnti
         RaiseDomainEvent(new BusinessPartnerLocationDeactivatedEvent
         {
             TenantId = TenantId,
-            LocationId        = Id,
+            LocationId = Id,
             BusinessPartnerId = BusinessPartnerId,
-            DeactivatedBy     = updatedBy,
+            DeactivatedBy = updatedBy,
         });
     }
 

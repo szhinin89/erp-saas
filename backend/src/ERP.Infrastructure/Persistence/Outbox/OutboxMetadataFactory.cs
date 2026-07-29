@@ -1,6 +1,6 @@
+using ERP.Domain.Common;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using ERP.Domain.Common;
 
 namespace ERP.Infrastructure.Persistence.Outbox;
 
@@ -15,9 +15,9 @@ public static class OutboxMetadataFactory
 {
     private static readonly JsonSerializerOptions Options = new()
     {
-        PropertyNamingPolicy   = JsonNamingPolicy.CamelCase,
+        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
         DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
-        WriteIndented          = false,
+        WriteIndented = false,
     };
 
     /// <summary>
@@ -32,8 +32,8 @@ public static class OutboxMetadataFactory
         var metadata = new OutboxMetadata
         {
             CorrelationId = baseEvent.CorrelationId,
-            CausationId   = baseEvent.CausationId,
-            SourceModule  = sourceModule,
+            CausationId = baseEvent.CausationId,
+            SourceModule = sourceModule,
         };
 
         // Skip serialization if nothing meaningful to store

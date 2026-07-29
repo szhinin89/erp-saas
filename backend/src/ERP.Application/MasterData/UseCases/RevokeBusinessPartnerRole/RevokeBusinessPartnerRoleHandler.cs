@@ -1,4 +1,4 @@
-﻿using ERP.Application.Common;
+using ERP.Application.Common;
 using ERP.Domain.MasterData.Interfaces;
 using MediatR;
 
@@ -8,7 +8,7 @@ public sealed class RevokeBusinessPartnerRoleHandler
     : IRequestHandler<RevokeBusinessPartnerRoleCommand, Result<bool>>
 {
     private readonly IBusinessPartnerRoleRepository _roleRepo;
-    private readonly IOperationalContext            _ctx;
+    private readonly IOperationalContext _ctx;
 
     public RevokeBusinessPartnerRoleHandler(
         IBusinessPartnerRoleRepository roleRepo, IOperationalContext ctx)

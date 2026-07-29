@@ -1,7 +1,7 @@
-using Microsoft.EntityFrameworkCore;
 using ERP.Application.Common;
 using ERP.Domain.Modules.Inventory.Entities;
 using ERP.Domain.Modules.Inventory.Interfaces;
+using Microsoft.EntityFrameworkCore;
 
 namespace ERP.Infrastructure.Persistence.Repositories;
 
@@ -47,7 +47,7 @@ public sealed class WarehouseRepository : IWarehouseRepository
     {
         var q = Scoped(tenantId);
 
-        if (activeFilter is true)       q = q.Where(b => b.IsActive);
+        if (activeFilter is true) q = q.Where(b => b.IsActive);
         else if (activeFilter is false) q = q.Where(b => !b.IsActive);
 
         if (branchId.HasValue) q = q.Where(b => b.BranchId == branchId.Value);
@@ -57,7 +57,7 @@ public sealed class WarehouseRepository : IWarehouseRepository
             var s = search.Trim();
             q = q.Where(b =>
                 b.Name.Contains(s) ||
-                (b.Code    != null && b.Code.Contains(s)) ||
+                (b.Code != null && b.Code.Contains(s)) ||
                 (b.Address != null && b.Address.Contains(s)) ||
                 (b.Manager != null && b.Manager.Contains(s)));
         }

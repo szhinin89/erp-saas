@@ -1,6 +1,6 @@
 using ERP.Domain.Common;
-using ERP.Domain.Modules.SriCatalogs.Entities;
 using ERP.Domain.Modules.Company.Enums;
+using ERP.Domain.Modules.SriCatalogs.Entities;
 
 namespace ERP.Domain.Modules.Company.Entities;
 
@@ -12,46 +12,46 @@ namespace ERP.Domain.Modules.Company.Entities;
 public class Company : ITenantScopedEntity
 {
     public const int CorporateEmailMaxLen = 120;
-    public const int WebsiteMaxLen        = 200;
+    public const int WebsiteMaxLen = 200;
 
-    public Guid    Id                            { get; set; }
-    public Guid    TenantId                      { get; set; }
-    public string  TaxIdentificationNumber       { get; set; } = null!;
-    public bool    IsTemporaryTaxIdentification  { get; set; }
+    public Guid Id { get; set; }
+    public Guid TenantId { get; set; }
+    public string TaxIdentificationNumber { get; set; } = null!;
+    public bool IsTemporaryTaxIdentification { get; set; }
     public TaxIdentificationStatus TaxIdentificationStatus { get; set; } = TaxIdentificationStatus.Verified;
-    public string  LegalName                     { get; set; } = null!;
-    public string? TradeName                     { get; set; }
-    public string? CorporateEmail    { get; set; }
-    public string? Phone             { get; set; }
-    public string? Website           { get; set; }
-    public string  CountryCode        { get; set; } = "ECU";
+    public string LegalName { get; set; } = null!;
+    public string? TradeName { get; set; }
+    public string? CorporateEmail { get; set; }
+    public string? Phone { get; set; }
+    public string? Website { get; set; }
+    public string CountryCode { get; set; } = "ECU";
     /// <summary>IANA timezone (e.g. America/Guayaquil).</summary>
-    public string  Timezone           { get; set; } = "America/Guayaquil";
+    public string Timezone { get; set; } = "America/Guayaquil";
     /// <summary>ISO 4217 currency (e.g. USD).</summary>
-    public string  CurrencyCode       { get; set; } = "USD";
-    public string? TaxRegimeCode      { get; set; }
-    public bool    IsAccountingReq    { get; set; }
-    public string? SpecialTaxpayerNo  { get; set; }
-    public bool    IsForeignTrade     { get; set; }
-    public bool    WithholdsRenta     { get; set; } = true;
-    public bool    WithholdsVat       { get; set; } = true;
+    public string CurrencyCode { get; set; } = "USD";
+    public string? TaxRegimeCode { get; set; }
+    public bool IsAccountingReq { get; set; }
+    public string? SpecialTaxpayerNo { get; set; }
+    public bool IsForeignTrade { get; set; }
+    public bool WithholdsRenta { get; set; } = true;
+    public bool WithholdsVat { get; set; } = true;
     // UI / white-label
     /// <summary>JSON theme tokens (colors, fonts) para white-label; validado en capa Application.</summary>
     public string? BrandingConfiguration { get; set; }
-    public string? ExtraLegend        { get; set; }
+    public string? ExtraLegend { get; set; }
     /// <summary>Idioma principal de la empresa (es/en/qu).</summary>
-    public string  LanguageCode       { get; set; } = "es";
+    public string LanguageCode { get; set; } = "es";
     // Representante legal
-    public string? LegalRepName       { get; set; }
-    public string? LegalRepPosition   { get; set; }
-    public string? LegalRepIdNumber   { get; set; }
-    public string? LegalRepEmail      { get; set; }
-    public string? LegalRepPhone      { get; set; }
-    public bool    IsActive           { get; set; } = true;
-    public DateTime  CreatedAt        { get; set; }
-    public DateTime  UpdatedAt        { get; set; }
-    public Guid?     CreatedBy        { get; set; }
-    public Guid?     UpdatedBy        { get; set; }
+    public string? LegalRepName { get; set; }
+    public string? LegalRepPosition { get; set; }
+    public string? LegalRepIdNumber { get; set; }
+    public string? LegalRepEmail { get; set; }
+    public string? LegalRepPhone { get; set; }
+    public bool IsActive { get; set; } = true;
+    public DateTime CreatedAt { get; set; }
+    public DateTime UpdatedAt { get; set; }
+    public Guid? CreatedBy { get; set; }
+    public Guid? UpdatedBy { get; set; }
 
     // ── Onboarding & Operational Status ──────────────────────────────────────
 
@@ -60,19 +60,19 @@ public class Company : ITenantScopedEntity
     /// Las companies quedan operativas de inmediato al provisionarse; este campo
     /// se conserva por compatibilidad de esquema/contrato de integración con Platform.
     /// </summary>
-    public bool                    OnboardingCompleted { get; private set; }
+    public bool OnboardingCompleted { get; private set; }
 
     /// <summary>
     /// Operational: empresa lista para operar. Suspended: suspendida por el operador platform.
     /// </summary>
-    public CompanyOperationalStatus OperationalStatus   { get; private set; } = CompanyOperationalStatus.Operational;
+    public CompanyOperationalStatus OperationalStatus { get; private set; } = CompanyOperationalStatus.Operational;
 
     // Navigation
-    public SriCountry?      Country      { get; set; }
-    public SriTaxRegime?    TaxRegime    { get; set; }
+    public SriCountry? Country { get; set; }
+    public SriTaxRegime? TaxRegime { get; set; }
 
-    public ICollection<Establishment>      Establishments { get; set; } = [];
-    public ICollection<GeneralParameter>   Parameters     { get; set; } = [];
+    public ICollection<Establishment> Establishments { get; set; } = [];
+    public ICollection<GeneralParameter> Parameters { get; set; } = [];
 
     // ── Lifecycle methods ─────────────────────────────────────────────────────
 
@@ -80,14 +80,14 @@ public class Company : ITenantScopedEntity
     public void MarkOperational()
     {
         OperationalStatus = CompanyOperationalStatus.Operational;
-        UpdatedAt         = DateTime.UtcNow;
+        UpdatedAt = DateTime.UtcNow;
     }
 
     /// <summary>Suspends company ERP operations (e.g., billing issue, platform action).</summary>
     public void SuspendOperations()
     {
         OperationalStatus = CompanyOperationalStatus.Suspended;
-        UpdatedAt         = DateTime.UtcNow;
+        UpdatedAt = DateTime.UtcNow;
     }
 
     // ── Factory methods ───────────────────────────────────────────────────────
@@ -129,25 +129,25 @@ public class Company : ITenantScopedEntity
         var now = DateTime.UtcNow;
         return new Company
         {
-            Id                           = Guid.NewGuid(),
-            TenantId                     = tenantId,
-            TaxIdentificationNumber      = NormalizeTaxIdentificationNumber(taxIdentificationNumber, isTemporaryTaxIdentification),
+            Id = Guid.NewGuid(),
+            TenantId = tenantId,
+            TaxIdentificationNumber = NormalizeTaxIdentificationNumber(taxIdentificationNumber, isTemporaryTaxIdentification),
             IsTemporaryTaxIdentification = isTemporaryTaxIdentification,
-            TaxIdentificationStatus      = taxIdentificationStatus,
-            LegalName                    = legalName.Trim(),
-            TradeName                    = string.IsNullOrWhiteSpace(tradeName) ? null : tradeName.Trim(),
-            CorporateEmail               = NormalizeEmail(corporateEmail),
-            Website                      = NormalizeWebsite(website),
-            CountryCode                  = string.IsNullOrWhiteSpace(countryCode) ? "ECU" : countryCode.Trim().ToUpperInvariant(),
-            Timezone                     = string.IsNullOrWhiteSpace(timezone) ? "America/Guayaquil" : timezone.Trim(),
-            CurrencyCode                 = string.IsNullOrWhiteSpace(currencyCode) ? "USD" : currencyCode.Trim().ToUpperInvariant(),
-            BrandingConfiguration        = string.IsNullOrWhiteSpace(brandingConfiguration) ? null : brandingConfiguration.Trim(),
-            IsActive                     = true,
-            OnboardingCompleted          = true,
-            OperationalStatus            = CompanyOperationalStatus.Operational,
-            CreatedAt                    = now,
-            UpdatedAt                    = now,
-            CreatedBy                    = createdBy,
+            TaxIdentificationStatus = taxIdentificationStatus,
+            LegalName = legalName.Trim(),
+            TradeName = string.IsNullOrWhiteSpace(tradeName) ? null : tradeName.Trim(),
+            CorporateEmail = NormalizeEmail(corporateEmail),
+            Website = NormalizeWebsite(website),
+            CountryCode = string.IsNullOrWhiteSpace(countryCode) ? "ECU" : countryCode.Trim().ToUpperInvariant(),
+            Timezone = string.IsNullOrWhiteSpace(timezone) ? "America/Guayaquil" : timezone.Trim(),
+            CurrencyCode = string.IsNullOrWhiteSpace(currencyCode) ? "USD" : currencyCode.Trim().ToUpperInvariant(),
+            BrandingConfiguration = string.IsNullOrWhiteSpace(brandingConfiguration) ? null : brandingConfiguration.Trim(),
+            IsActive = true,
+            OnboardingCompleted = true,
+            OperationalStatus = CompanyOperationalStatus.Operational,
+            CreatedAt = now,
+            UpdatedAt = now,
+            CreatedBy = createdBy,
         };
     }
 
@@ -167,21 +167,21 @@ public class Company : ITenantScopedEntity
         string? legalRepEmail = null,
         string? legalRepPhone = null)
     {
-        LegalName        = legalName.Trim();
-        TradeName        = string.IsNullOrWhiteSpace(tradeName) ? null : tradeName.Trim();
-        CorporateEmail   = NormalizeEmail(corporateEmail);
-        Phone            = string.IsNullOrWhiteSpace(phone) ? null : phone.Trim();
-        Website          = NormalizeWebsite(website);
-        CountryCode      = string.IsNullOrWhiteSpace(countryCode) ? CountryCode : countryCode.Trim().ToUpperInvariant();
-        Timezone         = string.IsNullOrWhiteSpace(timezone) ? Timezone : timezone.Trim();
-        CurrencyCode     = string.IsNullOrWhiteSpace(currencyCode) ? CurrencyCode : currencyCode.Trim().ToUpperInvariant();
-        LegalRepName     = string.IsNullOrWhiteSpace(legalRepName) ? null : legalRepName.Trim();
+        LegalName = legalName.Trim();
+        TradeName = string.IsNullOrWhiteSpace(tradeName) ? null : tradeName.Trim();
+        CorporateEmail = NormalizeEmail(corporateEmail);
+        Phone = string.IsNullOrWhiteSpace(phone) ? null : phone.Trim();
+        Website = NormalizeWebsite(website);
+        CountryCode = string.IsNullOrWhiteSpace(countryCode) ? CountryCode : countryCode.Trim().ToUpperInvariant();
+        Timezone = string.IsNullOrWhiteSpace(timezone) ? Timezone : timezone.Trim();
+        CurrencyCode = string.IsNullOrWhiteSpace(currencyCode) ? CurrencyCode : currencyCode.Trim().ToUpperInvariant();
+        LegalRepName = string.IsNullOrWhiteSpace(legalRepName) ? null : legalRepName.Trim();
         LegalRepPosition = string.IsNullOrWhiteSpace(legalRepPosition) ? null : legalRepPosition.Trim();
         LegalRepIdNumber = string.IsNullOrWhiteSpace(legalRepIdNumber) ? null : legalRepIdNumber.Trim();
-        LegalRepEmail    = NormalizeEmail(legalRepEmail);
-        LegalRepPhone    = string.IsNullOrWhiteSpace(legalRepPhone) ? null : legalRepPhone.Trim();
-        UpdatedAt        = DateTime.UtcNow;
-        UpdatedBy        = updatedBy;
+        LegalRepEmail = NormalizeEmail(legalRepEmail);
+        LegalRepPhone = string.IsNullOrWhiteSpace(legalRepPhone) ? null : legalRepPhone.Trim();
+        UpdatedAt = DateTime.UtcNow;
+        UpdatedBy = updatedBy;
     }
 
     /// <summary>Overload retained for the company-management module, which also manages <c>IsActive</c> and <c>BrandingConfiguration</c>.</summary>
@@ -199,16 +199,16 @@ public class Company : ITenantScopedEntity
     {
         UpdateProfile(legalName, tradeName, corporateEmail, website, countryCode, timezone, currencyCode, updatedBy);
         BrandingConfiguration = string.IsNullOrWhiteSpace(brandingConfiguration) ? null : brandingConfiguration.Trim();
-        IsActive              = isActive;
+        IsActive = isActive;
     }
 
     public void UpdateTaxIdentification(string taxIdentificationNumber, bool isTemporary, TaxIdentificationStatus status, Guid? updatedBy = null)
     {
-        TaxIdentificationNumber      = NormalizeTaxIdentificationNumber(taxIdentificationNumber, isTemporary);
+        TaxIdentificationNumber = NormalizeTaxIdentificationNumber(taxIdentificationNumber, isTemporary);
         IsTemporaryTaxIdentification = isTemporary;
-        TaxIdentificationStatus      = status;
-        UpdatedAt                    = DateTime.UtcNow;
-        UpdatedBy                    = updatedBy ?? UpdatedBy;
+        TaxIdentificationStatus = status;
+        UpdatedAt = DateTime.UtcNow;
+        UpdatedBy = updatedBy ?? UpdatedBy;
     }
 
     /// <summary>Actualiza la configuración fiscal (pestaña "Fiscal" de Configuración → Empresa).</summary>
@@ -221,38 +221,38 @@ public class Company : ITenantScopedEntity
         bool withholdsVat,
         Guid? updatedBy)
     {
-        TaxRegimeCode     = string.IsNullOrWhiteSpace(taxRegimeCode) ? null : taxRegimeCode.Trim().ToUpperInvariant();
-        IsAccountingReq   = isAccountingReq;
+        TaxRegimeCode = string.IsNullOrWhiteSpace(taxRegimeCode) ? null : taxRegimeCode.Trim().ToUpperInvariant();
+        IsAccountingReq = isAccountingReq;
         SpecialTaxpayerNo = string.IsNullOrWhiteSpace(specialTaxpayerNo) ? null : specialTaxpayerNo.Trim();
-        IsForeignTrade    = isForeignTrade;
-        WithholdsRenta    = withholdsRenta;
-        WithholdsVat      = withholdsVat;
-        UpdatedAt         = DateTime.UtcNow;
-        UpdatedBy         = updatedBy;
+        IsForeignTrade = isForeignTrade;
+        WithholdsRenta = withholdsRenta;
+        WithholdsVat = withholdsVat;
+        UpdatedAt = DateTime.UtcNow;
+        UpdatedBy = updatedBy;
     }
 
     /// <summary>Actualiza el idioma principal (pestaña "Operación" de Configuración → Empresa).</summary>
     public void UpdateOperationSettings(string languageCode, Guid? updatedBy)
     {
         LanguageCode = string.IsNullOrWhiteSpace(languageCode) ? LanguageCode : languageCode.Trim().ToLowerInvariant();
-        UpdatedAt    = DateTime.UtcNow;
-        UpdatedBy    = updatedBy;
+        UpdatedAt = DateTime.UtcNow;
+        UpdatedBy = updatedBy;
     }
 
     /// <summary>Actualiza las notas legales institucionales (pestaña "Documentos" de Configuración → Empresa).</summary>
     public void UpdateDocumentsSettings(string? extraLegend, Guid? updatedBy)
     {
         ExtraLegend = string.IsNullOrWhiteSpace(extraLegend) ? null : extraLegend.Trim();
-        UpdatedAt   = DateTime.UtcNow;
-        UpdatedBy   = updatedBy;
+        UpdatedAt = DateTime.UtcNow;
+        UpdatedBy = updatedBy;
     }
 
     /// <summary>Actualiza colores corporativos y eslogan (pestaña "Marca" de Configuración → Empresa).</summary>
     public void UpdateBrandingConfiguration(string? brandingConfigurationJson, Guid? updatedBy)
     {
         BrandingConfiguration = string.IsNullOrWhiteSpace(brandingConfigurationJson) ? null : brandingConfigurationJson.Trim();
-        UpdatedAt             = DateTime.UtcNow;
-        UpdatedBy             = updatedBy;
+        UpdatedAt = DateTime.UtcNow;
+        UpdatedBy = updatedBy;
     }
 
     private static string NormalizeTaxIdentificationNumber(string taxIdentificationNumber, bool isTemporary)
@@ -260,7 +260,7 @@ public class Company : ITenantScopedEntity
         var t = taxIdentificationNumber.Trim();
         if (isTemporary) return t;
         if (t.Length == 13) return t;
-        if (t.Length < 13)  return t.PadRight(13, '0')[..13];
+        if (t.Length < 13) return t.PadRight(13, '0')[..13];
         return t[..13];
     }
 

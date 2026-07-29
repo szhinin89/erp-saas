@@ -21,12 +21,12 @@ namespace ERP.Application.Tests.Purchases;
 /// </summary>
 public sealed class IssueWithholdingHandlerTests
 {
-    private static readonly Guid TenantId   = Guid.NewGuid();
-    private static readonly Guid CompanyId  = Guid.NewGuid();
-    private static readonly Guid BranchId   = Guid.NewGuid();
-    private static readonly Guid UserId     = Guid.NewGuid();
+    private static readonly Guid TenantId = Guid.NewGuid();
+    private static readonly Guid CompanyId = Guid.NewGuid();
+    private static readonly Guid BranchId = Guid.NewGuid();
+    private static readonly Guid UserId = Guid.NewGuid();
     private static readonly Guid SupplierId = Guid.NewGuid();
-    private static readonly Guid PtId       = Guid.NewGuid();
+    private static readonly Guid PtId = Guid.NewGuid();
     private static readonly Guid EmissionPointId = Guid.NewGuid();
 
     /// <summary>Compra confirmada sin códigos de retención en el proveedor (config = null) —

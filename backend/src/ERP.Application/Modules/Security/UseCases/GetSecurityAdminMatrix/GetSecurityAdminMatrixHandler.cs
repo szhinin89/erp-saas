@@ -1,9 +1,9 @@
-﻿using MediatR;
 using ERP.Application.Common;
 using ERP.Application.Security.DTOs;
 using ERP.Domain.Access.Interfaces;
 using ERP.Domain.Kernel.Security;
 using ERP.Domain.Security.Interfaces;
+using MediatR;
 
 namespace ERP.Application.Security.UseCases.GetSecurityAdminMatrix;
 

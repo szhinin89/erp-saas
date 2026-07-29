@@ -1,10 +1,8 @@
-using System.Net;
-using System.Text.Json;
 using ERP.API.Extensions;
+using ERP.API.Middleware;
 using ERP.Application.Common;
 using ERP.Application.Common.Exceptions;
 using ERP.Domain.Exceptions;
-using ERP.API.Middleware;
 using FluentAssertions;
 using FluentValidation;
 using FluentValidation.Results;
@@ -13,7 +11,9 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Logging.Abstractions;
+using System.Net;
 using System.Reflection;
+using System.Text.Json;
 
 namespace ERP.API.Tests;
 

@@ -1,4 +1,4 @@
-﻿namespace ERP.Infrastructure.Tests.Services;
+namespace ERP.Infrastructure.Tests.Services;
 
 /// <summary>Genera una clave de acceso de 49 dígitos con dígito verificador válido (misma regla que <see cref="ERP.Infrastructure.Services.SriInvoiceParser"/>).</summary>
 internal static class AccessKey49TestFactory
@@ -25,9 +25,9 @@ internal static class AccessKey49TestFactory
         for (var i = 47; i >= 0; i--)
             sum += (clave[i] - '0') * weights[(47 - i) % 6];
 
-        var residuo     = sum % 11;
+        var residuo = sum % 11;
         var verificador = residuo == 0 ? 0 : residuo == 1 ? 1 : 11 - residuo;
-        var ultimo      = clave[48] - '0';
+        var ultimo = clave[48] - '0';
         return verificador == ultimo;
     }
 }

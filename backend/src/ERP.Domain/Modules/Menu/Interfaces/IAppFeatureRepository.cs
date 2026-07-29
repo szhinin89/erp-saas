@@ -1,5 +1,3 @@
-﻿using ERP.Domain.Modules.Menu.Entities;
-
 namespace ERP.Domain.Modules.Menu.Interfaces;
 
 public sealed record AppFeatureMenuRow(

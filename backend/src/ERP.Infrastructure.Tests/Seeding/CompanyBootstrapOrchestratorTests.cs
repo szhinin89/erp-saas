@@ -13,9 +13,9 @@ namespace ERP.Infrastructure.Tests.Seeding;
 /// </summary>
 public sealed class CompanyBootstrapOrchestratorTests
 {
-    private static readonly Guid TenantId  = Guid.NewGuid();
+    private static readonly Guid TenantId = Guid.NewGuid();
     private static readonly Guid CompanyId = Guid.NewGuid();
-    private static readonly Guid ActorId   = Guid.NewGuid();
+    private static readonly Guid ActorId = Guid.NewGuid();
 
     private static Mock<ICompanyBootstrapStep> MakeStep(int order, List<int> executionLog)
     {

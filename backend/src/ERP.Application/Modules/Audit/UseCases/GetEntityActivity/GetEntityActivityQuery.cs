@@ -1,6 +1,6 @@
-using MediatR;
-using ERP.Application.Common;
 using ERP.Application.Audit.DTOs;
+using ERP.Application.Common;
+using MediatR;
 
 namespace ERP.Application.Audit.UseCases.GetEntityActivity;
 

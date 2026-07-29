@@ -1,14 +1,14 @@
-using MediatR;
-using Microsoft.Extensions.Logging;
 using ERP.Application.Common;
+using ERP.Application.Common.Services;
 using ERP.Application.Modules.Sales.DTOs;
 using ERP.Application.Modules.Sales.Services;
-using ERP.Application.Common.Services;
 using ERP.Domain.Modules.Company.Enums;
 using ERP.Domain.Modules.Company.Interfaces;
 using ERP.Domain.Modules.Inventory.Enums;
 using ERP.Domain.Modules.Inventory.Interfaces;
 using ERP.Domain.Modules.Sales.Interfaces;
+using MediatR;
+using Microsoft.Extensions.Logging;
 
 namespace ERP.Application.Modules.Sales.UseCases;
 

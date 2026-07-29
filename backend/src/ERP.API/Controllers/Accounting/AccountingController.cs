@@ -1,12 +1,12 @@
+using ERP.API.Attributes;
+using ERP.API.Extensions;
+using ERP.Application.Modules.Accounting.UseCases.AccountingPeriods;
+using ERP.Application.Modules.Accounting.UseCases.Accounts;
+using ERP.Application.Modules.Accounting.UseCases.PostingRules;
+using ERP.Domain.Kernel.Permissions;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using ERP.API.Attributes;
-using ERP.API.Extensions;
-using ERP.Application.Modules.Accounting.UseCases.Accounts;
-using ERP.Application.Modules.Accounting.UseCases.AccountingPeriods;
-using ERP.Application.Modules.Accounting.UseCases.PostingRules;
-using ERP.Domain.Kernel.Permissions;
 
 namespace ERP.API.Controllers.Accounting;
 

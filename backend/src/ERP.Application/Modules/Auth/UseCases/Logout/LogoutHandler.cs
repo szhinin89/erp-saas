@@ -1,7 +1,7 @@
-﻿using MediatR;
 using ERP.Application.Common;
 using ERP.Application.Common.Interfaces;
 using ERP.Domain.Access.Interfaces;
+using MediatR;
 
 namespace ERP.Application.Auth.UseCases.Logout;
 

@@ -1,6 +1,5 @@
-using FluentValidation;
 using ERP.Domain.Modules.Company.Entities;
-using ERP.Domain.Modules.Company.Enums;
+using FluentValidation;
 
 namespace ERP.Application.Modules.Company.UseCases.CreateEmissionPoint;
 

@@ -30,13 +30,13 @@ public sealed class ItemStockConfig
 
         return new ItemStockConfig
         {
-            TracksStock    = tracksStock,
-            TracksLot      = tracksLot,
-            TracksSeries   = tracksSeries,
-            AllowDecimalQty  = allowDecimalQty,
+            TracksStock = tracksStock,
+            TracksLot = tracksLot,
+            TracksSeries = tracksSeries,
+            AllowDecimalQty = allowDecimalQty,
             AllowDecimalSale = allowDecimalSale,
-            MinStockQty    = minStockQty,
-            MaxStockQty    = maxStockQty,
+            MinStockQty = minStockQty,
+            MaxStockQty = maxStockQty,
         };
     }
 }

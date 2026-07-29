@@ -1,12 +1,11 @@
-using System.Globalization;
-using MediatR;
 using ERP.Application.Common;
-using ERP.Application.Common.Interfaces;
 using ERP.Application.Common.Interfaces.SRI;
 using ERP.Application.Modules.ElectronicInvoicing.DTOs;
 using ERP.Application.Modules.ElectronicInvoicing.Services;
 using ERP.Domain.Configuration.Interfaces;
 using ERP.Domain.Modules.Company.Interfaces;
+using MediatR;
+using System.Globalization;
 
 namespace ERP.Application.Modules.ElectronicInvoicing.UseCases.ValidateSriConfiguration;
 
@@ -28,11 +27,11 @@ public sealed class ValidateSriConfigurationQueryHandler
         ISriCertificateStatusResolver certStatusResolver,
         ISriConnectivityChecker connectivityChecker)
     {
-        _sriSettingsRepo     = sriSettingsRepo;
-        _companyRepo         = companyRepo;
-        _currentTenant       = currentTenant;
-        _currentCompany      = currentCompany;
-        _certStatusResolver  = certStatusResolver;
+        _sriSettingsRepo = sriSettingsRepo;
+        _companyRepo = companyRepo;
+        _currentTenant = currentTenant;
+        _currentCompany = currentCompany;
+        _certStatusResolver = certStatusResolver;
         _connectivityChecker = connectivityChecker;
     }
 

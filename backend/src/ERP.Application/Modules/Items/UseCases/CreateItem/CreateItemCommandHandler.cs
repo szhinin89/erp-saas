@@ -1,11 +1,10 @@
-using MediatR;
 using ERP.Application.Common;
+using ERP.Application.Common.Persistence;
 using ERP.Application.Items.DTOs;
-using ERP.Application.Items;
 using ERP.Domain.Modules.Items.Entities;
 using ERP.Domain.Modules.Items.Interfaces;
-using ERP.Application.Common.Persistence;
 using ERP.Domain.Modules.Items.ValueObjects;
+using MediatR;
 
 namespace ERP.Application.Items.UseCases.CreateItem;
 
@@ -36,15 +35,15 @@ public sealed class CreateItemCommandHandler
         _catalogRepo = catalogRepo;
         _itemTypeRepo = itemTypeRepo;
         _currentTenant = tenant;
-        _user       = user;
-        _dbEx       = dbEx;
-        _sri        = sri;
+        _user = user;
+        _dbEx = dbEx;
+        _sri = sri;
     }
 
     public async Task<Result<ItemDto>> Handle(CreateItemCommand cmd, CancellationToken cancellationToken)
     {
         var tenantId = _currentTenant.TenantId;
-        var userId       = _user.UserId;
+        var userId = _user.UserId;
 
         if (await _repository.ExistsBySkuAsync(cmd.SKU, tenantId, cancellationToken: cancellationToken))
             return Result<ItemDto>.Conflict($"Ya existe un ítem con SKU '{cmd.SKU}'.", "SKU_DUPLICATE");

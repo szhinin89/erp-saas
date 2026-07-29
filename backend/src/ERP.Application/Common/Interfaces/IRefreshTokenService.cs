@@ -1,4 +1,4 @@
-﻿using ERP.Domain.Auth.Entities;
+using ERP.Domain.Auth.Entities;
 
 namespace ERP.Application.Common.Interfaces;
 
@@ -6,7 +6,7 @@ namespace ERP.Application.Common.Interfaces;
 public static class RefreshUserType
 {
     public const string Identity = "Identity";
-    public const string Legacy   = "Legacy";
+    public const string Legacy = "Legacy";
 }
 
 public interface IRefreshTokenService
@@ -54,26 +54,26 @@ public interface IRefreshTokenService
 
 public static class RefreshTokenAuditEvents
 {
-    public const string RefreshSuccess           = "refresh_success";
-    public const string RefreshReuseBenign       = "refresh_reuse_benign";
-    public const string RefreshReuseSuspicious   = "refresh_reuse_suspicious";
-    public const string RefreshFamilyRevoked     = "refresh_family_revoked";
-    public const string RefreshMultitabRetry     = "refresh_multitab_retry";
-    public const string RefreshRotationFailed    = "refresh_rotation_failed";
-    public const string RefreshRateLimited       = "refresh_rate_limited";
+    public const string RefreshSuccess = "refresh_success";
+    public const string RefreshReuseBenign = "refresh_reuse_benign";
+    public const string RefreshReuseSuspicious = "refresh_reuse_suspicious";
+    public const string RefreshFamilyRevoked = "refresh_family_revoked";
+    public const string RefreshMultitabRetry = "refresh_multitab_retry";
+    public const string RefreshRotationFailed = "refresh_rotation_failed";
+    public const string RefreshRateLimited = "refresh_rate_limited";
 }
 
 public sealed class RefreshTokenValidationResult
 {
-    public bool     IsValid   { get; init; }
-    public Guid     UserId    { get; init; }
-    public Guid     TenantId  { get; init; }
-    public Guid?    CompanyId   { get; init; }
-    public string?  UserType  { get; init; }
-    public string?  NewToken  { get; init; }
+    public bool IsValid { get; init; }
+    public Guid UserId { get; init; }
+    public Guid TenantId { get; init; }
+    public Guid? CompanyId { get; init; }
+    public string? UserType { get; init; }
+    public string? NewToken { get; init; }
     public DateTime? NewExpiry { get; init; }
-    public string?  Error     { get; init; }
-    public bool     IsRateLimited { get; init; }
+    public string? Error { get; init; }
+    public bool IsRateLimited { get; init; }
 
     public static RefreshTokenValidationResult Fail(string error)
         => new() { IsValid = false, Error = error };
@@ -86,8 +86,8 @@ public sealed class RefreshTokenValidationResult
         string newToken, DateTime newExpiry)
         => new()
         {
-            IsValid  = true,
-            UserId   = userId,
+            IsValid = true,
+            UserId = userId,
             TenantId = tenantId,
             CompanyId = companyId,
             UserType = userType,

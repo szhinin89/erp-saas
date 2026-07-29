@@ -8,40 +8,40 @@ public sealed class IssuedWithholding : AuditableEntity, ITenantScopedEntity, IC
 {
     public Guid CompanyId { get; private set; }
 
-    public const int NumberMaxLen         = 20;
-    public const int AccessKeyLen         = 49;
-    public const int CancelReasonMaxLen   = 300;
-    public const int SriMessageMaxLen     = 500;
-    public const int PathMaxLen           = 500;
-    public const int SriReceiptMaxLen     = 50;
+    public const int NumberMaxLen = 20;
+    public const int AccessKeyLen = 49;
+    public const int CancelReasonMaxLen = 300;
+    public const int SriMessageMaxLen = 500;
+    public const int PathMaxLen = 500;
+    public const int SriReceiptMaxLen = 50;
 
     // ── Core ────────────────────────────────────────────────────────────
-    public Guid               PurchaseInvoiceId   { get; private set; }
-    public Guid               SupplierId          { get; private set; }
-    public Guid               EmissionPointId     { get; private set; }
-    public string             WithholdingNumber   { get; private set; } = null!;
-    public DateOnly           IssueDate           { get; private set; }
-    public decimal            TotalRetainedVat    { get; private set; }
-    public decimal            TotalRetainedIncome { get; private set; }
-    public decimal            TotalRetainedIsd    { get; private set; }
-    public decimal            TotalRetained       { get; private set; }
-    public WithholdingStatus  Status              { get; private set; } = WithholdingStatus.Draft;
+    public Guid PurchaseInvoiceId { get; private set; }
+    public Guid SupplierId { get; private set; }
+    public Guid EmissionPointId { get; private set; }
+    public string WithholdingNumber { get; private set; } = null!;
+    public DateOnly IssueDate { get; private set; }
+    public decimal TotalRetainedVat { get; private set; }
+    public decimal TotalRetainedIncome { get; private set; }
+    public decimal TotalRetainedIsd { get; private set; }
+    public decimal TotalRetained { get; private set; }
+    public WithholdingStatus Status { get; private set; } = WithholdingStatus.Draft;
 
     // ── Cancellation ────────────────────────────────────────────────────
-    public string?            CancelReason        { get; private set; }
-    public DateTime?          CancelledAt         { get; private set; }
-    public Guid?              CancelledBy         { get; private set; }
+    public string? CancelReason { get; private set; }
+    public DateTime? CancelledAt { get; private set; }
+    public Guid? CancelledBy { get; private set; }
 
     // ── SRI Electronic Document ─────────────────────────────────────────
-    public string?            AccessKey               { get; private set; }
-    public string?            XmlPath                 { get; private set; }
-    public string?            SignedXmlPath            { get; private set; }
-    public string?            PdfPath                 { get; private set; }
-    public SriDocumentStatus  SriStatus               { get; private set; } = SriDocumentStatus.None;
-    public string?            SriReceiptNumber        { get; private set; }
-    public string?            SriAuthorizationNumber  { get; private set; }
-    public DateTime?          SriAuthorizationDate    { get; private set; }
-    public string?            SriMessage              { get; private set; }
+    public string? AccessKey { get; private set; }
+    public string? XmlPath { get; private set; }
+    public string? SignedXmlPath { get; private set; }
+    public string? PdfPath { get; private set; }
+    public SriDocumentStatus SriStatus { get; private set; } = SriDocumentStatus.None;
+    public string? SriReceiptNumber { get; private set; }
+    public string? SriAuthorizationNumber { get; private set; }
+    public DateTime? SriAuthorizationDate { get; private set; }
+    public string? SriMessage { get; private set; }
 
     // ── Details ─────────────────────────────────────────────────────────
     private readonly List<IssuedWithholdingDetail> _details = new();
@@ -50,25 +50,25 @@ public sealed class IssuedWithholding : AuditableEntity, ITenantScopedEntity, IC
     private IssuedWithholding() { }
 
     public static IssuedWithholding CreateDraft(
-        Guid    tenantId,
-        Guid    companyId,
-        Guid    purchaseInvoiceId,
-        Guid    supplierId,
-        Guid    emissionPointId,
+        Guid tenantId,
+        Guid companyId,
+        Guid purchaseInvoiceId,
+        Guid supplierId,
+        Guid emissionPointId,
         DateOnly issueDate,
-        Guid    createdBy)
+        Guid createdBy)
     {
         var w = new IssuedWithholding
         {
-            Id                  = Guid.NewGuid(),
-            TenantId            = tenantId,
-            CompanyId           = companyId,
-            PurchaseInvoiceId   = purchaseInvoiceId,
-            SupplierId          = supplierId,
-            EmissionPointId     = emissionPointId,
-            IssueDate           = issueDate,
-            Status              = WithholdingStatus.Draft,
-            SriStatus           = SriDocumentStatus.None,
+            Id = Guid.NewGuid(),
+            TenantId = tenantId,
+            CompanyId = companyId,
+            PurchaseInvoiceId = purchaseInvoiceId,
+            SupplierId = supplierId,
+            EmissionPointId = emissionPointId,
+            IssueDate = issueDate,
+            Status = WithholdingStatus.Draft,
+            SriStatus = SriDocumentStatus.None,
         };
         w.SetCreated(createdBy);
         return w;
@@ -111,11 +111,11 @@ public sealed class IssuedWithholding : AuditableEntity, ITenantScopedEntity, IC
         if (string.IsNullOrWhiteSpace(reason))
             throw new ArgumentException("El motivo de anulación es obligatorio.", nameof(reason));
 
-        Status       = WithholdingStatus.Cancelled;
+        Status = WithholdingStatus.Cancelled;
         CancelReason = reason.Trim();
-        CancelledAt  = DateTime.UtcNow;
-        CancelledBy  = cancelledBy;
-        SriStatus    = SriDocumentStatus.Voided;
+        CancelledAt = DateTime.UtcNow;
+        CancelledBy = cancelledBy;
+        SriStatus = SriDocumentStatus.Voided;
         SetUpdated(cancelledBy);
         RaiseDomainEvent(new IssuedWithholdingCancelledEvent(
             TenantId, Id, PurchaseInvoiceId, SupplierId, WithholdingNumber, TotalRetained, CancelReason));
@@ -144,20 +144,20 @@ public sealed class IssuedWithholding : AuditableEntity, ITenantScopedEntity, IC
         if (string.IsNullOrWhiteSpace(authorizationNumber))
             throw new ArgumentException("El número de autorización SRI es obligatorio.", nameof(authorizationNumber));
         SriAuthorizationNumber = authorizationNumber.Trim();
-        SriAuthorizationDate   = authorizationDate;
-        SriStatus              = SriDocumentStatus.Authorized;
+        SriAuthorizationDate = authorizationDate;
+        SriStatus = SriDocumentStatus.Authorized;
         SetUpdated(updatedBy);
     }
 
     public void MarkRejected(string message, Guid updatedBy)
     {
         SriMessage = message?.Trim();
-        SriStatus  = SriDocumentStatus.Rejected;
+        SriStatus = SriDocumentStatus.Rejected;
         SetUpdated(updatedBy);
     }
 
-    public void SetXmlPath(string xmlPath)     => XmlPath = xmlPath?.Trim();
-    public void SetPdfPath(string pdfPath)     => PdfPath = pdfPath?.Trim();
+    public void SetXmlPath(string xmlPath) => XmlPath = xmlPath?.Trim();
+    public void SetPdfPath(string pdfPath) => PdfPath = pdfPath?.Trim();
     public void SetSriReceiptNumber(string rn) => SriReceiptNumber = rn?.Trim();
 
     // ── Private ─────────────────────────────────────────────────────────
@@ -170,9 +170,9 @@ public sealed class IssuedWithholding : AuditableEntity, ITenantScopedEntity, IC
 
     private void RecalcTotals()
     {
-        TotalRetainedVat    = _details.Where(d => d.TaxType == "IVA").Sum(d => d.AmountRetained);
+        TotalRetainedVat = _details.Where(d => d.TaxType == "IVA").Sum(d => d.AmountRetained);
         TotalRetainedIncome = _details.Where(d => d.TaxType == "RENTA").Sum(d => d.AmountRetained);
-        TotalRetainedIsd    = _details.Where(d => d.TaxType == "ISD").Sum(d => d.AmountRetained);
-        TotalRetained       = TotalRetainedVat + TotalRetainedIncome + TotalRetainedIsd;
+        TotalRetainedIsd = _details.Where(d => d.TaxType == "ISD").Sum(d => d.AmountRetained);
+        TotalRetained = TotalRetainedVat + TotalRetainedIncome + TotalRetainedIsd;
     }
 }

@@ -1,10 +1,10 @@
-using MediatR;
 using ERP.Application.Common;
 using ERP.Application.Modules.Inventory.Warehouses.DTOs;
 using ERP.Application.Modules.Inventory.Warehouses.UseCases.GetWarehouses;
 using ERP.Domain.Audit.Entities;
 using ERP.Domain.Audit.Interfaces;
 using ERP.Domain.Modules.Inventory.Interfaces;
+using MediatR;
 
 namespace ERP.Application.Modules.Inventory.Warehouses.UseCases.DisableWarehouse;
 
@@ -22,10 +22,10 @@ public sealed class DisableWarehouseCommandHandler
         ICurrentTenant currentTenant,
         ICurrentUser user)
     {
-        _repo          = repo;
-        _activity      = activity;
+        _repo = repo;
+        _activity = activity;
         _currentTenant = currentTenant;
-        _user          = user;
+        _user = user;
     }
 
     public async Task<Result<WarehouseListItemDto>> Handle(

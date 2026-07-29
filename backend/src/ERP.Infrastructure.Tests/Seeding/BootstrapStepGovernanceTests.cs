@@ -1,9 +1,8 @@
-using System.Reflection;
-using System.Text.RegularExpressions;
 using ERP.Application.Common.Interfaces;
-using ERP.Infrastructure;
 using ERP.Infrastructure.Seeding.Global;
 using FluentAssertions;
+using System.Reflection;
+using System.Text.RegularExpressions;
 
 namespace ERP.Infrastructure.Tests.Seeding;
 
@@ -33,7 +32,7 @@ public sealed class BootstrapStepGovernanceTests
     public void Every_ICompanyBootstrapStep_implementation_is_registered_in_DI_and_vice_versa()
     {
         var implementors = DiscoverImplementors(typeof(ICompanyBootstrapStep));
-        var registered   = RegisteredTypeNames("ICompanyBootstrapStep");
+        var registered = RegisteredTypeNames("ICompanyBootstrapStep");
 
         registered.Should().BeEquivalentTo(implementors,
             "todo ICompanyBootstrapStep debe registrarse en DependencyInjection.cs, y todo lo " +
@@ -44,7 +43,7 @@ public sealed class BootstrapStepGovernanceTests
     public void Every_IGlobalBootstrapStep_implementation_is_registered_in_DI_and_vice_versa()
     {
         var implementors = DiscoverImplementors(typeof(IGlobalBootstrapStep));
-        var registered   = RegisteredTypeNames("IGlobalBootstrapStep");
+        var registered = RegisteredTypeNames("IGlobalBootstrapStep");
 
         registered.Should().BeEquivalentTo(implementors,
             "todo IGlobalBootstrapStep debe registrarse en DependencyInjection.cs, y todo lo " +

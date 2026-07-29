@@ -4,33 +4,33 @@ namespace ERP.Domain.Modules.Sales.Entities;
 
 public sealed class SalesInvoicePayment : IMustHaveTenant
 {
-    public const int CodeMaxLen      = 20;
-    public const int NameMaxLen      = 100;
+    public const int CodeMaxLen = 20;
+    public const int NameMaxLen = 100;
     public const int ReferenceMaxLen = 100;
 
-    public Guid    Id                { get; private set; }
-    public Guid    TenantId          { get; private set; }
-    public Guid    InvoiceId         { get; private set; }
-    public Guid    PaymentMethodId   { get; private set; }
-    public string  PaymentMethodCode { get; private set; } = null!;
-    public string  PaymentMethodName { get; private set; } = null!;
-    public decimal Amount            { get; private set; }
-    public string? Reference         { get; private set; }
-    public DateTime CreatedAt        { get; private set; }
+    public Guid Id { get; private set; }
+    public Guid TenantId { get; private set; }
+    public Guid InvoiceId { get; private set; }
+    public Guid PaymentMethodId { get; private set; }
+    public string PaymentMethodCode { get; private set; } = null!;
+    public string PaymentMethodName { get; private set; } = null!;
+    public decimal Amount { get; private set; }
+    public string? Reference { get; private set; }
+    public DateTime CreatedAt { get; private set; }
 
     // ── Detail (1:1 nullable — only one can exist) ─────────────────
-    public PaymentCardDetail?     CardDetail     { get; private set; }
+    public PaymentCardDetail? CardDetail { get; private set; }
     public PaymentTransferDetail? TransferDetail { get; private set; }
-    public PaymentChequeDetail?   ChequeDetail   { get; private set; }
+    public PaymentChequeDetail? ChequeDetail { get; private set; }
 
     private SalesInvoicePayment() { }
 
     public static SalesInvoicePayment Create(
-        Guid    invoiceId,
-        Guid    tenantId,
-        Guid    paymentMethodId,
-        string  paymentMethodCode,
-        string  paymentMethodName,
+        Guid invoiceId,
+        Guid tenantId,
+        Guid paymentMethodId,
+        string paymentMethodCode,
+        string paymentMethodName,
         decimal amount,
         string? reference = null)
     {
@@ -47,15 +47,15 @@ public sealed class SalesInvoicePayment : IMustHaveTenant
 
         return new SalesInvoicePayment
         {
-            Id                = Guid.NewGuid(),
-            TenantId          = tenantId,
-            InvoiceId         = invoiceId,
-            PaymentMethodId   = paymentMethodId,
+            Id = Guid.NewGuid(),
+            TenantId = tenantId,
+            InvoiceId = invoiceId,
+            PaymentMethodId = paymentMethodId,
             PaymentMethodCode = paymentMethodCode.Trim(),
             PaymentMethodName = paymentMethodName.Trim(),
-            Amount            = amount,
-            Reference         = reference?.Trim(),
-            CreatedAt         = DateTime.UtcNow,
+            Amount = amount,
+            Reference = reference?.Trim(),
+            CreatedAt = DateTime.UtcNow,
         };
     }
 

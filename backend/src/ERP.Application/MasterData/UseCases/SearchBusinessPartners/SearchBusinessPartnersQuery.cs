@@ -11,9 +11,9 @@ namespace ERP.Application.MasterData.UseCases.SearchBusinessPartners;
 /// Ejemplo: Roles = [Customer, Supplier] devuelve BPs que tienen ALGUNO de esos roles activos.
 /// </summary>
 public sealed record SearchBusinessPartnersQuery(
-    string?      Query    = null,
-    bool?        IsActive = true,
-    RoleType[]?  Roles    = null,
-    int          Skip     = 0,
-    int          Take     = 50)
+    string? Query = null,
+    bool? IsActive = true,
+    RoleType[]? Roles = null,
+    int Skip = 0,
+    int Take = 50)
     : IRequest<Result<PagedResult<BusinessPartnerSummaryDto>>>, ITenantScopedRequest;

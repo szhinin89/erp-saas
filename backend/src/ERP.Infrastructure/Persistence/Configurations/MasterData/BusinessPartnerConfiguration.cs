@@ -1,5 +1,4 @@
-﻿using ERP.Domain.MasterData.Entities;
-using ERP.Domain.MasterData.Enums;
+using ERP.Domain.MasterData.Entities;
 using ERP.Domain.MasterData.ValueObjects;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;

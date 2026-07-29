@@ -6,10 +6,10 @@ namespace ERP.Domain.Configuration.Enums;
 /// </summary>
 public enum SettingDataType
 {
-    String  = 1,
-    Guid    = 2,
-    Int     = 3,
+    String = 1,
+    Guid = 2,
+    Int = 3,
     Decimal = 4,
-    Bool    = 5,
-    Json    = 6,
+    Bool = 5,
+    Json = 6,
 }

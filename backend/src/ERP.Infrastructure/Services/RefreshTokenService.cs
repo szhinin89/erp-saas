@@ -1,13 +1,13 @@
-using System.Collections.Concurrent;
-using System.Security.Cryptography;
-using System.Text;
-using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 using ERP.Application.Common.Config;
 using ERP.Application.Common.Interfaces;
 using ERP.Application.Common.Security;
 using ERP.Domain.Auth.Entities;
 using ERP.Domain.Auth.Interfaces;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
+using System.Collections.Concurrent;
+using System.Security.Cryptography;
+using System.Text;
 
 namespace ERP.Infrastructure.Services;
 
@@ -28,17 +28,17 @@ public sealed partial class RefreshTokenService : IRefreshTokenService
         ISecurityMetrics metrics,
         ILogger<RefreshTokenService> logger)
     {
-        _repo         = repo;
-        _rateLimiter  = rateLimiter;
-        _authOptions  = authOptions.Value;
-        _metrics      = metrics;
-        _logger       = logger;
+        _repo = repo;
+        _rateLimiter = rateLimiter;
+        _authOptions = authOptions.Value;
+        _metrics = metrics;
+        _logger = logger;
     }
 
     public async Task<(string RawToken, DateTime Expiry)> CreateAsync(
         Guid userId, Guid tenantId, Guid? companyId, string userType, CancellationToken cancellationToken = default)
     {
-        var rawToken  = GenerateRaw();
+        var rawToken = GenerateRaw();
         var tokenHash = Hash(rawToken);
 
         var entity = RefreshToken.Create(userId, tenantId, companyId, userType, tokenHash);
@@ -53,7 +53,7 @@ public sealed partial class RefreshTokenService : IRefreshTokenService
     public async Task<(RefreshToken Entity, string RawToken)> CreateWithoutSaveAsync(
         Guid userId, Guid tenantId, Guid? companyId, string userType, CancellationToken cancellationToken = default)
     {
-        var rawToken  = GenerateRaw();
+        var rawToken = GenerateRaw();
         var tokenHash = Hash(rawToken);
 
         var entity = RefreshToken.Create(userId, tenantId, companyId, userType, tokenHash);
@@ -103,7 +103,7 @@ public sealed partial class RefreshTokenService : IRefreshTokenService
         if (!await CheckRateLimitsAsync(stored, cancellationToken))
             return RefreshTokenValidationResult.RateLimited("Demasiados intentos de renovación. Espera un momento.");
 
-        var newRaw  = GenerateRaw();
+        var newRaw = GenerateRaw();
         var newHash = Hash(newRaw);
         var successor = RefreshToken.Create(
             stored.UserId,
@@ -196,7 +196,7 @@ public sealed partial class RefreshTokenService : IRefreshTokenService
     public async Task<Guid?> RevokeAsync(string rawToken, string reason, CancellationToken cancellationToken = default)
     {
         var tokenHash = Hash(rawToken);
-        var stored    = await _repo.GetByHashAsync(tokenHash, cancellationToken);
+        var stored = await _repo.GetByHashAsync(tokenHash, cancellationToken);
 
         if (stored is null) return null;
 
@@ -281,7 +281,7 @@ public sealed partial class RefreshTokenService : IRefreshTokenService
     public static string Hash(string raw)
     {
         var inputBytes = Encoding.UTF8.GetBytes(raw);
-        var hashBytes  = SHA256.HashData(inputBytes);
+        var hashBytes = SHA256.HashData(inputBytes);
         return Convert.ToBase64String(hashBytes);
     }
 

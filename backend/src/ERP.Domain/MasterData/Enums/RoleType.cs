@@ -9,12 +9,12 @@ namespace ERP.Domain.MasterData.Enums;
 /// </summary>
 public enum RoleType : short
 {
-    Customer    = 1,
-    Supplier    = 2,
-    Employee    = 3,
-    Carrier     = 4,
-    Broker      = 5,
-    Agent       = 6,
+    Customer = 1,
+    Supplier = 2,
+    Employee = 3,
+    Carrier = 4,
+    Broker = 5,
+    Agent = 6,
     Distributor = 7,
-    Contractor  = 8,
+    Contractor = 8,
 }

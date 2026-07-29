@@ -1,4 +1,4 @@
-﻿using ERP.Domain.Common;
+using ERP.Domain.Common;
 
 namespace ERP.Domain.MasterData.Entities;
 
@@ -16,32 +16,32 @@ namespace ERP.Domain.MasterData.Entities;
 /// </summary>
 public sealed class CompanyBpTradingSettings : AuditableEntity, ITenantScopedEntity, ICompanyScopedEntity
 {
-    public const int BlockedReasonMaxLen  = 500;
-    public const int CurrencyCodeLen      = 3;
+    public const int BlockedReasonMaxLen = 500;
+    public const int CurrencyCodeLen = 3;
 
-    public Guid     CompanyId         { get; private set; }
-    public Guid     BusinessPartnerId  { get; private set; }
-    public decimal  CreditLimit        { get; private set; }
-    public string   CreditCurrencyCode { get; private set; } = "USD";
-    public int      PaymentDays        { get; private set; }
-    public Guid?    PaymentTermId      { get; private set; }
-    public int      Installments       { get; private set; } = 1;
-    public int      DaysBetweenInstallments { get; private set; }
-    public bool     IsBlocked          { get; private set; }
-    public string?  BlockedReason      { get; private set; }
-    public DateTime? BlockedAt         { get; private set; }
-    public Guid?    BlockedBy          { get; private set; }
+    public Guid CompanyId { get; private set; }
+    public Guid BusinessPartnerId { get; private set; }
+    public decimal CreditLimit { get; private set; }
+    public string CreditCurrencyCode { get; private set; } = "USD";
+    public int PaymentDays { get; private set; }
+    public Guid? PaymentTermId { get; private set; }
+    public int Installments { get; private set; } = 1;
+    public int DaysBetweenInstallments { get; private set; }
+    public bool IsBlocked { get; private set; }
+    public string? BlockedReason { get; private set; }
+    public DateTime? BlockedAt { get; private set; }
+    public Guid? BlockedBy { get; private set; }
 
     private CompanyBpTradingSettings() { }
 
     public static CompanyBpTradingSettings Create(
-        Guid    tenantId,
-        Guid    companyId,
-        Guid    businessPartnerId,
+        Guid tenantId,
+        Guid companyId,
+        Guid businessPartnerId,
         decimal creditLimit,
-        int     paymentDays,
-        Guid    createdBy,
-        string  creditCurrencyCode = "USD")
+        int paymentDays,
+        Guid createdBy,
+        string creditCurrencyCode = "USD")
     {
         if (tenantId == Guid.Empty)
             throw new ArgumentException("tenantId es obligatorio.", nameof(tenantId));
@@ -52,11 +52,11 @@ public sealed class CompanyBpTradingSettings : AuditableEntity, ITenantScopedEnt
 
         var settings = new CompanyBpTradingSettings
         {
-            Id                = Guid.NewGuid(),
-            TenantId      = tenantId,
-            CompanyId         = companyId,
+            Id = Guid.NewGuid(),
+            TenantId = tenantId,
+            CompanyId = companyId,
             BusinessPartnerId = businessPartnerId,
-            IsBlocked         = false,
+            IsBlocked = false,
         };
         settings.ApplyTradingTerms(creditLimit, paymentDays, creditCurrencyCode);
         settings.SetCreated(createdBy);
@@ -90,10 +90,10 @@ public sealed class CompanyBpTradingSettings : AuditableEntity, ITenantScopedEnt
         if (blockedBy == Guid.Empty)
             throw new ArgumentException("BlockedBy es obligatorio.", nameof(blockedBy));
 
-        IsBlocked     = true;
+        IsBlocked = true;
         BlockedReason = r;
-        BlockedAt     = DateTime.UtcNow;
-        BlockedBy     = blockedBy;
+        BlockedAt = DateTime.UtcNow;
+        BlockedBy = blockedBy;
         SetUpdated(blockedBy);
     }
 
@@ -104,10 +104,10 @@ public sealed class CompanyBpTradingSettings : AuditableEntity, ITenantScopedEnt
         if (unblockedBy == Guid.Empty)
             throw new ArgumentException("UnblockedBy es obligatorio.", nameof(unblockedBy));
 
-        IsBlocked     = false;
+        IsBlocked = false;
         BlockedReason = null;
-        BlockedAt     = null;
-        BlockedBy     = null;
+        BlockedAt = null;
+        BlockedBy = null;
         SetUpdated(unblockedBy);
     }
 
@@ -118,10 +118,10 @@ public sealed class CompanyBpTradingSettings : AuditableEntity, ITenantScopedEnt
         if (daysBetween < 0)
             throw new ArgumentException("Los días entre cuotas no pueden ser negativos.", nameof(daysBetween));
 
-        PaymentTermId           = paymentTermId;
-        Installments            = installments;
+        PaymentTermId = paymentTermId;
+        Installments = installments;
         DaysBetweenInstallments = daysBetween;
-        PaymentDays             = installments * daysBetween;
+        PaymentDays = installments * daysBetween;
     }
 
     private void ApplyTradingTerms(decimal creditLimit, int paymentDays, string currencyCode)
@@ -135,8 +135,8 @@ public sealed class CompanyBpTradingSettings : AuditableEntity, ITenantScopedEnt
         if (code.Length != CurrencyCodeLen)
             throw new ArgumentException($"CreditCurrencyCode debe ser un código ISO 4217 de {CurrencyCodeLen} letras.", nameof(currencyCode));
 
-        CreditLimit        = creditLimit;
-        PaymentDays        = paymentDays;
+        CreditLimit = creditLimit;
+        PaymentDays = paymentDays;
         CreditCurrencyCode = code;
     }
 }

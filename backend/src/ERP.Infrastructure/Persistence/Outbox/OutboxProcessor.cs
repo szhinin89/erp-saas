@@ -1,6 +1,5 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
-using ERP.Infrastructure.Persistence;
 
 namespace ERP.Infrastructure.Persistence.Outbox;
 

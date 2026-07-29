@@ -1,9 +1,9 @@
-using MediatR;
 using ERP.Application.Common;
 using ERP.Application.Modules.Branches;
 using ERP.Application.Modules.Inventory.Stock.DTOs;
 using ERP.Domain.Modules.Inventory.Enums;
 using ERP.Domain.Modules.Inventory.Interfaces;
+using MediatR;
 
 namespace ERP.Application.Modules.Inventory.Stock.UseCases.ConfirmStockTransfer;
 
@@ -11,23 +11,23 @@ public sealed class ConfirmStockTransferCommandHandler
     : IRequestHandler<ConfirmStockTransferCommand, Result<StockTransferDto>>
 {
     private readonly IStockTransferRepository _repo;
-    private readonly IStockRepository         _stockRepo;
-    private readonly IInterBranchAccessGuard  _interBranchGuard;
-    private readonly ICurrentTenant           _tenant;
-    private readonly ICurrentCompany          _company;
-    private readonly ICurrentUser             _user;
+    private readonly IStockRepository _stockRepo;
+    private readonly IInterBranchAccessGuard _interBranchGuard;
+    private readonly ICurrentTenant _tenant;
+    private readonly ICurrentCompany _company;
+    private readonly ICurrentUser _user;
 
     public ConfirmStockTransferCommandHandler(
         IStockTransferRepository repo, IStockRepository stockRepo,
         IInterBranchAccessGuard interBranchGuard,
         ICurrentTenant tenant, ICurrentCompany company, ICurrentUser user)
     {
-        _repo             = repo;
-        _stockRepo        = stockRepo;
+        _repo = repo;
+        _stockRepo = stockRepo;
         _interBranchGuard = interBranchGuard;
-        _tenant           = tenant;
-        _company          = company;
-        _user             = user;
+        _tenant = tenant;
+        _company = company;
+        _user = user;
     }
 
     public async Task<Result<StockTransferDto>> Handle(

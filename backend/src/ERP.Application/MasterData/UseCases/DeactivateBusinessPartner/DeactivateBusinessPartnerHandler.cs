@@ -1,4 +1,4 @@
-﻿using ERP.Application.Common;
+using ERP.Application.Common;
 using ERP.Domain.MasterData.Interfaces;
 using MediatR;
 
@@ -8,7 +8,7 @@ public sealed class DeactivateBusinessPartnerHandler
     : IRequestHandler<DeactivateBusinessPartnerCommand, Result<bool>>
 {
     private readonly IBusinessPartnerRepository _bpRepo;
-    private readonly IOperationalContext        _ctx;
+    private readonly IOperationalContext _ctx;
 
     public DeactivateBusinessPartnerHandler(IBusinessPartnerRepository bpRepo, IOperationalContext ctx)
         => (_bpRepo, _ctx) = (bpRepo, ctx);

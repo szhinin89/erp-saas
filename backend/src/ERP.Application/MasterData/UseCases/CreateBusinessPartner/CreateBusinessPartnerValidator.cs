@@ -1,4 +1,3 @@
-using ERP.Domain.MasterData.Enums;
 using ERP.Domain.MasterData.ValueObjects;
 using FluentValidation;
 

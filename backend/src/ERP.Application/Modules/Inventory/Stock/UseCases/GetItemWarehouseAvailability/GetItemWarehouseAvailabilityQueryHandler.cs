@@ -1,7 +1,7 @@
-using MediatR;
 using ERP.Application.Common;
 using ERP.Application.Modules.Inventory.Stock.DTOs;
 using ERP.Domain.Modules.Inventory.Interfaces;
+using MediatR;
 
 namespace ERP.Application.Modules.Inventory.Stock.UseCases.GetItemWarehouseAvailability;
 
@@ -9,15 +9,15 @@ public sealed class GetItemWarehouseAvailabilityQueryHandler
     : IRequestHandler<GetItemWarehouseAvailabilityQuery, Result<IReadOnlyList<ItemWarehouseAvailabilityDto>>>
 {
     private readonly IWarehouseRepository _warehouseRepo;
-    private readonly IStockRepository     _stockRepo;
-    private readonly ICurrentTenant       _tenant;
+    private readonly IStockRepository _stockRepo;
+    private readonly ICurrentTenant _tenant;
 
     public GetItemWarehouseAvailabilityQueryHandler(
         IWarehouseRepository warehouseRepo, IStockRepository stockRepo, ICurrentTenant tenant)
     {
         _warehouseRepo = warehouseRepo;
-        _stockRepo     = stockRepo;
-        _tenant        = tenant;
+        _stockRepo = stockRepo;
+        _tenant = tenant;
     }
 
     public async Task<Result<IReadOnlyList<ItemWarehouseAvailabilityDto>>> Handle(

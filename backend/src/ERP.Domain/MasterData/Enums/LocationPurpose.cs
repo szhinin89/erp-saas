@@ -8,9 +8,9 @@ namespace ERP.Domain.MasterData.Enums;
 [Flags]
 public enum LocationPurpose : int
 {
-    None           = 0,
-    Billing        = 1,
-    Delivery       = 2,
-    Fiscal         = 4,
+    None = 0,
+    Billing = 1,
+    Delivery = 2,
+    Fiscal = 4,
     Correspondence = 8,
 }

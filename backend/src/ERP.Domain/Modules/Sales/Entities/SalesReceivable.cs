@@ -7,12 +7,12 @@ public sealed class SalesReceivable : AuditableEntity, ITenantScopedEntity, ICom
 {
     public const int StatusMaxLen = 20;
 
-    public Guid    CompanyId     { get; private set; }
-    public Guid    InvoiceId     { get; private set; }
-    public Guid    CustomerId    { get; private set; }
+    public Guid CompanyId { get; private set; }
+    public Guid InvoiceId { get; private set; }
+    public Guid CustomerId { get; private set; }
     public decimal OriginalAmount { get; private set; }
-    public decimal PaidAmount    { get; private set; }
-    public string  Status        { get; private set; } = "pending";
+    public decimal PaidAmount { get; private set; }
+    public string Status { get; private set; } = "pending";
 
     public decimal BalanceDue => OriginalAmount - PaidAmount;
 
@@ -34,14 +34,14 @@ public sealed class SalesReceivable : AuditableEntity, ITenantScopedEntity, ICom
 
         var r = new SalesReceivable
         {
-            Id             = Guid.NewGuid(),
-            TenantId       = tenantId,
-            CompanyId      = companyId,
-            InvoiceId      = invoiceId,
-            CustomerId     = customerId,
+            Id = Guid.NewGuid(),
+            TenantId = tenantId,
+            CompanyId = companyId,
+            InvoiceId = invoiceId,
+            CustomerId = customerId,
             OriginalAmount = originalAmount,
-            PaidAmount     = 0,
-            Status         = "pending",
+            PaidAmount = 0,
+            Status = "pending",
         };
         r.SetCreated(createdBy);
         return r;

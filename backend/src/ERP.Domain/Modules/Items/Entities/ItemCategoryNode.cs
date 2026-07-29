@@ -43,13 +43,13 @@ public sealed class ItemCategoryNode : MasterEntity, ITenantScopedEntity
 
         var node = new ItemCategoryNode
         {
-            TenantId    = tenantId,
-            ParentId    = parentId,
-            Code        = code.Trim().ToUpperInvariant(),
-            Name        = name.Trim(),
+            TenantId = tenantId,
+            ParentId = parentId,
+            Code = code.Trim().ToUpperInvariant(),
+            Name = name.Trim(),
             Description = description?.Trim() is { Length: > 0 } d ? d : null,
-            Level       = level,
-            SortOrder   = sortOrder,
+            Level = level,
+            SortOrder = sortOrder,
         };
         node.SetCreated(createdBy);
         return node;

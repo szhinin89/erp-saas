@@ -9,8 +9,8 @@ public sealed record PersonName
     public const int LegalNameMaxLen = 200;
     public const int TradeNameMaxLen = 200;
 
-    public string  LegalName  { get; }
-    public string? TradeName  { get; }
+    public string LegalName { get; }
+    public string? TradeName { get; }
 
     private PersonName(string legalName, string? tradeName)
     {

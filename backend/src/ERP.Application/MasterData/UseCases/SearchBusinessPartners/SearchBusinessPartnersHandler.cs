@@ -1,4 +1,4 @@
-﻿using ERP.Application.Common;
+using ERP.Application.Common;
 using ERP.Application.MasterData.DTOs;
 using ERP.Domain.MasterData.Interfaces;
 using MediatR;
@@ -15,7 +15,7 @@ public sealed class SearchBusinessPartnersHandler
     public async Task<Result<PagedResult<BusinessPartnerSummaryDto>>> Handle(
         SearchBusinessPartnersQuery q, CancellationToken cancellationToken)
     {
-        var take       = Math.Clamp(q.Take, 1, 200);
+        var take = Math.Clamp(q.Take, 1, 200);
         var pageNumber = take > 0 ? (q.Skip / take) + 1 : 1;
 
         var items = await _bpRepo.SearchAsync(q.Query, q.IsActive, q.Roles, q.Skip, take, cancellationToken);

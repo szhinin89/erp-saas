@@ -13,35 +13,35 @@ public sealed class PriceList : MasterEntity, ITenantScopedEntity, ICompanyOpera
 {
     public Guid CompanyId { get; private set; }
 
-    public const int MaxCodeLength     = 20;
-    public const int MaxNameLength     = 120;
-    public const int CurrencyCodeLen   = 3;
+    public const int MaxCodeLength = 20;
+    public const int MaxNameLength = 120;
+    public const int CurrencyCodeLen = 3;
 
-    public string          Code          { get; private set; } = null!;
-    public string          Name          { get; private set; } = null!;
-    public string          CurrencyCode  { get; private set; } = null!;
-    public bool            IsDefault     { get; private set; }
-    public DateOnly?       ValidFrom     { get; private set; }
-    public DateOnly?       ValidUntil    { get; private set; }
+    public string Code { get; private set; } = null!;
+    public string Name { get; private set; } = null!;
+    public string CurrencyCode { get; private set; } = null!;
+    public bool IsDefault { get; private set; }
+    public DateOnly? ValidFrom { get; private set; }
+    public DateOnly? ValidUntil { get; private set; }
 
     /// <summary>Regla general de la lista (aplica a todo el catálogo salvo override por ítem). Null = sin ajuste (precio = base).</summary>
-    public PricingRuleType? RuleType  { get; private set; }
-    public decimal?         RuleValue { get; private set; }
+    public PricingRuleType? RuleType { get; private set; }
+    public decimal? RuleValue { get; private set; }
 
     private PriceList() { }
 
     public static PriceList Create(
-        Guid           tenantId,
-        Guid           companyId,
-        string         code,
-        string         name,
-        string         currencyCode,
-        bool           isDefault,
-        Guid           createdBy,
-        DateOnly?      validFrom  = null,
-        DateOnly?      validUntil = null,
-        PricingRuleType? ruleType  = null,
-        decimal?         ruleValue = null)
+        Guid tenantId,
+        Guid companyId,
+        string code,
+        string name,
+        string currencyCode,
+        bool isDefault,
+        Guid createdBy,
+        DateOnly? validFrom = null,
+        DateOnly? validUntil = null,
+        PricingRuleType? ruleType = null,
+        decimal? ruleValue = null)
     {
         if (string.IsNullOrWhiteSpace(code))
             throw new ArgumentException("El código de lista de precios es obligatorio.", nameof(code));
@@ -55,17 +55,17 @@ public sealed class PriceList : MasterEntity, ITenantScopedEntity, ICompanyOpera
 
         var pl = new PriceList
         {
-            Id           = Guid.NewGuid(),
-            TenantId     = tenantId,
-            CompanyId    = companyId,
-            Code         = code.Trim().ToUpperInvariant(),
-            Name         = name.Trim(),
+            Id = Guid.NewGuid(),
+            TenantId = tenantId,
+            CompanyId = companyId,
+            Code = code.Trim().ToUpperInvariant(),
+            Name = name.Trim(),
             CurrencyCode = currencyCode.Trim().ToUpperInvariant(),
-            IsDefault    = isDefault,
-            ValidFrom    = validFrom,
-            ValidUntil   = validUntil,
-            RuleType     = ruleType,
-            RuleValue    = ruleValue,
+            IsDefault = isDefault,
+            ValidFrom = validFrom,
+            ValidUntil = validUntil,
+            RuleType = ruleType,
+            RuleValue = ruleValue,
         };
         pl.SetCreated(createdBy);
         pl.RaiseDomainEvent(new PriceListCreatedEvent(tenantId, pl.Id));
@@ -79,17 +79,17 @@ public sealed class PriceList : MasterEntity, ITenantScopedEntity, ICompanyOpera
     /// <see cref="Update"/> permanece abierto.
     /// </summary>
     public static PriceList CreateSystemSeeded(
-        Guid           tenantId,
-        Guid           companyId,
-        string         code,
-        string         name,
-        string         currencyCode,
-        bool           isDefault,
-        Guid           createdBy,
-        DateOnly?      validFrom  = null,
-        DateOnly?      validUntil = null,
-        PricingRuleType? ruleType  = null,
-        decimal?         ruleValue = null)
+        Guid tenantId,
+        Guid companyId,
+        string code,
+        string name,
+        string currencyCode,
+        bool isDefault,
+        Guid createdBy,
+        DateOnly? validFrom = null,
+        DateOnly? validUntil = null,
+        PricingRuleType? ruleType = null,
+        decimal? ruleValue = null)
     {
         var pl = Create(tenantId, companyId, code, name, currencyCode, isDefault, createdBy, validFrom, validUntil, ruleType, ruleValue);
         pl.MarkAsSystemSeeded();
@@ -118,14 +118,14 @@ public sealed class PriceList : MasterEntity, ITenantScopedEntity, ICompanyOpera
     }
 
     public void Update(
-        string         name,
-        string         currencyCode,
-        bool           isDefault,
-        Guid           updatedBy,
-        DateOnly?      validFrom  = null,
-        DateOnly?      validUntil = null,
-        PricingRuleType? ruleType  = null,
-        decimal?         ruleValue = null)
+        string name,
+        string currencyCode,
+        bool isDefault,
+        Guid updatedBy,
+        DateOnly? validFrom = null,
+        DateOnly? validUntil = null,
+        PricingRuleType? ruleType = null,
+        decimal? ruleValue = null)
     {
         if (string.IsNullOrWhiteSpace(name))
             throw new ArgumentException("El nombre de lista de precios es obligatorio.", nameof(name));
@@ -135,16 +135,16 @@ public sealed class PriceList : MasterEntity, ITenantScopedEntity, ICompanyOpera
             throw new ArgumentException("La fecha fin no puede ser anterior a la fecha inicio.", nameof(validUntil));
         ValidateRule(ruleType, ruleValue);
 
-        var oldRuleType  = RuleType;
+        var oldRuleType = RuleType;
         var oldRuleValue = RuleValue;
 
-        Name         = name.Trim();
+        Name = name.Trim();
         CurrencyCode = currencyCode.Trim().ToUpperInvariant();
-        IsDefault    = isDefault;
-        ValidFrom    = validFrom;
-        ValidUntil   = validUntil;
-        RuleType     = ruleType;
-        RuleValue    = ruleValue;
+        IsDefault = isDefault;
+        ValidFrom = validFrom;
+        ValidUntil = validUntil;
+        RuleType = ruleType;
+        RuleValue = ruleValue;
         SetUpdated(updatedBy);
         RaiseDomainEvent(new PriceListUpdatedEvent(TenantId, Id, oldRuleType, oldRuleValue, ruleType, ruleValue));
     }

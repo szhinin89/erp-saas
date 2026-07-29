@@ -1,4 +1,3 @@
-using System.Linq;
 using ERP.Domain.Modules.Sales.Entities;
 using ERP.Domain.Modules.Sales.ValueObjects;
 using FluentAssertions;
@@ -12,9 +11,9 @@ namespace ERP.Domain.Tests.Sales;
 /// </summary>
 public sealed class SalesInvoiceBranchOwnershipTests
 {
-    private static readonly Guid TenantId  = Guid.NewGuid();
+    private static readonly Guid TenantId = Guid.NewGuid();
     private static readonly Guid CompanyId = Guid.NewGuid();
-    private static readonly Guid UserId    = Guid.NewGuid();
+    private static readonly Guid UserId = Guid.NewGuid();
 
     private static CustomerSnapshot Customer() =>
         CustomerSnapshot.Create("Cliente Test", "0999999999", "05");

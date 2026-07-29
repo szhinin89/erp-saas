@@ -22,18 +22,18 @@ namespace ERP.Application.MasterData.UseCases.AssignBusinessPartnerRole;
 public sealed class AssignBusinessPartnerRoleHandler
     : IRequestHandler<AssignBusinessPartnerRoleCommand, Result<BusinessPartnerRoleDto>>
 {
-    private readonly IBusinessPartnerRepository     _bpRepo;
+    private readonly IBusinessPartnerRepository _bpRepo;
     private readonly IBusinessPartnerRoleRepository _roleRepo;
-    private readonly IIdentificationUsageValidator   _usageValidator;
-    private readonly IOperationalContext            _ctx;
-    private readonly IDatabaseExceptionTranslator   _dbEx;
+    private readonly IIdentificationUsageValidator _usageValidator;
+    private readonly IOperationalContext _ctx;
+    private readonly IDatabaseExceptionTranslator _dbEx;
 
     public AssignBusinessPartnerRoleHandler(
-        IBusinessPartnerRepository     bpRepo,
+        IBusinessPartnerRepository bpRepo,
         IBusinessPartnerRoleRepository roleRepo,
-        IIdentificationUsageValidator   usageValidator,
-        IOperationalContext            ctx,
-        IDatabaseExceptionTranslator   dbEx)
+        IIdentificationUsageValidator usageValidator,
+        IOperationalContext ctx,
+        IDatabaseExceptionTranslator dbEx)
         => (_bpRepo, _roleRepo, _usageValidator, _ctx, _dbEx) = (bpRepo, roleRepo, usageValidator, ctx, dbEx);
 
     public async Task<Result<BusinessPartnerRoleDto>> Handle(
@@ -108,7 +108,7 @@ public sealed class AssignBusinessPartnerRoleHandler
         RoleType.Customer => IdentificationUsageType.Customer,
         RoleType.Supplier => IdentificationUsageType.Supplier,
         RoleType.Employee => IdentificationUsageType.Employee,
-        RoleType.Carrier  => IdentificationUsageType.Carrier,
+        RoleType.Carrier => IdentificationUsageType.Carrier,
         _ => null,
     };
 }

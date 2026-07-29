@@ -1,4 +1,3 @@
-using System.Linq;
 using ERP.Application.Common;
 using ERP.Domain.Access.Entities;
 using ERP.Domain.Kernel.Security;

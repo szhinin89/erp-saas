@@ -1,4 +1,4 @@
-﻿using ERP.Domain.Common;
+using ERP.Domain.Common;
 
 namespace ERP.Domain.Modules.Items.Entities;
 
@@ -27,9 +27,9 @@ public sealed class AttributeGroup : MasterEntity, ITenantScopedEntity
         var group = new AttributeGroup
         {
             TenantId = tenantId,
-            Code         = code.Trim().ToUpperInvariant(),
-            Name         = name.Trim(),
-            SortOrder    = sortOrder,
+            Code = code.Trim().ToUpperInvariant(),
+            Name = name.Trim(),
+            SortOrder = sortOrder,
         };
         group.SetCreated(tenantId);
         return group;
@@ -37,7 +37,7 @@ public sealed class AttributeGroup : MasterEntity, ITenantScopedEntity
 
     public void Update(string name, int sortOrder, Guid updatedBy)
     {
-        Name      = name.Trim();
+        Name = name.Trim();
         SortOrder = sortOrder;
         SetUpdated(updatedBy);
     }

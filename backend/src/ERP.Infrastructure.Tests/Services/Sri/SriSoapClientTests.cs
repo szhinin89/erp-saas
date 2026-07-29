@@ -127,7 +127,7 @@ public sealed class SriSoapClientTests
             </soap:Envelope>
             """;
         var handler = new FlakyThenRespondingHandler(failuresBeforeSuccess: 1, soap);
-        var client  = BuildClient(handler);
+        var client = BuildClient(handler);
 
         var result = await client.SendAsync([1, 2, 3], "https://celcer.sri.gob.ec/fake?wsdl");
 
@@ -140,7 +140,7 @@ public sealed class SriSoapClientTests
     public async Task SendAsync_on_persistent_network_failure_retries_exactly_the_configured_number_of_attempts()
     {
         var handler = new CountingThrowingHandler();
-        var client  = BuildClient(handler);
+        var client = BuildClient(handler);
 
         var result = await client.SendAsync([1, 2, 3], "https://celcer.sri.gob.ec/fake?wsdl");
 

@@ -1,10 +1,10 @@
-using FluentValidation;
-using MediatR;
 using ERP.Application.Common;
 using ERP.Application.Modules.Accounting.DTOs;
 using ERP.Application.Modules.Accounting.Posting;
 using ERP.Domain.Modules.Accounting.Entities;
 using ERP.Domain.Modules.Accounting.Interfaces;
+using FluentValidation;
+using MediatR;
 
 namespace ERP.Application.Modules.Accounting.UseCases.JournalEntries;
 

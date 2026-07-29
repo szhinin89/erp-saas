@@ -1,5 +1,3 @@
-using FluentValidation;
-using MediatR;
 using ERP.Application.Common;
 using ERP.Application.Modules.Caja.DTOs;
 using ERP.Domain.Branches.Interfaces;
@@ -8,6 +6,8 @@ using ERP.Domain.Modules.Caja.Entities;
 using ERP.Domain.Modules.Caja.Interfaces;
 using ERP.Domain.Modules.Company.Interfaces;
 using ERP.Domain.Modules.Inventory.Interfaces;
+using FluentValidation;
+using MediatR;
 
 namespace ERP.Application.Modules.Caja.UseCases;
 

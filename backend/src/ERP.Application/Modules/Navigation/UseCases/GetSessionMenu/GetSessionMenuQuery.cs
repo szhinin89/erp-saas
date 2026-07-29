@@ -1,6 +1,6 @@
-using MediatR;
 using ERP.Application.Common;
 using ERP.Application.Navigation.DTOs;
+using MediatR;
 
 namespace ERP.Application.Navigation.UseCases.GetSessionMenu;
 

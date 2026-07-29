@@ -1,5 +1,4 @@
 using ERP.Domain.Modules.Items.Entities;
-using ERP.Domain.Modules.Items.ValueObjects;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 

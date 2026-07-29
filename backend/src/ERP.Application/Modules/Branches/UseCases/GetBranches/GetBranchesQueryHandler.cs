@@ -1,7 +1,7 @@
-using MediatR;
 using ERP.Application.Common;
 using ERP.Application.Modules.Branches.DTOs;
 using ERP.Domain.Branches.Interfaces;
+using MediatR;
 
 namespace ERP.Application.Modules.Branches.UseCases.GetBranches;
 

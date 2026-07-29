@@ -7,9 +7,9 @@ namespace ERP.Domain.Modules.Pricing.Events;
 public sealed class PriceListItemAssignedEvent : BaseDomainEvent, IAuditEvent
 {
     public Guid AssignmentId { get; init; }
-    public Guid PriceListId  { get; init; }
-    public Guid ItemId       { get; init; }
-    public Guid AssignedBy   { get; init; }
+    public Guid PriceListId { get; init; }
+    public Guid ItemId { get; init; }
+    public Guid AssignedBy { get; init; }
 
     Guid IAuditEvent.EntityId => AssignmentId;
     string IAuditEvent.Action => "Assigned";
@@ -20,9 +20,9 @@ public sealed class PriceListItemAssignedEvent : BaseDomainEvent, IAuditEvent
 public sealed class PriceListItemEnabledEvent : BaseDomainEvent, IAuditEvent
 {
     public Guid AssignmentId { get; init; }
-    public Guid PriceListId  { get; init; }
-    public Guid ItemId       { get; init; }
-    public Guid EnabledBy    { get; init; }
+    public Guid PriceListId { get; init; }
+    public Guid ItemId { get; init; }
+    public Guid EnabledBy { get; init; }
 
     Guid IAuditEvent.EntityId => AssignmentId;
     string IAuditEvent.Action => "Enabled";
@@ -33,9 +33,9 @@ public sealed class PriceListItemEnabledEvent : BaseDomainEvent, IAuditEvent
 public sealed class PriceListItemDisabledEvent : BaseDomainEvent, IAuditEvent
 {
     public Guid AssignmentId { get; init; }
-    public Guid PriceListId  { get; init; }
-    public Guid ItemId       { get; init; }
-    public Guid DisabledBy   { get; init; }
+    public Guid PriceListId { get; init; }
+    public Guid ItemId { get; init; }
+    public Guid DisabledBy { get; init; }
 
     Guid IAuditEvent.EntityId => AssignmentId;
     string IAuditEvent.Action => "Disabled";
