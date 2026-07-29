@@ -69,7 +69,8 @@ public sealed class Branch : MasterEntity, ICompanyOperationalEntity
         string? internalNotes,
         bool isMainBranch,
         Guid createdBy,
-        Guid companyId = default)
+        Guid companyId = default
+    )
     {
         var b = new Branch
         {
@@ -83,11 +84,15 @@ public sealed class Branch : MasterEntity, ICompanyOperationalEntity
             Reference = string.IsNullOrWhiteSpace(reference) ? null : reference.Trim(),
             PostalCode = string.IsNullOrWhiteSpace(postalCode) ? null : postalCode.Trim(),
             Phone = string.IsNullOrWhiteSpace(phone) ? null : phone.Trim(),
-            SecondaryPhone = string.IsNullOrWhiteSpace(secondaryPhone) ? null : secondaryPhone.Trim(),
+            SecondaryPhone = string.IsNullOrWhiteSpace(secondaryPhone)
+                ? null
+                : secondaryPhone.Trim(),
             Email = string.IsNullOrWhiteSpace(email) ? null : email.Trim(),
             Website = string.IsNullOrWhiteSpace(website) ? null : website.Trim(),
             ManagerName = string.IsNullOrWhiteSpace(managerName) ? null : managerName.Trim(),
-            ManagerPosition = string.IsNullOrWhiteSpace(managerPosition) ? null : managerPosition.Trim(),
+            ManagerPosition = string.IsNullOrWhiteSpace(managerPosition)
+                ? null
+                : managerPosition.Trim(),
             ManagerEmail = string.IsNullOrWhiteSpace(managerEmail) ? null : managerEmail.Trim(),
             ManagerPhone = string.IsNullOrWhiteSpace(managerPhone) ? null : managerPhone.Trim(),
             CountryId = string.IsNullOrWhiteSpace(countryId) ? null : countryId.Trim(),
@@ -137,13 +142,37 @@ public sealed class Branch : MasterEntity, ICompanyOperationalEntity
         string? internalNotes,
         bool isMainBranch,
         Guid createdBy,
-        Guid companyId = default)
+        Guid companyId = default
+    )
     {
         var b = Create(
-            tenantId, name, address, code, description, reference, postalCode, phone, secondaryPhone,
-            email, website, managerName, managerPosition, managerEmail, managerPhone, countryId,
-            provinceId, cantonId, parishId, latitude, longitude, openingDate, internalNotes,
-            isMainBranch, createdBy, companyId);
+            tenantId,
+            name,
+            address,
+            code,
+            description,
+            reference,
+            postalCode,
+            phone,
+            secondaryPhone,
+            email,
+            website,
+            managerName,
+            managerPosition,
+            managerEmail,
+            managerPhone,
+            countryId,
+            provinceId,
+            cantonId,
+            parishId,
+            latitude,
+            longitude,
+            openingDate,
+            internalNotes,
+            isMainBranch,
+            createdBy,
+            companyId
+        );
         b.MarkAsSystemSeeded();
         return b;
     }
@@ -171,7 +200,8 @@ public sealed class Branch : MasterEntity, ICompanyOperationalEntity
         DateOnly? openingDate,
         string? internalNotes,
         bool isMainBranch,
-        Guid updatedBy)
+        Guid updatedBy
+    )
     {
         Name = name.Trim();
         Address = address.Trim();
@@ -183,7 +213,9 @@ public sealed class Branch : MasterEntity, ICompanyOperationalEntity
         Email = string.IsNullOrWhiteSpace(email) ? null : email.Trim();
         Website = string.IsNullOrWhiteSpace(website) ? null : website.Trim();
         ManagerName = string.IsNullOrWhiteSpace(managerName) ? null : managerName.Trim();
-        ManagerPosition = string.IsNullOrWhiteSpace(managerPosition) ? null : managerPosition.Trim();
+        ManagerPosition = string.IsNullOrWhiteSpace(managerPosition)
+            ? null
+            : managerPosition.Trim();
         ManagerEmail = string.IsNullOrWhiteSpace(managerEmail) ? null : managerEmail.Trim();
         ManagerPhone = string.IsNullOrWhiteSpace(managerPhone) ? null : managerPhone.Trim();
         CountryId = string.IsNullOrWhiteSpace(countryId) ? null : countryId.Trim();

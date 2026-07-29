@@ -16,13 +16,15 @@ namespace ERP.Infrastructure.Migrations
                 table: "purchase_reception_documents",
                 type: "character varying(49)",
                 maxLength: 49,
-                nullable: true);
+                nullable: true
+            );
 
             migrationBuilder.AddColumn<DateTime>(
                 name: "xml_downloaded_at",
                 table: "purchase_reception_documents",
                 type: "timestamp with time zone",
-                nullable: true);
+                nullable: true
+            );
         }
 
         /// <inheritdoc />
@@ -30,11 +32,13 @@ namespace ERP.Infrastructure.Migrations
         {
             migrationBuilder.DropColumn(
                 name: "authorization_number",
-                table: "purchase_reception_documents");
+                table: "purchase_reception_documents"
+            );
 
             migrationBuilder.DropColumn(
                 name: "xml_downloaded_at",
-                table: "purchase_reception_documents");
+                table: "purchase_reception_documents"
+            );
         }
     }
 }

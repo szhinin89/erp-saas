@@ -9,4 +9,5 @@ namespace ERP.Application.Modules.Purchases.PurchaseReception.UseCases.DownloadP
 /// el documento permanece en su estado anterior (no se pierde progreso ni se corrompe el registro).
 /// </summary>
 public sealed record DownloadPurchaseReceptionXmlCommand(Guid PurchaseReceptionDocumentId)
-    : IRequest<Result<DownloadPurchaseReceptionXmlResultDto>>, IBranchScopedRequest;
+    : IRequest<Result<DownloadPurchaseReceptionXmlResultDto>>,
+        IBranchScopedRequest;

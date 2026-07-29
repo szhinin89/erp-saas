@@ -26,8 +26,8 @@ public sealed record CreateCashRegisterCommand(
     Guid? EmissionPointId = null,
     string? Notes = null,
     Guid? DefaultWarehouseId = null,
-    Guid? DefaultCustomerId = null)
-    : IRequest<Result<CashRegisterDto>>, ICompanyScopedRequest;
+    Guid? DefaultCustomerId = null
+) : IRequest<Result<CashRegisterDto>>, ICompanyScopedRequest;
 
 // ── Validator ──────────────────────────────────────────────────────────
 
@@ -36,20 +36,31 @@ public sealed class CreateCashRegisterValidator : AbstractValidator<CreateCashRe
     public CreateCashRegisterValidator()
     {
         RuleFor(x => x.BranchId).NotEmpty().WithMessage("La sucursal es obligatoria.");
-        RuleFor(x => x.Code).NotEmpty().MaximumLength(CashRegister.CodeMaxLen)
-            .WithMessage($"El código de la caja es obligatorio y no puede exceder {CashRegister.CodeMaxLen} caracteres.");
-        RuleFor(x => x.Name).NotEmpty().MaximumLength(CashRegister.NameMaxLen)
-            .WithMessage($"El nombre de la caja es obligatorio y no puede exceder {CashRegister.NameMaxLen} caracteres.");
-        RuleFor(x => x.EmissionPointId).NotNull()
+        RuleFor(x => x.Code)
+            .NotEmpty()
+            .MaximumLength(CashRegister.CodeMaxLen)
+            .WithMessage(
+                $"El código de la caja es obligatorio y no puede exceder {CashRegister.CodeMaxLen} caracteres."
+            );
+        RuleFor(x => x.Name)
+            .NotEmpty()
+            .MaximumLength(CashRegister.NameMaxLen)
+            .WithMessage(
+                $"El nombre de la caja es obligatorio y no puede exceder {CashRegister.NameMaxLen} caracteres."
+            );
+        RuleFor(x => x.EmissionPointId)
+            .NotNull()
             .WithMessage("El punto de emisión es obligatorio.");
-        RuleFor(x => x.Notes).MaximumLength(CashRegister.NotesMaxLen)
+        RuleFor(x => x.Notes)
+            .MaximumLength(CashRegister.NotesMaxLen)
             .WithMessage($"Las notas no pueden exceder {CashRegister.NotesMaxLen} caracteres.");
     }
 }
 
 // ── Handler ────────────────────────────────────────────────────────────
 
-public sealed class CreateCashRegisterHandler : IRequestHandler<CreateCashRegisterCommand, Result<CashRegisterDto>>
+public sealed class CreateCashRegisterHandler
+    : IRequestHandler<CreateCashRegisterCommand, Result<CashRegisterDto>>
 {
     private readonly ICashRegisterRepository _repo;
     private readonly IEmissionPointRepository _emissionPointRepo;
@@ -66,57 +77,94 @@ public sealed class CreateCashRegisterHandler : IRequestHandler<CreateCashRegist
         IBranchRepository branchRepo,
         IWarehouseRepository warehouseRepo,
         IBusinessPartnerRepository customerRepo,
-        ICurrentTenant t, ICurrentCompany c, ICurrentUser u)
+        ICurrentTenant t,
+        ICurrentCompany c,
+        ICurrentUser u
+    )
     {
         _repo = repo;
         _emissionPointRepo = emissionPointRepo;
         _branchRepo = branchRepo;
         _warehouseRepo = warehouseRepo;
         _customerRepo = customerRepo;
-        _t = t; _c = c; _u = u;
+        _t = t;
+        _c = c;
+        _u = u;
     }
 
-    public async Task<Result<CashRegisterDto>> Handle(CreateCashRegisterCommand cmd, CancellationToken ct)
+    public async Task<Result<CashRegisterDto>> Handle(
+        CreateCashRegisterCommand cmd,
+        CancellationToken ct
+    )
     {
         var tid = _t.TenantId;
         var code = cmd.Code.Trim();
 
         var branch = await _branchRepo.GetByIdAsync(tid, cmd.BranchId, ct);
         if (branch is null || !branch.IsActive)
-            return Result<CashRegisterDto>.ValidationFailure("La sucursal no existe o no está activa.");
+            return Result<CashRegisterDto>.ValidationFailure(
+                "La sucursal no existe o no está activa."
+            );
 
         if (cmd.EmissionPointId.HasValue)
         {
-            var emissionPoint = await _emissionPointRepo.GetByIdAsync(cmd.EmissionPointId.Value, tid, ct);
+            var emissionPoint = await _emissionPointRepo.GetByIdAsync(
+                cmd.EmissionPointId.Value,
+                tid,
+                ct
+            );
             if (emissionPoint is null)
                 return Result<CashRegisterDto>.ValidationFailure("El punto de emisión no existe.");
             if (emissionPoint.Establishment.BranchId != cmd.BranchId)
-                return Result<CashRegisterDto>.ValidationFailure("El punto de emisión no pertenece a la sucursal seleccionada.");
+                return Result<CashRegisterDto>.ValidationFailure(
+                    "El punto de emisión no pertenece a la sucursal seleccionada."
+                );
         }
 
         if (cmd.DefaultWarehouseId.HasValue)
         {
-            var warehouse = await _warehouseRepo.GetByIdAsync(tid, cmd.DefaultWarehouseId.Value, ct);
+            var warehouse = await _warehouseRepo.GetByIdAsync(
+                tid,
+                cmd.DefaultWarehouseId.Value,
+                ct
+            );
             if (warehouse is null)
-                return Result<CashRegisterDto>.ValidationFailure("La bodega por defecto no existe.");
+                return Result<CashRegisterDto>.ValidationFailure(
+                    "La bodega por defecto no existe."
+                );
             if (warehouse.BranchId != cmd.BranchId)
-                return Result<CashRegisterDto>.ValidationFailure("La bodega por defecto no pertenece a la sucursal seleccionada.");
+                return Result<CashRegisterDto>.ValidationFailure(
+                    "La bodega por defecto no pertenece a la sucursal seleccionada."
+                );
         }
 
         if (cmd.DefaultCustomerId.HasValue)
         {
             var customer = await _customerRepo.GetByIdAsync(cmd.DefaultCustomerId.Value, ct);
             if (customer is null)
-                return Result<CashRegisterDto>.ValidationFailure("El cliente por defecto no existe.");
+                return Result<CashRegisterDto>.ValidationFailure(
+                    "El cliente por defecto no existe."
+                );
         }
 
         var exists = await _repo.ExistsByCodeAsync(tid, cmd.BranchId, code, ct: ct);
         if (exists)
-            return Result<CashRegisterDto>.ValidationFailure($"Ya existe una caja con código '{code}' en esta sucursal.");
+            return Result<CashRegisterDto>.ValidationFailure(
+                $"Ya existe una caja con código '{code}' en esta sucursal."
+            );
 
         var register = CashRegister.Create(
-            tid, _c.CompanyId, cmd.BranchId, code, cmd.Name.Trim(), _u.UserId,
-            cmd.EmissionPointId, cmd.Notes, cmd.DefaultWarehouseId, cmd.DefaultCustomerId);
+            tid,
+            _c.CompanyId,
+            cmd.BranchId,
+            code,
+            cmd.Name.Trim(),
+            _u.UserId,
+            cmd.EmissionPointId,
+            cmd.Notes,
+            cmd.DefaultWarehouseId,
+            cmd.DefaultCustomerId
+        );
 
         await _repo.AddAsync(register, ct);
         await _repo.SaveChangesAsync(ct);

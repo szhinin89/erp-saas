@@ -18,9 +18,14 @@ public sealed class ItemCategoryNodeConfiguration : IEntityTypeConfiguration<Ite
         builder.Property(e => e.Path).HasMaxLength(500).IsRequired().HasDefaultValue("/");
         builder.Property(e => e.Level).HasConversion<string>().HasMaxLength(20).IsRequired();
         builder.Property(e => e.SortOrder).HasDefaultValue(0);
-        builder.Property(e => e.IsSystemSeeded).HasColumnName("is_system_seeded").IsRequired().HasDefaultValue(false);
+        builder
+            .Property(e => e.IsSystemSeeded)
+            .HasColumnName("is_system_seeded")
+            .IsRequired()
+            .HasDefaultValue(false);
 
-        builder.HasOne<ItemCategoryNode>()
+        builder
+            .HasOne<ItemCategoryNode>()
             .WithMany()
             .HasForeignKey(e => e.ParentId)
             .OnDelete(DeleteBehavior.Restrict);

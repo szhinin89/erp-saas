@@ -1,6 +1,6 @@
+using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
-using System.Text;
 
 namespace ERP.API.Extensions;
 
@@ -8,20 +8,26 @@ public static class JwtExtensions
 {
     public static IServiceCollection AddJwtAuthentication(
         this IServiceCollection services,
-        IConfiguration configuration)
+        IConfiguration configuration
+    )
     {
-        var secretKey = configuration["Jwt:SecretKey"]
+        var secretKey =
+            configuration["Jwt:SecretKey"]
             ?? throw new InvalidOperationException(
-                "Falta 'Jwt:SecretKey' en la configuración. " +
-                "Usar User Secrets o variable de entorno JWT__SECRETKEY.");
+                "Falta 'Jwt:SecretKey' en la configuración. "
+                    + "Usar User Secrets o variable de entorno JWT__SECRETKEY."
+            );
 
-        var issuer = configuration["Jwt:Issuer"]
+        var issuer =
+            configuration["Jwt:Issuer"]
             ?? throw new InvalidOperationException("Falta 'Jwt:Issuer' en la configuración.");
 
-        var audience = configuration["Jwt:Audience"]
+        var audience =
+            configuration["Jwt:Audience"]
             ?? throw new InvalidOperationException("Falta 'Jwt:Audience' en la configuración.");
 
-        services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+        services
+            .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             .AddJwtBearer(options =>
             {
                 options.TokenValidationParameters = new TokenValidationParameters
@@ -32,10 +38,8 @@ public static class JwtExtensions
                     ValidateIssuerSigningKey = true,
                     ValidIssuer = issuer,
                     ValidAudience = audience,
-                    IssuerSigningKey = new SymmetricSecurityKey(
-                        Encoding.UTF8.GetBytes(secretKey))
+                    IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey)),
                 };
-
             });
 
         return services;

@@ -15,7 +15,8 @@ public record WarehouseListItemDto(
     string? Longitude,
     decimal? Capacity,
     decimal? DailyDispatchGoal,
-    bool IsActive);
+    bool IsActive
+);
 
 /// <summary>DTO de detalle — contrato que consume el frontend (warehouseService.ts: WarehouseDetailDto).</summary>
 public record WarehouseDetailDto(
@@ -36,4 +37,5 @@ public record WarehouseDetailDto(
     DateTime CreatedAt,
     DateTime? UpdatedAt,
     Guid CreatedBy,
-    Guid? UpdatedBy);
+    Guid? UpdatedBy
+);

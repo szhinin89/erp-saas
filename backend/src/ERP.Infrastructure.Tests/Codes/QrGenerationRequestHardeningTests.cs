@@ -42,7 +42,8 @@ public sealed class QrGenerationRequestHardeningTests
     [Fact]
     public void Constructor_throws_when_pixels_per_module_exceeds_the_maximum()
     {
-        var act = () => new QrGenerationRequest("content", QrGenerationRequest.MaxPixelsPerModule + 1);
+        var act = () =>
+            new QrGenerationRequest("content", QrGenerationRequest.MaxPixelsPerModule + 1);
 
         act.Should().Throw<ArgumentException>().WithParameterName("pixelsPerModule");
     }

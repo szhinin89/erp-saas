@@ -10,6 +10,6 @@ namespace ERP.Application.Access.UseCases.RevokeCompanyUserMembershipAdmin;
 /// autenticado en <see cref="RevokeCompanyUserMembershipAdminHandler"/>. <see cref="IRequiresCompanyContext"/>
 /// exige empresa operativa activa vía CompanyScopeBehavior antes de ejecutar el handler.
 /// </summary>
-public sealed record RevokeCompanyUserMembershipAdminCommand(
-    string Username
-) : IRequest<Result<object>>, IRequiresCompanyContext;
+public sealed record RevokeCompanyUserMembershipAdminCommand(string Username)
+    : IRequest<Result<object>>,
+        IRequiresCompanyContext;

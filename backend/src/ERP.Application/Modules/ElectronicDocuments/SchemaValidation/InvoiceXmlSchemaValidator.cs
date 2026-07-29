@@ -1,7 +1,7 @@
-using ERP.Application.Modules.ElectronicDocuments.DTOs;
-using ERP.Domain.Modules.ElectronicDocuments.Enums;
 using System.Xml;
 using System.Xml.Schema;
+using ERP.Application.Modules.ElectronicDocuments.DTOs;
+using ERP.Domain.Modules.ElectronicDocuments.Enums;
 
 namespace ERP.Application.Modules.ElectronicDocuments.SchemaValidation;
 
@@ -31,21 +31,28 @@ public sealed class InvoiceXmlSchemaValidator : IElectronicDocumentSchemaValidat
     public ElectronicDocumentType DocumentType => ElectronicDocumentType.Invoice;
 
     public async Task<ElectronicDocumentSchemaValidationResult> ValidateAsync(
-        ElectronicDocumentXml xml, CancellationToken ct = default)
+        ElectronicDocumentXml xml,
+        CancellationToken ct = default
+    )
     {
-        var schemaSet = await _schemaProvider.GetSchemaSetAsync(DocumentType, SchemaVersionValue, ct);
+        var schemaSet = await _schemaProvider.GetSchemaSetAsync(
+            DocumentType,
+            SchemaVersionValue,
+            ct
+        );
         if (schemaSet is null)
         {
             return new ElectronicDocumentSchemaValidationResult(
                 IsValid: false,
                 Errors:
                 [
-                    $"El esquema XSD oficial del SRI para Factura {SchemaVersionValue} todavía no está " +
-                    "incorporado al proyecto. El XML no pudo validarse — la firma electrónica no debe ejecutarse.",
+                    $"El esquema XSD oficial del SRI para Factura {SchemaVersionValue} todavía no está "
+                        + "incorporado al proyecto. El XML no pudo validarse — la firma electrónica no debe ejecutarse.",
                 ],
                 Warnings: [],
                 SchemaVersion: SchemaVersionValue,
-                DocumentType: DocumentType);
+                DocumentType: DocumentType
+            );
         }
 
         var errors = new List<string>();
@@ -81,6 +88,7 @@ public sealed class InvoiceXmlSchemaValidator : IElectronicDocumentSchemaValidat
             Errors: errors,
             Warnings: warnings,
             SchemaVersion: SchemaVersionValue,
-            DocumentType: DocumentType);
+            DocumentType: DocumentType
+        );
     }
 }

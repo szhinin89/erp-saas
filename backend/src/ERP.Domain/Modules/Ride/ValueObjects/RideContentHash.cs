@@ -16,12 +16,18 @@ public sealed record RideContentHash
     public static RideContentHash Create(string value)
     {
         if (string.IsNullOrWhiteSpace(value))
-            throw new ArgumentException("El hash del XML autorizado es obligatorio.", nameof(value));
+            throw new ArgumentException(
+                "El hash del XML autorizado es obligatorio.",
+                nameof(value)
+            );
 
         var trimmed = value.Trim().ToLowerInvariant();
 
         if (trimmed.Length != Length || !trimmed.All(Uri.IsHexDigit))
-            throw new ArgumentException($"El hash del XML autorizado debe tener exactamente {Length} caracteres hexadecimales.", nameof(value));
+            throw new ArgumentException(
+                $"El hash del XML autorizado debe tener exactamente {Length} caracteres hexadecimales.",
+                nameof(value)
+            );
 
         return new RideContentHash(trimmed);
     }

@@ -2,7 +2,7 @@ namespace ERP.Infrastructure.Persistence.Configurations;
 
 /// <summary>
 /// Convención de organización de configuraciones de EF Core por módulo.
-/// 
+///
 /// Estructura esperada:
 /// ```
 /// Persistence/
@@ -25,7 +25,7 @@ namespace ERP.Infrastructure.Persistence.Configurations;
 ///         ├── BranchConfiguration.cs
 ///         └── ...
 /// ```
-/// 
+///
 /// Normas:
 /// 1. Cada entidad tiene su propio archivo EntityConfiguration.cs
 /// 2. Implementa IEntityTypeConfiguration<TEntity>

@@ -8,7 +8,6 @@ namespace ERP.Application.Modules.Company.UseCases.GetEmissionPoints;
 /// Devuelve todos los puntos de emisión de la empresa activa, con información del
 /// establecimiento para mostrar en la pantalla independiente /settings/emission-points.
 /// </summary>
-public record GetAllEmissionPointsQuery(
-    bool? ActiveFilter = null,
-    string? Search = null
-) : IRequest<Result<IReadOnlyList<EmissionPointListItemDto>>>, ICompanyScopedRequest;
+public record GetAllEmissionPointsQuery(bool? ActiveFilter = null, string? Search = null)
+    : IRequest<Result<IReadOnlyList<EmissionPointListItemDto>>>,
+        ICompanyScopedRequest;

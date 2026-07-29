@@ -44,14 +44,54 @@ public sealed class ExpireUserSessionsIntegrationTests : IAsyncLifetime
 
         var createdBy = Guid.NewGuid();
         var tenant = Tenant.Create("Test Tenant", $"test-{Guid.NewGuid():N}"[..16], createdBy);
-        var companyOld = Company.CreateManaged(tenant.Id, "1790012345001", "Empresa Vieja S.A.", createdBy: createdBy);
-        var companyRecent = Company.CreateManaged(tenant.Id, "1790012345002", "Empresa Reciente S.A.", createdBy: createdBy);
-        var user = IdentityUser.Create($"ana{Guid.NewGuid():N}", "Ana", "Perez", $"ana{Guid.NewGuid():N}@test.com", "hash", createdBy);
+        var companyOld = Company.CreateManaged(
+            tenant.Id,
+            "1790012345001",
+            "Empresa Vieja S.A.",
+            createdBy: createdBy
+        );
+        var companyRecent = Company.CreateManaged(
+            tenant.Id,
+            "1790012345002",
+            "Empresa Reciente S.A.",
+            createdBy: createdBy
+        );
+        var user = IdentityUser.Create(
+            $"ana{Guid.NewGuid():N}",
+            "Ana",
+            "Perez",
+            $"ana{Guid.NewGuid():N}@test.com",
+            "hash",
+            createdBy
+        );
         var branch = Branch.Create(
-            tenant.Id, "Matriz", "Av. Principal 123", "001",
-            null, null, null, null, null, null, null, null, null, null, null,
-            null, null, null, null, null, null, null, null, true, createdBy,
-            companyId: companyOld.Id);
+            tenant.Id,
+            "Matriz",
+            "Av. Principal 123",
+            "001",
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            true,
+            createdBy,
+            companyId: companyOld.Id
+        );
 
         db.Tenants.Add(tenant);
         db.Companies.Add(companyOld);
@@ -75,7 +115,12 @@ public sealed class ExpireUserSessionsIntegrationTests : IAsyncLifetime
             .UseNpgsql(_postgres.GetConnectionString())
             .Options;
 
-        return new ErpDbContext(options, new FixedCurrentTenant(_tenantId), new NoOpPublisher(), new FixedCurrentCompany(_companyOldId));
+        return new ErpDbContext(
+            options,
+            new FixedCurrentTenant(_tenantId),
+            new NoOpPublisher(),
+            new FixedCurrentCompany(_companyOldId)
+        );
     }
 
     [Fact]
@@ -84,8 +129,20 @@ public sealed class ExpireUserSessionsIntegrationTests : IAsyncLifetime
         await using var seedDb = CreateContext();
         var repo = new UserSessionRepository(seedDb);
 
-        var oldSession = UserSession.Create(_tenantId, _companyOldId, _identityUserId, _branchId, "device-old");
-        var recentSession = UserSession.Create(_tenantId, _companyRecentId, _identityUserId, _branchId, "device-recent");
+        var oldSession = UserSession.Create(
+            _tenantId,
+            _companyOldId,
+            _identityUserId,
+            _branchId,
+            "device-old"
+        );
+        var recentSession = UserSession.Create(
+            _tenantId,
+            _companyRecentId,
+            _identityUserId,
+            _branchId,
+            "device-recent"
+        );
         await repo.AddAsync(oldSession, CancellationToken.None);
         await repo.AddAsync(recentSession, CancellationToken.None);
         await repo.SaveChangesAsync(CancellationToken.None);
@@ -95,7 +152,8 @@ public sealed class ExpireUserSessionsIntegrationTests : IAsyncLifetime
         // en el test.
         var backdated = DateTime.UtcNow.AddDays(-45);
         await seedDb.Database.ExecuteSqlInterpolatedAsync(
-            $"UPDATE user_sessions SET started_at = {backdated} WHERE id = {oldSession.Id}");
+            $"UPDATE user_sessions SET started_at = {backdated} WHERE id = {oldSession.Id}"
+        );
 
         await using var queryDb = CreateContext();
         var queryRepo = new UserSessionRepository(queryDb);
@@ -113,14 +171,21 @@ public sealed class ExpireUserSessionsIntegrationTests : IAsyncLifetime
         await using var seedDb = CreateContext();
         var repo = new UserSessionRepository(seedDb);
 
-        var closedSession = UserSession.Create(_tenantId, _companyOldId, _identityUserId, _branchId, "device-closed");
+        var closedSession = UserSession.Create(
+            _tenantId,
+            _companyOldId,
+            _identityUserId,
+            _branchId,
+            "device-closed"
+        );
         closedSession.CloseManually(_identityUserId);
         await repo.AddAsync(closedSession, CancellationToken.None);
         await repo.SaveChangesAsync(CancellationToken.None);
 
         var backdated = DateTime.UtcNow.AddDays(-45);
         await seedDb.Database.ExecuteSqlInterpolatedAsync(
-            $"UPDATE user_sessions SET started_at = {backdated} WHERE id = {closedSession.Id}");
+            $"UPDATE user_sessions SET started_at = {backdated} WHERE id = {closedSession.Id}"
+        );
 
         await using var queryDb = CreateContext();
         var queryRepo = new UserSessionRepository(queryDb);
@@ -146,11 +211,13 @@ public sealed class ExpireUserSessionsIntegrationTests : IAsyncLifetime
 
     private sealed class NoOpPublisher : IPublisher
     {
-        public Task Publish(object notification, CancellationToken cancellationToken = default)
-            => Task.CompletedTask;
+        public Task Publish(object notification, CancellationToken cancellationToken = default) =>
+            Task.CompletedTask;
 
-        public Task Publish<TNotification>(TNotification notification, CancellationToken cancellationToken = default)
-            where TNotification : INotification
-            => Task.CompletedTask;
+        public Task Publish<TNotification>(
+            TNotification notification,
+            CancellationToken cancellationToken = default
+        )
+            where TNotification : INotification => Task.CompletedTask;
     }
 }

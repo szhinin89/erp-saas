@@ -26,7 +26,10 @@ public sealed partial class QrCodeGenerator : IQrCodeGenerator
         try
         {
             using var qrCodeGenerator = new QRCodeGenerator();
-            using var qrCodeData = qrCodeGenerator.CreateQrCode(request.Content, QRCodeGenerator.ECCLevel.M);
+            using var qrCodeData = qrCodeGenerator.CreateQrCode(
+                request.Content,
+                QRCodeGenerator.ECCLevel.M
+            );
             using var pngQrCode = new PngByteQRCode(qrCodeData);
 
             var pngBytes = pngQrCode.GetGraphic(request.PixelsPerModule);
@@ -43,7 +46,9 @@ public sealed partial class QrCodeGenerator : IQrCodeGenerator
         }
     }
 
-    [LoggerMessage(Level = LogLevel.Error,
-        Message = "Fallo inesperado generando un código QR (longitud de contenido: {ContentLength}, píxeles por módulo: {PixelsPerModule}).")]
+    [LoggerMessage(
+        Level = LogLevel.Error,
+        Message = "Fallo inesperado generando un código QR (longitud de contenido: {ContentLength}, píxeles por módulo: {PixelsPerModule})."
+    )]
     private partial void LogGenerationFailed(Exception ex, int contentLength, int pixelsPerModule);
 }

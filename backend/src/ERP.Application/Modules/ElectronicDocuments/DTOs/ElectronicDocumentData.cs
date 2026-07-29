@@ -28,7 +28,8 @@ public sealed record ElectronicDocumentData(
     IReadOnlyList<ElectronicDocumentTaxSummary> TaxSummary,
     ElectronicDocumentTotals? Totals,
     IReadOnlyList<ElectronicDocumentPayment> Payments,
-    IReadOnlyList<ElectronicDocumentAdditionalField> AdditionalInfo);
+    IReadOnlyList<ElectronicDocumentAdditionalField> AdditionalInfo
+);
 
 /// <summary>Establecimiento, punto de emisión, secuencial y ambiente — contexto de emisión SRI.</summary>
 public sealed record ElectronicDocumentEmissionContext(
@@ -42,7 +43,8 @@ public sealed record ElectronicDocumentEmissionContext(
     string EstablishmentAddress,
     string EmissionPoint,
     string Sequential,
-    DateTime IssueDate);
+    DateTime IssueDate
+);
 
 /// <summary>Empresa emisora del comprobante.</summary>
 public sealed record ElectronicDocumentIssuerData(
@@ -55,7 +57,8 @@ public sealed record ElectronicDocumentIssuerData(
     /// contribuyentes de régimen general o especial (no aplica). El XmlBuilder solo decide si
     /// incluye el elemento; nunca traduce códigos de régimen.</summary>
     string? TaxRegime,
-    bool IsAccountingRequired);
+    bool IsAccountingRequired
+);
 
 /// <summary>Cliente/receptor del comprobante — identificación y dirección.</summary>
 public sealed record ElectronicDocumentCounterpartyData(
@@ -63,7 +66,8 @@ public sealed record ElectronicDocumentCounterpartyData(
     string IdentificationNumber,
     string LegalName,
     string? Address,
-    string? Email);
+    string? Email
+);
 
 /// <summary>Línea de detalle del comprobante con sus impuestos asociados.</summary>
 public sealed record ElectronicDocumentDetailLine(
@@ -73,37 +77,40 @@ public sealed record ElectronicDocumentDetailLine(
     decimal UnitPrice,
     decimal Discount,
     decimal Subtotal,
-    IReadOnlyList<ElectronicDocumentDetailTax> Taxes);
+    IReadOnlyList<ElectronicDocumentDetailTax> Taxes
+);
 
 public sealed record ElectronicDocumentDetailTax(
     string TaxCode,
     string TaxPercentageCode,
     decimal TaxableBase,
     decimal TaxRate,
-    decimal TaxAmount);
+    decimal TaxAmount
+);
 
 /// <summary>Resumen de impuestos agregado a nivel de documento (no por línea).</summary>
 public sealed record ElectronicDocumentTaxSummary(
     string TaxCode,
     string TaxPercentageCode,
     decimal TaxableBase,
-    decimal TaxAmount);
+    decimal TaxAmount
+);
 
 public sealed record ElectronicDocumentTotals(
     decimal Subtotal,
     decimal TotalDiscount,
     decimal TotalTax,
     decimal GrandTotal,
-    string CurrencyCode);
+    string CurrencyCode
+);
 
 /// <summary>Forma de pago SRI — un documento puede declarar más de una.</summary>
 public sealed record ElectronicDocumentPayment(
     string PaymentMethodCode,
     decimal Amount,
     int? Term,
-    string? TimeUnit);
+    string? TimeUnit
+);
 
 /// <summary>Campo adicional libre (información adicional del comprobante SRI).</summary>
-public sealed record ElectronicDocumentAdditionalField(
-    string Name,
-    string Value);
+public sealed record ElectronicDocumentAdditionalField(string Name, string Value);

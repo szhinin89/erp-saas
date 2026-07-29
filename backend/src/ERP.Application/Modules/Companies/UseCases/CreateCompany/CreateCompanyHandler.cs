@@ -5,7 +5,8 @@ using MediatR;
 
 namespace ERP.Application.Modules.Companies.UseCases.CreateCompany;
 
-public sealed class CreateCompanyHandler : IRequestHandler<CreateCompanyCommand, Result<CompanyDetailDto>>
+public sealed class CreateCompanyHandler
+    : IRequestHandler<CreateCompanyCommand, Result<CompanyDetailDto>>
 {
     private readonly ICompanyAccessGuard _accessGuard;
     private readonly ICompanyProvisioningService _provisioning;
@@ -14,14 +15,18 @@ public sealed class CreateCompanyHandler : IRequestHandler<CreateCompanyCommand,
     public CreateCompanyHandler(
         ICompanyAccessGuard accessGuard,
         ICompanyProvisioningService provisioning,
-        ICurrentUser currentUser)
+        ICurrentUser currentUser
+    )
     {
         _accessGuard = accessGuard;
         _provisioning = provisioning;
         _currentUser = currentUser;
     }
 
-    public async Task<Result<CompanyDetailDto>> Handle(CreateCompanyCommand command, CancellationToken cancellationToken)
+    public async Task<Result<CompanyDetailDto>> Handle(
+        CreateCompanyCommand command,
+        CancellationToken cancellationToken
+    )
     {
         var subResult = await _accessGuard.RequireActiveTenantAsync(cancellationToken);
         if (!subResult.IsSuccess)
@@ -44,7 +49,8 @@ public sealed class CreateCompanyHandler : IRequestHandler<CreateCompanyCommand,
                 command.CurrencyCode,
                 command.BrandingJson,
                 command.Website,
-                cancellationToken);
+                cancellationToken
+            );
 
             return Result<CompanyDetailDto>.Success(CompanyDetailDto.FromEntity(company));
         }

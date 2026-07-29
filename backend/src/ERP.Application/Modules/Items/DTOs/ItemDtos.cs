@@ -67,6 +67,7 @@ public record ItemVariantDto(
 );
 
 public record VariantAttributeDto(Guid AttributeDefinitionId, string Value);
+
 public record VariantBarcodeDto(Guid Id, string Code, string BarcodeType, bool IsPrimary);
 
 public record ItemImageDto(

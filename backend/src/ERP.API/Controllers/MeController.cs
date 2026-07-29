@@ -26,7 +26,10 @@ public sealed class MeController : ControllerBase
     /// </summary>
     [HttpGet("menu")]
     [Authorize(Policy = "Session")]
-    [ProducesResponseType(typeof(ApiResponse<IReadOnlyList<NavMenuGroupDto>>), StatusCodes.Status200OK)]
+    [ProducesResponseType(
+        typeof(ApiResponse<IReadOnlyList<NavMenuGroupDto>>),
+        StatusCodes.Status200OK
+    )]
     public async Task<IActionResult> GetMenu(CancellationToken cancellationToken)
     {
         var result = await _mediator.Send(new GetSessionMenuQuery(), cancellationToken);

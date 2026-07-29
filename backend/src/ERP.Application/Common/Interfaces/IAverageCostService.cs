@@ -1,4 +1,4 @@
-﻿namespace ERP.Application.Common.Interfaces;
+namespace ERP.Application.Common.Interfaces;
 
 /// <summary>
 /// Proporciona el costo promedio ponderado actual de un producto en una Warehouse.
@@ -16,5 +16,6 @@ public interface IAverageCostService
         Guid tenantId,
         Guid productId,
         Guid warehouseId,
-        CancellationToken cancellationToken = default);
+        CancellationToken cancellationToken = default
+    );
 }

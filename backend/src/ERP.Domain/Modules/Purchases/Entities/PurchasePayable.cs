@@ -3,7 +3,10 @@ using static ERP.Domain.Common.FiscalPrecision;
 
 namespace ERP.Domain.Modules.Purchases.Entities;
 
-public sealed class PurchasePayable : AuditableEntity, ITenantScopedEntity, ICompanyOperationalEntity
+public sealed class PurchasePayable
+    : AuditableEntity,
+        ITenantScopedEntity,
+        ICompanyOperationalEntity
 {
     public Guid CompanyId { get; private set; }
     public Guid PurchaseId { get; private set; }
@@ -20,11 +23,19 @@ public sealed class PurchasePayable : AuditableEntity, ITenantScopedEntity, ICom
     private PurchasePayable() { }
 
     public static PurchasePayable Create(
-        Guid tenantId, Guid companyId, Guid purchaseId, Guid supplierId,
-        decimal totalAmount, Guid createdBy)
+        Guid tenantId,
+        Guid companyId,
+        Guid purchaseId,
+        Guid supplierId,
+        decimal totalAmount,
+        Guid createdBy
+    )
     {
         if (totalAmount <= 0)
-            throw new ArgumentException("El monto total debe ser mayor a cero.", nameof(totalAmount));
+            throw new ArgumentException(
+                "El monto total debe ser mayor a cero.",
+                nameof(totalAmount)
+            );
 
         var p = new PurchasePayable
         {
@@ -43,14 +54,17 @@ public sealed class PurchasePayable : AuditableEntity, ITenantScopedEntity, ICom
 
     public void AddInstallment(int number, DateOnly dueDate, decimal amount)
     {
-        if (amount <= 0) throw new ArgumentException("El monto de la cuota debe ser mayor a cero.");
+        if (amount <= 0)
+            throw new ArgumentException("El monto de la cuota debe ser mayor a cero.");
         _installments.Add(PurchasePayableInstallment.Create(Id, TenantId, number, dueDate, amount));
     }
 
     public void CancelPayable()
     {
         if (PaidAmount > 0)
-            throw new InvalidOperationException("No se puede anular una cuenta por pagar con pagos registrados.");
+            throw new InvalidOperationException(
+                "No se puede anular una cuenta por pagar con pagos registrados."
+            );
         Status = "cancelled";
         TotalRetained = 0;
         _installments.Clear();
@@ -68,9 +82,13 @@ public sealed class PurchasePayable : AuditableEntity, ITenantScopedEntity, ICom
         if (amount <= 0)
             throw new ArgumentException("El monto del pago debe ser mayor a cero.", nameof(amount));
         if (Status == "cancelled")
-            throw new InvalidOperationException("No se puede registrar un pago sobre una cuenta por pagar anulada.");
+            throw new InvalidOperationException(
+                "No se puede registrar un pago sobre una cuenta por pagar anulada."
+            );
         if (amount > BalanceDue)
-            throw new InvalidOperationException("El monto del pago excede el saldo pendiente de la cuenta por pagar.");
+            throw new InvalidOperationException(
+                "El monto del pago excede el saldo pendiente de la cuenta por pagar."
+            );
 
         PaidAmount += amount;
         SetUpdated(updatedBy);
@@ -85,9 +103,14 @@ public sealed class PurchasePayable : AuditableEntity, ITenantScopedEntity, ICom
     public void ReversePayment(decimal amount, Guid updatedBy)
     {
         if (amount <= 0)
-            throw new ArgumentException("El monto a reversar debe ser mayor a cero.", nameof(amount));
+            throw new ArgumentException(
+                "El monto a reversar debe ser mayor a cero.",
+                nameof(amount)
+            );
         if (amount > PaidAmount)
-            throw new InvalidOperationException("El monto a reversar excede el monto pagado registrado en la cuenta por pagar.");
+            throw new InvalidOperationException(
+                "El monto a reversar excede el monto pagado registrado en la cuenta por pagar."
+            );
 
         PaidAmount -= amount;
         SetUpdated(updatedBy);
@@ -98,12 +121,16 @@ public sealed class PurchasePayable : AuditableEntity, ITenantScopedEntity, ICom
     /// <see cref="PurchaseInvoice.PaymentSchedules"/> — misma fuente que ve y personaliza el
     /// usuario al confirmar, para que la CxP nunca diverja del cronograma mostrado.
     /// </summary>
-    public void GenerateInstallments(IReadOnlyList<PurchasePaymentSchedule> schedule)
-        => RebuildInstallments(schedule);
+    public void GenerateInstallments(IReadOnlyList<PurchasePaymentSchedule> schedule) =>
+        RebuildInstallments(schedule);
 
-    public void ApplyRetention(decimal retainedAmount, IReadOnlyList<PurchasePaymentSchedule> schedule)
+    public void ApplyRetention(
+        decimal retainedAmount,
+        IReadOnlyList<PurchasePaymentSchedule> schedule
+    )
     {
-        if (retainedAmount < 0) throw new ArgumentException("El monto retenido no puede ser negativo.");
+        if (retainedAmount < 0)
+            throw new ArgumentException("El monto retenido no puede ser negativo.");
         TotalRetained = retainedAmount;
         RebuildInstallments(schedule);
     }
@@ -133,10 +160,19 @@ public sealed class PurchasePayable : AuditableEntity, ITenantScopedEntity, ICom
         for (var i = 0; i < ordered.Count; i++)
         {
             var s = ordered[i];
-            var amount = i == ordered.Count - 1
-                ? netAmount - allocated
-                : Math.Round(netAmount * s.Amount / scheduleTotal, TaxAmount);
-            _installments.Add(PurchasePayableInstallment.Create(Id, TenantId, s.InstallmentNumber, s.DueDate, amount));
+            var amount =
+                i == ordered.Count - 1
+                    ? netAmount - allocated
+                    : Math.Round(netAmount * s.Amount / scheduleTotal, TaxAmount);
+            _installments.Add(
+                PurchasePayableInstallment.Create(
+                    Id,
+                    TenantId,
+                    s.InstallmentNumber,
+                    s.DueDate,
+                    amount
+                )
+            );
             allocated += amount;
         }
     }

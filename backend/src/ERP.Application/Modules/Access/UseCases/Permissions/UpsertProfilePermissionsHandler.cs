@@ -21,7 +21,8 @@ public class UpsertProfilePermissionsHandler
         ICurrentTenant currentTenant,
         ICurrentUser currentUser,
         IPermissionsCacheInvalidator permissionsCache,
-        INavigationBuilder navigationBuilder)
+        INavigationBuilder navigationBuilder
+    )
     {
         _repo = repo;
         _currentTenant = currentTenant;
@@ -31,11 +32,14 @@ public class UpsertProfilePermissionsHandler
     }
 
     public Task<Result<PermissionUpsertResultDto>> HandleAsync(
-        UpsertProfilePermissionsCommand command, CancellationToken cancellationToken = default)
-        => Handle(command, cancellationToken);
+        UpsertProfilePermissionsCommand command,
+        CancellationToken cancellationToken = default
+    ) => Handle(command, cancellationToken);
 
     public async Task<Result<PermissionUpsertResultDto>> Handle(
-        UpsertProfilePermissionsCommand command, CancellationToken cancellationToken)
+        UpsertProfilePermissionsCommand command,
+        CancellationToken cancellationToken
+    )
     {
         if (!(_currentTenant.TenantId != Guid.Empty) || !_currentUser.IsAuthenticated)
             return Result<PermissionUpsertResultDto>.Failure("No autenticado.");
@@ -43,7 +47,11 @@ public class UpsertProfilePermissionsHandler
         if (command.Items is null || command.Items.Count == 0)
             return Result<PermissionUpsertResultDto>.Failure("Debe enviar al menos 1 permiso.");
 
-        var profile = await _repo.GetProfileByIdAsync(_currentTenant.TenantId, command.ProfileId, cancellationToken);
+        var profile = await _repo.GetProfileByIdAsync(
+            _currentTenant.TenantId,
+            command.ProfileId,
+            cancellationToken
+        );
         if (profile is null)
             return Result<PermissionUpsertResultDto>.Failure("Perfil no existe.");
 
@@ -55,7 +63,12 @@ public class UpsertProfilePermissionsHandler
         foreach (var item in command.Items.Where(i => !string.IsNullOrWhiteSpace(i.PermissionKey)))
         {
             var key = item.PermissionKey.Trim();
-            var existing = await _repo.GetProfilePermissionAsync(tenantId, command.ProfileId, key, cancellationToken);
+            var existing = await _repo.GetProfilePermissionAsync(
+                tenantId,
+                command.ProfileId,
+                key,
+                cancellationToken
+            );
 
             if (existing is null)
             {
@@ -64,7 +77,8 @@ public class UpsertProfilePermissionsHandler
                     profileId: command.ProfileId,
                     permissionKey: key,
                     isAllowed: item.IsAllowed,
-                    createdBy: actorId);
+                    createdBy: actorId
+                );
                 await _repo.AddProfilePermissionAsync(created, cancellationToken);
             }
             else
@@ -78,24 +92,29 @@ public class UpsertProfilePermissionsHandler
         await _repo.SaveChangesAsync(cancellationToken);
 
         var memberships = await _repo.GetCompanyUserMembershipsByTenantAsync(
-            tenantId, onlyActive: true, cancellationToken);
+            tenantId,
+            onlyActive: true,
+            cancellationToken
+        );
 
-        var profileMemberships = memberships
-            .Where(m => m.ProfileId == command.ProfileId)
-            .ToList();
+        var profileMemberships = memberships.Where(m => m.ProfileId == command.ProfileId).ToList();
 
-        foreach (var companyId in profileMemberships
-            .Select(m => m.CompanyId)
-            .Distinct())
+        foreach (var companyId in profileMemberships.Select(m => m.CompanyId).Distinct())
         {
             await _permissionsCache.BumpCompanyVersionAsync(companyId, cancellationToken);
         }
 
         foreach (var membership in profileMemberships)
         {
-            _navigationBuilder.InvalidateCache(tenantId, membership.CompanyId, membership.IdentityUserId);
+            _navigationBuilder.InvalidateCache(
+                tenantId,
+                membership.CompanyId,
+                membership.IdentityUserId
+            );
         }
 
-        return Result<PermissionUpsertResultDto>.Success(new PermissionUpsertResultDto(saved, rejected));
+        return Result<PermissionUpsertResultDto>.Success(
+            new PermissionUpsertResultDto(saved, rejected)
+        );
     }
 }

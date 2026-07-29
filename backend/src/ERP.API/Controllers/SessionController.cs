@@ -36,9 +36,15 @@ public sealed class SessionController : ControllerBase
     [HttpPost("switch-branch")]
     [Authorize(Policy = "Session")]
     [ProducesResponseType(typeof(ApiResponse<SessionBranchDto?>), StatusCodes.Status200OK)]
-    public async Task<IActionResult> SwitchBranch([FromBody] SwitchBranchRequest request, CancellationToken cancellationToken)
+    public async Task<IActionResult> SwitchBranch(
+        [FromBody] SwitchBranchRequest request,
+        CancellationToken cancellationToken
+    )
     {
-        var result = await _mediator.Send(new SwitchBranchCommand(request.BranchId), cancellationToken);
+        var result = await _mediator.Send(
+            new SwitchBranchCommand(request.BranchId),
+            cancellationToken
+        );
         return this.ToOkOrBadRequest(result);
     }
 

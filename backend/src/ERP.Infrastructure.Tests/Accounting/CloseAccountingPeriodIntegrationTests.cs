@@ -44,13 +44,34 @@ public sealed class CloseAccountingPeriodIntegrationTests : IAsyncLifetime
 
         _createdBy = Guid.NewGuid();
         var tenant = Tenant.Create("Test Tenant", $"test-{Guid.NewGuid():N}"[..16], _createdBy);
-        var company = Company.CreateManaged(tenant.Id, "1790012345001", "Test S.A.", createdBy: _createdBy);
+        var company = Company.CreateManaged(
+            tenant.Id,
+            "1790012345001",
+            "Test S.A.",
+            createdBy: _createdBy
+        );
         var debitAccount = Account.Create(
-            tenant.Id, company.Id, ERP.Domain.Modules.Accounting.ValueObjects.AccountCode.Create("1.1.01"), "Caja", null,
-            AccountType.Asset, AccountNature.Debit, allowsPosting: true, createdBy: _createdBy);
+            tenant.Id,
+            company.Id,
+            ERP.Domain.Modules.Accounting.ValueObjects.AccountCode.Create("1.1.01"),
+            "Caja",
+            null,
+            AccountType.Asset,
+            AccountNature.Debit,
+            allowsPosting: true,
+            createdBy: _createdBy
+        );
         var creditAccount = Account.Create(
-            tenant.Id, company.Id, ERP.Domain.Modules.Accounting.ValueObjects.AccountCode.Create("4.1.01"), "Ventas", null,
-            AccountType.Income, AccountNature.Credit, allowsPosting: true, createdBy: _createdBy);
+            tenant.Id,
+            company.Id,
+            ERP.Domain.Modules.Accounting.ValueObjects.AccountCode.Create("4.1.01"),
+            "Ventas",
+            null,
+            AccountType.Income,
+            AccountNature.Credit,
+            allowsPosting: true,
+            createdBy: _createdBy
+        );
 
         db.Tenants.Add(tenant);
         db.Companies.Add(company);
@@ -71,14 +92,26 @@ public sealed class CloseAccountingPeriodIntegrationTests : IAsyncLifetime
             .UseNpgsql(_postgres.GetConnectionString())
             .Options;
 
-        return new ErpDbContext(options, new FixedCurrentTenant(_tenantId), new NoOpPublisher(), new FixedCurrentCompany(_companyId));
+        return new ErpDbContext(
+            options,
+            new FixedCurrentTenant(_tenantId),
+            new NoOpPublisher(),
+            new FixedCurrentCompany(_companyId)
+        );
     }
 
     private async Task<AccountingPeriod> SeedPeriodAsync()
     {
         await using var db = CreateContext();
         var period = AccountingPeriod.Create(
-            _tenantId, _companyId, 2026, 7, new DateOnly(2026, 7, 1), new DateOnly(2026, 7, 31), _createdBy);
+            _tenantId,
+            _companyId,
+            2026,
+            7,
+            new DateOnly(2026, 7, 1),
+            new DateOnly(2026, 7, 31),
+            _createdBy
+        );
         db.AccountingPeriods.Add(period);
         await db.SaveChangesAsync();
         return period;
@@ -87,12 +120,25 @@ public sealed class CloseAccountingPeriodIntegrationTests : IAsyncLifetime
     private async Task<JournalEntry> SeedPostedEntryAsync(AccountingPeriod period)
     {
         await using var db = CreateContext();
-        var entryNumber = await new JournalEntrySequenceRepository(db)
-            .ReserveNextNumberAsync(_tenantId, _companyId, period.FiscalYear, CancellationToken.None);
+        var entryNumber = await new JournalEntrySequenceRepository(db).ReserveNextNumberAsync(
+            _tenantId,
+            _companyId,
+            period.FiscalYear,
+            CancellationToken.None
+        );
 
         var entry = JournalEntry.Create(
-            _tenantId, _companyId, new DateOnly(2026, 7, 15), period.Id, period.FiscalYear,
-            "Sales", "InvoiceIssued", Guid.NewGuid(), "Asiento test", _createdBy);
+            _tenantId,
+            _companyId,
+            new DateOnly(2026, 7, 15),
+            period.Id,
+            period.FiscalYear,
+            "Sales",
+            "InvoiceIssued",
+            Guid.NewGuid(),
+            "Asiento test",
+            _createdBy
+        );
         entry.AddLine(_debitAccountId, null, 100m, 0m);
         entry.AddLine(_creditAccountId, null, 0m, 100m);
         entry.Post(_createdBy, entryNumber);
@@ -106,20 +152,36 @@ public sealed class CloseAccountingPeriodIntegrationTests : IAsyncLifetime
     {
         await using var db = CreateContext();
         var entry = JournalEntry.Create(
-            _tenantId, _companyId, new DateOnly(2026, 7, 15), period.Id, period.FiscalYear,
-            "Sales", "InvoiceIssued", Guid.NewGuid(), "Asiento sin publicar", _createdBy);
+            _tenantId,
+            _companyId,
+            new DateOnly(2026, 7, 15),
+            period.Id,
+            period.FiscalYear,
+            "Sales",
+            "InvoiceIssued",
+            Guid.NewGuid(),
+            "Asiento sin publicar",
+            _createdBy
+        );
 
         db.JournalEntries.Add(entry);
         await db.SaveChangesAsync();
         return entry;
     }
 
-    private static CloseAccountingPeriodHandler BuildHandler(ErpDbContext db, Guid tenantId, Guid companyId, Guid userId) => new(
-        new AccountingPeriodRepository(db),
-        new JournalEntryRepository(db),
-        new FixedCurrentTenant(tenantId),
-        new FixedCurrentCompany(companyId),
-        new FixedCurrentUser(userId));
+    private static CloseAccountingPeriodHandler BuildHandler(
+        ErpDbContext db,
+        Guid tenantId,
+        Guid companyId,
+        Guid userId
+    ) =>
+        new(
+            new AccountingPeriodRepository(db),
+            new JournalEntryRepository(db),
+            new FixedCurrentTenant(tenantId),
+            new FixedCurrentCompany(companyId),
+            new FixedCurrentUser(userId)
+        );
 
     [Fact]
     public async Task Cierre_correcto_cuando_todos_los_asientos_estan_Posted()
@@ -167,9 +229,15 @@ public sealed class CloseAccountingPeriodIntegrationTests : IAsyncLifetime
 
         await using (var db = CreateContext())
         {
-            var entryNumber = await new JournalEntrySequenceRepository(db)
-                .ReserveNextNumberAsync(_tenantId, _companyId, period.FiscalYear, CancellationToken.None);
-            var tracked = await db.JournalEntries.Include(x => x.Lines).FirstAsync(x => x.Id == original.Id);
+            var entryNumber = await new JournalEntrySequenceRepository(db).ReserveNextNumberAsync(
+                _tenantId,
+                _companyId,
+                period.FiscalYear,
+                CancellationToken.None
+            );
+            var tracked = await db
+                .JournalEntries.Include(x => x.Lines)
+                .FirstAsync(x => x.Id == original.Id);
             var reversal = tracked.Reverse(_createdBy, entryNumber, "Ajuste de prueba");
             db.JournalEntries.Add(reversal);
             await db.SaveChangesAsync();
@@ -179,7 +247,11 @@ public sealed class CloseAccountingPeriodIntegrationTests : IAsyncLifetime
         var result = await BuildHandler(closeDb, _tenantId, _companyId, _createdBy)
             .Handle(new CloseAccountingPeriodCommand(period.Id), CancellationToken.None);
 
-        result.IsSuccess.Should().BeTrue(because: "un asiento Reversed con su reverso Posted y numerado es un cierre completo");
+        result
+            .IsSuccess.Should()
+            .BeTrue(
+                because: "un asiento Reversed con su reverso Posted y numerado es un cierre completo"
+            );
 
         await using var verifyDb = CreateContext();
         var loaded = await verifyDb.AccountingPeriods.FirstAsync(x => x.Id == period.Id);
@@ -211,11 +283,13 @@ public sealed class CloseAccountingPeriodIntegrationTests : IAsyncLifetime
 
     private sealed class NoOpPublisher : IPublisher
     {
-        public Task Publish(object notification, CancellationToken cancellationToken = default)
-            => Task.CompletedTask;
+        public Task Publish(object notification, CancellationToken cancellationToken = default) =>
+            Task.CompletedTask;
 
-        public Task Publish<TNotification>(TNotification notification, CancellationToken cancellationToken = default)
-            where TNotification : INotification
-            => Task.CompletedTask;
+        public Task Publish<TNotification>(
+            TNotification notification,
+            CancellationToken cancellationToken = default
+        )
+            where TNotification : INotification => Task.CompletedTask;
     }
 }

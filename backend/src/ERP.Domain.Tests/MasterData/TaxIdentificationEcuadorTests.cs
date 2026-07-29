@@ -1,4 +1,4 @@
-﻿using ERP.Domain.MasterData.ValueObjects;
+using ERP.Domain.MasterData.ValueObjects;
 using FluentAssertions;
 
 namespace ERP.Domain.Tests.MasterData;
@@ -12,7 +12,7 @@ public sealed class TaxIdentificationEcuadorTests
     // ── RUC — Persona Natural (3.er dígito 0-5) ───────────────────────────
 
     [Theory]
-    [InlineData("1790016919001")]  // RUC Persona Natural válido
+    [InlineData("1790016919001")] // RUC Persona Natural válido
     [InlineData("1790016919002")]
     public void RUC_persona_natural_valido_es_aceptado(string ruc)
     {
@@ -21,25 +21,25 @@ public sealed class TaxIdentificationEcuadorTests
     }
 
     [Theory]
-    [InlineData("1234567890123")]  // Dígito verificador incorrecto
-    [InlineData("0090016919001")]  // Provincia 00 inválida
-    [InlineData("2590016919001")]  // Provincia 25 inválida
-    [InlineData("1190016919000")]  // Establecimiento 000 inválido
-    [InlineData("1790016919")]     // Solo 10 dígitos (es CI, no RUC)
-    [InlineData("179001691900123")]// 15 dígitos — excede
-    [InlineData("1A90016919001")]  // No numérico
-    [InlineData("7890016919001")]  // 3.er dígito 8 — no asignado
+    [InlineData("1234567890123")] // Dígito verificador incorrecto
+    [InlineData("0090016919001")] // Provincia 00 inválida
+    [InlineData("2590016919001")] // Provincia 25 inválida
+    [InlineData("1190016919000")] // Establecimiento 000 inválido
+    [InlineData("1790016919")] // Solo 10 dígitos (es CI, no RUC)
+    [InlineData("179001691900123")] // 15 dígitos — excede
+    [InlineData("1A90016919001")] // No numérico
+    [InlineData("7890016919001")] // 3.er dígito 8 — no asignado
     public void RUC_invalido_lanza_ArgumentException(string ruc)
     {
         var act = () => TaxIdentification.Create("04", ruc);
-        act.Should().Throw<ArgumentException>(
-            $"RUC '{ruc}' debe ser rechazado por el validador SRI.");
+        act.Should()
+            .Throw<ArgumentException>($"RUC '{ruc}' debe ser rechazado por el validador SRI.");
     }
 
     // ── RUC — Sociedad Privada (3.er dígito 9) ───────────────────────────
 
     [Theory]
-    [InlineData("1790016919001")]  // Persona Natural
+    [InlineData("1790016919001")] // Persona Natural
     public void RUC_sociedad_privada_valido_es_aceptado(string ruc)
     {
         var id = TaxIdentification.Create("04", ruc);
@@ -50,7 +50,7 @@ public sealed class TaxIdentificationEcuadorTests
     // ── CI — Cédula de Ciudadanía ─────────────────────────────────────────
 
     [Theory]
-    [InlineData("1712345678")]  // CI Pichincha válida (con dígito verificador correcto)
+    [InlineData("1712345678")] // CI Pichincha válida (con dígito verificador correcto)
     [InlineData("1700016919")]
     public void CI_valida_es_aceptada(string ci)
     {
@@ -63,19 +63,18 @@ public sealed class TaxIdentificationEcuadorTests
     }
 
     [Theory]
-    [InlineData("123456789")]     // 9 dígitos — corto
-    [InlineData("12345678901")]   // 11 dígitos — largo
-    [InlineData("0012345678")]    // Provincia 00 inválida
-    [InlineData("2512345678")]    // Provincia 25 inválida (25 no existe)
-    [InlineData("1A12345678")]    // No numérico
-    [InlineData("1912345678")]    // 3.er dígito 9 → invalido para CI
-    [InlineData("1812345678")]    // 3.er dígito 8 → invalido para CI
-    [InlineData("1712345670")]    // Dígito verificador incorrecto (último dígito 0 forzado a fail)
+    [InlineData("123456789")] // 9 dígitos — corto
+    [InlineData("12345678901")] // 11 dígitos — largo
+    [InlineData("0012345678")] // Provincia 00 inválida
+    [InlineData("2512345678")] // Provincia 25 inválida (25 no existe)
+    [InlineData("1A12345678")] // No numérico
+    [InlineData("1912345678")] // 3.er dígito 9 → invalido para CI
+    [InlineData("1812345678")] // 3.er dígito 8 → invalido para CI
+    [InlineData("1712345670")] // Dígito verificador incorrecto (último dígito 0 forzado a fail)
     public void CI_invalida_lanza_ArgumentException(string ci)
     {
         var act = () => TaxIdentification.Create("05", ci);
-        act.Should().Throw<ArgumentException>(
-            $"CI '{ci}' debe ser rechazada por el validador.");
+        act.Should().Throw<ArgumentException>($"CI '{ci}' debe ser rechazada por el validador.");
     }
 
     // ── Tipo 04 longitud exacta ────────────────────────────────────────────
@@ -84,16 +83,14 @@ public sealed class TaxIdentificationEcuadorTests
     public void RUC_con_menos_de_13_digitos_lanza_error_de_longitud()
     {
         var act = () => TaxIdentification.Create("04", "179001691900"); // 12 dígitos
-        act.Should().Throw<ArgumentException>()
-            .WithMessage("*13 dígitos*");
+        act.Should().Throw<ArgumentException>().WithMessage("*13 dígitos*");
     }
 
     [Fact]
     public void CI_con_mas_de_10_digitos_lanza_error_de_longitud()
     {
         var act = () => TaxIdentification.Create("05", "17123456789"); // 11 dígitos
-        act.Should().Throw<ArgumentException>()
-            .WithMessage("*10 dígitos*");
+        act.Should().Throw<ArgumentException>().WithMessage("*10 dígitos*");
     }
 
     // ── Pasaporte (06) ───────────────────────────────────────────────────
@@ -109,8 +106,8 @@ public sealed class TaxIdentificationEcuadorTests
     }
 
     [Theory]
-    [InlineData("AB")]            // 2 chars — mínimo es 3
-    [InlineData("ABCDEFGHIJ12345678901")]  // 21 chars — máximo es 20
+    [InlineData("AB")] // 2 chars — mínimo es 3
+    [InlineData("ABCDEFGHIJ12345678901")] // 21 chars — máximo es 20
     public void Pasaporte_invalido_por_longitud_lanza_excepcion(string passport)
     {
         var act = () => TaxIdentification.Create("06", passport);
@@ -132,7 +129,7 @@ public sealed class TaxIdentificationEcuadorTests
     // ── Tipo inválido ─────────────────────────────────────────────────────
 
     [Theory]
-    [InlineData("01")]  // No existe en SRI
+    [InlineData("01")] // No existe en SRI
     [InlineData("02")]
     [InlineData("03")]
     [InlineData("RUC")]
@@ -141,8 +138,7 @@ public sealed class TaxIdentificationEcuadorTests
     public void Tipo_invalido_lanza_ArgumentException(string tipo)
     {
         var act = () => TaxIdentification.Create(tipo, "1790016919001");
-        act.Should().Throw<ArgumentException>()
-            .WithMessage("*Códigos SRI*");
+        act.Should().Throw<ArgumentException>().WithMessage("*Códigos SRI*");
     }
 
     // ── Número vacío ──────────────────────────────────────────────────────

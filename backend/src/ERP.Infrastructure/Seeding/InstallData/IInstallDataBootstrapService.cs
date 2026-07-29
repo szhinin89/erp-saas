@@ -1,4 +1,4 @@
-﻿namespace ERP.Infrastructure.Seeding.InstallData;
+namespace ERP.Infrastructure.Seeding.InstallData;
 
 public interface IInstallDataBootstrapService
 {

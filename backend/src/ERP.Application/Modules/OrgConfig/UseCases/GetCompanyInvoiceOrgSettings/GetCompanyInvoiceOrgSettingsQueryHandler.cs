@@ -17,7 +17,8 @@ public sealed class GetCompanyInvoiceOrgSettingsQueryHandler
     public GetCompanyInvoiceOrgSettingsQueryHandler(
         IOrgSettingsRepository repo,
         ICurrentTenant currentTenant,
-        ICurrentCompany currentCompany)
+        ICurrentCompany currentCompany
+    )
     {
         _repo = repo;
         _currentTenant = currentTenant;
@@ -25,23 +26,37 @@ public sealed class GetCompanyInvoiceOrgSettingsQueryHandler
     }
 
     public async Task<Result<CompanyInvoiceOrgSettingsDto>> Handle(
-        GetCompanyInvoiceOrgSettingsQuery request, CancellationToken cancellationToken)
+        GetCompanyInvoiceOrgSettingsQuery request,
+        CancellationToken cancellationToken
+    )
     {
         var tenantId = _currentTenant.TenantId;
         var companyId = _currentCompany.CompanyId;
 
         var all = await _repo.GetAllForScopeAsync(
-            tenantId, companyId, OrgScope.Company, companyId, cancellationToken);
+            tenantId,
+            companyId,
+            OrgScope.Company,
+            companyId,
+            cancellationToken
+        );
 
         var lookup = all.ToDictionary(s => s.Key, s => s.Value);
 
-        return Result<CompanyInvoiceOrgSettingsDto>.Success(new CompanyInvoiceOrgSettingsDto(
-            DefaultDocTypeCode: lookup.GetValueOrDefault(OrgSettingKeys.Invoice.DefaultDocTypeCode),
-            DefaultSriPaymentMethodCode: lookup.GetValueOrDefault(OrgSettingKeys.Invoice.DefaultPaymentMethodCode),
-            DefaultPaymentTermId: TryParseGuid(lookup.GetValueOrDefault(OrgSettingKeys.Invoice.DefaultPaymentTermId))
-        ));
+        return Result<CompanyInvoiceOrgSettingsDto>.Success(
+            new CompanyInvoiceOrgSettingsDto(
+                DefaultDocTypeCode: lookup.GetValueOrDefault(
+                    OrgSettingKeys.Invoice.DefaultDocTypeCode
+                ),
+                DefaultSriPaymentMethodCode: lookup.GetValueOrDefault(
+                    OrgSettingKeys.Invoice.DefaultPaymentMethodCode
+                ),
+                DefaultPaymentTermId: TryParseGuid(
+                    lookup.GetValueOrDefault(OrgSettingKeys.Invoice.DefaultPaymentTermId)
+                )
+            )
+        );
     }
 
-    private static Guid? TryParseGuid(string? value)
-        => Guid.TryParse(value, out var g) ? g : null;
+    private static Guid? TryParseGuid(string? value) => Guid.TryParse(value, out var g) ? g : null;
 }

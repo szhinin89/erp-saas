@@ -23,7 +23,11 @@ public static class ElectronicDocumentRetryPolicy
     /// el backoff correspondiente desde <paramref name="lastAttemptUtc"/>. Sin intento previo,
     /// siempre es elegible.
     /// </summary>
-    public static bool IsEligibleForAutomaticRetry(int retryCount, DateTime? lastAttemptUtc, DateTime nowUtc)
+    public static bool IsEligibleForAutomaticRetry(
+        int retryCount,
+        DateTime? lastAttemptUtc,
+        DateTime nowUtc
+    )
     {
         if (retryCount >= MaxAttempts)
             return false;

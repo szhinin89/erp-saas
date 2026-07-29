@@ -23,12 +23,14 @@ namespace ERP.Infrastructure.Services.ElectronicDocuments;
 /// </summary>
 public sealed class SriTaxCategoryCodeResolver : ISriTaxCategoryCodeResolver
 {
-    private static readonly IReadOnlyDictionary<string, string> CodeByTaxCode =
-        new Dictionary<string, string>(StringComparer.Ordinal)
-        {
-            ["VAT"] = "2",
-            ["ICE"] = "3",
-        };
+    private static readonly IReadOnlyDictionary<string, string> CodeByTaxCode = new Dictionary<
+        string,
+        string
+    >(StringComparer.Ordinal)
+    {
+        ["VAT"] = "2",
+        ["ICE"] = "3",
+    };
 
     public string? Resolve(string taxCode) =>
         CodeByTaxCode.TryGetValue(taxCode, out var code) ? code : null;

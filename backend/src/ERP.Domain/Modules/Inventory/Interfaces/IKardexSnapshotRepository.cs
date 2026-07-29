@@ -9,12 +9,17 @@ public interface IKardexSnapshotRepository
         Guid productId,
         Guid warehouseId,
         DateTime toUtc,
-        CancellationToken cancellationToken = default);
+        CancellationToken cancellationToken = default
+    );
 
     Task UpsertAsync(KardexSnapshot snapshot, CancellationToken cancellationToken = default);
 
     Task<IReadOnlyList<(Guid ProductId, Guid WarehouseId)>> GetDistinctProductWarehouseAsync(
-        Guid tenantId, CancellationToken cancellationToken = default);
+        Guid tenantId,
+        CancellationToken cancellationToken = default
+    );
 
-    Task<IReadOnlyList<Guid>> GetTenantsWithMovementsAsync(CancellationToken cancellationToken = default);
+    Task<IReadOnlyList<Guid>> GetTenantsWithMovementsAsync(
+        CancellationToken cancellationToken = default
+    );
 }

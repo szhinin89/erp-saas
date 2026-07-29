@@ -13,6 +13,7 @@ public sealed class ElectronicDocumentRejectedEvent : BaseDomainEvent, IAuditEve
     public ElectronicDocumentState FromState { get; }
     public ElectronicDocumentState ToState { get; }
     public string Reason { get; }
+
     /// <summary>
     /// Mensajes reales del SRI que motivaron el rechazo (identificador/tipo/mensaje/información
     /// adicional), cuando el rechazo vino de una respuesta SRI real (recepción o autorización).
@@ -23,9 +24,14 @@ public sealed class ElectronicDocumentRejectedEvent : BaseDomainEvent, IAuditEve
     public IReadOnlyList<SriMessage>? SriMessages { get; }
 
     public ElectronicDocumentRejectedEvent(
-        Guid tenantId, Guid electronicDocumentId, ElectronicDocumentType documentType,
-        ElectronicDocumentState fromState, ElectronicDocumentState toState, string reason,
-        IReadOnlyList<SriMessage>? sriMessages = null)
+        Guid tenantId,
+        Guid electronicDocumentId,
+        ElectronicDocumentType documentType,
+        ElectronicDocumentState fromState,
+        ElectronicDocumentState toState,
+        string reason,
+        IReadOnlyList<SriMessage>? sriMessages = null
+    )
     {
         TenantId = tenantId;
         ElectronicDocumentId = electronicDocumentId;

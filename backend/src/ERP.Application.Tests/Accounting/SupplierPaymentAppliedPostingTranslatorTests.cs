@@ -15,24 +15,39 @@ public sealed class SupplierPaymentAppliedPostingTranslatorTests
     private static readonly Guid CompanyId = Guid.NewGuid();
     private static readonly Guid SupplierId = Guid.NewGuid();
 
-    private static SupplierPaymentAppliedEvent Event(DateOnly? paymentDate = null, Guid? paymentId = null) => new(
-        TenantId, paymentId ?? Guid.NewGuid(), CompanyId, SupplierId, 250m, paymentDate ?? new DateOnly(2026, 7, 25));
+    private static SupplierPaymentAppliedEvent Event(
+        DateOnly? paymentDate = null,
+        Guid? paymentId = null
+    ) =>
+        new(
+            TenantId,
+            paymentId ?? Guid.NewGuid(),
+            CompanyId,
+            SupplierId,
+            250m,
+            paymentDate ?? new DateOnly(2026, 7, 25)
+        );
 
     private sealed class Mocks
     {
         public Mock<IPostingEngine> PostingEngine { get; } = new();
         public Mock<ILogger<SupplierPaymentAppliedPostingTranslator>> Logger { get; } = new();
 
-        public SupplierPaymentAppliedPostingTranslator BuildTranslator() => new(PostingEngine.Object, Logger.Object);
+        public SupplierPaymentAppliedPostingTranslator BuildTranslator() =>
+            new(PostingEngine.Object, Logger.Object);
 
-        public void VerifyWarningLogged(Times times) => Logger.Verify(
-            l => l.Log(
-                LogLevel.Warning,
-                It.IsAny<EventId>(),
-                It.IsAny<It.IsAnyType>(),
-                It.IsAny<Exception>(),
-                It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
-            times);
+        public void VerifyWarningLogged(Times times) =>
+            Logger.Verify(
+                l =>
+                    l.Log(
+                        LogLevel.Warning,
+                        It.IsAny<EventId>(),
+                        It.IsAny<It.IsAnyType>(),
+                        It.IsAny<Exception>(),
+                        It.IsAny<Func<It.IsAnyType, Exception?, string>>()
+                    ),
+                times
+            );
     }
 
     [Fact]
@@ -43,10 +58,15 @@ public sealed class SupplierPaymentAppliedPostingTranslatorTests
         var paymentDate = new DateOnly(2026, 7, 20);
         PostingFact? captured = null;
 
-        m.PostingEngine
-            .Setup(e => e.PostAsync(It.IsAny<PostingFact>(), It.IsAny<CancellationToken>()))
+        m.PostingEngine.Setup(e =>
+                e.PostAsync(It.IsAny<PostingFact>(), It.IsAny<CancellationToken>())
+            )
             .Callback<PostingFact, CancellationToken>((fact, _) => captured = fact)
-            .ReturnsAsync(Result<PostingOutcomeDto>.Success(new PostingOutcomeDto(Guid.NewGuid(), PostingOutcomeStatus.Created)));
+            .ReturnsAsync(
+                Result<PostingOutcomeDto>.Success(
+                    new PostingOutcomeDto(Guid.NewGuid(), PostingOutcomeStatus.Created)
+                )
+            );
 
         var translator = m.BuildTranslator();
         await translator.Handle(Event(paymentDate, paymentId), CancellationToken.None);
@@ -69,23 +89,36 @@ public sealed class SupplierPaymentAppliedPostingTranslatorTests
     public async Task Handle_invoca_PostAsync_exactamente_una_vez()
     {
         var m = new Mocks();
-        m.PostingEngine
-            .Setup(e => e.PostAsync(It.IsAny<PostingFact>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Result<PostingOutcomeDto>.Success(new PostingOutcomeDto(Guid.NewGuid(), PostingOutcomeStatus.Created)));
+        m.PostingEngine.Setup(e =>
+                e.PostAsync(It.IsAny<PostingFact>(), It.IsAny<CancellationToken>())
+            )
+            .ReturnsAsync(
+                Result<PostingOutcomeDto>.Success(
+                    new PostingOutcomeDto(Guid.NewGuid(), PostingOutcomeStatus.Created)
+                )
+            );
 
         var translator = m.BuildTranslator();
         await translator.Handle(Event(), CancellationToken.None);
 
-        m.PostingEngine.Verify(e => e.PostAsync(It.IsAny<PostingFact>(), It.IsAny<CancellationToken>()), Times.Once);
+        m.PostingEngine.Verify(
+            e => e.PostAsync(It.IsAny<PostingFact>(), It.IsAny<CancellationToken>()),
+            Times.Once
+        );
     }
 
     [Fact]
     public async Task Posting_exitoso_no_genera_warning()
     {
         var m = new Mocks();
-        m.PostingEngine
-            .Setup(e => e.PostAsync(It.IsAny<PostingFact>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Result<PostingOutcomeDto>.Success(new PostingOutcomeDto(Guid.NewGuid(), PostingOutcomeStatus.Created)));
+        m.PostingEngine.Setup(e =>
+                e.PostAsync(It.IsAny<PostingFact>(), It.IsAny<CancellationToken>())
+            )
+            .ReturnsAsync(
+                Result<PostingOutcomeDto>.Success(
+                    new PostingOutcomeDto(Guid.NewGuid(), PostingOutcomeStatus.Created)
+                )
+            );
 
         var translator = m.BuildTranslator();
         var act = async () => await translator.Handle(Event(), CancellationToken.None);
@@ -98,9 +131,15 @@ public sealed class SupplierPaymentAppliedPostingTranslatorTests
     public async Task Posting_failure_genera_warning_y_no_lanza_excepcion()
     {
         var m = new Mocks();
-        m.PostingEngine
-            .Setup(e => e.PostAsync(It.IsAny<PostingFact>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Result<PostingOutcomeDto>.ValidationFailure("No existe una regla de contabilización activa.", "RULE_NOT_FOUND"));
+        m.PostingEngine.Setup(e =>
+                e.PostAsync(It.IsAny<PostingFact>(), It.IsAny<CancellationToken>())
+            )
+            .ReturnsAsync(
+                Result<PostingOutcomeDto>.ValidationFailure(
+                    "No existe una regla de contabilización activa.",
+                    "RULE_NOT_FOUND"
+                )
+            );
 
         var translator = m.BuildTranslator();
         var act = async () => await translator.Handle(Event(), CancellationToken.None);

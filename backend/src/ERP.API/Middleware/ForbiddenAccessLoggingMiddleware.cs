@@ -14,7 +14,8 @@ public sealed partial class ForbiddenAccessLoggingMiddleware
     public ForbiddenAccessLoggingMiddleware(
         RequestDelegate next,
         ILogger<ForbiddenAccessLoggingMiddleware> logger,
-        ISecurityMetrics metrics)
+        ISecurityMetrics metrics
+    )
     {
         _next = next;
         _logger = logger;
@@ -35,12 +36,15 @@ public sealed partial class ForbiddenAccessLoggingMiddleware
         var endpoint = $"{context.Request.Method} {context.Request.Path.Value}";
         var reason = context.Response.StatusCode == 401 ? "unauthorized" : "forbidden";
 
-        _metrics.RecordPermissionDenied(new SecurityMetricTags(
-            TenantId: tenantId,
-            CompanyId: companyId,
-            Endpoint: endpoint,
-            RequestType: reason,
-            CorrelationId: correlationId));
+        _metrics.RecordPermissionDenied(
+            new SecurityMetricTags(
+                TenantId: tenantId,
+                CompanyId: companyId,
+                Endpoint: endpoint,
+                RequestType: reason,
+                CorrelationId: correlationId
+            )
+        );
 
         LogAccessDenied(
             context.Response.StatusCode,
@@ -48,13 +52,23 @@ public sealed partial class ForbiddenAccessLoggingMiddleware
             tenantId?.ToString("D") ?? "none",
             companyId?.ToString("D") ?? "none",
             correlationId,
-            context.Connection.RemoteIpAddress?.ToString());
+            context.Connection.RemoteIpAddress?.ToString()
+        );
     }
 
-    private static Guid? ParseGuid(string? value)
-        => Guid.TryParse(value, out var id) && id != Guid.Empty ? id : null;
+    private static Guid? ParseGuid(string? value) =>
+        Guid.TryParse(value, out var id) && id != Guid.Empty ? id : null;
 
-    [LoggerMessage(Level = LogLevel.Warning,
-        Message = "Access denied status={StatusCode} endpoint={Endpoint} tenantId={TenantId} companyId={CompanyId} correlationId={CorrelationId} remote={RemoteIp}")]
-    private partial void LogAccessDenied(int statusCode, string endpoint, string tenantId, string companyId, string correlationId, string? remoteIp);
+    [LoggerMessage(
+        Level = LogLevel.Warning,
+        Message = "Access denied status={StatusCode} endpoint={Endpoint} tenantId={TenantId} companyId={CompanyId} correlationId={CorrelationId} remote={RemoteIp}"
+    )]
+    private partial void LogAccessDenied(
+        int statusCode,
+        string endpoint,
+        string tenantId,
+        string companyId,
+        string correlationId,
+        string? remoteIp
+    );
 }

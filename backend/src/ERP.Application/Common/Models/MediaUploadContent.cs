@@ -8,4 +8,5 @@ public sealed record MediaUploadContent(
     Stream Content,
     string FileName,
     string ContentType,
-    long SizeBytes);
+    long SizeBytes
+);

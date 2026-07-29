@@ -31,7 +31,8 @@ internal static class TestP12CertificateFactory
             "CN=ElectronicDocuments Test Certificate",
             rsa,
             HashAlgorithmName.SHA256,
-            RSASignaturePadding.Pkcs1);
+            RSASignaturePadding.Pkcs1
+        );
 
         using var cert = request.CreateSelfSigned(notBefore, notAfter);
 

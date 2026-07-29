@@ -7,9 +7,11 @@ public sealed class GetUserSessionsPagedValidator : AbstractValidator<GetUserSes
 {
     public GetUserSessionsPagedValidator()
     {
-        RuleFor(x => x.PageNumber).GreaterThanOrEqualTo(1)
+        RuleFor(x => x.PageNumber)
+            .GreaterThanOrEqualTo(1)
             .WithMessage("El número de página debe ser mayor o igual a 1.");
-        RuleFor(x => x.PageSize).InclusiveBetween(1, 200)
+        RuleFor(x => x.PageSize)
+            .InclusiveBetween(1, 200)
             .WithMessage("El tamaño de página debe estar entre 1 y 200.");
         RuleFor(x => x.Status)
             .Must(s => string.IsNullOrEmpty(s) || Enum.TryParse<UserSessionStatus>(s, true, out _))

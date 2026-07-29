@@ -15,7 +15,9 @@ public sealed class RucValidatorTests
                 return r;
         }
 
-        throw new InvalidOperationException("No se encontró RUC de prueba válido (revisar algoritmo).");
+        throw new InvalidOperationException(
+            "No se encontró RUC de prueba válido (revisar algoritmo)."
+        );
     }
 
     [Fact]

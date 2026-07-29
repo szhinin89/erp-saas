@@ -19,8 +19,13 @@ public sealed class ItemAudit : AuditRecordBase
     private ItemAudit() { }
 
     public static ItemAudit Create(
-        AuditActor actor, Guid itemId, string action,
-        decimal? oldBaseSalePrice = null, decimal? newBaseSalePrice = null, string? reason = null)
+        AuditActor actor,
+        Guid itemId,
+        string action,
+        decimal? oldBaseSalePrice = null,
+        decimal? newBaseSalePrice = null,
+        string? reason = null
+    )
     {
         var audit = new ItemAudit
         {

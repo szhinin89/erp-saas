@@ -5,7 +5,8 @@ using Microsoft.Extensions.Logging;
 
 namespace ERP.Application.Modules.ElectronicDocuments.Services;
 
-public sealed partial class ElectronicDocumentAuthorizationService : IElectronicDocumentAuthorizationService
+public sealed partial class ElectronicDocumentAuthorizationService
+    : IElectronicDocumentAuthorizationService
 {
     // Únicos estados que representan una respuesta terminal que el llamador puede/debe
     // interpretar y transicionar. Lista blanca deliberada (no lista negra): cualquier estado
@@ -13,7 +14,12 @@ public sealed partial class ElectronicDocumentAuthorizationService : IElectronic
     // EST-01v2 (rechazo real del SRI, 2026-07-11): el literal real que devuelve el WS
     // AutorizacionComprobantesOffline es "NO AUTORIZADO" (con espacio) — no "RECHAZADO", que
     // nunca apareció en una respuesta real (ver SriSoapClient.CheckAuthorizationAsync).
-    private static readonly string[] TerminalOutcomeStatuses = ["AUTORIZADO", "NO AUTORIZADO", "TIMEOUT"];
+    private static readonly string[] TerminalOutcomeStatuses =
+    [
+        "AUTORIZADO",
+        "NO AUTORIZADO",
+        "TIMEOUT",
+    ];
 
     private readonly ISriSettingsRepository _sriSettingsRepository;
     private readonly ISriAuthorizationClient _client;
@@ -22,7 +28,8 @@ public sealed partial class ElectronicDocumentAuthorizationService : IElectronic
     public ElectronicDocumentAuthorizationService(
         ISriSettingsRepository sriSettingsRepository,
         ISriAuthorizationClient client,
-        ILogger<ElectronicDocumentAuthorizationService> logger)
+        ILogger<ElectronicDocumentAuthorizationService> logger
+    )
     {
         _sriSettingsRepository = sriSettingsRepository;
         _client = client;
@@ -30,21 +37,26 @@ public sealed partial class ElectronicDocumentAuthorizationService : IElectronic
     }
 
     public async Task<Result<SriAuthorizationResult>> CheckAsync(
-        Guid companyId, string accessKey, CancellationToken ct = default)
+        Guid companyId,
+        string accessKey,
+        CancellationToken ct = default
+    )
     {
         var sriSettings = await _sriSettingsRepository.GetByCompanyIdAsync(companyId, ct);
         if (sriSettings is null)
         {
             LogAuthorizationPrerequisiteMissing(companyId, "sin configuración SRI");
             return Result<SriAuthorizationResult>.ValidationFailure(
-                "La empresa no tiene configuración SRI registrada — no se puede consultar la autorización del documento electrónico.");
+                "La empresa no tiene configuración SRI registrada — no se puede consultar la autorización del documento electrónico."
+            );
         }
 
         if (string.IsNullOrWhiteSpace(sriSettings.WsdlUrl))
         {
             LogAuthorizationPrerequisiteMissing(companyId, "sin WsdlUrl configurada");
             return Result<SriAuthorizationResult>.ValidationFailure(
-                "La empresa no tiene una URL de servicio SRI (WsdlUrl) configurada.");
+                "La empresa no tiene una URL de servicio SRI (WsdlUrl) configurada."
+            );
         }
 
         var result = await _client.CheckAsync(accessKey, sriSettings.WsdlUrl, ct);
@@ -55,14 +67,19 @@ public sealed partial class ElectronicDocumentAuthorizationService : IElectronic
 
         return Result<SriAuthorizationResult>.Failure(
             result.ErrorMessage
-                ?? $"No se pudo obtener una respuesta definitiva de autorización del SRI (estado: {result.Status}).");
+                ?? $"No se pudo obtener una respuesta definitiva de autorización del SRI (estado: {result.Status})."
+        );
     }
 
-    [LoggerMessage(Level = LogLevel.Warning,
-        Message = "[ElectronicDocuments] Consulta de autorización SRI no ejecutada para empresa {CompanyId}: {Reason}")]
+    [LoggerMessage(
+        Level = LogLevel.Warning,
+        Message = "[ElectronicDocuments] Consulta de autorización SRI no ejecutada para empresa {CompanyId}: {Reason}"
+    )]
     private partial void LogAuthorizationPrerequisiteMissing(Guid companyId, string reason);
 
-    [LoggerMessage(Level = LogLevel.Information,
-        Message = "[ElectronicDocuments] Consulta de autorización SRI respondió estado '{Status}' para empresa {CompanyId}, claveAcceso {AccessKey}")]
+    [LoggerMessage(
+        Level = LogLevel.Information,
+        Message = "[ElectronicDocuments] Consulta de autorización SRI respondió estado '{Status}' para empresa {CompanyId}, claveAcceso {AccessKey}"
+    )]
     private partial void LogAuthorizationResult(Guid companyId, string accessKey, string status);
 }

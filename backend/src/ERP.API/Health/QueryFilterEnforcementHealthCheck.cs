@@ -12,16 +12,21 @@ public sealed class QueryFilterEnforcementHealthCheck : IHealthCheck
 
     public Task<HealthCheckResult> CheckHealthAsync(
         HealthCheckContext context,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default
+    )
     {
         var model = _db.Model;
-        var filteredEntities = model.GetEntityTypes()
+        var filteredEntities = model
+            .GetEntityTypes()
             .Count(e => e.GetDeclaredQueryFilters().Count > 0);
 
         if (filteredEntities == 0)
-            return Task.FromResult(HealthCheckResult.Unhealthy("No global query filters configured."));
+            return Task.FromResult(
+                HealthCheckResult.Unhealthy("No global query filters configured.")
+            );
 
-        return Task.FromResult(HealthCheckResult.Healthy(
-            $"Query filters active on {filteredEntities} entity type(s)."));
+        return Task.FromResult(
+            HealthCheckResult.Healthy($"Query filters active on {filteredEntities} entity type(s).")
+        );
     }
 }

@@ -6,42 +6,69 @@ using MediatR;
 
 namespace ERP.Application.Modules.Companies.UseCases.UpdateCompanyProfile;
 
-public sealed class UpdateCompanyProfileHandler : IRequestHandler<UpdateCompanyProfileCommand, Result<CompanyProfileDto>>
+public sealed class UpdateCompanyProfileHandler
+    : IRequestHandler<UpdateCompanyProfileCommand, Result<CompanyProfileDto>>
 {
     private readonly ICompanyAccessGuard _accessGuard;
     private readonly ICompanyRepository _companies;
     private readonly ICurrentUser _currentUser;
 
-    public UpdateCompanyProfileHandler(ICompanyAccessGuard accessGuard, ICompanyRepository companies, ICurrentUser currentUser)
+    public UpdateCompanyProfileHandler(
+        ICompanyAccessGuard accessGuard,
+        ICompanyRepository companies,
+        ICurrentUser currentUser
+    )
     {
         _accessGuard = accessGuard;
         _companies = companies;
         _currentUser = currentUser;
     }
 
-    public async Task<Result<CompanyProfileDto>> Handle(UpdateCompanyProfileCommand command, CancellationToken cancellationToken)
+    public async Task<Result<CompanyProfileDto>> Handle(
+        UpdateCompanyProfileCommand command,
+        CancellationToken cancellationToken
+    )
     {
         var access = await _accessGuard.RequireCurrentCompanyAsync(cancellationToken);
         if (!access.IsSuccess)
             return Result<CompanyProfileDto>.Failure(access.Error!);
 
-        var entity = await _companies.GetTrackedByIdForTenantAsync(access.Value!.CompanyId, access.Value!.TenantId, cancellationToken);
+        var entity = await _companies.GetTrackedByIdForTenantAsync(
+            access.Value!.CompanyId,
+            access.Value!.TenantId,
+            cancellationToken
+        );
         if (entity is null)
             return Result<CompanyProfileDto>.Failure("Empresa no encontrada.");
 
-        if (!string.IsNullOrWhiteSpace(command.TaxIdentificationNumber) &&
-            !string.Equals(command.TaxIdentificationNumber.Trim(), entity.TaxIdentificationNumber, StringComparison.Ordinal))
+        if (
+            !string.IsNullOrWhiteSpace(command.TaxIdentificationNumber)
+            && !string.Equals(
+                command.TaxIdentificationNumber.Trim(),
+                entity.TaxIdentificationNumber,
+                StringComparison.Ordinal
+            )
+        )
         {
-            var taken = await _companies.GetByTaxIdentificationNumberAsync(command.TaxIdentificationNumber.Trim(), cancellationToken);
+            var taken = await _companies.GetByTaxIdentificationNumberAsync(
+                command.TaxIdentificationNumber.Trim(),
+                cancellationToken
+            );
             if (taken is not null && taken.Id != entity.Id)
-                return Result<CompanyProfileDto>.Failure("El RUC ya está registrado en el sistema.", ERP.Domain.Exceptions.CompanyRucAlreadyExistsException.ErrorCode);
+                return Result<CompanyProfileDto>.Failure(
+                    "El RUC ya está registrado en el sistema.",
+                    ERP.Domain.Exceptions.CompanyRucAlreadyExistsException.ErrorCode
+                );
 
-            var isTemporary = ProvisionalTaxIdGenerator.IsProvisional(command.TaxIdentificationNumber);
+            var isTemporary = ProvisionalTaxIdGenerator.IsProvisional(
+                command.TaxIdentificationNumber
+            );
             entity.UpdateTaxIdentification(
                 command.TaxIdentificationNumber,
                 isTemporary,
                 isTemporary ? TaxIdentificationStatus.Pending : TaxIdentificationStatus.Verified,
-                _currentUser.UserId);
+                _currentUser.UserId
+            );
         }
 
         entity.UpdateProfile(
@@ -58,7 +85,8 @@ public sealed class UpdateCompanyProfileHandler : IRequestHandler<UpdateCompanyP
             command.LegalRepPosition,
             command.LegalRepIdNumber,
             command.LegalRepEmail,
-            command.LegalRepPhone);
+            command.LegalRepPhone
+        );
 
         await _companies.SaveChangesAsync(cancellationToken);
 

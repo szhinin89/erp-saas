@@ -20,5 +20,8 @@ public interface IElectronicDocumentReceptionService
     /// del llamador.
     /// </summary>
     Task<Result<SriReceptionResult>> SendAsync(
-        Guid companyId, byte[] signedXmlBytes, CancellationToken ct = default);
+        Guid companyId,
+        byte[] signedXmlBytes,
+        CancellationToken ct = default
+    );
 }

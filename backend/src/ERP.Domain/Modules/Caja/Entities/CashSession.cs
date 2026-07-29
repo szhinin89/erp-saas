@@ -71,8 +71,10 @@ public sealed class CashSession : AuditableEntity, ITenantScopedEntity, ICompany
     // se suma por separado en CurrentBalance. Contar Opening también como "ingreso" duplicaba el
     // monto de apertura en CurrentBalance/ExpectedAmount (bug detectado con datos reales durante
     // la validación end-to-end de Caja→Ventas).
-    public decimal TotalIncome => _movements.Where(m => IsIncome(m.MovementType)).Sum(m => m.Amount);
-    public decimal TotalExpense => _movements.Where(m => IsExpense(m.MovementType)).Sum(m => m.Amount);
+    public decimal TotalIncome =>
+        _movements.Where(m => IsIncome(m.MovementType)).Sum(m => m.Amount);
+    public decimal TotalExpense =>
+        _movements.Where(m => IsExpense(m.MovementType)).Sum(m => m.Amount);
     public decimal CurrentBalance => OpeningAmount + TotalIncome - TotalExpense;
 
     private CashSession() { }
@@ -89,7 +91,8 @@ public sealed class CashSession : AuditableEntity, ITenantScopedEntity, ICompany
         string emissionPointCodeSnapshot,
         decimal openingAmount,
         Guid createdBy,
-        string? notes = null)
+        string? notes = null
+    )
     {
         if (companyId == Guid.Empty)
             throw new ArgumentException("La empresa es obligatoria.", nameof(companyId));
@@ -100,15 +103,30 @@ public sealed class CashSession : AuditableEntity, ITenantScopedEntity, ICompany
         if (cashRegisterId == Guid.Empty)
             throw new ArgumentException("La caja es obligatoria.", nameof(cashRegisterId));
         if (string.IsNullOrWhiteSpace(cashRegisterCodeSnapshot))
-            throw new ArgumentException("El código de la caja es obligatorio.", nameof(cashRegisterCodeSnapshot));
+            throw new ArgumentException(
+                "El código de la caja es obligatorio.",
+                nameof(cashRegisterCodeSnapshot)
+            );
         if (string.IsNullOrWhiteSpace(cashRegisterNameSnapshot))
-            throw new ArgumentException("El nombre de la caja es obligatorio.", nameof(cashRegisterNameSnapshot));
+            throw new ArgumentException(
+                "El nombre de la caja es obligatorio.",
+                nameof(cashRegisterNameSnapshot)
+            );
         if (emissionPointId == Guid.Empty)
-            throw new ArgumentException("El punto de emisión es obligatorio.", nameof(emissionPointId));
+            throw new ArgumentException(
+                "El punto de emisión es obligatorio.",
+                nameof(emissionPointId)
+            );
         if (string.IsNullOrWhiteSpace(emissionPointCodeSnapshot))
-            throw new ArgumentException("El código del punto de emisión es obligatorio.", nameof(emissionPointCodeSnapshot));
+            throw new ArgumentException(
+                "El código del punto de emisión es obligatorio.",
+                nameof(emissionPointCodeSnapshot)
+            );
         if (openingAmount < 0)
-            throw new ArgumentException("El monto de apertura no puede ser negativo.", nameof(openingAmount));
+            throw new ArgumentException(
+                "El monto de apertura no puede ser negativo.",
+                nameof(openingAmount)
+            );
 
         var session = new CashSession
         {
@@ -129,12 +147,17 @@ public sealed class CashSession : AuditableEntity, ITenantScopedEntity, ICompany
         };
         session.SetCreated(createdBy);
 
-        session._movements.Add(CashMovement.Create(
-            session.Id, tenantId, companyId,
-            CashMovementType.Opening,
-            openingAmount,
-            "Apertura de caja",
-            createdBy));
+        session._movements.Add(
+            CashMovement.Create(
+                session.Id,
+                tenantId,
+                companyId,
+                CashMovementType.Opening,
+                openingAmount,
+                "Apertura de caja",
+                createdBy
+            )
+        );
 
         return session;
     }
@@ -146,16 +169,27 @@ public sealed class CashSession : AuditableEntity, ITenantScopedEntity, ICompany
         Guid createdBy,
         CashReferenceType referenceType = CashReferenceType.None,
         Guid? referenceId = null,
-        string? referenceNumber = null)
+        string? referenceNumber = null
+    )
     {
         EnsureOpen();
         if (movementType == CashMovementType.Opening)
-            throw new InvalidOperationException("No se puede registrar un movimiento de apertura manualmente.");
+            throw new InvalidOperationException(
+                "No se puede registrar un movimiento de apertura manualmente."
+            );
 
         var movement = CashMovement.Create(
-            Id, TenantId, CompanyId,
-            movementType, amount, description, createdBy,
-            referenceType, referenceId, referenceNumber);
+            Id,
+            TenantId,
+            CompanyId,
+            movementType,
+            amount,
+            description,
+            createdBy,
+            referenceType,
+            referenceId,
+            referenceNumber
+        );
 
         _movements.Add(movement);
         SetUpdated(createdBy);
@@ -165,7 +199,8 @@ public sealed class CashSession : AuditableEntity, ITenantScopedEntity, ICompany
     public void Close(
         Guid closedBy,
         List<CashClosingCount> closingCounts,
-        string? closeNotes = null)
+        string? closeNotes = null
+    )
     {
         EnsureOpen();
 
@@ -198,10 +233,8 @@ public sealed class CashSession : AuditableEntity, ITenantScopedEntity, ICompany
     }
 
     private static bool IsIncome(CashMovementType type) =>
-        type is CashMovementType.SaleIncome
-            or CashMovementType.ManualIncome;
+        type is CashMovementType.SaleIncome or CashMovementType.ManualIncome;
 
     private static bool IsExpense(CashMovementType type) =>
-        type is CashMovementType.ManualExpense
-            or CashMovementType.Withdrawal;
+        type is CashMovementType.ManualExpense or CashMovementType.Withdrawal;
 }

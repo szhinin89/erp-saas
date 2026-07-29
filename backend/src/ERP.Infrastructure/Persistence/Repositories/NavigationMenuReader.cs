@@ -1,8 +1,8 @@
+using System.Text.Json;
 using ERP.Application.Navigation;
 using ERP.Application.Navigation.DTOs;
 using ERP.Domain.Navigation.Entities;
 using Microsoft.EntityFrameworkCore;
-using System.Text.Json;
 
 namespace ERP.Infrastructure.Persistence.Repositories;
 
@@ -12,15 +12,19 @@ public sealed class NavigationMenuReader : INavigationMenuReader
 
     public NavigationMenuReader(ErpDbContext db) => _db = db;
 
-    public async Task<IReadOnlyList<SessionMenuGroupDto>> GetActiveMenuAsync(CancellationToken cancellationToken = default)
+    public async Task<IReadOnlyList<SessionMenuGroupDto>> GetActiveMenuAsync(
+        CancellationToken cancellationToken = default
+    )
     {
-        var groups = await _db.UiNavGroups.AsNoTracking()
+        var groups = await _db
+            .UiNavGroups.AsNoTracking()
             .Where(g => g.IsActive)
             .OrderBy(g => g.SortOrder)
             .ThenBy(g => g.Code)
             .ToListAsync(cancellationToken);
 
-        var items = await _db.UiNavItems.AsNoTracking()
+        var items = await _db
+            .UiNavItems.AsNoTracking()
             .Where(i => i.IsActive)
             .OrderBy(i => i.SortOrder)
             .ThenBy(i => i.RoutePath)
@@ -34,16 +38,19 @@ public sealed class NavigationMenuReader : INavigationMenuReader
             var list = byGroup.TryGetValue(g.Id, out var row) ? row : [];
             var itemDtos = BuildSessionItemTree(list, null);
 
-            dtos.Add(new SessionMenuGroupDto(
-                g.Code,
-                g.Icon,
-                g.LabelKey,
-                g.SortOrder,
-                g.ModuleKey,
-                ParseRoles(g.RolesCsv),
-                g.RequirePlatformPanel,
-                itemDtos,
-                null));
+            dtos.Add(
+                new SessionMenuGroupDto(
+                    g.Code,
+                    g.Icon,
+                    g.LabelKey,
+                    g.SortOrder,
+                    g.ModuleKey,
+                    ParseRoles(g.RolesCsv),
+                    g.RequirePlatformPanel,
+                    itemDtos,
+                    null
+                )
+            );
         }
 
         return dtos;
@@ -51,7 +58,8 @@ public sealed class NavigationMenuReader : INavigationMenuReader
 
     private static List<SessionMenuItemDto> BuildSessionItemTree(
         IReadOnlyList<UiNavItem> groupItems,
-        Guid? parentItemId)
+        Guid? parentItemId
+    )
     {
         var children = groupItems
             .Where(i => i.ParentItemId == parentItemId)
@@ -64,17 +72,20 @@ public sealed class NavigationMenuReader : INavigationMenuReader
         {
             var nested = BuildSessionItemTree(groupItems, i.Id);
             var keysAny = ParseKeysAny(i.PermissionKeysAnyJson);
-            list.Add(new SessionMenuItemDto(
-                i.RoutePath,
-                i.LabelKey,
-                i.DisplayLabel,
-                i.SortOrder,
-                i.ModuleKey,
-                i.PermissionKey,
-                keysAny,
-                ParseRoles(i.RolesCsv),
-                nested.Count > 0 ? nested : null,
-                null));
+            list.Add(
+                new SessionMenuItemDto(
+                    i.RoutePath,
+                    i.LabelKey,
+                    i.DisplayLabel,
+                    i.SortOrder,
+                    i.ModuleKey,
+                    i.PermissionKey,
+                    keysAny,
+                    ParseRoles(i.RolesCsv),
+                    nested.Count > 0 ? nested : null,
+                    null
+                )
+            );
         }
 
         return list;
@@ -82,14 +93,19 @@ public sealed class NavigationMenuReader : INavigationMenuReader
 
     private static List<string>? ParseRoles(string? csv)
     {
-        if (string.IsNullOrWhiteSpace(csv)) return null;
-        var parts = csv.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        if (string.IsNullOrWhiteSpace(csv))
+            return null;
+        var parts = csv.Split(
+            ',',
+            StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries
+        );
         return parts.Length == 0 ? null : parts.ToList();
     }
 
     private static List<string>? ParseKeysAny(string? json)
     {
-        if (string.IsNullOrWhiteSpace(json)) return null;
+        if (string.IsNullOrWhiteSpace(json))
+            return null;
         try
         {
             var arr = JsonSerializer.Deserialize<List<string>>(json);

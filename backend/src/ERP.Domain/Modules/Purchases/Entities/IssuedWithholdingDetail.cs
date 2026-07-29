@@ -28,16 +28,26 @@ public sealed class IssuedWithholdingDetail : IMustHaveTenant
         string retentionCode,
         string retentionCodeDescription,
         decimal taxableBase,
-        decimal retentionPct)
+        decimal retentionPct
+    )
     {
         if (string.IsNullOrWhiteSpace(taxType))
             throw new ArgumentException("El tipo de impuesto es obligatorio.", nameof(taxType));
         if (string.IsNullOrWhiteSpace(retentionCode))
-            throw new ArgumentException("El código de retención es obligatorio.", nameof(retentionCode));
+            throw new ArgumentException(
+                "El código de retención es obligatorio.",
+                nameof(retentionCode)
+            );
         if (taxableBase < 0)
-            throw new ArgumentException("La base imponible no puede ser negativa.", nameof(taxableBase));
+            throw new ArgumentException(
+                "La base imponible no puede ser negativa.",
+                nameof(taxableBase)
+            );
         if (retentionPct < 0)
-            throw new ArgumentException("El porcentaje de retención no puede ser negativo.", nameof(retentionPct));
+            throw new ArgumentException(
+                "El porcentaje de retención no puede ser negativo.",
+                nameof(retentionPct)
+            );
 
         return new IssuedWithholdingDetail
         {
@@ -49,7 +59,11 @@ public sealed class IssuedWithholdingDetail : IMustHaveTenant
             RetentionCodeDescription = retentionCodeDescription.Trim(),
             TaxableBase = taxableBase,
             RetentionPct = retentionPct,
-            AmountRetained = Math.Round(taxableBase * retentionPct / 100m, TaxAmount, MidpointRounding.AwayFromZero),
+            AmountRetained = Math.Round(
+                taxableBase * retentionPct / 100m,
+                TaxAmount,
+                MidpointRounding.AwayFromZero
+            ),
         };
     }
 }

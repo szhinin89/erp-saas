@@ -16,7 +16,8 @@ public interface IElectronicDocumentXmlStorageService
         Guid electronicDocumentId,
         ElectronicDocumentXml draftXml,
         SignedElectronicDocumentXml signedXml,
-        CancellationToken ct = default);
+        CancellationToken ct = default
+    );
 
     /// <summary>
     /// Persiste el XML autorizado devuelto por el SRI (Fase 9) — independiente de
@@ -28,5 +29,6 @@ public interface IElectronicDocumentXmlStorageService
         ElectronicDocumentType documentType,
         Guid electronicDocumentId,
         string authorizedXml,
-        CancellationToken ct = default);
+        CancellationToken ct = default
+    );
 }

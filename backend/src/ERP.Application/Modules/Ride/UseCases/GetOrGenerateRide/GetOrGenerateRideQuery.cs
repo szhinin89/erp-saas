@@ -10,7 +10,6 @@ namespace ERP.Application.Modules.Ride.UseCases.GetOrGenerateRide;
 /// hoy), nunca el Id interno de <c>ElectronicDocument</c> (corrección H2). Contrato congelado:
 /// cualquier cambio de firma requiere una nueva ADR.
 /// </summary>
-public sealed record GetOrGenerateRideQuery(
-    string SourceModule,
-    Guid SourceEntityId
-) : IRequest<Result<RideGenerationResultDto>>, ICompanyScopedRequest;
+public sealed record GetOrGenerateRideQuery(string SourceModule, Guid SourceEntityId)
+    : IRequest<Result<RideGenerationResultDto>>,
+        ICompanyScopedRequest;

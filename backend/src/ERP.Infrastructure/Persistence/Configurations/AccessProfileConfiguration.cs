@@ -23,9 +23,9 @@ public class AccessProfileConfiguration : IEntityTypeConfiguration<AccessProfile
         builder.Property(p => p.CreatedBy).HasColumnName("created_by");
         builder.Property(p => p.UpdatedBy).HasColumnName("updated_by");
 
-        builder.HasIndex(p => new { p.TenantId, p.Name })
+        builder
+            .HasIndex(p => new { p.TenantId, p.Name })
             .IsUnique()
             .HasDatabaseName("ux_access_profiles_subscriber_name");
     }
 }
-

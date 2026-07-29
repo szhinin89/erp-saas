@@ -43,12 +43,24 @@ public sealed class CompanyUserMembershipsController : ControllerBase
     /// GetCompanyUserMembershipsAdminQuery.
     /// </summary>
     [HttpGet]
-    [ProducesResponseType(typeof(ApiResponse<IReadOnlyList<CompanyUserMembershipAdminDto>>), StatusCodes.Status200OK)]
+    [ProducesResponseType(
+        typeof(ApiResponse<IReadOnlyList<CompanyUserMembershipAdminDto>>),
+        StatusCodes.Status200OK
+    )]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
-    public async Task<IActionResult> List([FromQuery] bool onlyActive = false, CancellationToken cancellationToken = default)
+    public async Task<IActionResult> List(
+        [FromQuery] bool onlyActive = false,
+        CancellationToken cancellationToken = default
+    )
     {
-        var result = await _mediator.Send(new GetCompanyUserMembershipsAdminQuery(onlyActive), cancellationToken);
-        return this.ToOkOrBadRequest(result, successFallbackFactory: () => Array.Empty<CompanyUserMembershipAdminDto>());
+        var result = await _mediator.Send(
+            new GetCompanyUserMembershipsAdminQuery(onlyActive),
+            cancellationToken
+        );
+        return this.ToOkOrBadRequest(
+            result,
+            successFallbackFactory: () => Array.Empty<CompanyUserMembershipAdminDto>()
+        );
     }
 
     /// <summary>
@@ -60,9 +72,15 @@ public sealed class CompanyUserMembershipsController : ControllerBase
     [HttpGet("lookup")]
     [ProducesResponseType(typeof(ApiResponse<UsernameLookupDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
-    public async Task<IActionResult> Lookup([FromQuery] string username, CancellationToken cancellationToken)
+    public async Task<IActionResult> Lookup(
+        [FromQuery] string username,
+        CancellationToken cancellationToken
+    )
     {
-        var result = await _mediator.Send(new LookupUserByUsernameAdminQuery(username), cancellationToken);
+        var result = await _mediator.Send(
+            new LookupUserByUsernameAdminQuery(username),
+            cancellationToken
+        );
         return this.ToOkOrBadRequest(result);
     }
 
@@ -71,11 +89,19 @@ public sealed class CompanyUserMembershipsController : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status422UnprocessableEntity)]
-    public async Task<IActionResult> Upsert([FromBody] UpsertCompanyUserMembershipRequest request, CancellationToken cancellationToken)
+    public async Task<IActionResult> Upsert(
+        [FromBody] UpsertCompanyUserMembershipRequest request,
+        CancellationToken cancellationToken
+    )
     {
         var command = new UpsertCompanyUserMembershipAdminCommand(
-            request.Username, request.Role, request.ProfileId,
-            request.AuthorizedBranchIds, request.DefaultBranchId, request.LoginMode);
+            request.Username,
+            request.Role,
+            request.ProfileId,
+            request.AuthorizedBranchIds,
+            request.DefaultBranchId,
+            request.LoginMode
+        );
 
         var result = await _mediator.Send(command, cancellationToken);
         return this.ToOkOrBadRequest(result, successFallbackFactory: () => new { });
@@ -85,7 +111,10 @@ public sealed class CompanyUserMembershipsController : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> Revoke([FromBody] RevokeCompanyUserMembershipRequest request, CancellationToken cancellationToken)
+    public async Task<IActionResult> Revoke(
+        [FromBody] RevokeCompanyUserMembershipRequest request,
+        CancellationToken cancellationToken
+    )
     {
         var command = new RevokeCompanyUserMembershipAdminCommand(request.Username);
         var result = await _mediator.Send(command, cancellationToken);
@@ -100,7 +129,8 @@ public sealed record UpsertCompanyUserMembershipRequest(
     Guid? ProfileId = null,
     IReadOnlyList<Guid>? AuthorizedBranchIds = null,
     Guid? DefaultBranchId = null,
-    string? LoginMode = null);
+    string? LoginMode = null
+);
 
 /// <summary>Body de POST revoke — CompanyId/TenantId nunca viajan aquí.</summary>
 public sealed record RevokeCompanyUserMembershipRequest(string Username);

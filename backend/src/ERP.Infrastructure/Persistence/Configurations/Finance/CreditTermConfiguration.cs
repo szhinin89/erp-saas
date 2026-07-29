@@ -15,30 +15,47 @@ public sealed class CreditTermConfiguration : IEntityTypeConfiguration<CreditTer
         builder.Property(x => x.TenantId).HasColumnName("tenant_id").IsRequired();
         builder.Property(x => x.CompanyId).HasColumnName("company_id").IsRequired();
 
-        builder.Property(x => x.Code).HasColumnName("code")
-            .HasMaxLength(CreditTerm.MaxCodeLength).IsRequired();
-        builder.Property(x => x.Name).HasColumnName("name")
-            .HasMaxLength(CreditTerm.MaxNameLength).IsRequired();
-        builder.Property(x => x.Mode).HasColumnName("mode")
-            .HasConversion<int>().IsRequired();
+        builder
+            .Property(x => x.Code)
+            .HasColumnName("code")
+            .HasMaxLength(CreditTerm.MaxCodeLength)
+            .IsRequired();
+        builder
+            .Property(x => x.Name)
+            .HasColumnName("name")
+            .HasMaxLength(CreditTerm.MaxNameLength)
+            .IsRequired();
+        builder.Property(x => x.Mode).HasColumnName("mode").HasConversion<int>().IsRequired();
         builder.Property(x => x.TotalDays).HasColumnName("total_days").IsRequired();
 
         builder.Property(x => x.IsActive).HasColumnName("is_active").IsRequired();
-        builder.Property(x => x.IsSystemSeeded).HasColumnName("is_system_seeded").IsRequired().HasDefaultValue(false);
+        builder
+            .Property(x => x.IsSystemSeeded)
+            .HasColumnName("is_system_seeded")
+            .IsRequired()
+            .HasDefaultValue(false);
         builder.Property(x => x.CreatedAt).HasColumnName("created_at");
         builder.Property(x => x.UpdatedAt).HasColumnName("updated_at");
         builder.Property(x => x.CreatedBy).HasColumnName("created_by");
         builder.Property(x => x.UpdatedBy).HasColumnName("updated_by");
 
-        builder.HasMany(x => x.Installments)
+        builder
+            .HasMany(x => x.Installments)
             .WithOne()
             .HasForeignKey(x => x.CreditTermId)
             .OnDelete(DeleteBehavior.Cascade);
 
-        builder.HasIndex(x => new { x.TenantId, x.CompanyId })
+        builder
+            .HasIndex(x => new { x.TenantId, x.CompanyId })
             .HasDatabaseName("ix_credit_terms_tenant_company");
 
-        builder.HasIndex(x => new { x.TenantId, x.CompanyId, x.Code })
+        builder
+            .HasIndex(x => new
+            {
+                x.TenantId,
+                x.CompanyId,
+                x.Code,
+            })
             .IsUnique()
             .HasDatabaseName("uq_credit_terms_tenant_company_code");
     }

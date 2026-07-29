@@ -17,8 +17,14 @@ public sealed record RideParty
     public string? TaxRegime { get; }
 
     private RideParty(
-        string? identificationType, string identificationNumber, string legalName,
-        string? tradeName, string? address, bool? isAccountingRequired, string? taxRegime)
+        string? identificationType,
+        string identificationNumber,
+        string legalName,
+        string? tradeName,
+        string? address,
+        bool? isAccountingRequired,
+        string? taxRegime
+    )
     {
         IdentificationType = identificationType;
         IdentificationNumber = identificationNumber;
@@ -30,12 +36,20 @@ public sealed record RideParty
     }
 
     public static RideParty Create(
-        string? identificationType, string identificationNumber, string legalName,
-        string? tradeName = null, string? address = null,
-        bool? isAccountingRequired = null, string? taxRegime = null)
+        string? identificationType,
+        string identificationNumber,
+        string legalName,
+        string? tradeName = null,
+        string? address = null,
+        bool? isAccountingRequired = null,
+        string? taxRegime = null
+    )
     {
         if (string.IsNullOrWhiteSpace(identificationNumber))
-            throw new ArgumentException("La identificación es obligatoria.", nameof(identificationNumber));
+            throw new ArgumentException(
+                "La identificación es obligatoria.",
+                nameof(identificationNumber)
+            );
         if (string.IsNullOrWhiteSpace(legalName))
             throw new ArgumentException("La razón social es obligatoria.", nameof(legalName));
 
@@ -46,6 +60,7 @@ public sealed record RideParty
             string.IsNullOrWhiteSpace(tradeName) ? null : tradeName.Trim(),
             string.IsNullOrWhiteSpace(address) ? null : address.Trim(),
             isAccountingRequired,
-            string.IsNullOrWhiteSpace(taxRegime) ? null : taxRegime.Trim());
+            string.IsNullOrWhiteSpace(taxRegime) ? null : taxRegime.Trim()
+        );
     }
 }

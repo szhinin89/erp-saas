@@ -9,4 +9,5 @@ public sealed record CreateInitialAdminCommand(
     string LastName,
     string? Email,
     string Password,
-    string SetupToken) : IRequest<Result<string>>;
+    string SetupToken
+) : IRequest<Result<string>>;

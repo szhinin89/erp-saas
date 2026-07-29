@@ -14,6 +14,6 @@ namespace ERP.Domain.Common;
 /// </remarks>
 public static class OptionalCode
 {
-    public static string? Normalize(string? code)
-        => string.IsNullOrWhiteSpace(code) ? null : code.Trim();
+    public static string? Normalize(string? code) =>
+        string.IsNullOrWhiteSpace(code) ? null : code.Trim();
 }

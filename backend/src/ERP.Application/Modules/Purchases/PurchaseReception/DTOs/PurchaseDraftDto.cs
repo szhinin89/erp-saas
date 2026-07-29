@@ -9,10 +9,25 @@ namespace ERP.Application.Modules.Purchases.PurchaseReception.DTOs;
 /// </summary>
 public sealed record PurchaseDraftLineDto(
     Guid PurchaseReceptionLineId,
-    Guid? ItemId, string ItemMatchStatus, string Description, decimal Quantity, decimal UnitPrice,
-    string VatCode, Guid? WarehouseId, string? Notes, decimal DiscountPct, string? IceCode,
-    string? SupplierCode, string? SupplierAuxCode, decimal Discount, decimal LineSubtotal,
-    string TaxCode, decimal VatPercentage, decimal TaxValue, decimal TotalLine);
+    Guid? ItemId,
+    string ItemMatchStatus,
+    string Description,
+    decimal Quantity,
+    decimal UnitPrice,
+    string VatCode,
+    Guid? WarehouseId,
+    string? Notes,
+    decimal DiscountPct,
+    string? IceCode,
+    string? SupplierCode,
+    string? SupplierAuxCode,
+    decimal Discount,
+    decimal LineSubtotal,
+    string TaxCode,
+    decimal VatPercentage,
+    decimal TaxValue,
+    decimal TotalLine
+);
 
 /// <summary>
 /// Respuesta de <c>POST /api/v1/purchases/reception/{id}/create-draft</c> — precarga del formulario
@@ -21,9 +36,17 @@ public sealed record PurchaseDraftLineDto(
 /// autorizó pero no pudo parsearse (comprobante sin detalle interpretable).
 /// </summary>
 public sealed record PurchaseDraftDto(
-    Guid? SupplierId, string SupplierRuc, string SupplierName,
-    string? DocTypeCode, string InvoiceNumber, DateOnly IssueDate,
-    string? AccessKey, string? AuthorizationNumber, DateTime? AuthorizationDate,
+    Guid? SupplierId,
+    string SupplierRuc,
+    string SupplierName,
+    string? DocTypeCode,
+    string InvoiceNumber,
+    DateOnly IssueDate,
+    string? AccessKey,
+    string? AuthorizationNumber,
+    DateTime? AuthorizationDate,
     string? SriPaymentMethodCode,
     List<PurchaseDraftLineDto> Lines,
-    string ProcessingStatus, string? ProcessingNotes);
+    string ProcessingStatus,
+    string? ProcessingNotes
+);

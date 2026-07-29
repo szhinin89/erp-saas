@@ -45,12 +45,40 @@ public sealed class PurchaseReceptionDocumentRepositoryTests : IAsyncLifetime
 
         _createdBy = Guid.NewGuid();
         var tenant = Tenant.Create("Test Tenant", $"test-{Guid.NewGuid():N}"[..16], _createdBy);
-        var company = Company.CreateManaged(tenant.Id, "1790012345001", "Test S.A.", createdBy: _createdBy);
+        var company = Company.CreateManaged(
+            tenant.Id,
+            "1790012345001",
+            "Test S.A.",
+            createdBy: _createdBy
+        );
         var branch = Branch.Create(
-            tenant.Id, "Matriz", "Av. Principal 123", "001",
-            null, null, null, null, null, null, null, null, null, null, null,
-            null, null, null, null, null, null, null, null, true, _createdBy,
-            companyId: company.Id);
+            tenant.Id,
+            "Matriz",
+            "Av. Principal 123",
+            "001",
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            true,
+            _createdBy,
+            companyId: company.Id
+        );
 
         db.Tenants.Add(tenant);
         db.Companies.Add(company);
@@ -75,19 +103,39 @@ public sealed class PurchaseReceptionDocumentRepositoryTests : IAsyncLifetime
             .AddInterceptors(new NewChildEntityTrackingInterceptor())
             .Options;
 
-        return new ErpDbContext(options, new FixedCurrentTenant(tenantId), new NoOpPublisher(), new FixedCurrentCompany(companyId));
+        return new ErpDbContext(
+            options,
+            new FixedCurrentTenant(tenantId),
+            new NoOpPublisher(),
+            new FixedCurrentCompany(companyId)
+        );
     }
 
     private ErpDbContext CreateContext() => CreateContext(_tenantId, _companyId);
 
-    private PurchaseReceptionDocument BuildDocument(string accessKey, Guid? tenantId = null, Guid? companyId = null, Guid? branchId = null)
-        => PurchaseReceptionDocument.Create(
-            tenantId ?? _tenantId, companyId ?? _companyId, branchId ?? _branchId,
+    private PurchaseReceptionDocument BuildDocument(
+        string accessKey,
+        Guid? tenantId = null,
+        Guid? companyId = null,
+        Guid? branchId = null
+    ) =>
+        PurchaseReceptionDocument.Create(
+            tenantId ?? _tenantId,
+            companyId ?? _companyId,
+            branchId ?? _branchId,
             PurchaseReceptionSourceDocType.Invoice,
-            "1791352688001", "QUALA ECUADOR S A", supplierId: null,
-            accessKey, "015-027-000161740", new DateOnly(2026, 7, 1),
+            "1791352688001",
+            "QUALA ECUADOR S A",
+            supplierId: null,
+            accessKey,
+            "015-027-000161740",
+            new DateOnly(2026, 7, 1),
             new DateTime(2026, 7, 1, 21, 6, 55, DateTimeKind.Utc),
-            15.96m, 2.4m, 18.35m, _createdBy);
+            15.96m,
+            2.4m,
+            18.35m,
+            _createdBy
+        );
 
     [Fact]
     public async Task AddAsync_persiste_el_documento_con_mapeo_correcto()
@@ -100,7 +148,10 @@ public sealed class PurchaseReceptionDocumentRepositoryTests : IAsyncLifetime
         await repo.SaveChangesAsync();
 
         await using var verifyDb = CreateContext();
-        var verifyRepo = new PurchaseReceptionDocumentRepository(verifyDb, new FixedCurrentCompany(_companyId));
+        var verifyRepo = new PurchaseReceptionDocumentRepository(
+            verifyDb,
+            new FixedCurrentCompany(_companyId)
+        );
         var stored = await verifyRepo.GetByIdAsync(_tenantId, document.Id);
 
         stored.Should().NotBeNull();
@@ -123,21 +174,46 @@ public sealed class PurchaseReceptionDocumentRepositoryTests : IAsyncLifetime
 
         var downloadedAt = new DateTime(2026, 7, 1, 22, 0, 0, DateTimeKind.Utc);
         var line = PurchaseReceptionLine.Create(
-            document.Id, _tenantId, "Producto de prueba", quantity: 2m, unitPrice: 10m,
-            vatCode: "2", taxCode: "2", vatPercentage: 15m, taxValue: 3m,
-            discountPct: 0m, discount: 0m, lineSubtotal: 20m, totalLine: 23m,
-            iceCode: "3020", iceValue: 1.5m, supplierCode: "PROV-001");
+            document.Id,
+            _tenantId,
+            "Producto de prueba",
+            quantity: 2m,
+            unitPrice: 10m,
+            vatCode: "2",
+            taxCode: "2",
+            vatPercentage: 15m,
+            taxValue: 3m,
+            discountPct: 0m,
+            discount: 0m,
+            lineSubtotal: 20m,
+            totalLine: 23m,
+            iceCode: "3020",
+            iceValue: 1.5m,
+            supplierCode: "PROV-001"
+        );
         document.AttachSriAuthorization(
-            document.AccessKey, new DateTime(2026, 7, 1, 21, 30, 0, DateTimeKind.Utc),
-            "<factura>contenido autorizado</factura>", downloadedAt, [line], _createdBy,
-            docTypeCode: "01", sriPaymentMethodCode: "20",
+            document.AccessKey,
+            new DateTime(2026, 7, 1, 21, 30, 0, DateTimeKind.Utc),
+            "<factura>contenido autorizado</factura>",
+            downloadedAt,
+            [line],
+            _createdBy,
+            docTypeCode: "01",
+            sriPaymentMethodCode: "20",
             processing: new PurchaseReceptionProcessingOutcome(
-                PurchaseReceptionProcessingStatus.ProcessedWithWarnings, LinesDetected: 2, LinesProcessed: 1,
-                Notes: "Línea 2 (PROV-999): La línea no tiene impuesto IVA. — línea omitida."));
+                PurchaseReceptionProcessingStatus.ProcessedWithWarnings,
+                LinesDetected: 2,
+                LinesProcessed: 1,
+                Notes: "Línea 2 (PROV-999): La línea no tiene impuesto IVA. — línea omitida."
+            )
+        );
         await repo.SaveChangesAsync();
 
         await using var verifyDb = CreateContext();
-        var verifyRepo = new PurchaseReceptionDocumentRepository(verifyDb, new FixedCurrentCompany(_companyId));
+        var verifyRepo = new PurchaseReceptionDocumentRepository(
+            verifyDb,
+            new FixedCurrentCompany(_companyId)
+        );
         var stored = await verifyRepo.GetByIdAsync(_tenantId, document.Id);
 
         stored.Should().NotBeNull();
@@ -147,7 +223,9 @@ public sealed class PurchaseReceptionDocumentRepositoryTests : IAsyncLifetime
         stored.XmlDownloadedAt.Should().Be(downloadedAt);
 
         // Fase 4/7: trazabilidad de procesamiento persiste y se recupera completa.
-        stored.ProcessingStatus.Should().Be(PurchaseReceptionProcessingStatus.ProcessedWithWarnings);
+        stored
+            .ProcessingStatus.Should()
+            .Be(PurchaseReceptionProcessingStatus.ProcessedWithWarnings);
         stored.LinesDetectedCount.Should().Be(2);
         stored.LinesProcessedCount.Should().Be(1);
         stored.ProcessingNotes.Should().Contain("PROV-999");
@@ -160,13 +238,19 @@ public sealed class PurchaseReceptionDocumentRepositoryTests : IAsyncLifetime
     public async Task ExistsByAccessKeyAsync_y_GetByAccessKeyAsync_reflejan_el_documento_creado()
     {
         await using var seedDb = CreateContext();
-        var seedRepo = new PurchaseReceptionDocumentRepository(seedDb, new FixedCurrentCompany(_companyId));
+        var seedRepo = new PurchaseReceptionDocumentRepository(
+            seedDb,
+            new FixedCurrentCompany(_companyId)
+        );
         var document = BuildDocument("0207202601179135268800120150270001617400016174022");
         await seedRepo.AddAsync(document);
         await seedRepo.SaveChangesAsync();
 
         await using var queryDb = CreateContext();
-        var queryRepo = new PurchaseReceptionDocumentRepository(queryDb, new FixedCurrentCompany(_companyId));
+        var queryRepo = new PurchaseReceptionDocumentRepository(
+            queryDb,
+            new FixedCurrentCompany(_companyId)
+        );
 
         (await queryRepo.ExistsByAccessKeyAsync(_tenantId, document.AccessKey)).Should().BeTrue();
         (await queryRepo.ExistsByAccessKeyAsync(_tenantId, "clave-inexistente")).Should().BeFalse();
@@ -183,11 +267,16 @@ public sealed class PurchaseReceptionDocumentRepositoryTests : IAsyncLifetime
         var repo = new PurchaseReceptionDocumentRepository(db, new FixedCurrentCompany(_companyId));
 
         for (var i = 0; i < 3; i++)
-            await repo.AddAsync(BuildDocument($"030720260117913526880012015027000161740001617{i:D4}"));
+            await repo.AddAsync(
+                BuildDocument($"030720260117913526880012015027000161740001617{i:D4}")
+            );
         await repo.SaveChangesAsync();
 
         await using var queryDb = CreateContext();
-        var queryRepo = new PurchaseReceptionDocumentRepository(queryDb, new FixedCurrentCompany(_companyId));
+        var queryRepo = new PurchaseReceptionDocumentRepository(
+            queryDb,
+            new FixedCurrentCompany(_companyId)
+        );
 
         var (page1, total1) = await queryRepo.GetPagedAsync(_tenantId, page: 1, pageSize: 2);
         var (page2, total2) = await queryRepo.GetPagedAsync(_tenantId, page: 2, pageSize: 2);
@@ -204,30 +293,69 @@ public sealed class PurchaseReceptionDocumentRepositoryTests : IAsyncLifetime
         var accessKey = "0407202601179135268800120150270001617400016174044";
 
         await using var db1 = CreateContext();
-        var repo1 = new PurchaseReceptionDocumentRepository(db1, new FixedCurrentCompany(_companyId));
+        var repo1 = new PurchaseReceptionDocumentRepository(
+            db1,
+            new FixedCurrentCompany(_companyId)
+        );
         await repo1.AddAsync(BuildDocument(accessKey));
         await repo1.SaveChangesAsync();
 
         await using var db2 = CreateContext();
-        var repo2 = new PurchaseReceptionDocumentRepository(db2, new FixedCurrentCompany(_companyId));
+        var repo2 = new PurchaseReceptionDocumentRepository(
+            db2,
+            new FixedCurrentCompany(_companyId)
+        );
         await repo2.AddAsync(BuildDocument(accessKey));
 
         var act = () => repo2.SaveChangesAsync();
 
-        await act.Should().ThrowAsync<DbUpdateException>()
+        await act.Should()
+            .ThrowAsync<DbUpdateException>()
             .Where(e => IsUniqueViolation(e.InnerException));
     }
 
     [Fact]
     public async Task Aislamiento_multi_tenant_un_tenant_no_ve_documentos_de_otro()
     {
-        var otherTenant = Tenant.Create("Other Tenant", $"other-{Guid.NewGuid():N}"[..16], _createdBy);
-        var otherCompany = Company.CreateManaged(otherTenant.Id, "1790099999001", "Other S.A.", createdBy: _createdBy);
+        var otherTenant = Tenant.Create(
+            "Other Tenant",
+            $"other-{Guid.NewGuid():N}"[..16],
+            _createdBy
+        );
+        var otherCompany = Company.CreateManaged(
+            otherTenant.Id,
+            "1790099999001",
+            "Other S.A.",
+            createdBy: _createdBy
+        );
         var otherBranch = Branch.Create(
-            otherTenant.Id, "Matriz Otro", "Av. Secundaria 456", "001",
-            null, null, null, null, null, null, null, null, null, null, null,
-            null, null, null, null, null, null, null, null, true, _createdBy,
-            companyId: otherCompany.Id);
+            otherTenant.Id,
+            "Matriz Otro",
+            "Av. Secundaria 456",
+            "001",
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            true,
+            _createdBy,
+            companyId: otherCompany.Id
+        );
 
         await using (var seedDb = CreateContext())
         {
@@ -241,14 +369,22 @@ public sealed class PurchaseReceptionDocumentRepositoryTests : IAsyncLifetime
 
         await using (var db = CreateContext(otherTenant.Id, otherCompany.Id))
         {
-            var repo = new PurchaseReceptionDocumentRepository(db, new FixedCurrentCompany(otherCompany.Id));
-            await repo.AddAsync(BuildDocument(accessKey, otherTenant.Id, otherCompany.Id, otherBranch.Id));
+            var repo = new PurchaseReceptionDocumentRepository(
+                db,
+                new FixedCurrentCompany(otherCompany.Id)
+            );
+            await repo.AddAsync(
+                BuildDocument(accessKey, otherTenant.Id, otherCompany.Id, otherBranch.Id)
+            );
             await repo.SaveChangesAsync();
         }
 
         // El tenant original (distinto del que creó el documento) no debe verlo bajo ningún método.
         await using var queryDb = CreateContext();
-        var queryRepo = new PurchaseReceptionDocumentRepository(queryDb, new FixedCurrentCompany(_companyId));
+        var queryRepo = new PurchaseReceptionDocumentRepository(
+            queryDb,
+            new FixedCurrentCompany(_companyId)
+        );
 
         (await queryRepo.ExistsByAccessKeyAsync(_tenantId, accessKey)).Should().BeFalse();
         var (items, total) = await queryRepo.GetPagedAsync(_tenantId, page: 1, pageSize: 50);
@@ -257,12 +393,15 @@ public sealed class PurchaseReceptionDocumentRepositoryTests : IAsyncLifetime
 
         // El tenant dueño sí lo ve.
         await using var ownerDb = CreateContext(otherTenant.Id, otherCompany.Id);
-        var ownerRepo = new PurchaseReceptionDocumentRepository(ownerDb, new FixedCurrentCompany(otherCompany.Id));
+        var ownerRepo = new PurchaseReceptionDocumentRepository(
+            ownerDb,
+            new FixedCurrentCompany(otherCompany.Id)
+        );
         (await ownerRepo.ExistsByAccessKeyAsync(otherTenant.Id, accessKey)).Should().BeTrue();
     }
 
-    private static bool IsUniqueViolation(Exception? inner)
-        => inner is PostgresException pg && pg.SqlState == PostgresErrorCodes.UniqueViolation;
+    private static bool IsUniqueViolation(Exception? inner) =>
+        inner is PostgresException pg && pg.SqlState == PostgresErrorCodes.UniqueViolation;
 
     // ── Helpers de identidad para el DbContext ───────────────────────────────
 
@@ -281,11 +420,13 @@ public sealed class PurchaseReceptionDocumentRepositoryTests : IAsyncLifetime
 
     private sealed class NoOpPublisher : IPublisher
     {
-        public Task Publish(object notification, CancellationToken cancellationToken = default)
-            => Task.CompletedTask;
+        public Task Publish(object notification, CancellationToken cancellationToken = default) =>
+            Task.CompletedTask;
 
-        public Task Publish<TNotification>(TNotification notification, CancellationToken cancellationToken = default)
-            where TNotification : INotification
-            => Task.CompletedTask;
+        public Task Publish<TNotification>(
+            TNotification notification,
+            CancellationToken cancellationToken = default
+        )
+            where TNotification : INotification => Task.CompletedTask;
     }
 }

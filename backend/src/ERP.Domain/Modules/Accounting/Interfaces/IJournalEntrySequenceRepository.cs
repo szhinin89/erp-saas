@@ -11,5 +11,9 @@ public interface IJournalEntrySequenceRepository
     /// no existe.
     /// </summary>
     Task<int> ReserveNextNumberAsync(
-        Guid tenantId, Guid companyId, int fiscalYear, CancellationToken ct = default);
+        Guid tenantId,
+        Guid companyId,
+        int fiscalYear,
+        CancellationToken ct = default
+    );
 }

@@ -1,4 +1,4 @@
-﻿namespace ERP.API.Hangfire;
+namespace ERP.API.Hangfire;
 
 /// <summary>
 /// Hangfire job that processes pending outbox messages.

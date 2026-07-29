@@ -8,14 +8,24 @@ public sealed class UpsertCompanyInvoiceOrgSettingsCommandValidator
 {
     public UpsertCompanyInvoiceOrgSettingsCommandValidator()
     {
-        When(c => !string.IsNullOrWhiteSpace(c.DefaultDocTypeCode), () =>
-            RuleFor(c => c.DefaultDocTypeCode)
-                .MaximumLength(SriSettings.DocTypeCodeMaxLen)
-                .WithMessage($"El código de tipo de documento no puede superar {SriSettings.DocTypeCodeMaxLen} caracteres."));
+        When(
+            c => !string.IsNullOrWhiteSpace(c.DefaultDocTypeCode),
+            () =>
+                RuleFor(c => c.DefaultDocTypeCode)
+                    .MaximumLength(SriSettings.DocTypeCodeMaxLen)
+                    .WithMessage(
+                        $"El código de tipo de documento no puede superar {SriSettings.DocTypeCodeMaxLen} caracteres."
+                    )
+        );
 
-        When(c => !string.IsNullOrWhiteSpace(c.DefaultSriPaymentMethodCode), () =>
-            RuleFor(c => c.DefaultSriPaymentMethodCode)
-                .MaximumLength(SriSettings.PaymentMethodCodeMaxLen)
-                .WithMessage($"El código de forma de pago SRI no puede superar {SriSettings.PaymentMethodCodeMaxLen} caracteres."));
+        When(
+            c => !string.IsNullOrWhiteSpace(c.DefaultSriPaymentMethodCode),
+            () =>
+                RuleFor(c => c.DefaultSriPaymentMethodCode)
+                    .MaximumLength(SriSettings.PaymentMethodCodeMaxLen)
+                    .WithMessage(
+                        $"El código de forma de pago SRI no puede superar {SriSettings.PaymentMethodCodeMaxLen} caracteres."
+                    )
+        );
     }
 }

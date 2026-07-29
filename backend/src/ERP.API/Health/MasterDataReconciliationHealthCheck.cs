@@ -8,12 +8,13 @@ public sealed class MasterDataReconciliationHealthCheck : IHealthCheck
 {
     private readonly IMasterDataReconciliationService _reconciliation;
 
-    public MasterDataReconciliationHealthCheck(IMasterDataReconciliationService reconciliation)
-        => _reconciliation = reconciliation;
+    public MasterDataReconciliationHealthCheck(IMasterDataReconciliationService reconciliation) =>
+        _reconciliation = reconciliation;
 
     public async Task<HealthCheckResult> CheckHealthAsync(
         HealthCheckContext context,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default
+    )
     {
         var report = await _reconciliation.AnalyzeAsync(cancellationToken);
 
@@ -29,7 +30,10 @@ public sealed class MasterDataReconciliationHealthCheck : IHealthCheck
         };
 
         return critical > 0
-            ? HealthCheckResult.Unhealthy("MasterData reconciliation: issues críticas detectadas.", data: data)
+            ? HealthCheckResult.Unhealthy(
+                "MasterData reconciliation: issues críticas detectadas.",
+                data: data
+            )
             : HealthCheckResult.Degraded("MasterData reconciliation: drift detectado.", data: data);
     }
 }

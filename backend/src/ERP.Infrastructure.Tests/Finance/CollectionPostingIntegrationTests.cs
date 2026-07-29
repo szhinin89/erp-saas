@@ -64,19 +64,67 @@ public sealed class CollectionPostingIntegrationTests : IAsyncLifetime
 
         _createdBy = Guid.NewGuid();
         var tenant = Tenant.Create("Test Tenant", $"test-{Guid.NewGuid():N}"[..16], _createdBy);
-        var company = Company.CreateManaged(tenant.Id, "1790012345001", "Test S.A.", createdBy: _createdBy);
+        var company = Company.CreateManaged(
+            tenant.Id,
+            "1790012345001",
+            "Test S.A.",
+            createdBy: _createdBy
+        );
         var branch = Branch.Create(
-            tenant.Id, "Matriz", "Av. Principal 123", "001",
-            null, null, null, null, null, null, null, null, null, null, null,
-            null, null, null, null, null, null, null, null, true, _createdBy,
-            companyId: company.Id);
-        var customer = BusinessPartner.Create(tenant.Id, "05", "1710034065", PersonType.Natural, "Cliente Test", _createdBy);
+            tenant.Id,
+            "Matriz",
+            "Av. Principal 123",
+            "001",
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            true,
+            _createdBy,
+            companyId: company.Id
+        );
+        var customer = BusinessPartner.Create(
+            tenant.Id,
+            "05",
+            "1710034065",
+            PersonType.Natural,
+            "Cliente Test",
+            _createdBy
+        );
         var establishment = Establishment.Create(
-            tenant.Id, branchId: branch.Id, company.Id,
-            code: "001", name: "Matriz Test", address: "Av. Principal 123",
-            phone: null, isMain: true, createdBy: _createdBy);
+            tenant.Id,
+            branchId: branch.Id,
+            company.Id,
+            code: "001",
+            name: "Matriz Test",
+            address: "Av. Principal 123",
+            phone: null,
+            isMain: true,
+            createdBy: _createdBy
+        );
         var cashRegister = CashRegister.Create(
-            tenant.Id, company.Id, branch.Id, "CAJA-01", "Caja Principal", _createdBy);
+            tenant.Id,
+            company.Id,
+            branch.Id,
+            "CAJA-01",
+            "Caja Principal",
+            _createdBy
+        );
 
         db.Tenants.Add(tenant);
         db.Companies.Add(company);
@@ -87,35 +135,76 @@ public sealed class CollectionPostingIntegrationTests : IAsyncLifetime
         await db.SaveChangesAsync();
 
         var emissionPoint = EmissionPoint.Create(
-            tenant.Id, company.Id, establishment.Id,
-            code: "001", name: "PE-001", emissionType: EmissionType.Electronic,
-            isDefault: true, createdBy: _createdBy);
+            tenant.Id,
+            company.Id,
+            establishment.Id,
+            code: "001",
+            name: "PE-001",
+            emissionType: EmissionType.Electronic,
+            isDefault: true,
+            createdBy: _createdBy
+        );
         db.EmissionPoints.Add(emissionPoint);
         await db.SaveChangesAsync();
 
         var cashSession = CashSession.Open(
-            tenant.Id, company.Id, branch.Id, _createdBy,
-            cashRegister.Id, "CAJA-01", "Caja Principal",
-            emissionPoint.Id, "001",
-            0m, _createdBy);
+            tenant.Id,
+            company.Id,
+            branch.Id,
+            _createdBy,
+            cashRegister.Id,
+            "CAJA-01",
+            "Caja Principal",
+            emissionPoint.Id,
+            "001",
+            0m,
+            _createdBy
+        );
         db.CashSessions.Add(cashSession);
         await db.SaveChangesAsync();
 
         // Factura solo como ancla de la FK real de SalesReceivable.InvoiceId — no se autoriza,
         // el flujo bajo prueba parte directamente de la CxC ya existente.
         var customerSnapshot = CustomerSnapshot.Create("Cliente Test", "1710034065", "05");
-        var paymentTerm = PaymentTermSnapshot.Create(Guid.NewGuid(), "Crédito", installments: 1, daysBetween: 30);
+        var paymentTerm = PaymentTermSnapshot.Create(
+            Guid.NewGuid(),
+            "Crédito",
+            installments: 1,
+            daysBetween: 30
+        );
         var invoice = SalesInvoice.CreateDraft(
-            tenant.Id, company.Id, branch.Id, customer.Id, customerSnapshot,
-            invoiceNumber: "001-001-000000001", issueDate: new DateOnly(2026, 7, 1), createdBy: _createdBy,
-            paymentTerm: paymentTerm, cashSessionId: cashSession.Id);
+            tenant.Id,
+            company.Id,
+            branch.Id,
+            customer.Id,
+            customerSnapshot,
+            invoiceNumber: "001-001-000000001",
+            issueDate: new DateOnly(2026, 7, 1),
+            createdBy: _createdBy,
+            paymentTerm: paymentTerm,
+            cashSessionId: cashSession.Id
+        );
         var line = SalesInvoiceDetail.Create(
-            invoice.Id, tenant.Id, "Producto Test", quantity: 1, unitPrice: 300m, vatCode: "10", uomCode: "UNIT");
+            invoice.Id,
+            tenant.Id,
+            "Producto Test",
+            quantity: 1,
+            unitPrice: 300m,
+            vatCode: "10",
+            uomCode: "UNIT"
+        );
         invoice.ReplaceLines(new[] { line }, _createdBy);
         db.SalesInvoices.Add(invoice);
         await db.SaveChangesAsync();
 
-        var receivable = SalesReceivable.Create(tenant.Id, company.Id, invoice.Id, customer.Id, 300m, _createdBy);
+        var receivable = SalesReceivable.Create(
+            tenant.Id,
+            company.Id,
+            invoice.Id,
+            customer.Id,
+            300m,
+            _createdBy
+        );
         db.SalesReceivables.Add(receivable);
         await db.SaveChangesAsync();
 
@@ -136,21 +225,33 @@ public sealed class CollectionPostingIntegrationTests : IAsyncLifetime
             .Options;
 
         return new ErpDbContext(
-            options, new FixedCurrentTenant(_tenantId), publisher ?? new NoOpPublisher(), new FixedCurrentCompany(_companyId));
+            options,
+            new FixedCurrentTenant(_tenantId),
+            publisher ?? new NoOpPublisher(),
+            new FixedCurrentCompany(_companyId)
+        );
     }
 
     /// <summary>Mismo mecanismo de producción (AddMediatR con escaneo de ensamblado) que
     /// SalesInvoiceAuthorizedPostingIntegrationTests — confirma que CollectionAppliedPostingTranslator
     /// se registra automáticamente como INotificationHandler&lt;CollectionAppliedEvent&gt;.</summary>
     private static (ErpDbContext db, IPublisher publisher) BuildWiredContext(
-        Guid tenantId, Guid companyId, PostgreSqlContainer postgres)
+        Guid tenantId,
+        Guid companyId,
+        PostgreSqlContainer postgres
+    )
     {
         var deferred = new DeferredPublisher();
         var options = new DbContextOptionsBuilder<ErpDbContext>()
             .UseNpgsql(postgres.GetConnectionString() + ";Include Error Detail=true")
             .EnableSensitiveDataLogging()
             .Options;
-        var db = new ErpDbContext(options, new FixedCurrentTenant(tenantId), deferred, new FixedCurrentCompany(companyId));
+        var db = new ErpDbContext(
+            options,
+            new FixedCurrentTenant(tenantId),
+            deferred,
+            new FixedCurrentCompany(companyId)
+        );
 
         var services = new ServiceCollection();
         services.AddLogging();
@@ -162,7 +263,9 @@ public sealed class CollectionPostingIntegrationTests : IAsyncLifetime
         services.AddScoped<IAccountingPeriodRepository, AccountingPeriodRepository>();
         services.AddScoped<IJournalEntrySequenceRepository, JournalEntrySequenceRepository>();
         services.AddScoped<IPostingEngine, PostingEngine>();
-        services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(CollectionAppliedPostingTranslator).Assembly));
+        services.AddMediatR(cfg =>
+            cfg.RegisterServicesFromAssembly(typeof(CollectionAppliedPostingTranslator).Assembly)
+        );
 
         var provider = services.BuildServiceProvider();
         deferred.Inner = provider.GetRequiredService<IPublisher>();
@@ -173,72 +276,183 @@ public sealed class CollectionPostingIntegrationTests : IAsyncLifetime
     private async Task SeedRuleAndPeriodAsync(ErpDbContext db, DateOnly entryDate)
     {
         var cashAccount = Account.Create(
-            _tenantId, _companyId, AccountCode.Create($"1.1.{Guid.NewGuid():N}"[..8]), "Caja", null,
-            AccountType.Asset, AccountNature.Debit, allowsPosting: true, createdBy: _createdBy);
+            _tenantId,
+            _companyId,
+            AccountCode.Create($"1.1.{Guid.NewGuid():N}"[..8]),
+            "Caja",
+            null,
+            AccountType.Asset,
+            AccountNature.Debit,
+            allowsPosting: true,
+            createdBy: _createdBy
+        );
         var receivableAccount = Account.Create(
-            _tenantId, _companyId, AccountCode.Create($"1.2.{Guid.NewGuid():N}"[..8]), "Cuentas por Cobrar", null,
-            AccountType.Asset, AccountNature.Debit, allowsPosting: true, createdBy: _createdBy);
+            _tenantId,
+            _companyId,
+            AccountCode.Create($"1.2.{Guid.NewGuid():N}"[..8]),
+            "Cuentas por Cobrar",
+            null,
+            AccountType.Asset,
+            AccountNature.Debit,
+            allowsPosting: true,
+            createdBy: _createdBy
+        );
         db.Accounts.AddRange(cashAccount, receivableAccount);
 
-        var rule = PostingRule.Create(_tenantId, _companyId, "Finance", "CollectionApplied", null, null, null, _createdBy);
+        var rule = PostingRule.Create(
+            _tenantId,
+            _companyId,
+            "Finance",
+            "CollectionApplied",
+            null,
+            null,
+            null,
+            _createdBy
+        );
         rule.AddLine(cashAccount.Id, AccountNature.Debit, PostingAmountKind.GrandTotal);
         rule.AddLine(receivableAccount.Id, AccountNature.Credit, PostingAmountKind.GrandTotal);
 
         var period = AccountingPeriod.Create(
-            _tenantId, _companyId, entryDate.Year, entryDate.Month,
+            _tenantId,
+            _companyId,
+            entryDate.Year,
+            entryDate.Month,
             new DateOnly(entryDate.Year, entryDate.Month, 1),
-            new DateOnly(entryDate.Year, entryDate.Month, DateTime.DaysInMonth(entryDate.Year, entryDate.Month)),
-            _createdBy);
+            new DateOnly(
+                entryDate.Year,
+                entryDate.Month,
+                DateTime.DaysInMonth(entryDate.Year, entryDate.Month)
+            ),
+            _createdBy
+        );
 
         db.PostingRules.Add(rule);
         db.AccountingPeriods.Add(period);
         await db.SaveChangesAsync();
     }
 
-    private static RegisterCollectionCommandHandler BuildHandler(ErpDbContext db, Guid tenantId, Guid companyId, Guid userId) => new(
-        new PaymentRepository(db),
-        new SalesReceivableRepository(db, new FixedCurrentCompany(companyId)),
-        new FixedCurrentTenant(tenantId),
-        new FixedCurrentCompany(companyId),
-        new FixedCurrentUser(userId));
+    private static RegisterCollectionCommandHandler BuildHandler(
+        ErpDbContext db,
+        Guid tenantId,
+        Guid companyId,
+        Guid userId
+    ) =>
+        new(
+            new PaymentRepository(db),
+            new SalesReceivableRepository(db, new FixedCurrentCompany(companyId)),
+            new FixedCurrentTenant(tenantId),
+            new FixedCurrentCompany(companyId),
+            new FixedCurrentUser(userId)
+        );
 
-    private static ReverseCollectionCommandHandler BuildReverseHandler(ErpDbContext db, Guid tenantId, Guid companyId, Guid userId) => new(
-        new PaymentRepository(db),
-        new SalesReceivableRepository(db, new FixedCurrentCompany(companyId)),
-        new FixedCurrentTenant(tenantId),
-        new FixedCurrentCompany(companyId),
-        new FixedCurrentUser(userId));
+    private static ReverseCollectionCommandHandler BuildReverseHandler(
+        ErpDbContext db,
+        Guid tenantId,
+        Guid companyId,
+        Guid userId
+    ) =>
+        new(
+            new PaymentRepository(db),
+            new SalesReceivableRepository(db, new FixedCurrentCompany(companyId)),
+            new FixedCurrentTenant(tenantId),
+            new FixedCurrentCompany(companyId),
+            new FixedCurrentUser(userId)
+        );
 
-    private static RegisterCollectionCommand SingleLineCommand(Guid receivableId, decimal amount, DateOnly paymentDate, Guid customerId) => new(
-        customerId, amount, paymentDate, PaymentMethodId: null, Reference: null,
-        new[] { new PaymentApplicationLineInput(receivableId, null, amount) });
+    private static RegisterCollectionCommand SingleLineCommand(
+        Guid receivableId,
+        decimal amount,
+        DateOnly paymentDate,
+        Guid customerId
+    ) =>
+        new(
+            customerId,
+            amount,
+            paymentDate,
+            PaymentMethodId: null,
+            Reference: null,
+            new[] { new PaymentApplicationLineInput(receivableId, null, amount) }
+        );
 
     /// <summary>Fase 5.6.6 — siembra tanto la regla de aplicación como la de reverso, más un único
     /// período compartido (dos períodos para el mismo mes/empresa no aportan nada y complicarían
     /// la resolución del PostingPeriodResolver sin necesidad).</summary>
-    private async Task SeedAppliedAndReversedRulesAndPeriodAsync(ErpDbContext db, DateOnly entryDate)
+    private async Task SeedAppliedAndReversedRulesAndPeriodAsync(
+        ErpDbContext db,
+        DateOnly entryDate
+    )
     {
         var cashAccount = Account.Create(
-            _tenantId, _companyId, AccountCode.Create($"1.1.{Guid.NewGuid():N}"[..8]), "Caja", null,
-            AccountType.Asset, AccountNature.Debit, allowsPosting: true, createdBy: _createdBy);
+            _tenantId,
+            _companyId,
+            AccountCode.Create($"1.1.{Guid.NewGuid():N}"[..8]),
+            "Caja",
+            null,
+            AccountType.Asset,
+            AccountNature.Debit,
+            allowsPosting: true,
+            createdBy: _createdBy
+        );
         var receivableAccount = Account.Create(
-            _tenantId, _companyId, AccountCode.Create($"1.2.{Guid.NewGuid():N}"[..8]), "Cuentas por Cobrar", null,
-            AccountType.Asset, AccountNature.Debit, allowsPosting: true, createdBy: _createdBy);
+            _tenantId,
+            _companyId,
+            AccountCode.Create($"1.2.{Guid.NewGuid():N}"[..8]),
+            "Cuentas por Cobrar",
+            null,
+            AccountType.Asset,
+            AccountNature.Debit,
+            allowsPosting: true,
+            createdBy: _createdBy
+        );
         db.Accounts.AddRange(cashAccount, receivableAccount);
 
-        var appliedRule = PostingRule.Create(_tenantId, _companyId, "Finance", "CollectionApplied", null, null, null, _createdBy);
+        var appliedRule = PostingRule.Create(
+            _tenantId,
+            _companyId,
+            "Finance",
+            "CollectionApplied",
+            null,
+            null,
+            null,
+            _createdBy
+        );
         appliedRule.AddLine(cashAccount.Id, AccountNature.Debit, PostingAmountKind.GrandTotal);
-        appliedRule.AddLine(receivableAccount.Id, AccountNature.Credit, PostingAmountKind.GrandTotal);
+        appliedRule.AddLine(
+            receivableAccount.Id,
+            AccountNature.Credit,
+            PostingAmountKind.GrandTotal
+        );
 
-        var reversedRule = PostingRule.Create(_tenantId, _companyId, "Finance", "CollectionReversed", null, null, null, _createdBy);
-        reversedRule.AddLine(receivableAccount.Id, AccountNature.Debit, PostingAmountKind.GrandTotal);
+        var reversedRule = PostingRule.Create(
+            _tenantId,
+            _companyId,
+            "Finance",
+            "CollectionReversed",
+            null,
+            null,
+            null,
+            _createdBy
+        );
+        reversedRule.AddLine(
+            receivableAccount.Id,
+            AccountNature.Debit,
+            PostingAmountKind.GrandTotal
+        );
         reversedRule.AddLine(cashAccount.Id, AccountNature.Credit, PostingAmountKind.GrandTotal);
 
         var period = AccountingPeriod.Create(
-            _tenantId, _companyId, entryDate.Year, entryDate.Month,
+            _tenantId,
+            _companyId,
+            entryDate.Year,
+            entryDate.Month,
             new DateOnly(entryDate.Year, entryDate.Month, 1),
-            new DateOnly(entryDate.Year, entryDate.Month, DateTime.DaysInMonth(entryDate.Year, entryDate.Month)),
-            _createdBy);
+            new DateOnly(
+                entryDate.Year,
+                entryDate.Month,
+                DateTime.DaysInMonth(entryDate.Year, entryDate.Month)
+            ),
+            _createdBy
+        );
 
         db.PostingRules.AddRange(appliedRule, reversedRule);
         db.AccountingPeriods.Add(period);
@@ -252,12 +466,17 @@ public sealed class CollectionPostingIntegrationTests : IAsyncLifetime
         var (db, _) = BuildWiredContext(_tenantId, _companyId, _postgres);
 
         var result = await BuildHandler(db, _tenantId, _companyId, _createdBy)
-            .Handle(SingleLineCommand(_receivableId, 300m, paymentDate, _customerId), CancellationToken.None);
+            .Handle(
+                SingleLineCommand(_receivableId, 300m, paymentDate, _customerId),
+                CancellationToken.None
+            );
 
         result.IsSuccess.Should().BeTrue();
 
         await using var verifyDb = CreateContext();
-        var payment = await verifyDb.Payments.Include(x => x.Lines).FirstAsync(x => x.Id == result.Value!.Id);
+        var payment = await verifyDb
+            .Payments.Include(x => x.Lines)
+            .FirstAsync(x => x.Id == result.Value!.Id);
         var receivable = await verifyDb.SalesReceivables.FirstAsync(x => x.Id == _receivableId);
 
         payment.Direction.Should().Be(PaymentDirection.Collection);
@@ -279,7 +498,10 @@ public sealed class CollectionPostingIntegrationTests : IAsyncLifetime
 
         var (dbA, _) = BuildWiredContext(_tenantId, _companyId, _postgres);
         var firstResult = await BuildHandler(dbA, _tenantId, _companyId, _createdBy)
-            .Handle(SingleLineCommand(_receivableId, 120m, paymentDate, _customerId), CancellationToken.None);
+            .Handle(
+                SingleLineCommand(_receivableId, 120m, paymentDate, _customerId),
+                CancellationToken.None
+            );
         firstResult.IsSuccess.Should().BeTrue();
 
         await using (var midDb = CreateContext())
@@ -291,7 +513,10 @@ public sealed class CollectionPostingIntegrationTests : IAsyncLifetime
 
         var (dbB, _) = BuildWiredContext(_tenantId, _companyId, _postgres);
         var secondResult = await BuildHandler(dbB, _tenantId, _companyId, _createdBy)
-            .Handle(SingleLineCommand(_receivableId, 180m, paymentDate, _customerId), CancellationToken.None);
+            .Handle(
+                SingleLineCommand(_receivableId, 180m, paymentDate, _customerId),
+                CancellationToken.None
+            );
         secondResult.IsSuccess.Should().BeTrue();
 
         await using var verifyDb = CreateContext();
@@ -300,7 +525,9 @@ public sealed class CollectionPostingIntegrationTests : IAsyncLifetime
 
         receivable.PaidAmount.Should().Be(300m);
         receivable.BalanceDue.Should().Be(0m);
-        paymentCount.Should().Be(2, because: "dos cobros independientes, cada uno con su propio Payment");
+        paymentCount
+            .Should()
+            .Be(2, because: "dos cobros independientes, cada uno con su propio Payment");
     }
 
     [Fact]
@@ -311,12 +538,16 @@ public sealed class CollectionPostingIntegrationTests : IAsyncLifetime
         await SeedRuleAndPeriodAsync(db, paymentDate);
 
         var result = await BuildHandler(db, _tenantId, _companyId, _createdBy)
-            .Handle(SingleLineCommand(_receivableId, 300m, paymentDate, _customerId), CancellationToken.None);
+            .Handle(
+                SingleLineCommand(_receivableId, 300m, paymentDate, _customerId),
+                CancellationToken.None
+            );
 
         result.IsSuccess.Should().BeTrue();
 
         await using var verifyDb = CreateContext();
-        var entry = await verifyDb.JournalEntries.Include(x => x.Lines)
+        var entry = await verifyDb
+            .JournalEntries.Include(x => x.Lines)
             .FirstOrDefaultAsync(x => x.SourceEventId == result.Value!.Id);
 
         entry.Should().NotBeNull();
@@ -336,15 +567,22 @@ public sealed class CollectionPostingIntegrationTests : IAsyncLifetime
         // Sin PostingRule sembrada — fuerza RULE_NOT_FOUND dentro del pipeline.
 
         var result = await BuildHandler(db, _tenantId, _companyId, _createdBy)
-            .Handle(SingleLineCommand(_receivableId, 300m, paymentDate, _customerId), CancellationToken.None);
+            .Handle(
+                SingleLineCommand(_receivableId, 300m, paymentDate, _customerId),
+                CancellationToken.None
+            );
 
-        result.IsSuccess.Should().BeTrue(because: "el fallo del Posting Engine no debe revertir el registro del cobro");
+        result
+            .IsSuccess.Should()
+            .BeTrue(because: "el fallo del Posting Engine no debe revertir el registro del cobro");
 
         await using var verifyDb = CreateContext();
         var receivable = await verifyDb.SalesReceivables.FirstAsync(x => x.Id == _receivableId);
         receivable.PaidAmount.Should().Be(300m);
 
-        var entry = await verifyDb.JournalEntries.FirstOrDefaultAsync(x => x.SourceEventId == result.Value!.Id);
+        var entry = await verifyDb.JournalEntries.FirstOrDefaultAsync(x =>
+            x.SourceEventId == result.Value!.Id
+        );
         entry.Should().BeNull();
     }
 
@@ -356,22 +594,46 @@ public sealed class CollectionPostingIntegrationTests : IAsyncLifetime
         await SeedRuleAndPeriodAsync(db, paymentDate);
 
         var result = await BuildHandler(db, _tenantId, _companyId, _createdBy)
-            .Handle(SingleLineCommand(_receivableId, 300m, paymentDate, _customerId), CancellationToken.None);
+            .Handle(
+                SingleLineCommand(_receivableId, 300m, paymentDate, _customerId),
+                CancellationToken.None
+            );
         result.IsSuccess.Should().BeTrue();
         var paymentId = result.Value!.Id;
 
         // Republicación manual del mismo evento — simula un reintento de entrega del mismo Domain
         // Event (nunca se vuelve a ejecutar RegisterCollectionCommand).
-        var repeated = new CollectionAppliedEvent(_tenantId, paymentId, _companyId, _customerId, 300m, paymentDate);
+        var repeated = new CollectionAppliedEvent(
+            _tenantId,
+            paymentId,
+            _companyId,
+            _customerId,
+            300m,
+            paymentDate
+        );
         await publisher.Publish(repeated, CancellationToken.None);
 
         await using var verifyDb = CreateContext();
-        var journalEntryCount = await verifyDb.JournalEntries.CountAsync(x => x.SourceEventId == paymentId);
+        var journalEntryCount = await verifyDb.JournalEntries.CountAsync(x =>
+            x.SourceEventId == paymentId
+        );
         var paymentCount = await verifyDb.Payments.CountAsync(x => x.Id == paymentId);
-        var lineCount = await verifyDb.PaymentApplicationLines.CountAsync(x => x.PaymentId == paymentId);
+        var lineCount = await verifyDb.PaymentApplicationLines.CountAsync(x =>
+            x.PaymentId == paymentId
+        );
 
-        journalEntryCount.Should().Be(1, because: "el Posting Engine ya garantiza idempotencia por SourceEventId (Fase 3.1)");
-        paymentCount.Should().Be(1, because: "republicar el evento no crea un segundo Payment — solo el comando lo hace");
+        journalEntryCount
+            .Should()
+            .Be(
+                1,
+                because: "el Posting Engine ya garantiza idempotencia por SourceEventId (Fase 3.1)"
+            );
+        paymentCount
+            .Should()
+            .Be(
+                1,
+                because: "republicar el evento no crea un segundo Payment — solo el comando lo hace"
+            );
         lineCount.Should().Be(1, because: "republicar el evento no duplica PaymentApplicationLine");
     }
 
@@ -393,13 +655,19 @@ public sealed class CollectionPostingIntegrationTests : IAsyncLifetime
         await SeedAppliedAndReversedRulesAndPeriodAsync(db, today);
 
         var registerResult = await BuildHandler(db, _tenantId, _companyId, _createdBy)
-            .Handle(SingleLineCommand(_receivableId, 300m, today, _customerId), CancellationToken.None);
+            .Handle(
+                SingleLineCommand(_receivableId, 300m, today, _customerId),
+                CancellationToken.None
+            );
         registerResult.IsSuccess.Should().BeTrue();
         var paymentId = registerResult.Value!.Id;
 
         var (dbReverse, _) = BuildWiredContext(_tenantId, _companyId, _postgres);
         var reverseResult = await BuildReverseHandler(dbReverse, _tenantId, _companyId, _createdBy)
-            .Handle(new ReverseCollectionCommand(paymentId, "Error de digitación"), CancellationToken.None);
+            .Handle(
+                new ReverseCollectionCommand(paymentId, "Error de digitación"),
+                CancellationToken.None
+            );
 
         reverseResult.IsSuccess.Should().BeTrue();
 
@@ -421,22 +689,34 @@ public sealed class CollectionPostingIntegrationTests : IAsyncLifetime
         await SeedAppliedAndReversedRulesAndPeriodAsync(db, today);
 
         var registerResult = await BuildHandler(db, _tenantId, _companyId, _createdBy)
-            .Handle(SingleLineCommand(_receivableId, 300m, today, _customerId), CancellationToken.None);
+            .Handle(
+                SingleLineCommand(_receivableId, 300m, today, _customerId),
+                CancellationToken.None
+            );
         registerResult.IsSuccess.Should().BeTrue();
         var paymentId = registerResult.Value!.Id;
 
         var (dbReverse, _) = BuildWiredContext(_tenantId, _companyId, _postgres);
         var reverseResult = await BuildReverseHandler(dbReverse, _tenantId, _companyId, _createdBy)
-            .Handle(new ReverseCollectionCommand(paymentId, "Error de digitación"), CancellationToken.None);
+            .Handle(
+                new ReverseCollectionCommand(paymentId, "Error de digitación"),
+                CancellationToken.None
+            );
         reverseResult.IsSuccess.Should().BeTrue();
 
         await using var verifyDb = CreateContext();
-        var appliedEntry = await verifyDb.JournalEntries
-            .FirstOrDefaultAsync(x => x.SourceEventId == paymentId && x.SourceEventType == "CollectionApplied");
-        var reversedEntry = await verifyDb.JournalEntries.Include(x => x.Lines)
-            .FirstOrDefaultAsync(x => x.SourceEventId == paymentId && x.SourceEventType == "CollectionReversed");
+        var appliedEntry = await verifyDb.JournalEntries.FirstOrDefaultAsync(x =>
+            x.SourceEventId == paymentId && x.SourceEventType == "CollectionApplied"
+        );
+        var reversedEntry = await verifyDb
+            .JournalEntries.Include(x => x.Lines)
+            .FirstOrDefaultAsync(x =>
+                x.SourceEventId == paymentId && x.SourceEventType == "CollectionReversed"
+            );
 
-        appliedEntry.Should().NotBeNull(because: "el asiento original de aplicación no debe desaparecer");
+        appliedEntry
+            .Should()
+            .NotBeNull(because: "el asiento original de aplicación no debe desaparecer");
         reversedEntry.Should().NotBeNull();
         reversedEntry!.SourceModule.Should().Be("Finance");
         reversedEntry.Status.Should().Be(JournalEntryStatus.Posted);
@@ -453,39 +733,65 @@ public sealed class CollectionPostingIntegrationTests : IAsyncLifetime
         await SeedAppliedAndReversedRulesAndPeriodAsync(db, today);
 
         var registerResult = await BuildHandler(db, _tenantId, _companyId, _createdBy)
-            .Handle(SingleLineCommand(_receivableId, 300m, today, _customerId), CancellationToken.None);
+            .Handle(
+                SingleLineCommand(_receivableId, 300m, today, _customerId),
+                CancellationToken.None
+            );
         registerResult.IsSuccess.Should().BeTrue();
         var paymentId = registerResult.Value!.Id;
 
         var (dbReverse, publisher) = BuildWiredContext(_tenantId, _companyId, _postgres);
         var reverseResult = await BuildReverseHandler(dbReverse, _tenantId, _companyId, _createdBy)
-            .Handle(new ReverseCollectionCommand(paymentId, "Error de digitación"), CancellationToken.None);
+            .Handle(
+                new ReverseCollectionCommand(paymentId, "Error de digitación"),
+                CancellationToken.None
+            );
         reverseResult.IsSuccess.Should().BeTrue();
 
         // Republicación manual del mismo evento de reverso — simula un reintento de entrega;
         // nunca se vuelve a ejecutar ReverseCollectionCommand (Payment.Reverse() es de un solo uso).
-        var repeated = new CollectionReversedEvent(_tenantId, paymentId, _companyId, _customerId, 300m, "Error de digitación");
+        var repeated = new CollectionReversedEvent(
+            _tenantId,
+            paymentId,
+            _companyId,
+            _customerId,
+            300m,
+            "Error de digitación"
+        );
         await publisher.Publish(repeated, CancellationToken.None);
 
         await using var verifyDb = CreateContext();
-        var reversedEntryCount = await verifyDb.JournalEntries
-            .CountAsync(x => x.SourceEventId == paymentId && x.SourceEventType == "CollectionReversed");
+        var reversedEntryCount = await verifyDb.JournalEntries.CountAsync(x =>
+            x.SourceEventId == paymentId && x.SourceEventType == "CollectionReversed"
+        );
         var payment = await verifyDb.Payments.FirstAsync(x => x.Id == paymentId);
 
-        reversedEntryCount.Should().Be(1, because: "el Posting Engine ya garantiza idempotencia por (CompanyId, SourceModule, SourceEventId, SourceEventType)");
-        payment.Status.Should().Be(PaymentStatus.Reversed, because: "republicar el evento no vuelve a ejecutar Payment.Reverse()");
+        reversedEntryCount
+            .Should()
+            .Be(
+                1,
+                because: "el Posting Engine ya garantiza idempotencia por (CompanyId, SourceModule, SourceEventId, SourceEventType)"
+            );
+        payment
+            .Status.Should()
+            .Be(
+                PaymentStatus.Reversed,
+                because: "republicar el evento no vuelve a ejecutar Payment.Reverse()"
+            );
     }
 
     private sealed class DeferredPublisher : IPublisher
     {
         public IPublisher? Inner { get; set; }
 
-        public Task Publish(object notification, CancellationToken cancellationToken = default)
-            => Inner!.Publish(notification, cancellationToken);
+        public Task Publish(object notification, CancellationToken cancellationToken = default) =>
+            Inner!.Publish(notification, cancellationToken);
 
-        public Task Publish<TNotification>(TNotification notification, CancellationToken cancellationToken = default)
-            where TNotification : INotification
-            => Inner!.Publish(notification, cancellationToken);
+        public Task Publish<TNotification>(
+            TNotification notification,
+            CancellationToken cancellationToken = default
+        )
+            where TNotification : INotification => Inner!.Publish(notification, cancellationToken);
     }
 
     private sealed class FixedCurrentTenant(Guid tenantId) : ICurrentTenant
@@ -513,11 +819,13 @@ public sealed class CollectionPostingIntegrationTests : IAsyncLifetime
 
     private sealed class NoOpPublisher : IPublisher
     {
-        public Task Publish(object notification, CancellationToken cancellationToken = default)
-            => Task.CompletedTask;
+        public Task Publish(object notification, CancellationToken cancellationToken = default) =>
+            Task.CompletedTask;
 
-        public Task Publish<TNotification>(TNotification notification, CancellationToken cancellationToken = default)
-            where TNotification : INotification
-            => Task.CompletedTask;
+        public Task Publish<TNotification>(
+            TNotification notification,
+            CancellationToken cancellationToken = default
+        )
+            where TNotification : INotification => Task.CompletedTask;
     }
 }

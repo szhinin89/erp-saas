@@ -11,11 +11,18 @@ public sealed record InventoryPostingRequest(
     string Reference,
     Guid SourceDocId,
     string SourceDocType,
-    Guid UserId);
+    Guid UserId
+);
 
 public interface IInventoryPostingService
 {
-    Task<Result<bool>> PostSaleExitAsync(InventoryPostingRequest request, CancellationToken cancellationToken = default);
+    Task<Result<bool>> PostSaleExitAsync(
+        InventoryPostingRequest request,
+        CancellationToken cancellationToken = default
+    );
 
-    Task<Result<bool>> PostSaleReturnAsync(InventoryPostingRequest request, CancellationToken cancellationToken = default);
+    Task<Result<bool>> PostSaleReturnAsync(
+        InventoryPostingRequest request,
+        CancellationToken cancellationToken = default
+    );
 }

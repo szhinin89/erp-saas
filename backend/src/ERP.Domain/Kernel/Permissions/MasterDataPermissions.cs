@@ -10,7 +10,8 @@ public static class MasterDataPermissions
     public const string BusinessPartnersCreate = "masterdata.businesspartners.create";
     public const string BusinessPartnersUpdate = "masterdata.businesspartners.update";
     public const string BusinessPartnersDisable = "masterdata.businesspartners.disable";
-    public const string BusinessPartnersConfigureCompany = "masterdata.businesspartners.configure-company";
+    public const string BusinessPartnersConfigureCompany =
+        "masterdata.businesspartners.configure-company";
 
     public const string PaymentTermsView = "masterdata.payment-terms.view";
     public const string PaymentTermsManage = "masterdata.payment-terms.manage";
@@ -25,8 +26,5 @@ public static class MasterDataPermissions
     ];
 
     public static IReadOnlyList<string> PaymentTermsAll { get; } =
-    [
-        PaymentTermsView,
-        PaymentTermsManage,
-    ];
+    [PaymentTermsView, PaymentTermsManage];
 }

@@ -39,8 +39,8 @@ public sealed class UpdateCompanyUserPreferencesAdminHandlerTests
         public Mock<IAccessRepository> AccessRepo { get; } = new();
         public Mock<IMediator> Mediator { get; } = new();
 
-        public UpdateCompanyUserPreferencesAdminHandler BuildHandler() => new(
-            AccessRepo.Object, new CurrentCompanyStub(), Mediator.Object);
+        public UpdateCompanyUserPreferencesAdminHandler BuildHandler() =>
+            new(AccessRepo.Object, new CurrentCompanyStub(), Mediator.Object);
     }
 
     [Fact]
@@ -48,21 +48,59 @@ public sealed class UpdateCompanyUserPreferencesAdminHandlerTests
     {
         var membership = Membership(CurrentCompanyId);
         var f = new Fixture();
-        f.AccessRepo.Setup(r => r.GetCompanyUserMembershipByIdAsync(membership.Id, It.IsAny<CancellationToken>()))
+        f.AccessRepo.Setup(r =>
+                r.GetCompanyUserMembershipByIdAsync(membership.Id, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(membership);
-        f.Mediator.Setup(m => m.Send(It.IsAny<GetCompanyUserPreferencesQuery>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Result<CompanyUserPreferencesDto?>.Success(
-                new CompanyUserPreferencesDto(Guid.NewGuid(), Guid.NewGuid(), CurrentCompanyId, membership.Id, null, "AskBranch")));
-        f.Mediator.Setup(m => m.Send(It.IsAny<UpdateCompanyUserPreferencesCommand>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Result<CompanyUserPreferencesDto>.Success(
-                new CompanyUserPreferencesDto(Guid.NewGuid(), Guid.NewGuid(), CurrentCompanyId, membership.Id, null, "AskBranch")));
+        f.Mediator.Setup(m =>
+                m.Send(It.IsAny<GetCompanyUserPreferencesQuery>(), It.IsAny<CancellationToken>())
+            )
+            .ReturnsAsync(
+                Result<CompanyUserPreferencesDto?>.Success(
+                    new CompanyUserPreferencesDto(
+                        Guid.NewGuid(),
+                        Guid.NewGuid(),
+                        CurrentCompanyId,
+                        membership.Id,
+                        null,
+                        "AskBranch"
+                    )
+                )
+            );
+        f.Mediator.Setup(m =>
+                m.Send(
+                    It.IsAny<UpdateCompanyUserPreferencesCommand>(),
+                    It.IsAny<CancellationToken>()
+                )
+            )
+            .ReturnsAsync(
+                Result<CompanyUserPreferencesDto>.Success(
+                    new CompanyUserPreferencesDto(
+                        Guid.NewGuid(),
+                        Guid.NewGuid(),
+                        CurrentCompanyId,
+                        membership.Id,
+                        null,
+                        "AskBranch"
+                    )
+                )
+            );
 
         var handler = f.BuildHandler();
         var result = await handler.Handle(
-            new UpdateCompanyUserPreferencesAdminCommand(membership.Id, "AskBranch", null), CancellationToken.None);
+            new UpdateCompanyUserPreferencesAdminCommand(membership.Id, "AskBranch", null),
+            CancellationToken.None
+        );
 
         result.IsSuccess.Should().BeTrue();
-        f.Mediator.Verify(m => m.Send(It.IsAny<CreateCompanyUserPreferencesCommand>(), It.IsAny<CancellationToken>()), Times.Never);
+        f.Mediator.Verify(
+            m =>
+                m.Send(
+                    It.IsAny<CreateCompanyUserPreferencesCommand>(),
+                    It.IsAny<CancellationToken>()
+                ),
+            Times.Never
+        );
     }
 
     [Fact]
@@ -70,21 +108,56 @@ public sealed class UpdateCompanyUserPreferencesAdminHandlerTests
     {
         var membership = Membership(CurrentCompanyId);
         var f = new Fixture();
-        f.AccessRepo.Setup(r => r.GetCompanyUserMembershipByIdAsync(membership.Id, It.IsAny<CancellationToken>()))
+        f.AccessRepo.Setup(r =>
+                r.GetCompanyUserMembershipByIdAsync(membership.Id, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(membership);
-        f.Mediator.Setup(m => m.Send(It.IsAny<GetCompanyUserPreferencesQuery>(), It.IsAny<CancellationToken>()))
+        f.Mediator.Setup(m =>
+                m.Send(It.IsAny<GetCompanyUserPreferencesQuery>(), It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(Result<CompanyUserPreferencesDto?>.Success(null));
-        f.Mediator.Setup(m => m.Send(It.IsAny<CreateCompanyUserPreferencesCommand>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Result<CompanyUserPreferencesDto>.Success(
-                new CompanyUserPreferencesDto(Guid.NewGuid(), Guid.NewGuid(), CurrentCompanyId, membership.Id, null, "AskBranch")));
+        f.Mediator.Setup(m =>
+                m.Send(
+                    It.IsAny<CreateCompanyUserPreferencesCommand>(),
+                    It.IsAny<CancellationToken>()
+                )
+            )
+            .ReturnsAsync(
+                Result<CompanyUserPreferencesDto>.Success(
+                    new CompanyUserPreferencesDto(
+                        Guid.NewGuid(),
+                        Guid.NewGuid(),
+                        CurrentCompanyId,
+                        membership.Id,
+                        null,
+                        "AskBranch"
+                    )
+                )
+            );
 
         var handler = f.BuildHandler();
         var result = await handler.Handle(
-            new UpdateCompanyUserPreferencesAdminCommand(membership.Id, "AskBranch", null), CancellationToken.None);
+            new UpdateCompanyUserPreferencesAdminCommand(membership.Id, "AskBranch", null),
+            CancellationToken.None
+        );
 
         result.IsSuccess.Should().BeTrue();
-        f.Mediator.Verify(m => m.Send(It.IsAny<CreateCompanyUserPreferencesCommand>(), It.IsAny<CancellationToken>()), Times.Once);
-        f.Mediator.Verify(m => m.Send(It.IsAny<UpdateCompanyUserPreferencesCommand>(), It.IsAny<CancellationToken>()), Times.Never);
+        f.Mediator.Verify(
+            m =>
+                m.Send(
+                    It.IsAny<CreateCompanyUserPreferencesCommand>(),
+                    It.IsAny<CancellationToken>()
+                ),
+            Times.Once
+        );
+        f.Mediator.Verify(
+            m =>
+                m.Send(
+                    It.IsAny<UpdateCompanyUserPreferencesCommand>(),
+                    It.IsAny<CancellationToken>()
+                ),
+            Times.Never
+        );
     }
 
     [Fact]
@@ -92,16 +165,27 @@ public sealed class UpdateCompanyUserPreferencesAdminHandlerTests
     {
         var membership = Membership(OtherCompanyId);
         var f = new Fixture();
-        f.AccessRepo.Setup(r => r.GetCompanyUserMembershipByIdAsync(membership.Id, It.IsAny<CancellationToken>()))
+        f.AccessRepo.Setup(r =>
+                r.GetCompanyUserMembershipByIdAsync(membership.Id, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(membership);
 
         var handler = f.BuildHandler();
         var result = await handler.Handle(
-            new UpdateCompanyUserPreferencesAdminCommand(membership.Id, "AskBranch", null), CancellationToken.None);
+            new UpdateCompanyUserPreferencesAdminCommand(membership.Id, "AskBranch", null),
+            CancellationToken.None
+        );
 
         result.IsSuccess.Should().BeFalse();
         result.Code.Should().Be(ApiResponseCodes.Common.NotFound);
-        f.Mediator.Verify(m => m.Send(It.IsAny<UpdateCompanyUserPreferencesCommand>(), It.IsAny<CancellationToken>()), Times.Never);
+        f.Mediator.Verify(
+            m =>
+                m.Send(
+                    It.IsAny<UpdateCompanyUserPreferencesCommand>(),
+                    It.IsAny<CancellationToken>()
+                ),
+            Times.Never
+        );
     }
 
     [Fact]
@@ -110,15 +194,26 @@ public sealed class UpdateCompanyUserPreferencesAdminHandlerTests
         var membership = Membership(CurrentCompanyId);
         membership.Deactivate(CreatedBy);
         var f = new Fixture();
-        f.AccessRepo.Setup(r => r.GetCompanyUserMembershipByIdAsync(membership.Id, It.IsAny<CancellationToken>()))
+        f.AccessRepo.Setup(r =>
+                r.GetCompanyUserMembershipByIdAsync(membership.Id, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(membership);
 
         var handler = f.BuildHandler();
         var result = await handler.Handle(
-            new UpdateCompanyUserPreferencesAdminCommand(membership.Id, "AskBranch", null), CancellationToken.None);
+            new UpdateCompanyUserPreferencesAdminCommand(membership.Id, "AskBranch", null),
+            CancellationToken.None
+        );
 
         result.IsSuccess.Should().BeFalse();
         result.Code.Should().Be(ApiResponseCodes.Common.Forbidden);
-        f.Mediator.Verify(m => m.Send(It.IsAny<UpdateCompanyUserPreferencesCommand>(), It.IsAny<CancellationToken>()), Times.Never);
+        f.Mediator.Verify(
+            m =>
+                m.Send(
+                    It.IsAny<UpdateCompanyUserPreferencesCommand>(),
+                    It.IsAny<CancellationToken>()
+                ),
+            Times.Never
+        );
     }
 }

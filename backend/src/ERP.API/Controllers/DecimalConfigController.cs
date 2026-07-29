@@ -13,14 +13,16 @@ namespace ERP.API.Controllers;
 public sealed class DecimalConfigController : ControllerBase
 {
     private readonly IMediator _mediator;
+
     public DecimalConfigController(IMediator mediator) => _mediator = mediator;
 
     [HttpGet]
-    public async Task<IActionResult> Get(CancellationToken ct)
-        => this.ToOkOrBadRequest(await _mediator.Send(new GetDecimalConfigQuery(), ct), "OK");
+    public async Task<IActionResult> Get(CancellationToken ct) =>
+        this.ToOkOrBadRequest(await _mediator.Send(new GetDecimalConfigQuery(), ct), "OK");
 
     [HttpPut]
     public async Task<IActionResult> Update(
-        [FromBody] UpdateDecimalConfigCommand cmd, CancellationToken ct)
-        => this.ToOkOrBadRequest(await _mediator.Send(cmd, ct));
+        [FromBody] UpdateDecimalConfigCommand cmd,
+        CancellationToken ct
+    ) => this.ToOkOrBadRequest(await _mediator.Send(cmd, ct));
 }

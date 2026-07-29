@@ -1,7 +1,7 @@
+using System.Reflection;
 using ERP.Application.Common;
 using FluentAssertions;
 using NetArchTest.Rules;
-using System.Reflection;
 
 namespace ERP.Architecture.Tests;
 
@@ -11,8 +11,7 @@ namespace ERP.Architecture.Tests;
 /// </summary>
 public sealed class ApiResponseContractTests
 {
-    private static readonly Assembly DomainAssembly =
-        typeof(ERP.Domain.Common.BaseEntity).Assembly;
+    private static readonly Assembly DomainAssembly = typeof(ERP.Domain.Common.BaseEntity).Assembly;
 
     private static readonly Assembly ApplicationAssembly =
         typeof(ERP.Application.DependencyInjection).Assembly;
@@ -24,33 +23,45 @@ public sealed class ApiResponseContractTests
     [Fact]
     public void Domain_must_not_reference_application()
     {
-        var result = Types.InAssembly(DomainAssembly)
-            .ShouldNot().HaveDependencyOn("ERP.Application")
+        var result = Types
+            .InAssembly(DomainAssembly)
+            .ShouldNot()
+            .HaveDependencyOn("ERP.Application")
             .GetResult();
 
-        result.IsSuccessful.Should().BeTrue(string.Join(", ", result.FailingTypeNames ?? Array.Empty<string>()));
+        result
+            .IsSuccessful.Should()
+            .BeTrue(string.Join(", ", result.FailingTypeNames ?? Array.Empty<string>()));
     }
 
     /// <summary>Regla C: el dominio no conoce ApiResponse/ResponseFactory (viven en ERP.API).</summary>
     [Fact]
     public void Domain_must_not_reference_api()
     {
-        var result = Types.InAssembly(DomainAssembly)
-            .ShouldNot().HaveDependencyOn("ERP.API")
+        var result = Types
+            .InAssembly(DomainAssembly)
+            .ShouldNot()
+            .HaveDependencyOn("ERP.API")
             .GetResult();
 
-        result.IsSuccessful.Should().BeTrue(string.Join(", ", result.FailingTypeNames ?? Array.Empty<string>()));
+        result
+            .IsSuccessful.Should()
+            .BeTrue(string.Join(", ", result.FailingTypeNames ?? Array.Empty<string>()));
     }
 
     /// <summary>Regla B: los handlers no conocen ResponseFactory/ApiResponse/ApiResultExtensions (viven en ERP.API).</summary>
     [Fact]
     public void Application_must_not_reference_api()
     {
-        var result = Types.InAssembly(ApplicationAssembly)
-            .ShouldNot().HaveDependencyOn("ERP.API")
+        var result = Types
+            .InAssembly(ApplicationAssembly)
+            .ShouldNot()
+            .HaveDependencyOn("ERP.API")
             .GetResult();
 
-        result.IsSuccessful.Should().BeTrue(string.Join(", ", result.FailingTypeNames ?? Array.Empty<string>()));
+        result
+            .IsSuccessful.Should()
+            .BeTrue(string.Join(", ", result.FailingTypeNames ?? Array.Empty<string>()));
     }
 
     /// <summary>Regla A: ningún controller construye <c>ApiResponse&lt;T&gt;</c> a mano; todos pasan por ResponseFactory/ApiResultExtensions.</summary>
@@ -64,7 +75,13 @@ public sealed class ApiResponseContractTests
         var forbidden = new[] { "new ApiResponse<", "new ApiResponse(", "new ApiResponse {" };
         var violations = new List<string>();
 
-        foreach (var file in Directory.EnumerateFiles(controllersDir, "*.cs", SearchOption.AllDirectories))
+        foreach (
+            var file in Directory.EnumerateFiles(
+                controllersDir,
+                "*.cs",
+                SearchOption.AllDirectories
+            )
+        )
         {
             var text = File.ReadAllText(file);
             if (forbidden.Any(pattern => text.Contains(pattern, StringComparison.Ordinal)))
@@ -73,9 +90,12 @@ public sealed class ApiResponseContractTests
             }
         }
 
-        violations.Should().BeEmpty(
-            "los controllers no deben construir ApiResponse<T> manualmente; deben usar " +
-            "ApiResultExtensions (ApiOk/ApiCreated/ToOkOrBadRequest/...), que delega en ResponseFactory.");
+        violations
+            .Should()
+            .BeEmpty(
+                "los controllers no deben construir ApiResponse<T> manualmente; deben usar "
+                    + "ApiResultExtensions (ApiOk/ApiCreated/ToOkOrBadRequest/...), que delega en ResponseFactory."
+            );
     }
 
     /// <summary>Regla B: los handlers (Application) no construyen mensajes vía MessageCatalog ni el envelope ApiResponse.</summary>
@@ -88,10 +108,17 @@ public sealed class ApiResponseContractTests
 
         var violations = new List<string>();
 
-        foreach (var file in Directory.EnumerateFiles(applicationDir, "*.cs", SearchOption.AllDirectories))
+        foreach (
+            var file in Directory.EnumerateFiles(
+                applicationDir,
+                "*.cs",
+                SearchOption.AllDirectories
+            )
+        )
         {
             var fileName = Path.GetFileName(file);
-            if (fileName is "MessageCatalog.cs" or "ApiResponseCodes.cs" or "ApiSeverity.cs") continue;
+            if (fileName is "MessageCatalog.cs" or "ApiResponseCodes.cs" or "ApiSeverity.cs")
+                continue;
 
             var text = File.ReadAllText(file);
             // "MessageCatalog." detecta uso real (Resolve/RegisteredCodes); excluye
@@ -102,9 +129,12 @@ public sealed class ApiResponseContractTests
             }
         }
 
-        violations.Should().BeEmpty(
-            "MessageCatalog solo debe ser consumido por ResponseFactory (ERP.API); los handlers " +
-            "devuelven Result<T> con un ApiResponseCodes.* y dejan que ResponseFactory resuelva el mensaje.");
+        violations
+            .Should()
+            .BeEmpty(
+                "MessageCatalog solo debe ser consumido por ResponseFactory (ERP.API); los handlers "
+                    + "devuelven Result<T> con un ApiResponseCodes.* y dejan que ResponseFactory resuelva el mensaje."
+            );
     }
 
     /// <summary>
@@ -114,13 +144,13 @@ public sealed class ApiResponseContractTests
     /// </summary>
     private static IEnumerable<string> CollectResponseCodes(Type type)
     {
-        var fields = type
-            .GetFields(BindingFlags.Public | BindingFlags.Static | BindingFlags.GetField)
+        var fields = type.GetFields(
+                BindingFlags.Public | BindingFlags.Static | BindingFlags.GetField
+            )
             .Where(f => f.IsLiteral && f.FieldType == typeof(string))
             .Select(f => (string)f.GetRawConstantValue()!);
 
-        var nested = type
-            .GetNestedTypes(BindingFlags.Public | BindingFlags.Static)
+        var nested = type.GetNestedTypes(BindingFlags.Public | BindingFlags.Static)
             .Where(t => t.IsAbstract && t.IsSealed)
             .SelectMany(CollectResponseCodes);
 
@@ -141,13 +171,19 @@ public sealed class ApiResponseContractTests
         var missingFromCatalog = declaredCodes.Except(catalogCodes).ToList();
         var orphanInCatalog = catalogCodes.Except(declaredCodes).ToList();
 
-        missingFromCatalog.Should().BeEmpty(
-            "todo código de ApiResponseCodes debe tener una entrada en MessageCatalog: " +
-            string.Join(", ", missingFromCatalog));
+        missingFromCatalog
+            .Should()
+            .BeEmpty(
+                "todo código de ApiResponseCodes debe tener una entrada en MessageCatalog: "
+                    + string.Join(", ", missingFromCatalog)
+            );
 
-        orphanInCatalog.Should().BeEmpty(
-            "MessageCatalog no debe tener entradas para códigos que ya no existen en ApiResponseCodes: " +
-            string.Join(", ", orphanInCatalog));
+        orphanInCatalog
+            .Should()
+            .BeEmpty(
+                "MessageCatalog no debe tener entradas para códigos que ya no existen en ApiResponseCodes: "
+                    + string.Join(", ", orphanInCatalog)
+            );
     }
 
     private static string ResolveBackendSrcRoot()

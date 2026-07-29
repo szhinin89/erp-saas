@@ -23,7 +23,10 @@ public sealed partial class ElectronicDocumentRetryJob : IElectronicDocumentRetr
     private readonly IServiceScopeFactory _scopeFactory;
     private readonly ILogger<ElectronicDocumentRetryJob> _logger;
 
-    public ElectronicDocumentRetryJob(IServiceScopeFactory scopeFactory, ILogger<ElectronicDocumentRetryJob> logger)
+    public ElectronicDocumentRetryJob(
+        IServiceScopeFactory scopeFactory,
+        ILogger<ElectronicDocumentRetryJob> logger
+    )
     {
         _scopeFactory = scopeFactory;
         _logger = logger;
@@ -57,13 +60,24 @@ public sealed partial class ElectronicDocumentRetryJob : IElectronicDocumentRetr
         var nowUtc = DateTime.UtcNow;
         foreach (var document in candidates)
         {
-            if (!ElectronicDocumentRetryPolicy.IsEligibleForAutomaticRetry(document.RetryCount, document.LastAttemptUtc, nowUtc))
+            if (
+                !ElectronicDocumentRetryPolicy.IsEligibleForAutomaticRetry(
+                    document.RetryCount,
+                    document.LastAttemptUtc,
+                    nowUtc
+                )
+            )
                 continue;
 
             using var _ = JobExecutionContext.Begin(document.TenantId, document.CompanyId);
             try
             {
-                var result = await issuer.RetryAsync(document.TenantId, document.Id, Guid.Empty, cancellationToken);
+                var result = await issuer.RetryAsync(
+                    document.TenantId,
+                    document.Id,
+                    Guid.Empty,
+                    cancellationToken
+                );
                 if (!result.IsSuccess)
                     LogRetryFailed(document.Id, result.Error);
             }
@@ -74,12 +88,21 @@ public sealed partial class ElectronicDocumentRetryJob : IElectronicDocumentRetr
         }
     }
 
-    [LoggerMessage(Level = LogLevel.Error, Message = "ElectronicDocumentRetryJob: no se pudo obtener la lista de candidatos a reintento")]
+    [LoggerMessage(
+        Level = LogLevel.Error,
+        Message = "ElectronicDocumentRetryJob: no se pudo obtener la lista de candidatos a reintento"
+    )]
     private partial void LogCandidateQueryFailed(Exception ex);
 
-    [LoggerMessage(Level = LogLevel.Warning, Message = "ElectronicDocumentRetryJob: reintento de {ElectronicDocumentId} no resolvió: {Reason}")]
+    [LoggerMessage(
+        Level = LogLevel.Warning,
+        Message = "ElectronicDocumentRetryJob: reintento de {ElectronicDocumentId} no resolvió: {Reason}"
+    )]
     private partial void LogRetryFailed(Guid electronicDocumentId, string? reason);
 
-    [LoggerMessage(Level = LogLevel.Error, Message = "ElectronicDocumentRetryJob: excepción no controlada reintentando {ElectronicDocumentId}")]
+    [LoggerMessage(
+        Level = LogLevel.Error,
+        Message = "ElectronicDocumentRetryJob: excepción no controlada reintentando {ElectronicDocumentId}"
+    )]
     private partial void LogRetryThrew(Guid electronicDocumentId, Exception ex);
 }

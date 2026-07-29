@@ -16,4 +16,5 @@ public sealed record PermissionsCacheDiagnosticsSnapshot(
     long CacheSetTotal,
     long CacheErrorTotal,
     double HitRatio,
-    IReadOnlyDictionary<string, long> MissesByReason);
+    IReadOnlyDictionary<string, long> MissesByReason
+);

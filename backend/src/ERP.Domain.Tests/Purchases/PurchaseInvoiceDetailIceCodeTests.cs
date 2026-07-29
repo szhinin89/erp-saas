@@ -12,9 +12,15 @@ public sealed class PurchaseInvoiceDetailIceCodeTests
 {
     private static PurchaseInvoiceDetail CreateLine(string? iceCode) =>
         PurchaseInvoiceDetail.Create(
-            invoiceId: Guid.NewGuid(), tenantId: Guid.NewGuid(),
-            description: "Línea test", quantity: 1m, unitPrice: 10m,
-            vatCode: "4", uomCode: "UNIT", iceCode: iceCode);
+            invoiceId: Guid.NewGuid(),
+            tenantId: Guid.NewGuid(),
+            description: "Línea test",
+            quantity: 1m,
+            unitPrice: 10m,
+            vatCode: "4",
+            uomCode: "UNIT",
+            iceCode: iceCode
+        );
 
     [Theory]
     [InlineData(null)]

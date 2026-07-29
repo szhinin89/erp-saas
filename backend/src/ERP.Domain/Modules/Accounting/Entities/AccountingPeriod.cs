@@ -16,7 +16,10 @@ namespace ERP.Domain.Modules.Accounting.Entities;
 /// <see cref="AccountingPeriod"/>. Queda pendiente para la capa de Application/Repository
 /// cuando se implemente persistencia (fase posterior), no es responsabilidad de este esqueleto.
 /// </remarks>
-public sealed class AccountingPeriod : AuditableEntity, ITenantScopedEntity, ICompanyOperationalEntity
+public sealed class AccountingPeriod
+    : AuditableEntity,
+        ITenantScopedEntity,
+        ICompanyOperationalEntity
 {
     public Guid CompanyId { get; private set; }
     public int FiscalYear { get; private set; }
@@ -36,10 +39,14 @@ public sealed class AccountingPeriod : AuditableEntity, ITenantScopedEntity, ICo
         int periodNumber,
         DateOnly startDate,
         DateOnly endDate,
-        Guid createdBy)
+        Guid createdBy
+    )
     {
         if (endDate <= startDate)
-            throw new ArgumentException("La fecha de fin debe ser posterior a la fecha de inicio.", nameof(endDate));
+            throw new ArgumentException(
+                "La fecha de fin debe ser posterior a la fecha de inicio.",
+                nameof(endDate)
+            );
 
         var period = new AccountingPeriod
         {
@@ -62,7 +69,8 @@ public sealed class AccountingPeriod : AuditableEntity, ITenantScopedEntity, ICo
     {
         if (Status != PeriodStatus.Open)
             throw new InvalidOperationException(
-                $"El período {FiscalYear}-{PeriodNumber} no admite contabilización en estado {Status}.");
+                $"El período {FiscalYear}-{PeriodNumber} no admite contabilización en estado {Status}."
+            );
     }
 
     /// <summary>
@@ -80,7 +88,8 @@ public sealed class AccountingPeriod : AuditableEntity, ITenantScopedEntity, ICo
         {
             var reasons = string.Join("; ", readiness.BuildBlockingReasons());
             throw new InvalidOperationException(
-                $"El período {FiscalYear}-{PeriodNumber} no puede cerrarse: {reasons}.");
+                $"El período {FiscalYear}-{PeriodNumber} no puede cerrarse: {reasons}."
+            );
         }
 
         Status = PeriodStatus.Closed;
@@ -93,7 +102,9 @@ public sealed class AccountingPeriod : AuditableEntity, ITenantScopedEntity, ICo
     public void Lock(Guid lockedBy)
     {
         if (Status != PeriodStatus.Closed)
-            throw new InvalidOperationException("Solo un período en estado Closed puede pasar a Locked.");
+            throw new InvalidOperationException(
+                "Solo un período en estado Closed puede pasar a Locked."
+            );
         Status = PeriodStatus.Locked;
         SetUpdated(lockedBy);
         RaiseDomainEvent(new AccountingPeriodLockedEvent(TenantId, Id, CompanyId));

@@ -46,11 +46,19 @@ public sealed class CompanyBpTradingSettingsController : ControllerBase
     /// </summary>
     [HttpGet]
     [Authorize(Policy = $"perm:{MasterDataPermissions.BusinessPartnersView}")]
-    [ProducesResponseType(typeof(ApiResponse<CompanyBpTradingSettingsDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(
+        typeof(ApiResponse<CompanyBpTradingSettingsDto>),
+        StatusCodes.Status200OK
+    )]
     public async Task<IActionResult> GetSettings(
-        [FromRoute] Guid bpId, CancellationToken cancellationToken = default)
+        [FromRoute] Guid bpId,
+        CancellationToken cancellationToken = default
+    )
     {
-        var result = await _mediator.Send(new GetCompanyBpTradingSettingsQuery(bpId), cancellationToken);
+        var result = await _mediator.Send(
+            new GetCompanyBpTradingSettingsQuery(bpId),
+            cancellationToken
+        );
         return this.ToOkOrBadRequest(result);
     }
 
@@ -61,16 +69,24 @@ public sealed class CompanyBpTradingSettingsController : ControllerBase
     /// </summary>
     [HttpPut]
     [Authorize(Policy = $"perm:{MasterDataPermissions.BusinessPartnersConfigureCompany}")]
-    [ProducesResponseType(typeof(ApiResponse<CompanyBpTradingSettingsDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(
+        typeof(ApiResponse<CompanyBpTradingSettingsDto>),
+        StatusCodes.Status200OK
+    )]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status409Conflict)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status422UnprocessableEntity)]
     public async Task<IActionResult> UpsertSettings(
         [FromRoute] Guid bpId,
         [FromBody] UpsertTradingSettingsRequest body,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default
+    )
     {
         var cmd = new UpsertCompanyBpTradingSettingsCommand(
-            bpId, body.CreditLimit, body.PaymentDays, body.CreditCurrencyCode);
+            bpId,
+            body.CreditLimit,
+            body.PaymentDays,
+            body.CreditCurrencyCode
+        );
         var result = await _mediator.Send(cmd, cancellationToken);
         return this.ToOkOrBadRequest(result);
     }
@@ -89,9 +105,13 @@ public sealed class CompanyBpTradingSettingsController : ControllerBase
     public async Task<IActionResult> Block(
         [FromRoute] Guid bpId,
         [FromBody] BlockRequest body,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default
+    )
     {
-        var result = await _mediator.Send(new BlockBusinessPartnerCommand(bpId, body.Reason), cancellationToken);
+        var result = await _mediator.Send(
+            new BlockBusinessPartnerCommand(bpId, body.Reason),
+            cancellationToken
+        );
         return this.ToOkOrBadRequest(result);
     }
 
@@ -105,9 +125,14 @@ public sealed class CompanyBpTradingSettingsController : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status422UnprocessableEntity)]
     public async Task<IActionResult> Unblock(
-        [FromRoute] Guid bpId, CancellationToken cancellationToken = default)
+        [FromRoute] Guid bpId,
+        CancellationToken cancellationToken = default
+    )
     {
-        var result = await _mediator.Send(new UnblockBusinessPartnerCommand(bpId), cancellationToken);
+        var result = await _mediator.Send(
+            new UnblockBusinessPartnerCommand(bpId),
+            cancellationToken
+        );
         return this.ToOkOrBadRequest(result);
     }
 }

@@ -53,27 +53,53 @@ public sealed class PurchaseReceptionLine : IMustHaveTenant
     private PurchaseReceptionLine() { }
 
     public static PurchaseReceptionLine Create(
-        Guid documentId, Guid tenantId, string description, decimal quantity, decimal unitPrice,
-        string vatCode, string taxCode, decimal vatPercentage, decimal taxValue,
-        decimal discountPct, decimal discount, decimal lineSubtotal, decimal totalLine,
-        string? iceCode = null, decimal iceValue = 0m,
-        string? supplierCode = null, string? supplierAuxCode = null,
-        Guid? itemId = null, ItemMatchStatus matchStatus = ItemMatchStatus.Pending)
+        Guid documentId,
+        Guid tenantId,
+        string description,
+        decimal quantity,
+        decimal unitPrice,
+        string vatCode,
+        string taxCode,
+        decimal vatPercentage,
+        decimal taxValue,
+        decimal discountPct,
+        decimal discount,
+        decimal lineSubtotal,
+        decimal totalLine,
+        string? iceCode = null,
+        decimal iceValue = 0m,
+        string? supplierCode = null,
+        string? supplierAuxCode = null,
+        Guid? itemId = null,
+        ItemMatchStatus matchStatus = ItemMatchStatus.Pending
+    )
     {
         if (documentId == Guid.Empty)
-            throw new ArgumentException("El documento de recepción es obligatorio.", nameof(documentId));
+            throw new ArgumentException(
+                "El documento de recepción es obligatorio.",
+                nameof(documentId)
+            );
         if (string.IsNullOrWhiteSpace(description))
             throw new ArgumentException("La descripción es obligatoria.", nameof(description));
         if (quantity <= 0)
             throw new ArgumentException("La cantidad debe ser mayor a cero.", nameof(quantity));
         if (unitPrice < 0)
-            throw new ArgumentException("El precio unitario no puede ser negativo.", nameof(unitPrice));
+            throw new ArgumentException(
+                "El precio unitario no puede ser negativo.",
+                nameof(unitPrice)
+            );
         if (string.IsNullOrWhiteSpace(vatCode))
             throw new ArgumentException("El código de IVA es obligatorio.", nameof(vatCode));
         if (string.IsNullOrWhiteSpace(taxCode))
             throw new ArgumentException("El código de impuesto es obligatorio.", nameof(taxCode));
-        if (matchStatus is ItemMatchStatus.AutoMatched or ItemMatchStatus.ManuallyMatched && itemId is null)
-            throw new ArgumentException("Un estado de conciliación resuelto requiere un ítem.", nameof(itemId));
+        if (
+            matchStatus is ItemMatchStatus.AutoMatched or ItemMatchStatus.ManuallyMatched
+            && itemId is null
+        )
+            throw new ArgumentException(
+                "Un estado de conciliación resuelto requiere un ítem.",
+                nameof(itemId)
+            );
 
         return new PurchaseReceptionLine
         {
@@ -129,7 +155,10 @@ public sealed class PurchaseReceptionLine : IMustHaveTenant
         if (itemId == Guid.Empty)
             throw new ArgumentException("El ítem es obligatorio.", nameof(itemId));
         if (matchedBy == Guid.Empty)
-            throw new ArgumentException("El usuario que concilia es obligatorio.", nameof(matchedBy));
+            throw new ArgumentException(
+                "El usuario que concilia es obligatorio.",
+                nameof(matchedBy)
+            );
 
         ItemId = itemId;
         MatchStatus = ItemMatchStatus.ManuallyMatched;
@@ -145,8 +174,13 @@ public sealed class PurchaseReceptionLine : IMustHaveTenant
     /// </summary>
     public void UnmatchItem()
     {
-        if (MatchStatus is not (ItemMatchStatus.AutoMatched or ItemMatchStatus.ManuallyMatched) || ItemId is null)
-            throw new InvalidOperationException("La línea no tiene un ítem asociado para desvincular.");
+        if (
+            MatchStatus is not (ItemMatchStatus.AutoMatched or ItemMatchStatus.ManuallyMatched)
+            || ItemId is null
+        )
+            throw new InvalidOperationException(
+                "La línea no tiene un ítem asociado para desvincular."
+            );
 
         ItemId = null;
         MatchStatus = ItemMatchStatus.Pending;

@@ -68,7 +68,8 @@ public sealed class MediaFile : MasterEntity, ICompanyOperationalEntity
         int? height = null,
         string? checksum = null,
         string? altText = null,
-        int displayOrder = 0)
+        int displayOrder = 0
+    )
     {
         var media = new MediaFile
         {

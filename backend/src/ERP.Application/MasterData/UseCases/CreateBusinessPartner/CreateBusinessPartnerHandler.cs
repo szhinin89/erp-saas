@@ -31,7 +31,8 @@ public sealed class CreateBusinessPartnerHandler
         IUserActivityRepository activity,
         IOperationalContext ctx,
         ICurrentUser currentUser,
-        IDatabaseExceptionTranslator dbEx)
+        IDatabaseExceptionTranslator dbEx
+    )
     {
         _bpRepo = bpRepo;
         _activity = activity;
@@ -42,15 +43,23 @@ public sealed class CreateBusinessPartnerHandler
 
     public async Task<Result<BusinessPartnerSummaryDto>> Handle(
         CreateBusinessPartnerCommand cmd,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken
+    )
     {
         if (!_ctx.HasTenant)
             return Result<BusinessPartnerSummaryDto>.Failure("Contexto de tenant no establecido.");
 
-        if (await _bpRepo.ExistsByIdentificationAsync(cmd.IdentificationType, cmd.IdentificationNumber, cancellationToken: cancellationToken))
+        if (
+            await _bpRepo.ExistsByIdentificationAsync(
+                cmd.IdentificationType,
+                cmd.IdentificationNumber,
+                cancellationToken: cancellationToken
+            )
+        )
             return Result<BusinessPartnerSummaryDto>.Conflict(
                 $"Ya existe un BusinessPartner con {cmd.IdentificationType} {cmd.IdentificationNumber} en este tenant.",
-                "IDENTIFICATION_DUPLICATE");
+                "IDENTIFICATION_DUPLICATE"
+            );
 
         BusinessPartner bp;
         try
@@ -63,7 +72,8 @@ public sealed class CreateBusinessPartnerHandler
                 cmd.LegalName,
                 _ctx.UserId,
                 cmd.TradeName,
-                cmd.CountryCode);
+                cmd.CountryCode
+            );
         }
         catch (ArgumentException ex)
         {
@@ -71,11 +81,20 @@ public sealed class CreateBusinessPartnerHandler
         }
 
         await _bpRepo.AddAsync(bp, cancellationToken);
-        await _activity.AddAsync(UserActivity.Create(
-            _ctx.TenantId, _ctx.UserId, _currentUser.Email, _currentUser.FullName,
-            module: "masterdata", action: "business-partner.create",
-            entityType: "BusinessPartner", entityId: bp.Id,
-            description: $"{bp.Name.LegalName} ({cmd.IdentificationType} {cmd.IdentificationNumber})"), cancellationToken);
+        await _activity.AddAsync(
+            UserActivity.Create(
+                _ctx.TenantId,
+                _ctx.UserId,
+                _currentUser.Email,
+                _currentUser.FullName,
+                module: "masterdata",
+                action: "business-partner.create",
+                entityType: "BusinessPartner",
+                entityId: bp.Id,
+                description: $"{bp.Name.LegalName} ({cmd.IdentificationType} {cmd.IdentificationNumber})"
+            ),
+            cancellationToken
+        );
 
         try
         {
@@ -86,7 +105,8 @@ public sealed class CreateBusinessPartnerHandler
         {
             return Result<BusinessPartnerSummaryDto>.Conflict(
                 $"Ya existe un BusinessPartner con {cmd.IdentificationType} {cmd.IdentificationNumber} en este tenant.",
-                "IDENTIFICATION_DUPLICATE");
+                "IDENTIFICATION_DUPLICATE"
+            );
         }
     }
 }

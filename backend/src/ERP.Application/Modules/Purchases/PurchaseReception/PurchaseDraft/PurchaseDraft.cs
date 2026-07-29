@@ -10,25 +10,35 @@ namespace ERP.Application.Modules.Purchases.PurchaseReception.PurchaseDraft;
 /// XML (ver <c>DownloadPurchaseReceptionXmlHandler</c>) — este modelo nunca vuelve a tocar el XML.
 /// </summary>
 public sealed record PurchaseDraft(
-    Guid? SupplierId, string SupplierRuc, string SupplierName,
-    string? DocTypeCode, string InvoiceNumber, DateOnly IssueDate,
-    string? AccessKey, string? AuthorizationNumber, DateTime? AuthorizationDate,
+    Guid? SupplierId,
+    string SupplierRuc,
+    string SupplierName,
+    string? DocTypeCode,
+    string InvoiceNumber,
+    DateOnly IssueDate,
+    string? AccessKey,
+    string? AuthorizationNumber,
+    DateTime? AuthorizationDate,
     string? SriPaymentMethodCode,
     IReadOnlyList<PurchaseReceptionLine> Lines,
-    PurchaseReceptionProcessingStatus ProcessingStatus, string? ProcessingNotes)
+    PurchaseReceptionProcessingStatus ProcessingStatus,
+    string? ProcessingNotes
+)
 {
-    public static PurchaseDraft FromReceptionDocument(PurchaseReceptionDocument document) => new(
-        SupplierId: document.SupplierId,
-        SupplierRuc: document.SupplierRuc,
-        SupplierName: document.SupplierName,
-        DocTypeCode: document.DocTypeCode,
-        InvoiceNumber: document.InvoiceNumber,
-        IssueDate: document.IssueDate,
-        AccessKey: document.AccessKey,
-        AuthorizationNumber: document.AuthorizationNumber,
-        AuthorizationDate: document.AuthorizationDate,
-        SriPaymentMethodCode: document.SriPaymentMethodCode,
-        Lines: document.Lines,
-        ProcessingStatus: document.ProcessingStatus,
-        ProcessingNotes: document.ProcessingNotes);
+    public static PurchaseDraft FromReceptionDocument(PurchaseReceptionDocument document) =>
+        new(
+            SupplierId: document.SupplierId,
+            SupplierRuc: document.SupplierRuc,
+            SupplierName: document.SupplierName,
+            DocTypeCode: document.DocTypeCode,
+            InvoiceNumber: document.InvoiceNumber,
+            IssueDate: document.IssueDate,
+            AccessKey: document.AccessKey,
+            AuthorizationNumber: document.AuthorizationNumber,
+            AuthorizationDate: document.AuthorizationDate,
+            SriPaymentMethodCode: document.SriPaymentMethodCode,
+            Lines: document.Lines,
+            ProcessingStatus: document.ProcessingStatus,
+            ProcessingNotes: document.ProcessingNotes
+        );
 }

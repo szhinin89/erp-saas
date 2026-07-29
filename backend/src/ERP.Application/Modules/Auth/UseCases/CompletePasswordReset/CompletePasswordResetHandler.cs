@@ -9,9 +9,11 @@ using MediatR;
 
 namespace ERP.Application.Auth.UseCases.CompletePasswordReset;
 
-public sealed class CompletePasswordResetHandler : IRequestHandler<CompletePasswordResetCommand, Result<AuthResponseDto>>
+public sealed class CompletePasswordResetHandler
+    : IRequestHandler<CompletePasswordResetCommand, Result<AuthResponseDto>>
 {
-    public const string InvalidTokenMessage = "El token de restablecimiento no es válido o ha expirado.";
+    public const string InvalidTokenMessage =
+        "El token de restablecimiento no es válido o ha expirado.";
 
     private readonly IPasswordResetTokenRepository _tokenRepository;
     private readonly IAccessRepository _accessRepository;
@@ -26,7 +28,8 @@ public sealed class CompletePasswordResetHandler : IRequestHandler<CompletePassw
         IPasswordHasher passwordHasher,
         IRefreshTokenService refreshTokenService,
         IMediator mediator,
-        IValidator<CompletePasswordResetCommand> validator)
+        IValidator<CompletePasswordResetCommand> validator
+    )
     {
         _tokenRepository = tokenRepository;
         _accessRepository = accessRepository;
@@ -36,20 +39,36 @@ public sealed class CompletePasswordResetHandler : IRequestHandler<CompletePassw
         _validator = validator;
     }
 
-    public async Task<Result<AuthResponseDto>> Handle(CompletePasswordResetCommand command, CancellationToken cancellationToken)
+    public async Task<Result<AuthResponseDto>> Handle(
+        CompletePasswordResetCommand command,
+        CancellationToken cancellationToken
+    )
     {
         var vr = await _validator.ValidateAsync(command, cancellationToken);
         if (!vr.IsValid)
-            return Result<AuthResponseDto>.Failure(string.Join(" ", vr.Errors.Select(e => e.ErrorMessage)));
+            return Result<AuthResponseDto>.Failure(
+                string.Join(" ", vr.Errors.Select(e => e.ErrorMessage))
+            );
 
         var stored = await PasswordResetTokenConsumer.TryGetValidAsync(
-            _tokenRepository, command.PasswordResetToken, PasswordResetToken.KindIdentity, cancellationToken);
+            _tokenRepository,
+            command.PasswordResetToken,
+            PasswordResetToken.KindIdentity,
+            cancellationToken
+        );
         if (stored is null)
             return Result<AuthResponseDto>.Failure(InvalidTokenMessage);
 
         var identity = await PasswordResetTokenConsumer.ApplyAsync(
-            _tokenRepository, _accessRepository, _passwordHasher, _refreshTokenService,
-            stored, command.NewPassword, "Cambio de contraseña (primer inicio de sesión)", cancellationToken);
+            _tokenRepository,
+            _accessRepository,
+            _passwordHasher,
+            _refreshTokenService,
+            stored,
+            command.NewPassword,
+            "Cambio de contraseña (primer inicio de sesión)",
+            cancellationToken
+        );
         if (identity is null)
             return Result<AuthResponseDto>.Failure(InvalidTokenMessage);
 
@@ -58,6 +77,9 @@ public sealed class CompletePasswordResetHandler : IRequestHandler<CompletePassw
         // RequirePasswordReset ya quedó en false (PasswordResetTokenConsumer.ApplyAsync llama
         // explícitamente a IdentityUser.ClearRequirePasswordReset), así que este Login no vuelve
         // a caer en la rama de reset.
-        return await _mediator.Send(new LoginCommand(identity.Username, command.NewPassword), cancellationToken);
+        return await _mediator.Send(
+            new LoginCommand(identity.Username, command.NewPassword),
+            cancellationToken
+        );
     }
 }

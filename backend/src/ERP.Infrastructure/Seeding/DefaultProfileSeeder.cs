@@ -20,25 +20,35 @@ public sealed partial class DefaultProfileSeeder : IDefaultProfileSeeder
     private readonly ErpDbContext _db;
     private readonly ILogger<DefaultProfileSeeder> _logger;
 
-    public DefaultProfileSeeder(
-        ErpDbContext db,
-        ILogger<DefaultProfileSeeder> logger)
+    public DefaultProfileSeeder(ErpDbContext db, ILogger<DefaultProfileSeeder> logger)
     {
         _db = db;
         _logger = logger;
     }
 
-    public async Task SeedForTenantAsync(Guid tenantId, Guid actorId, CancellationToken cancellationToken = default)
+    public async Task SeedForTenantAsync(
+        Guid tenantId,
+        Guid actorId,
+        CancellationToken cancellationToken = default
+    )
     {
         var bundles = new[]
         {
-            ("DataEntry", "Data entry operator — manages master data and items catalog.", DataEntryProfileBundle.Permissions),
+            (
+                "DataEntry",
+                "Data entry operator — manages master data and items catalog.",
+                DataEntryProfileBundle.Permissions
+            ),
         };
 
         foreach (var (name, description, permKeys) in bundles)
         {
-            var profile = await _db.AccessProfiles.IgnoreQueryFilters()
-                .FirstOrDefaultAsync(p => p.TenantId == tenantId && p.Name == name, cancellationToken);
+            var profile = await _db
+                .AccessProfiles.IgnoreQueryFilters()
+                .FirstOrDefaultAsync(
+                    p => p.TenantId == tenantId && p.Name == name,
+                    cancellationToken
+                );
 
             if (profile is null)
             {
@@ -46,7 +56,8 @@ public sealed partial class DefaultProfileSeeder : IDefaultProfileSeeder
                     tenantId: tenantId,
                     name: name,
                     description: description,
-                    createdBy: actorId);
+                    createdBy: actorId
+                );
 
                 _db.AccessProfiles.Add(profile);
                 await _db.SaveChangesAsync(cancellationToken);
@@ -57,7 +68,9 @@ public sealed partial class DefaultProfileSeeder : IDefaultProfileSeeder
                         profileId: profile.Id,
                         permissionKey: key,
                         isAllowed: true,
-                        createdBy: actorId));
+                        createdBy: actorId
+                    )
+                );
 
                 _db.AccessProfilePermissions.AddRange(newPermissions);
                 await _db.SaveChangesAsync(cancellationToken);
@@ -66,7 +79,8 @@ public sealed partial class DefaultProfileSeeder : IDefaultProfileSeeder
             }
             else
             {
-                var existing = await _db.AccessProfilePermissions.IgnoreQueryFilters()
+                var existing = await _db
+                    .AccessProfilePermissions.IgnoreQueryFilters()
                     .Where(p => p.ProfileId == profile.Id)
                     .Select(p => p.PermissionKey)
                     .ToListAsync(cancellationToken);
@@ -86,22 +100,40 @@ public sealed partial class DefaultProfileSeeder : IDefaultProfileSeeder
                         profileId: profile.Id,
                         permissionKey: key,
                         isAllowed: true,
-                        createdBy: actorId));
+                        createdBy: actorId
+                    )
+                );
 
                 _db.AccessProfilePermissions.AddRange(addedPermissions);
                 await _db.SaveChangesAsync(cancellationToken);
 
-                LogProfileUpdated(name, tenantId, missing.Count, _logger.IsEnabled(LogLevel.Information) ? string.Join(", ", missing) : string.Empty);
+                LogProfileUpdated(
+                    name,
+                    tenantId,
+                    missing.Count,
+                    _logger.IsEnabled(LogLevel.Information)
+                        ? string.Join(", ", missing)
+                        : string.Empty
+                );
             }
         }
     }
 
-    [LoggerMessage(Level = LogLevel.Information, Message = "Default profile '{Name}' created for tenant {TenantId} ({Count} permissions).")]
+    [LoggerMessage(
+        Level = LogLevel.Information,
+        Message = "Default profile '{Name}' created for tenant {TenantId} ({Count} permissions)."
+    )]
     private partial void LogProfileCreated(string name, Guid tenantId, int count);
 
-    [LoggerMessage(Level = LogLevel.Debug, Message = "Default profile '{Name}' for tenant {TenantId} is up to date.")]
+    [LoggerMessage(
+        Level = LogLevel.Debug,
+        Message = "Default profile '{Name}' for tenant {TenantId} is up to date."
+    )]
     private partial void LogProfileUpToDate(string name, Guid tenantId);
 
-    [LoggerMessage(Level = LogLevel.Information, Message = "Default profile '{Name}' for tenant {TenantId} updated: {Count} permission(s) added: {Keys}")]
+    [LoggerMessage(
+        Level = LogLevel.Information,
+        Message = "Default profile '{Name}' for tenant {TenantId} updated: {Count} permission(s) added: {Keys}"
+    )]
     private partial void LogProfileUpdated(string name, Guid tenantId, int count, string keys);
 }

@@ -8,7 +8,8 @@ public sealed record BranchAccessContext(
     Guid CompanyId,
     Guid BranchId,
     string BranchName,
-    bool IsMainBranch);
+    bool IsMainBranch
+);
 
 /// <summary>
 /// Central branch scope + CompanyUserBranch validation. Handlers must not duplicate these
@@ -25,5 +26,6 @@ public interface IBranchAccessGuard
     /// </summary>
     Task<Result<BranchAccessContext>> RequireBranchAsync(
         Guid branchId,
-        CancellationToken cancellationToken = default);
+        CancellationToken cancellationToken = default
+    );
 }

@@ -20,13 +20,19 @@ public sealed partial class CompanyBootstrapOrchestrator : ICompanyBootstrapServ
 
     public CompanyBootstrapOrchestrator(
         IEnumerable<ICompanyBootstrapStep> steps,
-        ILogger<CompanyBootstrapOrchestrator> logger)
+        ILogger<CompanyBootstrapOrchestrator> logger
+    )
     {
         _steps = steps.OrderBy(s => s.Order).ToList();
         _logger = logger;
     }
 
-    public async Task BootstrapCompanyAsync(Guid tenantId, Guid companyId, Guid actorId, CancellationToken cancellationToken = default)
+    public async Task BootstrapCompanyAsync(
+        Guid tenantId,
+        Guid companyId,
+        Guid actorId,
+        CancellationToken cancellationToken = default
+    )
     {
         LogBootstrappingCompany(companyId, tenantId);
 
@@ -41,12 +47,21 @@ public sealed partial class CompanyBootstrapOrchestrator : ICompanyBootstrapServ
         LogBootstrapComplete(companyId);
     }
 
-    [LoggerMessage(Level = LogLevel.Information, Message = "Bootstrapping company {CompanyId} (tenant {TenantId})…")]
+    [LoggerMessage(
+        Level = LogLevel.Information,
+        Message = "Bootstrapping company {CompanyId} (tenant {TenantId})…"
+    )]
     private partial void LogBootstrappingCompany(Guid companyId, Guid tenantId);
 
-    [LoggerMessage(Level = LogLevel.Debug, Message = "Running bootstrap step {StepName} (order={Order}) for company {CompanyId}.")]
+    [LoggerMessage(
+        Level = LogLevel.Debug,
+        Message = "Running bootstrap step {StepName} (order={Order}) for company {CompanyId}."
+    )]
     private partial void LogRunningStep(string stepName, int order, Guid companyId);
 
-    [LoggerMessage(Level = LogLevel.Information, Message = "Company {CompanyId} bootstrap complete.")]
+    [LoggerMessage(
+        Level = LogLevel.Information,
+        Message = "Company {CompanyId} bootstrap complete."
+    )]
     private partial void LogBootstrapComplete(Guid companyId);
 }

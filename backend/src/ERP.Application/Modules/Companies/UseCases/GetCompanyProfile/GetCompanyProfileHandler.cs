@@ -7,7 +7,8 @@ using MediatR;
 
 namespace ERP.Application.Modules.Companies.UseCases.GetCompanyProfile;
 
-public sealed class GetCompanyProfileHandler : IRequestHandler<GetCompanyProfileQuery, Result<CompanyProfileDto>>
+public sealed class GetCompanyProfileHandler
+    : IRequestHandler<GetCompanyProfileQuery, Result<CompanyProfileDto>>
 {
     private const string LogoRole = "logo";
     private const string AlternateLogoRole = "logo-alt";
@@ -16,14 +17,21 @@ public sealed class GetCompanyProfileHandler : IRequestHandler<GetCompanyProfile
     private readonly ICompanyRepository _companies;
     private readonly IMediaService _media;
 
-    public GetCompanyProfileHandler(ICompanyAccessGuard accessGuard, ICompanyRepository companies, IMediaService media)
+    public GetCompanyProfileHandler(
+        ICompanyAccessGuard accessGuard,
+        ICompanyRepository companies,
+        IMediaService media
+    )
     {
         _accessGuard = accessGuard;
         _companies = companies;
         _media = media;
     }
 
-    public async Task<Result<CompanyProfileDto>> Handle(GetCompanyProfileQuery request, CancellationToken cancellationToken)
+    public async Task<Result<CompanyProfileDto>> Handle(
+        GetCompanyProfileQuery request,
+        CancellationToken cancellationToken
+    )
     {
         var access = await _accessGuard.RequireCurrentCompanyAsync(cancellationToken);
         if (!access.IsSuccess)
@@ -34,11 +42,25 @@ public sealed class GetCompanyProfileHandler : IRequestHandler<GetCompanyProfile
             return Result<CompanyProfileDto>.Failure("Empresa no encontrada.");
 
         var logo = await _media.GetActivePrimaryAsync(
-            access.Value!.TenantId, access.Value!.CompanyId, MediaOwnerType.Company, access.Value!.CompanyId, LogoRole, cancellationToken);
+            access.Value!.TenantId,
+            access.Value!.CompanyId,
+            MediaOwnerType.Company,
+            access.Value!.CompanyId,
+            LogoRole,
+            cancellationToken
+        );
 
         var alternateLogo = await _media.GetActivePrimaryAsync(
-            access.Value!.TenantId, access.Value!.CompanyId, MediaOwnerType.Company, access.Value!.CompanyId, AlternateLogoRole, cancellationToken);
+            access.Value!.TenantId,
+            access.Value!.CompanyId,
+            MediaOwnerType.Company,
+            access.Value!.CompanyId,
+            AlternateLogoRole,
+            cancellationToken
+        );
 
-        return Result<CompanyProfileDto>.Success(CompanyProfileDto.FromEntity(company, logo, alternateLogo));
+        return Result<CompanyProfileDto>.Success(
+            CompanyProfileDto.FromEntity(company, logo, alternateLogo)
+        );
     }
 }

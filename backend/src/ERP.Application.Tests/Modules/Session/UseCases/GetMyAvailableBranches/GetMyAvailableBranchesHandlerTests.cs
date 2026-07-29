@@ -33,18 +33,20 @@ public sealed class GetMyAvailableBranchesHandlerTests
             CurrentTenant.Setup(t => t.TenantId).Returns(TenantId);
         }
 
-        public GetMyAvailableBranchesHandler BuildHandler() => new(
-            CurrentUser.Object,
-            CurrentCompany.Object,
-            CurrentTenant.Object,
-            AccessRepository.Object,
-            BranchRepository.Object,
-            CompanyUserBranchRepository.Object,
-            PreferencesRepository.Object);
+        public GetMyAvailableBranchesHandler BuildHandler() =>
+            new(
+                CurrentUser.Object,
+                CurrentCompany.Object,
+                CurrentTenant.Object,
+                AccessRepository.Object,
+                BranchRepository.Object,
+                CompanyUserBranchRepository.Object,
+                PreferencesRepository.Object
+            );
     }
 
-    private static Branch CreateBranch(string name, bool isMain, Guid? companyId = null)
-        => Branch.Create(
+    private static Branch CreateBranch(string name, bool isMain, Guid? companyId = null) =>
+        Branch.Create(
             tenantId: TenantId,
             name: name,
             address: "Av. Siempre Viva 123",
@@ -70,16 +72,20 @@ public sealed class GetMyAvailableBranchesHandlerTests
             internalNotes: null,
             isMainBranch: isMain,
             createdBy: Guid.NewGuid(),
-            companyId: companyId ?? CompanyId);
+            companyId: companyId ?? CompanyId
+        );
 
     [Fact]
     public async Task Sin_membership_activa_rechaza()
     {
         var f = new Fixture();
-        f.AccessRepository.Setup(r => r.GetCompanyUserMembershipAsync(CompanyId, UserId, It.IsAny<CancellationToken>()))
+        f.AccessRepository.Setup(r =>
+                r.GetCompanyUserMembershipAsync(CompanyId, UserId, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync((CompanyUserMembership?)null);
 
-        var result = await f.BuildHandler().Handle(new GetMyAvailableBranchesQuery(), CancellationToken.None);
+        var result = await f.BuildHandler()
+            .Handle(new GetMyAvailableBranchesQuery(), CancellationToken.None);
 
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Be("No tiene acceso a esta empresa.");
@@ -89,32 +95,69 @@ public sealed class GetMyAvailableBranchesHandlerTests
     public async Task Retorna_solo_sucursales_activas_y_autorizadas_ordenadas_con_principal_primero()
     {
         var f = new Fixture();
-        var membership = CompanyUserMembership.Create(CompanyId, UserId, "Cajero", null, Guid.NewGuid());
-        f.AccessRepository.Setup(r => r.GetCompanyUserMembershipAsync(CompanyId, UserId, It.IsAny<CancellationToken>()))
+        var membership = CompanyUserMembership.Create(
+            CompanyId,
+            UserId,
+            "Cajero",
+            null,
+            Guid.NewGuid()
+        );
+        f.AccessRepository.Setup(r =>
+                r.GetCompanyUserMembershipAsync(CompanyId, UserId, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(membership);
 
         var mainBranch = CreateBranch("Matriz", isMain: true);
         var northBranch = CreateBranch("Norte", isMain: false);
         var revokedBranch = CreateBranch("Sur (revocada)", isMain: false);
-        var otherCompanyBranch = CreateBranch("Otra empresa", isMain: false, companyId: Guid.NewGuid());
+        var otherCompanyBranch = CreateBranch(
+            "Otra empresa",
+            isMain: false,
+            companyId: Guid.NewGuid()
+        );
 
-        f.BranchRepository.Setup(r => r.GetAsync(TenantId, true, null, It.IsAny<CancellationToken>()))
+        f.BranchRepository.Setup(r =>
+                r.GetAsync(TenantId, true, null, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(new[] { mainBranch, northBranch, revokedBranch, otherCompanyBranch });
 
         var authorizations = new[]
         {
-            CompanyUserBranch.Create(TenantId, CompanyId, membership.Id, mainBranch.Id, Guid.NewGuid()),
-            CompanyUserBranch.Create(TenantId, CompanyId, membership.Id, northBranch.Id, Guid.NewGuid()),
-            CompanyUserBranch.Create(TenantId, CompanyId, membership.Id, revokedBranch.Id, Guid.NewGuid()),
+            CompanyUserBranch.Create(
+                TenantId,
+                CompanyId,
+                membership.Id,
+                mainBranch.Id,
+                Guid.NewGuid()
+            ),
+            CompanyUserBranch.Create(
+                TenantId,
+                CompanyId,
+                membership.Id,
+                northBranch.Id,
+                Guid.NewGuid()
+            ),
+            CompanyUserBranch.Create(
+                TenantId,
+                CompanyId,
+                membership.Id,
+                revokedBranch.Id,
+                Guid.NewGuid()
+            ),
         };
         authorizations[2].Deactivate(Guid.NewGuid());
-        f.CompanyUserBranchRepository.Setup(r => r.GetByMembershipAsync(membership.Id, It.IsAny<CancellationToken>()))
+        f.CompanyUserBranchRepository.Setup(r =>
+                r.GetByMembershipAsync(membership.Id, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(authorizations);
 
-        f.PreferencesRepository.Setup(r => r.GetByMembershipAsync(membership.Id, It.IsAny<CancellationToken>()))
+        f.PreferencesRepository.Setup(r =>
+                r.GetByMembershipAsync(membership.Id, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync((CompanyUserPreferences?)null);
 
-        var result = await f.BuildHandler().Handle(new GetMyAvailableBranchesQuery(), CancellationToken.None);
+        var result = await f.BuildHandler()
+            .Handle(new GetMyAvailableBranchesQuery(), CancellationToken.None);
 
         result.IsSuccess.Should().BeTrue();
         result.Value!.Branches.Should().HaveCount(2);
@@ -129,17 +172,32 @@ public sealed class GetMyAvailableBranchesHandlerTests
     public async Task Sin_preferencias_creadas_retorna_AskBranch_por_defecto()
     {
         var f = new Fixture();
-        var membership = CompanyUserMembership.Create(CompanyId, UserId, "Cajero", null, Guid.NewGuid());
-        f.AccessRepository.Setup(r => r.GetCompanyUserMembershipAsync(CompanyId, UserId, It.IsAny<CancellationToken>()))
+        var membership = CompanyUserMembership.Create(
+            CompanyId,
+            UserId,
+            "Cajero",
+            null,
+            Guid.NewGuid()
+        );
+        f.AccessRepository.Setup(r =>
+                r.GetCompanyUserMembershipAsync(CompanyId, UserId, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(membership);
-        f.BranchRepository.Setup(r => r.GetAsync(TenantId, true, null, It.IsAny<CancellationToken>()))
+        f.BranchRepository.Setup(r =>
+                r.GetAsync(TenantId, true, null, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(Array.Empty<Branch>());
-        f.CompanyUserBranchRepository.Setup(r => r.GetByMembershipAsync(membership.Id, It.IsAny<CancellationToken>()))
+        f.CompanyUserBranchRepository.Setup(r =>
+                r.GetByMembershipAsync(membership.Id, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(Array.Empty<CompanyUserBranch>());
-        f.PreferencesRepository.Setup(r => r.GetByMembershipAsync(membership.Id, It.IsAny<CancellationToken>()))
+        f.PreferencesRepository.Setup(r =>
+                r.GetByMembershipAsync(membership.Id, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync((CompanyUserPreferences?)null);
 
-        var result = await f.BuildHandler().Handle(new GetMyAvailableBranchesQuery(), CancellationToken.None);
+        var result = await f.BuildHandler()
+            .Handle(new GetMyAvailableBranchesQuery(), CancellationToken.None);
 
         result.IsSuccess.Should().BeTrue();
         result.Value!.Branches.Should().BeEmpty();
@@ -150,22 +208,54 @@ public sealed class GetMyAvailableBranchesHandlerTests
     public async Task Con_preferencias_DirectToDefault_expone_loginMode_y_defaultBranchId()
     {
         var f = new Fixture();
-        var membership = CompanyUserMembership.Create(CompanyId, UserId, "Cajero", null, Guid.NewGuid());
-        f.AccessRepository.Setup(r => r.GetCompanyUserMembershipAsync(CompanyId, UserId, It.IsAny<CancellationToken>()))
+        var membership = CompanyUserMembership.Create(
+            CompanyId,
+            UserId,
+            "Cajero",
+            null,
+            Guid.NewGuid()
+        );
+        f.AccessRepository.Setup(r =>
+                r.GetCompanyUserMembershipAsync(CompanyId, UserId, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(membership);
 
         var mainBranch = CreateBranch("Matriz", isMain: true);
-        f.BranchRepository.Setup(r => r.GetAsync(TenantId, true, null, It.IsAny<CancellationToken>()))
+        f.BranchRepository.Setup(r =>
+                r.GetAsync(TenantId, true, null, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(new[] { mainBranch });
-        f.CompanyUserBranchRepository.Setup(r => r.GetByMembershipAsync(membership.Id, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new[] { CompanyUserBranch.Create(TenantId, CompanyId, membership.Id, mainBranch.Id, Guid.NewGuid()) });
+        f.CompanyUserBranchRepository.Setup(r =>
+                r.GetByMembershipAsync(membership.Id, It.IsAny<CancellationToken>())
+            )
+            .ReturnsAsync(
+                new[]
+                {
+                    CompanyUserBranch.Create(
+                        TenantId,
+                        CompanyId,
+                        membership.Id,
+                        mainBranch.Id,
+                        Guid.NewGuid()
+                    ),
+                }
+            );
 
         var preferences = CompanyUserPreferences.Create(
-            TenantId, CompanyId, membership.Id, CompanyUserLoginMode.DirectToDefault, mainBranch.Id, Guid.NewGuid());
-        f.PreferencesRepository.Setup(r => r.GetByMembershipAsync(membership.Id, It.IsAny<CancellationToken>()))
+            TenantId,
+            CompanyId,
+            membership.Id,
+            CompanyUserLoginMode.DirectToDefault,
+            mainBranch.Id,
+            Guid.NewGuid()
+        );
+        f.PreferencesRepository.Setup(r =>
+                r.GetByMembershipAsync(membership.Id, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(preferences);
 
-        var result = await f.BuildHandler().Handle(new GetMyAvailableBranchesQuery(), CancellationToken.None);
+        var result = await f.BuildHandler()
+            .Handle(new GetMyAvailableBranchesQuery(), CancellationToken.None);
 
         result.IsSuccess.Should().BeTrue();
         result.Value!.LoginMode.Should().Be(nameof(CompanyUserLoginMode.DirectToDefault));

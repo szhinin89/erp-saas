@@ -44,15 +44,43 @@ public sealed class JournalEntryLinePersistenceTests : IAsyncLifetime
 
         _createdBy = Guid.NewGuid();
         var tenant = Tenant.Create("Test Tenant", $"test-{Guid.NewGuid():N}"[..16], _createdBy);
-        var company = Company.CreateManaged(tenant.Id, "1790012345001", "Test S.A.", createdBy: _createdBy);
+        var company = Company.CreateManaged(
+            tenant.Id,
+            "1790012345001",
+            "Test S.A.",
+            createdBy: _createdBy
+        );
         var period = AccountingPeriod.Create(
-            tenant.Id, company.Id, 2026, 7, new DateOnly(2026, 7, 1), new DateOnly(2026, 7, 31), _createdBy);
+            tenant.Id,
+            company.Id,
+            2026,
+            7,
+            new DateOnly(2026, 7, 1),
+            new DateOnly(2026, 7, 31),
+            _createdBy
+        );
         var debitAccount = Account.Create(
-            tenant.Id, company.Id, AccountCode.Create("1.1.01"), "Caja", null,
-            AccountType.Asset, AccountNature.Debit, allowsPosting: true, createdBy: _createdBy);
+            tenant.Id,
+            company.Id,
+            AccountCode.Create("1.1.01"),
+            "Caja",
+            null,
+            AccountType.Asset,
+            AccountNature.Debit,
+            allowsPosting: true,
+            createdBy: _createdBy
+        );
         var creditAccount = Account.Create(
-            tenant.Id, company.Id, AccountCode.Create("4.1.01"), "Ventas", null,
-            AccountType.Income, AccountNature.Credit, allowsPosting: true, createdBy: _createdBy);
+            tenant.Id,
+            company.Id,
+            AccountCode.Create("4.1.01"),
+            "Ventas",
+            null,
+            AccountType.Income,
+            AccountNature.Credit,
+            allowsPosting: true,
+            createdBy: _createdBy
+        );
 
         db.Tenants.Add(tenant);
         db.Companies.Add(company);
@@ -75,14 +103,28 @@ public sealed class JournalEntryLinePersistenceTests : IAsyncLifetime
             .UseNpgsql(_postgres.GetConnectionString())
             .Options;
 
-        return new ErpDbContext(options, new FixedCurrentTenant(_tenantId), new NoOpPublisher(), new FixedCurrentCompany(_companyId));
+        return new ErpDbContext(
+            options,
+            new FixedCurrentTenant(_tenantId),
+            new NoOpPublisher(),
+            new FixedCurrentCompany(_companyId)
+        );
     }
 
     private JournalEntry BuildBalancedEntry()
     {
         var entry = JournalEntry.Create(
-            _tenantId, _companyId, new DateOnly(2026, 7, 25), _accountingPeriodId, 2026,
-            "Sales", "InvoiceIssued", Guid.NewGuid(), "Asiento test", _createdBy);
+            _tenantId,
+            _companyId,
+            new DateOnly(2026, 7, 25),
+            _accountingPeriodId,
+            2026,
+            "Sales",
+            "InvoiceIssued",
+            Guid.NewGuid(),
+            "Asiento test",
+            _createdBy
+        );
 
         entry.AddLine(_debitAccountId, "Débito", 100m, 0m);
         entry.AddLine(_creditAccountId, "Crédito", 0m, 100m);
@@ -113,7 +155,9 @@ public sealed class JournalEntryLinePersistenceTests : IAsyncLifetime
         await db.SaveChangesAsync();
 
         await using var verifyDb = CreateContext();
-        var loaded = await verifyDb.JournalEntries.Include(x => x.Lines).FirstAsync(x => x.Id == entry.Id);
+        var loaded = await verifyDb
+            .JournalEntries.Include(x => x.Lines)
+            .FirstAsync(x => x.Id == entry.Id);
 
         loaded.Lines.Should().HaveCount(2);
         loaded.Lines.Should().Contain(l => l.AccountId == _debitAccountId && l.Debit == 100m);
@@ -125,16 +169,27 @@ public sealed class JournalEntryLinePersistenceTests : IAsyncLifetime
     public async Task Insertar_linea_con_AccountId_inexistente_viola_integridad_referencial()
     {
         var entry = JournalEntry.Create(
-            _tenantId, _companyId, new DateOnly(2026, 7, 25), _accountingPeriodId, 2026,
-            "Sales", "InvoiceIssued", Guid.NewGuid(), "Asiento con cuenta inexistente", _createdBy);
+            _tenantId,
+            _companyId,
+            new DateOnly(2026, 7, 25),
+            _accountingPeriodId,
+            2026,
+            "Sales",
+            "InvoiceIssued",
+            Guid.NewGuid(),
+            "Asiento con cuenta inexistente",
+            _createdBy
+        );
         entry.AddLine(Guid.NewGuid(), "Cuenta inexistente", 100m, 0m);
 
         await using var db = CreateContext();
         db.JournalEntries.Add(entry);
         var act = async () => await db.SaveChangesAsync();
 
-        await act.Should().ThrowAsync<DbUpdateException>(
-            because: "JournalEntryLine.AccountId tiene FK real a accounts (Restrict) — a diferencia de PostingRuleLine");
+        await act.Should()
+            .ThrowAsync<DbUpdateException>(
+                because: "JournalEntryLine.AccountId tiene FK real a accounts (Restrict) — a diferencia de PostingRuleLine"
+            );
     }
 
     [Fact]
@@ -156,8 +211,12 @@ public sealed class JournalEntryLinePersistenceTests : IAsyncLifetime
         }
 
         await using var verifyDb = CreateContext();
-        var remaining = await verifyDb.JournalEntryLines.CountAsync(x => x.JournalEntryId == entry.Id);
-        remaining.Should().Be(0, because: "ON DELETE CASCADE elimina las líneas junto con su asiento padre");
+        var remaining = await verifyDb.JournalEntryLines.CountAsync(x =>
+            x.JournalEntryId == entry.Id
+        );
+        remaining
+            .Should()
+            .Be(0, because: "ON DELETE CASCADE elimina las líneas junto con su asiento padre");
     }
 
     private sealed class FixedCurrentTenant(Guid tenantId) : ICurrentTenant
@@ -175,11 +234,13 @@ public sealed class JournalEntryLinePersistenceTests : IAsyncLifetime
 
     private sealed class NoOpPublisher : IPublisher
     {
-        public Task Publish(object notification, CancellationToken cancellationToken = default)
-            => Task.CompletedTask;
+        public Task Publish(object notification, CancellationToken cancellationToken = default) =>
+            Task.CompletedTask;
 
-        public Task Publish<TNotification>(TNotification notification, CancellationToken cancellationToken = default)
-            where TNotification : INotification
-            => Task.CompletedTask;
+        public Task Publish<TNotification>(
+            TNotification notification,
+            CancellationToken cancellationToken = default
+        )
+            where TNotification : INotification => Task.CompletedTask;
     }
 }

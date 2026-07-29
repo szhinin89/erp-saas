@@ -1,4 +1,4 @@
-﻿using ERP.API.Authorization;
+using ERP.API.Authorization;
 using ERP.API.Contracts;
 using ERP.API.Extensions;
 using ERP.Application.Access.DTOs;
@@ -28,11 +28,22 @@ public sealed class AccessProfilesController : ControllerBase
     [HttpGet("profiles")]
     [Authorize(Policy = "Session")]
     [ProducesResponseType(typeof(ApiResponse<IReadOnlyList<ProfileDto>>), StatusCodes.Status200OK)]
-    public async Task<IActionResult> GetProfiles([FromQuery] bool onlyActive = true, CancellationToken cancellationToken = default)
+    public async Task<IActionResult> GetProfiles(
+        [FromQuery] bool onlyActive = true,
+        CancellationToken cancellationToken = default
+    )
     {
         var pfx = PermissionPolicyProvider.Prefix;
-        var canProfiles = await _authorization.AuthorizeAsync(User, resource: null, policyName: $"{pfx}access.profiles.view");
-        var canMembers = await _authorization.AuthorizeAsync(User, resource: null, policyName: $"{pfx}access.company_user_memberships.view");
+        var canProfiles = await _authorization.AuthorizeAsync(
+            User,
+            resource: null,
+            policyName: $"{pfx}access.profiles.view"
+        );
+        var canMembers = await _authorization.AuthorizeAsync(
+            User,
+            resource: null,
+            policyName: $"{pfx}access.company_user_memberships.view"
+        );
         if (!canProfiles.Succeeded && !canMembers.Succeeded)
             return Forbid();
 
@@ -44,7 +55,10 @@ public sealed class AccessProfilesController : ControllerBase
     [Authorize(Policy = "Session")]
     [Authorize(Policy = $"perm:{AccessPermissions.ProfilesView}")]
     [ProducesResponseType(typeof(ApiResponse<ProfileDto?>), StatusCodes.Status201Created)]
-    public async Task<IActionResult> CreateProfile([FromBody] CreateProfileCommand command, CancellationToken cancellationToken)
+    public async Task<IActionResult> CreateProfile(
+        [FromBody] CreateProfileCommand command,
+        CancellationToken cancellationToken
+    )
     {
         var result = await _mediator.Send(command, cancellationToken);
         return this.ToCreatedOrBadRequest(result);
@@ -54,7 +68,11 @@ public sealed class AccessProfilesController : ControllerBase
     [Authorize(Policy = "Session")]
     [Authorize(Policy = $"perm:{AccessPermissions.ProfilesView}")]
     [ProducesResponseType(typeof(ApiResponse<ProfileDto?>), StatusCodes.Status200OK)]
-    public async Task<IActionResult> UpdateProfile([FromRoute] Guid profileId, [FromBody] UpdateProfileCommand command, CancellationToken cancellationToken)
+    public async Task<IActionResult> UpdateProfile(
+        [FromRoute] Guid profileId,
+        [FromBody] UpdateProfileCommand command,
+        CancellationToken cancellationToken
+    )
     {
         if (profileId != command.ProfileId)
             return this.ApiBadRequest("ProfileId no coincide con la ruta.");
@@ -70,7 +88,8 @@ public sealed class AccessProfilesController : ControllerBase
     public async Task<IActionResult> UpsertProfilePermissions(
         [FromRoute] Guid profileId,
         [FromBody] UpsertProfilePermissionsCommand command,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken
+    )
     {
         if (profileId != command.ProfileId)
             return this.ApiBadRequest("ProfileId no coincide con la ruta.");
@@ -83,9 +102,15 @@ public sealed class AccessProfilesController : ControllerBase
     [Authorize(Policy = "Session")]
     [Authorize(Policy = $"perm:{AccessPermissions.ProfilesView}")]
     [ProducesResponseType(typeof(ApiResponse<ProfilePermissionsDto?>), StatusCodes.Status200OK)]
-    public async Task<IActionResult> GetProfilePermissions([FromRoute] Guid profileId, CancellationToken cancellationToken)
+    public async Task<IActionResult> GetProfilePermissions(
+        [FromRoute] Guid profileId,
+        CancellationToken cancellationToken
+    )
     {
-        var result = await _mediator.Send(new GetProfilePermissionsQuery(profileId), cancellationToken);
+        var result = await _mediator.Send(
+            new GetProfilePermissionsQuery(profileId),
+            cancellationToken
+        );
         return this.ToOkOrBadRequest(result);
     }
 
@@ -99,9 +124,15 @@ public sealed class AccessProfilesController : ControllerBase
     [Authorize(Policy = "Session")]
     [Authorize(Policy = $"perm:{AccessPermissions.ProfilesView}")]
     [ProducesResponseType(typeof(ApiResponse<ProfilePermissionAuditDto>), StatusCodes.Status200OK)]
-    public async Task<IActionResult> GetProfilePermissionAudit([FromRoute] Guid profileId, CancellationToken cancellationToken)
+    public async Task<IActionResult> GetProfilePermissionAudit(
+        [FromRoute] Guid profileId,
+        CancellationToken cancellationToken
+    )
     {
-        var result = await _mediator.Send(new GetProfilePermissionAuditQuery(profileId), cancellationToken);
+        var result = await _mediator.Send(
+            new GetProfilePermissionAuditQuery(profileId),
+            cancellationToken
+        );
         return this.ToOkOrBadRequest(result);
     }
 }

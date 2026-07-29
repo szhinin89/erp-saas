@@ -20,8 +20,9 @@ public sealed class CurrentBranchService : ICurrentBranch
     {
         get
         {
-            var header = _httpContextAccessor.HttpContext?
-                .Request.Headers["X-Branch-Id"].FirstOrDefault();
+            var header = _httpContextAccessor
+                .HttpContext?.Request.Headers["X-Branch-Id"]
+                .FirstOrDefault();
 
             if (Guid.TryParse(header, out var id) && id != Guid.Empty)
                 return id;
@@ -30,9 +31,9 @@ public sealed class CurrentBranchService : ICurrentBranch
         }
     }
 
-    public bool IsAuthenticated
-        => _httpContextAccessor.HttpContext?.User.Identity?.IsAuthenticated ?? false
-           || JobBranchContext.Current != Guid.Empty;
+    public bool IsAuthenticated =>
+        _httpContextAccessor.HttpContext?.User.Identity?.IsAuthenticated
+        ?? false || JobBranchContext.Current != Guid.Empty;
 
     public bool HasBranchContext => BranchId != Guid.Empty;
 }

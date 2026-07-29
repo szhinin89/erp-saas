@@ -13,8 +13,14 @@ public sealed class PriceListAuditConfiguration : IEntityTypeConfiguration<Price
 
         builder.Property(x => x.CompanyId).HasColumnName("company_id").IsRequired();
         builder.Property(x => x.OldRuleType).HasColumnName("old_rule_type").HasConversion<int?>();
-        builder.Property(x => x.OldRuleValue).HasColumnName("old_rule_value").HasColumnType("numeric(18,6)");
+        builder
+            .Property(x => x.OldRuleValue)
+            .HasColumnName("old_rule_value")
+            .HasColumnType("numeric(18,6)");
         builder.Property(x => x.NewRuleType).HasColumnName("new_rule_type").HasConversion<int?>();
-        builder.Property(x => x.NewRuleValue).HasColumnName("new_rule_value").HasColumnType("numeric(18,6)");
+        builder
+            .Property(x => x.NewRuleValue)
+            .HasColumnName("new_rule_value")
+            .HasColumnType("numeric(18,6)");
     }
 }

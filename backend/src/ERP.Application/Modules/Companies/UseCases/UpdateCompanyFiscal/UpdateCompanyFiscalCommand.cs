@@ -10,4 +10,5 @@ public sealed record UpdateCompanyFiscalCommand(
     string? SpecialTaxpayerNo,
     bool IsForeignTrade,
     bool WithholdsRenta,
-    bool WithholdsVat) : IRequest<Result<CompanyProfileDto>>;
+    bool WithholdsVat
+) : IRequest<Result<CompanyProfileDto>>;

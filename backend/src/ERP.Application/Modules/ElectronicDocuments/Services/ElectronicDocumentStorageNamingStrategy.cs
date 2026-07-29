@@ -7,24 +7,35 @@ namespace ERP.Application.Modules.ElectronicDocuments.Services;
 /// Mismo estilo de segmentación que <c>MediaService</c> (tenant primero, luego el propietario
 /// lógico del archivo) — no inventa una convención nueva.
 /// </summary>
-public sealed class ElectronicDocumentStorageNamingStrategy : IElectronicDocumentStorageNamingStrategy
+public sealed class ElectronicDocumentStorageNamingStrategy
+    : IElectronicDocumentStorageNamingStrategy
 {
     public string BuildRelativePath(
-        Guid tenantId, ElectronicDocumentType documentType, Guid electronicDocumentId, ElectronicDocumentXmlVariant variant)
+        Guid tenantId,
+        ElectronicDocumentType documentType,
+        Guid electronicDocumentId,
+        ElectronicDocumentXmlVariant variant
+    )
     {
         var fileName = variant switch
         {
             ElectronicDocumentXmlVariant.Draft => "draft.xml",
             ElectronicDocumentXmlVariant.Signed => "signed.xml",
             ElectronicDocumentXmlVariant.Authorized => "authorized.xml",
-            _ => throw new ArgumentOutOfRangeException(nameof(variant), variant, "Variante de XML no soportada."),
+            _ => throw new ArgumentOutOfRangeException(
+                nameof(variant),
+                variant,
+                "Variante de XML no soportada."
+            ),
         };
 
-        return string.Join('/',
+        return string.Join(
+            '/',
             "electronic-documents",
             tenantId.ToString("N"),
             documentType.ToString().ToLowerInvariant(),
             electronicDocumentId.ToString("N"),
-            fileName);
+            fileName
+        );
     }
 }

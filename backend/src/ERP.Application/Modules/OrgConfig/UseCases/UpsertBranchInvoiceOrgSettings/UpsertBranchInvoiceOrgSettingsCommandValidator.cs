@@ -7,8 +7,6 @@ public sealed class UpsertBranchInvoiceOrgSettingsCommandValidator
 {
     public UpsertBranchInvoiceOrgSettingsCommandValidator()
     {
-        RuleFor(c => c.BranchId)
-            .NotEmpty()
-            .WithMessage("La sucursal es requerida.");
+        RuleFor(c => c.BranchId).NotEmpty().WithMessage("La sucursal es requerida.");
     }
 }

@@ -11,20 +11,27 @@ namespace ERP.Application.Access.UseCases.ExpireUserSessions;
 /// vuelve a aparecer en corridas posteriores — no hay riesgo de doble expiración ni de
 /// sobrescribir ClosedAt.
 /// </summary>
-public sealed class ExpireUserSessionsHandler : IRequestHandler<ExpireUserSessionsCommand, Result<int>>
+public sealed class ExpireUserSessionsHandler
+    : IRequestHandler<ExpireUserSessionsCommand, Result<int>>
 {
     private static readonly Guid SystemActor = Guid.Empty;
 
     private readonly IUserSessionRepository _repository;
     private readonly SessionExpirationOptions _options;
 
-    public ExpireUserSessionsHandler(IUserSessionRepository repository, SessionExpirationOptions options)
+    public ExpireUserSessionsHandler(
+        IUserSessionRepository repository,
+        SessionExpirationOptions options
+    )
     {
         _repository = repository;
         _options = options;
     }
 
-    public async Task<Result<int>> Handle(ExpireUserSessionsCommand request, CancellationToken cancellationToken)
+    public async Task<Result<int>> Handle(
+        ExpireUserSessionsCommand request,
+        CancellationToken cancellationToken
+    )
     {
         var cutoff = DateTime.UtcNow.AddDays(-_options.MaxSessionAgeDays);
         var candidates = await _repository.GetExpiredActiveSessionsAsync(cutoff, cancellationToken);

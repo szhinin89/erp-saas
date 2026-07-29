@@ -1,4 +1,4 @@
-﻿namespace ERP.Domain.Common;
+namespace ERP.Domain.Common;
 
 /// <summary>
 /// Clase base para entidades maestras de administración.

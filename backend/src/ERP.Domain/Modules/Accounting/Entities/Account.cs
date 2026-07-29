@@ -46,7 +46,8 @@ public sealed class Account : AuditableEntity, ITenantScopedEntity, ICompanyOper
         AccountType accountType,
         AccountNature nature,
         bool allowsPosting,
-        Guid createdBy)
+        Guid createdBy
+    )
     {
         if (string.IsNullOrWhiteSpace(name))
             throw new ArgumentException("El nombre de la cuenta es obligatorio.", nameof(name));

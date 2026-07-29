@@ -1,4 +1,4 @@
-﻿namespace ERP.Domain.Access.Enums;
+namespace ERP.Domain.Access.Enums;
 
 public enum IdentityUserType
 {

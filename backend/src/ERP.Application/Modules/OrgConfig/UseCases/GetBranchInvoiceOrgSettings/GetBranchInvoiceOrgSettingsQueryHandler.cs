@@ -17,7 +17,8 @@ public sealed class GetBranchInvoiceOrgSettingsQueryHandler
     public GetBranchInvoiceOrgSettingsQueryHandler(
         IOrgSettingsRepository repo,
         ICurrentTenant currentTenant,
-        ICurrentCompany currentCompany)
+        ICurrentCompany currentCompany
+    )
     {
         _repo = repo;
         _currentTenant = currentTenant;
@@ -25,21 +26,31 @@ public sealed class GetBranchInvoiceOrgSettingsQueryHandler
     }
 
     public async Task<Result<BranchInvoiceOrgSettingsDto>> Handle(
-        GetBranchInvoiceOrgSettingsQuery request, CancellationToken cancellationToken)
+        GetBranchInvoiceOrgSettingsQuery request,
+        CancellationToken cancellationToken
+    )
     {
         var tenantId = _currentTenant.TenantId;
         var companyId = _currentCompany.CompanyId;
 
         var all = await _repo.GetAllForScopeAsync(
-            tenantId, companyId, OrgScope.Branch, request.BranchId, cancellationToken);
+            tenantId,
+            companyId,
+            OrgScope.Branch,
+            request.BranchId,
+            cancellationToken
+        );
 
         var lookup = all.ToDictionary(s => s.Key, s => s.Value);
 
-        Guid? TryParseGuid(string? value)
-            => Guid.TryParse(value, out var g) ? g : null;
+        Guid? TryParseGuid(string? value) => Guid.TryParse(value, out var g) ? g : null;
 
-        return Result<BranchInvoiceOrgSettingsDto>.Success(new BranchInvoiceOrgSettingsDto(
-            DefaultWarehouseId: TryParseGuid(lookup.GetValueOrDefault(OrgSettingKeys.Invoice.DefaultWarehouseId))
-        ));
+        return Result<BranchInvoiceOrgSettingsDto>.Success(
+            new BranchInvoiceOrgSettingsDto(
+                DefaultWarehouseId: TryParseGuid(
+                    lookup.GetValueOrDefault(OrgSettingKeys.Invoice.DefaultWarehouseId)
+                )
+            )
+        );
     }
 }

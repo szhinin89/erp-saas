@@ -38,14 +38,19 @@ public sealed class RidePipelineStorageAndCacheIntegrationTests : IAsyncLifetime
         .WithPassword("erp_test_secret")
         .Build();
 
-    private readonly string _fileStorageBasePath =
-        Path.Combine(Path.GetTempPath(), "ride-storage-cache-tests-" + Guid.NewGuid().ToString("N"));
+    private readonly string _fileStorageBasePath = Path.Combine(
+        Path.GetTempPath(),
+        "ride-storage-cache-tests-" + Guid.NewGuid().ToString("N")
+    );
 
     private sealed class CountingRideRenderer(IRideRenderer inner) : IRideRenderer
     {
         public int CallCount { get; private set; }
 
-        public async Task<byte[]> RenderAsync(IRideDocumentLayout layout, CancellationToken ct = default)
+        public async Task<byte[]> RenderAsync(
+            IRideDocumentLayout layout,
+            CancellationToken ct = default
+        )
         {
             CallCount++;
             return await inner.RenderAsync(layout, ct);
@@ -54,7 +59,12 @@ public sealed class RidePipelineStorageAndCacheIntegrationTests : IAsyncLifetime
 
     private sealed class FakeTaxCategoryCodeResolver : ISriTaxCategoryCodeResolver
     {
-        public string? Resolve(string taxCode) => taxCode switch { "VAT" => "2", _ => null };
+        public string? Resolve(string taxCode) =>
+            taxCode switch
+            {
+                "VAT" => "2",
+                _ => null,
+            };
     }
 
     public async Task InitializeAsync()
@@ -73,8 +83,15 @@ public sealed class RidePipelineStorageAndCacheIntegrationTests : IAsyncLifetime
 
     private ErpDbContext NewDbContext()
     {
-        var options = new DbContextOptionsBuilder<ErpDbContext>().UseNpgsql(_postgres.GetConnectionString()).Options;
-        return new ErpDbContext(options, new FixedCurrentTenant(_tenantId), new NoOpPublisher(), new FixedCurrentCompany(_companyId));
+        var options = new DbContextOptionsBuilder<ErpDbContext>()
+            .UseNpgsql(_postgres.GetConnectionString())
+            .Options;
+        return new ErpDbContext(
+            options,
+            new FixedCurrentTenant(_tenantId),
+            new NoOpPublisher(),
+            new FixedCurrentCompany(_companyId)
+        );
     }
 
     private readonly Guid _tenantId = Guid.NewGuid();
@@ -84,18 +101,47 @@ public sealed class RidePipelineStorageAndCacheIntegrationTests : IAsyncLifetime
     {
         var data = new ElectronicDocumentData(
             Emission: new ElectronicDocumentEmissionContext(
-                "1", "1", "01", "001", "Av. Amazonas y Naciones Unidas", "001", "000000123", new DateTime(2026, 7, 8)),
+                "1",
+                "1",
+                "01",
+                "001",
+                "Av. Amazonas y Naciones Unidas",
+                "001",
+                "000000123",
+                new DateTime(2026, 7, 8)
+            ),
             Issuer: new ElectronicDocumentIssuerData(
-                "1790012345001", "ACME CIA LTDA", "ACME", "Av. Amazonas y Naciones Unidas", null, true),
+                "1790012345001",
+                "ACME CIA LTDA",
+                "ACME",
+                "Av. Amazonas y Naciones Unidas",
+                null,
+                true
+            ),
             Counterparty: new ElectronicDocumentCounterpartyData(
-                "05", "1710034065", "Juan Pérez", "Calle Falsa 123", "juan@example.com"),
-            Details: [new ElectronicDocumentDetailLine(
-                "SKU-001", "Producto de prueba", 2m, 10m, 0m, 20m,
-                [new ElectronicDocumentDetailTax("VAT", "2", 20m, 15m, 3m)])],
+                "05",
+                "1710034065",
+                "Juan Pérez",
+                "Calle Falsa 123",
+                "juan@example.com"
+            ),
+            Details:
+            [
+                new ElectronicDocumentDetailLine(
+                    "SKU-001",
+                    "Producto de prueba",
+                    2m,
+                    10m,
+                    0m,
+                    20m,
+                    [new ElectronicDocumentDetailTax("VAT", "2", 20m, 15m, 3m)]
+                ),
+            ],
             TaxSummary: [new ElectronicDocumentTaxSummary("VAT", "2", 20m, 3m)],
             Totals: new ElectronicDocumentTotals(20m, 0m, 3m, 23m, "USD"),
             Payments: [new ElectronicDocumentPayment("01", 23m, null, null)],
-            AdditionalInfo: []);
+            AdditionalInfo: []
+        );
 
         var result = new InvoiceXmlBuilder(new FakeTaxCategoryCodeResolver()).Build(data);
         result.IsSuccess.Should().BeTrue(result.Error);
@@ -112,51 +158,98 @@ public sealed class RidePipelineStorageAndCacheIntegrationTests : IAsyncLifetime
 
         var sourceXmlProvider = new Mock<IRideSourceXmlProvider>();
         sourceXmlProvider
-            .Setup(p => p.GetAuthorizedXmlAsync(_tenantId, _companyId, sourceModule, sourceEntityId, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Result<RideSourceXmlLookup>.Success(new RideSourceXmlLookup(
-                RideSourceXmlStatus.Available, xml, electronicDocumentId, RideDocumentType.Invoice)));
+            .Setup(p =>
+                p.GetAuthorizedXmlAsync(
+                    _tenantId,
+                    _companyId,
+                    sourceModule,
+                    sourceEntityId,
+                    It.IsAny<CancellationToken>()
+                )
+            )
+            .ReturnsAsync(
+                Result<RideSourceXmlLookup>.Success(
+                    new RideSourceXmlLookup(
+                        RideSourceXmlStatus.Available,
+                        xml,
+                        electronicDocumentId,
+                        RideDocumentType.Invoice
+                    )
+                )
+            );
 
         var brandingProvider = new Mock<IRideBrandingProvider>();
         brandingProvider
-            .Setup(b => b.GetAsync(_tenantId, _companyId, null, null, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Result<ERP.Domain.Modules.Ride.ValueObjects.RideBranding>.Success(
-                ERP.Domain.Modules.Ride.ValueObjects.RideBranding.Empty()));
+            .Setup(b =>
+                b.GetAsync(_tenantId, _companyId, null, null, It.IsAny<CancellationToken>())
+            )
+            .ReturnsAsync(
+                Result<ERP.Domain.Modules.Ride.ValueObjects.RideBranding>.Success(
+                    ERP.Domain.Modules.Ride.ValueObjects.RideBranding.Empty()
+                )
+            );
 
         var currentUser = new Mock<ICurrentUser>();
         currentUser.SetupGet(u => u.UserId).Returns(Guid.NewGuid());
 
         var configuration = new ConfigurationBuilder()
-            .AddInMemoryCollection(new Dictionary<string, string?> { ["FileStorage:BasePath"] = _fileStorageBasePath })
+            .AddInMemoryCollection(
+                new Dictionary<string, string?> { ["FileStorage:BasePath"] = _fileStorageBasePath }
+            )
             .Build();
         var fileStorage = new LocalFileStorage(configuration);
         var namingStrategy = new RidePdfStorageNamingStrategy();
         var storageService = new RidePdfStorageService(fileStorage, namingStrategy);
-        var countingRenderer = new CountingRideRenderer(new QuestPdfRideRenderer(RideQrCodeGeneratorTestFactory.Create(), RideBarcodeGeneratorTestFactory.Create(), new NoOpFileStorage()));
+        var countingRenderer = new CountingRideRenderer(
+            new QuestPdfRideRenderer(
+                RideQrCodeGeneratorTestFactory.Create(),
+                RideBarcodeGeneratorTestFactory.Create(),
+                new NoOpFileStorage()
+            )
+        );
 
-        RidePipeline BuildPipeline(ErpDbContext db) => new(
-            sourceXmlProvider.Object,
-            new RideXmlParserResolver([new InvoiceRideXmlParser()]),
-            new RideTemplateResolver([new DefaultInvoiceRideTemplate()]),
-            new RideCacheStrategy(new RidePdfDocumentRepository(db, new PostgresDatabaseExceptionTranslator())),
-            new RideContentHasher(),
-            brandingProvider.Object,
-            countingRenderer,
-            storageService,
-            new RidePdfDocumentRepository(db, new PostgresDatabaseExceptionTranslator()),
-            currentUser.Object);
+        RidePipeline BuildPipeline(ErpDbContext db) =>
+            new(
+                sourceXmlProvider.Object,
+                new RideXmlParserResolver([new InvoiceRideXmlParser()]),
+                new RideTemplateResolver([new DefaultInvoiceRideTemplate()]),
+                new RideCacheStrategy(
+                    new RidePdfDocumentRepository(db, new PostgresDatabaseExceptionTranslator())
+                ),
+                new RideContentHasher(),
+                brandingProvider.Object,
+                countingRenderer,
+                storageService,
+                new RidePdfDocumentRepository(db, new PostgresDatabaseExceptionTranslator()),
+                currentUser.Object
+            );
 
         Result<RideGenerationResultDto> firstResult;
         await using (var db1 = NewDbContext())
         {
-            firstResult = await BuildPipeline(db1).ExecuteAsync(
-                _tenantId, _companyId, sourceModule, sourceEntityId, forceRegenerate: false, CancellationToken.None);
+            firstResult = await BuildPipeline(db1)
+                .ExecuteAsync(
+                    _tenantId,
+                    _companyId,
+                    sourceModule,
+                    sourceEntityId,
+                    forceRegenerate: false,
+                    CancellationToken.None
+                );
         }
 
         Result<RideGenerationResultDto> secondResult;
         await using (var db2 = NewDbContext())
         {
-            secondResult = await BuildPipeline(db2).ExecuteAsync(
-                _tenantId, _companyId, sourceModule, sourceEntityId, forceRegenerate: false, CancellationToken.None);
+            secondResult = await BuildPipeline(db2)
+                .ExecuteAsync(
+                    _tenantId,
+                    _companyId,
+                    sourceModule,
+                    sourceEntityId,
+                    forceRegenerate: false,
+                    CancellationToken.None
+                );
         }
 
         firstResult.IsSuccess.Should().BeTrue(firstResult.Error);
@@ -169,8 +262,10 @@ public sealed class RidePipelineStorageAndCacheIntegrationTests : IAsyncLifetime
         countingRenderer.CallCount.Should().Be(1);
 
         await using var verifyDb = NewDbContext();
-        var rows = await verifyDb.RidePdfDocuments
-            .Where(x => x.TenantId == _tenantId && x.ElectronicDocumentId == electronicDocumentId)
+        var rows = await verifyDb
+            .RidePdfDocuments.Where(x =>
+                x.TenantId == _tenantId && x.ElectronicDocumentId == electronicDocumentId
+            )
             .ToListAsync();
         rows.Should().ContainSingle();
     }
@@ -199,56 +294,115 @@ public sealed class RidePipelineStorageAndCacheIntegrationTests : IAsyncLifetime
 
         var sourceXmlProvider = new Mock<IRideSourceXmlProvider>();
         sourceXmlProvider
-            .Setup(p => p.GetAuthorizedXmlAsync(_tenantId, _companyId, sourceModule, sourceEntityId, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Result<RideSourceXmlLookup>.Success(new RideSourceXmlLookup(
-                RideSourceXmlStatus.Available, xml, electronicDocumentId, RideDocumentType.Invoice)));
+            .Setup(p =>
+                p.GetAuthorizedXmlAsync(
+                    _tenantId,
+                    _companyId,
+                    sourceModule,
+                    sourceEntityId,
+                    It.IsAny<CancellationToken>()
+                )
+            )
+            .ReturnsAsync(
+                Result<RideSourceXmlLookup>.Success(
+                    new RideSourceXmlLookup(
+                        RideSourceXmlStatus.Available,
+                        xml,
+                        electronicDocumentId,
+                        RideDocumentType.Invoice
+                    )
+                )
+            );
 
-        var brandingA = ERP.Domain.Modules.Ride.ValueObjects.RideBranding.Create(footerText: "Branding original");
-        var brandingB = ERP.Domain.Modules.Ride.ValueObjects.RideBranding.Create(footerText: "Branding cambiado");
+        var brandingA = ERP.Domain.Modules.Ride.ValueObjects.RideBranding.Create(
+            footerText: "Branding original"
+        );
+        var brandingB = ERP.Domain.Modules.Ride.ValueObjects.RideBranding.Create(
+            footerText: "Branding cambiado"
+        );
         var brandingProvider = new Mock<IRideBrandingProvider>();
         brandingProvider
-            .SetupSequence(b => b.GetAsync(_tenantId, _companyId, null, null, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Result<ERP.Domain.Modules.Ride.ValueObjects.RideBranding>.Success(brandingA))
-            .ReturnsAsync(Result<ERP.Domain.Modules.Ride.ValueObjects.RideBranding>.Success(brandingB));
+            .SetupSequence(b =>
+                b.GetAsync(_tenantId, _companyId, null, null, It.IsAny<CancellationToken>())
+            )
+            .ReturnsAsync(
+                Result<ERP.Domain.Modules.Ride.ValueObjects.RideBranding>.Success(brandingA)
+            )
+            .ReturnsAsync(
+                Result<ERP.Domain.Modules.Ride.ValueObjects.RideBranding>.Success(brandingB)
+            );
 
         var currentUser = new Mock<ICurrentUser>();
         currentUser.SetupGet(u => u.UserId).Returns(Guid.NewGuid());
 
         var configuration = new ConfigurationBuilder()
-            .AddInMemoryCollection(new Dictionary<string, string?> { ["FileStorage:BasePath"] = _fileStorageBasePath })
+            .AddInMemoryCollection(
+                new Dictionary<string, string?> { ["FileStorage:BasePath"] = _fileStorageBasePath }
+            )
             .Build();
         var fileStorage = new LocalFileStorage(configuration);
-        var storageService = new RidePdfStorageService(fileStorage, new RidePdfStorageNamingStrategy());
-        var countingRenderer = new CountingRideRenderer(new QuestPdfRideRenderer(RideQrCodeGeneratorTestFactory.Create(), RideBarcodeGeneratorTestFactory.Create(), new NoOpFileStorage()));
+        var storageService = new RidePdfStorageService(
+            fileStorage,
+            new RidePdfStorageNamingStrategy()
+        );
+        var countingRenderer = new CountingRideRenderer(
+            new QuestPdfRideRenderer(
+                RideQrCodeGeneratorTestFactory.Create(),
+                RideBarcodeGeneratorTestFactory.Create(),
+                new NoOpFileStorage()
+            )
+        );
 
-        RidePipeline BuildPipeline(ErpDbContext db) => new(
-            sourceXmlProvider.Object,
-            new RideXmlParserResolver([new InvoiceRideXmlParser()]),
-            new RideTemplateResolver([new DefaultInvoiceRideTemplate()]),
-            new RideCacheStrategy(new RidePdfDocumentRepository(db, new PostgresDatabaseExceptionTranslator())),
-            new RideContentHasher(),
-            brandingProvider.Object,
-            countingRenderer,
-            storageService,
-            new RidePdfDocumentRepository(db, new PostgresDatabaseExceptionTranslator()),
-            currentUser.Object);
+        RidePipeline BuildPipeline(ErpDbContext db) =>
+            new(
+                sourceXmlProvider.Object,
+                new RideXmlParserResolver([new InvoiceRideXmlParser()]),
+                new RideTemplateResolver([new DefaultInvoiceRideTemplate()]),
+                new RideCacheStrategy(
+                    new RidePdfDocumentRepository(db, new PostgresDatabaseExceptionTranslator())
+                ),
+                new RideContentHasher(),
+                brandingProvider.Object,
+                countingRenderer,
+                storageService,
+                new RidePdfDocumentRepository(db, new PostgresDatabaseExceptionTranslator()),
+                currentUser.Object
+            );
 
         Result<RideGenerationResultDto> firstResult;
         await using (var db1 = NewDbContext())
-            firstResult = await BuildPipeline(db1).ExecuteAsync(
-                _tenantId, _companyId, sourceModule, sourceEntityId, forceRegenerate: false, CancellationToken.None);
+            firstResult = await BuildPipeline(db1)
+                .ExecuteAsync(
+                    _tenantId,
+                    _companyId,
+                    sourceModule,
+                    sourceEntityId,
+                    forceRegenerate: false,
+                    CancellationToken.None
+                );
 
         Result<RideGenerationResultDto> secondResult;
         await using (var db2 = NewDbContext())
-            secondResult = await BuildPipeline(db2).ExecuteAsync(
-                _tenantId, _companyId, sourceModule, sourceEntityId, forceRegenerate: false, CancellationToken.None);
+            secondResult = await BuildPipeline(db2)
+                .ExecuteAsync(
+                    _tenantId,
+                    _companyId,
+                    sourceModule,
+                    sourceEntityId,
+                    forceRegenerate: false,
+                    CancellationToken.None
+                );
 
         firstResult.Value!.Outcome.Should().Be(RideOutcome.Generated);
         // Comportamiento actual real: NO invalida — brandingB nunca cambió NeutralBrandingVersion.
         secondResult.Value!.Outcome.Should().Be(RideOutcome.Cached);
-        countingRenderer.CallCount.Should().Be(1,
-            "documenta el hueco real H3: el renderer no se vuelve a invocar aunque el branding cambió, " +
-            "porque RidePipeline todavía no thread-ea la versión real de IRideBrandingProvider al cache key");
+        countingRenderer
+            .CallCount.Should()
+            .Be(
+                1,
+                "documenta el hueco real H3: el renderer no se vuelve a invocar aunque el branding cambió, "
+                    + "porque RidePipeline todavía no thread-ea la versión real de IRideBrandingProvider al cache key"
+            );
     }
 
     /// <summary>Confirma actualización real de metadata (GeneratedAtUtc) al forzar una regeneración explícita.</summary>
@@ -262,61 +416,118 @@ public sealed class RidePipelineStorageAndCacheIntegrationTests : IAsyncLifetime
 
         var sourceXmlProvider = new Mock<IRideSourceXmlProvider>();
         sourceXmlProvider
-            .Setup(p => p.GetAuthorizedXmlAsync(_tenantId, _companyId, sourceModule, sourceEntityId, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Result<RideSourceXmlLookup>.Success(new RideSourceXmlLookup(
-                RideSourceXmlStatus.Available, xml, electronicDocumentId, RideDocumentType.Invoice)));
+            .Setup(p =>
+                p.GetAuthorizedXmlAsync(
+                    _tenantId,
+                    _companyId,
+                    sourceModule,
+                    sourceEntityId,
+                    It.IsAny<CancellationToken>()
+                )
+            )
+            .ReturnsAsync(
+                Result<RideSourceXmlLookup>.Success(
+                    new RideSourceXmlLookup(
+                        RideSourceXmlStatus.Available,
+                        xml,
+                        electronicDocumentId,
+                        RideDocumentType.Invoice
+                    )
+                )
+            );
 
         var brandingProvider = new Mock<IRideBrandingProvider>();
         brandingProvider
-            .Setup(b => b.GetAsync(_tenantId, _companyId, null, null, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Result<ERP.Domain.Modules.Ride.ValueObjects.RideBranding>.Success(
-                ERP.Domain.Modules.Ride.ValueObjects.RideBranding.Empty()));
+            .Setup(b =>
+                b.GetAsync(_tenantId, _companyId, null, null, It.IsAny<CancellationToken>())
+            )
+            .ReturnsAsync(
+                Result<ERP.Domain.Modules.Ride.ValueObjects.RideBranding>.Success(
+                    ERP.Domain.Modules.Ride.ValueObjects.RideBranding.Empty()
+                )
+            );
 
         var currentUser = new Mock<ICurrentUser>();
         currentUser.SetupGet(u => u.UserId).Returns(Guid.NewGuid());
 
         var configuration = new ConfigurationBuilder()
-            .AddInMemoryCollection(new Dictionary<string, string?> { ["FileStorage:BasePath"] = _fileStorageBasePath })
+            .AddInMemoryCollection(
+                new Dictionary<string, string?> { ["FileStorage:BasePath"] = _fileStorageBasePath }
+            )
             .Build();
         var fileStorage = new LocalFileStorage(configuration);
-        var storageService = new RidePdfStorageService(fileStorage, new RidePdfStorageNamingStrategy());
+        var storageService = new RidePdfStorageService(
+            fileStorage,
+            new RidePdfStorageNamingStrategy()
+        );
 
-        RidePipeline BuildPipeline(ErpDbContext db) => new(
-            sourceXmlProvider.Object,
-            new RideXmlParserResolver([new InvoiceRideXmlParser()]),
-            new RideTemplateResolver([new DefaultInvoiceRideTemplate()]),
-            new RideCacheStrategy(new RidePdfDocumentRepository(db, new PostgresDatabaseExceptionTranslator())),
-            new RideContentHasher(),
-            brandingProvider.Object,
-            new QuestPdfRideRenderer(RideQrCodeGeneratorTestFactory.Create(), RideBarcodeGeneratorTestFactory.Create(), new NoOpFileStorage()),
-            storageService,
-            new RidePdfDocumentRepository(db, new PostgresDatabaseExceptionTranslator()),
-            currentUser.Object);
+        RidePipeline BuildPipeline(ErpDbContext db) =>
+            new(
+                sourceXmlProvider.Object,
+                new RideXmlParserResolver([new InvoiceRideXmlParser()]),
+                new RideTemplateResolver([new DefaultInvoiceRideTemplate()]),
+                new RideCacheStrategy(
+                    new RidePdfDocumentRepository(db, new PostgresDatabaseExceptionTranslator())
+                ),
+                new RideContentHasher(),
+                brandingProvider.Object,
+                new QuestPdfRideRenderer(
+                    RideQrCodeGeneratorTestFactory.Create(),
+                    RideBarcodeGeneratorTestFactory.Create(),
+                    new NoOpFileStorage()
+                ),
+                storageService,
+                new RidePdfDocumentRepository(db, new PostgresDatabaseExceptionTranslator()),
+                currentUser.Object
+            );
 
         Result<RideGenerationResultDto> firstResult;
         await using (var db1 = NewDbContext())
-            firstResult = await BuildPipeline(db1).ExecuteAsync(
-                _tenantId, _companyId, sourceModule, sourceEntityId, forceRegenerate: false, CancellationToken.None);
+            firstResult = await BuildPipeline(db1)
+                .ExecuteAsync(
+                    _tenantId,
+                    _companyId,
+                    sourceModule,
+                    sourceEntityId,
+                    forceRegenerate: false,
+                    CancellationToken.None
+                );
 
         await Task.Delay(50);
 
         Result<RideGenerationResultDto> regeneratedResult;
         await using (var db2 = NewDbContext())
-            regeneratedResult = await BuildPipeline(db2).ExecuteAsync(
-                _tenantId, _companyId, sourceModule, sourceEntityId, forceRegenerate: true, CancellationToken.None);
+            regeneratedResult = await BuildPipeline(db2)
+                .ExecuteAsync(
+                    _tenantId,
+                    _companyId,
+                    sourceModule,
+                    sourceEntityId,
+                    forceRegenerate: true,
+                    CancellationToken.None
+                );
 
         firstResult.Value!.Outcome.Should().Be(RideOutcome.Generated);
         regeneratedResult.Value!.Outcome.Should().Be(RideOutcome.Generated);
         regeneratedResult.Value.Metadata.Should().NotBeNull();
         regeneratedResult.Value.Metadata!.WasCached.Should().BeFalse();
-        regeneratedResult.Value.Metadata.GeneratedAtUtc.Should().BeAfter(firstResult.Value.Metadata!.GeneratedAtUtc,
-            "forceRegenerate debe producir un GeneratedAtUtc real y posterior, no reutilizar la metadata anterior");
+        regeneratedResult
+            .Value.Metadata.GeneratedAtUtc.Should()
+            .BeAfter(
+                firstResult.Value.Metadata!.GeneratedAtUtc,
+                "forceRegenerate debe producir un GeneratedAtUtc real y posterior, no reutilizar la metadata anterior"
+            );
 
         await using var verifyDb = NewDbContext();
-        var rows = await verifyDb.RidePdfDocuments
-            .Where(x => x.TenantId == _tenantId && x.ElectronicDocumentId == electronicDocumentId)
+        var rows = await verifyDb
+            .RidePdfDocuments.Where(x =>
+                x.TenantId == _tenantId && x.ElectronicDocumentId == electronicDocumentId
+            )
             .ToListAsync();
-        rows.Should().ContainSingle("una regeneración sobre el mismo fingerprint actualiza la fila existente, no crea una nueva");
+        rows.Should()
+            .ContainSingle(
+                "una regeneración sobre el mismo fingerprint actualiza la fila existente, no crea una nueva"
+            );
     }
 
     /// <summary>
@@ -338,27 +549,54 @@ public sealed class RidePipelineStorageAndCacheIntegrationTests : IAsyncLifetime
 
         var namingStrategy = new RidePdfStorageNamingStrategy();
         var relativePath = namingStrategy.BuildRelativePath(
-            _tenantId, RideDocumentType.Invoice, electronicDocumentId, "unversioned");
+            _tenantId,
+            RideDocumentType.Invoice,
+            electronicDocumentId,
+            "unversioned"
+        );
         var forbiddenFullPath = Path.GetFullPath(Path.Combine(_fileStorageBasePath, relativePath));
         Directory.CreateDirectory(forbiddenFullPath);
 
         var sourceXmlProvider = new Mock<IRideSourceXmlProvider>();
         sourceXmlProvider
-            .Setup(p => p.GetAuthorizedXmlAsync(_tenantId, _companyId, sourceModule, sourceEntityId, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Result<RideSourceXmlLookup>.Success(new RideSourceXmlLookup(
-                RideSourceXmlStatus.Available, xml, electronicDocumentId, RideDocumentType.Invoice)));
+            .Setup(p =>
+                p.GetAuthorizedXmlAsync(
+                    _tenantId,
+                    _companyId,
+                    sourceModule,
+                    sourceEntityId,
+                    It.IsAny<CancellationToken>()
+                )
+            )
+            .ReturnsAsync(
+                Result<RideSourceXmlLookup>.Success(
+                    new RideSourceXmlLookup(
+                        RideSourceXmlStatus.Available,
+                        xml,
+                        electronicDocumentId,
+                        RideDocumentType.Invoice
+                    )
+                )
+            );
 
         var brandingProvider = new Mock<IRideBrandingProvider>();
         brandingProvider
-            .Setup(b => b.GetAsync(_tenantId, _companyId, null, null, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Result<ERP.Domain.Modules.Ride.ValueObjects.RideBranding>.Success(
-                ERP.Domain.Modules.Ride.ValueObjects.RideBranding.Empty()));
+            .Setup(b =>
+                b.GetAsync(_tenantId, _companyId, null, null, It.IsAny<CancellationToken>())
+            )
+            .ReturnsAsync(
+                Result<ERP.Domain.Modules.Ride.ValueObjects.RideBranding>.Success(
+                    ERP.Domain.Modules.Ride.ValueObjects.RideBranding.Empty()
+                )
+            );
 
         var currentUser = new Mock<ICurrentUser>();
         currentUser.SetupGet(u => u.UserId).Returns(Guid.NewGuid());
 
         var configuration = new ConfigurationBuilder()
-            .AddInMemoryCollection(new Dictionary<string, string?> { ["FileStorage:BasePath"] = _fileStorageBasePath })
+            .AddInMemoryCollection(
+                new Dictionary<string, string?> { ["FileStorage:BasePath"] = _fileStorageBasePath }
+            )
             .Build();
         var fileStorage = new LocalFileStorage(configuration);
         var storageService = new RidePdfStorageService(fileStorage, namingStrategy);
@@ -368,18 +606,35 @@ public sealed class RidePipelineStorageAndCacheIntegrationTests : IAsyncLifetime
             sourceXmlProvider.Object,
             new RideXmlParserResolver([new InvoiceRideXmlParser()]),
             new RideTemplateResolver([new DefaultInvoiceRideTemplate()]),
-            new RideCacheStrategy(new RidePdfDocumentRepository(db, new PostgresDatabaseExceptionTranslator())),
+            new RideCacheStrategy(
+                new RidePdfDocumentRepository(db, new PostgresDatabaseExceptionTranslator())
+            ),
             new RideContentHasher(),
             brandingProvider.Object,
-            new QuestPdfRideRenderer(RideQrCodeGeneratorTestFactory.Create(), RideBarcodeGeneratorTestFactory.Create(), new NoOpFileStorage()),
+            new QuestPdfRideRenderer(
+                RideQrCodeGeneratorTestFactory.Create(),
+                RideBarcodeGeneratorTestFactory.Create(),
+                new NoOpFileStorage()
+            ),
             storageService,
             new RidePdfDocumentRepository(db, new PostgresDatabaseExceptionTranslator()),
-            currentUser.Object);
+            currentUser.Object
+        );
 
-        var act = () => pipeline.ExecuteAsync(
-            _tenantId, _companyId, sourceModule, sourceEntityId, forceRegenerate: false, CancellationToken.None);
+        var act = () =>
+            pipeline.ExecuteAsync(
+                _tenantId,
+                _companyId,
+                sourceModule,
+                sourceEntityId,
+                forceRegenerate: false,
+                CancellationToken.None
+            );
 
-        var result = await act.Should().NotThrowAsync("una falla real de storage nunca debe escapar como excepción no controlada");
+        var result = await act.Should()
+            .NotThrowAsync(
+                "una falla real de storage nunca debe escapar como excepción no controlada"
+            );
         result.Subject.IsSuccess.Should().BeTrue();
         result.Subject.Value!.Outcome.Should().Be(RideOutcome.Failed);
         result.Subject.Value.ReasonCode.Should().StartWith("render_pipeline_error:");
@@ -400,9 +655,13 @@ public sealed class RidePipelineStorageAndCacheIntegrationTests : IAsyncLifetime
 
     private sealed class NoOpPublisher : IPublisher
     {
-        public Task Publish(object notification, CancellationToken cancellationToken = default) => Task.CompletedTask;
+        public Task Publish(object notification, CancellationToken cancellationToken = default) =>
+            Task.CompletedTask;
 
-        public Task Publish<TNotification>(TNotification notification, CancellationToken cancellationToken = default)
+        public Task Publish<TNotification>(
+            TNotification notification,
+            CancellationToken cancellationToken = default
+        )
             where TNotification : INotification => Task.CompletedTask;
     }
 }

@@ -16,8 +16,9 @@ public sealed class CurrentCompanyService : ICurrentCompany
     {
         get
         {
-            var header = _httpContextAccessor.HttpContext?
-                .Request.Headers["X-Company-Id"].FirstOrDefault();
+            var header = _httpContextAccessor
+                .HttpContext?.Request.Headers["X-Company-Id"]
+                .FirstOrDefault();
 
             if (Guid.TryParse(header, out var id) && id != Guid.Empty)
                 return id;
@@ -26,9 +27,9 @@ public sealed class CurrentCompanyService : ICurrentCompany
         }
     }
 
-    public bool IsAuthenticated
-        => _httpContextAccessor.HttpContext?.User.Identity?.IsAuthenticated ?? false
-           || JobCompanyContext.Current != Guid.Empty;
+    public bool IsAuthenticated =>
+        _httpContextAccessor.HttpContext?.User.Identity?.IsAuthenticated
+        ?? false || JobCompanyContext.Current != Guid.Empty;
 
     public bool HasCompanyContext => CompanyId != Guid.Empty;
 }

@@ -23,7 +23,8 @@ public sealed class CreateWarehouseCommandHandler
         IUserActivityRepository activity,
         ICurrentTenant currentTenant,
         ICurrentCompany company,
-        ICurrentUser user)
+        ICurrentUser user
+    )
     {
         _repo = repo;
         _activity = activity;
@@ -33,16 +34,26 @@ public sealed class CreateWarehouseCommandHandler
     }
 
     public async Task<Result<WarehouseListItemDto>> Handle(
-        CreateWarehouseCommand command, CancellationToken cancellationToken)
+        CreateWarehouseCommand command,
+        CancellationToken cancellationToken
+    )
     {
         var tenantId = _currentTenant.TenantId;
         var companyId = _company.CompanyId;
 
         var code = $"WH-{Guid.NewGuid():N}"[..Warehouse.CodeMaxLen];
 
-        var codeExists = await _repo.ExistsCodeAsync(tenantId, command.BranchId, code, null, cancellationToken);
+        var codeExists = await _repo.ExistsCodeAsync(
+            tenantId,
+            command.BranchId,
+            code,
+            null,
+            cancellationToken
+        );
         if (codeExists)
-            return Result<WarehouseListItemDto>.Conflict("Ya existe una bodega con ese código en la sucursal.");
+            return Result<WarehouseListItemDto>.Conflict(
+                "Ya existe una bodega con ese código en la sucursal."
+            );
 
         var entity = Warehouse.Create(
             tenantId: tenantId,
@@ -59,19 +70,24 @@ public sealed class CreateWarehouseCommandHandler
             capacity: command.Capacity,
             dailyDispatchGoal: command.DailyDispatchGoal,
             createdBy: _user.UserId,
-            companyId: companyId);
+            companyId: companyId
+        );
 
         await _repo.AddAsync(entity, cancellationToken);
-        await _activity.AddAsync(UserActivity.Create(
-            tenantId,
-            _user.UserId,
-            _user.Email,
-            _user.FullName,
-            module: "inventory",
-            action: "warehouse.create",
-            entityType: "Warehouse",
-            entityId: entity.Id,
-            description: entity.Name), cancellationToken);
+        await _activity.AddAsync(
+            UserActivity.Create(
+                tenantId,
+                _user.UserId,
+                _user.Email,
+                _user.FullName,
+                module: "inventory",
+                action: "warehouse.create",
+                entityType: "Warehouse",
+                entityId: entity.Id,
+                description: entity.Name
+            ),
+            cancellationToken
+        );
         await _repo.SaveChangesAsync(cancellationToken);
 
         return Result<WarehouseListItemDto>.Success(GetWarehousesQueryHandler.ToDto(entity));

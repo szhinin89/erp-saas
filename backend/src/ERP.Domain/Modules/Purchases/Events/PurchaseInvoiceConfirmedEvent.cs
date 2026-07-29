@@ -23,9 +23,18 @@ public sealed class PurchaseInvoiceConfirmedEvent : BaseDomainEvent, IAuditEvent
     public decimal TotalDiscount { get; }
 
     public PurchaseInvoiceConfirmedEvent(
-        Guid tenantId, Guid invoiceId, Guid supplierId, string invoiceNumber, decimal grandTotal,
-        Guid companyId, DateOnly issueDate,
-        decimal subtotal, decimal totalVat, decimal totalIce, decimal totalDiscount)
+        Guid tenantId,
+        Guid invoiceId,
+        Guid supplierId,
+        string invoiceNumber,
+        decimal grandTotal,
+        Guid companyId,
+        DateOnly issueDate,
+        decimal subtotal,
+        decimal totalVat,
+        decimal totalIce,
+        decimal totalDiscount
+    )
     {
         TenantId = tenantId;
         InvoiceId = invoiceId;

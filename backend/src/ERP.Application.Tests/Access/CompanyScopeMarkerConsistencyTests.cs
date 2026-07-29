@@ -27,8 +27,12 @@ public sealed class CompanyScopeMarkerConsistencyTests
     [InlineData(typeof(UpdateCompanyUserBranchesAdminCommand))]
     public void Request_corregido_en_S1_implementa_IRequiresCompanyContext(Type requestType)
     {
-        typeof(IRequiresCompanyContext).IsAssignableFrom(requestType).Should().BeTrue(
-            $"{requestType.Name} debe forzar CompanyScopeBehavior→ICompanyAccessGuard antes de ejecutarse (hallazgo 5C)");
+        typeof(IRequiresCompanyContext)
+            .IsAssignableFrom(requestType)
+            .Should()
+            .BeTrue(
+                $"{requestType.Name} debe forzar CompanyScopeBehavior→ICompanyAccessGuard antes de ejecutarse (hallazgo 5C)"
+            );
     }
 
     [Theory]

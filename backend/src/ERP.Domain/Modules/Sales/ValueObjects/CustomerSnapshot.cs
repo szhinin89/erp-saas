@@ -14,8 +14,13 @@ public sealed record CustomerSnapshot
     public string? Email { get; }
     public string? Address { get; }
 
-    private CustomerSnapshot(string name, string taxId, string identificationType,
-        string? email, string? address)
+    private CustomerSnapshot(
+        string name,
+        string taxId,
+        string identificationType,
+        string? email,
+        string? address
+    )
     {
         Name = name;
         TaxId = taxId;
@@ -25,27 +30,36 @@ public sealed record CustomerSnapshot
     }
 
     public static CustomerSnapshot Create(
-        string name, string taxId, string identificationType,
-        string? email = null, string? address = null)
+        string name,
+        string taxId,
+        string identificationType,
+        string? email = null,
+        string? address = null
+    )
     {
         if (string.IsNullOrWhiteSpace(name))
             throw new ArgumentException("El nombre del cliente es obligatorio.", nameof(name));
         if (string.IsNullOrWhiteSpace(taxId))
             throw new ArgumentException("El RUC/CI del cliente es obligatorio.", nameof(taxId));
         if (string.IsNullOrWhiteSpace(identificationType))
-            throw new ArgumentException("El tipo de identificación es obligatorio.", nameof(identificationType));
+            throw new ArgumentException(
+                "El tipo de identificación es obligatorio.",
+                nameof(identificationType)
+            );
 
         return new CustomerSnapshot(
             name.Trim(),
             taxId.Trim(),
             identificationType.Trim(),
             NullIfEmpty(email?.Trim(), EmailMaxLen, nameof(email)),
-            NullIfEmpty(address?.Trim(), AddressMaxLen, nameof(address)));
+            NullIfEmpty(address?.Trim(), AddressMaxLen, nameof(address))
+        );
     }
 
     private static string? NullIfEmpty(string? v, int max, string param)
     {
-        if (string.IsNullOrEmpty(v)) return null;
+        if (string.IsNullOrEmpty(v))
+            return null;
         if (v.Length > max)
             throw new ArgumentException($"{param} no puede superar {max} caracteres.", param);
         return v;

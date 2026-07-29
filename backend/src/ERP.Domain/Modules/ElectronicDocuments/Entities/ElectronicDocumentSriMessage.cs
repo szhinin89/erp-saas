@@ -25,9 +25,14 @@ public sealed class ElectronicDocumentSriMessage : AuditRecordBase, ICompanyOper
     private ElectronicDocumentSriMessage() { }
 
     public static ElectronicDocumentSriMessage Create(
-        AuditActor actor, Guid companyId, Guid electronicDocumentId, SriMessage message)
+        AuditActor actor,
+        Guid companyId,
+        Guid electronicDocumentId,
+        SriMessage message
+    )
     {
-        if (companyId == Guid.Empty) throw new ArgumentException("companyId requerido.", nameof(companyId));
+        if (companyId == Guid.Empty)
+            throw new ArgumentException("companyId requerido.", nameof(companyId));
 
         var entry = new ElectronicDocumentSriMessage
         {

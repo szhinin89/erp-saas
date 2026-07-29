@@ -1,12 +1,12 @@
-using ERP.Application.Common;
-using ERP.Application.Modules.ElectronicDocuments.DTOs;
-using ERP.Domain.Modules.ElectronicDocuments.Enums;
-using ERP.Domain.Modules.ElectronicDocuments.ValueObjects;
 using System.Globalization;
 using System.Security.Cryptography;
 using System.Text;
 using System.Xml;
 using System.Xml.Linq;
+using ERP.Application.Common;
+using ERP.Application.Modules.ElectronicDocuments.DTOs;
+using ERP.Domain.Modules.ElectronicDocuments.Enums;
+using ERP.Domain.Modules.ElectronicDocuments.ValueObjects;
 
 namespace ERP.Application.Modules.ElectronicDocuments.XmlBuilders;
 
@@ -68,23 +68,28 @@ public sealed class InvoiceXmlBuilder : IElectronicDocumentXmlBuilder
             // seguridad ante caracteres de control inválidos que la API de XElement no rechaza.
             XDocument.Parse(xml);
 
-            return Result<ElectronicDocumentXml>.Success(new ElectronicDocumentXml(
-                Xml: xml,
-                Encoding: XmlEncodingValue,
-                Version: XmlVersionValue,
-                DocumentType: DocumentType,
-                AccessKey: accessKey.Value,
-                GeneratedAtUtc: DateTime.UtcNow));
+            return Result<ElectronicDocumentXml>.Success(
+                new ElectronicDocumentXml(
+                    Xml: xml,
+                    Encoding: XmlEncodingValue,
+                    Version: XmlVersionValue,
+                    DocumentType: DocumentType,
+                    AccessKey: accessKey.Value,
+                    GeneratedAtUtc: DateTime.UtcNow
+                )
+            );
         }
         catch (ArgumentException ex)
         {
             return Result<ElectronicDocumentXml>.ValidationFailure(
-                $"No se pudo construir un XML válido: {ex.Message}");
+                $"No se pudo construir un XML válido: {ex.Message}"
+            );
         }
         catch (XmlException ex)
         {
             return Result<ElectronicDocumentXml>.ValidationFailure(
-                $"El XML generado no está bien formado: {ex.Message}");
+                $"El XML generado no está bien formado: {ex.Message}"
+            );
         }
     }
 
@@ -132,7 +137,9 @@ public sealed class InvoiceXmlBuilder : IElectronicDocumentXmlBuilder
             errors.Add("La razón social del comprador es obligatoria.");
 
         if (data.AdditionalInfo.Count > MaxAdditionalFields)
-            errors.Add($"El comprobante tiene {data.AdditionalInfo.Count} campos adicionales; el SRI permite un máximo de {MaxAdditionalFields}.");
+            errors.Add(
+                $"El comprobante tiene {data.AdditionalInfo.Count} campos adicionales; el SRI permite un máximo de {MaxAdditionalFields}."
+            );
 
         foreach (var line in data.Details)
         {
@@ -146,8 +153,8 @@ public sealed class InvoiceXmlBuilder : IElectronicDocumentXmlBuilder
 
         // Todo TaxCode presente (a nivel de línea o de resumen) debe poder resolverse a un
         // código SRI real antes de construir el XML — nunca se hardcodea ni se asume.
-        var distinctTaxCodes = data.Details
-            .SelectMany(d => d.Taxes)
+        var distinctTaxCodes = data
+            .Details.SelectMany(d => d.Taxes)
             .Select(t => t.TaxCode)
             .Concat(data.TaxSummary.Select(t => t.TaxCode))
             .Distinct();
@@ -155,8 +162,9 @@ public sealed class InvoiceXmlBuilder : IElectronicDocumentXmlBuilder
         {
             if (_taxCategoryCodeResolver.Resolve(taxCode) is null)
                 errors.Add(
-                    $"No se pudo generar el documento electrónico: el producto tiene un código de impuesto ('{taxCode}') " +
-                    "que el sistema no reconoce. Contacta a soporte técnico e indica este código.");
+                    $"No se pudo generar el documento electrónico: el producto tiene un código de impuesto ('{taxCode}') "
+                        + "que el sistema no reconoce. Contacta a soporte técnico e indica este código."
+                );
         }
 
         return errors;
@@ -167,7 +175,8 @@ public sealed class InvoiceXmlBuilder : IElectronicDocumentXmlBuilder
     {
         var fecha = data.Emission.IssueDate.ToString("ddMMyyyy", CultureInfo.InvariantCulture);
         var numericCode = ComputeNumericCode(
-            $"{data.Issuer.TaxId}|{data.Emission.Establishment}|{data.Emission.EmissionPoint}|{data.Emission.Sequential}|{data.Emission.DocTypeCode}");
+            $"{data.Issuer.TaxId}|{data.Emission.Establishment}|{data.Emission.EmissionPoint}|{data.Emission.Sequential}|{data.Emission.DocTypeCode}"
+        );
 
         var digits48 = string.Concat(
             fecha,
@@ -178,7 +187,8 @@ public sealed class InvoiceXmlBuilder : IElectronicDocumentXmlBuilder
             data.Emission.EmissionPoint,
             data.Emission.Sequential,
             numericCode,
-            data.Emission.EmissionType);
+            data.Emission.EmissionType
+        );
 
         return digits48 + ComputeCheckDigit(digits48);
     }
@@ -208,8 +218,10 @@ public sealed class InvoiceXmlBuilder : IElectronicDocumentXmlBuilder
         }
 
         var check = 11 - (sum % 11);
-        if (check == 11) check = 0;
-        else if (check == 10) check = 1;
+        if (check == 11)
+            check = 0;
+        else if (check == 10)
+            check = 1;
         return (char)('0' + check);
     }
 
@@ -218,11 +230,14 @@ public sealed class InvoiceXmlBuilder : IElectronicDocumentXmlBuilder
     {
         var totals = data.Totals!;
 
-        var infoTributaria = new XElement("infoTributaria",
+        var infoTributaria = new XElement(
+            "infoTributaria",
             new XElement("ambiente", data.Emission.Environment),
             new XElement("tipoEmision", data.Emission.EmissionType),
             new XElement("razonSocial", data.Issuer.LegalName),
-            data.Issuer.TradeName is null ? null : new XElement("nombreComercial", data.Issuer.TradeName),
+            data.Issuer.TradeName is null
+                ? null
+                : new XElement("nombreComercial", data.Issuer.TradeName),
             new XElement("ruc", data.Issuer.TaxId),
             new XElement("claveAcceso", accessKey),
             new XElement("codDoc", data.Emission.DocTypeCode),
@@ -233,49 +248,66 @@ public sealed class InvoiceXmlBuilder : IElectronicDocumentXmlBuilder
             // Ubicación oficial (ficha técnica, Anexo 22): "Entre la etiqueta <agenteRetencion>
             // y </infoTributaria>" — no dentro de <infoFactura>. Como el proyecto todavía no
             // modela <agenteRetencion>, se ubica como último hijo de <infoTributaria>.
-            data.Issuer.TaxRegime is null ? null : new XElement("contribuyenteRimpe", data.Issuer.TaxRegime));
+            data.Issuer.TaxRegime
+                is null
+                ? null
+                : new XElement("contribuyenteRimpe", data.Issuer.TaxRegime)
+        );
 
-        var infoFactura = new XElement("infoFactura",
-            new XElement("fechaEmision", data.Emission.IssueDate.ToString("dd/MM/yyyy", CultureInfo.InvariantCulture)),
+        var infoFactura = new XElement(
+            "infoFactura",
+            new XElement(
+                "fechaEmision",
+                data.Emission.IssueDate.ToString("dd/MM/yyyy", CultureInfo.InvariantCulture)
+            ),
             new XElement("dirEstablecimiento", data.Emission.EstablishmentAddress),
             new XElement("obligadoContabilidad", data.Issuer.IsAccountingRequired ? "SI" : "NO"),
             new XElement("tipoIdentificacionComprador", data.Counterparty.IdentificationType),
             new XElement("razonSocialComprador", data.Counterparty.LegalName),
             new XElement("identificacionComprador", data.Counterparty.IdentificationNumber),
-            data.Counterparty.Address is null ? null : new XElement("direccionComprador", data.Counterparty.Address),
+            data.Counterparty.Address is null
+                ? null
+                : new XElement("direccionComprador", data.Counterparty.Address),
             new XElement("totalSinImpuestos", FormatMoney(totals.Subtotal)),
             new XElement("totalDescuento", FormatMoney(totals.TotalDiscount)),
             new XElement("totalConImpuestos", data.TaxSummary.Select(BuildTotalImpuesto)),
             new XElement("propina", FormatMoney(0m)),
             new XElement("importeTotal", FormatMoney(totals.GrandTotal)),
             new XElement("moneda", totals.CurrencyCode),
-            new XElement("pagos", data.Payments.Select(BuildPago)));
+            new XElement("pagos", data.Payments.Select(BuildPago))
+        );
 
         var detalles = new XElement("detalles", data.Details.Select(BuildDetalle));
 
-        var root = new XElement("factura",
+        var root = new XElement(
+            "factura",
             new XAttribute("id", "comprobante"),
             new XAttribute("version", XmlVersionValue),
             infoTributaria,
             infoFactura,
             detalles,
-            data.AdditionalInfo.Count == 0 ? null : BuildInfoAdicional(data.AdditionalInfo));
+            data.AdditionalInfo.Count == 0 ? null : BuildInfoAdicional(data.AdditionalInfo)
+        );
 
         return new XDocument(new XDeclaration("1.0", XmlEncodingValue, null), root);
     }
 
     private XElement BuildTotalImpuesto(ElectronicDocumentTaxSummary tax) =>
-        new("totalImpuesto",
+        new(
+            "totalImpuesto",
             new XElement("codigo", ResolveSriTaxCode(tax.TaxCode)),
             new XElement("codigoPorcentaje", tax.TaxPercentageCode),
             new XElement("baseImponible", FormatMoney(tax.TaxableBase)),
-            new XElement("valor", FormatMoney(tax.TaxAmount)));
+            new XElement("valor", FormatMoney(tax.TaxAmount))
+        );
 
     private static XElement BuildPago(ElectronicDocumentPayment payment)
     {
-        var pago = new XElement("pago",
+        var pago = new XElement(
+            "pago",
             new XElement("formaPago", payment.PaymentMethodCode),
-            new XElement("total", FormatMoney(payment.Amount)));
+            new XElement("total", FormatMoney(payment.Amount))
+        );
 
         if (payment.Term is { } term)
             pago.Add(new XElement("plazo", term));
@@ -286,26 +318,38 @@ public sealed class InvoiceXmlBuilder : IElectronicDocumentXmlBuilder
     }
 
     private XElement BuildDetalle(ElectronicDocumentDetailLine line) =>
-        new("detalle",
+        new(
+            "detalle",
             new XElement("codigoPrincipal", line.Code),
             new XElement("descripcion", line.Description),
             new XElement("cantidad", FormatQuantity(line.Quantity)),
             new XElement("precioUnitario", FormatQuantity(line.UnitPrice)),
             new XElement("descuento", FormatMoney(line.Discount)),
             new XElement("precioTotalSinImpuesto", FormatMoney(line.Subtotal)),
-            new XElement("impuestos", line.Taxes.Select(BuildImpuestoDetalle)));
+            new XElement("impuestos", line.Taxes.Select(BuildImpuestoDetalle))
+        );
 
     private XElement BuildImpuestoDetalle(ElectronicDocumentDetailTax tax) =>
-        new("impuesto",
+        new(
+            "impuesto",
             new XElement("codigo", ResolveSriTaxCode(tax.TaxCode)),
             new XElement("codigoPorcentaje", tax.TaxPercentageCode),
             new XElement("tarifa", FormatMoney(tax.TaxRate)),
             new XElement("baseImponible", FormatMoney(tax.TaxableBase)),
-            new XElement("valor", FormatMoney(tax.TaxAmount)));
+            new XElement("valor", FormatMoney(tax.TaxAmount))
+        );
 
-    private static XElement BuildInfoAdicional(IReadOnlyList<ElectronicDocumentAdditionalField> fields) =>
-        new("infoAdicional",
-            fields.Select(f => new XElement("campoAdicional", new XAttribute("nombre", f.Name), f.Value)));
+    private static XElement BuildInfoAdicional(
+        IReadOnlyList<ElectronicDocumentAdditionalField> fields
+    ) =>
+        new(
+            "infoAdicional",
+            fields.Select(f => new XElement(
+                "campoAdicional",
+                new XAttribute("nombre", f.Name),
+                f.Value
+            ))
+        );
 
     /// <summary>
     /// Resuelve vía <see cref="ISriTaxCategoryCodeResolver"/> — nunca un switch/diccionario
@@ -315,11 +359,14 @@ public sealed class InvoiceXmlBuilder : IElectronicDocumentXmlBuilder
     private string ResolveSriTaxCode(string taxCode) =>
         _taxCategoryCodeResolver.Resolve(taxCode)
         ?? throw new InvalidOperationException(
-            $"Invariante violada: '{taxCode}' debía estar validado como resoluble antes de construir el XML.");
+            $"Invariante violada: '{taxCode}' debía estar validado como resoluble antes de construir el XML."
+        );
 
-    private static string FormatMoney(decimal value) => value.ToString("F2", CultureInfo.InvariantCulture);
+    private static string FormatMoney(decimal value) =>
+        value.ToString("F2", CultureInfo.InvariantCulture);
 
-    private static string FormatQuantity(decimal value) => value.ToString("F6", CultureInfo.InvariantCulture);
+    private static string FormatQuantity(decimal value) =>
+        value.ToString("F6", CultureInfo.InvariantCulture);
 
     /// <summary>
     /// XML-01 (auditoría SRI, Fase 2): <see cref="StringWriter"/> declara

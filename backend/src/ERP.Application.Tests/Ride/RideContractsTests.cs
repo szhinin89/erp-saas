@@ -37,7 +37,12 @@ public sealed class RideContractsTests
     [Fact]
     public void RideGenerationResultDto_exposes_outcome_storage_path_metadata_and_reason_code()
     {
-        var dto = new RideGenerationResultDto(RideOutcome.Generated, "ride/path/v1.pdf", null, null);
+        var dto = new RideGenerationResultDto(
+            RideOutcome.Generated,
+            "ride/path/v1.pdf",
+            null,
+            null
+        );
 
         dto.Outcome.Should().Be(RideOutcome.Generated);
         dto.StoragePath.Should().Be("ride/path/v1.pdf");
@@ -57,7 +62,8 @@ public sealed class RideContractsTests
             RendererVersion: "1.0.0",
             SourceXmlHash: new string('a', 64),
             GeneratedAtUtc: generatedAt,
-            WasCached: true);
+            WasCached: true
+        );
 
         metadata.TemplateId.Should().Be("DefaultInvoiceRideTemplate");
         metadata.WasCached.Should().BeTrue();

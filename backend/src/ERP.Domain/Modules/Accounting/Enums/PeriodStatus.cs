@@ -4,5 +4,5 @@ public enum PeriodStatus
 {
     Open,
     Closed,
-    Locked
+    Locked,
 }

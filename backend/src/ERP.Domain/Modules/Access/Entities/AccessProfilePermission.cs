@@ -21,7 +21,8 @@ public class AccessProfilePermission : AuditableEntity
         Guid profileId,
         string permissionKey,
         bool isAllowed,
-        Guid createdBy)
+        Guid createdBy
+    )
     {
         if (string.IsNullOrWhiteSpace(permissionKey))
             throw new ArgumentException("PermissionKey requerido.", nameof(permissionKey));
@@ -45,4 +46,3 @@ public class AccessProfilePermission : AuditableEntity
         SetUpdated(updatedBy);
     }
 }
-

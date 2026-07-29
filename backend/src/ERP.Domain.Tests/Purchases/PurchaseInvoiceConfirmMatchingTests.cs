@@ -22,26 +22,45 @@ public sealed class PurchaseInvoiceConfirmMatchingTests
 
     private static PurchaseInvoice CreateDraftInvoice() =>
         PurchaseInvoice.CreateDraft(
-            TenantId, CompanyId, BranchId, SupplierId,
-            "Proveedor Test", "1234567890001",
-            "01", "001-001-000000001", DateOnly.FromDateTime(DateTime.UtcNow), UserId,
-            PtId, "Contado", 1, 30,
-            globalWarehouseId: WhId);
+            TenantId,
+            CompanyId,
+            BranchId,
+            SupplierId,
+            "Proveedor Test",
+            "1234567890001",
+            "01",
+            "001-001-000000001",
+            DateOnly.FromDateTime(DateTime.UtcNow),
+            UserId,
+            PtId,
+            "Contado",
+            1,
+            30,
+            globalWarehouseId: WhId
+        );
 
     [Fact]
     public void Confirm_rejects_a_reception_linked_line_without_item()
     {
         var inv = CreateDraftInvoice();
         var line = PurchaseInvoiceDetail.Create(
-            inv.Id, TenantId, "Producto sin vincular",
-            quantity: 1, unitPrice: 10m, vatCode: "10", uomCode: "UNIT",
-            itemId: null, warehouseId: WhId,
-            purchaseReceptionLineId: Guid.NewGuid());
+            inv.Id,
+            TenantId,
+            "Producto sin vincular",
+            quantity: 1,
+            unitPrice: 10m,
+            vatCode: "10",
+            uomCode: "UNIT",
+            itemId: null,
+            warehouseId: WhId,
+            purchaseReceptionLineId: Guid.NewGuid()
+        );
         inv.ReplaceLines([line], UserId);
 
         var act = () => inv.Confirm(UserId);
 
-        act.Should().Throw<InvalidOperationException>()
+        act.Should()
+            .Throw<InvalidOperationException>()
             .WithMessage("*productos pendientes de vinculación*Producto sin vincular*");
     }
 
@@ -50,10 +69,17 @@ public sealed class PurchaseInvoiceConfirmMatchingTests
     {
         var inv = CreateDraftInvoice();
         var line = PurchaseInvoiceDetail.Create(
-            inv.Id, TenantId, "Producto vinculado",
-            quantity: 1, unitPrice: 10m, vatCode: "10", uomCode: "UNIT",
-            itemId: ItemId, warehouseId: WhId,
-            purchaseReceptionLineId: Guid.NewGuid());
+            inv.Id,
+            TenantId,
+            "Producto vinculado",
+            quantity: 1,
+            unitPrice: 10m,
+            vatCode: "10",
+            uomCode: "UNIT",
+            itemId: ItemId,
+            warehouseId: WhId,
+            purchaseReceptionLineId: Guid.NewGuid()
+        );
         inv.ReplaceLines([line], UserId);
 
         var act = () => inv.Confirm(UserId);
@@ -67,9 +93,16 @@ public sealed class PurchaseInvoiceConfirmMatchingTests
     {
         var inv = CreateDraftInvoice();
         var line = PurchaseInvoiceDetail.Create(
-            inv.Id, TenantId, "Servicio manual sin ítem",
-            quantity: 1, unitPrice: 10m, vatCode: "10", uomCode: "UNIT",
-            itemId: null, purchaseReceptionLineId: null);
+            inv.Id,
+            TenantId,
+            "Servicio manual sin ítem",
+            quantity: 1,
+            unitPrice: 10m,
+            vatCode: "10",
+            uomCode: "UNIT",
+            itemId: null,
+            purchaseReceptionLineId: null
+        );
         inv.ReplaceLines([line], UserId);
 
         var act = () => inv.Confirm(UserId);

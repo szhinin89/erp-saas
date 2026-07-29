@@ -13,15 +13,16 @@ namespace ERP.Application.Modules.Caja.UseCases;
 public sealed record CashClosingCountInput(
     decimal DenominationValue,
     string DenominationLabel,
-    int Quantity);
+    int Quantity
+);
 
 // ── Command ────────────────────────────────────────────────────────────
 
 public sealed record CloseCashSessionCommand(
     Guid Id,
     List<CashClosingCountInput> ClosingCounts,
-    string? CloseNotes = null)
-    : IRequest<Result<CashSessionDto>>, IBranchScopedRequest;
+    string? CloseNotes = null
+) : IRequest<Result<CashSessionDto>>, IBranchScopedRequest;
 
 // ── Validator ──────────────────────────────────────────────────────────
 
@@ -29,28 +30,39 @@ public sealed class CloseCashSessionValidator : AbstractValidator<CloseCashSessi
 {
     public CloseCashSessionValidator()
     {
-        RuleFor(x => x.Id).NotEmpty()
-            .WithMessage("El ID de la sesión de caja es obligatorio.");
-        RuleFor(x => x.ClosingCounts).NotEmpty()
+        RuleFor(x => x.Id).NotEmpty().WithMessage("El ID de la sesión de caja es obligatorio.");
+        RuleFor(x => x.ClosingCounts)
+            .NotEmpty()
             .WithMessage("Debe incluir al menos una denominación en el arqueo.");
-        RuleForEach(x => x.ClosingCounts).ChildRules(count =>
-        {
-            count.RuleFor(c => c.DenominationValue).GreaterThan(0)
-                .WithMessage("El valor de la denominación debe ser mayor a cero.");
-            count.RuleFor(c => c.DenominationLabel).NotEmpty()
-                .MaximumLength(CashClosingCount.DenominationLabelMaxLen)
-                .WithMessage("La etiqueta de denominación es obligatoria.");
-            count.RuleFor(c => c.Quantity).GreaterThanOrEqualTo(0)
-                .WithMessage("La cantidad no puede ser negativa.");
-        });
-        RuleFor(x => x.CloseNotes).MaximumLength(CashSession.CloseNotesMaxLen)
-            .WithMessage($"Las notas de cierre no pueden exceder {CashSession.CloseNotesMaxLen} caracteres.");
+        RuleForEach(x => x.ClosingCounts)
+            .ChildRules(count =>
+            {
+                count
+                    .RuleFor(c => c.DenominationValue)
+                    .GreaterThan(0)
+                    .WithMessage("El valor de la denominación debe ser mayor a cero.");
+                count
+                    .RuleFor(c => c.DenominationLabel)
+                    .NotEmpty()
+                    .MaximumLength(CashClosingCount.DenominationLabelMaxLen)
+                    .WithMessage("La etiqueta de denominación es obligatoria.");
+                count
+                    .RuleFor(c => c.Quantity)
+                    .GreaterThanOrEqualTo(0)
+                    .WithMessage("La cantidad no puede ser negativa.");
+            });
+        RuleFor(x => x.CloseNotes)
+            .MaximumLength(CashSession.CloseNotesMaxLen)
+            .WithMessage(
+                $"Las notas de cierre no pueden exceder {CashSession.CloseNotesMaxLen} caracteres."
+            );
     }
 }
 
 // ── Handler ────────────────────────────────────────────────────────────
 
-public sealed class CloseCashSessionHandler : IRequestHandler<CloseCashSessionCommand, Result<CashSessionDto>>
+public sealed class CloseCashSessionHandler
+    : IRequestHandler<CloseCashSessionCommand, Result<CashSessionDto>>
 {
     private readonly ICashSessionRepository _repo;
     private readonly IEmissionPointRepository _epRepo;
@@ -59,23 +71,40 @@ public sealed class CloseCashSessionHandler : IRequestHandler<CloseCashSessionCo
     private readonly ICurrentUser _u;
 
     public CloseCashSessionHandler(
-        ICashSessionRepository repo, IEmissionPointRepository epRepo, ICashRegisterRepository crRepo,
-        ICurrentTenant t, ICurrentUser u)
+        ICashSessionRepository repo,
+        IEmissionPointRepository epRepo,
+        ICashRegisterRepository crRepo,
+        ICurrentTenant t,
+        ICurrentUser u
+    )
     {
-        _repo = repo; _epRepo = epRepo; _crRepo = crRepo; _t = t; _u = u;
+        _repo = repo;
+        _epRepo = epRepo;
+        _crRepo = crRepo;
+        _t = t;
+        _u = u;
     }
 
-    public async Task<Result<CashSessionDto>> Handle(CloseCashSessionCommand cmd, CancellationToken ct)
+    public async Task<Result<CashSessionDto>> Handle(
+        CloseCashSessionCommand cmd,
+        CancellationToken ct
+    )
     {
         var session = await _repo.GetByIdAsync(_t.TenantId, cmd.Id, ct);
         if (session is null)
             return Result<CashSessionDto>.NotFound("Sesión de caja no encontrada.");
 
-        var closingCounts = cmd.ClosingCounts
-            .Where(c => c.Quantity > 0)
-            .Select(c => CashClosingCount.Create(
-                session.Id, session.TenantId,
-                c.DenominationValue, c.DenominationLabel, c.Quantity))
+        var closingCounts = cmd
+            .ClosingCounts.Where(c => c.Quantity > 0)
+            .Select(c =>
+                CashClosingCount.Create(
+                    session.Id,
+                    session.TenantId,
+                    c.DenominationValue,
+                    c.DenominationLabel,
+                    c.Quantity
+                )
+            )
             .ToList();
 
         try
@@ -91,9 +120,13 @@ public sealed class CloseCashSessionHandler : IRequestHandler<CloseCashSessionCo
 
         var ep = await _epRepo.GetByIdAsync(session.EmissionPointId, _t.TenantId, ct);
         var register = await _crRepo.GetByIdAsync(_t.TenantId, session.CashRegisterId, ct);
-        return Result<CashSessionDto>.Success(CajaMapper.ToDto(
-            session, ep?.EmissionType.ToString(),
-            (register?.DefaultWarehouseId, register?.DefaultWarehouse?.Name),
-            (register?.DefaultCustomerId, register?.DefaultCustomer?.Name.LegalName)));
+        return Result<CashSessionDto>.Success(
+            CajaMapper.ToDto(
+                session,
+                ep?.EmissionType.ToString(),
+                (register?.DefaultWarehouseId, register?.DefaultWarehouse?.Name),
+                (register?.DefaultCustomerId, register?.DefaultCustomer?.Name.LegalName)
+            )
+        );
     }
 }

@@ -18,14 +18,16 @@ public static class PurchaseReceptionSourceDocTypeMapper
 {
     public static PurchaseReceptionSourceDocType FromRawText(string? raw)
     {
-        if (string.IsNullOrWhiteSpace(raw)) return PurchaseReceptionSourceDocType.Unknown;
+        if (string.IsNullOrWhiteSpace(raw))
+            return PurchaseReceptionSourceDocType.Unknown;
 
         return raw.Trim().ToUpperInvariant() switch
         {
             "FACTURA" => PurchaseReceptionSourceDocType.Invoice,
             "NOTA DE CRÉDITO" or "NOTA DE CREDITO" => PurchaseReceptionSourceDocType.CreditNote,
             "NOTA DE DÉBITO" or "NOTA DE DEBITO" => PurchaseReceptionSourceDocType.DebitNote,
-            "COMPROBANTE DE RETENCIÓN" or "COMPROBANTE DE RETENCION" => PurchaseReceptionSourceDocType.Retention,
+            "COMPROBANTE DE RETENCIÓN" or "COMPROBANTE DE RETENCION" =>
+                PurchaseReceptionSourceDocType.Retention,
             _ => PurchaseReceptionSourceDocType.Unknown,
         };
     }

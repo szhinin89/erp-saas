@@ -1,11 +1,11 @@
-using ERP.Domain.Access.Entities;
-using ERP.Domain.Access.Interfaces;
-using Microsoft.Extensions.Configuration;
-using Microsoft.IdentityModel.Tokens;
 using System.Globalization;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
+using ERP.Domain.Access.Entities;
+using ERP.Domain.Access.Interfaces;
+using Microsoft.Extensions.Configuration;
+using Microsoft.IdentityModel.Tokens;
 
 namespace ERP.Infrastructure.Services;
 
@@ -17,21 +17,42 @@ public class AccessTokenService : IAccessTokenService
 
     public string GenerateBootstrapToken(IdentityUser user, IReadOnlyList<Guid> tenantIds)
     {
-        var expMinutes = int.Parse(_configuration["Jwt:BootstrapExpirationMinutes"] ?? "5", CultureInfo.InvariantCulture);
-        var extra = IdentityClaims(user).Append(
-            new Claim("tenant_ids", string.Join(',', tenantIds.Select(t => t.ToString()))));
-        return GenerateToken(user.Id, Guid.Empty, "Bootstrap", DateTime.UtcNow.AddMinutes(expMinutes), extra);
+        var expMinutes = int.Parse(
+            _configuration["Jwt:BootstrapExpirationMinutes"] ?? "5",
+            CultureInfo.InvariantCulture
+        );
+        var extra = IdentityClaims(user)
+            .Append(new Claim("tenant_ids", string.Join(',', tenantIds.Select(t => t.ToString()))));
+        return GenerateToken(
+            user.Id,
+            Guid.Empty,
+            "Bootstrap",
+            DateTime.UtcNow.AddMinutes(expMinutes),
+            extra
+        );
     }
 
     public string GenerateSessionToken(IdentityUser user, Guid tenantId, string role)
     {
-        var expMinutes = int.Parse(_configuration["Jwt:ExpirationMinutes"] ?? "60", CultureInfo.InvariantCulture);
-        return GenerateToken(user.Id, tenantId, role, DateTime.UtcNow.AddMinutes(expMinutes), IdentityClaims(user));
+        var expMinutes = int.Parse(
+            _configuration["Jwt:ExpirationMinutes"] ?? "60",
+            CultureInfo.InvariantCulture
+        );
+        return GenerateToken(
+            user.Id,
+            tenantId,
+            role,
+            DateTime.UtcNow.AddMinutes(expMinutes),
+            IdentityClaims(user)
+        );
     }
 
     public string GenerateSessionToken(Guid userId, Guid tenantId, string role)
     {
-        var expMinutes = int.Parse(_configuration["Jwt:ExpirationMinutes"] ?? "60", CultureInfo.InvariantCulture);
+        var expMinutes = int.Parse(
+            _configuration["Jwt:ExpirationMinutes"] ?? "60",
+            CultureInfo.InvariantCulture
+        );
         return GenerateToken(userId, tenantId, role, DateTime.UtcNow.AddMinutes(expMinutes), []);
     }
 
@@ -57,8 +78,12 @@ public class AccessTokenService : IAccessTokenService
     }
 
     private string GenerateToken(
-        Guid userId, Guid tenantId, string role, DateTime expiresAtUtc,
-        IEnumerable<Claim> extraClaims)
+        Guid userId,
+        Guid tenantId,
+        string role,
+        DateTime expiresAtUtc,
+        IEnumerable<Claim> extraClaims
+    )
     {
         var secretKey = _configuration["Jwt:SecretKey"]!;
         var issuer = _configuration["Jwt:Issuer"]!;
@@ -75,8 +100,13 @@ public class AccessTokenService : IAccessTokenService
 
         var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey));
         var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
-        var token = new JwtSecurityToken(issuer, audience, claims,
-            expires: expiresAtUtc, signingCredentials: creds);
+        var token = new JwtSecurityToken(
+            issuer,
+            audience,
+            claims,
+            expires: expiresAtUtc,
+            signingCredentials: creds
+        );
 
         return new JwtSecurityTokenHandler().WriteToken(token);
     }

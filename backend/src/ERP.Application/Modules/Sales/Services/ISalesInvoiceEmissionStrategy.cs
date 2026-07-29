@@ -7,7 +7,12 @@ namespace ERP.Application.Modules.Sales.Services;
 /// Datos que necesita cualquier estrategia de emisión para actuar sobre una factura ya
 /// autorizada comercialmente (<see cref="SalesInvoice.Authorize"/>) — nunca antes de eso.
 /// </summary>
-public sealed record SalesInvoiceEmissionContext(Guid TenantId, Guid CompanyId, Guid UserId, SalesInvoice Invoice);
+public sealed record SalesInvoiceEmissionContext(
+    Guid TenantId,
+    Guid CompanyId,
+    Guid UserId,
+    SalesInvoice Invoice
+);
 
 /// <summary>
 /// Único punto de decisión de "qué pasa después de autorizar una factura, según el tipo de

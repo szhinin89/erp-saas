@@ -32,7 +32,8 @@ public sealed partial class GetElectronicInvoicingStatusQueryHandler
         ICurrentCompany currentCompany,
         ISriCertificateStatusResolver certStatusResolver,
         ISriConnectivityChecker connectivityChecker,
-        ILogger<GetElectronicInvoicingStatusQueryHandler> logger)
+        ILogger<GetElectronicInvoicingStatusQueryHandler> logger
+    )
     {
         _repo = repo;
         _currentCompany = currentCompany;
@@ -42,15 +43,22 @@ public sealed partial class GetElectronicInvoicingStatusQueryHandler
     }
 
     public async Task<Result<ElectronicInvoicingStatusDto>> Handle(
-        GetElectronicInvoicingStatusQuery request, CancellationToken cancellationToken)
+        GetElectronicInvoicingStatusQuery request,
+        CancellationToken cancellationToken
+    )
     {
         try
         {
-            var settings = await _repo.GetByCompanyIdAsync(_currentCompany.CompanyId, cancellationToken);
+            var settings = await _repo.GetByCompanyIdAsync(
+                _currentCompany.CompanyId,
+                cancellationToken
+            );
             if (settings is null)
                 return Result<ElectronicInvoicingStatusDto>.Success(NotConfiguredDto());
 
-            return Result<ElectronicInvoicingStatusDto>.Success(await ResolveConfiguredStatusAsync(settings, cancellationToken));
+            return Result<ElectronicInvoicingStatusDto>.Success(
+                await ResolveConfiguredStatusAsync(settings, cancellationToken)
+            );
         }
         catch (Exception ex)
         {
@@ -59,7 +67,10 @@ public sealed partial class GetElectronicInvoicingStatusQueryHandler
         }
     }
 
-    private async Task<ElectronicInvoicingStatusDto> ResolveConfiguredStatusAsync(SriSettings settings, CancellationToken cancellationToken)
+    private async Task<ElectronicInvoicingStatusDto> ResolveConfiguredStatusAsync(
+        SriSettings settings,
+        CancellationToken cancellationToken
+    )
     {
         // Códigos oficiales SRI (Ficha Técnica, Tabla 4 "Ambiente"): 1=Pruebas, 2=Producción.
         var (environment, environmentName) = settings.Environment switch
@@ -77,10 +88,17 @@ public sealed partial class GetElectronicInvoicingStatusQueryHandler
         {
             return new ElectronicInvoicingStatusDto(
                 Status: ElectronicInvoicingStatus.Incomplete,
-                Configured: true, environment, environmentName, emissionType,
-                CertificateInstalled: certStatus.Installed, CertificateValid: false,
-                CertificateExpiresAt: null, CertificateDaysRemaining: null,
-                SriAvailability: SriAvailability.Unknown, CanIssue: false);
+                Configured: true,
+                environment,
+                environmentName,
+                emissionType,
+                CertificateInstalled: certStatus.Installed,
+                CertificateValid: false,
+                CertificateExpiresAt: null,
+                CertificateDaysRemaining: null,
+                SriAvailability: SriAvailability.Unknown,
+                CanIssue: false
+            );
         }
 
         var daysRemaining = certStatus.NotAfterUtc.HasValue
@@ -91,32 +109,54 @@ public sealed partial class GetElectronicInvoicingStatusQueryHandler
         {
             return new ElectronicInvoicingStatusDto(
                 Status: ElectronicInvoicingStatus.CertificateExpired,
-                Configured: true, environment, environmentName, emissionType,
-                CertificateInstalled: true, CertificateValid: false,
-                CertificateExpiresAt: certStatus.NotAfterUtc, CertificateDaysRemaining: daysRemaining,
-                SriAvailability: SriAvailability.Unknown, CanIssue: false);
+                Configured: true,
+                environment,
+                environmentName,
+                emissionType,
+                CertificateInstalled: true,
+                CertificateValid: false,
+                CertificateExpiresAt: certStatus.NotAfterUtc,
+                CertificateDaysRemaining: daysRemaining,
+                SriAvailability: SriAvailability.Unknown,
+                CanIssue: false
+            );
         }
 
         if (daysRemaining.HasValue && daysRemaining.Value <= CertificateExpiringThresholdDays)
         {
             return new ElectronicInvoicingStatusDto(
                 Status: ElectronicInvoicingStatus.CertificateExpiring,
-                Configured: true, environment, environmentName, emissionType,
-                CertificateInstalled: true, CertificateValid: true,
-                CertificateExpiresAt: certStatus.NotAfterUtc, CertificateDaysRemaining: daysRemaining,
-                SriAvailability: SriAvailability.Unknown, CanIssue: true);
+                Configured: true,
+                environment,
+                environmentName,
+                emissionType,
+                CertificateInstalled: true,
+                CertificateValid: true,
+                CertificateExpiresAt: certStatus.NotAfterUtc,
+                CertificateDaysRemaining: daysRemaining,
+                SriAvailability: SriAvailability.Unknown,
+                CanIssue: true
+            );
         }
 
-        var urlValid = Uri.TryCreate(settings.WsdlUrl, UriKind.Absolute, out var uri)
+        var urlValid =
+            Uri.TryCreate(settings.WsdlUrl, UriKind.Absolute, out var uri)
             && (uri.Scheme == Uri.UriSchemeHttps || uri.Scheme == Uri.UriSchemeHttp);
         if (!urlValid)
         {
             return new ElectronicInvoicingStatusDto(
                 Status: ElectronicInvoicingStatus.Incomplete,
-                Configured: true, environment, environmentName, emissionType,
-                CertificateInstalled: true, CertificateValid: true,
-                CertificateExpiresAt: certStatus.NotAfterUtc, CertificateDaysRemaining: daysRemaining,
-                SriAvailability: SriAvailability.Unknown, CanIssue: false);
+                Configured: true,
+                environment,
+                environmentName,
+                emissionType,
+                CertificateInstalled: true,
+                CertificateValid: true,
+                CertificateExpiresAt: certStatus.NotAfterUtc,
+                CertificateDaysRemaining: daysRemaining,
+                SriAvailability: SriAvailability.Unknown,
+                CanIssue: false
+            );
         }
 
         // Solo se comprueba conectividad SRI cuando el resto ya es válido — evita una llamada
@@ -126,36 +166,71 @@ public sealed partial class GetElectronicInvoicingStatusQueryHandler
         {
             return new ElectronicInvoicingStatusDto(
                 Status: ElectronicInvoicingStatus.SriUnavailable,
-                Configured: true, environment, environmentName, emissionType,
-                CertificateInstalled: true, CertificateValid: true,
-                CertificateExpiresAt: certStatus.NotAfterUtc, CertificateDaysRemaining: daysRemaining,
-                SriAvailability: SriAvailability.Unavailable, CanIssue: false);
+                Configured: true,
+                environment,
+                environmentName,
+                emissionType,
+                CertificateInstalled: true,
+                CertificateValid: true,
+                CertificateExpiresAt: certStatus.NotAfterUtc,
+                CertificateDaysRemaining: daysRemaining,
+                SriAvailability: SriAvailability.Unavailable,
+                CanIssue: false
+            );
         }
 
-        var status = environment == "Production" ? ElectronicInvoicingStatus.Ready : ElectronicInvoicingStatus.Testing;
+        var status =
+            environment == "Production"
+                ? ElectronicInvoicingStatus.Ready
+                : ElectronicInvoicingStatus.Testing;
         return new ElectronicInvoicingStatusDto(
             Status: status,
-            Configured: true, environment, environmentName, emissionType,
-            CertificateInstalled: true, CertificateValid: true,
-            CertificateExpiresAt: certStatus.NotAfterUtc, CertificateDaysRemaining: daysRemaining,
-            SriAvailability: SriAvailability.Available, CanIssue: true);
+            Configured: true,
+            environment,
+            environmentName,
+            emissionType,
+            CertificateInstalled: true,
+            CertificateValid: true,
+            CertificateExpiresAt: certStatus.NotAfterUtc,
+            CertificateDaysRemaining: daysRemaining,
+            SriAvailability: SriAvailability.Available,
+            CanIssue: true
+        );
     }
 
-    private static ElectronicInvoicingStatusDto NotConfiguredDto() => new(
-        Status: ElectronicInvoicingStatus.NotConfigured,
-        Configured: false, Environment: null, EnvironmentName: null, EmissionType: null,
-        CertificateInstalled: false, CertificateValid: false,
-        CertificateExpiresAt: null, CertificateDaysRemaining: null,
-        SriAvailability: SriAvailability.Unknown, CanIssue: false);
+    private static ElectronicInvoicingStatusDto NotConfiguredDto() =>
+        new(
+            Status: ElectronicInvoicingStatus.NotConfigured,
+            Configured: false,
+            Environment: null,
+            EnvironmentName: null,
+            EmissionType: null,
+            CertificateInstalled: false,
+            CertificateValid: false,
+            CertificateExpiresAt: null,
+            CertificateDaysRemaining: null,
+            SriAvailability: SriAvailability.Unknown,
+            CanIssue: false
+        );
 
-    private static ElectronicInvoicingStatusDto ErrorDto() => new(
-        Status: ElectronicInvoicingStatus.Error,
-        Configured: false, Environment: null, EnvironmentName: null, EmissionType: null,
-        CertificateInstalled: false, CertificateValid: false,
-        CertificateExpiresAt: null, CertificateDaysRemaining: null,
-        SriAvailability: SriAvailability.Unknown, CanIssue: false);
+    private static ElectronicInvoicingStatusDto ErrorDto() =>
+        new(
+            Status: ElectronicInvoicingStatus.Error,
+            Configured: false,
+            Environment: null,
+            EnvironmentName: null,
+            EmissionType: null,
+            CertificateInstalled: false,
+            CertificateValid: false,
+            CertificateExpiresAt: null,
+            CertificateDaysRemaining: null,
+            SriAvailability: SriAvailability.Unknown,
+            CanIssue: false
+        );
 
-    [LoggerMessage(Level = LogLevel.Error,
-        Message = "[ElectronicInvoicing] No fue posible determinar el estado de facturación electrónica")]
+    [LoggerMessage(
+        Level = LogLevel.Error,
+        Message = "[ElectronicInvoicing] No fue posible determinar el estado de facturación electrónica"
+    )]
     private partial void LogStatusResolutionFailed(Exception ex);
 }

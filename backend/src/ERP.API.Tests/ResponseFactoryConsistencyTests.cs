@@ -1,3 +1,6 @@
+using System.Net;
+using System.Reflection;
+using System.Text.Json;
 using ERP.API.Extensions;
 using ERP.API.Middleware;
 using ERP.Application.Common;
@@ -11,9 +14,6 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Logging.Abstractions;
-using System.Net;
-using System.Reflection;
-using System.Text.Json;
 
 namespace ERP.API.Tests;
 
@@ -41,22 +41,21 @@ public sealed class ResponseFactoryConsistencyTests
     /// </summary>
     private static IEnumerable<string> CollectResponseCodes(Type type)
     {
-        var fields = type
-            .GetFields(BindingFlags.Public | BindingFlags.Static | BindingFlags.GetField)
+        var fields = type.GetFields(
+                BindingFlags.Public | BindingFlags.Static | BindingFlags.GetField
+            )
             .Where(f => f.IsLiteral && f.FieldType == typeof(string))
             .Select(f => (string)f.GetRawConstantValue()!);
 
-        var nested = type
-            .GetNestedTypes(BindingFlags.Public | BindingFlags.Static)
+        var nested = type.GetNestedTypes(BindingFlags.Public | BindingFlags.Static)
             .Where(t => t.IsAbstract && t.IsSealed)
             .SelectMany(CollectResponseCodes);
 
         return fields.Concat(nested);
     }
 
-    public static IEnumerable<object[]> AllCodes()
-        => CollectResponseCodes(typeof(ApiResponseCodes))
-            .Select(code => new object[] { code });
+    public static IEnumerable<object[]> AllCodes() =>
+        CollectResponseCodes(typeof(ApiResponseCodes)).Select(code => new object[] { code });
 
     [Theory]
     [MemberData(nameof(AllCodes))]
@@ -71,7 +70,9 @@ public sealed class ResponseFactoryConsistencyTests
         response.Code.Should().Be(code);
         response.Severity.Should().Be(entry.Severity);
         response.Message.User.Should().Be(entry.User);
-        response.Message.Dev.Should().BeNull("en Production no se expone el mensaje de desarrollador");
+        response
+            .Message.Dev.Should()
+            .BeNull("en Production no se expone el mensaje de desarrollador");
     }
 
     [Theory]
@@ -87,7 +88,9 @@ public sealed class ResponseFactoryConsistencyTests
         response.Code.Should().Be(code);
         response.Severity.Should().Be(entry.Severity);
         response.Message.User.Should().Be(entry.User);
-        response.Message.Dev.Should().BeNull("en Production no se expone el mensaje de desarrollador");
+        response
+            .Message.Dev.Should()
+            .BeNull("en Production no se expone el mensaje de desarrollador");
     }
 
     [Fact]
@@ -97,7 +100,11 @@ public sealed class ResponseFactoryConsistencyTests
         var context = new DefaultHttpContext();
         var environment = new FakeWebHostEnvironment { EnvironmentName = "Development" };
 
-        var response = ResponseFactory.Error(context, environment, ApiResponseCodes.Common.InternalError);
+        var response = ResponseFactory.Error(
+            context,
+            environment,
+            ApiResponseCodes.Common.InternalError
+        );
 
         response.Message.Dev.Should().Be(entry.Dev);
     }
@@ -108,7 +115,12 @@ public sealed class ResponseFactoryConsistencyTests
         var context = new DefaultHttpContext { TraceIdentifier = "trace-123" };
         var environment = new FakeWebHostEnvironment();
 
-        var response = ResponseFactory.Success(context, environment, ApiResponseCodes.Common.Ok, new { });
+        var response = ResponseFactory.Success(
+            context,
+            environment,
+            ApiResponseCodes.Common.Ok,
+            new { }
+        );
 
         response.Meta.CorrelationId.Should().Be("trace-123");
         response.Meta.Timestamp.Should().BeCloseTo(DateTimeOffset.UtcNow, TimeSpan.FromSeconds(5));
@@ -116,12 +128,19 @@ public sealed class ResponseFactoryConsistencyTests
 
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
 
-    private static async Task<(JsonDocument Doc, int StatusCode)> RunMiddlewareAsync(Exception exceptionToThrow, string environmentName = "Production")
+    private static async Task<(JsonDocument Doc, int StatusCode)> RunMiddlewareAsync(
+        Exception exceptionToThrow,
+        string environmentName = "Production"
+    )
     {
         RequestDelegate next = _ => throw exceptionToThrow;
 
         var environment = new FakeWebHostEnvironment { EnvironmentName = environmentName };
-        var middleware = new ExceptionMiddleware(next, NullLogger<ExceptionMiddleware>.Instance, environment);
+        var middleware = new ExceptionMiddleware(
+            next,
+            NullLogger<ExceptionMiddleware>.Instance,
+            environment
+        );
         var context = new DefaultHttpContext { TraceIdentifier = "trace-abc" };
         context.Response.Body = new MemoryStream();
 
@@ -187,7 +206,11 @@ public sealed class ResponseFactoryConsistencyTests
 
     [Theory]
     [MemberData(nameof(ExceptionToStatusAndCode))]
-    public async Task ExceptionMiddleware_maps_exception_to_status_and_code(Exception exception, int expectedStatus, string expectedCode)
+    public async Task ExceptionMiddleware_maps_exception_to_status_and_code(
+        Exception exception,
+        int expectedStatus,
+        string expectedCode
+    )
     {
         var (doc, statusCode) = await RunMiddlewareAsync(exception);
         using var _doc = doc;
@@ -208,7 +231,11 @@ public sealed class ResponseFactoryConsistencyTests
 
     [Theory]
     [MemberData(nameof(ExceptionToStatusAndCode))]
-    public async Task ExceptionMiddleware_never_leaks_stack_trace_or_dev_message_in_production(Exception exception, int expectedStatus, string expectedCode)
+    public async Task ExceptionMiddleware_never_leaks_stack_trace_or_dev_message_in_production(
+        Exception exception,
+        int expectedStatus,
+        string expectedCode
+    )
     {
         var (doc, statusCode) = await RunMiddlewareAsync(exception, environmentName: "Production");
         using var _doc = doc;
@@ -229,11 +256,18 @@ public sealed class ResponseFactoryConsistencyTests
     [Fact]
     public async Task ExceptionMiddleware_exposes_dev_message_only_in_development()
     {
-        var (doc, _) = await RunMiddlewareAsync(new InvalidCastException("boom"), environmentName: "Development");
+        var (doc, _) = await RunMiddlewareAsync(
+            new InvalidCastException("boom"),
+            environmentName: "Development"
+        );
         using var _doc = doc;
 
         var entry = MessageCatalog.Resolve(ApiResponseCodes.Common.InternalError);
-        doc.RootElement.GetProperty("message").GetProperty("dev").GetString().Should().Be(entry.Dev);
+        doc.RootElement.GetProperty("message")
+            .GetProperty("dev")
+            .GetString()
+            .Should()
+            .Be(entry.Dev);
     }
 
     [Fact]
@@ -245,7 +279,9 @@ public sealed class ResponseFactoryConsistencyTests
         var root = doc.RootElement;
         foreach (var expected in new[] { "code", "severity", "message", "data", "meta" })
         {
-            root.TryGetProperty(expected, out _).Should().BeTrue($"el envelope debe exponer '{expected}' en camelCase");
+            root.TryGetProperty(expected, out _)
+                .Should()
+                .BeTrue($"el envelope debe exponer '{expected}' en camelCase");
         }
 
         var message = root.GetProperty("message");

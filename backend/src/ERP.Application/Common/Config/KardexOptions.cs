@@ -1,4 +1,4 @@
-﻿namespace ERP.Application.Common.Config;
+namespace ERP.Application.Common.Config;
 
 /// <summary>
 /// Opciones de comportamiento del Kardex. Se configuran en appsettings.json

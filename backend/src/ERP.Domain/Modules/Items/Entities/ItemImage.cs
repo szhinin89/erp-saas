@@ -16,11 +16,16 @@ public sealed class ItemImage : AuditableEntity
     private ItemImage() { }
 
     public static ItemImage Create(
-        Guid itemId, Guid tenantId,
-        Guid storageObjectId, string? altText,
-        bool isMain, bool isEcommerce, int sortOrder,
+        Guid itemId,
+        Guid tenantId,
+        Guid storageObjectId,
+        string? altText,
+        bool isMain,
+        bool isEcommerce,
+        int sortOrder,
         Guid createdBy,
-        Guid? variantId = null)
+        Guid? variantId = null
+    )
     {
         var entity = new ItemImage
         {

@@ -1,4 +1,4 @@
-﻿using ERP.Application.MasterData.Reconciliation;
+using ERP.Application.MasterData.Reconciliation;
 using ERP.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 
@@ -13,7 +13,9 @@ public sealed class BusinessPartnerReconciliationService : IMasterDataReconcilia
 
     public BusinessPartnerReconciliationService(ErpDbContext db) => _db = db;
 
-    public async Task<MasterDataReconciliationReport> AnalyzeAsync(CancellationToken cancellationToken = default)
+    public async Task<MasterDataReconciliationReport> AnalyzeAsync(
+        CancellationToken cancellationToken = default
+    )
     {
         var issues = new List<MasterDataReconciliationIssue>();
 
@@ -28,11 +30,18 @@ public sealed class BusinessPartnerReconciliationService : IMasterDataReconcilia
 
     /// <summary>Detecta identificaciones fiscales duplicadas dentro del mismo tenant.</summary>
     private async IAsyncEnumerable<MasterDataReconciliationIssue> DetectDuplicateIdentificationsAsync(
-        [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken)
+        [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken
+    )
     {
-        var dupes = await _db.BusinessPartners.IgnoreQueryFilters()
+        var dupes = await _db
+            .BusinessPartners.IgnoreQueryFilters()
             .AsNoTracking()
-            .GroupBy(b => new { b.TenantId, b.Identification.Type, b.Identification.Number })
+            .GroupBy(b => new
+            {
+                b.TenantId,
+                b.Identification.Type,
+                b.Identification.Number,
+            })
             .Where(g => g.Count() > 1)
             .Select(g => g.Key.TenantId)
             .Distinct()
@@ -44,14 +53,17 @@ public sealed class BusinessPartnerReconciliationService : IMasterDataReconcilia
                 "duplicate_bp_identification",
                 "critical",
                 "Identificación fiscal duplicada para el mismo tenant.",
-                subId);
+                subId
+            );
     }
 
     /// <summary>Detecta BusinessPartnerRoles sin un BusinessPartner padre válido.</summary>
     private async IAsyncEnumerable<MasterDataReconciliationIssue> DetectOrphanRolesAsync(
-        [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken)
+        [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken
+    )
     {
-        var orphanSubIds = await _db.BusinessPartnerRoles.IgnoreQueryFilters()
+        var orphanSubIds = await _db
+            .BusinessPartnerRoles.IgnoreQueryFilters()
             .AsNoTracking()
             .Where(r => !_db.BusinessPartners.Any(b => b.Id == r.BusinessPartnerId))
             .Select(r => r.TenantId)
@@ -64,6 +76,7 @@ public sealed class BusinessPartnerReconciliationService : IMasterDataReconcilia
                 "orphan_bp_role",
                 "warning",
                 "BusinessPartnerRole sin BusinessPartner padre.",
-                subId);
+                subId
+            );
     }
 }

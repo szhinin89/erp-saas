@@ -38,25 +38,30 @@ public class Result<T>
 
     public static Result<T> Success(T value, string? code = null) => new(true, value, null, code);
 
-    public static Result<T> Failure(string error, string? code = null) => new(false, default, error, code);
+    public static Result<T> Failure(string error, string? code = null) =>
+        new(false, default, error, code);
 
     /// <summary>Conflicto de concurrencia o unicidad (HTTP 409).</summary>
-    public static Result<T> Conflict(string error, string? code = ApiResponseCodes.Common.Conflict)
-        => new(false, default, error, code ?? ApiResponseCodes.Common.Conflict);
+    public static Result<T> Conflict(
+        string error,
+        string? code = ApiResponseCodes.Common.Conflict
+    ) => new(false, default, error, code ?? ApiResponseCodes.Common.Conflict);
 
     /// <summary>Violación UNIQUE en PostgreSQL (HTTP 409).</summary>
-    public static Result<T> UniqueViolation(string error, string? constraintName = null)
-        => new(false, default, error, ApiResponseCodes.Common.UniqueViolation);
+    public static Result<T> UniqueViolation(string error, string? constraintName = null) =>
+        new(false, default, error, ApiResponseCodes.Common.UniqueViolation);
 
     /// <summary>Regla de negocio / validación de dominio (HTTP 422).</summary>
-    public static Result<T> ValidationFailure(string error, string? code = ApiResponseCodes.Common.ValidationError)
-        => new(false, default, error, code ?? ApiResponseCodes.Common.ValidationError);
+    public static Result<T> ValidationFailure(
+        string error,
+        string? code = ApiResponseCodes.Common.ValidationError
+    ) => new(false, default, error, code ?? ApiResponseCodes.Common.ValidationError);
 
     /// <summary>Entidad no encontrada (HTTP 404).</summary>
-    public static Result<T> NotFound(string error)
-        => new(false, default, error, ApiResponseCodes.Common.NotFound);
+    public static Result<T> NotFound(string error) =>
+        new(false, default, error, ApiResponseCodes.Common.NotFound);
 
     /// <summary>Acceso denegado (HTTP 403).</summary>
-    public static Result<T> Forbidden(string error)
-        => new(false, default, error, ApiResponseCodes.Common.Forbidden);
+    public static Result<T> Forbidden(string error) =>
+        new(false, default, error, ApiResponseCodes.Common.Forbidden);
 }

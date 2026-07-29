@@ -9,7 +9,8 @@ public sealed record CurrentStockDto(
     decimal AvailableQuantity,
     decimal TotalStockValue,
     decimal AverageCost,
-    DateTime LastUpdatedAt);
+    DateTime LastUpdatedAt
+);
 
 public sealed record StockMovementDto(
     Guid Id,
@@ -32,17 +33,20 @@ public sealed record StockMovementDto(
     string? SourceDocType,
     Guid CreatedBy,
     DateTime CreatedAt,
-    string? CreatedByName = null);
+    string? CreatedByName = null
+);
 
 public sealed record AggregatedStockDto(
     Guid ItemId,
     decimal TotalQuantity,
     decimal TotalStockValue,
-    decimal AverageCost);
+    decimal AverageCost
+);
 
 public sealed record ItemWarehouseAvailabilityDto(
     Guid WarehouseId,
     string WarehouseName,
     decimal Available,
     decimal Reserved,
-    bool CanSell);
+    bool CanSell
+);

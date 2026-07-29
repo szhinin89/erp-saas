@@ -18,7 +18,8 @@ public sealed class ListMyCompaniesHandler
         IAccessRepository accessRepository,
         ICompanyRepository companyRepository,
         ICurrentUser currentUser,
-        ICurrentTenant currentTenant)
+        ICurrentTenant currentTenant
+    )
     {
         _accessRepository = accessRepository;
         _companyRepository = companyRepository;
@@ -27,18 +28,27 @@ public sealed class ListMyCompaniesHandler
     }
 
     public async Task<Result<IReadOnlyList<AccessibleCompanyDto>>> Handle(
-        ListMyCompaniesQuery request, CancellationToken cancellationToken)
+        ListMyCompaniesQuery request,
+        CancellationToken cancellationToken
+    )
     {
         if (!_currentUser.IsAuthenticated)
             return Result<IReadOnlyList<AccessibleCompanyDto>>.Failure("No autenticado.");
 
         var tenantId = _currentTenant.TenantId;
         if (tenantId == Guid.Empty)
-            return Result<IReadOnlyList<AccessibleCompanyDto>>.Failure("Contexto de tenant no establecido.");
+            return Result<IReadOnlyList<AccessibleCompanyDto>>.Failure(
+                "Contexto de tenant no establecido."
+            );
 
-        var memberships = await _accessRepository.GetActiveCompanyUserMembershipsForUserSystemAsync(_currentUser.UserId, cancellationToken);
+        var memberships = await _accessRepository.GetActiveCompanyUserMembershipsForUserSystemAsync(
+            _currentUser.UserId,
+            cancellationToken
+        );
         if (memberships.Count == 0)
-            return Result<IReadOnlyList<AccessibleCompanyDto>>.Success(Array.Empty<AccessibleCompanyDto>());
+            return Result<IReadOnlyList<AccessibleCompanyDto>>.Success(
+                Array.Empty<AccessibleCompanyDto>()
+            );
 
         var companyIds = memberships.Select(m => m.CompanyId).Distinct().ToList();
         var companies = await _companyRepository.GetByIdsAsync(companyIds, cancellationToken);
@@ -50,8 +60,13 @@ public sealed class ListMyCompaniesHandler
             {
                 var m = membershipByCompany[c.Id];
                 return new AccessibleCompanyDto(
-                    c.Id, c.TenantId, c.LegalName,
-                    c.TradeName ?? c.LegalName, c.TaxIdentificationNumber, m.Role);
+                    c.Id,
+                    c.TenantId,
+                    c.LegalName,
+                    c.TradeName ?? c.LegalName,
+                    c.TaxIdentificationNumber,
+                    m.Role
+                );
             })
             .OrderBy(x => x.LegalName)
             .ToList();

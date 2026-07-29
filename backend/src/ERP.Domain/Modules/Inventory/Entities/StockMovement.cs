@@ -67,17 +67,21 @@ public sealed class StockMovement : AuditableEntity, ITenantScopedEntity, ICompa
         Guid companyId,
         decimal? unitCost = null,
         Guid? lotId = null,
-        Guid? serialId = null)
+        Guid? serialId = null
+    )
     {
         if (branchId == Guid.Empty)
             throw new ArgumentException("La sucursal es obligatoria.", nameof(branchId));
         if (movementType == StockMovementType.PurchaseEntry && (unitCost is null or <= 0))
             throw new InvalidOperationException(
-                "El costo unitario es obligatorio y debe ser mayor a cero para entradas de compra.");
+                "El costo unitario es obligatorio y debe ser mayor a cero para entradas de compra."
+            );
         if (sequenceNumber <= 0)
             throw new InvalidOperationException("SequenceNumber debe ser mayor a cero.");
         if (string.IsNullOrWhiteSpace(uomCode))
-            throw new InvalidOperationException("UomCode es obligatorio para un movimiento de Kardex.");
+            throw new InvalidOperationException(
+                "UomCode es obligatorio para un movimiento de Kardex."
+            );
 
         var m = new StockMovement
         {

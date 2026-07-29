@@ -22,12 +22,15 @@ public sealed class PurchasePayableRepository : IPurchasePayableRepository
         _company = company;
     }
 
-    public Task<PurchasePayable?> GetByIdAsync(Guid tenantId, Guid id, CancellationToken ct = default)
-        => _db.PurchasePayables
-            .ForOperationalScope(tenantId, _company)
+    public Task<PurchasePayable?> GetByIdAsync(
+        Guid tenantId,
+        Guid id,
+        CancellationToken ct = default
+    ) =>
+        _db
+            .PurchasePayables.ForOperationalScope(tenantId, _company)
             .Include(x => x.Installments.OrderBy(i => i.InstallmentNumber))
             .FirstOrDefaultAsync(x => x.Id == id, ct);
 
-    public Task SaveChangesAsync(CancellationToken ct = default)
-        => _db.SaveChangesAsync(ct);
+    public Task SaveChangesAsync(CancellationToken ct = default) => _db.SaveChangesAsync(ct);
 }

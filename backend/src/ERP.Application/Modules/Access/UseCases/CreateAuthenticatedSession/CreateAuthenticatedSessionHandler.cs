@@ -27,7 +27,8 @@ public sealed class CreateAuthenticatedSessionHandler
     public CreateAuthenticatedSessionHandler(
         IUserSessionRepository userSessionRepository,
         IRefreshTokenService refreshTokenService,
-        IDatabaseExceptionTranslator dbEx)
+        IDatabaseExceptionTranslator dbEx
+    )
     {
         _userSessionRepository = userSessionRepository;
         _refreshTokenService = refreshTokenService;
@@ -35,10 +36,15 @@ public sealed class CreateAuthenticatedSessionHandler
     }
 
     public async Task<Result<AuthenticatedSessionDto>> Handle(
-        CreateAuthenticatedSessionCommand command, CancellationToken cancellationToken)
+        CreateAuthenticatedSessionCommand command,
+        CancellationToken cancellationToken
+    )
     {
         var existingActive = await _userSessionRepository.GetActiveSessionsAsync(
-            command.IdentityUserId, command.TenantId, cancellationToken);
+            command.IdentityUserId,
+            command.TenantId,
+            cancellationToken
+        );
 
         // Regla de negocio: una sesión activa por EMPRESA, no por tenant — solo se cierran
         // las sesiones activas de la misma empresa que el login en curso.
@@ -51,12 +57,21 @@ public sealed class CreateAuthenticatedSessionHandler
         // No persiste todavía — se combina con la creación de UserSession en un único
         // SaveChangesAsync (mismo ErpDbContext, mismo ChangeTracker).
         var (refreshToken, rawRefreshToken) = await _refreshTokenService.CreateWithoutSaveAsync(
-            command.IdentityUserId, command.TenantId, command.CompanyId,
-            RefreshUserType.Identity, cancellationToken);
+            command.IdentityUserId,
+            command.TenantId,
+            command.CompanyId,
+            RefreshUserType.Identity,
+            cancellationToken
+        );
 
         var session = UserSession.Create(
-            command.TenantId, command.CompanyId, command.IdentityUserId,
-            command.BranchId, command.TerminalId, refreshToken.Id);
+            command.TenantId,
+            command.CompanyId,
+            command.IdentityUserId,
+            command.BranchId,
+            command.TerminalId,
+            refreshToken.Id
+        );
 
         await _userSessionRepository.AddAsync(session, cancellationToken);
 
@@ -71,11 +86,15 @@ public sealed class CreateAuthenticatedSessionHandler
             // SwitchCompanyHandler lo comparan explícitamente para decidir cómo propagar el
             // fallo — cambiarlo aquí sin ajustar ambos handlers rompería esa traducción a 409.
             return Result<AuthenticatedSessionDto>.Conflict(
-                "Ya existe una sesión activa para este usuario en esta empresa. Intenta nuevamente.");
+                "Ya existe una sesión activa para este usuario en esta empresa. Intenta nuevamente."
+            );
         }
 
         var dto = new AuthenticatedSessionDto(
-            AccessSessionMapper.ToDto(session), rawRefreshToken, refreshToken.ExpiresAt);
+            AccessSessionMapper.ToDto(session),
+            rawRefreshToken,
+            refreshToken.ExpiresAt
+        );
 
         return Result<AuthenticatedSessionDto>.Success(dto);
     }

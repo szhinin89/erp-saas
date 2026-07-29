@@ -10,18 +10,20 @@ public sealed class RidePdfDocumentTests
 {
     private static RideContentHash ValidHash() => RideContentHash.Create(new string('a', 64));
 
-    private static RidePdfDocument NewPending() => RidePdfDocument.Create(
-        tenantId: Guid.NewGuid(),
-        companyId: Guid.NewGuid(),
-        electronicDocumentId: Guid.NewGuid(),
-        documentType: RideDocumentType.Invoice,
-        sourceXmlHash: ValidHash(),
-        templateId: "DefaultInvoiceRideTemplate",
-        templateVersion: "1.0.0",
-        brandingVersion: "1.0.0",
-        rendererVersion: "1.0.0",
-        rideSpecificationVersion: "1.0.0",
-        createdBy: Guid.NewGuid());
+    private static RidePdfDocument NewPending() =>
+        RidePdfDocument.Create(
+            tenantId: Guid.NewGuid(),
+            companyId: Guid.NewGuid(),
+            electronicDocumentId: Guid.NewGuid(),
+            documentType: RideDocumentType.Invoice,
+            sourceXmlHash: ValidHash(),
+            templateId: "DefaultInvoiceRideTemplate",
+            templateVersion: "1.0.0",
+            brandingVersion: "1.0.0",
+            rendererVersion: "1.0.0",
+            rideSpecificationVersion: "1.0.0",
+            createdBy: Guid.NewGuid()
+        );
 
     [Fact]
     public void Create_with_valid_data_starts_in_pending()
@@ -37,21 +39,22 @@ public sealed class RidePdfDocumentTests
     [Fact]
     public void Create_with_empty_electronic_document_id_throws()
     {
-        var act = () => RidePdfDocument.Create(
-            tenantId: Guid.NewGuid(),
-            companyId: Guid.NewGuid(),
-            electronicDocumentId: Guid.Empty,
-            documentType: RideDocumentType.Invoice,
-            sourceXmlHash: ValidHash(),
-            templateId: "DefaultInvoiceRideTemplate",
-            templateVersion: "1.0.0",
-            brandingVersion: "1.0.0",
-            rendererVersion: "1.0.0",
-            rideSpecificationVersion: "1.0.0",
-            createdBy: Guid.NewGuid());
+        var act = () =>
+            RidePdfDocument.Create(
+                tenantId: Guid.NewGuid(),
+                companyId: Guid.NewGuid(),
+                electronicDocumentId: Guid.Empty,
+                documentType: RideDocumentType.Invoice,
+                sourceXmlHash: ValidHash(),
+                templateId: "DefaultInvoiceRideTemplate",
+                templateVersion: "1.0.0",
+                brandingVersion: "1.0.0",
+                rendererVersion: "1.0.0",
+                rideSpecificationVersion: "1.0.0",
+                createdBy: Guid.NewGuid()
+            );
 
-        act.Should().Throw<ArgumentException>()
-            .WithMessage("*documento electrónico de origen*");
+        act.Should().Throw<ArgumentException>().WithMessage("*documento electrónico de origen*");
     }
 
     [Theory]
@@ -60,21 +63,22 @@ public sealed class RidePdfDocumentTests
     [InlineData(null)]
     public void Create_with_missing_template_version_throws(string? templateVersion)
     {
-        var act = () => RidePdfDocument.Create(
-            tenantId: Guid.NewGuid(),
-            companyId: Guid.NewGuid(),
-            electronicDocumentId: Guid.NewGuid(),
-            documentType: RideDocumentType.Invoice,
-            sourceXmlHash: ValidHash(),
-            templateId: "DefaultInvoiceRideTemplate",
-            templateVersion: templateVersion!,
-            brandingVersion: "1.0.0",
-            rendererVersion: "1.0.0",
-            rideSpecificationVersion: "1.0.0",
-            createdBy: Guid.NewGuid());
+        var act = () =>
+            RidePdfDocument.Create(
+                tenantId: Guid.NewGuid(),
+                companyId: Guid.NewGuid(),
+                electronicDocumentId: Guid.NewGuid(),
+                documentType: RideDocumentType.Invoice,
+                sourceXmlHash: ValidHash(),
+                templateId: "DefaultInvoiceRideTemplate",
+                templateVersion: templateVersion!,
+                brandingVersion: "1.0.0",
+                rendererVersion: "1.0.0",
+                rideSpecificationVersion: "1.0.0",
+                createdBy: Guid.NewGuid()
+            );
 
-        act.Should().Throw<ArgumentException>()
-            .WithMessage("*versión de plantilla*");
+        act.Should().Throw<ArgumentException>().WithMessage("*versión de plantilla*");
     }
 
     [Fact]
@@ -99,8 +103,7 @@ public sealed class RidePdfDocumentTests
 
         var act = () => document.MarkGenerated("ride/path/v2.pdf", DateTime.UtcNow, Guid.NewGuid());
 
-        act.Should().Throw<InvalidOperationException>()
-            .WithMessage("*MarkRegenerated*");
+        act.Should().Throw<InvalidOperationException>().WithMessage("*MarkRegenerated*");
     }
 
     [Fact]
@@ -122,7 +125,8 @@ public sealed class RidePdfDocumentTests
     {
         var document = NewPending();
 
-        var act = () => document.MarkRegenerated("ride/path/v1.pdf", DateTime.UtcNow, Guid.NewGuid());
+        var act = () =>
+            document.MarkRegenerated("ride/path/v1.pdf", DateTime.UtcNow, Guid.NewGuid());
 
         act.Should().Throw<InvalidOperationException>();
     }

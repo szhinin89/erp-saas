@@ -24,10 +24,27 @@ public sealed class OpenCashSessionHandlerTests
     private static readonly Guid EstablishmentId = Guid.NewGuid();
 
     private static EmissionPoint CreateEmissionPoint(Guid id) =>
-        EmissionPoint.Create(TenantId, CompanyId, EstablishmentId, "001", null, EmissionType.Electronic, true, UserId);
+        EmissionPoint.Create(
+            TenantId,
+            CompanyId,
+            EstablishmentId,
+            "001",
+            null,
+            EmissionType.Electronic,
+            true,
+            UserId
+        );
 
     private static CashRegister CreateRegister(Guid branchId, Guid? emissionPointId) =>
-        CashRegister.Create(TenantId, CompanyId, branchId, "CAJA-01", "Caja Principal", UserId, emissionPointId);
+        CashRegister.Create(
+            TenantId,
+            CompanyId,
+            branchId,
+            "CAJA-01",
+            "Caja Principal",
+            UserId,
+            emissionPointId
+        );
 
     private sealed class Fixture
     {
@@ -44,7 +61,13 @@ public sealed class OpenCashSessionHandlerTests
             User.Setup(u => u.UserId).Returns(UserId);
             Repo.Setup(r => r.GetOpenByUserAsync(TenantId, UserId, It.IsAny<CancellationToken>()))
                 .ReturnsAsync((CashSession?)null);
-            Repo.Setup(r => r.GetOpenByCashRegisterAsync(TenantId, It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            Repo.Setup(r =>
+                    r.GetOpenByCashRegisterAsync(
+                        TenantId,
+                        It.IsAny<Guid>(),
+                        It.IsAny<CancellationToken>()
+                    )
+                )
                 .ReturnsAsync((CashSession?)null);
         }
 
@@ -52,8 +75,13 @@ public sealed class OpenCashSessionHandlerTests
         {
             Branch.Setup(b => b.BranchId).Returns(branchId);
             return new OpenCashSessionHandler(
-                Repo.Object, CashRegisterRepo.Object, EmissionPointRepo.Object,
-                Tenant.Object, Branch.Object, User.Object);
+                Repo.Object,
+                CashRegisterRepo.Object,
+                EmissionPointRepo.Object,
+                Tenant.Object,
+                Branch.Object,
+                User.Object
+            );
         }
     }
 
@@ -66,9 +94,13 @@ public sealed class OpenCashSessionHandlerTests
         var register = CreateRegister(branchId, emissionPointId);
         var emissionPoint = CreateEmissionPoint(emissionPointId);
 
-        f.CashRegisterRepo.Setup(r => r.GetByIdAsync(TenantId, register.Id, It.IsAny<CancellationToken>()))
+        f.CashRegisterRepo.Setup(r =>
+                r.GetByIdAsync(TenantId, register.Id, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(register);
-        f.EmissionPointRepo.Setup(r => r.GetByIdAsync(emissionPointId, TenantId, It.IsAny<CancellationToken>()))
+        f.EmissionPointRepo.Setup(r =>
+                r.GetByIdAsync(emissionPointId, TenantId, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(emissionPoint);
 
         CashSession? captured = null;
@@ -77,7 +109,10 @@ public sealed class OpenCashSessionHandlerTests
             .Returns(Task.CompletedTask);
 
         var handler = f.BuildHandler(branchId);
-        var result = await handler.Handle(new OpenCashSessionCommand(register.Id, 50m), CancellationToken.None);
+        var result = await handler.Handle(
+            new OpenCashSessionCommand(register.Id, 50m),
+            CancellationToken.None
+        );
 
         result.IsSuccess.Should().BeTrue();
         captured.Should().NotBeNull();
@@ -95,11 +130,16 @@ public sealed class OpenCashSessionHandlerTests
         var f = new Fixture();
         var branchId = Guid.NewGuid();
         var missingId = Guid.NewGuid();
-        f.CashRegisterRepo.Setup(r => r.GetByIdAsync(TenantId, missingId, It.IsAny<CancellationToken>()))
+        f.CashRegisterRepo.Setup(r =>
+                r.GetByIdAsync(TenantId, missingId, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync((CashRegister?)null);
 
         var handler = f.BuildHandler(branchId);
-        var result = await handler.Handle(new OpenCashSessionCommand(missingId, 50m), CancellationToken.None);
+        var result = await handler.Handle(
+            new OpenCashSessionCommand(missingId, 50m),
+            CancellationToken.None
+        );
 
         result.IsSuccess.Should().BeFalse();
     }
@@ -111,11 +151,16 @@ public sealed class OpenCashSessionHandlerTests
         var branchId = Guid.NewGuid();
         var register = CreateRegister(branchId, Guid.NewGuid());
         register.Disable(UserId);
-        f.CashRegisterRepo.Setup(r => r.GetByIdAsync(TenantId, register.Id, It.IsAny<CancellationToken>()))
+        f.CashRegisterRepo.Setup(r =>
+                r.GetByIdAsync(TenantId, register.Id, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(register);
 
         var handler = f.BuildHandler(branchId);
-        var result = await handler.Handle(new OpenCashSessionCommand(register.Id, 50m), CancellationToken.None);
+        var result = await handler.Handle(
+            new OpenCashSessionCommand(register.Id, 50m),
+            CancellationToken.None
+        );
 
         result.IsSuccess.Should().BeFalse();
     }
@@ -126,11 +171,16 @@ public sealed class OpenCashSessionHandlerTests
         var f = new Fixture();
         var branchId = Guid.NewGuid();
         var register = CreateRegister(branchId, emissionPointId: null);
-        f.CashRegisterRepo.Setup(r => r.GetByIdAsync(TenantId, register.Id, It.IsAny<CancellationToken>()))
+        f.CashRegisterRepo.Setup(r =>
+                r.GetByIdAsync(TenantId, register.Id, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(register);
 
         var handler = f.BuildHandler(branchId);
-        var result = await handler.Handle(new OpenCashSessionCommand(register.Id, 50m), CancellationToken.None);
+        var result = await handler.Handle(
+            new OpenCashSessionCommand(register.Id, 50m),
+            CancellationToken.None
+        );
 
         result.IsSuccess.Should().BeFalse();
     }
@@ -142,11 +192,16 @@ public sealed class OpenCashSessionHandlerTests
         var registerBranchId = Guid.NewGuid();
         var activeBranchId = Guid.NewGuid();
         var register = CreateRegister(registerBranchId, Guid.NewGuid());
-        f.CashRegisterRepo.Setup(r => r.GetByIdAsync(TenantId, register.Id, It.IsAny<CancellationToken>()))
+        f.CashRegisterRepo.Setup(r =>
+                r.GetByIdAsync(TenantId, register.Id, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(register);
 
         var handler = f.BuildHandler(activeBranchId);
-        var result = await handler.Handle(new OpenCashSessionCommand(register.Id, 50m), CancellationToken.None);
+        var result = await handler.Handle(
+            new OpenCashSessionCommand(register.Id, 50m),
+            CancellationToken.None
+        );
 
         result.IsSuccess.Should().BeFalse();
     }
@@ -158,17 +213,32 @@ public sealed class OpenCashSessionHandlerTests
         var branchId = Guid.NewGuid();
         var register = CreateRegister(branchId, Guid.NewGuid());
         var existing = CashSession.Open(
-            TenantId, CompanyId, branchId, UserId,
-            Guid.NewGuid(), "CAJA-00", "Otra Caja",
-            Guid.NewGuid(), "001", 10m, UserId);
+            TenantId,
+            CompanyId,
+            branchId,
+            UserId,
+            Guid.NewGuid(),
+            "CAJA-00",
+            "Otra Caja",
+            Guid.NewGuid(),
+            "001",
+            10m,
+            UserId
+        );
         f.Repo.Setup(r => r.GetOpenByUserAsync(TenantId, UserId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(existing);
 
         var handler = f.BuildHandler(branchId);
-        var result = await handler.Handle(new OpenCashSessionCommand(register.Id, 50m), CancellationToken.None);
+        var result = await handler.Handle(
+            new OpenCashSessionCommand(register.Id, 50m),
+            CancellationToken.None
+        );
 
         result.IsSuccess.Should().BeFalse();
-        f.CashRegisterRepo.Verify(r => r.GetByIdAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()), Times.Never);
+        f.CashRegisterRepo.Verify(
+            r => r.GetByIdAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()),
+            Times.Never
+        );
     }
 
     [Fact]
@@ -178,17 +248,33 @@ public sealed class OpenCashSessionHandlerTests
         var branchId = Guid.NewGuid();
         var register = CreateRegister(branchId, Guid.NewGuid());
         var existing = CashSession.Open(
-            TenantId, CompanyId, branchId, Guid.NewGuid(),
-            register.Id, register.Code, register.Name,
-            Guid.NewGuid(), "001", 10m, UserId);
+            TenantId,
+            CompanyId,
+            branchId,
+            Guid.NewGuid(),
+            register.Id,
+            register.Code,
+            register.Name,
+            Guid.NewGuid(),
+            "001",
+            10m,
+            UserId
+        );
 
-        f.CashRegisterRepo.Setup(r => r.GetByIdAsync(TenantId, register.Id, It.IsAny<CancellationToken>()))
+        f.CashRegisterRepo.Setup(r =>
+                r.GetByIdAsync(TenantId, register.Id, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(register);
-        f.Repo.Setup(r => r.GetOpenByCashRegisterAsync(TenantId, register.Id, It.IsAny<CancellationToken>()))
+        f.Repo.Setup(r =>
+                r.GetOpenByCashRegisterAsync(TenantId, register.Id, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(existing);
 
         var handler = f.BuildHandler(branchId);
-        var result = await handler.Handle(new OpenCashSessionCommand(register.Id, 50m), CancellationToken.None);
+        var result = await handler.Handle(
+            new OpenCashSessionCommand(register.Id, 50m),
+            CancellationToken.None
+        );
 
         result.IsSuccess.Should().BeFalse();
     }
@@ -202,9 +288,13 @@ public sealed class OpenCashSessionHandlerTests
         var register = CreateRegister(branchId, registerEmissionPointId);
         var emissionPoint = CreateEmissionPoint(registerEmissionPointId);
 
-        f.CashRegisterRepo.Setup(r => r.GetByIdAsync(TenantId, register.Id, It.IsAny<CancellationToken>()))
+        f.CashRegisterRepo.Setup(r =>
+                r.GetByIdAsync(TenantId, register.Id, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(register);
-        f.EmissionPointRepo.Setup(r => r.GetByIdAsync(registerEmissionPointId, TenantId, It.IsAny<CancellationToken>()))
+        f.EmissionPointRepo.Setup(r =>
+                r.GetByIdAsync(registerEmissionPointId, TenantId, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(emissionPoint);
 
         CashSession? captured = null;
@@ -214,8 +304,12 @@ public sealed class OpenCashSessionHandlerTests
 
         // El command (OpenCashSessionCommand) no expone ninguna propiedad EmissionPointId —
         // el único dato de entrada del cliente es CashRegisterId + OpeningAmount + Notes.
-        typeof(OpenCashSessionCommand).GetProperty("EmissionPointId").Should().BeNull(
-            "el cliente nunca debe poder enviar el punto de emisión — se resuelve desde CashRegister");
+        typeof(OpenCashSessionCommand)
+            .GetProperty("EmissionPointId")
+            .Should()
+            .BeNull(
+                "el cliente nunca debe poder enviar el punto de emisión — se resuelve desde CashRegister"
+            );
 
         var handler = f.BuildHandler(branchId);
         await handler.Handle(new OpenCashSessionCommand(register.Id, 50m), CancellationToken.None);

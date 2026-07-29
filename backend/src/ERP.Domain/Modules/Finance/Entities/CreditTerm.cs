@@ -28,7 +28,8 @@ public sealed class CreditTerm : MasterEntity, ITenantScopedEntity, ICompanyOper
         CreditTermMode mode,
         int totalDays,
         Guid createdBy,
-        IEnumerable<(int Number, int DaysOffset, decimal Percentage)>? installments = null)
+        IEnumerable<(int Number, int DaysOffset, decimal Percentage)>? installments = null
+    )
     {
         if (string.IsNullOrWhiteSpace(code))
             throw new ArgumentException("El código es obligatorio.", nameof(code));
@@ -57,7 +58,8 @@ public sealed class CreditTerm : MasterEntity, ITenantScopedEntity, ICompanyOper
         CreditTermMode mode,
         int totalDays,
         Guid updatedBy,
-        IEnumerable<(int Number, int DaysOffset, decimal Percentage)>? installments = null)
+        IEnumerable<(int Number, int DaysOffset, decimal Percentage)>? installments = null
+    )
     {
         if (string.IsNullOrWhiteSpace(name))
             throw new ArgumentException("El nombre es obligatorio.", nameof(name));
@@ -72,7 +74,8 @@ public sealed class CreditTerm : MasterEntity, ITenantScopedEntity, ICompanyOper
     }
 
     private void ApplyInstallments(
-        IEnumerable<(int Number, int DaysOffset, decimal Percentage)>? installments)
+        IEnumerable<(int Number, int DaysOffset, decimal Percentage)>? installments
+    )
     {
         _installments.Clear();
 
@@ -82,10 +85,10 @@ public sealed class CreditTerm : MasterEntity, ITenantScopedEntity, ICompanyOper
         {
             if (Mode == CreditTermMode.FinancialStrict)
                 throw new InvalidOperationException(
-                    "El modo FinancialStrict requiere al menos una cuota.");
+                    "El modo FinancialStrict requiere al menos una cuota."
+                );
 
-            _installments.Add(
-                CreditInstallment.Create(Id, 1, TotalDays, 100.00m, TotalDays));
+            _installments.Add(CreditInstallment.Create(Id, 1, TotalDays, 100.00m, TotalDays));
             return;
         }
 
@@ -95,6 +98,7 @@ public sealed class CreditTerm : MasterEntity, ITenantScopedEntity, ICompanyOper
         var sum = _installments.Sum(i => i.Percentage);
         if (sum != 100.00m)
             throw new InvalidOperationException(
-                $"La suma de porcentajes de cuotas debe ser exactamente 100%. Actual: {sum}%.");
+                $"La suma de porcentajes de cuotas debe ser exactamente 100%. Actual: {sum}%."
+            );
     }
 }

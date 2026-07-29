@@ -13,6 +13,7 @@ public sealed class CurrentStock : AuditableEntity, ITenantScopedEntity, ICompan
     public decimal TotalStockValue { get; private set; }
     public decimal AverageCost => Quantity > 0m ? TotalStockValue / Quantity : 0m;
     public DateTime LastUpdatedAt { get; private set; }
+
     /// <summary>Optimistic concurrency token â€” EF Core uses this for concurrent update detection.</summary>
     public uint RowVersion { get; private set; }
 
@@ -23,7 +24,8 @@ public sealed class CurrentStock : AuditableEntity, ITenantScopedEntity, ICompan
         Guid productId,
         Guid warehouseId,
         Guid createdBy,
-        Guid companyId)
+        Guid companyId
+    )
     {
         var s = new CurrentStock
         {
@@ -46,7 +48,8 @@ public sealed class CurrentStock : AuditableEntity, ITenantScopedEntity, ICompan
         var newQty = Quantity + delta;
         if (newQty < 0)
             throw new InvalidOperationException(
-                $"Movement would leave stock at {newQty}. Insufficient stock.");
+                $"Movement would leave stock at {newQty}. Insufficient stock."
+            );
 
         TotalStockValue = Math.Max(0m, TotalStockValue + delta * unitCost);
         Quantity = newQty;
@@ -58,7 +61,8 @@ public sealed class CurrentStock : AuditableEntity, ITenantScopedEntity, ICompan
     {
         if (quantity > AvailableQuantity)
             throw new InvalidOperationException(
-                $"Insufficient available stock. Available: {AvailableQuantity}, requested: {quantity}.");
+                $"Insufficient available stock. Available: {AvailableQuantity}, requested: {quantity}."
+            );
         ReservedQuantity += quantity;
         LastUpdatedAt = DateTime.UtcNow;
         SetUpdated(updatedBy);

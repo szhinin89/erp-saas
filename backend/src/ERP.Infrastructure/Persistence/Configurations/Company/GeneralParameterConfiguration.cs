@@ -1,4 +1,4 @@
-﻿using ERP.Domain.Modules.Company.Entities;
+using ERP.Domain.Modules.Company.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -19,9 +19,13 @@ public class GeneralParameterConfiguration : IEntityTypeConfiguration<GeneralPar
         builder.Property(x => x.Description).HasColumnName("description").HasMaxLength(300);
 
         builder.HasIndex(x => x.TenantId).HasDatabaseName("ix_general_parameter_tenant_id");
-        builder.HasIndex(x => new { x.CompanyId, x.Key }).IsUnique().HasDatabaseName("uq_gen_param");
+        builder
+            .HasIndex(x => new { x.CompanyId, x.Key })
+            .IsUnique()
+            .HasDatabaseName("uq_gen_param");
 
-        builder.HasOne(x => x.Company)
+        builder
+            .HasOne(x => x.Company)
             .WithMany(x => x.Parameters)
             .HasForeignKey(x => x.CompanyId)
             .OnDelete(DeleteBehavior.Cascade);

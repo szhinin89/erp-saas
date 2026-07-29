@@ -45,44 +45,68 @@ internal sealed class PostgreSqlTestWebAppFactory : WebApplicationFactory<Progra
         builder.UseSetting("Testing:SkipFirstRunSetup", "true");
         builder.UseSetting("Testing:SkipCommercialPlansBootstrap", "true");
 
-        builder.ConfigureAppConfiguration((_, config) =>
-        {
-            config.AddInMemoryCollection(new Dictionary<string, string?>
+        builder.ConfigureAppConfiguration(
+            (_, config) =>
             {
-                ["ConnectionStrings:DefaultConnection"] = ConnectionString,
-                ["Jwt:SecretKey"] = IntegrationTestConstants.JwtSecretKey,
-                ["Jwt:Issuer"] = "ZHTechnologies",
-                ["Jwt:Audience"] = "ERPUsers",
-            });
-        });
+                config.AddInMemoryCollection(
+                    new Dictionary<string, string?>
+                    {
+                        ["ConnectionStrings:DefaultConnection"] = ConnectionString,
+                        ["Jwt:SecretKey"] = IntegrationTestConstants.JwtSecretKey,
+                        ["Jwt:Issuer"] = "ZHTechnologies",
+                        ["Jwt:Audience"] = "ERPUsers",
+                    }
+                );
+            }
+        );
 
         builder.ConfigureServices(services =>
         {
-            foreach (var d in services.Where(x =>
-                         x.ServiceType == typeof(DbContextOptions<ErpDbContext>)
-                         || x.ServiceType == typeof(ErpDbContext)).ToList())
+            foreach (
+                var d in services
+                    .Where(x =>
+                        x.ServiceType == typeof(DbContextOptions<ErpDbContext>)
+                        || x.ServiceType == typeof(ErpDbContext)
+                    )
+                    .ToList()
+            )
                 services.Remove(d);
 
             services.AddDbContext<ErpDbContext>(options =>
-                options.UseNpgsql(ConnectionString, b =>
-                    b.MigrationsAssembly(typeof(ErpDbContext).Assembly.FullName)));
+                options.UseNpgsql(
+                    ConnectionString,
+                    b => b.MigrationsAssembly(typeof(ErpDbContext).Assembly.FullName)
+                )
+            );
 
             foreach (var d in services.Where(x => x.ServiceType == typeof(ICurrentTenant)).ToList())
                 services.Remove(d);
-            foreach (var d in services.Where(x => x.ServiceType == typeof(ICurrentCompany)).ToList())
+            foreach (
+                var d in services.Where(x => x.ServiceType == typeof(ICurrentCompany)).ToList()
+            )
                 services.Remove(d);
             foreach (var d in services.Where(x => x.ServiceType == typeof(ICurrentUser)).ToList())
                 services.Remove(d);
 
             services.AddSingleton(MutableTenant);
-            services.AddSingleton<ICurrentTenant>(sp => sp.GetRequiredService<MutableCurrentTenant>());
+            services.AddSingleton<ICurrentTenant>(sp =>
+                sp.GetRequiredService<MutableCurrentTenant>()
+            );
             services.AddSingleton(MutableCompany);
-            services.AddSingleton<ICurrentCompany>(sp => sp.GetRequiredService<MutableCurrentCompany>());
+            services.AddSingleton<ICurrentCompany>(sp =>
+                sp.GetRequiredService<MutableCurrentCompany>()
+            );
             services.AddSingleton(MutableUser);
             services.AddSingleton<ICurrentUser>(sp => sp.GetRequiredService<MutableCurrentUser>());
 
-            foreach (var d in services.Where(x => x.ImplementationType?.Name?.Contains("Kardex") == true
-                                                  && x.ServiceType == typeof(IHostedService)).ToList())
+            foreach (
+                var d in services
+                    .Where(x =>
+                        x.ImplementationType?.Name?.Contains("Kardex") == true
+                        && x.ServiceType == typeof(IHostedService)
+                    )
+                    .ToList()
+            )
                 services.Remove(d);
         });
     }

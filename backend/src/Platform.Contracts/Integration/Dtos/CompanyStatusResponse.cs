@@ -12,4 +12,5 @@ public sealed record CompanyStatusResponse(
     bool OnboardingCompleted,
     string OperationalStatus,
     DateTime CreatedAt,
-    DateTime UpdatedAt);
+    DateTime UpdatedAt
+);

@@ -16,17 +16,25 @@ public sealed class GetSessionStatisticsHandler
     private readonly IUserSessionRepository _repository;
     private readonly ICurrentTenant _currentTenant;
 
-    public GetSessionStatisticsHandler(IUserSessionRepository repository, ICurrentTenant currentTenant)
+    public GetSessionStatisticsHandler(
+        IUserSessionRepository repository,
+        ICurrentTenant currentTenant
+    )
     {
         _repository = repository;
         _currentTenant = currentTenant;
     }
 
     public async Task<Result<SessionStatisticsDto>> Handle(
-        GetSessionStatisticsQuery request, CancellationToken cancellationToken)
+        GetSessionStatisticsQuery request,
+        CancellationToken cancellationToken
+    )
     {
         var counts = await _repository.GetStatusCountsAsync(
-            _currentTenant.TenantId, request.CompanyId, cancellationToken);
+            _currentTenant.TenantId,
+            request.CompanyId,
+            cancellationToken
+        );
 
         var active = counts.GetValueOrDefault(UserSessionStatus.Active);
         var closedManually = counts.GetValueOrDefault(UserSessionStatus.ClosedManually);
@@ -34,8 +42,12 @@ public sealed class GetSessionStatisticsHandler
         var expired = counts.GetValueOrDefault(UserSessionStatus.Expired);
 
         var dto = new SessionStatisticsDto(
-            active, closedManually, closedByNewLogin, expired,
-            Total: active + closedManually + closedByNewLogin + expired);
+            active,
+            closedManually,
+            closedByNewLogin,
+            expired,
+            Total: active + closedManually + closedByNewLogin + expired
+        );
 
         return Result<SessionStatisticsDto>.Success(dto);
     }

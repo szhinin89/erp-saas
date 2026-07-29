@@ -23,13 +23,22 @@ public sealed class SalesInvoiceAuthorizedHandlerTests
 
     private static CashSession OpenSession(Guid cashSessionSeed) =>
         CashSession.Open(
-            TenantId, CompanyId, BranchId, UserId,
-            Guid.NewGuid(), "CAJA-01", "Caja Principal",
-            Guid.NewGuid(), "001",
-            0m, UserId);
+            TenantId,
+            CompanyId,
+            BranchId,
+            UserId,
+            Guid.NewGuid(),
+            "CAJA-01",
+            "Caja Principal",
+            Guid.NewGuid(),
+            "001",
+            0m,
+            UserId
+        );
 
-    private static SalesInvoiceAuthorizedHandler BuildHandler(Mock<ICashSessionRepository> cashRepo) =>
-        new(cashRepo.Object, MockTenant(), Mock.Of<ILogger<SalesInvoiceAuthorizedHandler>>());
+    private static SalesInvoiceAuthorizedHandler BuildHandler(
+        Mock<ICashSessionRepository> cashRepo
+    ) => new(cashRepo.Object, MockTenant(), Mock.Of<ILogger<SalesInvoiceAuthorizedHandler>>());
 
     private static ICurrentTenant MockTenant()
     {
@@ -43,20 +52,44 @@ public sealed class SalesInvoiceAuthorizedHandlerTests
     {
         var session = OpenSession(Guid.NewGuid());
         var cashRepo = new Mock<ICashSessionRepository>();
-        cashRepo.Setup(r => r.GetByIdAsync(TenantId, session.Id, It.IsAny<CancellationToken>()))
+        cashRepo
+            .Setup(r => r.GetByIdAsync(TenantId, session.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(session);
 
         var handler = BuildHandler(cashRepo);
         var evt = new SalesInvoiceAuthorizedEvent(
-            Guid.NewGuid(), "001-001-000000001", 115m, UserId, session.Id,
-            TenantId, CompanyId, new DateOnly(2026, 7, 25),
-            100m, 15m, 0m, 0m);
+            Guid.NewGuid(),
+            "001-001-000000001",
+            115m,
+            UserId,
+            session.Id,
+            TenantId,
+            CompanyId,
+            new DateOnly(2026, 7, 25),
+            100m,
+            15m,
+            0m,
+            0m
+        );
 
         await handler.Handle(evt, CancellationToken.None);
 
-        cashRepo.Verify(r => r.GetByIdAsync(TenantId, session.Id, It.IsAny<CancellationToken>()), Times.Once);
-        cashRepo.Verify(r => r.GetOpenByUserAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()), Times.Never);
-        session.Movements.Should().Contain(m => m.ReferenceNumber == "001-001-000000001" && m.Amount == 115m);
+        cashRepo.Verify(
+            r => r.GetByIdAsync(TenantId, session.Id, It.IsAny<CancellationToken>()),
+            Times.Once
+        );
+        cashRepo.Verify(
+            r =>
+                r.GetOpenByUserAsync(
+                    It.IsAny<Guid>(),
+                    It.IsAny<Guid>(),
+                    It.IsAny<CancellationToken>()
+                ),
+            Times.Never
+        );
+        session
+            .Movements.Should()
+            .Contain(m => m.ReferenceNumber == "001-001-000000001" && m.Amount == 115m);
     }
 
     [Fact]
@@ -64,14 +97,25 @@ public sealed class SalesInvoiceAuthorizedHandlerTests
     {
         var cashRepo = new Mock<ICashSessionRepository>();
         var missingSessionId = Guid.NewGuid();
-        cashRepo.Setup(r => r.GetByIdAsync(TenantId, missingSessionId, It.IsAny<CancellationToken>()))
+        cashRepo
+            .Setup(r => r.GetByIdAsync(TenantId, missingSessionId, It.IsAny<CancellationToken>()))
             .ReturnsAsync((CashSession?)null);
 
         var handler = BuildHandler(cashRepo);
         var evt = new SalesInvoiceAuthorizedEvent(
-            Guid.NewGuid(), "001-001-000000002", 50m, UserId, missingSessionId,
-            TenantId, CompanyId, new DateOnly(2026, 7, 25),
-            50m, 0m, 0m, 0m);
+            Guid.NewGuid(),
+            "001-001-000000002",
+            50m,
+            UserId,
+            missingSessionId,
+            TenantId,
+            CompanyId,
+            new DateOnly(2026, 7, 25),
+            50m,
+            0m,
+            0m,
+            0m
+        );
 
         var act = async () => await handler.Handle(evt, CancellationToken.None);
 

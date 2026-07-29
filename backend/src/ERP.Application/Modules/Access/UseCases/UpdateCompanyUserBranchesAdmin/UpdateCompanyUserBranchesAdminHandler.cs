@@ -42,7 +42,8 @@ public sealed class UpdateCompanyUserBranchesAdminHandler
         ICurrentTenant currentTenant,
         ICurrentUser currentUser,
         IBranchRepository branchRepository,
-        ICompanyUserBranchRepository companyUserBranchRepository)
+        ICompanyUserBranchRepository companyUserBranchRepository
+    )
     {
         _accessRepository = accessRepository;
         _currentCompany = currentCompany;
@@ -53,18 +54,26 @@ public sealed class UpdateCompanyUserBranchesAdminHandler
     }
 
     public async Task<Result<CompanyUserBranchesAdminDto>> Handle(
-        UpdateCompanyUserBranchesAdminCommand command, CancellationToken cancellationToken)
+        UpdateCompanyUserBranchesAdminCommand command,
+        CancellationToken cancellationToken
+    )
     {
-        var membership = await _accessRepository.GetCompanyUserMembershipByIdAsync(command.CompanyUserMembershipId, cancellationToken);
+        var membership = await _accessRepository.GetCompanyUserMembershipByIdAsync(
+            command.CompanyUserMembershipId,
+            cancellationToken
+        );
         if (membership is null || membership.CompanyId != _currentCompany.CompanyId)
-            return Result<CompanyUserBranchesAdminDto>.NotFound("Usuario de empresa no encontrado.");
+            return Result<CompanyUserBranchesAdminDto>.NotFound(
+                "Usuario de empresa no encontrado."
+            );
 
         // Fase E: una membership revocada no debe poder recibir nuevas autorizaciones de sucursal
         // por esta vía administrativa — evita dejar CompanyUserBranch "activas" sobre un acceso ya
         // revocado, sin depender de que el login sea el único punto que valide IsActive.
         if (!membership.IsActive)
             return Result<CompanyUserBranchesAdminDto>.Forbidden(
-                "La membresía está revocada; no se pueden modificar sus sucursales autorizadas.");
+                "La membresía está revocada; no se pueden modificar sus sucursales autorizadas."
+            );
 
         var requestedBranchIds = command.AuthorizedBranchIds.Distinct().ToList();
 
@@ -72,17 +81,26 @@ public sealed class UpdateCompanyUserBranchesAdminHandler
         // solicitadas pasen las tres reglas (existe, pertenece a la empresa, activa).
         foreach (var branchId in requestedBranchIds)
         {
-            var branch = await _branchRepository.GetByIdAsync(_currentTenant.TenantId, branchId, cancellationToken);
+            var branch = await _branchRepository.GetByIdAsync(
+                _currentTenant.TenantId,
+                branchId,
+                cancellationToken
+            );
             if (branch is null || branch.CompanyId != membership.CompanyId)
                 return Result<CompanyUserBranchesAdminDto>.ValidationFailure(
-                    $"La sucursal {branchId} no existe o no pertenece a la empresa.");
+                    $"La sucursal {branchId} no existe o no pertenece a la empresa."
+                );
 
             if (!branch.IsActive)
                 return Result<CompanyUserBranchesAdminDto>.ValidationFailure(
-                    $"La sucursal {branchId} está inactiva y no puede autorizarse.");
+                    $"La sucursal {branchId} está inactiva y no puede autorizarse."
+                );
         }
 
-        var existingAuthorizations = await _companyUserBranchRepository.GetByMembershipAsync(membership.Id, cancellationToken);
+        var existingAuthorizations = await _companyUserBranchRepository.GetByMembershipAsync(
+            membership.Id,
+            cancellationToken
+        );
         var existingByBranchId = existingAuthorizations.ToDictionary(x => x.BranchId);
 
         foreach (var branchId in requestedBranchIds)
@@ -91,8 +109,15 @@ public sealed class UpdateCompanyUserBranchesAdminHandler
                 existing.Activate(_currentUser.UserId);
             else
                 await _companyUserBranchRepository.AddAsync(
-                    CompanyUserBranch.Create(_currentTenant.TenantId, membership.CompanyId, membership.Id, branchId, _currentUser.UserId),
-                    cancellationToken);
+                    CompanyUserBranch.Create(
+                        _currentTenant.TenantId,
+                        membership.CompanyId,
+                        membership.Id,
+                        branchId,
+                        _currentUser.UserId
+                    ),
+                    cancellationToken
+                );
         }
 
         foreach (var existing in existingAuthorizations)
@@ -103,18 +128,39 @@ public sealed class UpdateCompanyUserBranchesAdminHandler
 
         await _companyUserBranchRepository.SaveChangesAsync(cancellationToken);
 
-        return Result<CompanyUserBranchesAdminDto>.Success(await BuildDtoAsync(membership.Id, membership.CompanyId, requestedBranchIds, cancellationToken));
+        return Result<CompanyUserBranchesAdminDto>.Success(
+            await BuildDtoAsync(
+                membership.Id,
+                membership.CompanyId,
+                requestedBranchIds,
+                cancellationToken
+            )
+        );
     }
 
     private async Task<CompanyUserBranchesAdminDto> BuildDtoAsync(
-        Guid membershipId, Guid companyId, IReadOnlyCollection<Guid> authorizedBranchIds, CancellationToken cancellationToken)
+        Guid membershipId,
+        Guid companyId,
+        IReadOnlyCollection<Guid> authorizedBranchIds,
+        CancellationToken cancellationToken
+    )
     {
-        var companyBranches = (await _branchRepository.GetAsync(_currentTenant.TenantId, activeFilter: true, cancellationToken: cancellationToken))
+        var companyBranches = (
+            await _branchRepository.GetAsync(
+                _currentTenant.TenantId,
+                activeFilter: true,
+                cancellationToken: cancellationToken
+            )
+        )
             .Where(b => b.CompanyId == companyId)
             .ToList();
 
         var options = companyBranches
-            .Select(b => new CompanyUserBranchOptionDto(b.Id, b.Name, authorizedBranchIds.Contains(b.Id)))
+            .Select(b => new CompanyUserBranchOptionDto(
+                b.Id,
+                b.Name,
+                authorizedBranchIds.Contains(b.Id)
+            ))
             .ToList();
 
         return new CompanyUserBranchesAdminDto(membershipId, options);

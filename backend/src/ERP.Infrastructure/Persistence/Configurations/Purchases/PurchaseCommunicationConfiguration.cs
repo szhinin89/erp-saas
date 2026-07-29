@@ -4,7 +4,8 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace ERP.Infrastructure.Persistence.Configurations.Purchases;
 
-public sealed class PurchaseCommunicationConfiguration : IEntityTypeConfiguration<PurchaseCommunication>
+public sealed class PurchaseCommunicationConfiguration
+    : IEntityTypeConfiguration<PurchaseCommunication>
 {
     public void Configure(EntityTypeBuilder<PurchaseCommunication> builder)
     {
@@ -15,8 +16,15 @@ public sealed class PurchaseCommunicationConfiguration : IEntityTypeConfiguratio
         builder.Property(x => x.TenantId).HasColumnName("tenant_id").IsRequired();
         builder.Property(x => x.CompanyId).HasColumnName("company_id").IsRequired();
         builder.Property(x => x.PurchaseId).HasColumnName("purchase_id").IsRequired();
-        builder.Property(x => x.Subject).HasColumnName("subject").HasMaxLength(PurchaseCommunication.SubjectMaxLen).IsRequired();
-        builder.Property(x => x.Notes).HasColumnName("notes").HasMaxLength(PurchaseCommunication.NotesMaxLen);
+        builder
+            .Property(x => x.Subject)
+            .HasColumnName("subject")
+            .HasMaxLength(PurchaseCommunication.SubjectMaxLen)
+            .IsRequired();
+        builder
+            .Property(x => x.Notes)
+            .HasColumnName("notes")
+            .HasMaxLength(PurchaseCommunication.NotesMaxLen);
         builder.Property(x => x.Status).HasColumnName("status").HasMaxLength(20).IsRequired();
         builder.Property(x => x.ScheduledDate).HasColumnName("scheduled_date");
 

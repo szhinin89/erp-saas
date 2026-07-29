@@ -12,6 +12,6 @@ namespace ERP.Application.Access.UseCases.LookupUserByUsernameAdmin;
 /// No reimplementa ninguna regla: compone IAccessRepository.GetUserByUsernameAsync +
 /// GetCompanyUserMembershipAsync, ambos ya usados por otros UseCases.
 /// </summary>
-public sealed record LookupUserByUsernameAdminQuery(
-    string Username
-) : IRequest<Result<UsernameLookupDto>>, IRequiresCompanyContext;
+public sealed record LookupUserByUsernameAdminQuery(string Username)
+    : IRequest<Result<UsernameLookupDto>>,
+        IRequiresCompanyContext;

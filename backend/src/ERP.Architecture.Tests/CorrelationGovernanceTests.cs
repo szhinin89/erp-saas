@@ -1,7 +1,7 @@
+using System.Reflection;
 using ERP.API.Middleware;
 using FluentAssertions;
 using NetArchTest.Rules;
-using System.Reflection;
 
 namespace ERP.Architecture.Tests;
 
@@ -30,20 +30,26 @@ public sealed class CorrelationGovernanceTests
         foreach (var file in Directory.EnumerateFiles(apiDir, "*.cs", SearchOption.AllDirectories))
         {
             var relative = Path.GetRelativePath(backendRoot, file).Replace('\\', '/');
-            if (relative == allowedFile.Replace('\\', '/')) continue;
+            if (relative == allowedFile.Replace('\\', '/'))
+                continue;
 
             var text = File.ReadAllText(file);
-            if (text.Contains("TraceIdentifier", StringComparison.Ordinal)
-                || text.Contains("X-Correlation-Id", StringComparison.Ordinal))
+            if (
+                text.Contains("TraceIdentifier", StringComparison.Ordinal)
+                || text.Contains("X-Correlation-Id", StringComparison.Ordinal)
+            )
             {
                 violations.Add(relative);
             }
         }
 
-        violations.Should().BeEmpty(
-            "TraceIdentifier y el header X-Correlation-Id solo deben usarse dentro de " +
-            "RequestCorrelationMiddleware; el resto del código debe llamar a " +
-            "RequestCorrelationMiddleware.Resolve(context).");
+        violations
+            .Should()
+            .BeEmpty(
+                "TraceIdentifier y el header X-Correlation-Id solo deben usarse dentro de "
+                    + "RequestCorrelationMiddleware; el resto del código debe llamar a "
+                    + "RequestCorrelationMiddleware.Resolve(context)."
+            );
     }
 
     [Fact]
@@ -60,8 +66,11 @@ public sealed class CorrelationGovernanceTests
         {
             File.Exists(file).Should().BeTrue(file);
             var text = File.ReadAllText(file);
-            text.Should().NotContain("Guid.NewGuid()",
-                $"{Path.GetFileName(file)} no debe generar su propio correlationId; debe usar RequestCorrelationMiddleware.Resolve(context).");
+            text.Should()
+                .NotContain(
+                    "Guid.NewGuid()",
+                    $"{Path.GetFileName(file)} no debe generar su propio correlationId; debe usar RequestCorrelationMiddleware.Resolve(context)."
+                );
         }
     }
 
@@ -69,12 +78,17 @@ public sealed class CorrelationGovernanceTests
     [Fact]
     public void ResponseFactory_must_not_depend_on_infrastructure()
     {
-        var result = Types.InAssembly(ApiAssembly)
-            .That().HaveNameMatching("ResponseFactory")
-            .ShouldNot().HaveDependencyOn("ERP.Infrastructure")
+        var result = Types
+            .InAssembly(ApiAssembly)
+            .That()
+            .HaveNameMatching("ResponseFactory")
+            .ShouldNot()
+            .HaveDependencyOn("ERP.Infrastructure")
             .GetResult();
 
-        result.IsSuccessful.Should().BeTrue(string.Join(", ", result.FailingTypeNames ?? Array.Empty<string>()));
+        result
+            .IsSuccessful.Should()
+            .BeTrue(string.Join(", ", result.FailingTypeNames ?? Array.Empty<string>()));
     }
 
     private static string ResolveBackendSrcRoot()

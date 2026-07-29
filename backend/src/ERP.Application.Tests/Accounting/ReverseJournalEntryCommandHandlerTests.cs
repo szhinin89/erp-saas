@@ -25,16 +25,33 @@ public sealed class ReverseJournalEntryCommandHandlerTests
     private static JournalEntry PostedEntry(Guid accountingPeriodId, int entryNumber = 1)
     {
         var entry = JournalEntry.Create(
-            TenantId, CompanyId, new DateOnly(2026, 7, 25), accountingPeriodId, 2026,
-            "Sales", "InvoiceIssued", Guid.NewGuid(), "Asiento original", CreatedBy);
+            TenantId,
+            CompanyId,
+            new DateOnly(2026, 7, 25),
+            accountingPeriodId,
+            2026,
+            "Sales",
+            "InvoiceIssued",
+            Guid.NewGuid(),
+            "Asiento original",
+            CreatedBy
+        );
         entry.AddLine(DebitAccountId, null, 100m, 0m);
         entry.AddLine(CreditAccountId, null, 0m, 100m);
         entry.Post(CreatedBy, entryNumber);
         return entry;
     }
 
-    private static AccountingPeriod OpenPeriod() => AccountingPeriod.Create(
-        TenantId, CompanyId, 2026, 7, new DateOnly(2026, 7, 1), new DateOnly(2026, 7, 31), CreatedBy);
+    private static AccountingPeriod OpenPeriod() =>
+        AccountingPeriod.Create(
+            TenantId,
+            CompanyId,
+            2026,
+            7,
+            new DateOnly(2026, 7, 1),
+            new DateOnly(2026, 7, 31),
+            CreatedBy
+        );
 
     private sealed class Mocks
     {
@@ -51,13 +68,26 @@ public sealed class ReverseJournalEntryCommandHandlerTests
             Company.Setup(c => c.CompanyId).Returns(CompanyId);
             User.Setup(u => u.UserId).Returns(CreatedBy);
             JournalEntrySequences
-                .Setup(r => r.ReserveNextNumberAsync(TenantId, CompanyId, 2026, It.IsAny<CancellationToken>()))
+                .Setup(r =>
+                    r.ReserveNextNumberAsync(
+                        TenantId,
+                        CompanyId,
+                        2026,
+                        It.IsAny<CancellationToken>()
+                    )
+                )
                 .ReturnsAsync(2);
         }
 
-        public ReverseJournalEntryCommandHandler BuildHandler() => new(
-            JournalEntries.Object, AccountingPeriods.Object, JournalEntrySequences.Object,
-            Tenant.Object, Company.Object, User.Object);
+        public ReverseJournalEntryCommandHandler BuildHandler() =>
+            new(
+                JournalEntries.Object,
+                AccountingPeriods.Object,
+                JournalEntrySequences.Object,
+                Tenant.Object,
+                Company.Object,
+                User.Object
+            );
     }
 
     [Fact]
@@ -66,19 +96,27 @@ public sealed class ReverseJournalEntryCommandHandlerTests
         var period = OpenPeriod();
         var original = PostedEntry(period.Id);
         var m = new Mocks();
-        m.JournalEntries.Setup(r => r.GetByIdAsync(TenantId, CompanyId, original.Id, It.IsAny<CancellationToken>()))
+        m.JournalEntries.Setup(r =>
+                r.GetByIdAsync(TenantId, CompanyId, original.Id, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(original);
-        m.AccountingPeriods.Setup(r => r.GetByIdAsync(TenantId, CompanyId, period.Id, It.IsAny<CancellationToken>()))
+        m.AccountingPeriods.Setup(r =>
+                r.GetByIdAsync(TenantId, CompanyId, period.Id, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(period);
 
         JournalEntry? captured = null;
-        m.JournalEntries
-            .Setup(r => r.AddAsync(It.IsAny<JournalEntry>(), It.IsAny<CancellationToken>()))
+        m.JournalEntries.Setup(r =>
+                r.AddAsync(It.IsAny<JournalEntry>(), It.IsAny<CancellationToken>())
+            )
             .Callback<JournalEntry, CancellationToken>((e, _) => captured = e)
             .Returns(Task.CompletedTask);
 
         var handler = m.BuildHandler();
-        var result = await handler.Handle(new ReverseJournalEntryCommand(original.Id, "Error de digitación"), CancellationToken.None);
+        var result = await handler.Handle(
+            new ReverseJournalEntryCommand(original.Id, "Error de digitación"),
+            CancellationToken.None
+        );
 
         result.IsSuccess.Should().BeTrue();
         result.Value!.EntryNumber.Should().Be(2);
@@ -89,7 +127,10 @@ public sealed class ReverseJournalEntryCommandHandlerTests
         original.Status.Should().Be(JournalEntryStatus.Reversed);
         original.ReverseReason.Should().Be("Error de digitación");
 
-        m.JournalEntries.Verify(r => r.AddAsync(It.IsAny<JournalEntry>(), It.IsAny<CancellationToken>()), Times.Once);
+        m.JournalEntries.Verify(
+            r => r.AddAsync(It.IsAny<JournalEntry>(), It.IsAny<CancellationToken>()),
+            Times.Once
+        );
         m.JournalEntries.Verify(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
     }
 
@@ -97,11 +138,16 @@ public sealed class ReverseJournalEntryCommandHandlerTests
     public async Task Asiento_inexistente_retorna_NotFound()
     {
         var m = new Mocks();
-        m.JournalEntries.Setup(r => r.GetByIdAsync(TenantId, CompanyId, It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+        m.JournalEntries.Setup(r =>
+                r.GetByIdAsync(TenantId, CompanyId, It.IsAny<Guid>(), It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync((JournalEntry?)null);
 
         var handler = m.BuildHandler();
-        var result = await handler.Handle(new ReverseJournalEntryCommand(Guid.NewGuid(), "Motivo"), CancellationToken.None);
+        var result = await handler.Handle(
+            new ReverseJournalEntryCommand(Guid.NewGuid(), "Motivo"),
+            CancellationToken.None
+        );
 
         result.IsSuccess.Should().BeFalse();
         result.Code.Should().Be(ApiResponseCodes.Common.NotFound);
@@ -115,18 +161,33 @@ public sealed class ReverseJournalEntryCommandHandlerTests
         period.Close(CreatedBy, new JournalEntryClosureReadiness(false, false, false));
 
         var m = new Mocks();
-        m.JournalEntries.Setup(r => r.GetByIdAsync(TenantId, CompanyId, original.Id, It.IsAny<CancellationToken>()))
+        m.JournalEntries.Setup(r =>
+                r.GetByIdAsync(TenantId, CompanyId, original.Id, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(original);
-        m.AccountingPeriods.Setup(r => r.GetByIdAsync(TenantId, CompanyId, period.Id, It.IsAny<CancellationToken>()))
+        m.AccountingPeriods.Setup(r =>
+                r.GetByIdAsync(TenantId, CompanyId, period.Id, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(period);
 
         var handler = m.BuildHandler();
-        var result = await handler.Handle(new ReverseJournalEntryCommand(original.Id, "Motivo"), CancellationToken.None);
+        var result = await handler.Handle(
+            new ReverseJournalEntryCommand(original.Id, "Motivo"),
+            CancellationToken.None
+        );
 
         result.IsSuccess.Should().BeFalse();
         result.Code.Should().Be("PERIOD_NOT_OPEN");
-        original.Status.Should().Be(JournalEntryStatus.Posted, because: "un período cerrado nunca debe dejar avanzar el reverso");
-        m.JournalEntries.Verify(r => r.AddAsync(It.IsAny<JournalEntry>(), It.IsAny<CancellationToken>()), Times.Never);
+        original
+            .Status.Should()
+            .Be(
+                JournalEntryStatus.Posted,
+                because: "un período cerrado nunca debe dejar avanzar el reverso"
+            );
+        m.JournalEntries.Verify(
+            r => r.AddAsync(It.IsAny<JournalEntry>(), It.IsAny<CancellationToken>()),
+            Times.Never
+        );
     }
 
     [Fact]
@@ -138,17 +199,27 @@ public sealed class ReverseJournalEntryCommandHandlerTests
         period.Lock(CreatedBy);
 
         var m = new Mocks();
-        m.JournalEntries.Setup(r => r.GetByIdAsync(TenantId, CompanyId, original.Id, It.IsAny<CancellationToken>()))
+        m.JournalEntries.Setup(r =>
+                r.GetByIdAsync(TenantId, CompanyId, original.Id, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(original);
-        m.AccountingPeriods.Setup(r => r.GetByIdAsync(TenantId, CompanyId, period.Id, It.IsAny<CancellationToken>()))
+        m.AccountingPeriods.Setup(r =>
+                r.GetByIdAsync(TenantId, CompanyId, period.Id, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(period);
 
         var handler = m.BuildHandler();
-        var result = await handler.Handle(new ReverseJournalEntryCommand(original.Id, "Motivo"), CancellationToken.None);
+        var result = await handler.Handle(
+            new ReverseJournalEntryCommand(original.Id, "Motivo"),
+            CancellationToken.None
+        );
 
         result.IsSuccess.Should().BeFalse();
         result.Code.Should().Be("PERIOD_NOT_OPEN");
-        m.JournalEntries.Verify(r => r.AddAsync(It.IsAny<JournalEntry>(), It.IsAny<CancellationToken>()), Times.Never);
+        m.JournalEntries.Verify(
+            r => r.AddAsync(It.IsAny<JournalEntry>(), It.IsAny<CancellationToken>()),
+            Times.Never
+        );
     }
 
     [Fact]
@@ -156,20 +227,39 @@ public sealed class ReverseJournalEntryCommandHandlerTests
     {
         var period = OpenPeriod();
         var draft = JournalEntry.Create(
-            TenantId, CompanyId, new DateOnly(2026, 7, 25), period.Id, 2026,
-            "Sales", "InvoiceIssued", Guid.NewGuid(), "Asiento sin publicar", CreatedBy);
+            TenantId,
+            CompanyId,
+            new DateOnly(2026, 7, 25),
+            period.Id,
+            2026,
+            "Sales",
+            "InvoiceIssued",
+            Guid.NewGuid(),
+            "Asiento sin publicar",
+            CreatedBy
+        );
 
         var m = new Mocks();
-        m.JournalEntries.Setup(r => r.GetByIdAsync(TenantId, CompanyId, draft.Id, It.IsAny<CancellationToken>()))
+        m.JournalEntries.Setup(r =>
+                r.GetByIdAsync(TenantId, CompanyId, draft.Id, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(draft);
-        m.AccountingPeriods.Setup(r => r.GetByIdAsync(TenantId, CompanyId, period.Id, It.IsAny<CancellationToken>()))
+        m.AccountingPeriods.Setup(r =>
+                r.GetByIdAsync(TenantId, CompanyId, period.Id, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(period);
 
         var handler = m.BuildHandler();
-        var result = await handler.Handle(new ReverseJournalEntryCommand(draft.Id, "Motivo"), CancellationToken.None);
+        var result = await handler.Handle(
+            new ReverseJournalEntryCommand(draft.Id, "Motivo"),
+            CancellationToken.None
+        );
 
         result.IsSuccess.Should().BeFalse();
-        m.JournalEntries.Verify(r => r.AddAsync(It.IsAny<JournalEntry>(), It.IsAny<CancellationToken>()), Times.Never);
+        m.JournalEntries.Verify(
+            r => r.AddAsync(It.IsAny<JournalEntry>(), It.IsAny<CancellationToken>()),
+            Times.Never
+        );
     }
 
     [Fact]
@@ -180,15 +270,25 @@ public sealed class ReverseJournalEntryCommandHandlerTests
         original.Reverse(CreatedBy, 2, "Primer reverso");
 
         var m = new Mocks();
-        m.JournalEntries.Setup(r => r.GetByIdAsync(TenantId, CompanyId, original.Id, It.IsAny<CancellationToken>()))
+        m.JournalEntries.Setup(r =>
+                r.GetByIdAsync(TenantId, CompanyId, original.Id, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(original);
-        m.AccountingPeriods.Setup(r => r.GetByIdAsync(TenantId, CompanyId, period.Id, It.IsAny<CancellationToken>()))
+        m.AccountingPeriods.Setup(r =>
+                r.GetByIdAsync(TenantId, CompanyId, period.Id, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(period);
 
         var handler = m.BuildHandler();
-        var result = await handler.Handle(new ReverseJournalEntryCommand(original.Id, "Segundo intento"), CancellationToken.None);
+        var result = await handler.Handle(
+            new ReverseJournalEntryCommand(original.Id, "Segundo intento"),
+            CancellationToken.None
+        );
 
         result.IsSuccess.Should().BeFalse();
-        m.JournalEntries.Verify(r => r.AddAsync(It.IsAny<JournalEntry>(), It.IsAny<CancellationToken>()), Times.Never);
+        m.JournalEntries.Verify(
+            r => r.AddAsync(It.IsAny<JournalEntry>(), It.IsAny<CancellationToken>()),
+            Times.Never
+        );
     }
 }

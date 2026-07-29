@@ -12,8 +12,14 @@ public sealed record RideLine
     public IReadOnlyList<RideTaxSummary> Taxes { get; }
 
     private RideLine(
-        string code, string description, decimal quantity, decimal unitPrice,
-        decimal discount, decimal subtotal, IReadOnlyList<RideTaxSummary> taxes)
+        string code,
+        string description,
+        decimal quantity,
+        decimal unitPrice,
+        decimal discount,
+        decimal subtotal,
+        IReadOnlyList<RideTaxSummary> taxes
+    )
     {
         Code = code;
         Description = description;
@@ -25,23 +31,46 @@ public sealed record RideLine
     }
 
     public static RideLine Create(
-        string code, string description, decimal quantity, decimal unitPrice,
-        decimal discount, decimal subtotal, IReadOnlyList<RideTaxSummary> taxes)
+        string code,
+        string description,
+        decimal quantity,
+        decimal unitPrice,
+        decimal discount,
+        decimal subtotal,
+        IReadOnlyList<RideTaxSummary> taxes
+    )
     {
         if (string.IsNullOrWhiteSpace(code))
             throw new ArgumentException("El código de la línea es obligatorio.", nameof(code));
         if (string.IsNullOrWhiteSpace(description))
-            throw new ArgumentException("La descripción de la línea es obligatoria.", nameof(description));
+            throw new ArgumentException(
+                "La descripción de la línea es obligatoria.",
+                nameof(description)
+            );
         if (quantity <= 0)
             throw new ArgumentException("La cantidad debe ser mayor a cero.", nameof(quantity));
         if (unitPrice < 0)
-            throw new ArgumentException("El precio unitario no puede ser negativo.", nameof(unitPrice));
+            throw new ArgumentException(
+                "El precio unitario no puede ser negativo.",
+                nameof(unitPrice)
+            );
         if (discount < 0)
             throw new ArgumentException("El descuento no puede ser negativo.", nameof(discount));
         if (subtotal < 0)
-            throw new ArgumentException("El subtotal de la línea no puede ser negativo.", nameof(subtotal));
+            throw new ArgumentException(
+                "El subtotal de la línea no puede ser negativo.",
+                nameof(subtotal)
+            );
         ArgumentNullException.ThrowIfNull(taxes);
 
-        return new RideLine(code.Trim(), description.Trim(), quantity, unitPrice, discount, subtotal, taxes);
+        return new RideLine(
+            code.Trim(),
+            description.Trim(),
+            quantity,
+            unitPrice,
+            discount,
+            subtotal,
+            taxes
+        );
     }
 }

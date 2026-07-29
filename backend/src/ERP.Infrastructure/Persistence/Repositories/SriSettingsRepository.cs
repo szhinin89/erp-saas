@@ -10,12 +10,20 @@ public sealed class SriSettingsRepository : ISriSettingsRepository
 
     public SriSettingsRepository(ErpDbContext db) => _db = db;
 
-    public Task<SriSettings?> GetByCompanyIdAsync(Guid companyId, CancellationToken cancellationToken = default)
-        => _db.SriSettings.FirstOrDefaultAsync(s => s.CompanyId == companyId, cancellationToken);
+    public Task<SriSettings?> GetByCompanyIdAsync(
+        Guid companyId,
+        CancellationToken cancellationToken = default
+    ) => _db.SriSettings.FirstOrDefaultAsync(s => s.CompanyId == companyId, cancellationToken);
 
-    public Task<SriSettings?> GetByCompanyIdForUpdateAsync(Guid companyId, CancellationToken cancellationToken = default)
-        => _db.SriSettings
-            .FromSqlRaw("SELECT * FROM sri_settings WHERE company_id = {0} FOR UPDATE", companyId)
+    public Task<SriSettings?> GetByCompanyIdForUpdateAsync(
+        Guid companyId,
+        CancellationToken cancellationToken = default
+    ) =>
+        _db
+            .SriSettings.FromSqlRaw(
+                "SELECT * FROM sri_settings WHERE company_id = {0} FOR UPDATE",
+                companyId
+            )
             .FirstOrDefaultAsync(cancellationToken);
 
     public Task AddAsync(SriSettings config, CancellationToken cancellationToken = default)
@@ -30,6 +38,6 @@ public sealed class SriSettingsRepository : ISriSettingsRepository
         return Task.CompletedTask;
     }
 
-    public Task SaveChangesAsync(CancellationToken cancellationToken = default)
-        => _db.SaveChangesAsync(cancellationToken);
+    public Task SaveChangesAsync(CancellationToken cancellationToken = default) =>
+        _db.SaveChangesAsync(cancellationToken);
 }

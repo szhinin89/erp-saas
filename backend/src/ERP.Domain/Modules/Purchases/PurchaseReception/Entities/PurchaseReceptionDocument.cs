@@ -12,7 +12,10 @@ namespace ERP.Domain.Modules.Purchases.PurchaseReception.Entities;
 /// o futura, asignada por una fase posterior (conciliación/creación).
 /// Branch Ownership Rule: TenantId+CompanyId+BranchId, BranchId nunca viene del cliente.
 /// </summary>
-public sealed class PurchaseReceptionDocument : AuditableEntity, ITenantScopedEntity, ICompanyOperationalEntity
+public sealed class PurchaseReceptionDocument
+    : AuditableEntity,
+        ITenantScopedEntity,
+        ICompanyOperationalEntity
 {
     public const int SupplierRucMaxLen = 20;
     public const int SupplierNameMaxLen = 200;
@@ -62,7 +65,8 @@ public sealed class PurchaseReceptionDocument : AuditableEntity, ITenantScopedEn
     /// puede tener <see cref="PurchaseReceptionProcessingStatus.Failed"/> — el comprobante es
     /// fiscalmente válido independientemente de nuestra capacidad de parsear su detalle.
     /// </summary>
-    public PurchaseReceptionProcessingStatus ProcessingStatus { get; private set; } = PurchaseReceptionProcessingStatus.Pending;
+    public PurchaseReceptionProcessingStatus ProcessingStatus { get; private set; } =
+        PurchaseReceptionProcessingStatus.Pending;
 
     /// <summary>Cantidad de elementos &lt;detalle&gt; detectados en el XML — 0 mientras no se procese.</summary>
     public int LinesDetectedCount { get; private set; }
@@ -86,31 +90,52 @@ public sealed class PurchaseReceptionDocument : AuditableEntity, ITenantScopedEn
     public string? XmlContent { get; private set; }
 
     private readonly List<PurchaseReceptionLine> _lines = new();
+
     /// <summary>Líneas de detalle extraídas del XML autorizado — pobladas por <see cref="AttachSriAuthorization"/>, vacío hasta entonces.</summary>
     public IReadOnlyList<PurchaseReceptionLine> Lines => _lines.AsReadOnly();
 
     private PurchaseReceptionDocument() { }
 
     public static PurchaseReceptionDocument Create(
-        Guid tenantId, Guid companyId, Guid branchId,
+        Guid tenantId,
+        Guid companyId,
+        Guid branchId,
         PurchaseReceptionSourceDocType sourceDocType,
-        string supplierRuc, string supplierName, Guid? supplierId,
-        string accessKey, string invoiceNumber, DateOnly issueDate, DateTime? authorizationDate,
-        decimal subtotal, decimal vatAmount, decimal totalAmount,
-        Guid createdBy, Guid? purchaseId = null)
+        string supplierRuc,
+        string supplierName,
+        Guid? supplierId,
+        string accessKey,
+        string invoiceNumber,
+        DateOnly issueDate,
+        DateTime? authorizationDate,
+        decimal subtotal,
+        decimal vatAmount,
+        decimal totalAmount,
+        Guid createdBy,
+        Guid? purchaseId = null
+    )
     {
         if (companyId == Guid.Empty)
             throw new ArgumentException("La empresa es obligatoria.", nameof(companyId));
         if (branchId == Guid.Empty)
             throw new ArgumentException("La sucursal es obligatoria.", nameof(branchId));
         if (string.IsNullOrWhiteSpace(supplierRuc))
-            throw new ArgumentException("El RUC del proveedor es obligatorio.", nameof(supplierRuc));
+            throw new ArgumentException(
+                "El RUC del proveedor es obligatorio.",
+                nameof(supplierRuc)
+            );
         if (string.IsNullOrWhiteSpace(supplierName))
-            throw new ArgumentException("El nombre del proveedor es obligatorio.", nameof(supplierName));
+            throw new ArgumentException(
+                "El nombre del proveedor es obligatorio.",
+                nameof(supplierName)
+            );
         if (string.IsNullOrWhiteSpace(accessKey))
             throw new ArgumentException("La clave de acceso es obligatoria.", nameof(accessKey));
         if (string.IsNullOrWhiteSpace(invoiceNumber))
-            throw new ArgumentException("El número de comprobante es obligatorio.", nameof(invoiceNumber));
+            throw new ArgumentException(
+                "El número de comprobante es obligatorio.",
+                nameof(invoiceNumber)
+            );
 
         var doc = new PurchaseReceptionDocument
         {
@@ -139,13 +164,17 @@ public sealed class PurchaseReceptionDocument : AuditableEntity, ITenantScopedEn
     private void EnsureImported()
     {
         if (Status != PurchaseReceptionDocumentStatus.Imported)
-            throw new InvalidOperationException("Solo se puede operar sobre documentos en estado Importado.");
+            throw new InvalidOperationException(
+                "Solo se puede operar sobre documentos en estado Importado."
+            );
     }
 
     private void EnsureVerified()
     {
         if (Status != PurchaseReceptionDocumentStatus.Verified)
-            throw new InvalidOperationException("Solo se puede operar sobre documentos en estado Verificado.");
+            throw new InvalidOperationException(
+                "Solo se puede operar sobre documentos en estado Verificado."
+            );
     }
 
     /// <summary>Reservado para la fase de conciliación: marca el documento como verificado contra proveedor/compra.</summary>
@@ -189,16 +218,28 @@ public sealed class PurchaseReceptionDocument : AuditableEntity, ITenantScopedEn
     /// en ese caso <c>CreatePurchaseReceptionDraftHandler</c> no podrá generar un borrador completo.
     /// </summary>
     public void AttachSriAuthorization(
-        string authorizationNumber, DateTime authorizationDate, string xmlContent, DateTime downloadedAtUtc,
-        IEnumerable<PurchaseReceptionLine> lines, Guid updatedBy,
-        string? docTypeCode, string? sriPaymentMethodCode,
-        PurchaseReceptionProcessingOutcome processing)
+        string authorizationNumber,
+        DateTime authorizationDate,
+        string xmlContent,
+        DateTime downloadedAtUtc,
+        IEnumerable<PurchaseReceptionLine> lines,
+        Guid updatedBy,
+        string? docTypeCode,
+        string? sriPaymentMethodCode,
+        PurchaseReceptionProcessingOutcome processing
+    )
     {
         EnsureImported();
         if (string.IsNullOrWhiteSpace(authorizationNumber))
-            throw new ArgumentException("El número de autorización es obligatorio.", nameof(authorizationNumber));
+            throw new ArgumentException(
+                "El número de autorización es obligatorio.",
+                nameof(authorizationNumber)
+            );
         if (string.IsNullOrWhiteSpace(xmlContent))
-            throw new ArgumentException("El contenido XML no puede estar vacío.", nameof(xmlContent));
+            throw new ArgumentException(
+                "El contenido XML no puede estar vacío.",
+                nameof(xmlContent)
+            );
         ValidateProcessingOutcome(processing);
 
         AuthorizationNumber = authorizationNumber.Trim();
@@ -208,7 +249,12 @@ public sealed class PurchaseReceptionDocument : AuditableEntity, ITenantScopedEn
         DocTypeCode = docTypeCode?.Trim();
         SriPaymentMethodCode = sriPaymentMethodCode?.Trim();
         Status = PurchaseReceptionDocumentStatus.Verified;
-        ApplyProcessingOutcome(processing, docTypeCode, sriPaymentMethodCode, overwriteHeaderWhenNull: true);
+        ApplyProcessingOutcome(
+            processing,
+            docTypeCode,
+            sriPaymentMethodCode,
+            overwriteHeaderWhenNull: true
+        );
         _lines.Clear();
         _lines.AddRange(lines);
         SetUpdated(updatedBy);
@@ -223,18 +269,30 @@ public sealed class PurchaseReceptionDocument : AuditableEntity, ITenantScopedEn
     /// infraestructura nunca permite.
     /// </summary>
     public void ReprocessDetail(
-        IEnumerable<PurchaseReceptionLine> lines, PurchaseReceptionProcessingOutcome processing,
-        string? docTypeCode, string? sriPaymentMethodCode, Guid updatedBy)
+        IEnumerable<PurchaseReceptionLine> lines,
+        PurchaseReceptionProcessingOutcome processing,
+        string? docTypeCode,
+        string? sriPaymentMethodCode,
+        Guid updatedBy
+    )
     {
         EnsureVerified();
         if (string.IsNullOrWhiteSpace(XmlContent))
-            throw new InvalidOperationException("El documento no tiene XML guardado para reprocesar.");
+            throw new InvalidOperationException(
+                "El documento no tiene XML guardado para reprocesar."
+            );
         if (ProcessingStatus != PurchaseReceptionProcessingStatus.Failed)
             throw new InvalidOperationException(
-                "Solo se puede reprocesar un documento cuyo procesamiento anterior fue Failed — evita sobrescribir Item Matching ya resuelto.");
+                "Solo se puede reprocesar un documento cuyo procesamiento anterior fue Failed — evita sobrescribir Item Matching ya resuelto."
+            );
         ValidateProcessingOutcome(processing);
 
-        ApplyProcessingOutcome(processing, docTypeCode, sriPaymentMethodCode, overwriteHeaderWhenNull: false);
+        ApplyProcessingOutcome(
+            processing,
+            docTypeCode,
+            sriPaymentMethodCode,
+            overwriteHeaderWhenNull: false
+        );
         _lines.Clear();
         _lines.AddRange(lines);
         SetUpdated(updatedBy);
@@ -242,18 +300,31 @@ public sealed class PurchaseReceptionDocument : AuditableEntity, ITenantScopedEn
 
     private static void ValidateProcessingOutcome(PurchaseReceptionProcessingOutcome processing)
     {
-        if (processing.Status == PurchaseReceptionProcessingStatus.Failed && processing.LinesProcessed != 0)
+        if (
+            processing.Status == PurchaseReceptionProcessingStatus.Failed
+            && processing.LinesProcessed != 0
+        )
             throw new ArgumentException(
-                "Un procesamiento Failed no puede reportar líneas procesadas.", nameof(processing));
-        if (processing.Status != PurchaseReceptionProcessingStatus.Failed && processing.LinesProcessed == 0
-            && processing.Status != PurchaseReceptionProcessingStatus.Pending)
+                "Un procesamiento Failed no puede reportar líneas procesadas.",
+                nameof(processing)
+            );
+        if (
+            processing.Status != PurchaseReceptionProcessingStatus.Failed
+            && processing.LinesProcessed == 0
+            && processing.Status != PurchaseReceptionProcessingStatus.Pending
+        )
             throw new ArgumentException(
-                "Un procesamiento Processed/ProcessedWithWarnings requiere al menos una línea procesada.", nameof(processing));
+                "Un procesamiento Processed/ProcessedWithWarnings requiere al menos una línea procesada.",
+                nameof(processing)
+            );
     }
 
     private void ApplyProcessingOutcome(
-        PurchaseReceptionProcessingOutcome processing, string? docTypeCode, string? sriPaymentMethodCode,
-        bool overwriteHeaderWhenNull)
+        PurchaseReceptionProcessingOutcome processing,
+        string? docTypeCode,
+        string? sriPaymentMethodCode,
+        bool overwriteHeaderWhenNull
+    )
     {
         ProcessingStatus = processing.Status;
         LinesDetectedCount = processing.LinesDetected;
@@ -269,6 +340,7 @@ public sealed class PurchaseReceptionDocument : AuditableEntity, ITenantScopedEn
         if (overwriteHeaderWhenNull || sriPaymentMethodCode is not null)
             SriPaymentMethodCode = sriPaymentMethodCode?.Trim();
     }
+
     /// <summary>
     /// Completa el proveedor cuando el documento fue importado antes
     /// de resolver el BusinessPartner.
@@ -276,9 +348,7 @@ public sealed class PurchaseReceptionDocument : AuditableEntity, ITenantScopedEn
     public void AssignSupplier(Guid supplierId, Guid updatedBy)
     {
         if (supplierId == Guid.Empty)
-            throw new ArgumentException(
-                "El proveedor es obligatorio.",
-                nameof(supplierId));
+            throw new ArgumentException("El proveedor es obligatorio.", nameof(supplierId));
 
         if (SupplierId.HasValue)
             return;

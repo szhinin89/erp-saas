@@ -25,6 +25,7 @@ namespace ERP.API.Controllers.Accounting;
 public sealed class AccountingController : ControllerBase
 {
     private readonly IMediator _mediator;
+
     public AccountingController(IMediator mediator) => _mediator = mediator;
 
     // ══════════════════════════════════════════════════════════════════════
@@ -33,36 +34,43 @@ public sealed class AccountingController : ControllerBase
 
     [HttpGet("accounts")]
     [Authorize(Policy = $"perm:{AccountingPermissions.View}")]
-    public async Task<IActionResult> GetAccounts(CancellationToken ct)
-        => this.ToOkOrBadRequest(await _mediator.Send(new GetAccountsQuery(), ct), "OK");
+    public async Task<IActionResult> GetAccounts(CancellationToken ct) =>
+        this.ToOkOrBadRequest(await _mediator.Send(new GetAccountsQuery(), ct), "OK");
 
     [HttpGet("accounts/{id:guid}")]
     [Authorize(Policy = $"perm:{AccountingPermissions.View}")]
-    public async Task<IActionResult> GetAccountById(Guid id, CancellationToken ct)
-        => this.ToOkOrNotFound(await _mediator.Send(new GetAccountByIdQuery(id), ct));
+    public async Task<IActionResult> GetAccountById(Guid id, CancellationToken ct) =>
+        this.ToOkOrNotFound(await _mediator.Send(new GetAccountByIdQuery(id), ct));
 
     [HttpPost("accounts")]
     [Authorize(Policy = $"perm:{AccountingPermissions.Create}")]
-    public async Task<IActionResult> CreateAccount([FromBody] CreateAccountCommand command, CancellationToken ct)
-        => this.ToCreatedOrBadRequest(await _mediator.Send(command, ct));
+    public async Task<IActionResult> CreateAccount(
+        [FromBody] CreateAccountCommand command,
+        CancellationToken ct
+    ) => this.ToCreatedOrBadRequest(await _mediator.Send(command, ct));
 
     [HttpPatch("accounts/{id:guid}")]
     [Authorize(Policy = $"perm:{AccountingPermissions.Update}")]
-    public async Task<IActionResult> RenameAccount(Guid id, [FromBody] RenameAccountCommand command, CancellationToken ct)
+    public async Task<IActionResult> RenameAccount(
+        Guid id,
+        [FromBody] RenameAccountCommand command,
+        CancellationToken ct
+    )
     {
-        if (id != command.Id) return this.ApiBadRequest("El ID no coincide.");
+        if (id != command.Id)
+            return this.ApiBadRequest("El ID no coincide.");
         return this.ToOkOrBadRequest(await _mediator.Send(command, ct));
     }
 
     [HttpPatch("accounts/{id:guid}/enable")]
     [Authorize(Policy = $"perm:{AccountingPermissions.Update}")]
-    public async Task<IActionResult> EnableAccount(Guid id, CancellationToken ct)
-        => this.ToOkOrBadRequest(await _mediator.Send(new EnableAccountCommand(id), ct));
+    public async Task<IActionResult> EnableAccount(Guid id, CancellationToken ct) =>
+        this.ToOkOrBadRequest(await _mediator.Send(new EnableAccountCommand(id), ct));
 
     [HttpPatch("accounts/{id:guid}/disable")]
     [Authorize(Policy = $"perm:{AccountingPermissions.Delete}")]
-    public async Task<IActionResult> DisableAccount(Guid id, CancellationToken ct)
-        => this.ToOkOrBadRequest(await _mediator.Send(new DisableAccountCommand(id), ct));
+    public async Task<IActionResult> DisableAccount(Guid id, CancellationToken ct) =>
+        this.ToOkOrBadRequest(await _mediator.Send(new DisableAccountCommand(id), ct));
 
     // ══════════════════════════════════════════════════════════════════════
     // ACCOUNTING PERIODS
@@ -70,29 +78,30 @@ public sealed class AccountingController : ControllerBase
 
     [HttpGet("accounting-periods")]
     [Authorize(Policy = $"perm:{AccountingPermissions.View}")]
-    public async Task<IActionResult> GetAccountingPeriods(CancellationToken ct)
-        => this.ToOkOrBadRequest(await _mediator.Send(new GetAccountingPeriodsQuery(), ct), "OK");
+    public async Task<IActionResult> GetAccountingPeriods(CancellationToken ct) =>
+        this.ToOkOrBadRequest(await _mediator.Send(new GetAccountingPeriodsQuery(), ct), "OK");
 
     [HttpGet("accounting-periods/{id:guid}")]
     [Authorize(Policy = $"perm:{AccountingPermissions.View}")]
-    public async Task<IActionResult> GetAccountingPeriodById(Guid id, CancellationToken ct)
-        => this.ToOkOrNotFound(await _mediator.Send(new GetAccountingPeriodByIdQuery(id), ct));
+    public async Task<IActionResult> GetAccountingPeriodById(Guid id, CancellationToken ct) =>
+        this.ToOkOrNotFound(await _mediator.Send(new GetAccountingPeriodByIdQuery(id), ct));
 
     [HttpPost("accounting-periods")]
     [Authorize(Policy = $"perm:{AccountingPermissions.Create}")]
     public async Task<IActionResult> CreateAccountingPeriod(
-        [FromBody] CreateAccountingPeriodCommand command, CancellationToken ct)
-        => this.ToCreatedOrBadRequest(await _mediator.Send(command, ct));
+        [FromBody] CreateAccountingPeriodCommand command,
+        CancellationToken ct
+    ) => this.ToCreatedOrBadRequest(await _mediator.Send(command, ct));
 
     [HttpPatch("accounting-periods/{id:guid}/close")]
     [Authorize(Policy = $"perm:{AccountingPermissions.Update}")]
-    public async Task<IActionResult> CloseAccountingPeriod(Guid id, CancellationToken ct)
-        => this.ToOkOrBadRequest(await _mediator.Send(new CloseAccountingPeriodCommand(id), ct));
+    public async Task<IActionResult> CloseAccountingPeriod(Guid id, CancellationToken ct) =>
+        this.ToOkOrBadRequest(await _mediator.Send(new CloseAccountingPeriodCommand(id), ct));
 
     [HttpPatch("accounting-periods/{id:guid}/lock")]
     [Authorize(Policy = $"perm:{AccountingPermissions.Update}")]
-    public async Task<IActionResult> LockAccountingPeriod(Guid id, CancellationToken ct)
-        => this.ToOkOrBadRequest(await _mediator.Send(new LockAccountingPeriodCommand(id), ct));
+    public async Task<IActionResult> LockAccountingPeriod(Guid id, CancellationToken ct) =>
+        this.ToOkOrBadRequest(await _mediator.Send(new LockAccountingPeriodCommand(id), ct));
 
     // ══════════════════════════════════════════════════════════════════════
     // POSTING RULES
@@ -100,35 +109,41 @@ public sealed class AccountingController : ControllerBase
 
     [HttpGet("posting-rules")]
     [Authorize(Policy = $"perm:{AccountingPermissions.View}")]
-    public async Task<IActionResult> GetPostingRules(CancellationToken ct)
-        => this.ToOkOrBadRequest(await _mediator.Send(new GetPostingRulesQuery(), ct), "OK");
+    public async Task<IActionResult> GetPostingRules(CancellationToken ct) =>
+        this.ToOkOrBadRequest(await _mediator.Send(new GetPostingRulesQuery(), ct), "OK");
 
     [HttpGet("posting-rules/{id:guid}")]
     [Authorize(Policy = $"perm:{AccountingPermissions.View}")]
-    public async Task<IActionResult> GetPostingRuleById(Guid id, CancellationToken ct)
-        => this.ToOkOrNotFound(await _mediator.Send(new GetPostingRuleByIdQuery(id), ct));
+    public async Task<IActionResult> GetPostingRuleById(Guid id, CancellationToken ct) =>
+        this.ToOkOrNotFound(await _mediator.Send(new GetPostingRuleByIdQuery(id), ct));
 
     [HttpPost("posting-rules")]
     [Authorize(Policy = $"perm:{AccountingPermissions.Create}")]
-    public async Task<IActionResult> CreatePostingRule([FromBody] CreatePostingRuleCommand command, CancellationToken ct)
-        => this.ToCreatedOrBadRequest(await _mediator.Send(command, ct));
+    public async Task<IActionResult> CreatePostingRule(
+        [FromBody] CreatePostingRuleCommand command,
+        CancellationToken ct
+    ) => this.ToCreatedOrBadRequest(await _mediator.Send(command, ct));
 
     [HttpPatch("posting-rules/{id:guid}")]
     [Authorize(Policy = $"perm:{AccountingPermissions.Update}")]
     public async Task<IActionResult> UpdatePostingRule(
-        Guid id, [FromBody] UpdatePostingRuleCommand command, CancellationToken ct)
+        Guid id,
+        [FromBody] UpdatePostingRuleCommand command,
+        CancellationToken ct
+    )
     {
-        if (id != command.Id) return this.ApiBadRequest("El ID no coincide.");
+        if (id != command.Id)
+            return this.ApiBadRequest("El ID no coincide.");
         return this.ToOkOrBadRequest(await _mediator.Send(command, ct));
     }
 
     [HttpPatch("posting-rules/{id:guid}/enable")]
     [Authorize(Policy = $"perm:{AccountingPermissions.Update}")]
-    public async Task<IActionResult> EnablePostingRule(Guid id, CancellationToken ct)
-        => this.ToOkOrBadRequest(await _mediator.Send(new EnablePostingRuleCommand(id), ct));
+    public async Task<IActionResult> EnablePostingRule(Guid id, CancellationToken ct) =>
+        this.ToOkOrBadRequest(await _mediator.Send(new EnablePostingRuleCommand(id), ct));
 
     [HttpPatch("posting-rules/{id:guid}/disable")]
     [Authorize(Policy = $"perm:{AccountingPermissions.Delete}")]
-    public async Task<IActionResult> DisablePostingRule(Guid id, CancellationToken ct)
-        => this.ToOkOrBadRequest(await _mediator.Send(new DisablePostingRuleCommand(id), ct));
+    public async Task<IActionResult> DisablePostingRule(Guid id, CancellationToken ct) =>
+        this.ToOkOrBadRequest(await _mediator.Send(new DisablePostingRuleCommand(id), ct));
 }

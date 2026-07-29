@@ -11,15 +11,19 @@ public sealed class NavigationMenuAdminService : INavigationMenuAdminService
 
     public NavigationMenuAdminService(ErpDbContext db) => _db = db;
 
-    public async Task<AdminNavigationMenuResponse> GetMenuTreeAsync(CancellationToken cancellationToken = default)
+    public async Task<AdminNavigationMenuResponse> GetMenuTreeAsync(
+        CancellationToken cancellationToken = default
+    )
     {
-        var groups = await _db.UiNavGroups.AsNoTracking()
+        var groups = await _db
+            .UiNavGroups.AsNoTracking()
             .Where(g => g.IsActive)
             .OrderBy(g => g.SortOrder)
             .ThenBy(g => g.Code)
             .ToListAsync(cancellationToken);
 
-        var items = await _db.UiNavItems.AsNoTracking()
+        var items = await _db
+            .UiNavItems.AsNoTracking()
             .Where(i => i.IsActive)
             .OrderBy(i => i.SortOrder)
             .ThenBy(i => i.RoutePath)
@@ -31,17 +35,20 @@ public sealed class NavigationMenuAdminService : INavigationMenuAdminService
         foreach (var g in groups)
         {
             var list = byGroup.TryGetValue(g.Id, out var row) ? row : [];
-            groupDtos.Add(new AdminNavGroupRowDto(
-                g.Id,
-                g.Code,
-                g.Icon,
-                g.LabelKey,
-                g.SortOrder,
-                g.ModuleKey,
-                ParseRoles(g.RolesCsv),
-                g.RequirePlatformPanel,
-                g.IsActive,
-                BuildAdminItemTree(list, null)));
+            groupDtos.Add(
+                new AdminNavGroupRowDto(
+                    g.Id,
+                    g.Code,
+                    g.Icon,
+                    g.LabelKey,
+                    g.SortOrder,
+                    g.ModuleKey,
+                    ParseRoles(g.RolesCsv),
+                    g.RequirePlatformPanel,
+                    g.IsActive,
+                    BuildAdminItemTree(list, null)
+                )
+            );
         }
 
         return new AdminNavigationMenuResponse(groupDtos);
@@ -49,9 +56,11 @@ public sealed class NavigationMenuAdminService : INavigationMenuAdminService
 
     public async Task<(bool Ok, string? Error)> ReorderGroupsAsync(
         IReadOnlyList<Guid> orderedGroupIds,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default
+    )
     {
-        var activeIds = await _db.UiNavGroups.AsNoTracking()
+        var activeIds = await _db
+            .UiNavGroups.AsNoTracking()
             .Where(g => g.IsActive)
             .Select(g => g.Id)
             .ToListAsync(cancellationToken);
@@ -72,7 +81,8 @@ public sealed class NavigationMenuAdminService : INavigationMenuAdminService
         for (var i = 0; i < orderedGroupIds.Count; i++)
         {
             var id = orderedGroupIds[i];
-            await _db.UiNavGroups.Where(g => g.Id == id)
+            await _db
+                .UiNavGroups.Where(g => g.Id == id)
                 .ExecuteUpdateAsync(s => s.SetProperty(g => g.SortOrder, i), cancellationToken);
         }
 
@@ -81,7 +91,8 @@ public sealed class NavigationMenuAdminService : INavigationMenuAdminService
 
     public async Task<(bool Ok, string? Error)> ReorderItemLevelsAsync(
         IReadOnlyList<NavItemSiblingOrderDto> levels,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default
+    )
     {
         var seenLevelKeys = new HashSet<(Guid GroupId, Guid? ParentItemId)>();
         var itemParent = new Dictionary<Guid, Guid?>();
@@ -109,13 +120,17 @@ public sealed class NavigationMenuAdminService : INavigationMenuAdminService
             return (true, null);
 
         var groupIds = itemGroup.Values.Distinct().ToList();
-        var dbItems = await _db.UiNavItems.AsNoTracking()
+        var dbItems = await _db
+            .UiNavItems.AsNoTracking()
             .Where(i => i.IsActive && groupIds.Contains(i.GroupId))
             .Select(i => new { i.Id, i.GroupId })
             .ToListAsync(cancellationToken);
 
         if (dbItems.Count != itemParent.Count)
-            return (false, "La estructura debe incluir todos los ítems activos de los grupos afectados.");
+            return (
+                false,
+                "La estructura debe incluir todos los ítems activos de los grupos afectados."
+            );
 
         foreach (var row in dbItems)
         {
@@ -156,10 +171,14 @@ public sealed class NavigationMenuAdminService : INavigationMenuAdminService
             {
                 var newParent = itemParent[id];
                 var sort = itemSort[id];
-                await _db.UiNavItems.Where(x => x.Id == id)
+                await _db
+                    .UiNavItems.Where(x => x.Id == id)
                     .ExecuteUpdateAsync(
-                        s => s.SetProperty(x => x.ParentItemId, newParent).SetProperty(x => x.SortOrder, sort),
-                        cancellationToken);
+                        s =>
+                            s.SetProperty(x => x.ParentItemId, newParent)
+                                .SetProperty(x => x.SortOrder, sort),
+                        cancellationToken
+                    );
             }
 
             await tr.CommitAsync(cancellationToken);
@@ -175,7 +194,8 @@ public sealed class NavigationMenuAdminService : INavigationMenuAdminService
 
     public async Task<(bool Ok, Guid? NewId, string? Error)> CreateNavItemAsync(
         CreateNavItemRequest request,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default
+    )
     {
         var route = (request.RoutePath ?? string.Empty).Trim();
         if (route.Length == 0 || !route.StartsWith('/'))
@@ -185,28 +205,44 @@ public sealed class NavigationMenuAdminService : INavigationMenuAdminService
         if (label.Length == 0 || label.Length > 200)
             return (false, null, "El texto a mostrar es obligatorio (máx. 200 caracteres).");
 
-        var groupOk = await _db.UiNavGroups.AsNoTracking()
+        var groupOk = await _db
+            .UiNavGroups.AsNoTracking()
             .AnyAsync(g => g.Id == request.GroupId && g.IsActive, cancellationToken);
         if (!groupOk)
             return (false, null, "Grupo no encontrado o inactivo.");
 
         if (request.ParentItemId is { } pid)
         {
-            var parentOk = await _db.UiNavItems.AsNoTracking()
-                .AnyAsync(i => i.Id == pid && i.GroupId == request.GroupId && i.IsActive, cancellationToken);
+            var parentOk = await _db
+                .UiNavItems.AsNoTracking()
+                .AnyAsync(
+                    i => i.Id == pid && i.GroupId == request.GroupId && i.IsActive,
+                    cancellationToken
+                );
             if (!parentOk)
                 return (false, null, "El ítem padre no existe o no pertenece al grupo.");
         }
 
-        var routeTaken = await _db.UiNavItems.AsNoTracking()
-            .AnyAsync(i => i.GroupId == request.GroupId && i.RoutePath == route && i.IsActive, cancellationToken);
+        var routeTaken = await _db
+            .UiNavItems.AsNoTracking()
+            .AnyAsync(
+                i => i.GroupId == request.GroupId && i.RoutePath == route && i.IsActive,
+                cancellationToken
+            );
         if (routeTaken)
             return (false, null, "Ya existe un ítem activo con esa ruta en el grupo.");
 
-        var maxOrder = await _db.UiNavItems.AsNoTracking()
-            .Where(i => i.GroupId == request.GroupId && i.ParentItemId == request.ParentItemId && i.IsActive)
-            .Select(i => (int?)i.SortOrder)
-            .MaxAsync(cancellationToken) ?? -1;
+        var maxOrder =
+            await _db
+                .UiNavItems.AsNoTracking()
+                .Where(i =>
+                    i.GroupId == request.GroupId
+                    && i.ParentItemId == request.ParentItemId
+                    && i.IsActive
+                )
+                .Select(i => (int?)i.SortOrder)
+                .MaxAsync(cancellationToken)
+            ?? -1;
 
         var labelKey = $"nav.custom.{Guid.NewGuid():N}";
         var id = Guid.NewGuid();
@@ -222,7 +258,8 @@ public sealed class NavigationMenuAdminService : INavigationMenuAdminService
             null,
             true,
             request.ParentItemId,
-            label);
+            label
+        );
 
         _db.UiNavItems.Add(entity);
         await _db.SaveChangesAsync(cancellationToken);
@@ -232,9 +269,11 @@ public sealed class NavigationMenuAdminService : INavigationMenuAdminService
     public async Task<(bool Ok, string? Error)> UpdateNavItemAsync(
         Guid itemId,
         UpdateNavItemRequest request,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default
+    )
     {
-        var row = await _db.UiNavItems.AsNoTracking()
+        var row = await _db
+            .UiNavItems.AsNoTracking()
             .Where(i => i.Id == itemId && i.IsActive)
             .Select(i => new { i.GroupId })
             .FirstOrDefaultAsync(cancellationToken);
@@ -249,36 +288,55 @@ public sealed class NavigationMenuAdminService : INavigationMenuAdminService
         if (route.Length == 0 || !route.StartsWith('/'))
             return (false, "La ruta debe empezar por /.");
 
-        var routeTaken = await _db.UiNavItems.AsNoTracking()
-            .AnyAsync(i => i.GroupId == row.GroupId && i.RoutePath == route && i.IsActive && i.Id != itemId, cancellationToken);
+        var routeTaken = await _db
+            .UiNavItems.AsNoTracking()
+            .AnyAsync(
+                i =>
+                    i.GroupId == row.GroupId
+                    && i.RoutePath == route
+                    && i.IsActive
+                    && i.Id != itemId,
+                cancellationToken
+            );
         if (routeTaken)
             return (false, "Ya existe un ítem activo con esa ruta en el grupo.");
 
-        var moduleKey = string.IsNullOrWhiteSpace(request.ModuleKey) ? null : request.ModuleKey.Trim().ToLowerInvariant();
-        var permissionKey = string.IsNullOrWhiteSpace(request.PermissionKey) ? null : request.PermissionKey.Trim();
+        var moduleKey = string.IsNullOrWhiteSpace(request.ModuleKey)
+            ? null
+            : request.ModuleKey.Trim().ToLowerInvariant();
+        var permissionKey = string.IsNullOrWhiteSpace(request.PermissionKey)
+            ? null
+            : request.PermissionKey.Trim();
 
-        await _db.UiNavItems.Where(i => i.Id == itemId)
+        await _db
+            .UiNavItems.Where(i => i.Id == itemId)
             .ExecuteUpdateAsync(
-                s => s
-                    .SetProperty(x => x.DisplayLabel, displayLabel)
-                    .SetProperty(x => x.RoutePath, route)
-                    .SetProperty(x => x.ModuleKey, moduleKey)
-                    .SetProperty(x => x.PermissionKey, permissionKey),
-                cancellationToken);
+                s =>
+                    s.SetProperty(x => x.DisplayLabel, displayLabel)
+                        .SetProperty(x => x.RoutePath, route)
+                        .SetProperty(x => x.ModuleKey, moduleKey)
+                        .SetProperty(x => x.PermissionKey, permissionKey),
+                cancellationToken
+            );
 
         return (true, null);
     }
 
-    public async Task<(bool Ok, string? Error)> DeleteNavItemAsync(Guid itemId, CancellationToken cancellationToken = default)
+    public async Task<(bool Ok, string? Error)> DeleteNavItemAsync(
+        Guid itemId,
+        CancellationToken cancellationToken = default
+    )
     {
-        var row = await _db.UiNavItems.AsNoTracking()
+        var row = await _db
+            .UiNavItems.AsNoTracking()
             .Where(i => i.Id == itemId && i.IsActive)
             .Select(i => new { i.GroupId })
             .FirstOrDefaultAsync(cancellationToken);
         if (row is null)
             return (false, "Ítem no encontrado o ya estaba inactivo.");
 
-        var all = await _db.UiNavItems.AsNoTracking()
+        var all = await _db
+            .UiNavItems.AsNoTracking()
             .Where(i => i.GroupId == row.GroupId && i.IsActive)
             .Select(i => new { i.Id, i.ParentItemId })
             .ToListAsync(cancellationToken);
@@ -314,7 +372,8 @@ public sealed class NavigationMenuAdminService : INavigationMenuAdminService
 
         foreach (var id in toDeactivate)
         {
-            await _db.UiNavItems.Where(x => x.Id == id && x.IsActive)
+            await _db
+                .UiNavItems.Where(x => x.Id == id && x.IsActive)
                 .ExecuteUpdateAsync(s => s.SetProperty(x => x.IsActive, false), cancellationToken);
         }
 
@@ -323,7 +382,8 @@ public sealed class NavigationMenuAdminService : INavigationMenuAdminService
 
     private static List<AdminNavItemRowDto> BuildAdminItemTree(
         IReadOnlyList<UiNavItem> groupItems,
-        Guid? parentItemId)
+        Guid? parentItemId
+    )
     {
         var children = groupItems
             .Where(i => i.ParentItemId == parentItemId)
@@ -335,18 +395,21 @@ public sealed class NavigationMenuAdminService : INavigationMenuAdminService
         foreach (var i in children)
         {
             var nested = BuildAdminItemTree(groupItems, i.Id);
-            list.Add(new AdminNavItemRowDto(
-                i.Id,
-                i.ParentItemId,
-                i.RoutePath,
-                i.LabelKey,
-                i.DisplayLabel,
-                i.SortOrder,
-                i.ModuleKey,
-                i.PermissionKey,
-                ParseKeysAny(i.PermissionKeysAnyJson),
-                i.IsActive,
-                nested));
+            list.Add(
+                new AdminNavItemRowDto(
+                    i.Id,
+                    i.ParentItemId,
+                    i.RoutePath,
+                    i.LabelKey,
+                    i.DisplayLabel,
+                    i.SortOrder,
+                    i.ModuleKey,
+                    i.PermissionKey,
+                    ParseKeysAny(i.PermissionKeysAnyJson),
+                    i.IsActive,
+                    nested
+                )
+            );
         }
 
         return list;
@@ -354,14 +417,19 @@ public sealed class NavigationMenuAdminService : INavigationMenuAdminService
 
     private static List<string>? ParseRoles(string? csv)
     {
-        if (string.IsNullOrWhiteSpace(csv)) return null;
-        var parts = csv.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        if (string.IsNullOrWhiteSpace(csv))
+            return null;
+        var parts = csv.Split(
+            ',',
+            StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries
+        );
         return parts.Length == 0 ? null : parts.ToList();
     }
 
     private static List<string>? ParseKeysAny(string? json)
     {
-        if (string.IsNullOrWhiteSpace(json)) return null;
+        if (string.IsNullOrWhiteSpace(json))
+            return null;
         try
         {
             var arr = System.Text.Json.JsonSerializer.Deserialize<List<string>>(json);

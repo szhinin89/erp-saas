@@ -8,4 +8,5 @@ public record SriConfigurationDto(
     DateTime? CertUploadedAtUtc,
     int Environment,
     int EmissionType,
-    string WsdlUrl);
+    string WsdlUrl
+);

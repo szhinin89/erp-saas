@@ -28,19 +28,22 @@ public sealed class RidePdfDocumentRepository : IRidePdfDocumentRepository
         string brandingVersion,
         string rendererVersion,
         string rideSpecificationVersion,
-        CancellationToken ct = default)
-        => _db.RidePdfDocuments.FirstOrDefaultAsync(
-            x => x.TenantId == tenantId
-                 && x.ElectronicDocumentId == electronicDocumentId
-                 && x.SourceXmlHash == sourceXmlHash
-                 && x.TemplateVersion == templateVersion
-                 && x.BrandingVersion == brandingVersion
-                 && x.RendererVersion == rendererVersion
-                 && x.RideSpecificationVersion == rideSpecificationVersion,
-            ct);
+        CancellationToken ct = default
+    ) =>
+        _db.RidePdfDocuments.FirstOrDefaultAsync(
+            x =>
+                x.TenantId == tenantId
+                && x.ElectronicDocumentId == electronicDocumentId
+                && x.SourceXmlHash == sourceXmlHash
+                && x.TemplateVersion == templateVersion
+                && x.BrandingVersion == brandingVersion
+                && x.RendererVersion == rendererVersion
+                && x.RideSpecificationVersion == rideSpecificationVersion,
+            ct
+        );
 
-    public Task AddAsync(RidePdfDocument document, CancellationToken ct = default)
-        => _db.RidePdfDocuments.AddAsync(document, ct).AsTask();
+    public Task AddAsync(RidePdfDocument document, CancellationToken ct = default) =>
+        _db.RidePdfDocuments.AddAsync(document, ct).AsTask();
 
     /// <summary>
     /// H4 (ADR-025 §14, Fase 8): dos generaciones concurrentes de la MISMA huella exacta violan
@@ -58,8 +61,10 @@ public sealed class RidePdfDocumentRepository : IRidePdfDocumentRepository
         {
             await _db.SaveChangesAsync(ct);
         }
-        catch (Exception ex) when (
-            _dbEx.TryGetUniqueViolation(ex, out var info) && info.ConstraintName == FingerprintConstraintName)
+        catch (Exception ex)
+            when (_dbEx.TryGetUniqueViolation(ex, out var info)
+                && info.ConstraintName == FingerprintConstraintName
+            )
         {
             foreach (var entry in _db.ChangeTracker.Entries<RidePdfDocument>().ToList())
                 entry.State = EntityState.Detached;

@@ -1,4 +1,4 @@
-﻿namespace ERP.Domain.Common;
+namespace ERP.Domain.Common;
 
 /// <summary>
 /// Tipo de note comercial. Concepto de negocio puro — sin conversiones ni mapeos.
@@ -7,5 +7,5 @@
 public enum NoteType
 {
     Credit,
-    Debit
+    Debit,
 }

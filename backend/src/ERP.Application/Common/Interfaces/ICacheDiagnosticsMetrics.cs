@@ -16,4 +16,5 @@ public sealed record CacheMetricsSnapshot(
     long Sets,
     double HitRatio,
     IReadOnlyDictionary<string, long> HitsByCategory,
-    IReadOnlyDictionary<string, long> MissesByCategory);
+    IReadOnlyDictionary<string, long> MissesByCategory
+);

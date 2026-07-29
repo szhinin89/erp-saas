@@ -20,5 +20,5 @@ public sealed record AssignBusinessPartnerRoleCommand(
     SupplierRoleConfig? SupplierConfig = null,
     CarrierRoleConfig? CarrierConfig = null,
     CustomerRoleConfig? CustomerConfig = null,
-    SupplierClassificationConfig? ClassificationConfig = null)
-    : IRequest<Result<BusinessPartnerRoleDto>>, ITenantScopedRequest;
+    SupplierClassificationConfig? ClassificationConfig = null
+) : IRequest<Result<BusinessPartnerRoleDto>>, ITenantScopedRequest;

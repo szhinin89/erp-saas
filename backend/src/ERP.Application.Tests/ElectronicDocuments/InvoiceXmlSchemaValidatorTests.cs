@@ -1,8 +1,8 @@
+using System.Xml.Schema;
 using ERP.Application.Modules.ElectronicDocuments.DTOs;
 using ERP.Application.Modules.ElectronicDocuments.SchemaValidation;
 using ERP.Domain.Modules.ElectronicDocuments.Enums;
 using FluentAssertions;
-using System.Xml.Schema;
 
 namespace ERP.Application.Tests.ElectronicDocuments;
 
@@ -11,20 +11,25 @@ public sealed class InvoiceXmlSchemaValidatorTests
     private sealed class FakeSchemaProvider : IXmlSchemaProvider
     {
         private readonly XmlSchemaSet? _schemaSet;
+
         public FakeSchemaProvider(XmlSchemaSet? schemaSet) => _schemaSet = schemaSet;
 
         public Task<XmlSchemaSet?> GetSchemaSetAsync(
-            ElectronicDocumentType documentType, string schemaVersion, CancellationToken ct = default)
-            => Task.FromResult(_schemaSet);
+            ElectronicDocumentType documentType,
+            string schemaVersion,
+            CancellationToken ct = default
+        ) => Task.FromResult(_schemaSet);
     }
 
-    private static ElectronicDocumentXml SampleXml(string xml) => new(
-        Xml: xml,
-        Encoding: "UTF-8",
-        Version: "1.1.0",
-        DocumentType: ElectronicDocumentType.Invoice,
-        AccessKey: new string('1', 49),
-        GeneratedAtUtc: DateTime.UtcNow);
+    private static ElectronicDocumentXml SampleXml(string xml) =>
+        new(
+            Xml: xml,
+            Encoding: "UTF-8",
+            Version: "1.1.0",
+            DocumentType: ElectronicDocumentType.Invoice,
+            AccessKey: new string('1', 49),
+            GeneratedAtUtc: DateTime.UtcNow
+        );
 
     [Fact]
     public async Task ValidateAsync_when_schema_not_available_returns_invalid_without_throwing()
@@ -63,7 +68,10 @@ public sealed class InvoiceXmlSchemaValidatorTests
     private static XmlSchemaSet BuildMinimalSchemaSet()
     {
         using var reader = System.Xml.XmlReader.Create(new StringReader(MinimalXsd));
-        var schema = XmlSchema.Read(reader, (_, e) => throw new InvalidOperationException(e.Message))!;
+        var schema = XmlSchema.Read(
+            reader,
+            (_, e) => throw new InvalidOperationException(e.Message)
+        )!;
         var set = new XmlSchemaSet();
         set.Add(schema);
         set.Compile();
@@ -73,8 +81,12 @@ public sealed class InvoiceXmlSchemaValidatorTests
     [Fact]
     public async Task ValidateAsync_valid_xml_returns_no_errors()
     {
-        var validator = new InvoiceXmlSchemaValidator(new FakeSchemaProvider(BuildMinimalSchemaSet()));
-        var xml = SampleXml("<root><requiredField>abc</requiredField><numberField>42</numberField></root>");
+        var validator = new InvoiceXmlSchemaValidator(
+            new FakeSchemaProvider(BuildMinimalSchemaSet())
+        );
+        var xml = SampleXml(
+            "<root><requiredField>abc</requiredField><numberField>42</numberField></root>"
+        );
 
         var result = await validator.ValidateAsync(xml);
 
@@ -85,7 +97,9 @@ public sealed class InvoiceXmlSchemaValidatorTests
     [Fact]
     public async Task ValidateAsync_missing_required_node_is_reported()
     {
-        var validator = new InvoiceXmlSchemaValidator(new FakeSchemaProvider(BuildMinimalSchemaSet()));
+        var validator = new InvoiceXmlSchemaValidator(
+            new FakeSchemaProvider(BuildMinimalSchemaSet())
+        );
         var xml = SampleXml("<root><numberField>42</numberField></root>");
 
         var result = await validator.ValidateAsync(xml);
@@ -97,8 +111,12 @@ public sealed class InvoiceXmlSchemaValidatorTests
     [Fact]
     public async Task ValidateAsync_wrong_type_is_reported()
     {
-        var validator = new InvoiceXmlSchemaValidator(new FakeSchemaProvider(BuildMinimalSchemaSet()));
-        var xml = SampleXml("<root><requiredField>abc</requiredField><numberField>not-a-number</numberField></root>");
+        var validator = new InvoiceXmlSchemaValidator(
+            new FakeSchemaProvider(BuildMinimalSchemaSet())
+        );
+        var xml = SampleXml(
+            "<root><requiredField>abc</requiredField><numberField>not-a-number</numberField></root>"
+        );
 
         var result = await validator.ValidateAsync(xml);
 
@@ -109,9 +127,12 @@ public sealed class InvoiceXmlSchemaValidatorTests
     [Fact]
     public async Task ValidateAsync_length_violation_is_reported()
     {
-        var validator = new InvoiceXmlSchemaValidator(new FakeSchemaProvider(BuildMinimalSchemaSet()));
+        var validator = new InvoiceXmlSchemaValidator(
+            new FakeSchemaProvider(BuildMinimalSchemaSet())
+        );
         var xml = SampleXml(
-            "<root><requiredField>abc</requiredField><numberField>1</numberField><shortField>TOO-LONG</shortField></root>");
+            "<root><requiredField>abc</requiredField><numberField>1</numberField><shortField>TOO-LONG</shortField></root>"
+        );
 
         var result = await validator.ValidateAsync(xml);
 
@@ -122,7 +143,9 @@ public sealed class InvoiceXmlSchemaValidatorTests
     [Fact]
     public async Task ValidateAsync_malformed_xml_is_reported_as_error_not_exception()
     {
-        var validator = new InvoiceXmlSchemaValidator(new FakeSchemaProvider(BuildMinimalSchemaSet()));
+        var validator = new InvoiceXmlSchemaValidator(
+            new FakeSchemaProvider(BuildMinimalSchemaSet())
+        );
         var xml = SampleXml("<root><requiredField>abc</requiredField>");
 
         var result = await validator.ValidateAsync(xml);
@@ -134,11 +157,14 @@ public sealed class InvoiceXmlSchemaValidatorTests
     [Fact]
     public async Task ValidateAsync_accumulates_multiple_errors_in_a_single_pass()
     {
-        var validator = new InvoiceXmlSchemaValidator(new FakeSchemaProvider(BuildMinimalSchemaSet()));
+        var validator = new InvoiceXmlSchemaValidator(
+            new FakeSchemaProvider(BuildMinimalSchemaSet())
+        );
         // numberField con tipo incorrecto Y shortField que excede la longitud máxima:
         // dos violaciones de contenido independientes, ambas en la misma pasada.
         var xml = SampleXml(
-            "<root><requiredField>abc</requiredField><numberField>not-a-number</numberField><shortField>TOO-LONG</shortField></root>");
+            "<root><requiredField>abc</requiredField><numberField>not-a-number</numberField><shortField>TOO-LONG</shortField></root>"
+        );
 
         var result = await validator.ValidateAsync(xml);
 

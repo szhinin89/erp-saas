@@ -24,7 +24,8 @@ public sealed record ItemPricingSimulationRowDto(
     PricingRuleSummaryDto RuleSummary,
     decimal NetPrice,
     decimal? MaxDiscountPercent,
-    decimal MinAllowedPrice);
+    decimal MinAllowedPrice
+);
 
 /// <summary>
 /// Simulación de precio contra TODAS las listas de precio activas y vigentes, en una sola
@@ -46,7 +47,10 @@ public sealed record GetItemPricingSimulationQuery(
 ) : IRequest<Result<IReadOnlyList<ItemPricingSimulationRowDto>>>, ICompanyScopedRequest;
 
 public sealed class GetItemPricingSimulationQueryHandler
-    : IRequestHandler<GetItemPricingSimulationQuery, Result<IReadOnlyList<ItemPricingSimulationRowDto>>>
+    : IRequestHandler<
+        GetItemPricingSimulationQuery,
+        Result<IReadOnlyList<ItemPricingSimulationRowDto>>
+    >
 {
     private readonly IItemRepository _items;
     private readonly IPriceListRepository _priceLists;
@@ -56,16 +60,26 @@ public sealed class GetItemPricingSimulationQueryHandler
     private readonly ICurrentTenant _t;
 
     public GetItemPricingSimulationQueryHandler(
-        IItemRepository items, IPriceListRepository priceLists, IPricingRuleRepository rules,
-        IPriceListItemRepository assignments, IPricingAdjustmentStrategyResolver strategies,
-        ICurrentTenant t)
+        IItemRepository items,
+        IPriceListRepository priceLists,
+        IPricingRuleRepository rules,
+        IPriceListItemRepository assignments,
+        IPricingAdjustmentStrategyResolver strategies,
+        ICurrentTenant t
+    )
     {
-        _items = items; _priceLists = priceLists; _rules = rules;
-        _assignments = assignments; _strategies = strategies; _t = t;
+        _items = items;
+        _priceLists = priceLists;
+        _rules = rules;
+        _assignments = assignments;
+        _strategies = strategies;
+        _t = t;
     }
 
     public async Task<Result<IReadOnlyList<ItemPricingSimulationRowDto>>> Handle(
-        GetItemPricingSimulationQuery q, CancellationToken ct)
+        GetItemPricingSimulationQuery q,
+        CancellationToken ct
+    )
     {
         var tenantId = _t.TenantId;
 
@@ -78,7 +92,9 @@ public sealed class GetItemPricingSimulationQueryHandler
         {
             var item = await _items.GetByIdLightAsync(q.ItemId.Value, tenantId, ct);
             if (item is null)
-                return Result<IReadOnlyList<ItemPricingSimulationRowDto>>.NotFound("Ítem no encontrado.");
+                return Result<IReadOnlyList<ItemPricingSimulationRowDto>>.NotFound(
+                    "Ítem no encontrado."
+                );
 
             basePrice = q.BaseSalePriceOverride ?? item.BaseSalePrice;
             maxDiscount = q.MaxDiscountPercentOverride ?? item.SaleConfig.MaxDiscountPercent;
@@ -103,7 +119,9 @@ public sealed class GetItemPricingSimulationQueryHandler
         }
 
         if (!basePrice.HasValue)
-            return Result<IReadOnlyList<ItemPricingSimulationRowDto>>.Success(Array.Empty<ItemPricingSimulationRowDto>());
+            return Result<IReadOnlyList<ItemPricingSimulationRowDto>>.Success(
+                Array.Empty<ItemPricingSimulationRowDto>()
+            );
 
         // 2 queries totales (o 1 sin ItemId), sin importar cuántas listas existan (nunca N+1).
         var today = DateOnly.FromDateTime(DateTime.UtcNow);
@@ -115,20 +133,38 @@ public sealed class GetItemPricingSimulationQueryHandler
         foreach (var priceList in activeLists)
         {
             itemRulesByList.TryGetValue(priceList.Id, out var itemRule);
-            var (netPrice, _) = PricingCalculation.Resolve(basePrice.Value, itemRule, priceList, _strategies);
+            var (netPrice, _) = PricingCalculation.Resolve(
+                basePrice.Value,
+                itemRule,
+                priceList,
+                _strategies
+            );
             var ruleSummary = PricingCalculation.Summarize(itemRule, priceList);
 
             // Precio neto (sin impuestos) — el piso de descuento se calcula sobre el mismo
             // precio neto, nunca sobre un precio con IVA/ICE incluido (eso es responsabilidad
             // del consumidor tributario, no de Pricing).
             var minAllowedPrice = maxDiscount.HasValue
-                ? Math.Round(netPrice * (1 - maxDiscount.Value / 100m), 2, MidpointRounding.AwayFromZero)
+                ? Math.Round(
+                    netPrice * (1 - maxDiscount.Value / 100m),
+                    2,
+                    MidpointRounding.AwayFromZero
+                )
                 : netPrice;
 
-            rows.Add(new ItemPricingSimulationRowDto(
-                priceList.Id, priceList.Code, priceList.Name, priceList.CurrencyCode,
-                assignedListIds.Contains(priceList.Id),
-                ruleSummary, netPrice, maxDiscount, minAllowedPrice));
+            rows.Add(
+                new ItemPricingSimulationRowDto(
+                    priceList.Id,
+                    priceList.Code,
+                    priceList.Name,
+                    priceList.CurrencyCode,
+                    assignedListIds.Contains(priceList.Id),
+                    ruleSummary,
+                    netPrice,
+                    maxDiscount,
+                    minAllowedPrice
+                )
+            );
         }
 
         return Result<IReadOnlyList<ItemPricingSimulationRowDto>>.Success(rows);

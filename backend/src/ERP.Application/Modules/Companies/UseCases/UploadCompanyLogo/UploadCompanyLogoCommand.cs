@@ -5,4 +5,5 @@ using MediatR;
 
 namespace ERP.Application.Modules.Companies.UseCases.UploadCompanyLogo;
 
-public sealed record UploadCompanyLogoCommand(MediaUploadContent File) : IRequest<Result<CompanyProfileDto>>;
+public sealed record UploadCompanyLogoCommand(MediaUploadContent File)
+    : IRequest<Result<CompanyProfileDto>>;

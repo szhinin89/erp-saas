@@ -5,9 +5,9 @@ using MediatR;
 
 namespace ERP.Application.Modules.Sales.UseCases;
 
-public sealed record SearchItemsForInvoiceQuery(
-    string Query, Guid? WarehouseId, int PageSize = 10)
-    : IRequest<Result<IReadOnlyList<InvoiceItemSearchResultDto>>>, IBranchScopedRequest;
+public sealed record SearchItemsForInvoiceQuery(string Query, Guid? WarehouseId, int PageSize = 10)
+    : IRequest<Result<IReadOnlyList<InvoiceItemSearchResultDto>>>,
+        IBranchScopedRequest;
 
 public sealed class SearchItemsForInvoiceHandler
     : IRequestHandler<SearchItemsForInvoiceQuery, Result<IReadOnlyList<InvoiceItemSearchResultDto>>>
@@ -18,8 +18,11 @@ public sealed class SearchItemsForInvoiceHandler
     private readonly ICurrentCompany _company;
 
     public SearchItemsForInvoiceHandler(
-        IInvoiceItemSearchRepository repo, ISriCatalogResolver sri,
-        ICurrentTenant tenant, ICurrentCompany company)
+        IInvoiceItemSearchRepository repo,
+        ISriCatalogResolver sri,
+        ICurrentTenant tenant,
+        ICurrentCompany company
+    )
     {
         _repo = repo;
         _sri = sri;
@@ -28,12 +31,15 @@ public sealed class SearchItemsForInvoiceHandler
     }
 
     public async Task<Result<IReadOnlyList<InvoiceItemSearchResultDto>>> Handle(
-        SearchItemsForInvoiceQuery request, CancellationToken cancellationToken)
+        SearchItemsForInvoiceQuery request,
+        CancellationToken cancellationToken
+    )
     {
         var q = request.Query.Trim();
         if (q.Length < 2)
             return Result<IReadOnlyList<InvoiceItemSearchResultDto>>.Success(
-                Array.Empty<InvoiceItemSearchResultDto>());
+                Array.Empty<InvoiceItemSearchResultDto>()
+            );
 
         var matches = await _repo.SearchAsync(
             _tenant.TenantId,
@@ -41,11 +47,13 @@ public sealed class SearchItemsForInvoiceHandler
             q,
             request.WarehouseId,
             Math.Clamp(request.PageSize, 1, 20),
-            cancellationToken);
+            cancellationToken
+        );
 
         if (matches.Count == 0)
             return Result<IReadOnlyList<InvoiceItemSearchResultDto>>.Success(
-                Array.Empty<InvoiceItemSearchResultDto>());
+                Array.Empty<InvoiceItemSearchResultDto>()
+            );
 
         // Batch-resolve unique tax codes — ISriCatalogResolver filters by IsActive
         var vatCodes = matches.Select(m => m.VatCode).OfType<string>().Distinct();
@@ -61,23 +69,34 @@ public sealed class SearchItemsForInvoiceHandler
     private static InvoiceItemSearchResultDto Enrich(
         InvoiceItemMatch match,
         IReadOnlyDictionary<string, SriVatInfo> vatMap,
-        IReadOnlyDictionary<string, SriIceInfo> iceMap)
+        IReadOnlyDictionary<string, SriIceInfo> iceMap
+    )
     {
-        var vatInfo = !string.IsNullOrWhiteSpace(match.VatCode) ? vatMap.GetValueOrDefault(match.VatCode) : null;
-        var iceInfo = !string.IsNullOrWhiteSpace(match.IceCode) ? iceMap.GetValueOrDefault(match.IceCode) : null;
+        var vatInfo = !string.IsNullOrWhiteSpace(match.VatCode)
+            ? vatMap.GetValueOrDefault(match.VatCode)
+            : null;
+        var iceInfo = !string.IsNullOrWhiteSpace(match.IceCode)
+            ? iceMap.GetValueOrDefault(match.IceCode)
+            : null;
 
         var vatPct = vatInfo?.Percent ?? 0m;
         var icePct = iceInfo?.Percent ?? 0m;
 
         var vatDisplay = vatInfo is not null
-            ? vatPct == 0m ? "IVA 0%" : $"IVA {vatPct:0.##}%"
+            ? vatPct == 0m
+                ? "IVA 0%"
+                : $"IVA {vatPct:0.##}%"
             : "Sin IVA";
         var iceDisplay = iceInfo is not null ? $"ICE {icePct:0.##}%" : "—";
 
         decimal? finalSalePrice = null;
         if (match.SalePriceWithoutTax.HasValue)
         {
-            var (_, _, taxInclusive) = SriTaxCalculator.Compute(match.SalePriceWithoutTax.Value, vatPct, icePct);
+            var (_, _, taxInclusive) = SriTaxCalculator.Compute(
+                match.SalePriceWithoutTax.Value,
+                vatPct,
+                icePct
+            );
             finalSalePrice = taxInclusive;
         }
 
@@ -96,6 +115,7 @@ public sealed class SearchItemsForInvoiceHandler
             vatDisplay,
             iceDisplay,
             match.VatCode,
-            match.IceCode);
+            match.IceCode
+        );
     }
 }

@@ -1,4 +1,4 @@
-﻿namespace ERP.Application.Access.Authorization;
+namespace ERP.Application.Access.Authorization;
 
 /// <summary>
 /// Autorización runtime de permisos (<c>perm:*</c>).
@@ -11,5 +11,6 @@ public interface IRuntimePermissionAuthorizer
         string permissionKey,
         Guid userId,
         string role,
-        CancellationToken cancellationToken = default);
+        CancellationToken cancellationToken = default
+    );
 }

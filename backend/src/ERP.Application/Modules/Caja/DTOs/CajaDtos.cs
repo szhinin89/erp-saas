@@ -1,63 +1,171 @@
 namespace ERP.Application.Modules.Caja.DTOs;
 
-/// <param name="EmissionType">
+/// <param name="Id"></param>
+/// <param name="CompanyId"></param>
+/// <param name="BranchId"></param>
+/// <param name="UserId"></param>
+/// <param name="CashRegisterId"></param>
+/// <param name="CashRegisterCodeSnapshot"></param>
+/// <param name="CashRegisterNameSnapshot"></param>
+/// <param name="EmissionPointId"></param>
+/// <param name="EmissionPointCodeSnapshot"></param>/// <param name="EmissionType">
 /// Resuelto en vivo desde <c>EmissionPoint.EmissionType</c> (nunca un snapshot) usando el
 /// <c>EmissionPointId</c> ya fijado en la sesión — null si el punto de emisión ya no existe/está
 /// activo, nunca un valor inventado por defecto.
 /// </param>
+/// <param name="DefaultWarehouseId"></param>
+/// <param name="DefaultWarehouseName"></param>
+/// <param name="DefaultCustomerId"></param>
+/// <param name="DefaultCustomerName"></param>
+/// <param name="OpenedAt"></param>
+/// <param name="OpeningAmount"></param>
+/// <param name="Status"></param>
+/// <param name="Notes"></param>
+/// <param name="ClosedAt"></param>
+/// <param name="ClosedBy"></param>
+/// <param name="CloseNotes"></param>
+/// <param name="ExpectedAmount"></param>
+/// <param name="CountedAmount"></param>
+/// <param name="Difference"></param>
+/// <param name="TotalIncome"></param>
+/// <param name="TotalExpense"></param>
+/// <param name="CurrentBalance"></param>
+/// <param name="Movements"></param>
+/// <param name="ClosingCounts"></param>
+/// <param name="CreatedAt"></param>
+/// <param name="UpdatedAt"></param>
 public sealed record CashSessionDto(
-    Guid Id, Guid CompanyId, Guid BranchId, Guid UserId,
-    Guid CashRegisterId, string CashRegisterCodeSnapshot, string CashRegisterNameSnapshot,
-    Guid EmissionPointId, string EmissionPointCodeSnapshot, string? EmissionType,
-    Guid? DefaultWarehouseId, string? DefaultWarehouseName,
-    Guid? DefaultCustomerId, string? DefaultCustomerName,
-    DateTime OpenedAt, decimal OpeningAmount,
-    string Status, string? Notes,
-    DateTime? ClosedAt, Guid? ClosedBy, string? CloseNotes,
-    decimal? ExpectedAmount, decimal? CountedAmount, decimal? Difference,
-    decimal TotalIncome, decimal TotalExpense, decimal CurrentBalance,
+    Guid Id,
+    Guid CompanyId,
+    Guid BranchId,
+    Guid UserId,
+    Guid CashRegisterId,
+    string CashRegisterCodeSnapshot,
+    string CashRegisterNameSnapshot,
+    Guid EmissionPointId,
+    string EmissionPointCodeSnapshot,
+    string? EmissionType,
+    Guid? DefaultWarehouseId,
+    string? DefaultWarehouseName,
+    Guid? DefaultCustomerId,
+    string? DefaultCustomerName,
+    DateTime OpenedAt,
+    decimal OpeningAmount,
+    string Status,
+    string? Notes,
+    DateTime? ClosedAt,
+    Guid? ClosedBy,
+    string? CloseNotes,
+    decimal? ExpectedAmount,
+    decimal? CountedAmount,
+    decimal? Difference,
+    decimal TotalIncome,
+    decimal TotalExpense,
+    decimal CurrentBalance,
     IReadOnlyList<CashMovementDto> Movements,
     IReadOnlyList<CashClosingCountDto> ClosingCounts,
-    DateTime CreatedAt, DateTime? UpdatedAt);
+    DateTime CreatedAt,
+    DateTime? UpdatedAt
+);
 
 public sealed record CashMovementDto(
-    Guid Id, string MovementType, decimal Amount,
-    string Description, DateTime CreatedAt, Guid CreatedBy,
-    string ReferenceType, Guid? ReferenceId, string? ReferenceNumber);
+    Guid Id,
+    string MovementType,
+    decimal Amount,
+    string Description,
+    DateTime CreatedAt,
+    Guid CreatedBy,
+    string ReferenceType,
+    Guid? ReferenceId,
+    string? ReferenceNumber
+);
 
 public sealed record CashClosingCountDto(
-    Guid Id, decimal DenominationValue, string DenominationLabel,
-    int Quantity, decimal Total);
+    Guid Id,
+    decimal DenominationValue,
+    string DenominationLabel,
+    int Quantity,
+    decimal Total
+);
 
 public sealed record CashSessionListDto(
-    Guid Id, Guid UserId, Guid CashRegisterId, string CashRegisterCodeSnapshot, Guid EmissionPointId,
-    DateTime OpenedAt, decimal OpeningAmount, string Status,
-    decimal CurrentBalance, int MovementCount,
-    DateTime? ClosedAt, decimal? Difference,
-    DateTime CreatedAt);
+    Guid Id,
+    Guid UserId,
+    Guid CashRegisterId,
+    string CashRegisterCodeSnapshot,
+    Guid EmissionPointId,
+    DateTime OpenedAt,
+    decimal OpeningAmount,
+    string Status,
+    decimal CurrentBalance,
+    int MovementCount,
+    DateTime? ClosedAt,
+    decimal? Difference,
+    DateTime CreatedAt
+);
 
 public sealed record CashSessionListResponse(
-    IReadOnlyList<CashSessionListDto> Items, int Total, int Page, int PageSize);
+    IReadOnlyList<CashSessionListDto> Items,
+    int Total,
+    int Page,
+    int PageSize
+);
 
 /// <summary>
 /// DTO único de Caja — alimenta a la vez el selector "Abrir Caja" (con tarjeta resumen
 /// Sucursal/Establecimiento/Punto de Emisión) y la administración de Cajas, evitando
 /// requests adicionales y endpoints duplicados.
 /// </summary>
+/// <param name="Id"></param>
+/// <param name="BranchId"></param>
+/// <param name="BranchName"></param>
+/// <param name="BranchCode"></param>
+/// <param name="EmissionPointId"></param>
+/// <param name="EstablishmentCode"></param>
+/// <param name="EmissionPointCode"></param>
+/// <param name="EmissionPointName"></param>
+/// <param name="Code"></param>
+/// <param name="Name"></param>
+/// <param name="Notes"></param>
+/// <param name="IsActive"></param>
 /// <param name="HasHistory">
 /// true si la Caja ya tiene historial operativo (ver <c>ICashRegisterUsageGuard</c>) — único
 /// indicador que el frontend debe usar para bloquear Código/Sucursal/Punto de Emisión en el
 /// formulario de edición. Calculado siempre server-side, nunca inferido en el cliente.
 /// </param>
+/// <param name="DefaultWarehouseId"></param>
+/// <param name="DefaultWarehouseCode"></param>
+/// <param name="DefaultWarehouseName"></param>
+/// <param name="DefaultCustomerId"></param>
+/// <param name="DefaultCustomerName"></param>
+/// <param name="CreatedAt"></param>
+/// <param name="UpdatedAt"></param>
 public sealed record CashRegisterDto(
-    Guid Id, Guid BranchId, string BranchName, string? BranchCode,
-    Guid? EmissionPointId, string? EstablishmentCode,
-    string? EmissionPointCode, string? EmissionPointName,
-    string Code, string Name, string? Notes, bool IsActive,
+    Guid Id,
+    Guid BranchId,
+    string BranchName,
+    string? BranchCode,
+    Guid? EmissionPointId,
+    string? EstablishmentCode,
+    string? EmissionPointCode,
+    string? EmissionPointName,
+    string Code,
+    string Name,
+    string? Notes,
+    bool IsActive,
     bool HasHistory,
-    Guid? DefaultWarehouseId, string? DefaultWarehouseCode, string? DefaultWarehouseName,
-    Guid? DefaultCustomerId, string? DefaultCustomerName,
-    DateTime CreatedAt, DateTime? UpdatedAt);
+    Guid? DefaultWarehouseId,
+    string? DefaultWarehouseCode,
+    string? DefaultWarehouseName,
+    Guid? DefaultCustomerId,
+    string? DefaultCustomerName,
+    DateTime CreatedAt,
+    DateTime? UpdatedAt
+);
 
 public sealed record EmissionPointLookupForBranchDto(
-    Guid Id, string Code, string? Name, string EstablishmentCode);
+    Guid Id,
+    string Code,
+    string? Name,
+    string EstablishmentCode
+);

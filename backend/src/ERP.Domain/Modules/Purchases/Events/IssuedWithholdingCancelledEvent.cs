@@ -14,8 +14,14 @@ public sealed class IssuedWithholdingCancelledEvent : BaseDomainEvent, IAuditEve
     public string CancelReason { get; }
 
     public IssuedWithholdingCancelledEvent(
-        Guid tenantId, Guid withholdingId, Guid purchaseInvoiceId, Guid supplierId,
-        string withholdingNumber, decimal totalRetained, string cancelReason)
+        Guid tenantId,
+        Guid withholdingId,
+        Guid purchaseInvoiceId,
+        Guid supplierId,
+        string withholdingNumber,
+        decimal totalRetained,
+        string cancelReason
+    )
     {
         TenantId = tenantId;
         WithholdingId = withholdingId;

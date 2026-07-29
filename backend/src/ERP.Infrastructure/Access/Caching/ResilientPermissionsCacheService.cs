@@ -15,7 +15,8 @@ public sealed partial class ResilientPermissionsCacheService : IPermissionsCache
     public ResilientPermissionsCacheService(
         DistributedPermissionsCacheService inner,
         IPermissionsCacheDiagnostics diagnostics,
-        ILogger<ResilientPermissionsCacheService> logger)
+        ILogger<ResilientPermissionsCacheService> logger
+    )
     {
         _inner = inner;
         _diagnostics = diagnostics;
@@ -26,7 +27,8 @@ public sealed partial class ResilientPermissionsCacheService : IPermissionsCache
         Guid tenantId,
         Guid companyId,
         Guid userId,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default
+    )
     {
         try
         {
@@ -46,7 +48,8 @@ public sealed partial class ResilientPermissionsCacheService : IPermissionsCache
         Guid userId,
         IReadOnlyList<string> keys,
         TimeSpan? ttl = null,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default
+    )
     {
         try
         {
@@ -59,7 +62,11 @@ public sealed partial class ResilientPermissionsCacheService : IPermissionsCache
         }
     }
 
-    public async Task InvalidateUserAsync(Guid companyId, Guid userId, CancellationToken cancellationToken = default)
+    public async Task InvalidateUserAsync(
+        Guid companyId,
+        Guid userId,
+        CancellationToken cancellationToken = default
+    )
     {
         try
         {
@@ -72,7 +79,10 @@ public sealed partial class ResilientPermissionsCacheService : IPermissionsCache
         }
     }
 
-    public async Task BumpCompanyVersionAsync(Guid companyId, CancellationToken cancellationToken = default)
+    public async Task BumpCompanyVersionAsync(
+        Guid companyId,
+        CancellationToken cancellationToken = default
+    )
     {
         try
         {
@@ -85,7 +95,10 @@ public sealed partial class ResilientPermissionsCacheService : IPermissionsCache
         }
     }
 
-    public async Task BumpTenantVersionAsync(Guid tenantId, CancellationToken cancellationToken = default)
+    public async Task BumpTenantVersionAsync(
+        Guid tenantId,
+        CancellationToken cancellationToken = default
+    )
     {
         try
         {
@@ -98,18 +111,33 @@ public sealed partial class ResilientPermissionsCacheService : IPermissionsCache
         }
     }
 
-    [LoggerMessage(Level = LogLevel.Warning, Message = "Permissions cache READ failed for {CompanyId}/{UserId}; falling back to DB.")]
+    [LoggerMessage(
+        Level = LogLevel.Warning,
+        Message = "Permissions cache READ failed for {CompanyId}/{UserId}; falling back to DB."
+    )]
     private partial void LogCacheReadFailed(Exception ex, Guid companyId, Guid userId);
 
-    [LoggerMessage(Level = LogLevel.Warning, Message = "Permissions cache WRITE failed for {CompanyId}/{UserId}; ignored.")]
+    [LoggerMessage(
+        Level = LogLevel.Warning,
+        Message = "Permissions cache WRITE failed for {CompanyId}/{UserId}; ignored."
+    )]
     private partial void LogCacheWriteFailed(Exception ex, Guid companyId, Guid userId);
 
-    [LoggerMessage(Level = LogLevel.Warning, Message = "Permissions cache INVALIDATE user failed for {CompanyId}/{UserId}; ignored.")]
+    [LoggerMessage(
+        Level = LogLevel.Warning,
+        Message = "Permissions cache INVALIDATE user failed for {CompanyId}/{UserId}; ignored."
+    )]
     private partial void LogCacheInvalidateFailed(Exception ex, Guid companyId, Guid userId);
 
-    [LoggerMessage(Level = LogLevel.Warning, Message = "Permissions cache BUMP company failed for {CompanyId}; ignored.")]
+    [LoggerMessage(
+        Level = LogLevel.Warning,
+        Message = "Permissions cache BUMP company failed for {CompanyId}; ignored."
+    )]
     private partial void LogCacheBumpCompanyFailed(Exception ex, Guid companyId);
 
-    [LoggerMessage(Level = LogLevel.Warning, Message = "Permissions cache BUMP tenant failed for {TenantId}; ignored.")]
+    [LoggerMessage(
+        Level = LogLevel.Warning,
+        Message = "Permissions cache BUMP tenant failed for {TenantId}; ignored."
+    )]
     private partial void LogCacheBumpTenantFailed(Exception ex, Guid tenantId);
 }

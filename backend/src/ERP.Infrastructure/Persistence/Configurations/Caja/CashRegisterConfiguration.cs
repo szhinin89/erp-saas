@@ -26,15 +26,27 @@ public sealed class CashRegisterConfiguration : IEntityTypeConfiguration<CashReg
         builder.Property(x => x.DefaultWarehouseId).HasColumnName("default_warehouse_id");
         builder.Property(x => x.DefaultCustomerId).HasColumnName("default_customer_id");
 
-        builder.Property(x => x.Code).HasColumnName("code")
-            .HasMaxLength(CashRegister.CodeMaxLen).IsRequired();
-        builder.Property(x => x.Name).HasColumnName("name")
-            .HasMaxLength(CashRegister.NameMaxLen).IsRequired();
-        builder.Property(x => x.Notes).HasColumnName("notes")
+        builder
+            .Property(x => x.Code)
+            .HasColumnName("code")
+            .HasMaxLength(CashRegister.CodeMaxLen)
+            .IsRequired();
+        builder
+            .Property(x => x.Name)
+            .HasColumnName("name")
+            .HasMaxLength(CashRegister.NameMaxLen)
+            .IsRequired();
+        builder
+            .Property(x => x.Notes)
+            .HasColumnName("notes")
             .HasMaxLength(CashRegister.NotesMaxLen);
 
         builder.Property(x => x.IsActive).HasColumnName("is_active").IsRequired();
-        builder.Property(x => x.IsSystemSeeded).HasColumnName("is_system_seeded").IsRequired().HasDefaultValue(false);
+        builder
+            .Property(x => x.IsSystemSeeded)
+            .HasColumnName("is_system_seeded")
+            .IsRequired()
+            .HasDefaultValue(false);
 
         // ── Auditoría ───────────────────────────────────────────────
         builder.Property(x => x.CreatedAt).HasColumnName("created_at");
@@ -43,42 +55,56 @@ public sealed class CashRegisterConfiguration : IEntityTypeConfiguration<CashReg
         builder.Property(x => x.UpdatedBy).HasColumnName("updated_by");
 
         // ── Relationships ───────────────────────────────────────────
-        builder.HasOne<Company>()
+        builder
+            .HasOne<Company>()
             .WithMany()
             .HasForeignKey(x => x.CompanyId)
             .OnDelete(DeleteBehavior.Restrict);
 
-        builder.HasOne(x => x.Branch)
+        builder
+            .HasOne(x => x.Branch)
             .WithMany()
             .HasForeignKey(x => x.BranchId)
             .OnDelete(DeleteBehavior.Restrict);
 
-        builder.HasOne(x => x.EmissionPoint)
+        builder
+            .HasOne(x => x.EmissionPoint)
             .WithMany()
             .HasForeignKey(x => x.EmissionPointId)
             .OnDelete(DeleteBehavior.Restrict);
 
-        builder.HasOne(x => x.DefaultWarehouse)
+        builder
+            .HasOne(x => x.DefaultWarehouse)
             .WithMany()
             .HasForeignKey(x => x.DefaultWarehouseId)
             .OnDelete(DeleteBehavior.Restrict);
 
-        builder.HasOne(x => x.DefaultCustomer)
+        builder
+            .HasOne(x => x.DefaultCustomer)
             .WithMany()
             .HasForeignKey(x => x.DefaultCustomerId)
             .OnDelete(DeleteBehavior.Restrict);
 
         // ── Indexes ─────────────────────────────────────────────────
-        builder.HasIndex(x => new { x.TenantId, x.CompanyId })
+        builder
+            .HasIndex(x => new { x.TenantId, x.CompanyId })
             .HasDatabaseName("ix_cash_registers_tenant_company");
 
-        builder.HasIndex(x => new { x.TenantId, x.BranchId })
+        builder
+            .HasIndex(x => new { x.TenantId, x.BranchId })
             .HasDatabaseName("ix_cash_registers_tenant_branch");
 
-        builder.HasIndex(x => x.EmissionPointId)
+        builder
+            .HasIndex(x => x.EmissionPointId)
             .HasDatabaseName("ix_cash_registers_emission_point");
 
-        builder.HasIndex(x => new { x.TenantId, x.BranchId, x.Code })
+        builder
+            .HasIndex(x => new
+            {
+                x.TenantId,
+                x.BranchId,
+                x.Code,
+            })
             .IsUnique()
             .HasDatabaseName("uq_cash_registers_tenant_branch_code");
     }

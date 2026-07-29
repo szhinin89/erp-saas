@@ -1,4 +1,4 @@
-﻿using ERP.Domain.MasterData.Entities;
+using ERP.Domain.MasterData.Entities;
 using ERP.Domain.MasterData.Interfaces;
 using ERP.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
@@ -34,9 +34,12 @@ public sealed class CompanyBpTradingSettingsRepository : ICompanyBpTradingSettin
     /// </summary>
     public Task<CompanyBpTradingSettings?> GetByBusinessPartnerAsync(
         Guid businessPartnerId,
-        CancellationToken cancellationToken = default)
-        => _db.CompanyBpTradingSettings
-              .FirstOrDefaultAsync(s => s.BusinessPartnerId == businessPartnerId, cancellationToken);
+        CancellationToken cancellationToken = default
+    ) =>
+        _db.CompanyBpTradingSettings.FirstOrDefaultAsync(
+            s => s.BusinessPartnerId == businessPartnerId,
+            cancellationToken
+        );
 
     /// <summary>
     /// Todos los BPs bloqueados en la empresa activa.
@@ -44,21 +47,24 @@ public sealed class CompanyBpTradingSettingsRepository : ICompanyBpTradingSettin
     /// El global query filter restringe al (tenant, company) activo.
     /// </summary>
     public async Task<IReadOnlyList<CompanyBpTradingSettings>> GetBlockedAsync(
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default
+    )
     {
-        return await _db.CompanyBpTradingSettings
-            .AsNoTracking()
+        return await _db
+            .CompanyBpTradingSettings.AsNoTracking()
             .Where(s => s.IsBlocked)
             .OrderBy(s => s.BlockedAt)
             .ToListAsync(cancellationToken);
     }
 
-    public async Task AddAsync(CompanyBpTradingSettings settings, CancellationToken cancellationToken = default)
-        => await _db.CompanyBpTradingSettings.AddAsync(settings, cancellationToken);
+    public async Task AddAsync(
+        CompanyBpTradingSettings settings,
+        CancellationToken cancellationToken = default
+    ) => await _db.CompanyBpTradingSettings.AddAsync(settings, cancellationToken);
 
     /// <summary>
     /// SaveChanges despacha domain events (BusinessPartnerBlockedEvent, etc.) via Outbox.
     /// </summary>
-    public Task SaveChangesAsync(CancellationToken cancellationToken = default)
-        => _db.SaveChangesAsync(cancellationToken);
+    public Task SaveChangesAsync(CancellationToken cancellationToken = default) =>
+        _db.SaveChangesAsync(cancellationToken);
 }

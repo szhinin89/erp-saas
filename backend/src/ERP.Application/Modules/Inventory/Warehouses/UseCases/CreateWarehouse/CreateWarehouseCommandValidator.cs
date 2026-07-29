@@ -7,17 +7,19 @@ public sealed class CreateWarehouseCommandValidator : AbstractValidator<CreateWa
 {
     public CreateWarehouseCommandValidator()
     {
-        RuleFor(x => x.BranchId)
-            .NotEmpty().WithMessage("La sucursal es obligatoria.");
+        RuleFor(x => x.BranchId).NotEmpty().WithMessage("La sucursal es obligatoria.");
 
         RuleFor(x => x.Name)
-            .NotEmpty().WithMessage("El nombre de la bodega es obligatorio.")
+            .NotEmpty()
+            .WithMessage("El nombre de la bodega es obligatorio.")
             .MaximumLength(Warehouse.NameMaxLen)
             .WithMessage($"El nombre no puede exceder {Warehouse.NameMaxLen} caracteres.");
 
         RuleFor(x => x.StorageType)
             .MaximumLength(Warehouse.StorageTypeMaxLen)
-            .WithMessage($"El tipo de almacenamiento no puede exceder {Warehouse.StorageTypeMaxLen} caracteres.")
+            .WithMessage(
+                $"El tipo de almacenamiento no puede exceder {Warehouse.StorageTypeMaxLen} caracteres."
+            )
             .When(x => !string.IsNullOrWhiteSpace(x.StorageType));
 
         RuleFor(x => x.Address)
@@ -31,7 +33,8 @@ public sealed class CreateWarehouseCommandValidator : AbstractValidator<CreateWa
             .When(x => !string.IsNullOrWhiteSpace(x.Phone));
 
         RuleFor(x => x.Email)
-            .EmailAddress().WithMessage("El correo no tiene un formato válido.")
+            .EmailAddress()
+            .WithMessage("El correo no tiene un formato válido.")
             .MaximumLength(Warehouse.EmailMaxLen)
             .WithMessage($"El correo no puede exceder {Warehouse.EmailMaxLen} caracteres.")
             .When(x => !string.IsNullOrWhiteSpace(x.Email));
@@ -52,11 +55,13 @@ public sealed class CreateWarehouseCommandValidator : AbstractValidator<CreateWa
             .When(x => !string.IsNullOrWhiteSpace(x.Longitude));
 
         RuleFor(x => x.Capacity)
-            .GreaterThanOrEqualTo(0).WithMessage("La capacidad no puede ser negativa.")
+            .GreaterThanOrEqualTo(0)
+            .WithMessage("La capacidad no puede ser negativa.")
             .When(x => x.Capacity.HasValue);
 
         RuleFor(x => x.DailyDispatchGoal)
-            .GreaterThanOrEqualTo(0).WithMessage("La meta de despacho diario no puede ser negativa.")
+            .GreaterThanOrEqualTo(0)
+            .WithMessage("La meta de despacho diario no puede ser negativa.")
             .When(x => x.DailyDispatchGoal.HasValue);
     }
 }

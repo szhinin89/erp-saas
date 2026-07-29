@@ -21,7 +21,8 @@ public sealed class GetSalesInvoiceDefaultsQueryHandler
         IOrgSettingsRepository orgRepo,
         IEmissionPointRepository epRepo,
         ICurrentTenant currentTenant,
-        ICurrentCompany currentCompany)
+        ICurrentCompany currentCompany
+    )
     {
         _orgRepo = orgRepo;
         _epRepo = epRepo;
@@ -30,23 +31,31 @@ public sealed class GetSalesInvoiceDefaultsQueryHandler
     }
 
     public async Task<Result<SalesInvoiceDefaultsDto>> Handle(
-        GetSalesInvoiceDefaultsQuery query, CancellationToken cancellationToken)
+        GetSalesInvoiceDefaultsQuery query,
+        CancellationToken cancellationToken
+    )
     {
         var tenantId = _currentTenant.TenantId;
         var companyId = _currentCompany.CompanyId;
 
         // Leer configuración de empresa: DocTypeCode, PaymentMethodCode, PaymentTermId
         var orgSettings = await _orgRepo.GetAllForScopeAsync(
-            tenantId, companyId, OrgScope.Company, companyId, cancellationToken);
+            tenantId,
+            companyId,
+            OrgScope.Company,
+            companyId,
+            cancellationToken
+        );
 
         var orgLookup = orgSettings.ToDictionary(s => s.Key, s => s.Value);
 
-        string? Resolve(string key)
-            => orgLookup.TryGetValue(key, out var v) && !string.IsNullOrWhiteSpace(v) ? v : null;
+        string? Resolve(string key) =>
+            orgLookup.TryGetValue(key, out var v) && !string.IsNullOrWhiteSpace(v) ? v : null;
 
         Guid? ResolveGuid(string key)
         {
-            if (orgLookup.TryGetValue(key, out var v) && Guid.TryParse(v, out var g)) return g;
+            if (orgLookup.TryGetValue(key, out var v) && Guid.TryParse(v, out var g))
+                return g;
             return null;
         }
 
@@ -55,19 +64,26 @@ public sealed class GetSalesInvoiceDefaultsQueryHandler
         var paymentTermId = ResolveGuid(OrgSettingKeys.Invoice.DefaultPaymentTermId);
 
         // DefaultEmissionPointId: resuelto siempre desde EmissionPoint.IsDefault (única fuente).
-        var defaultEp = await _epRepo.GetDefaultForCompanyAsync(tenantId, companyId, cancellationToken);
+        var defaultEp = await _epRepo.GetDefaultForCompanyAsync(
+            tenantId,
+            companyId,
+            cancellationToken
+        );
         var emissionPointId = defaultEp?.Id;
 
         // DefaultWarehouseId: propietario Sucursal (OrgScope.Branch).
         // No hay contexto de sucursal en esta query → null; el frontend usa whsData[0] como fallback.
 
-        return Result<SalesInvoiceDefaultsDto>.Success(new SalesInvoiceDefaultsDto(
-            DefaultDocTypeCode: docTypeCode,
-            DefaultSriPaymentMethodCode: payMethodCode,
-            DefaultEmissionPointId: emissionPointId,
-            DefaultWarehouseId: null,
-            DefaultPaymentTermId: paymentTermId,
-            FallbackDocTypeCode: SriSettings.FallbackDocTypeCode,
-            FallbackSriPaymentMethodCode: SriSettings.FallbackSriPaymentMethodCode));
+        return Result<SalesInvoiceDefaultsDto>.Success(
+            new SalesInvoiceDefaultsDto(
+                DefaultDocTypeCode: docTypeCode,
+                DefaultSriPaymentMethodCode: payMethodCode,
+                DefaultEmissionPointId: emissionPointId,
+                DefaultWarehouseId: null,
+                DefaultPaymentTermId: paymentTermId,
+                FallbackDocTypeCode: SriSettings.FallbackDocTypeCode,
+                FallbackSriPaymentMethodCode: SriSettings.FallbackSriPaymentMethodCode
+            )
+        );
     }
 }

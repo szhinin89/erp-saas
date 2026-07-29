@@ -9,4 +9,5 @@ public sealed record DownloadPurchaseReceptionXmlResultDto(
     string ProcessingStatus,
     int LinesDetectedCount,
     int LinesProcessedCount,
-    string? ProcessingNotes);
+    string? ProcessingNotes
+);

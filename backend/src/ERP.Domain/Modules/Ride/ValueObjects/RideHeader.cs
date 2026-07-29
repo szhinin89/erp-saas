@@ -37,11 +37,23 @@ public sealed record RideHeader
     public decimal GrandTotal { get; }
 
     private RideHeader(
-        string environment, string emissionType, string documentTypeCode,
-        string establishment, string emissionPoint, string sequential, string establishmentAddress,
-        DateOnly issueDate, string currencyCode, RideAccessKey accessKey,
-        string authorizationNumber, DateTime? authorizationDate,
-        decimal subtotalWithoutTax, decimal totalDiscount, decimal tip, decimal grandTotal)
+        string environment,
+        string emissionType,
+        string documentTypeCode,
+        string establishment,
+        string emissionPoint,
+        string sequential,
+        string establishmentAddress,
+        DateOnly issueDate,
+        string currencyCode,
+        RideAccessKey accessKey,
+        string authorizationNumber,
+        DateTime? authorizationDate,
+        decimal subtotalWithoutTax,
+        decimal totalDiscount,
+        decimal tip,
+        decimal grandTotal
+    )
     {
         Environment = environment;
         EmissionType = emissionType;
@@ -62,45 +74,93 @@ public sealed record RideHeader
     }
 
     public static RideHeader Create(
-        string environment, string emissionType, string documentTypeCode,
-        string establishment, string emissionPoint, string sequential, string establishmentAddress,
-        DateOnly issueDate, string currencyCode, RideAccessKey accessKey,
-        string authorizationNumber, DateTime? authorizationDate,
-        decimal subtotalWithoutTax, decimal totalDiscount, decimal tip, decimal grandTotal)
+        string environment,
+        string emissionType,
+        string documentTypeCode,
+        string establishment,
+        string emissionPoint,
+        string sequential,
+        string establishmentAddress,
+        DateOnly issueDate,
+        string currencyCode,
+        RideAccessKey accessKey,
+        string authorizationNumber,
+        DateTime? authorizationDate,
+        decimal subtotalWithoutTax,
+        decimal totalDiscount,
+        decimal tip,
+        decimal grandTotal
+    )
     {
         if (string.IsNullOrWhiteSpace(environment))
             throw new ArgumentException("El ambiente SRI es obligatorio.", nameof(environment));
         if (string.IsNullOrWhiteSpace(emissionType))
-            throw new ArgumentException("El tipo de emisión SRI es obligatorio.", nameof(emissionType));
+            throw new ArgumentException(
+                "El tipo de emisión SRI es obligatorio.",
+                nameof(emissionType)
+            );
         if (string.IsNullOrWhiteSpace(documentTypeCode))
-            throw new ArgumentException("El código de tipo de comprobante es obligatorio.", nameof(documentTypeCode));
+            throw new ArgumentException(
+                "El código de tipo de comprobante es obligatorio.",
+                nameof(documentTypeCode)
+            );
         if (establishment is not { Length: 3 } || !establishment.All(char.IsDigit))
-            throw new ArgumentException("El código de establecimiento debe tener 3 dígitos.", nameof(establishment));
+            throw new ArgumentException(
+                "El código de establecimiento debe tener 3 dígitos.",
+                nameof(establishment)
+            );
         if (emissionPoint is not { Length: 3 } || !emissionPoint.All(char.IsDigit))
-            throw new ArgumentException("El código de punto de emisión debe tener 3 dígitos.", nameof(emissionPoint));
+            throw new ArgumentException(
+                "El código de punto de emisión debe tener 3 dígitos.",
+                nameof(emissionPoint)
+            );
         if (sequential is not { Length: 9 } || !sequential.All(char.IsDigit))
             throw new ArgumentException("El secuencial debe tener 9 dígitos.", nameof(sequential));
         if (string.IsNullOrWhiteSpace(establishmentAddress))
-            throw new ArgumentException("La dirección del establecimiento es obligatoria.", nameof(establishmentAddress));
+            throw new ArgumentException(
+                "La dirección del establecimiento es obligatoria.",
+                nameof(establishmentAddress)
+            );
         if (string.IsNullOrWhiteSpace(currencyCode))
             throw new ArgumentException("La moneda es obligatoria.", nameof(currencyCode));
         ArgumentNullException.ThrowIfNull(accessKey);
         if (string.IsNullOrWhiteSpace(authorizationNumber))
-            throw new ArgumentException("El número de autorización es obligatorio.", nameof(authorizationNumber));
+            throw new ArgumentException(
+                "El número de autorización es obligatorio.",
+                nameof(authorizationNumber)
+            );
         if (subtotalWithoutTax < 0)
-            throw new ArgumentException("El subtotal no puede ser negativo.", nameof(subtotalWithoutTax));
+            throw new ArgumentException(
+                "El subtotal no puede ser negativo.",
+                nameof(subtotalWithoutTax)
+            );
         if (totalDiscount < 0)
-            throw new ArgumentException("El descuento total no puede ser negativo.", nameof(totalDiscount));
+            throw new ArgumentException(
+                "El descuento total no puede ser negativo.",
+                nameof(totalDiscount)
+            );
         if (tip < 0)
             throw new ArgumentException("La propina no puede ser negativa.", nameof(tip));
         if (grandTotal < 0)
             throw new ArgumentException("El total no puede ser negativo.", nameof(grandTotal));
 
         return new RideHeader(
-            environment.Trim(), emissionType.Trim(), documentTypeCode.Trim(),
-            establishment, emissionPoint, sequential, establishmentAddress.Trim(),
-            issueDate, currencyCode.Trim(), accessKey,
-            authorizationNumber.Trim(), authorizationDate,
-            subtotalWithoutTax, totalDiscount, tip, grandTotal);
+            environment.Trim(),
+            emissionType.Trim(),
+            documentTypeCode.Trim(),
+            establishment,
+            emissionPoint,
+            sequential,
+            establishmentAddress.Trim(),
+            issueDate,
+            currencyCode.Trim(),
+            accessKey,
+            authorizationNumber.Trim(),
+            authorizationDate,
+            subtotalWithoutTax,
+            totalDiscount,
+            tip,
+            grandTotal
+        );
     }
 }

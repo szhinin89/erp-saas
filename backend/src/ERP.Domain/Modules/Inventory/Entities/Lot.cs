@@ -37,14 +37,20 @@ public sealed class Lot : AuditableEntity, ITenantScopedEntity, ICompanyOperatio
         DateOnly? manufactureDate = null,
         DateOnly? expirationDate = null,
         string? notes = null,
-        Guid? receiptLineId = null)
+        Guid? receiptLineId = null
+    )
     {
         if (string.IsNullOrWhiteSpace(lotNumber))
             throw new ArgumentException("El número de lote es obligatorio.", nameof(lotNumber));
         if (initialQty <= 0)
-            throw new ArgumentException("La cantidad inicial debe ser mayor que cero.", nameof(initialQty));
+            throw new ArgumentException(
+                "La cantidad inicial debe ser mayor que cero.",
+                nameof(initialQty)
+            );
         if (expirationDate.HasValue && manufactureDate.HasValue && expirationDate < manufactureDate)
-            throw new ArgumentException("La fecha de vencimiento no puede ser anterior a la de fabricación.");
+            throw new ArgumentException(
+                "La fecha de vencimiento no puede ser anterior a la de fabricación."
+            );
 
         var lot = new Lot
         {
@@ -71,7 +77,9 @@ public sealed class Lot : AuditableEntity, ITenantScopedEntity, ICompanyOperatio
         if (Status == LotStatus.Depleted)
             throw new InvalidOperationException($"El lote '{LotNumber}' está agotado.");
         if (qty > CurrentQty)
-            throw new InvalidOperationException($"Stock insuficiente en lote '{LotNumber}'. Disponible: {CurrentQty}, requerido: {qty}.");
+            throw new InvalidOperationException(
+                $"Stock insuficiente en lote '{LotNumber}'. Disponible: {CurrentQty}, requerido: {qty}."
+            );
 
         CurrentQty -= qty;
 
@@ -82,7 +90,9 @@ public sealed class Lot : AuditableEntity, ITenantScopedEntity, ICompanyOperatio
     public void RegisterEntry(decimal qty)
     {
         if (Status == LotStatus.Depleted)
-            throw new InvalidOperationException($"No se puede agregar stock a un lote agotado '{LotNumber}'.");
+            throw new InvalidOperationException(
+                $"No se puede agregar stock a un lote agotado '{LotNumber}'."
+            );
 
         CurrentQty += qty;
     }

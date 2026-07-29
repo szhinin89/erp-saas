@@ -1,4 +1,4 @@
-﻿using ERP.Domain.Geography.Interfaces;
+using ERP.Domain.Geography.Interfaces;
 
 namespace ERP.Application.Modules.Branches;
 
@@ -10,7 +10,8 @@ internal static class BranchLocationValidation
         string? provinceId,
         string? cantonId,
         string? parishId,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken
+    )
     {
         var c = string.IsNullOrWhiteSpace(countryId) ? null : countryId.Trim();
         var p = string.IsNullOrWhiteSpace(provinceId) ? null : provinceId.Trim();

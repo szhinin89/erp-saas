@@ -34,7 +34,10 @@ public sealed class CompanyUserMembershipsControllerTests
         services.AddSingleton<IWebHostEnvironment>(new StubWebHostEnvironment());
         controller.ControllerContext = new ControllerContext
         {
-            HttpContext = new DefaultHttpContext { RequestServices = services.BuildServiceProvider() },
+            HttpContext = new DefaultHttpContext
+            {
+                RequestServices = services.BuildServiceProvider(),
+            },
         };
         return controller;
     }
@@ -44,9 +47,11 @@ public sealed class CompanyUserMembershipsControllerTests
         public string EnvironmentName { get; set; } = "Development";
         public string ApplicationName { get; set; } = "ERP.API.Tests";
         public string WebRootPath { get; set; } = "";
-        public Microsoft.Extensions.FileProviders.IFileProvider WebRootFileProvider { get; set; } = null!;
+        public Microsoft.Extensions.FileProviders.IFileProvider WebRootFileProvider { get; set; } =
+            null!;
         public string ContentRootPath { get; set; } = "";
-        public Microsoft.Extensions.FileProviders.IFileProvider ContentRootFileProvider { get; set; } = null!;
+        public Microsoft.Extensions.FileProviders.IFileProvider ContentRootFileProvider { get; set; } =
+            null!;
     }
 
     // ── Autorización declarativa ─────────────────────────────────────────────
@@ -72,7 +77,21 @@ public sealed class CompanyUserMembershipsControllerTests
         {
             sentRequest = req;
             return Result<IReadOnlyList<CompanyUserMembershipAdminDto>>.Success(
-                new[] { new CompanyUserMembershipAdminDto(Guid.NewGuid(), Guid.NewGuid(), "ana.perez", "Ana Perez", "ana@test.com", "User", true, null, null) });
+                new[]
+                {
+                    new CompanyUserMembershipAdminDto(
+                        Guid.NewGuid(),
+                        Guid.NewGuid(),
+                        "ana.perez",
+                        "Ana Perez",
+                        "ana@test.com",
+                        "User",
+                        true,
+                        null,
+                        null
+                    ),
+                }
+            );
         });
 
         var response = await controller.List(onlyActive: true, CancellationToken.None);
@@ -88,7 +107,9 @@ public sealed class CompanyUserMembershipsControllerTests
         var controller = BuildController(req =>
         {
             sentRequest = req;
-            return Result<IReadOnlyList<CompanyUserMembershipAdminDto>>.Success(Array.Empty<CompanyUserMembershipAdminDto>());
+            return Result<IReadOnlyList<CompanyUserMembershipAdminDto>>.Success(
+                Array.Empty<CompanyUserMembershipAdminDto>()
+            );
         });
 
         await controller.List(cancellationToken: CancellationToken.None);
@@ -100,7 +121,10 @@ public sealed class CompanyUserMembershipsControllerTests
     public async Task List_sin_empresa_activa_retorna_403()
     {
         var controller = BuildController(_ =>
-            Result<IReadOnlyList<CompanyUserMembershipAdminDto>>.Forbidden("No hay una empresa activa en la sesión."));
+            Result<IReadOnlyList<CompanyUserMembershipAdminDto>>.Forbidden(
+                "No hay una empresa activa en la sesión."
+            )
+        );
 
         var response = await controller.List(cancellationToken: CancellationToken.None);
 
@@ -130,7 +154,8 @@ public sealed class CompanyUserMembershipsControllerTests
     public async Task Lookup_sin_empresa_activa_retorna_403()
     {
         var controller = BuildController(_ =>
-            Result<UsernameLookupDto>.Forbidden("No hay una empresa activa en la sesión."));
+            Result<UsernameLookupDto>.Forbidden("No hay una empresa activa en la sesión.")
+        );
 
         var response = await controller.Lookup("ana.perez", CancellationToken.None);
 
@@ -153,11 +178,22 @@ public sealed class CompanyUserMembershipsControllerTests
         var branchId = Guid.NewGuid();
         var profileId = Guid.NewGuid();
         var response = await controller.Upsert(
-            new UpsertCompanyUserMembershipRequest("ana.perez", "Admin", profileId, new[] { branchId }, branchId, "DirectToDefault"),
-            CancellationToken.None);
+            new UpsertCompanyUserMembershipRequest(
+                "ana.perez",
+                "Admin",
+                profileId,
+                new[] { branchId },
+                branchId,
+                "DirectToDefault"
+            ),
+            CancellationToken.None
+        );
 
         response.Should().BeOfType<OkObjectResult>();
-        var sentCommand = sentRequest.Should().BeOfType<UpsertCompanyUserMembershipAdminCommand>().Subject;
+        var sentCommand = sentRequest
+            .Should()
+            .BeOfType<UpsertCompanyUserMembershipAdminCommand>()
+            .Subject;
         sentCommand.Username.Should().Be("ana.perez");
         sentCommand.Role.Should().Be("Admin");
         sentCommand.ProfileId.Should().Be(profileId);
@@ -170,10 +206,13 @@ public sealed class CompanyUserMembershipsControllerTests
     public async Task Upsert_con_empresa_activa_distinta_retorna_403()
     {
         var controller = BuildController(_ =>
-            Result<object>.Forbidden("La empresa activa no coincide con el contexto administrado."));
+            Result<object>.Forbidden("La empresa activa no coincide con el contexto administrado.")
+        );
 
         var response = await controller.Upsert(
-            new UpsertCompanyUserMembershipRequest("ana.perez", "User"), CancellationToken.None);
+            new UpsertCompanyUserMembershipRequest("ana.perez", "User"),
+            CancellationToken.None
+        );
 
         response.Should().BeOfType<ObjectResult>();
         ((ObjectResult)response).StatusCode.Should().Be(StatusCodes.Status403Forbidden);
@@ -185,7 +224,9 @@ public sealed class CompanyUserMembershipsControllerTests
         var controller = BuildController(_ => Result<object>.Failure("Usuario no existe."));
 
         var response = await controller.Upsert(
-            new UpsertCompanyUserMembershipRequest("no-existe", "User"), CancellationToken.None);
+            new UpsertCompanyUserMembershipRequest("no-existe", "User"),
+            CancellationToken.None
+        );
 
         response.Should().BeOfType<BadRequestObjectResult>();
     }
@@ -195,10 +236,14 @@ public sealed class CompanyUserMembershipsControllerTests
     {
         var controller = BuildController(_ =>
             Result<object>.ValidationFailure(
-                "La sucursal por defecto debe estar previamente autorizada para este usuario (CompanyUserBranch)."));
+                "La sucursal por defecto debe estar previamente autorizada para este usuario (CompanyUserBranch)."
+            )
+        );
 
         var response = await controller.Upsert(
-            new UpsertCompanyUserMembershipRequest("ana.perez", "User"), CancellationToken.None);
+            new UpsertCompanyUserMembershipRequest("ana.perez", "User"),
+            CancellationToken.None
+        );
 
         response.Should().BeOfType<UnprocessableEntityObjectResult>();
     }
@@ -216,7 +261,9 @@ public sealed class CompanyUserMembershipsControllerTests
         });
 
         var response = await controller.Revoke(
-            new RevokeCompanyUserMembershipRequest("ana.perez"), CancellationToken.None);
+            new RevokeCompanyUserMembershipRequest("ana.perez"),
+            CancellationToken.None
+        );
 
         response.Should().BeOfType<OkObjectResult>();
         sentRequest.Should().Be(new RevokeCompanyUserMembershipAdminCommand("ana.perez"));
@@ -226,10 +273,13 @@ public sealed class CompanyUserMembershipsControllerTests
     public async Task Revoke_con_empresa_activa_distinta_retorna_403()
     {
         var controller = BuildController(_ =>
-            Result<object>.Forbidden("La empresa activa no coincide con el contexto administrado."));
+            Result<object>.Forbidden("La empresa activa no coincide con el contexto administrado.")
+        );
 
         var response = await controller.Revoke(
-            new RevokeCompanyUserMembershipRequest("ana.perez"), CancellationToken.None);
+            new RevokeCompanyUserMembershipRequest("ana.perez"),
+            CancellationToken.None
+        );
 
         response.Should().BeOfType<ObjectResult>();
         ((ObjectResult)response).StatusCode.Should().Be(StatusCodes.Status403Forbidden);
@@ -241,7 +291,9 @@ public sealed class CompanyUserMembershipsControllerTests
         var controller = BuildController(_ => Result<object>.Failure("Usuario no existe."));
 
         var response = await controller.Revoke(
-            new RevokeCompanyUserMembershipRequest("no-existe"), CancellationToken.None);
+            new RevokeCompanyUserMembershipRequest("no-existe"),
+            CancellationToken.None
+        );
 
         response.Should().BeOfType<BadRequestObjectResult>();
     }

@@ -17,8 +17,16 @@ public sealed class AccountingPeriodConfiguration : IEntityTypeConfiguration<Acc
 
         builder.Property(x => x.FiscalYear).HasColumnName("fiscal_year").IsRequired();
         builder.Property(x => x.PeriodNumber).HasColumnName("period_number").IsRequired();
-        builder.Property(x => x.StartDate).HasColumnName("start_date").HasColumnType("date").IsRequired();
-        builder.Property(x => x.EndDate).HasColumnName("end_date").HasColumnType("date").IsRequired();
+        builder
+            .Property(x => x.StartDate)
+            .HasColumnName("start_date")
+            .HasColumnType("date")
+            .IsRequired();
+        builder
+            .Property(x => x.EndDate)
+            .HasColumnName("end_date")
+            .HasColumnType("date")
+            .IsRequired();
         builder.Property(x => x.Status).HasColumnName("status").HasConversion<int>().IsRequired();
         builder.Property(x => x.ClosedAtUtc).HasColumnName("closed_at_utc");
         builder.Property(x => x.ClosedBy).HasColumnName("closed_by");
@@ -30,7 +38,13 @@ public sealed class AccountingPeriodConfiguration : IEntityTypeConfiguration<Acc
 
         // Único por (CompanyId, FiscalYear, PeriodNumber) — todas propiedades planas del owner,
         // sin el problema de owned type visto en Account.Code.
-        builder.HasIndex(x => new { x.CompanyId, x.FiscalYear, x.PeriodNumber })
+        builder
+            .HasIndex(x => new
+            {
+                x.CompanyId,
+                x.FiscalYear,
+                x.PeriodNumber,
+            })
             .IsUnique()
             .HasDatabaseName("uq_accounting_periods_company_year_period");
 

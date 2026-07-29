@@ -17,7 +17,8 @@ public sealed partial class GlobalBootstrapOrchestrator : IGlobalBootstrapOrches
 
     public GlobalBootstrapOrchestrator(
         IEnumerable<IGlobalBootstrapStep> steps,
-        ILogger<GlobalBootstrapOrchestrator> logger)
+        ILogger<GlobalBootstrapOrchestrator> logger
+    )
     {
         _steps = steps.OrderBy(s => s.Order).ToList();
         _logger = logger;
@@ -39,7 +40,10 @@ public sealed partial class GlobalBootstrapOrchestrator : IGlobalBootstrapOrches
     [LoggerMessage(Level = LogLevel.Debug, Message = "Running global bootstrap…")]
     private partial void LogRunningGlobalBootstrap();
 
-    [LoggerMessage(Level = LogLevel.Debug, Message = "Running global bootstrap step {StepName} (order={Order}).")]
+    [LoggerMessage(
+        Level = LogLevel.Debug,
+        Message = "Running global bootstrap step {StepName} (order={Order})."
+    )]
     private partial void LogRunningStep(string stepName, int order);
 
     [LoggerMessage(Level = LogLevel.Debug, Message = "Global bootstrap complete.")]

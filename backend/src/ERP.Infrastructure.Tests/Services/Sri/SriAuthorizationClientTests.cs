@@ -13,20 +13,27 @@ public sealed class SriAuthorizationClientTests
     private sealed class RespondingHandler : HttpMessageHandler
     {
         private readonly string _body;
+
         public RespondingHandler(string body) => _body = body;
 
         protected override Task<HttpResponseMessage> SendAsync(
-            HttpRequestMessage request, CancellationToken cancellationToken)
-            => Task.FromResult(new HttpResponseMessage(System.Net.HttpStatusCode.OK)
-            {
-                Content = new StringContent(_body, System.Text.Encoding.UTF8, "text/xml"),
-            });
+            HttpRequestMessage request,
+            CancellationToken cancellationToken
+        ) =>
+            Task.FromResult(
+                new HttpResponseMessage(System.Net.HttpStatusCode.OK)
+                {
+                    Content = new StringContent(_body, System.Text.Encoding.UTF8, "text/xml"),
+                }
+            );
     }
 
     private sealed class FakeHttpClientFactory : IHttpClientFactory
     {
         private readonly HttpMessageHandler _handler;
+
         public FakeHttpClientFactory(HttpMessageHandler handler) => _handler = handler;
+
         public HttpClient CreateClient(string name) => new(_handler);
     }
 
@@ -51,10 +58,16 @@ public sealed class SriAuthorizationClientTests
               </soap:Body>
             </soap:Envelope>
             """;
-        var soapClient = new SriSoapClient(new FakeHttpClientFactory(new RespondingHandler(soap)), NullLogger<SriSoapClient>.Instance);
+        var soapClient = new SriSoapClient(
+            new FakeHttpClientFactory(new RespondingHandler(soap)),
+            NullLogger<SriSoapClient>.Instance
+        );
         var adapter = new SriAuthorizationClient(soapClient);
 
-        var result = await adapter.CheckAsync(new string('1', 49), "https://celcer.sri.gob.ec/fake?wsdl");
+        var result = await adapter.CheckAsync(
+            new string('1', 49),
+            "https://celcer.sri.gob.ec/fake?wsdl"
+        );
 
         result.Status.Should().Be("AUTORIZADO");
         result.Authorized.Should().BeTrue();

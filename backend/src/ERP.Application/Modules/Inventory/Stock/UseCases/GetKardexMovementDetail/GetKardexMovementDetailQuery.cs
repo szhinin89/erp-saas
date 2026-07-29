@@ -10,4 +10,5 @@ namespace ERP.Application.Modules.Inventory.Stock.UseCases.GetKardexMovementDeta
 /// origen y el actor — sin duplicar datos entre dominios.
 /// </summary>
 public sealed record GetKardexMovementDetailQuery(Guid MovementId)
-    : IRequest<Result<KardexMovementDetailDto>>, IBranchScopedRequest;
+    : IRequest<Result<KardexMovementDetailDto>>,
+        IBranchScopedRequest;

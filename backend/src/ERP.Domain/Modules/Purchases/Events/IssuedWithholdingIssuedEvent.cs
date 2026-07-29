@@ -13,8 +13,13 @@ public sealed class IssuedWithholdingIssuedEvent : BaseDomainEvent, IAuditEvent
     public decimal TotalRetained { get; }
 
     public IssuedWithholdingIssuedEvent(
-        Guid tenantId, Guid withholdingId, Guid purchaseInvoiceId, Guid supplierId,
-        string withholdingNumber, decimal totalRetained)
+        Guid tenantId,
+        Guid withholdingId,
+        Guid purchaseInvoiceId,
+        Guid supplierId,
+        string withholdingNumber,
+        decimal totalRetained
+    )
     {
         TenantId = tenantId;
         WithholdingId = withholdingId;

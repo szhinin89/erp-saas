@@ -7,7 +7,8 @@ using Npgsql;
 
 namespace ERP.Infrastructure.Services;
 
-public sealed partial class KardexMaterializedDailySummariesReader : IKardexMaterializedDailySummariesReader
+public sealed partial class KardexMaterializedDailySummariesReader
+    : IKardexMaterializedDailySummariesReader
 {
     private readonly ErpDbContext _db;
     private readonly IConfiguration _configuration;
@@ -16,7 +17,8 @@ public sealed partial class KardexMaterializedDailySummariesReader : IKardexMate
     public KardexMaterializedDailySummariesReader(
         ErpDbContext db,
         IConfiguration configuration,
-        ILogger<KardexMaterializedDailySummariesReader> logger)
+        ILogger<KardexMaterializedDailySummariesReader> logger
+    )
     {
         _db = db;
         _configuration = configuration;
@@ -29,12 +31,16 @@ public sealed partial class KardexMaterializedDailySummariesReader : IKardexMate
         Guid warehouseId,
         DateOnly fromInclusive,
         DateOnly toInclusive,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default
+    )
     {
-        if (!string.Equals(
+        if (
+            !string.Equals(
                 _db.Database.ProviderName,
                 "Npgsql.EntityFrameworkCore.PostgreSQL",
-                StringComparison.Ordinal))
+                StringComparison.Ordinal
+            )
+        )
             return null;
 
         var cs = _configuration.GetConnectionString("DefaultConnection");
@@ -61,7 +67,8 @@ public sealed partial class KardexMaterializedDailySummariesReader : IKardexMate
                   AND fecha <= @d1
                 ORDER BY fecha;
                 """,
-                conn);
+                conn
+            );
 
             cmd.Parameters.AddWithValue("t", tenantId);
             cmd.Parameters.AddWithValue("p", productId);
@@ -73,16 +80,20 @@ public sealed partial class KardexMaterializedDailySummariesReader : IKardexMate
             var list = new List<KardexMvDayAggregate>();
             while (await reader.ReadAsync(cancellationToken))
             {
-                var fecha = reader.GetFieldType(0) == typeof(DateTime)
-                    ? DateOnly.FromDateTime(reader.GetDateTime(0))
-                    : reader.GetFieldValue<DateOnly>(0);
+                var fecha =
+                    reader.GetFieldType(0) == typeof(DateTime)
+                        ? DateOnly.FromDateTime(reader.GetDateTime(0))
+                        : reader.GetFieldValue<DateOnly>(0);
 
-                list.Add(new KardexMvDayAggregate(
-                    fecha,
-                    reader.GetDecimal(1),
-                    reader.GetDecimal(2),
-                    reader.GetDecimal(3),
-                    reader.GetDecimal(4)));
+                list.Add(
+                    new KardexMvDayAggregate(
+                        fecha,
+                        reader.GetDecimal(1),
+                        reader.GetDecimal(2),
+                        reader.GetDecimal(3),
+                        reader.GetDecimal(4)
+                    )
+                );
             }
 
             return list;
@@ -102,7 +113,10 @@ public sealed partial class KardexMaterializedDailySummariesReader : IKardexMate
     [LoggerMessage(Level = LogLevel.Debug, Message = "mv_saldos_diarios no disponible.")]
     private partial void LogViewNotAvailable(Exception ex);
 
-    [LoggerMessage(Level = LogLevel.Warning, Message = "Lectura de mv_saldos_diarios omitida; se usarán movimientos detallados.")]
+    [LoggerMessage(
+        Level = LogLevel.Warning,
+        Message = "Lectura de mv_saldos_diarios omitida; se usarán movimientos detallados."
+    )]
     private partial void LogReadSkipped(Exception ex);
 }
 

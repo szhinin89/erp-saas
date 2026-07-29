@@ -25,21 +25,33 @@ public sealed class OrgConfigController : ControllerBase
     /// <summary>Devuelve las configuraciones de factura de venta a nivel empresa.</summary>
     [HttpGet("company/invoice-defaults")]
     [Authorize(Policy = $"perm:{SettingsPermissions.CompanyView}")]
-    [ProducesResponseType(typeof(ApiResponse<CompanyInvoiceOrgSettingsDto>), StatusCodes.Status200OK)]
-    public async Task<IActionResult> GetCompanyInvoiceDefaults(CancellationToken cancellationToken = default)
+    [ProducesResponseType(
+        typeof(ApiResponse<CompanyInvoiceOrgSettingsDto>),
+        StatusCodes.Status200OK
+    )]
+    public async Task<IActionResult> GetCompanyInvoiceDefaults(
+        CancellationToken cancellationToken = default
+    )
     {
-        var result = await _mediator.Send(new GetCompanyInvoiceOrgSettingsQuery(), cancellationToken);
+        var result = await _mediator.Send(
+            new GetCompanyInvoiceOrgSettingsQuery(),
+            cancellationToken
+        );
         return this.ToOkOrBadRequest(result);
     }
 
     /// <summary>Actualiza las configuraciones de factura de venta a nivel empresa.</summary>
     [HttpPut("company/invoice-defaults")]
     [Authorize(Policy = $"perm:{SettingsPermissions.CompaniesUpdate}")]
-    [ProducesResponseType(typeof(ApiResponse<CompanyInvoiceOrgSettingsDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(
+        typeof(ApiResponse<CompanyInvoiceOrgSettingsDto>),
+        StatusCodes.Status200OK
+    )]
     [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
     public async Task<IActionResult> UpsertCompanyInvoiceDefaults(
         [FromBody] UpsertCompanyInvoiceOrgSettingsCommand command,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default
+    )
     {
         var result = await _mediator.Send(command, cancellationToken);
         return this.ToOkOrBadRequest(result);
@@ -48,24 +60,35 @@ public sealed class OrgConfigController : ControllerBase
     /// <summary>Devuelve las configuraciones de factura de venta a nivel sucursal.</summary>
     [HttpGet("branch/{branchId:guid}/invoice-defaults")]
     [Authorize(Policy = $"perm:{SettingsPermissions.CompanyView}")]
-    [ProducesResponseType(typeof(ApiResponse<BranchInvoiceOrgSettingsDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(
+        typeof(ApiResponse<BranchInvoiceOrgSettingsDto>),
+        StatusCodes.Status200OK
+    )]
     public async Task<IActionResult> GetBranchInvoiceDefaults(
         Guid branchId,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default
+    )
     {
-        var result = await _mediator.Send(new GetBranchInvoiceOrgSettingsQuery(branchId), cancellationToken);
+        var result = await _mediator.Send(
+            new GetBranchInvoiceOrgSettingsQuery(branchId),
+            cancellationToken
+        );
         return this.ToOkOrBadRequest(result);
     }
 
     /// <summary>Actualiza las configuraciones de factura de venta a nivel sucursal.</summary>
     [HttpPut("branch/{branchId:guid}/invoice-defaults")]
     [Authorize(Policy = $"perm:{SettingsPermissions.CompaniesUpdate}")]
-    [ProducesResponseType(typeof(ApiResponse<BranchInvoiceOrgSettingsDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(
+        typeof(ApiResponse<BranchInvoiceOrgSettingsDto>),
+        StatusCodes.Status200OK
+    )]
     [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
     public async Task<IActionResult> UpsertBranchInvoiceDefaults(
         Guid branchId,
         [FromBody] UpsertBranchInvoiceOrgSettingsCommand command,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default
+    )
     {
         var result = await _mediator.Send(command with { BranchId = branchId }, cancellationToken);
         return this.ToOkOrBadRequest(result);

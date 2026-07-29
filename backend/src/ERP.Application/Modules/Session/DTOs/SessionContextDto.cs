@@ -12,9 +12,15 @@ public sealed record SessionContextDto(
     SessionTenantDto Tenant,
     SessionAuthorizationDto Authorization,
     SessionPreferencesDto Preferences,
-    SessionBranchDto? Branch);
+    SessionBranchDto? Branch
+);
 
-public sealed record SessionIdentityDto(Guid UserId, string FullName, string Username, string? Email);
+public sealed record SessionIdentityDto(
+    Guid UserId,
+    string FullName,
+    string Username,
+    string? Email
+);
 
 /// <summary>
 /// DisplayName/Logo provienen de la empresa operativa activa (TradeName ?? LegalName,
@@ -22,7 +28,10 @@ public sealed record SessionIdentityDto(Guid UserId, string FullName, string Use
 /// </summary>
 public sealed record SessionTenantDto(Guid Id, string DisplayName, CompanyLogoDto? Logo);
 
-public sealed record SessionAuthorizationDto(IReadOnlyList<string> Roles, IReadOnlyList<string> Permissions);
+public sealed record SessionAuthorizationDto(
+    IReadOnlyList<string> Roles,
+    IReadOnlyList<string> Permissions
+);
 
 public sealed record SessionPreferencesDto(string Language);
 

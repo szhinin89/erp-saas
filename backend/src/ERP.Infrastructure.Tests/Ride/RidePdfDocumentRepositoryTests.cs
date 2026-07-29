@@ -49,18 +49,33 @@ public sealed class RidePdfDocumentRepositoryTests : IAsyncLifetime
             .UseNpgsql(_postgres.GetConnectionString())
             .Options;
         return new ErpDbContext(
-            options, new FixedCurrentTenant(_tenantId), new NoOpPublisher(), new FixedCurrentCompany(_companyId));
+            options,
+            new FixedCurrentTenant(_tenantId),
+            new NoOpPublisher(),
+            new FixedCurrentCompany(_companyId)
+        );
     }
 
     private static RidePdfDocumentRepository NewRepository(ErpDbContext db) =>
         new(db, new PostgresDatabaseExceptionTranslator());
 
-    private static RideContentHash Hash(char fill = 'a') => RideContentHash.Create(new string(fill, 64));
+    private static RideContentHash Hash(char fill = 'a') =>
+        RideContentHash.Create(new string(fill, 64));
 
     private RidePdfDocument NewDocument(Guid electronicDocumentId, RideContentHash? hash = null) =>
         RidePdfDocument.Create(
-            _tenantId, _companyId, electronicDocumentId, RideDocumentType.Invoice,
-            hash ?? Hash(), "DefaultInvoiceRideTemplate", "1.0.0", "1.0.0", "1.0.0", "1.0.0", _userId);
+            _tenantId,
+            _companyId,
+            electronicDocumentId,
+            RideDocumentType.Invoice,
+            hash ?? Hash(),
+            "DefaultInvoiceRideTemplate",
+            "1.0.0",
+            "1.0.0",
+            "1.0.0",
+            "1.0.0",
+            _userId
+        );
 
     [Fact]
     public async Task AddAsync_then_SaveChanges_persists_a_new_document()
@@ -100,12 +115,26 @@ public sealed class RidePdfDocumentRepositoryTests : IAsyncLifetime
         var readRepository = NewRepository(readDb);
 
         var found = await readRepository.GetByFingerprintAsync(
-            _tenantId, electronicDocumentId, Hash('b'), "1.0.0", "1.0.0", "1.0.0", "1.0.0");
+            _tenantId,
+            electronicDocumentId,
+            Hash('b'),
+            "1.0.0",
+            "1.0.0",
+            "1.0.0",
+            "1.0.0"
+        );
         found.Should().NotBeNull();
         found!.Id.Should().Be(document.Id);
 
         var notFound = await readRepository.GetByFingerprintAsync(
-            _tenantId, electronicDocumentId, Hash('c'), "1.0.0", "1.0.0", "1.0.0", "1.0.0");
+            _tenantId,
+            electronicDocumentId,
+            Hash('c'),
+            "1.0.0",
+            "1.0.0",
+            "1.0.0",
+            "1.0.0"
+        );
         notFound.Should().BeNull();
     }
 
@@ -127,7 +156,14 @@ public sealed class RidePdfDocumentRepositoryTests : IAsyncLifetime
         {
             var repository = NewRepository(db);
             var tracked = await repository.GetByFingerprintAsync(
-                _tenantId, electronicDocumentId, Hash('d'), "1.0.0", "1.0.0", "1.0.0", "1.0.0");
+                _tenantId,
+                electronicDocumentId,
+                Hash('d'),
+                "1.0.0",
+                "1.0.0",
+                "1.0.0",
+                "1.0.0"
+            );
             tracked!.MarkGenerated("ride/path/v1.pdf", DateTime.UtcNow, _userId);
             await repository.SaveChangesAsync();
         }
@@ -171,8 +207,10 @@ public sealed class RidePdfDocumentRepositoryTests : IAsyncLifetime
         await act.Should().NotThrowAsync();
 
         await using var verifyDb = NewDbContext();
-        var rows = await verifyDb.RidePdfDocuments
-            .Where(x => x.TenantId == _tenantId && x.ElectronicDocumentId == electronicDocumentId)
+        var rows = await verifyDb
+            .RidePdfDocuments.Where(x =>
+                x.TenantId == _tenantId && x.ElectronicDocumentId == electronicDocumentId
+            )
             .ToListAsync();
         rows.Should().ContainSingle();
         rows[0].Id.Should().Be(winnerId);
@@ -193,11 +231,13 @@ public sealed class RidePdfDocumentRepositoryTests : IAsyncLifetime
 
     private sealed class NoOpPublisher : IPublisher
     {
-        public Task Publish(object notification, CancellationToken cancellationToken = default)
-            => Task.CompletedTask;
+        public Task Publish(object notification, CancellationToken cancellationToken = default) =>
+            Task.CompletedTask;
 
-        public Task Publish<TNotification>(TNotification notification, CancellationToken cancellationToken = default)
-            where TNotification : INotification
-            => Task.CompletedTask;
+        public Task Publish<TNotification>(
+            TNotification notification,
+            CancellationToken cancellationToken = default
+        )
+            where TNotification : INotification => Task.CompletedTask;
     }
 }

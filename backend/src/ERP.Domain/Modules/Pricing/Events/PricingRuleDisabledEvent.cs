@@ -14,8 +14,13 @@ public sealed class PricingRuleDisabledEvent : BaseDomainEvent, IAuditEvent
     public decimal RuleValue { get; }
 
     public PricingRuleDisabledEvent(
-        Guid tenantId, Guid ruleId, Guid priceListId, Guid itemId,
-        PricingRuleType ruleType, decimal ruleValue)
+        Guid tenantId,
+        Guid ruleId,
+        Guid priceListId,
+        Guid itemId,
+        PricingRuleType ruleType,
+        decimal ruleValue
+    )
     {
         TenantId = tenantId;
         RuleId = ruleId;

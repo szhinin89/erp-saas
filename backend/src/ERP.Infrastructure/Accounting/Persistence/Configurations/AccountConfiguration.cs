@@ -23,7 +23,8 @@ public sealed class AccountConfiguration : IEntityTypeConfiguration<Account>
         // el índice único compuesto (CompanyId, Code) vía Fluent API estándar, sin la
         // limitación de EF Core que impide combinar una propiedad de owned type con una
         // propiedad del owner en el mismo índice (ver ItemConfiguration.cs, Code.SKU).
-        builder.Property(x => x.Code)
+        builder
+            .Property(x => x.Code)
             .HasConversion(c => c.Value, v => AccountCode.Create(v))
             .HasColumnName("code")
             .HasMaxLength(30)
@@ -31,7 +32,11 @@ public sealed class AccountConfiguration : IEntityTypeConfiguration<Account>
 
         builder.Property(x => x.Name).HasColumnName("name").HasMaxLength(150).IsRequired();
         builder.Property(x => x.ParentAccountId).HasColumnName("parent_account_id");
-        builder.Property(x => x.AccountType).HasColumnName("account_type").HasConversion<int>().IsRequired();
+        builder
+            .Property(x => x.AccountType)
+            .HasColumnName("account_type")
+            .HasConversion<int>()
+            .IsRequired();
         builder.Property(x => x.Nature).HasColumnName("nature").HasConversion<int>().IsRequired();
         builder.Property(x => x.AllowsPosting).HasColumnName("allows_posting").IsRequired();
         builder.Property(x => x.IsActive).HasColumnName("is_active").IsRequired();
@@ -44,10 +49,12 @@ public sealed class AccountConfiguration : IEntityTypeConfiguration<Account>
         // No FK a sí misma (ParentAccountId) todavía — jerarquía/detección de ciclos diferida
         // a Application/Repository (ver <remarks> de Account.cs). Columna plana sin constraint.
 
-        builder.HasIndex(x => new { x.CompanyId, x.ParentAccountId })
+        builder
+            .HasIndex(x => new { x.CompanyId, x.ParentAccountId })
             .HasDatabaseName("ix_accounts_company_parent");
 
-        builder.HasIndex(x => new { x.CompanyId, x.Code })
+        builder
+            .HasIndex(x => new { x.CompanyId, x.Code })
             .IsUnique()
             .HasDatabaseName("uq_accounts_company_code");
     }

@@ -29,7 +29,8 @@ public sealed class CurrentCashSessionService : ICurrentCashSession
         ICashSessionRepository repo,
         ICurrentTenant tenant,
         ICurrentUser user,
-        ICurrentBranch branch)
+        ICurrentBranch branch
+    )
     {
         _repo = repo;
         _tenant = tenant;
@@ -56,7 +57,8 @@ public sealed class CurrentCashSessionService : ICurrentCashSession
 
         var session = _repo
             .GetOpenByUserAsync(_tenant.TenantId, _user.UserId, CancellationToken.None)
-            .GetAwaiter().GetResult();
+            .GetAwaiter()
+            .GetResult();
 
         // La sesión pertenece al usuario autenticado y está Open (ya filtrado por el repositorio).
         // Falta validar que corresponda a la sucursal activa: si el usuario cambió de sucursal sin

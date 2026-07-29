@@ -15,4 +15,5 @@ public sealed record NavigationItemDefinition(
     string? PermissionKey,
     int SortOrder,
     Guid? ParentItemId = null,
-    string? PermissionKeysAnyJson = null);
+    string? PermissionKeysAnyJson = null
+);

@@ -20,15 +20,19 @@ public sealed class MediaFileRepository : IMediaFileRepository
         MediaOwnerType ownerType,
         Guid ownerId,
         string role,
-        CancellationToken cancellationToken = default)
-        => _db.MediaFiles
-            .FirstOrDefaultAsync(m => m.TenantId == tenantId
-                                   && m.CompanyId == companyId
-                                   && m.OwnerType == ownerType
-                                   && m.OwnerId == ownerId
-                                   && m.Role == role
-                                   && m.IsPrimary
-                                   && m.IsActive, cancellationToken);
+        CancellationToken cancellationToken = default
+    ) =>
+        _db.MediaFiles.FirstOrDefaultAsync(
+            m =>
+                m.TenantId == tenantId
+                && m.CompanyId == companyId
+                && m.OwnerType == ownerType
+                && m.OwnerId == ownerId
+                && m.Role == role
+                && m.IsPrimary
+                && m.IsActive,
+            cancellationToken
+        );
 
     public Task AddAsync(MediaFile mediaFile, CancellationToken cancellationToken = default)
     {
@@ -36,6 +40,6 @@ public sealed class MediaFileRepository : IMediaFileRepository
         return Task.CompletedTask;
     }
 
-    public Task SaveChangesAsync(CancellationToken cancellationToken = default)
-        => _db.SaveChangesAsync(cancellationToken);
+    public Task SaveChangesAsync(CancellationToken cancellationToken = default) =>
+        _db.SaveChangesAsync(cancellationToken);
 }

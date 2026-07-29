@@ -14,7 +14,8 @@ namespace ERP.Application.Access.UseCases.CloseUserSessionAdmin;
 ///
 /// NO revoca el RefreshToken asociado — no existe flujo aprobado de revocación por Id.
 /// </summary>
-public sealed class CloseUserSessionAdminHandler : IRequestHandler<CloseUserSessionAdminCommand, Result<string>>
+public sealed class CloseUserSessionAdminHandler
+    : IRequestHandler<CloseUserSessionAdminCommand, Result<string>>
 {
     private readonly IUserSessionRepository _repository;
     private readonly ICurrentUser _currentUser;
@@ -25,7 +26,10 @@ public sealed class CloseUserSessionAdminHandler : IRequestHandler<CloseUserSess
         _currentUser = currentUser;
     }
 
-    public async Task<Result<string>> Handle(CloseUserSessionAdminCommand command, CancellationToken cancellationToken)
+    public async Task<Result<string>> Handle(
+        CloseUserSessionAdminCommand command,
+        CancellationToken cancellationToken
+    )
     {
         // Sin IgnoreQueryFilters: el filtro automático de ICompanyOperationalEntity ya
         // garantiza que un admin solo alcance sesiones de su propia empresa activa — una

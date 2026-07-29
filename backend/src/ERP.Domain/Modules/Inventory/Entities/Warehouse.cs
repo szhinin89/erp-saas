@@ -48,7 +48,8 @@ public sealed class Warehouse : MasterEntity, ITenantScopedEntity, ICompanyOpera
         Guid createdBy,
         Guid companyId,
         bool isMain = false,
-        Guid? establishmentId = null)
+        Guid? establishmentId = null
+    )
     {
         if (string.IsNullOrWhiteSpace(name))
             throw new ArgumentException("Warehouse name is required.", nameof(name));
@@ -100,11 +101,28 @@ public sealed class Warehouse : MasterEntity, ITenantScopedEntity, ICompanyOpera
         Guid createdBy,
         Guid companyId,
         bool isMain = false,
-        Guid? establishmentId = null)
+        Guid? establishmentId = null
+    )
     {
         var w = Create(
-            tenantId, branchId, name, code, storageType, address, phone, email, manager, latitude,
-            longitude, capacity, dailyDispatchGoal, createdBy, companyId, isMain, establishmentId);
+            tenantId,
+            branchId,
+            name,
+            code,
+            storageType,
+            address,
+            phone,
+            email,
+            manager,
+            latitude,
+            longitude,
+            capacity,
+            dailyDispatchGoal,
+            createdBy,
+            companyId,
+            isMain,
+            establishmentId
+        );
         w.MarkAsSystemSeeded();
         return w;
     }
@@ -122,7 +140,8 @@ public sealed class Warehouse : MasterEntity, ITenantScopedEntity, ICompanyOpera
         decimal? capacity,
         decimal? dailyDispatchGoal,
         Guid updatedBy,
-        Guid? establishmentId = null)
+        Guid? establishmentId = null
+    )
     {
         if (string.IsNullOrWhiteSpace(name))
             throw new ArgumentException("Warehouse name is required.", nameof(name));
@@ -142,8 +161,7 @@ public sealed class Warehouse : MasterEntity, ITenantScopedEntity, ICompanyOpera
         SetUpdated(updatedBy);
     }
 
-    private static string? Trim(string? s) =>
-        string.IsNullOrWhiteSpace(s) ? null : s.Trim();
+    private static string? Trim(string? s) => string.IsNullOrWhiteSpace(s) ? null : s.Trim();
 
     public override void Disable(Guid updatedBy)
     {

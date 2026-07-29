@@ -23,44 +23,64 @@ public sealed class RideCodesBoundaryTests
     [Fact]
     public void Ride_must_not_depend_on_qrcoder()
     {
-        var result = Types.InAssembly(InfrastructureAssembly)
-            .That().ResideInNamespace(RideInfrastructureNamespace)
-            .ShouldNot().HaveDependencyOn("QRCoder")
+        var result = Types
+            .InAssembly(InfrastructureAssembly)
+            .That()
+            .ResideInNamespace(RideInfrastructureNamespace)
+            .ShouldNot()
+            .HaveDependencyOn("QRCoder")
             .GetResult();
 
-        result.IsSuccessful.Should().BeTrue(string.Join(", ", result.FailingTypeNames ?? Array.Empty<string>()));
+        result
+            .IsSuccessful.Should()
+            .BeTrue(string.Join(", ", result.FailingTypeNames ?? Array.Empty<string>()));
     }
 
     [Fact]
     public void Ride_must_not_depend_on_zxing()
     {
-        var result = Types.InAssembly(InfrastructureAssembly)
-            .That().ResideInNamespace(RideInfrastructureNamespace)
-            .ShouldNot().HaveDependencyOn("ZXing")
+        var result = Types
+            .InAssembly(InfrastructureAssembly)
+            .That()
+            .ResideInNamespace(RideInfrastructureNamespace)
+            .ShouldNot()
+            .HaveDependencyOn("ZXing")
             .GetResult();
 
-        result.IsSuccessful.Should().BeTrue(string.Join(", ", result.FailingTypeNames ?? Array.Empty<string>()));
+        result
+            .IsSuccessful.Should()
+            .BeTrue(string.Join(", ", result.FailingTypeNames ?? Array.Empty<string>()));
     }
 
     [Fact]
     public void Ride_must_not_depend_on_skiasharp()
     {
-        var result = Types.InAssembly(InfrastructureAssembly)
-            .That().ResideInNamespace(RideInfrastructureNamespace)
-            .ShouldNot().HaveDependencyOn("SkiaSharp")
+        var result = Types
+            .InAssembly(InfrastructureAssembly)
+            .That()
+            .ResideInNamespace(RideInfrastructureNamespace)
+            .ShouldNot()
+            .HaveDependencyOn("SkiaSharp")
             .GetResult();
 
-        result.IsSuccessful.Should().BeTrue(string.Join(", ", result.FailingTypeNames ?? Array.Empty<string>()));
+        result
+            .IsSuccessful.Should()
+            .BeTrue(string.Join(", ", result.FailingTypeNames ?? Array.Empty<string>()));
     }
 
     [Fact]
     public void Ride_must_not_depend_on_the_concrete_codes_implementation()
     {
-        var result = Types.InAssembly(InfrastructureAssembly)
-            .That().ResideInNamespace(RideInfrastructureNamespace)
-            .ShouldNot().HaveDependencyOn("ERP.Infrastructure.Codes")
+        var result = Types
+            .InAssembly(InfrastructureAssembly)
+            .That()
+            .ResideInNamespace(RideInfrastructureNamespace)
+            .ShouldNot()
+            .HaveDependencyOn("ERP.Infrastructure.Codes")
             .GetResult();
 
-        result.IsSuccessful.Should().BeTrue(string.Join(", ", result.FailingTypeNames ?? Array.Empty<string>()));
+        result
+            .IsSuccessful.Should()
+            .BeTrue(string.Join(", ", result.FailingTypeNames ?? Array.Empty<string>()));
     }
 }

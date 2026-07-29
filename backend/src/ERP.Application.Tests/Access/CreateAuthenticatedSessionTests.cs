@@ -15,8 +15,8 @@ public sealed class CreateAuthenticatedSessionValidatorTests
 {
     private static readonly CreateAuthenticatedSessionValidator Validator = new();
 
-    private static CreateAuthenticatedSessionCommand ValidCommand() => new(
-        Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), "device-1");
+    private static CreateAuthenticatedSessionCommand ValidCommand() =>
+        new(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), "device-1");
 
     [Fact]
     public void Command_valido_no_tiene_errores()
@@ -28,14 +28,18 @@ public sealed class CreateAuthenticatedSessionValidatorTests
     public void TenantId_vacio_es_invalido()
     {
         var result = Validator.Validate(ValidCommand() with { TenantId = Guid.Empty });
-        result.Errors.Should().Contain(e => e.PropertyName == nameof(CreateAuthenticatedSessionCommand.TenantId));
+        result
+            .Errors.Should()
+            .Contain(e => e.PropertyName == nameof(CreateAuthenticatedSessionCommand.TenantId));
     }
 
     [Fact]
     public void BranchId_vacio_es_invalido()
     {
         var result = Validator.Validate(ValidCommand() with { BranchId = Guid.Empty });
-        result.Errors.Should().Contain(e => e.PropertyName == nameof(CreateAuthenticatedSessionCommand.BranchId));
+        result
+            .Errors.Should()
+            .Contain(e => e.PropertyName == nameof(CreateAuthenticatedSessionCommand.BranchId));
     }
 
     [Theory]
@@ -44,7 +48,9 @@ public sealed class CreateAuthenticatedSessionValidatorTests
     public void TerminalId_vacio_es_invalido(string? terminalId)
     {
         var result = Validator.Validate(ValidCommand() with { TerminalId = terminalId! });
-        result.Errors.Should().Contain(e => e.PropertyName == nameof(CreateAuthenticatedSessionCommand.TerminalId));
+        result
+            .Errors.Should()
+            .Contain(e => e.PropertyName == nameof(CreateAuthenticatedSessionCommand.TerminalId));
     }
 }
 
@@ -61,9 +67,12 @@ public sealed class RefreshTokenNeverReferencesUserSessionTests
     {
         var properties = typeof(RefreshToken).GetProperties();
 
-        properties.Should().NotContain(p =>
-            p.PropertyType == typeof(UserSession) ||
-            p.Name.Contains("UserSession", StringComparison.OrdinalIgnoreCase));
+        properties
+            .Should()
+            .NotContain(p =>
+                p.PropertyType == typeof(UserSession)
+                || p.Name.Contains("UserSession", StringComparison.OrdinalIgnoreCase)
+            );
     }
 }
 
@@ -75,21 +84,42 @@ public sealed class CreateAuthenticatedSessionHandlerTests
     private static readonly Guid IdentityUserId = Guid.NewGuid();
     private static readonly Guid BranchId = Guid.NewGuid();
 
-    private static CreateAuthenticatedSessionCommand Command(Guid? companyId = null) => new(
-        TenantId, companyId ?? CompanyId, IdentityUserId, BranchId, "device-1");
+    private static CreateAuthenticatedSessionCommand Command(Guid? companyId = null) =>
+        new(TenantId, companyId ?? CompanyId, IdentityUserId, BranchId, "device-1");
 
     private static RefreshToken NewRefreshTokenEntity() =>
-        RefreshToken.Create(IdentityUserId, TenantId, CompanyId, RefreshUserType.Identity, "hash-" + Guid.NewGuid());
+        RefreshToken.Create(
+            IdentityUserId,
+            TenantId,
+            CompanyId,
+            RefreshUserType.Identity,
+            "hash-" + Guid.NewGuid()
+        );
 
-    private static (Mock<IUserSessionRepository> sessions, Mock<IRefreshTokenService> refresh, Mock<IDatabaseExceptionTranslator> dbEx) BuildMocks()
+    private static (
+        Mock<IUserSessionRepository> sessions,
+        Mock<IRefreshTokenService> refresh,
+        Mock<IDatabaseExceptionTranslator> dbEx
+    ) BuildMocks()
     {
         var sessions = new Mock<IUserSessionRepository>();
-        sessions.Setup(r => r.GetActiveSessionsAsync(IdentityUserId, TenantId, It.IsAny<CancellationToken>()))
+        sessions
+            .Setup(r =>
+                r.GetActiveSessionsAsync(IdentityUserId, TenantId, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(Array.Empty<UserSession>());
 
         var refresh = new Mock<IRefreshTokenService>();
-        refresh.Setup(r => r.CreateWithoutSaveAsync(
-                IdentityUserId, TenantId, It.IsAny<Guid?>(), RefreshUserType.Identity, It.IsAny<CancellationToken>()))
+        refresh
+            .Setup(r =>
+                r.CreateWithoutSaveAsync(
+                    IdentityUserId,
+                    TenantId,
+                    It.IsAny<Guid?>(),
+                    RefreshUserType.Identity,
+                    It.IsAny<CancellationToken>()
+                )
+            )
             .ReturnsAsync(() => (NewRefreshTokenEntity(), "raw-token-value"));
 
         var dbEx = new Mock<IDatabaseExceptionTranslator>();
@@ -104,11 +134,23 @@ public sealed class CreateAuthenticatedSessionHandlerTests
     {
         var (sessions, refresh, dbEx) = BuildMocks();
         var tokenEntity = NewRefreshTokenEntity();
-        refresh.Setup(r => r.CreateWithoutSaveAsync(
-                IdentityUserId, TenantId, CompanyId, RefreshUserType.Identity, It.IsAny<CancellationToken>()))
+        refresh
+            .Setup(r =>
+                r.CreateWithoutSaveAsync(
+                    IdentityUserId,
+                    TenantId,
+                    CompanyId,
+                    RefreshUserType.Identity,
+                    It.IsAny<CancellationToken>()
+                )
+            )
             .ReturnsAsync((tokenEntity, "raw-token-value"));
 
-        var handler = new CreateAuthenticatedSessionHandler(sessions.Object, refresh.Object, dbEx.Object);
+        var handler = new CreateAuthenticatedSessionHandler(
+            sessions.Object,
+            refresh.Object,
+            dbEx.Object
+        );
 
         var result = await handler.Handle(Command(), CancellationToken.None);
 
@@ -116,9 +158,16 @@ public sealed class CreateAuthenticatedSessionHandlerTests
         result.Value!.RefreshToken.Should().Be("raw-token-value");
         result.Value.RefreshTokenExpiry.Should().Be(tokenEntity.ExpiresAt);
 
-        sessions.Verify(r => r.AddAsync(
-            It.Is<UserSession>(s => s.RefreshTokenId == tokenEntity.Id && s.Status == UserSessionStatus.Active),
-            It.IsAny<CancellationToken>()), Times.Once);
+        sessions.Verify(
+            r =>
+                r.AddAsync(
+                    It.Is<UserSession>(s =>
+                        s.RefreshTokenId == tokenEntity.Id && s.Status == UserSessionStatus.Active
+                    ),
+                    It.IsAny<CancellationToken>()
+                ),
+            Times.Once
+        );
 
         // Única unidad de trabajo: un solo SaveChangesAsync para cierre(s) + RefreshToken + nueva sesión.
         sessions.Verify(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
@@ -128,11 +177,24 @@ public sealed class CreateAuthenticatedSessionHandlerTests
     public async Task Sesion_activa_previa_de_la_misma_empresa_se_cierra_por_nuevo_login()
     {
         var (sessions, refresh, dbEx) = BuildMocks();
-        var previous = UserSession.Create(TenantId, CompanyId, IdentityUserId, BranchId, "old-device");
-        sessions.Setup(r => r.GetActiveSessionsAsync(IdentityUserId, TenantId, It.IsAny<CancellationToken>()))
+        var previous = UserSession.Create(
+            TenantId,
+            CompanyId,
+            IdentityUserId,
+            BranchId,
+            "old-device"
+        );
+        sessions
+            .Setup(r =>
+                r.GetActiveSessionsAsync(IdentityUserId, TenantId, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(new[] { previous });
 
-        var handler = new CreateAuthenticatedSessionHandler(sessions.Object, refresh.Object, dbEx.Object);
+        var handler = new CreateAuthenticatedSessionHandler(
+            sessions.Object,
+            refresh.Object,
+            dbEx.Object
+        );
 
         await handler.Handle(Command(), CancellationToken.None);
 
@@ -145,26 +207,47 @@ public sealed class CreateAuthenticatedSessionHandlerTests
     public async Task Sesion_activa_de_otra_empresa_del_mismo_tenant_no_se_toca()
     {
         var (sessions, refresh, dbEx) = BuildMocks();
-        var otherCompanySession = UserSession.Create(TenantId, OtherCompanyId, IdentityUserId, BranchId, "other-device");
-        sessions.Setup(r => r.GetActiveSessionsAsync(IdentityUserId, TenantId, It.IsAny<CancellationToken>()))
+        var otherCompanySession = UserSession.Create(
+            TenantId,
+            OtherCompanyId,
+            IdentityUserId,
+            BranchId,
+            "other-device"
+        );
+        sessions
+            .Setup(r =>
+                r.GetActiveSessionsAsync(IdentityUserId, TenantId, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(new[] { otherCompanySession });
 
-        var handler = new CreateAuthenticatedSessionHandler(sessions.Object, refresh.Object, dbEx.Object);
+        var handler = new CreateAuthenticatedSessionHandler(
+            sessions.Object,
+            refresh.Object,
+            dbEx.Object
+        );
 
         await handler.Handle(Command(companyId: CompanyId), CancellationToken.None);
 
         otherCompanySession.Status.Should().Be(UserSessionStatus.Active);
-        sessions.Verify(r => r.UpdateAsync(otherCompanySession, It.IsAny<CancellationToken>()), Times.Never);
+        sessions.Verify(
+            r => r.UpdateAsync(otherCompanySession, It.IsAny<CancellationToken>()),
+            Times.Never
+        );
     }
 
     [Fact]
     public async Task Si_SaveChangesAsync_falla_por_una_causa_no_relacionada_a_unicidad_la_excepcion_se_propaga()
     {
         var (sessions, refresh, dbEx) = BuildMocks();
-        sessions.Setup(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()))
+        sessions
+            .Setup(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()))
             .ThrowsAsync(new InvalidOperationException("Fallo no relacionado a unicidad."));
 
-        var handler = new CreateAuthenticatedSessionHandler(sessions.Object, refresh.Object, dbEx.Object);
+        var handler = new CreateAuthenticatedSessionHandler(
+            sessions.Object,
+            refresh.Object,
+            dbEx.Object
+        );
 
         var act = () => handler.Handle(Command(), CancellationToken.None);
 
@@ -181,13 +264,23 @@ public sealed class CreateAuthenticatedSessionHandlerTests
     public async Task Si_SaveChangesAsync_falla_por_violacion_de_unicidad_devuelve_Conflict()
     {
         var (sessions, refresh, dbEx) = BuildMocks();
-        sessions.Setup(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()))
+        sessions
+            .Setup(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()))
             .ThrowsAsync(new InvalidOperationException("Violación de unicidad simulada."));
 
-        var info = new DatabaseUniqueViolationInfo("23505", "ux_user_sessions_active_per_company", "user_sessions", null);
+        var info = new DatabaseUniqueViolationInfo(
+            "23505",
+            "ux_user_sessions_active_per_company",
+            "user_sessions",
+            null
+        );
         dbEx.Setup(d => d.TryGetUniqueViolation(It.IsAny<Exception>(), out info)).Returns(true);
 
-        var handler = new CreateAuthenticatedSessionHandler(sessions.Object, refresh.Object, dbEx.Object);
+        var handler = new CreateAuthenticatedSessionHandler(
+            sessions.Object,
+            refresh.Object,
+            dbEx.Object
+        );
 
         var result = await handler.Handle(Command(), CancellationToken.None);
 

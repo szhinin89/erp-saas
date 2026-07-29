@@ -16,4 +16,5 @@ public sealed record ElectronicDocumentSchemaValidationResult(
     IReadOnlyList<string> Errors,
     IReadOnlyList<string> Warnings,
     string? SchemaVersion,
-    ElectronicDocumentType DocumentType);
+    ElectronicDocumentType DocumentType
+);

@@ -11,22 +11,26 @@ public sealed class DashboardKpiReader : IDashboardKpiReader
         Guid tenantId,
         Guid companyId,
         DateTime asOf,
-        CancellationToken cancellationToken = default)
-        => Task.FromResult(new DashboardKpisDto(
-            SalesMtd: 0m,
-            InvoicesMtd: 0,
-            SalesYtd: 0m,
-            PendingArTotal: 0m,
-            PendingArCount: 0,
-            OverdueArTotal: 0m,
-            OverdueArCount: 0,
-            PendingApTotal: 0m,
-            PendingApCount: 0,
-            OverdueApTotal: 0m,
-            OverdueApCount: 0,
-            LowStockSkuCount: 0,
-            OutOfStockSkuCount: 0,
-            AsOf: asOf,
-            Month: asOf.Month,
-            Year: asOf.Year));
+        CancellationToken cancellationToken = default
+    ) =>
+        Task.FromResult(
+            new DashboardKpisDto(
+                SalesMtd: 0m,
+                InvoicesMtd: 0,
+                SalesYtd: 0m,
+                PendingArTotal: 0m,
+                PendingArCount: 0,
+                OverdueArTotal: 0m,
+                OverdueArCount: 0,
+                PendingApTotal: 0m,
+                PendingApCount: 0,
+                OverdueApTotal: 0m,
+                OverdueApCount: 0,
+                LowStockSkuCount: 0,
+                OutOfStockSkuCount: 0,
+                AsOf: asOf,
+                Month: asOf.Month,
+                Year: asOf.Year
+            )
+        );
 }

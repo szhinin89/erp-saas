@@ -17,18 +17,29 @@ public sealed class CompanyUserPreferencesRepository : ICompanyUserPreferencesRe
     // AskBranch vs. DirectToDefault), antes de que exista un ICurrentCompany ambiente
     // confiable — mismo criterio que CompanyUserBranchRepository/UserSessionRepository.
     public Task<CompanyUserPreferences?> GetByMembershipAsync(
-        Guid companyUserMembershipId, CancellationToken cancellationToken = default)
-        => _db.CompanyUserPreferences.IgnoreQueryFilters()
-            .SingleOrDefaultAsync(x => x.CompanyUserMembershipId == companyUserMembershipId, cancellationToken);
+        Guid companyUserMembershipId,
+        CancellationToken cancellationToken = default
+    ) =>
+        _db
+            .CompanyUserPreferences.IgnoreQueryFilters()
+            .SingleOrDefaultAsync(
+                x => x.CompanyUserMembershipId == companyUserMembershipId,
+                cancellationToken
+            );
 
     public Task<bool> ExistsAsync(
-        Guid companyUserMembershipId, CancellationToken cancellationToken = default)
-        => _db.CompanyUserPreferences.IgnoreQueryFilters()
+        Guid companyUserMembershipId,
+        CancellationToken cancellationToken = default
+    ) =>
+        _db
+            .CompanyUserPreferences.IgnoreQueryFilters()
             .AnyAsync(x => x.CompanyUserMembershipId == companyUserMembershipId, cancellationToken);
 
-    public Task AddAsync(CompanyUserPreferences entity, CancellationToken cancellationToken = default)
-        => _db.CompanyUserPreferences.AddAsync(entity, cancellationToken).AsTask();
+    public Task AddAsync(
+        CompanyUserPreferences entity,
+        CancellationToken cancellationToken = default
+    ) => _db.CompanyUserPreferences.AddAsync(entity, cancellationToken).AsTask();
 
-    public Task SaveChangesAsync(CancellationToken cancellationToken = default)
-        => _db.SaveChangesAsync(cancellationToken);
+    public Task SaveChangesAsync(CancellationToken cancellationToken = default) =>
+        _db.SaveChangesAsync(cancellationToken);
 }

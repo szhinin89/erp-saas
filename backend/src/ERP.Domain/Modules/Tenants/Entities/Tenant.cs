@@ -15,7 +15,8 @@ public sealed class Tenant : SystemAuditableEntity
         string name,
         string slug,
         Guid createdBy,
-        string preferredLanguage = "es")
+        string preferredLanguage = "es"
+    )
     {
         var tenant = new Tenant
         {
@@ -23,7 +24,9 @@ public sealed class Tenant : SystemAuditableEntity
             Name = name,
             Slug = slug.ToLowerInvariant(),
             IsActive = true,
-            PreferredLanguage = string.IsNullOrWhiteSpace(preferredLanguage) ? "es" : preferredLanguage.Trim().ToLowerInvariant(),
+            PreferredLanguage = string.IsNullOrWhiteSpace(preferredLanguage)
+                ? "es"
+                : preferredLanguage.Trim().ToLowerInvariant(),
         };
         tenant.SetCreated(createdBy);
         return tenant;
@@ -33,7 +36,9 @@ public sealed class Tenant : SystemAuditableEntity
     {
         Name = name;
         Slug = slug.ToLowerInvariant();
-        PreferredLanguage = string.IsNullOrWhiteSpace(preferredLanguage) ? "es" : preferredLanguage!.Trim().ToLowerInvariant();
+        PreferredLanguage = string.IsNullOrWhiteSpace(preferredLanguage)
+            ? "es"
+            : preferredLanguage!.Trim().ToLowerInvariant();
         SetUpdated(updatedBy);
     }
 

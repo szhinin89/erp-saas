@@ -1,3 +1,5 @@
+using System.Net;
+using System.Text.Json;
 using ERP.API.Contracts;
 using ERP.API.Extensions;
 using ERP.Application.Common;
@@ -5,8 +7,6 @@ using ERP.Application.Common.Exceptions;
 using ERP.Domain.Exceptions;
 using FluentValidation;
 using Microsoft.EntityFrameworkCore;
-using System.Net;
-using System.Text.Json;
 
 namespace ERP.API.Middleware;
 
@@ -18,7 +18,11 @@ public partial class ExceptionMiddleware
     private readonly ILogger<ExceptionMiddleware> _logger;
     private readonly IWebHostEnvironment _environment;
 
-    public ExceptionMiddleware(RequestDelegate next, ILogger<ExceptionMiddleware> logger, IWebHostEnvironment environment)
+    public ExceptionMiddleware(
+        RequestDelegate next,
+        ILogger<ExceptionMiddleware> logger,
+        IWebHostEnvironment environment
+    )
     {
         _next = next;
         _logger = logger;
@@ -59,7 +63,11 @@ public partial class ExceptionMiddleware
         return ex is OperationCanceledException or TaskCanceledException;
     }
 
-    private static async Task HandleExceptionAsync(HttpContext context, Exception exception, IWebHostEnvironment environment)
+    private static async Task HandleExceptionAsync(
+        HttpContext context,
+        Exception exception,
+        IWebHostEnvironment environment
+    )
     {
         // Si la respuesta ya se inició (headers enviados), no podemos cambiar StatusCode ni ContentType.
         // Solo registrar en el log y abortar — el cliente recibirá lo que ya se envió.
@@ -70,27 +78,44 @@ public partial class ExceptionMiddleware
 
         var (statusCode, code) = exception switch
         {
-            ValidationException =>
-                (HttpStatusCode.UnprocessableEntity, ApiResponseCodes.Common.ValidationError),
+            ValidationException => (
+                HttpStatusCode.UnprocessableEntity,
+                ApiResponseCodes.Common.ValidationError
+            ),
             // FASE 7: Optimistic concurrency violation → 409 Conflict
-            DbUpdateConcurrencyException =>
-                (HttpStatusCode.Conflict, ApiResponseCodes.Common.ConcurrencyConflict),
-            DbUpdateException =>
-                (HttpStatusCode.ServiceUnavailable, ApiResponseCodes.Common.DatabaseUnavailable),
-            ArgumentException =>
-                (HttpStatusCode.BadRequest, ApiResponseCodes.Common.BadRequest),
-            InvalidOperationException =>
-                (HttpStatusCode.UnprocessableEntity, ApiResponseCodes.Common.DomainRuleViolation),
-            SriCommunicationException =>
-                (HttpStatusCode.BadGateway, ApiResponseCodes.Common.SriCommunicationError),
-            ERP.Domain.Exceptions.CompanyScopeException =>
-                (HttpStatusCode.Forbidden, ApiResponseCodes.Common.CompanyScopeForbidden),
-            ERP.Domain.Exceptions.BranchScopeException =>
-                (HttpStatusCode.Forbidden, ApiResponseCodes.Common.BranchScopeForbidden),
-            CompanyRucAlreadyExistsException =>
-                (HttpStatusCode.Conflict, ApiResponseCodes.Common.CompanyRucAlreadyExists),
-            UnauthorizedAccessException =>
-                (HttpStatusCode.Unauthorized, ApiResponseCodes.Common.Unauthorized),
+            DbUpdateConcurrencyException => (
+                HttpStatusCode.Conflict,
+                ApiResponseCodes.Common.ConcurrencyConflict
+            ),
+            DbUpdateException => (
+                HttpStatusCode.ServiceUnavailable,
+                ApiResponseCodes.Common.DatabaseUnavailable
+            ),
+            ArgumentException => (HttpStatusCode.BadRequest, ApiResponseCodes.Common.BadRequest),
+            InvalidOperationException => (
+                HttpStatusCode.UnprocessableEntity,
+                ApiResponseCodes.Common.DomainRuleViolation
+            ),
+            SriCommunicationException => (
+                HttpStatusCode.BadGateway,
+                ApiResponseCodes.Common.SriCommunicationError
+            ),
+            ERP.Domain.Exceptions.CompanyScopeException => (
+                HttpStatusCode.Forbidden,
+                ApiResponseCodes.Common.CompanyScopeForbidden
+            ),
+            ERP.Domain.Exceptions.BranchScopeException => (
+                HttpStatusCode.Forbidden,
+                ApiResponseCodes.Common.BranchScopeForbidden
+            ),
+            CompanyRucAlreadyExistsException => (
+                HttpStatusCode.Conflict,
+                ApiResponseCodes.Common.CompanyRucAlreadyExists
+            ),
+            UnauthorizedAccessException => (
+                HttpStatusCode.Unauthorized,
+                ApiResponseCodes.Common.Unauthorized
+            ),
             _ => (HttpStatusCode.InternalServerError, ApiResponseCodes.Common.InternalError),
         };
 
@@ -102,11 +127,11 @@ public partial class ExceptionMiddleware
         ApiResponse<object> response;
         if (exception is ValidationException validationException)
         {
-            var fieldErrors = validationException.Errors
-                .Where(e => e is not null)
-                .GroupBy(e => string.IsNullOrWhiteSpace(e.PropertyName)
-                    ? "_"
-                    : ToCamelCase(e.PropertyName))
+            var fieldErrors = validationException
+                .Errors.Where(e => e is not null)
+                .GroupBy(e =>
+                    string.IsNullOrWhiteSpace(e.PropertyName) ? "_" : ToCamelCase(e.PropertyName)
+                )
                 .ToDictionary(g => g.Key, g => g.Select(e => e.ErrorMessage).ToArray());
 
             response = ResponseFactory.ValidationError(context, environment, code, fieldErrors);
@@ -115,10 +140,16 @@ public partial class ExceptionMiddleware
         {
             var errors = exception switch
             {
-                ArgumentException or InvalidOperationException or SriCommunicationException
-                    or ERP.Domain.Exceptions.CompanyScopeException or ERP.Domain.Exceptions.BranchScopeException
-                    or CompanyRucAlreadyExistsException
-                    when !string.IsNullOrWhiteSpace(exception.Message) => new[] { exception.Message.Trim() },
+                ArgumentException
+                or InvalidOperationException
+                or SriCommunicationException
+                or ERP.Domain.Exceptions.CompanyScopeException
+                or ERP.Domain.Exceptions.BranchScopeException
+                or CompanyRucAlreadyExistsException
+                    when !string.IsNullOrWhiteSpace(exception.Message) => new[]
+                {
+                    exception.Message.Trim(),
+                },
                 _ => Array.Empty<string>(),
             };
             response = ResponseFactory.Error(context, environment, code, errors);
@@ -127,13 +158,19 @@ public partial class ExceptionMiddleware
         await context.Response.WriteAsync(JsonSerializer.Serialize(response, JsonOptions));
     }
 
-    private static string ToCamelCase(string name)
-        => name.Length == 0 ? name : char.ToLowerInvariant(name[0]) + name[1..];
+    private static string ToCamelCase(string name) =>
+        name.Length == 0 ? name : char.ToLowerInvariant(name[0]) + name[1..];
 
-    [LoggerMessage(Level = LogLevel.Debug, Message = "Petición cancelada (cliente desconectado): {Method} {Path}")]
+    [LoggerMessage(
+        Level = LogLevel.Debug,
+        Message = "Petición cancelada (cliente desconectado): {Method} {Path}"
+    )]
     private partial void LogRequestCancelled(Exception ex, string method, PathString path);
 
-    [LoggerMessage(Level = LogLevel.Warning, Message = "Validación fallida ({FailureCount} error(es)): {Method} {Path}")]
+    [LoggerMessage(
+        Level = LogLevel.Warning,
+        Message = "Validación fallida ({FailureCount} error(es)): {Method} {Path}"
+    )]
     private partial void LogValidationError(int failureCount, string method, PathString path);
 
     [LoggerMessage(Level = LogLevel.Error, Message = "Error no controlado en {Method} {Path}")]

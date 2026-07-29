@@ -20,11 +20,17 @@ public static class ElectronicDocumentDiagnosticAssembler
         ElectronicDocument document,
         IReadOnlyList<ElectronicDocumentAudit> timelineRecords,
         IAuditReader<ElectronicDocumentSriMessage> sriMessageReader,
-        CancellationToken ct)
+        CancellationToken ct
+    )
     {
         var timeline = ElectronicDocumentTimelineBuilder.Build(timelineRecords);
 
-        var sriMessages = await sriMessageReader.GetByEntityAsync(document.TenantId, document.Id, MessageTake, ct);
+        var sriMessages = await sriMessageReader.GetByEntityAsync(
+            document.TenantId,
+            document.Id,
+            MessageTake,
+            ct
+        );
         var messages = BuildMessages(document, sriMessages);
 
         return new ElectronicDocumentDiagnosticDto(
@@ -40,10 +46,12 @@ public static class ElectronicDocumentDiagnosticAssembler
                 document.AuthorizationDate,
                 document.RetryCount,
                 document.LastAttemptUtc,
-                CorrelationId: null),
+                CorrelationId: null
+            ),
             !string.IsNullOrWhiteSpace(document.XmlDraftPath),
             !string.IsNullOrWhiteSpace(document.SignedXmlPath),
-            !string.IsNullOrWhiteSpace(document.AuthorizedXmlPath));
+            !string.IsNullOrWhiteSpace(document.AuthorizedXmlPath)
+        );
     }
 
     /// <summary>
@@ -56,13 +64,21 @@ public static class ElectronicDocumentDiagnosticAssembler
     /// estructurada real.
     /// </summary>
     private static IReadOnlyList<ElectronicDocumentMessageDto> BuildMessages(
-        ElectronicDocument document, IReadOnlyList<ElectronicDocumentSriMessage> sriMessages)
+        ElectronicDocument document,
+        IReadOnlyList<ElectronicDocumentSriMessage> sriMessages
+    )
     {
         if (sriMessages.Count > 0)
         {
             return sriMessages
                 .OrderBy(m => m.OccurredAtUtc)
-                .Select(m => new ElectronicDocumentMessageDto(m.Code, m.MessageType, m.Message, m.AdditionalInfo, m.OccurredAtUtc))
+                .Select(m => new ElectronicDocumentMessageDto(
+                    m.Code,
+                    m.MessageType,
+                    m.Message,
+                    m.AdditionalInfo,
+                    m.OccurredAtUtc
+                ))
                 .ToList();
         }
 
@@ -70,6 +86,15 @@ public static class ElectronicDocumentDiagnosticAssembler
             return [];
 
         var occurredAt = document.LastAttemptUtc ?? document.UpdatedAt ?? document.CreatedAt;
-        return [new ElectronicDocumentMessageDto(Code: null, MessageType: "ERROR", document.LastError, AdditionalInfo: null, occurredAt)];
+        return
+        [
+            new ElectronicDocumentMessageDto(
+                Code: null,
+                MessageType: "ERROR",
+                document.LastError,
+                AdditionalInfo: null,
+                occurredAt
+            ),
+        ];
     }
 }

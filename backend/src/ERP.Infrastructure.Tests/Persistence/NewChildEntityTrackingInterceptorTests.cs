@@ -50,20 +50,70 @@ public sealed class NewChildEntityTrackingInterceptorTests : IAsyncLifetime
         await db.Database.MigrateAsync();
 
         var tenant = Tenant.Create("Test Tenant", $"test-{Guid.NewGuid():N}"[..16], _userId);
-        var company = Company.CreateManaged(tenant.Id, "1790012345001", "Test S.A.", createdBy: _userId);
+        var company = Company.CreateManaged(
+            tenant.Id,
+            "1790012345001",
+            "Test S.A.",
+            createdBy: _userId
+        );
         var branch = Branch.Create(
-            tenantId: tenant.Id, name: "Matriz", address: "Av. Principal 123", code: "B01",
-            description: null, reference: null, postalCode: null, phone: null, secondaryPhone: null,
-            email: null, website: null, managerName: null, managerPosition: null, managerEmail: null,
-            managerPhone: null, countryId: null, provinceId: null, cantonId: null, parishId: null,
-            latitude: null, longitude: null, openingDate: null, internalNotes: null,
-            isMainBranch: true, createdBy: _userId, companyId: company.Id);
+            tenantId: tenant.Id,
+            name: "Matriz",
+            address: "Av. Principal 123",
+            code: "B01",
+            description: null,
+            reference: null,
+            postalCode: null,
+            phone: null,
+            secondaryPhone: null,
+            email: null,
+            website: null,
+            managerName: null,
+            managerPosition: null,
+            managerEmail: null,
+            managerPhone: null,
+            countryId: null,
+            provinceId: null,
+            cantonId: null,
+            parishId: null,
+            latitude: null,
+            longitude: null,
+            openingDate: null,
+            internalNotes: null,
+            isMainBranch: true,
+            createdBy: _userId,
+            companyId: company.Id
+        );
         var establishment = Establishment.Create(
-            tenant.Id, null, company.Id, "001", "Matriz", "Av. Principal 123", null, true, _userId);
+            tenant.Id,
+            null,
+            company.Id,
+            "001",
+            "Matriz",
+            "Av. Principal 123",
+            null,
+            true,
+            _userId
+        );
         var emissionPoint = EmissionPoint.Create(
-            tenant.Id, company.Id, establishment.Id, "001", null, EmissionType.Electronic, true, _userId);
+            tenant.Id,
+            company.Id,
+            establishment.Id,
+            "001",
+            null,
+            EmissionType.Electronic,
+            true,
+            _userId
+        );
         var cashRegister = CashRegister.Create(
-            tenant.Id, company.Id, branch.Id, "CAJA-01", "Caja Principal", _userId, emissionPoint.Id);
+            tenant.Id,
+            company.Id,
+            branch.Id,
+            "CAJA-01",
+            "Caja Principal",
+            _userId,
+            emissionPoint.Id
+        );
 
         db.Tenants.Add(tenant);
         db.Companies.Add(company);
@@ -89,17 +139,30 @@ public sealed class NewChildEntityTrackingInterceptorTests : IAsyncLifetime
             .AddInterceptors(new NewChildEntityTrackingInterceptor())
             .Options;
 
-        return new ErpDbContext(options, new FixedCurrentTenant(_tenantId), new NoOpPublisher(), new FixedCurrentCompany(_companyId));
+        return new ErpDbContext(
+            options,
+            new FixedCurrentTenant(_tenantId),
+            new NoOpPublisher(),
+            new FixedCurrentCompany(_companyId)
+        );
     }
 
     private async Task<Guid> OpenSessionAsync()
     {
         await using var db = CreateContext();
         var session = CashSession.Open(
-            _tenantId, _companyId, _branchId, _userId,
-            _cashRegisterId, "CAJA-01", "Caja Principal",
-            _emissionPointId, "001",
-            100m, _userId);
+            _tenantId,
+            _companyId,
+            _branchId,
+            _userId,
+            _cashRegisterId,
+            "CAJA-01",
+            "Caja Principal",
+            _emissionPointId,
+            "001",
+            100m,
+            _userId
+        );
         db.CashSessions.Add(session);
         await db.SaveChangesAsync();
         return session.Id;
@@ -113,7 +176,8 @@ public sealed class NewChildEntityTrackingInterceptorTests : IAsyncLifetime
         var sessionId = await OpenSessionAsync();
 
         await using var db = CreateContext();
-        var session = await db.CashSessions.Include(s => s.Movements)
+        var session = await db
+            .CashSessions.Include(s => s.Movements)
             .FirstAsync(s => s.Id == sessionId);
 
         session.RecordMovement(CashMovementType.SaleIncome, 25m, "Venta 001", _userId);
@@ -121,8 +185,10 @@ public sealed class NewChildEntityTrackingInterceptorTests : IAsyncLifetime
         var act = () => db.SaveChangesAsync();
         await act.Should().NotThrowAsync();
 
-        var persisted = await db.CashMovements
-            .Where(m => m.CashSessionId == sessionId && m.MovementType == CashMovementType.SaleIncome)
+        var persisted = await db
+            .CashMovements.Where(m =>
+                m.CashSessionId == sessionId && m.MovementType == CashMovementType.SaleIncome
+            )
             .ToListAsync();
         persisted.Should().ContainSingle(m => m.Amount == 25m);
     }
@@ -135,7 +201,8 @@ public sealed class NewChildEntityTrackingInterceptorTests : IAsyncLifetime
         var sessionId = await OpenSessionAsync();
 
         await using var db = CreateContext();
-        var session = await db.CashSessions.Include(s => s.Movements)
+        var session = await db
+            .CashSessions.Include(s => s.Movements)
             .FirstAsync(s => s.Id == sessionId);
 
         session.RecordMovement(CashMovementType.SaleIncome, 10m, "Venta A", _userId);
@@ -157,7 +224,8 @@ public sealed class NewChildEntityTrackingInterceptorTests : IAsyncLifetime
         var sessionBId = await OpenSessionAsync();
 
         await using var db = CreateContext();
-        var sessions = await db.CashSessions.Include(s => s.Movements)
+        var sessions = await db
+            .CashSessions.Include(s => s.Movements)
             .Where(s => s.Id == sessionAId || s.Id == sessionBId)
             .ToListAsync();
 
@@ -178,7 +246,8 @@ public sealed class NewChildEntityTrackingInterceptorTests : IAsyncLifetime
         var sessionId = await OpenSessionAsync();
 
         await using var db = CreateContext();
-        var session = await db.CashSessions.Include(s => s.Movements)
+        var session = await db
+            .CashSessions.Include(s => s.Movements)
             .FirstAsync(s => s.Id == sessionId);
 
         session.Close(_userId, new List<CashClosingCount>());
@@ -190,7 +259,9 @@ public sealed class NewChildEntityTrackingInterceptorTests : IAsyncLifetime
         reloaded.Status.Should().Be(CashSessionStatus.Closed);
 
         // Una sola fila — Close() nunca debió producir un INSERT duplicado.
-        (await verify.CashSessions.CountAsync(s => s.Id == sessionId)).Should().Be(1);
+        (await verify.CashSessions.CountAsync(s => s.Id == sessionId))
+            .Should()
+            .Be(1);
     }
 
     // ── Ejecución repetida ────────────────────────────────────────────────────
@@ -201,7 +272,8 @@ public sealed class NewChildEntityTrackingInterceptorTests : IAsyncLifetime
         var sessionId = await OpenSessionAsync();
 
         await using var db = CreateContext();
-        var session = await db.CashSessions.Include(s => s.Movements)
+        var session = await db
+            .CashSessions.Include(s => s.Movements)
             .FirstAsync(s => s.Id == sessionId);
 
         session.RecordMovement(CashMovementType.SaleIncome, 1m, "Venta 1", _userId);
@@ -225,7 +297,8 @@ public sealed class NewChildEntityTrackingInterceptorTests : IAsyncLifetime
         var sessionId = await OpenSessionAsync();
 
         await using var db = CreateContext();
-        var session = await db.CashSessions.Include(s => s.Movements)
+        var session = await db
+            .CashSessions.Include(s => s.Movements)
             .FirstAsync(s => s.Id == sessionId);
 
         // Simula la firma anómala que el interceptor no debe resolver por adivinanza:
@@ -233,7 +306,8 @@ public sealed class NewChildEntityTrackingInterceptorTests : IAsyncLifetime
         db.Entry(session).State = EntityState.Modified;
 
         var act = () => db.SaveChangesAsync();
-        await act.Should().ThrowAsync<InvalidOperationException>()
+        await act.Should()
+            .ThrowAsync<InvalidOperationException>()
             .WithMessage("*fue cargada por una query*");
     }
 
@@ -254,11 +328,13 @@ public sealed class NewChildEntityTrackingInterceptorTests : IAsyncLifetime
 
     private sealed class NoOpPublisher : IPublisher
     {
-        public Task Publish(object notification, CancellationToken cancellationToken = default)
-            => Task.CompletedTask;
+        public Task Publish(object notification, CancellationToken cancellationToken = default) =>
+            Task.CompletedTask;
 
-        public Task Publish<TNotification>(TNotification notification, CancellationToken cancellationToken = default)
-            where TNotification : INotification
-            => Task.CompletedTask;
+        public Task Publish<TNotification>(
+            TNotification notification,
+            CancellationToken cancellationToken = default
+        )
+            where TNotification : INotification => Task.CompletedTask;
     }
 }

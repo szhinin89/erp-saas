@@ -16,7 +16,8 @@ public sealed record RegisterElectronicDocumentRequest(
     ElectronicDocumentType DocumentType,
     string SourceModule,
     Guid SourceEntityId,
-    Guid UserId);
+    Guid UserId
+);
 
 /// <summary>
 /// Única puerta de entrada pública del módulo ElectronicDocuments para el resto del ERP.
@@ -38,7 +39,9 @@ public sealed record RegisterElectronicDocumentRequest(
 public interface IElectronicDocumentIssuer
 {
     Task<Result<ElectronicDocumentDto>> RegisterAsync(
-        RegisterElectronicDocumentRequest request, CancellationToken ct = default);
+        RegisterElectronicDocumentRequest request,
+        CancellationToken ct = default
+    );
 
     /// <summary>
     /// Reintenta un documento ya existente varado en Draft/Failed (el pipeline previo a la firma
@@ -50,5 +53,9 @@ public interface IElectronicDocumentIssuer
     /// lo pasa a DeadLetter. Llamable desde un job sin HttpContext (tenantId/userId explícitos).
     /// </summary>
     Task<Result<ElectronicDocumentDto>> RetryAsync(
-        Guid tenantId, Guid electronicDocumentId, Guid userId, CancellationToken ct = default);
+        Guid tenantId,
+        Guid electronicDocumentId,
+        Guid userId,
+        CancellationToken ct = default
+    );
 }

@@ -15,13 +15,16 @@ public sealed class ExpireUserSessionsHandlerTests
     private static readonly Guid IdentityUserId = Guid.NewGuid();
     private static readonly Guid BranchId = Guid.NewGuid();
 
-    private static SessionExpirationOptions Options(int maxDays = 30) => new() { MaxSessionAgeDays = maxDays };
+    private static SessionExpirationOptions Options(int maxDays = 30) =>
+        new() { MaxSessionAgeDays = maxDays };
 
     [Fact]
     public async Task Sesion_activa_no_expirada_permanece_no_se_toca()
     {
         var repo = new Mock<IUserSessionRepository>();
-        repo.Setup(r => r.GetExpiredActiveSessionsAsync(It.IsAny<DateTime>(), It.IsAny<CancellationToken>()))
+        repo.Setup(r =>
+                r.GetExpiredActiveSessionsAsync(It.IsAny<DateTime>(), It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(Array.Empty<UserSession>());
 
         var handler = new ExpireUserSessionsHandler(repo.Object, Options());
@@ -29,7 +32,10 @@ public sealed class ExpireUserSessionsHandlerTests
 
         result.IsSuccess.Should().BeTrue();
         result.Value.Should().Be(0);
-        repo.Verify(r => r.UpdateAsync(It.IsAny<UserSession>(), It.IsAny<CancellationToken>()), Times.Never);
+        repo.Verify(
+            r => r.UpdateAsync(It.IsAny<UserSession>(), It.IsAny<CancellationToken>()),
+            Times.Never
+        );
         repo.Verify(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
     }
 
@@ -39,7 +45,9 @@ public sealed class ExpireUserSessionsHandlerTests
         var session = UserSession.Create(TenantId, CompanyId, IdentityUserId, BranchId, "device-1");
 
         var repo = new Mock<IUserSessionRepository>();
-        repo.Setup(r => r.GetExpiredActiveSessionsAsync(It.IsAny<DateTime>(), It.IsAny<CancellationToken>()))
+        repo.Setup(r =>
+                r.GetExpiredActiveSessionsAsync(It.IsAny<DateTime>(), It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(new[] { session });
 
         var handler = new ExpireUserSessionsHandler(repo.Object, Options());
@@ -57,7 +65,9 @@ public sealed class ExpireUserSessionsHandlerTests
     {
         DateTime? capturedCutoff = null;
         var repo = new Mock<IUserSessionRepository>();
-        repo.Setup(r => r.GetExpiredActiveSessionsAsync(It.IsAny<DateTime>(), It.IsAny<CancellationToken>()))
+        repo.Setup(r =>
+                r.GetExpiredActiveSessionsAsync(It.IsAny<DateTime>(), It.IsAny<CancellationToken>())
+            )
             .Callback<DateTime, CancellationToken>((cutoff, _) => capturedCutoff = cutoff)
             .ReturnsAsync(Array.Empty<UserSession>());
 
@@ -65,18 +75,34 @@ public sealed class ExpireUserSessionsHandlerTests
         await handler.Handle(new ExpireUserSessionsCommand(), CancellationToken.None);
 
         capturedCutoff.Should().NotBeNull();
-        capturedCutoff!.Value.Should().BeCloseTo(DateTime.UtcNow.AddDays(-15), TimeSpan.FromSeconds(5));
+        capturedCutoff!
+            .Value.Should()
+            .BeCloseTo(DateTime.UtcNow.AddDays(-15), TimeSpan.FromSeconds(5));
     }
 
     [Fact]
     public async Task Multiples_sesiones_de_distintas_empresas_se_expiran_todas_sin_distincion()
     {
         var otherCompanyId = Guid.NewGuid();
-        var sessionA = UserSession.Create(TenantId, CompanyId, IdentityUserId, BranchId, "device-1");
-        var sessionB = UserSession.Create(TenantId, otherCompanyId, IdentityUserId, BranchId, "device-2");
+        var sessionA = UserSession.Create(
+            TenantId,
+            CompanyId,
+            IdentityUserId,
+            BranchId,
+            "device-1"
+        );
+        var sessionB = UserSession.Create(
+            TenantId,
+            otherCompanyId,
+            IdentityUserId,
+            BranchId,
+            "device-2"
+        );
 
         var repo = new Mock<IUserSessionRepository>();
-        repo.Setup(r => r.GetExpiredActiveSessionsAsync(It.IsAny<DateTime>(), It.IsAny<CancellationToken>()))
+        repo.Setup(r =>
+                r.GetExpiredActiveSessionsAsync(It.IsAny<DateTime>(), It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(new[] { sessionA, sessionB });
 
         var handler = new ExpireUserSessionsHandler(repo.Object, Options());
@@ -94,7 +120,9 @@ public sealed class ExpireUserSessionsHandlerTests
         var repo = new Mock<IUserSessionRepository>();
 
         var call = 0;
-        repo.Setup(r => r.GetExpiredActiveSessionsAsync(It.IsAny<DateTime>(), It.IsAny<CancellationToken>()))
+        repo.Setup(r =>
+                r.GetExpiredActiveSessionsAsync(It.IsAny<DateTime>(), It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(() => call++ == 0 ? new[] { session } : Array.Empty<UserSession>());
 
         var handler = new ExpireUserSessionsHandler(repo.Object, Options());

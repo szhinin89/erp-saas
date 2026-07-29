@@ -18,7 +18,8 @@ namespace ERP.Infrastructure.Migrations
                 """
                 CREATE UNIQUE INDEX uq_mbp_identification
                 ON master_business_partners (tenant_id, identification_type, identification_number);
-                """);
+                """
+            );
         }
 
         /// <inheritdoc />

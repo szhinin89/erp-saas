@@ -18,7 +18,10 @@ public sealed class GetPurchaseReceptionLineMatchHandler
     private readonly ICurrentTenant _tenant;
 
     public GetPurchaseReceptionLineMatchHandler(
-        IPurchaseReceptionDocumentRepository documentRepo, IItemMatchFinder matchFinder, ICurrentTenant tenant)
+        IPurchaseReceptionDocumentRepository documentRepo,
+        IItemMatchFinder matchFinder,
+        ICurrentTenant tenant
+    )
     {
         _documentRepo = documentRepo;
         _matchFinder = matchFinder;
@@ -26,21 +29,39 @@ public sealed class GetPurchaseReceptionLineMatchHandler
     }
 
     public async Task<Result<PurchaseReceptionLineMatchDto>> Handle(
-        GetPurchaseReceptionLineMatchQuery request, CancellationToken cancellationToken)
+        GetPurchaseReceptionLineMatchQuery request,
+        CancellationToken cancellationToken
+    )
     {
-        var document = await _documentRepo.GetByLineIdAsync(_tenant.TenantId, request.PurchaseReceptionLineId, cancellationToken);
+        var document = await _documentRepo.GetByLineIdAsync(
+            _tenant.TenantId,
+            request.PurchaseReceptionLineId,
+            cancellationToken
+        );
         if (document is null)
-            return Result<PurchaseReceptionLineMatchDto>.NotFound("La línea de recepción no existe.");
+            return Result<PurchaseReceptionLineMatchDto>.NotFound(
+                "La línea de recepción no existe."
+            );
 
         var line = document.Lines.First(l => l.Id == request.PurchaseReceptionLineId);
 
         if (line.MatchStatus is ItemMatchStatus.AutoMatched or ItemMatchStatus.ManuallyMatched)
-            return Result<PurchaseReceptionLineMatchDto>.Success(ItemMatchingMapper.ToDto(line, document.SupplierId));
+            return Result<PurchaseReceptionLineMatchDto>.Success(
+                ItemMatchingMapper.ToDto(line, document.SupplierId)
+            );
 
         var suggestions = await _matchFinder.FindCandidatesAsync(
-            _tenant.TenantId, document.SupplierId, line.SupplierCode, line.SupplierAuxCode,
-            line.Description, MaxSuggestions, cancellationToken);
+            _tenant.TenantId,
+            document.SupplierId,
+            line.SupplierCode,
+            line.SupplierAuxCode,
+            line.Description,
+            MaxSuggestions,
+            cancellationToken
+        );
 
-        return Result<PurchaseReceptionLineMatchDto>.Success(ItemMatchingMapper.ToDto(line, document.SupplierId, suggestions));
+        return Result<PurchaseReceptionLineMatchDto>.Success(
+            ItemMatchingMapper.ToDto(line, document.SupplierId, suggestions)
+        );
     }
 }

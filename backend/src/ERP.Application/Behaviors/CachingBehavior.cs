@@ -1,8 +1,8 @@
+using System.Text.Json;
 using ERP.Application.Common;
 using MediatR;
 using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Logging;
-using System.Text.Json;
 
 namespace ERP.Application.Behaviors;
 
@@ -10,7 +10,8 @@ namespace ERP.Application.Behaviors;
 /// Intercepta <see cref="ICacheable"/> y devuelve respuesta desde Redis/memoria si existe.
 /// Debe registrarse después de validación y límites de suscripción para no omitirlos en cache miss.
 /// </summary>
-public sealed partial class CachingBehavior<TRequest, TResponse> : IPipelineBehavior<TRequest, TResponse>
+public sealed partial class CachingBehavior<TRequest, TResponse>
+    : IPipelineBehavior<TRequest, TResponse>
     where TRequest : IRequest<TResponse>
 {
     private static readonly JsonSerializerOptions JsonOptions = new()
@@ -26,7 +27,8 @@ public sealed partial class CachingBehavior<TRequest, TResponse> : IPipelineBeha
     public CachingBehavior(
         IDistributedCache cache,
         ICurrentTenant tenant,
-        ILogger<CachingBehavior<TRequest, TResponse>> logger)
+        ILogger<CachingBehavior<TRequest, TResponse>> logger
+    )
     {
         _cache = cache;
         _currentTenant = tenant;
@@ -36,7 +38,8 @@ public sealed partial class CachingBehavior<TRequest, TResponse> : IPipelineBeha
     public async Task<TResponse> Handle(
         TRequest request,
         RequestHandlerDelegate<TResponse> next,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken
+    )
     {
         if (request is not ICacheable cacheable)
             return await next(cancellationToken);
@@ -86,12 +89,18 @@ public sealed partial class CachingBehavior<TRequest, TResponse> : IPipelineBeha
     [LoggerMessage(Level = LogLevel.Information, Message = "Cache hit for {Request}")]
     private partial void LogCacheHit(string request);
 
-    [LoggerMessage(Level = LogLevel.Warning, Message = "Cache corrupta para {Request}; se recalcula.")]
+    [LoggerMessage(
+        Level = LogLevel.Warning,
+        Message = "Cache corrupta para {Request}; se recalcula."
+    )]
     private partial void LogCacheCorrupted(Exception ex, string request);
 
     [LoggerMessage(Level = LogLevel.Information, Message = "Cache miss for {Request}")]
     private partial void LogCacheMiss(string request);
 
-    [LoggerMessage(Level = LogLevel.Warning, Message = "No se pudo serializar respuesta en caché para {Request}.")]
+    [LoggerMessage(
+        Level = LogLevel.Warning,
+        Message = "No se pudo serializar respuesta en caché para {Request}."
+    )]
     private partial void LogCacheSerializationFailed(Exception ex, string request);
 }

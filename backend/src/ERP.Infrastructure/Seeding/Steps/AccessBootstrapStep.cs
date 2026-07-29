@@ -19,6 +19,8 @@ public sealed class AccessBootstrapStep : ICompanyBootstrapStep
         _profileSeeder = profileSeeder;
     }
 
-    public Task ExecuteAsync(CompanyBootstrapContext context, CancellationToken cancellationToken = default)
-        => _profileSeeder.SeedForTenantAsync(context.TenantId, context.ActorId, cancellationToken);
+    public Task ExecuteAsync(
+        CompanyBootstrapContext context,
+        CancellationToken cancellationToken = default
+    ) => _profileSeeder.SeedForTenantAsync(context.TenantId, context.ActorId, cancellationToken);
 }

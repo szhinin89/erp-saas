@@ -12,12 +12,17 @@ namespace ERP.Infrastructure.Tests.Ride;
 /// </summary>
 public sealed class RidePdfStorageServiceTests : IDisposable
 {
-    private readonly string _basePath = Path.Combine(Path.GetTempPath(), "ride-storage-tests-" + Guid.NewGuid().ToString("N"));
+    private readonly string _basePath = Path.Combine(
+        Path.GetTempPath(),
+        "ride-storage-tests-" + Guid.NewGuid().ToString("N")
+    );
 
     private RidePdfStorageService BuildService()
     {
         var configuration = new ConfigurationBuilder()
-            .AddInMemoryCollection(new Dictionary<string, string?> { ["FileStorage:BasePath"] = _basePath })
+            .AddInMemoryCollection(
+                new Dictionary<string, string?> { ["FileStorage:BasePath"] = _basePath }
+            )
             .Build();
         var fileStorage = new LocalFileStorage(configuration);
         return new RidePdfStorageService(fileStorage, new RidePdfStorageNamingStrategy());
@@ -37,7 +42,13 @@ public sealed class RidePdfStorageServiceTests : IDisposable
         var electronicDocumentId = Guid.NewGuid();
         byte[] pdf = [1, 2, 3, 4];
 
-        var result = await service.StoreAsync(tenantId, RideDocumentType.Invoice, electronicDocumentId, "1.0.0", pdf);
+        var result = await service.StoreAsync(
+            tenantId,
+            RideDocumentType.Invoice,
+            electronicDocumentId,
+            "1.0.0",
+            pdf
+        );
 
         result.IsSuccess.Should().BeTrue(result.Error);
         result.Value.Should().NotBeNullOrWhiteSpace();
@@ -51,10 +62,18 @@ public sealed class RidePdfStorageServiceTests : IDisposable
         var electronicDocumentId = Guid.NewGuid();
         byte[] pdf = [5, 6, 7, 8, 9];
 
-        var storeResult = await service.StoreAsync(tenantId, RideDocumentType.Invoice, electronicDocumentId, "1.0.0", pdf);
+        var storeResult = await service.StoreAsync(
+            tenantId,
+            RideDocumentType.Invoice,
+            electronicDocumentId,
+            "1.0.0",
+            pdf
+        );
 
         var configuration = new ConfigurationBuilder()
-            .AddInMemoryCollection(new Dictionary<string, string?> { ["FileStorage:BasePath"] = _basePath })
+            .AddInMemoryCollection(
+                new Dictionary<string, string?> { ["FileStorage:BasePath"] = _basePath }
+            )
             .Build();
         var fileStorage = new LocalFileStorage(configuration);
         await using var stream = await fileStorage.GetAsync(storeResult.Value!);
@@ -72,13 +91,27 @@ public sealed class RidePdfStorageServiceTests : IDisposable
         var tenantId = Guid.NewGuid();
         var electronicDocumentId = Guid.NewGuid();
 
-        var first = await service.StoreAsync(tenantId, RideDocumentType.Invoice, electronicDocumentId, "1.0.0", [1, 1, 1]);
-        var second = await service.StoreAsync(tenantId, RideDocumentType.Invoice, electronicDocumentId, "1.0.0", [2, 2, 2, 2]);
+        var first = await service.StoreAsync(
+            tenantId,
+            RideDocumentType.Invoice,
+            electronicDocumentId,
+            "1.0.0",
+            [1, 1, 1]
+        );
+        var second = await service.StoreAsync(
+            tenantId,
+            RideDocumentType.Invoice,
+            electronicDocumentId,
+            "1.0.0",
+            [2, 2, 2, 2]
+        );
 
         second.Value.Should().Be(first.Value);
 
         var configuration = new ConfigurationBuilder()
-            .AddInMemoryCollection(new Dictionary<string, string?> { ["FileStorage:BasePath"] = _basePath })
+            .AddInMemoryCollection(
+                new Dictionary<string, string?> { ["FileStorage:BasePath"] = _basePath }
+            )
             .Build();
         var fileStorage = new LocalFileStorage(configuration);
         await using var stream = await fileStorage.GetAsync(second.Value!);
@@ -95,8 +128,20 @@ public sealed class RidePdfStorageServiceTests : IDisposable
         var tenantId = Guid.NewGuid();
         var electronicDocumentId = Guid.NewGuid();
 
-        var first = await service.StoreAsync(tenantId, RideDocumentType.Invoice, electronicDocumentId, "1.0.0", [1]);
-        var second = await service.StoreAsync(tenantId, RideDocumentType.Invoice, electronicDocumentId, "1.0.0", [1]);
+        var first = await service.StoreAsync(
+            tenantId,
+            RideDocumentType.Invoice,
+            electronicDocumentId,
+            "1.0.0",
+            [1]
+        );
+        var second = await service.StoreAsync(
+            tenantId,
+            RideDocumentType.Invoice,
+            electronicDocumentId,
+            "1.0.0",
+            [1]
+        );
 
         second.Value.Should().Be(first.Value);
     }
@@ -108,8 +153,20 @@ public sealed class RidePdfStorageServiceTests : IDisposable
         var tenantId = Guid.NewGuid();
         var electronicDocumentId = Guid.NewGuid();
 
-        var v1 = await service.StoreAsync(tenantId, RideDocumentType.Invoice, electronicDocumentId, "1.0.0", [1]);
-        var v2 = await service.StoreAsync(tenantId, RideDocumentType.Invoice, electronicDocumentId, "2.0.0", [1]);
+        var v1 = await service.StoreAsync(
+            tenantId,
+            RideDocumentType.Invoice,
+            electronicDocumentId,
+            "1.0.0",
+            [1]
+        );
+        var v2 = await service.StoreAsync(
+            tenantId,
+            RideDocumentType.Invoice,
+            electronicDocumentId,
+            "2.0.0",
+            [1]
+        );
 
         v2.Value.Should().NotBe(v1.Value);
     }

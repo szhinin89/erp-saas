@@ -24,7 +24,14 @@ namespace ERP.API.Controllers;
 /// las ejecuta <c>ElectronicDocumentIssuer</c>, invocado desde Ventas o desde el job automático
 /// de reintentos.
 /// </summary>
-[AppFeature("Monitor de Documentos Electrónicos", $"perm:{ElectronicDocumentsPermissions.View}", "📡", "/electronic-documents/monitor", "perm:settings.group", 26)]
+[AppFeature(
+    "Monitor de Documentos Electrónicos",
+    $"perm:{ElectronicDocumentsPermissions.View}",
+    "📡",
+    "/electronic-documents/monitor",
+    "perm:settings.group",
+    26
+)]
 [ApiController]
 [Route("api/v1/electronic-documents")]
 [Authorize]
@@ -46,19 +53,37 @@ public sealed class ElectronicDocumentsController : ControllerBase
         [FromQuery] string? search = null,
         [FromQuery] int pageNumber = 1,
         [FromQuery] int pageSize = 25,
-        CancellationToken ct = default)
-        => this.ToOkOrBadRequest(await _mediator.Send(
-            new GetElectronicDocumentsListQuery(dateFrom, dateTo, state, documentType, environment, search, pageNumber, pageSize), ct), "OK");
+        CancellationToken ct = default
+    ) =>
+        this.ToOkOrBadRequest(
+            await _mediator.Send(
+                new GetElectronicDocumentsListQuery(
+                    dateFrom,
+                    dateTo,
+                    state,
+                    documentType,
+                    environment,
+                    search,
+                    pageNumber,
+                    pageSize
+                ),
+                ct
+            ),
+            "OK"
+        );
 
     [HttpGet("dashboard")]
     [Authorize(Policy = $"perm:{ElectronicDocumentsPermissions.View}")]
-    public async Task<IActionResult> GetDashboard(CancellationToken ct)
-        => this.ToOkOrBadRequest(await _mediator.Send(new GetElectronicDocumentsDashboardQuery(), ct), "OK");
+    public async Task<IActionResult> GetDashboard(CancellationToken ct) =>
+        this.ToOkOrBadRequest(
+            await _mediator.Send(new GetElectronicDocumentsDashboardQuery(), ct),
+            "OK"
+        );
 
     [HttpGet("{id:guid}")]
     [Authorize(Policy = $"perm:{ElectronicDocumentsPermissions.Detail}")]
-    public async Task<IActionResult> GetDetail(Guid id, CancellationToken ct)
-        => this.ToOkOrNotFound(await _mediator.Send(new GetElectronicDocumentDetailQuery(id), ct));
+    public async Task<IActionResult> GetDetail(Guid id, CancellationToken ct) =>
+        this.ToOkOrNotFound(await _mediator.Send(new GetElectronicDocumentDetailQuery(id), ct));
 
     /// <summary>
     /// Diagnóstico agnóstico de módulo — usado por cualquier pantalla del ERP (Ventas, y a futuro
@@ -68,14 +93,21 @@ public sealed class ElectronicDocumentsController : ControllerBase
     [HttpGet("by-source")]
     [Authorize(Policy = $"perm:{ElectronicDocumentsPermissions.Detail}")]
     public async Task<IActionResult> GetDiagnosticBySource(
-        [FromQuery] string sourceModule, [FromQuery] Guid sourceEntityId, CancellationToken ct)
-        => this.ToOkOrNotFound(await _mediator.Send(
-            new GetElectronicDocumentDiagnosticBySourceQuery(sourceModule, sourceEntityId), ct));
+        [FromQuery] string sourceModule,
+        [FromQuery] Guid sourceEntityId,
+        CancellationToken ct
+    ) =>
+        this.ToOkOrNotFound(
+            await _mediator.Send(
+                new GetElectronicDocumentDiagnosticBySourceQuery(sourceModule, sourceEntityId),
+                ct
+            )
+        );
 
     [HttpGet("{id:guid}/timeline")]
     [Authorize(Policy = $"perm:{ElectronicDocumentsPermissions.Detail}")]
-    public async Task<IActionResult> GetTimeline(Guid id, CancellationToken ct)
-        => this.ToOkOrNotFound(await _mediator.Send(new GetElectronicDocumentTimelineQuery(id), ct));
+    public async Task<IActionResult> GetTimeline(Guid id, CancellationToken ct) =>
+        this.ToOkOrNotFound(await _mediator.Send(new GetElectronicDocumentTimelineQuery(id), ct));
 
     /// <summary>Devuelve el XML ya almacenado (borrador o firmado) — nunca genera uno nuevo.</summary>
     [HttpGet("xml")]
@@ -84,15 +116,23 @@ public sealed class ElectronicDocumentsController : ControllerBase
         [FromQuery] string sourceModule,
         [FromQuery] Guid sourceEntityId,
         [FromQuery] ElectronicDocumentXmlVariant variant,
-        CancellationToken ct)
-        => this.ToOkOrNotFound(await _mediator.Send(
-            new GetElectronicDocumentXmlQuery(sourceModule, sourceEntityId, variant), ct));
+        CancellationToken ct
+    ) =>
+        this.ToOkOrNotFound(
+            await _mediator.Send(
+                new GetElectronicDocumentXmlQuery(sourceModule, sourceEntityId, variant),
+                ct
+            )
+        );
 
     /// <summary>Reintenta manualmente un documento varado en Signed/Received/Failed, o lo reactiva desde DeadLetter y reintenta.</summary>
     [HttpPost("{id:guid}/retry")]
     [Authorize(Policy = $"perm:{ElectronicDocumentsPermissions.Retry}")]
-    public async Task<IActionResult> Retry(Guid id, CancellationToken ct)
-        => this.ToOkOrBadRequest(await _mediator.Send(new RetryElectronicDocumentCommand(id), ct), "OK");
+    public async Task<IActionResult> Retry(Guid id, CancellationToken ct) =>
+        this.ToOkOrBadRequest(
+            await _mediator.Send(new RetryElectronicDocumentCommand(id), ct),
+            "OK"
+        );
 
     /// <summary>
     /// Backfill: registra el documento electrónico de un documento de origen ya autorizado
@@ -101,6 +141,8 @@ public sealed class ElectronicDocumentsController : ControllerBase
     /// </summary>
     [HttpPost("register")]
     [Authorize(Policy = $"perm:{ElectronicDocumentsPermissions.Retry}")]
-    public async Task<IActionResult> Register([FromBody] CreateElectronicDocumentCommand command, CancellationToken ct)
-        => this.ToOkOrBadRequest(await _mediator.Send(command, ct), "OK");
+    public async Task<IActionResult> Register(
+        [FromBody] CreateElectronicDocumentCommand command,
+        CancellationToken ct
+    ) => this.ToOkOrBadRequest(await _mediator.Send(command, ct), "OK");
 }

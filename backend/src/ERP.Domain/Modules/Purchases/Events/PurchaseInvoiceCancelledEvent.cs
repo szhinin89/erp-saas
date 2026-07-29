@@ -13,8 +13,13 @@ public sealed class PurchaseInvoiceCancelledEvent : BaseDomainEvent, IAuditEvent
     public string CancelReason { get; }
 
     public PurchaseInvoiceCancelledEvent(
-        Guid tenantId, Guid invoiceId, Guid supplierId, string invoiceNumber,
-        decimal grandTotal, string cancelReason)
+        Guid tenantId,
+        Guid invoiceId,
+        Guid supplierId,
+        string invoiceNumber,
+        decimal grandTotal,
+        string cancelReason
+    )
     {
         TenantId = tenantId;
         InvoiceId = invoiceId;

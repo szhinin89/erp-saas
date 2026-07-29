@@ -8,7 +8,8 @@ using MediatR;
 
 namespace ERP.Application.Modules.Inventory.ItemMatching.UseCases.MatchItem;
 
-public sealed class MatchItemHandler : IRequestHandler<MatchItemCommand, Result<PurchaseReceptionLineMatchDto>>
+public sealed class MatchItemHandler
+    : IRequestHandler<MatchItemCommand, Result<PurchaseReceptionLineMatchDto>>
 {
     private readonly IPurchaseReceptionDocumentRepository _documentRepo;
     private readonly IItemRepository _itemRepo;
@@ -17,8 +18,12 @@ public sealed class MatchItemHandler : IRequestHandler<MatchItemCommand, Result<
     private readonly ICurrentUser _user;
 
     public MatchItemHandler(
-        IPurchaseReceptionDocumentRepository documentRepo, IItemRepository itemRepo,
-        IItemMatchConfirmationService confirmationService, ICurrentTenant tenant, ICurrentUser user)
+        IPurchaseReceptionDocumentRepository documentRepo,
+        IItemRepository itemRepo,
+        IItemMatchConfirmationService confirmationService,
+        ICurrentTenant tenant,
+        ICurrentUser user
+    )
     {
         _documentRepo = documentRepo;
         _itemRepo = itemRepo;
@@ -27,21 +32,45 @@ public sealed class MatchItemHandler : IRequestHandler<MatchItemCommand, Result<
         _user = user;
     }
 
-    public async Task<Result<PurchaseReceptionLineMatchDto>> Handle(MatchItemCommand request, CancellationToken cancellationToken)
+    public async Task<Result<PurchaseReceptionLineMatchDto>> Handle(
+        MatchItemCommand request,
+        CancellationToken cancellationToken
+    )
     {
-        var document = await _documentRepo.GetByLineIdAsync(_tenant.TenantId, request.PurchaseReceptionLineId, cancellationToken);
+        var document = await _documentRepo.GetByLineIdAsync(
+            _tenant.TenantId,
+            request.PurchaseReceptionLineId,
+            cancellationToken
+        );
         if (document is null)
-            return Result<PurchaseReceptionLineMatchDto>.NotFound("La línea de recepción no existe.");
+            return Result<PurchaseReceptionLineMatchDto>.NotFound(
+                "La línea de recepción no existe."
+            );
 
         var line = document.Lines.First(l => l.Id == request.PurchaseReceptionLineId);
 
-        var item = await _itemRepo.GetByIdLightAsync(request.ItemId, _tenant.TenantId, cancellationToken);
+        var item = await _itemRepo.GetByIdLightAsync(
+            request.ItemId,
+            _tenant.TenantId,
+            cancellationToken
+        );
         if (item is null)
-            return Result<PurchaseReceptionLineMatchDto>.NotFound("El ítem seleccionado no existe.");
+            return Result<PurchaseReceptionLineMatchDto>.NotFound(
+                "El ítem seleccionado no existe."
+            );
 
-        await _confirmationService.ConfirmAsync(document, line, request.ItemId, _user.UserId, DateTime.UtcNow, cancellationToken);
+        await _confirmationService.ConfirmAsync(
+            document,
+            line,
+            request.ItemId,
+            _user.UserId,
+            DateTime.UtcNow,
+            cancellationToken
+        );
         await _documentRepo.SaveChangesAsync(cancellationToken);
 
-        return Result<PurchaseReceptionLineMatchDto>.Success(ItemMatchingMapper.ToDto(line, document.SupplierId));
+        return Result<PurchaseReceptionLineMatchDto>.Success(
+            ItemMatchingMapper.ToDto(line, document.SupplierId)
+        );
     }
 }

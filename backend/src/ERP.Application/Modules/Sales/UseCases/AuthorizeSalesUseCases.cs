@@ -18,7 +18,8 @@ namespace ERP.Application.Modules.Sales.UseCases;
 /// (resuelto entonces desde ICurrentCashSession) — nunca un override manual.
 /// </summary>
 public sealed record AuthorizeSalesInvoiceCommand(Guid InvoiceId)
-    : IRequest<Result<SalesInvoiceDto>>, IBranchScopedRequest;
+    : IRequest<Result<SalesInvoiceDto>>,
+        IBranchScopedRequest;
 
 public sealed class AuthorizeSalesInvoiceHandler
     : IRequestHandler<AuthorizeSalesInvoiceCommand, Result<SalesInvoiceDto>>
@@ -44,32 +45,50 @@ public sealed class AuthorizeSalesInvoiceHandler
     private readonly ICurrentUser _u;
 
     public AuthorizeSalesInvoiceHandler(
-        ISalesInvoiceRepository repo, ISalesReceivableRepository rxRepo,
+        ISalesInvoiceRepository repo,
+        ISalesReceivableRepository rxRepo,
         IStockRepository stockRepo,
-        ISriTaxResolver tax, IDocumentSequenceRepository seqRepo,
-        IEmissionPointRepository epRepo, IEstablishmentRepository estRepo,
+        ISriTaxResolver tax,
+        IDocumentSequenceRepository seqRepo,
+        IEmissionPointRepository epRepo,
+        IEstablishmentRepository estRepo,
         ERP.Domain.Modules.ElectronicDocuments.Interfaces.IElectronicDocumentRepository edocRepo,
         ISalesInvoiceEmissionStrategyResolver emissionStrategyResolver,
         ERP.Application.Common.Services.ICompanyClock companyClock,
         ILogger<AuthorizeSalesInvoiceHandler> logger,
-        ICurrentTenant t, ICurrentCompany c, ICurrentUser u)
+        ICurrentTenant t,
+        ICurrentCompany c,
+        ICurrentUser u
+    )
     {
-        _repo = repo; _rxRepo = rxRepo; _stockRepo = stockRepo;
-        _tax = tax; _seqRepo = seqRepo;
-        _epRepo = epRepo; _estRepo = estRepo; _edocRepo = edocRepo;
+        _repo = repo;
+        _rxRepo = rxRepo;
+        _stockRepo = stockRepo;
+        _tax = tax;
+        _seqRepo = seqRepo;
+        _epRepo = epRepo;
+        _estRepo = estRepo;
+        _edocRepo = edocRepo;
         _emissionStrategyResolver = emissionStrategyResolver;
         _companyClock = companyClock;
-        _logger = logger; _t = t; _c = c; _u = u;
+        _logger = logger;
+        _t = t;
+        _c = c;
+        _u = u;
     }
 
-    public async Task<Result<SalesInvoiceDto>> Handle(AuthorizeSalesInvoiceCommand cmd, CancellationToken ct)
+    public async Task<Result<SalesInvoiceDto>> Handle(
+        AuthorizeSalesInvoiceCommand cmd,
+        CancellationToken ct
+    )
     {
         var tid = _t.TenantId;
         var cid = _c.CompanyId;
         var uid = _u.UserId;
 
         var inv = await _repo.GetByIdAsync(tid, cmd.InvoiceId, ct);
-        if (inv is null) return Result<SalesInvoiceDto>.NotFound("Factura no encontrada.");
+        if (inv is null)
+            return Result<SalesInvoiceDto>.NotFound("Factura no encontrada.");
 
         if (inv.Status != Domain.Modules.Sales.Enums.SalesInvoiceStatus.Draft)
             return Result<SalesInvoiceDto>.ValidationFailure("Esta factura ya fue autorizada.");
@@ -82,19 +101,23 @@ public sealed class AuthorizeSalesInvoiceHandler
         var companyToday = await _companyClock.TodayAsync(cid, tid, ct);
         if (inv.IssueDate > companyToday)
             return Result<SalesInvoiceDto>.ValidationFailure(
-                $"La fecha de emisión ({inv.IssueDate:dd/MM/yyyy}) no puede ser posterior a la fecha actual ({companyToday:dd/MM/yyyy}).");
+                $"La fecha de emisión ({inv.IssueDate:dd/MM/yyyy}) no puede ser posterior a la fecha actual ({companyToday:dd/MM/yyyy})."
+            );
         if (inv.IssueDate < companyToday.AddDays(-SriIssueDateToleranceDays))
             return Result<SalesInvoiceDto>.ValidationFailure(
-                $"No puedes emitir esta factura porque la fecha de emisión ({inv.IssueDate:dd/MM/yyyy}) es demasiado antigua " +
-                $"(supera el máximo de {SriIssueDateToleranceDays} días permitido). Corrige la fecha de emisión o contacta a " +
-                "soporte si necesitas registrar una venta retroactiva.");
+                $"No puedes emitir esta factura porque la fecha de emisión ({inv.IssueDate:dd/MM/yyyy}) es demasiado antigua "
+                    + $"(supera el máximo de {SriIssueDateToleranceDays} días permitido). Corrige la fecha de emisión o contacta a "
+                    + "soporte si necesitas registrar una venta retroactiva."
+            );
 
         // ── Recalcular impuestos con nombres actualizados ───────────
         foreach (var line in inv.Lines)
         {
             var vatResult = await _tax.GetVatRateWithNameAsync(line.VatCode, ct);
             if (vatResult is null)
-                return Result<SalesInvoiceDto>.ValidationFailure($"Código IVA '{line.VatCode}' no encontrado.");
+                return Result<SalesInvoiceDto>.ValidationFailure(
+                    $"Código IVA '{line.VatCode}' no encontrado."
+                );
 
             decimal iceRate = 0;
             string? iceName = null;
@@ -102,12 +125,20 @@ public sealed class AuthorizeSalesInvoiceHandler
             {
                 var iceResult = await _tax.GetIceRateWithNameAsync(line.IceCode, ct);
                 if (iceResult is null)
-                    return Result<SalesInvoiceDto>.ValidationFailure($"Código ICE '{line.IceCode}' no encontrado.");
+                    return Result<SalesInvoiceDto>.ValidationFailure(
+                        $"Código ICE '{line.IceCode}' no encontrado."
+                    );
                 iceRate = iceResult.Rate;
                 iceName = iceResult.Name;
             }
-            line.ApplyTaxes(line.VatCode, vatResult.Rate, vatResult.Name,
-                            line.IceCode, iceRate, iceName);
+            line.ApplyTaxes(
+                line.VatCode,
+                vatResult.Rate,
+                vatResult.Name,
+                line.IceCode,
+                iceRate,
+                iceName
+            );
         }
 
         // ── Validar stock disponible por línea (Kardex) ─────────────
@@ -116,15 +147,22 @@ public sealed class AuthorizeSalesInvoiceHandler
         // (impuesto por SalesLineBuilder al crear el borrador).
         foreach (var line in inv.Lines)
         {
-            if (line.ItemId is null || line.WarehouseId is null) continue;
+            if (line.ItemId is null || line.WarehouseId is null)
+                continue;
 
-            var stock = await _stockRepo.GetStockAsync(tid, line.WarehouseId.Value, line.ItemId.Value, ct);
+            var stock = await _stockRepo.GetStockAsync(
+                tid,
+                line.WarehouseId.Value,
+                line.ItemId.Value,
+                ct
+            );
             var available = stock?.Quantity ?? 0m;
             if (available < line.Quantity)
                 return Result<SalesInvoiceDto>.ValidationFailure(
-                    $"Línea '{line.Description}': stock insuficiente en la bodega seleccionada " +
-                    $"(disponible: {available}, solicitado: {line.Quantity}). " +
-                    "Reduce la cantidad, elige otra bodega, o realiza un ingreso de inventario antes de emitir.");
+                    $"Línea '{line.Description}': stock insuficiente en la bodega seleccionada "
+                        + $"(disponible: {available}, solicitado: {line.Quantity}). "
+                        + "Reduce la cantidad, elige otra bodega, o realiza un ingreso de inventario antes de emitir."
+                );
         }
 
         // ── Generar número secuencial SRI ───────────────────────────
@@ -150,18 +188,31 @@ public sealed class AuthorizeSalesInvoiceHandler
             // CaptureNextAsync: atómico (advisory lock + transacción propia).
             // Usa inv.DocTypeCode para soportar facturas, NC, ND, etc. sin hardcode.
             // Común a Electronic y Physical — ambos consumen secuencial SRI por igual.
-            var sequential = await _seqRepo.CaptureNextAsync(tid, cid, epId.Value, inv.DocTypeCode, ct);
+            var sequential = await _seqRepo.CaptureNextAsync(
+                tid,
+                cid,
+                epId.Value,
+                inv.DocTypeCode,
+                ct
+            );
             inv.SetInvoiceNumber($"{est.Code}-{ep.Code}-{sequential}");
 
             emissionPointType = ep.EmissionType;
         }
 
         // ── Autorizar (congela líneas + snapshot totales) ───────────
-        try { inv.Authorize(uid); }
+        try
+        {
+            inv.Authorize(uid);
+        }
         catch (InvalidOperationException ex)
         {
-            _logger.LogWarning("Authorize rejected for sales invoice {InvoiceId} tenant {TenantId}: {Reason}",
-                cmd.InvoiceId, tid, ex.Message);
+            _logger.LogWarning(
+                "Authorize rejected for sales invoice {InvoiceId} tenant {TenantId}: {Reason}",
+                cmd.InvoiceId,
+                tid,
+                ex.Message
+            );
             return Result<SalesInvoiceDto>.ValidationFailure(ex.Message);
         }
 
@@ -169,13 +220,24 @@ public sealed class AuthorizeSalesInvoiceHandler
         // documento; precio/descuento/IVA siguen siendo propiedad exclusiva de Ventas ──
         foreach (var line in inv.Lines)
         {
-            if (line.ItemId is null || line.WarehouseId is null) continue;
+            if (line.ItemId is null || line.WarehouseId is null)
+                continue;
 
             await _stockRepo.AppendMovementAsync(
-                tid, cid, line.ItemId.Value, line.WarehouseId.Value,
-                StockMovementType.SaleExit, -line.Quantity, line.UomCode,
-                inv.IssueDate, inv.InvoiceNumber, inv.Id, "SalesInvoice",
-                uid, cancellationToken: ct);
+                tid,
+                cid,
+                line.ItemId.Value,
+                line.WarehouseId.Value,
+                StockMovementType.SaleExit,
+                -line.Quantity,
+                line.UomCode,
+                inv.IssueDate,
+                inv.InvoiceNumber,
+                inv.Id,
+                "SalesInvoice",
+                uid,
+                cancellationToken: ct
+            );
         }
 
         // ── Generar cuenta por cobrar (solo crédito — contado no genera CxC) ─
@@ -183,19 +245,37 @@ public sealed class AuthorizeSalesInvoiceHandler
         if (isCredit && inv.GrandTotal > 0)
         {
             var receivable = Domain.Modules.Sales.Entities.SalesReceivable.Create(
-                tid, cid, inv.Id, inv.CustomerId, inv.GrandTotal, uid);
+                tid,
+                cid,
+                inv.Id,
+                inv.CustomerId,
+                inv.GrandTotal,
+                uid
+            );
             receivable.GenerateInstallments(
-                inv.IssueDate, inv.CreditTermDays, inv.PaymentTerm.Installments);
+                inv.IssueDate,
+                inv.CreditTermDays,
+                inv.PaymentTerm.Installments
+            );
             await _rxRepo.AddAsync(receivable, ct);
         }
 
-        _logger.LogInformation("Authorizing sales invoice {InvoiceNumber} ({InvoiceId}) for tenant {TenantId}. Lines: {LineCount}, Total: {GrandTotal}",
-            inv.InvoiceNumber, inv.Id, tid, inv.Lines.Count, inv.GrandTotal);
+        _logger.LogInformation(
+            "Authorizing sales invoice {InvoiceNumber} ({InvoiceId}) for tenant {TenantId}. Lines: {LineCount}, Total: {GrandTotal}",
+            inv.InvoiceNumber,
+            inv.Id,
+            tid,
+            inv.Lines.Count,
+            inv.GrandTotal
+        );
 
         await _stockRepo.SaveChangesWithSequenceRetryAsync(ct);
 
-        _logger.LogInformation("Sales invoice {InvoiceNumber} ({InvoiceId}) authorized successfully",
-            inv.InvoiceNumber, inv.Id);
+        _logger.LogInformation(
+            "Sales invoice {InvoiceNumber} ({InvoiceId}) authorized successfully",
+            inv.InvoiceNumber,
+            inv.Id
+        );
 
         // Fase 10 (integración final): dispara el flujo posterior a la autorización SOLO después
         // de que la transacción de Ventas ya fue confirmada (SaveChangesWithSequenceRetryAsync
@@ -225,7 +305,9 @@ public sealed class AuthorizeSalesInvoiceHandler
         {
             var strategy = _emissionStrategyResolver.Resolve(emissionPointType.Value);
             electronicIssueError = await strategy.ExecuteAsync(
-                new SalesInvoiceEmissionContext(tid, cid, uid, inv), ct);
+                new SalesInvoiceEmissionContext(tid, cid, uid, inv),
+                ct
+            );
         }
 
         var edoc = await _edocRepo.GetBySourceAsync(tid, "Sales", inv.Id, ct);

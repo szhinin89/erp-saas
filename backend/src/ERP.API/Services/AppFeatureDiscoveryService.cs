@@ -1,8 +1,8 @@
+using System.Reflection;
 using ERP.API.Attributes;
 using ERP.Domain.Modules.Menu.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Routing;
-using System.Reflection;
 
 namespace ERP.API.Services;
 
@@ -15,7 +15,10 @@ public sealed class AppFeatureDiscoveryService
     private readonly IAppFeatureRepository _repository;
     private readonly ILogger<AppFeatureDiscoveryService> _logger;
 
-    public AppFeatureDiscoveryService(IAppFeatureRepository repository, ILogger<AppFeatureDiscoveryService> logger)
+    public AppFeatureDiscoveryService(
+        IAppFeatureRepository repository,
+        ILogger<AppFeatureDiscoveryService> logger
+    )
     {
         _repository = repository;
         _logger = logger;
@@ -28,7 +31,8 @@ public sealed class AppFeatureDiscoveryService
         string? Path,
         string? ParentPermission,
         int SortOrder,
-        bool IsVisibleInMenu);
+        bool IsVisibleInMenu
+    );
 
     public async Task<int> SyncFeaturesAsync(CancellationToken cancellationToken = default)
     {
@@ -43,7 +47,11 @@ public sealed class AppFeatureDiscoveryService
             if (classAttr is not null && !ShouldExclude(classAttr.Permission))
                 rows.Add(ToRow(classAttr, NormalizeParent(classAttr.ParentPermission)));
 
-            foreach (var method in type.GetMethods(BindingFlags.Instance | BindingFlags.Public | BindingFlags.DeclaredOnly))
+            foreach (
+                var method in type.GetMethods(
+                    BindingFlags.Instance | BindingFlags.Public | BindingFlags.DeclaredOnly
+                )
+            )
             {
                 if (!IsHttpAction(method))
                     continue;
@@ -68,18 +76,23 @@ public sealed class AppFeatureDiscoveryService
         }
 
         var byPerm = new Dictionary<string, DiscoveryRow>(StringComparer.OrdinalIgnoreCase);
-        foreach (var r in rows.OrderBy(r => r.ParentPermission is null ? 0 : 1).ThenBy(r => r.SortOrder).ThenBy(r => r.Permission, StringComparer.Ordinal))
+        foreach (
+            var r in rows.OrderBy(r => r.ParentPermission is null ? 0 : 1)
+                .ThenBy(r => r.SortOrder)
+                .ThenBy(r => r.Permission, StringComparer.Ordinal)
+        )
             byPerm[r.Permission] = r;
 
-        var syncRows = byPerm.Values
-            .Select(r => new AppFeatureSyncRow(
+        var syncRows = byPerm
+            .Values.Select(r => new AppFeatureSyncRow(
                 r.Permission,
                 r.Name,
                 r.Icon,
                 r.Path,
                 r.ParentPermission,
                 r.SortOrder,
-                r.IsVisibleInMenu))
+                r.IsVisibleInMenu
+            ))
             .ToList();
 
         return await _repository.SyncDiscoveredFeaturesAsync(syncRows, cancellationToken);
@@ -88,8 +101,7 @@ public sealed class AppFeatureDiscoveryService
     private static string? NormalizeParent(string? parent) =>
         string.IsNullOrWhiteSpace(parent) ? null : parent.Trim();
 
-    private static bool ShouldExclude(string permission)
-        => string.IsNullOrWhiteSpace(permission);
+    private static bool ShouldExclude(string permission) => string.IsNullOrWhiteSpace(permission);
 
     private static DiscoveryRow ToRow(AppFeatureAttribute a, string? parentPermissionExplicit)
     {
@@ -102,7 +114,8 @@ public sealed class AppFeatureDiscoveryService
             a.Path,
             parent,
             a.SortOrder,
-            a.IsVisibleInMenu);
+            a.IsVisibleInMenu
+        );
     }
 
     private static bool IsHttpAction(MethodInfo m)

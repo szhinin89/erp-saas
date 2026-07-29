@@ -19,14 +19,24 @@ public sealed class ItemStockConfig
         bool allowDecimalQty = false,
         bool allowDecimalSale = false,
         decimal? minStockQty = null,
-        decimal? maxStockQty = null)
+        decimal? maxStockQty = null
+    )
     {
         if (minStockQty.HasValue && minStockQty < 0)
-            throw new ArgumentException("El stock mínimo no puede ser negativo.", nameof(minStockQty));
+            throw new ArgumentException(
+                "El stock mínimo no puede ser negativo.",
+                nameof(minStockQty)
+            );
         if (maxStockQty.HasValue && maxStockQty < 0)
-            throw new ArgumentException("El stock máximo no puede ser negativo.", nameof(maxStockQty));
+            throw new ArgumentException(
+                "El stock máximo no puede ser negativo.",
+                nameof(maxStockQty)
+            );
         if (minStockQty.HasValue && maxStockQty.HasValue && minStockQty > maxStockQty)
-            throw new ArgumentException("El stock mínimo no puede ser mayor que el máximo.", nameof(minStockQty));
+            throw new ArgumentException(
+                "El stock mínimo no puede ser mayor que el máximo.",
+                nameof(minStockQty)
+            );
 
         return new ItemStockConfig
         {

@@ -49,23 +49,37 @@ public sealed class RideDependencyInjectionTests
 
         services.AddSingleton<IConfiguration>(configuration);
         services.AddLogging();
-        services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(ERP.Application.DependencyInjection).Assembly));
-        services.AddDbContext<ErpDbContext>(options => options.UseNpgsql("Host=localhost;Database=ride-di-test-only"));
+        services.AddMediatR(cfg =>
+            cfg.RegisterServicesFromAssembly(typeof(ERP.Application.DependencyInjection).Assembly)
+        );
+        services.AddDbContext<ErpDbContext>(options =>
+            options.UseNpgsql("Host=localhost;Database=ride-di-test-only")
+        );
         services.AddScoped<ICurrentTenant>(_ => new FixedCurrentTenant(Guid.NewGuid));
         services.AddScoped<ICurrentCompany>(_ => new FixedCurrentCompany(Guid.NewGuid));
         services.AddScoped<ICurrentUser>(_ => new FixedCurrentUser(Guid.NewGuid));
         services.AddScoped<IElectronicDocumentRepository, ElectronicDocumentRepository>();
-        services.AddScoped<ERP.Application.Common.Interfaces.IFileStorage, ERP.Infrastructure.Services.LocalFileStorage>();
+        services.AddScoped<
+            ERP.Application.Common.Interfaces.IFileStorage,
+            ERP.Infrastructure.Services.LocalFileStorage
+        >();
 
-        services.AddSingleton<ERP.Application.Common.Persistence.IDatabaseExceptionTranslator,
-            PostgresDatabaseExceptionTranslator>();
+        services.AddSingleton<
+            ERP.Application.Common.Persistence.IDatabaseExceptionTranslator,
+            PostgresDatabaseExceptionTranslator
+        >();
         services.AddScoped<ERP.Domain.Configuration.Interfaces.IOrgSettingsRepository>(_ =>
         {
             var mock = new Mock<ERP.Domain.Configuration.Interfaces.IOrgSettingsRepository>();
-            mock.Setup(r => r.GetAllForScopeAsync(
-                    It.IsAny<Guid>(), It.IsAny<Guid>(),
-                    ERP.Domain.Configuration.Enums.OrgScope.Company, It.IsAny<Guid>(),
-                    It.IsAny<CancellationToken>()))
+            mock.Setup(r =>
+                    r.GetAllForScopeAsync(
+                        It.IsAny<Guid>(),
+                        It.IsAny<Guid>(),
+                        ERP.Domain.Configuration.Enums.OrgScope.Company,
+                        It.IsAny<Guid>(),
+                        It.IsAny<CancellationToken>()
+                    )
+                )
                 .ReturnsAsync(new List<ERP.Domain.Configuration.Entities.OrgSetting>());
             return mock.Object;
         });
@@ -81,14 +95,26 @@ public sealed class RideDependencyInjectionTests
         services.AddScoped<IRideBrandingProvider, OrgSettingsRideBrandingProvider>();
         services.AddSingleton<ERP.Application.Codes.IQrCodeGenerator, QrCodeGenerator>();
         services.AddScoped<IRideQrCodeGenerator, RideQrCodeGenerator>();
-        services.AddSingleton<ERP.Application.Codes.Barcodes.IBarcodeGenerator, Code128BarcodeGenerator>();
+        services.AddSingleton<
+            ERP.Application.Codes.Barcodes.IBarcodeGenerator,
+            Code128BarcodeGenerator
+        >();
         services.AddScoped<IRideBarcodeGenerator, RideBarcodeGenerator>();
         services.AddScoped<IRidePdfStorageNamingStrategy, RidePdfStorageNamingStrategy>();
         services.AddScoped<IRidePdfStorageService, RidePdfStorageService>();
-        services.AddScoped<IRideCacheStrategy, ERP.Application.Modules.Ride.Services.RideCacheStrategy>();
-        services.AddScoped<IRideContentHasher, ERP.Application.Modules.Ride.Services.RideContentHasher>();
+        services.AddScoped<
+            IRideCacheStrategy,
+            ERP.Application.Modules.Ride.Services.RideCacheStrategy
+        >();
+        services.AddScoped<
+            IRideContentHasher,
+            ERP.Application.Modules.Ride.Services.RideContentHasher
+        >();
         services.AddScoped<ERP.Application.Modules.Ride.Services.RidePipeline>();
-        services.AddScoped<IRideDocumentService, ERP.Application.Modules.Ride.Services.RideDocumentService>();
+        services.AddScoped<
+            IRideDocumentService,
+            ERP.Application.Modules.Ride.Services.RideDocumentService
+        >();
 
         return services.BuildServiceProvider(validateScopes: true);
     }

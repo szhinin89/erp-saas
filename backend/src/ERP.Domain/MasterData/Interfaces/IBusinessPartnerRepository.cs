@@ -18,12 +18,14 @@ public interface IBusinessPartnerRepository
     /// </summary>
     Task<IReadOnlyDictionary<Guid, string>> GetNamesByIdsAsync(
         IEnumerable<Guid> ids,
-        CancellationToken cancellationToken = default);
+        CancellationToken cancellationToken = default
+    );
 
     Task<BusinessPartner?> GetByIdentificationAsync(
         string identificationType,
         string identificationNumber,
-        CancellationToken cancellationToken = default);
+        CancellationToken cancellationToken = default
+    );
 
     /// <summary>
     /// Existence-only check por identificación (tipo + número), tenant-scoped via
@@ -34,7 +36,8 @@ public interface IBusinessPartnerRepository
         string identificationType,
         string identificationNumber,
         Guid? excludeId = null,
-        CancellationToken cancellationToken = default);
+        CancellationToken cancellationToken = default
+    );
 
     /// <summary>
     /// Búsqueda con filtros. roles: lista de RoleType requeridos (JOIN a master_bp_roles).
@@ -46,13 +49,15 @@ public interface IBusinessPartnerRepository
         RoleType[]? roles = null,
         int skip = 0,
         int take = 50,
-        CancellationToken cancellationToken = default);
+        CancellationToken cancellationToken = default
+    );
 
     Task<int> CountAsync(
         string? query = null,
         bool? isActive = true,
         RoleType[]? roles = null,
-        CancellationToken cancellationToken = default);
+        CancellationToken cancellationToken = default
+    );
 
     Task AddAsync(BusinessPartner businessPartner, CancellationToken cancellationToken = default);
 

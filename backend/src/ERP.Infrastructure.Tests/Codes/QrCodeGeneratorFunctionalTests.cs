@@ -22,12 +22,23 @@ public sealed class QrCodeGeneratorFunctionalTests
     private static string Decode(byte[] pngBytes)
     {
         using var decoded = SKBitmap.Decode(pngBytes);
-        using var bitmap = new SKBitmap(new SKImageInfo(decoded.Width, decoded.Height, SKColorType.Bgra8888, SKAlphaType.Unpremul));
+        using var bitmap = new SKBitmap(
+            new SKImageInfo(
+                decoded.Width,
+                decoded.Height,
+                SKColorType.Bgra8888,
+                SKAlphaType.Unpremul
+            )
+        );
         using (var canvas = new SKCanvas(bitmap))
             canvas.DrawBitmap(decoded, 0, 0);
 
         var luminanceSource = new RGBLuminanceSource(
-            bitmap.Bytes, bitmap.Width, bitmap.Height, RGBLuminanceSource.BitmapFormat.BGRA32);
+            bitmap.Bytes,
+            bitmap.Width,
+            bitmap.Height,
+            RGBLuminanceSource.BitmapFormat.BGRA32
+        );
         var binaryBitmap = new BinaryBitmap(new HybridBinarizer(luminanceSource));
 
         var result = new QRCodeReader().decode(binaryBitmap);

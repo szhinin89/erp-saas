@@ -10,4 +10,5 @@ namespace ERP.Application.Modules.Session.UseCases.GetSessionContext;
 /// la sesión debe poder consultarse incluso antes de seleccionar empresa.
 /// </summary>
 public sealed record GetSessionContextQuery
-    : IRequest<Result<SessionContextDto>>, ITenantScopedRequest;
+    : IRequest<Result<SessionContextDto>>,
+        ITenantScopedRequest;

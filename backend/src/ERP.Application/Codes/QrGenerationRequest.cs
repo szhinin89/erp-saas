@@ -31,16 +31,25 @@ public sealed class QrGenerationRequest
     public QrGenerationRequest(string content, int pixelsPerModule = 20)
     {
         if (string.IsNullOrWhiteSpace(content))
-            throw new ArgumentException("El contenido a codificar es obligatorio.", nameof(content));
+            throw new ArgumentException(
+                "El contenido a codificar es obligatorio.",
+                nameof(content)
+            );
         if (content.Length > MaxContentLength)
             throw new ArgumentException(
                 $"El contenido a codificar excede la capacidad máxima de un código QR ({MaxContentLength} caracteres).",
-                nameof(content));
+                nameof(content)
+            );
         if (pixelsPerModule <= 0)
-            throw new ArgumentException("Los píxeles por módulo deben ser mayores a cero.", nameof(pixelsPerModule));
+            throw new ArgumentException(
+                "Los píxeles por módulo deben ser mayores a cero.",
+                nameof(pixelsPerModule)
+            );
         if (pixelsPerModule > MaxPixelsPerModule)
             throw new ArgumentException(
-                $"Los píxeles por módulo no pueden exceder {MaxPixelsPerModule}.", nameof(pixelsPerModule));
+                $"Los píxeles por módulo no pueden exceder {MaxPixelsPerModule}.",
+                nameof(pixelsPerModule)
+            );
 
         Content = content;
         PixelsPerModule = pixelsPerModule;

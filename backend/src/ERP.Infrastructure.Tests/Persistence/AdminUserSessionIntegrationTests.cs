@@ -44,16 +44,65 @@ public sealed class AdminUserSessionIntegrationTests : IAsyncLifetime
 
         var createdBy = Guid.NewGuid();
         var tenant = Tenant.Create("Test Tenant", $"test-{Guid.NewGuid():N}"[..16], createdBy);
-        var otherTenant = Tenant.Create("Other Tenant", $"other-{Guid.NewGuid():N}"[..16], createdBy);
-        var companyA = Company.CreateManaged(tenant.Id, "1790012345001", "Empresa A S.A.", createdBy: createdBy);
-        var companyB = Company.CreateManaged(tenant.Id, "1790012345002", "Empresa B S.A.", createdBy: createdBy);
-        var companyOther = Company.CreateManaged(otherTenant.Id, "1790012345003", "Empresa Otro Tenant S.A.", createdBy: createdBy);
-        var user = IdentityUser.Create($"ana{Guid.NewGuid():N}", "Ana", "Perez", $"ana{Guid.NewGuid():N}@test.com", "hash", createdBy);
+        var otherTenant = Tenant.Create(
+            "Other Tenant",
+            $"other-{Guid.NewGuid():N}"[..16],
+            createdBy
+        );
+        var companyA = Company.CreateManaged(
+            tenant.Id,
+            "1790012345001",
+            "Empresa A S.A.",
+            createdBy: createdBy
+        );
+        var companyB = Company.CreateManaged(
+            tenant.Id,
+            "1790012345002",
+            "Empresa B S.A.",
+            createdBy: createdBy
+        );
+        var companyOther = Company.CreateManaged(
+            otherTenant.Id,
+            "1790012345003",
+            "Empresa Otro Tenant S.A.",
+            createdBy: createdBy
+        );
+        var user = IdentityUser.Create(
+            $"ana{Guid.NewGuid():N}",
+            "Ana",
+            "Perez",
+            $"ana{Guid.NewGuid():N}@test.com",
+            "hash",
+            createdBy
+        );
         var branch = Branch.Create(
-            tenant.Id, "Matriz", "Av. Principal 123", "001",
-            null, null, null, null, null, null, null, null, null, null, null,
-            null, null, null, null, null, null, null, null, true, createdBy,
-            companyId: companyA.Id);
+            tenant.Id,
+            "Matriz",
+            "Av. Principal 123",
+            "001",
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            true,
+            createdBy,
+            companyId: companyA.Id
+        );
 
         db.Tenants.AddRange(tenant, otherTenant);
         db.Companies.AddRange(companyA, companyB, companyOther);
@@ -71,9 +120,24 @@ public sealed class AdminUserSessionIntegrationTests : IAsyncLifetime
         // Sesiones de prueba: dos en el tenant bajo prueba (empresas distintas) + una en otro tenant.
         await using var seedDb = CreateContext(_tenantId, _companyAId);
         var seedRepo = new UserSessionRepository(seedDb);
-        await seedRepo.AddAsync(UserSession.Create(_tenantId, _companyAId, _identityUserId, _branchId, "device-a"), CancellationToken.None);
-        await seedRepo.AddAsync(UserSession.Create(_tenantId, _companyBId, _identityUserId, _branchId, "device-b"), CancellationToken.None);
-        await seedRepo.AddAsync(UserSession.Create(_otherTenantId, companyOther.Id, _identityUserId, _branchId, "device-other-tenant"), CancellationToken.None);
+        await seedRepo.AddAsync(
+            UserSession.Create(_tenantId, _companyAId, _identityUserId, _branchId, "device-a"),
+            CancellationToken.None
+        );
+        await seedRepo.AddAsync(
+            UserSession.Create(_tenantId, _companyBId, _identityUserId, _branchId, "device-b"),
+            CancellationToken.None
+        );
+        await seedRepo.AddAsync(
+            UserSession.Create(
+                _otherTenantId,
+                companyOther.Id,
+                _identityUserId,
+                _branchId,
+                "device-other-tenant"
+            ),
+            CancellationToken.None
+        );
         await seedRepo.SaveChangesAsync(CancellationToken.None);
     }
 
@@ -85,7 +149,12 @@ public sealed class AdminUserSessionIntegrationTests : IAsyncLifetime
             .UseNpgsql(_postgres.GetConnectionString())
             .Options;
 
-        return new ErpDbContext(options, new FixedCurrentTenant(tenantId), new NoOpPublisher(), new FixedCurrentCompany(companyId));
+        return new ErpDbContext(
+            options,
+            new FixedCurrentTenant(tenantId),
+            new NoOpPublisher(),
+            new FixedCurrentCompany(companyId)
+        );
     }
 
     [Fact]
@@ -95,7 +164,16 @@ public sealed class AdminUserSessionIntegrationTests : IAsyncLifetime
         var repo = new UserSessionRepository(db);
 
         var (allInTenant, totalInTenant) = await repo.GetPagedAsync(
-            _tenantId, null, null, null, null, null, 1, 25, CancellationToken.None);
+            _tenantId,
+            null,
+            null,
+            null,
+            null,
+            null,
+            1,
+            25,
+            CancellationToken.None
+        );
 
         totalInTenant.Should().Be(2);
         allInTenant.Should().OnlyContain(x => x.TenantId == _tenantId);
@@ -103,7 +181,16 @@ public sealed class AdminUserSessionIntegrationTests : IAsyncLifetime
         allInTenant.Should().Contain(x => x.CompanyId == _companyBId);
 
         var (onlyCompanyA, totalCompanyA) = await repo.GetPagedAsync(
-            _tenantId, null, _companyAId, null, null, null, 1, 25, CancellationToken.None);
+            _tenantId,
+            null,
+            _companyAId,
+            null,
+            null,
+            null,
+            1,
+            25,
+            CancellationToken.None
+        );
 
         totalCompanyA.Should().Be(1);
         onlyCompanyA.Should().OnlyContain(x => x.CompanyId == _companyAId);
@@ -124,10 +211,18 @@ public sealed class AdminUserSessionIntegrationTests : IAsyncLifetime
     public async Task GetByIdAsync_respeta_el_filtro_automatico_de_empresa_actual()
     {
         await using var seedDb = CreateContext(_tenantId, _companyAId);
-        var sessionA = await seedDb.UserSessions.IgnoreQueryFilters()
-            .FirstAsync(x => x.TenantId == _tenantId && x.CompanyId == _companyAId, CancellationToken.None);
-        var sessionB = await seedDb.UserSessions.IgnoreQueryFilters()
-            .FirstAsync(x => x.TenantId == _tenantId && x.CompanyId == _companyBId, CancellationToken.None);
+        var sessionA = await seedDb
+            .UserSessions.IgnoreQueryFilters()
+            .FirstAsync(
+                x => x.TenantId == _tenantId && x.CompanyId == _companyAId,
+                CancellationToken.None
+            );
+        var sessionB = await seedDb
+            .UserSessions.IgnoreQueryFilters()
+            .FirstAsync(
+                x => x.TenantId == _tenantId && x.CompanyId == _companyBId,
+                CancellationToken.None
+            );
 
         // Contexto ambiente = empresa A: solo debe poder alcanzar la sesión de la empresa A.
         await using var dbAsCompanyA = CreateContext(_tenantId, _companyAId);
@@ -144,8 +239,12 @@ public sealed class AdminUserSessionIntegrationTests : IAsyncLifetime
     public async Task Cierre_administrativo_persiste_el_estado_cerrado_en_BD()
     {
         await using var seedDb = CreateContext(_tenantId, _companyAId);
-        var sessionA = await seedDb.UserSessions.IgnoreQueryFilters()
-            .FirstAsync(x => x.TenantId == _tenantId && x.CompanyId == _companyAId, CancellationToken.None);
+        var sessionA = await seedDb
+            .UserSessions.IgnoreQueryFilters()
+            .FirstAsync(
+                x => x.TenantId == _tenantId && x.CompanyId == _companyAId,
+                CancellationToken.None
+            );
 
         await using var dbAsCompanyA = CreateContext(_tenantId, _companyAId);
         var repo = new UserSessionRepository(dbAsCompanyA);
@@ -155,7 +254,9 @@ public sealed class AdminUserSessionIntegrationTests : IAsyncLifetime
         await repo.SaveChangesAsync(CancellationToken.None);
 
         await using var verifyDb = CreateContext(_tenantId, _companyAId);
-        var stored = await verifyDb.UserSessions.IgnoreQueryFilters().FirstAsync(x => x.Id == sessionA.Id);
+        var stored = await verifyDb
+            .UserSessions.IgnoreQueryFilters()
+            .FirstAsync(x => x.Id == sessionA.Id);
         stored.Status.Should().Be(UserSessionStatus.ClosedManually);
         stored.ClosedAt.Should().NotBeNull();
     }
@@ -175,11 +276,13 @@ public sealed class AdminUserSessionIntegrationTests : IAsyncLifetime
 
     private sealed class NoOpPublisher : IPublisher
     {
-        public Task Publish(object notification, CancellationToken cancellationToken = default)
-            => Task.CompletedTask;
+        public Task Publish(object notification, CancellationToken cancellationToken = default) =>
+            Task.CompletedTask;
 
-        public Task Publish<TNotification>(TNotification notification, CancellationToken cancellationToken = default)
-            where TNotification : INotification
-            => Task.CompletedTask;
+        public Task Publish<TNotification>(
+            TNotification notification,
+            CancellationToken cancellationToken = default
+        )
+            where TNotification : INotification => Task.CompletedTask;
     }
 }

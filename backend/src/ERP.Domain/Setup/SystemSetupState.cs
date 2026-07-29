@@ -30,8 +30,8 @@ public sealed class SystemSetupState
         IsFirstRun = true;
     }
 
-    public bool HasActiveSetupToken(DateTime utcNow)
-        => !IsInitialized
+    public bool HasActiveSetupToken(DateTime utcNow) =>
+        !IsInitialized
         && SetupTokenHash is not null
         && SetupTokenExpiryUtc is not null
         && SetupTokenExpiryUtc.Value > utcNow;

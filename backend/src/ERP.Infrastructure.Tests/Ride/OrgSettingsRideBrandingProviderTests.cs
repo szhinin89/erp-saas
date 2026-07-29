@@ -15,15 +15,31 @@ public sealed class OrgSettingsRideBrandingProviderTests
     private static readonly Guid UserId = Guid.NewGuid();
 
     private static OrgSetting Setting(string key, string value) =>
-        OrgSetting.Create(TenantId, CompanyId, OrgScope.Company, CompanyId, key, value, SettingDataType.String, UserId);
+        OrgSetting.Create(
+            TenantId,
+            CompanyId,
+            OrgScope.Company,
+            CompanyId,
+            key,
+            value,
+            SettingDataType.String,
+            UserId
+        );
 
     [Fact]
     public async Task Existing_branding_settings_populate_RideBranding()
     {
         var repo = new Mock<IOrgSettingsRepository>();
-        repo.Setup(r => r.GetAllForScopeAsync(TenantId, CompanyId, OrgScope.Company, CompanyId, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(
-            [
+        repo.Setup(r =>
+                r.GetAllForScopeAsync(
+                    TenantId,
+                    CompanyId,
+                    OrgScope.Company,
+                    CompanyId,
+                    It.IsAny<CancellationToken>()
+                )
+            )
+            .ReturnsAsync([
                 Setting(OrgSettingKeys.Ride.LogoStoragePath, "branding/logo.png"),
                 Setting(OrgSettingKeys.Ride.PrimaryColorHex, "#112233"),
                 Setting(OrgSettingKeys.Ride.SecondaryColorHex, "#445566"),
@@ -44,7 +60,15 @@ public sealed class OrgSettingsRideBrandingProviderTests
     public async Task No_configured_settings_returns_empty_branding_not_an_error()
     {
         var repo = new Mock<IOrgSettingsRepository>();
-        repo.Setup(r => r.GetAllForScopeAsync(TenantId, CompanyId, OrgScope.Company, CompanyId, It.IsAny<CancellationToken>()))
+        repo.Setup(r =>
+                r.GetAllForScopeAsync(
+                    TenantId,
+                    CompanyId,
+                    OrgScope.Company,
+                    CompanyId,
+                    It.IsAny<CancellationToken>()
+                )
+            )
             .ReturnsAsync([]);
         var provider = new OrgSettingsRideBrandingProvider(repo.Object);
 
@@ -61,7 +85,15 @@ public sealed class OrgSettingsRideBrandingProviderTests
     public async Task Blank_setting_values_are_treated_as_absent()
     {
         var repo = new Mock<IOrgSettingsRepository>();
-        repo.Setup(r => r.GetAllForScopeAsync(TenantId, CompanyId, OrgScope.Company, CompanyId, It.IsAny<CancellationToken>()))
+        repo.Setup(r =>
+                r.GetAllForScopeAsync(
+                    TenantId,
+                    CompanyId,
+                    OrgScope.Company,
+                    CompanyId,
+                    It.IsAny<CancellationToken>()
+                )
+            )
             .ReturnsAsync([Setting(OrgSettingKeys.Ride.FooterText, "   ")]);
         var provider = new OrgSettingsRideBrandingProvider(repo.Object);
 

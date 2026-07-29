@@ -13,15 +13,21 @@ public static class DistributedCacheInstrumentationExtensions
     public static IServiceCollection AddDistributedCacheInstrumentation(
         this IServiceCollection services,
         IConfiguration configuration,
-        bool redisConfigured)
+        bool redisConfigured
+    )
     {
-        services.Configure<CacheDiagnosticsOptions>(configuration.GetSection(CacheDiagnosticsOptions.SectionName));
+        services.Configure<CacheDiagnosticsOptions>(
+            configuration.GetSection(CacheDiagnosticsOptions.SectionName)
+        );
         services.TryAddSingleton<CacheDiagnosticsMetrics>();
-        services.TryAddSingleton<ICacheDiagnosticsMetrics>(sp => sp.GetRequiredService<CacheDiagnosticsMetrics>());
+        services.TryAddSingleton<ICacheDiagnosticsMetrics>(sp =>
+            sp.GetRequiredService<CacheDiagnosticsMetrics>()
+        );
         services.TryAddSingleton<ICacheProviderStatus>(_ => new CacheProviderStatus(
             redisConfigured ? "Redis" : "Memory",
             redisConfigured,
-            fallbackActive: !redisConfigured));
+            fallbackActive: !redisConfigured
+        ));
 
         var descriptor = services.SingleOrDefault(d => d.ServiceType == typeof(IDistributedCache));
         if (descriptor is null)
@@ -35,13 +41,17 @@ public static class DistributedCacheInstrumentationExtensions
                 inner,
                 sp.GetRequiredService<ICacheDiagnosticsMetrics>(),
                 sp.GetRequiredService<IOptions<CacheDiagnosticsOptions>>(),
-                sp.GetRequiredService<ILogger<InstrumentedDistributedCache>>());
+                sp.GetRequiredService<ILogger<InstrumentedDistributedCache>>()
+            );
         });
 
         return services;
     }
 
-    private static IDistributedCache ResolveInnerCache(IServiceProvider sp, ServiceDescriptor descriptor)
+    private static IDistributedCache ResolveInnerCache(
+        IServiceProvider sp,
+        ServiceDescriptor descriptor
+    )
     {
         if (descriptor.ImplementationInstance is IDistributedCache instance)
             return instance;
@@ -52,6 +62,8 @@ public static class DistributedCacheInstrumentationExtensions
         if (descriptor.ImplementationType is { } type)
             return (IDistributedCache)ActivatorUtilities.CreateInstance(sp, type);
 
-        throw new InvalidOperationException("No se pudo resolver la implementación interna de IDistributedCache.");
+        throw new InvalidOperationException(
+            "No se pudo resolver la implementación interna de IDistributedCache."
+        );
     }
 }

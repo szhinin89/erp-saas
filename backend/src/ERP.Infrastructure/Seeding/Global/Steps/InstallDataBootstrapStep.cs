@@ -18,7 +18,10 @@ public sealed partial class InstallDataBootstrapStep : IGlobalBootstrapStep
     private readonly IInstallDataBootstrapService _installData;
     private readonly ILogger<InstallDataBootstrapStep> _logger;
 
-    public InstallDataBootstrapStep(IInstallDataBootstrapService installData, ILogger<InstallDataBootstrapStep> logger)
+    public InstallDataBootstrapStep(
+        IInstallDataBootstrapService installData,
+        ILogger<InstallDataBootstrapStep> logger
+    )
     {
         _installData = installData;
         _logger = logger;
@@ -36,6 +39,9 @@ public sealed partial class InstallDataBootstrapStep : IGlobalBootstrapStep
         }
     }
 
-    [LoggerMessage(Level = LogLevel.Error, Message = "InstallData failed at startup. Continuing without blocking API startup.")]
+    [LoggerMessage(
+        Level = LogLevel.Error,
+        Message = "InstallData failed at startup. Continuing without blocking API startup."
+    )]
     private partial void LogInstallDataFailed(Exception ex);
 }

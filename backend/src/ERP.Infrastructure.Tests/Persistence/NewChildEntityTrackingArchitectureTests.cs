@@ -1,5 +1,5 @@
-using FluentAssertions;
 using System.Text.RegularExpressions;
+using FluentAssertions;
 
 namespace ERP.Infrastructure.Tests.Persistence;
 
@@ -26,14 +26,15 @@ public sealed class NewChildEntityTrackingArchitectureTests
     // a DbSet.Update()/Attach() sobre una entidad de catálogo/configuración simple,
     // sin colecciones de navegación hijas — no expuestos al bug que corrige el
     // interceptor (no hay fixup de grafo posible: la entidad no tiene hijos).
-    private static readonly HashSet<string> AllowedAttachOrUpdateCallers =
-        new(StringComparer.OrdinalIgnoreCase)
-        {
-            "src/ERP.Infrastructure/MasterData/Repositories/PaymentTermRepository.cs",
-            "src/ERP.Infrastructure/Persistence/Repositories/Sales/PaymentMethodRepository.cs",
-            "src/ERP.Infrastructure/Persistence/Repositories/SriSettingsRepository.cs",
-            "src/ERP.Infrastructure/Persistence/Repositories/Items/ItemTypeRepository.cs",
-        };
+    private static readonly HashSet<string> AllowedAttachOrUpdateCallers = new(
+        StringComparer.OrdinalIgnoreCase
+    )
+    {
+        "src/ERP.Infrastructure/MasterData/Repositories/PaymentTermRepository.cs",
+        "src/ERP.Infrastructure/Persistence/Repositories/Sales/PaymentMethodRepository.cs",
+        "src/ERP.Infrastructure/Persistence/Repositories/SriSettingsRepository.cs",
+        "src/ERP.Infrastructure/Persistence/Repositories/Items/ItemTypeRepository.cs",
+    };
 
     /// <summary>
     /// Ningún archivo de producción fuera de la lista autorizada puede llamar a
@@ -50,19 +51,23 @@ public sealed class NewChildEntityTrackingArchitectureTests
     {
         var pattern = new Regex(
             @"(_db|_context|context)\.\w+\.(Attach|Update)\(",
-            RegexOptions.Compiled);
+            RegexOptions.Compiled
+        );
 
         var violations = ScanForRegex(pattern, AllowedAttachOrUpdateCallers);
 
-        violations.Should().BeEmpty(
-            "Reatachar una entidad detached con ID real (Attach/Update sobre un DbSet) " +
-            "sin que haya pasado antes por una query trackeada en este DbContext rompe el " +
-            "invariante del que depende NewChildEntityTrackingInterceptor: una entidad " +
-            "legítimamente existente pero reatachada 'a ciegas' queda indistinguible de una " +
-            "entidad nueva descubierta por fixup de navegación. Si el módulo necesita " +
-            "actualizar una entidad existente, debe cargarla primero con una query en este " +
-            "DbContext (lo que la registra como query-tracked) y mutarla con sus métodos de " +
-            "dominio — nunca Attach()/Update() directo sobre un DbSet.");
+        violations
+            .Should()
+            .BeEmpty(
+                "Reatachar una entidad detached con ID real (Attach/Update sobre un DbSet) "
+                    + "sin que haya pasado antes por una query trackeada en este DbContext rompe el "
+                    + "invariante del que depende NewChildEntityTrackingInterceptor: una entidad "
+                    + "legítimamente existente pero reatachada 'a ciegas' queda indistinguible de una "
+                    + "entidad nueva descubierta por fixup de navegación. Si el módulo necesita "
+                    + "actualizar una entidad existente, debe cargarla primero con una query en este "
+                    + "DbContext (lo que la registra como query-tracked) y mutarla con sus métodos de "
+                    + "dominio — nunca Attach()/Update() directo sobre un DbSet."
+            );
     }
 
     // ── Infraestructura de scan ───────────────────────────────────────────────
@@ -72,13 +77,30 @@ public sealed class NewChildEntityTrackingArchitectureTests
         var backendRoot = ResolveBackendRoot();
         var violations = new List<string>();
 
-        foreach (var file in Directory.EnumerateFiles(backendRoot, "*.cs", SearchOption.AllDirectories))
+        foreach (
+            var file in Directory.EnumerateFiles(backendRoot, "*.cs", SearchOption.AllDirectories)
+        )
         {
-            if (file.Contains($"{Path.DirectorySeparatorChar}Migrations{Path.DirectorySeparatorChar}", StringComparison.OrdinalIgnoreCase))
+            if (
+                file.Contains(
+                    $"{Path.DirectorySeparatorChar}Migrations{Path.DirectorySeparatorChar}",
+                    StringComparison.OrdinalIgnoreCase
+                )
+            )
                 continue;
-            if (file.Contains($"{Path.DirectorySeparatorChar}bin{Path.DirectorySeparatorChar}", StringComparison.OrdinalIgnoreCase))
+            if (
+                file.Contains(
+                    $"{Path.DirectorySeparatorChar}bin{Path.DirectorySeparatorChar}",
+                    StringComparison.OrdinalIgnoreCase
+                )
+            )
                 continue;
-            if (file.Contains($"{Path.DirectorySeparatorChar}obj{Path.DirectorySeparatorChar}", StringComparison.OrdinalIgnoreCase))
+            if (
+                file.Contains(
+                    $"{Path.DirectorySeparatorChar}obj{Path.DirectorySeparatorChar}",
+                    StringComparison.OrdinalIgnoreCase
+                )
+            )
                 continue;
             if (file.Contains(".Tests", StringComparison.OrdinalIgnoreCase))
                 continue;
@@ -100,13 +122,17 @@ public sealed class NewChildEntityTrackingArchitectureTests
         var dir = new DirectoryInfo(AppContext.BaseDirectory);
         while (dir is not null)
         {
-            if (File.Exists(Path.Combine(dir.FullName, "ERP.sln")) ||
-                Directory.Exists(Path.Combine(dir.FullName, "src", "ERP.API")))
+            if (
+                File.Exists(Path.Combine(dir.FullName, "ERP.sln"))
+                || Directory.Exists(Path.Combine(dir.FullName, "src", "ERP.API"))
+            )
                 return dir.FullName;
 
             dir = dir.Parent;
         }
 
-        throw new InvalidOperationException("No se encontró la raíz backend (ERP.sln / src/ERP.API).");
+        throw new InvalidOperationException(
+            "No se encontró la raíz backend (ERP.sln / src/ERP.API)."
+        );
     }
 }

@@ -32,15 +32,18 @@ public static class SessionMenuTreeValidator
 
             if (leaf && ch is { Count: > 0 })
                 throw new InvalidOperationException(
-                    $"Menú ({groupCode}): el ítem «{name}» es hoja (tiene ruta y permiso) pero contiene subítems.");
+                    $"Menú ({groupCode}): el ítem «{name}» es hoja (tiene ruta y permiso) pero contiene subítems."
+                );
 
             if (folder && (ch is null || ch.Count == 0))
                 throw new InvalidOperationException(
-                    $"Menú ({groupCode}): el ítem «{name}» es carpeta (sin ruta ni permiso) pero no tiene hijos.");
+                    $"Menú ({groupCode}): el ítem «{name}» es carpeta (sin ruta ni permiso) pero no tiene hijos."
+                );
 
             if (!leaf && !folder)
                 throw new InvalidOperationException(
-                    $"Menú ({groupCode}): el ítem «{name}» es inconsistente (falta ruta o permiso en la hoja).");
+                    $"Menú ({groupCode}): el ítem «{name}» es inconsistente (falta ruta o permiso en la hoja)."
+                );
 
             if (ch is { Count: > 0 })
                 ValidateItems(ch, groupCode);

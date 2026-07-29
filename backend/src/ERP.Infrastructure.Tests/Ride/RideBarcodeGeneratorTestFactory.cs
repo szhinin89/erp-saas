@@ -12,5 +12,7 @@ namespace ERP.Infrastructure.Tests.Ride;
 internal static class RideBarcodeGeneratorTestFactory
 {
     public static IRideBarcodeGenerator Create() =>
-        new RideBarcodeGenerator(new Code128BarcodeGenerator(NullLogger<Code128BarcodeGenerator>.Instance));
+        new RideBarcodeGenerator(
+            new Code128BarcodeGenerator(NullLogger<Code128BarcodeGenerator>.Instance)
+        );
 }

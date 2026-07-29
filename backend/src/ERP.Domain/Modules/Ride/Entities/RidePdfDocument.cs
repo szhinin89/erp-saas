@@ -18,7 +18,10 @@ namespace ERP.Domain.Modules.Ride.Entities;
 /// <see cref="MarkGenerated"/> de nuevo, protegiendo un registro exitoso de ser degradado por un
 /// reintento fallido no solicitado.
 /// </summary>
-public sealed class RidePdfDocument : AuditableEntity, ITenantScopedEntity, ICompanyOperationalEntity
+public sealed class RidePdfDocument
+    : AuditableEntity,
+        ITenantScopedEntity,
+        ICompanyOperationalEntity
 {
     public const int PathMaxLen = 500;
     public const int VersionMaxLen = 50;
@@ -56,16 +59,45 @@ public sealed class RidePdfDocument : AuditableEntity, ITenantScopedEntity, ICom
         string rendererVersion,
         string rideSpecificationVersion,
         Guid createdBy,
-        Guid? id = null)
+        Guid? id = null
+    )
     {
         if (electronicDocumentId == Guid.Empty)
-            throw new ArgumentException("El documento electrónico de origen es obligatorio.", nameof(electronicDocumentId));
+            throw new ArgumentException(
+                "El documento electrónico de origen es obligatorio.",
+                nameof(electronicDocumentId)
+            );
         ArgumentNullException.ThrowIfNull(sourceXmlHash);
-        ValidateVersion(templateId, TemplateIdMaxLen, nameof(templateId), "El identificador de plantilla");
-        ValidateVersion(templateVersion, VersionMaxLen, nameof(templateVersion), "La versión de plantilla");
-        ValidateVersion(brandingVersion, VersionMaxLen, nameof(brandingVersion), "La versión de branding");
-        ValidateVersion(rendererVersion, VersionMaxLen, nameof(rendererVersion), "La versión del renderer");
-        ValidateVersion(rideSpecificationVersion, VersionMaxLen, nameof(rideSpecificationVersion), "La versión de especificación de Ride");
+        ValidateVersion(
+            templateId,
+            TemplateIdMaxLen,
+            nameof(templateId),
+            "El identificador de plantilla"
+        );
+        ValidateVersion(
+            templateVersion,
+            VersionMaxLen,
+            nameof(templateVersion),
+            "La versión de plantilla"
+        );
+        ValidateVersion(
+            brandingVersion,
+            VersionMaxLen,
+            nameof(brandingVersion),
+            "La versión de branding"
+        );
+        ValidateVersion(
+            rendererVersion,
+            VersionMaxLen,
+            nameof(rendererVersion),
+            "La versión del renderer"
+        );
+        ValidateVersion(
+            rideSpecificationVersion,
+            VersionMaxLen,
+            nameof(rideSpecificationVersion),
+            "La versión de especificación de Ride"
+        );
 
         return new RidePdfDocument
         {
@@ -93,10 +125,13 @@ public sealed class RidePdfDocument : AuditableEntity, ITenantScopedEntity, ICom
     /// <summary>Transición Pending/Failed/PendingSource→Generated: primer éxito para esta huella.</summary>
     public void MarkGenerated(string storagePath, DateTime generatedAtUtc, Guid updatedBy)
     {
-        if (State is not (RidePdfState.Pending or RidePdfState.Failed or RidePdfState.PendingSource))
+        if (
+            State is not (RidePdfState.Pending or RidePdfState.Failed or RidePdfState.PendingSource)
+        )
             throw new InvalidOperationException(
-                $"Solo se puede marcar como generado desde Pending, Failed o PendingSource (estado actual: {State}). " +
-                "Una huella ya Generated se actualiza con MarkRegenerated.");
+                $"Solo se puede marcar como generado desde Pending, Failed o PendingSource (estado actual: {State}). "
+                    + "Una huella ya Generated se actualiza con MarkRegenerated."
+            );
         ValidateStoragePath(storagePath);
 
         StoragePath = storagePath.Trim();
@@ -105,7 +140,9 @@ public sealed class RidePdfDocument : AuditableEntity, ITenantScopedEntity, ICom
         State = RidePdfState.Generated;
         SetUpdated(updatedBy);
 
-        RaiseDomainEvent(new RidePdfGeneratedEvent(TenantId, Id, ElectronicDocumentId, DocumentType, StoragePath));
+        RaiseDomainEvent(
+            new RidePdfGeneratedEvent(TenantId, Id, ElectronicDocumentId, DocumentType, StoragePath)
+        );
     }
 
     /// <summary>Transición Generated→Generated: la huella ya existía y se regeneró explícitamente (RegenerateRideCommand).</summary>
@@ -113,8 +150,9 @@ public sealed class RidePdfDocument : AuditableEntity, ITenantScopedEntity, ICom
     {
         if (State != RidePdfState.Generated)
             throw new InvalidOperationException(
-                $"Solo se puede regenerar una huella que ya esté Generated (estado actual: {State}). " +
-                "Un primer éxito se registra con MarkGenerated.");
+                $"Solo se puede regenerar una huella que ya esté Generated (estado actual: {State}). "
+                    + "Un primer éxito se registra con MarkGenerated."
+            );
         ValidateStoragePath(storagePath);
 
         StoragePath = storagePath.Trim();
@@ -122,27 +160,49 @@ public sealed class RidePdfDocument : AuditableEntity, ITenantScopedEntity, ICom
         LastError = null;
         SetUpdated(updatedBy);
 
-        RaiseDomainEvent(new RidePdfRegeneratedEvent(TenantId, Id, ElectronicDocumentId, DocumentType, StoragePath));
+        RaiseDomainEvent(
+            new RidePdfRegeneratedEvent(
+                TenantId,
+                Id,
+                ElectronicDocumentId,
+                DocumentType,
+                StoragePath
+            )
+        );
     }
 
     /// <summary>Transición Pending/Failed/PendingSource→Failed: el intento de generación falló.</summary>
     public void MarkFailed(string reason, Guid updatedBy)
     {
-        if (State is not (RidePdfState.Pending or RidePdfState.Failed or RidePdfState.PendingSource))
+        if (
+            State is not (RidePdfState.Pending or RidePdfState.Failed or RidePdfState.PendingSource)
+        )
             throw new InvalidOperationException(
-                $"Solo se puede marcar como fallido desde Pending, Failed o PendingSource (estado actual: {State}). " +
-                "Una huella Generated nunca se degrada a Failed.");
+                $"Solo se puede marcar como fallido desde Pending, Failed o PendingSource (estado actual: {State}). "
+                    + "Una huella Generated nunca se degrada a Failed."
+            );
         if (string.IsNullOrWhiteSpace(reason))
             throw new ArgumentException("El motivo del fallo es obligatorio.", nameof(reason));
         if (reason.Length > ReasonMaxLen)
-            throw new ArgumentException($"El motivo del fallo no puede superar {ReasonMaxLen} caracteres.", nameof(reason));
+            throw new ArgumentException(
+                $"El motivo del fallo no puede superar {ReasonMaxLen} caracteres.",
+                nameof(reason)
+            );
 
         LastError = reason.Trim();
         State = RidePdfState.Failed;
         RetryCount++;
         SetUpdated(updatedBy);
 
-        RaiseDomainEvent(new RidePdfGenerationFailedEvent(TenantId, Id, ElectronicDocumentId, DocumentType, LastError));
+        RaiseDomainEvent(
+            new RidePdfGenerationFailedEvent(
+                TenantId,
+                Id,
+                ElectronicDocumentId,
+                DocumentType,
+                LastError
+            )
+        );
     }
 
     /// <summary>
@@ -152,10 +212,13 @@ public sealed class RidePdfDocument : AuditableEntity, ITenantScopedEntity, ICom
     /// </summary>
     public void MarkPendingSource(Guid updatedBy)
     {
-        if (State is not (RidePdfState.Pending or RidePdfState.Failed or RidePdfState.PendingSource))
+        if (
+            State is not (RidePdfState.Pending or RidePdfState.Failed or RidePdfState.PendingSource)
+        )
             throw new InvalidOperationException(
-                $"Solo se puede marcar como pendiente de fuente desde Pending, Failed o PendingSource (estado actual: {State}). " +
-                "Una huella Generated nunca se degrada a PendingSource.");
+                $"Solo se puede marcar como pendiente de fuente desde Pending, Failed o PendingSource (estado actual: {State}). "
+                    + "Una huella Generated nunca se degrada a PendingSource."
+            );
 
         LastError = null;
         State = RidePdfState.PendingSource;
@@ -167,14 +230,23 @@ public sealed class RidePdfDocument : AuditableEntity, ITenantScopedEntity, ICom
         if (string.IsNullOrWhiteSpace(value))
             throw new ArgumentException($"{label} es obligatoria.", paramName);
         if (value.Length > maxLen)
-            throw new ArgumentException($"{label} no puede superar {maxLen} caracteres.", paramName);
+            throw new ArgumentException(
+                $"{label} no puede superar {maxLen} caracteres.",
+                paramName
+            );
     }
 
     private static void ValidateStoragePath(string storagePath)
     {
         if (string.IsNullOrWhiteSpace(storagePath))
-            throw new ArgumentException("La ruta de almacenamiento del PDF es obligatoria.", nameof(storagePath));
+            throw new ArgumentException(
+                "La ruta de almacenamiento del PDF es obligatoria.",
+                nameof(storagePath)
+            );
         if (storagePath.Length > PathMaxLen)
-            throw new ArgumentException($"La ruta de almacenamiento no puede superar {PathMaxLen} caracteres.", nameof(storagePath));
+            throw new ArgumentException(
+                $"La ruta de almacenamiento no puede superar {PathMaxLen} caracteres.",
+                nameof(storagePath)
+            );
     }
 }

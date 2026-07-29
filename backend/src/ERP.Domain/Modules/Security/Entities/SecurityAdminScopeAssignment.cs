@@ -5,8 +5,8 @@ namespace ERP.Domain.Security.Entities;
 public class SecurityAdminScopeAssignment : AuditableEntity
 {
     public string SubjectType { get; private set; } = null!; // "Role" | "User"
-    public string SubjectKey { get; private set; } = null!;  // RoleName or UserId (Guid string)
-    public int Scope { get; private set; }                   // SecurityAdminScope enum int
+    public string SubjectKey { get; private set; } = null!; // RoleName or UserId (Guid string)
+    public int Scope { get; private set; } // SecurityAdminScope enum int
     public bool IsAllowed { get; private set; }
 
     private SecurityAdminScopeAssignment() { }
@@ -17,7 +17,8 @@ public class SecurityAdminScopeAssignment : AuditableEntity
         string subjectKey,
         int scope,
         bool isAllowed,
-        Guid createdBy)
+        Guid createdBy
+    )
     {
         var entity = new SecurityAdminScopeAssignment
         {
@@ -26,7 +27,7 @@ public class SecurityAdminScopeAssignment : AuditableEntity
             SubjectType = subjectType,
             SubjectKey = subjectKey,
             Scope = scope,
-            IsAllowed = isAllowed
+            IsAllowed = isAllowed,
         };
         entity.SetCreated(createdBy);
         return entity;
@@ -46,4 +47,3 @@ public enum SecurityAdminScope
     ManageScreens = 3,
     ManageProcesses = 4,
 }
-

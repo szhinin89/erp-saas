@@ -21,16 +21,48 @@ public sealed class JournalFactoryTests
     private static readonly Guid CreatedBy = Guid.NewGuid();
 
     private static PostingFact Fact(
-        decimal subtotal = 100m, decimal totalVat = 15m, decimal totalIce = 0m,
-        decimal totalDiscount = 0m, decimal grandTotal = 115m) => new(
-        TenantId, CompanyId, "Sales", "InvoiceIssued", Guid.NewGuid(), new DateOnly(2026, 7, 15),
-        subtotal, totalVat, totalIce, totalDiscount, grandTotal);
+        decimal subtotal = 100m,
+        decimal totalVat = 15m,
+        decimal totalIce = 0m,
+        decimal totalDiscount = 0m,
+        decimal grandTotal = 115m
+    ) =>
+        new(
+            TenantId,
+            CompanyId,
+            "Sales",
+            "InvoiceIssued",
+            Guid.NewGuid(),
+            new DateOnly(2026, 7, 15),
+            subtotal,
+            totalVat,
+            totalIce,
+            totalDiscount,
+            grandTotal
+        );
 
-    private static AccountingPeriod OpenPeriod() => AccountingPeriod.Create(
-        TenantId, CompanyId, 2026, 7, new DateOnly(2026, 7, 1), new DateOnly(2026, 7, 31), CreatedBy);
+    private static AccountingPeriod OpenPeriod() =>
+        AccountingPeriod.Create(
+            TenantId,
+            CompanyId,
+            2026,
+            7,
+            new DateOnly(2026, 7, 1),
+            new DateOnly(2026, 7, 31),
+            CreatedBy
+        );
 
-    private static PostingRule EmptyRule() => PostingRule.Create(
-        TenantId, CompanyId, "Sales", "InvoiceIssued", null, null, null, CreatedBy);
+    private static PostingRule EmptyRule() =>
+        PostingRule.Create(
+            TenantId,
+            CompanyId,
+            "Sales",
+            "InvoiceIssued",
+            null,
+            null,
+            null,
+            CreatedBy
+        );
 
     private sealed class Mocks
     {
@@ -43,30 +75,74 @@ public sealed class JournalFactoryTests
         public Mocks()
         {
             JournalEntries
-                .Setup(r => r.AcquireIdempotencyLockAsync(
-                    It.IsAny<Guid>(), It.IsAny<string>(), It.IsAny<Guid>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+                .Setup(r =>
+                    r.AcquireIdempotencyLockAsync(
+                        It.IsAny<Guid>(),
+                        It.IsAny<string>(),
+                        It.IsAny<Guid>(),
+                        It.IsAny<string>(),
+                        It.IsAny<CancellationToken>()
+                    )
+                )
                 .Returns(Task.CompletedTask);
             JournalEntries
-                .Setup(r => r.FindByKeyAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+                .Setup(r =>
+                    r.FindByKeyAsync(
+                        It.IsAny<Guid>(),
+                        It.IsAny<Guid>(),
+                        It.IsAny<string>(),
+                        It.IsAny<string>(),
+                        It.IsAny<Guid>(),
+                        It.IsAny<CancellationToken>()
+                    )
+                )
                 .ReturnsAsync((JournalEntry?)null);
             JournalEntries
                 .Setup(r => r.AddAsync(It.IsAny<JournalEntry>(), It.IsAny<CancellationToken>()))
                 .Callback<JournalEntry, CancellationToken>((entry, _) => Captured = entry)
                 .Returns(Task.CompletedTask);
             AccountingPeriods
-                .Setup(r => r.FindContainingDateAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<DateOnly>(), It.IsAny<CancellationToken>()))
+                .Setup(r =>
+                    r.FindContainingDateAsync(
+                        It.IsAny<Guid>(),
+                        It.IsAny<Guid>(),
+                        It.IsAny<DateOnly>(),
+                        It.IsAny<CancellationToken>()
+                    )
+                )
                 .ReturnsAsync(OpenPeriod());
             JournalEntrySequences
-                .Setup(r => r.ReserveNextNumberAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<int>(), It.IsAny<CancellationToken>()))
+                .Setup(r =>
+                    r.ReserveNextNumberAsync(
+                        It.IsAny<Guid>(),
+                        It.IsAny<Guid>(),
+                        It.IsAny<int>(),
+                        It.IsAny<CancellationToken>()
+                    )
+                )
                 .ReturnsAsync(1);
         }
 
-        public void SetupRule(PostingRule rule) => PostingRules
-            .Setup(r => r.FindByKeyAsync(TenantId, CompanyId, "Sales", "InvoiceIssued", It.IsAny<CancellationToken>()))
-            .ReturnsAsync(rule);
+        public void SetupRule(PostingRule rule) =>
+            PostingRules
+                .Setup(r =>
+                    r.FindByKeyAsync(
+                        TenantId,
+                        CompanyId,
+                        "Sales",
+                        "InvoiceIssued",
+                        It.IsAny<CancellationToken>()
+                    )
+                )
+                .ReturnsAsync(rule);
 
-        public PostingEngine BuildEngine() => new(
-            JournalEntries.Object, PostingRules.Object, AccountingPeriods.Object, JournalEntrySequences.Object);
+        public PostingEngine BuildEngine() =>
+            new(
+                JournalEntries.Object,
+                PostingRules.Object,
+                AccountingPeriods.Object,
+                JournalEntrySequences.Object
+            );
     }
 
     [Fact]
@@ -84,7 +160,8 @@ public sealed class JournalFactoryTests
 
         result.IsSuccess.Should().BeTrue();
         m.Captured.Should().NotBeNull();
-        m.Captured!.Lines.Should().Contain(l => l.AccountId == accountId && l.Debit == 100m && l.Credit == 0m);
+        m.Captured!.Lines.Should()
+            .Contain(l => l.AccountId == accountId && l.Debit == 100m && l.Credit == 0m);
     }
 
     [Fact]
@@ -101,7 +178,8 @@ public sealed class JournalFactoryTests
         var result = await m.BuildEngine().PostAsync(Fact());
 
         result.IsSuccess.Should().BeTrue();
-        m.Captured!.Lines.Should().Contain(l => l.AccountId == accountId && l.Credit == 115m && l.Debit == 0m);
+        m.Captured!.Lines.Should()
+            .Contain(l => l.AccountId == accountId && l.Credit == 115m && l.Debit == 0m);
     }
 
     [Fact]
@@ -123,7 +201,8 @@ public sealed class JournalFactoryTests
         result.IsSuccess.Should().BeTrue();
         m.Captured!.Lines.Should().HaveCount(3);
         m.Captured.Lines.Should().Contain(l => l.AccountId == debitAccount && l.Debit == 115m);
-        m.Captured.Lines.Should().Contain(l => l.AccountId == creditSubtotalAccount && l.Credit == 100m);
+        m.Captured.Lines.Should()
+            .Contain(l => l.AccountId == creditSubtotalAccount && l.Credit == 100m);
         m.Captured.Lines.Should().Contain(l => l.AccountId == creditVatAccount && l.Credit == 15m);
     }
 
@@ -131,7 +210,10 @@ public sealed class JournalFactoryTests
     [InlineData(PostingAmountKind.Subtotal, 100)]
     [InlineData(PostingAmountKind.TaxVat, 15)]
     [InlineData(PostingAmountKind.GrandTotal, 115)]
-    public async Task Regla_resuelve_el_monto_correcto_segun_PostingAmountKind(PostingAmountKind kind, decimal expectedAmount)
+    public async Task Regla_resuelve_el_monto_correcto_segun_PostingAmountKind(
+        PostingAmountKind kind,
+        decimal expectedAmount
+    )
     {
         var accountId = Guid.NewGuid();
         var rule = EmptyRule();
@@ -144,7 +226,8 @@ public sealed class JournalFactoryTests
         var result = await m.BuildEngine().PostAsync(Fact());
 
         result.IsSuccess.Should().BeTrue();
-        m.Captured!.Lines.Should().Contain(l => l.AccountId == accountId && l.Debit == expectedAmount);
+        m.Captured!.Lines.Should()
+            .Contain(l => l.AccountId == accountId && l.Debit == expectedAmount);
     }
 
     [Fact]
@@ -163,7 +246,10 @@ public sealed class JournalFactoryTests
         var result = await m.BuildEngine().PostAsync(Fact(totalIce: 0m));
 
         result.IsSuccess.Should().BeTrue();
-        m.Captured!.Lines.Should().NotContain(l => l.AccountId == iceAccount,
-            because: "la línea de ICE se omite porque el monto resuelto es cero — nunca se contabiliza en cero");
+        m.Captured!.Lines.Should()
+            .NotContain(
+                l => l.AccountId == iceAccount,
+                because: "la línea de ICE se omite porque el monto resuelto es cero — nunca se contabiliza en cero"
+            );
     }
 }

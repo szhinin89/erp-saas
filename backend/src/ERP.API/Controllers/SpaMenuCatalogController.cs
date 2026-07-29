@@ -1,4 +1,4 @@
-﻿using ERP.API.Attributes;
+using ERP.API.Attributes;
 using ERP.Domain.Kernel.Permissions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -17,14 +17,35 @@ namespace ERP.API.Controllers;
 public sealed class SpaMenuCatalogController : ControllerBase
 {
     [HttpGet("profiles")]
-    [AppFeature("Perfiles (Roles)", $"perm:{AdminPermissions.RolesView}", "👥", "/admin/roles", null, 86)]
+    [AppFeature(
+        "Perfiles (Roles)",
+        $"perm:{AdminPermissions.RolesView}",
+        "👥",
+        "/admin/roles",
+        null,
+        86
+    )]
     public IActionResult ProfilesCatalogMarker() => NotFound();
 
     [HttpGet("tenant-access")]
-    [AppFeature("Acceso usuarios", $"perm:{AdminPermissions.UsersView}", "👤", "/access/users", null, 87)]
+    [AppFeature(
+        "Acceso usuarios",
+        $"perm:{AdminPermissions.UsersView}",
+        "👤",
+        "/access/users",
+        null,
+        87
+    )]
     public IActionResult TenantAccessCatalogMarker() => NotFound();
 
     [HttpGet("empresa")]
-    [AppFeature("Datos de Empresa", $"perm:{SettingsPermissions.CompanyView}", "🏢", "/settings/company", null, 29)]
+    [AppFeature(
+        "Datos de Empresa",
+        $"perm:{SettingsPermissions.CompanyView}",
+        "🏢",
+        "/settings/company",
+        null,
+        29
+    )]
     public IActionResult EmpresaCatalogMarker() => NotFound();
 }

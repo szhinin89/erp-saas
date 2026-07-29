@@ -12,4 +12,5 @@ public sealed record RidePdfMetadataDto(
     string RendererVersion,
     string SourceXmlHash,
     DateTime GeneratedAtUtc,
-    bool WasCached);
+    bool WasCached
+);

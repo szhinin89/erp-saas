@@ -11,7 +11,8 @@ public record EstablishmentDto(
     bool IsMain,
     bool IsActive,
     DateTime CreatedAt,
-    DateTime? UpdatedAt);
+    DateTime? UpdatedAt
+);
 
 /// <summary>Item del listado principal de la pantalla /settings/establishments.</summary>
 public record EstablishmentListItemDto(
@@ -25,4 +26,5 @@ public record EstablishmentListItemDto(
     int EmissionPointCount,
     bool IsMain,
     bool IsActive,
-    DateTime CreatedAt);
+    DateTime CreatedAt
+);

@@ -18,24 +18,56 @@ public sealed class CreatePurchaseReceptionDraftHandlerTests
     private static readonly Guid UserId = Guid.NewGuid();
     private static readonly Guid SupplierId = Guid.NewGuid();
 
-    private static PurchaseReceptionDocument SampleDocument(Guid? supplierId = null) => PurchaseReceptionDocument.Create(
-        TenantId, CompanyId, BranchId, PurchaseReceptionSourceDocType.Invoice,
-        "1790012345001", "PROVEEDOR ACME S.A.", supplierId,
-        "0107202601179135268800120150270001617400016174011", "015-027-000161740",
-        new DateOnly(2026, 7, 1), new DateTime(2026, 7, 1, 21, 6, 55, DateTimeKind.Utc),
-        15.96m, 2.4m, 18.35m, UserId);
+    private static PurchaseReceptionDocument SampleDocument(Guid? supplierId = null) =>
+        PurchaseReceptionDocument.Create(
+            TenantId,
+            CompanyId,
+            BranchId,
+            PurchaseReceptionSourceDocType.Invoice,
+            "1790012345001",
+            "PROVEEDOR ACME S.A.",
+            supplierId,
+            "0107202601179135268800120150270001617400016174011",
+            "015-027-000161740",
+            new DateOnly(2026, 7, 1),
+            new DateTime(2026, 7, 1, 21, 6, 55, DateTimeKind.Utc),
+            15.96m,
+            2.4m,
+            18.35m,
+            UserId
+        );
 
     private static PurchaseReceptionLine SampleLine(
-        Guid documentId, string description = "Producto de prueba", string? supplierCode = "SKU-001",
-        Guid? itemId = null, ItemMatchStatus matchStatus = ItemMatchStatus.Pending) =>
+        Guid documentId,
+        string description = "Producto de prueba",
+        string? supplierCode = "SKU-001",
+        Guid? itemId = null,
+        ItemMatchStatus matchStatus = ItemMatchStatus.Pending
+    ) =>
         PurchaseReceptionLine.Create(
-            documentId, TenantId, description, quantity: 2m, unitPrice: 10m,
-            vatCode: "2", taxCode: "2", vatPercentage: 15m, taxValue: 3m,
-            discountPct: 0m, discount: 0m, lineSubtotal: 20m, totalLine: 23m,
-            supplierCode: supplierCode, itemId: itemId, matchStatus: matchStatus);
+            documentId,
+            TenantId,
+            description,
+            quantity: 2m,
+            unitPrice: 10m,
+            vatCode: "2",
+            taxCode: "2",
+            vatPercentage: 15m,
+            taxValue: 3m,
+            discountPct: 0m,
+            discount: 0m,
+            lineSubtotal: 20m,
+            totalLine: 23m,
+            supplierCode: supplierCode,
+            itemId: itemId,
+            matchStatus: matchStatus
+        );
 
-    private static (CreatePurchaseReceptionDraftHandler handler, Mock<IPurchaseReceptionDocumentRepository> repo,
-        Mock<IPurchaseReceptionDetailProcessor> detailProcessor) BuildHandler()
+    private static (
+        CreatePurchaseReceptionDraftHandler handler,
+        Mock<IPurchaseReceptionDocumentRepository> repo,
+        Mock<IPurchaseReceptionDetailProcessor> detailProcessor
+    ) BuildHandler()
     {
         var repo = new Mock<IPurchaseReceptionDocumentRepository>();
         var detailProcessor = new Mock<IPurchaseReceptionDetailProcessor>();
@@ -44,7 +76,12 @@ public sealed class CreatePurchaseReceptionDraftHandlerTests
         var user = new Mock<ICurrentUser>();
         user.Setup(u => u.UserId).Returns(UserId);
 
-        var handler = new CreatePurchaseReceptionDraftHandler(repo.Object, detailProcessor.Object, tenant.Object, user.Object);
+        var handler = new CreatePurchaseReceptionDraftHandler(
+            repo.Object,
+            detailProcessor.Object,
+            tenant.Object,
+            user.Object
+        );
         return (handler, repo, detailProcessor);
     }
 
@@ -54,13 +91,29 @@ public sealed class CreatePurchaseReceptionDraftHandlerTests
         var document = SampleDocument(SupplierId);
         var line = SampleLine(document.Id);
         document.AttachSriAuthorization(
-            "1234567890", DateTime.UtcNow, "<factura>irrelevante</factura>", DateTime.UtcNow, [line], UserId,
-            docTypeCode: "01", sriPaymentMethodCode: "01",
-            processing: new PurchaseReceptionProcessingOutcome(PurchaseReceptionProcessingStatus.Processed, 1, 1, null));
+            "1234567890",
+            DateTime.UtcNow,
+            "<factura>irrelevante</factura>",
+            DateTime.UtcNow,
+            [line],
+            UserId,
+            docTypeCode: "01",
+            sriPaymentMethodCode: "01",
+            processing: new PurchaseReceptionProcessingOutcome(
+                PurchaseReceptionProcessingStatus.Processed,
+                1,
+                1,
+                null
+            )
+        );
         var (handler, repo, _) = BuildHandler();
-        repo.Setup(r => r.GetByIdAsync(TenantId, document.Id, It.IsAny<CancellationToken>())).ReturnsAsync(document);
+        repo.Setup(r => r.GetByIdAsync(TenantId, document.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(document);
 
-        var result = await handler.Handle(new CreatePurchaseReceptionDraftCommand(document.Id), CancellationToken.None);
+        var result = await handler.Handle(
+            new CreatePurchaseReceptionDraftCommand(document.Id),
+            CancellationToken.None
+        );
 
         result.IsSuccess.Should().BeTrue(result.Error);
         var dto = result.Value!;
@@ -83,13 +136,29 @@ public sealed class CreatePurchaseReceptionDraftHandlerTests
         var document = SampleDocument(supplierId: null);
         var line = SampleLine(document.Id);
         document.AttachSriAuthorization(
-            "1234567890", DateTime.UtcNow, "<factura>irrelevante</factura>", DateTime.UtcNow, [line], UserId,
-            docTypeCode: "01", sriPaymentMethodCode: "01",
-            processing: new PurchaseReceptionProcessingOutcome(PurchaseReceptionProcessingStatus.Processed, 1, 1, null));
+            "1234567890",
+            DateTime.UtcNow,
+            "<factura>irrelevante</factura>",
+            DateTime.UtcNow,
+            [line],
+            UserId,
+            docTypeCode: "01",
+            sriPaymentMethodCode: "01",
+            processing: new PurchaseReceptionProcessingOutcome(
+                PurchaseReceptionProcessingStatus.Processed,
+                1,
+                1,
+                null
+            )
+        );
         var (handler, repo, _) = BuildHandler();
-        repo.Setup(r => r.GetByIdAsync(TenantId, document.Id, It.IsAny<CancellationToken>())).ReturnsAsync(document);
+        repo.Setup(r => r.GetByIdAsync(TenantId, document.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(document);
 
-        var result = await handler.Handle(new CreatePurchaseReceptionDraftCommand(document.Id), CancellationToken.None);
+        var result = await handler.Handle(
+            new CreatePurchaseReceptionDraftCommand(document.Id),
+            CancellationToken.None
+        );
 
         result.IsSuccess.Should().BeTrue(result.Error);
         result.Value!.SupplierId.Should().BeNull();
@@ -103,7 +172,10 @@ public sealed class CreatePurchaseReceptionDraftHandlerTests
         repo.Setup(r => r.GetByIdAsync(TenantId, missingId, It.IsAny<CancellationToken>()))
             .ReturnsAsync((PurchaseReceptionDocument?)null);
 
-        var result = await handler.Handle(new CreatePurchaseReceptionDraftCommand(missingId), CancellationToken.None);
+        var result = await handler.Handle(
+            new CreatePurchaseReceptionDraftCommand(missingId),
+            CancellationToken.None
+        );
 
         result.IsSuccess.Should().BeFalse();
         result.Code.Should().Be(ApiResponseCodes.Common.NotFound);
@@ -114,9 +186,13 @@ public sealed class CreatePurchaseReceptionDraftHandlerTests
     {
         var document = SampleDocument();
         var (handler, repo, _) = BuildHandler();
-        repo.Setup(r => r.GetByIdAsync(TenantId, document.Id, It.IsAny<CancellationToken>())).ReturnsAsync(document);
+        repo.Setup(r => r.GetByIdAsync(TenantId, document.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(document);
 
-        var result = await handler.Handle(new CreatePurchaseReceptionDraftCommand(document.Id), CancellationToken.None);
+        var result = await handler.Handle(
+            new CreatePurchaseReceptionDraftCommand(document.Id),
+            CancellationToken.None
+        );
 
         result.IsSuccess.Should().BeFalse();
         result.Code.Should().Be(ApiResponseCodes.Common.ValidationError);
@@ -129,13 +205,29 @@ public sealed class CreatePurchaseReceptionDraftHandlerTests
         var document = SampleDocument(SupplierId);
         var line = SampleLine(document.Id, matchStatus: ItemMatchStatus.Pending);
         document.AttachSriAuthorization(
-            "1234567890", DateTime.UtcNow, "<factura>irrelevante</factura>", DateTime.UtcNow, [line], UserId,
-            docTypeCode: "01", sriPaymentMethodCode: "01",
-            processing: new PurchaseReceptionProcessingOutcome(PurchaseReceptionProcessingStatus.Processed, 1, 1, null));
+            "1234567890",
+            DateTime.UtcNow,
+            "<factura>irrelevante</factura>",
+            DateTime.UtcNow,
+            [line],
+            UserId,
+            docTypeCode: "01",
+            sriPaymentMethodCode: "01",
+            processing: new PurchaseReceptionProcessingOutcome(
+                PurchaseReceptionProcessingStatus.Processed,
+                1,
+                1,
+                null
+            )
+        );
         var (handler, repo, _) = BuildHandler();
-        repo.Setup(r => r.GetByIdAsync(TenantId, document.Id, It.IsAny<CancellationToken>())).ReturnsAsync(document);
+        repo.Setup(r => r.GetByIdAsync(TenantId, document.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(document);
 
-        var result = await handler.Handle(new CreatePurchaseReceptionDraftCommand(document.Id), CancellationToken.None);
+        var result = await handler.Handle(
+            new CreatePurchaseReceptionDraftCommand(document.Id),
+            CancellationToken.None
+        );
 
         var lineDto = result.Value!.Lines.Single();
         lineDto.ItemId.Should().BeNull();
@@ -148,15 +240,35 @@ public sealed class CreatePurchaseReceptionDraftHandlerTests
     {
         var document = SampleDocument(SupplierId);
         var itemId = Guid.NewGuid();
-        var line = SampleLine(document.Id, itemId: itemId, matchStatus: ItemMatchStatus.AutoMatched);
+        var line = SampleLine(
+            document.Id,
+            itemId: itemId,
+            matchStatus: ItemMatchStatus.AutoMatched
+        );
         document.AttachSriAuthorization(
-            "1234567890", DateTime.UtcNow, "<factura>irrelevante</factura>", DateTime.UtcNow, [line], UserId,
-            docTypeCode: "01", sriPaymentMethodCode: "01",
-            processing: new PurchaseReceptionProcessingOutcome(PurchaseReceptionProcessingStatus.Processed, 1, 1, null));
+            "1234567890",
+            DateTime.UtcNow,
+            "<factura>irrelevante</factura>",
+            DateTime.UtcNow,
+            [line],
+            UserId,
+            docTypeCode: "01",
+            sriPaymentMethodCode: "01",
+            processing: new PurchaseReceptionProcessingOutcome(
+                PurchaseReceptionProcessingStatus.Processed,
+                1,
+                1,
+                null
+            )
+        );
         var (handler, repo, _) = BuildHandler();
-        repo.Setup(r => r.GetByIdAsync(TenantId, document.Id, It.IsAny<CancellationToken>())).ReturnsAsync(document);
+        repo.Setup(r => r.GetByIdAsync(TenantId, document.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(document);
 
-        var result = await handler.Handle(new CreatePurchaseReceptionDraftCommand(document.Id), CancellationToken.None);
+        var result = await handler.Handle(
+            new CreatePurchaseReceptionDraftCommand(document.Id),
+            CancellationToken.None
+        );
 
         var lineDto = result.Value!.Lines.Single();
         lineDto.ItemId.Should().Be(itemId);
@@ -169,15 +281,35 @@ public sealed class CreatePurchaseReceptionDraftHandlerTests
     {
         var document = SampleDocument(SupplierId);
         var itemId = Guid.NewGuid();
-        var line = SampleLine(document.Id, itemId: itemId, matchStatus: ItemMatchStatus.ManuallyMatched);
+        var line = SampleLine(
+            document.Id,
+            itemId: itemId,
+            matchStatus: ItemMatchStatus.ManuallyMatched
+        );
         document.AttachSriAuthorization(
-            "1234567890", DateTime.UtcNow, "<factura>irrelevante</factura>", DateTime.UtcNow, [line], UserId,
-            docTypeCode: "01", sriPaymentMethodCode: "01",
-            processing: new PurchaseReceptionProcessingOutcome(PurchaseReceptionProcessingStatus.Processed, 1, 1, null));
+            "1234567890",
+            DateTime.UtcNow,
+            "<factura>irrelevante</factura>",
+            DateTime.UtcNow,
+            [line],
+            UserId,
+            docTypeCode: "01",
+            sriPaymentMethodCode: "01",
+            processing: new PurchaseReceptionProcessingOutcome(
+                PurchaseReceptionProcessingStatus.Processed,
+                1,
+                1,
+                null
+            )
+        );
         var (handler, repo, _) = BuildHandler();
-        repo.Setup(r => r.GetByIdAsync(TenantId, document.Id, It.IsAny<CancellationToken>())).ReturnsAsync(document);
+        repo.Setup(r => r.GetByIdAsync(TenantId, document.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(document);
 
-        var result = await handler.Handle(new CreatePurchaseReceptionDraftCommand(document.Id), CancellationToken.None);
+        var result = await handler.Handle(
+            new CreatePurchaseReceptionDraftCommand(document.Id),
+            CancellationToken.None
+        );
 
         var lineDto = result.Value!.Lines.Single();
         lineDto.ItemId.Should().Be(itemId);
@@ -193,23 +325,59 @@ public sealed class CreatePurchaseReceptionDraftHandlerTests
         // draft vacío ni se abre el formulario de Compras.
         var document = SampleDocument(SupplierId);
         document.AttachSriAuthorization(
-            "1234567890", DateTime.UtcNow, "<factura>irrelevante</factura>", DateTime.UtcNow, [], UserId,
-            docTypeCode: null, sriPaymentMethodCode: null,
-            processing: PurchaseReceptionProcessingOutcome.Failed("El XML no tiene un elemento raíz."));
+            "1234567890",
+            DateTime.UtcNow,
+            "<factura>irrelevante</factura>",
+            DateTime.UtcNow,
+            [],
+            UserId,
+            docTypeCode: null,
+            sriPaymentMethodCode: null,
+            processing: PurchaseReceptionProcessingOutcome.Failed(
+                "El XML no tiene un elemento raíz."
+            )
+        );
         var (handler, repo, detailProcessor) = BuildHandler();
-        repo.Setup(r => r.GetByIdAsync(TenantId, document.Id, It.IsAny<CancellationToken>())).ReturnsAsync(document);
-        detailProcessor.Setup(p => p.ProcessAsync(
-                document.Id, TenantId, document.SupplierId, document.XmlContent!, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new PurchaseReceptionDetailProcessingResult(
-                [], PurchaseReceptionProcessingOutcome.Failed("El XML no tiene un elemento raíz."), null, null));
+        repo.Setup(r => r.GetByIdAsync(TenantId, document.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(document);
+        detailProcessor
+            .Setup(p =>
+                p.ProcessAsync(
+                    document.Id,
+                    TenantId,
+                    document.SupplierId,
+                    document.XmlContent!,
+                    It.IsAny<CancellationToken>()
+                )
+            )
+            .ReturnsAsync(
+                new PurchaseReceptionDetailProcessingResult(
+                    [],
+                    PurchaseReceptionProcessingOutcome.Failed("El XML no tiene un elemento raíz."),
+                    null,
+                    null
+                )
+            );
 
-        var result = await handler.Handle(new CreatePurchaseReceptionDraftCommand(document.Id), CancellationToken.None);
+        var result = await handler.Handle(
+            new CreatePurchaseReceptionDraftCommand(document.Id),
+            CancellationToken.None
+        );
 
         result.IsSuccess.Should().BeFalse();
         result.Code.Should().Be(ApiResponseCodes.Common.ValidationError);
         result.Error.Should().Contain("El XML no tiene un elemento raíz.");
-        detailProcessor.Verify(p => p.ProcessAsync(
-            document.Id, TenantId, document.SupplierId, document.XmlContent!, It.IsAny<CancellationToken>()), Times.Once);
+        detailProcessor.Verify(
+            p =>
+                p.ProcessAsync(
+                    document.Id,
+                    TenantId,
+                    document.SupplierId,
+                    document.XmlContent!,
+                    It.IsAny<CancellationToken>()
+                ),
+            Times.Once
+        );
         repo.Verify(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
     }
 
@@ -221,19 +389,50 @@ public sealed class CreatePurchaseReceptionDraftHandlerTests
         // se arma con normalidad, sin que el usuario perciba ningún paso adicional.
         var document = SampleDocument(SupplierId);
         document.AttachSriAuthorization(
-            "1234567890", DateTime.UtcNow, "<factura>irrelevante</factura>", DateTime.UtcNow, [], UserId,
-            docTypeCode: null, sriPaymentMethodCode: null,
-            processing: PurchaseReceptionProcessingOutcome.Failed("El parser anterior no pudo interpretar el detalle."));
+            "1234567890",
+            DateTime.UtcNow,
+            "<factura>irrelevante</factura>",
+            DateTime.UtcNow,
+            [],
+            UserId,
+            docTypeCode: null,
+            sriPaymentMethodCode: null,
+            processing: PurchaseReceptionProcessingOutcome.Failed(
+                "El parser anterior no pudo interpretar el detalle."
+            )
+        );
         var (handler, repo, detailProcessor) = BuildHandler();
-        repo.Setup(r => r.GetByIdAsync(TenantId, document.Id, It.IsAny<CancellationToken>())).ReturnsAsync(document);
+        repo.Setup(r => r.GetByIdAsync(TenantId, document.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(document);
         var recoveredLine = SampleLine(document.Id);
-        detailProcessor.Setup(p => p.ProcessAsync(
-                document.Id, TenantId, document.SupplierId, document.XmlContent!, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new PurchaseReceptionDetailProcessingResult(
-                [recoveredLine], new PurchaseReceptionProcessingOutcome(PurchaseReceptionProcessingStatus.Processed, 1, 1, null),
-                "01", "01"));
+        detailProcessor
+            .Setup(p =>
+                p.ProcessAsync(
+                    document.Id,
+                    TenantId,
+                    document.SupplierId,
+                    document.XmlContent!,
+                    It.IsAny<CancellationToken>()
+                )
+            )
+            .ReturnsAsync(
+                new PurchaseReceptionDetailProcessingResult(
+                    [recoveredLine],
+                    new PurchaseReceptionProcessingOutcome(
+                        PurchaseReceptionProcessingStatus.Processed,
+                        1,
+                        1,
+                        null
+                    ),
+                    "01",
+                    "01"
+                )
+            );
 
-        var result = await handler.Handle(new CreatePurchaseReceptionDraftCommand(document.Id), CancellationToken.None);
+        var result = await handler.Handle(
+            new CreatePurchaseReceptionDraftCommand(document.Id),
+            CancellationToken.None
+        );
 
         result.IsSuccess.Should().BeTrue(result.Error);
         result.Value!.Lines.Should().ContainSingle();
@@ -248,33 +447,76 @@ public sealed class CreatePurchaseReceptionDraftHandlerTests
     {
         var document = SampleDocument(SupplierId);
         document.AttachSriAuthorization(
-            "1234567890", DateTime.UtcNow, "<factura>irrelevante</factura>", DateTime.UtcNow, [], UserId,
-            docTypeCode: null, sriPaymentMethodCode: null,
-            processing: PurchaseReceptionProcessingOutcome.Failed("El parser anterior no pudo interpretar el detalle."));
+            "1234567890",
+            DateTime.UtcNow,
+            "<factura>irrelevante</factura>",
+            DateTime.UtcNow,
+            [],
+            UserId,
+            docTypeCode: null,
+            sriPaymentMethodCode: null,
+            processing: PurchaseReceptionProcessingOutcome.Failed(
+                "El parser anterior no pudo interpretar el detalle."
+            )
+        );
         var (handler, repo, detailProcessor) = BuildHandler();
         // El repositorio simula persistencia real: siempre devuelve la MISMA instancia mutable, así
         // que el efecto de ReprocessDetail() en el primer Handle() es visible en el segundo.
-        repo.Setup(r => r.GetByIdAsync(TenantId, document.Id, It.IsAny<CancellationToken>())).ReturnsAsync(document);
+        repo.Setup(r => r.GetByIdAsync(TenantId, document.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(document);
         var recoveredLine = SampleLine(document.Id);
-        detailProcessor.Setup(p => p.ProcessAsync(
-                document.Id, TenantId, document.SupplierId, document.XmlContent!, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new PurchaseReceptionDetailProcessingResult(
-                [recoveredLine], new PurchaseReceptionProcessingOutcome(PurchaseReceptionProcessingStatus.Processed, 1, 1, null),
-                "01", "01"));
+        detailProcessor
+            .Setup(p =>
+                p.ProcessAsync(
+                    document.Id,
+                    TenantId,
+                    document.SupplierId,
+                    document.XmlContent!,
+                    It.IsAny<CancellationToken>()
+                )
+            )
+            .ReturnsAsync(
+                new PurchaseReceptionDetailProcessingResult(
+                    [recoveredLine],
+                    new PurchaseReceptionProcessingOutcome(
+                        PurchaseReceptionProcessingStatus.Processed,
+                        1,
+                        1,
+                        null
+                    ),
+                    "01",
+                    "01"
+                )
+            );
 
         // Primer intento: snapshot Failed -> reconstrucción -> persistencia -> compra.
-        var firstResult = await handler.Handle(new CreatePurchaseReceptionDraftCommand(document.Id), CancellationToken.None);
+        var firstResult = await handler.Handle(
+            new CreatePurchaseReceptionDraftCommand(document.Id),
+            CancellationToken.None
+        );
         firstResult.IsSuccess.Should().BeTrue(firstResult.Error);
         document.ProcessingStatus.Should().Be(PurchaseReceptionProcessingStatus.Processed);
         document.Lines.Should().ContainSingle();
 
         // Segundo intento: snapshot ya reconstruido -> no vuelve a reconstruir -> carga directa.
-        var secondResult = await handler.Handle(new CreatePurchaseReceptionDraftCommand(document.Id), CancellationToken.None);
+        var secondResult = await handler.Handle(
+            new CreatePurchaseReceptionDraftCommand(document.Id),
+            CancellationToken.None
+        );
         secondResult.IsSuccess.Should().BeTrue(secondResult.Error);
         secondResult.Value!.Lines.Should().ContainSingle();
 
-        detailProcessor.Verify(p => p.ProcessAsync(
-            document.Id, TenantId, document.SupplierId, It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Once);
+        detailProcessor.Verify(
+            p =>
+                p.ProcessAsync(
+                    document.Id,
+                    TenantId,
+                    document.SupplierId,
+                    It.IsAny<string>(),
+                    It.IsAny<CancellationToken>()
+                ),
+            Times.Once
+        );
         repo.Verify(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
     }
 
@@ -286,17 +528,42 @@ public sealed class CreatePurchaseReceptionDraftHandlerTests
         var document = SampleDocument(SupplierId);
         var line = SampleLine(document.Id);
         document.AttachSriAuthorization(
-            "1234567890", DateTime.UtcNow, "<factura>irrelevante</factura>", DateTime.UtcNow, [line], UserId,
-            docTypeCode: "01", sriPaymentMethodCode: "01",
-            processing: new PurchaseReceptionProcessingOutcome(PurchaseReceptionProcessingStatus.Processed, 1, 1, null));
+            "1234567890",
+            DateTime.UtcNow,
+            "<factura>irrelevante</factura>",
+            DateTime.UtcNow,
+            [line],
+            UserId,
+            docTypeCode: "01",
+            sriPaymentMethodCode: "01",
+            processing: new PurchaseReceptionProcessingOutcome(
+                PurchaseReceptionProcessingStatus.Processed,
+                1,
+                1,
+                null
+            )
+        );
         var (handler, repo, detailProcessor) = BuildHandler();
-        repo.Setup(r => r.GetByIdAsync(TenantId, document.Id, It.IsAny<CancellationToken>())).ReturnsAsync(document);
+        repo.Setup(r => r.GetByIdAsync(TenantId, document.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(document);
 
-        var result = await handler.Handle(new CreatePurchaseReceptionDraftCommand(document.Id), CancellationToken.None);
+        var result = await handler.Handle(
+            new CreatePurchaseReceptionDraftCommand(document.Id),
+            CancellationToken.None
+        );
 
         result.IsSuccess.Should().BeTrue(result.Error);
-        detailProcessor.Verify(p => p.ProcessAsync(
-            It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<Guid?>(), It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
+        detailProcessor.Verify(
+            p =>
+                p.ProcessAsync(
+                    It.IsAny<Guid>(),
+                    It.IsAny<Guid>(),
+                    It.IsAny<Guid?>(),
+                    It.IsAny<string>(),
+                    It.IsAny<CancellationToken>()
+                ),
+            Times.Never
+        );
         repo.Verify(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
     }
 
@@ -306,18 +573,42 @@ public sealed class CreatePurchaseReceptionDraftHandlerTests
         var document = SampleDocument(SupplierId);
         var line = SampleLine(document.Id);
         document.AttachSriAuthorization(
-            "1234567890", DateTime.UtcNow, "<factura>irrelevante</factura>", DateTime.UtcNow, [line], UserId,
-            docTypeCode: "01", sriPaymentMethodCode: "01",
+            "1234567890",
+            DateTime.UtcNow,
+            "<factura>irrelevante</factura>",
+            DateTime.UtcNow,
+            [line],
+            UserId,
+            docTypeCode: "01",
+            sriPaymentMethodCode: "01",
             processing: new PurchaseReceptionProcessingOutcome(
-                PurchaseReceptionProcessingStatus.ProcessedWithWarnings, 2, 1, "Línea 2: omitida."));
+                PurchaseReceptionProcessingStatus.ProcessedWithWarnings,
+                2,
+                1,
+                "Línea 2: omitida."
+            )
+        );
         var (handler, repo, detailProcessor) = BuildHandler();
-        repo.Setup(r => r.GetByIdAsync(TenantId, document.Id, It.IsAny<CancellationToken>())).ReturnsAsync(document);
+        repo.Setup(r => r.GetByIdAsync(TenantId, document.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(document);
 
-        var result = await handler.Handle(new CreatePurchaseReceptionDraftCommand(document.Id), CancellationToken.None);
+        var result = await handler.Handle(
+            new CreatePurchaseReceptionDraftCommand(document.Id),
+            CancellationToken.None
+        );
 
         result.IsSuccess.Should().BeTrue(result.Error);
-        detailProcessor.Verify(p => p.ProcessAsync(
-            It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<Guid?>(), It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
+        detailProcessor.Verify(
+            p =>
+                p.ProcessAsync(
+                    It.IsAny<Guid>(),
+                    It.IsAny<Guid>(),
+                    It.IsAny<Guid?>(),
+                    It.IsAny<string>(),
+                    It.IsAny<CancellationToken>()
+                ),
+            Times.Never
+        );
         repo.Verify(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
     }
 
@@ -328,15 +619,29 @@ public sealed class CreatePurchaseReceptionDraftHandlerTests
         var document = SampleDocument(SupplierId);
         var line = SampleLine(document.Id);
         document.AttachSriAuthorization(
-            "1234567890", DateTime.UtcNow, "<factura>irrelevante</factura>", DateTime.UtcNow, [line], UserId,
-            docTypeCode: "01", sriPaymentMethodCode: "01",
+            "1234567890",
+            DateTime.UtcNow,
+            "<factura>irrelevante</factura>",
+            DateTime.UtcNow,
+            [line],
+            UserId,
+            docTypeCode: "01",
+            sriPaymentMethodCode: "01",
             processing: new PurchaseReceptionProcessingOutcome(
-                PurchaseReceptionProcessingStatus.ProcessedWithWarnings, 2, 1,
-                "Línea 2 (SKU-999): La línea no tiene impuesto IVA. — línea omitida."));
+                PurchaseReceptionProcessingStatus.ProcessedWithWarnings,
+                2,
+                1,
+                "Línea 2 (SKU-999): La línea no tiene impuesto IVA. — línea omitida."
+            )
+        );
         var (handler, repo, _) = BuildHandler();
-        repo.Setup(r => r.GetByIdAsync(TenantId, document.Id, It.IsAny<CancellationToken>())).ReturnsAsync(document);
+        repo.Setup(r => r.GetByIdAsync(TenantId, document.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(document);
 
-        var result = await handler.Handle(new CreatePurchaseReceptionDraftCommand(document.Id), CancellationToken.None);
+        var result = await handler.Handle(
+            new CreatePurchaseReceptionDraftCommand(document.Id),
+            CancellationToken.None
+        );
 
         result.IsSuccess.Should().BeTrue(result.Error);
         result.Value!.Lines.Should().ContainSingle();

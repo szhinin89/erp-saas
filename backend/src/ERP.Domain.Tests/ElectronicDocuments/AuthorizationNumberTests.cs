@@ -30,8 +30,7 @@ public sealed class AuthorizationNumberTests
     {
         var act = () => AuthorizationNumber.Create(value!);
 
-        act.Should().Throw<ArgumentException>()
-            .WithMessage("*obligatorio*");
+        act.Should().Throw<ArgumentException>().WithMessage("*obligatorio*");
     }
 
     [Fact]
@@ -41,8 +40,7 @@ public sealed class AuthorizationNumberTests
 
         var act = () => AuthorizationNumber.Create(tooShort);
 
-        act.Should().Throw<ArgumentException>()
-            .WithMessage("*exactamente 49 dígitos*");
+        act.Should().Throw<ArgumentException>().WithMessage("*exactamente 49 dígitos*");
     }
 
     [Fact]
@@ -52,8 +50,7 @@ public sealed class AuthorizationNumberTests
 
         var act = () => AuthorizationNumber.Create(tooLong);
 
-        act.Should().Throw<ArgumentException>()
-            .WithMessage("*exactamente 49 dígitos*");
+        act.Should().Throw<ArgumentException>().WithMessage("*exactamente 49 dígitos*");
     }
 
     [Theory]
@@ -66,8 +63,7 @@ public sealed class AuthorizationNumberTests
 
         var act = () => AuthorizationNumber.Create(withLetter);
 
-        act.Should().Throw<ArgumentException>()
-            .WithMessage("*dígitos numéricos*");
+        act.Should().Throw<ArgumentException>().WithMessage("*dígitos numéricos*");
     }
 
     [Fact]

@@ -22,7 +22,8 @@ public sealed class CreateEstablishmentCommandHandler
         IBranchRepository branches,
         ICurrentTenant currentTenant,
         ICurrentCompany company,
-        ICurrentUser user)
+        ICurrentUser user
+    )
     {
         _repo = repo;
         _branches = branches;
@@ -31,14 +32,21 @@ public sealed class CreateEstablishmentCommandHandler
         _user = user;
     }
 
-    public async Task<Result<EstablishmentDto>> Handle(CreateEstablishmentCommand command, CancellationToken cancellationToken)
+    public async Task<Result<EstablishmentDto>> Handle(
+        CreateEstablishmentCommand command,
+        CancellationToken cancellationToken
+    )
     {
         var tenantId = _currentTenant.TenantId;
         var companyId = _company.CompanyId;
 
         if (command.BranchId.HasValue)
         {
-            var branch = await _branches.GetByIdAsync(tenantId, command.BranchId.Value, cancellationToken);
+            var branch = await _branches.GetByIdAsync(
+                tenantId,
+                command.BranchId.Value,
+                cancellationToken
+            );
             if (branch is null || !branch.IsActive)
                 return Result<EstablishmentDto>.Failure("La sucursal no existe o no está activa.");
         }
@@ -46,7 +54,9 @@ public sealed class CreateEstablishmentCommandHandler
         var code = command.Code.Trim().PadLeft(3, '0');
         var exists = await _repo.ExistsAsync(tenantId, companyId, code, cancellationToken);
         if (exists)
-            return Result<EstablishmentDto>.Failure($"Ya existe un establecimiento con código {code} en esta empresa.");
+            return Result<EstablishmentDto>.Failure(
+                $"Ya existe un establecimiento con código {code} en esta empresa."
+            );
 
         var entity = Establishment.Create(
             tenantId: tenantId,
@@ -57,11 +67,14 @@ public sealed class CreateEstablishmentCommandHandler
             address: command.Address,
             phone: command.Phone,
             isMain: command.IsMain,
-            createdBy: _user.UserId);
+            createdBy: _user.UserId
+        );
 
         await _repo.AddAsync(entity, cancellationToken);
         await _repo.SaveChangesAsync(cancellationToken);
 
-        return Result<EstablishmentDto>.Success(GetEstablishmentsByBranchQueryHandler.ToDto(entity));
+        return Result<EstablishmentDto>.Success(
+            GetEstablishmentsByBranchQueryHandler.ToDto(entity)
+        );
     }
 }

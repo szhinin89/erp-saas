@@ -19,12 +19,14 @@ namespace ERP.Infrastructure.Services.Sri;
 /// </summary>
 public sealed class XadesSignedXml : SignedXml
 {
-    public XadesSignedXml(XmlDocument document) : base(document) { }
+    public XadesSignedXml(XmlDocument document)
+        : base(document) { }
 
     public override XmlElement? GetIdElement(XmlDocument? document, string idValue)
     {
         var fromDocument = base.GetIdElement(document, idValue);
-        if (fromDocument is not null) return fromDocument;
+        if (fromDocument is not null)
+            return fromDocument;
 
         // FIRMA-01 (auditoría SRI, Fase 2): resuelve la referencia a KeyInfo (Uri="#Certificate",
         // ver XadesBesSigner) durante ComputeSignature() — en ese momento KeyInfo todavía no es
@@ -38,13 +40,16 @@ public sealed class XadesSignedXml : SignedXml
 
         foreach (DataObject dataObject in Signature.ObjectList)
         {
-            if (dataObject.Data is null) continue;
+            if (dataObject.Data is null)
+                continue;
 
             foreach (XmlNode node in dataObject.Data)
             {
-                if (node is not XmlElement element) continue;
+                if (node is not XmlElement element)
+                    continue;
 
-                if (element.GetAttribute("Id") == idValue) return element;
+                if (element.GetAttribute("Id") == idValue)
+                    return element;
 
                 if (element.SelectSingleNode($"//*[@Id='{idValue}']") is XmlElement match)
                     return match;

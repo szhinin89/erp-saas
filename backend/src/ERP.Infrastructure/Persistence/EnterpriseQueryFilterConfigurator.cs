@@ -1,6 +1,6 @@
+using System.Linq.Expressions;
 using ERP.Domain.Common;
 using Microsoft.EntityFrameworkCore;
-using System.Linq.Expressions;
 
 namespace ERP.Infrastructure.Persistence;
 
@@ -29,12 +29,18 @@ internal static class EnterpriseQueryFilterConfigurator
 
             if (typeof(ICompanyOperationalEntity).IsAssignableFrom(clrType))
             {
-                ApplyFilter(modelBuilder, clrType, BuildCompanyOperationalFilter(clrType, dbContext));
+                ApplyFilter(
+                    modelBuilder,
+                    clrType,
+                    BuildCompanyOperationalFilter(clrType, dbContext)
+                );
                 continue;
             }
 
-            if (typeof(ICompanyScopedEntity).IsAssignableFrom(clrType)
-                && typeof(ITenantScopedEntity).IsAssignableFrom(clrType))
+            if (
+                typeof(ICompanyScopedEntity).IsAssignableFrom(clrType)
+                && typeof(ITenantScopedEntity).IsAssignableFrom(clrType)
+            )
             {
                 ApplyFilter(modelBuilder, clrType, BuildCompanyScopedFilter(clrType, dbContext));
                 continue;
@@ -45,8 +51,11 @@ internal static class EnterpriseQueryFilterConfigurator
         }
     }
 
-    private static void ApplyFilter(ModelBuilder modelBuilder, Type clrType, LambdaExpression filter)
-        => modelBuilder.Entity(clrType).HasQueryFilter(filter);
+    private static void ApplyFilter(
+        ModelBuilder modelBuilder,
+        Type clrType,
+        LambdaExpression filter
+    ) => modelBuilder.Entity(clrType).HasQueryFilter(filter);
 
     private static LambdaExpression BuildTenantFilter(Type clrType, ErpDbContext dbContext)
     {
@@ -64,13 +73,20 @@ internal static class EnterpriseQueryFilterConfigurator
         return Expression.Lambda(body, parameter);
     }
 
-    private static LambdaExpression BuildCompanyOperationalFilter(Type clrType, ErpDbContext dbContext)
-        => BuildOperationalScopedFilter(clrType, dbContext);
+    private static LambdaExpression BuildCompanyOperationalFilter(
+        Type clrType,
+        ErpDbContext dbContext
+    ) => BuildOperationalScopedFilter(clrType, dbContext);
 
-    private static LambdaExpression BuildCompanyScopedFilter(Type clrType, ErpDbContext dbContext)
-        => BuildStrictCompanyScopedFilter(clrType, dbContext);
+    private static LambdaExpression BuildCompanyScopedFilter(
+        Type clrType,
+        ErpDbContext dbContext
+    ) => BuildStrictCompanyScopedFilter(clrType, dbContext);
 
-    private static LambdaExpression BuildOperationalScopedFilter(Type clrType, ErpDbContext dbContext)
+    private static LambdaExpression BuildOperationalScopedFilter(
+        Type clrType,
+        ErpDbContext dbContext
+    )
     {
         var parameter = Expression.Parameter(clrType, "e");
         var dbConstant = Expression.Constant(dbContext);
@@ -79,19 +95,32 @@ internal static class EnterpriseQueryFilterConfigurator
         var emptyGuid = Expression.Constant(Guid.Empty);
         var hasTenantCtx = Expression.NotEqual(currentTenant, emptyGuid);
         var tenantProp = Expression.Property(parameter, nameof(ITenantScopedEntity.TenantId));
-        var tenantMatch = Expression.AndAlso(hasTenantCtx,
-                              Expression.Equal(tenantProp, currentTenant));
+        var tenantMatch = Expression.AndAlso(
+            hasTenantCtx,
+            Expression.Equal(tenantProp, currentTenant)
+        );
 
-        var hasCompanyCtx = Expression.Property(dbConstant, nameof(ErpDbContext.FilterHasCompanyContext));
+        var hasCompanyCtx = Expression.Property(
+            dbConstant,
+            nameof(ErpDbContext.FilterHasCompanyContext)
+        );
         var currentCompany = Expression.Property(dbConstant, nameof(ErpDbContext.FilterCompanyId));
-        var companyProp = Expression.Property(parameter, nameof(ICompanyOperationalEntity.CompanyId));
-        var companyMatch = Expression.AndAlso(hasCompanyCtx,
-                               Expression.Equal(companyProp, currentCompany));
+        var companyProp = Expression.Property(
+            parameter,
+            nameof(ICompanyOperationalEntity.CompanyId)
+        );
+        var companyMatch = Expression.AndAlso(
+            hasCompanyCtx,
+            Expression.Equal(companyProp, currentCompany)
+        );
 
         return Expression.Lambda(Expression.AndAlso(tenantMatch, companyMatch), parameter);
     }
 
-    private static LambdaExpression BuildStrictCompanyScopedFilter(Type clrType, ErpDbContext dbContext)
+    private static LambdaExpression BuildStrictCompanyScopedFilter(
+        Type clrType,
+        ErpDbContext dbContext
+    )
     {
         var parameter = Expression.Parameter(clrType, "e");
         var dbConstant = Expression.Constant(dbContext);
@@ -100,14 +129,21 @@ internal static class EnterpriseQueryFilterConfigurator
         var emptyGuid = Expression.Constant(Guid.Empty);
         var hasTenantCtx = Expression.NotEqual(currentTenant, emptyGuid);
         var tenantProp = Expression.Property(parameter, nameof(ITenantScopedEntity.TenantId));
-        var tenantMatch = Expression.AndAlso(hasTenantCtx,
-                              Expression.Equal(tenantProp, currentTenant));
+        var tenantMatch = Expression.AndAlso(
+            hasTenantCtx,
+            Expression.Equal(tenantProp, currentTenant)
+        );
 
-        var hasCompanyCtx = Expression.Property(dbConstant, nameof(ErpDbContext.FilterHasCompanyContext));
+        var hasCompanyCtx = Expression.Property(
+            dbConstant,
+            nameof(ErpDbContext.FilterHasCompanyContext)
+        );
         var currentCompany = Expression.Property(dbConstant, nameof(ErpDbContext.FilterCompanyId));
         var companyProp = Expression.Property(parameter, nameof(ICompanyScopedEntity.CompanyId));
-        var companyMatch = Expression.AndAlso(hasCompanyCtx,
-                               Expression.Equal(companyProp, currentCompany));
+        var companyMatch = Expression.AndAlso(
+            hasCompanyCtx,
+            Expression.Equal(companyProp, currentCompany)
+        );
 
         return Expression.Lambda(Expression.AndAlso(tenantMatch, companyMatch), parameter);
     }

@@ -11,10 +11,10 @@ namespace ERP.Application.Modules.Pricing.EventHandlers;
 /// Único lugar que conoce ambos lados (evento de dominio ↔ entidad de auditoría) — el
 /// resto de la infraestructura de auditoría es genérica y no conoce Pricing.
 /// </summary>
-public sealed class PricingRuleAuditHandler :
-    INotificationHandler<PricingRuleUpdatedEvent>,
-    INotificationHandler<PricingRuleEnabledEvent>,
-    INotificationHandler<PricingRuleDisabledEvent>
+public sealed class PricingRuleAuditHandler
+    : INotificationHandler<PricingRuleUpdatedEvent>,
+        INotificationHandler<PricingRuleEnabledEvent>,
+        INotificationHandler<PricingRuleDisabledEvent>
 {
     private readonly IAuditService _audit;
     private readonly IAuditContext _context;
@@ -25,21 +25,54 @@ public sealed class PricingRuleAuditHandler :
         _context = context;
     }
 
-    public Task Handle(PricingRuleUpdatedEvent e, CancellationToken ct) => _audit.RecordAsync(
-        PricingRuleAudit.Create(
-            _context.Actor, _context.CompanyId, e.RuleId, e.PriceListId, e.ItemId, ((IAuditEvent)e).Action,
-            e.OldRuleType, e.OldRuleValue, e.NewRuleType, e.NewRuleValue),
-        ct);
+    public Task Handle(PricingRuleUpdatedEvent e, CancellationToken ct) =>
+        _audit.RecordAsync(
+            PricingRuleAudit.Create(
+                _context.Actor,
+                _context.CompanyId,
+                e.RuleId,
+                e.PriceListId,
+                e.ItemId,
+                ((IAuditEvent)e).Action,
+                e.OldRuleType,
+                e.OldRuleValue,
+                e.NewRuleType,
+                e.NewRuleValue
+            ),
+            ct
+        );
 
-    public Task Handle(PricingRuleEnabledEvent e, CancellationToken ct) => _audit.RecordAsync(
-        PricingRuleAudit.Create(
-            _context.Actor, _context.CompanyId, e.RuleId, e.PriceListId, e.ItemId, ((IAuditEvent)e).Action,
-            e.RuleType, e.RuleValue, e.RuleType, e.RuleValue),
-        ct);
+    public Task Handle(PricingRuleEnabledEvent e, CancellationToken ct) =>
+        _audit.RecordAsync(
+            PricingRuleAudit.Create(
+                _context.Actor,
+                _context.CompanyId,
+                e.RuleId,
+                e.PriceListId,
+                e.ItemId,
+                ((IAuditEvent)e).Action,
+                e.RuleType,
+                e.RuleValue,
+                e.RuleType,
+                e.RuleValue
+            ),
+            ct
+        );
 
-    public Task Handle(PricingRuleDisabledEvent e, CancellationToken ct) => _audit.RecordAsync(
-        PricingRuleAudit.Create(
-            _context.Actor, _context.CompanyId, e.RuleId, e.PriceListId, e.ItemId, ((IAuditEvent)e).Action,
-            e.RuleType, e.RuleValue, e.RuleType, e.RuleValue),
-        ct);
+    public Task Handle(PricingRuleDisabledEvent e, CancellationToken ct) =>
+        _audit.RecordAsync(
+            PricingRuleAudit.Create(
+                _context.Actor,
+                _context.CompanyId,
+                e.RuleId,
+                e.PriceListId,
+                e.ItemId,
+                ((IAuditEvent)e).Action,
+                e.RuleType,
+                e.RuleValue,
+                e.RuleType,
+                e.RuleValue
+            ),
+            ct
+        );
 }

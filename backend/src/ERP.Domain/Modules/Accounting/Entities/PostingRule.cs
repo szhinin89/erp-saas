@@ -48,12 +48,19 @@ public sealed class PostingRule : AuditableEntity, ITenantScopedEntity, ICompany
         Guid? debitAccountId,
         Guid? creditAccountId,
         string? taxCode,
-        Guid createdBy)
+        Guid createdBy
+    )
     {
         if (string.IsNullOrWhiteSpace(sourceModule))
-            throw new ArgumentException("El módulo de origen es obligatorio.", nameof(sourceModule));
+            throw new ArgumentException(
+                "El módulo de origen es obligatorio.",
+                nameof(sourceModule)
+            );
         if (string.IsNullOrWhiteSpace(factType))
-            throw new ArgumentException("El tipo de hecho contable es obligatorio.", nameof(factType));
+            throw new ArgumentException(
+                "El tipo de hecho contable es obligatorio.",
+                nameof(factType)
+            );
 
         var rule = new PostingRule
         {
@@ -95,7 +102,12 @@ public sealed class PostingRule : AuditableEntity, ITenantScopedEntity, ICompany
     /// Infrastructure al momento de resolver (ver remarks de la clase). No cambia
     /// SourceModule/FactType (identidad de la regla) ni IsActive.
     /// </summary>
-    public void UpdateMapping(Guid? debitAccountId, Guid? creditAccountId, string? taxCode, Guid updatedBy)
+    public void UpdateMapping(
+        Guid? debitAccountId,
+        Guid? creditAccountId,
+        string? taxCode,
+        Guid updatedBy
+    )
     {
         DebitAccountId = debitAccountId;
         CreditAccountId = creditAccountId;
@@ -109,7 +121,14 @@ public sealed class PostingRule : AuditableEntity, ITenantScopedEntity, ICompany
     /// </summary>
     public void AddLine(Guid accountId, AccountNature nature, PostingAmountKind amountKind)
     {
-        var line = PostingRuleLine.Create(Id, TenantId, accountId, nature, amountKind, (short)_lines.Count);
+        var line = PostingRuleLine.Create(
+            Id,
+            TenantId,
+            accountId,
+            nature,
+            amountKind,
+            (short)_lines.Count
+        );
         _lines.Add(line);
     }
 }

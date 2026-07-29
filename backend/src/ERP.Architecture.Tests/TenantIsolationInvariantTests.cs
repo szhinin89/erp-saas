@@ -1,6 +1,6 @@
+using System.Reflection;
 using ERP.Domain.Common;
 using FluentAssertions;
-using System.Reflection;
 
 namespace ERP.Architecture.Tests;
 
@@ -10,8 +10,7 @@ namespace ERP.Architecture.Tests;
 /// </summary>
 public sealed class TenantIsolationInvariantTests
 {
-    private static readonly Assembly DomainAssembly =
-        typeof(ITenantScopedEntity).Assembly;
+    private static readonly Assembly DomainAssembly = typeof(ITenantScopedEntity).Assembly;
 
     private static readonly Assembly InfraAssembly =
         typeof(ERP.Infrastructure.Persistence.ErpDbContext).Assembly;
@@ -34,13 +33,14 @@ public sealed class TenantIsolationInvariantTests
             typeof(ICompanyScopedEntity),
         };
 
-        var violators = DomainAssembly.GetTypes()
+        var violators = DomainAssembly
+            .GetTypes()
             .Where(t => t.IsClass && !t.IsAbstract)
             .Where(t => operationalInterfaces.Any(i => i.IsAssignableFrom(t)))
             .Select(t => new
             {
                 Type = t,
-                Prop = t.GetProperty("CompanyId", BindingFlags.Public | BindingFlags.Instance)
+                Prop = t.GetProperty("CompanyId", BindingFlags.Public | BindingFlags.Instance),
             })
             .Where(x => x.Prop is not null)
             .Where(x =>
@@ -51,10 +51,13 @@ public sealed class TenantIsolationInvariantTests
             .Select(x => x.Type.FullName)
             .ToList();
 
-        violators.Should().BeEmpty(
-            "CompanyId es un invariante de identidad. " +
-            "Setters públicos permiten re-asignación cross-company. " +
-            "Usar factory Create() para asignar CompanyId.");
+        violators
+            .Should()
+            .BeEmpty(
+                "CompanyId es un invariante de identidad. "
+                    + "Setters públicos permiten re-asignación cross-company. "
+                    + "Usar factory Create() para asignar CompanyId."
+            );
     }
 
     /// <summary>
@@ -64,7 +67,8 @@ public sealed class TenantIsolationInvariantTests
     [Fact]
     public void INV_A2_operational_entity_company_id_must_be_guid_not_nullable()
     {
-        var violators = DomainAssembly.GetTypes()
+        var violators = DomainAssembly
+            .GetTypes()
             .Where(t => t.IsClass && !t.IsAbstract)
             .Where(t => typeof(ICompanyOperationalEntity).IsAssignableFrom(t))
             .Where(t =>
@@ -75,10 +79,13 @@ public sealed class TenantIsolationInvariantTests
             .Select(t => t.FullName)
             .ToList();
 
-        violators.Should().BeEmpty(
-            "ICompanyOperationalEntity.CompanyId debe ser Guid (NOT NULL). " +
-            "Todas las entidades operacionales requieren empresa válida. " +
-            "Migración FinalizeCompanyIdNotNull establece esta garantía.");
+        violators
+            .Should()
+            .BeEmpty(
+                "ICompanyOperationalEntity.CompanyId debe ser Guid (NOT NULL). "
+                    + "Todas las entidades operacionales requieren empresa válida. "
+                    + "Migración FinalizeCompanyIdNotNull establece esta garantía."
+            );
     }
 
     // ── INVARIANT B — TenantId consistente ────────────────────────────────────
@@ -90,14 +97,17 @@ public sealed class TenantIsolationInvariantTests
     [Fact]
     public void INV_B1_tenant_id_must_not_have_public_setter_on_operational_entities()
     {
-        var violators = DomainAssembly.GetTypes()
+        var violators = DomainAssembly
+            .GetTypes()
             .Where(t => t.IsClass && !t.IsAbstract)
-            .Where(t => typeof(ICompanyOperationalEntity).IsAssignableFrom(t)
-                     || typeof(ICompanyScopedEntity).IsAssignableFrom(t))
+            .Where(t =>
+                typeof(ICompanyOperationalEntity).IsAssignableFrom(t)
+                || typeof(ICompanyScopedEntity).IsAssignableFrom(t)
+            )
             .Select(t => new
             {
                 Type = t,
-                Prop = t.GetProperty("TenantId", BindingFlags.Public | BindingFlags.Instance)
+                Prop = t.GetProperty("TenantId", BindingFlags.Public | BindingFlags.Instance),
             })
             .Where(x => x.Prop is not null)
             .Where(x =>
@@ -108,9 +118,12 @@ public sealed class TenantIsolationInvariantTests
             .Select(x => x.Type.FullName)
             .ToList();
 
-        violators.Should().BeEmpty(
-            "TenantId es un invariante de tenancy — no puede tener setter público. " +
-            "Cambiar TenantId permitiría mover datos entre tenants.");
+        violators
+            .Should()
+            .BeEmpty(
+                "TenantId es un invariante de tenancy — no puede tener setter público. "
+                    + "Cambiar TenantId permitiría mover datos entre tenants."
+            );
     }
 
     // ── INVARIANT C — Ownership Company ↔ Subscriber ─────────────────────────
@@ -122,16 +135,20 @@ public sealed class TenantIsolationInvariantTests
     [Fact]
     public void INV_C1_company_scoped_entity_must_also_be_tenant_scoped()
     {
-        var violators = DomainAssembly.GetTypes()
+        var violators = DomainAssembly
+            .GetTypes()
             .Where(t => t.IsClass && !t.IsAbstract)
             .Where(t => typeof(ICompanyScopedEntity).IsAssignableFrom(t))
             .Where(t => !typeof(ITenantScopedEntity).IsAssignableFrom(t))
             .Select(t => t.FullName)
             .ToList();
 
-        violators.Should().BeEmpty(
-            "Toda entidad company-scoped debe también ser tenant-scoped. " +
-            "Una empresa siempre pertenece a un tenant.");
+        violators
+            .Should()
+            .BeEmpty(
+                "Toda entidad company-scoped debe también ser tenant-scoped. "
+                    + "Una empresa siempre pertenece a un tenant."
+            );
     }
 
     /// <summary>
@@ -143,10 +160,14 @@ public sealed class TenantIsolationInvariantTests
     {
         // ICompanyOperationalEntity extends ITenantScopedEntity — verified at compile time
         // This test verifies the runtime type hierarchy is correct
-        typeof(ICompanyOperationalEntity).GetInterfaces()
-            .Should().Contain(typeof(ITenantScopedEntity),
-            "ICompanyOperationalEntity debe extender ITenantScopedEntity. " +
-            "Toda entidad operacional requiere contexto de tenant.");
+        typeof(ICompanyOperationalEntity)
+            .GetInterfaces()
+            .Should()
+            .Contain(
+                typeof(ITenantScopedEntity),
+                "ICompanyOperationalEntity debe extender ITenantScopedEntity. "
+                    + "Toda entidad operacional requiere contexto de tenant."
+            );
     }
 
     // ── INVARIANT D — No Cross-Company References ─────────────────────────────
@@ -173,21 +194,33 @@ public sealed class TenantIsolationInvariantTests
             "ERP.Domain.Modules.Cash",
         };
 
-        var violators = DomainAssembly.GetTypes()
-            .Where(t => erpOperationalNamespaces.Any(ns =>
-                (t.Namespace ?? "").StartsWith(ns, StringComparison.Ordinal)))
+        var violators = DomainAssembly
+            .GetTypes()
+            .Where(t =>
+                erpOperationalNamespaces.Any(ns =>
+                    (t.Namespace ?? "").StartsWith(ns, StringComparison.Ordinal)
+                )
+            )
             .Where(t =>
             {
-                var fields = t.GetFields(BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Public);
-                return fields.Any(f => forbiddenBillingNamespaces.Any(fn =>
-                    (f.FieldType.Namespace ?? "").StartsWith(fn, StringComparison.Ordinal)));
+                var fields = t.GetFields(
+                    BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Public
+                );
+                return fields.Any(f =>
+                    forbiddenBillingNamespaces.Any(fn =>
+                        (f.FieldType.Namespace ?? "").StartsWith(fn, StringComparison.Ordinal)
+                    )
+                );
             })
             .Select(t => t.FullName)
             .ToList();
 
-        violators.Should().BeEmpty(
-            "Entidades COMPANY ERP no pueden referenciar entidades SUBSCRIBER billing. " +
-            "Violación del COMPANY ↔ SUBSCRIBER boundary.");
+        violators
+            .Should()
+            .BeEmpty(
+                "Entidades COMPANY ERP no pueden referenciar entidades SUBSCRIBER billing. "
+                    + "Violación del COMPANY ↔ SUBSCRIBER boundary."
+            );
     }
 
     // ── ENFORCEMENT LAYER INTEGRITY ───────────────────────────────────────────
@@ -208,9 +241,13 @@ public sealed class TenantIsolationInvariantTests
 
         foreach (var name in required)
         {
-            InfraAssembly.GetType(name).Should().NotBeNull(
-                $"Interceptor '{name}' eliminado del enforcement layer. " +
-                "Este interceptor es obligatorio para el zero-leak guarantee.");
+            InfraAssembly
+                .GetType(name)
+                .Should()
+                .NotBeNull(
+                    $"Interceptor '{name}' eliminado del enforcement layer. "
+                        + "Este interceptor es obligatorio para el zero-leak guarantee."
+                );
         }
     }
 
@@ -231,21 +268,29 @@ public sealed class TenantIsolationInvariantTests
             "ERP.Application.Sales",
         };
 
-        var violators = AppAssembly.GetTypes()
+        var violators = AppAssembly
+            .GetTypes()
             .Where(t => t.IsClass && !t.IsAbstract)
             .Where(t => typeof(MediatR.IBaseRequest).IsAssignableFrom(t))
-            .Where(t => companyModulePrefixes.Any(p =>
-                (t.Namespace ?? "").StartsWith(p, StringComparison.Ordinal)))
             .Where(t =>
-                !typeof(ERP.Application.Common.ICompanyScopedRequest).IsAssignableFrom(t) &&
-                !typeof(ERP.Application.Common.ITenantScopedRequest).IsAssignableFrom(t) &&
-                !typeof(ERP.Application.Common.IPlatformScopedRequest).IsAssignableFrom(t))
+                companyModulePrefixes.Any(p =>
+                    (t.Namespace ?? "").StartsWith(p, StringComparison.Ordinal)
+                )
+            )
+            .Where(t =>
+                !typeof(ERP.Application.Common.ICompanyScopedRequest).IsAssignableFrom(t)
+                && !typeof(ERP.Application.Common.ITenantScopedRequest).IsAssignableFrom(t)
+                && !typeof(ERP.Application.Common.IPlatformScopedRequest).IsAssignableFrom(t)
+            )
             .Select(t => t.FullName)
             .ToList();
 
-        violators.Should().BeEmpty(
-            "Requests en módulos COMPANY deben implementar ICompanyScopedRequest " +
-            "(o ITenantScopedRequest / IPlatformScopedRequest). " +
-            "Sin scope explícito el CompanyScopeBehavior no valida company context (fail-closed).");
+        violators
+            .Should()
+            .BeEmpty(
+                "Requests en módulos COMPANY deben implementar ICompanyScopedRequest "
+                    + "(o ITenantScopedRequest / IPlatformScopedRequest). "
+                    + "Sin scope explícito el CompanyScopeBehavior no valida company context (fail-closed)."
+            );
     }
 }

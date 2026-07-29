@@ -15,7 +15,8 @@ public sealed partial class MasterDataReconciliationJob : IMasterDataReconciliat
 
     public MasterDataReconciliationJob(
         IMasterDataReconciliationService reconciliation,
-        ILogger<MasterDataReconciliationJob> logger)
+        ILogger<MasterDataReconciliationJob> logger
+    )
     {
         _reconciliation = reconciliation;
         _logger = logger;
@@ -30,12 +31,21 @@ public sealed partial class MasterDataReconciliationJob : IMasterDataReconciliat
             return;
         }
 
-        LogIssuesDetected(report.IssueCount, string.Join("; ", report.Issues.Take(5).Select(i => i.Code)));
+        LogIssuesDetected(
+            report.IssueCount,
+            string.Join("; ", report.Issues.Take(5).Select(i => i.Code))
+        );
     }
 
-    [LoggerMessage(Level = LogLevel.Information, Message = "MasterDataReconciliationJob: sin divergencias.")]
+    [LoggerMessage(
+        Level = LogLevel.Information,
+        Message = "MasterDataReconciliationJob: sin divergencias."
+    )]
     private partial void LogNoIssues();
 
-    [LoggerMessage(Level = LogLevel.Warning, Message = "MasterDataReconciliationJob: {IssueCount} issue(s) detectadas. Critical sample: {Sample}")]
+    [LoggerMessage(
+        Level = LogLevel.Warning,
+        Message = "MasterDataReconciliationJob: {IssueCount} issue(s) detectadas. Critical sample: {Sample}"
+    )]
     private partial void LogIssuesDetected(int issueCount, string sample);
 }

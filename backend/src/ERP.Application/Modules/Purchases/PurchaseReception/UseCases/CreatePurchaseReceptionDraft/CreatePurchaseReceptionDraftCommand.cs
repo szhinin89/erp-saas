@@ -12,4 +12,5 @@ namespace ERP.Application.Modules.Purchases.PurchaseReception.UseCases.CreatePur
 /// formulario, con los datos ya cargados y editables por el usuario.
 /// </summary>
 public sealed record CreatePurchaseReceptionDraftCommand(Guid PurchaseReceptionDocumentId)
-    : IRequest<Result<PurchaseDraftDto>>, IBranchScopedRequest;
+    : IRequest<Result<PurchaseDraftDto>>,
+        IBranchScopedRequest;

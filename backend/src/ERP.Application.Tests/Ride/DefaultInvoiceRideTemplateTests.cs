@@ -21,7 +21,8 @@ public sealed class DefaultInvoiceRideTemplateTests
             logoStoragePath: "branding/logo.png",
             primaryColorHex: "#112233",
             secondaryColorHex: "#445566",
-            footerText: "Gracias por su compra");
+            footerText: "Gracias por su compra"
+        );
         var template = new DefaultInvoiceRideTemplate();
 
         var layout = template.Compose(model, branding);

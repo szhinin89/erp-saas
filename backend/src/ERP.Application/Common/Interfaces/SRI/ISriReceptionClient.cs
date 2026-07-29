@@ -11,6 +11,7 @@ public sealed class SriReceptionResult
 {
     public required string Status { get; init; }
     public IReadOnlyList<string> Errors { get; init; } = Array.Empty<string>();
+
     /// <summary>Mismos mensajes de <see cref="Errors"/>, sin aplanar — código/tipo/mensaje/información adicional por separado.</summary>
     public IReadOnlyList<SriMessage> StructuredMessages { get; init; } = Array.Empty<SriMessage>();
     public bool Received => Status.Equals("RECIBIDA", StringComparison.OrdinalIgnoreCase);
@@ -29,5 +30,8 @@ public interface ISriReceptionClient
     /// ("ERROR_CONEXION"/"ERROR_RESPUESTA_INVALIDA").
     /// </summary>
     Task<SriReceptionResult> SendAsync(
-        byte[] signedXmlBytes, string wsdlUrl, CancellationToken ct = default);
+        byte[] signedXmlBytes,
+        string wsdlUrl,
+        CancellationToken ct = default
+    );
 }

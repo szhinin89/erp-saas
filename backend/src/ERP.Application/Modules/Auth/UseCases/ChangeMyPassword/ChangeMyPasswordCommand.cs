@@ -10,7 +10,5 @@ namespace ERP.Application.Auth.UseCases.ChangeMyPassword;
 /// actual en vez de un token, pero reutiliza el mismo mecanismo de aplicación
 /// (IdentityUser.SetPasswordHash) y de invalidación (IRefreshTokenService.RevokeAllForUserAsync).
 /// </summary>
-public sealed record ChangeMyPasswordCommand(
-    string CurrentPassword,
-    string NewPassword
-) : IRequest<Result<bool>>;
+public sealed record ChangeMyPasswordCommand(string CurrentPassword, string NewPassword)
+    : IRequest<Result<bool>>;

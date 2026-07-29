@@ -11,10 +11,7 @@ public record UpsertProfilePermissionsCommand(
     IReadOnlyList<PermissionUpsertItem> Items
 ) : IRequest<Result<PermissionUpsertResultDto>>;
 
-public record PermissionUpsertItem(
-    string PermissionKey,
-    bool IsAllowed
-);
+public record PermissionUpsertItem(string PermissionKey, bool IsAllowed);
 
 /// <summary>
 /// Explicit result showing which permissions were saved and which were rejected.
@@ -23,16 +20,14 @@ public record PermissionUpsertItem(
 /// </summary>
 public sealed record PermissionUpsertResultDto(
     IReadOnlyList<string> Saved,
-    IReadOnlyList<RejectedPermission> Rejected)
+    IReadOnlyList<RejectedPermission> Rejected
+)
 {
     /// <summary>True when every submitted permission was saved successfully.</summary>
     public bool AllSaved => Rejected.Count == 0;
 }
 
-public sealed record RejectedPermission(
-    string PermissionKey,
-    string Reason,
-    string RejectionCode);
+public sealed record RejectedPermission(string PermissionKey, string Reason, string RejectionCode);
 
 public static class RejectionCodes
 {
@@ -42,5 +37,5 @@ public static class RejectionCodes
 }
 
 public record GetProfilePermissionsQuery(Guid ProfileId) : IRequest<Result<ProfilePermissionsDto>>;
-public record GetMyPermissionsQuery : IRequest<Result<MyPermissionsDto>>;
 
+public record GetMyPermissionsQuery : IRequest<Result<MyPermissionsDto>>;

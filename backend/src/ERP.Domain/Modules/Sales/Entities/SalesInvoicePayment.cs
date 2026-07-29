@@ -32,16 +32,26 @@ public sealed class SalesInvoicePayment : IMustHaveTenant
         string paymentMethodCode,
         string paymentMethodName,
         decimal amount,
-        string? reference = null)
+        string? reference = null
+    )
     {
         if (invoiceId == Guid.Empty)
             throw new ArgumentException("La factura es obligatoria.", nameof(invoiceId));
         if (paymentMethodId == Guid.Empty)
-            throw new ArgumentException("El método de pago es obligatorio.", nameof(paymentMethodId));
+            throw new ArgumentException(
+                "El método de pago es obligatorio.",
+                nameof(paymentMethodId)
+            );
         if (string.IsNullOrWhiteSpace(paymentMethodCode))
-            throw new ArgumentException("El código del método de pago es obligatorio.", nameof(paymentMethodCode));
+            throw new ArgumentException(
+                "El código del método de pago es obligatorio.",
+                nameof(paymentMethodCode)
+            );
         if (string.IsNullOrWhiteSpace(paymentMethodName))
-            throw new ArgumentException("El nombre del método de pago es obligatorio.", nameof(paymentMethodName));
+            throw new ArgumentException(
+                "El nombre del método de pago es obligatorio.",
+                nameof(paymentMethodName)
+            );
         if (amount <= 0)
             throw new ArgumentException("El monto debe ser mayor a cero.", nameof(amount));
 

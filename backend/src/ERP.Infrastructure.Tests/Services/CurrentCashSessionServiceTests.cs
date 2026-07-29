@@ -18,12 +18,25 @@ public sealed class CurrentCashSessionServiceTests
     private static readonly Guid CompanyId = Guid.NewGuid();
     private static readonly Guid UserId = Guid.NewGuid();
 
-    private static CashSession OpenSession(Guid branchId, Guid userId, Guid cashRegisterId, Guid emissionPointId) =>
+    private static CashSession OpenSession(
+        Guid branchId,
+        Guid userId,
+        Guid cashRegisterId,
+        Guid emissionPointId
+    ) =>
         CashSession.Open(
-            TenantId, CompanyId, branchId, userId,
-            cashRegisterId, "CAJA-01", "Caja Principal",
-            emissionPointId, "001",
-            50m, userId);
+            TenantId,
+            CompanyId,
+            branchId,
+            userId,
+            cashRegisterId,
+            "CAJA-01",
+            "Caja Principal",
+            emissionPointId,
+            "001",
+            50m,
+            userId
+        );
 
     private sealed class Fixture
     {
@@ -102,7 +115,10 @@ public sealed class CurrentCashSessionServiceTests
         var service = f.BuildService(branchId);
 
         service.HasOpenSession.Should().BeFalse();
-        f.Repo.Verify(r => r.GetOpenByUserAsync(TenantId, UserId, It.IsAny<CancellationToken>()), Times.Once);
+        f.Repo.Verify(
+            r => r.GetOpenByUserAsync(TenantId, UserId, It.IsAny<CancellationToken>()),
+            Times.Once
+        );
     }
 
     [Fact]
@@ -136,8 +152,11 @@ public sealed class CurrentCashSessionServiceTests
 
         var service = f.BuildService(activeBranchId);
 
-        service.HasOpenSession.Should().BeFalse(
-            "la sesión pertenece a otra sucursal — no debe exponerse en el contexto operativo activo");
+        service
+            .HasOpenSession.Should()
+            .BeFalse(
+                "la sesión pertenece a otra sucursal — no debe exponerse en el contexto operativo activo"
+            );
     }
 
     [Fact]
@@ -177,8 +196,11 @@ public sealed class CurrentCashSessionServiceTests
         _ = service.CashRegisterCodeSnapshot;
         _ = service.CashRegisterNameSnapshot;
 
-        f.Repo.Verify(r => r.GetOpenByUserAsync(TenantId, UserId, It.IsAny<CancellationToken>()), Times.Once,
-            "el servicio es Scoped (una instancia por request) — debe memoizar y no repetir la consulta");
+        f.Repo.Verify(
+            r => r.GetOpenByUserAsync(TenantId, UserId, It.IsAny<CancellationToken>()),
+            Times.Once,
+            "el servicio es Scoped (una instancia por request) — debe memoizar y no repetir la consulta"
+        );
     }
 
     [Fact]
@@ -189,6 +211,14 @@ public sealed class CurrentCashSessionServiceTests
         var service = f.BuildService(Guid.NewGuid());
 
         service.HasOpenSession.Should().BeFalse();
-        f.Repo.Verify(r => r.GetOpenByUserAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()), Times.Never);
+        f.Repo.Verify(
+            r =>
+                r.GetOpenByUserAsync(
+                    It.IsAny<Guid>(),
+                    It.IsAny<Guid>(),
+                    It.IsAny<CancellationToken>()
+                ),
+            Times.Never
+        );
     }
 }

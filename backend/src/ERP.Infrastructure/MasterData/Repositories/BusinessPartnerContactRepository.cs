@@ -32,24 +32,25 @@ public sealed class BusinessPartnerContactRepository : IBusinessPartnerContactRe
     public BusinessPartnerContactRepository(ErpDbContext db) => _db = db;
 
     /// <summary>Devuelve entidad tracked — necesaria para Update, Deactivate, SetPrimary.</summary>
-    public Task<BusinessPartnerContact?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
-        => _db.BusinessPartnerContacts
-              .FirstOrDefaultAsync(c => c.Id == id, cancellationToken);
+    public Task<BusinessPartnerContact?> GetByIdAsync(
+        Guid id,
+        CancellationToken cancellationToken = default
+    ) => _db.BusinessPartnerContacts.FirstOrDefaultAsync(c => c.Id == id, cancellationToken);
 
     public async Task<IReadOnlyList<BusinessPartnerContact>> GetByBusinessPartnerAsync(
         Guid businessPartnerId,
         bool? onlyActive = true,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default
+    )
     {
-        var q = _db.BusinessPartnerContacts
-                   .AsNoTracking()
-                   .Where(c => c.BusinessPartnerId == businessPartnerId);
+        var q = _db
+            .BusinessPartnerContacts.AsNoTracking()
+            .Where(c => c.BusinessPartnerId == businessPartnerId);
 
         if (onlyActive.HasValue)
             q = q.Where(c => c.IsActive == onlyActive.Value);
 
-        return await q
-            .OrderByDescending(c => c.IsPrimary)
+        return await q.OrderByDescending(c => c.IsPrimary)
             .ThenBy(c => c.FirstName)
             .ToListAsync(cancellationToken);
     }
@@ -61,13 +62,12 @@ public sealed class BusinessPartnerContactRepository : IBusinessPartnerContactRe
     public async Task<IReadOnlyList<BusinessPartnerContact>> GetByRoleAsync(
         Guid businessPartnerId,
         ContactRole role,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default
+    )
     {
-        return await _db.BusinessPartnerContacts
-            .AsNoTracking()
-            .Where(c => c.BusinessPartnerId == businessPartnerId
-                     && c.Role == role
-                     && c.IsActive)
+        return await _db
+            .BusinessPartnerContacts.AsNoTracking()
+            .Where(c => c.BusinessPartnerId == businessPartnerId && c.Role == role && c.IsActive)
             .OrderByDescending(c => c.IsPrimary)
             .ThenBy(c => c.FirstName)
             .ToListAsync(cancellationToken);
@@ -75,28 +75,37 @@ public sealed class BusinessPartnerContactRepository : IBusinessPartnerContactRe
 
     public Task<BusinessPartnerContact?> GetPrimaryAsync(
         Guid businessPartnerId,
-        CancellationToken cancellationToken = default)
-        => _db.BusinessPartnerContacts
-              .AsNoTracking()
-              .FirstOrDefaultAsync(c =>
-                  c.BusinessPartnerId == businessPartnerId &&
-                  c.IsPrimary && c.IsActive, cancellationToken);
+        CancellationToken cancellationToken = default
+    ) =>
+        _db
+            .BusinessPartnerContacts.AsNoTracking()
+            .FirstOrDefaultAsync(
+                c => c.BusinessPartnerId == businessPartnerId && c.IsPrimary && c.IsActive,
+                cancellationToken
+            );
 
     /// <summary>
     /// Quita IsPrimary de TODOS los contactos del BP (bulk UPDATE directo a BD).
     /// Llamar ANTES de SetPrimary() en el handler.
     /// El global query filter añade WHERE tenant_id = @tenant automáticamente.
     /// </summary>
-    public async Task ClearPrimaryAsync(Guid businessPartnerId, CancellationToken cancellationToken = default)
+    public async Task ClearPrimaryAsync(
+        Guid businessPartnerId,
+        CancellationToken cancellationToken = default
+    )
     {
-        await _db.BusinessPartnerContacts
-            .Where(c => c.BusinessPartnerId == businessPartnerId && c.IsPrimary)
+        await _db
+            .BusinessPartnerContacts.Where(c =>
+                c.BusinessPartnerId == businessPartnerId && c.IsPrimary
+            )
             .ExecuteUpdateAsync(s => s.SetProperty(c => c.IsPrimary, false), cancellationToken);
     }
 
-    public Task AddAsync(BusinessPartnerContact contact, CancellationToken cancellationToken = default)
-        => _db.BusinessPartnerContacts.AddAsync(contact, cancellationToken).AsTask();
+    public Task AddAsync(
+        BusinessPartnerContact contact,
+        CancellationToken cancellationToken = default
+    ) => _db.BusinessPartnerContacts.AddAsync(contact, cancellationToken).AsTask();
 
-    public Task SaveChangesAsync(CancellationToken cancellationToken = default)
-        => _db.SaveChangesAsync(cancellationToken);
+    public Task SaveChangesAsync(CancellationToken cancellationToken = default) =>
+        _db.SaveChangesAsync(cancellationToken);
 }

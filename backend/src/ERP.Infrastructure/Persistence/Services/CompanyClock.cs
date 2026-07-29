@@ -14,30 +14,47 @@ public sealed class CompanyClock : ICompanyClock
     private const string DefaultTimezoneId = "America/Guayaquil";
 
     private readonly ErpDbContext _db;
+
     public CompanyClock(ErpDbContext db) => _db = db;
 
-    public async Task<DateOnly> TodayAsync(Guid companyId, Guid tenantId, CancellationToken ct = default)
+    public async Task<DateOnly> TodayAsync(
+        Guid companyId,
+        Guid tenantId,
+        CancellationToken ct = default
+    )
     {
         var tz = await ResolveCompanyTimeZoneAsync(companyId, tenantId, ct);
         var localNow = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, tz);
         return DateOnly.FromDateTime(localNow);
     }
 
-    public async Task<(DateTime StartUtc, DateTime EndUtc)> TodayUtcRangeAsync(Guid companyId, Guid tenantId, CancellationToken ct = default)
+    public async Task<(DateTime StartUtc, DateTime EndUtc)> TodayUtcRangeAsync(
+        Guid companyId,
+        Guid tenantId,
+        CancellationToken ct = default
+    )
     {
         var tz = await ResolveCompanyTimeZoneAsync(companyId, tenantId, ct);
-        var localToday = DateOnly.FromDateTime(TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, tz));
+        var localToday = DateOnly.FromDateTime(
+            TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, tz)
+        );
         var localStart = localToday.ToDateTime(TimeOnly.MinValue);
         var localEnd = localToday.AddDays(1).ToDateTime(TimeOnly.MinValue);
 
         return (
             TimeZoneInfo.ConvertTimeToUtc(localStart, tz),
-            TimeZoneInfo.ConvertTimeToUtc(localEnd, tz));
+            TimeZoneInfo.ConvertTimeToUtc(localEnd, tz)
+        );
     }
 
-    private async Task<TimeZoneInfo> ResolveCompanyTimeZoneAsync(Guid companyId, Guid tenantId, CancellationToken ct)
+    private async Task<TimeZoneInfo> ResolveCompanyTimeZoneAsync(
+        Guid companyId,
+        Guid tenantId,
+        CancellationToken ct
+    )
     {
-        var timezoneId = await _db.Companies.AsNoTracking()
+        var timezoneId = await _db
+            .Companies.AsNoTracking()
             .Where(c => c.Id == companyId && c.TenantId == tenantId)
             .Select(c => c.Timezone)
             .FirstOrDefaultAsync(ct);
@@ -62,6 +79,11 @@ public sealed class CompanyClock : ICompanyClock
         }
     }
 
-    private static TimeZoneInfo FixedEcuadorOffset()
-        => TimeZoneInfo.CreateCustomTimeZone("Ecuador-Fixed-UTC-5", TimeSpan.FromHours(-5), "Ecuador (UTC-5)", "Ecuador (UTC-5)");
+    private static TimeZoneInfo FixedEcuadorOffset() =>
+        TimeZoneInfo.CreateCustomTimeZone(
+            "Ecuador-Fixed-UTC-5",
+            TimeSpan.FromHours(-5),
+            "Ecuador (UTC-5)",
+            "Ecuador (UTC-5)"
+        );
 }

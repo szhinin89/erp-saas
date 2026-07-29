@@ -47,15 +47,43 @@ public sealed class ReverseJournalEntryIntegrationTests : IAsyncLifetime
 
         _createdBy = Guid.NewGuid();
         var tenant = Tenant.Create("Test Tenant", $"test-{Guid.NewGuid():N}"[..16], _createdBy);
-        var company = Company.CreateManaged(tenant.Id, "1790012345001", "Test S.A.", createdBy: _createdBy);
+        var company = Company.CreateManaged(
+            tenant.Id,
+            "1790012345001",
+            "Test S.A.",
+            createdBy: _createdBy
+        );
         var period = AccountingPeriod.Create(
-            tenant.Id, company.Id, 2026, 7, new DateOnly(2026, 7, 1), new DateOnly(2026, 7, 31), _createdBy);
+            tenant.Id,
+            company.Id,
+            2026,
+            7,
+            new DateOnly(2026, 7, 1),
+            new DateOnly(2026, 7, 31),
+            _createdBy
+        );
         var debitAccount = Account.Create(
-            tenant.Id, company.Id, AccountCode.Create("1.1.01"), "Caja", null,
-            AccountType.Asset, AccountNature.Debit, allowsPosting: true, createdBy: _createdBy);
+            tenant.Id,
+            company.Id,
+            AccountCode.Create("1.1.01"),
+            "Caja",
+            null,
+            AccountType.Asset,
+            AccountNature.Debit,
+            allowsPosting: true,
+            createdBy: _createdBy
+        );
         var creditAccount = Account.Create(
-            tenant.Id, company.Id, AccountCode.Create("4.1.01"), "Ventas", null,
-            AccountType.Income, AccountNature.Credit, allowsPosting: true, createdBy: _createdBy);
+            tenant.Id,
+            company.Id,
+            AccountCode.Create("4.1.01"),
+            "Ventas",
+            null,
+            AccountType.Income,
+            AccountNature.Credit,
+            allowsPosting: true,
+            createdBy: _createdBy
+        );
 
         db.Tenants.Add(tenant);
         db.Companies.Add(company);
@@ -78,7 +106,12 @@ public sealed class ReverseJournalEntryIntegrationTests : IAsyncLifetime
             .UseNpgsql(_postgres.GetConnectionString())
             .Options;
 
-        return new ErpDbContext(options, new FixedCurrentTenant(_tenantId), new NoOpPublisher(), new FixedCurrentCompany(_companyId));
+        return new ErpDbContext(
+            options,
+            new FixedCurrentTenant(_tenantId),
+            new NoOpPublisher(),
+            new FixedCurrentCompany(_companyId)
+        );
     }
 
     private async Task<Guid> SeedPostedEntryAsync()
@@ -88,12 +121,25 @@ public sealed class ReverseJournalEntryIntegrationTests : IAsyncLifetime
         // y el reverso posterior (que también reserva de la misma secuencia) recibe el siguiente
         // correlativo real en vez de colisionar contra un número asignado a mano.
         await using var db = CreateContext();
-        var entryNumber = await new JournalEntrySequenceRepository(db)
-            .ReserveNextNumberAsync(_tenantId, _companyId, 2026, CancellationToken.None);
+        var entryNumber = await new JournalEntrySequenceRepository(db).ReserveNextNumberAsync(
+            _tenantId,
+            _companyId,
+            2026,
+            CancellationToken.None
+        );
 
         var entry = JournalEntry.Create(
-            _tenantId, _companyId, new DateOnly(2026, 7, 15), _accountingPeriodId, 2026,
-            "Sales", "InvoiceIssued", Guid.NewGuid(), "Asiento original", _createdBy);
+            _tenantId,
+            _companyId,
+            new DateOnly(2026, 7, 15),
+            _accountingPeriodId,
+            2026,
+            "Sales",
+            "InvoiceIssued",
+            Guid.NewGuid(),
+            "Asiento original",
+            _createdBy
+        );
         entry.AddLine(_debitAccountId, "Débito original", 100m, 0m);
         entry.AddLine(_creditAccountId, "Crédito original", 0m, 100m);
         entry.Post(_createdBy, entryNumber);
@@ -103,13 +149,20 @@ public sealed class ReverseJournalEntryIntegrationTests : IAsyncLifetime
         return entry.Id;
     }
 
-    private static ReverseJournalEntryCommandHandler BuildHandler(ErpDbContext db, Guid tenantId, Guid companyId, Guid userId) => new(
-        new JournalEntryRepository(db),
-        new AccountingPeriodRepository(db),
-        new JournalEntrySequenceRepository(db),
-        new FixedCurrentTenant(tenantId),
-        new FixedCurrentCompany(companyId),
-        new FixedCurrentUser(userId));
+    private static ReverseJournalEntryCommandHandler BuildHandler(
+        ErpDbContext db,
+        Guid tenantId,
+        Guid companyId,
+        Guid userId
+    ) =>
+        new(
+            new JournalEntryRepository(db),
+            new AccountingPeriodRepository(db),
+            new JournalEntrySequenceRepository(db),
+            new FixedCurrentTenant(tenantId),
+            new FixedCurrentCompany(companyId),
+            new FixedCurrentUser(userId)
+        );
 
     [Fact]
     public async Task Reverso_persiste_el_nuevo_asiento_con_lineas_invertidas_y_EntryNumber_correlativo()
@@ -118,19 +171,29 @@ public sealed class ReverseJournalEntryIntegrationTests : IAsyncLifetime
 
         await using var db = CreateContext();
         var result = await BuildHandler(db, _tenantId, _companyId, _createdBy)
-            .Handle(new ReverseJournalEntryCommand(originalId, "Error de digitación"), CancellationToken.None);
+            .Handle(
+                new ReverseJournalEntryCommand(originalId, "Error de digitación"),
+                CancellationToken.None
+            );
 
         result.IsSuccess.Should().BeTrue();
-        result.Value!.EntryNumber.Should().Be(2, because: "el original ya ocupó el número 1 del mismo (CompanyId, FiscalYear)");
+        result
+            .Value!.EntryNumber.Should()
+            .Be(2, because: "el original ya ocupó el número 1 del mismo (CompanyId, FiscalYear)");
 
         await using var verifyDb = CreateContext();
-        var reversal = await verifyDb.JournalEntries.Include(x => x.Lines)
+        var reversal = await verifyDb
+            .JournalEntries.Include(x => x.Lines)
             .FirstAsync(x => x.Id == result.Value.Id);
 
         reversal.Status.Should().Be(JournalEntryStatus.Posted);
         reversal.Lines.Should().HaveCount(2);
-        reversal.Lines.Should().Contain(l => l.AccountId == _debitAccountId && l.Credit == 100m && l.Debit == 0m);
-        reversal.Lines.Should().Contain(l => l.AccountId == _creditAccountId && l.Debit == 100m && l.Credit == 0m);
+        reversal
+            .Lines.Should()
+            .Contain(l => l.AccountId == _debitAccountId && l.Credit == 100m && l.Debit == 0m);
+        reversal
+            .Lines.Should()
+            .Contain(l => l.AccountId == _creditAccountId && l.Debit == 100m && l.Credit == 0m);
     }
 
     [Fact]
@@ -140,7 +203,10 @@ public sealed class ReverseJournalEntryIntegrationTests : IAsyncLifetime
 
         await using var db = CreateContext();
         var result = await BuildHandler(db, _tenantId, _companyId, _createdBy)
-            .Handle(new ReverseJournalEntryCommand(originalId, "Ajuste contable"), CancellationToken.None);
+            .Handle(
+                new ReverseJournalEntryCommand(originalId, "Ajuste contable"),
+                CancellationToken.None
+            );
 
         result.IsSuccess.Should().BeTrue();
 
@@ -168,8 +234,12 @@ public sealed class ReverseJournalEntryIntegrationTests : IAsyncLifetime
         await using var dbA = CreateContext();
         await using var dbB = CreateContext();
 
-        var originalA = await dbA.JournalEntries.Include(x => x.Lines).FirstAsync(x => x.Id == originalId);
-        var originalB = await dbB.JournalEntries.Include(x => x.Lines).FirstAsync(x => x.Id == originalId);
+        var originalA = await dbA
+            .JournalEntries.Include(x => x.Lines)
+            .FirstAsync(x => x.Id == originalId);
+        var originalB = await dbB
+            .JournalEntries.Include(x => x.Lines)
+            .FirstAsync(x => x.Id == originalId);
 
         var reversalA = originalA.Reverse(_createdBy, 2, "Reverso A");
         var reversalB = originalB.Reverse(_createdBy, 3, "Reverso B");
@@ -180,8 +250,10 @@ public sealed class ReverseJournalEntryIntegrationTests : IAsyncLifetime
         dbB.JournalEntries.Add(reversalB);
         var act = async () => await dbB.SaveChangesAsync();
 
-        await act.Should().ThrowAsync<DbUpdateException>(
-            because: "uq_journal_entries_original_journal_entry_id impide dos reversos para el mismo asiento original");
+        await act.Should()
+            .ThrowAsync<DbUpdateException>(
+                because: "uq_journal_entries_original_journal_entry_id impide dos reversos para el mismo asiento original"
+            );
     }
 
     private sealed class FixedCurrentTenant(Guid tenantId) : ICurrentTenant
@@ -209,11 +281,13 @@ public sealed class ReverseJournalEntryIntegrationTests : IAsyncLifetime
 
     private sealed class NoOpPublisher : IPublisher
     {
-        public Task Publish(object notification, CancellationToken cancellationToken = default)
-            => Task.CompletedTask;
+        public Task Publish(object notification, CancellationToken cancellationToken = default) =>
+            Task.CompletedTask;
 
-        public Task Publish<TNotification>(TNotification notification, CancellationToken cancellationToken = default)
-            where TNotification : INotification
-            => Task.CompletedTask;
+        public Task Publish<TNotification>(
+            TNotification notification,
+            CancellationToken cancellationToken = default
+        )
+            where TNotification : INotification => Task.CompletedTask;
     }
 }

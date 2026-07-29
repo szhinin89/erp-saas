@@ -31,7 +31,12 @@ public sealed class ImportPurchaseReceptionValidatorTests
     [Fact]
     public void Succeeds_for_a_valid_txt_file()
     {
-        var content = new MediaUploadContent(new MemoryStream([1]), "reception.txt", "text/plain", 1);
+        var content = new MediaUploadContent(
+            new MemoryStream([1]),
+            "reception.txt",
+            "text/plain",
+            1
+        );
         var result = _validator.Validate(new ImportPurchaseReceptionCommand(content));
 
         result.IsValid.Should().BeTrue();

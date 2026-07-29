@@ -5,7 +5,8 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace ERP.Infrastructure.Persistence.Configurations.Purchases;
 
-public sealed class PurchaseReceptionLineConfiguration : IEntityTypeConfiguration<PurchaseReceptionLine>
+public sealed class PurchaseReceptionLineConfiguration
+    : IEntityTypeConfiguration<PurchaseReceptionLine>
 {
     public void Configure(EntityTypeBuilder<PurchaseReceptionLine> builder)
     {
@@ -14,57 +15,108 @@ public sealed class PurchaseReceptionLineConfiguration : IEntityTypeConfiguratio
         builder.HasKey(x => x.Id);
         builder.Property(x => x.Id).HasColumnName("id").IsRequired();
         builder.Property(x => x.TenantId).HasColumnName("tenant_id").IsRequired();
-        builder.Property(x => x.PurchaseReceptionDocumentId).HasColumnName("purchase_reception_document_id").IsRequired();
+        builder
+            .Property(x => x.PurchaseReceptionDocumentId)
+            .HasColumnName("purchase_reception_document_id")
+            .IsRequired();
 
-        builder.Property(x => x.SupplierCode).HasColumnName("supplier_code")
+        builder
+            .Property(x => x.SupplierCode)
+            .HasColumnName("supplier_code")
             .HasMaxLength(PurchaseReceptionLine.SupplierCodeMaxLen);
-        builder.Property(x => x.SupplierAuxCode).HasColumnName("supplier_aux_code")
+        builder
+            .Property(x => x.SupplierAuxCode)
+            .HasColumnName("supplier_aux_code")
             .HasMaxLength(PurchaseReceptionLine.SupplierCodeMaxLen);
-        builder.Property(x => x.Description).HasColumnName("description")
-            .HasMaxLength(PurchaseReceptionLine.DescriptionMaxLen).IsRequired();
-        builder.Property(x => x.Quantity).HasColumnName("quantity")
-            .HasColumnType("numeric(18,4)").IsRequired();
-        builder.Property(x => x.UnitPrice).HasColumnName("unit_price")
-            .HasColumnType("numeric(18,6)").IsRequired();
+        builder
+            .Property(x => x.Description)
+            .HasColumnName("description")
+            .HasMaxLength(PurchaseReceptionLine.DescriptionMaxLen)
+            .IsRequired();
+        builder
+            .Property(x => x.Quantity)
+            .HasColumnName("quantity")
+            .HasColumnType("numeric(18,4)")
+            .IsRequired();
+        builder
+            .Property(x => x.UnitPrice)
+            .HasColumnName("unit_price")
+            .HasColumnType("numeric(18,6)")
+            .IsRequired();
 
-        builder.Property(x => x.VatCode).HasColumnName("vat_code")
-            .HasMaxLength(PurchaseReceptionLine.VatCodeMaxLen).IsRequired();
-        builder.Property(x => x.TaxCode).HasColumnName("tax_code")
-            .HasMaxLength(PurchaseReceptionLine.TaxCodeMaxLen).IsRequired();
-        builder.Property(x => x.VatPercentage).HasColumnName("vat_percentage")
-            .HasColumnType("numeric(5,2)").IsRequired();
-        builder.Property(x => x.TaxValue).HasColumnName("tax_value")
-            .HasColumnType("numeric(18,2)").IsRequired();
-        builder.Property(x => x.IceCode).HasColumnName("ice_code")
+        builder
+            .Property(x => x.VatCode)
+            .HasColumnName("vat_code")
+            .HasMaxLength(PurchaseReceptionLine.VatCodeMaxLen)
+            .IsRequired();
+        builder
+            .Property(x => x.TaxCode)
+            .HasColumnName("tax_code")
+            .HasMaxLength(PurchaseReceptionLine.TaxCodeMaxLen)
+            .IsRequired();
+        builder
+            .Property(x => x.VatPercentage)
+            .HasColumnName("vat_percentage")
+            .HasColumnType("numeric(5,2)")
+            .IsRequired();
+        builder
+            .Property(x => x.TaxValue)
+            .HasColumnName("tax_value")
+            .HasColumnType("numeric(18,2)")
+            .IsRequired();
+        builder
+            .Property(x => x.IceCode)
+            .HasColumnName("ice_code")
             .HasMaxLength(PurchaseReceptionLine.IceCodeMaxLen);
-        builder.Property(x => x.IceValue).HasColumnName("ice_value")
-            .HasColumnType("numeric(18,2)").IsRequired();
-        builder.Property(x => x.DiscountPct).HasColumnName("discount_pct")
-            .HasColumnType("numeric(5,2)").IsRequired();
-        builder.Property(x => x.Discount).HasColumnName("discount")
-            .HasColumnType("numeric(18,2)").IsRequired();
-        builder.Property(x => x.LineSubtotal).HasColumnName("line_subtotal")
-            .HasColumnType("numeric(18,2)").IsRequired();
-        builder.Property(x => x.TotalLine).HasColumnName("total_line")
-            .HasColumnType("numeric(18,2)").IsRequired();
+        builder
+            .Property(x => x.IceValue)
+            .HasColumnName("ice_value")
+            .HasColumnType("numeric(18,2)")
+            .IsRequired();
+        builder
+            .Property(x => x.DiscountPct)
+            .HasColumnName("discount_pct")
+            .HasColumnType("numeric(5,2)")
+            .IsRequired();
+        builder
+            .Property(x => x.Discount)
+            .HasColumnName("discount")
+            .HasColumnType("numeric(18,2)")
+            .IsRequired();
+        builder
+            .Property(x => x.LineSubtotal)
+            .HasColumnName("line_subtotal")
+            .HasColumnType("numeric(18,2)")
+            .IsRequired();
+        builder
+            .Property(x => x.TotalLine)
+            .HasColumnName("total_line")
+            .HasColumnType("numeric(18,2)")
+            .IsRequired();
 
         builder.Property(x => x.ItemId).HasColumnName("item_id");
-        builder.Property(x => x.MatchStatus).HasColumnName("match_status")
-            .HasConversion<int>().IsRequired();
+        builder
+            .Property(x => x.MatchStatus)
+            .HasColumnName("match_status")
+            .HasConversion<int>()
+            .IsRequired();
         builder.Property(x => x.MatchedAt).HasColumnName("matched_at");
         builder.Property(x => x.MatchedBy).HasColumnName("matched_by");
 
-        builder.HasIndex(x => x.PurchaseReceptionDocumentId)
+        builder
+            .HasIndex(x => x.PurchaseReceptionDocumentId)
             .HasDatabaseName("ix_purchase_reception_lines_document");
 
         // FK real a Items: una línea conciliada siempre referencia un ítem existente del mismo
         // tenant. Sin cascada: un ítem no debe arrastrar líneas de recepción al eliminarse.
-        builder.HasOne<Item>()
+        builder
+            .HasOne<Item>()
             .WithMany()
             .HasForeignKey(x => x.ItemId)
             .OnDelete(DeleteBehavior.Restrict);
 
-        builder.HasIndex(x => x.ItemId)
+        builder
+            .HasIndex(x => x.ItemId)
             .HasDatabaseName("ix_purchase_reception_lines_item")
             .HasFilter("item_id IS NOT NULL");
     }

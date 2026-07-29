@@ -15,7 +15,10 @@ public sealed class SriReceptionClient : ISriReceptionClient
     public SriReceptionClient(SriSoapClient client) => _client = client;
 
     public async Task<SriReceptionResult> SendAsync(
-        byte[] signedXmlBytes, string wsdlUrl, CancellationToken ct = default)
+        byte[] signedXmlBytes,
+        string wsdlUrl,
+        CancellationToken ct = default
+    )
     {
         var result = await _client.SendAsync(signedXmlBytes, wsdlUrl, ct);
         return new SriReceptionResult

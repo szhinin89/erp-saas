@@ -10,4 +10,5 @@ namespace ERP.Application.Modules.Session.UseCases.GetMyAvailableBranches;
 /// (empresa operativa activa + membership válido) en vez de duplicar esa validación aquí.
 /// </summary>
 public sealed record GetMyAvailableBranchesQuery
-    : IRequest<Result<MyAvailableBranchesDto>>, ICompanyScopedRequest;
+    : IRequest<Result<MyAvailableBranchesDto>>,
+        ICompanyScopedRequest;

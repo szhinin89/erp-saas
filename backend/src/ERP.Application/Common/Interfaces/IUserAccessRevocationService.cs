@@ -25,6 +25,12 @@ public interface IUserAccessRevocationService
     /// igual criterio que <c>CloseUserSessionAdminHandler</c>.
     /// </param>
     /// <param name="reason">Motivo persistido en cada RefreshToken revocado.</param>
+    /// <param name="cancellationToken"></param>
     Task RevokeAllAccessAsync(
-        Guid userId, Guid tenantId, Guid actorId, string reason, CancellationToken cancellationToken = default);
+        Guid userId,
+        Guid tenantId,
+        Guid actorId,
+        string reason,
+        CancellationToken cancellationToken = default
+    );
 }

@@ -16,11 +16,19 @@ public sealed class SalesSourceDocumentSummaryProvider : ISourceDocumentSummaryP
     public string SourceModule => "Sales";
 
     public async Task<IReadOnlyDictionary<Guid, SourceDocumentSummary>> GetSummariesAsync(
-        Guid tenantId, IReadOnlyCollection<Guid> sourceEntityIds, CancellationToken ct = default)
+        Guid tenantId,
+        IReadOnlyCollection<Guid> sourceEntityIds,
+        CancellationToken ct = default
+    )
     {
-        var summaries = await _invoiceRepository.GetSummariesByIdsAsync(tenantId, sourceEntityIds, ct);
+        var summaries = await _invoiceRepository.GetSummariesByIdsAsync(
+            tenantId,
+            sourceEntityIds,
+            ct
+        );
         return summaries.ToDictionary(
             kv => kv.Key,
-            kv => new SourceDocumentSummary(kv.Value.InvoiceNumber, kv.Value.CustomerName));
+            kv => new SourceDocumentSummary(kv.Value.InvoiceNumber, kv.Value.CustomerName)
+        );
     }
 }

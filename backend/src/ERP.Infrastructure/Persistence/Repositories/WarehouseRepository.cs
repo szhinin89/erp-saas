@@ -16,21 +16,25 @@ public sealed class WarehouseRepository : IWarehouseRepository
         _company = company;
     }
 
-    private IQueryable<Warehouse> Scoped(Guid tenantId)
-        => _context.Warehouses.ForOperationalScope(tenantId, _company);
+    private IQueryable<Warehouse> Scoped(Guid tenantId) =>
+        _context.Warehouses.ForOperationalScope(tenantId, _company);
 
-    public Task AddAsync(Warehouse warehouse, CancellationToken cancellationToken = default)
-        => _context.Warehouses.AddAsync(warehouse, cancellationToken).AsTask();
+    public Task AddAsync(Warehouse warehouse, CancellationToken cancellationToken = default) =>
+        _context.Warehouses.AddAsync(warehouse, cancellationToken).AsTask();
 
-    public Task<Warehouse?> GetByIdAsync(Guid tenantId, Guid id, CancellationToken cancellationToken = default)
-        => Scoped(tenantId).FirstOrDefaultAsync(b => b.Id == id, cancellationToken);
+    public Task<Warehouse?> GetByIdAsync(
+        Guid tenantId,
+        Guid id,
+        CancellationToken cancellationToken = default
+    ) => Scoped(tenantId).FirstOrDefaultAsync(b => b.Id == id, cancellationToken);
 
     public async Task<bool> ExistsCodeAsync(
         Guid tenantId,
         Guid branchId,
         string code,
         Guid? excludeId,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default
+    )
     {
         var q = Scoped(tenantId).Where(w => w.BranchId == branchId && w.Code == code.Trim());
         if (excludeId.HasValue)
@@ -43,28 +47,33 @@ public sealed class WarehouseRepository : IWarehouseRepository
         bool? activeFilter,
         string? search,
         Guid? branchId,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default
+    )
     {
         var q = Scoped(tenantId);
 
-        if (activeFilter is true) q = q.Where(b => b.IsActive);
-        else if (activeFilter is false) q = q.Where(b => !b.IsActive);
+        if (activeFilter is true)
+            q = q.Where(b => b.IsActive);
+        else if (activeFilter is false)
+            q = q.Where(b => !b.IsActive);
 
-        if (branchId.HasValue) q = q.Where(b => b.BranchId == branchId.Value);
+        if (branchId.HasValue)
+            q = q.Where(b => b.BranchId == branchId.Value);
 
         if (!string.IsNullOrWhiteSpace(search))
         {
             var s = search.Trim();
             q = q.Where(b =>
-                b.Name.Contains(s) ||
-                (b.Code != null && b.Code.Contains(s)) ||
-                (b.Address != null && b.Address.Contains(s)) ||
-                (b.Manager != null && b.Manager.Contains(s)));
+                b.Name.Contains(s)
+                || (b.Code != null && b.Code.Contains(s))
+                || (b.Address != null && b.Address.Contains(s))
+                || (b.Manager != null && b.Manager.Contains(s))
+            );
         }
 
         return await q.OrderBy(b => b.Name).ToListAsync(cancellationToken);
     }
 
-    public Task SaveChangesAsync(CancellationToken cancellationToken = default)
-        => _context.SaveChangesAsync(cancellationToken);
+    public Task SaveChangesAsync(CancellationToken cancellationToken = default) =>
+        _context.SaveChangesAsync(cancellationToken);
 }

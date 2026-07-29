@@ -14,12 +14,16 @@ namespace ERP.Infrastructure.Tests.Ride;
 public sealed class RideRenderingSectionsTests
 {
     private static byte[] RenderInIsolation(Action<IContainer> compose) =>
-        Document.Create(container => container.Page(page =>
-        {
-            page.Size(PageSizes.A4);
-            page.Margin(20);
-            page.Content().Element(compose);
-        })).GeneratePdf();
+        Document
+            .Create(container =>
+                container.Page(page =>
+                {
+                    page.Size(PageSizes.A4);
+                    page.Margin(20);
+                    page.Content().Element(compose);
+                })
+            )
+            .GeneratePdf();
 
     private static byte[] CreateBarcodeBytes(InvoiceRideDocumentLayout layout) =>
         RideBarcodeGeneratorTestFactory.Create().Generate(layout.Header.AccessKey);
@@ -33,7 +37,8 @@ public sealed class RideRenderingSectionsTests
         var layout = RideRenderingFixtures.Full();
         var barcodeBytes = CreateBarcodeBytes(layout);
 
-        var act = () => RenderInIsolation(c => HeaderSection.Compose(c, layout, logoBytes: null, barcodeBytes));
+        var act = () =>
+            RenderInIsolation(c => HeaderSection.Compose(c, layout, logoBytes: null, barcodeBytes));
 
         act.Should().NotThrow();
     }
@@ -45,7 +50,8 @@ public sealed class RideRenderingSectionsTests
         layout.Header.AuthorizationDate.Should().BeNull();
         var barcodeBytes = CreateBarcodeBytes(layout);
 
-        var act = () => RenderInIsolation(c => HeaderSection.Compose(c, layout, logoBytes: null, barcodeBytes));
+        var act = () =>
+            RenderInIsolation(c => HeaderSection.Compose(c, layout, logoBytes: null, barcodeBytes));
 
         act.Should().NotThrow();
     }
@@ -57,7 +63,8 @@ public sealed class RideRenderingSectionsTests
         var logoBytes = CreateQrBytes(layout);
         var barcodeBytes = CreateBarcodeBytes(layout);
 
-        var act = () => RenderInIsolation(c => HeaderSection.Compose(c, layout, logoBytes, barcodeBytes));
+        var act = () =>
+            RenderInIsolation(c => HeaderSection.Compose(c, layout, logoBytes, barcodeBytes));
 
         act.Should().NotThrow();
     }

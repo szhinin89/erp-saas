@@ -11,4 +11,5 @@ namespace ERP.Application.Modules.Purchases.PurchaseReception.UseCases.ImportPur
 /// sucursal antes de ejecutar el handler; BranchId nunca se acepta desde el cliente.
 /// </summary>
 public sealed record ImportPurchaseReceptionCommand(MediaUploadContent File)
-    : IRequest<Result<PurchaseReceptionImportResultDto>>, IBranchScopedRequest;
+    : IRequest<Result<PurchaseReceptionImportResultDto>>,
+        IBranchScopedRequest;

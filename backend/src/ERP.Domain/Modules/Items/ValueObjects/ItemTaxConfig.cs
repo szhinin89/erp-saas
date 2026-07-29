@@ -13,7 +13,8 @@ public sealed class ItemTaxConfig
     public static ItemTaxConfig Create(
         string? saleVatCode,
         string? purchaseVatCode,
-        string? exciseTaxCode = null)
+        string? exciseTaxCode = null
+    )
     {
         return new ItemTaxConfig
         {

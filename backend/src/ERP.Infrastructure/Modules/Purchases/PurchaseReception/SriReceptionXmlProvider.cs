@@ -17,26 +17,46 @@ public sealed class SriReceptionXmlProvider : ISriReceptionXmlProvider
     private readonly ISriAuthorizationClient _authorizationClient;
     private readonly ISriSettingsRepository _sriSettingsRepo;
 
-    public SriReceptionXmlProvider(ISriAuthorizationClient authorizationClient, ISriSettingsRepository sriSettingsRepo)
+    public SriReceptionXmlProvider(
+        ISriAuthorizationClient authorizationClient,
+        ISriSettingsRepository sriSettingsRepo
+    )
     {
         _authorizationClient = authorizationClient;
         _sriSettingsRepo = sriSettingsRepo;
     }
 
     public async Task<SriReceptionXmlQueryResult> GetAuthorizedXmlAsync(
-        Guid tenantId, Guid companyId, string accessKey, CancellationToken cancellationToken = default)
+        Guid tenantId,
+        Guid companyId,
+        string accessKey,
+        CancellationToken cancellationToken = default
+    )
     {
         var settings = await _sriSettingsRepo.GetByCompanyIdAsync(companyId, cancellationToken);
         if (settings is null)
         {
             return new SriReceptionXmlQueryResult(
-                Authorized: false, AuthorizationNumber: null, AuthorizationDate: null, XmlContent: null,
-                ErrorMessage: "La empresa no tiene configuración SRI (WSDL) registrada.");
+                Authorized: false,
+                AuthorizationNumber: null,
+                AuthorizationDate: null,
+                XmlContent: null,
+                ErrorMessage: "La empresa no tiene configuración SRI (WSDL) registrada."
+            );
         }
 
-        var result = await _authorizationClient.CheckAsync(accessKey, settings.WsdlUrl, cancellationToken);
+        var result = await _authorizationClient.CheckAsync(
+            accessKey,
+            settings.WsdlUrl,
+            cancellationToken
+        );
 
         return new SriReceptionXmlQueryResult(
-            result.Authorized, result.AuthorizationNumber, result.AuthorizationDate, result.DocumentXml, result.ErrorMessage);
+            result.Authorized,
+            result.AuthorizationNumber,
+            result.AuthorizationDate,
+            result.DocumentXml,
+            result.ErrorMessage
+        );
     }
 }

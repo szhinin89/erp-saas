@@ -16,7 +16,9 @@ public sealed class RideResolverTests
     [InlineData(RideDocumentType.Invoice)]
     [InlineData(RideDocumentType.CreditNote)]
     [InlineData(RideDocumentType.PurchaseSettlement)]
-    public void RideXmlParserResolver_with_no_registered_parsers_returns_null(RideDocumentType documentType)
+    public void RideXmlParserResolver_with_no_registered_parsers_returns_null(
+        RideDocumentType documentType
+    )
     {
         var resolver = new RideXmlParserResolver([]);
 
@@ -38,10 +40,18 @@ public sealed class RideResolverTests
     [Theory]
     [InlineData(RideDocumentType.Invoice)]
     [InlineData(RideDocumentType.ShippingGuide)]
-    public void RideTemplateResolver_with_no_registered_templates_returns_null(RideDocumentType documentType)
+    public void RideTemplateResolver_with_no_registered_templates_returns_null(
+        RideDocumentType documentType
+    )
     {
         var resolver = new RideTemplateResolver([]);
-        var selector = new RideTemplateSelector(Guid.NewGuid(), Guid.NewGuid(), null, null, documentType);
+        var selector = new RideTemplateSelector(
+            Guid.NewGuid(),
+            Guid.NewGuid(),
+            null,
+            null,
+            documentType
+        );
 
         var result = resolver.Resolve(selector);
 
@@ -52,7 +62,13 @@ public sealed class RideResolverTests
     public void RideTemplateResolver_with_no_registered_templates_never_throws()
     {
         var resolver = new RideTemplateResolver([]);
-        var selector = new RideTemplateSelector(Guid.NewGuid(), Guid.NewGuid(), null, null, RideDocumentType.Invoice);
+        var selector = new RideTemplateSelector(
+            Guid.NewGuid(),
+            Guid.NewGuid(),
+            null,
+            null,
+            RideDocumentType.Invoice
+        );
 
         var act = () => resolver.Resolve(selector);
 

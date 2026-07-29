@@ -4,8 +4,10 @@ namespace ERP.Domain.Auth.ValueObjects;
 
 public sealed record Email
 {
-    private static readonly Regex _pattern =
-        new(@"^[^@\s]+@[^@\s]+\.[^@\s]+$", RegexOptions.Compiled | RegexOptions.IgnoreCase);
+    private static readonly Regex _pattern = new(
+        @"^[^@\s]+@[^@\s]+\.[^@\s]+$",
+        RegexOptions.Compiled | RegexOptions.IgnoreCase
+    );
 
     public string Value { get; }
 

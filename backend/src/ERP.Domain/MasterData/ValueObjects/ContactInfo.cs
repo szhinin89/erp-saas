@@ -22,7 +22,11 @@ public sealed record ContactInfo
         Email = email;
     }
 
-    public static ContactInfo Create(string? phone = null, string? mobile = null, string? email = null)
+    public static ContactInfo Create(
+        string? phone = null,
+        string? mobile = null,
+        string? email = null
+    )
     {
         var p = Normalize(phone, PhoneMaxLen, nameof(phone));
         var m = Normalize(mobile, PhoneMaxLen, nameof(mobile));
@@ -34,18 +38,26 @@ public sealed record ContactInfo
     private static string? Normalize(string? value, int maxLen, string paramName)
     {
         var v = value?.Trim();
-        if (string.IsNullOrEmpty(v)) return null;
+        if (string.IsNullOrEmpty(v))
+            return null;
         if (v.Length > maxLen)
-            throw new ArgumentException($"{paramName} no puede superar {maxLen} caracteres.", paramName);
+            throw new ArgumentException(
+                $"{paramName} no puede superar {maxLen} caracteres.",
+                paramName
+            );
         return v;
     }
 
     private static string? NormalizeEmail(string? email)
     {
         var e = email?.Trim().ToLowerInvariant();
-        if (string.IsNullOrEmpty(e)) return null;
+        if (string.IsNullOrEmpty(e))
+            return null;
         if (e.Length > EmailMaxLen)
-            throw new ArgumentException($"Email no puede superar {EmailMaxLen} caracteres.", nameof(email));
+            throw new ArgumentException(
+                $"Email no puede superar {EmailMaxLen} caracteres.",
+                nameof(email)
+            );
         if (!e.Contains('@') || e.IndexOf('.', e.IndexOf('@')) < 0)
             throw new ArgumentException("Formato de email inválido.", nameof(email));
         return e;

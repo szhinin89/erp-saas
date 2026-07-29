@@ -27,4 +27,5 @@ public sealed record CreateBranchCommand(
     DateOnly? OpeningDate,
     string? InternalNotes,
     bool IsActive,
-    bool IsMainBranch) : IRequest<Result<BranchListItemDto>>, ICompanyScopedRequest;
+    bool IsMainBranch
+) : IRequest<Result<BranchListItemDto>>, ICompanyScopedRequest;

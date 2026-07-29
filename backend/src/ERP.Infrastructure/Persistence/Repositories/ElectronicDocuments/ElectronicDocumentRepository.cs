@@ -17,22 +17,30 @@ public sealed class ElectronicDocumentRepository : IElectronicDocumentRepository
         _companyClock = companyClock;
     }
 
-    public Task<ElectronicDocument?> GetByIdAsync(Guid tenantId, Guid id, CancellationToken ct = default)
-        => _db.ElectronicDocuments
-            .FirstOrDefaultAsync(x => x.TenantId == tenantId && x.Id == id, ct);
+    public Task<ElectronicDocument?> GetByIdAsync(
+        Guid tenantId,
+        Guid id,
+        CancellationToken ct = default
+    ) => _db.ElectronicDocuments.FirstOrDefaultAsync(x => x.TenantId == tenantId && x.Id == id, ct);
 
     public Task<ElectronicDocument?> GetBySourceAsync(
-        Guid tenantId, string sourceModule, Guid sourceEntityId, CancellationToken ct = default)
-        => _db.ElectronicDocuments
-            .FirstOrDefaultAsync(
-                x => x.TenantId == tenantId && x.SourceModule == sourceModule && x.SourceEntityId == sourceEntityId,
-                ct);
+        Guid tenantId,
+        string sourceModule,
+        Guid sourceEntityId,
+        CancellationToken ct = default
+    ) =>
+        _db.ElectronicDocuments.FirstOrDefaultAsync(
+            x =>
+                x.TenantId == tenantId
+                && x.SourceModule == sourceModule
+                && x.SourceEntityId == sourceEntityId,
+            ct
+        );
 
-    public Task AddAsync(ElectronicDocument document, CancellationToken ct = default)
-        => _db.ElectronicDocuments.AddAsync(document, ct).AsTask();
+    public Task AddAsync(ElectronicDocument document, CancellationToken ct = default) =>
+        _db.ElectronicDocuments.AddAsync(document, ct).AsTask();
 
-    public Task SaveChangesAsync(CancellationToken ct = default)
-        => _db.SaveChangesAsync(ct);
+    public Task SaveChangesAsync(CancellationToken ct = default) => _db.SaveChangesAsync(ct);
 
     private IQueryable<ElectronicDocument> Scoped(Guid tenantId, Guid? companyId)
     {
@@ -53,7 +61,8 @@ public sealed class ElectronicDocumentRepository : IElectronicDocumentRepository
         string? search,
         int page,
         int pageSize,
-        CancellationToken ct = default)
+        CancellationToken ct = default
+    )
     {
         var query = Scoped(tenantId, companyId);
 
@@ -72,11 +81,16 @@ public sealed class ElectronicDocumentRepository : IElectronicDocumentRepository
         {
             var s = search.Trim();
             query = query.Where(x =>
-                (x.AccessKey != null && x.AccessKey.Value.Contains(s)) ||
-                (x.AuthorizationNumber != null && x.AuthorizationNumber.Value.Contains(s)) ||
-                (x.SourceModule == "Sales" && _db.SalesInvoices.Any(si =>
-                    si.Id == x.SourceEntityId &&
-                    (si.InvoiceNumber.Contains(s) || si.Customer.Name.Contains(s)))));
+                (x.AccessKey != null && x.AccessKey.Value.Contains(s))
+                || (x.AuthorizationNumber != null && x.AuthorizationNumber.Value.Contains(s))
+                || (
+                    x.SourceModule == "Sales"
+                    && _db.SalesInvoices.Any(si =>
+                        si.Id == x.SourceEntityId
+                        && (si.InvoiceNumber.Contains(s) || si.Customer.Name.Contains(s))
+                    )
+                )
+            );
         }
 
         var total = await query.CountAsync(ct);
@@ -90,7 +104,10 @@ public sealed class ElectronicDocumentRepository : IElectronicDocumentRepository
     }
 
     public async Task<IReadOnlyDictionary<ElectronicDocumentState, int>> GetStateCountsAsync(
-        Guid tenantId, Guid? companyId, CancellationToken ct = default)
+        Guid tenantId,
+        Guid? companyId,
+        CancellationToken ct = default
+    )
     {
         var counts = await Scoped(tenantId, companyId)
             .GroupBy(x => x.CurrentState)
@@ -100,42 +117,71 @@ public sealed class ElectronicDocumentRepository : IElectronicDocumentRepository
         return counts.ToDictionary(x => x.State, x => x.Count);
     }
 
-    public async Task<int> CountAuthorizedTodayAsync(Guid tenantId, Guid? companyId, CancellationToken ct = default)
+    public async Task<int> CountAuthorizedTodayAsync(
+        Guid tenantId,
+        Guid? companyId,
+        CancellationToken ct = default
+    )
     {
         var (startUtc, endUtc) = await GetCompanyTodayRangeUtcAsync(tenantId, companyId, ct);
         return await Scoped(tenantId, companyId)
-            .Where(x => x.CurrentState == ElectronicDocumentState.Authorized
+            .Where(x =>
+                x.CurrentState == ElectronicDocumentState.Authorized
                 && x.AuthorizationDate != null
-                && x.AuthorizationDate >= startUtc && x.AuthorizationDate < endUtc)
+                && x.AuthorizationDate >= startUtc
+                && x.AuthorizationDate < endUtc
+            )
             .CountAsync(ct);
     }
 
-    public async Task<int> CountErrorsTodayAsync(Guid tenantId, Guid? companyId, CancellationToken ct = default)
+    public async Task<int> CountErrorsTodayAsync(
+        Guid tenantId,
+        Guid? companyId,
+        CancellationToken ct = default
+    )
     {
         var (startUtc, endUtc) = await GetCompanyTodayRangeUtcAsync(tenantId, companyId, ct);
         return await Scoped(tenantId, companyId)
-            .Where(x => (x.CurrentState == ElectronicDocumentState.Rejected
+            .Where(x =>
+                (
+                    x.CurrentState == ElectronicDocumentState.Rejected
                     || x.CurrentState == ElectronicDocumentState.DeadLetter
-                    || x.CurrentState == ElectronicDocumentState.Failed)
-                && x.UpdatedAt != null && x.UpdatedAt >= startUtc && x.UpdatedAt < endUtc)
+                    || x.CurrentState == ElectronicDocumentState.Failed
+                )
+                && x.UpdatedAt != null
+                && x.UpdatedAt >= startUtc
+                && x.UpdatedAt < endUtc
+            )
             .CountAsync(ct);
     }
 
-    public async Task<double?> GetAverageAuthorizationMinutesAsync(Guid tenantId, Guid? companyId, CancellationToken ct = default)
+    public async Task<double?> GetAverageAuthorizationMinutesAsync(
+        Guid tenantId,
+        Guid? companyId,
+        CancellationToken ct = default
+    )
     {
         var authorized = await Scoped(tenantId, companyId)
             .Where(x => x.AuthorizationDate != null)
             .Select(x => new { x.CreatedAt, AuthorizationDate = x.AuthorizationDate!.Value })
             .ToListAsync(ct);
 
-        if (authorized.Count == 0) return null;
+        if (authorized.Count == 0)
+            return null;
         return authorized.Average(x => (x.AuthorizationDate - x.CreatedAt).TotalMinutes);
     }
 
-    public Task<int> CountPendingRetriesAsync(Guid tenantId, Guid? companyId, CancellationToken ct = default)
-        => Scoped(tenantId, companyId).Where(x => x.RetryCount > 0).CountAsync(ct);
+    public Task<int> CountPendingRetriesAsync(
+        Guid tenantId,
+        Guid? companyId,
+        CancellationToken ct = default
+    ) => Scoped(tenantId, companyId).Where(x => x.RetryCount > 0).CountAsync(ct);
 
-    public async Task<int> CountCreatedTodayAsync(Guid tenantId, Guid? companyId, CancellationToken ct = default)
+    public async Task<int> CountCreatedTodayAsync(
+        Guid tenantId,
+        Guid? companyId,
+        CancellationToken ct = default
+    )
     {
         var (startUtc, endUtc) = await GetCompanyTodayRangeUtcAsync(tenantId, companyId, ct);
         return await Scoped(tenantId, companyId)
@@ -144,19 +190,28 @@ public sealed class ElectronicDocumentRepository : IElectronicDocumentRepository
     }
 
     private Task<(DateTime StartUtc, DateTime EndUtc)> GetCompanyTodayRangeUtcAsync(
-        Guid tenantId, Guid? companyId, CancellationToken ct)
+        Guid tenantId,
+        Guid? companyId,
+        CancellationToken ct
+    )
     {
         if (companyId is not Guid currentCompanyId || currentCompanyId == Guid.Empty)
-            throw new InvalidOperationException("El dashboard de documentos electrónicos requiere contexto de empresa para calcular 'Hoy'.");
+            throw new InvalidOperationException(
+                "El dashboard de documentos electrónicos requiere contexto de empresa para calcular 'Hoy'."
+            );
 
         return _companyClock.TodayUtcRangeAsync(currentCompanyId, tenantId, ct);
     }
 
-    public async Task<IReadOnlyList<ElectronicDocument>> GetRetryCandidatesAsync(CancellationToken ct = default)
-        => await _db.ElectronicDocuments
-            .Where(x => x.CurrentState == ElectronicDocumentState.Signed
+    public async Task<IReadOnlyList<ElectronicDocument>> GetRetryCandidatesAsync(
+        CancellationToken ct = default
+    ) =>
+        await _db
+            .ElectronicDocuments.Where(x =>
+                x.CurrentState == ElectronicDocumentState.Signed
                 || x.CurrentState == ElectronicDocumentState.Received
                 || x.CurrentState == ElectronicDocumentState.Draft
-                || x.CurrentState == ElectronicDocumentState.Failed)
+                || x.CurrentState == ElectronicDocumentState.Failed
+            )
             .ToListAsync(ct);
 }

@@ -14,13 +14,31 @@ public sealed class PaymentTests
     private static readonly Guid CreatedBy = Guid.NewGuid();
     private static readonly Guid DocumentId = Guid.NewGuid();
 
-    private static Payment CreateCollection(decimal amount = 100m) => Payment.Create(
-        TenantId, CompanyId, PaymentDirection.Collection, PartnerId, amount,
-        new DateOnly(2026, 7, 25), paymentMethodId: null, reference: null, CreatedBy);
+    private static Payment CreateCollection(decimal amount = 100m) =>
+        Payment.Create(
+            TenantId,
+            CompanyId,
+            PaymentDirection.Collection,
+            PartnerId,
+            amount,
+            new DateOnly(2026, 7, 25),
+            paymentMethodId: null,
+            reference: null,
+            CreatedBy
+        );
 
-    private static Payment CreatePayment(decimal amount = 100m) => Payment.Create(
-        TenantId, CompanyId, PaymentDirection.Payment, PartnerId, amount,
-        new DateOnly(2026, 7, 25), paymentMethodId: null, reference: null, CreatedBy);
+    private static Payment CreatePayment(decimal amount = 100m) =>
+        Payment.Create(
+            TenantId,
+            CompanyId,
+            PaymentDirection.Payment,
+            PartnerId,
+            amount,
+            new DateOnly(2026, 7, 25),
+            paymentMethodId: null,
+            reference: null,
+            CreatedBy
+        );
 
     // ── Create ──────────────────────────────────────────────────────────
 
@@ -40,12 +58,30 @@ public sealed class PaymentTests
     [Fact]
     public void Create_rechaza_amount_menor_o_igual_a_cero()
     {
-        var actZero = () => Payment.Create(
-            TenantId, CompanyId, PaymentDirection.Collection, PartnerId, 0m,
-            new DateOnly(2026, 7, 25), null, null, CreatedBy);
-        var actNegative = () => Payment.Create(
-            TenantId, CompanyId, PaymentDirection.Collection, PartnerId, -10m,
-            new DateOnly(2026, 7, 25), null, null, CreatedBy);
+        var actZero = () =>
+            Payment.Create(
+                TenantId,
+                CompanyId,
+                PaymentDirection.Collection,
+                PartnerId,
+                0m,
+                new DateOnly(2026, 7, 25),
+                null,
+                null,
+                CreatedBy
+            );
+        var actNegative = () =>
+            Payment.Create(
+                TenantId,
+                CompanyId,
+                PaymentDirection.Collection,
+                PartnerId,
+                -10m,
+                new DateOnly(2026, 7, 25),
+                null,
+                null,
+                CreatedBy
+            );
 
         actZero.Should().Throw<ArgumentException>();
         actNegative.Should().Throw<ArgumentException>();
@@ -54,9 +90,18 @@ public sealed class PaymentTests
     [Fact]
     public void Create_rechaza_partnerId_vacio()
     {
-        var act = () => Payment.Create(
-            TenantId, CompanyId, PaymentDirection.Collection, Guid.Empty, 100m,
-            new DateOnly(2026, 7, 25), null, null, CreatedBy);
+        var act = () =>
+            Payment.Create(
+                TenantId,
+                CompanyId,
+                PaymentDirection.Collection,
+                Guid.Empty,
+                100m,
+                new DateOnly(2026, 7, 25),
+                null,
+                null,
+                CreatedBy
+            );
 
         act.Should().Throw<ArgumentException>();
     }

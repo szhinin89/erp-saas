@@ -23,12 +23,18 @@ public sealed class UpdateItemCommandHandlerTests
     private static Item CreateItem(bool isFavorite, decimal? baseSalePrice = 10m)
     {
         var item = Item.Create(
-            TenantId, "SKU-001", "Item de prueba", "Descripción de prueba", ItemTypeId, "UNIT",
+            TenantId,
+            "SKU-001",
+            "Item de prueba",
+            "Descripción de prueba",
+            ItemTypeId,
+            "UNIT",
             ItemTaxConfig.Create("10", "10"),
             ItemSaleConfig.Create(isFavorite: isFavorite),
             ItemStockConfig.Create(),
             UserId,
-            baseSalePrice: baseSalePrice);
+            baseSalePrice: baseSalePrice
+        );
         return item;
     }
 
@@ -37,14 +43,22 @@ public sealed class UpdateItemCommandHandlerTests
         var repo = new Mock<IItemRepository>();
         repo.Setup(r => r.GetByIdLightAsync(item.Id, TenantId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(item);
-        repo.Setup(r => r.ExistsBySkuAsync(It.IsAny<string>(), TenantId, item.Id, It.IsAny<CancellationToken>()))
+        repo.Setup(r =>
+                r.ExistsBySkuAsync(
+                    It.IsAny<string>(),
+                    TenantId,
+                    item.Id,
+                    It.IsAny<CancellationToken>()
+                )
+            )
             .ReturnsAsync(false);
         repo.Setup(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()))
             .Returns(Task.CompletedTask);
 
         var categoryRepo = new Mock<ICategoryNodeRepository>();
         var itemTypeRepo = new Mock<IItemTypeRepository>();
-        itemTypeRepo.Setup(r => r.GetByIdAsync(TenantId, ItemTypeId, It.IsAny<CancellationToken>()))
+        itemTypeRepo
+            .Setup(r => r.GetByIdAsync(TenantId, ItemTypeId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(ItemTypeDefinition.Create(TenantId, "FISICO", "Físico", 1, UserId));
 
         var tenant = new Mock<ICurrentTenant>();
@@ -54,25 +68,35 @@ public sealed class UpdateItemCommandHandlerTests
         user.SetupGet(u => u.UserId).Returns(UserId);
 
         var sri = new Mock<ISriCatalogResolver>();
-        sri.Setup(s => s.ResolveUomsAsync(It.IsAny<IEnumerable<string>>(), It.IsAny<CancellationToken>()))
+        sri.Setup(s =>
+                s.ResolveUomsAsync(It.IsAny<IEnumerable<string>>(), It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(new Dictionary<string, SriUomInfo>());
 
         var dbEx = new Mock<IDatabaseExceptionTranslator>();
 
         var handler = new UpdateItemCommandHandler(
-            repo.Object, categoryRepo.Object, itemTypeRepo.Object,
-            tenant.Object, user.Object, sri.Object, dbEx.Object);
+            repo.Object,
+            categoryRepo.Object,
+            itemTypeRepo.Object,
+            tenant.Object,
+            user.Object,
+            sri.Object,
+            dbEx.Object
+        );
 
         return (handler, repo);
     }
 
-    private static UpdateItemCommand ValidCommand(Guid id, decimal baseSalePrice) => new(
-        Id: id,
-        SKU: "SKU-001",
-        ShortName: "Item de prueba",
-        Description: "Descripción de prueba",
-        DefaultUomCode: "UNIT",
-        BaseSalePrice: baseSalePrice);
+    private static UpdateItemCommand ValidCommand(Guid id, decimal baseSalePrice) =>
+        new(
+            Id: id,
+            SKU: "SKU-001",
+            ShortName: "Item de prueba",
+            Description: "Descripción de prueba",
+            DefaultUomCode: "UNIT",
+            BaseSalePrice: baseSalePrice
+        );
 
     [Fact]
     public async Task Update_sin_IsFavorite_preserva_el_valor_existente()
@@ -84,7 +108,8 @@ public sealed class UpdateItemCommandHandlerTests
         var result = await handler.Handle(ValidCommand(item.Id, 15m), CancellationToken.None);
 
         result.IsSuccess.Should().BeTrue();
-        item.SaleConfig.IsFavorite.Should().BeTrue("un Update que no envía IsFavorite no debe resetearlo");
+        item.SaleConfig.IsFavorite.Should()
+            .BeTrue("un Update que no envía IsFavorite no debe resetearlo");
     }
 
     [Fact]

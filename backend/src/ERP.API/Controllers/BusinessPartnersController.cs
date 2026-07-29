@@ -46,17 +46,23 @@ public sealed class BusinessPartnersController : ControllerBase
     /// </summary>
     [HttpGet]
     [Authorize(Policy = $"perm:{MasterDataPermissions.BusinessPartnersView}")]
-    [ProducesResponseType(typeof(ApiResponse<PagedResult<BusinessPartnerSummaryDto>>), StatusCodes.Status200OK)]
+    [ProducesResponseType(
+        typeof(ApiResponse<PagedResult<BusinessPartnerSummaryDto>>),
+        StatusCodes.Status200OK
+    )]
     public async Task<IActionResult> Search(
         [FromQuery] string? q = null,
         [FromQuery] bool? isActive = true,
         [FromQuery] RoleType[]? roles = null,
         [FromQuery] int skip = 0,
         [FromQuery] int take = 50,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default
+    )
     {
         var result = await _mediator.Send(
-            new SearchBusinessPartnersQuery(q, isActive, roles, skip, take), cancellationToken);
+            new SearchBusinessPartnersQuery(q, isActive, roles, skip, take),
+            cancellationToken
+        );
         return this.ToOkOrBadRequest(result);
     }
 
@@ -67,7 +73,10 @@ public sealed class BusinessPartnersController : ControllerBase
     [Authorize(Policy = $"perm:{MasterDataPermissions.BusinessPartnersView}")]
     [ProducesResponseType(typeof(ApiResponse<BusinessPartnerDetailDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> GetById([FromRoute] Guid id, CancellationToken cancellationToken = default)
+    public async Task<IActionResult> GetById(
+        [FromRoute] Guid id,
+        CancellationToken cancellationToken = default
+    )
     {
         var result = await _mediator.Send(new GetBusinessPartnerQuery(id), cancellationToken);
         return this.ToOkOrBadRequest(result);
@@ -82,11 +91,16 @@ public sealed class BusinessPartnersController : ControllerBase
     /// </summary>
     [HttpPost]
     [Authorize(Policy = $"perm:{MasterDataPermissions.BusinessPartnersCreate}")]
-    [ProducesResponseType(typeof(ApiResponse<BusinessPartnerSummaryDto>), StatusCodes.Status201Created)]
+    [ProducesResponseType(
+        typeof(ApiResponse<BusinessPartnerSummaryDto>),
+        StatusCodes.Status201Created
+    )]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status409Conflict)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status422UnprocessableEntity)]
     public async Task<IActionResult> Create(
-        [FromBody] CreateBusinessPartnerRequest body, CancellationToken cancellationToken = default)
+        [FromBody] CreateBusinessPartnerRequest body,
+        CancellationToken cancellationToken = default
+    )
     {
         var cmd = new CreateBusinessPartnerCommand(
             body.IdentificationType,
@@ -94,12 +108,11 @@ public sealed class BusinessPartnersController : ControllerBase
             body.PersonType,
             body.LegalName,
             body.TradeName,
-            body.CountryCode);
+            body.CountryCode
+        );
 
         var result = await _mediator.Send(cmd, cancellationToken);
-        return result.IsSuccess
-            ? this.ApiCreated(result.Value!)
-            : this.ToOkOrBadRequest(result);
+        return result.IsSuccess ? this.ApiCreated(result.Value!) : this.ToOkOrBadRequest(result);
     }
 
     // ── Actualizaciones ───────────────────────────────────────────────────────
@@ -113,10 +126,16 @@ public sealed class BusinessPartnersController : ControllerBase
     public async Task<IActionResult> UpdateProfile(
         [FromRoute] Guid id,
         [FromBody] UpdateBusinessPartnerRequest body,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default
+    )
     {
         var cmd = new UpdateBusinessPartnerCommand(
-            id, body.LegalName, body.PersonType, body.TradeName, body.CountryCode);
+            id,
+            body.LegalName,
+            body.PersonType,
+            body.TradeName,
+            body.CountryCode
+        );
         var result = await _mediator.Send(cmd, cancellationToken);
         return this.ToOkOrBadRequest(result);
     }
@@ -133,10 +152,14 @@ public sealed class BusinessPartnersController : ControllerBase
     public async Task<IActionResult> UpdateIdentification(
         [FromRoute] Guid id,
         [FromBody] UpdateIdentificationRequest body,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default
+    )
     {
         var cmd = new UpdateBusinessPartnerIdentificationCommand(
-            id, body.IdentificationType, body.IdentificationNumber);
+            id,
+            body.IdentificationType,
+            body.IdentificationNumber
+        );
         var result = await _mediator.Send(cmd, cancellationToken);
         return this.ToOkOrBadRequest(result);
     }
@@ -148,9 +171,15 @@ public sealed class BusinessPartnersController : ControllerBase
     [Authorize(Policy = $"perm:{MasterDataPermissions.BusinessPartnersUpdate}")]
     [ProducesResponseType(typeof(ApiResponse<bool>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> Activate([FromRoute] Guid id, CancellationToken cancellationToken = default)
+    public async Task<IActionResult> Activate(
+        [FromRoute] Guid id,
+        CancellationToken cancellationToken = default
+    )
     {
-        var result = await _mediator.Send(new ActivateBusinessPartnerCommand(id), cancellationToken);
+        var result = await _mediator.Send(
+            new ActivateBusinessPartnerCommand(id),
+            cancellationToken
+        );
         return this.ToOkOrBadRequest(result);
     }
 
@@ -163,9 +192,15 @@ public sealed class BusinessPartnersController : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<bool>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status422UnprocessableEntity)]
-    public async Task<IActionResult> Deactivate([FromRoute] Guid id, CancellationToken cancellationToken = default)
+    public async Task<IActionResult> Deactivate(
+        [FromRoute] Guid id,
+        CancellationToken cancellationToken = default
+    )
     {
-        var result = await _mediator.Send(new DeactivateBusinessPartnerCommand(id), cancellationToken);
+        var result = await _mediator.Send(
+            new DeactivateBusinessPartnerCommand(id),
+            cancellationToken
+        );
         return this.ToOkOrBadRequest(result);
     }
 }

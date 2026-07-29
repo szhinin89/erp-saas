@@ -6,4 +6,3 @@ public record PagedResponse<T>(
     int PageSize,
     int TotalCount
 );
-

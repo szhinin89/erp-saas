@@ -12,6 +12,7 @@ namespace ERP.Domain.Modules.Company.Entities;
 public class GeneralParameter : ITenantScopedEntity
 {
     public Guid Id { get; set; }
+
     /// <summary>Tenant owner — required for multi-tenant query filter.</summary>
     public Guid TenantId { get; set; }
     public Guid CompanyId { get; set; }

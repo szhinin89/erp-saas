@@ -14,5 +14,5 @@ public enum PostingAmountKind
     TaxIce,
     Discount,
     Retention,
-    GrandTotal
+    GrandTotal,
 }

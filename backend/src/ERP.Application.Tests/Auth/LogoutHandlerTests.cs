@@ -16,14 +16,22 @@ namespace ERP.Application.Tests.Auth;
 public sealed class LogoutHandlerTests
 {
     private static UserSession NewSession(Guid tenantId, Guid userId, Guid? refreshTokenId) =>
-        UserSession.Create(tenantId, Guid.NewGuid(), userId, Guid.NewGuid(), "POS-1", refreshTokenId);
+        UserSession.Create(
+            tenantId,
+            Guid.NewGuid(),
+            userId,
+            Guid.NewGuid(),
+            "POS-1",
+            refreshTokenId
+        );
 
     private sealed class Fixture
     {
         public Mock<IRefreshTokenService> RefreshTokenService { get; } = new();
         public Mock<IUserSessionRepository> UserSessionRepository { get; } = new();
 
-        public LogoutHandler BuildHandler() => new(RefreshTokenService.Object, UserSessionRepository.Object);
+        public LogoutHandler BuildHandler() =>
+            new(RefreshTokenService.Object, UserSessionRepository.Object);
     }
 
     [Fact]
@@ -32,10 +40,16 @@ public sealed class LogoutHandlerTests
         var f = new Fixture();
         var handler = f.BuildHandler();
 
-        var result = await handler.Handle(new LogoutCommand("", AllDevices: false), CancellationToken.None);
+        var result = await handler.Handle(
+            new LogoutCommand("", AllDevices: false),
+            CancellationToken.None
+        );
 
         result.IsSuccess.Should().BeFalse();
-        f.UserSessionRepository.Verify(r => r.GetByRefreshTokenIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()), Times.Never);
+        f.UserSessionRepository.Verify(
+            r => r.GetByRefreshTokenIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()),
+            Times.Never
+        );
     }
 
     [Fact]
@@ -47,17 +61,27 @@ public sealed class LogoutHandlerTests
         var refreshTokenId = Guid.NewGuid();
         var session = NewSession(tenantId, userId, refreshTokenId);
 
-        f.RefreshTokenService.Setup(s => s.RevokeAsync("raw-token", "Logout", It.IsAny<CancellationToken>()))
+        f.RefreshTokenService.Setup(s =>
+                s.RevokeAsync("raw-token", "Logout", It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(refreshTokenId);
-        f.UserSessionRepository.Setup(r => r.GetByRefreshTokenIdAsync(refreshTokenId, It.IsAny<CancellationToken>()))
+        f.UserSessionRepository.Setup(r =>
+                r.GetByRefreshTokenIdAsync(refreshTokenId, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(session);
 
         var handler = f.BuildHandler();
-        var result = await handler.Handle(new LogoutCommand("raw-token", AllDevices: false), CancellationToken.None);
+        var result = await handler.Handle(
+            new LogoutCommand("raw-token", AllDevices: false),
+            CancellationToken.None
+        );
 
         result.IsSuccess.Should().BeTrue();
         session.Status.Should().Be(Domain.Access.Enums.UserSessionStatus.ClosedManually);
-        f.UserSessionRepository.Verify(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
+        f.UserSessionRepository.Verify(
+            r => r.SaveChangesAsync(It.IsAny<CancellationToken>()),
+            Times.Once
+        );
     }
 
     [Fact]
@@ -66,30 +90,48 @@ public sealed class LogoutHandlerTests
         var f = new Fixture();
         var refreshTokenId = Guid.NewGuid();
 
-        f.RefreshTokenService.Setup(s => s.RevokeAsync(It.IsAny<string>(), "Logout", It.IsAny<CancellationToken>()))
+        f.RefreshTokenService.Setup(s =>
+                s.RevokeAsync(It.IsAny<string>(), "Logout", It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(refreshTokenId);
-        f.UserSessionRepository.Setup(r => r.GetByRefreshTokenIdAsync(refreshTokenId, It.IsAny<CancellationToken>()))
+        f.UserSessionRepository.Setup(r =>
+                r.GetByRefreshTokenIdAsync(refreshTokenId, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync((UserSession?)null);
 
         var handler = f.BuildHandler();
-        var result = await handler.Handle(new LogoutCommand("raw-token", AllDevices: false), CancellationToken.None);
+        var result = await handler.Handle(
+            new LogoutCommand("raw-token", AllDevices: false),
+            CancellationToken.None
+        );
 
         result.IsSuccess.Should().BeTrue();
-        f.UserSessionRepository.Verify(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
+        f.UserSessionRepository.Verify(
+            r => r.SaveChangesAsync(It.IsAny<CancellationToken>()),
+            Times.Never
+        );
     }
 
     [Fact]
     public async Task Logout_de_un_dispositivo_con_token_desconocido_no_falla_ni_busca_sesion()
     {
         var f = new Fixture();
-        f.RefreshTokenService.Setup(s => s.RevokeAsync(It.IsAny<string>(), "Logout", It.IsAny<CancellationToken>()))
+        f.RefreshTokenService.Setup(s =>
+                s.RevokeAsync(It.IsAny<string>(), "Logout", It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync((Guid?)null);
 
         var handler = f.BuildHandler();
-        var result = await handler.Handle(new LogoutCommand("raw-token", AllDevices: false), CancellationToken.None);
+        var result = await handler.Handle(
+            new LogoutCommand("raw-token", AllDevices: false),
+            CancellationToken.None
+        );
 
         result.IsSuccess.Should().BeTrue();
-        f.UserSessionRepository.Verify(r => r.GetByRefreshTokenIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()), Times.Never);
+        f.UserSessionRepository.Verify(
+            r => r.GetByRefreshTokenIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()),
+            Times.Never
+        );
     }
 
     [Fact]
@@ -101,32 +143,73 @@ public sealed class LogoutHandlerTests
         var sessionA = NewSession(tenantId, userId, Guid.NewGuid());
         var sessionB = NewSession(tenantId, userId, Guid.NewGuid());
 
-        f.RefreshTokenService.Setup(s => s.ValidateAndRotateAsync("raw-token", It.IsAny<CancellationToken>()))
-            .ReturnsAsync(RefreshTokenValidationResult.Ok(userId, tenantId, null, RefreshUserType.Identity, "new-token", DateTime.UtcNow.AddDays(1)));
-        f.UserSessionRepository.Setup(r => r.GetActiveSessionsAsync(userId, tenantId, It.IsAny<CancellationToken>()))
+        f.RefreshTokenService.Setup(s =>
+                s.ValidateAndRotateAsync("raw-token", It.IsAny<CancellationToken>())
+            )
+            .ReturnsAsync(
+                RefreshTokenValidationResult.Ok(
+                    userId,
+                    tenantId,
+                    null,
+                    RefreshUserType.Identity,
+                    "new-token",
+                    DateTime.UtcNow.AddDays(1)
+                )
+            );
+        f.UserSessionRepository.Setup(r =>
+                r.GetActiveSessionsAsync(userId, tenantId, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(new[] { sessionA, sessionB });
 
         var handler = f.BuildHandler();
-        var result = await handler.Handle(new LogoutCommand("raw-token", AllDevices: true), CancellationToken.None);
+        var result = await handler.Handle(
+            new LogoutCommand("raw-token", AllDevices: true),
+            CancellationToken.None
+        );
 
         result.IsSuccess.Should().BeTrue();
         sessionA.Status.Should().Be(Domain.Access.Enums.UserSessionStatus.ClosedManually);
         sessionB.Status.Should().Be(Domain.Access.Enums.UserSessionStatus.ClosedManually);
-        f.RefreshTokenService.Verify(s => s.RevokeAllForUserAsync(userId, tenantId, "Logout global", It.IsAny<CancellationToken>()), Times.Once);
-        f.UserSessionRepository.Verify(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
+        f.RefreshTokenService.Verify(
+            s =>
+                s.RevokeAllForUserAsync(
+                    userId,
+                    tenantId,
+                    "Logout global",
+                    It.IsAny<CancellationToken>()
+                ),
+            Times.Once
+        );
+        f.UserSessionRepository.Verify(
+            r => r.SaveChangesAsync(It.IsAny<CancellationToken>()),
+            Times.Once
+        );
     }
 
     [Fact]
     public async Task Logout_global_con_token_invalido_falla_y_no_toca_sesiones()
     {
         var f = new Fixture();
-        f.RefreshTokenService.Setup(s => s.ValidateAndRotateAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+        f.RefreshTokenService.Setup(s =>
+                s.ValidateAndRotateAsync(It.IsAny<string>(), It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(RefreshTokenValidationResult.Fail("Refresh token inválido."));
 
         var handler = f.BuildHandler();
-        var result = await handler.Handle(new LogoutCommand("raw-token", AllDevices: true), CancellationToken.None);
+        var result = await handler.Handle(
+            new LogoutCommand("raw-token", AllDevices: true),
+            CancellationToken.None
+        );
 
         result.IsSuccess.Should().BeFalse();
-        f.UserSessionRepository.Verify(r => r.GetActiveSessionsAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()), Times.Never);
+        f.UserSessionRepository.Verify(
+            r =>
+                r.GetActiveSessionsAsync(
+                    It.IsAny<Guid>(),
+                    It.IsAny<Guid>(),
+                    It.IsAny<CancellationToken>()
+                ),
+            Times.Never
+        );
     }
 }

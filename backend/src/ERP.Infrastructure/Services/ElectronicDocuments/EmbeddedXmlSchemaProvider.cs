@@ -1,10 +1,10 @@
-using ERP.Application.Modules.ElectronicDocuments.SchemaValidation;
-using ERP.Domain.Modules.ElectronicDocuments.Enums;
-using Microsoft.Extensions.Logging;
 using System.Collections.Concurrent;
 using System.Text.Json;
 using System.Xml;
 using System.Xml.Schema;
+using ERP.Application.Modules.ElectronicDocuments.SchemaValidation;
+using ERP.Domain.Modules.ElectronicDocuments.Enums;
+using Microsoft.Extensions.Logging;
 
 namespace ERP.Infrastructure.Services.ElectronicDocuments;
 
@@ -34,7 +34,10 @@ public sealed partial class EmbeddedXmlSchemaProvider : IXmlSchemaProvider
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
     };
 
-    private readonly ConcurrentDictionary<(ElectronicDocumentType DocumentType, string SchemaVersion), XmlSchemaSet?> _cache = new();
+    private readonly ConcurrentDictionary<
+        (ElectronicDocumentType DocumentType, string SchemaVersion),
+        XmlSchemaSet?
+    > _cache = new();
     private readonly Lazy<SriResourceManifest?> _manifest;
     private readonly ILogger<EmbeddedXmlSchemaProvider> _logger;
 
@@ -45,9 +48,15 @@ public sealed partial class EmbeddedXmlSchemaProvider : IXmlSchemaProvider
     }
 
     public Task<XmlSchemaSet?> GetSchemaSetAsync(
-        ElectronicDocumentType documentType, string schemaVersion, CancellationToken ct = default)
+        ElectronicDocumentType documentType,
+        string schemaVersion,
+        CancellationToken ct = default
+    )
     {
-        var schemaSet = _cache.GetOrAdd((documentType, schemaVersion), key => LoadSchemaSet(key.DocumentType, key.SchemaVersion));
+        var schemaSet = _cache.GetOrAdd(
+            (documentType, schemaVersion),
+            key => LoadSchemaSet(key.DocumentType, key.SchemaVersion)
+        );
         return Task.FromResult(schemaSet);
     }
 
@@ -65,7 +74,10 @@ public sealed partial class EmbeddedXmlSchemaProvider : IXmlSchemaProvider
 
         try
         {
-            return JsonSerializer.Deserialize<SriResourceManifest>(stream, ManifestSerializerOptions);
+            return JsonSerializer.Deserialize<SriResourceManifest>(
+                stream,
+                ManifestSerializerOptions
+            );
         }
         catch (JsonException ex)
         {
@@ -120,7 +132,8 @@ public sealed partial class EmbeddedXmlSchemaProvider : IXmlSchemaProvider
     private XmlSchema? LoadEmbeddedSchema(string manifestRelativePath)
     {
         var assembly = typeof(EmbeddedXmlSchemaProvider).Assembly;
-        var resourceName = $"{assembly.GetName().Name}.{ResourceRootPrefix}{manifestRelativePath.Replace('/', '.')}";
+        var resourceName =
+            $"{assembly.GetName().Name}.{ResourceRootPrefix}{manifestRelativePath.Replace('/', '.')}";
 
         using var resourceStream = assembly.GetManifestResourceStream(resourceName);
         if (resourceStream is null)
@@ -132,7 +145,10 @@ public sealed partial class EmbeddedXmlSchemaProvider : IXmlSchemaProvider
         try
         {
             using var xmlReader = XmlReader.Create(resourceStream);
-            var schema = XmlSchema.Read(xmlReader, (_, e) => LogSchemaReadWarning(resourceName, e.Message));
+            var schema = XmlSchema.Read(
+                xmlReader,
+                (_, e) => LogSchemaReadWarning(resourceName, e.Message)
+            );
             if (schema is null)
                 LogSchemaUnreadable(resourceName);
             return schema;
@@ -144,32 +160,66 @@ public sealed partial class EmbeddedXmlSchemaProvider : IXmlSchemaProvider
         }
     }
 
-    [LoggerMessage(Level = LogLevel.Error, Message = "No se encontró el manifiesto de recursos SRI '{ResourceName}'.")]
+    [LoggerMessage(
+        Level = LogLevel.Error,
+        Message = "No se encontró el manifiesto de recursos SRI '{ResourceName}'."
+    )]
     private partial void LogManifestMissing(string resourceName);
 
-    [LoggerMessage(Level = LogLevel.Error, Message = "El manifiesto de recursos SRI '{ResourceName}' no es JSON válido: {Reason}")]
+    [LoggerMessage(
+        Level = LogLevel.Error,
+        Message = "El manifiesto de recursos SRI '{ResourceName}' no es JSON válido: {Reason}"
+    )]
     private partial void LogManifestInvalid(string resourceName, string reason);
 
-    [LoggerMessage(Level = LogLevel.Information, Message = "El manifiesto de recursos SRI no tiene ninguna entrada para el tipo de documento {DocumentType}.")]
+    [LoggerMessage(
+        Level = LogLevel.Information,
+        Message = "El manifiesto de recursos SRI no tiene ninguna entrada para el tipo de documento {DocumentType}."
+    )]
     private partial void LogNoManifestEntryForType(ElectronicDocumentType documentType);
 
-    [LoggerMessage(Level = LogLevel.Information, Message = "El manifiesto de recursos SRI no tiene la versión {SchemaVersion} para {DocumentType}.")]
-    private partial void LogNoManifestEntryForVersion(ElectronicDocumentType documentType, string schemaVersion);
+    [LoggerMessage(
+        Level = LogLevel.Information,
+        Message = "El manifiesto de recursos SRI no tiene la versión {SchemaVersion} para {DocumentType}."
+    )]
+    private partial void LogNoManifestEntryForVersion(
+        ElectronicDocumentType documentType,
+        string schemaVersion
+    );
 
-    [LoggerMessage(Level = LogLevel.Information, Message = "El recurso XSD '{ResourceName}' todavía no fue incorporado al proyecto.")]
+    [LoggerMessage(
+        Level = LogLevel.Information,
+        Message = "El recurso XSD '{ResourceName}' todavía no fue incorporado al proyecto."
+    )]
     private partial void LogResourceMissing(string resourceName);
 
-    [LoggerMessage(Level = LogLevel.Warning, Message = "Advertencia al leer el esquema XSD '{ResourceName}': {Message}")]
+    [LoggerMessage(
+        Level = LogLevel.Warning,
+        Message = "Advertencia al leer el esquema XSD '{ResourceName}': {Message}"
+    )]
     private partial void LogSchemaReadWarning(string resourceName, string message);
 
-    [LoggerMessage(Level = LogLevel.Error, Message = "No se pudo leer el esquema XSD '{ResourceName}'.")]
+    [LoggerMessage(
+        Level = LogLevel.Error,
+        Message = "No se pudo leer el esquema XSD '{ResourceName}'."
+    )]
     private partial void LogSchemaUnreadable(string resourceName);
 
-    [LoggerMessage(Level = LogLevel.Error, Message = "El recurso XSD '{ResourceName}' no es un XML bien formado: {Reason}")]
+    [LoggerMessage(
+        Level = LogLevel.Error,
+        Message = "El recurso XSD '{ResourceName}' no es un XML bien formado: {Reason}"
+    )]
     private partial void LogSchemaMalformed(string resourceName, string reason);
 
-    [LoggerMessage(Level = LogLevel.Error, Message = "El conjunto de esquemas SRI para {DocumentType} v{SchemaVersion} no compiló: {Reason}")]
-    private partial void LogSchemaSetCompileFailed(ElectronicDocumentType documentType, string schemaVersion, string reason);
+    [LoggerMessage(
+        Level = LogLevel.Error,
+        Message = "El conjunto de esquemas SRI para {DocumentType} v{SchemaVersion} no compiló: {Reason}"
+    )]
+    private partial void LogSchemaSetCompileFailed(
+        ElectronicDocumentType documentType,
+        string schemaVersion,
+        string reason
+    );
 }
 
 /// <summary>Forma de <c>Resources/SRI/manifest.json</c> — única fuente de verdad de qué archivo físico corresponde a cada (tipo, versión).</summary>

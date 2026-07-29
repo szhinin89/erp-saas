@@ -27,7 +27,8 @@ public sealed partial class InstrumentedDistributedCache : IDistributedCache
         IDistributedCache inner,
         ICacheDiagnosticsMetrics metrics,
         IOptions<CacheDiagnosticsOptions> options,
-        ILogger<InstrumentedDistributedCache> logger)
+        ILogger<InstrumentedDistributedCache> logger
+    )
     {
         _inner = inner;
         _metrics = metrics;
@@ -55,14 +56,15 @@ public sealed partial class InstrumentedDistributedCache : IDistributedCache
         return bytes;
     }
 
-    public void Set(string key, byte[] value, DistributedCacheEntryOptions options)
-        => SetAsync(key, value, options).GetAwaiter().GetResult();
+    public void Set(string key, byte[] value, DistributedCacheEntryOptions options) =>
+        SetAsync(key, value, options).GetAwaiter().GetResult();
 
     public async Task SetAsync(
         string key,
         byte[] value,
         DistributedCacheEntryOptions options,
-        CancellationToken token = default)
+        CancellationToken token = default
+    )
     {
         await _inner.SetAsync(key, value, options, token);
         _metrics.RecordSet(ClassifyKey(key));
@@ -71,13 +73,13 @@ public sealed partial class InstrumentedDistributedCache : IDistributedCache
 
     public void Refresh(string key) => RefreshAsync(key).GetAwaiter().GetResult();
 
-    public Task RefreshAsync(string key, CancellationToken token = default)
-        => _inner.RefreshAsync(key, token);
+    public Task RefreshAsync(string key, CancellationToken token = default) =>
+        _inner.RefreshAsync(key, token);
 
     public void Remove(string key) => RemoveAsync(key).GetAwaiter().GetResult();
 
-    public Task RemoveAsync(string key, CancellationToken token = default)
-        => _inner.RemoveAsync(key, token);
+    public Task RemoveAsync(string key, CancellationToken token = default) =>
+        _inner.RemoveAsync(key, token);
 
     private void LogIfAllowed(string action, string key, string category)
     {
@@ -113,6 +115,9 @@ public sealed partial class InstrumentedDistributedCache : IDistributedCache
         return "other";
     }
 
-    [LoggerMessage(Level = LogLevel.Information, Message = "{Action} category={Category} key={Key}")]
+    [LoggerMessage(
+        Level = LogLevel.Information,
+        Message = "{Action} category={Category} key={Key}"
+    )]
     private partial void LogCacheAction(string action, string category, string key);
 }

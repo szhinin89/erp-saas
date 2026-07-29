@@ -38,12 +38,18 @@ internal static class CompanyUserPreferencesLoginResolver
         IMediator mediator,
         Guid companyUserMembershipId,
         Func<Task<Guid?>> fallbackHeuristic,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken
+    )
     {
         var preferencesResult = await mediator.Send(
-            new GetCompanyUserPreferencesQuery(companyUserMembershipId), cancellationToken);
+            new GetCompanyUserPreferencesQuery(companyUserMembershipId),
+            cancellationToken
+        );
         if (!preferencesResult.IsSuccess)
-            return (null, Result<AuthResponseDto>.Failure(preferencesResult.Error!, preferencesResult.Code));
+            return (
+                null,
+                Result<AuthResponseDto>.Failure(preferencesResult.Error!, preferencesResult.Code)
+            );
 
         var preferences = preferencesResult.Value;
         if (preferences is null)
@@ -54,8 +60,12 @@ internal static class CompanyUserPreferencesLoginResolver
 
         var revalidation = await mediator.Send(
             new UpdateCompanyUserPreferencesCommand(
-                companyUserMembershipId, preferences.LoginMode, preferences.DefaultBranchId),
-            cancellationToken);
+                companyUserMembershipId,
+                preferences.LoginMode,
+                preferences.DefaultBranchId
+            ),
+            cancellationToken
+        );
 
         if (!revalidation.IsSuccess)
             return (null, Result<AuthResponseDto>.Failure(revalidation.Error!, revalidation.Code));

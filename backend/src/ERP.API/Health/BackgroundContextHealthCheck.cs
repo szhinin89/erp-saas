@@ -13,13 +13,17 @@ public sealed class BackgroundContextHealthCheck : IHealthCheck
 
     public Task<HealthCheckResult> CheckHealthAsync(
         HealthCheckContext context,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default
+    )
     {
         if (JobTenantContext.Current != Guid.Empty || JobCompanyContext.Current != Guid.Empty)
         {
             _metrics.RecordBackgroundContextLeakDetected();
-            return Task.FromResult(HealthCheckResult.Unhealthy(
-                "Job AsyncLocal context leak: tenant or company set outside job execution."));
+            return Task.FromResult(
+                HealthCheckResult.Unhealthy(
+                    "Job AsyncLocal context leak: tenant or company set outside job execution."
+                )
+            );
         }
 
         return Task.FromResult(HealthCheckResult.Healthy("Background context clean."));

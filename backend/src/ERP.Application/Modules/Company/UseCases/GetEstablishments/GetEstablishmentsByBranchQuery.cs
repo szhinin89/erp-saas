@@ -4,4 +4,6 @@ using MediatR;
 
 namespace ERP.Application.Modules.Company.UseCases.GetEstablishments;
 
-public record GetEstablishmentsByBranchQuery(Guid BranchId) : IRequest<Result<IReadOnlyList<EstablishmentDto>>>, ICompanyScopedRequest;
+public record GetEstablishmentsByBranchQuery(Guid BranchId)
+    : IRequest<Result<IReadOnlyList<EstablishmentDto>>>,
+        ICompanyScopedRequest;

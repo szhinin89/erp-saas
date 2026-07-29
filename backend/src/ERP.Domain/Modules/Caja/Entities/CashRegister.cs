@@ -70,7 +70,8 @@ public sealed class CashRegister : MasterEntity, ITenantScopedEntity, ICompanyOp
         Guid? emissionPointId = null,
         string? notes = null,
         Guid? defaultWarehouseId = null,
-        Guid? defaultCustomerId = null)
+        Guid? defaultCustomerId = null
+    )
     {
         if (companyId == Guid.Empty)
             throw new ArgumentException("La empresa es obligatoria.", nameof(companyId));
@@ -81,11 +82,20 @@ public sealed class CashRegister : MasterEntity, ITenantScopedEntity, ICompanyOp
         if (string.IsNullOrWhiteSpace(name))
             throw new ArgumentException("El nombre de la caja es obligatorio.", nameof(name));
         if (emissionPointId == Guid.Empty)
-            throw new ArgumentException("El punto de emisión no puede ser un Guid vacío.", nameof(emissionPointId));
+            throw new ArgumentException(
+                "El punto de emisión no puede ser un Guid vacío.",
+                nameof(emissionPointId)
+            );
         if (defaultWarehouseId == Guid.Empty)
-            throw new ArgumentException("La bodega por defecto no puede ser un Guid vacío.", nameof(defaultWarehouseId));
+            throw new ArgumentException(
+                "La bodega por defecto no puede ser un Guid vacío.",
+                nameof(defaultWarehouseId)
+            );
         if (defaultCustomerId == Guid.Empty)
-            throw new ArgumentException("El cliente por defecto no puede ser un Guid vacío.", nameof(defaultCustomerId));
+            throw new ArgumentException(
+                "El cliente por defecto no puede ser un Guid vacío.",
+                nameof(defaultCustomerId)
+            );
 
         var register = new CashRegister
         {
@@ -118,9 +128,19 @@ public sealed class CashRegister : MasterEntity, ITenantScopedEntity, ICompanyOp
         string name,
         Guid createdBy,
         Guid? emissionPointId = null,
-        string? notes = null)
+        string? notes = null
+    )
     {
-        var register = Create(tenantId, companyId, branchId, code, name, createdBy, emissionPointId, notes);
+        var register = Create(
+            tenantId,
+            companyId,
+            branchId,
+            code,
+            name,
+            createdBy,
+            emissionPointId,
+            notes
+        );
         register.MarkAsSystemSeeded();
         return register;
     }
@@ -147,7 +167,10 @@ public sealed class CashRegister : MasterEntity, ITenantScopedEntity, ICompanyOp
     public void ChangeEmissionPoint(Guid? emissionPointId, Guid updatedBy)
     {
         if (emissionPointId == Guid.Empty)
-            throw new ArgumentException("El punto de emisión no puede ser un Guid vacío.", nameof(emissionPointId));
+            throw new ArgumentException(
+                "El punto de emisión no puede ser un Guid vacío.",
+                nameof(emissionPointId)
+            );
 
         EmissionPointId = emissionPointId;
         SetUpdated(updatedBy);
@@ -161,7 +184,10 @@ public sealed class CashRegister : MasterEntity, ITenantScopedEntity, ICompanyOp
     public void SetDefaultWarehouse(Guid? warehouseId, Guid updatedBy)
     {
         if (warehouseId == Guid.Empty)
-            throw new ArgumentException("La bodega por defecto no puede ser un Guid vacío.", nameof(warehouseId));
+            throw new ArgumentException(
+                "La bodega por defecto no puede ser un Guid vacío.",
+                nameof(warehouseId)
+            );
 
         DefaultWarehouseId = warehouseId;
         SetUpdated(updatedBy);
@@ -175,7 +201,10 @@ public sealed class CashRegister : MasterEntity, ITenantScopedEntity, ICompanyOp
     public void SetDefaultCustomer(Guid? customerId, Guid updatedBy)
     {
         if (customerId == Guid.Empty)
-            throw new ArgumentException("El cliente por defecto no puede ser un Guid vacío.", nameof(customerId));
+            throw new ArgumentException(
+                "El cliente por defecto no puede ser un Guid vacío.",
+                nameof(customerId)
+            );
 
         DefaultCustomerId = customerId;
         SetUpdated(updatedBy);

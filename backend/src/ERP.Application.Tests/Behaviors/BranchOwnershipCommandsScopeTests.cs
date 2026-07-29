@@ -29,8 +29,11 @@ public sealed class BranchOwnershipCommandsScopeTests
         public Mock<ICurrentBranch> Branch { get; } = new();
     }
 
-    private static RequestHandlerDelegate<Result<string>> NextReturning(Result<string> value, Action? onCalled = null)
-        => _ =>
+    private static RequestHandlerDelegate<Result<string>> NextReturning(
+        Result<string> value,
+        Action? onCalled = null
+    ) =>
+        _ =>
         {
             onCalled?.Invoke();
             return Task.FromResult(value);
@@ -38,8 +41,24 @@ public sealed class BranchOwnershipCommandsScopeTests
 
     public static IEnumerable<object[]> BranchOwnershipCreationCommands()
     {
-        yield return new object[] { new CreateSalesDraftCommand(Guid.NewGuid(), DateOnly.FromDateTime(DateTime.UtcNow), new List<SalesLineInput>()) };
-        yield return new object[] { new CreatePurchaseDraftCommand(Guid.NewGuid(), "01", "001-001-000000001", DateOnly.FromDateTime(DateTime.UtcNow), new List<PurchaseLineInput>()) };
+        yield return new object[]
+        {
+            new CreateSalesDraftCommand(
+                Guid.NewGuid(),
+                DateOnly.FromDateTime(DateTime.UtcNow),
+                new List<SalesLineInput>()
+            ),
+        };
+        yield return new object[]
+        {
+            new CreatePurchaseDraftCommand(
+                Guid.NewGuid(),
+                "01",
+                "001-001-000000001",
+                DateOnly.FromDateTime(DateTime.UtcNow),
+                new List<PurchaseLineInput>()
+            ),
+        };
         yield return new object[] { new OpenCashSessionCommand(Guid.NewGuid(), 0m) };
     }
 
@@ -54,8 +73,13 @@ public sealed class BranchOwnershipCommandsScopeTests
     [MemberData(nameof(BranchOwnershipCreationCommands))]
     public void Ningun_comando_de_creacion_expone_BranchId_como_parametro(object command)
     {
-        command.GetType().GetProperty("BranchId").Should().BeNull(
-            "BranchId nunca debe poder llegar desde el cliente — se asigna en el handler desde ICurrentBranch");
+        command
+            .GetType()
+            .GetProperty("BranchId")
+            .Should()
+            .BeNull(
+                "BranchId nunca debe poder llegar desde el cliente — se asigna en el handler desde ICurrentBranch"
+            );
     }
 
     [Theory]
@@ -68,12 +92,21 @@ public sealed class BranchOwnershipCommandsScopeTests
         var behavior = BuildBehaviorFor(f, command);
         var nextCalled = false;
 
-        var act = async () => await InvokeAsync(
-            behavior, command, NextReturning(Result<string>.Success("no-debe-llegar"), () => nextCalled = true));
+        var act = async () =>
+            await InvokeAsync(
+                behavior,
+                command,
+                NextReturning(Result<string>.Success("no-debe-llegar"), () => nextCalled = true)
+            );
 
         await act.Should().ThrowAsync<BranchScopeException>();
-        nextCalled.Should().BeFalse("el handler de creación nunca debe ejecutarse sin sucursal activa");
-        f.Guard.Verify(g => g.RequireBranchAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()), Times.Never);
+        nextCalled
+            .Should()
+            .BeFalse("el handler de creación nunca debe ejecutarse sin sucursal activa");
+        f.Guard.Verify(
+            g => g.RequireBranchAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()),
+            Times.Never
+        );
     }
 
     [Theory]
@@ -85,14 +118,28 @@ public sealed class BranchOwnershipCommandsScopeTests
         f.Branch.Setup(b => b.HasBranchContext).Returns(true);
         f.Branch.Setup(b => b.BranchId).Returns(branchId);
         f.Guard.Setup(g => g.RequireBranchAsync(branchId, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Result<BranchAccessContext>.Success(
-                new BranchAccessContext(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), branchId, "Matriz", true)));
+            .ReturnsAsync(
+                Result<BranchAccessContext>.Success(
+                    new BranchAccessContext(
+                        Guid.NewGuid(),
+                        Guid.NewGuid(),
+                        Guid.NewGuid(),
+                        branchId,
+                        "Matriz",
+                        true
+                    )
+                )
+            );
 
         var behavior = BuildBehaviorFor(f, command);
         var expected = Result<string>.Success("ok");
         var nextCalled = false;
 
-        var result = await InvokeAsync(behavior, command, NextReturning(expected, () => nextCalled = true));
+        var result = await InvokeAsync(
+            behavior,
+            command,
+            NextReturning(expected, () => nextCalled = true)
+        );
 
         result.Should().Be(expected);
         nextCalled.Should().BeTrue();
@@ -101,15 +148,22 @@ public sealed class BranchOwnershipCommandsScopeTests
     private static object BuildBehaviorFor(Fixture f, object request)
     {
         var requestType = request.GetType();
-        var behaviorType = typeof(BranchScopeBehavior<,>).MakeGenericType(requestType, typeof(Result<string>));
+        var behaviorType = typeof(BranchScopeBehavior<,>).MakeGenericType(
+            requestType,
+            typeof(Result<string>)
+        );
         return Activator.CreateInstance(behaviorType, f.Guard.Object, f.Branch.Object)!;
     }
 
     private static async Task<Result<string>> InvokeAsync(
-        object behavior, object request, RequestHandlerDelegate<Result<string>> next)
+        object behavior,
+        object request,
+        RequestHandlerDelegate<Result<string>> next
+    )
     {
         var method = behavior.GetType().GetMethod("Handle")!;
-        var task = (Task<Result<string>>)method.Invoke(behavior, [request, next, CancellationToken.None])!;
+        var task =
+            (Task<Result<string>>)method.Invoke(behavior, [request, next, CancellationToken.None])!;
         return await task;
     }
 }

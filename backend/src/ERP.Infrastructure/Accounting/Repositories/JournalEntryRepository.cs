@@ -16,34 +16,68 @@ public sealed class JournalEntryRepository : IJournalEntryRepository
         _context = context;
     }
 
-    public Task<JournalEntry?> GetByIdAsync(Guid tenantId, Guid companyId, Guid id, CancellationToken ct = default)
+    public Task<JournalEntry?> GetByIdAsync(
+        Guid tenantId,
+        Guid companyId,
+        Guid id,
+        CancellationToken ct = default
+    )
         // Include(Lines) — Fase 5.4: ReverseJournalEntryHandler necesita las líneas del asiento
         // original para construir el reverso (JournalEntry.Reverse invierte cada línea); sin este
         // Include, la colección llegaría vacía (sin lazy loading, ver JournalFactory/PostingRule).
-        => _context.JournalEntries
-            .Include(x => x.Lines)
+        =>
+        _context
+            .JournalEntries.Include(x => x.Lines)
             .Where(x => x.TenantId == tenantId && x.CompanyId == companyId && x.Id == id)
             .FirstOrDefaultAsync(ct);
 
     public Task<JournalEntry?> FindByKeyAsync(
-        Guid tenantId, Guid companyId, string sourceModule, string factType, Guid sourceEventId, CancellationToken ct = default)
-        => _context.JournalEntries
-            .Where(x => x.TenantId == tenantId && x.CompanyId == companyId
-                && x.SourceModule == sourceModule && x.SourceEventType == factType && x.SourceEventId == sourceEventId)
+        Guid tenantId,
+        Guid companyId,
+        string sourceModule,
+        string factType,
+        Guid sourceEventId,
+        CancellationToken ct = default
+    ) =>
+        _context
+            .JournalEntries.Where(x =>
+                x.TenantId == tenantId
+                && x.CompanyId == companyId
+                && x.SourceModule == sourceModule
+                && x.SourceEventType == factType
+                && x.SourceEventId == sourceEventId
+            )
             .FirstOrDefaultAsync(ct);
 
     public async Task AcquireIdempotencyLockAsync(
-        Guid companyId, string sourceModule, Guid sourceEventId, string factType, CancellationToken ct = default)
+        Guid companyId,
+        string sourceModule,
+        Guid sourceEventId,
+        string factType,
+        CancellationToken ct = default
+    )
     {
         // Advisory lock de transacción — serializa concurrentes para la misma clave de
         // idempotencia (CompanyId, SourceModule, SourceEventId, FactType) sin bloquear otras
         // claves. pg_advisory_xact_lock(int4, int4) se libera automáticamente al hacer
         // COMMIT/ROLLBACK de la transacción ambiente — nunca abre ni comitea una transacción
         // propia (la persistencia pertenece exclusivamente a ErpDbContext.SaveChangesAsync).
-        var hash1 = StableHash(companyId.ToByteArray().Concat(System.Text.Encoding.UTF8.GetBytes(sourceModule)).ToArray());
-        var hash2 = StableHash(sourceEventId.ToByteArray().Concat(System.Text.Encoding.UTF8.GetBytes(factType)).ToArray());
+        var hash1 = StableHash(
+            companyId
+                .ToByteArray()
+                .Concat(System.Text.Encoding.UTF8.GetBytes(sourceModule))
+                .ToArray()
+        );
+        var hash2 = StableHash(
+            sourceEventId
+                .ToByteArray()
+                .Concat(System.Text.Encoding.UTF8.GetBytes(factType))
+                .ToArray()
+        );
         await _context.Database.ExecuteSqlInterpolatedAsync(
-            $"SELECT pg_advisory_xact_lock({hash1}, {hash2})", ct);
+            $"SELECT pg_advisory_xact_lock({hash1}, {hash2})",
+            ct
+        );
     }
 
     // Hash estable (no depende de HashCode.GetHashCode, no-determinístico en .NET 5+) — mismo
@@ -61,31 +95,48 @@ public sealed class JournalEntryRepository : IJournalEntryRepository
         return h;
     }
 
-    public Task AddAsync(JournalEntry entry, CancellationToken ct = default)
-        => _context.JournalEntries.AddAsync(entry, ct).AsTask();
+    public Task AddAsync(JournalEntry entry, CancellationToken ct = default) =>
+        _context.JournalEntries.AddAsync(entry, ct).AsTask();
 
-    public Task SaveChangesAsync(CancellationToken ct = default)
-        => _context.SaveChangesAsync(ct);
+    public Task SaveChangesAsync(CancellationToken ct = default) => _context.SaveChangesAsync(ct);
 
     public async Task<JournalEntryClosureReadiness> GetClosureReadinessAsync(
-        Guid tenantId, Guid companyId, Guid accountingPeriodId, CancellationToken ct = default)
+        Guid tenantId,
+        Guid companyId,
+        Guid accountingPeriodId,
+        CancellationToken ct = default
+    )
     {
-        var scoped = _context.JournalEntries
-            .Where(x => x.TenantId == tenantId && x.CompanyId == companyId && x.AccountingPeriodId == accountingPeriodId);
+        var scoped = _context.JournalEntries.Where(x =>
+            x.TenantId == tenantId
+            && x.CompanyId == companyId
+            && x.AccountingPeriodId == accountingPeriodId
+        );
 
         // Cada AnyAsync se traduce a "SELECT EXISTS(...)" — nunca materializa JournalEntry
         // completos, ni siquiera para contar (ADR-026 §6.1/§9: cierre es cross-aggregate, pero
         // no debe cargar el período entero para decidir).
         var hasDraftOrNonFinal = await scoped.AnyAsync(
-            x => x.Status != JournalEntryStatus.Posted && x.Status != JournalEntryStatus.Reversed, ct);
+            x => x.Status != JournalEntryStatus.Posted && x.Status != JournalEntryStatus.Reversed,
+            ct
+        );
 
         var hasWithoutEntryNumber = await scoped.AnyAsync(
-            x => x.Status != JournalEntryStatus.Draft && x.EntryNumber == null, ct);
+            x => x.Status != JournalEntryStatus.Draft && x.EntryNumber == null,
+            ct
+        );
 
-        var hasIncompleteReversals = await scoped.AnyAsync(x =>
-            (x.Status == JournalEntryStatus.Reversed && x.ReverseJournalEntryId == null) ||
-            (x.OriginalJournalEntryId != null && x.Status != JournalEntryStatus.Posted), ct);
+        var hasIncompleteReversals = await scoped.AnyAsync(
+            x =>
+                (x.Status == JournalEntryStatus.Reversed && x.ReverseJournalEntryId == null)
+                || (x.OriginalJournalEntryId != null && x.Status != JournalEntryStatus.Posted),
+            ct
+        );
 
-        return new JournalEntryClosureReadiness(hasDraftOrNonFinal, hasWithoutEntryNumber, hasIncompleteReversals);
+        return new JournalEntryClosureReadiness(
+            hasDraftOrNonFinal,
+            hasWithoutEntryNumber,
+            hasIncompleteReversals
+        );
     }
 }

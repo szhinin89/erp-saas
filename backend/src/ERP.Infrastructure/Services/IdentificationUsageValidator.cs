@@ -11,7 +11,15 @@ public sealed class IdentificationUsageValidator : IIdentificationUsageValidator
 
     public IdentificationUsageValidator(ErpDbContext db) => _db = db;
 
-    public async Task<bool> IsAllowedAsync(string idTypeCode, IdentificationUsageType usageType, CancellationToken ct = default)
-        => await _db.SriIdTypeUsages.AsNoTracking()
-            .AnyAsync(u => u.IdTypeCode == idTypeCode && u.UsageType == usageType && u.IsActive, ct);
+    public async Task<bool> IsAllowedAsync(
+        string idTypeCode,
+        IdentificationUsageType usageType,
+        CancellationToken ct = default
+    ) =>
+        await _db
+            .SriIdTypeUsages.AsNoTracking()
+            .AnyAsync(
+                u => u.IdTypeCode == idTypeCode && u.UsageType == usageType && u.IsActive,
+                ct
+            );
 }

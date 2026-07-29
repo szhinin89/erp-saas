@@ -10,16 +10,13 @@ public sealed record UpdateItemCommand(
     string ShortName,
     string Description,
     string DefaultUomCode,
-
     string? SaleVatCode = null,
     string? PurchaseVatCode = null,
-
     string? Observations = null,
     Guid? CategoryNodeId = null,
     Guid? BrandId = null,
     decimal? BaseSalePrice = null,
     string? ExciseTaxCode = null,
-
     bool IsForSale = true,
     decimal? MaxDiscountPercent = null,
     bool IsAvailableOnWeb = false,
@@ -29,7 +26,6 @@ public sealed record UpdateItemCommand(
     // null = "no viene en el payload" → se preserva el valor existente del agregado
     // (no hay UI hoy que lo setee; ver UpdateItemCommandHandler).
     bool? IsFavorite = null,
-
     bool TracksStock = true,
     bool TracksLot = false,
     bool TracksSeries = false,

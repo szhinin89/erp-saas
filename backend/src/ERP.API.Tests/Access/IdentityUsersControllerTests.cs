@@ -1,3 +1,4 @@
+using System.Reflection;
 using ERP.API.Controllers;
 using ERP.API.Tests.Support;
 using ERP.Application.Access.DTOs;
@@ -11,7 +12,6 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.DependencyInjection;
-using System.Reflection;
 
 namespace ERP.API.Tests.Access;
 
@@ -31,7 +31,10 @@ public sealed class IdentityUsersControllerTests
         services.AddSingleton<IWebHostEnvironment>(new StubWebHostEnvironment());
         controller.ControllerContext = new ControllerContext
         {
-            HttpContext = new DefaultHttpContext { RequestServices = services.BuildServiceProvider() },
+            HttpContext = new DefaultHttpContext
+            {
+                RequestServices = services.BuildServiceProvider(),
+            },
         };
         return controller;
     }
@@ -41,9 +44,11 @@ public sealed class IdentityUsersControllerTests
         public string EnvironmentName { get; set; } = "Development";
         public string ApplicationName { get; set; } = "ERP.API.Tests";
         public string WebRootPath { get; set; } = "";
-        public Microsoft.Extensions.FileProviders.IFileProvider WebRootFileProvider { get; set; } = null!;
+        public Microsoft.Extensions.FileProviders.IFileProvider WebRootFileProvider { get; set; } =
+            null!;
         public string ContentRootPath { get; set; } = "";
-        public Microsoft.Extensions.FileProviders.IFileProvider ContentRootFileProvider { get; set; } = null!;
+        public Microsoft.Extensions.FileProviders.IFileProvider ContentRootFileProvider { get; set; } =
+            null!;
     }
 
     [Fact]
@@ -64,13 +69,24 @@ public sealed class IdentityUsersControllerTests
         var controller = BuildController(req =>
         {
             sentRequest = req;
-            return Result<CreateSystemUserResultDto>.Success(new CreateSystemUserResultDto(Guid.NewGuid(), "ana.perez"));
+            return Result<CreateSystemUserResultDto>.Success(
+                new CreateSystemUserResultDto(Guid.NewGuid(), "ana.perez")
+            );
         });
 
         var profileId = Guid.NewGuid();
         var response = await controller.Create(
-            new CreateSystemUserRequest("ana.perez", "Ana", "Perez", "ana@test.com", "S3curePass!", "Admin", profileId),
-            CancellationToken.None);
+            new CreateSystemUserRequest(
+                "ana.perez",
+                "Ana",
+                "Perez",
+                "ana@test.com",
+                "S3curePass!",
+                "Admin",
+                profileId
+            ),
+            CancellationToken.None
+        );
 
         response.Should().BeOfType<OkObjectResult>();
         var sentCommand = sentRequest.Should().BeOfType<CreateSystemUserAdminCommand>().Subject;
@@ -86,10 +102,22 @@ public sealed class IdentityUsersControllerTests
     public async Task Create_con_empresa_activa_distinta_retorna_403()
     {
         var controller = BuildController(_ =>
-            Result<CreateSystemUserResultDto>.Forbidden("La empresa activa no coincide con el contexto administrado."));
+            Result<CreateSystemUserResultDto>.Forbidden(
+                "La empresa activa no coincide con el contexto administrado."
+            )
+        );
 
         var response = await controller.Create(
-            new CreateSystemUserRequest("ana.perez", "Ana", "Perez", "ana@test.com", "S3curePass!", "User"), CancellationToken.None);
+            new CreateSystemUserRequest(
+                "ana.perez",
+                "Ana",
+                "Perez",
+                "ana@test.com",
+                "S3curePass!",
+                "User"
+            ),
+            CancellationToken.None
+        );
 
         response.Should().BeOfType<ObjectResult>();
         ((ObjectResult)response).StatusCode.Should().Be(StatusCodes.Status403Forbidden);
@@ -99,10 +127,20 @@ public sealed class IdentityUsersControllerTests
     public async Task Create_con_email_duplicado_retorna_409()
     {
         var controller = BuildController(_ =>
-            Result<CreateSystemUserResultDto>.Conflict("Ya existe un usuario con ese email."));
+            Result<CreateSystemUserResultDto>.Conflict("Ya existe un usuario con ese email.")
+        );
 
         var response = await controller.Create(
-            new CreateSystemUserRequest("ana.perez", "Ana", "Perez", "ana@test.com", "S3curePass!", "User"), CancellationToken.None);
+            new CreateSystemUserRequest(
+                "ana.perez",
+                "Ana",
+                "Perez",
+                "ana@test.com",
+                "S3curePass!",
+                "User"
+            ),
+            CancellationToken.None
+        );
 
         response.Should().BeOfType<ConflictObjectResult>();
     }
@@ -110,7 +148,9 @@ public sealed class IdentityUsersControllerTests
     // ── AssignTemporaryPassword ──────────────────────────────────────────────────────────────
 
     private static MethodInfo AssignTemporaryPasswordMethod =>
-        typeof(IdentityUsersController).GetMethod(nameof(IdentityUsersController.AssignTemporaryPassword))!;
+        typeof(IdentityUsersController).GetMethod(
+            nameof(IdentityUsersController.AssignTemporaryPassword)
+        )!;
 
     [Fact]
     public void El_endpoint_exige_perm_access_identity_users_assign_temporary_password()
@@ -127,7 +167,10 @@ public sealed class IdentityUsersControllerTests
     public void El_endpoint_esta_mapeado_a_POST_username_assign_temporary_password()
     {
         var attr = AssignTemporaryPasswordMethod
-            .GetCustomAttributes(typeof(Microsoft.AspNetCore.Mvc.Routing.HttpMethodAttribute), inherit: true)
+            .GetCustomAttributes(
+                typeof(Microsoft.AspNetCore.Mvc.Routing.HttpMethodAttribute),
+                inherit: true
+            )
             .Cast<Microsoft.AspNetCore.Mvc.Routing.HttpMethodAttribute>()
             .Single();
 
@@ -146,10 +189,16 @@ public sealed class IdentityUsersControllerTests
         });
 
         var response = await controller.AssignTemporaryPassword(
-            "ana.perez", new AssignTemporaryPasswordRequest("Temp0ral!"), CancellationToken.None);
+            "ana.perez",
+            new AssignTemporaryPasswordRequest("Temp0ral!"),
+            CancellationToken.None
+        );
 
         response.Should().BeOfType<OkObjectResult>();
-        var sentCommand = sentRequest.Should().BeOfType<AssignTemporaryPasswordAdminCommand>().Subject;
+        var sentCommand = sentRequest
+            .Should()
+            .BeOfType<AssignTemporaryPasswordAdminCommand>()
+            .Subject;
         sentCommand.Username.Should().Be("ana.perez");
         sentCommand.TemporaryPassword.Should().Be("Temp0ral!");
     }
@@ -157,10 +206,15 @@ public sealed class IdentityUsersControllerTests
     [Fact]
     public async Task AssignTemporaryPassword_nunca_devuelve_la_contrasena_en_la_respuesta()
     {
-        var controller = BuildController(_ => Result<string>.Success("Contraseña temporal asignada correctamente."));
+        var controller = BuildController(_ =>
+            Result<string>.Success("Contraseña temporal asignada correctamente.")
+        );
 
         var response = await controller.AssignTemporaryPassword(
-            "ana.perez", new AssignTemporaryPasswordRequest("Temp0ral!"), CancellationToken.None);
+            "ana.perez",
+            new AssignTemporaryPasswordRequest("Temp0ral!"),
+            CancellationToken.None
+        );
 
         var ok = response.Should().BeOfType<OkObjectResult>().Subject;
         ok.Value.Should().NotBeNull();
@@ -173,7 +227,10 @@ public sealed class IdentityUsersControllerTests
         var controller = BuildController(_ => Result<string>.NotFound("Usuario no encontrado."));
 
         var response = await controller.AssignTemporaryPassword(
-            "no.existe", new AssignTemporaryPasswordRequest("Temp0ral!"), CancellationToken.None);
+            "no.existe",
+            new AssignTemporaryPasswordRequest("Temp0ral!"),
+            CancellationToken.None
+        );
 
         response.Should().BeOfType<NotFoundObjectResult>();
     }
@@ -182,10 +239,14 @@ public sealed class IdentityUsersControllerTests
     public async Task AssignTemporaryPassword_usuario_de_otra_empresa_retorna_403()
     {
         var controller = BuildController(_ =>
-            Result<string>.Forbidden("El usuario no pertenece a la empresa activa."));
+            Result<string>.Forbidden("El usuario no pertenece a la empresa activa.")
+        );
 
         var response = await controller.AssignTemporaryPassword(
-            "ana.perez", new AssignTemporaryPasswordRequest("Temp0ral!"), CancellationToken.None);
+            "ana.perez",
+            new AssignTemporaryPasswordRequest("Temp0ral!"),
+            CancellationToken.None
+        );
 
         response.Should().BeOfType<ObjectResult>();
         ((ObjectResult)response).StatusCode.Should().Be(StatusCodes.Status403Forbidden);

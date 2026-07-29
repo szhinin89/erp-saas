@@ -9,6 +9,6 @@ public sealed class SriConnectivityChecker : ISriConnectivityChecker
 
     public SriConnectivityChecker(SriSoapClient soapClient) => _soapClient = soapClient;
 
-    public Task<bool> PingAsync(string wsdlUrl, CancellationToken ct = default)
-        => _soapClient.PingAsync(wsdlUrl, ct);
+    public Task<bool> PingAsync(string wsdlUrl, CancellationToken ct = default) =>
+        _soapClient.PingAsync(wsdlUrl, ct);
 }

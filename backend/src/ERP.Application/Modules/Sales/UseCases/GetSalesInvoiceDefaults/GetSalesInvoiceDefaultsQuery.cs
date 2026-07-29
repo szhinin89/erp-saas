@@ -10,4 +10,6 @@ namespace ERP.Application.Modules.Sales.UseCases.GetSalesInvoiceDefaults;
 /// DefaultWarehouseId (sigue null; ver comentario del handler) — eso es una mejora de lógica
 /// de negocio fuera de alcance de este cierre.
 /// </summary>
-public record GetSalesInvoiceDefaultsQuery : IRequest<Result<SalesInvoiceDefaultsDto>>, IBranchScopedRequest;
+public record GetSalesInvoiceDefaultsQuery
+    : IRequest<Result<SalesInvoiceDefaultsDto>>,
+        IBranchScopedRequest;

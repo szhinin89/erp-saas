@@ -19,32 +19,48 @@ internal sealed class JournalValidator
     {
         if (entry.Lines.Count < 2)
             return Result<JournalEntry>.ValidationFailure(
-                "El asiento debe tener al menos dos líneas (una de Débito y una de Crédito).", ValidationFailedCode);
+                "El asiento debe tener al menos dos líneas (una de Débito y una de Crédito).",
+                ValidationFailedCode
+            );
 
         foreach (var line in entry.Lines)
         {
             if (line.AccountId == Guid.Empty)
                 return Result<JournalEntry>.ValidationFailure(
-                    "Toda línea del asiento requiere una cuenta contable.", ValidationFailedCode);
+                    "Toda línea del asiento requiere una cuenta contable.",
+                    ValidationFailedCode
+                );
 
             var hasDebit = line.Debit > 0m;
             var hasCredit = line.Credit > 0m;
             if (hasDebit == hasCredit)
                 return Result<JournalEntry>.ValidationFailure(
-                    "Cada línea del asiento debe tener exactamente un monto en Débito o en Crédito.", ValidationFailedCode);
+                    "Cada línea del asiento debe tener exactamente un monto en Débito o en Crédito.",
+                    ValidationFailedCode
+                );
         }
 
-        var debitAccounts = entry.Lines.Where(l => l.Debit > 0m).Select(l => l.AccountId).ToHashSet();
-        var creditAccounts = entry.Lines.Where(l => l.Credit > 0m).Select(l => l.AccountId).ToHashSet();
+        var debitAccounts = entry
+            .Lines.Where(l => l.Debit > 0m)
+            .Select(l => l.AccountId)
+            .ToHashSet();
+        var creditAccounts = entry
+            .Lines.Where(l => l.Credit > 0m)
+            .Select(l => l.AccountId)
+            .ToHashSet();
         if (debitAccounts.Overlaps(creditAccounts))
             return Result<JournalEntry>.ValidationFailure(
-                "Una misma cuenta no puede recibir Débito y Crédito dentro del mismo asiento.", ValidationFailedCode);
+                "Una misma cuenta no puede recibir Débito y Crédito dentro del mismo asiento.",
+                ValidationFailedCode
+            );
 
         var totalDebit = entry.Lines.Sum(l => l.Debit);
         var totalCredit = entry.Lines.Sum(l => l.Credit);
         if (totalDebit == 0m && totalCredit == 0m)
             return Result<JournalEntry>.ValidationFailure(
-                "El asiento no puede contabilizarse con montos en cero.", ValidationFailedCode);
+                "El asiento no puede contabilizarse con montos en cero.",
+                ValidationFailedCode
+            );
 
         try
         {

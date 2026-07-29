@@ -12,7 +12,8 @@ public sealed record PurchaseReceptionProcessingOutcome(
     PurchaseReceptionProcessingStatus Status,
     int LinesDetected,
     int LinesProcessed,
-    string? Notes)
+    string? Notes
+)
 {
     public static PurchaseReceptionProcessingOutcome Failed(string notes) =>
         new(PurchaseReceptionProcessingStatus.Failed, LinesDetected: 0, LinesProcessed: 0, notes);

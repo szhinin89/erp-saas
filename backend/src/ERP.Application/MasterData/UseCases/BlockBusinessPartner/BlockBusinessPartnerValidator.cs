@@ -9,8 +9,11 @@ public sealed class BlockBusinessPartnerValidator : AbstractValidator<BlockBusin
     {
         RuleFor(x => x.BusinessPartnerId).NotEmpty();
         RuleFor(x => x.Reason)
-            .NotEmpty().WithMessage("El motivo de bloqueo es obligatorio.")
+            .NotEmpty()
+            .WithMessage("El motivo de bloqueo es obligatorio.")
             .MaximumLength(CompanyBpTradingSettings.BlockedReasonMaxLen)
-            .WithMessage($"El motivo no puede superar {CompanyBpTradingSettings.BlockedReasonMaxLen} caracteres.");
+            .WithMessage(
+                $"El motivo no puede superar {CompanyBpTradingSettings.BlockedReasonMaxLen} caracteres."
+            );
     }
 }

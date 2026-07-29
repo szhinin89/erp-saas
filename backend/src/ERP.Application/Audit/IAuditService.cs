@@ -9,5 +9,6 @@ namespace ERP.Application.Audit;
 /// </summary>
 public interface IAuditService
 {
-    Task RecordAsync<TAudit>(TAudit record, CancellationToken ct = default) where TAudit : AuditRecordBase;
+    Task RecordAsync<TAudit>(TAudit record, CancellationToken ct = default)
+        where TAudit : AuditRecordBase;
 }

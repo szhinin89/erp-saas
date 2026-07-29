@@ -36,7 +36,8 @@ public sealed class PricingRule : AuditableEntity, ITenantScopedEntity, ICompany
         Guid itemId,
         PricingRuleType ruleType,
         decimal ruleValue,
-        Guid createdBy)
+        Guid createdBy
+    )
     {
         ValidateRule(ruleType, ruleValue);
 
@@ -63,8 +64,18 @@ public sealed class PricingRule : AuditableEntity, ITenantScopedEntity, ICompany
         RuleType = ruleType;
         RuleValue = ruleValue;
         SetUpdated(updatedBy);
-        RaiseDomainEvent(new PricingRuleUpdatedEvent(
-            TenantId, Id, PriceListId, ItemId, oldRuleType, oldRuleValue, ruleType, ruleValue));
+        RaiseDomainEvent(
+            new PricingRuleUpdatedEvent(
+                TenantId,
+                Id,
+                PriceListId,
+                ItemId,
+                oldRuleType,
+                oldRuleValue,
+                ruleType,
+                ruleValue
+            )
+        );
     }
 
     /// <summary>
@@ -77,7 +88,9 @@ public sealed class PricingRule : AuditableEntity, ITenantScopedEntity, ICompany
             throw new InvalidOperationException("La regla ya está deshabilitada.");
         IsActive = false;
         SetUpdated(updatedBy);
-        RaiseDomainEvent(new PricingRuleDisabledEvent(TenantId, Id, PriceListId, ItemId, RuleType, RuleValue));
+        RaiseDomainEvent(
+            new PricingRuleDisabledEvent(TenantId, Id, PriceListId, ItemId, RuleType, RuleValue)
+        );
     }
 
     public void Enable(Guid updatedBy)
@@ -86,7 +99,9 @@ public sealed class PricingRule : AuditableEntity, ITenantScopedEntity, ICompany
             throw new InvalidOperationException("La regla ya está activa.");
         IsActive = true;
         SetUpdated(updatedBy);
-        RaiseDomainEvent(new PricingRuleEnabledEvent(TenantId, Id, PriceListId, ItemId, RuleType, RuleValue));
+        RaiseDomainEvent(
+            new PricingRuleEnabledEvent(TenantId, Id, PriceListId, ItemId, RuleType, RuleValue)
+        );
     }
 
     private static void ValidateRule(PricingRuleType ruleType, decimal ruleValue)

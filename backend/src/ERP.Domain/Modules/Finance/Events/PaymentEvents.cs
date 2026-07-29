@@ -17,7 +17,13 @@ public sealed class CollectionAppliedEvent : BaseDomainEvent, IAuditEvent
     public DateOnly PaymentDate { get; }
 
     public CollectionAppliedEvent(
-        Guid tenantId, Guid paymentId, Guid companyId, Guid customerId, decimal amount, DateOnly paymentDate)
+        Guid tenantId,
+        Guid paymentId,
+        Guid companyId,
+        Guid customerId,
+        decimal amount,
+        DateOnly paymentDate
+    )
     {
         TenantId = tenantId;
         PaymentId = paymentId;
@@ -46,7 +52,13 @@ public sealed class SupplierPaymentAppliedEvent : BaseDomainEvent, IAuditEvent
     public DateOnly PaymentDate { get; }
 
     public SupplierPaymentAppliedEvent(
-        Guid tenantId, Guid paymentId, Guid companyId, Guid supplierId, decimal amount, DateOnly paymentDate)
+        Guid tenantId,
+        Guid paymentId,
+        Guid companyId,
+        Guid supplierId,
+        decimal amount,
+        DateOnly paymentDate
+    )
     {
         TenantId = tenantId;
         PaymentId = paymentId;
@@ -71,7 +83,13 @@ public sealed class CollectionReversedEvent : BaseDomainEvent, IAuditEvent
     public string Reason { get; }
 
     public CollectionReversedEvent(
-        Guid tenantId, Guid paymentId, Guid companyId, Guid customerId, decimal amount, string reason)
+        Guid tenantId,
+        Guid paymentId,
+        Guid companyId,
+        Guid customerId,
+        decimal amount,
+        string reason
+    )
     {
         TenantId = tenantId;
         PaymentId = paymentId;
@@ -96,7 +114,13 @@ public sealed class SupplierPaymentReversedEvent : BaseDomainEvent, IAuditEvent
     public string Reason { get; }
 
     public SupplierPaymentReversedEvent(
-        Guid tenantId, Guid paymentId, Guid companyId, Guid supplierId, decimal amount, string reason)
+        Guid tenantId,
+        Guid paymentId,
+        Guid companyId,
+        Guid supplierId,
+        decimal amount,
+        string reason
+    )
     {
         TenantId = tenantId;
         PaymentId = paymentId;

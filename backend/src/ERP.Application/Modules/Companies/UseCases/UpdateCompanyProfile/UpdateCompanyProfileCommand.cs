@@ -17,4 +17,5 @@ public sealed record UpdateCompanyProfileCommand(
     string? LegalRepPosition,
     string? LegalRepIdNumber,
     string? LegalRepEmail,
-    string? LegalRepPhone) : IRequest<Result<CompanyProfileDto>>;
+    string? LegalRepPhone
+) : IRequest<Result<CompanyProfileDto>>;

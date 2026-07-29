@@ -13,4 +13,5 @@ public sealed record CreateCompanyCommand(
     string CountryCode,
     string Timezone,
     string CurrencyCode,
-    string? BrandingJson) : IRequest<Result<CompanyDetailDto>>;
+    string? BrandingJson
+) : IRequest<Result<CompanyDetailDto>>;

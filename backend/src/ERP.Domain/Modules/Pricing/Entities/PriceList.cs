@@ -41,16 +41,32 @@ public sealed class PriceList : MasterEntity, ITenantScopedEntity, ICompanyOpera
         DateOnly? validFrom = null,
         DateOnly? validUntil = null,
         PricingRuleType? ruleType = null,
-        decimal? ruleValue = null)
+        decimal? ruleValue = null
+    )
     {
         if (string.IsNullOrWhiteSpace(code))
-            throw new ArgumentException("El código de lista de precios es obligatorio.", nameof(code));
+            throw new ArgumentException(
+                "El código de lista de precios es obligatorio.",
+                nameof(code)
+            );
         if (string.IsNullOrWhiteSpace(name))
-            throw new ArgumentException("El nombre de lista de precios es obligatorio.", nameof(name));
-        if (string.IsNullOrWhiteSpace(currencyCode) || currencyCode.Trim().Length != CurrencyCodeLen)
-            throw new ArgumentException("El código de moneda debe tener 3 caracteres.", nameof(currencyCode));
+            throw new ArgumentException(
+                "El nombre de lista de precios es obligatorio.",
+                nameof(name)
+            );
+        if (
+            string.IsNullOrWhiteSpace(currencyCode)
+            || currencyCode.Trim().Length != CurrencyCodeLen
+        )
+            throw new ArgumentException(
+                "El código de moneda debe tener 3 caracteres.",
+                nameof(currencyCode)
+            );
         if (validFrom.HasValue && validUntil.HasValue && validUntil < validFrom)
-            throw new ArgumentException("La fecha fin no puede ser anterior a la fecha inicio.", nameof(validUntil));
+            throw new ArgumentException(
+                "La fecha fin no puede ser anterior a la fecha inicio.",
+                nameof(validUntil)
+            );
         ValidateRule(ruleType, ruleValue);
 
         var pl = new PriceList
@@ -89,9 +105,22 @@ public sealed class PriceList : MasterEntity, ITenantScopedEntity, ICompanyOpera
         DateOnly? validFrom = null,
         DateOnly? validUntil = null,
         PricingRuleType? ruleType = null,
-        decimal? ruleValue = null)
+        decimal? ruleValue = null
+    )
     {
-        var pl = Create(tenantId, companyId, code, name, currencyCode, isDefault, createdBy, validFrom, validUntil, ruleType, ruleValue);
+        var pl = Create(
+            tenantId,
+            companyId,
+            code,
+            name,
+            currencyCode,
+            isDefault,
+            createdBy,
+            validFrom,
+            validUntil,
+            ruleType,
+            ruleValue
+        );
         pl.MarkAsSystemSeeded();
         return pl;
     }
@@ -125,14 +154,27 @@ public sealed class PriceList : MasterEntity, ITenantScopedEntity, ICompanyOpera
         DateOnly? validFrom = null,
         DateOnly? validUntil = null,
         PricingRuleType? ruleType = null,
-        decimal? ruleValue = null)
+        decimal? ruleValue = null
+    )
     {
         if (string.IsNullOrWhiteSpace(name))
-            throw new ArgumentException("El nombre de lista de precios es obligatorio.", nameof(name));
-        if (string.IsNullOrWhiteSpace(currencyCode) || currencyCode.Trim().Length != CurrencyCodeLen)
-            throw new ArgumentException("El código de moneda debe tener 3 caracteres.", nameof(currencyCode));
+            throw new ArgumentException(
+                "El nombre de lista de precios es obligatorio.",
+                nameof(name)
+            );
+        if (
+            string.IsNullOrWhiteSpace(currencyCode)
+            || currencyCode.Trim().Length != CurrencyCodeLen
+        )
+            throw new ArgumentException(
+                "El código de moneda debe tener 3 caracteres.",
+                nameof(currencyCode)
+            );
         if (validFrom.HasValue && validUntil.HasValue && validUntil < validFrom)
-            throw new ArgumentException("La fecha fin no puede ser anterior a la fecha inicio.", nameof(validUntil));
+            throw new ArgumentException(
+                "La fecha fin no puede ser anterior a la fecha inicio.",
+                nameof(validUntil)
+            );
         ValidateRule(ruleType, ruleValue);
 
         var oldRuleType = RuleType;
@@ -146,21 +188,32 @@ public sealed class PriceList : MasterEntity, ITenantScopedEntity, ICompanyOpera
         RuleType = ruleType;
         RuleValue = ruleValue;
         SetUpdated(updatedBy);
-        RaiseDomainEvent(new PriceListUpdatedEvent(TenantId, Id, oldRuleType, oldRuleValue, ruleType, ruleValue));
+        RaiseDomainEvent(
+            new PriceListUpdatedEvent(TenantId, Id, oldRuleType, oldRuleValue, ruleType, ruleValue)
+        );
     }
 
     private static void ValidateRule(PricingRuleType? ruleType, decimal? ruleValue)
     {
         if (ruleType.HasValue && !ruleValue.HasValue)
-            throw new ArgumentException("El valor de la regla general es obligatorio cuando se especifica un tipo de regla.", nameof(ruleValue));
+            throw new ArgumentException(
+                "El valor de la regla general es obligatorio cuando se especifica un tipo de regla.",
+                nameof(ruleValue)
+            );
         if (!ruleType.HasValue && ruleValue.HasValue)
-            throw new ArgumentException("No se puede especificar un valor de regla sin un tipo de regla.", nameof(ruleType));
+            throw new ArgumentException(
+                "No se puede especificar un valor de regla sin un tipo de regla.",
+                nameof(ruleType)
+            );
         if (ruleType is PricingRuleType.FixedPrice && ruleValue < 0)
-            throw new ArgumentException("El precio fijo de la regla no puede ser negativo.", nameof(ruleValue));
+            throw new ArgumentException(
+                "El precio fijo de la regla no puede ser negativo.",
+                nameof(ruleValue)
+            );
     }
 
     /// <summary>Vigente en la fecha indicada según ValidFrom/ValidUntil (ambos opcionales).</summary>
     public bool IsValidOn(DateOnly date) =>
-        (!ValidFrom.HasValue || date >= ValidFrom.Value) &&
-        (!ValidUntil.HasValue || date <= ValidUntil.Value);
+        (!ValidFrom.HasValue || date >= ValidFrom.Value)
+        && (!ValidUntil.HasValue || date <= ValidUntil.Value);
 }

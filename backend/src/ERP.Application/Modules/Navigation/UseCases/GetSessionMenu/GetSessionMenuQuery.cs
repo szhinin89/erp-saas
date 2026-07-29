@@ -10,4 +10,6 @@ namespace ERP.Application.Navigation.UseCases.GetSessionMenu;
 /// contra la membresía del usuario antes de construir el menú. Sesiones pendientes de
 /// selección de empresa (<c>RequiresCompanySelection = true</c>) no deben invocar este endpoint.
 /// </summary>
-public sealed record GetSessionMenuQuery : IRequest<Result<IReadOnlyList<NavMenuGroupDto>>>, IRequiresCompanyContext;
+public sealed record GetSessionMenuQuery
+    : IRequest<Result<IReadOnlyList<NavMenuGroupDto>>>,
+        IRequiresCompanyContext;

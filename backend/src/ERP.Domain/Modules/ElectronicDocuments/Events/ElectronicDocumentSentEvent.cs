@@ -13,8 +13,12 @@ public sealed class ElectronicDocumentSentEvent : BaseDomainEvent, IAuditEvent
     public ElectronicDocumentState ToState { get; }
 
     public ElectronicDocumentSentEvent(
-        Guid tenantId, Guid electronicDocumentId, ElectronicDocumentType documentType,
-        ElectronicDocumentState fromState, ElectronicDocumentState toState)
+        Guid tenantId,
+        Guid electronicDocumentId,
+        ElectronicDocumentType documentType,
+        ElectronicDocumentState fromState,
+        ElectronicDocumentState toState
+    )
     {
         TenantId = tenantId;
         ElectronicDocumentId = electronicDocumentId;

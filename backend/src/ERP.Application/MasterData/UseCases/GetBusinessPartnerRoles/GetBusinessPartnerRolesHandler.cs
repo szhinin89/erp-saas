@@ -10,13 +10,22 @@ public sealed class GetBusinessPartnerRolesHandler
 {
     private readonly IBusinessPartnerRoleRepository _roleRepo;
 
-    public GetBusinessPartnerRolesHandler(IBusinessPartnerRoleRepository roleRepo) => _roleRepo = roleRepo;
+    public GetBusinessPartnerRolesHandler(IBusinessPartnerRoleRepository roleRepo) =>
+        _roleRepo = roleRepo;
 
     public async Task<Result<IReadOnlyList<BusinessPartnerRoleDto>>> Handle(
-        GetBusinessPartnerRolesQuery q, CancellationToken cancellationToken)
+        GetBusinessPartnerRolesQuery q,
+        CancellationToken cancellationToken
+    )
     {
-        var roles = await _roleRepo.GetByBusinessPartnerAsync(q.BusinessPartnerId, q.OnlyActive, cancellationToken);
-        var dtos = (IReadOnlyList<BusinessPartnerRoleDto>)roles.Select(BusinessPartnerRoleDto.From).ToList();
+        var roles = await _roleRepo.GetByBusinessPartnerAsync(
+            q.BusinessPartnerId,
+            q.OnlyActive,
+            cancellationToken
+        );
+        var dtos =
+            (IReadOnlyList<BusinessPartnerRoleDto>)
+                roles.Select(BusinessPartnerRoleDto.From).ToList();
         return Result<IReadOnlyList<BusinessPartnerRoleDto>>.Success(dtos);
     }
 }

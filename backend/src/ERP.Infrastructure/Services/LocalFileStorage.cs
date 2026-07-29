@@ -23,13 +23,20 @@ public sealed class LocalFileStorage : IFileStorage
     public async Task<string> SaveAsync(
         string relativePath,
         Stream content,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default
+    )
     {
         var fullPath = FullPath(relativePath);
         Directory.CreateDirectory(Path.GetDirectoryName(fullPath)!);
 
         await using var fs = new FileStream(
-            fullPath, FileMode.Create, FileAccess.Write, FileShare.None, 65536, useAsync: true);
+            fullPath,
+            FileMode.Create,
+            FileAccess.Write,
+            FileShare.None,
+            65536,
+            useAsync: true
+        );
         await content.CopyToAsync(fs, cancellationToken);
 
         return relativePath;
@@ -42,7 +49,13 @@ public sealed class LocalFileStorage : IFileStorage
             return Task.FromResult<Stream?>(null);
 
         Stream stream = new FileStream(
-            fullPath, FileMode.Open, FileAccess.Read, FileShare.Read, 65536, useAsync: true);
+            fullPath,
+            FileMode.Open,
+            FileAccess.Read,
+            FileShare.Read,
+            65536,
+            useAsync: true
+        );
         return Task.FromResult<Stream?>(stream);
     }
 

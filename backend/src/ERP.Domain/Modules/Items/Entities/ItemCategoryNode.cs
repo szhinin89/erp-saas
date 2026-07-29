@@ -30,7 +30,8 @@ public sealed class ItemCategoryNode : MasterEntity, ITenantScopedEntity
         Guid createdBy,
         Guid? parentId = null,
         string? description = null,
-        int sortOrder = 0)
+        int sortOrder = 0
+    )
     {
         if (string.IsNullOrWhiteSpace(code))
             throw new ArgumentException("El código del nodo es obligatorio.", nameof(code));
@@ -69,14 +70,21 @@ public sealed class ItemCategoryNode : MasterEntity, ITenantScopedEntity
         Guid createdBy,
         Guid? parentId = null,
         string? description = null,
-        int sortOrder = 0)
+        int sortOrder = 0
+    )
     {
         var node = Create(tenantId, code, name, level, createdBy, parentId, description, sortOrder);
         node.MarkAsSystemSeeded();
         return node;
     }
 
-    public void Update(string code, string name, Guid updatedBy, string? description = null, int? sortOrder = null)
+    public void Update(
+        string code,
+        string name,
+        Guid updatedBy,
+        string? description = null,
+        int? sortOrder = null
+    )
     {
         this.EnsureEditable("El nodo de categoría", "modificarse");
         if (string.IsNullOrWhiteSpace(code))
@@ -87,7 +95,8 @@ public sealed class ItemCategoryNode : MasterEntity, ITenantScopedEntity
         Code = code.Trim().ToUpperInvariant();
         Name = name.Trim();
         Description = description?.Trim() is { Length: > 0 } d ? d : null;
-        if (sortOrder.HasValue) SortOrder = sortOrder.Value;
+        if (sortOrder.HasValue)
+            SortOrder = sortOrder.Value;
         SetUpdated(updatedBy);
     }
 

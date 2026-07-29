@@ -21,7 +21,8 @@ public sealed class CreateEmissionPointCommandHandler
         IEstablishmentRepository establishments,
         ICurrentTenant currentTenant,
         ICurrentCompany company,
-        ICurrentUser user)
+        ICurrentUser user
+    )
     {
         _repo = repo;
         _establishments = establishments;
@@ -30,22 +31,44 @@ public sealed class CreateEmissionPointCommandHandler
         _user = user;
     }
 
-    public async Task<Result<EmissionPointDto>> Handle(CreateEmissionPointCommand command, CancellationToken cancellationToken)
+    public async Task<Result<EmissionPointDto>> Handle(
+        CreateEmissionPointCommand command,
+        CancellationToken cancellationToken
+    )
     {
         var tenantId = _currentTenant.TenantId;
         var companyId = _company.CompanyId;
 
-        var estab = await _establishments.GetByIdAsync(tenantId, command.EstablishmentId, cancellationToken);
+        var estab = await _establishments.GetByIdAsync(
+            tenantId,
+            command.EstablishmentId,
+            cancellationToken
+        );
         if (estab is null || !estab.IsActive)
-            return Result<EmissionPointDto>.Failure("El establecimiento no existe o no está activo.");
+            return Result<EmissionPointDto>.Failure(
+                "El establecimiento no existe o no está activo."
+            );
 
         var code = command.Code.Trim().PadLeft(3, '0');
-        var exists = await _repo.ExistsAsync(tenantId, command.EstablishmentId, code, cancellationToken);
+        var exists = await _repo.ExistsAsync(
+            tenantId,
+            command.EstablishmentId,
+            code,
+            cancellationToken
+        );
         if (exists)
-            return Result<EmissionPointDto>.Failure($"Ya existe un punto de emisión con código {code} en este establecimiento.");
+            return Result<EmissionPointDto>.Failure(
+                $"Ya existe un punto de emisión con código {code} en este establecimiento."
+            );
 
         if (command.IsDefault)
-            await _repo.ClearDefaultExceptAsync(tenantId, command.EstablishmentId, null, _user.UserId, cancellationToken);
+            await _repo.ClearDefaultExceptAsync(
+                tenantId,
+                command.EstablishmentId,
+                null,
+                _user.UserId,
+                cancellationToken
+            );
 
         var entity = EmissionPoint.Create(
             tenantId: tenantId,
@@ -55,11 +78,14 @@ public sealed class CreateEmissionPointCommandHandler
             name: command.Name,
             emissionType: command.EmissionType,
             isDefault: command.IsDefault,
-            createdBy: _user.UserId);
+            createdBy: _user.UserId
+        );
 
         await _repo.AddAsync(entity, cancellationToken);
         await _repo.SaveChangesAsync(cancellationToken);
 
-        return Result<EmissionPointDto>.Success(GetEmissionPointsByEstablishmentQueryHandler.ToDto(entity));
+        return Result<EmissionPointDto>.Success(
+            GetEmissionPointsByEstablishmentQueryHandler.ToDto(entity)
+        );
     }
 }

@@ -18,7 +18,12 @@ public sealed class PriceListItem : AuditableEntity, ITenantScopedEntity, ICompa
     private PriceListItem() { }
 
     public static PriceListItem Create(
-        Guid tenantId, Guid companyId, Guid priceListId, Guid itemId, Guid createdBy)
+        Guid tenantId,
+        Guid companyId,
+        Guid priceListId,
+        Guid itemId,
+        Guid createdBy
+    )
     {
         var assignment = new PriceListItem
         {
@@ -30,14 +35,16 @@ public sealed class PriceListItem : AuditableEntity, ITenantScopedEntity, ICompa
             IsActive = true,
         };
         assignment.SetCreated(createdBy);
-        assignment.RaiseDomainEvent(new PriceListItemAssignedEvent
-        {
-            TenantId = tenantId,
-            AssignmentId = assignment.Id,
-            PriceListId = priceListId,
-            ItemId = itemId,
-            AssignedBy = createdBy,
-        });
+        assignment.RaiseDomainEvent(
+            new PriceListItemAssignedEvent
+            {
+                TenantId = tenantId,
+                AssignmentId = assignment.Id,
+                PriceListId = priceListId,
+                ItemId = itemId,
+                AssignedBy = createdBy,
+            }
+        );
         return assignment;
     }
 
@@ -47,14 +54,16 @@ public sealed class PriceListItem : AuditableEntity, ITenantScopedEntity, ICompa
             throw new InvalidOperationException("La asignación ya está activa.");
         IsActive = true;
         SetUpdated(updatedBy);
-        RaiseDomainEvent(new PriceListItemEnabledEvent
-        {
-            TenantId = TenantId,
-            AssignmentId = Id,
-            PriceListId = PriceListId,
-            ItemId = ItemId,
-            EnabledBy = updatedBy,
-        });
+        RaiseDomainEvent(
+            new PriceListItemEnabledEvent
+            {
+                TenantId = TenantId,
+                AssignmentId = Id,
+                PriceListId = PriceListId,
+                ItemId = ItemId,
+                EnabledBy = updatedBy,
+            }
+        );
     }
 
     public void Disable(Guid updatedBy)
@@ -63,13 +72,15 @@ public sealed class PriceListItem : AuditableEntity, ITenantScopedEntity, ICompa
             throw new InvalidOperationException("La asignación ya está deshabilitada.");
         IsActive = false;
         SetUpdated(updatedBy);
-        RaiseDomainEvent(new PriceListItemDisabledEvent
-        {
-            TenantId = TenantId,
-            AssignmentId = Id,
-            PriceListId = PriceListId,
-            ItemId = ItemId,
-            DisabledBy = updatedBy,
-        });
+        RaiseDomainEvent(
+            new PriceListItemDisabledEvent
+            {
+                TenantId = TenantId,
+                AssignmentId = Id,
+                PriceListId = PriceListId,
+                ItemId = ItemId,
+                DisabledBy = updatedBy,
+            }
+        );
     }
 }

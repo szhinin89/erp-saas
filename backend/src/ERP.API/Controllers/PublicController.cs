@@ -12,13 +12,15 @@ namespace ERP.API.Controllers;
 public sealed class PublicController : ControllerBase
 {
     [HttpGet("deployment")]
-    public IActionResult GetDeploymentInfo()
-        => this.ApiOk(new
-        {
-            platformPanelEnabled = false,
-            dedicatedSingleClientInstance = true,
-            maxActiveSubscribers = (int?)null,
-            maxIdentityUsers = (int?)null,
-            maxUsersPerSubscriber = (int?)null,
-        });
+    public IActionResult GetDeploymentInfo() =>
+        this.ApiOk(
+            new
+            {
+                platformPanelEnabled = false,
+                dedicatedSingleClientInstance = true,
+                maxActiveSubscribers = (int?)null,
+                maxIdentityUsers = (int?)null,
+                maxUsersPerSubscriber = (int?)null,
+            }
+        );
 }

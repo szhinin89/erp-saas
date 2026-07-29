@@ -17,7 +17,8 @@ public interface IRidePdfDocumentRepository
         string brandingVersion,
         string rendererVersion,
         string rideSpecificationVersion,
-        CancellationToken ct = default);
+        CancellationToken ct = default
+    );
 
     Task AddAsync(RidePdfDocument document, CancellationToken ct = default);
 

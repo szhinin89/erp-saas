@@ -8,5 +8,5 @@ public sealed record GetStockMovementsQuery(
     Guid ItemId,
     Guid WarehouseId,
     DateTime? From,
-    DateTime? To)
-    : IRequest<Result<IReadOnlyList<StockMovementDto>>>, IBranchScopedRequest;
+    DateTime? To
+) : IRequest<Result<IReadOnlyList<StockMovementDto>>>, IBranchScopedRequest;

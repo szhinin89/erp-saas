@@ -6,4 +6,3 @@ public record SecurityAdminScopeAssignmentDto(
     int Scope,
     bool IsAllowed
 );
-

@@ -5,7 +5,8 @@ namespace ERP.Application.Access.UseCases.AssignTemporaryPasswordAdmin;
 
 /// <summary>Misma política de complejidad que CreateSystemUserCommandValidator/ChangeMyPasswordCommandValidator
 /// — ver PasswordComplexityRules.</summary>
-public sealed class AssignTemporaryPasswordAdminCommandValidator : AbstractValidator<AssignTemporaryPasswordAdminCommand>
+public sealed class AssignTemporaryPasswordAdminCommandValidator
+    : AbstractValidator<AssignTemporaryPasswordAdminCommand>
 {
     public AssignTemporaryPasswordAdminCommandValidator()
     {

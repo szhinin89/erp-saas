@@ -11,7 +11,8 @@ namespace ERP.Application.Modules.Accounting.Posting.Translators;
 /// automático de ningún JournalEntry existente, sin desglose de impuestos, GrandTotal transporta
 /// el monto reversado, fecha del hecho contable tomada de BaseDomainEvent.OccurredOn.
 /// </summary>
-public sealed class SupplierPaymentReversedPostingTranslator : INotificationHandler<SupplierPaymentReversedEvent>
+public sealed class SupplierPaymentReversedPostingTranslator
+    : INotificationHandler<SupplierPaymentReversedEvent>
 {
     private const string SourceModuleName = "Finance";
     private const string FactTypeName = "SupplierPaymentReversed";
@@ -20,7 +21,9 @@ public sealed class SupplierPaymentReversedPostingTranslator : INotificationHand
     private readonly ILogger<SupplierPaymentReversedPostingTranslator> _logger;
 
     public SupplierPaymentReversedPostingTranslator(
-        IPostingEngine postingEngine, ILogger<SupplierPaymentReversedPostingTranslator> logger)
+        IPostingEngine postingEngine,
+        ILogger<SupplierPaymentReversedPostingTranslator> logger
+    )
     {
         _postingEngine = postingEngine;
         _logger = logger;
@@ -29,8 +32,18 @@ public sealed class SupplierPaymentReversedPostingTranslator : INotificationHand
     public async Task Handle(SupplierPaymentReversedEvent e, CancellationToken ct)
     {
         var fact = new PostingFact(
-            e.TenantId!.Value, e.CompanyId, SourceModuleName, FactTypeName, e.PaymentId,
-            DateOnly.FromDateTime(e.OccurredOn), 0m, 0m, 0m, 0m, e.Amount);
+            e.TenantId!.Value,
+            e.CompanyId,
+            SourceModuleName,
+            FactTypeName,
+            e.PaymentId,
+            DateOnly.FromDateTime(e.OccurredOn),
+            0m,
+            0m,
+            0m,
+            0m,
+            e.Amount
+        );
 
         var result = await _postingEngine.PostAsync(fact, ct);
 
@@ -38,7 +51,10 @@ public sealed class SupplierPaymentReversedPostingTranslator : INotificationHand
         {
             _logger.LogWarning(
                 "Posting failed for SupplierPaymentReversed {PaymentId}: {Code} — {Error}",
-                e.PaymentId, result.Code, result.Error);
+                e.PaymentId,
+                result.Code,
+                result.Error
+            );
         }
     }
 }

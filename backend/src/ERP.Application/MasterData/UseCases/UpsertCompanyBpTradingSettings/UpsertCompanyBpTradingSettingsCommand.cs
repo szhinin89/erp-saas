@@ -13,5 +13,5 @@ public sealed record UpsertCompanyBpTradingSettingsCommand(
     Guid BusinessPartnerId,
     decimal CreditLimit,
     int PaymentDays,
-    string CreditCurrencyCode = "USD")
-    : IRequest<Result<CompanyBpTradingSettingsDto>>, ICompanyScopedRequest;
+    string CreditCurrencyCode = "USD"
+) : IRequest<Result<CompanyBpTradingSettingsDto>>, ICompanyScopedRequest;

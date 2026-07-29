@@ -40,18 +40,25 @@ public sealed class QuestPdfRideRenderer : IRideRenderer
     private readonly IFileStorage _fileStorage;
 
     public QuestPdfRideRenderer(
-        IRideQrCodeGenerator qrCodeGenerator, IRideBarcodeGenerator barcodeGenerator, IFileStorage fileStorage)
+        IRideQrCodeGenerator qrCodeGenerator,
+        IRideBarcodeGenerator barcodeGenerator,
+        IFileStorage fileStorage
+    )
     {
         _qrCodeGenerator = qrCodeGenerator;
         _barcodeGenerator = barcodeGenerator;
         _fileStorage = fileStorage;
     }
 
-    public async Task<byte[]> RenderAsync(IRideDocumentLayout layout, CancellationToken ct = default)
+    public async Task<byte[]> RenderAsync(
+        IRideDocumentLayout layout,
+        CancellationToken ct = default
+    )
     {
         if (layout is not InvoiceRideDocumentLayout invoiceLayout)
             throw new NotSupportedException(
-                $"QuestPdfRideRenderer no soporta todavía el tipo de layout '{layout.GetType().Name}'.");
+                $"QuestPdfRideRenderer no soporta todavía el tipo de layout '{layout.GetType().Name}'."
+            );
 
         var qrImageBytes = _qrCodeGenerator.Generate(invoiceLayout.Header.AccessKey);
         var barcodeImageBytes = _barcodeGenerator.Generate(invoiceLayout.Header.AccessKey);
@@ -65,40 +72,65 @@ public sealed class QuestPdfRideRenderer : IRideRenderer
                 page.Margin(20);
                 page.DefaultTextStyle(style => style.FontSize(8));
 
-                page.Header().Element(c => HeaderSection.Compose(c, invoiceLayout, logoBytes, barcodeImageBytes));
+                page.Header()
+                    .Element(c =>
+                        HeaderSection.Compose(c, invoiceLayout, logoBytes, barcodeImageBytes)
+                    );
 
-                page.Content().PaddingVertical(6).Column(column =>
-                {
-                    column.Spacing(6);
-                    column.Item().Element(c => BuyerSection.Compose(c, invoiceLayout));
-                    column.Item().Element(c => LinesSection.Compose(c, invoiceLayout));
-                    column.Item().Row(row =>
+                page.Content()
+                    .PaddingVertical(6)
+                    .Column(column =>
                     {
-                        row.RelativeItem(3).Column(left =>
-                        {
-                            left.Spacing(6);
-                            left.Item().Element(c => AdditionalInfoSection.Compose(c, invoiceLayout));
-                            left.Item().Element(c => PaymentsSection.Compose(c, invoiceLayout));
-                        });
-                        row.ConstantItem(8);
-                        row.RelativeItem(2).Element(c => TaxSummarySection.Compose(c, invoiceLayout));
+                        column.Spacing(6);
+                        column.Item().Element(c => BuyerSection.Compose(c, invoiceLayout));
+                        column.Item().Element(c => LinesSection.Compose(c, invoiceLayout));
+                        column
+                            .Item()
+                            .Row(row =>
+                            {
+                                row.RelativeItem(3)
+                                    .Column(left =>
+                                    {
+                                        left.Spacing(6);
+                                        left.Item()
+                                            .Element(c =>
+                                                AdditionalInfoSection.Compose(c, invoiceLayout)
+                                            );
+                                        left.Item()
+                                            .Element(c =>
+                                                PaymentsSection.Compose(c, invoiceLayout)
+                                            );
+                                    });
+                                row.ConstantItem(8);
+                                row.RelativeItem(2)
+                                    .Element(c => TaxSummarySection.Compose(c, invoiceLayout));
+                            });
                     });
-                });
 
-                page.Footer().Column(footer =>
-                {
-                    footer.Item().Element(c => QrFooterSection.Compose(c, invoiceLayout, qrImageBytes));
-                    footer.Item().PaddingTop(4).AlignCenter()
-                        .Text("Representación impresa del comprobante electrónico.").FontSize(7);
-                    footer.Item().AlignCenter().Text("www.sri.gob.ec").FontSize(7);
-                });
+                page.Footer()
+                    .Column(footer =>
+                    {
+                        footer
+                            .Item()
+                            .Element(c => QrFooterSection.Compose(c, invoiceLayout, qrImageBytes));
+                        footer
+                            .Item()
+                            .PaddingTop(4)
+                            .AlignCenter()
+                            .Text("Representación impresa del comprobante electrónico.")
+                            .FontSize(7);
+                        footer.Item().AlignCenter().Text("www.sri.gob.ec").FontSize(7);
+                    });
             });
         });
 
         return document.GeneratePdf();
     }
 
-    private async Task<byte[]?> ResolveLogoBytesAsync(InvoiceRideDocumentLayout layout, CancellationToken ct)
+    private async Task<byte[]?> ResolveLogoBytesAsync(
+        InvoiceRideDocumentLayout layout,
+        CancellationToken ct
+    )
     {
         if (layout.Branding.LogoStoragePath is not { } path)
             return null;

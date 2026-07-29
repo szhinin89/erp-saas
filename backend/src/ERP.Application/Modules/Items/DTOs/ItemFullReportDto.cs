@@ -13,7 +13,6 @@ public record ItemFullReportDto(
     string? Observations,
     Guid ItemTypeId,
     string ItemTypeName,
-
     // ── Classification (with names for display) ────────────────────────
     Guid? CategoryNodeId,
     Guid? BrandId,
@@ -21,19 +20,16 @@ public record ItemFullReportDto(
     string DefaultUomCode,
     string DefaultUomAbbrev,
     string DefaultUomName,
-
     // ── Config sections ────────────────────────────────────────────────
     ItemTaxConfigDto TaxConfig,
     ItemSaleConfigDto SaleConfig,
     ItemStockConfigDto StockConfig,
-
     // ── Collections ────────────────────────────────────────────────────
     IReadOnlyList<ItemVariantDto> Variants,
     IReadOnlyList<ItemImageDto> Images,
     IReadOnlyList<ItemUnitConversionDto> UnitConversions,
     IReadOnlyList<ItemSubstituteDto> Substitutes,
     IReadOnlyList<ItemPackagingLevelDto> PackagingLevels,
-
     // ── Audit ──────────────────────────────────────────────────────────
     bool IsActive,
     DateTime CreatedAt,

@@ -4,4 +4,5 @@ using MediatR;
 
 namespace ERP.Application.Modules.Companies.UseCases.ListCompanies;
 
-public sealed record ListCompaniesQuery(bool ActiveOnly = true) : IRequest<Result<IReadOnlyList<CompanyListItemDto>>>;
+public sealed record ListCompaniesQuery(bool ActiveOnly = true)
+    : IRequest<Result<IReadOnlyList<CompanyListItemDto>>>;

@@ -9,17 +9,22 @@ namespace ERP.Application.Access.UseCases.UpsertCompanyUserMembershipAdmin;
 /// reglas (ProfileId, DefaultBranchId, LoginMode) las sigue validando el UseCase de Fase D al que
 /// se delega.
 /// </summary>
-public sealed class UpsertCompanyUserMembershipAdminCommandValidator : AbstractValidator<UpsertCompanyUserMembershipAdminCommand>
+public sealed class UpsertCompanyUserMembershipAdminCommandValidator
+    : AbstractValidator<UpsertCompanyUserMembershipAdminCommand>
 {
     public UpsertCompanyUserMembershipAdminCommandValidator()
     {
         RuleFor(x => x.Username)
-            .NotEmpty().WithMessage("El username del usuario es obligatorio.")
-            .MaximumLength(50).WithMessage("El username no puede exceder 50 caracteres.");
+            .NotEmpty()
+            .WithMessage("El username del usuario es obligatorio.")
+            .MaximumLength(50)
+            .WithMessage("El username no puede exceder 50 caracteres.");
 
         RuleFor(x => x.Role)
-            .NotEmpty().WithMessage("El rol es obligatorio.")
-            .MaximumLength(50).WithMessage("El rol no puede exceder 50 caracteres.");
+            .NotEmpty()
+            .WithMessage("El rol es obligatorio.")
+            .MaximumLength(50)
+            .WithMessage("El rol no puede exceder 50 caracteres.");
 
         RuleForEach(x => x.AuthorizedBranchIds)
             .NotEqual(Guid.Empty)

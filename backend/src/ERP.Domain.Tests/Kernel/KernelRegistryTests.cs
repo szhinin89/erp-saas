@@ -19,8 +19,10 @@ public sealed class KernelRegistryTests
     // "purchases", "expenses" sin uso, "products."/"inventory.products" → sucedido por "items.").
     private static readonly string[] LegacyFragments =
     [
-        "purchasing", "expenses",
-        "inventory.products", "products.",
+        "purchasing",
+        "expenses",
+        "inventory.products",
+        "products.",
     ];
 
     [Fact]
@@ -36,14 +38,18 @@ public sealed class KernelRegistryTests
     {
         var allowed = new HashSet<string>(KernelRegistry.Permissions, StringComparer.Ordinal);
 
-        var orphanKeys = KernelRegistry.Navigation
-            .Where(n => n.PermissionKey is not null)
+        var orphanKeys = KernelRegistry
+            .Navigation.Where(n => n.PermissionKey is not null)
             .Select(n => n.PermissionKey!)
             .Where(key => !allowed.Contains(key))
             .Distinct()
             .ToList();
 
-        orphanKeys.Should().BeEmpty("todo permiso referenciado por navegación debe existir en KernelRegistry.Permissions");
+        orphanKeys
+            .Should()
+            .BeEmpty(
+                "todo permiso referenciado por navegación debe existir en KernelRegistry.Permissions"
+            );
     }
 
     [Fact]
@@ -68,22 +74,28 @@ public sealed class KernelRegistryTests
     {
         var byRoute = KernelRegistry.Navigation.ToDictionary(n => n.RoutePath, n => n.Id);
 
-        byRoute["/settings/company"].Should().Be(Guid.Parse("00000000-0000-4000-8000-000000000101"));
+        byRoute["/settings/company"]
+            .Should()
+            .Be(Guid.Parse("00000000-0000-4000-8000-000000000101"));
         byRoute["/companies"].Should().Be(Guid.Parse("00000000-0000-4000-8000-000000000104"));
     }
 
     [Fact]
     public void Permissions_and_routes_have_no_legacy_module_fragments()
     {
-        var keys = KernelRegistry.Permissions
-            .Concat(KernelRegistry.Navigation.Select(n => n.RoutePath))
+        var keys = KernelRegistry
+            .Permissions.Concat(KernelRegistry.Navigation.Select(n => n.RoutePath))
             .Concat(KernelRegistry.Modules.Select(m => m.Code));
 
         foreach (var key in keys)
         {
             foreach (var fragment in LegacyFragments)
             {
-                key.Should().NotContain(fragment, $"'{key}' no debe contener el fragmento legacy '{fragment}'");
+                key.Should()
+                    .NotContain(
+                        fragment,
+                        $"'{key}' no debe contener el fragmento legacy '{fragment}'"
+                    );
             }
         }
     }

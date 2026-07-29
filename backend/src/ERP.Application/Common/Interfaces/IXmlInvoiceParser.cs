@@ -7,8 +7,14 @@ namespace ERP.Application.Common.Interfaces;
 /// </summary>
 public interface IXmlInvoiceParser
 {
-    Task<InvoiceParseResult> ParseAsync(Stream xmlStream, CancellationToken cancellationToken = default);
-    Task<SupplierNoteParseResult> ParseSupplierNoteAsync(Stream xmlStream, CancellationToken cancellationToken = default);
+    Task<InvoiceParseResult> ParseAsync(
+        Stream xmlStream,
+        CancellationToken cancellationToken = default
+    );
+    Task<SupplierNoteParseResult> ParseSupplierNoteAsync(
+        Stream xmlStream,
+        CancellationToken cancellationToken = default
+    );
 }
 
 public sealed record InvoiceParseResult(

@@ -2,7 +2,10 @@ using ERP.Domain.Common;
 
 namespace ERP.Domain.Modules.Inventory.Entities;
 
-public sealed class StockAdjustment : AuditableEntity, ITenantScopedEntity, ICompanyOperationalEntity
+public sealed class StockAdjustment
+    : AuditableEntity,
+        ITenantScopedEntity,
+        ICompanyOperationalEntity
 {
     public Guid CompanyId { get; private set; }
     public const int NumberMaxLen = 20;
@@ -41,10 +44,14 @@ public sealed class StockAdjustment : AuditableEntity, ITenantScopedEntity, ICom
         string reason,
         string? notes,
         Guid createdBy,
-        Guid companyId = default)
+        Guid companyId = default
+    )
     {
         if (adjustmentQty == 0)
-            throw new ArgumentException("Adjustment quantity cannot be zero.", nameof(adjustmentQty));
+            throw new ArgumentException(
+                "Adjustment quantity cannot be zero.",
+                nameof(adjustmentQty)
+            );
         if (string.IsNullOrWhiteSpace(reason))
             throw new ArgumentException("Reason is required.", nameof(reason));
 
@@ -73,7 +80,9 @@ public sealed class StockAdjustment : AuditableEntity, ITenantScopedEntity, ICom
     public void Execute(Guid userId)
     {
         if (Status != "Draft")
-            throw new InvalidOperationException($"Only Draft adjustments can be executed (current: {Status}).");
+            throw new InvalidOperationException(
+                $"Only Draft adjustments can be executed (current: {Status})."
+            );
         Status = "Executed";
         ExecutedAt = DateTime.UtcNow;
         ExecutedBy = userId;
@@ -83,7 +92,9 @@ public sealed class StockAdjustment : AuditableEntity, ITenantScopedEntity, ICom
     public void Cancel(Guid userId)
     {
         if (Status != "Draft")
-            throw new InvalidOperationException($"Only Draft adjustments can be cancelled (current: {Status}).");
+            throw new InvalidOperationException(
+                $"Only Draft adjustments can be cancelled (current: {Status})."
+            );
         Status = "Cancelled";
         SetUpdated(userId);
     }

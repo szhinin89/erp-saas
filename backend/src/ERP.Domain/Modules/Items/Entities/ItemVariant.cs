@@ -29,7 +29,8 @@ public sealed class ItemVariant : MasterEntity, ITenantScopedEntity
         IReadOnlyList<(Guid AttributeDefinitionId, string Value)> attributes,
         bool isDefault,
         int sortOrder,
-        Guid createdBy)
+        Guid createdBy
+    )
     {
         if (string.IsNullOrWhiteSpace(sku))
             throw new ArgumentException("El SKU de la variante es obligatorio.", nameof(sku));
@@ -50,27 +51,47 @@ public sealed class ItemVariant : MasterEntity, ITenantScopedEntity
 
         foreach (var attr in attributes)
             variant._attributes.Add(
-                ItemVariantAttribute.Create(variant.Id, tenantId, attr.AttributeDefinitionId, attr.Value, createdBy));
+                ItemVariantAttribute.Create(
+                    variant.Id,
+                    tenantId,
+                    attr.AttributeDefinitionId,
+                    attr.Value,
+                    createdBy
+                )
+            );
 
         return variant;
     }
 
-    public void AddBarcode(string code, string type, Guid tenantId, Guid createdBy, bool isPrimary = false)
+    public void AddBarcode(
+        string code,
+        string type,
+        Guid tenantId,
+        Guid createdBy,
+        bool isPrimary = false
+    )
     {
         if (_barcodes.Any(b => b.IsActive && b.Code == code))
-            throw new InvalidOperationException($"El código de barras '{code}' ya existe en esta variante.");
+            throw new InvalidOperationException(
+                $"El código de barras '{code}' ya existe en esta variante."
+            );
 
-        _barcodes.Add(ItemVariantBarcode.Create(ItemId, tenantId, code, type, createdBy, Id, isPrimary));
+        _barcodes.Add(
+            ItemVariantBarcode.Create(ItemId, tenantId, code, type, createdBy, Id, isPrimary)
+        );
     }
 
     public void DisableBarcode(Guid barcodeId, Guid updatedBy)
     {
         var bc = _barcodes.FirstOrDefault(b => b.Id == barcodeId);
-        if (bc is null) throw new InvalidOperationException("Código de barras no encontrado en esta variante.");
+        if (bc is null)
+            throw new InvalidOperationException("Código de barras no encontrado en esta variante.");
         bc.Disable(updatedBy);
     }
 
     public void SetAsDefault() => IsDefault = true;
+
     public void ClearDefault() => IsDefault = false;
+
     public void UpdateSortOrder(int order) => SortOrder = order;
 }

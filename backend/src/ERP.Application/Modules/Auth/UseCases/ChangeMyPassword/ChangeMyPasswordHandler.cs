@@ -18,7 +18,8 @@ public sealed class ChangeMyPasswordHandler : IRequestHandler<ChangeMyPasswordCo
         IPasswordHasher hasher,
         ICurrentUser currentUser,
         ICurrentTenant currentTenant,
-        IRefreshTokenService refreshTokenService)
+        IRefreshTokenService refreshTokenService
+    )
     {
         _accessRepository = accessRepository;
         _hasher = hasher;
@@ -27,7 +28,10 @@ public sealed class ChangeMyPasswordHandler : IRequestHandler<ChangeMyPasswordCo
         _refreshTokenService = refreshTokenService;
     }
 
-    public async Task<Result<bool>> Handle(ChangeMyPasswordCommand command, CancellationToken cancellationToken)
+    public async Task<Result<bool>> Handle(
+        ChangeMyPasswordCommand command,
+        CancellationToken cancellationToken
+    )
     {
         var user = await _accessRepository.GetUserByIdAsync(_currentUser.UserId, cancellationToken);
         if (user is null)
@@ -44,7 +48,11 @@ public sealed class ChangeMyPasswordHandler : IRequestHandler<ChangeMyPasswordCo
         // Mismo mecanismo y misma consecuencia que el reset por token (ResetPasswordWithTokenHandler):
         // cambiar la contraseña invalida todas las sesiones existentes, incluida la actual.
         await _refreshTokenService.RevokeAllForUserAsync(
-            user.Id, _currentTenant.TenantId, "Cambio de contraseña (self-service)", cancellationToken);
+            user.Id,
+            _currentTenant.TenantId,
+            "Cambio de contraseña (self-service)",
+            cancellationToken
+        );
 
         return Result<bool>.Success(true);
     }

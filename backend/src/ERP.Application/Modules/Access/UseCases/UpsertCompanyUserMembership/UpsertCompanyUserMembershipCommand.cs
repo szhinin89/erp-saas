@@ -21,4 +21,3 @@ public record UpsertCompanyUserMembershipCommand(
     Guid? DefaultBranchId = null,
     string? LoginMode = null
 ) : IRequest<Result<object>>;
-

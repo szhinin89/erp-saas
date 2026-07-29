@@ -17,14 +17,27 @@ public sealed class BarcodeGenerationRequest
     public int Height { get; }
 
     public BarcodeGenerationRequest(
-        string content, BarcodeSymbology symbology = BarcodeSymbology.Code128, int width = 600, int height = 100)
+        string content,
+        BarcodeSymbology symbology = BarcodeSymbology.Code128,
+        int width = 600,
+        int height = 100
+    )
     {
         if (string.IsNullOrWhiteSpace(content))
-            throw new ArgumentException("El contenido a codificar es obligatorio.", nameof(content));
+            throw new ArgumentException(
+                "El contenido a codificar es obligatorio.",
+                nameof(content)
+            );
         if (width <= 0 || width > MaxWidth)
-            throw new ArgumentException($"El ancho debe estar entre 1 y {MaxWidth}.", nameof(width));
+            throw new ArgumentException(
+                $"El ancho debe estar entre 1 y {MaxWidth}.",
+                nameof(width)
+            );
         if (height <= 0 || height > MaxHeight)
-            throw new ArgumentException($"El alto debe estar entre 1 y {MaxHeight}.", nameof(height));
+            throw new ArgumentException(
+                $"El alto debe estar entre 1 y {MaxHeight}.",
+                nameof(height)
+            );
 
         Content = content;
         Symbology = symbology;

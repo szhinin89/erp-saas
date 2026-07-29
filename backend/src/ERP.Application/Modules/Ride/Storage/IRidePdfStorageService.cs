@@ -15,5 +15,6 @@ public interface IRidePdfStorageService
         Guid electronicDocumentId,
         string templateVersion,
         byte[] pdf,
-        CancellationToken ct = default);
+        CancellationToken ct = default
+    );
 }

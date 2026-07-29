@@ -17,10 +17,18 @@ public sealed class PurchaseInvoiceAudit : AuditRecordBase, ICompanyOperationalE
     private PurchaseInvoiceAudit() { }
 
     public static PurchaseInvoiceAudit Create(
-        AuditActor actor, Guid companyId, Guid invoiceId, Guid supplierId,
-        string invoiceNumber, decimal grandTotal, string action, string? reason = null)
+        AuditActor actor,
+        Guid companyId,
+        Guid invoiceId,
+        Guid supplierId,
+        string invoiceNumber,
+        decimal grandTotal,
+        string action,
+        string? reason = null
+    )
     {
-        if (companyId == Guid.Empty) throw new ArgumentException("companyId requerido.", nameof(companyId));
+        if (companyId == Guid.Empty)
+            throw new ArgumentException("companyId requerido.", nameof(companyId));
 
         var audit = new PurchaseInvoiceAudit
         {

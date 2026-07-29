@@ -4,9 +4,11 @@ public sealed record UsernameMembershipLookupDto(
     Guid CompanyUserMembershipId,
     bool IsActive,
     string Role,
-    Guid? ProfileId);
+    Guid? ProfileId
+);
 
 public sealed record UsernameLookupDto(
     bool IdentityUserExists,
     string? FullName,
-    UsernameMembershipLookupDto? Membership);
+    UsernameMembershipLookupDto? Membership
+);

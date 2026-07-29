@@ -35,38 +35,75 @@ public static class RetentionCalculator
         string? vatRetentionName,
         string? incomeRetentionCode,
         decimal incomeRetentionPct,
-        string? incomeRetentionName)
+        string? incomeRetentionName
+    )
     {
         if (isRetentionExempt)
             return new RetentionCalculationResult(
-                Array.Empty<RetentionLineResult>(), 0, 0, 0, 0,
-                "Proveedor exento de retención (RISE / microempresa / sector público).");
+                Array.Empty<RetentionLineResult>(),
+                0,
+                0,
+                0,
+                0,
+                "Proveedor exento de retención (RISE / microempresa / sector público)."
+            );
 
         var lines = new List<RetentionLineResult>();
 
         // ── Retención IVA ───────────────────────────────────────────────
         if (!string.IsNullOrWhiteSpace(vatRetentionCode) && vatRetentionPct > 0 && totalVat > 0)
         {
-            var amount = Math.Round(totalVat * vatRetentionPct / 100m, TaxAmount, MidpointRounding.AwayFromZero);
-            lines.Add(new RetentionLineResult(
-                "IVA", vatRetentionCode, vatRetentionName ?? vatRetentionCode,
-                totalVat, vatRetentionPct, amount));
+            var amount = Math.Round(
+                totalVat * vatRetentionPct / 100m,
+                TaxAmount,
+                MidpointRounding.AwayFromZero
+            );
+            lines.Add(
+                new RetentionLineResult(
+                    "IVA",
+                    vatRetentionCode,
+                    vatRetentionName ?? vatRetentionCode,
+                    totalVat,
+                    vatRetentionPct,
+                    amount
+                )
+            );
         }
 
         // ── Retención Renta ─────────────────────────────────────────────
-        if (!string.IsNullOrWhiteSpace(incomeRetentionCode) && incomeRetentionPct > 0 && taxableBaseIncome > 0)
+        if (
+            !string.IsNullOrWhiteSpace(incomeRetentionCode)
+            && incomeRetentionPct > 0
+            && taxableBaseIncome > 0
+        )
         {
-            var amount = Math.Round(taxableBaseIncome * incomeRetentionPct / 100m, TaxAmount, MidpointRounding.AwayFromZero);
-            lines.Add(new RetentionLineResult(
-                "RENTA", incomeRetentionCode, incomeRetentionName ?? incomeRetentionCode,
-                taxableBaseIncome, incomeRetentionPct, amount));
+            var amount = Math.Round(
+                taxableBaseIncome * incomeRetentionPct / 100m,
+                TaxAmount,
+                MidpointRounding.AwayFromZero
+            );
+            lines.Add(
+                new RetentionLineResult(
+                    "RENTA",
+                    incomeRetentionCode,
+                    incomeRetentionName ?? incomeRetentionCode,
+                    taxableBaseIncome,
+                    incomeRetentionPct,
+                    amount
+                )
+            );
         }
 
         var totalRetVat = lines.Where(l => l.TaxType == "IVA").Sum(l => l.AmountRetained);
         var totalRetIncome = lines.Where(l => l.TaxType == "RENTA").Sum(l => l.AmountRetained);
 
         return new RetentionCalculationResult(
-            lines, totalRetVat, totalRetIncome, 0, totalRetVat + totalRetIncome,
-            lines.Count == 0 ? "Sin códigos de retención configurados en el proveedor." : null);
+            lines,
+            totalRetVat,
+            totalRetIncome,
+            0,
+            totalRetVat + totalRetIncome,
+            lines.Count == 0 ? "Sin códigos de retención configurados en el proveedor." : null
+        );
     }
 }

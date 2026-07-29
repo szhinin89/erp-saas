@@ -18,19 +18,35 @@ public sealed class Code128BarcodeGeneratorTests
 {
     private static readonly byte[] PngSignature = [0x89, 0x50, 0x4E, 0x47];
 
-    private static Code128BarcodeGenerator CreateSut() => new(NullLogger<Code128BarcodeGenerator>.Instance);
+    private static Code128BarcodeGenerator CreateSut() =>
+        new(NullLogger<Code128BarcodeGenerator>.Instance);
 
     private static string Decode(byte[] pngBytes)
     {
         using var decoded = SKBitmap.Decode(pngBytes);
-        using var bitmap = new SKBitmap(new SKImageInfo(decoded.Width, decoded.Height, SKColorType.Bgra8888, SKAlphaType.Unpremul));
+        using var bitmap = new SKBitmap(
+            new SKImageInfo(
+                decoded.Width,
+                decoded.Height,
+                SKColorType.Bgra8888,
+                SKAlphaType.Unpremul
+            )
+        );
         using (var canvas = new SKCanvas(bitmap))
             canvas.DrawBitmap(decoded, 0, 0);
 
         var luminanceSource = new RGBLuminanceSource(
-            bitmap.Bytes, bitmap.Width, bitmap.Height, RGBLuminanceSource.BitmapFormat.BGRA32);
+            bitmap.Bytes,
+            bitmap.Width,
+            bitmap.Height,
+            RGBLuminanceSource.BitmapFormat.BGRA32
+        );
 
-        var reader = new BarcodeReaderGeneric { AutoRotate = true, Options = new DecodingOptions { PossibleFormats = [BarcodeFormat.CODE_128] } };
+        var reader = new BarcodeReaderGeneric
+        {
+            AutoRotate = true,
+            Options = new DecodingOptions { PossibleFormats = [BarcodeFormat.CODE_128] },
+        };
         var result = reader.Decode(luminanceSource);
         result.Should().NotBeNull("el PNG generado debe contener un Code128 decodificable");
         return result!.Text;
@@ -41,7 +57,9 @@ public sealed class Code128BarcodeGeneratorTests
     {
         var sut = CreateSut();
 
-        var result = sut.Generate(new BarcodeGenerationRequest("1234567890123456789012345678901234567890123456789"));
+        var result = sut.Generate(
+            new BarcodeGenerationRequest("1234567890123456789012345678901234567890123456789")
+        );
 
         result.PngBytes.Should().NotBeNullOrEmpty();
         result.PngBytes.Take(4).Should().Equal(PngSignature);
@@ -50,7 +68,9 @@ public sealed class Code128BarcodeGeneratorTests
     [Theory]
     [InlineData("1234567890123456789012345678901234567890123456789")]
     [InlineData("ABC-123-xyz")]
-    public void Generate_produces_a_barcode_that_decodes_back_to_the_original_content(string content)
+    public void Generate_produces_a_barcode_that_decodes_back_to_the_original_content(
+        string content
+    )
     {
         var sut = CreateSut();
 

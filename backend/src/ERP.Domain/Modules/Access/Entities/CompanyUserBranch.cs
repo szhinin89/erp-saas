@@ -12,7 +12,10 @@ namespace ERP.Domain.Access.Entities;
 /// el registro real de <c>Branch</c> requiere acceso a datos y es responsabilidad del handler de
 /// aplicación que orquesta esta creación (fuera de alcance de Domain).
 /// </summary>
-public sealed class CompanyUserBranch : AuditableEntity, ITenantScopedEntity, ICompanyOperationalEntity
+public sealed class CompanyUserBranch
+    : AuditableEntity,
+        ITenantScopedEntity,
+        ICompanyOperationalEntity
 {
     public Guid CompanyId { get; private set; }
     public Guid CompanyUserMembershipId { get; private set; }
@@ -26,12 +29,16 @@ public sealed class CompanyUserBranch : AuditableEntity, ITenantScopedEntity, IC
         Guid companyId,
         Guid companyUserMembershipId,
         Guid branchId,
-        Guid createdBy)
+        Guid createdBy
+    )
     {
         if (companyId == Guid.Empty)
             throw new ArgumentException("La empresa es obligatoria.", nameof(companyId));
         if (companyUserMembershipId == Guid.Empty)
-            throw new ArgumentException("La membresía es obligatoria.", nameof(companyUserMembershipId));
+            throw new ArgumentException(
+                "La membresía es obligatoria.",
+                nameof(companyUserMembershipId)
+            );
         if (branchId == Guid.Empty)
             throw new ArgumentException("La sucursal es obligatoria.", nameof(branchId));
 

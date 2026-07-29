@@ -12,13 +12,21 @@ namespace ERP.Infrastructure.Migrations
         {
             migrationBuilder.DropIndex(
                 name: "ix_journal_entries_company_source_event",
-                table: "journal_entries");
+                table: "journal_entries"
+            );
 
             migrationBuilder.CreateIndex(
                 name: "uq_journal_entries_company_source_event_fact",
                 table: "journal_entries",
-                columns: new[] { "company_id", "source_module", "source_event_id", "source_event_type" },
-                unique: true);
+                columns: new[]
+                {
+                    "company_id",
+                    "source_module",
+                    "source_event_id",
+                    "source_event_type",
+                },
+                unique: true
+            );
         }
 
         /// <inheritdoc />
@@ -26,12 +34,14 @@ namespace ERP.Infrastructure.Migrations
         {
             migrationBuilder.DropIndex(
                 name: "uq_journal_entries_company_source_event_fact",
-                table: "journal_entries");
+                table: "journal_entries"
+            );
 
             migrationBuilder.CreateIndex(
                 name: "ix_journal_entries_company_source_event",
                 table: "journal_entries",
-                columns: new[] { "company_id", "source_event_id" });
+                columns: new[] { "company_id", "source_event_id" }
+            );
         }
     }
 }

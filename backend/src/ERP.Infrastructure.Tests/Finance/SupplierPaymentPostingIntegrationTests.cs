@@ -57,8 +57,20 @@ public sealed class SupplierPaymentPostingIntegrationTests : IAsyncLifetime
 
         _createdBy = Guid.NewGuid();
         var tenant = Tenant.Create("Test Tenant", $"test-{Guid.NewGuid():N}"[..16], _createdBy);
-        var company = Company.CreateManaged(tenant.Id, "1790012345001", "Test S.A.", createdBy: _createdBy);
-        var supplier = BusinessPartner.Create(tenant.Id, "05", "1710034065", PersonType.Natural, "Proveedor Test", _createdBy);
+        var company = Company.CreateManaged(
+            tenant.Id,
+            "1790012345001",
+            "Test S.A.",
+            createdBy: _createdBy
+        );
+        var supplier = BusinessPartner.Create(
+            tenant.Id,
+            "05",
+            "1710034065",
+            PersonType.Natural,
+            "Proveedor Test",
+            _createdBy
+        );
 
         db.Tenants.Add(tenant);
         db.Companies.Add(company);
@@ -67,7 +79,14 @@ public sealed class SupplierPaymentPostingIntegrationTests : IAsyncLifetime
 
         // PurchasePayable no tiene FK real a PurchaseInvoice/BusinessPartner (a diferencia de
         // SalesReceivable) — PurchaseId es un Guid suelto, solo la empresa/tenant son reales.
-        var payable = PurchasePayable.Create(tenant.Id, company.Id, Guid.NewGuid(), supplier.Id, 300m, _createdBy);
+        var payable = PurchasePayable.Create(
+            tenant.Id,
+            company.Id,
+            Guid.NewGuid(),
+            supplier.Id,
+            300m,
+            _createdBy
+        );
         db.PurchasePayables.Add(payable);
         await db.SaveChangesAsync();
 
@@ -86,18 +105,30 @@ public sealed class SupplierPaymentPostingIntegrationTests : IAsyncLifetime
             .Options;
 
         return new ErpDbContext(
-            options, new FixedCurrentTenant(_tenantId), publisher ?? new NoOpPublisher(), new FixedCurrentCompany(_companyId));
+            options,
+            new FixedCurrentTenant(_tenantId),
+            publisher ?? new NoOpPublisher(),
+            new FixedCurrentCompany(_companyId)
+        );
     }
 
     private static (ErpDbContext db, IPublisher publisher) BuildWiredContext(
-        Guid tenantId, Guid companyId, PostgreSqlContainer postgres)
+        Guid tenantId,
+        Guid companyId,
+        PostgreSqlContainer postgres
+    )
     {
         var deferred = new DeferredPublisher();
         var options = new DbContextOptionsBuilder<ErpDbContext>()
             .UseNpgsql(postgres.GetConnectionString() + ";Include Error Detail=true")
             .EnableSensitiveDataLogging()
             .Options;
-        var db = new ErpDbContext(options, new FixedCurrentTenant(tenantId), deferred, new FixedCurrentCompany(companyId));
+        var db = new ErpDbContext(
+            options,
+            new FixedCurrentTenant(tenantId),
+            deferred,
+            new FixedCurrentCompany(companyId)
+        );
 
         var services = new ServiceCollection();
         services.AddLogging();
@@ -109,7 +140,11 @@ public sealed class SupplierPaymentPostingIntegrationTests : IAsyncLifetime
         services.AddScoped<IAccountingPeriodRepository, AccountingPeriodRepository>();
         services.AddScoped<IJournalEntrySequenceRepository, JournalEntrySequenceRepository>();
         services.AddScoped<IPostingEngine, PostingEngine>();
-        services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(SupplierPaymentAppliedPostingTranslator).Assembly));
+        services.AddMediatR(cfg =>
+            cfg.RegisterServicesFromAssembly(
+                typeof(SupplierPaymentAppliedPostingTranslator).Assembly
+            )
+        );
 
         var provider = services.BuildServiceProvider();
         deferred.Inner = provider.GetRequiredService<IPublisher>();
@@ -120,72 +155,175 @@ public sealed class SupplierPaymentPostingIntegrationTests : IAsyncLifetime
     private async Task SeedRuleAndPeriodAsync(ErpDbContext db, DateOnly entryDate)
     {
         var payableAccount = Account.Create(
-            _tenantId, _companyId, AccountCode.Create($"2.1.{Guid.NewGuid():N}"[..8]), "Cuentas por Pagar", null,
-            AccountType.Liability, AccountNature.Credit, allowsPosting: true, createdBy: _createdBy);
+            _tenantId,
+            _companyId,
+            AccountCode.Create($"2.1.{Guid.NewGuid():N}"[..8]),
+            "Cuentas por Pagar",
+            null,
+            AccountType.Liability,
+            AccountNature.Credit,
+            allowsPosting: true,
+            createdBy: _createdBy
+        );
         var cashAccount = Account.Create(
-            _tenantId, _companyId, AccountCode.Create($"1.1.{Guid.NewGuid():N}"[..8]), "Caja", null,
-            AccountType.Asset, AccountNature.Debit, allowsPosting: true, createdBy: _createdBy);
+            _tenantId,
+            _companyId,
+            AccountCode.Create($"1.1.{Guid.NewGuid():N}"[..8]),
+            "Caja",
+            null,
+            AccountType.Asset,
+            AccountNature.Debit,
+            allowsPosting: true,
+            createdBy: _createdBy
+        );
         db.Accounts.AddRange(payableAccount, cashAccount);
 
-        var rule = PostingRule.Create(_tenantId, _companyId, "Finance", "SupplierPaymentApplied", null, null, null, _createdBy);
+        var rule = PostingRule.Create(
+            _tenantId,
+            _companyId,
+            "Finance",
+            "SupplierPaymentApplied",
+            null,
+            null,
+            null,
+            _createdBy
+        );
         rule.AddLine(payableAccount.Id, AccountNature.Debit, PostingAmountKind.GrandTotal);
         rule.AddLine(cashAccount.Id, AccountNature.Credit, PostingAmountKind.GrandTotal);
 
         var period = AccountingPeriod.Create(
-            _tenantId, _companyId, entryDate.Year, entryDate.Month,
+            _tenantId,
+            _companyId,
+            entryDate.Year,
+            entryDate.Month,
             new DateOnly(entryDate.Year, entryDate.Month, 1),
-            new DateOnly(entryDate.Year, entryDate.Month, DateTime.DaysInMonth(entryDate.Year, entryDate.Month)),
-            _createdBy);
+            new DateOnly(
+                entryDate.Year,
+                entryDate.Month,
+                DateTime.DaysInMonth(entryDate.Year, entryDate.Month)
+            ),
+            _createdBy
+        );
 
         db.PostingRules.Add(rule);
         db.AccountingPeriods.Add(period);
         await db.SaveChangesAsync();
     }
 
-    private static RegisterPaymentCommandHandler BuildHandler(ErpDbContext db, Guid tenantId, Guid companyId, Guid userId) => new(
-        new PaymentRepository(db),
-        new PurchasePayableRepository(db, new FixedCurrentCompany(companyId)),
-        new FixedCurrentTenant(tenantId),
-        new FixedCurrentCompany(companyId),
-        new FixedCurrentUser(userId));
+    private static RegisterPaymentCommandHandler BuildHandler(
+        ErpDbContext db,
+        Guid tenantId,
+        Guid companyId,
+        Guid userId
+    ) =>
+        new(
+            new PaymentRepository(db),
+            new PurchasePayableRepository(db, new FixedCurrentCompany(companyId)),
+            new FixedCurrentTenant(tenantId),
+            new FixedCurrentCompany(companyId),
+            new FixedCurrentUser(userId)
+        );
 
-    private static ReversePaymentCommandHandler BuildReverseHandler(ErpDbContext db, Guid tenantId, Guid companyId, Guid userId) => new(
-        new PaymentRepository(db),
-        new PurchasePayableRepository(db, new FixedCurrentCompany(companyId)),
-        new FixedCurrentTenant(tenantId),
-        new FixedCurrentCompany(companyId),
-        new FixedCurrentUser(userId));
+    private static ReversePaymentCommandHandler BuildReverseHandler(
+        ErpDbContext db,
+        Guid tenantId,
+        Guid companyId,
+        Guid userId
+    ) =>
+        new(
+            new PaymentRepository(db),
+            new PurchasePayableRepository(db, new FixedCurrentCompany(companyId)),
+            new FixedCurrentTenant(tenantId),
+            new FixedCurrentCompany(companyId),
+            new FixedCurrentUser(userId)
+        );
 
-    private static RegisterPaymentCommand SingleLineCommand(Guid payableId, decimal amount, DateOnly paymentDate, Guid supplierId) => new(
-        supplierId, amount, paymentDate, PaymentMethodId: null, Reference: null,
-        new[] { new PaymentApplicationLineInput(payableId, null, amount) });
+    private static RegisterPaymentCommand SingleLineCommand(
+        Guid payableId,
+        decimal amount,
+        DateOnly paymentDate,
+        Guid supplierId
+    ) =>
+        new(
+            supplierId,
+            amount,
+            paymentDate,
+            PaymentMethodId: null,
+            Reference: null,
+            new[] { new PaymentApplicationLineInput(payableId, null, amount) }
+        );
 
     /// <summary>Fase 5.6.6 — igual que en Collection: SupplierPaymentReversedEvent fecha el hecho
     /// contable con OccurredOn (fecha real de ejecución), así que se siembra un único período
     /// cubriendo "hoy" para ambos asientos (aplicación + reverso).</summary>
-    private async Task SeedAppliedAndReversedRulesAndPeriodAsync(ErpDbContext db, DateOnly entryDate)
+    private async Task SeedAppliedAndReversedRulesAndPeriodAsync(
+        ErpDbContext db,
+        DateOnly entryDate
+    )
     {
         var payableAccount = Account.Create(
-            _tenantId, _companyId, AccountCode.Create($"2.1.{Guid.NewGuid():N}"[..8]), "Cuentas por Pagar", null,
-            AccountType.Liability, AccountNature.Credit, allowsPosting: true, createdBy: _createdBy);
+            _tenantId,
+            _companyId,
+            AccountCode.Create($"2.1.{Guid.NewGuid():N}"[..8]),
+            "Cuentas por Pagar",
+            null,
+            AccountType.Liability,
+            AccountNature.Credit,
+            allowsPosting: true,
+            createdBy: _createdBy
+        );
         var cashAccount = Account.Create(
-            _tenantId, _companyId, AccountCode.Create($"1.1.{Guid.NewGuid():N}"[..8]), "Caja", null,
-            AccountType.Asset, AccountNature.Debit, allowsPosting: true, createdBy: _createdBy);
+            _tenantId,
+            _companyId,
+            AccountCode.Create($"1.1.{Guid.NewGuid():N}"[..8]),
+            "Caja",
+            null,
+            AccountType.Asset,
+            AccountNature.Debit,
+            allowsPosting: true,
+            createdBy: _createdBy
+        );
         db.Accounts.AddRange(payableAccount, cashAccount);
 
-        var appliedRule = PostingRule.Create(_tenantId, _companyId, "Finance", "SupplierPaymentApplied", null, null, null, _createdBy);
+        var appliedRule = PostingRule.Create(
+            _tenantId,
+            _companyId,
+            "Finance",
+            "SupplierPaymentApplied",
+            null,
+            null,
+            null,
+            _createdBy
+        );
         appliedRule.AddLine(payableAccount.Id, AccountNature.Debit, PostingAmountKind.GrandTotal);
         appliedRule.AddLine(cashAccount.Id, AccountNature.Credit, PostingAmountKind.GrandTotal);
 
-        var reversedRule = PostingRule.Create(_tenantId, _companyId, "Finance", "SupplierPaymentReversed", null, null, null, _createdBy);
+        var reversedRule = PostingRule.Create(
+            _tenantId,
+            _companyId,
+            "Finance",
+            "SupplierPaymentReversed",
+            null,
+            null,
+            null,
+            _createdBy
+        );
         reversedRule.AddLine(cashAccount.Id, AccountNature.Debit, PostingAmountKind.GrandTotal);
         reversedRule.AddLine(payableAccount.Id, AccountNature.Credit, PostingAmountKind.GrandTotal);
 
         var period = AccountingPeriod.Create(
-            _tenantId, _companyId, entryDate.Year, entryDate.Month,
+            _tenantId,
+            _companyId,
+            entryDate.Year,
+            entryDate.Month,
             new DateOnly(entryDate.Year, entryDate.Month, 1),
-            new DateOnly(entryDate.Year, entryDate.Month, DateTime.DaysInMonth(entryDate.Year, entryDate.Month)),
-            _createdBy);
+            new DateOnly(
+                entryDate.Year,
+                entryDate.Month,
+                DateTime.DaysInMonth(entryDate.Year, entryDate.Month)
+            ),
+            _createdBy
+        );
 
         db.PostingRules.AddRange(appliedRule, reversedRule);
         db.AccountingPeriods.Add(period);
@@ -199,12 +337,17 @@ public sealed class SupplierPaymentPostingIntegrationTests : IAsyncLifetime
         var (db, _) = BuildWiredContext(_tenantId, _companyId, _postgres);
 
         var result = await BuildHandler(db, _tenantId, _companyId, _createdBy)
-            .Handle(SingleLineCommand(_payableId, 300m, paymentDate, _supplierId), CancellationToken.None);
+            .Handle(
+                SingleLineCommand(_payableId, 300m, paymentDate, _supplierId),
+                CancellationToken.None
+            );
 
         result.IsSuccess.Should().BeTrue();
 
         await using var verifyDb = CreateContext();
-        var payment = await verifyDb.Payments.Include(x => x.Lines).FirstAsync(x => x.Id == result.Value!.Id);
+        var payment = await verifyDb
+            .Payments.Include(x => x.Lines)
+            .FirstAsync(x => x.Id == result.Value!.Id);
         var payable = await verifyDb.PurchasePayables.FirstAsync(x => x.Id == _payableId);
 
         payment.Direction.Should().Be(PaymentDirection.Payment);
@@ -226,7 +369,10 @@ public sealed class SupplierPaymentPostingIntegrationTests : IAsyncLifetime
 
         var (dbA, _) = BuildWiredContext(_tenantId, _companyId, _postgres);
         var firstResult = await BuildHandler(dbA, _tenantId, _companyId, _createdBy)
-            .Handle(SingleLineCommand(_payableId, 120m, paymentDate, _supplierId), CancellationToken.None);
+            .Handle(
+                SingleLineCommand(_payableId, 120m, paymentDate, _supplierId),
+                CancellationToken.None
+            );
         firstResult.IsSuccess.Should().BeTrue();
 
         await using (var midDb = CreateContext())
@@ -238,7 +384,10 @@ public sealed class SupplierPaymentPostingIntegrationTests : IAsyncLifetime
 
         var (dbB, _) = BuildWiredContext(_tenantId, _companyId, _postgres);
         var secondResult = await BuildHandler(dbB, _tenantId, _companyId, _createdBy)
-            .Handle(SingleLineCommand(_payableId, 180m, paymentDate, _supplierId), CancellationToken.None);
+            .Handle(
+                SingleLineCommand(_payableId, 180m, paymentDate, _supplierId),
+                CancellationToken.None
+            );
         secondResult.IsSuccess.Should().BeTrue();
 
         await using var verifyDb = CreateContext();
@@ -247,7 +396,9 @@ public sealed class SupplierPaymentPostingIntegrationTests : IAsyncLifetime
 
         payable.PaidAmount.Should().Be(300m);
         payable.BalanceDue.Should().Be(0m);
-        paymentCount.Should().Be(2, because: "dos pagos independientes, cada uno con su propio Payment");
+        paymentCount
+            .Should()
+            .Be(2, because: "dos pagos independientes, cada uno con su propio Payment");
     }
 
     [Fact]
@@ -258,12 +409,16 @@ public sealed class SupplierPaymentPostingIntegrationTests : IAsyncLifetime
         await SeedRuleAndPeriodAsync(db, paymentDate);
 
         var result = await BuildHandler(db, _tenantId, _companyId, _createdBy)
-            .Handle(SingleLineCommand(_payableId, 300m, paymentDate, _supplierId), CancellationToken.None);
+            .Handle(
+                SingleLineCommand(_payableId, 300m, paymentDate, _supplierId),
+                CancellationToken.None
+            );
 
         result.IsSuccess.Should().BeTrue();
 
         await using var verifyDb = CreateContext();
-        var entry = await verifyDb.JournalEntries.Include(x => x.Lines)
+        var entry = await verifyDb
+            .JournalEntries.Include(x => x.Lines)
             .FirstOrDefaultAsync(x => x.SourceEventId == result.Value!.Id);
 
         entry.Should().NotBeNull();
@@ -283,15 +438,22 @@ public sealed class SupplierPaymentPostingIntegrationTests : IAsyncLifetime
         // Sin PostingRule sembrada — fuerza RULE_NOT_FOUND dentro del pipeline.
 
         var result = await BuildHandler(db, _tenantId, _companyId, _createdBy)
-            .Handle(SingleLineCommand(_payableId, 300m, paymentDate, _supplierId), CancellationToken.None);
+            .Handle(
+                SingleLineCommand(_payableId, 300m, paymentDate, _supplierId),
+                CancellationToken.None
+            );
 
-        result.IsSuccess.Should().BeTrue(because: "el fallo del Posting Engine no debe revertir el registro del pago");
+        result
+            .IsSuccess.Should()
+            .BeTrue(because: "el fallo del Posting Engine no debe revertir el registro del pago");
 
         await using var verifyDb = CreateContext();
         var payable = await verifyDb.PurchasePayables.FirstAsync(x => x.Id == _payableId);
         payable.PaidAmount.Should().Be(300m);
 
-        var entry = await verifyDb.JournalEntries.FirstOrDefaultAsync(x => x.SourceEventId == result.Value!.Id);
+        var entry = await verifyDb.JournalEntries.FirstOrDefaultAsync(x =>
+            x.SourceEventId == result.Value!.Id
+        );
         entry.Should().BeNull();
     }
 
@@ -303,20 +465,44 @@ public sealed class SupplierPaymentPostingIntegrationTests : IAsyncLifetime
         await SeedRuleAndPeriodAsync(db, paymentDate);
 
         var result = await BuildHandler(db, _tenantId, _companyId, _createdBy)
-            .Handle(SingleLineCommand(_payableId, 300m, paymentDate, _supplierId), CancellationToken.None);
+            .Handle(
+                SingleLineCommand(_payableId, 300m, paymentDate, _supplierId),
+                CancellationToken.None
+            );
         result.IsSuccess.Should().BeTrue();
         var paymentId = result.Value!.Id;
 
-        var repeated = new SupplierPaymentAppliedEvent(_tenantId, paymentId, _companyId, _supplierId, 300m, paymentDate);
+        var repeated = new SupplierPaymentAppliedEvent(
+            _tenantId,
+            paymentId,
+            _companyId,
+            _supplierId,
+            300m,
+            paymentDate
+        );
         await publisher.Publish(repeated, CancellationToken.None);
 
         await using var verifyDb = CreateContext();
-        var journalEntryCount = await verifyDb.JournalEntries.CountAsync(x => x.SourceEventId == paymentId);
+        var journalEntryCount = await verifyDb.JournalEntries.CountAsync(x =>
+            x.SourceEventId == paymentId
+        );
         var paymentCount = await verifyDb.Payments.CountAsync(x => x.Id == paymentId);
-        var lineCount = await verifyDb.PaymentApplicationLines.CountAsync(x => x.PaymentId == paymentId);
+        var lineCount = await verifyDb.PaymentApplicationLines.CountAsync(x =>
+            x.PaymentId == paymentId
+        );
 
-        journalEntryCount.Should().Be(1, because: "el Posting Engine ya garantiza idempotencia por SourceEventId (Fase 3.1)");
-        paymentCount.Should().Be(1, because: "republicar el evento no crea un segundo Payment — solo el comando lo hace");
+        journalEntryCount
+            .Should()
+            .Be(
+                1,
+                because: "el Posting Engine ya garantiza idempotencia por SourceEventId (Fase 3.1)"
+            );
+        paymentCount
+            .Should()
+            .Be(
+                1,
+                because: "republicar el evento no crea un segundo Payment — solo el comando lo hace"
+            );
         lineCount.Should().Be(1, because: "republicar el evento no duplica PaymentApplicationLine");
     }
 
@@ -332,13 +518,19 @@ public sealed class SupplierPaymentPostingIntegrationTests : IAsyncLifetime
         await SeedAppliedAndReversedRulesAndPeriodAsync(db, today);
 
         var registerResult = await BuildHandler(db, _tenantId, _companyId, _createdBy)
-            .Handle(SingleLineCommand(_payableId, 300m, today, _supplierId), CancellationToken.None);
+            .Handle(
+                SingleLineCommand(_payableId, 300m, today, _supplierId),
+                CancellationToken.None
+            );
         registerResult.IsSuccess.Should().BeTrue();
         var paymentId = registerResult.Value!.Id;
 
         var (dbReverse, _) = BuildWiredContext(_tenantId, _companyId, _postgres);
         var reverseResult = await BuildReverseHandler(dbReverse, _tenantId, _companyId, _createdBy)
-            .Handle(new ReversePaymentCommand(paymentId, "Error de digitación"), CancellationToken.None);
+            .Handle(
+                new ReversePaymentCommand(paymentId, "Error de digitación"),
+                CancellationToken.None
+            );
 
         reverseResult.IsSuccess.Should().BeTrue();
 
@@ -360,22 +552,34 @@ public sealed class SupplierPaymentPostingIntegrationTests : IAsyncLifetime
         await SeedAppliedAndReversedRulesAndPeriodAsync(db, today);
 
         var registerResult = await BuildHandler(db, _tenantId, _companyId, _createdBy)
-            .Handle(SingleLineCommand(_payableId, 300m, today, _supplierId), CancellationToken.None);
+            .Handle(
+                SingleLineCommand(_payableId, 300m, today, _supplierId),
+                CancellationToken.None
+            );
         registerResult.IsSuccess.Should().BeTrue();
         var paymentId = registerResult.Value!.Id;
 
         var (dbReverse, _) = BuildWiredContext(_tenantId, _companyId, _postgres);
         var reverseResult = await BuildReverseHandler(dbReverse, _tenantId, _companyId, _createdBy)
-            .Handle(new ReversePaymentCommand(paymentId, "Error de digitación"), CancellationToken.None);
+            .Handle(
+                new ReversePaymentCommand(paymentId, "Error de digitación"),
+                CancellationToken.None
+            );
         reverseResult.IsSuccess.Should().BeTrue();
 
         await using var verifyDb = CreateContext();
-        var appliedEntry = await verifyDb.JournalEntries
-            .FirstOrDefaultAsync(x => x.SourceEventId == paymentId && x.SourceEventType == "SupplierPaymentApplied");
-        var reversedEntry = await verifyDb.JournalEntries.Include(x => x.Lines)
-            .FirstOrDefaultAsync(x => x.SourceEventId == paymentId && x.SourceEventType == "SupplierPaymentReversed");
+        var appliedEntry = await verifyDb.JournalEntries.FirstOrDefaultAsync(x =>
+            x.SourceEventId == paymentId && x.SourceEventType == "SupplierPaymentApplied"
+        );
+        var reversedEntry = await verifyDb
+            .JournalEntries.Include(x => x.Lines)
+            .FirstOrDefaultAsync(x =>
+                x.SourceEventId == paymentId && x.SourceEventType == "SupplierPaymentReversed"
+            );
 
-        appliedEntry.Should().NotBeNull(because: "el asiento original de aplicación no debe desaparecer");
+        appliedEntry
+            .Should()
+            .NotBeNull(because: "el asiento original de aplicación no debe desaparecer");
         reversedEntry.Should().NotBeNull();
         reversedEntry!.SourceModule.Should().Be("Finance");
         reversedEntry.Status.Should().Be(JournalEntryStatus.Posted);
@@ -392,37 +596,63 @@ public sealed class SupplierPaymentPostingIntegrationTests : IAsyncLifetime
         await SeedAppliedAndReversedRulesAndPeriodAsync(db, today);
 
         var registerResult = await BuildHandler(db, _tenantId, _companyId, _createdBy)
-            .Handle(SingleLineCommand(_payableId, 300m, today, _supplierId), CancellationToken.None);
+            .Handle(
+                SingleLineCommand(_payableId, 300m, today, _supplierId),
+                CancellationToken.None
+            );
         registerResult.IsSuccess.Should().BeTrue();
         var paymentId = registerResult.Value!.Id;
 
         var (dbReverse, publisher) = BuildWiredContext(_tenantId, _companyId, _postgres);
         var reverseResult = await BuildReverseHandler(dbReverse, _tenantId, _companyId, _createdBy)
-            .Handle(new ReversePaymentCommand(paymentId, "Error de digitación"), CancellationToken.None);
+            .Handle(
+                new ReversePaymentCommand(paymentId, "Error de digitación"),
+                CancellationToken.None
+            );
         reverseResult.IsSuccess.Should().BeTrue();
 
-        var repeated = new SupplierPaymentReversedEvent(_tenantId, paymentId, _companyId, _supplierId, 300m, "Error de digitación");
+        var repeated = new SupplierPaymentReversedEvent(
+            _tenantId,
+            paymentId,
+            _companyId,
+            _supplierId,
+            300m,
+            "Error de digitación"
+        );
         await publisher.Publish(repeated, CancellationToken.None);
 
         await using var verifyDb = CreateContext();
-        var reversedEntryCount = await verifyDb.JournalEntries
-            .CountAsync(x => x.SourceEventId == paymentId && x.SourceEventType == "SupplierPaymentReversed");
+        var reversedEntryCount = await verifyDb.JournalEntries.CountAsync(x =>
+            x.SourceEventId == paymentId && x.SourceEventType == "SupplierPaymentReversed"
+        );
         var payment = await verifyDb.Payments.FirstAsync(x => x.Id == paymentId);
 
-        reversedEntryCount.Should().Be(1, because: "el Posting Engine ya garantiza idempotencia por (CompanyId, SourceModule, SourceEventId, SourceEventType)");
-        payment.Status.Should().Be(PaymentStatus.Reversed, because: "republicar el evento no vuelve a ejecutar Payment.Reverse()");
+        reversedEntryCount
+            .Should()
+            .Be(
+                1,
+                because: "el Posting Engine ya garantiza idempotencia por (CompanyId, SourceModule, SourceEventId, SourceEventType)"
+            );
+        payment
+            .Status.Should()
+            .Be(
+                PaymentStatus.Reversed,
+                because: "republicar el evento no vuelve a ejecutar Payment.Reverse()"
+            );
     }
 
     private sealed class DeferredPublisher : IPublisher
     {
         public IPublisher? Inner { get; set; }
 
-        public Task Publish(object notification, CancellationToken cancellationToken = default)
-            => Inner!.Publish(notification, cancellationToken);
+        public Task Publish(object notification, CancellationToken cancellationToken = default) =>
+            Inner!.Publish(notification, cancellationToken);
 
-        public Task Publish<TNotification>(TNotification notification, CancellationToken cancellationToken = default)
-            where TNotification : INotification
-            => Inner!.Publish(notification, cancellationToken);
+        public Task Publish<TNotification>(
+            TNotification notification,
+            CancellationToken cancellationToken = default
+        )
+            where TNotification : INotification => Inner!.Publish(notification, cancellationToken);
     }
 
     private sealed class FixedCurrentTenant(Guid tenantId) : ICurrentTenant
@@ -450,11 +680,13 @@ public sealed class SupplierPaymentPostingIntegrationTests : IAsyncLifetime
 
     private sealed class NoOpPublisher : IPublisher
     {
-        public Task Publish(object notification, CancellationToken cancellationToken = default)
-            => Task.CompletedTask;
+        public Task Publish(object notification, CancellationToken cancellationToken = default) =>
+            Task.CompletedTask;
 
-        public Task Publish<TNotification>(TNotification notification, CancellationToken cancellationToken = default)
-            where TNotification : INotification
-            => Task.CompletedTask;
+        public Task Publish<TNotification>(
+            TNotification notification,
+            CancellationToken cancellationToken = default
+        )
+            where TNotification : INotification => Task.CompletedTask;
     }
 }

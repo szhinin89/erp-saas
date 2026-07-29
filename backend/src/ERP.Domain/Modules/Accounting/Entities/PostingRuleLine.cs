@@ -23,8 +23,13 @@ public sealed class PostingRuleLine : IMustHaveTenant
     private PostingRuleLine() { }
 
     public static PostingRuleLine Create(
-        Guid postingRuleId, Guid tenantId, Guid accountId, AccountNature nature,
-        PostingAmountKind amountKind, short sortOrder)
+        Guid postingRuleId,
+        Guid tenantId,
+        Guid accountId,
+        AccountNature nature,
+        PostingAmountKind amountKind,
+        short sortOrder
+    )
     {
         if (accountId == Guid.Empty)
             throw new ArgumentException("La cuenta contable es obligatoria.", nameof(accountId));

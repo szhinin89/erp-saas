@@ -22,9 +22,18 @@ public sealed class PurchaseLinePvpAuditHandler : INotificationHandler<PurchaseL
         _context = context;
     }
 
-    public Task Handle(PurchaseLinePvpUpdatedEvent e, CancellationToken ct) => _audit.RecordAsync(
-        PurchaseLinePvpAudit.Create(
-            _context.Actor, _context.CompanyId, e.InvoiceId, e.InvoiceNumber,
-            e.ItemId, e.OldPvp, e.NewPvp, ((IAuditEvent)e).Action),
-        ct);
+    public Task Handle(PurchaseLinePvpUpdatedEvent e, CancellationToken ct) =>
+        _audit.RecordAsync(
+            PurchaseLinePvpAudit.Create(
+                _context.Actor,
+                _context.CompanyId,
+                e.InvoiceId,
+                e.InvoiceNumber,
+                e.ItemId,
+                e.OldPvp,
+                e.NewPvp,
+                ((IAuditEvent)e).Action
+            ),
+            ct
+        );
 }

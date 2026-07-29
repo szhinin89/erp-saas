@@ -20,18 +20,21 @@ public sealed record BusinessPartnerSummaryDto(
     string PersonType,
     string? CountryCode,
     bool IsActive,
-    DateTime CreatedAt)
+    DateTime CreatedAt
+)
 {
-    public static BusinessPartnerSummaryDto From(BusinessPartner bp) => new(
-        bp.Id,
-        bp.Identification.Type,
-        bp.Identification.Number,
-        bp.Name.LegalName,
-        bp.Name.TradeName,
-        bp.PersonType.ToString(),
-        bp.CountryCode,
-        bp.IsActive,
-        bp.CreatedAt);
+    public static BusinessPartnerSummaryDto From(BusinessPartner bp) =>
+        new(
+            bp.Id,
+            bp.Identification.Type,
+            bp.Identification.Number,
+            bp.Name.LegalName,
+            bp.Name.TradeName,
+            bp.PersonType.ToString(),
+            bp.CountryCode,
+            bp.IsActive,
+            bp.CreatedAt
+        );
 }
 
 // ── line completo — incluye roles con sus configs ─────────────────────────
@@ -46,21 +49,25 @@ public sealed record BusinessPartnerDetailDto(
     string? CountryCode,
     bool IsActive,
     DateTime CreatedAt,
-    IReadOnlyList<BusinessPartnerRoleDto> Roles)
+    IReadOnlyList<BusinessPartnerRoleDto> Roles
+)
 {
     public static BusinessPartnerDetailDto From(
         BusinessPartner bp,
-        IReadOnlyList<BusinessPartnerRoleDto> roles) => new(
-        bp.Id,
-        bp.Identification.Type,
-        bp.Identification.Number,
-        bp.Name.LegalName,
-        bp.Name.TradeName,
-        bp.PersonType.ToString(),
-        bp.CountryCode,
-        bp.IsActive,
-        bp.CreatedAt,
-        roles);
+        IReadOnlyList<BusinessPartnerRoleDto> roles
+    ) =>
+        new(
+            bp.Id,
+            bp.Identification.Type,
+            bp.Identification.Number,
+            bp.Name.LegalName,
+            bp.Name.TradeName,
+            bp.PersonType.ToString(),
+            bp.CountryCode,
+            bp.IsActive,
+            bp.CreatedAt,
+            roles
+        );
 }
 
 // ── Rol del BusinessPartner ───────────────────────────────────────────────────
@@ -76,21 +83,29 @@ public sealed record BusinessPartnerRoleDto(
     SupplierRoleConfigDto? SupplierConfig,
     CarrierRoleConfigDto? CarrierConfig,
     CustomerRoleConfigDto? CustomerConfig,
-    SupplierClassificationConfigDto? ClassificationConfig)
+    SupplierClassificationConfigDto? ClassificationConfig
+)
 {
-    public static BusinessPartnerRoleDto From(BusinessPartnerRole role) => new(
-        role.Id,
-        role.RoleType.ToString(),
-        BpRoleDtoHelpers.RoleTypeLabel(role.RoleType),
-        role.IsActive,
-        role.Notes,
-        role.AssignedAt,
-        role.RevokedAt,
-        role.SupplierConfig is not null ? SupplierRoleConfigDto.From(role.SupplierConfig) : null,
-        role.CarrierConfig is not null ? CarrierRoleConfigDto.From(role.CarrierConfig) : null,
-        role.CustomerConfig is not null ? CustomerRoleConfigDto.From(role.CustomerConfig) : null,
-        role.ClassificationConfig is not null ? SupplierClassificationConfigDto.From(role.ClassificationConfig) : null);
-
+    public static BusinessPartnerRoleDto From(BusinessPartnerRole role) =>
+        new(
+            role.Id,
+            role.RoleType.ToString(),
+            BpRoleDtoHelpers.RoleTypeLabel(role.RoleType),
+            role.IsActive,
+            role.Notes,
+            role.AssignedAt,
+            role.RevokedAt,
+            role.SupplierConfig is not null
+                ? SupplierRoleConfigDto.From(role.SupplierConfig)
+                : null,
+            role.CarrierConfig is not null ? CarrierRoleConfigDto.From(role.CarrierConfig) : null,
+            role.CustomerConfig is not null
+                ? CustomerRoleConfigDto.From(role.CustomerConfig)
+                : null,
+            role.ClassificationConfig is not null
+                ? SupplierClassificationConfigDto.From(role.ClassificationConfig)
+                : null
+        );
 }
 
 public sealed record SupplierRoleConfigDto(
@@ -100,16 +115,19 @@ public sealed record SupplierRoleConfigDto(
     string? DefaultPaymentMethodCode,
     string? RefundProviderTypeCode,
     bool IsRetentionExempt,
-    Guid PaymentTermId)
+    Guid PaymentTermId
+)
 {
-    public static SupplierRoleConfigDto From(SupplierRoleConfig c) => new(
-        c.DefaultTaxSupportCode,
-        c.DefaultRetentionVatCode,
-        c.DefaultRetentionIncomeCode,
-        c.DefaultPaymentMethodCode,
-        c.RefundProviderTypeCode,
-        c.IsRetentionExempt,
-        c.PaymentTermId);
+    public static SupplierRoleConfigDto From(SupplierRoleConfig c) =>
+        new(
+            c.DefaultTaxSupportCode,
+            c.DefaultRetentionVatCode,
+            c.DefaultRetentionIncomeCode,
+            c.DefaultPaymentMethodCode,
+            c.RefundProviderTypeCode,
+            c.IsRetentionExempt,
+            c.PaymentTermId
+        );
 }
 
 public sealed record SupplierClassificationConfigDto(
@@ -119,25 +137,28 @@ public sealed record SupplierClassificationConfigDto(
     string? SupplierRating,
     string? PrimaryGoodType,
     string? SupplierSegment,
-    string? PaymentMethodPreference)
+    string? PaymentMethodPreference
+)
 {
-    public static SupplierClassificationConfigDto From(SupplierClassificationConfig c) => new(
-        c.SupplierCategory,
-        c.SupplierType,
-        c.SupplierRisk,
-        c.SupplierRating,
-        c.PrimaryGoodType,
-        c.SupplierSegment,
-        c.PaymentMethodPreference);
+    public static SupplierClassificationConfigDto From(SupplierClassificationConfig c) =>
+        new(
+            c.SupplierCategory,
+            c.SupplierType,
+            c.SupplierRisk,
+            c.SupplierRating,
+            c.PrimaryGoodType,
+            c.SupplierSegment,
+            c.PaymentMethodPreference
+        );
 }
 
 public sealed record CarrierRoleConfigDto(
     string? TransportAuthorizationNumber,
-    decimal? VehicleCapacityTons)
+    decimal? VehicleCapacityTons
+)
 {
-    public static CarrierRoleConfigDto From(CarrierRoleConfig c) => new(
-        c.TransportAuthorizationNumber,
-        c.VehicleCapacityTons);
+    public static CarrierRoleConfigDto From(CarrierRoleConfig c) =>
+        new(c.TransportAuthorizationNumber, c.VehicleCapacityTons);
 }
 
 public sealed record CustomerRoleConfigDto(
@@ -147,32 +168,36 @@ public sealed record CustomerRoleConfigDto(
     string? CreditRating,
     string? LoyaltyTier,
     string? PreferredInvoiceFormat,
-    string? CustomerClassification)
+    string? CustomerClassification
+)
 {
-    public static CustomerRoleConfigDto From(CustomerRoleConfig c) => new(
-        c.CustomerCategory,
-        c.CustomerSegment,
-        c.SalesZone,
-        c.CreditRating,
-        c.LoyaltyTier,
-        c.PreferredInvoiceFormat,
-        c.CustomerClassification);
+    public static CustomerRoleConfigDto From(CustomerRoleConfig c) =>
+        new(
+            c.CustomerCategory,
+            c.CustomerSegment,
+            c.SalesZone,
+            c.CreditRating,
+            c.LoyaltyTier,
+            c.PreferredInvoiceFormat,
+            c.CustomerClassification
+        );
 }
 
 // ── Helper fuera del record (evita conflicto propiedad RoleType string vs enum RoleType) ──
 
 internal static class BpRoleDtoHelpers
 {
-    internal static string RoleTypeLabel(RoleType rt) => rt switch
-    {
-        RoleType.Customer => "Cliente",
-        RoleType.Supplier => "Proveedor",
-        RoleType.Employee => "Empleado",
-        RoleType.Carrier => "Transportista",
-        RoleType.Broker => "Intermediario",
-        RoleType.Agent => "Agente",
-        RoleType.Distributor => "Distribuidor",
-        RoleType.Contractor => "Contratista",
-        _ => rt.ToString(),
-    };
+    internal static string RoleTypeLabel(RoleType rt) =>
+        rt switch
+        {
+            RoleType.Customer => "Cliente",
+            RoleType.Supplier => "Proveedor",
+            RoleType.Employee => "Empleado",
+            RoleType.Carrier => "Transportista",
+            RoleType.Broker => "Intermediario",
+            RoleType.Agent => "Agente",
+            RoleType.Distributor => "Distribuidor",
+            RoleType.Contractor => "Contratista",
+            _ => rt.ToString(),
+        };
 }

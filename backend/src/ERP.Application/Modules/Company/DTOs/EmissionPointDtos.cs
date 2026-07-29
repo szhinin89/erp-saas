@@ -13,7 +13,8 @@ public record EmissionPointDto(
     bool IsDefault,
     bool IsActive,
     DateTime CreatedAt,
-    DateTime? UpdatedAt);
+    DateTime? UpdatedAt
+);
 
 /// <summary>DTO enriquecido para el listado independiente — incluye nombre y código del establecimiento.</summary>
 public record EmissionPointListItemDto(
@@ -27,10 +28,8 @@ public record EmissionPointListItemDto(
     EmissionType EmissionType,
     bool IsDefault,
     bool IsActive,
-    DateTime CreatedAt);
+    DateTime CreatedAt
+);
 
 /// <summary>DTO de lookup para poblar el selector de Establecimiento en el formulario.</summary>
-public record EstablishmentLookupDto(
-    Guid Id,
-    string Code,
-    string Name);
+public record EstablishmentLookupDto(Guid Id, string Code, string Name);

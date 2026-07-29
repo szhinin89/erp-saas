@@ -19,7 +19,8 @@ public sealed record ReplacePrimaryMediaRequest(
     MediaType MediaType,
     MediaVisibility Visibility,
     MediaUploadContent Content,
-    Guid UserId);
+    Guid UserId
+);
 
 /// <summary>
 /// Fachada de aplicación del módulo Media. Otros módulos (p.ej. Companies)
@@ -30,7 +31,8 @@ public interface IMediaService
 {
     Task<Result<MediaFile>> ReplacePrimaryImageAsync(
         ReplacePrimaryMediaRequest request,
-        CancellationToken cancellationToken = default);
+        CancellationToken cancellationToken = default
+    );
 
     Task<MediaFile?> GetActivePrimaryAsync(
         Guid tenantId,
@@ -38,7 +40,11 @@ public interface IMediaService
         MediaOwnerType ownerType,
         Guid ownerId,
         string role,
-        CancellationToken cancellationToken = default);
+        CancellationToken cancellationToken = default
+    );
 
-    Task<Stream?> OpenContentAsync(MediaFile mediaFile, CancellationToken cancellationToken = default);
+    Task<Stream?> OpenContentAsync(
+        MediaFile mediaFile,
+        CancellationToken cancellationToken = default
+    );
 }

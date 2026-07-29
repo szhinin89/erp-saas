@@ -17,8 +17,8 @@ public sealed record RecordCashMovementCommand(
     string Description,
     string? ReferenceType = null,
     Guid? ReferenceId = null,
-    string? ReferenceNumber = null)
-    : IRequest<Result<CashMovementDto>>, IBranchScopedRequest;
+    string? ReferenceNumber = null
+) : IRequest<Result<CashMovementDto>>, IBranchScopedRequest;
 
 // ── Validator ──────────────────────────────────────────────────────────
 
@@ -26,13 +26,13 @@ public sealed class RecordCashMovementValidator : AbstractValidator<RecordCashMo
 {
     public RecordCashMovementValidator()
     {
-        RuleFor(x => x.CashSessionId).NotEmpty()
-            .WithMessage("La sesión de caja es obligatoria.");
-        RuleFor(x => x.MovementType).NotEmpty()
+        RuleFor(x => x.CashSessionId).NotEmpty().WithMessage("La sesión de caja es obligatoria.");
+        RuleFor(x => x.MovementType)
+            .NotEmpty()
             .WithMessage("El tipo de movimiento es obligatorio.");
-        RuleFor(x => x.Amount).GreaterThan(0)
-            .WithMessage("El monto debe ser mayor a cero.");
-        RuleFor(x => x.Description).NotEmpty()
+        RuleFor(x => x.Amount).GreaterThan(0).WithMessage("El monto debe ser mayor a cero.");
+        RuleFor(x => x.Description)
+            .NotEmpty()
             .MaximumLength(CashMovement.DescriptionMaxLen)
             .WithMessage("La descripción es obligatoria.");
         RuleFor(x => x.ReferenceNumber).MaximumLength(CashMovement.ReferenceNumberMaxLen);
@@ -41,30 +41,38 @@ public sealed class RecordCashMovementValidator : AbstractValidator<RecordCashMo
 
 // ── Handler ────────────────────────────────────────────────────────────
 
-public sealed class RecordCashMovementHandler : IRequestHandler<RecordCashMovementCommand, Result<CashMovementDto>>
+public sealed class RecordCashMovementHandler
+    : IRequestHandler<RecordCashMovementCommand, Result<CashMovementDto>>
 {
     private readonly ICashSessionRepository _repo;
     private readonly ICurrentTenant _t;
     private readonly ICurrentUser _u;
 
-    public RecordCashMovementHandler(
-        ICashSessionRepository repo,
-        ICurrentTenant t, ICurrentUser u)
+    public RecordCashMovementHandler(ICashSessionRepository repo, ICurrentTenant t, ICurrentUser u)
     {
-        _repo = repo; _t = t; _u = u;
+        _repo = repo;
+        _t = t;
+        _u = u;
     }
 
-    public async Task<Result<CashMovementDto>> Handle(RecordCashMovementCommand cmd, CancellationToken ct)
+    public async Task<Result<CashMovementDto>> Handle(
+        RecordCashMovementCommand cmd,
+        CancellationToken ct
+    )
     {
         if (!Enum.TryParse<CashMovementType>(cmd.MovementType, true, out var movementType))
             return Result<CashMovementDto>.ValidationFailure(
-                $"Tipo de movimiento '{cmd.MovementType}' no válido.");
+                $"Tipo de movimiento '{cmd.MovementType}' no válido."
+            );
 
         var referenceType = CashReferenceType.None;
-        if (!string.IsNullOrWhiteSpace(cmd.ReferenceType)
-            && !Enum.TryParse(cmd.ReferenceType, true, out referenceType))
+        if (
+            !string.IsNullOrWhiteSpace(cmd.ReferenceType)
+            && !Enum.TryParse(cmd.ReferenceType, true, out referenceType)
+        )
             return Result<CashMovementDto>.ValidationFailure(
-                $"Tipo de referencia '{cmd.ReferenceType}' no válido.");
+                $"Tipo de referencia '{cmd.ReferenceType}' no válido."
+            );
 
         var session = await _repo.GetByIdAsync(_t.TenantId, cmd.CashSessionId, ct);
         if (session is null)
@@ -73,15 +81,30 @@ public sealed class RecordCashMovementHandler : IRequestHandler<RecordCashMoveme
         try
         {
             var movement = session.RecordMovement(
-                movementType, cmd.Amount, cmd.Description, _u.UserId,
-                referenceType, cmd.ReferenceId, cmd.ReferenceNumber);
+                movementType,
+                cmd.Amount,
+                cmd.Description,
+                _u.UserId,
+                referenceType,
+                cmd.ReferenceId,
+                cmd.ReferenceNumber
+            );
 
             await _repo.SaveChangesAsync(ct);
 
-            return Result<CashMovementDto>.Success(new CashMovementDto(
-                movement.Id, movement.MovementType.ToString(), movement.Amount,
-                movement.Description, movement.CreatedAt, movement.CreatedBy,
-                movement.ReferenceType.ToString(), movement.ReferenceId, movement.ReferenceNumber));
+            return Result<CashMovementDto>.Success(
+                new CashMovementDto(
+                    movement.Id,
+                    movement.MovementType.ToString(),
+                    movement.Amount,
+                    movement.Description,
+                    movement.CreatedAt,
+                    movement.CreatedBy,
+                    movement.ReferenceType.ToString(),
+                    movement.ReferenceId,
+                    movement.ReferenceNumber
+                )
+            );
         }
         catch (InvalidOperationException ex)
         {

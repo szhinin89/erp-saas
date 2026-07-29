@@ -15,13 +15,15 @@ public sealed record ElectronicDocumentListItemDto(
     int RetryCount,
     DateTime? UpdatedAt,
     /// <summary>Último mensaje/motivo relevante (<c>ElectronicDocument.LastError</c>) — null si el documento no tiene ninguno registrado (en proceso o autorizado).</summary>
-    string? LastMessage);
+    string? LastMessage
+);
 
 public sealed record ElectronicDocumentsListResponse(
     IReadOnlyList<ElectronicDocumentListItemDto> Items,
     int Total,
     int PageNumber,
-    int PageSize);
+    int PageSize
+);
 
 /// <summary>Un evento del timeline — reconstruido desde <c>ElectronicDocumentAudit</c> (append-only), nunca inventado.</summary>
 public sealed record ElectronicDocumentTimelineEventDto(
@@ -30,7 +32,8 @@ public sealed record ElectronicDocumentTimelineEventDto(
     string ToState,
     DateTime OccurredAtUtc,
     string UserName,
-    double? DurationSinceLastMinutes);
+    double? DurationSinceLastMinutes
+);
 
 /// <summary>
 /// Detalle de Monitor — datos propios de esta pantalla (compañía, documento de origen) más el
@@ -53,7 +56,8 @@ public sealed record ElectronicDocumentDetailDto(
     DateTime CreatedAt,
     DateTime? UpdatedAt,
     string? Observations,
-    ElectronicDocumentDiagnosticDto Diagnostic);
+    ElectronicDocumentDiagnosticDto Diagnostic
+);
 
 public sealed record ElectronicDocumentsDashboardDto(
     int Pending,
@@ -67,4 +71,5 @@ public sealed record ElectronicDocumentsDashboardDto(
     double? AverageAuthorizationMinutes,
     int PendingRetries,
     /// <summary>Documentos creados hoy, sin importar su estado — distinto de <see cref="AuthorizedToday"/>.</summary>
-    int TotalToday);
+    int TotalToday
+);

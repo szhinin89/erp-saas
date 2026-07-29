@@ -47,12 +47,26 @@ public sealed class CreateInitialAdminHandlerTests
             // el delegate inline (sin transacción real), para que los asserts sobre los demás mocks
             // (TenantRepo/AccessRepo/CompanyProvisioning) sigan reflejando lo que el handler hizo.
             UnitOfWork
-                .Setup(u => u.ExecuteInTransactionAsync(It.IsAny<Func<CancellationToken, Task>>(), It.IsAny<CancellationToken>()))
-                .Returns((Func<CancellationToken, Task> operation, CancellationToken ct) => operation(ct));
+                .Setup(u =>
+                    u.ExecuteInTransactionAsync(
+                        It.IsAny<Func<CancellationToken, Task>>(),
+                        It.IsAny<CancellationToken>()
+                    )
+                )
+                .Returns(
+                    (Func<CancellationToken, Task> operation, CancellationToken ct) => operation(ct)
+                );
         }
 
-        public CreateInitialAdminHandler BuildHandler() => new(
-            SetupRepo.Object, TenantRepo.Object, AccessRepo.Object, Hasher.Object, CompanyProvisioning.Object, UnitOfWork.Object);
+        public CreateInitialAdminHandler BuildHandler() =>
+            new(
+                SetupRepo.Object,
+                TenantRepo.Object,
+                AccessRepo.Object,
+                Hasher.Object,
+                CompanyProvisioning.Object,
+                UnitOfWork.Object
+            );
     }
 
     private static CreateInitialAdminCommand ValidCommand(string token = RawToken) =>
@@ -64,25 +78,52 @@ public sealed class CreateInitialAdminHandlerTests
         var state = NewActiveState();
         var f = new Fixture();
         f.SetupRepo.Setup(r => r.GetAsync(It.IsAny<CancellationToken>())).ReturnsAsync(state);
-        f.AccessRepo.Setup(r => r.AnyUserWithUsernameAsync("ana.perez", It.IsAny<CancellationToken>())).ReturnsAsync(false);
-        f.AccessRepo.Setup(r => r.AnyUserWithEmailAsync("ana@test.com", It.IsAny<CancellationToken>())).ReturnsAsync(false);
-        f.CompanyProvisioning
-            .Setup(s => s.EnsureDefaultCompanyAsync(It.IsAny<Tenant>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync((Tenant t, CancellationToken _) => Company.CreateManaged(t.Id, "1790012345001", "Principal S.A.", createdBy: Guid.NewGuid()));
+        f.AccessRepo.Setup(r =>
+                r.AnyUserWithUsernameAsync("ana.perez", It.IsAny<CancellationToken>())
+            )
+            .ReturnsAsync(false);
+        f.AccessRepo.Setup(r =>
+                r.AnyUserWithEmailAsync("ana@test.com", It.IsAny<CancellationToken>())
+            )
+            .ReturnsAsync(false);
+        f.CompanyProvisioning.Setup(s =>
+                s.EnsureDefaultCompanyAsync(It.IsAny<Tenant>(), It.IsAny<CancellationToken>())
+            )
+            .ReturnsAsync(
+                (Tenant t, CancellationToken _) =>
+                    Company.CreateManaged(
+                        t.Id,
+                        "1790012345001",
+                        "Principal S.A.",
+                        createdBy: Guid.NewGuid()
+                    )
+            );
 
         var handler = f.BuildHandler();
         var result = await handler.Handle(ValidCommand(), CancellationToken.None);
 
         result.IsSuccess.Should().BeTrue();
-        state.IsInitialized.Should().BeTrue("el token debe invalidarse permanentemente tras el primer uso");
-        f.TenantRepo.Verify(r => r.AddAsync(It.IsAny<Tenant>(), It.IsAny<CancellationToken>()), Times.Once);
-        f.AccessRepo.Verify(r => r.AddCompanyUserMembershipAsync(
-            It.Is<ERP.Domain.Access.Entities.CompanyUserMembership>(m => m.Role == "Admin"),
-            It.IsAny<CancellationToken>()), Times.Once);
-        f.CompanyProvisioning.Verify(p => p.EnsureDefaultCompanyAsync(
-            It.IsAny<Tenant>(), It.IsAny<CancellationToken>()), Times.Once,
-            "el bootstrap de la empresa (sucursal, bodega, perfiles, etc.) ahora es responsabilidad " +
-            "interna de CompanyProvisioningService — el handler solo debe garantizar que se invoque");
+        state
+            .IsInitialized.Should()
+            .BeTrue("el token debe invalidarse permanentemente tras el primer uso");
+        f.TenantRepo.Verify(
+            r => r.AddAsync(It.IsAny<Tenant>(), It.IsAny<CancellationToken>()),
+            Times.Once
+        );
+        f.AccessRepo.Verify(
+            r =>
+                r.AddCompanyUserMembershipAsync(
+                    It.Is<ERP.Domain.Access.Entities.CompanyUserMembership>(m => m.Role == "Admin"),
+                    It.IsAny<CancellationToken>()
+                ),
+            Times.Once
+        );
+        f.CompanyProvisioning.Verify(
+            p => p.EnsureDefaultCompanyAsync(It.IsAny<Tenant>(), It.IsAny<CancellationToken>()),
+            Times.Once,
+            "el bootstrap de la empresa (sucursal, bodega, perfiles, etc.) ahora es responsabilidad "
+                + "interna de CompanyProvisioningService — el handler solo debe garantizar que se invoque"
+        );
     }
 
     [Fact]
@@ -98,7 +139,10 @@ public sealed class CreateInitialAdminHandlerTests
 
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Be("El sistema ya ha sido inicializado.");
-        f.TenantRepo.Verify(r => r.AddAsync(It.IsAny<Tenant>(), It.IsAny<CancellationToken>()), Times.Never);
+        f.TenantRepo.Verify(
+            r => r.AddAsync(It.IsAny<Tenant>(), It.IsAny<CancellationToken>()),
+            Times.Never
+        );
     }
 
     [Fact]
@@ -109,24 +153,34 @@ public sealed class CreateInitialAdminHandlerTests
         f.SetupRepo.Setup(r => r.GetAsync(It.IsAny<CancellationToken>())).ReturnsAsync(state);
 
         var handler = f.BuildHandler();
-        var result = await handler.Handle(ValidCommand(token: "token-incorrecto"), CancellationToken.None);
+        var result = await handler.Handle(
+            ValidCommand(token: "token-incorrecto"),
+            CancellationToken.None
+        );
 
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Be("Token de inicialización inválido.");
         state.IsInitialized.Should().BeFalse();
-        f.TenantRepo.Verify(r => r.AddAsync(It.IsAny<Tenant>(), It.IsAny<CancellationToken>()), Times.Never);
+        f.TenantRepo.Verify(
+            r => r.AddAsync(It.IsAny<Tenant>(), It.IsAny<CancellationToken>()),
+            Times.Never
+        );
     }
 
     [Fact]
     public async Task Sin_token_de_instalacion_activo_en_el_servidor_rechaza_la_solicitud()
     {
         var f = new Fixture();
-        f.SetupRepo.Setup(r => r.GetAsync(It.IsAny<CancellationToken>())).ReturnsAsync((SystemSetupState?)null);
+        f.SetupRepo.Setup(r => r.GetAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync((SystemSetupState?)null);
 
         var handler = f.BuildHandler();
         var result = await handler.Handle(ValidCommand(), CancellationToken.None);
 
         result.IsSuccess.Should().BeFalse();
-        f.TenantRepo.Verify(r => r.AddAsync(It.IsAny<Tenant>(), It.IsAny<CancellationToken>()), Times.Never);
+        f.TenantRepo.Verify(
+            r => r.AddAsync(It.IsAny<Tenant>(), It.IsAny<CancellationToken>()),
+            Times.Never
+        );
     }
 }

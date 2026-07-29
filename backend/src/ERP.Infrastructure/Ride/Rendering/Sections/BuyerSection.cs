@@ -21,20 +21,30 @@ public static class BuyerSection
         var receiver = layout.Receiver;
         var header = layout.Header;
 
-        container.RideBox().Padding(8).Column(column =>
-        {
-            column.Spacing(2);
-            column.Item().Text($"Razón Social / Nombres y Apellidos: {receiver.LegalName}").FontSize(9);
-            column.Item().Text($"Identificación: {receiver.IdentificationNumber}").FontSize(9);
-
-            column.Item().Row(row =>
+        container
+            .RideBox()
+            .Padding(8)
+            .Column(column =>
             {
-                row.RelativeItem(2).Text($"Fecha: {header.IssueDate:dd/MM/yyyy}").FontSize(9);
-                row.RelativeItem(2).Text("Placa / Matrícula: ").FontSize(9);
-                row.RelativeItem(1).Text("Guía: ").FontSize(9);
-            });
+                column.Spacing(2);
+                column
+                    .Item()
+                    .Text($"Razón Social / Nombres y Apellidos: {receiver.LegalName}")
+                    .FontSize(9);
+                column.Item().Text($"Identificación: {receiver.IdentificationNumber}").FontSize(9);
 
-            column.Item().Text($"Dirección: {receiver.Address ?? string.Empty}").FontSize(9);
-        });
+                column
+                    .Item()
+                    .Row(row =>
+                    {
+                        row.RelativeItem(2)
+                            .Text($"Fecha: {header.IssueDate:dd/MM/yyyy}")
+                            .FontSize(9);
+                        row.RelativeItem(2).Text("Placa / Matrícula: ").FontSize(9);
+                        row.RelativeItem(1).Text("Guía: ").FontSize(9);
+                    });
+
+                column.Item().Text($"Dirección: {receiver.Address ?? string.Empty}").FontSize(9);
+            });
     }
 }

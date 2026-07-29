@@ -11,4 +11,5 @@ namespace ERP.Application.Modules.Inventory.ItemMatching.UseCases.GetLineMatch;
 /// el motor de sugerencias ni la lectura de PurchaseReceptionLine.
 /// </summary>
 public sealed record GetPurchaseReceptionLineMatchQuery(Guid PurchaseReceptionLineId)
-    : IRequest<Result<PurchaseReceptionLineMatchDto>>, IBranchScopedRequest;
+    : IRequest<Result<PurchaseReceptionLineMatchDto>>,
+        IBranchScopedRequest;

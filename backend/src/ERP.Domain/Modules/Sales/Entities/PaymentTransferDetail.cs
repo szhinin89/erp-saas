@@ -13,7 +13,11 @@ public sealed class PaymentTransferDetail
     private PaymentTransferDetail() { }
 
     public static PaymentTransferDetail Create(
-        Guid paymentId, string? bankName, string? receiptNumber, DateOnly? transferDate)
+        Guid paymentId,
+        string? bankName,
+        string? receiptNumber,
+        DateOnly? transferDate
+    )
     {
         return new PaymentTransferDetail
         {

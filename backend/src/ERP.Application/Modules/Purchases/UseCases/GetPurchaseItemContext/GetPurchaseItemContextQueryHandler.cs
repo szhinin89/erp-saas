@@ -27,7 +27,8 @@ public sealed class GetPurchaseItemContextQueryHandler
         ISriTaxResolver taxResolver,
         ICurrentTenant tenant,
         ICurrentCompany company,
-        IDecimalConfigRepository decimalConfigRepo)
+        IDecimalConfigRepository decimalConfigRepo
+    )
     {
         _itemRepo = itemRepo;
         _stockRepo = stockRepo;
@@ -39,7 +40,9 @@ public sealed class GetPurchaseItemContextQueryHandler
     }
 
     public async Task<Result<PurchaseItemContextDto>> Handle(
-        GetPurchaseItemContextQuery request, CancellationToken ct)
+        GetPurchaseItemContextQuery request,
+        CancellationToken ct
+    )
     {
         var tid = _tenant.TenantId;
         var decimalConfig = await _decimalConfigRepo.GetAsync(tid, _company.CompanyId, ct);
@@ -55,7 +58,12 @@ public sealed class GetPurchaseItemContextQueryHandler
         // compra global (Item.Code.PurchaseCode legacy fue eliminado).
         string? supplierCode = null;
         if (request.SupplierId.HasValue)
-            supplierCode = await _itemRepo.GetSupplierCodeAsync(request.ItemId, request.SupplierId.Value, tid, ct);
+            supplierCode = await _itemRepo.GetSupplierCodeAsync(
+                request.ItemId,
+                request.SupplierId.Value,
+                tid,
+                ct
+            );
 
         // 2. STOCK — SSOT desde CurrentStock
         var stock = await _stockRepo.GetStockAsync(tid, request.WarehouseId, request.ItemId, ct);
@@ -65,8 +73,9 @@ public sealed class GetPurchaseItemContextQueryHandler
         var averageCost = stock?.AverageCost ?? 0m;
 
         // 3. ÚLTIMO COSTO — desde StockMovement (PurchaseEntry más reciente)
-        var lastCost = await _stockRepo.GetLastPurchaseCostAsync(
-            tid, request.ItemId, request.WarehouseId, ct) ?? 0m;
+        var lastCost =
+            await _stockRepo.GetLastPurchaseCostAsync(tid, request.ItemId, request.WarehouseId, ct)
+            ?? 0m;
 
         // 4. PVP — SSOT vía PricingResolver (Motor de Pricing). Sin precio configurado
         // o sin lista predeterminada, se muestra 0 — es solo contexto informativo para
@@ -97,34 +106,36 @@ public sealed class GetPurchaseItemContextQueryHandler
         var costMargin = pvp - averageCost;
         var costMarginPct = pvp > 0m ? (costMargin / pvp) * 100m : 0m;
 
-        return Result<PurchaseItemContextDto>.Success(new PurchaseItemContextDto
-        {
-            ItemId = item.Id,
-            Sku = item.Code.SKU,
-            ShortName = item.Code.ShortName,
-            Description = item.Code.Description,
-            SupplierCode = supplierCode,
+        return Result<PurchaseItemContextDto>.Success(
+            new PurchaseItemContextDto
+            {
+                ItemId = item.Id,
+                Sku = item.Code.SKU,
+                ShortName = item.Code.ShortName,
+                Description = item.Code.Description,
+                SupplierCode = supplierCode,
 
-            CurrentStock = currentQty,
-            AvailableStock = availableQty,
-            ReservedStock = reservedQty,
+                CurrentStock = currentQty,
+                AvailableStock = availableQty,
+                ReservedStock = reservedQty,
 
-            AverageCost = Math.Round(averageCost, decimalConfig.PurchaseUnitPrice),
-            LastPurchaseCost = Math.Round(lastCost, decimalConfig.PurchaseUnitPrice),
+                AverageCost = Math.Round(averageCost, decimalConfig.PurchaseUnitPrice),
+                LastPurchaseCost = Math.Round(lastCost, decimalConfig.PurchaseUnitPrice),
 
-            Pvp = Math.Round(pvp, decimalConfig.SalesUnitPrice),
-            PreviousPrice = Math.Round(pvp, decimalConfig.SalesUnitPrice),
-            MaxDiscountPercent = maxDiscount,
+                Pvp = Math.Round(pvp, decimalConfig.SalesUnitPrice),
+                PreviousPrice = Math.Round(pvp, decimalConfig.SalesUnitPrice),
+                MaxDiscountPercent = maxDiscount,
 
-            PurchaseVatCode = item.TaxConfig.PurchaseVatCode,
-            VatPercent = vatPct,
-            ExciseTaxCode = item.TaxConfig.ExciseTaxCode,
-            IcePercent = icePct,
-            HasVat = hasVat,
-            HasIce = hasIce,
+                PurchaseVatCode = item.TaxConfig.PurchaseVatCode,
+                VatPercent = vatPct,
+                ExciseTaxCode = item.TaxConfig.ExciseTaxCode,
+                IcePercent = icePct,
+                HasVat = hasVat,
+                HasIce = hasIce,
 
-            CostMargin = Math.Round(costMargin, decimalConfig.TotalAmount),
-            CostMarginPercent = Math.Round(costMarginPct, decimalConfig.Percentage),
-        });
+                CostMargin = Math.Round(costMargin, decimalConfig.TotalAmount),
+                CostMarginPercent = Math.Round(costMarginPct, decimalConfig.Percentage),
+            }
+        );
     }
 }

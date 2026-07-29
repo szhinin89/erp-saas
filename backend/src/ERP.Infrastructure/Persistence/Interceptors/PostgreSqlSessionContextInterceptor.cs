@@ -1,6 +1,6 @@
+using System.Data.Common;
 using ERP.Application.Common;
 using Microsoft.EntityFrameworkCore.Diagnostics;
-using System.Data.Common;
 
 namespace ERP.Infrastructure.Persistence.Interceptors;
 
@@ -19,7 +19,8 @@ public sealed class PostgreSqlSessionContextInterceptor : DbConnectionIntercepto
     public override async Task ConnectionOpenedAsync(
         DbConnection connection,
         ConnectionEndEventData eventData,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default
+    )
     {
         await _applicator.ApplyAsync(connection, cancellationToken);
         await base.ConnectionOpenedAsync(connection, eventData, cancellationToken);

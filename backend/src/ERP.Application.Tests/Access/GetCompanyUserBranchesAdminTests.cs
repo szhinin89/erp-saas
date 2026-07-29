@@ -25,11 +25,35 @@ public sealed class GetCompanyUserBranchesAdminHandlerTests
     private static CompanyUserMembership Membership(Guid companyId) =>
         CompanyUserMembership.Create(companyId, Guid.NewGuid(), "User", null, CreatedBy);
 
-    private static Branch NewBranch(Guid companyId, string name) => Branch.Create(
-        TenantId, name, "Av. Principal 123", "001",
-        null, null, null, null, null, null, null, null, null, null, null,
-        null, null, null, null, null, null, null, null, true, CreatedBy,
-        companyId: companyId);
+    private static Branch NewBranch(Guid companyId, string name) =>
+        Branch.Create(
+            TenantId,
+            name,
+            "Av. Principal 123",
+            "001",
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            true,
+            CreatedBy,
+            companyId: companyId
+        );
 
     private sealed class CurrentCompanyStub : ICurrentCompany
     {
@@ -50,8 +74,14 @@ public sealed class GetCompanyUserBranchesAdminHandlerTests
         public Mock<IBranchRepository> BranchRepo { get; } = new();
         public Mock<ICompanyUserBranchRepository> CompanyUserBranchRepo { get; } = new();
 
-        public GetCompanyUserBranchesAdminHandler BuildHandler() => new(
-            AccessRepo.Object, new CurrentCompanyStub(), new CurrentTenantStub(), BranchRepo.Object, CompanyUserBranchRepo.Object);
+        public GetCompanyUserBranchesAdminHandler BuildHandler() =>
+            new(
+                AccessRepo.Object,
+                new CurrentCompanyStub(),
+                new CurrentTenantStub(),
+                BranchRepo.Object,
+                CompanyUserBranchRepo.Object
+            );
     }
 
     [Fact]
@@ -60,18 +90,31 @@ public sealed class GetCompanyUserBranchesAdminHandlerTests
         var membership = Membership(CurrentCompanyId);
         var branchA = NewBranch(CurrentCompanyId, "Matriz");
         var branchB = NewBranch(CurrentCompanyId, "Sucursal Norte");
-        var authorization = CompanyUserBranch.Create(TenantId, CurrentCompanyId, membership.Id, branchA.Id, CreatedBy);
+        var authorization = CompanyUserBranch.Create(
+            TenantId,
+            CurrentCompanyId,
+            membership.Id,
+            branchA.Id,
+            CreatedBy
+        );
 
         var f = new Fixture();
-        f.AccessRepo.Setup(r => r.GetCompanyUserMembershipByIdAsync(membership.Id, It.IsAny<CancellationToken>()))
+        f.AccessRepo.Setup(r =>
+                r.GetCompanyUserMembershipByIdAsync(membership.Id, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(membership);
         f.BranchRepo.Setup(r => r.GetAsync(TenantId, true, null, It.IsAny<CancellationToken>()))
             .ReturnsAsync(new[] { branchA, branchB });
-        f.CompanyUserBranchRepo.Setup(r => r.GetByMembershipAsync(membership.Id, It.IsAny<CancellationToken>()))
+        f.CompanyUserBranchRepo.Setup(r =>
+                r.GetByMembershipAsync(membership.Id, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(new[] { authorization });
 
         var handler = f.BuildHandler();
-        var result = await handler.Handle(new GetCompanyUserBranchesAdminQuery(membership.Id), CancellationToken.None);
+        var result = await handler.Handle(
+            new GetCompanyUserBranchesAdminQuery(membership.Id),
+            CancellationToken.None
+        );
 
         result.IsSuccess.Should().BeTrue();
         result.Value!.CompanyUserId.Should().Be(membership.Id);
@@ -88,15 +131,22 @@ public sealed class GetCompanyUserBranchesAdminHandlerTests
         var foreignBranch = NewBranch(OtherCompanyId, "Sucursal ajena");
 
         var f = new Fixture();
-        f.AccessRepo.Setup(r => r.GetCompanyUserMembershipByIdAsync(membership.Id, It.IsAny<CancellationToken>()))
+        f.AccessRepo.Setup(r =>
+                r.GetCompanyUserMembershipByIdAsync(membership.Id, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(membership);
         f.BranchRepo.Setup(r => r.GetAsync(TenantId, true, null, It.IsAny<CancellationToken>()))
             .ReturnsAsync(new[] { ownBranch, foreignBranch });
-        f.CompanyUserBranchRepo.Setup(r => r.GetByMembershipAsync(membership.Id, It.IsAny<CancellationToken>()))
+        f.CompanyUserBranchRepo.Setup(r =>
+                r.GetByMembershipAsync(membership.Id, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(Array.Empty<CompanyUserBranch>());
 
         var handler = f.BuildHandler();
-        var result = await handler.Handle(new GetCompanyUserBranchesAdminQuery(membership.Id), CancellationToken.None);
+        var result = await handler.Handle(
+            new GetCompanyUserBranchesAdminQuery(membership.Id),
+            CancellationToken.None
+        );
 
         result.IsSuccess.Should().BeTrue();
         result.Value!.Branches.Should().ContainSingle(b => b.BranchId == ownBranch.Id);
@@ -108,15 +158,29 @@ public sealed class GetCompanyUserBranchesAdminHandlerTests
     {
         var membership = Membership(OtherCompanyId);
         var f = new Fixture();
-        f.AccessRepo.Setup(r => r.GetCompanyUserMembershipByIdAsync(membership.Id, It.IsAny<CancellationToken>()))
+        f.AccessRepo.Setup(r =>
+                r.GetCompanyUserMembershipByIdAsync(membership.Id, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(membership);
 
         var handler = f.BuildHandler();
-        var result = await handler.Handle(new GetCompanyUserBranchesAdminQuery(membership.Id), CancellationToken.None);
+        var result = await handler.Handle(
+            new GetCompanyUserBranchesAdminQuery(membership.Id),
+            CancellationToken.None
+        );
 
         result.IsSuccess.Should().BeFalse();
         result.Code.Should().Be(ApiResponseCodes.Common.NotFound);
-        f.BranchRepo.Verify(r => r.GetAsync(It.IsAny<Guid>(), It.IsAny<bool?>(), It.IsAny<string?>(), It.IsAny<CancellationToken>()), Times.Never);
+        f.BranchRepo.Verify(
+            r =>
+                r.GetAsync(
+                    It.IsAny<Guid>(),
+                    It.IsAny<bool?>(),
+                    It.IsAny<string?>(),
+                    It.IsAny<CancellationToken>()
+                ),
+            Times.Never
+        );
     }
 
     [Fact]
@@ -124,11 +188,16 @@ public sealed class GetCompanyUserBranchesAdminHandlerTests
     {
         var missingId = Guid.NewGuid();
         var f = new Fixture();
-        f.AccessRepo.Setup(r => r.GetCompanyUserMembershipByIdAsync(missingId, It.IsAny<CancellationToken>()))
+        f.AccessRepo.Setup(r =>
+                r.GetCompanyUserMembershipByIdAsync(missingId, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync((CompanyUserMembership?)null);
 
         var handler = f.BuildHandler();
-        var result = await handler.Handle(new GetCompanyUserBranchesAdminQuery(missingId), CancellationToken.None);
+        var result = await handler.Handle(
+            new GetCompanyUserBranchesAdminQuery(missingId),
+            CancellationToken.None
+        );
 
         result.IsSuccess.Should().BeFalse();
         result.Code.Should().Be(ApiResponseCodes.Common.NotFound);

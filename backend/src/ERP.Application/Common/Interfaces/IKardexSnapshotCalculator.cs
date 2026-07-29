@@ -12,8 +12,12 @@ public interface IKardexSnapshotCalculator
         Guid? productId,
         Guid? warehouseId,
         DateTime untilDate,
-        CancellationToken cancellationToken = default);
+        CancellationToken cancellationToken = default
+    );
 
     /// <summary>Recalcula snapshots para todos los tenants hasta la fecha indicada.</summary>
-    Task<int> RecalcularTodosAsync(DateTime untilDate, CancellationToken cancellationToken = default);
+    Task<int> RecalcularTodosAsync(
+        DateTime untilDate,
+        CancellationToken cancellationToken = default
+    );
 }

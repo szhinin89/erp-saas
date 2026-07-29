@@ -9,5 +9,5 @@ public record UserActivityDto(
     string? Description,
     DateTime CreatedAt,
     string? UserEmail,
-    string? UserFullName);
-
+    string? UserFullName
+);

@@ -15,7 +15,8 @@ namespace ERP.Application.Modules.Accounting.Posting.Translators;
 /// monto reversado. Sin PaymentDate en el evento — se usa la fecha real del reverso
 /// (BaseDomainEvent.OccurredOn) como fecha del hecho contable.
 /// </summary>
-public sealed class CollectionReversedPostingTranslator : INotificationHandler<CollectionReversedEvent>
+public sealed class CollectionReversedPostingTranslator
+    : INotificationHandler<CollectionReversedEvent>
 {
     private const string SourceModuleName = "Finance";
     private const string FactTypeName = "CollectionReversed";
@@ -24,7 +25,9 @@ public sealed class CollectionReversedPostingTranslator : INotificationHandler<C
     private readonly ILogger<CollectionReversedPostingTranslator> _logger;
 
     public CollectionReversedPostingTranslator(
-        IPostingEngine postingEngine, ILogger<CollectionReversedPostingTranslator> logger)
+        IPostingEngine postingEngine,
+        ILogger<CollectionReversedPostingTranslator> logger
+    )
     {
         _postingEngine = postingEngine;
         _logger = logger;
@@ -33,8 +36,18 @@ public sealed class CollectionReversedPostingTranslator : INotificationHandler<C
     public async Task Handle(CollectionReversedEvent e, CancellationToken ct)
     {
         var fact = new PostingFact(
-            e.TenantId!.Value, e.CompanyId, SourceModuleName, FactTypeName, e.PaymentId,
-            DateOnly.FromDateTime(e.OccurredOn), 0m, 0m, 0m, 0m, e.Amount);
+            e.TenantId!.Value,
+            e.CompanyId,
+            SourceModuleName,
+            FactTypeName,
+            e.PaymentId,
+            DateOnly.FromDateTime(e.OccurredOn),
+            0m,
+            0m,
+            0m,
+            0m,
+            e.Amount
+        );
 
         var result = await _postingEngine.PostAsync(fact, ct);
 
@@ -42,7 +55,10 @@ public sealed class CollectionReversedPostingTranslator : INotificationHandler<C
         {
             _logger.LogWarning(
                 "Posting failed for CollectionReversed {PaymentId}: {Code} — {Error}",
-                e.PaymentId, result.Code, result.Error);
+                e.PaymentId,
+                result.Code,
+                result.Error
+            );
         }
     }
 }

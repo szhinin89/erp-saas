@@ -15,8 +15,12 @@ public sealed class PaymentChequeDetail
     private PaymentChequeDetail() { }
 
     public static PaymentChequeDetail Create(
-        Guid paymentId, string? bankName, string? chequeNumber,
-        string? holderName, DateOnly? cashDate)
+        Guid paymentId,
+        string? bankName,
+        string? chequeNumber,
+        string? holderName,
+        DateOnly? cashDate
+    )
     {
         return new PaymentChequeDetail
         {

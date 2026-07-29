@@ -4,4 +4,6 @@ using MediatR;
 
 namespace ERP.Application.Modules.Branches.UseCases.DisableBranch;
 
-public sealed record DisableBranchCommand(Guid Id) : IRequest<Result<BranchListItemDto>>, ICompanyScopedRequest;
+public sealed record DisableBranchCommand(Guid Id)
+    : IRequest<Result<BranchListItemDto>>,
+        ICompanyScopedRequest;

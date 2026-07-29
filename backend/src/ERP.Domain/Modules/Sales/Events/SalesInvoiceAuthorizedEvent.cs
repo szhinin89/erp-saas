@@ -28,9 +28,19 @@ public sealed class SalesInvoiceAuthorizedEvent : BaseDomainEvent
     public decimal TotalDiscount { get; }
 
     public SalesInvoiceAuthorizedEvent(
-        Guid invoiceId, string invoiceNumber, decimal grandTotal, Guid userId, Guid cashSessionId,
-        Guid tenantId, Guid companyId, DateOnly issueDate,
-        decimal subtotal, decimal totalVat, decimal totalIce, decimal totalDiscount)
+        Guid invoiceId,
+        string invoiceNumber,
+        decimal grandTotal,
+        Guid userId,
+        Guid cashSessionId,
+        Guid tenantId,
+        Guid companyId,
+        DateOnly issueDate,
+        decimal subtotal,
+        decimal totalVat,
+        decimal totalIce,
+        decimal totalDiscount
+    )
     {
         InvoiceId = invoiceId;
         InvoiceNumber = invoiceNumber;

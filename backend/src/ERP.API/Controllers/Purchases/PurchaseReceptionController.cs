@@ -18,7 +18,14 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace ERP.API.Controllers.Purchases;
 
-[AppFeature("Recepción electrónica", $"perm:{PurchasePermissions.View}", "move_to_inbox", "/purchases/reception", $"perm:{PurchasePermissions.View}", 61)]
+[AppFeature(
+    "Recepción electrónica",
+    $"perm:{PurchasePermissions.View}",
+    "move_to_inbox",
+    "/purchases/reception",
+    $"perm:{PurchasePermissions.View}",
+    61
+)]
 [ApiController]
 [Route("api/v1/purchases/reception")]
 [Authorize]
@@ -26,12 +33,16 @@ namespace ERP.API.Controllers.Purchases;
 public sealed class PurchaseReceptionController : ControllerBase
 {
     private readonly IMediator _mediator;
+
     public PurchaseReceptionController(IMediator mediator) => _mediator = mediator;
 
     [HttpPost("import")]
     [Authorize(Policy = $"perm:{PurchasePermissions.View}")]
     [Consumes("multipart/form-data")]
-    [ProducesResponseType(typeof(Contracts.ApiResponse<PurchaseReceptionImportResultDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(
+        typeof(Contracts.ApiResponse<PurchaseReceptionImportResultDto>),
+        StatusCodes.Status200OK
+    )]
     public async Task<IActionResult> Import(IFormFile? file, CancellationToken ct)
     {
         if (file is null || file.Length == 0)
@@ -48,47 +59,76 @@ public sealed class PurchaseReceptionController : ControllerBase
 
     [HttpPost("{id:guid}/download-xml")]
     [Authorize(Policy = $"perm:{PurchasePermissions.View}")]
-    [ProducesResponseType(typeof(Contracts.ApiResponse<DownloadPurchaseReceptionXmlResultDto>), StatusCodes.Status200OK)]
-    public async Task<IActionResult> DownloadXml(Guid id, CancellationToken ct)
-        => this.ToOkOrBadRequest(await _mediator.Send(new DownloadPurchaseReceptionXmlCommand(id), ct));
+    [ProducesResponseType(
+        typeof(Contracts.ApiResponse<DownloadPurchaseReceptionXmlResultDto>),
+        StatusCodes.Status200OK
+    )]
+    public async Task<IActionResult> DownloadXml(Guid id, CancellationToken ct) =>
+        this.ToOkOrBadRequest(
+            await _mediator.Send(new DownloadPurchaseReceptionXmlCommand(id), ct)
+        );
 
     [HttpPost("{id:guid}/create-draft")]
     [Authorize(Policy = $"perm:{PurchasePermissions.View}")]
     [ProducesResponseType(typeof(Contracts.ApiResponse<PurchaseDraftDto>), StatusCodes.Status200OK)]
-    public async Task<IActionResult> CreateDraft(Guid id, CancellationToken ct)
-        => this.ToOkOrBadRequest(await _mediator.Send(new CreatePurchaseReceptionDraftCommand(id), ct));
+    public async Task<IActionResult> CreateDraft(Guid id, CancellationToken ct) =>
+        this.ToOkOrBadRequest(
+            await _mediator.Send(new CreatePurchaseReceptionDraftCommand(id), ct)
+        );
 
     // ── Item Matching ────────────────────────────────────────────────────
 
     [HttpGet("{id:guid}/lines")]
     [Authorize(Policy = $"perm:{PurchasePermissions.View}")]
-    [ProducesResponseType(typeof(Contracts.ApiResponse<IReadOnlyList<PurchaseReceptionLineMatchDto>>), StatusCodes.Status200OK)]
-    public async Task<IActionResult> GetLines(Guid id, CancellationToken ct)
-        => this.ToOkOrBadRequest(await _mediator.Send(new FindItemMatchesQuery(id), ct));
+    [ProducesResponseType(
+        typeof(Contracts.ApiResponse<IReadOnlyList<PurchaseReceptionLineMatchDto>>),
+        StatusCodes.Status200OK
+    )]
+    public async Task<IActionResult> GetLines(Guid id, CancellationToken ct) =>
+        this.ToOkOrBadRequest(await _mediator.Send(new FindItemMatchesQuery(id), ct));
 
     [HttpGet("lines/{id:guid}")]
     [Authorize(Policy = $"perm:{PurchasePermissions.View}")]
-    [ProducesResponseType(typeof(Contracts.ApiResponse<PurchaseReceptionLineMatchDto>), StatusCodes.Status200OK)]
-    public async Task<IActionResult> GetLineMatch(Guid id, CancellationToken ct)
-        => this.ToOkOrBadRequest(await _mediator.Send(new GetPurchaseReceptionLineMatchQuery(id), ct));
+    [ProducesResponseType(
+        typeof(Contracts.ApiResponse<PurchaseReceptionLineMatchDto>),
+        StatusCodes.Status200OK
+    )]
+    public async Task<IActionResult> GetLineMatch(Guid id, CancellationToken ct) =>
+        this.ToOkOrBadRequest(await _mediator.Send(new GetPurchaseReceptionLineMatchQuery(id), ct));
 
     [HttpPost("lines/{id:guid}/match-item")]
     [Authorize(Policy = $"perm:{PurchasePermissions.View}")]
-    [ProducesResponseType(typeof(Contracts.ApiResponse<PurchaseReceptionLineMatchDto>), StatusCodes.Status200OK)]
-    public async Task<IActionResult> MatchItem(Guid id, [FromBody] MatchItemRequest body, CancellationToken ct)
-        => this.ToOkOrBadRequest(await _mediator.Send(new MatchItemCommand(id, body.ItemId), ct));
+    [ProducesResponseType(
+        typeof(Contracts.ApiResponse<PurchaseReceptionLineMatchDto>),
+        StatusCodes.Status200OK
+    )]
+    public async Task<IActionResult> MatchItem(
+        Guid id,
+        [FromBody] MatchItemRequest body,
+        CancellationToken ct
+    ) => this.ToOkOrBadRequest(await _mediator.Send(new MatchItemCommand(id, body.ItemId), ct));
 
     [HttpPost("lines/{id:guid}/unmatch-item")]
     [Authorize(Policy = $"perm:{PurchasePermissions.View}")]
-    [ProducesResponseType(typeof(Contracts.ApiResponse<PurchaseReceptionLineMatchDto>), StatusCodes.Status200OK)]
-    public async Task<IActionResult> UnmatchItem(Guid id, CancellationToken ct)
-        => this.ToOkOrBadRequest(await _mediator.Send(new UnmatchPurchaseReceptionItemCommand(id), ct));
+    [ProducesResponseType(
+        typeof(Contracts.ApiResponse<PurchaseReceptionLineMatchDto>),
+        StatusCodes.Status200OK
+    )]
+    public async Task<IActionResult> UnmatchItem(Guid id, CancellationToken ct) =>
+        this.ToOkOrBadRequest(
+            await _mediator.Send(new UnmatchPurchaseReceptionItemCommand(id), ct)
+        );
 
     [HttpPost("matching/bulk")]
     [Authorize(Policy = $"perm:{PurchasePermissions.View}")]
-    [ProducesResponseType(typeof(Contracts.ApiResponse<BulkMatchItemsResultDto>), StatusCodes.Status200OK)]
-    public async Task<IActionResult> BulkMatch([FromBody] IReadOnlyList<BulkMatchItemEntry> matches, CancellationToken ct)
-        => this.ToOkOrBadRequest(await _mediator.Send(new BulkMatchItemsCommand(matches), ct));
+    [ProducesResponseType(
+        typeof(Contracts.ApiResponse<BulkMatchItemsResultDto>),
+        StatusCodes.Status200OK
+    )]
+    public async Task<IActionResult> BulkMatch(
+        [FromBody] IReadOnlyList<BulkMatchItemEntry> matches,
+        CancellationToken ct
+    ) => this.ToOkOrBadRequest(await _mediator.Send(new BulkMatchItemsCommand(matches), ct));
 }
 
 public sealed record MatchItemRequest(Guid ItemId);

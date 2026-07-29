@@ -13,15 +13,30 @@ public sealed class PasswordResetTokenRepository : IPasswordResetTokenRepository
         _db = db;
     }
 
-    public Task AddAsync(PasswordResetToken entity, CancellationToken cancellationToken = default)
-        => _db.PasswordResetTokens.AddAsync(entity, cancellationToken).AsTask();
+    public Task AddAsync(
+        PasswordResetToken entity,
+        CancellationToken cancellationToken = default
+    ) => _db.PasswordResetTokens.AddAsync(entity, cancellationToken).AsTask();
 
-    public Task<PasswordResetToken?> GetByTokenHashAsync(string tokenHash, CancellationToken cancellationToken = default)
-        => _db.PasswordResetTokens.FirstOrDefaultAsync(t => t.TokenHash == tokenHash, cancellationToken);
+    public Task<PasswordResetToken?> GetByTokenHashAsync(
+        string tokenHash,
+        CancellationToken cancellationToken = default
+    ) =>
+        _db.PasswordResetTokens.FirstOrDefaultAsync(
+            t => t.TokenHash == tokenHash,
+            cancellationToken
+        );
 
-    public async Task InvalidateActiveForUserAsync(Guid userId, string userKind, Guid? tenantId, CancellationToken cancellationToken = default)
+    public async Task InvalidateActiveForUserAsync(
+        Guid userId,
+        string userKind,
+        Guid? tenantId,
+        CancellationToken cancellationToken = default
+    )
     {
-        var query = _db.PasswordResetTokens.Where(t => t.UserId == userId && t.UserKind == userKind && !t.Used);
+        var query = _db.PasswordResetTokens.Where(t =>
+            t.UserId == userId && t.UserKind == userKind && !t.Used
+        );
         if (tenantId.HasValue)
             query = query.Where(t => t.TenantId == tenantId);
         else
@@ -32,6 +47,6 @@ public sealed class PasswordResetTokenRepository : IPasswordResetTokenRepository
             r.MarkUsed();
     }
 
-    public Task SaveChangesAsync(CancellationToken cancellationToken = default)
-        => _db.SaveChangesAsync(cancellationToken);
+    public Task SaveChangesAsync(CancellationToken cancellationToken = default) =>
+        _db.SaveChangesAsync(cancellationToken);
 }

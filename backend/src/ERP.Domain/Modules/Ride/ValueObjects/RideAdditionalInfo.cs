@@ -15,7 +15,10 @@ public sealed record RideAdditionalInfo
     public static RideAdditionalInfo Create(string name, string value)
     {
         if (string.IsNullOrWhiteSpace(name))
-            throw new ArgumentException("El nombre del campo adicional es obligatorio.", nameof(name));
+            throw new ArgumentException(
+                "El nombre del campo adicional es obligatorio.",
+                nameof(name)
+            );
         ArgumentNullException.ThrowIfNull(value);
 
         return new RideAdditionalInfo(name.Trim(), value);

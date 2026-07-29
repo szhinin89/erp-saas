@@ -37,24 +37,25 @@ public sealed class BusinessPartnerLocationRepository : IBusinessPartnerLocation
     public BusinessPartnerLocationRepository(ErpDbContext db) => _db = db;
 
     /// <summary>Devuelve entidad tracked — necesaria para Deactivate, Update, SetPrimary.</summary>
-    public Task<BusinessPartnerLocation?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
-        => _db.BusinessPartnerLocations
-              .FirstOrDefaultAsync(l => l.Id == id, cancellationToken);
+    public Task<BusinessPartnerLocation?> GetByIdAsync(
+        Guid id,
+        CancellationToken cancellationToken = default
+    ) => _db.BusinessPartnerLocations.FirstOrDefaultAsync(l => l.Id == id, cancellationToken);
 
     public async Task<IReadOnlyList<BusinessPartnerLocation>> GetByBusinessPartnerAsync(
         Guid businessPartnerId,
         bool? onlyActive = true,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default
+    )
     {
-        var q = _db.BusinessPartnerLocations
-                   .AsNoTracking()
-                   .Where(l => l.BusinessPartnerId == businessPartnerId);
+        var q = _db
+            .BusinessPartnerLocations.AsNoTracking()
+            .Where(l => l.BusinessPartnerId == businessPartnerId);
 
         if (onlyActive.HasValue)
             q = q.Where(l => l.IsActive == onlyActive.Value);
 
-        return await q
-            .OrderByDescending(l => l.IsPrimary)
+        return await q.OrderByDescending(l => l.IsPrimary)
             .ThenBy(l => l.Name)
             .ToListAsync(cancellationToken);
     }
@@ -67,13 +68,16 @@ public sealed class BusinessPartnerLocationRepository : IBusinessPartnerLocation
     public async Task<IReadOnlyList<BusinessPartnerLocation>> GetByPurposeAsync(
         Guid businessPartnerId,
         LocationPurpose purpose,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default
+    )
     {
-        return await _db.BusinessPartnerLocations
-            .AsNoTracking()
-            .Where(l => l.BusinessPartnerId == businessPartnerId
-                     && l.IsActive
-                     && (l.Purpose & purpose) == purpose)
+        return await _db
+            .BusinessPartnerLocations.AsNoTracking()
+            .Where(l =>
+                l.BusinessPartnerId == businessPartnerId
+                && l.IsActive
+                && (l.Purpose & purpose) == purpose
+            )
             .OrderByDescending(l => l.IsPrimary)
             .ThenBy(l => l.Name)
             .ToListAsync(cancellationToken);
@@ -81,37 +85,51 @@ public sealed class BusinessPartnerLocationRepository : IBusinessPartnerLocation
 
     public Task<BusinessPartnerLocation?> GetPrimaryAsync(
         Guid businessPartnerId,
-        CancellationToken cancellationToken = default)
-        => _db.BusinessPartnerLocations
-              .AsNoTracking()
-              .FirstOrDefaultAsync(l =>
-                  l.BusinessPartnerId == businessPartnerId &&
-                  l.IsPrimary && l.IsActive, cancellationToken);
+        CancellationToken cancellationToken = default
+    ) =>
+        _db
+            .BusinessPartnerLocations.AsNoTracking()
+            .FirstOrDefaultAsync(
+                l => l.BusinessPartnerId == businessPartnerId && l.IsPrimary && l.IsActive,
+                cancellationToken
+            );
 
     /// <summary>
     /// Verifica si algún contacto activo del tenant referencia esta ubicación.
     /// DEBE llamarse en DeactivateBpLocationHandler ANTES de llamar Deactivate().
     /// El global query filter en BusinessPartnerContacts filtra por tenant_id.
     /// </summary>
-    public Task<bool> HasActiveContactsAsync(Guid locationId, CancellationToken cancellationToken = default)
-        => _db.BusinessPartnerContacts
-              .AnyAsync(c => c.LocationId == locationId && c.IsActive, cancellationToken);
+    public Task<bool> HasActiveContactsAsync(
+        Guid locationId,
+        CancellationToken cancellationToken = default
+    ) =>
+        _db.BusinessPartnerContacts.AnyAsync(
+            c => c.LocationId == locationId && c.IsActive,
+            cancellationToken
+        );
 
     /// <summary>
     /// Quita IsPrimary de TODAS las ubicaciones del BP (bulk UPDATE directo a BD).
     /// Llamar ANTES de SetPrimary() en el handler para mantener la invariante.
     /// El global query filter añade WHERE tenant_id = @tenant automáticamente.
     /// </summary>
-    public async Task ClearPrimaryAsync(Guid businessPartnerId, CancellationToken cancellationToken = default)
+    public async Task ClearPrimaryAsync(
+        Guid businessPartnerId,
+        CancellationToken cancellationToken = default
+    )
     {
-        await _db.BusinessPartnerLocations
-            .Where(l => l.BusinessPartnerId == businessPartnerId && l.IsPrimary)
+        await _db
+            .BusinessPartnerLocations.Where(l =>
+                l.BusinessPartnerId == businessPartnerId && l.IsPrimary
+            )
             .ExecuteUpdateAsync(s => s.SetProperty(l => l.IsPrimary, false), cancellationToken);
     }
 
-    public Task AddAsync(BusinessPartnerLocation location, CancellationToken cancellationToken = default)
-        => _db.BusinessPartnerLocations.AddAsync(location, cancellationToken).AsTask();
+    public Task AddAsync(
+        BusinessPartnerLocation location,
+        CancellationToken cancellationToken = default
+    ) => _db.BusinessPartnerLocations.AddAsync(location, cancellationToken).AsTask();
 
-    public Task SaveChangesAsync(CancellationToken cancellationToken = default)
-        => _db.SaveChangesAsync(cancellationToken);
+    public Task SaveChangesAsync(CancellationToken cancellationToken = default) =>
+        _db.SaveChangesAsync(cancellationToken);
 }

@@ -32,15 +32,17 @@ public sealed class RequestCorrelationMiddleware
     /// no se ejecutó (p. ej. <c>HttpContext</c> construido a mano en tests unitarios),
     /// cae a <see cref="HttpContext.TraceIdentifier"/>.
     /// </summary>
-    public static string Resolve(HttpContext context)
-        => context.Items.TryGetValue(ItemsKey, out var value) && value is string id
+    public static string Resolve(HttpContext context) =>
+        context.Items.TryGetValue(ItemsKey, out var value) && value is string id
             ? id
             : context.TraceIdentifier;
 
     public async Task InvokeAsync(HttpContext context)
     {
         var incoming = context.Request.Headers[HeaderName].FirstOrDefault();
-        var correlationId = string.IsNullOrWhiteSpace(incoming) ? context.TraceIdentifier : incoming;
+        var correlationId = string.IsNullOrWhiteSpace(incoming)
+            ? context.TraceIdentifier
+            : incoming;
 
         context.Items[ItemsKey] = correlationId;
         context.Response.Headers[HeaderName] = correlationId;
@@ -57,6 +59,6 @@ public sealed class RequestCorrelationMiddleware
 public static class RequestCorrelationMiddlewareExtensions
 {
     /// <summary>Registra <see cref="RequestCorrelationMiddleware"/>. Debe ser el primer middleware del pipeline.</summary>
-    public static IApplicationBuilder UseRequestCorrelation(this IApplicationBuilder app)
-        => app.UseMiddleware<RequestCorrelationMiddleware>();
+    public static IApplicationBuilder UseRequestCorrelation(this IApplicationBuilder app) =>
+        app.UseMiddleware<RequestCorrelationMiddleware>();
 }

@@ -1,7 +1,7 @@
-using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
+using Microsoft.IdentityModel.Tokens;
 
 namespace ERP.API.Tests.Support;
 
@@ -11,7 +11,8 @@ internal static class TestJwtFactory
         Guid tenantId,
         Guid userId,
         Guid? companyId = null,
-        string role = "Admin")
+        string role = "Admin"
+    )
     {
         var claims = new List<Claim>
         {
@@ -21,7 +22,8 @@ internal static class TestJwtFactory
         };
 
         var key = new SymmetricSecurityKey(
-            Encoding.UTF8.GetBytes(IntegrationTestConstants.JwtSecretKey));
+            Encoding.UTF8.GetBytes(IntegrationTestConstants.JwtSecretKey)
+        );
 
         var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
@@ -30,7 +32,8 @@ internal static class TestJwtFactory
             audience: "ERPUsers",
             claims: claims.ToArray(),
             expires: DateTime.UtcNow.AddHours(1),
-            signingCredentials: creds);
+            signingCredentials: creds
+        );
 
         return new JwtSecurityTokenHandler().WriteToken(token);
     }

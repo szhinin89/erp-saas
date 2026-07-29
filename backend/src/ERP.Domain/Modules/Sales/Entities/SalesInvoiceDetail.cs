@@ -60,8 +60,18 @@ public sealed class SalesInvoiceDetail : IMustHaveTenant
 
     // ── Calculated (NOT persisted) ──────────────────────────────────────
     public decimal LineSubtotal => Quantity * UnitPrice;
-    public decimal TaxableBase => Math.Round(LineSubtotal - DiscountAmount, FiscalPrecision.TaxAmount, MidpointRounding.AwayFromZero);
-    public decimal TaxInclusiveTotal => Math.Round(TaxableBase + IceAmount + VatAmount, FiscalPrecision.TaxAmount, MidpointRounding.AwayFromZero);
+    public decimal TaxableBase =>
+        Math.Round(
+            LineSubtotal - DiscountAmount,
+            FiscalPrecision.TaxAmount,
+            MidpointRounding.AwayFromZero
+        );
+    public decimal TaxInclusiveTotal =>
+        Math.Round(
+            TaxableBase + IceAmount + VatAmount,
+            FiscalPrecision.TaxAmount,
+            MidpointRounding.AwayFromZero
+        );
 
     // ── Constructor ─────────────────────────────────────────────────────
     private SalesInvoiceDetail() { }
@@ -82,22 +92,35 @@ public sealed class SalesInvoiceDetail : IMustHaveTenant
         string? snapshotSku = null,
         string? snapshotItemName = null,
         decimal conversionFactor = 1m,
-        Guid? warehouseId = null)
+        Guid? warehouseId = null
+    )
     {
         if (string.IsNullOrWhiteSpace(description))
-            throw new ArgumentException("La descripción de la línea es obligatoria.", nameof(description));
+            throw new ArgumentException(
+                "La descripción de la línea es obligatoria.",
+                nameof(description)
+            );
         if (quantity <= 0)
             throw new ArgumentException("La cantidad debe ser mayor a cero.", nameof(quantity));
         if (unitPrice < 0)
-            throw new ArgumentException("El precio unitario no puede ser negativo.", nameof(unitPrice));
+            throw new ArgumentException(
+                "El precio unitario no puede ser negativo.",
+                nameof(unitPrice)
+            );
         if (discountPct is < 0 or > 100)
-            throw new ArgumentException("El descuento debe estar entre 0 y 100.", nameof(discountPct));
+            throw new ArgumentException(
+                "El descuento debe estar entre 0 y 100.",
+                nameof(discountPct)
+            );
         if (string.IsNullOrWhiteSpace(vatCode))
             throw new ArgumentException("El código IVA es obligatorio.", nameof(vatCode));
         if (string.IsNullOrWhiteSpace(uomCode))
             throw new ArgumentException("La unidad de medida es obligatoria.", nameof(uomCode));
         if (conversionFactor <= 0)
-            throw new ArgumentException("El factor de conversión debe ser mayor a cero.", nameof(conversionFactor));
+            throw new ArgumentException(
+                "El factor de conversión debe ser mayor a cero.",
+                nameof(conversionFactor)
+            );
 
         var line = new SalesInvoiceDetail
         {
@@ -112,7 +135,11 @@ public sealed class SalesInvoiceDetail : IMustHaveTenant
             UomCode = uomCode.Trim().ToUpperInvariant(),
             ConversionFactor = conversionFactor,
             Quantity = quantity,
-            QuantityInBaseUom = Math.Round(quantity * conversionFactor, FiscalPrecision.Quantity, MidpointRounding.AwayFromZero),
+            QuantityInBaseUom = Math.Round(
+                quantity * conversionFactor,
+                FiscalPrecision.Quantity,
+                MidpointRounding.AwayFromZero
+            ),
             UnitPrice = unitPrice,
             DiscountPct = discountPct,
             VatCode = vatCode.Trim(),
@@ -125,8 +152,14 @@ public sealed class SalesInvoiceDetail : IMustHaveTenant
     }
 
     // ── Tax Application ─────────────────────────────────────────────────
-    public void ApplyTaxes(string vatCode, decimal vatRate, string? vatName,
-                           string? iceCode, decimal iceRate, string? iceName)
+    public void ApplyTaxes(
+        string vatCode,
+        decimal vatRate,
+        string? vatName,
+        string? iceCode,
+        decimal iceRate,
+        string? iceName
+    )
     {
         EnsureNotFrozen();
         if (string.IsNullOrWhiteSpace(vatCode))
@@ -166,7 +199,8 @@ public sealed class SalesInvoiceDetail : IMustHaveTenant
     // ── Freeze (called once on Authorize — irreversible) ────────────────
     internal void Freeze()
     {
-        if (IsFrozen) return;
+        if (IsFrozen)
+            return;
         RecalcTaxes();
         IsFrozen = true;
     }
@@ -176,15 +210,21 @@ public sealed class SalesInvoiceDetail : IMustHaveTenant
     {
         if (IsFrozen)
             throw new InvalidOperationException(
-                "La línea de venta está autorizada y no puede ser modificada.");
+                "La línea de venta está autorizada y no puede ser modificada."
+            );
     }
 
     // ── Private Calculations ────────────────────────────────────────────
     private void RecalcDiscount()
     {
-        DiscountAmount = DiscountPct > 0
-            ? Math.Round(LineSubtotal * DiscountPct / 100m, FiscalPrecision.UnitCost, MidpointRounding.AwayFromZero)
-            : 0;
+        DiscountAmount =
+            DiscountPct > 0
+                ? Math.Round(
+                    LineSubtotal * DiscountPct / 100m,
+                    FiscalPrecision.UnitCost,
+                    MidpointRounding.AwayFromZero
+                )
+                : 0;
     }
 
     private void RecalcTaxes()
@@ -192,6 +232,7 @@ public sealed class SalesInvoiceDetail : IMustHaveTenant
         (IceAmount, VatAmount, _) = SriTaxCalculator.Compute(
             TaxableBase,
             VatRate,
-            !string.IsNullOrWhiteSpace(IceCode) ? IceRate : 0m);
+            !string.IsNullOrWhiteSpace(IceCode) ? IceRate : 0m
+        );
     }
 }

@@ -15,7 +15,8 @@ using MediatR;
 
 namespace ERP.Application.Modules.Session.UseCases.GetSessionContext;
 
-public sealed class GetSessionContextHandler : IRequestHandler<GetSessionContextQuery, Result<SessionContextDto>>
+public sealed class GetSessionContextHandler
+    : IRequestHandler<GetSessionContextQuery, Result<SessionContextDto>>
 {
     private const string LogoRole = "logo";
 
@@ -46,7 +47,8 @@ public sealed class GetSessionContextHandler : IRequestHandler<GetSessionContext
         IMediaService media,
         IUserSessionRepository userSessionRepository,
         IBranchRepository branchRepository,
-        IMediator mediator)
+        IMediator mediator
+    )
     {
         _currentUser = currentUser;
         _currentTenant = currentTenant;
@@ -62,25 +64,41 @@ public sealed class GetSessionContextHandler : IRequestHandler<GetSessionContext
         _mediator = mediator;
     }
 
-    public async Task<Result<SessionContextDto>> Handle(GetSessionContextQuery request, CancellationToken cancellationToken)
+    public async Task<Result<SessionContextDto>> Handle(
+        GetSessionContextQuery request,
+        CancellationToken cancellationToken
+    )
     {
         if (!_currentUser.IsAuthenticated || _currentTenant.TenantId == Guid.Empty)
             return Result<SessionContextDto>.Failure("No autenticado.");
 
-        var identityUser = await _accessRepository.GetUserByIdAsync(_currentUser.UserId, cancellationToken);
-        var tenant = await _tenantRepository.GetByIdAsync(_currentTenant.TenantId, cancellationToken);
+        var identityUser = await _accessRepository.GetUserByIdAsync(
+            _currentUser.UserId,
+            cancellationToken
+        );
+        var tenant = await _tenantRepository.GetByIdAsync(
+            _currentTenant.TenantId,
+            cancellationToken
+        );
 
-        var operationalContext = await _companyContext.ResolveOperationalForCurrentUserAsync(cancellationToken);
+        var operationalContext = await _companyContext.ResolveOperationalForCurrentUserAsync(
+            cancellationToken
+        );
 
-        var company = operationalContext is not null && operationalContext.CompanyId != Guid.Empty
-            ? await _companyRepository.GetByIdAsync(operationalContext.CompanyId, cancellationToken)
-            : null;
+        var company =
+            operationalContext is not null && operationalContext.CompanyId != Guid.Empty
+                ? await _companyRepository.GetByIdAsync(
+                    operationalContext.CompanyId,
+                    cancellationToken
+                )
+                : null;
 
         var identity = new SessionIdentityDto(
             _currentUser.UserId,
             identityUser?.FullName ?? string.Empty,
             identityUser?.Username ?? string.Empty,
-            identityUser?.Email?.Value);
+            identityUser?.Email?.Value
+        );
 
         CompanyLogoDto? logo = null;
         if (company is not null)
@@ -91,7 +109,8 @@ public sealed class GetSessionContextHandler : IRequestHandler<GetSessionContext
                 MediaOwnerType.Company,
                 company.Id,
                 LogoRole,
-                cancellationToken);
+                cancellationToken
+            );
 
             logo = logoMedia is null ? null : CompanyLogoDto.FromMediaFile(logoMedia);
         }
@@ -99,11 +118,13 @@ public sealed class GetSessionContextHandler : IRequestHandler<GetSessionContext
         var tenantDto = new SessionTenantDto(
             _currentTenant.TenantId,
             company?.TradeName ?? company?.LegalName ?? tenant?.Name ?? string.Empty,
-            logo);
+            logo
+        );
 
         var authorization = new SessionAuthorizationDto(
             ResolveRoles(_currentUser.Role),
-            await ResolvePermissionsAsync(operationalContext, cancellationToken));
+            await ResolvePermissionsAsync(operationalContext, cancellationToken)
+        );
 
         var preferences = new SessionPreferencesDto(tenant?.PreferredLanguage ?? "es");
 
@@ -111,7 +132,9 @@ public sealed class GetSessionContextHandler : IRequestHandler<GetSessionContext
             ? await ResolveActiveBranchAsync(company.Id, cancellationToken)
             : null;
 
-        return Result<SessionContextDto>.Success(new SessionContextDto(identity, tenantDto, authorization, preferences, branch));
+        return Result<SessionContextDto>.Success(
+            new SessionContextDto(identity, tenantDto, authorization, preferences, branch)
+        );
     }
 
     /// <summary>
@@ -137,19 +160,32 @@ public sealed class GetSessionContextHandler : IRequestHandler<GetSessionContext
     ///      sucursal inicial cuando tampoco existe una UserSession reutilizable (mismo mecanismo
     ///      que LoginHandler/SwitchCompanyHandler, sin reimplementarlo).
     /// </summary>
-    private async Task<SessionBranchDto?> ResolveActiveBranchAsync(Guid companyId, CancellationToken cancellationToken)
+    private async Task<SessionBranchDto?> ResolveActiveBranchAsync(
+        Guid companyId,
+        CancellationToken cancellationToken
+    )
     {
         if (_currentBranch.HasBranchContext)
         {
             var headerBranch = await _branchRepository.GetByIdAsync(
-                _currentTenant.TenantId, _currentBranch.BranchId, cancellationToken);
+                _currentTenant.TenantId,
+                _currentBranch.BranchId,
+                cancellationToken
+            );
 
             if (headerBranch is not null && headerBranch.CompanyId == companyId)
-                return new SessionBranchDto(headerBranch.Id, headerBranch.Name, headerBranch.IsMainBranch);
+                return new SessionBranchDto(
+                    headerBranch.Id,
+                    headerBranch.Name,
+                    headerBranch.IsMainBranch
+                );
         }
 
         var activeSessions = await _userSessionRepository.GetActiveSessionsAsync(
-            _currentUser.UserId, _currentTenant.TenantId, cancellationToken);
+            _currentUser.UserId,
+            _currentTenant.TenantId,
+            cancellationToken
+        );
         var existingSession = activeSessions.FirstOrDefault(s => s.CompanyId == companyId);
 
         Guid? branchId = existingSession?.BranchId;
@@ -157,14 +193,19 @@ public sealed class GetSessionContextHandler : IRequestHandler<GetSessionContext
         if (branchId is null)
         {
             var membership = await _accessRepository.GetCompanyUserMembershipAsync(
-                companyId, _currentUser.UserId, cancellationToken);
+                companyId,
+                _currentUser.UserId,
+                cancellationToken
+            );
 
             if (membership is not null && membership.IsActive)
             {
                 var (resolvedBranchId, _) = await CompanyUserPreferencesLoginResolver.ResolveAsync(
-                    _mediator, membership.Id,
+                    _mediator,
+                    membership.Id,
                     () => ResolveMainBranchIdAsync(companyId, cancellationToken),
-                    cancellationToken);
+                    cancellationToken
+                );
 
                 branchId = resolvedBranchId;
             }
@@ -173,8 +214,14 @@ public sealed class GetSessionContextHandler : IRequestHandler<GetSessionContext
         if (branchId is not Guid resolved || resolved == Guid.Empty)
             return null;
 
-        var branch = await _branchRepository.GetByIdAsync(_currentTenant.TenantId, resolved, cancellationToken);
-        return branch is null ? null : new SessionBranchDto(branch.Id, branch.Name, branch.IsMainBranch);
+        var branch = await _branchRepository.GetByIdAsync(
+            _currentTenant.TenantId,
+            resolved,
+            cancellationToken
+        );
+        return branch is null
+            ? null
+            : new SessionBranchDto(branch.Id, branch.Name, branch.IsMainBranch);
     }
 
     /// <summary>
@@ -183,30 +230,47 @@ public sealed class GetSessionContextHandler : IRequestHandler<GetSessionContext
     /// DirectToDefault resoluble): nunca adivina, solo resuelve si hay exactamente una
     /// sucursal activa marcada IsMainBranch en la empresa.
     /// </summary>
-    private async Task<Guid?> ResolveMainBranchIdAsync(Guid companyId, CancellationToken cancellationToken)
+    private async Task<Guid?> ResolveMainBranchIdAsync(
+        Guid companyId,
+        CancellationToken cancellationToken
+    )
     {
         var branches = await _branchRepository.GetAsync(
-            _currentTenant.TenantId, activeFilter: true, search: null, cancellationToken);
+            _currentTenant.TenantId,
+            activeFilter: true,
+            search: null,
+            cancellationToken
+        );
         var mainBranches = branches.Where(b => b.CompanyId == companyId && b.IsMainBranch).ToList();
         return mainBranches.Count == 1 ? mainBranches[0].Id : null;
     }
 
-    private static IReadOnlyList<string> ResolveRoles(string? role)
-        => string.IsNullOrEmpty(role) || string.Equals(role, "Bootstrap", StringComparison.OrdinalIgnoreCase)
+    private static IReadOnlyList<string> ResolveRoles(string? role) =>
+        string.IsNullOrEmpty(role)
+        || string.Equals(role, "Bootstrap", StringComparison.OrdinalIgnoreCase)
             ? []
             : [role];
 
     private async Task<IReadOnlyList<string>> ResolvePermissionsAsync(
         OperationalCompanyContext? operationalContext,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken
+    )
     {
-        if (string.Equals(_currentUser.Role, SecurityRoles.Admin, StringComparison.OrdinalIgnoreCase))
+        if (
+            string.Equals(
+                _currentUser.Role,
+                SecurityRoles.Admin,
+                StringComparison.OrdinalIgnoreCase
+            )
+        )
             return AdminPermissions;
 
-        if (operationalContext is null
+        if (
+            operationalContext is null
             || operationalContext.CompanyId == Guid.Empty
             || !operationalContext.IsActiveMembership
-            || operationalContext.ProfileId is null)
+            || operationalContext.ProfileId is null
+        )
             return [];
 
         return await _permissionKeys.GetAllowedKeysAsync(
@@ -214,6 +278,7 @@ public sealed class GetSessionContextHandler : IRequestHandler<GetSessionContext
             operationalContext.CompanyId,
             _currentUser.UserId,
             operationalContext.ProfileId.Value,
-            cancellationToken);
+            cancellationToken
+        );
     }
 }

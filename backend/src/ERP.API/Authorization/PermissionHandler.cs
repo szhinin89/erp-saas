@@ -1,6 +1,6 @@
-﻿using ERP.Application.Access.Authorization;
-using Microsoft.AspNetCore.Authorization;
 using System.Security.Claims;
+using ERP.Application.Access.Authorization;
+using Microsoft.AspNetCore.Authorization;
 
 namespace ERP.API.Authorization;
 
@@ -19,17 +19,26 @@ public sealed class PermissionHandler : AuthorizationHandler<PermissionRequireme
 
     protected override async Task HandleRequirementAsync(
         AuthorizationHandlerContext context,
-        PermissionRequirement requirement)
+        PermissionRequirement requirement
+    )
     {
         var http = context.Resource as HttpContext;
         var cancellationToken = http?.RequestAborted ?? CancellationToken.None;
 
         var role = context.User.FindFirst(ClaimTypes.Role)?.Value ?? string.Empty;
-        var sub = context.User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+        var sub =
+            context.User.FindFirst(ClaimTypes.NameIdentifier)?.Value
             ?? context.User.FindFirst("sub")?.Value;
         _ = Guid.TryParse(sub, out var userId);
 
-        if (await _authorizer.IsAuthorizedAsync(requirement.PermissionKey, userId, role, cancellationToken))
+        if (
+            await _authorizer.IsAuthorizedAsync(
+                requirement.PermissionKey,
+                userId,
+                role,
+                cancellationToken
+            )
+        )
             context.Succeed(requirement);
     }
 }

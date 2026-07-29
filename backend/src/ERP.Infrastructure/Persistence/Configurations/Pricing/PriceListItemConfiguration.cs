@@ -24,15 +24,16 @@ public sealed class PriceListItemConfiguration : IEntityTypeConfiguration<PriceL
         builder.Property(x => x.CreatedBy).HasColumnName("created_by");
         builder.Property(x => x.UpdatedBy).HasColumnName("updated_by");
 
-        builder.HasOne<PriceList>()
+        builder
+            .HasOne<PriceList>()
             .WithMany()
             .HasForeignKey(x => x.PriceListId)
             .OnDelete(DeleteBehavior.Restrict);
 
-        builder.HasIndex(x => x.ItemId)
-            .HasDatabaseName("ix_price_list_items_item");
+        builder.HasIndex(x => x.ItemId).HasDatabaseName("ix_price_list_items_item");
 
-        builder.HasIndex(x => new { x.PriceListId, x.ItemId })
+        builder
+            .HasIndex(x => new { x.PriceListId, x.ItemId })
             .IsUnique()
             .HasDatabaseName("uq_price_list_items_list_item");
     }

@@ -44,7 +44,8 @@ public sealed class RefreshToken
         string tokenHash,
         Guid? familyId = null,
         Guid? parentTokenId = null,
-        int rotationDepth = 0)
+        int rotationDepth = 0
+    )
     {
         var id = Guid.NewGuid();
         return new RefreshToken

@@ -5,4 +5,5 @@ public sealed record SriConfigurationCheckDto(string Code, bool Passed, string M
 public sealed record SriConfigurationValidationDto(
     bool IsValid,
     IReadOnlyList<SriConfigurationCheckDto> Checks,
-    SriCertificateInfoDto? Certificate);
+    SriCertificateInfoDto? Certificate
+);

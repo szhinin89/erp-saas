@@ -17,10 +17,21 @@ public sealed class AccountingPeriodTests
     private static readonly Guid CreatedBy = Guid.NewGuid();
 
     private static readonly JournalEntryClosureReadiness Ready = new(
-        HasDraftOrNonFinalEntries: false, HasEntriesWithoutEntryNumber: false, HasIncompleteReversals: false);
+        HasDraftOrNonFinalEntries: false,
+        HasEntriesWithoutEntryNumber: false,
+        HasIncompleteReversals: false
+    );
 
-    private static AccountingPeriod OpenPeriod() => AccountingPeriod.Create(
-        TenantId, CompanyId, 2026, 7, new DateOnly(2026, 7, 1), new DateOnly(2026, 7, 31), CreatedBy);
+    private static AccountingPeriod OpenPeriod() =>
+        AccountingPeriod.Create(
+            TenantId,
+            CompanyId,
+            2026,
+            7,
+            new DateOnly(2026, 7, 1),
+            new DateOnly(2026, 7, 31),
+            CreatedBy
+        );
 
     [Fact]
     public void Close_con_readiness_lista_cierra_el_periodo_correctamente()
@@ -68,7 +79,9 @@ public sealed class AccountingPeriodTests
 
         var act = () => period.Close(CreatedBy, readiness);
 
-        act.Should().Throw<InvalidOperationException>().WithMessage("*reversos contables incompletos*");
+        act.Should()
+            .Throw<InvalidOperationException>()
+            .WithMessage("*reversos contables incompletos*");
         period.Status.Should().Be(PeriodStatus.Open);
     }
 
@@ -77,14 +90,19 @@ public sealed class AccountingPeriodTests
     {
         var period = OpenPeriod();
         var readiness = new JournalEntryClosureReadiness(
-            HasDraftOrNonFinalEntries: true, HasEntriesWithoutEntryNumber: true, HasIncompleteReversals: true);
+            HasDraftOrNonFinalEntries: true,
+            HasEntriesWithoutEntryNumber: true,
+            HasIncompleteReversals: true
+        );
 
         var act = () => period.Close(CreatedBy, readiness);
 
-        act.Should().Throw<InvalidOperationException>()
+        act.Should()
+            .Throw<InvalidOperationException>()
             .WithMessage("*sin publicar*")
             .WithMessage("*número de asiento*")
-            .Which.Message.Should().Contain("reversos contables incompletos");
+            .Which.Message.Should()
+            .Contain("reversos contables incompletos");
     }
 
     [Fact]

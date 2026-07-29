@@ -5,7 +5,8 @@ public sealed record KardexMvDayAggregate(
     decimal EntryQty,
     decimal EntryValue,
     decimal ExitQty,
-    decimal ExitValue);
+    decimal ExitValue
+);
 
 public interface IKardexMaterializedDailySummariesReader
 {
@@ -15,5 +16,6 @@ public interface IKardexMaterializedDailySummariesReader
         Guid warehouseId,
         DateOnly fromInclusive,
         DateOnly toInclusive,
-        CancellationToken cancellationToken = default);
+        CancellationToken cancellationToken = default
+    );
 }

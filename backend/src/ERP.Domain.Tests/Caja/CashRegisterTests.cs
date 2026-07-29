@@ -15,9 +15,20 @@ public sealed class CashRegisterTests
     private static readonly Guid CreatedBy = Guid.NewGuid();
 
     private static CashRegister CreateValid(
-        Guid? branchId = null, Guid? emissionPointId = null, string code = "CAJA-01", string name = "Caja Principal") =>
+        Guid? branchId = null,
+        Guid? emissionPointId = null,
+        string code = "CAJA-01",
+        string name = "Caja Principal"
+    ) =>
         CashRegister.Create(
-            TenantId, CompanyId, branchId ?? Guid.NewGuid(), code, name, CreatedBy, emissionPointId);
+            TenantId,
+            CompanyId,
+            branchId ?? Guid.NewGuid(),
+            code,
+            name,
+            CreatedBy,
+            emissionPointId
+        );
 
     [Fact]
     public void Create_con_datos_validos_persiste_los_campos()
@@ -26,7 +37,15 @@ public sealed class CashRegisterTests
         var emissionPointId = Guid.NewGuid();
 
         var register = CashRegister.Create(
-            TenantId, CompanyId, branchId, "CAJA-01", "Caja Principal", CreatedBy, emissionPointId, "Turno mañana");
+            TenantId,
+            CompanyId,
+            branchId,
+            "CAJA-01",
+            "Caja Principal",
+            CreatedBy,
+            emissionPointId,
+            "Turno mañana"
+        );
 
         register.TenantId.Should().Be(TenantId);
         register.CompanyId.Should().Be(CompanyId);
@@ -50,8 +69,15 @@ public sealed class CashRegisterTests
     [Fact]
     public void Create_con_BranchId_vacio_lanza_ArgumentException()
     {
-        var act = () => CashRegister.Create(
-            TenantId, CompanyId, Guid.Empty, "CAJA-01", "Caja Principal", CreatedBy);
+        var act = () =>
+            CashRegister.Create(
+                TenantId,
+                CompanyId,
+                Guid.Empty,
+                "CAJA-01",
+                "Caja Principal",
+                CreatedBy
+            );
 
         act.Should().Throw<ArgumentException>().WithParameterName("branchId");
     }
@@ -59,8 +85,15 @@ public sealed class CashRegisterTests
     [Fact]
     public void Create_con_CompanyId_vacio_lanza_ArgumentException()
     {
-        var act = () => CashRegister.Create(
-            TenantId, Guid.Empty, Guid.NewGuid(), "CAJA-01", "Caja Principal", CreatedBy);
+        var act = () =>
+            CashRegister.Create(
+                TenantId,
+                Guid.Empty,
+                Guid.NewGuid(),
+                "CAJA-01",
+                "Caja Principal",
+                CreatedBy
+            );
 
         act.Should().Throw<ArgumentException>().WithParameterName("companyId");
     }
@@ -68,8 +101,15 @@ public sealed class CashRegisterTests
     [Fact]
     public void Create_con_codigo_vacio_lanza_ArgumentException()
     {
-        var act = () => CashRegister.Create(
-            TenantId, CompanyId, Guid.NewGuid(), "  ", "Caja Principal", CreatedBy);
+        var act = () =>
+            CashRegister.Create(
+                TenantId,
+                CompanyId,
+                Guid.NewGuid(),
+                "  ",
+                "Caja Principal",
+                CreatedBy
+            );
 
         act.Should().Throw<ArgumentException>().WithParameterName("code");
     }
@@ -77,8 +117,8 @@ public sealed class CashRegisterTests
     [Fact]
     public void Create_con_nombre_vacio_lanza_ArgumentException()
     {
-        var act = () => CashRegister.Create(
-            TenantId, CompanyId, Guid.NewGuid(), "CAJA-01", "  ", CreatedBy);
+        var act = () =>
+            CashRegister.Create(TenantId, CompanyId, Guid.NewGuid(), "CAJA-01", "  ", CreatedBy);
 
         act.Should().Throw<ArgumentException>().WithParameterName("name");
     }
@@ -146,9 +186,11 @@ public sealed class CashRegisterTests
         property.SetMethod.Should().NotBeNull();
         property.SetMethod!.IsPublic.Should().BeFalse("BranchId solo se asigna en Create");
 
-        typeof(CashRegister).GetMethods()
+        typeof(CashRegister)
+            .GetMethods()
             .Any(m => m.Name is "ChangeBranch" or "SetBranch" or "UpdateBranch")
-            .Should().BeFalse("no debe existir ningún método para mutar la sucursal");
+            .Should()
+            .BeFalse("no debe existir ningún método para mutar la sucursal");
     }
 
     [Fact]
@@ -158,9 +200,11 @@ public sealed class CashRegisterTests
         property.SetMethod.Should().NotBeNull();
         property.SetMethod!.IsPublic.Should().BeFalse("CompanyId solo se asigna en Create");
 
-        typeof(CashRegister).GetMethods()
+        typeof(CashRegister)
+            .GetMethods()
             .Any(m => m.Name is "ChangeCompany" or "SetCompany" or "UpdateCompany")
-            .Should().BeFalse("no debe existir ningún método para mutar la empresa");
+            .Should()
+            .BeFalse("no debe existir ningún método para mutar la empresa");
     }
 
     [Fact]
@@ -168,18 +212,26 @@ public sealed class CashRegisterTests
     {
         var property = typeof(CashRegister).GetProperty(nameof(CashRegister.TenantId))!;
         property.SetMethod.Should().NotBeNull();
-        property.SetMethod!.IsPublic.Should().BeFalse("TenantId es inmutable desde BaseEntity (setter protegido)");
+        property
+            .SetMethod!.IsPublic.Should()
+            .BeFalse("TenantId es inmutable desde BaseEntity (setter protegido)");
 
-        typeof(CashRegister).GetMethods()
+        typeof(CashRegister)
+            .GetMethods()
             .Any(m => m.Name is "ChangeTenant" or "SetTenant" or "UpdateTenant")
-            .Should().BeFalse("no debe existir ningún método para mutar el tenant");
+            .Should()
+            .BeFalse("no debe existir ningún método para mutar el tenant");
     }
 
     [Fact]
     public void No_existe_ningun_metodo_publico_de_eliminacion_fisica()
     {
-        typeof(CashRegister).GetMethods()
+        typeof(CashRegister)
+            .GetMethods()
             .Any(m => m.Name is "Delete" or "Remove" or "HardDelete")
-            .Should().BeFalse("la única forma de dar de baja una caja es Disable() — soft delete vía IsActive");
+            .Should()
+            .BeFalse(
+                "la única forma de dar de baja una caja es Disable() — soft delete vía IsActive"
+            );
     }
 }

@@ -7,7 +7,8 @@ public sealed record ApiResponseMessage(string User, string? Dev);
 public sealed record ApiResponseMeta(
     string CorrelationId,
     DateTimeOffset Timestamp,
-    string? TraceId = null);
+    string? TraceId = null
+);
 
 /// <summary>
 /// Envelope estándar de respuesta de la API. <see cref="Code"/> es la única fuente de

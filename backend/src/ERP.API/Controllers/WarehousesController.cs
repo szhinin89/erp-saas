@@ -15,7 +15,14 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace ERP.API.Controllers;
 
-[AppFeature("Bodegas", $"perm:{InventoryPermissions.WarehousesView}", "warehouse", "/inventory/warehouses", null, 20)]
+[AppFeature(
+    "Bodegas",
+    $"perm:{InventoryPermissions.WarehousesView}",
+    "warehouse",
+    "/inventory/warehouses",
+    null,
+    20
+)]
 [ApiController]
 [Route("api/v1/inventory/warehouses")]
 [Authorize]
@@ -32,7 +39,10 @@ public sealed class WarehousesController : ControllerBase
     /// <summary>Lista bodegas con filtros de estado, búsqueda y sucursal.</summary>
     [HttpGet]
     [Authorize(Policy = $"perm:{InventoryPermissions.WarehousesView}")]
-    [ProducesResponseType(typeof(ApiResponse<IReadOnlyList<WarehouseListItemDto>>), StatusCodes.Status200OK)]
+    [ProducesResponseType(
+        typeof(ApiResponse<IReadOnlyList<WarehouseListItemDto>>),
+        StatusCodes.Status200OK
+    )]
     public async Task<IActionResult> GetAll(CancellationToken cancellationToken = default)
     {
         var activeFilter = CatalogQueryParameters.ParseActiveFilter(Request.Query);
@@ -40,7 +50,9 @@ public sealed class WarehousesController : ControllerBase
         var branchId = ParseBranchId(Request.Query);
 
         var result = await _mediator.Send(
-            new GetWarehousesQuery(activeFilter, search, branchId), cancellationToken);
+            new GetWarehousesQuery(activeFilter, search, branchId),
+            cancellationToken
+        );
 
         return this.ToOkOrBadRequest(result, "OK", () => Array.Empty<WarehouseListItemDto>());
     }
@@ -62,7 +74,9 @@ public sealed class WarehousesController : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<WarehouseListItemDto>), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
     public async Task<IActionResult> Create(
-        [FromBody] CreateWarehouseCommand command, CancellationToken cancellationToken = default)
+        [FromBody] CreateWarehouseCommand command,
+        CancellationToken cancellationToken = default
+    )
     {
         var result = await _mediator.Send(command, cancellationToken);
         return this.ToCreatedOrBadRequest(result);
@@ -74,7 +88,10 @@ public sealed class WarehousesController : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<WarehouseListItemDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
     public async Task<IActionResult> Update(
-        Guid id, [FromBody] UpdateWarehouseCommand command, CancellationToken cancellationToken = default)
+        Guid id,
+        [FromBody] UpdateWarehouseCommand command,
+        CancellationToken cancellationToken = default
+    )
     {
         if (id != command.Id)
             return this.ApiBadRequest("El id de ruta no coincide con el cuerpo.");
@@ -103,8 +120,10 @@ public sealed class WarehousesController : ControllerBase
 
     private static Guid? ParseBranchId(IQueryCollection query)
     {
-        if (query.TryGetValue("sucursalId", out var raw) &&
-            Guid.TryParse(raw.ToString(), out var id))
+        if (
+            query.TryGetValue("sucursalId", out var raw)
+            && Guid.TryParse(raw.ToString(), out var id)
+        )
             return id;
         return null;
     }

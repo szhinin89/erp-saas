@@ -15,14 +15,19 @@ public sealed class CloseUserSessionAdminValidatorTests
     [Fact]
     public void Command_valido_no_tiene_errores()
     {
-        Validator.Validate(new CloseUserSessionAdminCommand(Guid.NewGuid())).IsValid.Should().BeTrue();
+        Validator
+            .Validate(new CloseUserSessionAdminCommand(Guid.NewGuid()))
+            .IsValid.Should()
+            .BeTrue();
     }
 
     [Fact]
     public void SessionId_vacio_es_invalido()
     {
         var result = Validator.Validate(new CloseUserSessionAdminCommand(Guid.Empty));
-        result.Errors.Should().Contain(e => e.PropertyName == nameof(CloseUserSessionAdminCommand.SessionId));
+        result
+            .Errors.Should()
+            .Contain(e => e.PropertyName == nameof(CloseUserSessionAdminCommand.SessionId));
     }
 }
 
@@ -47,10 +52,14 @@ public sealed class CloseUserSessionAdminHandlerTests
     {
         var (repo, user) = BuildMocks();
         var session = UserSession.Create(TenantId, CompanyId, OwnerUserId, BranchId, "device-1");
-        repo.Setup(r => r.GetByIdAsync(session.Id, It.IsAny<CancellationToken>())).ReturnsAsync(session);
+        repo.Setup(r => r.GetByIdAsync(session.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(session);
 
         var handler = new CloseUserSessionAdminHandler(repo.Object, user.Object);
-        var result = await handler.Handle(new CloseUserSessionAdminCommand(session.Id), CancellationToken.None);
+        var result = await handler.Handle(
+            new CloseUserSessionAdminCommand(session.Id),
+            CancellationToken.None
+        );
 
         result.IsSuccess.Should().BeTrue();
         session.Status.Should().Be(UserSessionStatus.ClosedManually);
@@ -62,10 +71,14 @@ public sealed class CloseUserSessionAdminHandlerTests
     public async Task Sesion_inexistente_devuelve_NotFound_no_falla_silenciosamente()
     {
         var (repo, user) = BuildMocks();
-        repo.Setup(r => r.GetByIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>())).ReturnsAsync((UserSession?)null);
+        repo.Setup(r => r.GetByIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((UserSession?)null);
 
         var handler = new CloseUserSessionAdminHandler(repo.Object, user.Object);
-        var result = await handler.Handle(new CloseUserSessionAdminCommand(Guid.NewGuid()), CancellationToken.None);
+        var result = await handler.Handle(
+            new CloseUserSessionAdminCommand(Guid.NewGuid()),
+            CancellationToken.None
+        );
 
         result.IsSuccess.Should().BeFalse();
         result.Code.Should().Be(ApiResponseCodes.Common.NotFound);
@@ -77,10 +90,14 @@ public sealed class CloseUserSessionAdminHandlerTests
         var (repo, user) = BuildMocks();
         var session = UserSession.Create(TenantId, CompanyId, OwnerUserId, BranchId, "device-1");
         session.CloseManually(OwnerUserId);
-        repo.Setup(r => r.GetByIdAsync(session.Id, It.IsAny<CancellationToken>())).ReturnsAsync(session);
+        repo.Setup(r => r.GetByIdAsync(session.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(session);
 
         var handler = new CloseUserSessionAdminHandler(repo.Object, user.Object);
-        var result = await handler.Handle(new CloseUserSessionAdminCommand(session.Id), CancellationToken.None);
+        var result = await handler.Handle(
+            new CloseUserSessionAdminCommand(session.Id),
+            CancellationToken.None
+        );
 
         result.IsSuccess.Should().BeTrue();
         session.Status.Should().Be(UserSessionStatus.ClosedManually);

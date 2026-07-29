@@ -7,7 +7,8 @@ namespace ERP.Application.Audit;
 /// genérica (Infrastructure) sirve a todos los módulos — ningún dominio implementa esto
 /// por su cuenta.
 /// </summary>
-public interface IAuditWriter<TAudit> where TAudit : AuditRecordBase
+public interface IAuditWriter<TAudit>
+    where TAudit : AuditRecordBase
 {
     /// <summary>
     /// Registra el registro en el <c>ChangeTracker</c> del contexto de persistencia activo.

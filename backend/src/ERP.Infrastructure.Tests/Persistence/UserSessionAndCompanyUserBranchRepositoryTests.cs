@@ -46,14 +46,55 @@ public sealed class UserSessionAndCompanyUserBranchRepositoryTests : IAsyncLifet
 
         var createdBy = Guid.NewGuid();
         var tenant = Tenant.Create("Test Tenant", $"test-{Guid.NewGuid():N}"[..16], createdBy);
-        var company = Company.CreateManaged(tenant.Id, "1790012345001", "Test S.A.", createdBy: createdBy);
-        var user = IdentityUser.Create($"ana{Guid.NewGuid():N}", "Ana", "Perez", $"ana{Guid.NewGuid():N}@test.com", "hash", createdBy);
+        var company = Company.CreateManaged(
+            tenant.Id,
+            "1790012345001",
+            "Test S.A.",
+            createdBy: createdBy
+        );
+        var user = IdentityUser.Create(
+            $"ana{Guid.NewGuid():N}",
+            "Ana",
+            "Perez",
+            $"ana{Guid.NewGuid():N}@test.com",
+            "hash",
+            createdBy
+        );
         var branch = Branch.Create(
-            tenant.Id, "Matriz", "Av. Principal 123", "001",
-            null, null, null, null, null, null, null, null, null, null, null,
-            null, null, null, null, null, null, null, null, true, createdBy,
-            companyId: company.Id);
-        var membership = CompanyUserMembership.Create(company.Id, user.Id, "Admin", null, createdBy);
+            tenant.Id,
+            "Matriz",
+            "Av. Principal 123",
+            "001",
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            true,
+            createdBy,
+            companyId: company.Id
+        );
+        var membership = CompanyUserMembership.Create(
+            company.Id,
+            user.Id,
+            "Admin",
+            null,
+            createdBy
+        );
 
         db.Tenants.Add(tenant);
         db.Companies.Add(company);
@@ -77,7 +118,12 @@ public sealed class UserSessionAndCompanyUserBranchRepositoryTests : IAsyncLifet
             .UseNpgsql(_postgres.GetConnectionString())
             .Options;
 
-        return new ErpDbContext(options, new FixedCurrentTenant(_tenantId), new NoOpPublisher(), new FixedCurrentCompany(_companyId));
+        return new ErpDbContext(
+            options,
+            new FixedCurrentTenant(_tenantId),
+            new NoOpPublisher(),
+            new FixedCurrentCompany(_companyId)
+        );
     }
 
     // ── UserSession ──────────────────────────────────────────────────────────
@@ -87,13 +133,21 @@ public sealed class UserSessionAndCompanyUserBranchRepositoryTests : IAsyncLifet
     {
         await using var db = CreateContext();
         var repo = new UserSessionRepository(db);
-        var session = UserSession.Create(_tenantId, _companyId, _identityUserId, _branchId, "device-1");
+        var session = UserSession.Create(
+            _tenantId,
+            _companyId,
+            _identityUserId,
+            _branchId,
+            "device-1"
+        );
 
         await repo.AddAsync(session);
         await repo.SaveChangesAsync();
 
         await using var verifyDb = CreateContext();
-        var stored = await verifyDb.UserSessions.IgnoreQueryFilters().SingleAsync(x => x.Id == session.Id);
+        var stored = await verifyDb
+            .UserSessions.IgnoreQueryFilters()
+            .SingleAsync(x => x.Id == session.Id);
         stored.Status.Should().Be(UserSessionStatus.Active);
         stored.BranchId.Should().Be(_branchId);
         stored.TerminalId.Should().Be("device-1");
@@ -105,8 +159,20 @@ public sealed class UserSessionAndCompanyUserBranchRepositoryTests : IAsyncLifet
         await using var seedDb = CreateContext();
         var repo = new UserSessionRepository(seedDb);
 
-        var active = UserSession.Create(_tenantId, _companyId, _identityUserId, _branchId, "device-active");
-        var closed = UserSession.Create(_tenantId, _companyId, _identityUserId, _branchId, "device-closed");
+        var active = UserSession.Create(
+            _tenantId,
+            _companyId,
+            _identityUserId,
+            _branchId,
+            "device-active"
+        );
+        var closed = UserSession.Create(
+            _tenantId,
+            _companyId,
+            _identityUserId,
+            _branchId,
+            "device-closed"
+        );
         closed.CloseManually(_identityUserId);
 
         await repo.AddAsync(active);
@@ -126,16 +192,21 @@ public sealed class UserSessionAndCompanyUserBranchRepositoryTests : IAsyncLifet
     {
         await using var db1 = CreateContext();
         var repo1 = new UserSessionRepository(db1);
-        await repo1.AddAsync(UserSession.Create(_tenantId, _companyId, _identityUserId, _branchId, "device-1"));
+        await repo1.AddAsync(
+            UserSession.Create(_tenantId, _companyId, _identityUserId, _branchId, "device-1")
+        );
         await repo1.SaveChangesAsync();
 
         await using var db2 = CreateContext();
         var repo2 = new UserSessionRepository(db2);
-        await repo2.AddAsync(UserSession.Create(_tenantId, _companyId, _identityUserId, _branchId, "device-2"));
+        await repo2.AddAsync(
+            UserSession.Create(_tenantId, _companyId, _identityUserId, _branchId, "device-2")
+        );
 
         var act = () => repo2.SaveChangesAsync();
 
-        await act.Should().ThrowAsync<DbUpdateException>()
+        await act.Should()
+            .ThrowAsync<DbUpdateException>()
             .Where(e => IsUniqueViolation(e.InnerException));
     }
 
@@ -146,13 +217,21 @@ public sealed class UserSessionAndCompanyUserBranchRepositoryTests : IAsyncLifet
     {
         await using var db = CreateContext();
         var repo = new CompanyUserBranchRepository(db);
-        var entity = CompanyUserBranch.Create(_tenantId, _companyId, _membershipId, _branchId, _identityUserId);
+        var entity = CompanyUserBranch.Create(
+            _tenantId,
+            _companyId,
+            _membershipId,
+            _branchId,
+            _identityUserId
+        );
 
         await repo.AddAsync(entity);
         await repo.SaveChangesAsync();
 
         await using var verifyDb = CreateContext();
-        var stored = await verifyDb.CompanyUserBranches.IgnoreQueryFilters().SingleAsync(x => x.Id == entity.Id);
+        var stored = await verifyDb
+            .CompanyUserBranches.IgnoreQueryFilters()
+            .SingleAsync(x => x.Id == entity.Id);
         stored.IsActive.Should().BeTrue();
         stored.BranchId.Should().Be(_branchId);
         stored.CompanyUserMembershipId.Should().Be(_membershipId);
@@ -163,7 +242,13 @@ public sealed class UserSessionAndCompanyUserBranchRepositoryTests : IAsyncLifet
     {
         await using var seedDb = CreateContext();
         var repo = new CompanyUserBranchRepository(seedDb);
-        var entity = CompanyUserBranch.Create(_tenantId, _companyId, _membershipId, _branchId, _identityUserId);
+        var entity = CompanyUserBranch.Create(
+            _tenantId,
+            _companyId,
+            _membershipId,
+            _branchId,
+            _identityUserId
+        );
         await repo.AddAsync(entity);
         await repo.SaveChangesAsync();
 
@@ -184,7 +269,13 @@ public sealed class UserSessionAndCompanyUserBranchRepositoryTests : IAsyncLifet
     {
         await using var seedDb = CreateContext();
         var repo = new CompanyUserBranchRepository(seedDb);
-        var entity = CompanyUserBranch.Create(_tenantId, _companyId, _membershipId, _branchId, _identityUserId);
+        var entity = CompanyUserBranch.Create(
+            _tenantId,
+            _companyId,
+            _membershipId,
+            _branchId,
+            _identityUserId
+        );
         entity.Deactivate(_identityUserId);
         await repo.AddAsync(entity);
         await repo.SaveChangesAsync();
@@ -201,21 +292,38 @@ public sealed class UserSessionAndCompanyUserBranchRepositoryTests : IAsyncLifet
     {
         await using var db1 = CreateContext();
         var repo1 = new CompanyUserBranchRepository(db1);
-        await repo1.AddAsync(CompanyUserBranch.Create(_tenantId, _companyId, _membershipId, _branchId, _identityUserId));
+        await repo1.AddAsync(
+            CompanyUserBranch.Create(
+                _tenantId,
+                _companyId,
+                _membershipId,
+                _branchId,
+                _identityUserId
+            )
+        );
         await repo1.SaveChangesAsync();
 
         await using var db2 = CreateContext();
         var repo2 = new CompanyUserBranchRepository(db2);
-        await repo2.AddAsync(CompanyUserBranch.Create(_tenantId, _companyId, _membershipId, _branchId, _identityUserId));
+        await repo2.AddAsync(
+            CompanyUserBranch.Create(
+                _tenantId,
+                _companyId,
+                _membershipId,
+                _branchId,
+                _identityUserId
+            )
+        );
 
         var act = () => repo2.SaveChangesAsync();
 
-        await act.Should().ThrowAsync<DbUpdateException>()
+        await act.Should()
+            .ThrowAsync<DbUpdateException>()
             .Where(e => IsUniqueViolation(e.InnerException));
     }
 
-    private static bool IsUniqueViolation(Exception? inner)
-        => inner is PostgresException pg && pg.SqlState == PostgresErrorCodes.UniqueViolation;
+    private static bool IsUniqueViolation(Exception? inner) =>
+        inner is PostgresException pg && pg.SqlState == PostgresErrorCodes.UniqueViolation;
 
     // ── Helpers de identidad para el DbContext ───────────────────────────────
 
@@ -234,11 +342,13 @@ public sealed class UserSessionAndCompanyUserBranchRepositoryTests : IAsyncLifet
 
     private sealed class NoOpPublisher : IPublisher
     {
-        public Task Publish(object notification, CancellationToken cancellationToken = default)
-            => Task.CompletedTask;
+        public Task Publish(object notification, CancellationToken cancellationToken = default) =>
+            Task.CompletedTask;
 
-        public Task Publish<TNotification>(TNotification notification, CancellationToken cancellationToken = default)
-            where TNotification : INotification
-            => Task.CompletedTask;
+        public Task Publish<TNotification>(
+            TNotification notification,
+            CancellationToken cancellationToken = default
+        )
+            where TNotification : INotification => Task.CompletedTask;
     }
 }

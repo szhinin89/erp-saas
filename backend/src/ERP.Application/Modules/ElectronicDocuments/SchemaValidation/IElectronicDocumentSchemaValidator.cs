@@ -15,5 +15,7 @@ public interface IElectronicDocumentSchemaValidator
     ElectronicDocumentType DocumentType { get; }
 
     Task<ElectronicDocumentSchemaValidationResult> ValidateAsync(
-        ElectronicDocumentXml xml, CancellationToken ct = default);
+        ElectronicDocumentXml xml,
+        CancellationToken ct = default
+    );
 }

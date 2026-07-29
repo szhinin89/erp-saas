@@ -19,6 +19,6 @@ public sealed class NavigationBootstrapStep : IGlobalBootstrapStep
         _navigationSync = navigationSync;
     }
 
-    public Task ExecuteAsync(CancellationToken cancellationToken = default)
-        => _navigationSync.SyncAsync(cancellationToken);
+    public Task ExecuteAsync(CancellationToken cancellationToken = default) =>
+        _navigationSync.SyncAsync(cancellationToken);
 }

@@ -15,9 +15,21 @@ public sealed class PriceListItemAuditConfiguration : IEntityTypeConfiguration<P
         builder.Property(x => x.PriceListId).HasColumnName("price_list_id").IsRequired();
         builder.Property(x => x.ItemId).HasColumnName("item_id").IsRequired();
 
-        builder.HasIndex(x => new { x.TenantId, x.ItemId, x.OccurredAtUtc })
+        builder
+            .HasIndex(x => new
+            {
+                x.TenantId,
+                x.ItemId,
+                x.OccurredAtUtc,
+            })
             .HasDatabaseName("ix_price_list_item_audit_item_occurred_at");
-        builder.HasIndex(x => new { x.TenantId, x.PriceListId, x.OccurredAtUtc })
+        builder
+            .HasIndex(x => new
+            {
+                x.TenantId,
+                x.PriceListId,
+                x.OccurredAtUtc,
+            })
             .HasDatabaseName("ix_price_list_item_audit_price_list_occurred_at");
     }
 }

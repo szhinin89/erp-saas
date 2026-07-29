@@ -11,5 +11,9 @@ namespace ERP.Application.Modules.Ride.Storage;
 public interface IRidePdfStorageNamingStrategy
 {
     string BuildRelativePath(
-        Guid tenantId, RideDocumentType documentType, Guid electronicDocumentId, string templateVersion);
+        Guid tenantId,
+        RideDocumentType documentType,
+        Guid electronicDocumentId,
+        string templateVersion
+    );
 }

@@ -16,28 +16,44 @@ public sealed class LogoutHandler : IRequestHandler<LogoutCommand, Result<string
     private readonly IRefreshTokenService _refreshTokenService;
     private readonly IUserSessionRepository _userSessionRepository;
 
-    public LogoutHandler(IRefreshTokenService refreshTokenService, IUserSessionRepository userSessionRepository)
+    public LogoutHandler(
+        IRefreshTokenService refreshTokenService,
+        IUserSessionRepository userSessionRepository
+    )
     {
         _refreshTokenService = refreshTokenService;
         _userSessionRepository = userSessionRepository;
     }
 
-    public async Task<Result<string>> Handle(LogoutCommand command, CancellationToken cancellationToken)
+    public async Task<Result<string>> Handle(
+        LogoutCommand command,
+        CancellationToken cancellationToken
+    )
     {
         if (string.IsNullOrWhiteSpace(command.RawRefreshToken))
             return Result<string>.Failure("Se requiere el refresh token para cerrar sesión.");
 
         if (command.AllDevices)
         {
-            var validation = await _refreshTokenService.ValidateAndRotateAsync(command.RawRefreshToken, cancellationToken);
+            var validation = await _refreshTokenService.ValidateAndRotateAsync(
+                command.RawRefreshToken,
+                cancellationToken
+            );
             if (!validation.IsValid)
                 return Result<string>.Failure(validation.Error ?? "Refresh token inválido.");
 
             await _refreshTokenService.RevokeAllForUserAsync(
-                validation.UserId, validation.TenantId, "Logout global", cancellationToken);
+                validation.UserId,
+                validation.TenantId,
+                "Logout global",
+                cancellationToken
+            );
 
             var activeSessions = await _userSessionRepository.GetActiveSessionsAsync(
-                validation.UserId, validation.TenantId, cancellationToken);
+                validation.UserId,
+                validation.TenantId,
+                cancellationToken
+            );
             if (activeSessions.Count > 0)
             {
                 foreach (var session in activeSessions)
@@ -48,10 +64,17 @@ public sealed class LogoutHandler : IRequestHandler<LogoutCommand, Result<string
             return Result<string>.Success("Sesión cerrada en todos los dispositivos.");
         }
 
-        var refreshTokenId = await _refreshTokenService.RevokeAsync(command.RawRefreshToken, "Logout", cancellationToken);
+        var refreshTokenId = await _refreshTokenService.RevokeAsync(
+            command.RawRefreshToken,
+            "Logout",
+            cancellationToken
+        );
         if (refreshTokenId is Guid id)
         {
-            var session = await _userSessionRepository.GetByRefreshTokenIdAsync(id, cancellationToken);
+            var session = await _userSessionRepository.GetByRefreshTokenIdAsync(
+                id,
+                cancellationToken
+            );
             if (session is not null)
             {
                 session.CloseManually(session.IdentityUserId);
@@ -63,6 +86,9 @@ public sealed class LogoutHandler : IRequestHandler<LogoutCommand, Result<string
     }
 
     // Backward-compatible helper used by integration tests.
-    public Task<Result<string>> HandleAsync(string rawRefreshToken, bool allDevices, CancellationToken cancellationToken = default)
-        => Handle(new LogoutCommand(rawRefreshToken, allDevices), cancellationToken);
+    public Task<Result<string>> HandleAsync(
+        string rawRefreshToken,
+        bool allDevices,
+        CancellationToken cancellationToken = default
+    ) => Handle(new LogoutCommand(rawRefreshToken, allDevices), cancellationToken);
 }

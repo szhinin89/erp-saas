@@ -5,4 +5,5 @@ using MediatR;
 namespace ERP.Application.Access.UseCases.GetSessionStatistics;
 
 public sealed record GetSessionStatisticsQuery(Guid? CompanyId = null)
-    : IRequest<Result<SessionStatisticsDto>>, ITenantScopedRequest;
+    : IRequest<Result<SessionStatisticsDto>>,
+        ITenantScopedRequest;

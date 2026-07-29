@@ -21,7 +21,8 @@ public sealed class UpsertSriConfigurationCommandHandler
         ICurrentTenant currentTenant,
         ICurrentCompany currentCompany,
         ICurrentUser currentUser,
-        ISecretProtector secretProtector)
+        ISecretProtector secretProtector
+    )
     {
         _repo = repo;
         _currentTenant = currentTenant;
@@ -31,7 +32,9 @@ public sealed class UpsertSriConfigurationCommandHandler
     }
 
     public async Task<Result<SriConfigurationDto>> Handle(
-        UpsertSriConfigurationCommand command, CancellationToken cancellationToken)
+        UpsertSriConfigurationCommand command,
+        CancellationToken cancellationToken
+    )
     {
         var tenantId = _currentTenant.TenantId;
         var companyId = _currentCompany.CompanyId;
@@ -48,7 +51,8 @@ public sealed class UpsertSriConfigurationCommandHandler
                 environment: command.Environment,
                 emissionType: command.EmissionType,
                 wsdlUrl: command.WsdlUrl,
-                createdBy: userId);
+                createdBy: userId
+            );
 
             if (hasNewPassword)
             {
@@ -57,7 +61,8 @@ public sealed class UpsertSriConfigurationCommandHandler
                     emissionType: command.EmissionType,
                     wsdlUrl: command.WsdlUrl,
                     certPassword: _secretProtector.Protect(command.CertPassword!.Trim()),
-                    updatedBy: userId);
+                    updatedBy: userId
+                );
             }
 
             await _repo.AddAsync(config, cancellationToken);
@@ -76,20 +81,23 @@ public sealed class UpsertSriConfigurationCommandHandler
             emissionType: command.EmissionType,
             wsdlUrl: command.WsdlUrl,
             certPassword: certPasswordToPersist,
-            updatedBy: userId);
+            updatedBy: userId
+        );
 
         await _repo.UpdateAsync(existing, cancellationToken);
         await _repo.SaveChangesAsync(cancellationToken);
         return Result<SriConfigurationDto>.Success(ToDto(existing));
     }
 
-    private static SriConfigurationDto ToDto(SriSettings c) => new(
-        c.CompanyId,
-        HasCertificate: !string.IsNullOrWhiteSpace(c.CertP12Path),
-        c.CertFileName,
-        c.CertSizeBytes,
-        c.CertUploadedAtUtc,
-        c.Environment,
-        c.EmissionType,
-        c.WsdlUrl);
+    private static SriConfigurationDto ToDto(SriSettings c) =>
+        new(
+            c.CompanyId,
+            HasCertificate: !string.IsNullOrWhiteSpace(c.CertP12Path),
+            c.CertFileName,
+            c.CertSizeBytes,
+            c.CertUploadedAtUtc,
+            c.Environment,
+            c.EmissionType,
+            c.WsdlUrl
+        );
 }

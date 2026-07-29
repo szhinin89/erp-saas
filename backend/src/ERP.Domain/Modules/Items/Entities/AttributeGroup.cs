@@ -14,8 +14,7 @@ public sealed class AttributeGroup : MasterEntity, ITenantScopedEntity
 
     private AttributeGroup() { }
 
-    public static AttributeGroup Create(
-        Guid tenantId, string code, string name, int sortOrder = 0)
+    public static AttributeGroup Create(Guid tenantId, string code, string name, int sortOrder = 0)
     {
         if (string.IsNullOrWhiteSpace(code))
             throw new ArgumentException("El código del grupo es obligatorio.", nameof(code));

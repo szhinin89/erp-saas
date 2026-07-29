@@ -1,9 +1,9 @@
+using System.Text;
+using System.Xml;
 using ERP.Application.Common.Config;
 using ERP.Domain.Modules.ElectronicDocuments.ValueObjects;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using System.Text;
-using System.Xml;
 
 namespace ERP.Infrastructure.Services.Sri;
 
@@ -15,6 +15,7 @@ namespace ERP.Infrastructure.Services.Sri;
 public sealed partial class SriSoapClient
 {
     private const string SoapAction = "\"\"";
+
     // Solo el media type: StringContent(string, Encoding, string) construye el header
     // "Content-Type: text/xml; charset=utf-8" a partir de Encoding — pasar aquí el charset ya
     // incluido produce un valor duplicado/mal formado y StringContent lanza FormatException en
@@ -32,7 +33,10 @@ public sealed partial class SriSoapClient
     private readonly SriPollingOptions _pollingOptions;
 
     public SriSoapClient(
-        IHttpClientFactory factory, ILogger<SriSoapClient> logger, IOptions<SriPollingOptions>? pollingOptions = null)
+        IHttpClientFactory factory,
+        ILogger<SriSoapClient> logger,
+        IOptions<SriPollingOptions>? pollingOptions = null
+    )
     {
         _factory = factory;
         _logger = logger;
@@ -48,7 +52,8 @@ public sealed partial class SriSoapClient
     public async Task<SriRecepcionResult> SendAsync(
         byte[] signedXmlBytes,
         string wsdlUrl,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default
+    )
     {
         var endpointUrl = RecepcionEndpoint(wsdlUrl);
         var b64Xml = Convert.ToBase64String(signedXmlBytes);
@@ -75,7 +80,10 @@ public sealed partial class SriSoapClient
             return new SriRecepcionResult
             {
                 Status = "ERROR_CONEXION",
-                Errors = ["No se pudo contactar al servicio de recepción del SRI. Verifique la conectividad y la URL configurada."],
+                Errors =
+                [
+                    "No se pudo contactar al servicio de recepción del SRI. Verifique la conectividad y la URL configurada.",
+                ],
             };
         }
 
@@ -95,12 +103,18 @@ public sealed partial class SriSoapClient
             return new SriRecepcionResult
             {
                 Status = "ERROR_RESPUESTA_INVALIDA",
-                Errors = ["El SRI respondió con un contenido que no pudo interpretarse como XML válido."],
+                Errors =
+                [
+                    "El SRI respondió con un contenido que no pudo interpretarse como XML válido.",
+                ],
             };
         }
     }
 
-    [LoggerMessage(Level = LogLevel.Warning, Message = "[SRI] Respuesta de recepción no interpretable como XML desde {Url}: {Reason}")]
+    [LoggerMessage(
+        Level = LogLevel.Warning,
+        Message = "[SRI] Respuesta de recepción no interpretable como XML desde {Url}: {Reason}"
+    )]
     private partial void LogSriMalformedResponse(string url, string reason);
 
     /// <summary>
@@ -114,7 +128,8 @@ public sealed partial class SriSoapClient
         string accessKey,
         string wsdlUrl,
         int maxAttempts = 5,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default
+    )
     {
         var endpointUrl = AutorizacionEndpoint(wsdlUrl);
         var envelope = BuildAutorizacionEnvelope(accessKey);
@@ -122,7 +137,10 @@ public sealed partial class SriSoapClient
         if (_pollingOptions.InitialAuthorizationDelaySeconds > 0)
         {
             LogSriInitialDelay(_pollingOptions.InitialAuthorizationDelaySeconds);
-            await Task.Delay(TimeSpan.FromSeconds(_pollingOptions.InitialAuthorizationDelaySeconds), cancellationToken);
+            await Task.Delay(
+                TimeSpan.FromSeconds(_pollingOptions.InitialAuthorizationDelaySeconds),
+                cancellationToken
+            );
         }
 
         for (var attempt = 1; attempt <= maxAttempts; attempt++)
@@ -148,7 +166,8 @@ public sealed partial class SriSoapClient
                 return new SriAutorizacionResult
                 {
                     Status = "ERROR_CONEXION",
-                    ErrorMessage = "No se pudo contactar al servicio de autorización del SRI. Verifique la conectividad y la URL configurada.",
+                    ErrorMessage =
+                        "No se pudo contactar al servicio de autorización del SRI. Verifique la conectividad y la URL configurada.",
                 };
             }
 
@@ -165,7 +184,8 @@ public sealed partial class SriSoapClient
                 return new SriAutorizacionResult
                 {
                     Status = "ERROR_RESPUESTA_INVALIDA",
-                    ErrorMessage = "El SRI respondió con un contenido que no pudo interpretarse como XML válido.",
+                    ErrorMessage =
+                        "El SRI respondió con un contenido que no pudo interpretarse como XML válido.",
                 };
             }
 
@@ -189,7 +209,11 @@ public sealed partial class SriSoapClient
             }
         }
 
-        return new SriAutorizacionResult { Status = "TIMEOUT", ErrorMessage = "El SRI no respondió tras varios reintentos." };
+        return new SriAutorizacionResult
+        {
+            Status = "TIMEOUT",
+            ErrorMessage = "El SRI no respondió tras varios reintentos.",
+        };
     }
 
     /// <summary>
@@ -219,27 +243,27 @@ public sealed partial class SriSoapClient
 
     private static string BuildRecepcionEnvelope(string base64Xml) =>
         $"""
-         <soapenv:Envelope xmlns:soapenv="{NsSoap}" xmlns:ec="{NsRecepcion}">
-           <soapenv:Header/>
-           <soapenv:Body>
-             <ec:validarComprobante>
-               <xml>{base64Xml}</xml>
-             </ec:validarComprobante>
-           </soapenv:Body>
-         </soapenv:Envelope>
-         """;
+            <soapenv:Envelope xmlns:soapenv="{NsSoap}" xmlns:ec="{NsRecepcion}">
+              <soapenv:Header/>
+              <soapenv:Body>
+                <ec:validarComprobante>
+                  <xml>{base64Xml}</xml>
+                </ec:validarComprobante>
+              </soapenv:Body>
+            </soapenv:Envelope>
+            """;
 
     private static string BuildAutorizacionEnvelope(string accessKey) =>
         $"""
-         <soapenv:Envelope xmlns:soapenv="{NsSoap}" xmlns:ec="{NsAutorizacion}">
-           <soapenv:Header/>
-           <soapenv:Body>
-             <ec:autorizacionComprobante>
-               <claveAccesoComprobante>{accessKey}</claveAccesoComprobante>
-             </ec:autorizacionComprobante>
-           </soapenv:Body>
-         </soapenv:Envelope>
-         """;
+            <soapenv:Envelope xmlns:soapenv="{NsSoap}" xmlns:ec="{NsAutorizacion}">
+              <soapenv:Header/>
+              <soapenv:Body>
+                <ec:autorizacionComprobante>
+                  <claveAccesoComprobante>{accessKey}</claveAccesoComprobante>
+                </ec:autorizacionComprobante>
+              </soapenv:Body>
+            </soapenv:Envelope>
+            """;
 
     // ── HTTP ──────────────────────────────────────────────────────────────────
 
@@ -266,7 +290,11 @@ public sealed partial class SriSoapClient
     /// <summary>Reintentos ante fallo transitorio de red/timeout del HttpClient "sri" — nunca ante un SOAP Fault real (esa es una respuesta definitiva del SRI, no un fallo de transporte).</summary>
     private const int HttpRetryAttempts = 3;
 
-    private async Task<string?> PostSoapAsync(string url, string envelope, CancellationToken cancellationToken)
+    private async Task<string?> PostSoapAsync(
+        string url,
+        string envelope,
+        CancellationToken cancellationToken
+    )
     {
         for (var attempt = 1; attempt <= HttpRetryAttempts; attempt++)
         {
@@ -288,7 +316,10 @@ public sealed partial class SriSoapClient
                     throw new SriSoapFaultException(fault);
                 }
 
-                LogSriHttpRequestFailed(url, $"HTTP {(int)response.StatusCode} {response.ReasonPhrase}");
+                LogSriHttpRequestFailed(
+                    url,
+                    $"HTTP {(int)response.StatusCode} {response.ReasonPhrase}"
+                );
                 return null;
             }
             catch (HttpRequestException ex)
@@ -319,8 +350,16 @@ public sealed partial class SriSoapClient
         return null;
     }
 
-    [LoggerMessage(Level = LogLevel.Debug, Message = "[SRI] Fallo transitorio en intento {Attempt}/{Max} hacia {Url}: {Reason} — reintentando")]
-    private partial void LogSriRetryingAfterTransientFailure(int attempt, int max, string url, string reason);
+    [LoggerMessage(
+        Level = LogLevel.Debug,
+        Message = "[SRI] Fallo transitorio en intento {Attempt}/{Max} hacia {Url}: {Reason} — reintentando"
+    )]
+    private partial void LogSriRetryingAfterTransientFailure(
+        int attempt,
+        int max,
+        string url,
+        string reason
+    );
 
     /// <summary>
     /// Intenta interpretar el cuerpo de una respuesta HTTP no-2xx como un SOAP 1.1 Fault
@@ -352,7 +391,10 @@ public sealed partial class SriSoapClient
         fault = new SriSoapFault(
             FaultCode: NodeText(faultNode, "faultcode"),
             FaultString: NodeText(faultNode, "faultstring"),
-            Detail: string.IsNullOrWhiteSpace(detailNode?.InnerXml) ? null : detailNode.InnerXml.Trim());
+            Detail: string.IsNullOrWhiteSpace(detailNode?.InnerXml)
+                ? null
+                : detailNode.InnerXml.Trim()
+        );
         return true;
     }
 
@@ -366,12 +408,12 @@ public sealed partial class SriSoapClient
         var mensajeNodes = SelectMensajeNodes(doc);
 
         var errors = mensajeNodes
-            .Select(m => $"[{NodeText(m, "identificador")}] {NodeText(m, "mensaje")}: {NodeText(m, "informacionAdicional")}")
+            .Select(m =>
+                $"[{NodeText(m, "identificador")}] {NodeText(m, "mensaje")}: {NodeText(m, "informacionAdicional")}"
+            )
             .ToList();
 
-        var structuredMessages = mensajeNodes
-            .Select(ToSriMessage)
-            .ToList();
+        var structuredMessages = mensajeNodes.Select(ToSriMessage).ToList();
 
         return new SriRecepcionResult
         {
@@ -392,7 +434,8 @@ public sealed partial class SriSoapClient
     /// ambigüedad sin depender de la profundidad del árbol.
     /// </summary>
     private static List<XmlElement> SelectMensajeNodes(XmlNode scope) =>
-        scope.SelectNodes(".//*[local-name()='mensajes']/*[local-name()='mensaje']")!
+        scope
+            .SelectNodes(".//*[local-name()='mensajes']/*[local-name()='mensaje']")!
             .OfType<XmlElement>()
             .ToList();
 
@@ -403,11 +446,13 @@ public sealed partial class SriSoapClient
     /// lo incluyen), se usa <c>"ERROR"</c> como único fallback documentado — nunca se inventa un
     /// código o mensaje que el SRI no envió.
     /// </summary>
-    private static SriMessage ToSriMessage(XmlElement mensaje) => new(
-        Code: NodeText(mensaje, "identificador"),
-        MessageType: NodeText(mensaje, "tipo") ?? "ERROR",
-        Message: NodeText(mensaje, "mensaje") ?? "",
-        AdditionalInfo: NodeText(mensaje, "informacionAdicional"));
+    private static SriMessage ToSriMessage(XmlElement mensaje) =>
+        new(
+            Code: NodeText(mensaje, "identificador"),
+            MessageType: NodeText(mensaje, "tipo") ?? "ERROR",
+            Message: NodeText(mensaje, "mensaje") ?? "",
+            AdditionalInfo: NodeText(mensaje, "informacionAdicional")
+        );
 
     private static SriAutorizacionResult ParseAutorizacionResponse(string soap)
     {
@@ -418,7 +463,11 @@ public sealed partial class SriSoapClient
             .FirstOrDefault();
 
         if (autorizacion is null)
-            return new SriAutorizacionResult { Status = "SIN_RESPUESTA", ErrorMessage = "No se encontró el nodo <autorizacion>." };
+            return new SriAutorizacionResult
+            {
+                Status = "SIN_RESPUESTA",
+                ErrorMessage = "No se encontró el nodo <autorizacion>.",
+            };
 
         var status = NodeText(autorizacion, "estado") ?? "DESCONOCIDO";
         var number = NodeText(autorizacion, "numeroAutorizacion") ?? "";
@@ -436,19 +485,22 @@ public sealed partial class SriSoapClient
         // AdjustToUniversal convierte el offset real a UTC (dato correcto, nunca se pierde
         // información); AssumeUniversal solo aplica si el SRI llegara a omitir el offset.
         _ = DateTime.TryParse(
-            dateStr, System.Globalization.CultureInfo.InvariantCulture,
-            System.Globalization.DateTimeStyles.AdjustToUniversal | System.Globalization.DateTimeStyles.AssumeUniversal,
-            out var authDate);
+            dateStr,
+            System.Globalization.CultureInfo.InvariantCulture,
+            System.Globalization.DateTimeStyles.AdjustToUniversal
+                | System.Globalization.DateTimeStyles.AssumeUniversal,
+            out var authDate
+        );
 
         var mensajeNodes = SelectMensajeNodes(autorizacion);
 
         var messages = mensajeNodes
-            .Select(m => $"[{NodeText(m, "identificador")}] {NodeText(m, "mensaje")}: {NodeText(m, "informacionAdicional")}")
+            .Select(m =>
+                $"[{NodeText(m, "identificador")}] {NodeText(m, "mensaje")}: {NodeText(m, "informacionAdicional")}"
+            )
             .ToList();
 
-        var structuredMessages = mensajeNodes
-            .Select(ToSriMessage)
-            .ToList();
+        var structuredMessages = mensajeNodes.Select(ToSriMessage).ToList();
 
         return new SriAutorizacionResult
         {
@@ -468,17 +520,20 @@ public sealed partial class SriSoapClient
     /// El WsdlUrl almacenado en SriSettings apunta a RecepcionComprobantesOffline.
     /// Quita el sufijo ?wsdl para obtener el endpoint SOAP real.
     /// </summary>
-    private static string RecepcionEndpoint(string wsdlUrl)
-        => wsdlUrl.TrimEnd('/').Replace("?wsdl", "", StringComparison.OrdinalIgnoreCase);
+    private static string RecepcionEndpoint(string wsdlUrl) =>
+        wsdlUrl.TrimEnd('/').Replace("?wsdl", "", StringComparison.OrdinalIgnoreCase);
 
     /// <summary>
     /// Deriva la URL de autorización reemplazando "Recepcion" por "Autorizacion".
     /// Funciona tanto para pruebas (celcer) como producción (cel).
     /// </summary>
-    private static string AutorizacionEndpoint(string wsdlUrl)
-        => RecepcionEndpoint(wsdlUrl)
-            .Replace("RecepcionComprobantesOffline", "AutorizacionComprobantesOffline",
-                     StringComparison.OrdinalIgnoreCase);
+    private static string AutorizacionEndpoint(string wsdlUrl) =>
+        RecepcionEndpoint(wsdlUrl)
+            .Replace(
+                "RecepcionComprobantesOffline",
+                "AutorizacionComprobantesOffline",
+                StringComparison.OrdinalIgnoreCase
+            );
 
     // ── XML utils ─────────────────────────────────────────────────────────────
 
@@ -489,8 +544,8 @@ public sealed partial class SriSoapClient
         return doc;
     }
 
-    private static string? NodeText(XmlNode parent, string localName)
-        => parent.SelectSingleNode($".//*[local-name()='{localName}']")?.InnerText?.Trim();
+    private static string? NodeText(XmlNode parent, string localName) =>
+        parent.SelectSingleNode($".//*[local-name()='{localName}']")?.InnerText?.Trim();
 
     [LoggerMessage(Level = LogLevel.Debug, Message = "[SRI] Enviando a recepción: {Url}")]
     private partial void LogSriSending(string url);
@@ -498,22 +553,34 @@ public sealed partial class SriSoapClient
     [LoggerMessage(Level = LogLevel.Debug, Message = "[SRI] Respuesta recepción ({Chars} chars)")]
     private partial void LogSriRecepcionResponse(int chars);
 
-    [LoggerMessage(Level = LogLevel.Debug, Message = "[SRI] Consultando autorización intento {N}/{Max}: {Key}")]
+    [LoggerMessage(
+        Level = LogLevel.Debug,
+        Message = "[SRI] Consultando autorización intento {N}/{Max}: {Key}"
+    )]
     private partial void LogSriCheckingAuthorization(int n, int max, string key);
 
     [LoggerMessage(Level = LogLevel.Debug, Message = "[SRI] Estado: {Estado} — esperando {Delay}s")]
     private partial void LogSriWaiting(string estado, double delay);
 
-    [LoggerMessage(Level = LogLevel.Warning, Message = "[SRI] Fallo de red al llamar a {Url}: {Reason}")]
+    [LoggerMessage(
+        Level = LogLevel.Warning,
+        Message = "[SRI] Fallo de red al llamar a {Url}: {Reason}"
+    )]
     private partial void LogSriHttpRequestFailed(string url, string reason);
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "[SRI] Timeout al llamar a {Url}: {Reason}")]
     private partial void LogSriRequestTimedOut(string url, string reason);
 
-    [LoggerMessage(Level = LogLevel.Warning, Message = "[SRI] SOAP Fault recibido desde {Url}: faultcode={FaultCode} faultstring={FaultString}")]
+    [LoggerMessage(
+        Level = LogLevel.Warning,
+        Message = "[SRI] SOAP Fault recibido desde {Url}: faultcode={FaultCode} faultstring={FaultString}"
+    )]
     private partial void LogSriSoapFault(string url, string? faultCode, string? faultString);
 
-    [LoggerMessage(Level = LogLevel.Debug, Message = "[SRI] Esperando {Seconds}s antes de la primera consulta de autorización")]
+    [LoggerMessage(
+        Level = LogLevel.Debug,
+        Message = "[SRI] Esperando {Seconds}s antes de la primera consulta de autorización"
+    )]
     private partial void LogSriInitialDelay(int seconds);
 }
 
@@ -523,7 +590,8 @@ public sealed record SriSoapFault(string? FaultCode, string? FaultString, string
     /// <summary>Mensaje legible para exponer en Errors/ErrorMessage — el texto real que devolvió el SRI, no un genérico.</summary>
     public string ToDisplayMessage()
     {
-        var text = $"[SOAP Fault{(string.IsNullOrWhiteSpace(FaultCode) ? "" : $" {FaultCode}")}] {FaultString ?? "El SRI devolvió un error SOAP sin mensaje."}";
+        var text =
+            $"[SOAP Fault{(string.IsNullOrWhiteSpace(FaultCode) ? "" : $" {FaultCode}")}] {FaultString ?? "El SRI devolvió un error SOAP sin mensaje."}";
         return string.IsNullOrWhiteSpace(Detail) ? text : $"{text} — {Detail}";
     }
 }
@@ -532,7 +600,8 @@ internal sealed class SriSoapFaultException : Exception
 {
     public SriSoapFault Fault { get; }
 
-    public SriSoapFaultException(SriSoapFault fault) : base(fault.ToDisplayMessage())
+    public SriSoapFaultException(SriSoapFault fault)
+        : base(fault.ToDisplayMessage())
     {
         Fault = fault;
     }
@@ -544,6 +613,7 @@ public sealed class SriRecepcionResult
 {
     public string Status { get; init; } = "";
     public List<string> Errors { get; init; } = new();
+
     /// <summary>Mismos mensajes de <see cref="Errors"/>, sin aplanar — código/tipo/mensaje/información adicional por separado.</summary>
     public List<SriMessage> StructuredMessages { get; init; } = new();
     public bool Received => Status.Equals("RECIBIDA", StringComparison.OrdinalIgnoreCase);
@@ -556,6 +626,7 @@ public sealed class SriAutorizacionResult
     public DateTime AuthorizationDate { get; init; }
     public string DocumentXml { get; init; } = "";
     public List<string> Messages { get; init; } = new();
+
     /// <summary>Mismos mensajes de <see cref="Messages"/>, sin aplanar — código/tipo/mensaje/información adicional por separado.</summary>
     public List<SriMessage> StructuredMessages { get; init; } = new();
     public string? ErrorMessage { get; set; }

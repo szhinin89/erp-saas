@@ -4,12 +4,11 @@ public static class ProvisionalTaxIdGenerator
 {
     private const string Prefix = "TMP-EC-";
 
-    public static string Create() =>
-        $"{Prefix}{Guid.NewGuid():N}"[..15];
+    public static string Create() => $"{Prefix}{Guid.NewGuid():N}"[..15];
 
     public static bool IsProvisional(string? taxId) =>
-        !string.IsNullOrWhiteSpace(taxId) &&
-        taxId.Trim().StartsWith(Prefix, StringComparison.OrdinalIgnoreCase);
+        !string.IsNullOrWhiteSpace(taxId)
+        && taxId.Trim().StartsWith(Prefix, StringComparison.OrdinalIgnoreCase);
 
     public static string NormalizeOfficial(string ruc)
     {

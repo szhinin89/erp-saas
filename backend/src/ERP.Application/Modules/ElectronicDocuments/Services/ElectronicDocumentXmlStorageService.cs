@@ -1,9 +1,9 @@
+using System.Text;
 using ERP.Application.Common;
 using ERP.Application.Common.Interfaces;
 using ERP.Application.Modules.ElectronicDocuments.DTOs;
 using ERP.Domain.Modules.ElectronicDocuments.Enums;
 using Microsoft.Extensions.Logging;
-using System.Text;
 
 namespace ERP.Application.Modules.ElectronicDocuments.Services;
 
@@ -12,7 +12,8 @@ namespace ERP.Application.Modules.ElectronicDocuments.Services;
 /// segundo sistema de almacenamiento, solo orquesta <see cref="IElectronicDocumentStorageNamingStrategy"/>
 /// (nombre lógico) + <c>IFileStorage</c> (escritura real).
 /// </summary>
-public sealed partial class ElectronicDocumentXmlStorageService : IElectronicDocumentXmlStorageService
+public sealed partial class ElectronicDocumentXmlStorageService
+    : IElectronicDocumentXmlStorageService
 {
     private readonly IFileStorage _fileStorage;
     private readonly IElectronicDocumentStorageNamingStrategy _namingStrategy;
@@ -21,7 +22,8 @@ public sealed partial class ElectronicDocumentXmlStorageService : IElectronicDoc
     public ElectronicDocumentXmlStorageService(
         IFileStorage fileStorage,
         IElectronicDocumentStorageNamingStrategy namingStrategy,
-        ILogger<ElectronicDocumentXmlStorageService> logger)
+        ILogger<ElectronicDocumentXmlStorageService> logger
+    )
     {
         _fileStorage = fileStorage;
         _namingStrategy = namingStrategy;
@@ -34,13 +36,18 @@ public sealed partial class ElectronicDocumentXmlStorageService : IElectronicDoc
         Guid electronicDocumentId,
         ElectronicDocumentXml draftXml,
         SignedElectronicDocumentXml signedXml,
-        CancellationToken ct = default)
+        CancellationToken ct = default
+    )
     {
         string draftStoredPath;
         try
         {
             var draftRelativePath = _namingStrategy.BuildRelativePath(
-                tenantId, documentType, electronicDocumentId, ElectronicDocumentXmlVariant.Draft);
+                tenantId,
+                documentType,
+                electronicDocumentId,
+                ElectronicDocumentXmlVariant.Draft
+            );
             using var draftStream = new MemoryStream(Encoding.UTF8.GetBytes(draftXml.Xml));
             draftStoredPath = await _fileStorage.SaveAsync(draftRelativePath, draftStream, ct);
         }
@@ -48,18 +55,28 @@ public sealed partial class ElectronicDocumentXmlStorageService : IElectronicDoc
         {
             LogStorageFailed(electronicDocumentId, "draft", ex);
             return Result<ElectronicDocumentStoredXmlPaths>.Failure(
-                $"No se pudo almacenar el XML generado: {ex.Message}");
+                $"No se pudo almacenar el XML generado: {ex.Message}"
+            );
         }
 
         try
         {
             var signedRelativePath = _namingStrategy.BuildRelativePath(
-                tenantId, documentType, electronicDocumentId, ElectronicDocumentXmlVariant.Signed);
+                tenantId,
+                documentType,
+                electronicDocumentId,
+                ElectronicDocumentXmlVariant.Signed
+            );
             using var signedStream = new MemoryStream(Encoding.UTF8.GetBytes(signedXml.SignedXml));
-            var signedStoredPath = await _fileStorage.SaveAsync(signedRelativePath, signedStream, ct);
+            var signedStoredPath = await _fileStorage.SaveAsync(
+                signedRelativePath,
+                signedStream,
+                ct
+            );
 
             return Result<ElectronicDocumentStoredXmlPaths>.Success(
-                new ElectronicDocumentStoredXmlPaths(draftStoredPath, signedStoredPath));
+                new ElectronicDocumentStoredXmlPaths(draftStoredPath, signedStoredPath)
+            );
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
@@ -70,7 +87,8 @@ public sealed partial class ElectronicDocumentXmlStorageService : IElectronicDoc
             await _fileStorage.DeleteAsync(draftStoredPath, ct);
             LogOrphanedDraftDeleted(electronicDocumentId, draftStoredPath);
             return Result<ElectronicDocumentStoredXmlPaths>.Failure(
-                $"No se pudo almacenar el XML firmado: {ex.Message}");
+                $"No se pudo almacenar el XML firmado: {ex.Message}"
+            );
         }
     }
 
@@ -79,12 +97,17 @@ public sealed partial class ElectronicDocumentXmlStorageService : IElectronicDoc
         ElectronicDocumentType documentType,
         Guid electronicDocumentId,
         string authorizedXml,
-        CancellationToken ct = default)
+        CancellationToken ct = default
+    )
     {
         try
         {
             var relativePath = _namingStrategy.BuildRelativePath(
-                tenantId, documentType, electronicDocumentId, ElectronicDocumentXmlVariant.Authorized);
+                tenantId,
+                documentType,
+                electronicDocumentId,
+                ElectronicDocumentXmlVariant.Authorized
+            );
             using var stream = new MemoryStream(Encoding.UTF8.GetBytes(authorizedXml));
             var storedPath = await _fileStorage.SaveAsync(relativePath, stream, ct);
             return Result<string>.Success(storedPath);
@@ -96,11 +119,15 @@ public sealed partial class ElectronicDocumentXmlStorageService : IElectronicDoc
         }
     }
 
-    [LoggerMessage(Level = LogLevel.Error,
-        Message = "[ElectronicDocuments] No se pudo almacenar el XML '{Variant}' del documento {ElectronicDocumentId}")]
+    [LoggerMessage(
+        Level = LogLevel.Error,
+        Message = "[ElectronicDocuments] No se pudo almacenar el XML '{Variant}' del documento {ElectronicDocumentId}"
+    )]
     private partial void LogStorageFailed(Guid electronicDocumentId, string variant, Exception ex);
 
-    [LoggerMessage(Level = LogLevel.Warning,
-        Message = "[ElectronicDocuments] Borrador huérfano eliminado tras fallo de almacenamiento del firmado — documento {ElectronicDocumentId}, ruta {DraftPath}")]
+    [LoggerMessage(
+        Level = LogLevel.Warning,
+        Message = "[ElectronicDocuments] Borrador huérfano eliminado tras fallo de almacenamiento del firmado — documento {ElectronicDocumentId}, ruta {DraftPath}"
+    )]
     private partial void LogOrphanedDraftDeleted(Guid electronicDocumentId, string draftPath);
 }

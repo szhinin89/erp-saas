@@ -28,7 +28,8 @@ public sealed class AppFeature
         Guid? parentId,
         int sortOrder,
         bool isVisibleInMenu,
-        DateTime utcNow)
+        DateTime utcNow
+    )
     {
         var p = (permission ?? string.Empty).Trim();
         if (p.Length == 0 || p.Length > PermissionMaxLen)
@@ -56,7 +57,8 @@ public sealed class AppFeature
         Guid? parentId,
         int sortOrder,
         bool isVisibleInMenu,
-        DateTime utcNow)
+        DateTime utcNow
+    )
     {
         Name = (name ?? string.Empty).Trim();
         Icon = string.IsNullOrWhiteSpace(icon) ? null : icon.Trim();

@@ -14,7 +14,8 @@ public sealed record KardexSourceDocumentDto(
     string? VatCode,
     decimal? VatRate,
     string? Reason,
-    string? Notes);
+    string? Notes
+);
 
 public sealed record KardexActorDto(Guid UserId, string UserName);
 
@@ -28,17 +29,21 @@ public sealed record KardexDocumentChainLinkDto(
     string DocType,
     string? DocNumber,
     Guid? DocId,
-    bool IsCurrent);
+    bool IsCurrent
+);
 
-public sealed record KardexDocumentChainDto(
-    IReadOnlyList<KardexDocumentChainLinkDto> Links);
+public sealed record KardexDocumentChainDto(IReadOnlyList<KardexDocumentChainLinkDto> Links);
 
 /// <summary>
 /// Referencia liviana a un movimiento relacionado (vecino en la secuencia del Kardex
 /// para la misma clave Producto+Bodega) — sin volver a traer el detalle completo.
 /// </summary>
 public sealed record KardexRelatedMovementRef(
-    Guid MovementId, long SequenceNumber, string MovementTypeName, DateOnly EffectiveDate);
+    Guid MovementId,
+    long SequenceNumber,
+    string MovementTypeName,
+    DateOnly EffectiveDate
+);
 
 /// <summary>
 /// Contexto de navegación agrupado: el movimiento actual + sus vecinos anterior/siguiente
@@ -47,11 +52,13 @@ public sealed record KardexRelatedMovementRef(
 public sealed record KardexMovementRelationsDto(
     KardexRelatedMovementRef Current,
     KardexRelatedMovementRef? Previous,
-    KardexRelatedMovementRef? Next);
+    KardexRelatedMovementRef? Next
+);
 
 public sealed record KardexMovementDetailDto(
     StockMovementDto Movement,
     KardexSourceDocumentDto? SourceDocument,
     KardexActorDto Actor,
     KardexDocumentChainDto DocumentChain,
-    KardexMovementRelationsDto Relations);
+    KardexMovementRelationsDto Relations
+);

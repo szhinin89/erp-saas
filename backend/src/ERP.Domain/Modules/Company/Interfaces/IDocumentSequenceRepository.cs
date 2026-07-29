@@ -1,4 +1,4 @@
-﻿using ERP.Domain.Modules.Company.Entities;
+using ERP.Domain.Modules.Company.Entities;
 
 namespace ERP.Domain.Modules.Company.Interfaces;
 
@@ -12,16 +12,28 @@ public interface IDocumentSequenceRepository
     /// </summary>
     /// <returns>El número formateado en 9 dígitos, ej. "000000001".</returns>
     Task<string> CaptureNextAsync(
-        Guid tenantId, Guid companyId, Guid emissionPointId,
-        string docTypeCode, CancellationToken ct = default);
+        Guid tenantId,
+        Guid companyId,
+        Guid emissionPointId,
+        string docTypeCode,
+        CancellationToken ct = default
+    );
 
     /// <summary>
     /// Obtiene el DocumentSequence con bloqueo pesimista (SELECT FOR UPDATE).
     /// Llamar siempre dentro de una transacción activa. Preferir <see cref="CaptureNextAsync"/>.
     /// </summary>
-    Task<DocumentSequence?> GetForUpdateAsync(Guid emissionPointId, string docTypeCode, CancellationToken cancellationToken = default);
+    Task<DocumentSequence?> GetForUpdateAsync(
+        Guid emissionPointId,
+        string docTypeCode,
+        CancellationToken cancellationToken = default
+    );
 
-    Task<bool> ExistsAsync(Guid emissionPointId, string docTypeCode, CancellationToken cancellationToken = default);
+    Task<bool> ExistsAsync(
+        Guid emissionPointId,
+        string docTypeCode,
+        CancellationToken cancellationToken = default
+    );
     Task AddAsync(DocumentSequence sequence, CancellationToken cancellationToken = default);
     Task SaveChangesAsync(CancellationToken cancellationToken = default);
 }

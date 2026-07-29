@@ -9,4 +9,5 @@ public sealed record ProductCreatedIntegrationEvent(
     Guid TenantId,
     Guid ItemId,
     string Sku,
-    string ItemType) : IIntegrationEvent;
+    string ItemType
+) : IIntegrationEvent;

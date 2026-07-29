@@ -1,10 +1,10 @@
+using System.Xml;
+using System.Xml.Linq;
 using ERP.Application.Modules.ElectronicDocuments.DTOs;
 using ERP.Application.Modules.ElectronicDocuments.XmlBuilders;
 using ERP.Infrastructure.Services.ElectronicDocuments;
 using ERP.Infrastructure.Services.Sri;
 using FluentAssertions;
-using System.Xml;
-using System.Xml.Linq;
 
 namespace ERP.Infrastructure.Tests.Services.Sri;
 
@@ -26,45 +26,56 @@ namespace ERP.Infrastructure.Tests.Services.Sri;
 /// </summary>
 public sealed class ElectronicInvoicePipelineIntegrationTests
 {
-    private static ElectronicDocumentData ValidInvoiceData() => new(
-        Emission: new ElectronicDocumentEmissionContext(
-            Environment: "1",
-            EmissionType: "1",
-            DocTypeCode: "01",
-            Establishment: "001",
-            EstablishmentAddress: "Av. Amazonas y Naciones Unidas",
-            EmissionPoint: "001",
-            Sequential: "000000123",
-            IssueDate: new DateTime(2026, 7, 9)),
-        Issuer: new ElectronicDocumentIssuerData(
-            TaxId: "1790012345001",
-            LegalName: "ACME CIA LTDA",
-            TradeName: "ACME",
-            MatrixAddress: "Av. Amazonas y Naciones Unidas",
-            TaxRegime: null,
-            IsAccountingRequired: true),
-        Counterparty: new ElectronicDocumentCounterpartyData(
-            IdentificationType: "05",
-            IdentificationNumber: "1710034065",
-            LegalName: "Juan Perez",
-            Address: "Calle Falsa 123",
-            Email: "juan@example.com"),
-        Details:
-        [
-            new ElectronicDocumentDetailLine(
-                Code: "SKU-001",
-                Description: "Producto de prueba",
-                Quantity: 2m,
-                UnitPrice: 10m,
-                Discount: 0m,
+    private static ElectronicDocumentData ValidInvoiceData() =>
+        new(
+            Emission: new ElectronicDocumentEmissionContext(
+                Environment: "1",
+                EmissionType: "1",
+                DocTypeCode: "01",
+                Establishment: "001",
+                EstablishmentAddress: "Av. Amazonas y Naciones Unidas",
+                EmissionPoint: "001",
+                Sequential: "000000123",
+                IssueDate: new DateTime(2026, 7, 9)
+            ),
+            Issuer: new ElectronicDocumentIssuerData(
+                TaxId: "1790012345001",
+                LegalName: "ACME CIA LTDA",
+                TradeName: "ACME",
+                MatrixAddress: "Av. Amazonas y Naciones Unidas",
+                TaxRegime: null,
+                IsAccountingRequired: true
+            ),
+            Counterparty: new ElectronicDocumentCounterpartyData(
+                IdentificationType: "05",
+                IdentificationNumber: "1710034065",
+                LegalName: "Juan Perez",
+                Address: "Calle Falsa 123",
+                Email: "juan@example.com"
+            ),
+            Details:
+            [
+                new ElectronicDocumentDetailLine(
+                    Code: "SKU-001",
+                    Description: "Producto de prueba",
+                    Quantity: 2m,
+                    UnitPrice: 10m,
+                    Discount: 0m,
+                    Subtotal: 20m,
+                    Taxes: [new ElectronicDocumentDetailTax("VAT", "2", 20m, 15m, 3m)]
+                ),
+            ],
+            TaxSummary: [new ElectronicDocumentTaxSummary("VAT", "2", 20m, 3m)],
+            Totals: new ElectronicDocumentTotals(
                 Subtotal: 20m,
-                Taxes: [new ElectronicDocumentDetailTax("VAT", "2", 20m, 15m, 3m)]),
-        ],
-        TaxSummary: [new ElectronicDocumentTaxSummary("VAT", "2", 20m, 3m)],
-        Totals: new ElectronicDocumentTotals(
-            Subtotal: 20m, TotalDiscount: 0m, TotalTax: 3m, GrandTotal: 23m, CurrencyCode: "USD"),
-        Payments: [new ElectronicDocumentPayment("01", 23m, null, null)],
-        AdditionalInfo: []);
+                TotalDiscount: 0m,
+                TotalTax: 3m,
+                GrandTotal: 23m,
+                CurrencyCode: "USD"
+            ),
+            Payments: [new ElectronicDocumentPayment("01", 23m, null, null)],
+            AdditionalInfo: []
+        );
 
     [Fact]
     public void Real_invoice_reaches_wellformed_xml_and_a_cryptographically_valid_XAdES_BES_signature()
@@ -104,10 +115,14 @@ public sealed class ElectronicInvoicePipelineIntegrationTests
             var signedXml = new XadesSignedXml(signedDoc);
             signedXml.LoadXml(signatureNode!);
 
-            signedXml.CheckSignature().Should().BeTrue(
-                "una Factura Electrónica real debe poder generarse y firmarse con una firma " +
-                "XAdES-BES criptográficamente válida, sin depender de la validación XSD " +
-                "(bloqueada — ver README del directorio Xsd/Invoice) para demostrarlo");
+            signedXml
+                .CheckSignature()
+                .Should()
+                .BeTrue(
+                    "una Factura Electrónica real debe poder generarse y firmarse con una firma "
+                        + "XAdES-BES criptográficamente válida, sin depender de la validación XSD "
+                        + "(bloqueada — ver README del directorio Xsd/Invoice) para demostrarlo"
+                );
         }
         finally
         {

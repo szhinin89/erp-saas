@@ -6,7 +6,10 @@ internal static class AccessKey49TestFactory
     public static string FromPrefix48(string first48Digits)
     {
         if (first48Digits.Length != 48 || !first48Digits.All(char.IsDigit))
-            throw new ArgumentException("Se requieren exactamente 48 dígitos.", nameof(first48Digits));
+            throw new ArgumentException(
+                "Se requieren exactamente 48 dígitos.",
+                nameof(first48Digits)
+            );
 
         for (var check = 0; check <= 9; check++)
         {
@@ -26,7 +29,10 @@ internal static class AccessKey49TestFactory
             sum += (clave[i] - '0') * weights[(47 - i) % 6];
 
         var residuo = sum % 11;
-        var verificador = residuo == 0 ? 0 : residuo == 1 ? 1 : 11 - residuo;
+        var verificador =
+            residuo == 0 ? 0
+            : residuo == 1 ? 1
+            : 11 - residuo;
         return verificador == (clave[48] - '0');
     }
 }

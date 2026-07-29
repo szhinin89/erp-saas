@@ -18,9 +18,13 @@ public sealed class ConfirmStockTransferCommandHandler
     private readonly ICurrentUser _user;
 
     public ConfirmStockTransferCommandHandler(
-        IStockTransferRepository repo, IStockRepository stockRepo,
+        IStockTransferRepository repo,
+        IStockRepository stockRepo,
         IInterBranchAccessGuard interBranchGuard,
-        ICurrentTenant tenant, ICurrentCompany company, ICurrentUser user)
+        ICurrentTenant tenant,
+        ICurrentCompany company,
+        ICurrentUser user
+    )
     {
         _repo = repo;
         _stockRepo = stockRepo;
@@ -31,7 +35,9 @@ public sealed class ConfirmStockTransferCommandHandler
     }
 
     public async Task<Result<StockTransferDto>> Handle(
-        ConfirmStockTransferCommand request, CancellationToken ct)
+        ConfirmStockTransferCommand request,
+        CancellationToken ct
+    )
     {
         var tid = _tenant.TenantId;
         var cid = _company.CompanyId;
@@ -43,10 +49,14 @@ public sealed class ConfirmStockTransferCommandHandler
 
         if (transfer.Status != "Draft")
             return Result<StockTransferDto>.Failure(
-                $"Solo transferencias en Draft pueden confirmarse (actual: {transfer.Status}).");
+                $"Solo transferencias en Draft pueden confirmarse (actual: {transfer.Status})."
+            );
 
         var access = await _interBranchGuard.RequireInterBranchAccessAsync(
-            transfer.SourceWarehouseId, transfer.TargetWarehouseId, ct);
+            transfer.SourceWarehouseId,
+            transfer.TargetWarehouseId,
+            ct
+        );
         if (!access.IsSuccess)
             return Result<StockTransferDto>.Failure(access.Error!);
 
@@ -57,25 +67,47 @@ public sealed class ConfirmStockTransferCommandHandler
             // TransferExit — decrementar origen. Sin costo explícito: se resuelve con el
             // RunningAverageCost vigente del Kardex de origen (ver IStockRepository.AppendMovementAsync).
             var exitMovement = await _stockRepo.AppendMovementAsync(
-                tid, transfer.CompanyId, line.ProductId, transfer.SourceWarehouseId,
-                StockMovementType.TransferExit, -line.Quantity, "UNIT",
-                effectiveDate, transfer.TransferNumber, transfer.Id, "StockTransfer",
-                uid, cancellationToken: ct);
+                tid,
+                transfer.CompanyId,
+                line.ProductId,
+                transfer.SourceWarehouseId,
+                StockMovementType.TransferExit,
+                -line.Quantity,
+                "UNIT",
+                effectiveDate,
+                transfer.TransferNumber,
+                transfer.Id,
+                "StockTransfer",
+                uid,
+                cancellationToken: ct
+            );
 
             // TransferEntry — incrementar destino, con el costo que traía la mercadería de origen
             // (una salida por promedio ponderado no cambia el costo promedio, por eso
             // exitMovement.RunningAverageCost sigue representando el costo de esas unidades).
             await _stockRepo.AppendMovementAsync(
-                tid, transfer.CompanyId, line.ProductId, transfer.TargetWarehouseId,
-                StockMovementType.TransferEntry, line.Quantity, "UNIT",
-                effectiveDate, transfer.TransferNumber, transfer.Id, "StockTransfer",
-                uid, exitMovement.RunningAverageCost, cancellationToken: ct);
+                tid,
+                transfer.CompanyId,
+                line.ProductId,
+                transfer.TargetWarehouseId,
+                StockMovementType.TransferEntry,
+                line.Quantity,
+                "UNIT",
+                effectiveDate,
+                transfer.TransferNumber,
+                transfer.Id,
+                "StockTransfer",
+                uid,
+                exitMovement.RunningAverageCost,
+                cancellationToken: ct
+            );
         }
 
         transfer.Confirm(uid);
         await _stockRepo.SaveChangesWithSequenceRetryAsync(ct);
 
         return Result<StockTransferDto>.Success(
-            CreateStockTransfer.CreateStockTransferCommandHandler.ToDto(transfer));
+            CreateStockTransfer.CreateStockTransferCommandHandler.ToDto(transfer)
+        );
     }
 }

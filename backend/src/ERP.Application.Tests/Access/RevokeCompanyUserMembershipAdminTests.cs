@@ -31,6 +31,7 @@ public sealed class RevokeCompanyUserMembershipAdminHandlerTests
     private sealed class CurrentTenantStub : ICurrentTenant
     {
         public CurrentTenantStub(Guid tenantId) => TenantId = tenantId;
+
         public Guid TenantId { get; }
         public string? Slug => null;
     }
@@ -38,6 +39,7 @@ public sealed class RevokeCompanyUserMembershipAdminHandlerTests
     private sealed class CurrentCompanyStub : ICurrentCompany
     {
         public CurrentCompanyStub(Guid companyId) => CompanyId = companyId;
+
         public Guid CompanyId { get; }
         public bool IsAuthenticated => true;
         public bool HasCompanyContext => true;
@@ -49,12 +51,17 @@ public sealed class RevokeCompanyUserMembershipAdminHandlerTests
         public Mock<ICompanyProvisioningService> CompanyProvisioning { get; } = new();
         public Mock<IMediator> Mediator { get; } = new();
 
-        public RevokeCompanyUserMembershipAdminHandler BuildHandler(Guid tenantId, Guid companyId) => new(
-            new CurrentTenantStub(tenantId),
-            new CurrentCompanyStub(companyId),
-            TenantRepo.Object,
-            CompanyProvisioning.Object,
-            Mediator.Object);
+        public RevokeCompanyUserMembershipAdminHandler BuildHandler(
+            Guid tenantId,
+            Guid companyId
+        ) =>
+            new(
+                new CurrentTenantStub(tenantId),
+                new CurrentCompanyStub(companyId),
+                TenantRepo.Object,
+                CompanyProvisioning.Object,
+                Mediator.Object
+            );
     }
 
     [Fact]
@@ -63,16 +70,30 @@ public sealed class RevokeCompanyUserMembershipAdminHandlerTests
         var tenant = NewTenant();
         var company = NewCompany(tenant.Id);
         var f = new Fixture();
-        f.TenantRepo.Setup(r => r.GetByIdAsync(tenant.Id, It.IsAny<CancellationToken>())).ReturnsAsync(tenant);
-        f.CompanyProvisioning.Setup(s => s.EnsureDefaultCompanyAsync(tenant, It.IsAny<CancellationToken>())).ReturnsAsync(company);
+        f.TenantRepo.Setup(r => r.GetByIdAsync(tenant.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(tenant);
+        f.CompanyProvisioning.Setup(s =>
+                s.EnsureDefaultCompanyAsync(tenant, It.IsAny<CancellationToken>())
+            )
+            .ReturnsAsync(company);
 
         RevokeCompanyUserMembershipCommand? sentCommand = null;
-        f.Mediator.Setup(m => m.Send(It.IsAny<RevokeCompanyUserMembershipCommand>(), It.IsAny<CancellationToken>()))
-            .Callback<IRequest<Result<object>>, CancellationToken>((cmd, _) => sentCommand = (RevokeCompanyUserMembershipCommand)cmd)
+        f.Mediator.Setup(m =>
+                m.Send(
+                    It.IsAny<RevokeCompanyUserMembershipCommand>(),
+                    It.IsAny<CancellationToken>()
+                )
+            )
+            .Callback<IRequest<Result<object>>, CancellationToken>(
+                (cmd, _) => sentCommand = (RevokeCompanyUserMembershipCommand)cmd
+            )
             .ReturnsAsync(Result<object>.Success(new { }));
 
         var handler = f.BuildHandler(tenant.Id, company.Id);
-        var result = await handler.Handle(new RevokeCompanyUserMembershipAdminCommand(Username), CancellationToken.None);
+        var result = await handler.Handle(
+            new RevokeCompanyUserMembershipAdminCommand(Username),
+            CancellationToken.None
+        );
 
         result.IsSuccess.Should().BeTrue();
         sentCommand.Should().NotBeNull();
@@ -87,15 +108,29 @@ public sealed class RevokeCompanyUserMembershipAdminHandlerTests
         var tenantDefaultCompany = NewCompany(tenant.Id);
         var otherActiveCompanyId = Guid.NewGuid();
         var f = new Fixture();
-        f.TenantRepo.Setup(r => r.GetByIdAsync(tenant.Id, It.IsAny<CancellationToken>())).ReturnsAsync(tenant);
-        f.CompanyProvisioning.Setup(s => s.EnsureDefaultCompanyAsync(tenant, It.IsAny<CancellationToken>())).ReturnsAsync(tenantDefaultCompany);
+        f.TenantRepo.Setup(r => r.GetByIdAsync(tenant.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(tenant);
+        f.CompanyProvisioning.Setup(s =>
+                s.EnsureDefaultCompanyAsync(tenant, It.IsAny<CancellationToken>())
+            )
+            .ReturnsAsync(tenantDefaultCompany);
 
         var handler = f.BuildHandler(tenant.Id, otherActiveCompanyId);
-        var result = await handler.Handle(new RevokeCompanyUserMembershipAdminCommand(Username), CancellationToken.None);
+        var result = await handler.Handle(
+            new RevokeCompanyUserMembershipAdminCommand(Username),
+            CancellationToken.None
+        );
 
         result.IsSuccess.Should().BeFalse();
         result.Code.Should().Be(ApiResponseCodes.Common.Forbidden);
-        f.Mediator.Verify(m => m.Send(It.IsAny<RevokeCompanyUserMembershipCommand>(), It.IsAny<CancellationToken>()), Times.Never);
+        f.Mediator.Verify(
+            m =>
+                m.Send(
+                    It.IsAny<RevokeCompanyUserMembershipCommand>(),
+                    It.IsAny<CancellationToken>()
+                ),
+            Times.Never
+        );
     }
 
     /// <summary>
@@ -110,14 +145,25 @@ public sealed class RevokeCompanyUserMembershipAdminHandlerTests
         var tenant = NewTenant();
         var company = NewCompany(tenant.Id);
         var f = new Fixture();
-        f.TenantRepo.Setup(r => r.GetByIdAsync(tenant.Id, It.IsAny<CancellationToken>())).ReturnsAsync(tenant);
-        f.CompanyProvisioning.Setup(s => s.EnsureDefaultCompanyAsync(tenant, It.IsAny<CancellationToken>())).ReturnsAsync(company);
-        f.Mediator.Setup(m => m.Send(It.IsAny<RevokeCompanyUserMembershipCommand>(), It.IsAny<CancellationToken>()))
+        f.TenantRepo.Setup(r => r.GetByIdAsync(tenant.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(tenant);
+        f.CompanyProvisioning.Setup(s =>
+                s.EnsureDefaultCompanyAsync(tenant, It.IsAny<CancellationToken>())
+            )
+            .ReturnsAsync(company);
+        f.Mediator.Setup(m =>
+                m.Send(
+                    It.IsAny<RevokeCompanyUserMembershipCommand>(),
+                    It.IsAny<CancellationToken>()
+                )
+            )
             .ReturnsAsync(Result<object>.Failure("Usuario no existe."));
 
         var handler = f.BuildHandler(tenant.Id, company.Id);
         var result = await handler.Handle(
-            new RevokeCompanyUserMembershipAdminCommand("no-existe"), CancellationToken.None);
+            new RevokeCompanyUserMembershipAdminCommand("no-existe"),
+            CancellationToken.None
+        );
 
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Be("Usuario no existe.");
@@ -128,13 +174,24 @@ public sealed class RevokeCompanyUserMembershipAdminHandlerTests
     {
         var tenantId = Guid.NewGuid();
         var f = new Fixture();
-        f.TenantRepo.Setup(r => r.GetByIdAsync(tenantId, It.IsAny<CancellationToken>())).ReturnsAsync((Tenant?)null);
+        f.TenantRepo.Setup(r => r.GetByIdAsync(tenantId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync((Tenant?)null);
 
         var handler = f.BuildHandler(tenantId, Guid.NewGuid());
-        var result = await handler.Handle(new RevokeCompanyUserMembershipAdminCommand(Username), CancellationToken.None);
+        var result = await handler.Handle(
+            new RevokeCompanyUserMembershipAdminCommand(Username),
+            CancellationToken.None
+        );
 
         result.IsSuccess.Should().BeFalse();
         result.Code.Should().Be(ApiResponseCodes.Common.NotFound);
-        f.Mediator.Verify(m => m.Send(It.IsAny<RevokeCompanyUserMembershipCommand>(), It.IsAny<CancellationToken>()), Times.Never);
+        f.Mediator.Verify(
+            m =>
+                m.Send(
+                    It.IsAny<RevokeCompanyUserMembershipCommand>(),
+                    It.IsAny<CancellationToken>()
+                ),
+            Times.Never
+        );
     }
 }

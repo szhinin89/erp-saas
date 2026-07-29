@@ -10,4 +10,5 @@ public sealed record TenantStatusResponse(
     bool IsActive,
     string PreferredLanguage,
     DateTime CreatedAt,
-    DateTime? UpdatedAt);
+    DateTime? UpdatedAt
+);

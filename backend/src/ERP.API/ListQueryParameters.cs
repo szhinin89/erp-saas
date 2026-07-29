@@ -2,7 +2,10 @@ namespace ERP.API;
 
 internal static class ListQueryParameters
 {
-    public static (int PageNumber, int PageSize) ParsePaged(IQueryCollection query, int defaultPageSize = 20)
+    public static (int PageNumber, int PageSize) ParsePaged(
+        IQueryCollection query,
+        int defaultPageSize = 20
+    )
     {
         var pageNumber = 1;
         var pageSize = defaultPageSize;
@@ -31,11 +34,15 @@ internal static class ListQueryParameters
     public static (DateOnly? From, DateOnly? To) ParseDateOnlyRange(
         IQueryCollection query,
         string fromKey = "dateFrom",
-        string toKey = "dateTo")
+        string toKey = "dateTo"
+    )
     {
         DateOnly? from = null;
         DateOnly? to = null;
-        if (query.TryGetValue(fromKey, out var fromValue) && DateOnly.TryParse(fromValue, out var fromDate))
+        if (
+            query.TryGetValue(fromKey, out var fromValue)
+            && DateOnly.TryParse(fromValue, out var fromDate)
+        )
             from = fromDate;
         if (query.TryGetValue(toKey, out var toValue) && DateOnly.TryParse(toValue, out var toDate))
             to = toDate;
@@ -45,11 +52,15 @@ internal static class ListQueryParameters
     public static (DateTime? From, DateTime? To) ParseDateTimeRange(
         IQueryCollection query,
         string fromKey = "desde",
-        string toKey = "hasta")
+        string toKey = "hasta"
+    )
     {
         DateTime? from = null;
         DateTime? to = null;
-        if (query.TryGetValue(fromKey, out var fromValue) && DateTime.TryParse(fromValue, out var fromDate))
+        if (
+            query.TryGetValue(fromKey, out var fromValue)
+            && DateTime.TryParse(fromValue, out var fromDate)
+        )
             from = fromDate;
         if (query.TryGetValue(toKey, out var toValue) && DateTime.TryParse(toValue, out var toDate))
             to = toDate;
@@ -60,9 +71,15 @@ internal static class ListQueryParameters
     {
         var skip = 0;
         var take = defaultTake;
-        if (query.TryGetValue("skip", out var skipValue) && int.TryParse(skipValue, out var skipParsed))
+        if (
+            query.TryGetValue("skip", out var skipValue)
+            && int.TryParse(skipValue, out var skipParsed)
+        )
             skip = skipParsed;
-        if (query.TryGetValue("take", out var takeValue) && int.TryParse(takeValue, out var takeParsed))
+        if (
+            query.TryGetValue("take", out var takeValue)
+            && int.TryParse(takeValue, out var takeParsed)
+        )
             take = takeParsed;
         return (skip, take);
     }

@@ -35,33 +35,63 @@ public sealed class IssueWithholdingHandlerTests
     private static PurchaseInvoice CreateConfirmedInvoice(DateOnly issueDate)
     {
         var inv = PurchaseInvoice.CreateDraft(
-            TenantId, CompanyId, BranchId, SupplierId,
-            "Proveedor Test", "1234567890001",
-            "01", "001-001-000000001", issueDate, UserId,
-            PtId, "Contado", 1, 30);
+            TenantId,
+            CompanyId,
+            BranchId,
+            SupplierId,
+            "Proveedor Test",
+            "1234567890001",
+            "01",
+            "001-001-000000001",
+            issueDate,
+            UserId,
+            PtId,
+            "Contado",
+            1,
+            30
+        );
 
         var line = PurchaseInvoiceDetail.Create(
-            inv.Id, TenantId, "Producto Test",
-            quantity: 1, unitPrice: 100m, vatCode: "10", uomCode: "UNIT");
+            inv.Id,
+            TenantId,
+            "Producto Test",
+            quantity: 1,
+            unitPrice: 100m,
+            vatCode: "10",
+            uomCode: "UNIT"
+        );
         inv.ReplaceLines(new[] { line }, UserId);
         inv.Confirm(UserId);
         return inv;
     }
 
-    private static (IssueWithholdingHandler handler, Mock<ICompanyClock> companyClock)
-        BuildHandler(PurchaseInvoice inv, DateOnly companyToday)
+    private static (IssueWithholdingHandler handler, Mock<ICompanyClock> companyClock) BuildHandler(
+        PurchaseInvoice inv,
+        DateOnly companyToday
+    )
     {
         var repo = new Mock<IPurchaseInvoiceRepository>();
-        repo.Setup(r => r.GetByIdAsync(TenantId, inv.Id, It.IsAny<CancellationToken>())).ReturnsAsync(inv);
-        repo.Setup(r => r.GetWithholdingByPurchaseIdAsync(TenantId, inv.Id, It.IsAny<CancellationToken>()))
+        repo.Setup(r => r.GetByIdAsync(TenantId, inv.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(inv);
+        repo.Setup(r =>
+                r.GetWithholdingByPurchaseIdAsync(TenantId, inv.Id, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync((IssuedWithholding?)null);
 
         var roleRepo = new Mock<IBusinessPartnerRoleRepository>();
-        roleRepo.Setup(r => r.GetByTypeAsync(SupplierId, ERP.Domain.MasterData.Enums.RoleType.Supplier, It.IsAny<CancellationToken>()))
+        roleRepo
+            .Setup(r =>
+                r.GetByTypeAsync(
+                    SupplierId,
+                    ERP.Domain.MasterData.Enums.RoleType.Supplier,
+                    It.IsAny<CancellationToken>()
+                )
+            )
             .ReturnsAsync((ERP.Domain.MasterData.Entities.BusinessPartnerRole?)null);
 
         var companyClock = new Mock<ICompanyClock>();
-        companyClock.Setup(c => c.TodayAsync(CompanyId, TenantId, It.IsAny<CancellationToken>()))
+        companyClock
+            .Setup(c => c.TodayAsync(CompanyId, TenantId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(companyToday);
 
         var tenant = new Mock<ICurrentTenant>();
@@ -79,7 +109,10 @@ public sealed class IssueWithholdingHandlerTests
             Mock.Of<IEstablishmentRepository>(),
             Mock.Of<IDocumentSequenceRepository>(),
             companyClock.Object,
-            tenant.Object, company.Object, user.Object);
+            tenant.Object,
+            company.Object,
+            user.Object
+        );
 
         return (handler, companyClock);
     }
@@ -92,7 +125,9 @@ public sealed class IssueWithholdingHandlerTests
         var (handler, _) = BuildHandler(inv, today);
 
         var result = await handler.Handle(
-            new IssueWithholdingCommand(inv.Id, EmissionPointId, today.AddDays(4)), CancellationToken.None);
+            new IssueWithholdingCommand(inv.Id, EmissionPointId, today.AddDays(4)),
+            CancellationToken.None
+        );
 
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Contain("no puede ser posterior");
@@ -106,7 +141,9 @@ public sealed class IssueWithholdingHandlerTests
         var (handler, _) = BuildHandler(inv, today);
 
         var result = await handler.Handle(
-            new IssueWithholdingCommand(inv.Id, EmissionPointId, today.AddDays(-91)), CancellationToken.None);
+            new IssueWithholdingCommand(inv.Id, EmissionPointId, today.AddDays(-91)),
+            CancellationToken.None
+        );
 
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Contain("excede el rango permitido");
@@ -120,14 +157,19 @@ public sealed class IssueWithholdingHandlerTests
         var (handler, companyClock) = BuildHandler(inv, today);
 
         var result = await handler.Handle(
-            new IssueWithholdingCommand(inv.Id, EmissionPointId, today.AddDays(-90)), CancellationToken.None);
+            new IssueWithholdingCommand(inv.Id, EmissionPointId, today.AddDays(-90)),
+            CancellationToken.None
+        );
 
         // Pasa la validación de fecha y llega al siguiente gate de negocio (sin códigos de
         // retención configurados) — nunca falla por fecha.
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().NotContain("excede el rango permitido");
         result.Error.Should().NotContain("no puede ser posterior");
-        companyClock.Verify(c => c.TodayAsync(CompanyId, TenantId, It.IsAny<CancellationToken>()), Times.Once);
+        companyClock.Verify(
+            c => c.TodayAsync(CompanyId, TenantId, It.IsAny<CancellationToken>()),
+            Times.Once
+        );
     }
 
     [Fact]
@@ -138,11 +180,16 @@ public sealed class IssueWithholdingHandlerTests
         var (handler, companyClock) = BuildHandler(inv, today);
 
         var result = await handler.Handle(
-            new IssueWithholdingCommand(inv.Id, EmissionPointId, today), CancellationToken.None);
+            new IssueWithholdingCommand(inv.Id, EmissionPointId, today),
+            CancellationToken.None
+        );
 
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Be("Sin códigos de retención configurados en el proveedor.");
-        companyClock.Verify(c => c.TodayAsync(CompanyId, TenantId, It.IsAny<CancellationToken>()), Times.Once);
+        companyClock.Verify(
+            c => c.TodayAsync(CompanyId, TenantId, It.IsAny<CancellationToken>()),
+            Times.Once
+        );
     }
 
     [Fact]
@@ -157,9 +204,14 @@ public sealed class IssueWithholdingHandlerTests
         var (handler, companyClock) = BuildHandler(inv, companyToday);
 
         var result = await handler.Handle(
-            new IssueWithholdingCommand(inv.Id, EmissionPointId, companyToday), CancellationToken.None);
+            new IssueWithholdingCommand(inv.Id, EmissionPointId, companyToday),
+            CancellationToken.None
+        );
 
         result.Error.Should().Be("Sin códigos de retención configurados en el proveedor.");
-        companyClock.Verify(c => c.TodayAsync(CompanyId, TenantId, It.IsAny<CancellationToken>()), Times.Once);
+        companyClock.Verify(
+            c => c.TodayAsync(CompanyId, TenantId, It.IsAny<CancellationToken>()),
+            Times.Once
+        );
     }
 }

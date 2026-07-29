@@ -7,7 +7,8 @@ using MediatR;
 
 namespace ERP.Application.Modules.Inventory.ItemMatching.UseCases.BulkMatchItems;
 
-public sealed class BulkMatchItemsHandler : IRequestHandler<BulkMatchItemsCommand, Result<BulkMatchItemsResultDto>>
+public sealed class BulkMatchItemsHandler
+    : IRequestHandler<BulkMatchItemsCommand, Result<BulkMatchItemsResultDto>>
 {
     private readonly IPurchaseReceptionDocumentRepository _documentRepo;
     private readonly IItemRepository _itemRepo;
@@ -16,8 +17,12 @@ public sealed class BulkMatchItemsHandler : IRequestHandler<BulkMatchItemsComman
     private readonly ICurrentUser _user;
 
     public BulkMatchItemsHandler(
-        IPurchaseReceptionDocumentRepository documentRepo, IItemRepository itemRepo,
-        IItemMatchConfirmationService confirmationService, ICurrentTenant tenant, ICurrentUser user)
+        IPurchaseReceptionDocumentRepository documentRepo,
+        IItemRepository itemRepo,
+        IItemMatchConfirmationService confirmationService,
+        ICurrentTenant tenant,
+        ICurrentUser user
+    )
     {
         _documentRepo = documentRepo;
         _itemRepo = itemRepo;
@@ -26,7 +31,10 @@ public sealed class BulkMatchItemsHandler : IRequestHandler<BulkMatchItemsComman
         _user = user;
     }
 
-    public async Task<Result<BulkMatchItemsResultDto>> Handle(BulkMatchItemsCommand request, CancellationToken cancellationToken)
+    public async Task<Result<BulkMatchItemsResultDto>> Handle(
+        BulkMatchItemsCommand request,
+        CancellationToken cancellationToken
+    )
     {
         var results = new List<BulkMatchItemResultEntry>();
         var matchedAtUtc = DateTime.UtcNow;
@@ -35,31 +43,62 @@ public sealed class BulkMatchItemsHandler : IRequestHandler<BulkMatchItemsComman
         {
             try
             {
-                var document = await _documentRepo.GetByLineIdAsync(_tenant.TenantId, entry.PurchaseReceptionLineId, cancellationToken);
+                var document = await _documentRepo.GetByLineIdAsync(
+                    _tenant.TenantId,
+                    entry.PurchaseReceptionLineId,
+                    cancellationToken
+                );
                 if (document is null)
                 {
-                    results.Add(new BulkMatchItemResultEntry(entry.PurchaseReceptionLineId, false, "La línea de recepción no existe."));
+                    results.Add(
+                        new BulkMatchItemResultEntry(
+                            entry.PurchaseReceptionLineId,
+                            false,
+                            "La línea de recepción no existe."
+                        )
+                    );
                     continue;
                 }
 
                 var line = document.Lines.First(l => l.Id == entry.PurchaseReceptionLineId);
 
-                var item = await _itemRepo.GetByIdLightAsync(entry.ItemId, _tenant.TenantId, cancellationToken);
+                var item = await _itemRepo.GetByIdLightAsync(
+                    entry.ItemId,
+                    _tenant.TenantId,
+                    cancellationToken
+                );
                 if (item is null)
                 {
-                    results.Add(new BulkMatchItemResultEntry(entry.PurchaseReceptionLineId, false, "El ítem seleccionado no existe."));
+                    results.Add(
+                        new BulkMatchItemResultEntry(
+                            entry.PurchaseReceptionLineId,
+                            false,
+                            "El ítem seleccionado no existe."
+                        )
+                    );
                     continue;
                 }
 
-                await _confirmationService.ConfirmAsync(document, line, entry.ItemId, _user.UserId, matchedAtUtc, cancellationToken);
+                await _confirmationService.ConfirmAsync(
+                    document,
+                    line,
+                    entry.ItemId,
+                    _user.UserId,
+                    matchedAtUtc,
+                    cancellationToken
+                );
                 await _documentRepo.SaveChangesAsync(cancellationToken);
 
-                results.Add(new BulkMatchItemResultEntry(entry.PurchaseReceptionLineId, true, null));
+                results.Add(
+                    new BulkMatchItemResultEntry(entry.PurchaseReceptionLineId, true, null)
+                );
             }
             catch (ArgumentException ex)
             {
                 // Una línea inválida dentro del lote no debe abortar las demás.
-                results.Add(new BulkMatchItemResultEntry(entry.PurchaseReceptionLineId, false, ex.Message));
+                results.Add(
+                    new BulkMatchItemResultEntry(entry.PurchaseReceptionLineId, false, ex.Message)
+                );
             }
         }
 

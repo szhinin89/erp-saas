@@ -7,7 +7,8 @@ using MediatR;
 
 namespace ERP.Application.Access.UseCases.RevokeCompanyUserMembership;
 
-public class RevokeCompanyUserMembershipHandler : IRequestHandler<RevokeCompanyUserMembershipCommand, Result<object>>
+public class RevokeCompanyUserMembershipHandler
+    : IRequestHandler<RevokeCompanyUserMembershipCommand, Result<object>>
 {
     private readonly IAccessRepository _accessRepository;
     private readonly ICurrentUser _currentUser;
@@ -22,7 +23,8 @@ public class RevokeCompanyUserMembershipHandler : IRequestHandler<RevokeCompanyU
         ITenantRepository TenantRepository,
         ICompanyProvisioningService companyProvisioning,
         IPermissionsCacheInvalidator permissionsCache,
-        INavigationBuilder navigationBuilder)
+        INavigationBuilder navigationBuilder
+    )
     {
         _accessRepository = accessRepository;
         _currentUser = currentUser;
@@ -32,23 +34,35 @@ public class RevokeCompanyUserMembershipHandler : IRequestHandler<RevokeCompanyU
         _navigationBuilder = navigationBuilder;
     }
 
-    public Task<Result<object>> HandleAsync(RevokeCompanyUserMembershipCommand command, CancellationToken cancellationToken = default)
-        => Handle(command, cancellationToken);
+    public Task<Result<object>> HandleAsync(
+        RevokeCompanyUserMembershipCommand command,
+        CancellationToken cancellationToken = default
+    ) => Handle(command, cancellationToken);
 
-    public async Task<Result<object>> Handle(RevokeCompanyUserMembershipCommand command, CancellationToken cancellationToken)
+    public async Task<Result<object>> Handle(
+        RevokeCompanyUserMembershipCommand command,
+        CancellationToken cancellationToken
+    )
     {
         var tenant = await _tenantRepository.GetByIdAsync(command.TenantId, cancellationToken);
         if (tenant is null)
             return Result<object>.Success(new { });
 
-        var company = await _companyProvisioning.EnsureDefaultCompanyAsync(tenant, cancellationToken);
+        var company = await _companyProvisioning.EnsureDefaultCompanyAsync(
+            tenant,
+            cancellationToken
+        );
 
         var username = command.Username.Trim().ToLowerInvariant();
         var user = await _accessRepository.GetUserByUsernameAsync(username, cancellationToken);
         if (user is null)
             return Result<object>.Failure("Usuario no existe.");
 
-        var membership = await _accessRepository.GetCompanyUserMembershipAsync(company.Id, user.Id, cancellationToken);
+        var membership = await _accessRepository.GetCompanyUserMembershipAsync(
+            company.Id,
+            user.Id,
+            cancellationToken
+        );
         if (membership is null || !membership.IsActive)
             return Result<object>.Success(new { });
 
@@ -56,11 +70,15 @@ public class RevokeCompanyUserMembershipHandler : IRequestHandler<RevokeCompanyU
         // activo tras la revocación — regla pura, el handler obtiene las memberships activas y
         // se las entrega, nunca al revés.
         var activeMemberships = await _accessRepository.GetCompanyUserMembershipsByCompanyAsync(
-            company.Id, onlyActive: true, cancellationToken);
+            company.Id,
+            onlyActive: true,
+            cancellationToken
+        );
         var invariantViolation = CompanyAdministratorInvariant.Validate<object>(
             membership,
             new CompanyAdministratorInvariant.FutureState(IsActive: false, Role: membership.Role),
-            activeMemberships);
+            activeMemberships
+        );
         if (invariantViolation is not null)
             return invariantViolation;
 

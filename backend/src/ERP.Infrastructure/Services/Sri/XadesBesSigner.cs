@@ -27,7 +27,8 @@ public sealed class XadesBesSigner
         var cert = X509CertificateLoader.LoadPkcs12FromFile(
             p12FilePath,
             p12Password,
-            X509KeyStorageFlags.Exportable | X509KeyStorageFlags.PersistKeySet);
+            X509KeyStorageFlags.Exportable | X509KeyStorageFlags.PersistKeySet
+        );
         return Sign(xmlUtf8, cert);
     }
 
@@ -37,7 +38,8 @@ public sealed class XadesBesSigner
         var cert = X509CertificateLoader.LoadPkcs12(
             p12Bytes,
             p12Password,
-            X509KeyStorageFlags.Exportable | X509KeyStorageFlags.PersistKeySet);
+            X509KeyStorageFlags.Exportable | X509KeyStorageFlags.PersistKeySet
+        );
         return Sign(xmlUtf8, cert);
     }
 
@@ -50,9 +52,11 @@ public sealed class XadesBesSigner
         var now = DateTime.Now;
         if (now < cert.NotBefore || now > cert.NotAfter)
             throw new InvalidOperationException(
-                $"El certificado no está vigente (válido del {cert.NotBefore:dd/MM/yyyy} al {cert.NotAfter:dd/MM/yyyy}).");
+                $"El certificado no está vigente (válido del {cert.NotBefore:dd/MM/yyyy} al {cert.NotAfter:dd/MM/yyyy})."
+            );
 
-        using var rsa = cert.GetRSAPrivateKey()
+        using var rsa =
+            cert.GetRSAPrivateKey()
             ?? throw new InvalidOperationException("El certificado no contiene clave privada RSA.");
 
         // 2. Cargar XML
@@ -74,10 +78,7 @@ public sealed class XadesBesSigner
         // (Uri="#SignedPropertiesId") dentro del DataObject agregado más abajo; SignedXml.ComputeSignature()
         // calcula su digest automáticamente al resolverla — no se calcula ni se inyecta
         // manualmente aquí.
-        var signedXml = new XadesSignedXml(xmlDoc)
-        {
-            SigningKey = rsa,
-        };
+        var signedXml = new XadesSignedXml(xmlDoc) { SigningKey = rsa };
         signedXml.SignedInfo!.CanonicalizationMethod = SignedXml.XmlDsigC14NTransformUrl;
         signedXml.SignedInfo!.SignatureMethod = SignedXml.XmlDsigRSASHA1Url;
 
@@ -118,7 +119,11 @@ public sealed class XadesBesSigner
         // resuelve vía XadesSignedXml.GetIdElement (KeyInfo.Id == "Certificate"), igual que
         // SignedProperties se resuelve dentro del DataObject — KeyInfo todavía no es un nodo vivo
         // del documento en el momento de ComputeSignature().
-        var refCert = new Reference { Uri = "#" + certId, DigestMethod = SignedXml.XmlDsigSHA256Url };
+        var refCert = new Reference
+        {
+            Uri = "#" + certId,
+            DigestMethod = SignedXml.XmlDsigSHA256Url,
+        };
         refCert.AddTransform(new XmlDsigC14NTransform());
         signedXml.AddReference(refCert);
 
@@ -145,19 +150,22 @@ public sealed class XadesBesSigner
         // documento final embebido — si el ancestro cambia entre ambos momentos (como ocurría
         // pasando solo .ChildNodes, que descarta el wrapper), el C14N de SignedProperties da un
         // resultado distinto en cada caso y el digest referenciado deja de coincidir al verificar.
-        var qualifyingProps = BuildQualifyingProperties(cert, signedPropsId, sigId, qualifyingPropsId, signedPropsXml);
-        var dataObj = new DataObject
-        {
-            Data = qualifyingProps.SelectNodes(".")!,
-            Id = objectId,
-        };
+        var qualifyingProps = BuildQualifyingProperties(
+            cert,
+            signedPropsId,
+            sigId,
+            qualifyingPropsId,
+            signedPropsXml
+        );
+        var dataObj = new DataObject { Data = qualifyingProps.SelectNodes(".")!, Id = objectId };
         signedXml.AddObject(dataObj);
 
         // 5. Firmar
         signedXml.ComputeSignature();
 
         // 6. Obtener elemento <ds:Signature> y añadir IDs de los atributos
-        var sigElement = signedXml.GetXml()
+        var sigElement =
+            signedXml.GetXml()
             ?? throw new InvalidOperationException("SignedXml.GetXml() retornó null.");
         SetAttrId(sigElement, sigId);
         SetChildAttrId(sigElement, "SignatureValue", sigValueId);
@@ -183,7 +191,8 @@ public sealed class XadesBesSigner
         X509Certificate2 cert,
         string signedPropsId,
         string sigId,
-        string docRefId)
+        string docRefId
+    )
     {
         var doc = new XmlDocument();
         var sp = doc.CreateElement("xades", "SignedProperties", XadesNs);
@@ -196,7 +205,10 @@ public sealed class XadesBesSigner
         // del Anexo 14 de la Ficha Técnica del SRI ("2012-03-05T16:57:32-05:00"). Un timestamp
         // sin offset es ambiguo sobre si es hora local o UTC.
         var st = doc.CreateElement("xades", "SigningTime", XadesNs);
-        st.InnerText = DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ssZ", System.Globalization.CultureInfo.InvariantCulture);
+        st.InnerText = DateTime.UtcNow.ToString(
+            "yyyy-MM-ddTHH:mm:ssZ",
+            System.Globalization.CultureInfo.InvariantCulture
+        );
         ssp.AppendChild(st);
 
         // SigningCertificate
@@ -253,7 +265,8 @@ public sealed class XadesBesSigner
         string signedPropsId,
         string sigId,
         string qualifyingPropsId,
-        XmlElement signedProps)
+        XmlElement signedProps
+    )
     {
         var doc = new XmlDocument();
         var qp = doc.CreateElement("xades", "QualifyingProperties", XadesNs);
@@ -276,8 +289,9 @@ public sealed class XadesBesSigner
     {
         var bigEndianBytes = cert.GetSerialNumber();
         Array.Reverse(bigEndianBytes);
-        return new BigInteger(bigEndianBytes, isUnsigned: true, isBigEndian: true)
-            .ToString(System.Globalization.CultureInfo.InvariantCulture);
+        return new BigInteger(bigEndianBytes, isUnsigned: true, isBigEndian: true).ToString(
+            System.Globalization.CultureInfo.InvariantCulture
+        );
     }
 
     private static void SetAttrId(XmlElement el, string id)

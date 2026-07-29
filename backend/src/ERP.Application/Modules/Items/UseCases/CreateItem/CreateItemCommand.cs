@@ -16,26 +16,20 @@ public sealed record CreateItemCommand(
     string Description,
     Guid ItemTypeId,
     string DefaultUomCode,
-
     // ── Clasificación (obligatoria en creación) ─────────────────────────────
     Guid? CategoryNodeId,
     Guid? BrandId,
-
     // ── Identificación ────────────────────────────────────────────────────
     IReadOnlyList<CreateItemBarcodeDto> Barcodes,
-
     // ── Tax config (código = fuente única de verdad; nulo = no aplica) ──────
     string? SaleVatCode = null,
     string? PurchaseVatCode = null,
     string? ExciseTaxCode = null,
-
     // ── Optionals ─────────────────────────────────────────────────────────
     string? Observations = null,
     IReadOnlyList<CreateItemSupplierCodeDto>? SupplierCodes = null,
-
     // ── Precio base (SSOT, Motor de Pricing v2) ─────────────────────────
     decimal? BaseSalePrice = null,
-
     // ── Sale config ───────────────────────────────────────────────────────
     bool IsForSale = true,
     decimal? MaxDiscountPercent = null,
@@ -44,7 +38,6 @@ public sealed record CreateItemCommand(
     bool IsAvailableOnMobile = false,
     bool IsEcommerceActive = false,
     bool IsFavorite = false,
-
     // ── Stock config ──────────────────────────────────────────────────────
     bool TracksStock = true,
     bool TracksLot = false,

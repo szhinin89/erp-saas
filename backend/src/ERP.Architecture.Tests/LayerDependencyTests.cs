@@ -20,60 +20,84 @@ public sealed class LayerDependencyTests
     [Fact]
     public void Domain_must_not_reference_ef_core()
     {
-        var result = Types.InAssembly(DomainAssembly)
-            .ShouldNot().HaveDependencyOn("Microsoft.EntityFrameworkCore")
+        var result = Types
+            .InAssembly(DomainAssembly)
+            .ShouldNot()
+            .HaveDependencyOn("Microsoft.EntityFrameworkCore")
             .GetResult();
 
-        result.IsSuccessful.Should().BeTrue(string.Join(", ", result.FailingTypeNames ?? Array.Empty<string>()));
+        result
+            .IsSuccessful.Should()
+            .BeTrue(string.Join(", ", result.FailingTypeNames ?? Array.Empty<string>()));
     }
 
     [Fact]
     public void Domain_must_not_reference_asp_net_core()
     {
-        var result = Types.InAssembly(DomainAssembly)
-            .ShouldNot().HaveDependencyOn("Microsoft.AspNetCore")
+        var result = Types
+            .InAssembly(DomainAssembly)
+            .ShouldNot()
+            .HaveDependencyOn("Microsoft.AspNetCore")
             .GetResult();
 
-        result.IsSuccessful.Should().BeTrue(string.Join(", ", result.FailingTypeNames ?? Array.Empty<string>()));
+        result
+            .IsSuccessful.Should()
+            .BeTrue(string.Join(", ", result.FailingTypeNames ?? Array.Empty<string>()));
     }
 
     [Fact]
     public void Domain_must_not_reference_infrastructure()
     {
-        var result = Types.InAssembly(DomainAssembly)
-            .ShouldNot().HaveDependencyOn("ERP.Infrastructure")
+        var result = Types
+            .InAssembly(DomainAssembly)
+            .ShouldNot()
+            .HaveDependencyOn("ERP.Infrastructure")
             .GetResult();
 
-        result.IsSuccessful.Should().BeTrue(string.Join(", ", result.FailingTypeNames ?? Array.Empty<string>()));
+        result
+            .IsSuccessful.Should()
+            .BeTrue(string.Join(", ", result.FailingTypeNames ?? Array.Empty<string>()));
     }
 
     [Fact]
     public void Application_must_not_reference_infrastructure()
     {
-        var result = Types.InAssembly(ApplicationAssembly)
-            .ShouldNot().HaveDependencyOn("ERP.Infrastructure")
+        var result = Types
+            .InAssembly(ApplicationAssembly)
+            .ShouldNot()
+            .HaveDependencyOn("ERP.Infrastructure")
             .GetResult();
 
-        result.IsSuccessful.Should().BeTrue(string.Join(", ", result.FailingTypeNames ?? Array.Empty<string>()));
+        result
+            .IsSuccessful.Should()
+            .BeTrue(string.Join(", ", result.FailingTypeNames ?? Array.Empty<string>()));
     }
 
     [Fact]
     public void Application_must_not_reference_ef_core()
     {
-        var result = Types.InAssembly(ApplicationAssembly)
-            .ShouldNot().HaveDependencyOn("Microsoft.EntityFrameworkCore")
+        var result = Types
+            .InAssembly(ApplicationAssembly)
+            .ShouldNot()
+            .HaveDependencyOn("Microsoft.EntityFrameworkCore")
             .GetResult();
 
-        result.IsSuccessful.Should().BeTrue(string.Join(", ", result.FailingTypeNames ?? Array.Empty<string>()));
+        result
+            .IsSuccessful.Should()
+            .BeTrue(string.Join(", ", result.FailingTypeNames ?? Array.Empty<string>()));
     }
 
     [Fact]
     public void Infrastructure_must_not_reference_api()
     {
-        var result = Types.InAssembly(InfrastructureAssembly)
-            .ShouldNot().HaveDependencyOn("ERP.API")
+        var result = Types
+            .InAssembly(InfrastructureAssembly)
+            .ShouldNot()
+            .HaveDependencyOn("ERP.API")
             .GetResult();
 
-        result.IsSuccessful.Should().BeTrue(string.Join(", ", result.FailingTypeNames ?? Array.Empty<string>()));
+        result
+            .IsSuccessful.Should()
+            .BeTrue(string.Join(", ", result.FailingTypeNames ?? Array.Empty<string>()));
     }
 }

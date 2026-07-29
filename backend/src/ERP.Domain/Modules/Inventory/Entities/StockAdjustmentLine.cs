@@ -35,7 +35,8 @@ public sealed class StockAdjustmentLine : ITenantScopedEntity, ICompanyOperation
         decimal physicalQuantity,
         decimal unitCost,
         string? reason,
-        short sortOrder)
+        short sortOrder
+    )
     {
         return new StockAdjustmentLine
         {

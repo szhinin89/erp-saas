@@ -14,22 +14,40 @@ namespace ERP.Application.Modules.Purchases.UseCases;
 // ── DTOs ────────────────────────────────────────────────────────────────
 
 public sealed record IssuedWithholdingDto(
-    Guid Id, Guid PurchaseInvoiceId, Guid SupplierId, Guid EmissionPointId,
-    string WithholdingNumber, DateOnly IssueDate, string? AccessKey,
-    decimal TotalRetainedVat, decimal TotalRetainedIncome, decimal TotalRetainedIsd,
-    decimal TotalRetained, string Status,
+    Guid Id,
+    Guid PurchaseInvoiceId,
+    Guid SupplierId,
+    Guid EmissionPointId,
+    string WithholdingNumber,
+    DateOnly IssueDate,
+    string? AccessKey,
+    decimal TotalRetainedVat,
+    decimal TotalRetainedIncome,
+    decimal TotalRetainedIsd,
+    decimal TotalRetained,
+    string Status,
     IReadOnlyList<IssuedWithholdingDetailDto> Details,
-    DateTime CreatedAt, DateTime? UpdatedAt);
+    DateTime CreatedAt,
+    DateTime? UpdatedAt
+);
 
 public sealed record IssuedWithholdingDetailDto(
-    Guid Id, string TaxType, string RetentionCode, string RetentionCodeDescription,
-    decimal TaxableBase, decimal RetentionPct, decimal AmountRetained);
+    Guid Id,
+    string TaxType,
+    string RetentionCode,
+    string RetentionCodeDescription,
+    decimal TaxableBase,
+    decimal RetentionPct,
+    decimal AmountRetained
+);
 
 // ── Command ─────────────────────────────────────────────────────────────
 
 public sealed record IssueWithholdingCommand(
-    Guid PurchaseInvoiceId, Guid EmissionPointId, DateOnly IssueDate)
-    : IRequest<Result<IssuedWithholdingDto>>, IBranchScopedRequest;
+    Guid PurchaseInvoiceId,
+    Guid EmissionPointId,
+    DateOnly IssueDate
+) : IRequest<Result<IssuedWithholdingDto>>, IBranchScopedRequest;
 
 // ── Validator ───────────────────────────────────────────────────────────
 
@@ -65,29 +83,46 @@ public sealed class IssueWithholdingHandler
     private readonly ICurrentUser _u;
 
     public IssueWithholdingHandler(
-        IPurchaseInvoiceRepository purchaseRepo, IBusinessPartnerRoleRepository roleRepo,
+        IPurchaseInvoiceRepository purchaseRepo,
+        IBusinessPartnerRoleRepository roleRepo,
         IRetentionCodeResolver retResolver,
-        IEmissionPointRepository epRepo, IEstablishmentRepository estRepo,
+        IEmissionPointRepository epRepo,
+        IEstablishmentRepository estRepo,
         IDocumentSequenceRepository seqRepo,
         ERP.Application.Common.Services.ICompanyClock companyClock,
-        ICurrentTenant t, ICurrentCompany c, ICurrentUser u)
+        ICurrentTenant t,
+        ICurrentCompany c,
+        ICurrentUser u
+    )
     {
-        _purchaseRepo = purchaseRepo; _roleRepo = roleRepo; _retResolver = retResolver;
-        _epRepo = epRepo; _estRepo = estRepo; _seqRepo = seqRepo;
+        _purchaseRepo = purchaseRepo;
+        _roleRepo = roleRepo;
+        _retResolver = retResolver;
+        _epRepo = epRepo;
+        _estRepo = estRepo;
+        _seqRepo = seqRepo;
         _companyClock = companyClock;
-        _t = t; _c = c; _u = u;
+        _t = t;
+        _c = c;
+        _u = u;
     }
 
-    public async Task<Result<IssuedWithholdingDto>> Handle(IssueWithholdingCommand cmd, CancellationToken ct)
+    public async Task<Result<IssuedWithholdingDto>> Handle(
+        IssueWithholdingCommand cmd,
+        CancellationToken ct
+    )
     {
         var tid = _t.TenantId;
         var uid = _u.UserId;
 
         // ── Validar compra ──────────────────────────────────────────────
         var inv = await _purchaseRepo.GetByIdAsync(tid, cmd.PurchaseInvoiceId, ct);
-        if (inv is null) return Result<IssuedWithholdingDto>.NotFound("Compra no encontrada.");
+        if (inv is null)
+            return Result<IssuedWithholdingDto>.NotFound("Compra no encontrada.");
         if (inv.Status != Domain.Modules.Purchases.Enums.PurchaseStatus.Confirmed)
-            return Result<IssuedWithholdingDto>.ValidationFailure("Solo se pueden emitir retenciones de compras confirmadas.");
+            return Result<IssuedWithholdingDto>.ValidationFailure(
+                "Solo se pueden emitir retenciones de compras confirmadas."
+            );
 
         // ── Validar fecha de emisión contra la fecha empresarial (Ecuador) ──
         // Corrige SRI [65] FECHA EMISIÓN EXTEMPORÁNEA: debe ejecutarse ANTES de capturar
@@ -96,78 +131,138 @@ public sealed class IssueWithholdingHandler
         var companyToday = await _companyClock.TodayAsync(_c.CompanyId, tid, ct);
         if (cmd.IssueDate > companyToday)
             return Result<IssuedWithholdingDto>.ValidationFailure(
-                $"La fecha de emisión ({cmd.IssueDate:dd/MM/yyyy}) no puede ser posterior a la fecha actual ({companyToday:dd/MM/yyyy}).");
+                $"La fecha de emisión ({cmd.IssueDate:dd/MM/yyyy}) no puede ser posterior a la fecha actual ({companyToday:dd/MM/yyyy})."
+            );
         if (cmd.IssueDate < companyToday.AddDays(-SriIssueDateToleranceDays))
             return Result<IssuedWithholdingDto>.ValidationFailure(
-                $"La fecha de emisión ({cmd.IssueDate:dd/MM/yyyy}) excede el rango permitido por el SRI " +
-                $"({SriIssueDateToleranceDays} días).");
+                $"La fecha de emisión ({cmd.IssueDate:dd/MM/yyyy}) excede el rango permitido por el SRI "
+                    + $"({SriIssueDateToleranceDays} días)."
+            );
 
         // ── Idempotencia: verificar que no exista retención activa ───────
-        var existing = await _purchaseRepo.GetWithholdingByPurchaseIdAsync(tid, cmd.PurchaseInvoiceId, ct);
-        if (existing is not null && existing.Status != Domain.Modules.Purchases.Enums.WithholdingStatus.Cancelled)
-            return Result<IssuedWithholdingDto>.Conflict("Esta compra ya tiene una retención emitida.");
+        var existing = await _purchaseRepo.GetWithholdingByPurchaseIdAsync(
+            tid,
+            cmd.PurchaseInvoiceId,
+            ct
+        );
+        if (
+            existing is not null
+            && existing.Status != Domain.Modules.Purchases.Enums.WithholdingStatus.Cancelled
+        )
+            return Result<IssuedWithholdingDto>.Conflict(
+                "Esta compra ya tiene una retención emitida."
+            );
 
         // ── Obtener config proveedor ────────────────────────────────────
         var supplierRole = await _roleRepo.GetByTypeAsync(inv.SupplierId, RoleType.Supplier, ct);
         var config = supplierRole?.SupplierConfig;
         if (config is not null && config.IsRetentionExempt)
-            return Result<IssuedWithholdingDto>.ValidationFailure("El proveedor está exento de retención.");
+            return Result<IssuedWithholdingDto>.ValidationFailure(
+                "El proveedor está exento de retención."
+            );
 
         // ── Calcular retención ──────────────────────────────────────────
         string? vatCode = config?.DefaultRetentionVatCode;
-        decimal vatPct = 0; string? vatName = null;
+        decimal vatPct = 0;
+        string? vatName = null;
         if (!string.IsNullOrWhiteSpace(vatCode))
         {
             var info = await _retResolver.GetRetentionCodeAsync(vatCode, "IVA", ct);
-            if (info is not null) { vatPct = info.Percentage; vatName = info.Name; }
-            else vatCode = null;
+            if (info is not null)
+            {
+                vatPct = info.Percentage;
+                vatName = info.Name;
+            }
+            else
+                vatCode = null;
         }
 
         string? incomeCode = config?.DefaultRetentionIncomeCode;
-        decimal incomePct = 0; string? incomeName = null;
+        decimal incomePct = 0;
+        string? incomeName = null;
         if (!string.IsNullOrWhiteSpace(incomeCode))
         {
             var info = await _retResolver.GetRetentionCodeAsync(incomeCode, "RENTA", ct);
-            if (info is not null) { incomePct = info.Percentage; incomeName = info.Name; }
-            else incomeCode = null;
+            if (info is not null)
+            {
+                incomePct = info.Percentage;
+                incomeName = info.Name;
+            }
+            else
+                incomeCode = null;
         }
 
         var taxableBaseIncome = inv.Lines.Sum(l => l.TaxableBase);
         var calcResult = RetentionCalculator.Calculate(
-            inv.TotalVat, taxableBaseIncome, false,
-            vatCode, vatPct, vatName,
-            incomeCode, incomePct, incomeName);
+            inv.TotalVat,
+            taxableBaseIncome,
+            false,
+            vatCode,
+            vatPct,
+            vatName,
+            incomeCode,
+            incomePct,
+            incomeName
+        );
 
         if (calcResult.Lines.Count == 0)
             return Result<IssuedWithholdingDto>.ValidationFailure(
-                calcResult.SkipReason ?? "No se generaron líneas de retención.");
+                calcResult.SkipReason ?? "No se generaron líneas de retención."
+            );
 
         // ── Crear borrador ──────────────────────────────────────────────
         var wh = IssuedWithholding.CreateDraft(
-            tid, _c.CompanyId, inv.Id, inv.SupplierId, cmd.EmissionPointId, cmd.IssueDate, uid);
+            tid,
+            _c.CompanyId,
+            inv.Id,
+            inv.SupplierId,
+            cmd.EmissionPointId,
+            cmd.IssueDate,
+            uid
+        );
 
         var details = calcResult.Lines.Select(l =>
             IssuedWithholdingDetail.Create(
-                wh.Id, tid, l.TaxType, l.RetentionCode, l.RetentionCodeName,
-                l.TaxableBase, l.RetentionPct));
+                wh.Id,
+                tid,
+                l.TaxType,
+                l.RetentionCode,
+                l.RetentionCodeName,
+                l.TaxableBase,
+                l.RetentionPct
+            )
+        );
         wh.ReplaceDetails(details);
 
         // ── Generar número secuencial ───────────────────────────────────
         var ep = await _epRepo.GetByIdAsync(cmd.EmissionPointId, tid, ct);
-        if (ep is null) return Result<IssuedWithholdingDto>.NotFound("Punto de emisión no encontrado.");
+        if (ep is null)
+            return Result<IssuedWithholdingDto>.NotFound("Punto de emisión no encontrado.");
 
         var est = await _estRepo.GetByIdAsync(tid, ep.EstablishmentId, ct);
-        if (est is null) return Result<IssuedWithholdingDto>.NotFound("Establecimiento no encontrado.");
+        if (est is null)
+            return Result<IssuedWithholdingDto>.NotFound("Establecimiento no encontrado.");
 
         // CaptureNextAsync: atómico (advisory lock + transacción propia).
         // "07" es el código SRI fijo para retenciones en la fuente.
-        var sequential = await _seqRepo.CaptureNextAsync(tid, _c.CompanyId, cmd.EmissionPointId, "07", ct);
+        var sequential = await _seqRepo.CaptureNextAsync(
+            tid,
+            _c.CompanyId,
+            cmd.EmissionPointId,
+            "07",
+            ct
+        );
         var number = $"{est.Code}-{ep.Code}-{sequential}";
 
         // ── Emitir ──────────────────────────────────────────────────────
-        try { wh.Issue(number, uid); }
+        try
+        {
+            wh.Issue(number, uid);
+        }
         catch (InvalidOperationException ex)
-        { return Result<IssuedWithholdingDto>.ValidationFailure(ex.Message); }
+        {
+            return Result<IssuedWithholdingDto>.ValidationFailure(ex.Message);
+        }
 
         // ── Actualizar cuenta por pagar ─────────────────────────────────
         var payable = await _purchaseRepo.GetPayableByPurchaseIdAsync(tid, inv.Id, ct);
@@ -178,7 +273,8 @@ public sealed class IssueWithholdingHandler
         else if (wh.TotalRetained > 0)
         {
             return Result<IssuedWithholdingDto>.ValidationFailure(
-                "No se encontró cuenta por pagar asociada. No se puede aplicar la retención financieramente.");
+                "No se encontró cuenta por pagar asociada. No se puede aplicar la retención financieramente."
+            );
         }
 
         // ── Persistir (auditoría de "withholding.issued" vía IssuedWithholdingAuditHandler,
@@ -193,13 +289,31 @@ public sealed class IssueWithholdingHandler
 
 file static class MapWh
 {
-    public static IssuedWithholdingDto ToDto(IssuedWithholding w) => new(
-        w.Id, w.PurchaseInvoiceId, w.SupplierId, w.EmissionPointId,
-        w.WithholdingNumber, w.IssueDate, w.AccessKey,
-        w.TotalRetainedVat, w.TotalRetainedIncome, w.TotalRetainedIsd,
-        w.TotalRetained, w.Status.ToString(),
-        w.Details.Select(d => new IssuedWithholdingDetailDto(
-            d.Id, d.TaxType, d.RetentionCode, d.RetentionCodeDescription,
-            d.TaxableBase, d.RetentionPct, d.AmountRetained)).ToList(),
-        w.CreatedAt, w.UpdatedAt);
+    public static IssuedWithholdingDto ToDto(IssuedWithholding w) =>
+        new(
+            w.Id,
+            w.PurchaseInvoiceId,
+            w.SupplierId,
+            w.EmissionPointId,
+            w.WithholdingNumber,
+            w.IssueDate,
+            w.AccessKey,
+            w.TotalRetainedVat,
+            w.TotalRetainedIncome,
+            w.TotalRetainedIsd,
+            w.TotalRetained,
+            w.Status.ToString(),
+            w.Details.Select(d => new IssuedWithholdingDetailDto(
+                    d.Id,
+                    d.TaxType,
+                    d.RetentionCode,
+                    d.RetentionCodeDescription,
+                    d.TaxableBase,
+                    d.RetentionPct,
+                    d.AmountRetained
+                ))
+                .ToList(),
+            w.CreatedAt,
+            w.UpdatedAt
+        );
 }

@@ -4,4 +4,6 @@ using MediatR;
 
 namespace ERP.Application.Modules.Branches.UseCases.GetBranchById;
 
-public sealed record GetBranchByIdQuery(Guid Id) : IRequest<Result<BranchDetailDto>>, ICompanyScopedRequest;
+public sealed record GetBranchByIdQuery(Guid Id)
+    : IRequest<Result<BranchDetailDto>>,
+        ICompanyScopedRequest;

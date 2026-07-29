@@ -20,16 +20,26 @@ public sealed record PaymentTermSnapshot
     }
 
     public static PaymentTermSnapshot Create(
-        Guid id, string name, int installments, int daysBetween)
+        Guid id,
+        string name,
+        int installments,
+        int daysBetween
+    )
     {
         if (id == Guid.Empty)
             throw new ArgumentException("La condición de pago es obligatoria.", nameof(id));
         if (string.IsNullOrWhiteSpace(name))
-            throw new ArgumentException("El nombre de la condición de pago es obligatorio.", nameof(name));
+            throw new ArgumentException(
+                "El nombre de la condición de pago es obligatorio.",
+                nameof(name)
+            );
         if (installments < 1)
             throw new ArgumentException("Las cuotas deben ser al menos 1.", nameof(installments));
         if (daysBetween < 0)
-            throw new ArgumentException("Los días entre cuotas no pueden ser negativos.", nameof(daysBetween));
+            throw new ArgumentException(
+                "Los días entre cuotas no pueden ser negativos.",
+                nameof(daysBetween)
+            );
 
         return new PaymentTermSnapshot(id, name.Trim(), installments, daysBetween);
     }

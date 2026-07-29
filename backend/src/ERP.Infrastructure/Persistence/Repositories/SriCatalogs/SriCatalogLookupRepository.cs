@@ -18,27 +18,42 @@ public sealed class SriCatalogLookupRepository : ISriCatalogLookupRepository
 
     public SriCatalogLookupRepository(ErpDbContext db) => _db = db;
 
-    public async Task<IReadOnlyList<SriUom>> GetActiveUomsAsync(CancellationToken cancellationToken = default)
-        => await _db.SriUoms.AsNoTracking()
+    public async Task<IReadOnlyList<SriUom>> GetActiveUomsAsync(
+        CancellationToken cancellationToken = default
+    ) =>
+        await _db
+            .SriUoms.AsNoTracking()
             .Where(u => u.IsActive)
             .OrderBy(u => u.Code)
             .ToListAsync(cancellationToken);
 
-    public async Task<IReadOnlyList<SriVatRate>> GetActiveVatRatesAsync(DateOnly asOfDate, CancellationToken cancellationToken = default)
-        => await _db.SriVatRates.AsNoTracking()
-            .Where(r => r.IsActive
+    public async Task<IReadOnlyList<SriVatRate>> GetActiveVatRatesAsync(
+        DateOnly asOfDate,
+        CancellationToken cancellationToken = default
+    ) =>
+        await _db
+            .SriVatRates.AsNoTracking()
+            .Where(r =>
+                r.IsActive
                 && (r.ValidFrom == null || r.ValidFrom <= asOfDate)
-                && (r.ValidUntil == null || r.ValidUntil >= asOfDate))
+                && (r.ValidUntil == null || r.ValidUntil >= asOfDate)
+            )
             .OrderBy(r => r.Percentage)
             .ToListAsync(cancellationToken);
 
-    public async Task<IReadOnlyList<SriIceRate>> GetActiveIceRatesAsync(CancellationToken cancellationToken = default)
-        => await _db.SriIceRates.AsNoTracking()
+    public async Task<IReadOnlyList<SriIceRate>> GetActiveIceRatesAsync(
+        CancellationToken cancellationToken = default
+    ) =>
+        await _db
+            .SriIceRates.AsNoTracking()
             .Where(r => r.IsActive)
             .OrderBy(r => r.Code)
             .ToListAsync(cancellationToken);
 
-    public async Task<IReadOnlyList<SriRetentionCode>> GetActiveRetentionCodesAsync(string? taxType, CancellationToken cancellationToken = default)
+    public async Task<IReadOnlyList<SriRetentionCode>> GetActiveRetentionCodesAsync(
+        string? taxType,
+        CancellationToken cancellationToken = default
+    )
     {
         var query = _db.SriRetentionCodes.AsNoTracking().Where(r => r.IsActive);
 
@@ -46,68 +61,104 @@ public sealed class SriCatalogLookupRepository : ISriCatalogLookupRepository
             query = query.Where(r => r.TaxType == taxType.Trim().ToUpperInvariant());
 
         return await query
-            .OrderBy(r => r.TaxType).ThenBy(r => r.Code)
+            .OrderBy(r => r.TaxType)
+            .ThenBy(r => r.Code)
             .ToListAsync(cancellationToken);
     }
 
-    public async Task<IReadOnlyList<SriTaxSupport>> GetActiveTaxSupportCodesAsync(CancellationToken cancellationToken = default)
-        => await _db.SriTaxSupports.AsNoTracking()
+    public async Task<IReadOnlyList<SriTaxSupport>> GetActiveTaxSupportCodesAsync(
+        CancellationToken cancellationToken = default
+    ) =>
+        await _db
+            .SriTaxSupports.AsNoTracking()
             .Where(t => t.IsActive)
             .OrderBy(t => t.Code)
             .ToListAsync(cancellationToken);
 
-    public async Task<IReadOnlyList<SriDocType>> GetActiveDocTypesAsync(CancellationToken cancellationToken = default)
-        => await _db.SriDocTypes.AsNoTracking()
+    public async Task<IReadOnlyList<SriDocType>> GetActiveDocTypesAsync(
+        CancellationToken cancellationToken = default
+    ) =>
+        await _db
+            .SriDocTypes.AsNoTracking()
             .Where(d => d.IsActive)
             .OrderBy(d => d.Code)
             .ToListAsync(cancellationToken);
 
-    public async Task<IReadOnlyList<SriPaymentMethod>> GetActivePaymentMethodsAsync(CancellationToken cancellationToken = default)
-        => await _db.SriPaymentMethods.AsNoTracking()
+    public async Task<IReadOnlyList<SriPaymentMethod>> GetActivePaymentMethodsAsync(
+        CancellationToken cancellationToken = default
+    ) =>
+        await _db
+            .SriPaymentMethods.AsNoTracking()
             .Where(p => p.IsActive)
             .OrderBy(p => p.Code)
             .ToListAsync(cancellationToken);
 
-    public async Task<IReadOnlyList<SriSupplierType>> GetActiveSupplierTypesAsync(CancellationToken cancellationToken = default)
-        => await _db.SriSupplierTypes.AsNoTracking()
+    public async Task<IReadOnlyList<SriSupplierType>> GetActiveSupplierTypesAsync(
+        CancellationToken cancellationToken = default
+    ) =>
+        await _db
+            .SriSupplierTypes.AsNoTracking()
             .Where(r => r.IsActive)
             .OrderBy(r => r.Code)
             .ToListAsync(cancellationToken);
 
-    public async Task<IReadOnlyList<SriTaxRegime>> GetActiveTaxRegimesAsync(CancellationToken cancellationToken = default)
-        => await _db.SriTaxRegimes.AsNoTracking()
+    public async Task<IReadOnlyList<SriTaxRegime>> GetActiveTaxRegimesAsync(
+        CancellationToken cancellationToken = default
+    ) =>
+        await _db
+            .SriTaxRegimes.AsNoTracking()
             .Where(r => r.IsActive)
             .OrderBy(r => r.Code)
             .ToListAsync(cancellationToken);
 
-    public async Task<IReadOnlyList<PersonTypeCatalog>> GetPersonTypesAsync(CancellationToken cancellationToken = default)
-        => await _db.PersonTypeCatalogs.AsNoTracking()
+    public async Task<IReadOnlyList<PersonTypeCatalog>> GetPersonTypesAsync(
+        CancellationToken cancellationToken = default
+    ) =>
+        await _db
+            .PersonTypeCatalogs.AsNoTracking()
             .OrderBy(p => p.Code)
             .ToListAsync(cancellationToken);
 
-    public async Task<IReadOnlyList<BarcodeTypeDefinition>> GetActiveBarcodeTypesAsync(CancellationToken cancellationToken = default)
-        => await _db.BarcodeTypes.AsNoTracking()
+    public async Task<IReadOnlyList<BarcodeTypeDefinition>> GetActiveBarcodeTypesAsync(
+        CancellationToken cancellationToken = default
+    ) =>
+        await _db
+            .BarcodeTypes.AsNoTracking()
             .Where(b => b.IsActive)
             .OrderBy(b => b.Code)
             .ToListAsync(cancellationToken);
 
-    public async Task<IReadOnlyList<ItemMarginStatusDefinition>> GetItemMarginStatusesAsync(CancellationToken cancellationToken = default)
-        => await _db.ItemMarginStatuses.AsNoTracking()
+    public async Task<IReadOnlyList<ItemMarginStatusDefinition>> GetItemMarginStatusesAsync(
+        CancellationToken cancellationToken = default
+    ) =>
+        await _db
+            .ItemMarginStatuses.AsNoTracking()
             .OrderBy(m => m.Code)
             .ToListAsync(cancellationToken);
 
-    public async Task<IReadOnlyList<SriIdType>> GetSriIdTypesAsync(CancellationToken cancellationToken = default)
-        => await _db.SriIdTypes.AsNoTracking()
-            .OrderBy(t => t.Code)
-            .ToListAsync(cancellationToken);
+    public async Task<IReadOnlyList<SriIdType>> GetSriIdTypesAsync(
+        CancellationToken cancellationToken = default
+    ) => await _db.SriIdTypes.AsNoTracking().OrderBy(t => t.Code).ToListAsync(cancellationToken);
 
-    public async Task<IReadOnlyList<SriIdType>> GetSriIdTypesByUsageAsync(IdentificationUsageType usage, CancellationToken cancellationToken = default)
-        => await _db.SriIdTypeUsages.AsNoTracking()
+    public async Task<IReadOnlyList<SriIdType>> GetSriIdTypesByUsageAsync(
+        IdentificationUsageType usage,
+        CancellationToken cancellationToken = default
+    ) =>
+        await _db
+            .SriIdTypeUsages.AsNoTracking()
             .Where(u => u.UsageType == usage && u.IsActive)
-            .Join(_db.SriIdTypes.AsNoTracking(),
+            .Join(
+                _db.SriIdTypes.AsNoTracking(),
                 u => u.IdTypeCode,
                 t => t.Code,
-                (u, t) => new SriIdType { Code = t.Code, Name = t.Name, Digits = t.Digits })
+                (u, t) =>
+                    new SriIdType
+                    {
+                        Code = t.Code,
+                        Name = t.Name,
+                        Digits = t.Digits,
+                    }
+            )
             .OrderBy(x => x.Code)
             .ToListAsync(cancellationToken);
 }

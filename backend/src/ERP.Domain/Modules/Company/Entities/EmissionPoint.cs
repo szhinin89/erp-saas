@@ -17,6 +17,7 @@ public sealed class EmissionPoint : MasterEntity, ITenantScopedEntity, ICompanyS
     public string Code { get; private set; } = null!;
     public string? Name { get; private set; }
     public EmissionType EmissionType { get; private set; }
+
     /// <summary>Punto de emisi�n predeterminado del establecimiento; usado cuando el comando no especifica uno.</summary>
     public bool IsDefault { get; private set; }
 
@@ -35,10 +36,14 @@ public sealed class EmissionPoint : MasterEntity, ITenantScopedEntity, ICompanyS
         string? name,
         EmissionType emissionType,
         bool isDefault,
-        Guid createdBy)
+        Guid createdBy
+    )
     {
         if (string.IsNullOrWhiteSpace(code))
-            throw new ArgumentException("El c�digo de punto de emisi�n es obligatorio.", nameof(code));
+            throw new ArgumentException(
+                "El c�digo de punto de emisi�n es obligatorio.",
+                nameof(code)
+            );
 
         var ep = new EmissionPoint
         {
@@ -69,9 +74,19 @@ public sealed class EmissionPoint : MasterEntity, ITenantScopedEntity, ICompanyS
         string? name,
         EmissionType emissionType,
         bool isDefault,
-        Guid createdBy)
+        Guid createdBy
+    )
     {
-        var ep = Create(tenantId, companyId, establishmentId, code, name, emissionType, isDefault, createdBy);
+        var ep = Create(
+            tenantId,
+            companyId,
+            establishmentId,
+            code,
+            name,
+            emissionType,
+            isDefault,
+            createdBy
+        );
         ep.MarkAsSystemSeeded();
         return ep;
     }

@@ -14,7 +14,14 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace ERP.API.Controllers;
 
-[AppFeature("Establecimientos SRI", $"perm:{SettingsPermissions.EstablishmentsView}", "receipt_long", "/settings/establishments", "perm:settings.group", 28)]
+[AppFeature(
+    "Establecimientos SRI",
+    $"perm:{SettingsPermissions.EstablishmentsView}",
+    "receipt_long",
+    "/settings/establishments",
+    "perm:settings.group",
+    28
+)]
 [ApiController]
 [Route("api/v1/settings/establishments")]
 [Authorize]
@@ -31,26 +38,37 @@ public sealed class EstablishmentsController : ControllerBase
     /// <summary>Lista los establecimientos de la empresa activa con filtros opcionales.</summary>
     [HttpGet]
     [Authorize(Policy = $"perm:{SettingsPermissions.EstablishmentsView}")]
-    [ProducesResponseType(typeof(ApiResponse<IReadOnlyList<EstablishmentListItemDto>>), StatusCodes.Status200OK)]
+    [ProducesResponseType(
+        typeof(ApiResponse<IReadOnlyList<EstablishmentListItemDto>>),
+        StatusCodes.Status200OK
+    )]
     public async Task<IActionResult> GetAll(CancellationToken cancellationToken = default)
     {
         var activeFilter = CatalogQueryParameters.ParseActiveFilter(Request.Query);
         var search = CatalogQueryParameters.ParseSearch(Request.Query);
         Guid? branchId = null;
-        if (Request.Query.TryGetValue("branchId", out var rawBranchId)
-            && Guid.TryParse(rawBranchId, out var parsedBranchId))
+        if (
+            Request.Query.TryGetValue("branchId", out var rawBranchId)
+            && Guid.TryParse(rawBranchId, out var parsedBranchId)
+        )
         {
             branchId = parsedBranchId;
         }
 
-        var result = await _mediator.Send(new GetEstablishmentsQuery(branchId, activeFilter, search), cancellationToken);
+        var result = await _mediator.Send(
+            new GetEstablishmentsQuery(branchId, activeFilter, search),
+            cancellationToken
+        );
         return this.ToOkOrBadRequest(result, "OK", () => Array.Empty<EstablishmentListItemDto>());
     }
 
     /// <summary>Devuelve los establecimientos activos de la empresa — para poblar el selector en formularios.</summary>
     [HttpGet("lookups")]
     [Authorize(Policy = $"perm:{SettingsPermissions.EstablishmentsView}")]
-    [ProducesResponseType(typeof(ApiResponse<IReadOnlyList<EstablishmentLookupDto>>), StatusCodes.Status200OK)]
+    [ProducesResponseType(
+        typeof(ApiResponse<IReadOnlyList<EstablishmentLookupDto>>),
+        StatusCodes.Status200OK
+    )]
     public async Task<IActionResult> GetLookups(CancellationToken cancellationToken = default)
     {
         var result = await _mediator.Send(new GetEstablishmentLookupsQuery(), cancellationToken);
@@ -62,7 +80,10 @@ public sealed class EstablishmentsController : ControllerBase
     [Authorize(Policy = $"perm:{SettingsPermissions.EstablishmentsCreate}")]
     [ProducesResponseType(typeof(ApiResponse<EstablishmentDto>), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
-    public async Task<IActionResult> Create([FromBody] CreateEstablishmentCommand command, CancellationToken cancellationToken = default)
+    public async Task<IActionResult> Create(
+        [FromBody] CreateEstablishmentCommand command,
+        CancellationToken cancellationToken = default
+    )
     {
         var result = await _mediator.Send(command, cancellationToken);
         return this.ToCreatedOrBadRequest(result);
@@ -73,7 +94,11 @@ public sealed class EstablishmentsController : ControllerBase
     [Authorize(Policy = $"perm:{SettingsPermissions.EstablishmentsUpdate}")]
     [ProducesResponseType(typeof(ApiResponse<EstablishmentDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
-    public async Task<IActionResult> Update(Guid id, [FromBody] UpdateEstablishmentCommand command, CancellationToken cancellationToken = default)
+    public async Task<IActionResult> Update(
+        Guid id,
+        [FromBody] UpdateEstablishmentCommand command,
+        CancellationToken cancellationToken = default
+    )
     {
         if (id != command.Id)
             return this.ApiBadRequest("El id de ruta no coincide con el cuerpo.");

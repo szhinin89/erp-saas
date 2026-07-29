@@ -20,7 +20,8 @@ public sealed class UpdateWarehouseCommandHandler
         IWarehouseRepository repo,
         IUserActivityRepository activity,
         ICurrentTenant currentTenant,
-        ICurrentUser user)
+        ICurrentUser user
+    )
     {
         _repo = repo;
         _activity = activity;
@@ -29,7 +30,9 @@ public sealed class UpdateWarehouseCommandHandler
     }
 
     public async Task<Result<WarehouseListItemDto>> Handle(
-        UpdateWarehouseCommand command, CancellationToken cancellationToken)
+        UpdateWarehouseCommand command,
+        CancellationToken cancellationToken
+    )
     {
         var tenantId = _currentTenant.TenantId;
 
@@ -49,18 +52,23 @@ public sealed class UpdateWarehouseCommandHandler
             longitude: command.Longitude,
             capacity: command.Capacity,
             dailyDispatchGoal: command.DailyDispatchGoal,
-            updatedBy: _user.UserId);
+            updatedBy: _user.UserId
+        );
 
-        await _activity.AddAsync(UserActivity.Create(
-            tenantId,
-            _user.UserId,
-            _user.Email,
-            _user.FullName,
-            module: "inventory",
-            action: "warehouse.update",
-            entityType: "Warehouse",
-            entityId: entity.Id,
-            description: entity.Name), cancellationToken);
+        await _activity.AddAsync(
+            UserActivity.Create(
+                tenantId,
+                _user.UserId,
+                _user.Email,
+                _user.FullName,
+                module: "inventory",
+                action: "warehouse.update",
+                entityType: "Warehouse",
+                entityId: entity.Id,
+                description: entity.Name
+            ),
+            cancellationToken
+        );
         await _repo.SaveChangesAsync(cancellationToken);
 
         return Result<WarehouseListItemDto>.Success(GetWarehousesQueryHandler.ToDto(entity));

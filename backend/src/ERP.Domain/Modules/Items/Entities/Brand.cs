@@ -24,8 +24,13 @@ public class Brand : MasterEntity, ITenantScopedEntity
     private Brand() { }
 
     public static Brand Create(
-        Guid tenantId, string code, string name, Guid createdBy,
-        string? manufacturer = null, string? countryOfOrigin = null)
+        Guid tenantId,
+        string code,
+        string name,
+        Guid createdBy,
+        string? manufacturer = null,
+        string? countryOfOrigin = null
+    )
     {
         var brand = new Brand
         {
@@ -47,8 +52,13 @@ public class Brand : MasterEntity, ITenantScopedEntity
     /// <c>CLAUDE.md</c>.
     /// </summary>
     public static Brand CreateSystemSeeded(
-        Guid tenantId, string code, string name, Guid createdBy,
-        string? manufacturer = null, string? countryOfOrigin = null)
+        Guid tenantId,
+        string code,
+        string name,
+        Guid createdBy,
+        string? manufacturer = null,
+        string? countryOfOrigin = null
+    )
     {
         var brand = Create(tenantId, code, name, createdBy, manufacturer, countryOfOrigin);
         brand.MarkAsSystemSeeded();
@@ -56,8 +66,12 @@ public class Brand : MasterEntity, ITenantScopedEntity
     }
 
     public void Update(
-        string code, string name, Guid updatedBy,
-        string? manufacturer = null, string? countryOfOrigin = null)
+        string code,
+        string name,
+        Guid updatedBy,
+        string? manufacturer = null,
+        string? countryOfOrigin = null
+    )
     {
         this.EnsureEditable("La marca", "modificarse");
 

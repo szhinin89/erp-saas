@@ -11,7 +11,8 @@ namespace ERP.Application.Modules.Accounting.Posting.Translators;
 /// impuestos (Subtotal/TotalVat/TotalIce/TotalDiscount en cero, no inventados), GrandTotal
 /// transporta el monto pagado.
 /// </summary>
-public sealed class SupplierPaymentAppliedPostingTranslator : INotificationHandler<SupplierPaymentAppliedEvent>
+public sealed class SupplierPaymentAppliedPostingTranslator
+    : INotificationHandler<SupplierPaymentAppliedEvent>
 {
     private const string SourceModuleName = "Finance";
     private const string FactTypeName = "SupplierPaymentApplied";
@@ -20,7 +21,9 @@ public sealed class SupplierPaymentAppliedPostingTranslator : INotificationHandl
     private readonly ILogger<SupplierPaymentAppliedPostingTranslator> _logger;
 
     public SupplierPaymentAppliedPostingTranslator(
-        IPostingEngine postingEngine, ILogger<SupplierPaymentAppliedPostingTranslator> logger)
+        IPostingEngine postingEngine,
+        ILogger<SupplierPaymentAppliedPostingTranslator> logger
+    )
     {
         _postingEngine = postingEngine;
         _logger = logger;
@@ -29,8 +32,18 @@ public sealed class SupplierPaymentAppliedPostingTranslator : INotificationHandl
     public async Task Handle(SupplierPaymentAppliedEvent e, CancellationToken ct)
     {
         var fact = new PostingFact(
-            e.TenantId!.Value, e.CompanyId, SourceModuleName, FactTypeName, e.PaymentId, e.PaymentDate,
-            0m, 0m, 0m, 0m, e.Amount);
+            e.TenantId!.Value,
+            e.CompanyId,
+            SourceModuleName,
+            FactTypeName,
+            e.PaymentId,
+            e.PaymentDate,
+            0m,
+            0m,
+            0m,
+            0m,
+            e.Amount
+        );
 
         var result = await _postingEngine.PostAsync(fact, ct);
 
@@ -38,7 +51,10 @@ public sealed class SupplierPaymentAppliedPostingTranslator : INotificationHandl
         {
             _logger.LogWarning(
                 "Posting failed for SupplierPayment {PaymentId}: {Code} — {Error}",
-                e.PaymentId, result.Code, result.Error);
+                e.PaymentId,
+                result.Code,
+                result.Error
+            );
         }
     }
 }

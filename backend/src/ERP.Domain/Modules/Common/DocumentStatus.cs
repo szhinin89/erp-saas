@@ -18,5 +18,5 @@ public enum DocumentStatus
     /// <summary>
     /// Anulado. Estado final, no reversible.
     /// </summary>
-    Voided = 2
+    Voided = 2,
 }

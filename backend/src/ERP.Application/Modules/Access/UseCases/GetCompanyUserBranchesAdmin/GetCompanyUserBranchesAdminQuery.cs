@@ -14,6 +14,6 @@ namespace ERP.Application.Access.UseCases.GetCompanyUserBranchesAdmin;
 /// (header <c>X-Company-Id</c>) no pasaba por ICompanyAccessGuard. El marker fuerza esa
 /// revalidación antes del handler.
 /// </summary>
-public sealed record GetCompanyUserBranchesAdminQuery(
-    Guid CompanyUserId
-) : IRequest<Result<CompanyUserBranchesAdminDto?>>, IRequiresCompanyContext;
+public sealed record GetCompanyUserBranchesAdminQuery(Guid CompanyUserId)
+    : IRequest<Result<CompanyUserBranchesAdminDto?>>,
+        IRequiresCompanyContext;

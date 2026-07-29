@@ -1,6 +1,6 @@
-using ERP.Domain.Common;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using ERP.Domain.Common;
 
 namespace ERP.Infrastructure.Persistence.Outbox;
 
@@ -37,9 +37,11 @@ public static class OutboxMetadataFactory
         };
 
         // Skip serialization if nothing meaningful to store
-        if (metadata.CorrelationId is null &&
-            metadata.CausationId is null &&
-            metadata.SourceModule is null)
+        if (
+            metadata.CorrelationId is null
+            && metadata.CausationId is null
+            && metadata.SourceModule is null
+        )
             return null;
 
         return JsonSerializer.Serialize(metadata, Options);

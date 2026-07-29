@@ -16,9 +16,11 @@ public sealed partial class AppFeatureRepository : IAppFeatureRepository
         _logger = logger;
     }
 
-    public async Task<IReadOnlyList<AppFeatureMenuRow>> ListVisibleMenuRowsAsync(CancellationToken cancellationToken = default)
-        => await _db.AppFeatures
-            .AsNoTracking()
+    public async Task<IReadOnlyList<AppFeatureMenuRow>> ListVisibleMenuRowsAsync(
+        CancellationToken cancellationToken = default
+    ) =>
+        await _db
+            .AppFeatures.AsNoTracking()
             .Where(x => x.IsVisibleInMenu)
             .Select(x => new AppFeatureMenuRow(
                 x.Id,
@@ -27,29 +29,50 @@ public sealed partial class AppFeatureRepository : IAppFeatureRepository
                 x.Path,
                 x.Permission,
                 x.ParentId,
-                x.SortOrder))
+                x.SortOrder
+            ))
             .ToListAsync(cancellationToken);
 
-    public async Task<int> SyncDiscoveredFeaturesAsync(IReadOnlyList<AppFeatureSyncRow> rows, CancellationToken cancellationToken = default)
+    public async Task<int> SyncDiscoveredFeaturesAsync(
+        IReadOnlyList<AppFeatureSyncRow> rows,
+        CancellationToken cancellationToken = default
+    )
     {
         var byPerm = new Dictionary<string, AppFeatureSyncRow>(StringComparer.OrdinalIgnoreCase);
-        foreach (var r in rows.OrderBy(r => r.ParentPermission is null ? 0 : 1).ThenBy(r => r.SortOrder).ThenBy(r => r.Permission, StringComparer.Ordinal))
+        foreach (
+            var r in rows.OrderBy(r => r.ParentPermission is null ? 0 : 1)
+                .ThenBy(r => r.SortOrder)
+                .ThenBy(r => r.Permission, StringComparer.Ordinal)
+        )
             byPerm[r.Permission] = r;
 
         var utc = DateTime.UtcNow;
         await using var tx = await _db.Database.BeginTransactionAsync(cancellationToken);
 
-        var tracked = await _db.AppFeatures.AsTracking()
-            .ToDictionaryAsync(x => x.Permission, x => x, StringComparer.OrdinalIgnoreCase, cancellationToken);
+        var tracked = await _db
+            .AppFeatures.AsTracking()
+            .ToDictionaryAsync(
+                x => x.Permission,
+                x => x,
+                StringComparer.OrdinalIgnoreCase,
+                cancellationToken
+            );
 
-        var permToId = tracked.ToDictionary(x => x.Key, x => x.Value.Id, StringComparer.OrdinalIgnoreCase);
+        var permToId = tracked.ToDictionary(
+            x => x.Key,
+            x => x.Value.Id,
+            StringComparer.OrdinalIgnoreCase
+        );
 
         var pending = byPerm.Values.ToList();
         var guard = 0;
         while (pending.Count > 0 && guard++ < 64)
         {
             var batch = pending
-                .Where(r => string.IsNullOrEmpty(r.ParentPermission) || permToId.ContainsKey(r.ParentPermission))
+                .Where(r =>
+                    string.IsNullOrEmpty(r.ParentPermission)
+                    || permToId.ContainsKey(r.ParentPermission)
+                )
                 .ToList();
             if (batch.Count == 0)
             {
@@ -62,12 +85,23 @@ public sealed partial class AppFeatureRepository : IAppFeatureRepository
             {
                 pending.Remove(r);
                 Guid? parentId = null;
-                if (!string.IsNullOrEmpty(r.ParentPermission) && permToId.TryGetValue(r.ParentPermission, out var pid))
+                if (
+                    !string.IsNullOrEmpty(r.ParentPermission)
+                    && permToId.TryGetValue(r.ParentPermission, out var pid)
+                )
                     parentId = pid;
 
                 if (tracked.TryGetValue(r.Permission, out var entity))
                 {
-                    entity.SyncFromDiscovery(r.Name, r.Icon, r.Path, parentId, r.SortOrder, r.IsVisibleInMenu, utc);
+                    entity.SyncFromDiscovery(
+                        r.Name,
+                        r.Icon,
+                        r.Path,
+                        parentId,
+                        r.SortOrder,
+                        r.IsVisibleInMenu,
+                        utc
+                    );
                 }
                 else
                 {
@@ -79,7 +113,8 @@ public sealed partial class AppFeatureRepository : IAppFeatureRepository
                         parentId,
                         r.SortOrder,
                         r.IsVisibleInMenu,
-                        utc);
+                        utc
+                    );
                     _db.AppFeatures.Add(created);
                     tracked[r.Permission] = created;
                     permToId[r.Permission] = created.Id;
@@ -94,9 +129,15 @@ public sealed partial class AppFeatureRepository : IAppFeatureRepository
         return byPerm.Count;
     }
 
-    [LoggerMessage(Level = LogLevel.Warning, Message = "AppFeature with unresolved parent (skipped): {Permission} -> parent {Parent}")]
+    [LoggerMessage(
+        Level = LogLevel.Warning,
+        Message = "AppFeature with unresolved parent (skipped): {Permission} -> parent {Parent}"
+    )]
     private partial void LogUnresolvedParent(string permission, string? parent);
 
-    [LoggerMessage(Level = LogLevel.Information, Message = "AppFeature sync completed ({Count} unique permissions).")]
+    [LoggerMessage(
+        Level = LogLevel.Information,
+        Message = "AppFeature sync completed ({Count} unique permissions)."
+    )]
     private partial void LogSyncCompleted(int count);
 }

@@ -1,3 +1,4 @@
+using System.Globalization;
 using ERP.Application.Common;
 using ERP.Application.Common.Services;
 using ERP.Application.Modules.ElectronicDocuments.DTOs;
@@ -11,7 +12,6 @@ using ERP.Domain.Modules.Sales.Entities;
 using ERP.Domain.Modules.Sales.Enums;
 using ERP.Domain.Modules.Sales.Interfaces;
 using ERP.Domain.Modules.SriCatalogs.Entities;
-using System.Globalization;
 
 namespace ERP.Application.Modules.Sales.Services;
 
@@ -42,7 +42,8 @@ public sealed class SalesInvoiceElectronicDocumentDataProvider : IElectronicDocu
         IEstablishmentRepository establishmentRepository,
         ICompanyRepository companyRepository,
         ISriSettingsRepository sriSettingsRepository,
-        ISriDocTypeCatalogResolver docTypeCatalogResolver)
+        ISriDocTypeCatalogResolver docTypeCatalogResolver
+    )
     {
         _invoiceRepository = invoiceRepository;
         _emissionPointRepository = emissionPointRepository;
@@ -55,9 +56,15 @@ public sealed class SalesInvoiceElectronicDocumentDataProvider : IElectronicDocu
     public ElectronicDocumentType DocumentType => ElectronicDocumentType.Invoice;
 
     public async Task<Result<ElectronicDocumentData>> GetDataAsync(
-        ElectronicDocumentSourceReference reference, CancellationToken ct = default)
+        ElectronicDocumentSourceReference reference,
+        CancellationToken ct = default
+    )
     {
-        var invoice = await _invoiceRepository.GetByIdAsync(reference.TenantId, reference.SourceEntityId, ct);
+        var invoice = await _invoiceRepository.GetByIdAsync(
+            reference.TenantId,
+            reference.SourceEntityId,
+            ct
+        );
         if (invoice is null)
             return Result<ElectronicDocumentData>.NotFound("La factura de venta no existe.");
 
@@ -84,7 +91,11 @@ public sealed class SalesInvoiceElectronicDocumentDataProvider : IElectronicDocu
         EmissionPoint? emissionPoint = null;
         if (invoice.EmissionPointId is { } emissionPointId)
         {
-            emissionPoint = await _emissionPointRepository.GetByIdAsync(emissionPointId, reference.TenantId, ct);
+            emissionPoint = await _emissionPointRepository.GetByIdAsync(
+                emissionPointId,
+                reference.TenantId,
+                ct
+            );
             if (emissionPoint is null)
                 errors.Add("El punto de emisión de la factura ya no existe o está inactivo.");
         }
@@ -93,23 +104,34 @@ public sealed class SalesInvoiceElectronicDocumentDataProvider : IElectronicDocu
             errors.Add("La factura no tiene un punto de emisión asignado.");
         }
 
-        var company = await _companyRepository.GetByIdForTenantAsync(reference.CompanyId, reference.TenantId, ct);
+        var company = await _companyRepository.GetByIdForTenantAsync(
+            reference.CompanyId,
+            reference.TenantId,
+            ct
+        );
         if (company is null)
             errors.Add("La empresa emisora no existe.");
 
         var mainEstablishment = await _establishmentRepository.GetMainByCompanyAsync(
-            reference.TenantId, reference.CompanyId, ct);
+            reference.TenantId,
+            reference.CompanyId,
+            ct
+        );
         if (mainEstablishment is null)
             errors.Add("La empresa no tiene un establecimiento matriz configurado.");
 
         var sriSettings = await _sriSettingsRepository.GetByCompanyIdAsync(reference.CompanyId, ct);
         if (sriSettings is null)
-            errors.Add("La empresa no tiene configuración SRI (ambiente / tipo de emisión) definida.");
+            errors.Add(
+                "La empresa no tiene configuración SRI (ambiente / tipo de emisión) definida."
+            );
 
         // Única fuente de verdad del código de tipo de comprobante: el catálogo sri_doc_types.
         // Nunca se asume que invoice.DocTypeCode ("01" por defecto) sigue vigente sin validarlo.
         if (!await _docTypeCatalogResolver.IsActiveElectronicDocTypeAsync(invoice.DocTypeCode, ct))
-            errors.Add($"El tipo de comprobante SRI '{invoice.DocTypeCode}' no está activo o habilitado para emisión electrónica en el catálogo.");
+            errors.Add(
+                $"El tipo de comprobante SRI '{invoice.DocTypeCode}' no está activo o habilitado para emisión electrónica en el catálogo."
+            );
 
         if (errors.Count > 0)
             return Result<ElectronicDocumentData>.ValidationFailure(string.Join(" ", errors));
@@ -125,20 +147,23 @@ public sealed class SalesInvoiceElectronicDocumentDataProvider : IElectronicDocu
                 EstablishmentAddress: emissionPoint.Establishment.Address,
                 EmissionPoint: emissionPoint.Code,
                 Sequential: ExtractSequential(invoice.InvoiceNumber),
-                IssueDate: invoice.IssueDate.ToDateTime(TimeOnly.MinValue)),
+                IssueDate: invoice.IssueDate.ToDateTime(TimeOnly.MinValue)
+            ),
             Issuer: new ElectronicDocumentIssuerData(
                 TaxId: company!.TaxIdentificationNumber,
                 LegalName: company.LegalName,
                 TradeName: company.TradeName,
                 MatrixAddress: mainEstablishment!.Address,
                 TaxRegime: ResolveContribuyenteRimpeText(company.TaxRegime),
-                IsAccountingRequired: company.IsAccountingReq),
+                IsAccountingRequired: company.IsAccountingReq
+            ),
             Counterparty: new ElectronicDocumentCounterpartyData(
                 IdentificationType: invoice.Customer.IdentificationType,
                 IdentificationNumber: invoice.Customer.TaxId,
                 LegalName: invoice.Customer.Name,
                 Address: invoice.Customer.Address,
-                Email: invoice.Customer.Email),
+                Email: invoice.Customer.Email
+            ),
             Details: details,
             TaxSummary: BuildTaxSummary(details),
             Totals: new ElectronicDocumentTotals(
@@ -146,17 +171,20 @@ public sealed class SalesInvoiceElectronicDocumentDataProvider : IElectronicDocu
                 TotalDiscount: invoice.TotalDiscount,
                 TotalTax: invoice.TotalTax,
                 GrandTotal: invoice.GrandTotal,
-                CurrencyCode: invoice.CurrencyCode),
-            Payments: invoice.Payments
-                .Select(p => new ElectronicDocumentPayment(
+                CurrencyCode: invoice.CurrencyCode
+            ),
+            Payments: invoice
+                .Payments.Select(p => new ElectronicDocumentPayment(
                     PaymentMethodCode: invoice.SriPaymentMethodCode!,
                     Amount: p.Amount,
                     Term: null,
-                    TimeUnit: null))
+                    TimeUnit: null
+                ))
                 .ToList(),
             AdditionalInfo: string.IsNullOrWhiteSpace(invoice.Notes)
                 ? []
-                : [new ElectronicDocumentAdditionalField("Observación", invoice.Notes)]);
+                : [new ElectronicDocumentAdditionalField("Observación", invoice.Notes)]
+        );
 
         return Result<ElectronicDocumentData>.Success(data);
     }
@@ -182,7 +210,15 @@ public sealed class SalesInvoiceElectronicDocumentDataProvider : IElectronicDocu
             new("VAT", line.VatCode, line.TaxableBase, line.VatRate, line.VatAmount),
         };
         if (!string.IsNullOrWhiteSpace(line.IceCode))
-            taxes.Add(new ElectronicDocumentDetailTax("ICE", line.IceCode!, line.TaxableBase, line.IceRate, line.IceAmount));
+            taxes.Add(
+                new ElectronicDocumentDetailTax(
+                    "ICE",
+                    line.IceCode!,
+                    line.TaxableBase,
+                    line.IceRate,
+                    line.IceAmount
+                )
+            );
 
         return new ElectronicDocumentDetailLine(
             Code: line.SnapshotSku!,
@@ -191,17 +227,22 @@ public sealed class SalesInvoiceElectronicDocumentDataProvider : IElectronicDocu
             UnitPrice: line.UnitPrice,
             Discount: line.DiscountAmount,
             Subtotal: line.LineSubtotal,
-            Taxes: taxes);
+            Taxes: taxes
+        );
     }
 
     private static IReadOnlyList<ElectronicDocumentTaxSummary> BuildTaxSummary(
-        IReadOnlyList<ElectronicDocumentDetailLine> details)
-        => details
+        IReadOnlyList<ElectronicDocumentDetailLine> details
+    ) =>
+        details
             .SelectMany(d => d.Taxes)
             .GroupBy(t => (t.TaxCode, t.TaxPercentageCode))
             .Select(g => new ElectronicDocumentTaxSummary(
-                g.Key.TaxCode, g.Key.TaxPercentageCode,
-                g.Sum(t => t.TaxableBase), g.Sum(t => t.TaxAmount)))
+                g.Key.TaxCode,
+                g.Key.TaxPercentageCode,
+                g.Sum(t => t.TaxableBase),
+                g.Sum(t => t.TaxAmount)
+            ))
             .ToList();
 
     /// <summary>
@@ -209,6 +250,5 @@ public sealed class SalesInvoiceElectronicDocumentDataProvider : IElectronicDocu
     /// (formato "EST-PTO-SECUENCIAL", ver AuthorizeSalesUseCases) — se extrae, nunca se vuelve
     /// a solicitar a <c>IDocumentSequenceRepository</c> (eso emitiría un número nuevo).
     /// </summary>
-    private static string ExtractSequential(string invoiceNumber)
-        => invoiceNumber.Split('-')[^1];
+    private static string ExtractSequential(string invoiceNumber) => invoiceNumber.Split('-')[^1];
 }

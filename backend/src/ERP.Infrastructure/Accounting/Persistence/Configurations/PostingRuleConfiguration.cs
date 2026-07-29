@@ -15,7 +15,11 @@ public sealed class PostingRuleConfiguration : IEntityTypeConfiguration<PostingR
         builder.Property(x => x.TenantId).HasColumnName("tenant_id").IsRequired();
         builder.Property(x => x.CompanyId).HasColumnName("company_id").IsRequired();
 
-        builder.Property(x => x.SourceModule).HasColumnName("source_module").HasMaxLength(50).IsRequired();
+        builder
+            .Property(x => x.SourceModule)
+            .HasColumnName("source_module")
+            .HasMaxLength(50)
+            .IsRequired();
         builder.Property(x => x.FactType).HasColumnName("fact_type").HasMaxLength(100).IsRequired();
 
         // Columnas planas, sin FK a Account (ADR-026 §6.2 — PostingRule no referencia el
@@ -38,13 +42,20 @@ public sealed class PostingRuleConfiguration : IEntityTypeConfiguration<PostingR
         // uq_pricing_rules_list_item (único sin distinguir IsActive, fuerza deshabilitar/
         // reactivar en vez de duplicar filas). Decisión revisada y confirmada por Database
         // Architecture Review Board antes de la primera migración de Accounting.
-        builder.HasIndex(x => new { x.CompanyId, x.SourceModule, x.FactType })
+        builder
+            .HasIndex(x => new
+            {
+                x.CompanyId,
+                x.SourceModule,
+                x.FactType,
+            })
             .IsUnique()
             .HasDatabaseName("uq_posting_rules_company_source_fact");
 
         // PostingRuleLine — persistencia agregada en Fase 3.5.4. Cascade: una línea de mapeo no
         // tiene sentido de existir sin su regla — borrar la regla borra sus líneas.
-        builder.HasMany(x => x.Lines)
+        builder
+            .HasMany(x => x.Lines)
             .WithOne()
             .HasForeignKey(x => x.PostingRuleId)
             .OnDelete(DeleteBehavior.Cascade);

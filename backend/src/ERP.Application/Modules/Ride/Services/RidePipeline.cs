@@ -55,7 +55,8 @@ public sealed class RidePipeline
         IRideRenderer renderer,
         IRidePdfStorageService storageService,
         IRidePdfDocumentRepository repository,
-        ICurrentUser currentUser)
+        ICurrentUser currentUser
+    )
     {
         _sourceXmlProvider = sourceXmlProvider;
         _parserResolver = parserResolver;
@@ -70,19 +71,42 @@ public sealed class RidePipeline
     }
 
     public async Task<Result<RideGenerationResultDto>> ExecuteAsync(
-        Guid tenantId, Guid companyId, string sourceModule, Guid sourceEntityId, bool forceRegenerate, CancellationToken ct)
+        Guid tenantId,
+        Guid companyId,
+        string sourceModule,
+        Guid sourceEntityId,
+        bool forceRegenerate,
+        CancellationToken ct
+    )
     {
         // 1. Obtener XML autorizado.
-        var sourceResult = await _sourceXmlProvider.GetAuthorizedXmlAsync(tenantId, companyId, sourceModule, sourceEntityId, ct);
+        var sourceResult = await _sourceXmlProvider.GetAuthorizedXmlAsync(
+            tenantId,
+            companyId,
+            sourceModule,
+            sourceEntityId,
+            ct
+        );
         if (!sourceResult.IsSuccess)
             return Result<RideGenerationResultDto>.Failure(
-                sourceResult.Error ?? "No se pudo consultar el documento electrónico de origen.");
+                sourceResult.Error ?? "No se pudo consultar el documento electrónico de origen."
+            );
 
         var lookup = sourceResult.Value!;
         if (lookup.Status == RideSourceXmlStatus.PendingSource)
-            return Success(RideOutcome.PendingSource, storagePath: null, metadata: null, "source_xml_pending");
+            return Success(
+                RideOutcome.PendingSource,
+                storagePath: null,
+                metadata: null,
+                "source_xml_pending"
+            );
         if (lookup.Status == RideSourceXmlStatus.NotApplicable)
-            return Success(RideOutcome.NotApplicable, storagePath: null, metadata: null, "source_not_applicable");
+            return Success(
+                RideOutcome.NotApplicable,
+                storagePath: null,
+                metadata: null,
+                "source_not_applicable"
+            );
 
         var authorizedXml = lookup.AuthorizedXml!;
         var electronicDocumentId = lookup.ElectronicDocumentId;
@@ -91,30 +115,68 @@ public sealed class RidePipeline
         // 2. Resolver parser (Strategy — ADR-025 §9).
         var parser = _parserResolver.Resolve(documentType);
         if (parser is null)
-            return Success(RideOutcome.Failed, storagePath: null, metadata: null, "parser_not_registered");
+            return Success(
+                RideOutcome.Failed,
+                storagePath: null,
+                metadata: null,
+                "parser_not_registered"
+            );
 
         // 3. Resolver plantilla (Strategy — ADR-025 §9).
-        var selector = new RideTemplateSelector(tenantId, companyId, BranchId: null, EmissionPointId: null, documentType);
+        var selector = new RideTemplateSelector(
+            tenantId,
+            companyId,
+            BranchId: null,
+            EmissionPointId: null,
+            documentType
+        );
         var template = _templateResolver.Resolve(selector);
         if (template is null)
-            return Success(RideOutcome.Failed, storagePath: null, metadata: null, "template_not_registered");
+            return Success(
+                RideOutcome.Failed,
+                storagePath: null,
+                metadata: null,
+                "template_not_registered"
+            );
 
         // 4. Consultar estrategia de cache — huella completa (ADR-025 §14).
         var sourceXmlHash = _contentHasher.Compute(authorizedXml);
         var templateId = documentType.ToString();
 
         var cacheResult = await _cacheStrategy.TryGetCachedAsync(
-            tenantId, electronicDocumentId, sourceXmlHash,
-            templateId, NeutralTemplateVersion, NeutralBrandingVersion, NeutralRendererVersion, RideSpecificationVersion, ct);
+            tenantId,
+            electronicDocumentId,
+            sourceXmlHash,
+            templateId,
+            NeutralTemplateVersion,
+            NeutralBrandingVersion,
+            NeutralRendererVersion,
+            RideSpecificationVersion,
+            ct
+        );
         if (!cacheResult.IsSuccess)
-            return Result<RideGenerationResultDto>.Failure(cacheResult.Error ?? "No se pudo consultar el cache de RIDE.");
+            return Result<RideGenerationResultDto>.Failure(
+                cacheResult.Error ?? "No se pudo consultar el cache de RIDE."
+            );
 
         if (!forceRegenerate && cacheResult.Value is { } cachedMetadata)
         {
             var cachedDocument = await _repository.GetByFingerprintAsync(
-                tenantId, electronicDocumentId, sourceXmlHash,
-                NeutralTemplateVersion, NeutralBrandingVersion, NeutralRendererVersion, RideSpecificationVersion, ct);
-            return Success(RideOutcome.Cached, cachedDocument?.StoragePath, cachedMetadata, reasonCode: null);
+                tenantId,
+                electronicDocumentId,
+                sourceXmlHash,
+                NeutralTemplateVersion,
+                NeutralBrandingVersion,
+                NeutralRendererVersion,
+                RideSpecificationVersion,
+                ct
+            );
+            return Success(
+                RideOutcome.Cached,
+                cachedDocument?.StoragePath,
+                cachedMetadata,
+                reasonCode: null
+            );
         }
 
         // 5. Renderizar (solo si corresponde: cache-miss o regeneración forzada).
@@ -123,19 +185,43 @@ public sealed class RidePipeline
         {
             var parseResult = parser.Parse(authorizedXml);
             if (!parseResult.IsSuccess)
-                return Success(RideOutcome.Failed, storagePath: null, metadata: null, "xml_parse_failed");
+                return Success(
+                    RideOutcome.Failed,
+                    storagePath: null,
+                    metadata: null,
+                    "xml_parse_failed"
+                );
 
-            var brandingResult = await _brandingProvider.GetAsync(tenantId, companyId, branchId: null, emissionPointId: null, ct);
+            var brandingResult = await _brandingProvider.GetAsync(
+                tenantId,
+                companyId,
+                branchId: null,
+                emissionPointId: null,
+                ct
+            );
             if (!brandingResult.IsSuccess)
-                return Success(RideOutcome.Failed, storagePath: null, metadata: null, "branding_resolution_failed");
+                return Success(
+                    RideOutcome.Failed,
+                    storagePath: null,
+                    metadata: null,
+                    "branding_resolution_failed"
+                );
 
             var layout = template.Compose(parseResult.Value!, brandingResult.Value!);
             var pdfBytes = await _renderer.RenderAsync(layout, ct);
 
             var storeResult = await _storageService.StoreAsync(
-                tenantId, documentType, electronicDocumentId, NeutralTemplateVersion, pdfBytes, ct);
+                tenantId,
+                documentType,
+                electronicDocumentId,
+                NeutralTemplateVersion,
+                pdfBytes,
+                ct
+            );
             if (!storeResult.IsSuccess)
-                return Result<RideGenerationResultDto>.Failure(storeResult.Error ?? "No se pudo almacenar el PDF generado.");
+                return Result<RideGenerationResultDto>.Failure(
+                    storeResult.Error ?? "No se pudo almacenar el PDF generado."
+                );
 
             storagePath = storeResult.Value!;
         }
@@ -144,7 +230,12 @@ public sealed class RidePipeline
             // Ningún contrato de render/plantilla expone un canal de error tipado (IRideRenderer/
             // IRideTemplate no devuelven Result<T>) — este boundary evita que una falla real de
             // un futuro renderer/plantilla concretos escape como excepción no manejada del pipeline.
-            return Success(RideOutcome.Failed, storagePath: null, metadata: null, $"render_pipeline_error:{ex.GetType().Name}");
+            return Success(
+                RideOutcome.Failed,
+                storagePath: null,
+                metadata: null,
+                $"render_pipeline_error:{ex.GetType().Name}"
+            );
         }
 
         // 6. Persistir.
@@ -152,16 +243,32 @@ public sealed class RidePipeline
         var userId = _currentUser.UserId;
 
         var existing = await _repository.GetByFingerprintAsync(
-            tenantId, electronicDocumentId, sourceXmlHash,
-            NeutralTemplateVersion, NeutralBrandingVersion, NeutralRendererVersion, RideSpecificationVersion, ct);
+            tenantId,
+            electronicDocumentId,
+            sourceXmlHash,
+            NeutralTemplateVersion,
+            NeutralBrandingVersion,
+            NeutralRendererVersion,
+            RideSpecificationVersion,
+            ct
+        );
 
         RidePdfDocument document;
         if (existing is null)
         {
             document = RidePdfDocument.Create(
-                tenantId, companyId, electronicDocumentId, documentType, sourceXmlHash,
-                templateId, NeutralTemplateVersion, NeutralBrandingVersion, NeutralRendererVersion, RideSpecificationVersion,
-                userId);
+                tenantId,
+                companyId,
+                electronicDocumentId,
+                documentType,
+                sourceXmlHash,
+                templateId,
+                NeutralTemplateVersion,
+                NeutralBrandingVersion,
+                NeutralRendererVersion,
+                RideSpecificationVersion,
+                userId
+            );
             document.MarkGenerated(storagePath, generatedAtUtc, userId);
             await _repository.AddAsync(document, ct);
         }
@@ -179,13 +286,25 @@ public sealed class RidePipeline
         await _repository.SaveChangesAsync(ct);
 
         var metadata = new RidePdfMetadataDto(
-            templateId, NeutralTemplateVersion, NeutralBrandingVersion, NeutralRendererVersion,
-            sourceXmlHash.Value, generatedAtUtc, WasCached: false);
+            templateId,
+            NeutralTemplateVersion,
+            NeutralBrandingVersion,
+            NeutralRendererVersion,
+            sourceXmlHash.Value,
+            generatedAtUtc,
+            WasCached: false
+        );
 
         return Success(RideOutcome.Generated, storagePath, metadata, reasonCode: null);
     }
 
     private static Result<RideGenerationResultDto> Success(
-        RideOutcome outcome, string? storagePath, RidePdfMetadataDto? metadata, string? reasonCode)
-        => Result<RideGenerationResultDto>.Success(new RideGenerationResultDto(outcome, storagePath, metadata, reasonCode));
+        RideOutcome outcome,
+        string? storagePath,
+        RidePdfMetadataDto? metadata,
+        string? reasonCode
+    ) =>
+        Result<RideGenerationResultDto>.Success(
+            new RideGenerationResultDto(outcome, storagePath, metadata, reasonCode)
+        );
 }

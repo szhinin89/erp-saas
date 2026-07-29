@@ -47,22 +47,45 @@ public sealed class RevokeCompanyUserMembershipHandlerTests
             CurrentUser.SetupGet(x => x.UserId).Returns(CreatedBy);
         }
 
-        public RevokeCompanyUserMembershipHandler BuildHandler() => new(
-            AccessRepo.Object, CurrentUser.Object, TenantRepo.Object, CompanyProvisioning.Object,
-            PermissionsCache.Object, NavigationBuilder.Object);
+        public RevokeCompanyUserMembershipHandler BuildHandler() =>
+            new(
+                AccessRepo.Object,
+                CurrentUser.Object,
+                TenantRepo.Object,
+                CompanyProvisioning.Object,
+                PermissionsCache.Object,
+                NavigationBuilder.Object
+            );
     }
 
     private static Fixture BuildBaseFixture(
-        IdentityUser user, Tenant tenant, Company company, CompanyUserMembership membership,
-        IReadOnlyList<CompanyUserMembership> activeMemberships)
+        IdentityUser user,
+        Tenant tenant,
+        Company company,
+        CompanyUserMembership membership,
+        IReadOnlyList<CompanyUserMembership> activeMemberships
+    )
     {
         var f = new Fixture();
-        f.TenantRepo.Setup(r => r.GetByIdAsync(tenant.Id, It.IsAny<CancellationToken>())).ReturnsAsync(tenant);
-        f.CompanyProvisioning.Setup(s => s.EnsureDefaultCompanyAsync(tenant, It.IsAny<CancellationToken>())).ReturnsAsync(company);
-        f.AccessRepo.Setup(r => r.GetUserByUsernameAsync(Username, It.IsAny<CancellationToken>())).ReturnsAsync(user);
-        f.AccessRepo.Setup(r => r.GetCompanyUserMembershipAsync(company.Id, user.Id, It.IsAny<CancellationToken>()))
+        f.TenantRepo.Setup(r => r.GetByIdAsync(tenant.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(tenant);
+        f.CompanyProvisioning.Setup(s =>
+                s.EnsureDefaultCompanyAsync(tenant, It.IsAny<CancellationToken>())
+            )
+            .ReturnsAsync(company);
+        f.AccessRepo.Setup(r => r.GetUserByUsernameAsync(Username, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(user);
+        f.AccessRepo.Setup(r =>
+                r.GetCompanyUserMembershipAsync(company.Id, user.Id, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(membership);
-        f.AccessRepo.Setup(r => r.GetCompanyUserMembershipsByCompanyAsync(company.Id, true, It.IsAny<CancellationToken>()))
+        f.AccessRepo.Setup(r =>
+                r.GetCompanyUserMembershipsByCompanyAsync(
+                    company.Id,
+                    true,
+                    It.IsAny<CancellationToken>()
+                )
+            )
             .ReturnsAsync(activeMemberships);
         return f;
     }
@@ -73,18 +96,35 @@ public sealed class RevokeCompanyUserMembershipHandlerTests
         var user = NewUser();
         var tenant = NewTenant();
         var company = NewCompany(tenant.Id);
-        var membership = CompanyUserMembership.Create(company.Id, user.Id, SecurityRoles.Admin, null, CreatedBy);
+        var membership = CompanyUserMembership.Create(
+            company.Id,
+            user.Id,
+            SecurityRoles.Admin,
+            null,
+            CreatedBy
+        );
         var f = BuildBaseFixture(user, tenant, company, membership, new[] { membership });
 
         var handler = f.BuildHandler();
-        var result = await handler.Handle(new RevokeCompanyUserMembershipCommand(tenant.Id, Username), CancellationToken.None);
+        var result = await handler.Handle(
+            new RevokeCompanyUserMembershipCommand(tenant.Id, Username),
+            CancellationToken.None
+        );
 
         result.IsSuccess.Should().BeFalse();
         result.Code.Should().Be(ApiResponseCodes.Common.ValidationError);
         result.Error.Should().Be("La empresa debe conservar al menos un administrador activo.");
         membership.IsActive.Should().BeTrue();
         f.AccessRepo.Verify(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
-        f.PermissionsCache.Verify(c => c.InvalidateUserAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()), Times.Never);
+        f.PermissionsCache.Verify(
+            c =>
+                c.InvalidateUserAsync(
+                    It.IsAny<Guid>(),
+                    It.IsAny<Guid>(),
+                    It.IsAny<CancellationToken>()
+                ),
+            Times.Never
+        );
     }
 
     [Fact]
@@ -93,12 +133,33 @@ public sealed class RevokeCompanyUserMembershipHandlerTests
         var user = NewUser();
         var tenant = NewTenant();
         var company = NewCompany(tenant.Id);
-        var membership = CompanyUserMembership.Create(company.Id, user.Id, SecurityRoles.Admin, null, CreatedBy);
-        var otherAdmin = CompanyUserMembership.Create(company.Id, Guid.NewGuid(), SecurityRoles.Admin, null, CreatedBy);
-        var f = BuildBaseFixture(user, tenant, company, membership, new[] { membership, otherAdmin });
+        var membership = CompanyUserMembership.Create(
+            company.Id,
+            user.Id,
+            SecurityRoles.Admin,
+            null,
+            CreatedBy
+        );
+        var otherAdmin = CompanyUserMembership.Create(
+            company.Id,
+            Guid.NewGuid(),
+            SecurityRoles.Admin,
+            null,
+            CreatedBy
+        );
+        var f = BuildBaseFixture(
+            user,
+            tenant,
+            company,
+            membership,
+            new[] { membership, otherAdmin }
+        );
 
         var handler = f.BuildHandler();
-        var result = await handler.Handle(new RevokeCompanyUserMembershipCommand(tenant.Id, Username), CancellationToken.None);
+        var result = await handler.Handle(
+            new RevokeCompanyUserMembershipCommand(tenant.Id, Username),
+            CancellationToken.None
+        );
 
         result.IsSuccess.Should().BeTrue();
         membership.IsActive.Should().BeFalse();
@@ -112,11 +173,20 @@ public sealed class RevokeCompanyUserMembershipHandlerTests
         var tenant = NewTenant();
         var company = NewCompany(tenant.Id);
         var membership = CompanyUserMembership.Create(company.Id, user.Id, "User", null, CreatedBy);
-        var admin = CompanyUserMembership.Create(company.Id, Guid.NewGuid(), SecurityRoles.Admin, null, CreatedBy);
+        var admin = CompanyUserMembership.Create(
+            company.Id,
+            Guid.NewGuid(),
+            SecurityRoles.Admin,
+            null,
+            CreatedBy
+        );
         var f = BuildBaseFixture(user, tenant, company, membership, new[] { membership, admin });
 
         var handler = f.BuildHandler();
-        var result = await handler.Handle(new RevokeCompanyUserMembershipCommand(tenant.Id, Username), CancellationToken.None);
+        var result = await handler.Handle(
+            new RevokeCompanyUserMembershipCommand(tenant.Id, Username),
+            CancellationToken.None
+        );
 
         result.IsSuccess.Should().BeTrue();
         membership.IsActive.Should().BeFalse();
@@ -129,12 +199,21 @@ public sealed class RevokeCompanyUserMembershipHandlerTests
         var user = NewUser();
         var tenant = NewTenant();
         var company = NewCompany(tenant.Id);
-        var membership = CompanyUserMembership.Create(company.Id, user.Id, SecurityRoles.Admin, null, CreatedBy);
+        var membership = CompanyUserMembership.Create(
+            company.Id,
+            user.Id,
+            SecurityRoles.Admin,
+            null,
+            CreatedBy
+        );
         var f = BuildBaseFixture(user, tenant, company, membership, new[] { membership });
         f.CurrentUser.SetupGet(x => x.UserId).Returns(user.Id); // el propio Admin revocado es quien ejecuta la acción
 
         var handler = f.BuildHandler();
-        var result = await handler.Handle(new RevokeCompanyUserMembershipCommand(tenant.Id, Username), CancellationToken.None);
+        var result = await handler.Handle(
+            new RevokeCompanyUserMembershipCommand(tenant.Id, Username),
+            CancellationToken.None
+        );
 
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Be("La empresa debe conservar al menos un administrador activo.");

@@ -16,19 +16,25 @@ public sealed class CreditTermRepository : ICreditTermRepository
         _company = company;
     }
 
-    private IQueryable<CreditTerm> Scoped(Guid tenantId)
-        => _context.CreditTerms.Include(t => t.Installments).ForOperationalScope(tenantId, _company);
+    private IQueryable<CreditTerm> Scoped(Guid tenantId) =>
+        _context.CreditTerms.Include(t => t.Installments).ForOperationalScope(tenantId, _company);
 
-    public Task<CreditTerm?> GetByIdAsync(Guid tenantId, Guid id, CancellationToken ct = default)
-        => Scoped(tenantId).FirstOrDefaultAsync(t => t.Id == id, ct);
+    public Task<CreditTerm?> GetByIdAsync(Guid tenantId, Guid id, CancellationToken ct = default) =>
+        Scoped(tenantId).FirstOrDefaultAsync(t => t.Id == id, ct);
 
     public async Task<IReadOnlyList<CreditTerm>> GetAllAsync(
-        Guid tenantId, bool? activeFilter, string? search, CancellationToken ct = default)
+        Guid tenantId,
+        bool? activeFilter,
+        string? search,
+        CancellationToken ct = default
+    )
     {
         var q = Scoped(tenantId);
 
-        if (activeFilter is true) q = q.Where(t => t.IsActive);
-        else if (activeFilter is false) q = q.Where(t => !t.IsActive);
+        if (activeFilter is true)
+            q = q.Where(t => t.IsActive);
+        else if (activeFilter is false)
+            q = q.Where(t => !t.IsActive);
 
         if (!string.IsNullOrWhiteSpace(search))
         {
@@ -39,16 +45,21 @@ public sealed class CreditTermRepository : ICreditTermRepository
         return await q.OrderBy(t => t.Code).ToListAsync(ct);
     }
 
-    public async Task<bool> CodeExistsAsync(Guid tenantId, string code, Guid? excludeId, CancellationToken ct = default)
+    public async Task<bool> CodeExistsAsync(
+        Guid tenantId,
+        string code,
+        Guid? excludeId,
+        CancellationToken ct = default
+    )
     {
         var q = Scoped(tenantId).Where(t => t.Code == code.Trim().ToUpperInvariant());
-        if (excludeId.HasValue) q = q.Where(t => t.Id != excludeId.Value);
+        if (excludeId.HasValue)
+            q = q.Where(t => t.Id != excludeId.Value);
         return await q.AnyAsync(ct);
     }
 
-    public Task AddAsync(CreditTerm term, CancellationToken ct = default)
-        => _context.CreditTerms.AddAsync(term, ct).AsTask();
+    public Task AddAsync(CreditTerm term, CancellationToken ct = default) =>
+        _context.CreditTerms.AddAsync(term, ct).AsTask();
 
-    public Task SaveChangesAsync(CancellationToken ct = default)
-        => _context.SaveChangesAsync(ct);
+    public Task SaveChangesAsync(CancellationToken ct = default) => _context.SaveChangesAsync(ct);
 }

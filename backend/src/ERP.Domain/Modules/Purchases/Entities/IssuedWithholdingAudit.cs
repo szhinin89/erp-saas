@@ -18,10 +18,19 @@ public sealed class IssuedWithholdingAudit : AuditRecordBase, ICompanyOperationa
     private IssuedWithholdingAudit() { }
 
     public static IssuedWithholdingAudit Create(
-        AuditActor actor, Guid companyId, Guid withholdingId, Guid purchaseInvoiceId, Guid supplierId,
-        string withholdingNumber, decimal totalRetained, string action, string? reason = null)
+        AuditActor actor,
+        Guid companyId,
+        Guid withholdingId,
+        Guid purchaseInvoiceId,
+        Guid supplierId,
+        string withholdingNumber,
+        decimal totalRetained,
+        string action,
+        string? reason = null
+    )
     {
-        if (companyId == Guid.Empty) throw new ArgumentException("companyId requerido.", nameof(companyId));
+        if (companyId == Guid.Empty)
+            throw new ArgumentException("companyId requerido.", nameof(companyId));
 
         var audit = new IssuedWithholdingAudit
         {

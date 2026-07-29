@@ -21,7 +21,8 @@ public class DashboardController : ControllerBase
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> GetKpis(
         [FromQuery] DateTime? asOf = null,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default
+    )
     {
         var result = await _mediator.Send(new GetDashboardKpisQuery(asOf), cancellationToken);
         return this.ToOkOrBadRequest(result);

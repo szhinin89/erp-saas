@@ -1,4 +1,4 @@
-﻿using ERP.Application.Common.Interfaces;
+using ERP.Application.Common.Interfaces;
 using ERP.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 
@@ -14,27 +14,39 @@ public sealed class SriGlobalRateReader : ISriGlobalRateReader
 
     public SriGlobalRateReader(ErpDbContext db) => _db = db;
 
-    public async Task<decimal?> GetVatPercentageAsync(string code, CancellationToken cancellationToken = default)
+    public async Task<decimal?> GetVatPercentageAsync(
+        string code,
+        CancellationToken cancellationToken = default
+    )
     {
-        var rate = await _db.SriVatRates.AsNoTracking()
+        var rate = await _db
+            .SriVatRates.AsNoTracking()
             .Where(r => r.Code == code && r.IsActive)
             .Select(r => (decimal?)r.Percentage)
             .FirstOrDefaultAsync(cancellationToken);
         return rate;
     }
 
-    public async Task<decimal?> GetIcePercentageAsync(string code, CancellationToken cancellationToken = default)
+    public async Task<decimal?> GetIcePercentageAsync(
+        string code,
+        CancellationToken cancellationToken = default
+    )
     {
-        var rate = await _db.SriIceRates.AsNoTracking()
+        var rate = await _db
+            .SriIceRates.AsNoTracking()
             .Where(r => r.Code == code && r.IsActive)
             .Select(r => r.Percentage)
             .FirstOrDefaultAsync(cancellationToken);
         return rate;
     }
 
-    public async Task<decimal?> GetRetentionPercentageAsync(string code, CancellationToken cancellationToken = default)
+    public async Task<decimal?> GetRetentionPercentageAsync(
+        string code,
+        CancellationToken cancellationToken = default
+    )
     {
-        var rate = await _db.SriRetentionCodes.AsNoTracking()
+        var rate = await _db
+            .SriRetentionCodes.AsNoTracking()
             .Where(r => r.Code == code && r.IsActive)
             .Select(r => (decimal?)r.Percentage)
             .FirstOrDefaultAsync(cancellationToken);

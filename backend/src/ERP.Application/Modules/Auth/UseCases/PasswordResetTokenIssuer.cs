@@ -22,13 +22,23 @@ internal static class PasswordResetTokenIssuer
         string userKind,
         Guid? tenantId,
         int? overrideLifetimeMinutes,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken
+    )
     {
-        await tokenRepository.InvalidateActiveForUserAsync(userId, userKind, tenantId, cancellationToken);
+        await tokenRepository.InvalidateActiveForUserAsync(
+            userId,
+            userKind,
+            tenantId,
+            cancellationToken
+        );
 
         var raw = PasswordResetTokenCrypto.CreateRawToken();
         var hash = PasswordResetTokenCrypto.Hash(raw);
-        var minutes = Math.Clamp(overrideLifetimeMinutes ?? options.Value.TokenLifetimeMinutes, 5, 24 * 60);
+        var minutes = Math.Clamp(
+            overrideLifetimeMinutes ?? options.Value.TokenLifetimeMinutes,
+            5,
+            24 * 60
+        );
         var expires = DateTime.UtcNow.AddMinutes(minutes);
 
         var entity = PasswordResetToken.Create(hash, userId, userKind, tenantId, expires);

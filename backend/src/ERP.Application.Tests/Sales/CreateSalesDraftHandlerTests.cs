@@ -52,34 +52,71 @@ public sealed class CreateSalesDraftHandlerTests
             User.Setup(u => u.UserId).Returns(UserId);
 
             var bp = BusinessPartner.Create(
-                TenantId, "05", "1710034065", PersonType.Natural, "Cliente Test", UserId);
-            BpRepo.Setup(r => r.GetByIdAsync(CustomerId, It.IsAny<CancellationToken>())).ReturnsAsync(bp);
+                TenantId,
+                "05",
+                "1710034065",
+                PersonType.Natural,
+                "Cliente Test",
+                UserId
+            );
+            BpRepo
+                .Setup(r => r.GetByIdAsync(CustomerId, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(bp);
             // El mock siempre devuelve `bp`, independientemente del Id pedido — suficiente para
             // este test, que solo crea un draft con un único cliente.
-            BpRepo.Setup(r => r.GetByIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>())).ReturnsAsync(bp);
+            BpRepo
+                .Setup(r => r.GetByIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(bp);
 
             var role = BusinessPartnerRole.Create(TenantId, bp.Id, RoleType.Customer, UserId);
-            RoleRepo.Setup(r => r.GetByTypeAsync(It.IsAny<Guid>(), RoleType.Customer, It.IsAny<CancellationToken>()))
+            RoleRepo
+                .Setup(r =>
+                    r.GetByTypeAsync(
+                        It.IsAny<Guid>(),
+                        RoleType.Customer,
+                        It.IsAny<CancellationToken>()
+                    )
+                )
                 .ReturnsAsync(role);
 
             var pt = PaymentTerm.Create(TenantId, "CONT", "Contado", 1, 0, UserId);
-            PtRepo.Setup(r => r.ListAsync(TenantId, null, It.IsAny<CancellationToken>()))
+            PtRepo
+                .Setup(r => r.ListAsync(TenantId, null, It.IsAny<CancellationToken>()))
                 .ReturnsAsync(new List<PaymentTerm> { pt });
-            PtRepo.Setup(r => r.GetByIdAsync(TenantId, It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            PtRepo
+                .Setup(r =>
+                    r.GetByIdAsync(TenantId, It.IsAny<Guid>(), It.IsAny<CancellationToken>())
+                )
                 .ReturnsAsync(pt);
 
             Tax.Setup(t => t.GetVatRateWithNameAsync("10", It.IsAny<CancellationToken>()))
                 .ReturnsAsync(new TaxRateResult(15m, "IVA 15%"));
         }
 
-        public CreateSalesDraftHandler BuildHandler() => new(
-            Repo.Object, BpRepo.Object, RoleRepo.Object, PtRepo.Object, PmRepo.Object, ItemRepo.Object,
-            EpRepo.Object, Tax.Object, Pricing.Object,
-            Tenant.Object, Company.Object, Branch.Object, User.Object, CashSession.Object);
+        public CreateSalesDraftHandler BuildHandler() =>
+            new(
+                Repo.Object,
+                BpRepo.Object,
+                RoleRepo.Object,
+                PtRepo.Object,
+                PmRepo.Object,
+                ItemRepo.Object,
+                EpRepo.Object,
+                Tax.Object,
+                Pricing.Object,
+                Tenant.Object,
+                Company.Object,
+                Branch.Object,
+                User.Object,
+                CashSession.Object
+            );
 
-        public static CreateSalesDraftCommand ValidCommand() => new(
-            CustomerId, DateOnly.FromDateTime(DateTime.UtcNow),
-            new List<SalesLineInput> { new(null, "Producto Test", 1, 100m, "10") });
+        public static CreateSalesDraftCommand ValidCommand() =>
+            new(
+                CustomerId,
+                DateOnly.FromDateTime(DateTime.UtcNow),
+                new List<SalesLineInput> { new(null, "Producto Test", 1, 100m, "10") }
+            );
     }
 
     [Fact]
@@ -91,7 +128,9 @@ public sealed class CreateSalesDraftHandlerTests
         f.CashSession.Setup(c => c.HasOpenSession).Returns(true);
         f.CashSession.Setup(c => c.CashSessionId).Returns(cashSessionId);
         f.CashSession.Setup(c => c.EmissionPointId).Returns(emissionPointId);
-        f.EpRepo.Setup(r => r.GetByIdAsync(emissionPointId, TenantId, It.IsAny<CancellationToken>()))
+        f.EpRepo.Setup(r =>
+                r.GetByIdAsync(emissionPointId, TenantId, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync((ERP.Domain.Modules.Company.Entities.EmissionPoint?)null);
 
         SalesInvoice? captured = null;
@@ -120,17 +159,31 @@ public sealed class CreateSalesDraftHandlerTests
 
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Be("No existe una caja abierta para realizar ventas.");
-        f.Repo.Verify(r => r.AddAsync(It.IsAny<SalesInvoice>(), It.IsAny<CancellationToken>()), Times.Never);
-        f.BpRepo.Verify(r => r.GetByIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()), Times.Never,
-            "debe rechazar antes de tocar cualquier otro repositorio si no hay caja abierta");
+        f.Repo.Verify(
+            r => r.AddAsync(It.IsAny<SalesInvoice>(), It.IsAny<CancellationToken>()),
+            Times.Never
+        );
+        f.BpRepo.Verify(
+            r => r.GetByIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()),
+            Times.Never,
+            "debe rechazar antes de tocar cualquier otro repositorio si no hay caja abierta"
+        );
     }
 
     [Fact]
     public void El_cliente_nunca_puede_enviar_EmissionPointId_ni_CashSessionId()
     {
-        typeof(CreateSalesDraftCommand).GetProperty("EmissionPointId").Should().BeNull(
-            "el punto de emisión se resuelve desde ICurrentCashSession, nunca desde el cliente");
-        typeof(CreateSalesDraftCommand).GetProperty("CashSessionId").Should().BeNull(
-            "la sesión de caja se resuelve desde ICurrentCashSession, nunca desde el cliente");
+        typeof(CreateSalesDraftCommand)
+            .GetProperty("EmissionPointId")
+            .Should()
+            .BeNull(
+                "el punto de emisión se resuelve desde ICurrentCashSession, nunca desde el cliente"
+            );
+        typeof(CreateSalesDraftCommand)
+            .GetProperty("CashSessionId")
+            .Should()
+            .BeNull(
+                "la sesión de caja se resuelve desde ICurrentCashSession, nunca desde el cliente"
+            );
     }
 }

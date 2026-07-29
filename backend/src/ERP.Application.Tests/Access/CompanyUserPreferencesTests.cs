@@ -18,8 +18,8 @@ public sealed class CreateCompanyUserPreferencesCommandValidatorTests
 {
     private static readonly CreateCompanyUserPreferencesCommandValidator Validator = new();
 
-    private static CreateCompanyUserPreferencesCommand ValidCommand() => new(
-        Guid.NewGuid(), nameof(CompanyUserLoginMode.AskBranch), null);
+    private static CreateCompanyUserPreferencesCommand ValidCommand() =>
+        new(Guid.NewGuid(), nameof(CompanyUserLoginMode.AskBranch), null);
 
     [Fact]
     public void Command_valido_no_tiene_errores()
@@ -30,22 +30,38 @@ public sealed class CreateCompanyUserPreferencesCommandValidatorTests
     [Fact]
     public void CompanyUserMembershipId_vacio_es_invalido()
     {
-        var result = Validator.Validate(ValidCommand() with { CompanyUserMembershipId = Guid.Empty });
-        result.Errors.Should().Contain(e => e.PropertyName == nameof(CreateCompanyUserPreferencesCommand.CompanyUserMembershipId));
+        var result = Validator.Validate(
+            ValidCommand() with
+            {
+                CompanyUserMembershipId = Guid.Empty,
+            }
+        );
+        result
+            .Errors.Should()
+            .Contain(e =>
+                e.PropertyName
+                == nameof(CreateCompanyUserPreferencesCommand.CompanyUserMembershipId)
+            );
     }
 
     [Fact]
     public void LoginMode_desconocido_es_invalido()
     {
         var result = Validator.Validate(ValidCommand() with { LoginMode = "NoExiste" });
-        result.Errors.Should().Contain(e => e.PropertyName == nameof(CreateCompanyUserPreferencesCommand.LoginMode));
+        result
+            .Errors.Should()
+            .Contain(e => e.PropertyName == nameof(CreateCompanyUserPreferencesCommand.LoginMode));
     }
 
     [Fact]
     public void DefaultBranchId_Guid_Empty_es_invalido()
     {
         var result = Validator.Validate(ValidCommand() with { DefaultBranchId = Guid.Empty });
-        result.Errors.Should().Contain(e => e.PropertyName == nameof(CreateCompanyUserPreferencesCommand.DefaultBranchId));
+        result
+            .Errors.Should()
+            .Contain(e =>
+                e.PropertyName == nameof(CreateCompanyUserPreferencesCommand.DefaultBranchId)
+            );
     }
 }
 
@@ -53,8 +69,8 @@ public sealed class UpdateCompanyUserPreferencesCommandValidatorTests
 {
     private static readonly UpdateCompanyUserPreferencesCommandValidator Validator = new();
 
-    private static UpdateCompanyUserPreferencesCommand ValidCommand() => new(
-        Guid.NewGuid(), nameof(CompanyUserLoginMode.AskBranch), null);
+    private static UpdateCompanyUserPreferencesCommand ValidCommand() =>
+        new(Guid.NewGuid(), nameof(CompanyUserLoginMode.AskBranch), null);
 
     [Fact]
     public void Command_valido_no_tiene_errores()
@@ -66,7 +82,9 @@ public sealed class UpdateCompanyUserPreferencesCommandValidatorTests
     public void LoginMode_desconocido_es_invalido()
     {
         var result = Validator.Validate(ValidCommand() with { LoginMode = "NoExiste" });
-        result.Errors.Should().Contain(e => e.PropertyName == nameof(UpdateCompanyUserPreferencesCommand.LoginMode));
+        result
+            .Errors.Should()
+            .Contain(e => e.PropertyName == nameof(UpdateCompanyUserPreferencesCommand.LoginMode));
     }
 }
 
@@ -85,12 +103,22 @@ public sealed class CompanyUserPreferencesMapperTests
         var membershipId = Guid.NewGuid();
         var branchId = Guid.NewGuid();
         var entity = CompanyUserPreferences.Create(
-            tenantId, companyId, membershipId, CompanyUserLoginMode.DirectToDefault, branchId, Guid.NewGuid());
+            tenantId,
+            companyId,
+            membershipId,
+            CompanyUserLoginMode.DirectToDefault,
+            branchId,
+            Guid.NewGuid()
+        );
         var repo = new Mock<ICompanyUserPreferencesRepository>();
-        repo.Setup(r => r.GetByMembershipAsync(membershipId, It.IsAny<CancellationToken>())).ReturnsAsync(entity);
+        repo.Setup(r => r.GetByMembershipAsync(membershipId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(entity);
 
         var handler = new GetCompanyUserPreferencesHandler(repo.Object);
-        var result = await handler.Handle(new GetCompanyUserPreferencesQuery(membershipId), CancellationToken.None);
+        var result = await handler.Handle(
+            new GetCompanyUserPreferencesQuery(membershipId),
+            CancellationToken.None
+        );
 
         var dto = result.Value!;
         dto.Id.Should().Be(entity.Id);
@@ -118,10 +146,33 @@ public sealed class CreateCompanyUserPreferencesHandlerTests
 
     private static Branch BranchEntity(Guid tenantId) =>
         Branch.Create(
-            tenantId, "Matriz", "Av. Principal 123", "001",
-            null, null, null, null, null, null, null, null, null, null, null,
-            null, null, null, null, null, null, null, null, true, Guid.NewGuid(),
-            companyId: CompanyId);
+            tenantId,
+            "Matriz",
+            "Av. Principal 123",
+            "001",
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            true,
+            Guid.NewGuid(),
+            companyId: CompanyId
+        );
 
     private sealed class Fixture
     {
@@ -137,14 +188,22 @@ public sealed class CreateCompanyUserPreferencesHandlerTests
             CurrentUser.SetupGet(x => x.UserId).Returns(ActorUserId);
         }
 
-        public CreateCompanyUserPreferencesHandler BuildHandler() => new(
-            AccessRepository.Object, CompanyRepository.Object, BranchRepository.Object,
-            CompanyUserBranchRepository.Object, PreferencesRepository.Object, CurrentUser.Object);
+        public CreateCompanyUserPreferencesHandler BuildHandler() =>
+            new(
+                AccessRepository.Object,
+                CompanyRepository.Object,
+                BranchRepository.Object,
+                CompanyUserBranchRepository.Object,
+                PreferencesRepository.Object,
+                CurrentUser.Object
+            );
     }
 
     private static CreateCompanyUserPreferencesCommand Command(
-        Guid membershipId, string loginMode = nameof(CompanyUserLoginMode.AskBranch), Guid? defaultBranchId = null) =>
-        new(membershipId, loginMode, defaultBranchId);
+        Guid membershipId,
+        string loginMode = nameof(CompanyUserLoginMode.AskBranch),
+        Guid? defaultBranchId = null
+    ) => new(membershipId, loginMode, defaultBranchId);
 
     [Fact]
     public async Task Creacion_valida_persiste_y_devuelve_el_dto()
@@ -152,9 +211,13 @@ public sealed class CreateCompanyUserPreferencesHandlerTests
         var f = new Fixture();
         var membership = Membership();
         var tenantId = Guid.NewGuid();
-        f.AccessRepository.Setup(r => r.GetCompanyUserMembershipByIdAsync(membership.Id, It.IsAny<CancellationToken>()))
+        f.AccessRepository.Setup(r =>
+                r.GetCompanyUserMembershipByIdAsync(membership.Id, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(membership);
-        f.PreferencesRepository.Setup(r => r.ExistsAsync(membership.Id, It.IsAny<CancellationToken>()))
+        f.PreferencesRepository.Setup(r =>
+                r.ExistsAsync(membership.Id, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(false);
         f.CompanyRepository.Setup(r => r.GetByIdAsync(CompanyId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(CompanyEntity(tenantId));
@@ -167,10 +230,20 @@ public sealed class CreateCompanyUserPreferencesHandlerTests
         result.Value.TenantId.Should().Be(tenantId);
         result.Value.LoginMode.Should().Be(nameof(CompanyUserLoginMode.AskBranch));
 
-        f.PreferencesRepository.Verify(r => r.AddAsync(
-            It.Is<CompanyUserPreferences>(p => p.CompanyUserMembershipId == membership.Id && p.CreatedBy == ActorUserId),
-            It.IsAny<CancellationToken>()), Times.Once);
-        f.PreferencesRepository.Verify(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
+        f.PreferencesRepository.Verify(
+            r =>
+                r.AddAsync(
+                    It.Is<CompanyUserPreferences>(p =>
+                        p.CompanyUserMembershipId == membership.Id && p.CreatedBy == ActorUserId
+                    ),
+                    It.IsAny<CancellationToken>()
+                ),
+            Times.Once
+        );
+        f.PreferencesRepository.Verify(
+            r => r.SaveChangesAsync(It.IsAny<CancellationToken>()),
+            Times.Once
+        );
     }
 
     [Fact]
@@ -178,9 +251,13 @@ public sealed class CreateCompanyUserPreferencesHandlerTests
     {
         var f = new Fixture();
         var membership = Membership();
-        f.AccessRepository.Setup(r => r.GetCompanyUserMembershipByIdAsync(membership.Id, It.IsAny<CancellationToken>()))
+        f.AccessRepository.Setup(r =>
+                r.GetCompanyUserMembershipByIdAsync(membership.Id, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(membership);
-        f.PreferencesRepository.Setup(r => r.ExistsAsync(membership.Id, It.IsAny<CancellationToken>()))
+        f.PreferencesRepository.Setup(r =>
+                r.ExistsAsync(membership.Id, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(true);
 
         var handler = f.BuildHandler();
@@ -188,7 +265,10 @@ public sealed class CreateCompanyUserPreferencesHandlerTests
 
         result.IsSuccess.Should().BeFalse();
         result.Code.Should().Be(ApiResponseCodes.Common.Conflict);
-        f.PreferencesRepository.Verify(r => r.AddAsync(It.IsAny<CompanyUserPreferences>(), It.IsAny<CancellationToken>()), Times.Never);
+        f.PreferencesRepository.Verify(
+            r => r.AddAsync(It.IsAny<CompanyUserPreferences>(), It.IsAny<CancellationToken>()),
+            Times.Never
+        );
     }
 
     [Fact]
@@ -196,7 +276,12 @@ public sealed class CreateCompanyUserPreferencesHandlerTests
     {
         var f = new Fixture();
         var missingMembershipId = Guid.NewGuid();
-        f.AccessRepository.Setup(r => r.GetCompanyUserMembershipByIdAsync(missingMembershipId, It.IsAny<CancellationToken>()))
+        f.AccessRepository.Setup(r =>
+                r.GetCompanyUserMembershipByIdAsync(
+                    missingMembershipId,
+                    It.IsAny<CancellationToken>()
+                )
+            )
             .ReturnsAsync((CompanyUserMembership?)null);
 
         var handler = f.BuildHandler();
@@ -204,7 +289,10 @@ public sealed class CreateCompanyUserPreferencesHandlerTests
 
         result.IsSuccess.Should().BeFalse();
         result.Code.Should().Be(ApiResponseCodes.Common.NotFound);
-        f.PreferencesRepository.Verify(r => r.ExistsAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()), Times.Never);
+        f.PreferencesRepository.Verify(
+            r => r.ExistsAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()),
+            Times.Never
+        );
     }
 
     [Fact]
@@ -213,22 +301,33 @@ public sealed class CreateCompanyUserPreferencesHandlerTests
         var f = new Fixture();
         var membership = Membership();
         var tenantId = Guid.NewGuid();
-        f.AccessRepository.Setup(r => r.GetCompanyUserMembershipByIdAsync(membership.Id, It.IsAny<CancellationToken>()))
+        f.AccessRepository.Setup(r =>
+                r.GetCompanyUserMembershipByIdAsync(membership.Id, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(membership);
-        f.PreferencesRepository.Setup(r => r.ExistsAsync(membership.Id, It.IsAny<CancellationToken>()))
+        f.PreferencesRepository.Setup(r =>
+                r.ExistsAsync(membership.Id, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(false);
         f.CompanyRepository.Setup(r => r.GetByIdAsync(CompanyId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(CompanyEntity(tenantId));
-        f.BranchRepository.Setup(r => r.GetByIdAsync(tenantId, BranchId, It.IsAny<CancellationToken>()))
+        f.BranchRepository.Setup(r =>
+                r.GetByIdAsync(tenantId, BranchId, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync((Branch?)null);
 
         var handler = f.BuildHandler();
         var result = await handler.Handle(
-            Command(membership.Id, nameof(CompanyUserLoginMode.DirectToDefault), BranchId), CancellationToken.None);
+            Command(membership.Id, nameof(CompanyUserLoginMode.DirectToDefault), BranchId),
+            CancellationToken.None
+        );
 
         result.IsSuccess.Should().BeFalse();
         result.Code.Should().Be(ApiResponseCodes.Common.NotFound);
-        f.PreferencesRepository.Verify(r => r.AddAsync(It.IsAny<CompanyUserPreferences>(), It.IsAny<CancellationToken>()), Times.Never);
+        f.PreferencesRepository.Verify(
+            r => r.AddAsync(It.IsAny<CompanyUserPreferences>(), It.IsAny<CancellationToken>()),
+            Times.Never
+        );
     }
 
     /// <summary>
@@ -243,25 +342,41 @@ public sealed class CreateCompanyUserPreferencesHandlerTests
         var f = new Fixture();
         var membership = Membership();
         var tenantId = Guid.NewGuid();
-        f.AccessRepository.Setup(r => r.GetCompanyUserMembershipByIdAsync(membership.Id, It.IsAny<CancellationToken>()))
+        f.AccessRepository.Setup(r =>
+                r.GetCompanyUserMembershipByIdAsync(membership.Id, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(membership);
-        f.PreferencesRepository.Setup(r => r.ExistsAsync(membership.Id, It.IsAny<CancellationToken>()))
+        f.PreferencesRepository.Setup(r =>
+                r.ExistsAsync(membership.Id, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(false);
         f.CompanyRepository.Setup(r => r.GetByIdAsync(CompanyId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(CompanyEntity(tenantId));
-        f.BranchRepository.Setup(r => r.GetByIdAsync(tenantId, BranchId, It.IsAny<CancellationToken>()))
+        f.BranchRepository.Setup(r =>
+                r.GetByIdAsync(tenantId, BranchId, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(BranchEntity(tenantId));
-        f.CompanyUserBranchRepository.Setup(r => r.ExistsAsync(membership.Id, BranchId, It.IsAny<CancellationToken>()))
+        f.CompanyUserBranchRepository.Setup(r =>
+                r.ExistsAsync(membership.Id, BranchId, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(false);
 
         var handler = f.BuildHandler();
         var result = await handler.Handle(
-            Command(membership.Id, nameof(CompanyUserLoginMode.DirectToDefault), BranchId), CancellationToken.None);
+            Command(membership.Id, nameof(CompanyUserLoginMode.DirectToDefault), BranchId),
+            CancellationToken.None
+        );
 
         result.IsSuccess.Should().BeFalse();
         result.Code.Should().Be(ApiResponseCodes.Common.ValidationError);
-        f.CompanyUserBranchRepository.Verify(r => r.AddAsync(It.IsAny<CompanyUserBranch>(), It.IsAny<CancellationToken>()), Times.Never);
-        f.PreferencesRepository.Verify(r => r.AddAsync(It.IsAny<CompanyUserPreferences>(), It.IsAny<CancellationToken>()), Times.Never);
+        f.CompanyUserBranchRepository.Verify(
+            r => r.AddAsync(It.IsAny<CompanyUserBranch>(), It.IsAny<CancellationToken>()),
+            Times.Never
+        );
+        f.PreferencesRepository.Verify(
+            r => r.AddAsync(It.IsAny<CompanyUserPreferences>(), It.IsAny<CancellationToken>()),
+            Times.Never
+        );
     }
 
     /// <summary>
@@ -278,24 +393,37 @@ public sealed class CreateCompanyUserPreferencesHandlerTests
         var tenantId = Guid.NewGuid();
         var inactiveBranch = BranchEntity(tenantId);
         inactiveBranch.Disable(Guid.NewGuid());
-        f.AccessRepository.Setup(r => r.GetCompanyUserMembershipByIdAsync(membership.Id, It.IsAny<CancellationToken>()))
+        f.AccessRepository.Setup(r =>
+                r.GetCompanyUserMembershipByIdAsync(membership.Id, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(membership);
-        f.PreferencesRepository.Setup(r => r.ExistsAsync(membership.Id, It.IsAny<CancellationToken>()))
+        f.PreferencesRepository.Setup(r =>
+                r.ExistsAsync(membership.Id, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(false);
         f.CompanyRepository.Setup(r => r.GetByIdAsync(CompanyId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(CompanyEntity(tenantId));
-        f.BranchRepository.Setup(r => r.GetByIdAsync(tenantId, BranchId, It.IsAny<CancellationToken>()))
+        f.BranchRepository.Setup(r =>
+                r.GetByIdAsync(tenantId, BranchId, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(inactiveBranch);
-        f.CompanyUserBranchRepository.Setup(r => r.ExistsAsync(membership.Id, BranchId, It.IsAny<CancellationToken>()))
+        f.CompanyUserBranchRepository.Setup(r =>
+                r.ExistsAsync(membership.Id, BranchId, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(true);
 
         var handler = f.BuildHandler();
         var result = await handler.Handle(
-            Command(membership.Id, nameof(CompanyUserLoginMode.DirectToDefault), BranchId), CancellationToken.None);
+            Command(membership.Id, nameof(CompanyUserLoginMode.DirectToDefault), BranchId),
+            CancellationToken.None
+        );
 
         result.IsSuccess.Should().BeFalse();
         result.Code.Should().Be(ApiResponseCodes.Common.ValidationError);
-        f.PreferencesRepository.Verify(r => r.AddAsync(It.IsAny<CompanyUserPreferences>(), It.IsAny<CancellationToken>()), Times.Never);
+        f.PreferencesRepository.Verify(
+            r => r.AddAsync(It.IsAny<CompanyUserPreferences>(), It.IsAny<CancellationToken>()),
+            Times.Never
+        );
     }
 
     [Fact]
@@ -304,20 +432,33 @@ public sealed class CreateCompanyUserPreferencesHandlerTests
         var f = new Fixture();
         var membership = Membership();
         var tenantId = Guid.NewGuid();
-        f.AccessRepository.Setup(r => r.GetCompanyUserMembershipByIdAsync(membership.Id, It.IsAny<CancellationToken>()))
+        f.AccessRepository.Setup(r =>
+                r.GetCompanyUserMembershipByIdAsync(membership.Id, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(membership);
-        f.PreferencesRepository.Setup(r => r.ExistsAsync(membership.Id, It.IsAny<CancellationToken>()))
+        f.PreferencesRepository.Setup(r =>
+                r.ExistsAsync(membership.Id, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(false);
         f.CompanyRepository.Setup(r => r.GetByIdAsync(CompanyId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(CompanyEntity(tenantId));
 
         var handler = f.BuildHandler();
         var result = await handler.Handle(
-            Command(membership.Id, nameof(CompanyUserLoginMode.DirectToDefault), defaultBranchId: null), CancellationToken.None);
+            Command(
+                membership.Id,
+                nameof(CompanyUserLoginMode.DirectToDefault),
+                defaultBranchId: null
+            ),
+            CancellationToken.None
+        );
 
         result.IsSuccess.Should().BeFalse();
         result.Code.Should().Be(ApiResponseCodes.Common.ValidationError);
-        f.BranchRepository.Verify(r => r.GetByIdAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()), Times.Never);
+        f.BranchRepository.Verify(
+            r => r.GetByIdAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()),
+            Times.Never
+        );
     }
 
     [Fact]
@@ -326,16 +467,22 @@ public sealed class CreateCompanyUserPreferencesHandlerTests
         var f = new Fixture();
         var membership = Membership();
         var tenantId = Guid.NewGuid();
-        f.AccessRepository.Setup(r => r.GetCompanyUserMembershipByIdAsync(membership.Id, It.IsAny<CancellationToken>()))
+        f.AccessRepository.Setup(r =>
+                r.GetCompanyUserMembershipByIdAsync(membership.Id, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(membership);
-        f.PreferencesRepository.Setup(r => r.ExistsAsync(membership.Id, It.IsAny<CancellationToken>()))
+        f.PreferencesRepository.Setup(r =>
+                r.ExistsAsync(membership.Id, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(false);
         f.CompanyRepository.Setup(r => r.GetByIdAsync(CompanyId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(CompanyEntity(tenantId));
 
         var handler = f.BuildHandler();
         var result = await handler.Handle(
-            Command(membership.Id, nameof(CompanyUserLoginMode.AskBranch), defaultBranchId: null), CancellationToken.None);
+            Command(membership.Id, nameof(CompanyUserLoginMode.AskBranch), defaultBranchId: null),
+            CancellationToken.None
+        );
 
         result.IsSuccess.Should().BeTrue();
         result.Value!.DefaultBranchId.Should().BeNull();
@@ -351,15 +498,47 @@ public sealed class UpdateCompanyUserPreferencesHandlerTests
     private static readonly Guid ActorUserId = Guid.NewGuid();
 
     private static CompanyUserPreferences Existing(
-        CompanyUserLoginMode loginMode = CompanyUserLoginMode.AskBranch, Guid? defaultBranchId = null) =>
-        CompanyUserPreferences.Create(TenantId, CompanyId, MembershipId, loginMode, defaultBranchId, Guid.NewGuid());
+        CompanyUserLoginMode loginMode = CompanyUserLoginMode.AskBranch,
+        Guid? defaultBranchId = null
+    ) =>
+        CompanyUserPreferences.Create(
+            TenantId,
+            CompanyId,
+            MembershipId,
+            loginMode,
+            defaultBranchId,
+            Guid.NewGuid()
+        );
 
     private static Branch BranchEntity() =>
         Branch.Create(
-            TenantId, "Matriz", "Av. Principal 123", "001",
-            null, null, null, null, null, null, null, null, null, null, null,
-            null, null, null, null, null, null, null, null, true, Guid.NewGuid(),
-            companyId: CompanyId);
+            TenantId,
+            "Matriz",
+            "Av. Principal 123",
+            "001",
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            true,
+            Guid.NewGuid(),
+            companyId: CompanyId
+        );
 
     private sealed class Fixture
     {
@@ -373,42 +552,61 @@ public sealed class UpdateCompanyUserPreferencesHandlerTests
             CurrentUser.SetupGet(x => x.UserId).Returns(ActorUserId);
         }
 
-        public UpdateCompanyUserPreferencesHandler BuildHandler() => new(
-            PreferencesRepository.Object, BranchRepository.Object, CompanyUserBranchRepository.Object, CurrentUser.Object);
+        public UpdateCompanyUserPreferencesHandler BuildHandler() =>
+            new(
+                PreferencesRepository.Object,
+                BranchRepository.Object,
+                CompanyUserBranchRepository.Object,
+                CurrentUser.Object
+            );
     }
 
     private static UpdateCompanyUserPreferencesCommand Command(
-        string loginMode = nameof(CompanyUserLoginMode.AskBranch), Guid? defaultBranchId = null) =>
-        new(MembershipId, loginMode, defaultBranchId);
+        string loginMode = nameof(CompanyUserLoginMode.AskBranch),
+        Guid? defaultBranchId = null
+    ) => new(MembershipId, loginMode, defaultBranchId);
 
     [Fact]
     public async Task Actualizacion_valida_cambia_sucursal_y_modo_sin_tocar_CompanyUserMembership()
     {
         var f = new Fixture();
         var existing = Existing();
-        f.PreferencesRepository.Setup(r => r.GetByMembershipAsync(MembershipId, It.IsAny<CancellationToken>()))
+        f.PreferencesRepository.Setup(r =>
+                r.GetByMembershipAsync(MembershipId, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(existing);
-        f.BranchRepository.Setup(r => r.GetByIdAsync(TenantId, BranchId, It.IsAny<CancellationToken>()))
+        f.BranchRepository.Setup(r =>
+                r.GetByIdAsync(TenantId, BranchId, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(BranchEntity());
-        f.CompanyUserBranchRepository.Setup(r => r.ExistsAsync(MembershipId, BranchId, It.IsAny<CancellationToken>()))
+        f.CompanyUserBranchRepository.Setup(r =>
+                r.ExistsAsync(MembershipId, BranchId, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(true);
 
         var handler = f.BuildHandler();
         var result = await handler.Handle(
-            Command(nameof(CompanyUserLoginMode.DirectToDefault), BranchId), CancellationToken.None);
+            Command(nameof(CompanyUserLoginMode.DirectToDefault), BranchId),
+            CancellationToken.None
+        );
 
         result.IsSuccess.Should().BeTrue();
         existing.DefaultBranchId.Should().Be(BranchId);
         existing.LoginMode.Should().Be(CompanyUserLoginMode.DirectToDefault);
         existing.UpdatedBy.Should().Be(ActorUserId);
-        f.PreferencesRepository.Verify(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
+        f.PreferencesRepository.Verify(
+            r => r.SaveChangesAsync(It.IsAny<CancellationToken>()),
+            Times.Once
+        );
     }
 
     [Fact]
     public async Task Preferencias_inexistentes_devuelve_NotFound_y_no_llama_a_SaveChanges()
     {
         var f = new Fixture();
-        f.PreferencesRepository.Setup(r => r.GetByMembershipAsync(MembershipId, It.IsAny<CancellationToken>()))
+        f.PreferencesRepository.Setup(r =>
+                r.GetByMembershipAsync(MembershipId, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync((CompanyUserPreferences?)null);
 
         var handler = f.BuildHandler();
@@ -416,7 +614,10 @@ public sealed class UpdateCompanyUserPreferencesHandlerTests
 
         result.IsSuccess.Should().BeFalse();
         result.Code.Should().Be(ApiResponseCodes.Common.NotFound);
-        f.PreferencesRepository.Verify(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
+        f.PreferencesRepository.Verify(
+            r => r.SaveChangesAsync(It.IsAny<CancellationToken>()),
+            Times.Never
+        );
     }
 
     [Fact]
@@ -424,21 +625,32 @@ public sealed class UpdateCompanyUserPreferencesHandlerTests
     {
         var f = new Fixture();
         var existing = Existing();
-        f.PreferencesRepository.Setup(r => r.GetByMembershipAsync(MembershipId, It.IsAny<CancellationToken>()))
+        f.PreferencesRepository.Setup(r =>
+                r.GetByMembershipAsync(MembershipId, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(existing);
-        f.BranchRepository.Setup(r => r.GetByIdAsync(TenantId, BranchId, It.IsAny<CancellationToken>()))
+        f.BranchRepository.Setup(r =>
+                r.GetByIdAsync(TenantId, BranchId, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(BranchEntity());
-        f.CompanyUserBranchRepository.Setup(r => r.ExistsAsync(MembershipId, BranchId, It.IsAny<CancellationToken>()))
+        f.CompanyUserBranchRepository.Setup(r =>
+                r.ExistsAsync(MembershipId, BranchId, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(false);
 
         var handler = f.BuildHandler();
         var result = await handler.Handle(
-            Command(nameof(CompanyUserLoginMode.DirectToDefault), BranchId), CancellationToken.None);
+            Command(nameof(CompanyUserLoginMode.DirectToDefault), BranchId),
+            CancellationToken.None
+        );
 
         result.IsSuccess.Should().BeFalse();
         result.Code.Should().Be(ApiResponseCodes.Common.ValidationError);
         existing.DefaultBranchId.Should().BeNull();
-        f.PreferencesRepository.Verify(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
+        f.PreferencesRepository.Verify(
+            r => r.SaveChangesAsync(It.IsAny<CancellationToken>()),
+            Times.Never
+        );
     }
 
     /// <summary>Fase H — mismo hallazgo que en CreateCompanyUserPreferencesHandlerTests: una
@@ -451,20 +663,31 @@ public sealed class UpdateCompanyUserPreferencesHandlerTests
         var existing = Existing();
         var inactiveBranch = BranchEntity();
         inactiveBranch.Disable(Guid.NewGuid());
-        f.PreferencesRepository.Setup(r => r.GetByMembershipAsync(MembershipId, It.IsAny<CancellationToken>()))
+        f.PreferencesRepository.Setup(r =>
+                r.GetByMembershipAsync(MembershipId, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(existing);
-        f.BranchRepository.Setup(r => r.GetByIdAsync(TenantId, BranchId, It.IsAny<CancellationToken>()))
+        f.BranchRepository.Setup(r =>
+                r.GetByIdAsync(TenantId, BranchId, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(inactiveBranch);
-        f.CompanyUserBranchRepository.Setup(r => r.ExistsAsync(MembershipId, BranchId, It.IsAny<CancellationToken>()))
+        f.CompanyUserBranchRepository.Setup(r =>
+                r.ExistsAsync(MembershipId, BranchId, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(true);
 
         var handler = f.BuildHandler();
         var result = await handler.Handle(
-            Command(nameof(CompanyUserLoginMode.DirectToDefault), BranchId), CancellationToken.None);
+            Command(nameof(CompanyUserLoginMode.DirectToDefault), BranchId),
+            CancellationToken.None
+        );
 
         result.IsSuccess.Should().BeFalse();
         result.Code.Should().Be(ApiResponseCodes.Common.ValidationError);
-        f.PreferencesRepository.Verify(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
+        f.PreferencesRepository.Verify(
+            r => r.SaveChangesAsync(It.IsAny<CancellationToken>()),
+            Times.Never
+        );
     }
 }
 
@@ -475,12 +698,22 @@ public sealed class GetCompanyUserPreferencesHandlerTests
     {
         var membershipId = Guid.NewGuid();
         var entity = CompanyUserPreferences.Create(
-            Guid.NewGuid(), Guid.NewGuid(), membershipId, CompanyUserLoginMode.AskBranch, null, Guid.NewGuid());
+            Guid.NewGuid(),
+            Guid.NewGuid(),
+            membershipId,
+            CompanyUserLoginMode.AskBranch,
+            null,
+            Guid.NewGuid()
+        );
         var repo = new Mock<ICompanyUserPreferencesRepository>();
-        repo.Setup(r => r.GetByMembershipAsync(membershipId, It.IsAny<CancellationToken>())).ReturnsAsync(entity);
+        repo.Setup(r => r.GetByMembershipAsync(membershipId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(entity);
 
         var handler = new GetCompanyUserPreferencesHandler(repo.Object);
-        var result = await handler.Handle(new GetCompanyUserPreferencesQuery(membershipId), CancellationToken.None);
+        var result = await handler.Handle(
+            new GetCompanyUserPreferencesQuery(membershipId),
+            CancellationToken.None
+        );
 
         result.IsSuccess.Should().BeTrue();
         result.Value.Should().NotBeNull();
@@ -496,10 +729,16 @@ public sealed class GetCompanyUserPreferencesHandlerTests
             .ReturnsAsync((CompanyUserPreferences?)null);
 
         var handler = new GetCompanyUserPreferencesHandler(repo.Object);
-        var result = await handler.Handle(new GetCompanyUserPreferencesQuery(membershipId), CancellationToken.None);
+        var result = await handler.Handle(
+            new GetCompanyUserPreferencesQuery(membershipId),
+            CancellationToken.None
+        );
 
         result.IsSuccess.Should().BeTrue();
         result.Value.Should().BeNull();
-        repo.Verify(r => r.AddAsync(It.IsAny<CompanyUserPreferences>(), It.IsAny<CancellationToken>()), Times.Never);
+        repo.Verify(
+            r => r.AddAsync(It.IsAny<CompanyUserPreferences>(), It.IsAny<CancellationToken>()),
+            Times.Never
+        );
     }
 }

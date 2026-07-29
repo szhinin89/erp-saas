@@ -9,7 +9,10 @@ public sealed class ItemTaxConfigTests
     public void Create_con_todos_los_codigos_nulos_no_lanza()
     {
         var act = () => ItemTaxConfig.Create(null, null, null);
-        act.Should().NotThrow("un código nulo significa que el impuesto no aplica — ya no es un error de validación.");
+        act.Should()
+            .NotThrow(
+                "un código nulo significa que el impuesto no aplica — ya no es un error de validación."
+            );
     }
 
     [Fact]
@@ -18,7 +21,8 @@ public sealed class ItemTaxConfigTests
         var config = ItemTaxConfig.Create(
             saleVatCode: " 4 ",
             purchaseVatCode: " 4 ",
-            exciseTaxCode: " 3072 ");
+            exciseTaxCode: " 3072 "
+        );
 
         config.SaleVatCode.Should().Be("4");
         config.PurchaseVatCode.Should().Be("4");
@@ -33,7 +37,11 @@ public sealed class ItemTaxConfigTests
     {
         var config = ItemTaxConfig.Create(blank, blank, blank);
 
-        config.SaleVatCode.Should().BeNull("\"\"/\"   \" deben tratarse igual que NULL — nunca persistir string vacío como código real.");
+        config
+            .SaleVatCode.Should()
+            .BeNull(
+                "\"\"/\"   \" deben tratarse igual que NULL — nunca persistir string vacío como código real."
+            );
         config.PurchaseVatCode.Should().BeNull();
         config.ExciseTaxCode.Should().BeNull();
     }

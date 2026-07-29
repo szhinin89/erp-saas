@@ -27,8 +27,11 @@ public sealed class CreatePurchaseReceptionDraftHandler
     private readonly ICurrentUser _user;
 
     public CreatePurchaseReceptionDraftHandler(
-        IPurchaseReceptionDocumentRepository documentRepo, IPurchaseReceptionDetailProcessor detailProcessor,
-        ICurrentTenant tenant, ICurrentUser user)
+        IPurchaseReceptionDocumentRepository documentRepo,
+        IPurchaseReceptionDetailProcessor detailProcessor,
+        ICurrentTenant tenant,
+        ICurrentUser user
+    )
     {
         _documentRepo = documentRepo;
         _detailProcessor = detailProcessor;
@@ -37,16 +40,26 @@ public sealed class CreatePurchaseReceptionDraftHandler
     }
 
     public async Task<Result<PurchaseDraftDto>> Handle(
-        CreatePurchaseReceptionDraftCommand request, CancellationToken cancellationToken)
+        CreatePurchaseReceptionDraftCommand request,
+        CancellationToken cancellationToken
+    )
     {
-        var document = await _documentRepo.GetByIdAsync(_tenant.TenantId, request.PurchaseReceptionDocumentId, cancellationToken);
+        var document = await _documentRepo.GetByIdAsync(
+            _tenant.TenantId,
+            request.PurchaseReceptionDocumentId,
+            cancellationToken
+        );
         if (document is null)
             return Result<PurchaseDraftDto>.NotFound("El documento de recepción no existe.");
 
-        if (document.Status != PurchaseReceptionDocumentStatus.Verified || string.IsNullOrWhiteSpace(document.XmlContent))
+        if (
+            document.Status != PurchaseReceptionDocumentStatus.Verified
+            || string.IsNullOrWhiteSpace(document.XmlContent)
+        )
         {
             return Result<PurchaseDraftDto>.ValidationFailure(
-                "Solo se puede generar un borrador de compra desde documentos con XML autorizado (estado Verificado).");
+                "Solo se puede generar un borrador de compra desde documentos con XML autorizado (estado Verificado)."
+            );
         }
 
         // Caso recuperable: el detalle nunca se interpretó con éxito (p. ej. porque el parser
@@ -57,10 +70,19 @@ public sealed class CreatePurchaseReceptionDraftHandler
         if (document.ProcessingStatus == PurchaseReceptionProcessingStatus.Failed)
         {
             var reprocessed = await _detailProcessor.ProcessAsync(
-                document.Id, _tenant.TenantId, document.SupplierId, document.XmlContent, cancellationToken);
+                document.Id,
+                _tenant.TenantId,
+                document.SupplierId,
+                document.XmlContent,
+                cancellationToken
+            );
             document.ReprocessDetail(
-                reprocessed.Lines, reprocessed.Processing, reprocessed.DocTypeCode, reprocessed.SriPaymentMethodCode,
-                _user.UserId);
+                reprocessed.Lines,
+                reprocessed.Processing,
+                reprocessed.DocTypeCode,
+                reprocessed.SriPaymentMethodCode,
+                _user.UserId
+            );
             await _documentRepo.SaveChangesAsync(cancellationToken);
         }
 
@@ -71,9 +93,10 @@ public sealed class CreatePurchaseReceptionDraftHandler
         if (document.ProcessingStatus == PurchaseReceptionProcessingStatus.Failed)
         {
             return Result<PurchaseDraftDto>.ValidationFailure(
-                "No se pudo interpretar el detalle de este comprobante " +
-                $"({document.ProcessingNotes ?? "motivo no especificado"}). " +
-                "El XML autorizado quedó conservado como evidencia fiscal; contacte soporte para revisión manual.");
+                "No se pudo interpretar el detalle de este comprobante "
+                    + $"({document.ProcessingNotes ?? "motivo no especificado"}). "
+                    + "El XML autorizado quedó conservado como evidencia fiscal; contacte soporte para revisión manual."
+            );
         }
 
         var draft = DraftModel.FromReceptionDocument(document);

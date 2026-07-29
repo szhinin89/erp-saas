@@ -16,9 +16,21 @@ public sealed class PurchasePayableConfiguration : IEntityTypeConfiguration<Purc
         builder.Property(x => x.CompanyId).HasColumnName("company_id").IsRequired();
         builder.Property(x => x.PurchaseId).HasColumnName("purchase_id").IsRequired();
         builder.Property(x => x.SupplierId).HasColumnName("supplier_id").IsRequired();
-        builder.Property(x => x.TotalAmount).HasColumnName("total_amount").HasColumnType("numeric(18,2)").IsRequired();
-        builder.Property(x => x.PaidAmount).HasColumnName("paid_amount").HasColumnType("numeric(18,2)").IsRequired();
-        builder.Property(x => x.TotalRetained).HasColumnName("total_retained").HasColumnType("numeric(18,2)").IsRequired();
+        builder
+            .Property(x => x.TotalAmount)
+            .HasColumnName("total_amount")
+            .HasColumnType("numeric(18,2)")
+            .IsRequired();
+        builder
+            .Property(x => x.PaidAmount)
+            .HasColumnName("paid_amount")
+            .HasColumnType("numeric(18,2)")
+            .IsRequired();
+        builder
+            .Property(x => x.TotalRetained)
+            .HasColumnName("total_retained")
+            .HasColumnType("numeric(18,2)")
+            .IsRequired();
         builder.Property(x => x.Status).HasColumnName("status").HasMaxLength(20).IsRequired();
 
         builder.Ignore(x => x.BalanceDue);
@@ -28,9 +40,18 @@ public sealed class PurchasePayableConfiguration : IEntityTypeConfiguration<Purc
         builder.Property(x => x.CreatedBy).HasColumnName("created_by");
         builder.Property(x => x.UpdatedBy).HasColumnName("updated_by");
 
-        builder.HasMany(x => x.Installments).WithOne().HasForeignKey(x => x.PayableId).OnDelete(DeleteBehavior.Cascade);
+        builder
+            .HasMany(x => x.Installments)
+            .WithOne()
+            .HasForeignKey(x => x.PayableId)
+            .OnDelete(DeleteBehavior.Cascade);
 
-        builder.HasIndex(x => new { x.TenantId, x.CompanyId }).HasDatabaseName("ix_purchase_payables_tenant_company");
-        builder.HasIndex(x => x.PurchaseId).IsUnique().HasDatabaseName("uq_purchase_payables_purchase");
+        builder
+            .HasIndex(x => new { x.TenantId, x.CompanyId })
+            .HasDatabaseName("ix_purchase_payables_tenant_company");
+        builder
+            .HasIndex(x => x.PurchaseId)
+            .IsUnique()
+            .HasDatabaseName("uq_purchase_payables_purchase");
     }
 }

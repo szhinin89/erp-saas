@@ -36,7 +36,8 @@ public class UpsertCompanyUserMembershipHandler
         INavigationBuilder navigationBuilder,
         IBranchRepository branchRepository,
         ICompanyUserBranchRepository companyUserBranchRepository,
-        IMediator mediator)
+        IMediator mediator
+    )
     {
         _accessRepository = accessRepository;
         _currentUser = currentUser;
@@ -49,28 +50,45 @@ public class UpsertCompanyUserMembershipHandler
         _mediator = mediator;
     }
 
-    public Task<Result<object>> HandleAsync(UpsertCompanyUserMembershipCommand command, CancellationToken cancellationToken = default)
-        => Handle(command, cancellationToken);
+    public Task<Result<object>> HandleAsync(
+        UpsertCompanyUserMembershipCommand command,
+        CancellationToken cancellationToken = default
+    ) => Handle(command, cancellationToken);
 
-    public async Task<Result<object>> Handle(UpsertCompanyUserMembershipCommand command, CancellationToken cancellationToken)
+    public async Task<Result<object>> Handle(
+        UpsertCompanyUserMembershipCommand command,
+        CancellationToken cancellationToken
+    )
     {
         var tenant = await _tenantRepository.GetByIdAsync(command.TenantId, cancellationToken);
         if (tenant is null)
             return Result<object>.Failure("Tenant no encontrado.");
 
-        var company = await _companyProvisioning.EnsureDefaultCompanyAsync(tenant, cancellationToken);
+        var company = await _companyProvisioning.EnsureDefaultCompanyAsync(
+            tenant,
+            cancellationToken
+        );
 
         var username = command.Username.Trim().ToLowerInvariant();
         var user = await _accessRepository.GetUserByUsernameAsync(username, cancellationToken);
         if (user is null)
             return Result<object>.Failure("Usuario no existe.");
 
-        var existing = await _accessRepository.GetCompanyUserMembershipAsync(company.Id, user.Id, cancellationToken);
+        var existing = await _accessRepository.GetCompanyUserMembershipAsync(
+            company.Id,
+            user.Id,
+            cancellationToken
+        );
         CompanyUserMembership membership;
         if (existing is null)
         {
             membership = CompanyUserMembership.Create(
-                company.Id, user.Id, command.Role, command.ProfileId, createdBy: _currentUser.UserId);
+                company.Id,
+                user.Id,
+                command.Role,
+                command.ProfileId,
+                createdBy: _currentUser.UserId
+            );
             await _accessRepository.AddCompanyUserMembershipAsync(membership, cancellationToken);
         }
         else
@@ -79,11 +97,15 @@ public class UpsertCompanyUserMembershipHandler
             // activo tras el cambio de rol — regla pura, el handler obtiene las memberships
             // activas y se las entrega, nunca al revés.
             var activeMemberships = await _accessRepository.GetCompanyUserMembershipsByCompanyAsync(
-                company.Id, onlyActive: true, cancellationToken);
+                company.Id,
+                onlyActive: true,
+                cancellationToken
+            );
             var invariantViolation = CompanyAdministratorInvariant.Validate<object>(
                 existing,
                 new CompanyAdministratorInvariant.FutureState(IsActive: true, Role: command.Role),
-                activeMemberships);
+                activeMemberships
+            );
             if (invariantViolation is not null)
                 return invariantViolation;
 
@@ -105,7 +127,11 @@ public class UpsertCompanyUserMembershipHandler
 
             foreach (var branchId in distinctBranchIds)
             {
-                var branch = await _branchRepository.GetByIdAsync(tenant.Id, branchId, cancellationToken);
+                var branch = await _branchRepository.GetByIdAsync(
+                    tenant.Id,
+                    branchId,
+                    cancellationToken
+                );
                 if (branch is null)
                     return Result<object>.NotFound($"La sucursal {branchId} no existe.");
             }
@@ -113,12 +139,20 @@ public class UpsertCompanyUserMembershipHandler
             foreach (var branchId in distinctBranchIds)
             {
                 var alreadyAuthorized = await _companyUserBranchRepository.ExistsAsync(
-                    membership.Id, branchId, cancellationToken);
+                    membership.Id,
+                    branchId,
+                    cancellationToken
+                );
                 if (alreadyAuthorized)
                     continue;
 
                 var authorization = CompanyUserBranch.Create(
-                    tenant.Id, company.Id, membership.Id, branchId, createdBy: _currentUser.UserId);
+                    tenant.Id,
+                    company.Id,
+                    membership.Id,
+                    branchId,
+                    createdBy: _currentUser.UserId
+                );
                 await _companyUserBranchRepository.AddAsync(authorization, cancellationToken);
             }
 
@@ -129,7 +163,11 @@ public class UpsertCompanyUserMembershipHandler
         // CompanyUserPreferences sigue siendo la única fuente de verdad de DefaultBranch/LoginMode.
         // Nunca se reimplementa su validación: siempre se reutilizan los UseCases de Fase C vía
         // MediatR (mismo patrón que LoginHandler → CreateAuthenticatedSessionCommand).
-        var preferencesResult = await UpsertPreferencesAsync(membership.Id, command, cancellationToken);
+        var preferencesResult = await UpsertPreferencesAsync(
+            membership.Id,
+            command,
+            cancellationToken
+        );
         if (!preferencesResult.IsSuccess)
             return Result<object>.Failure(preferencesResult.Error!, preferencesResult.Code);
 
@@ -139,10 +177,15 @@ public class UpsertCompanyUserMembershipHandler
     }
 
     private async Task<Result<CompanyUserPreferencesDto?>> UpsertPreferencesAsync(
-        Guid membershipId, UpsertCompanyUserMembershipCommand command, CancellationToken cancellationToken)
+        Guid membershipId,
+        UpsertCompanyUserMembershipCommand command,
+        CancellationToken cancellationToken
+    )
     {
         var existingPreferences = await _mediator.Send(
-            new GetCompanyUserPreferencesQuery(membershipId), cancellationToken);
+            new GetCompanyUserPreferencesQuery(membershipId),
+            cancellationToken
+        );
         if (!existingPreferences.IsSuccess)
             return existingPreferences;
 
@@ -151,14 +194,21 @@ public class UpsertCompanyUserMembershipHandler
             // Membresía nueva (o reactivada sin preferencias previas): si el administrador no
             // informó nada, se crea con el default documentado — AskBranch, sin sucursal. Nunca
             // se deja una membresía sin fila de preferencias.
-            var createResult = await _mediator.Send(new CreateCompanyUserPreferencesCommand(
-                membershipId,
-                command.LoginMode ?? nameof(CompanyUserLoginMode.AskBranch),
-                command.DefaultBranchId), cancellationToken);
+            var createResult = await _mediator.Send(
+                new CreateCompanyUserPreferencesCommand(
+                    membershipId,
+                    command.LoginMode ?? nameof(CompanyUserLoginMode.AskBranch),
+                    command.DefaultBranchId
+                ),
+                cancellationToken
+            );
 
             return createResult.IsSuccess
                 ? Result<CompanyUserPreferencesDto?>.Success(createResult.Value)
-                : Result<CompanyUserPreferencesDto?>.Failure(createResult.Error!, createResult.Code);
+                : Result<CompanyUserPreferencesDto?>.Failure(
+                    createResult.Error!,
+                    createResult.Code
+                );
         }
 
         // Ya existían preferencias: solo se tocan si el administrador informó explícitamente
@@ -168,10 +218,14 @@ public class UpsertCompanyUserMembershipHandler
             return existingPreferences;
 
         var current = existingPreferences.Value;
-        var updateResult = await _mediator.Send(new UpdateCompanyUserPreferencesCommand(
-            membershipId,
-            command.LoginMode ?? current.LoginMode,
-            command.DefaultBranchId ?? current.DefaultBranchId), cancellationToken);
+        var updateResult = await _mediator.Send(
+            new UpdateCompanyUserPreferencesCommand(
+                membershipId,
+                command.LoginMode ?? current.LoginMode,
+                command.DefaultBranchId ?? current.DefaultBranchId
+            ),
+            cancellationToken
+        );
 
         return updateResult.IsSuccess
             ? Result<CompanyUserPreferencesDto?>.Success(updateResult.Value)

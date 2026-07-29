@@ -1,6 +1,6 @@
-using ERP.Domain.Modules.Ride.ValueObjects;
 using System.Security.Cryptography;
 using System.Text;
+using ERP.Domain.Modules.Ride.ValueObjects;
 
 namespace ERP.Application.Modules.Ride.Services;
 

@@ -17,10 +17,17 @@ public sealed class PriceListItemAudit : AuditRecordBase, ICompanyOperationalEnt
     private PriceListItemAudit() { }
 
     public static PriceListItemAudit Create(
-        AuditActor actor, Guid companyId, Guid assignmentId, Guid priceListId, Guid itemId, string action,
-        string? reason = null)
+        AuditActor actor,
+        Guid companyId,
+        Guid assignmentId,
+        Guid priceListId,
+        Guid itemId,
+        string action,
+        string? reason = null
+    )
     {
-        if (companyId == Guid.Empty) throw new ArgumentException("companyId requerido.", nameof(companyId));
+        if (companyId == Guid.Empty)
+            throw new ArgumentException("companyId requerido.", nameof(companyId));
 
         var audit = new PriceListItemAudit
         {

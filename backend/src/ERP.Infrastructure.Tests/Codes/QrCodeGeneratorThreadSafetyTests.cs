@@ -22,13 +22,19 @@ public sealed class QrCodeGeneratorThreadSafetyTests
         var sut = new QrCodeGenerator(NullLogger<QrCodeGenerator>.Instance);
         const int concurrency = 64;
 
-        var tasks = Enumerable.Range(0, concurrency)
-            .Select(i => Task.Run(() =>
-            {
-                var content = i.ToString("D49", System.Globalization.CultureInfo.InvariantCulture);
-                var result = sut.Generate(new QrGenerationRequest(content));
-                return (Content: content, result.PngBytes);
-            }))
+        var tasks = Enumerable
+            .Range(0, concurrency)
+            .Select(i =>
+                Task.Run(() =>
+                {
+                    var content = i.ToString(
+                        "D49",
+                        System.Globalization.CultureInfo.InvariantCulture
+                    );
+                    var result = sut.Generate(new QrGenerationRequest(content));
+                    return (Content: content, result.PngBytes);
+                })
+            )
             .ToArray();
 
         var results = await Task.WhenAll(tasks);
@@ -38,6 +44,10 @@ public sealed class QrCodeGeneratorThreadSafetyTests
 
         // Contenidos distintos generan imágenes distintas — evidencia directa de que no hay
         // estado compartido corrompiéndose entre hilos.
-        results.Select(r => Convert.ToBase64String(r.PngBytes)).Distinct().Should().HaveCount(concurrency);
+        results
+            .Select(r => Convert.ToBase64String(r.PngBytes))
+            .Distinct()
+            .Should()
+            .HaveCount(concurrency);
     }
 }

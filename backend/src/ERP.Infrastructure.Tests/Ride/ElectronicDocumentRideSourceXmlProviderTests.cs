@@ -40,8 +40,10 @@ public sealed class ElectronicDocumentRideSourceXmlProviderTests : IAsyncLifetim
         .WithPassword("erp_test_secret")
         .Build();
 
-    private readonly string _fileStorageBasePath =
-        Path.Combine(Path.GetTempPath(), "ride-source-xml-tests-" + Guid.NewGuid().ToString("N"));
+    private readonly string _fileStorageBasePath = Path.Combine(
+        Path.GetTempPath(),
+        "ride-source-xml-tests-" + Guid.NewGuid().ToString("N")
+    );
 
     private ServiceProvider _serviceProvider = null!;
     private Guid _tenantId;
@@ -55,19 +57,27 @@ public sealed class ElectronicDocumentRideSourceXmlProviderTests : IAsyncLifetim
 
         var services = new ServiceCollection();
         var configuration = new ConfigurationBuilder()
-            .AddInMemoryCollection(new Dictionary<string, string?> { ["FileStorage:BasePath"] = _fileStorageBasePath })
+            .AddInMemoryCollection(
+                new Dictionary<string, string?> { ["FileStorage:BasePath"] = _fileStorageBasePath }
+            )
             .Build();
 
         services.AddSingleton<IConfiguration>(configuration);
-        services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(ERP.Application.DependencyInjection).Assembly));
-        services.AddDbContext<ErpDbContext>((sp, options) => options.UseNpgsql(_postgres.GetConnectionString()));
+        services.AddMediatR(cfg =>
+            cfg.RegisterServicesFromAssembly(typeof(ERP.Application.DependencyInjection).Assembly)
+        );
+        services.AddDbContext<ErpDbContext>(
+            (sp, options) => options.UseNpgsql(_postgres.GetConnectionString())
+        );
         services.AddScoped<ICurrentTenant>(_ => new FixedCurrentTenant(() => _tenantId));
         services.AddScoped<ICurrentCompany>(_ => new FixedCurrentCompany(() => _companyId));
         services.AddScoped<IElectronicDocumentRepository, ElectronicDocumentRepository>();
         services.AddScoped<ERP.Application.Common.Interfaces.IFileStorage, LocalFileStorage>();
         services.AddScoped<IRideSourceXmlProvider, ElectronicDocumentRideSourceXmlProvider>();
-        services.AddScoped<ERP.Application.Common.Services.ICompanyClock,
-            ERP.Infrastructure.Persistence.Services.CompanyClock>();
+        services.AddScoped<
+            ERP.Application.Common.Services.ICompanyClock,
+            ERP.Infrastructure.Persistence.Services.CompanyClock
+        >();
 
         // ElectronicDocument.SaveChangesAsync publica domain events (ElectronicDocumentAuditHandler,
         // Entity Audit ADR-022) — se registra la infraestructura real, sin mocks, mismo patrón que
@@ -75,7 +85,11 @@ public sealed class ElectronicDocumentRideSourceXmlProviderTests : IAsyncLifetim
         services.AddScoped(typeof(IAuditWriter<>), typeof(EfAuditWriter<>));
         services.AddScoped(typeof(IAuditReader<>), typeof(EfAuditReader<>));
         services.AddScoped<IAuditService, AuditService>();
-        services.AddScoped<IAuditContext>(_ => new FixedAuditContext(() => _tenantId, () => _companyId, _userId));
+        services.AddScoped<IAuditContext>(_ => new FixedAuditContext(
+            () => _tenantId,
+            () => _companyId,
+            _userId
+        ));
 
         _serviceProvider = services.BuildServiceProvider();
 
@@ -84,7 +98,12 @@ public sealed class ElectronicDocumentRideSourceXmlProviderTests : IAsyncLifetim
         await db.Database.MigrateAsync();
 
         var tenant = Tenant.Create("Test Tenant", $"test-{Guid.NewGuid():N}"[..16], _userId);
-        var company = Company.CreateManaged(tenant.Id, "1790012345001", "Test S.A.", createdBy: _userId);
+        var company = Company.CreateManaged(
+            tenant.Id,
+            "1790012345001",
+            "Test S.A.",
+            createdBy: _userId
+        );
         db.Tenants.Add(tenant);
         db.Companies.Add(company);
         await db.SaveChangesAsync();
@@ -106,12 +125,16 @@ public sealed class ElectronicDocumentRideSourceXmlProviderTests : IAsyncLifetim
     {
         const string xmlContent = "<factura>contenido de prueba</factura>";
         var sourceEntityId = Guid.NewGuid();
-        var authorizedPath = $"electronic-documents/{_tenantId:N}/invoice/{Guid.NewGuid():N}/authorized.xml";
+        var authorizedPath =
+            $"electronic-documents/{_tenantId:N}/invoice/{Guid.NewGuid():N}/authorized.xml";
 
         await using (var scope = _serviceProvider.CreateAsyncScope())
         {
-            var fileStorage = scope.ServiceProvider.GetRequiredService<ERP.Application.Common.Interfaces.IFileStorage>();
-            await using var contentStream = new MemoryStream(System.Text.Encoding.UTF8.GetBytes(xmlContent));
+            var fileStorage =
+                scope.ServiceProvider.GetRequiredService<ERP.Application.Common.Interfaces.IFileStorage>();
+            await using var contentStream = new MemoryStream(
+                System.Text.Encoding.UTF8.GetBytes(xmlContent)
+            );
             await fileStorage.SaveAsync(authorizedPath, contentStream);
 
             var db = scope.ServiceProvider.GetRequiredService<ErpDbContext>();
@@ -141,13 +164,17 @@ public sealed class ElectronicDocumentRideSourceXmlProviderTests : IAsyncLifetim
         // alias válido de SourceEntityId.
         const string xmlContent = "<factura>contenido de prueba</factura>";
         var sourceEntityId = Guid.NewGuid();
-        var authorizedPath = $"electronic-documents/{_tenantId:N}/invoice/{Guid.NewGuid():N}/authorized.xml";
+        var authorizedPath =
+            $"electronic-documents/{_tenantId:N}/invoice/{Guid.NewGuid():N}/authorized.xml";
         Guid electronicDocumentId;
 
         await using (var scope = _serviceProvider.CreateAsyncScope())
         {
-            var fileStorage = scope.ServiceProvider.GetRequiredService<ERP.Application.Common.Interfaces.IFileStorage>();
-            await using var contentStream = new MemoryStream(System.Text.Encoding.UTF8.GetBytes(xmlContent));
+            var fileStorage =
+                scope.ServiceProvider.GetRequiredService<ERP.Application.Common.Interfaces.IFileStorage>();
+            await using var contentStream = new MemoryStream(
+                System.Text.Encoding.UTF8.GetBytes(xmlContent)
+            );
             await fileStorage.SaveAsync(authorizedPath, contentStream);
 
             var db = scope.ServiceProvider.GetRequiredService<ErpDbContext>();
@@ -157,8 +184,12 @@ public sealed class ElectronicDocumentRideSourceXmlProviderTests : IAsyncLifetim
             electronicDocumentId = document.Id;
         }
 
-        electronicDocumentId.Should().NotBe(sourceEntityId,
-            "la prueba solo es válida si el Id interno del agregado es distinto de SourceEntityId");
+        electronicDocumentId
+            .Should()
+            .NotBe(
+                sourceEntityId,
+                "la prueba solo es válida si el Id interno del agregado es distinto de SourceEntityId"
+            );
 
         var byRealSourceEntityId = await GetAuthorizedXmlAsync(sourceEntityId);
         var byInternalAggregateId = await GetAuthorizedXmlAsync(electronicDocumentId);
@@ -167,8 +198,12 @@ public sealed class ElectronicDocumentRideSourceXmlProviderTests : IAsyncLifetim
         byRealSourceEntityId.Value!.Status.Should().Be(RideSourceXmlStatus.Available);
 
         byInternalAggregateId.IsSuccess.Should().BeTrue();
-        byInternalAggregateId.Value!.Status.Should().Be(RideSourceXmlStatus.NotApplicable,
-            "buscar por ElectronicDocument.Id (en vez de SourceEntityId) no debe encontrar el documento");
+        byInternalAggregateId
+            .Value!.Status.Should()
+            .Be(
+                RideSourceXmlStatus.NotApplicable,
+                "buscar por ElectronicDocument.Id (en vez de SourceEntityId) no debe encontrar el documento"
+            );
     }
 
     [Fact]
@@ -234,13 +269,24 @@ public sealed class ElectronicDocumentRideSourceXmlProviderTests : IAsyncLifetim
     {
         await using var scope = _serviceProvider.CreateAsyncScope();
         var provider = scope.ServiceProvider.GetRequiredService<IRideSourceXmlProvider>();
-        return await provider.GetAuthorizedXmlAsync(_tenantId, _companyId, SourceModule, sourceEntityId);
+        return await provider.GetAuthorizedXmlAsync(
+            _tenantId,
+            _companyId,
+            SourceModule,
+            sourceEntityId
+        );
     }
 
     private ElectronicDocument BuildReceivedDocument(Guid sourceEntityId)
     {
         var document = ElectronicDocument.Create(
-            _tenantId, _companyId, ElectronicDocumentType.Invoice, SourceModule, sourceEntityId, _userId);
+            _tenantId,
+            _companyId,
+            ElectronicDocumentType.Invoice,
+            SourceModule,
+            sourceEntityId,
+            _userId
+        );
         document.MarkXmlGenerated("path/draft.xml", "1.1.0", "1.1.0", _userId);
         document.MarkSigned("path/signed.xml", AccessKey.Create(new string('7', 49)), _userId);
         document.MarkSent(_userId);
@@ -248,11 +294,18 @@ public sealed class ElectronicDocumentRideSourceXmlProviderTests : IAsyncLifetim
         return document;
     }
 
-    private ElectronicDocument BuildAuthorizedDocument(Guid sourceEntityId, string? authorizedXmlPath)
+    private ElectronicDocument BuildAuthorizedDocument(
+        Guid sourceEntityId,
+        string? authorizedXmlPath
+    )
     {
         var document = BuildReceivedDocument(sourceEntityId);
         document.MarkAuthorized(
-            AuthorizationNumber.Create(new string('7', 49)), DateTime.UtcNow, authorizedXmlPath, _userId);
+            AuthorizationNumber.Create(new string('7', 49)),
+            DateTime.UtcNow,
+            authorizedXmlPath,
+            _userId
+        );
         return document;
     }
 
@@ -284,18 +337,21 @@ file sealed class FixedCurrentCompany(Func<Guid> companyId) : ICurrentCompany
     public bool HasCompanyContext => true;
 }
 
-file sealed class FixedAuditContext(Func<Guid> tenantId, Func<Guid> companyId, Guid userId) : IAuditContext
+file sealed class FixedAuditContext(Func<Guid> tenantId, Func<Guid> companyId, Guid userId)
+    : IAuditContext
 {
     public Guid TenantId => tenantId();
     public Guid CompanyId => companyId();
-    public AuditActor Actor => new(
-        TenantId: tenantId(),
-        UserId: userId,
-        UserName: "Test User",
-        FullName: "Test User",
-        Email: "test.user@example.com",
-        RoleName: "Admin",
-        CorrelationId: "test-correlation",
-        RequestId: "test-request",
-        Source: AuditSource.UserAction);
+    public AuditActor Actor =>
+        new(
+            TenantId: tenantId(),
+            UserId: userId,
+            UserName: "Test User",
+            FullName: "Test User",
+            Email: "test.user@example.com",
+            RoleName: "Admin",
+            CorrelationId: "test-correlation",
+            RequestId: "test-request",
+            Source: AuditSource.UserAction
+        );
 }

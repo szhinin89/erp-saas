@@ -29,7 +29,8 @@ public sealed class GetElectronicDocumentDetailQueryHandler
         IAuditReader<ElectronicDocumentAudit> auditReader,
         IAuditReader<ElectronicDocumentSriMessage> sriMessageReader,
         ICurrentTenant currentTenant,
-        ICurrentCompany currentCompany)
+        ICurrentCompany currentCompany
+    )
     {
         _repository = repository;
         _summaryResolver = summaryResolver;
@@ -41,17 +42,30 @@ public sealed class GetElectronicDocumentDetailQueryHandler
     }
 
     public async Task<Result<ElectronicDocumentDetailDto>> Handle(
-        GetElectronicDocumentDetailQuery query, CancellationToken cancellationToken)
+        GetElectronicDocumentDetailQuery query,
+        CancellationToken cancellationToken
+    )
     {
-        var document = await _repository.GetByIdAsync(_currentTenant.TenantId, query.Id, cancellationToken);
+        var document = await _repository.GetByIdAsync(
+            _currentTenant.TenantId,
+            query.Id,
+            cancellationToken
+        );
         if (document is null)
-            return Result<ElectronicDocumentDetailDto>.NotFound("El documento electrónico no existe.");
+            return Result<ElectronicDocumentDetailDto>.NotFound(
+                "El documento electrónico no existe."
+            );
 
         if (_currentCompany.HasCompanyContext && document.CompanyId != _currentCompany.CompanyId)
-            return Result<ElectronicDocumentDetailDto>.NotFound("El documento electrónico no existe.");
+            return Result<ElectronicDocumentDetailDto>.NotFound(
+                "El documento electrónico no existe."
+            );
 
         var company = await _companyRepository.GetByIdForTenantAsync(
-            document.CompanyId, _currentTenant.TenantId, cancellationToken);
+            document.CompanyId,
+            _currentTenant.TenantId,
+            cancellationToken
+        );
 
         string? documentNumber = null;
         string? counterpartyName = null;
@@ -59,7 +73,10 @@ public sealed class GetElectronicDocumentDetailQueryHandler
         if (summaryProvider is not null)
         {
             var summaries = await summaryProvider.GetSummariesAsync(
-                _currentTenant.TenantId, new[] { document.SourceEntityId }, cancellationToken);
+                _currentTenant.TenantId,
+                new[] { document.SourceEntityId },
+                cancellationToken
+            );
             if (summaries.TryGetValue(document.SourceEntityId, out var summary))
             {
                 documentNumber = summary.DocumentNumber;
@@ -68,11 +85,20 @@ public sealed class GetElectronicDocumentDetailQueryHandler
         }
 
         var auditRecords = await ElectronicDocumentTimelineBuilder.FetchRecordsAsync(
-            _auditReader, _currentTenant.TenantId, document.Id, TimelineTake, cancellationToken);
+            _auditReader,
+            _currentTenant.TenantId,
+            document.Id,
+            TimelineTake,
+            cancellationToken
+        );
         var lastReason = auditRecords.FirstOrDefault()?.Reason;
 
         var diagnostic = await ElectronicDocumentDiagnosticAssembler.BuildAsync(
-            document, auditRecords, _sriMessageReader, cancellationToken);
+            document,
+            auditRecords,
+            _sriMessageReader,
+            cancellationToken
+        );
 
         var dto = new ElectronicDocumentDetailDto(
             document.Id,
@@ -87,7 +113,8 @@ public sealed class GetElectronicDocumentDetailQueryHandler
             document.CreatedAt,
             document.UpdatedAt,
             lastReason,
-            diagnostic);
+            diagnostic
+        );
 
         return Result<ElectronicDocumentDetailDto>.Success(dto);
     }

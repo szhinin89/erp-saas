@@ -26,7 +26,8 @@ public sealed class RevokeCompanyUserMembershipAdminHandler
         ICurrentCompany currentCompany,
         ITenantRepository tenantRepository,
         ICompanyProvisioningService companyProvisioning,
-        IMediator mediator)
+        IMediator mediator
+    )
     {
         _currentTenant = currentTenant;
         _currentCompany = currentCompany;
@@ -35,18 +36,30 @@ public sealed class RevokeCompanyUserMembershipAdminHandler
         _mediator = mediator;
     }
 
-    public async Task<Result<object>> Handle(RevokeCompanyUserMembershipAdminCommand command, CancellationToken cancellationToken)
+    public async Task<Result<object>> Handle(
+        RevokeCompanyUserMembershipAdminCommand command,
+        CancellationToken cancellationToken
+    )
     {
-        var tenant = await _tenantRepository.GetByIdAsync(_currentTenant.TenantId, cancellationToken);
+        var tenant = await _tenantRepository.GetByIdAsync(
+            _currentTenant.TenantId,
+            cancellationToken
+        );
         if (tenant is null)
             return Result<object>.NotFound("Tenant no encontrado.");
 
-        var company = await _companyProvisioning.EnsureDefaultCompanyAsync(tenant, cancellationToken);
+        var company = await _companyProvisioning.EnsureDefaultCompanyAsync(
+            tenant,
+            cancellationToken
+        );
         if (company.Id != _currentCompany.CompanyId)
-            return Result<object>.Forbidden("La empresa activa no coincide con el contexto administrado.");
+            return Result<object>.Forbidden(
+                "La empresa activa no coincide con el contexto administrado."
+            );
 
         return await _mediator.Send(
             new RevokeCompanyUserMembershipCommand(_currentTenant.TenantId, command.Username),
-            cancellationToken);
+            cancellationToken
+        );
     }
 }

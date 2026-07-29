@@ -31,80 +31,185 @@ public sealed class ElectronicDocumentIssuerExceptionHandlingTests
     private static readonly Guid UserId = Guid.NewGuid();
     private static readonly string ValidAccessKey = new('1', 49);
 
-    private static ElectronicDocumentData SampleData() => new(
-        Emission: new ElectronicDocumentEmissionContext("2", "1", "01", "001", "Dirección", "001", "000000001", DateTime.UtcNow),
-        Issuer: new ElectronicDocumentIssuerData("1792146739001", "Empresa Prueba", null, "Matriz", null, false),
-        Counterparty: new ElectronicDocumentCounterpartyData("05", "1713328506", "Cliente Prueba", null, null),
-        Details: [],
-        TaxSummary: [],
-        Totals: new ElectronicDocumentTotals(0, 0, 0, 0, "USD"),
-        Payments: [],
-        AdditionalInfo: []);
+    private static ElectronicDocumentData SampleData() =>
+        new(
+            Emission: new ElectronicDocumentEmissionContext(
+                "2",
+                "1",
+                "01",
+                "001",
+                "Dirección",
+                "001",
+                "000000001",
+                DateTime.UtcNow
+            ),
+            Issuer: new ElectronicDocumentIssuerData(
+                "1792146739001",
+                "Empresa Prueba",
+                null,
+                "Matriz",
+                null,
+                false
+            ),
+            Counterparty: new ElectronicDocumentCounterpartyData(
+                "05",
+                "1713328506",
+                "Cliente Prueba",
+                null,
+                null
+            ),
+            Details: [],
+            TaxSummary: [],
+            Totals: new ElectronicDocumentTotals(0, 0, 0, 0, "USD"),
+            Payments: [],
+            AdditionalInfo: []
+        );
 
-    private static RegisterElectronicDocumentRequest SampleRequest() => new(
-        TenantId, CompanyId, ElectronicDocumentType.Invoice, "Sales", SourceEntityId, UserId);
+    private static RegisterElectronicDocumentRequest SampleRequest() =>
+        new(TenantId, CompanyId, ElectronicDocumentType.Invoice, "Sales", SourceEntityId, UserId);
 
-    private static (ElectronicDocumentIssuer Issuer, Mock<IElectronicDocumentRepository> Repository, Mock<IElectronicDocumentSigningService> Signing, Mock<IElectronicDocumentReceptionService> Reception, Mock<IDatabaseExceptionTranslator> DbEx)
-        BuildIssuer()
+    private static (
+        ElectronicDocumentIssuer Issuer,
+        Mock<IElectronicDocumentRepository> Repository,
+        Mock<IElectronicDocumentSigningService> Signing,
+        Mock<IElectronicDocumentReceptionService> Reception,
+        Mock<IDatabaseExceptionTranslator> DbEx
+    ) BuildIssuer()
     {
         var providerMock = new Mock<IElectronicDocumentDataProvider>();
         providerMock.Setup(p => p.DocumentType).Returns(ElectronicDocumentType.Invoice);
-        providerMock.Setup(p => p.GetDataAsync(It.IsAny<ElectronicDocumentSourceReference>(), It.IsAny<CancellationToken>()))
+        providerMock
+            .Setup(p =>
+                p.GetDataAsync(
+                    It.IsAny<ElectronicDocumentSourceReference>(),
+                    It.IsAny<CancellationToken>()
+                )
+            )
             .ReturnsAsync(Result<ElectronicDocumentData>.Success(SampleData()));
 
         var providerResolver = new Mock<IElectronicDocumentDataProviderResolver>();
-        providerResolver.Setup(r => r.Resolve(ElectronicDocumentType.Invoice)).Returns(providerMock.Object);
+        providerResolver
+            .Setup(r => r.Resolve(ElectronicDocumentType.Invoice))
+            .Returns(providerMock.Object);
 
-        var xml = new ElectronicDocumentXml("<factura/>", "UTF-8", "1.1.0", ElectronicDocumentType.Invoice, ValidAccessKey, DateTime.UtcNow);
+        var xml = new ElectronicDocumentXml(
+            "<factura/>",
+            "UTF-8",
+            "1.1.0",
+            ElectronicDocumentType.Invoice,
+            ValidAccessKey,
+            DateTime.UtcNow
+        );
         var builderMock = new Mock<IElectronicDocumentXmlBuilder>();
         builderMock.Setup(b => b.DocumentType).Returns(ElectronicDocumentType.Invoice);
-        builderMock.Setup(b => b.Build(It.IsAny<ElectronicDocumentData>())).Returns(Result<ElectronicDocumentXml>.Success(xml));
+        builderMock
+            .Setup(b => b.Build(It.IsAny<ElectronicDocumentData>()))
+            .Returns(Result<ElectronicDocumentXml>.Success(xml));
 
         var builderResolver = new Mock<IElectronicDocumentXmlBuilderResolver>();
-        builderResolver.Setup(r => r.Resolve(ElectronicDocumentType.Invoice)).Returns(builderMock.Object);
+        builderResolver
+            .Setup(r => r.Resolve(ElectronicDocumentType.Invoice))
+            .Returns(builderMock.Object);
 
         var validatorMock = new Mock<IElectronicDocumentSchemaValidator>();
         validatorMock.Setup(v => v.DocumentType).Returns(ElectronicDocumentType.Invoice);
-        validatorMock.Setup(v => v.ValidateAsync(It.IsAny<ElectronicDocumentXml>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new ElectronicDocumentSchemaValidationResult(true, [], [], "1.1.0", ElectronicDocumentType.Invoice));
+        validatorMock
+            .Setup(v =>
+                v.ValidateAsync(It.IsAny<ElectronicDocumentXml>(), It.IsAny<CancellationToken>())
+            )
+            .ReturnsAsync(
+                new ElectronicDocumentSchemaValidationResult(
+                    true,
+                    [],
+                    [],
+                    "1.1.0",
+                    ElectronicDocumentType.Invoice
+                )
+            );
 
         var validatorResolver = new Mock<IElectronicDocumentSchemaValidatorResolver>();
-        validatorResolver.Setup(r => r.Resolve(ElectronicDocumentType.Invoice)).Returns(validatorMock.Object);
+        validatorResolver
+            .Setup(r => r.Resolve(ElectronicDocumentType.Invoice))
+            .Returns(validatorMock.Object);
 
-        var signedXml = new SignedElectronicDocumentXml("<factura><ds:Signature/></factura>", "UTF-8", "1.1.0", ElectronicDocumentType.Invoice, ValidAccessKey, DateTime.UtcNow);
+        var signedXml = new SignedElectronicDocumentXml(
+            "<factura><ds:Signature/></factura>",
+            "UTF-8",
+            "1.1.0",
+            ElectronicDocumentType.Invoice,
+            ValidAccessKey,
+            DateTime.UtcNow
+        );
         var signingService = new Mock<IElectronicDocumentSigningService>();
-        signingService.Setup(s => s.SignAsync(TenantId, CompanyId, It.IsAny<ElectronicDocumentXml>(), It.IsAny<CancellationToken>()))
+        signingService
+            .Setup(s =>
+                s.SignAsync(
+                    TenantId,
+                    CompanyId,
+                    It.IsAny<ElectronicDocumentXml>(),
+                    It.IsAny<CancellationToken>()
+                )
+            )
             .ReturnsAsync(Result<SignedElectronicDocumentXml>.Success(signedXml));
 
         var storageService = new Mock<IElectronicDocumentXmlStorageService>();
-        storageService.Setup(s => s.StoreAsync(
-                TenantId, ElectronicDocumentType.Invoice, It.IsAny<Guid>(),
-                It.IsAny<ElectronicDocumentXml>(), It.IsAny<SignedElectronicDocumentXml>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Result<ElectronicDocumentStoredXmlPaths>.Success(
-                new ElectronicDocumentStoredXmlPaths("draft/path.xml", "signed/path.xml")));
+        storageService
+            .Setup(s =>
+                s.StoreAsync(
+                    TenantId,
+                    ElectronicDocumentType.Invoice,
+                    It.IsAny<Guid>(),
+                    It.IsAny<ElectronicDocumentXml>(),
+                    It.IsAny<SignedElectronicDocumentXml>(),
+                    It.IsAny<CancellationToken>()
+                )
+            )
+            .ReturnsAsync(
+                Result<ElectronicDocumentStoredXmlPaths>.Success(
+                    new ElectronicDocumentStoredXmlPaths("draft/path.xml", "signed/path.xml")
+                )
+            );
 
         var repository = new Mock<IElectronicDocumentRepository>();
-        repository.Setup(r => r.GetBySourceAsync(TenantId, "Sales", SourceEntityId, It.IsAny<CancellationToken>()))
+        repository
+            .Setup(r =>
+                r.GetBySourceAsync(TenantId, "Sales", SourceEntityId, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync((ElectronicDocument?)null);
-        repository.Setup(r => r.AddAsync(It.IsAny<ElectronicDocument>(), It.IsAny<CancellationToken>()))
+        repository
+            .Setup(r => r.AddAsync(It.IsAny<ElectronicDocument>(), It.IsAny<CancellationToken>()))
             .Returns(Task.CompletedTask);
-        repository.Setup(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()))
+        repository
+            .Setup(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()))
             .Returns(Task.CompletedTask);
 
         var reception = new Mock<IElectronicDocumentReceptionService>();
         var authorization = new Mock<IElectronicDocumentAuthorizationService>();
-        authorization.Setup(a => a.CheckAsync(CompanyId, It.IsAny<string>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Result<SriAuthorizationResult>.Failure("No se pudo contactar al servicio de autorización del SRI."));
+        authorization
+            .Setup(a => a.CheckAsync(CompanyId, It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(
+                Result<SriAuthorizationResult>.Failure(
+                    "No se pudo contactar al servicio de autorización del SRI."
+                )
+            );
 
         var dbEx = new Mock<IDatabaseExceptionTranslator>();
         DatabaseUniqueViolationInfo? none = null;
         dbEx.Setup(d => d.TryGetUniqueViolation(It.IsAny<Exception>(), out none)).Returns(false);
 
         var issuer = new ElectronicDocumentIssuer(
-            repository.Object, providerResolver.Object, builderResolver.Object,
-            validatorResolver.Object, signingService.Object, storageService.Object,
-            reception.Object, authorization.Object, new Mock<IFileStorage>().Object,
-            dbEx.Object, NullLogger<ElectronicDocumentIssuer>.Instance);
+            repository.Object,
+            providerResolver.Object,
+            builderResolver.Object,
+            validatorResolver.Object,
+            signingService.Object,
+            storageService.Object,
+            reception.Object,
+            authorization.Object,
+            new Mock<IFileStorage>().Object,
+            dbEx.Object,
+            NullLogger<ElectronicDocumentIssuer>.Instance
+        );
 
         return (issuer, repository, signingService, reception, dbEx);
     }
@@ -113,8 +218,18 @@ public sealed class ElectronicDocumentIssuerExceptionHandlingTests
     public async Task RegisterAsync_when_signing_throws_marks_document_failed_instead_of_propagating()
     {
         var (issuer, _, signing, _, _) = BuildIssuer();
-        signing.Setup(s => s.SignAsync(TenantId, CompanyId, It.IsAny<ElectronicDocumentXml>(), It.IsAny<CancellationToken>()))
-            .ThrowsAsync(new InvalidOperationException("El certificado no contiene clave privada RSA."));
+        signing
+            .Setup(s =>
+                s.SignAsync(
+                    TenantId,
+                    CompanyId,
+                    It.IsAny<ElectronicDocumentXml>(),
+                    It.IsAny<CancellationToken>()
+                )
+            )
+            .ThrowsAsync(
+                new InvalidOperationException("El certificado no contiene clave privada RSA.")
+            );
 
         var act = async () => await issuer.RegisterAsync(SampleRequest());
 
@@ -127,11 +242,22 @@ public sealed class ElectronicDocumentIssuerExceptionHandlingTests
     public async Task RegisterAsync_when_signing_throws_persists_failed_state_with_reason_and_increments_retry_count()
     {
         var (issuer, repository, signing, _, _) = BuildIssuer();
-        signing.Setup(s => s.SignAsync(TenantId, CompanyId, It.IsAny<ElectronicDocumentXml>(), It.IsAny<CancellationToken>()))
-            .ThrowsAsync(new InvalidOperationException("El certificado no contiene clave privada RSA."));
+        signing
+            .Setup(s =>
+                s.SignAsync(
+                    TenantId,
+                    CompanyId,
+                    It.IsAny<ElectronicDocumentXml>(),
+                    It.IsAny<CancellationToken>()
+                )
+            )
+            .ThrowsAsync(
+                new InvalidOperationException("El certificado no contiene clave privada RSA.")
+            );
 
         ElectronicDocument? added = null;
-        repository.Setup(r => r.AddAsync(It.IsAny<ElectronicDocument>(), It.IsAny<CancellationToken>()))
+        repository
+            .Setup(r => r.AddAsync(It.IsAny<ElectronicDocument>(), It.IsAny<CancellationToken>()))
             .Callback<ElectronicDocument, CancellationToken>((d, _) => added = d)
             .Returns(Task.CompletedTask);
 
@@ -147,11 +273,13 @@ public sealed class ElectronicDocumentIssuerExceptionHandlingTests
     public async Task RegisterAsync_when_reception_throws_after_signing_does_not_propagate_and_stays_signed()
     {
         var (issuer, repository, _, reception, _) = BuildIssuer();
-        reception.Setup(r => r.SendAsync(CompanyId, It.IsAny<byte[]>(), It.IsAny<CancellationToken>()))
+        reception
+            .Setup(r => r.SendAsync(CompanyId, It.IsAny<byte[]>(), It.IsAny<CancellationToken>()))
             .ThrowsAsync(new HttpRequestException("Conexión rechazada por el servidor SRI."));
 
         ElectronicDocument? added = null;
-        repository.Setup(r => r.AddAsync(It.IsAny<ElectronicDocument>(), It.IsAny<CancellationToken>()))
+        repository
+            .Setup(r => r.AddAsync(It.IsAny<ElectronicDocument>(), It.IsAny<CancellationToken>()))
             .Callback<ElectronicDocument, CancellationToken>((d, _) => added = d)
             .Returns(Task.CompletedTask);
 
@@ -170,10 +298,17 @@ public sealed class ElectronicDocumentIssuerExceptionHandlingTests
         // (ven null), el índice único uq_electronic_document_source es la barrera real. El
         // perdedor debe recibir Result.Conflict, nunca una excepción sin control.
         var (issuer, repository, _, _, dbEx) = BuildIssuer();
-        var violation = new DatabaseUniqueViolationInfo("23505", "uq_electronic_document_source", "electronic_documents", null);
-        repository.Setup(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()))
+        var violation = new DatabaseUniqueViolationInfo(
+            "23505",
+            "uq_electronic_document_source",
+            "electronic_documents",
+            null
+        );
+        repository
+            .Setup(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()))
             .ThrowsAsync(new InvalidOperationException("simulated DbUpdateException"));
-        dbEx.Setup(d => d.TryGetUniqueViolation(It.IsAny<Exception>(), out violation)).Returns(true);
+        dbEx.Setup(d => d.TryGetUniqueViolation(It.IsAny<Exception>(), out violation))
+            .Returns(true);
 
         var act = async () => await issuer.RegisterAsync(SampleRequest());
 

@@ -30,7 +30,8 @@ internal sealed class JournalFactory
             fact.FactType,
             fact.SourceEventId,
             description,
-            SystemActor);
+            SystemActor
+        );
 
         foreach (var line in rule.Lines.OrderBy(l => l.SortOrder))
         {
@@ -53,14 +54,15 @@ internal sealed class JournalFactory
     /// transporta ese monto (fuera de alcance de esta fase, "No modificar PostingFact") — una
     /// PostingRuleLine que lo referencie queda sin efecto hasta que PostingFact se enriquezca.
     /// </summary>
-    private static decimal ResolveAmount(PostingFact fact, PostingAmountKind kind) => kind switch
-    {
-        PostingAmountKind.Subtotal => fact.Subtotal,
-        PostingAmountKind.TaxVat => fact.TotalVat,
-        PostingAmountKind.TaxIce => fact.TotalIce,
-        PostingAmountKind.Discount => fact.TotalDiscount,
-        PostingAmountKind.GrandTotal => fact.GrandTotal,
-        PostingAmountKind.Retention => 0m,
-        _ => 0m,
-    };
+    private static decimal ResolveAmount(PostingFact fact, PostingAmountKind kind) =>
+        kind switch
+        {
+            PostingAmountKind.Subtotal => fact.Subtotal,
+            PostingAmountKind.TaxVat => fact.TotalVat,
+            PostingAmountKind.TaxIce => fact.TotalIce,
+            PostingAmountKind.Discount => fact.TotalDiscount,
+            PostingAmountKind.GrandTotal => fact.GrandTotal,
+            PostingAmountKind.Retention => 0m,
+            _ => 0m,
+        };
 }

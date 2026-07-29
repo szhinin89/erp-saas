@@ -1,4 +1,4 @@
-﻿namespace ERP.Application.Common.Exceptions;
+namespace ERP.Application.Common.Exceptions;
 
 /// <summary>
 /// Se lanza cuando hay un error en la comunicación con el SRI Ecuador

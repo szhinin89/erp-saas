@@ -12,7 +12,10 @@ public interface IUserSessionRepository
     /// no una activa por tenant).
     /// </summary>
     Task<IReadOnlyList<UserSession>> GetActiveSessionsAsync(
-        Guid identityUserId, Guid tenantId, CancellationToken cancellationToken = default);
+        Guid identityUserId,
+        Guid tenantId,
+        CancellationToken cancellationToken = default
+    );
 
     /// <summary>
     /// Sesiones Active con StartedAt anterior a <paramref name="olderThanUtc"/>, cruzando todas
@@ -21,7 +24,9 @@ public interface IUserSessionRepository
     /// allowlist de IgnoreQueryFilters, sin necesidad de una nueva entrada).
     /// </summary>
     Task<IReadOnlyList<UserSession>> GetExpiredActiveSessionsAsync(
-        DateTime olderThanUtc, CancellationToken cancellationToken = default);
+        DateTime olderThanUtc,
+        CancellationToken cancellationToken = default
+    );
 
     /// <summary>
     /// Listado paginado para el dashboard administrativo (Fase 10) — cruza todas las empresas
@@ -37,11 +42,15 @@ public interface IUserSessionRepository
         DateTime? toUtc,
         int pageNumber,
         int pageSize,
-        CancellationToken cancellationToken = default);
+        CancellationToken cancellationToken = default
+    );
 
     /// <summary>Conteo de sesiones por Status dentro del tenant (Fase 10), CompanyId opcional.</summary>
     Task<IReadOnlyDictionary<UserSessionStatus, int>> GetStatusCountsAsync(
-        Guid tenantId, Guid? companyId, CancellationToken cancellationToken = default);
+        Guid tenantId,
+        Guid? companyId,
+        CancellationToken cancellationToken = default
+    );
 
     /// <summary>
     /// Búsqueda por Id SIN IgnoreQueryFilters — se apoya en el filtro automático de
@@ -57,7 +66,10 @@ public interface IUserSessionRepository
     /// logout es [AllowAnonymous] (el access token típicamente ya expiró), sin
     /// ICompanyOperationalEntity ambiente confiable — mismo criterio que GetActiveSessionsAsync.
     /// </summary>
-    Task<UserSession?> GetByRefreshTokenIdAsync(Guid refreshTokenId, CancellationToken cancellationToken = default);
+    Task<UserSession?> GetByRefreshTokenIdAsync(
+        Guid refreshTokenId,
+        CancellationToken cancellationToken = default
+    );
 
     Task AddAsync(UserSession session, CancellationToken cancellationToken = default);
 

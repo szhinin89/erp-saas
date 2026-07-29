@@ -25,7 +25,8 @@ public sealed class ImportPurchaseReceptionHandler
         ICurrentTenant tenant,
         ICurrentCompany company,
         ICurrentBranch branch,
-        ICurrentUser user)
+        ICurrentUser user
+    )
     {
         _parser = parser;
         _verifier = verifier;
@@ -38,42 +39,33 @@ public sealed class ImportPurchaseReceptionHandler
 
     public async Task<Result<PurchaseReceptionImportResultDto>> Handle(
         ImportPurchaseReceptionCommand request,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken
+    )
     {
-        var parseResult = await _parser.ParseAsync(
-            request.File.Content,
-            cancellationToken);
+        var parseResult = await _parser.ParseAsync(request.File.Content, cancellationToken);
 
-        var verifiedItems = await _verifier.VerifyAsync(
-            parseResult.Records,
-            cancellationToken);
-
+        var verifiedItems = await _verifier.VerifyAsync(parseResult.Records, cancellationToken);
 
         var itemDtos = new List<PurchaseReceptionItemDto>(verifiedItems.Count);
 
         var hasChanges = false;
 
-
         // Documentos agregados en este batch pero todavía no guardados
         // evita duplicar por AccessKey dentro del mismo archivo.
         var pendingByAccessKey = new Dictionary<string, PurchaseReceptionDocument>();
-
 
         foreach (var item in verifiedItems)
         {
             PurchaseReceptionDocument? document;
 
-
-            if (!pendingByAccessKey.TryGetValue(
-                    item.Record.AccessKey,
-                    out document))
+            if (!pendingByAccessKey.TryGetValue(item.Record.AccessKey, out document))
             {
                 document = await _documentRepo.GetByAccessKeyAsync(
                     _tenant.TenantId,
                     item.Record.AccessKey,
-                    cancellationToken);
+                    cancellationToken
+                );
             }
-
 
             if (document is null)
             {
@@ -93,13 +85,10 @@ public sealed class ImportPurchaseReceptionHandler
                     item.Record.VatAmount,
                     item.Record.Total,
                     _user.UserId,
-                    item.PurchaseId);
+                    item.PurchaseId
+                );
 
-
-                await _documentRepo.AddAsync(
-                    document,
-                    cancellationToken);
-
+                await _documentRepo.AddAsync(document, cancellationToken);
 
                 pendingByAccessKey[item.Record.AccessKey] = document;
 
@@ -109,36 +98,28 @@ public sealed class ImportPurchaseReceptionHandler
             {
                 // Documento existente creado anteriormente sin proveedor.
                 // Si ahora el proveedor ya fue resuelto, completamos SupplierId.
-                if (document.SupplierId is null &&
-                    item.SupplierId.HasValue)
+                if (document.SupplierId is null && item.SupplierId.HasValue)
                 {
-                    document.AssignSupplier(
-                        item.SupplierId.Value,
-                        _user.UserId);
+                    document.AssignSupplier(item.SupplierId.Value, _user.UserId);
 
                     hasChanges = true;
                 }
             }
 
-
-            itemDtos.Add(
-                PurchaseReceptionMapper.ToDto(
-                    item,
-                    document));
+            itemDtos.Add(PurchaseReceptionMapper.ToDto(item, document));
         }
-
 
         if (hasChanges)
         {
-            await _documentRepo.SaveChangesAsync(
-                cancellationToken);
+            await _documentRepo.SaveChangesAsync(cancellationToken);
         }
 
         var dto = new PurchaseReceptionImportResultDto(
             itemDtos,
             parseResult.Records.Count,
             parseResult.Errors.Count,
-            parseResult.SkippedUnsupportedCount);
+            parseResult.SkippedUnsupportedCount
+        );
         return Result<PurchaseReceptionImportResultDto>.Success(dto);
     }
 }

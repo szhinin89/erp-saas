@@ -6,7 +6,8 @@ public sealed record RetentionLineResult(
     string RetentionCodeName,
     decimal TaxableBase,
     decimal RetentionPct,
-    decimal AmountRetained);
+    decimal AmountRetained
+);
 
 public sealed record RetentionCalculationResult(
     IReadOnlyList<RetentionLineResult> Lines,
@@ -14,4 +15,5 @@ public sealed record RetentionCalculationResult(
     decimal TotalRetainedIncome,
     decimal TotalRetainedIsd,
     decimal TotalRetained,
-    string? SkipReason);
+    string? SkipReason
+);

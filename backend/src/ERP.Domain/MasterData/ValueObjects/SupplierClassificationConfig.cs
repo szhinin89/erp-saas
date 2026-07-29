@@ -26,34 +26,76 @@ public sealed record SupplierClassificationConfig
     // ── Valores válidos ───────────────────────────────────────────────────────
 
     /// <summary>Tipo estratégico del proveedor.</summary>
-    public static readonly IReadOnlySet<string> ValidCategories =
-        new HashSet<string>(StringComparer.OrdinalIgnoreCase)
-        { "Manufacturer", "Distributor", "ServiceProvider", "Agent", "Retailer", "Other" };
+    public static readonly IReadOnlySet<string> ValidCategories = new HashSet<string>(
+        StringComparer.OrdinalIgnoreCase
+    )
+    {
+        "Manufacturer",
+        "Distributor",
+        "ServiceProvider",
+        "Agent",
+        "Retailer",
+        "Other",
+    };
 
     /// <summary>Origen geográfico del proveedor.</summary>
-    public static readonly IReadOnlySet<string> ValidTypes =
-        new HashSet<string>(StringComparer.OrdinalIgnoreCase)
-        { "National", "International", "Both" };
+    public static readonly IReadOnlySet<string> ValidTypes = new HashSet<string>(
+        StringComparer.OrdinalIgnoreCase
+    )
+    {
+        "National",
+        "International",
+        "Both",
+    };
 
     /// <summary>Nivel de riesgo operativo y comercial.</summary>
-    public static readonly IReadOnlySet<string> ValidRisks =
-        new HashSet<string>(StringComparer.OrdinalIgnoreCase)
-        { "Low", "Medium", "High", "Critical" };
+    public static readonly IReadOnlySet<string> ValidRisks = new HashSet<string>(
+        StringComparer.OrdinalIgnoreCase
+    )
+    {
+        "Low",
+        "Medium",
+        "High",
+        "Critical",
+    };
 
     /// <summary>Calificación de calidad y confiabilidad del proveedor.</summary>
-    public static readonly IReadOnlySet<string> ValidRatings =
-        new HashSet<string>(StringComparer.OrdinalIgnoreCase)
-        { "AAA", "AA", "A", "BBB", "BB", "B", "C", "D", "NR" };
+    public static readonly IReadOnlySet<string> ValidRatings = new HashSet<string>(
+        StringComparer.OrdinalIgnoreCase
+    )
+    {
+        "AAA",
+        "AA",
+        "A",
+        "BBB",
+        "BB",
+        "B",
+        "C",
+        "D",
+        "NR",
+    };
 
     /// <summary>Tipo de bien o servicio principal que provee.</summary>
-    public static readonly IReadOnlySet<string> ValidGoodTypes =
-        new HashSet<string>(StringComparer.OrdinalIgnoreCase)
-        { "Goods", "Services", "Both", "Digital" };
+    public static readonly IReadOnlySet<string> ValidGoodTypes = new HashSet<string>(
+        StringComparer.OrdinalIgnoreCase
+    )
+    {
+        "Goods",
+        "Services",
+        "Both",
+        "Digital",
+    };
 
     /// <summary>Segmento estratégico para gestión de proveedores.</summary>
-    public static readonly IReadOnlySet<string> ValidSegments =
-        new HashSet<string>(StringComparer.OrdinalIgnoreCase)
-        { "Strategic", "Preferred", "Approved", "Transactional" };
+    public static readonly IReadOnlySet<string> ValidSegments = new HashSet<string>(
+        StringComparer.OrdinalIgnoreCase
+    )
+    {
+        "Strategic",
+        "Preferred",
+        "Approved",
+        "Transactional",
+    };
 
     // ── Propiedades ───────────────────────────────────────────────────────────
 
@@ -85,7 +127,8 @@ public sealed record SupplierClassificationConfig
         string? supplierRating,
         string? primaryGoodType,
         string? supplierSegment,
-        string? paymentMethodPreference)
+        string? paymentMethodPreference
+    )
     {
         SupplierCategory = supplierCategory;
         SupplierType = supplierType;
@@ -103,38 +146,62 @@ public sealed record SupplierClassificationConfig
         string? supplierRating = null,
         string? primaryGoodType = null,
         string? supplierSegment = null,
-        string? paymentMethodPreference = null)
+        string? paymentMethodPreference = null
+    )
     {
         return new SupplierClassificationConfig(
-            ValidateEnum(supplierCategory, ValidCategories, CategoryMaxLen, nameof(supplierCategory)),
+            ValidateEnum(
+                supplierCategory,
+                ValidCategories,
+                CategoryMaxLen,
+                nameof(supplierCategory)
+            ),
             ValidateEnum(supplierType, ValidTypes, TypeMaxLen, nameof(supplierType)),
             ValidateEnum(supplierRisk, ValidRisks, RiskMaxLen, nameof(supplierRisk)),
             ValidateEnum(supplierRating, ValidRatings, RatingMaxLen, nameof(supplierRating)),
             ValidateEnum(primaryGoodType, ValidGoodTypes, GoodTypeMaxLen, nameof(primaryGoodType)),
             ValidateEnum(supplierSegment, ValidSegments, SegmentMaxLen, nameof(supplierSegment)),
-            NormalizeText(paymentMethodPreference, PaymentPrefMaxLen, nameof(paymentMethodPreference)));
+            NormalizeText(
+                paymentMethodPreference,
+                PaymentPrefMaxLen,
+                nameof(paymentMethodPreference)
+            )
+        );
     }
 
     private static string? ValidateEnum(
-        string? value, IReadOnlySet<string> validValues, int maxLen, string paramName)
+        string? value,
+        IReadOnlySet<string> validValues,
+        int maxLen,
+        string paramName
+    )
     {
         var v = value?.Trim();
-        if (string.IsNullOrEmpty(v)) return null;
+        if (string.IsNullOrEmpty(v))
+            return null;
         if (v.Length > maxLen)
-            throw new ArgumentException($"{paramName} no puede superar {maxLen} caracteres.", paramName);
+            throw new ArgumentException(
+                $"{paramName} no puede superar {maxLen} caracteres.",
+                paramName
+            );
         if (!validValues.Contains(v))
             throw new ArgumentException(
                 $"{paramName} '{v}' no es un valor válido. Permitidos: {string.Join(", ", validValues)}.",
-                paramName);
+                paramName
+            );
         return v;
     }
 
     private static string? NormalizeText(string? value, int maxLen, string paramName)
     {
         var v = value?.Trim();
-        if (string.IsNullOrEmpty(v)) return null;
+        if (string.IsNullOrEmpty(v))
+            return null;
         if (v.Length > maxLen)
-            throw new ArgumentException($"{paramName} no puede superar {maxLen} caracteres.", paramName);
+            throw new ArgumentException(
+                $"{paramName} no puede superar {maxLen} caracteres.",
+                paramName
+            );
         return v;
     }
 }

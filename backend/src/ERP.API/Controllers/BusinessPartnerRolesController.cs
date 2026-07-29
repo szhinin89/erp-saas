@@ -38,13 +38,20 @@ public sealed class BusinessPartnerRolesController : ControllerBase
     /// </summary>
     [HttpGet]
     [Authorize(Policy = $"perm:{MasterDataPermissions.BusinessPartnersView}")]
-    [ProducesResponseType(typeof(ApiResponse<IReadOnlyList<BusinessPartnerRoleDto>>), StatusCodes.Status200OK)]
+    [ProducesResponseType(
+        typeof(ApiResponse<IReadOnlyList<BusinessPartnerRoleDto>>),
+        StatusCodes.Status200OK
+    )]
     public async Task<IActionResult> GetRoles(
         [FromRoute] Guid bpId,
         [FromQuery] bool? onlyActive = true,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default
+    )
     {
-        var result = await _mediator.Send(new GetBusinessPartnerRolesQuery(bpId, onlyActive), cancellationToken);
+        var result = await _mediator.Send(
+            new GetBusinessPartnerRolesQuery(bpId, onlyActive),
+            cancellationToken
+        );
         return this.ToOkOrBadRequest(result);
     }
 
@@ -57,13 +64,17 @@ public sealed class BusinessPartnerRolesController : ControllerBase
     /// </summary>
     [HttpPost]
     [Authorize(Policy = $"perm:{MasterDataPermissions.BusinessPartnersUpdate}")]
-    [ProducesResponseType(typeof(ApiResponse<BusinessPartnerRoleDto>), StatusCodes.Status201Created)]
+    [ProducesResponseType(
+        typeof(ApiResponse<BusinessPartnerRoleDto>),
+        StatusCodes.Status201Created
+    )]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status409Conflict)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status422UnprocessableEntity)]
     public async Task<IActionResult> AssignRole(
         [FromRoute] Guid bpId,
         [FromBody] AssignRoleRequest body,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default
+    )
     {
         var supplierConfig = body.SupplierConfig is not null
             ? SupplierRoleConfig.Create(
@@ -73,13 +84,15 @@ public sealed class BusinessPartnerRolesController : ControllerBase
                 body.SupplierConfig.DefaultRetentionIncomeCode,
                 defaultPaymentMethodCode: body.SupplierConfig.DefaultPaymentMethodCode,
                 refundProviderTypeCode: body.SupplierConfig.RefundProviderTypeCode,
-                isRetentionExempt: body.SupplierConfig.IsRetentionExempt)
+                isRetentionExempt: body.SupplierConfig.IsRetentionExempt
+            )
             : null;
 
         var carrierConfig = body.CarrierConfig is not null
             ? CarrierRoleConfig.Create(
                 body.CarrierConfig.TransportAuthorizationNumber,
-                body.CarrierConfig.VehicleCapacityTons)
+                body.CarrierConfig.VehicleCapacityTons
+            )
             : null;
 
         var customerConfig = body.CustomerConfig is not null
@@ -90,7 +103,8 @@ public sealed class BusinessPartnerRolesController : ControllerBase
                 body.CustomerConfig.CreditRating,
                 body.CustomerConfig.LoyaltyTier,
                 body.CustomerConfig.PreferredInvoiceFormat,
-                body.CustomerConfig.CustomerClassification)
+                body.CustomerConfig.CustomerClassification
+            )
             : null;
 
         SupplierClassificationConfig? classificationConfig = null;
@@ -105,18 +119,26 @@ public sealed class BusinessPartnerRolesController : ControllerBase
                     body.SupplierClassification.SupplierRating,
                     body.SupplierClassification.PrimaryGoodType,
                     body.SupplierClassification.SupplierSegment,
-                    body.SupplierClassification.PaymentMethodPreference);
+                    body.SupplierClassification.PaymentMethodPreference
+                );
             }
-            catch (ArgumentException ex) { return this.ApiBadRequest(ex.Message); }
+            catch (ArgumentException ex)
+            {
+                return this.ApiBadRequest(ex.Message);
+            }
         }
 
         var cmd = new AssignBusinessPartnerRoleCommand(
-            bpId, body.RoleType, supplierConfig, carrierConfig, customerConfig, classificationConfig);
+            bpId,
+            body.RoleType,
+            supplierConfig,
+            carrierConfig,
+            customerConfig,
+            classificationConfig
+        );
 
         var result = await _mediator.Send(cmd, cancellationToken);
-        return result.IsSuccess
-            ? this.ApiCreated(result.Value!)
-            : this.ToOkOrBadRequest(result);
+        return result.IsSuccess ? this.ApiCreated(result.Value!) : this.ToOkOrBadRequest(result);
     }
 
     /// <summary>
@@ -131,10 +153,14 @@ public sealed class BusinessPartnerRolesController : ControllerBase
     public async Task<IActionResult> RevokeRole(
         [FromRoute] Guid bpId,
         [FromRoute] Guid roleId,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default
+    )
     {
         _ = bpId; // el filtro de tenant garantiza que roleId pertenece al tenant
-        var result = await _mediator.Send(new RevokeBusinessPartnerRoleCommand(roleId), cancellationToken);
+        var result = await _mediator.Send(
+            new RevokeBusinessPartnerRoleCommand(roleId),
+            cancellationToken
+        );
         return this.ToOkOrBadRequest(result);
     }
 
@@ -149,7 +175,8 @@ public sealed class BusinessPartnerRolesController : ControllerBase
         [FromRoute] Guid bpId,
         [FromRoute] Guid roleId,
         [FromBody] SupplierConfigRequest body,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default
+    )
     {
         _ = bpId;
         SupplierRoleConfig config;
@@ -162,11 +189,18 @@ public sealed class BusinessPartnerRolesController : ControllerBase
                 body.DefaultRetentionIncomeCode,
                 defaultPaymentMethodCode: body.DefaultPaymentMethodCode,
                 refundProviderTypeCode: body.RefundProviderTypeCode,
-                isRetentionExempt: body.IsRetentionExempt);
+                isRetentionExempt: body.IsRetentionExempt
+            );
         }
-        catch (ArgumentException ex) { return this.ApiBadRequest(ex.Message); }
+        catch (ArgumentException ex)
+        {
+            return this.ApiBadRequest(ex.Message);
+        }
 
-        var result = await _mediator.Send(new UpdateSupplierRoleConfigCommand(roleId, config), cancellationToken);
+        var result = await _mediator.Send(
+            new UpdateSupplierRoleConfigCommand(roleId, config),
+            cancellationToken
+        );
         return this.ToOkOrBadRequest(result);
     }
 
@@ -183,7 +217,8 @@ public sealed class BusinessPartnerRolesController : ControllerBase
         [FromRoute] Guid bpId,
         [FromRoute] Guid roleId,
         [FromBody] SupplierClassificationRequest body,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default
+    )
     {
         _ = bpId;
         SupplierClassificationConfig config;
@@ -196,11 +231,18 @@ public sealed class BusinessPartnerRolesController : ControllerBase
                 body.SupplierRating,
                 body.PrimaryGoodType,
                 body.SupplierSegment,
-                body.PaymentMethodPreference);
+                body.PaymentMethodPreference
+            );
         }
-        catch (ArgumentException ex) { return this.ApiBadRequest(ex.Message); }
+        catch (ArgumentException ex)
+        {
+            return this.ApiBadRequest(ex.Message);
+        }
 
-        var result = await _mediator.Send(new UpdateSupplierClassificationConfigCommand(roleId, config), cancellationToken);
+        var result = await _mediator.Send(
+            new UpdateSupplierClassificationConfigCommand(roleId, config),
+            cancellationToken
+        );
         return this.ToOkOrBadRequest(result);
     }
 
@@ -213,7 +255,8 @@ public sealed class BusinessPartnerRolesController : ControllerBase
         [FromRoute] Guid bpId,
         [FromRoute] Guid roleId,
         [FromBody] CarrierConfigRequest body,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default
+    )
     {
         _ = bpId;
         CarrierRoleConfig config;
@@ -221,11 +264,18 @@ public sealed class BusinessPartnerRolesController : ControllerBase
         {
             config = CarrierRoleConfig.Create(
                 body.TransportAuthorizationNumber,
-                body.VehicleCapacityTons);
+                body.VehicleCapacityTons
+            );
         }
-        catch (ArgumentException ex) { return this.ApiBadRequest(ex.Message); }
+        catch (ArgumentException ex)
+        {
+            return this.ApiBadRequest(ex.Message);
+        }
 
-        var result = await _mediator.Send(new UpdateCarrierRoleConfigCommand(roleId, config), cancellationToken);
+        var result = await _mediator.Send(
+            new UpdateCarrierRoleConfigCommand(roleId, config),
+            cancellationToken
+        );
         return this.ToOkOrBadRequest(result);
     }
 
@@ -242,7 +292,8 @@ public sealed class BusinessPartnerRolesController : ControllerBase
         [FromRoute] Guid bpId,
         [FromRoute] Guid roleId,
         [FromBody] CustomerConfigRequest body,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default
+    )
     {
         _ = bpId;
         CustomerRoleConfig config;
@@ -255,11 +306,18 @@ public sealed class BusinessPartnerRolesController : ControllerBase
                 body.CreditRating,
                 body.LoyaltyTier,
                 body.PreferredInvoiceFormat,
-                body.CustomerClassification);
+                body.CustomerClassification
+            );
         }
-        catch (ArgumentException ex) { return this.ApiBadRequest(ex.Message); }
+        catch (ArgumentException ex)
+        {
+            return this.ApiBadRequest(ex.Message);
+        }
 
-        var result = await _mediator.Send(new UpdateCustomerRoleConfigCommand(roleId, config), cancellationToken);
+        var result = await _mediator.Send(
+            new UpdateCustomerRoleConfigCommand(roleId, config),
+            cancellationToken
+        );
         return this.ToOkOrBadRequest(result);
     }
 
@@ -271,10 +329,14 @@ public sealed class BusinessPartnerRolesController : ControllerBase
         [FromRoute] Guid bpId,
         [FromRoute] Guid roleId,
         [FromBody] UpdateRoleNotesRequest body,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default
+    )
     {
         _ = bpId;
-        var result = await _mediator.Send(new UpdateRoleNotesCommand(roleId, body.Notes), cancellationToken);
+        var result = await _mediator.Send(
+            new UpdateRoleNotesCommand(roleId, body.Notes),
+            cancellationToken
+        );
         return this.ToOkOrBadRequest(result);
     }
 }

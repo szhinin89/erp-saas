@@ -15,7 +15,11 @@ public sealed class JournalEntrySequenceRepository : IJournalEntrySequenceReposi
     }
 
     public async Task<int> ReserveNextNumberAsync(
-        Guid tenantId, Guid companyId, int fiscalYear, CancellationToken ct = default)
+        Guid tenantId,
+        Guid companyId,
+        int fiscalYear,
+        CancellationToken ct = default
+    )
     {
         // Advisory lock de transacción ambiente — serializa concurrentes para el mismo
         // (CompanyId, FiscalYear) sin bloquear otras empresas/ejercicios. Se libera
@@ -24,10 +28,14 @@ public sealed class JournalEntrySequenceRepository : IJournalEntrySequenceReposi
         // JournalEntryRepository.AcquireIdempotencyLockAsync (ADR-026 §8).
         var companyHash = StableHash(companyId.ToByteArray());
         await _context.Database.ExecuteSqlInterpolatedAsync(
-            $"SELECT pg_advisory_xact_lock({companyHash}, {fiscalYear})", ct);
+            $"SELECT pg_advisory_xact_lock({companyHash}, {fiscalYear})",
+            ct
+        );
 
-        var sequence = await _context.JournalEntrySequences
-            .FirstOrDefaultAsync(s => s.CompanyId == companyId && s.FiscalYear == fiscalYear, ct);
+        var sequence = await _context.JournalEntrySequences.FirstOrDefaultAsync(
+            s => s.CompanyId == companyId && s.FiscalYear == fiscalYear,
+            ct
+        );
 
         if (sequence is null)
         {

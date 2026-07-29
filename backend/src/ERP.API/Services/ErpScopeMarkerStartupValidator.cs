@@ -25,16 +25,21 @@ public sealed partial class ErpScopeMarkerStartupValidator : IHostedService
 
     private readonly ILogger<ErpScopeMarkerStartupValidator> _logger;
 
-    public ErpScopeMarkerStartupValidator(ILogger<ErpScopeMarkerStartupValidator> logger)
-        => _logger = logger;
+    public ErpScopeMarkerStartupValidator(ILogger<ErpScopeMarkerStartupValidator> logger) =>
+        _logger = logger;
 
     public Task StartAsync(CancellationToken cancellationToken)
     {
         var appAssembly = typeof(ICurrentTenant).Assembly;
-        var missing = appAssembly.GetTypes()
+        var missing = appAssembly
+            .GetTypes()
             .Where(t => t.IsClass && !t.IsAbstract)
             .Where(t => typeof(IBaseRequest).IsAssignableFrom(t))
-            .Where(t => OperationalPrefixes.Any(p => (t.Namespace ?? "").StartsWith(p, StringComparison.Ordinal)))
+            .Where(t =>
+                OperationalPrefixes.Any(p =>
+                    (t.Namespace ?? "").StartsWith(p, StringComparison.Ordinal)
+                )
+            )
             .Where(t => !HasMarker(t))
             .Select(t => t.FullName)
             .ToList();
@@ -58,9 +63,15 @@ public sealed partial class ErpScopeMarkerStartupValidator : IHostedService
         || typeof(ITenantScopedRequest).IsAssignableFrom(t)
         || typeof(IPlatformScopedRequest).IsAssignableFrom(t);
 
-    [LoggerMessage(Level = LogLevel.Warning, Message = "Startup scope audit: {Count} request(s) ERP sin marcador explícito: {Types}")]
+    [LoggerMessage(
+        Level = LogLevel.Warning,
+        Message = "Startup scope audit: {Count} request(s) ERP sin marcador explícito: {Types}"
+    )]
     private partial void LogScopeMissing(int count, string types);
 
-    [LoggerMessage(Level = LogLevel.Information, Message = "Startup scope audit: todos los requests ERP operativos tienen marcador explícito.")]
+    [LoggerMessage(
+        Level = LogLevel.Information,
+        Message = "Startup scope audit: todos los requests ERP operativos tienen marcador explícito."
+    )]
     private partial void LogScopeAuditOk();
 }

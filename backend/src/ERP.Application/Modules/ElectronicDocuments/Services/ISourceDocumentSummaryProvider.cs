@@ -15,5 +15,8 @@ public interface ISourceDocumentSummaryProvider
     string SourceModule { get; }
 
     Task<IReadOnlyDictionary<Guid, SourceDocumentSummary>> GetSummariesAsync(
-        Guid tenantId, IReadOnlyCollection<Guid> sourceEntityIds, CancellationToken ct = default);
+        Guid tenantId,
+        IReadOnlyCollection<Guid> sourceEntityIds,
+        CancellationToken ct = default
+    );
 }

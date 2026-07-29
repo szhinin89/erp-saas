@@ -10,10 +10,12 @@ public sealed class CreateBusinessPartnerRequest
     /// <summary>Código SRI: 04=RUC, 05=CI, 06=Pasaporte, 07=ConsumidorFinal, 08=Exterior, 09=Placa</summary>
     public string IdentificationType { get; set; } = "";
     public string IdentificationNumber { get; set; } = "";
+
     /// <summary>1=Natural, 2=Legal, 3=Government, 4=Organization</summary>
     public PersonType PersonType { get; set; } = PersonType.Natural;
     public string LegalName { get; set; } = "";
     public string? TradeName { get; set; }
+
     /// <summary>ISO 3166-1 alpha-2. Ej: EC, US, CO</summary>
     public string? CountryCode { get; set; }
 }
@@ -55,16 +57,22 @@ public sealed class SupplierConfigRequest
 {
     /// <summary>Condición de pago obligatoria — FK a master_payment_terms.</summary>
     public Guid PaymentTermId { get; set; }
+
     /// <summary>Código sustento tributario SRI (01-19). Ej: "01" = Crédito Tributario.</summary>
     public string? DefaultTaxSupportCode { get; set; }
+
     /// <summary>Código retención IVA SRI. Ej: "725".</summary>
     public string? DefaultRetentionVatCode { get; set; }
+
     /// <summary>Código retención renta SRI. Ej: "303".</summary>
     public string? DefaultRetentionIncomeCode { get; set; }
+
     /// <summary>Método de pago SRI por defecto (01-21). Ej: "01" = Sin sistema financiero.</summary>
     public string? DefaultPaymentMethodCode { get; set; }
+
     /// <summary>Tipo Proveedor de Reembolso (global.sri_supplier_type: 01=Persona Natural, 02=Sociedad).</summary>
     public string? RefundProviderTypeCode { get; set; }
+
     /// <summary>Proveedor exento de retención (RISE, microempresa, sector público). Default: false.</summary>
     public bool IsRetentionExempt { get; set; }
 }
@@ -89,16 +97,22 @@ public sealed class CustomerConfigRequest
 {
     /// <summary>Retail | Wholesale | Corporate | Government | VIP | Other</summary>
     public string? CustomerCategory { get; set; }
+
     /// <summary>Individual | SMB | MidMarket | Enterprise | StartUp</summary>
     public string? CustomerSegment { get; set; }
+
     /// <summary>Territorio libre: "Norte", "Sur", código de zona, etc.</summary>
     public string? SalesZone { get; set; }
+
     /// <summary>AAA | AA | A | BBB | BB | B | C | D | NR (no reemplaza CreditLimit)</summary>
     public string? CreditRating { get; set; }
+
     /// <summary>None | Bronze | Silver | Gold | Platinum</summary>
     public string? LoyaltyTier { get; set; }
+
     /// <summary>PDF | XML | EMAIL | PORTAL | PAPER</summary>
     public string? PreferredInvoiceFormat { get; set; }
+
     /// <summary>Nacional | Exportador | Importador | Exento | Especial</summary>
     public string? CustomerClassification { get; set; }
 }
@@ -112,20 +126,26 @@ public sealed class CustomerConfigRequest
 public sealed class CreateLocationRequest
 {
     public string Name { get; set; } = "";
+
     /// <summary>Matrix=1, Branch=2, Office=3, Warehouse=4, DeliveryPoint=5, Other=99</summary>
     public LocationType Type { get; set; }
+
     /// <summary>Bitmask: None=0, Billing=1, Delivery=2, Fiscal=4, Correspondence=8</summary>
     public LocationPurpose Purpose { get; set; } = LocationPurpose.None;
     public string AddressLine { get; set; } = "";
+
     /// <summary>Código INEC provincia (2 dígitos). Ej: "17" = Pichincha.</summary>
     public string? ProvinceCode { get; set; }
+
     /// <summary>Código INEC cantón (4 dígitos). Requiere ProvinceCode.</summary>
     public string? CantonCode { get; set; }
+
     /// <summary>Código INEC parroquia (6 dígitos). Requiere CantonCode.</summary>
     public string? ParishCode { get; set; }
     public string? Phone { get; set; }
     public string? Email { get; set; }
     public bool IsPrimary { get; set; }
+
     /// <summary>Obligatorio si Type=Other.</summary>
     public string? OtherDescription { get; set; }
 }
@@ -149,6 +169,7 @@ public sealed class UpdateLocationRequest
 public sealed class CreateContactRequest
 {
     public string FirstName { get; set; } = "";
+
     /// <summary>Commercial=1, Accounting=2, Management=3, Reception=4, Dispatch=5, Billing=6, Technical=7, Purchasing=8, Legal=9, Other=99</summary>
     public ContactRole Role { get; set; }
     public Guid? LocationId { get; set; }
@@ -159,6 +180,7 @@ public sealed class CreateContactRequest
     public string? Email { get; set; }
     public string? Notes { get; set; }
     public bool IsPrimary { get; set; }
+
     /// <summary>Obligatorio si Role=Other.</summary>
     public string? OtherDescription { get; set; }
 }
@@ -184,8 +206,10 @@ public sealed class UpsertTradingSettingsRequest
 {
     /// <summary>Límite de crédito. 0 = sin crédito. Mínimo: 0.</summary>
     public decimal CreditLimit { get; set; }
+
     /// <summary>Plazo de pago en días. 0 = contado. Mínimo: 0.</summary>
     public int PaymentDays { get; set; }
+
     /// <summary>ISO 4217. Default: USD.</summary>
     public string CreditCurrencyCode { get; set; } = "USD";
 }
@@ -195,16 +219,22 @@ public sealed class SupplierClassificationRequest
 {
     /// <summary>Manufacturer | Distributor | ServiceProvider | Agent | Retailer | Other</summary>
     public string? SupplierCategory { get; set; }
+
     /// <summary>National | International | Both</summary>
     public string? SupplierType { get; set; }
+
     /// <summary>Low | Medium | High | Critical</summary>
     public string? SupplierRisk { get; set; }
+
     /// <summary>AAA | AA | A | BBB | BB | B | C | D | NR</summary>
     public string? SupplierRating { get; set; }
+
     /// <summary>Goods | Services | Both | Digital</summary>
     public string? PrimaryGoodType { get; set; }
+
     /// <summary>Strategic | Preferred | Approved | Transactional</summary>
     public string? SupplierSegment { get; set; }
+
     /// <summary>Texto libre — método de pago operativo interno (distinto del código SRI).</summary>
     public string? PaymentMethodPreference { get; set; }
 }

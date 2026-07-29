@@ -1,6 +1,6 @@
+using System.Globalization;
 using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Logging;
-using System.Globalization;
 
 namespace ERP.Infrastructure.Services;
 
@@ -10,16 +10,18 @@ public sealed class RefreshTokenRateLimiter
     private readonly IDistributedCache _cache;
     private readonly ILogger<RefreshTokenRateLimiter> _logger;
 
-    public RefreshTokenRateLimiter(
-        IDistributedCache cache,
-        ILogger<RefreshTokenRateLimiter> logger)
+    public RefreshTokenRateLimiter(IDistributedCache cache, ILogger<RefreshTokenRateLimiter> logger)
     {
         _cache = cache;
         _logger = logger;
     }
 
     public async Task<bool> TryAcquireAsync(
-        string partitionKey, int limit, TimeSpan window, CancellationToken cancellationToken = default)
+        string partitionKey,
+        int limit,
+        TimeSpan window,
+        CancellationToken cancellationToken = default
+    )
     {
         var key = $"erp:refresh:rl:{partitionKey}";
         var now = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
@@ -49,7 +51,8 @@ public sealed class RefreshTokenRateLimiter
             key,
             $"{bucket.WindowStartMs}:{bucket.Count}",
             new DistributedCacheEntryOptions { AbsoluteExpirationRelativeToNow = window },
-            cancellationToken);
+            cancellationToken
+        );
 
         return true;
     }

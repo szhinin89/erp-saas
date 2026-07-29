@@ -14,8 +14,8 @@ internal static class AuthRefreshCookie
     /// <summary>Path legacy (antes de platform login); se limpia en logout por compatibilidad.</summary>
     public const string LegacyPath = "/api/auth";
 
-    public static CookieOptions BuildOptions(HttpRequest request, DateTime expiry)
-        => new()
+    public static CookieOptions BuildOptions(HttpRequest request, DateTime expiry) =>
+        new()
         {
             HttpOnly = true,
             Secure = request.IsHttps,
@@ -24,8 +24,8 @@ internal static class AuthRefreshCookie
             Path = Path,
         };
 
-    public static CookieOptions BuildDeleteOptions(HttpRequest request, string path)
-        => new()
+    public static CookieOptions BuildDeleteOptions(HttpRequest request, string path) =>
+        new()
         {
             HttpOnly = true,
             Secure = request.IsHttps,

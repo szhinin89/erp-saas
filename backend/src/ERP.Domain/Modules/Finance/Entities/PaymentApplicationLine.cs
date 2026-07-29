@@ -36,30 +36,70 @@ public sealed class PaymentApplicationLine : IMustHaveTenant
 
     /// <summary>Usar únicamente desde <see cref="Payment.AddApplicationLine"/> — valida la dirección del pago propietario.</summary>
     internal static PaymentApplicationLine CreateForReceivable(
-        Guid paymentId, Guid tenantId, Guid receivableId, Guid? installmentId, decimal appliedAmount, short sortOrder)
+        Guid paymentId,
+        Guid tenantId,
+        Guid receivableId,
+        Guid? installmentId,
+        decimal appliedAmount,
+        short sortOrder
+    )
     {
         if (receivableId == Guid.Empty)
-            throw new ArgumentException("La cuenta por cobrar es obligatoria.", nameof(receivableId));
+            throw new ArgumentException(
+                "La cuenta por cobrar es obligatoria.",
+                nameof(receivableId)
+            );
 
-        return Create(paymentId, tenantId, receivableId, null, installmentId, appliedAmount, sortOrder);
+        return Create(
+            paymentId,
+            tenantId,
+            receivableId,
+            null,
+            installmentId,
+            appliedAmount,
+            sortOrder
+        );
     }
 
     /// <summary>Usar únicamente desde <see cref="Payment.AddApplicationLine"/> — valida la dirección del pago propietario.</summary>
     internal static PaymentApplicationLine CreateForPayable(
-        Guid paymentId, Guid tenantId, Guid payableId, Guid? installmentId, decimal appliedAmount, short sortOrder)
+        Guid paymentId,
+        Guid tenantId,
+        Guid payableId,
+        Guid? installmentId,
+        decimal appliedAmount,
+        short sortOrder
+    )
     {
         if (payableId == Guid.Empty)
             throw new ArgumentException("La cuenta por pagar es obligatoria.", nameof(payableId));
 
-        return Create(paymentId, tenantId, null, payableId, installmentId, appliedAmount, sortOrder);
+        return Create(
+            paymentId,
+            tenantId,
+            null,
+            payableId,
+            installmentId,
+            appliedAmount,
+            sortOrder
+        );
     }
 
     private static PaymentApplicationLine Create(
-        Guid paymentId, Guid tenantId, Guid? receivableId, Guid? payableId,
-        Guid? installmentId, decimal appliedAmount, short sortOrder)
+        Guid paymentId,
+        Guid tenantId,
+        Guid? receivableId,
+        Guid? payableId,
+        Guid? installmentId,
+        decimal appliedAmount,
+        short sortOrder
+    )
     {
         if (appliedAmount <= 0)
-            throw new ArgumentException("El monto aplicado debe ser mayor a cero.", nameof(appliedAmount));
+            throw new ArgumentException(
+                "El monto aplicado debe ser mayor a cero.",
+                nameof(appliedAmount)
+            );
 
         return new PaymentApplicationLine
         {

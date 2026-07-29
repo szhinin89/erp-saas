@@ -12,11 +12,17 @@ namespace ERP.Infrastructure.Ride.Storage;
 public sealed class RidePdfStorageNamingStrategy : IRidePdfStorageNamingStrategy
 {
     public string BuildRelativePath(
-        Guid tenantId, RideDocumentType documentType, Guid electronicDocumentId, string templateVersion)
-        => string.Join('/',
+        Guid tenantId,
+        RideDocumentType documentType,
+        Guid electronicDocumentId,
+        string templateVersion
+    ) =>
+        string.Join(
+            '/',
             "ride",
             tenantId.ToString("N"),
             documentType.ToString().ToLowerInvariant(),
             electronicDocumentId.ToString("N"),
-            $"{templateVersion}.pdf");
+            $"{templateVersion}.pdf"
+        );
 }

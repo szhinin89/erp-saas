@@ -17,11 +17,17 @@ internal sealed class ErpDbContextFactory : IDesignTimeDbContextFactory<ErpDbCon
         var options = new DbContextOptionsBuilder<ErpDbContext>()
             .UseNpgsql(
                 "Host=localhost;Port=5435;Database=dberpsaas;Username=postgres;Password=zhin@2024",
-                npgsql => npgsql.MigrationsAssembly(typeof(ErpDbContext).Assembly.FullName))
+                npgsql => npgsql.MigrationsAssembly(typeof(ErpDbContext).Assembly.FullName)
+            )
             .ConfigureWarnings(w => w.Ignore(RelationalEventId.PendingModelChangesWarning))
             .Options;
 
-        return new ErpDbContext(options, new DesignTimeTenant(), new NoOpPublisher(), new DesignTimeCompany());
+        return new ErpDbContext(
+            options,
+            new DesignTimeTenant(),
+            new NoOpPublisher(),
+            new DesignTimeCompany()
+        );
     }
 
     private sealed class DesignTimeTenant : ICurrentTenant

@@ -6,8 +6,6 @@ public sealed class DisableBranchCommandValidator : AbstractValidator<DisableBra
 {
     public DisableBranchCommandValidator()
     {
-        RuleFor(x => x.Id)
-            .NotEmpty()
-            .WithMessage("El ID de la sucursal es obligatorio.");
+        RuleFor(x => x.Id).NotEmpty().WithMessage("El ID de la sucursal es obligatorio.");
     }
 }

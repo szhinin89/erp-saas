@@ -10,7 +10,8 @@ public sealed record InterBranchAccessContext(
     Guid SourceWarehouseId,
     Guid SourceBranchId,
     Guid TargetWarehouseId,
-    Guid DestinationBranchId);
+    Guid DestinationBranchId
+);
 
 /// <summary>
 /// Autorización para operaciones que involucran dos sucursales potencialmente distintas
@@ -32,5 +33,6 @@ public interface IInterBranchAccessGuard
     Task<Result<InterBranchAccessContext>> RequireInterBranchAccessAsync(
         Guid sourceWarehouseId,
         Guid targetWarehouseId,
-        CancellationToken cancellationToken = default);
+        CancellationToken cancellationToken = default
+    );
 }

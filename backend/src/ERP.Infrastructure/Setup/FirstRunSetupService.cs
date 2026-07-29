@@ -20,7 +20,11 @@ public sealed class FirstRunSetupService : IFirstRunSetupService
     private readonly IConfiguration _config;
     private readonly ILogger<FirstRunSetupService> _logger;
 
-    public FirstRunSetupService(ISystemSetupRepository repo, IConfiguration config, ILogger<FirstRunSetupService> logger)
+    public FirstRunSetupService(
+        ISystemSetupRepository repo,
+        IConfiguration config,
+        ILogger<FirstRunSetupService> logger
+    )
     {
         _repo = repo;
         _config = config;
@@ -71,6 +75,7 @@ public sealed class FirstRunSetupService : IFirstRunSetupService
 
         _logger.LogWarning(
             "First-run setup token generado — expira en {ExpiryMinutes} minutos. Úselo de inmediato en POST /api/v1/setup/admin.",
-            expiryMinutes);
+            expiryMinutes
+        );
     }
 }

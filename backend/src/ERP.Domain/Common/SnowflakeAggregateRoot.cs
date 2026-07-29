@@ -3,7 +3,10 @@ namespace ERP.Domain.Common;
 /// <summary>
 /// Raíz de agregado transaccional greenfield: PK <see cref="Id"/> (Snowflake) + <see cref="PublicId"/> (UUID API).
 /// </summary>
-public abstract class SnowflakeAggregateRoot : IHasDomainEvents, ITenantScopedEntity, ICompanyOperationalEntity
+public abstract class SnowflakeAggregateRoot
+    : IHasDomainEvents,
+        ITenantScopedEntity,
+        ICompanyOperationalEntity
 {
     private readonly List<IDomainEvent> _domainEvents = new();
 

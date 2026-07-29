@@ -1,5 +1,3 @@
 namespace ERP.Domain.Common;
 
-public interface IMustHaveTenant : ITenantScopedEntity
-{
-}
+public interface IMustHaveTenant : ITenantScopedEntity { }

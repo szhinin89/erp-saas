@@ -31,25 +31,65 @@ public sealed record CustomerRoleConfig
     public const int ClassificationMaxLen = 50;
 
     // ── Valores válidos (validación en Application layer vía FluentValidation) ─
-    public static readonly IReadOnlySet<string> ValidCategories =
-        new HashSet<string>(StringComparer.OrdinalIgnoreCase)
-        { "Retail", "Wholesale", "Corporate", "Government", "VIP", "Other" };
+    public static readonly IReadOnlySet<string> ValidCategories = new HashSet<string>(
+        StringComparer.OrdinalIgnoreCase
+    )
+    {
+        "Retail",
+        "Wholesale",
+        "Corporate",
+        "Government",
+        "VIP",
+        "Other",
+    };
 
-    public static readonly IReadOnlySet<string> ValidSegments =
-        new HashSet<string>(StringComparer.OrdinalIgnoreCase)
-        { "Individual", "SMB", "MidMarket", "Enterprise", "StartUp" };
+    public static readonly IReadOnlySet<string> ValidSegments = new HashSet<string>(
+        StringComparer.OrdinalIgnoreCase
+    )
+    {
+        "Individual",
+        "SMB",
+        "MidMarket",
+        "Enterprise",
+        "StartUp",
+    };
 
-    public static readonly IReadOnlySet<string> ValidCreditRatings =
-        new HashSet<string>(StringComparer.OrdinalIgnoreCase)
-        { "AAA", "AA", "A", "BBB", "BB", "B", "C", "D", "NR" };
+    public static readonly IReadOnlySet<string> ValidCreditRatings = new HashSet<string>(
+        StringComparer.OrdinalIgnoreCase
+    )
+    {
+        "AAA",
+        "AA",
+        "A",
+        "BBB",
+        "BB",
+        "B",
+        "C",
+        "D",
+        "NR",
+    };
 
-    public static readonly IReadOnlySet<string> ValidLoyaltyTiers =
-        new HashSet<string>(StringComparer.OrdinalIgnoreCase)
-        { "None", "Bronze", "Silver", "Gold", "Platinum" };
+    public static readonly IReadOnlySet<string> ValidLoyaltyTiers = new HashSet<string>(
+        StringComparer.OrdinalIgnoreCase
+    )
+    {
+        "None",
+        "Bronze",
+        "Silver",
+        "Gold",
+        "Platinum",
+    };
 
-    public static readonly IReadOnlySet<string> ValidInvoiceFormats =
-        new HashSet<string>(StringComparer.OrdinalIgnoreCase)
-        { "PDF", "XML", "EMAIL", "PORTAL", "PAPER" };
+    public static readonly IReadOnlySet<string> ValidInvoiceFormats = new HashSet<string>(
+        StringComparer.OrdinalIgnoreCase
+    )
+    {
+        "PDF",
+        "XML",
+        "EMAIL",
+        "PORTAL",
+        "PAPER",
+    };
 
     // ── Propiedades ───────────────────────────────────────────────────────────
 
@@ -103,7 +143,8 @@ public sealed record CustomerRoleConfig
         string? creditRating,
         string? loyaltyTier,
         string? preferredInvoiceFormat,
-        string? customerClassification)
+        string? customerClassification
+    )
     {
         CustomerCategory = customerCategory;
         CustomerSegment = customerSegment;
@@ -121,7 +162,8 @@ public sealed record CustomerRoleConfig
         string? creditRating = null,
         string? loyaltyTier = null,
         string? preferredInvoiceFormat = null,
-        string? customerClassification = null)
+        string? customerClassification = null
+    )
     {
         return new CustomerRoleConfig(
             Normalize(customerCategory, CategoryMaxLen, nameof(customerCategory)),
@@ -130,15 +172,20 @@ public sealed record CustomerRoleConfig
             Normalize(creditRating, CreditRatingMaxLen, nameof(creditRating)),
             Normalize(loyaltyTier, LoyaltyTierMaxLen, nameof(loyaltyTier)),
             Normalize(preferredInvoiceFormat, InvoiceFormatMaxLen, nameof(preferredInvoiceFormat)),
-            Normalize(customerClassification, ClassificationMaxLen, nameof(customerClassification)));
+            Normalize(customerClassification, ClassificationMaxLen, nameof(customerClassification))
+        );
     }
 
     private static string? Normalize(string? value, int maxLen, string paramName)
     {
         var v = value?.Trim();
-        if (string.IsNullOrEmpty(v)) return null;
+        if (string.IsNullOrEmpty(v))
+            return null;
         if (v.Length > maxLen)
-            throw new ArgumentException($"{paramName} no puede superar {maxLen} caracteres.", paramName);
+            throw new ArgumentException(
+                $"{paramName} no puede superar {maxLen} caracteres.",
+                paramName
+            );
         return v;
     }
 }

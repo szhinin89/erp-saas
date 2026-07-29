@@ -12,8 +12,13 @@ namespace ERP.Application.Modules.Inventory.ItemMatching.Services;
 public interface IItemMatchConfirmationService
 {
     Task ConfirmAsync(
-        PurchaseReceptionDocument document, PurchaseReceptionLine line, Guid itemId,
-        Guid matchedBy, DateTime matchedAtUtc, CancellationToken cancellationToken = default);
+        PurchaseReceptionDocument document,
+        PurchaseReceptionLine line,
+        Guid itemId,
+        Guid matchedBy,
+        DateTime matchedAtUtc,
+        CancellationToken cancellationToken = default
+    );
 
     /// <summary>
     /// Efecto inverso de <see cref="ConfirmAsync"/>: antes de desvincular la línea, revierte el
@@ -21,8 +26,11 @@ public interface IItemMatchConfirmationService
     /// para que el motor de sugerencias (<see cref="IItemMatchFinder"/>) no lo vuelva a proponer.
     /// </summary>
     Task UnconfirmAsync(
-        PurchaseReceptionDocument document, PurchaseReceptionLine line, Guid unmatchedBy,
-        CancellationToken cancellationToken = default);
+        PurchaseReceptionDocument document,
+        PurchaseReceptionLine line,
+        Guid unmatchedBy,
+        CancellationToken cancellationToken = default
+    );
 }
 
 public sealed class ItemMatchConfirmationService : IItemMatchConfirmationService
@@ -32,18 +40,37 @@ public sealed class ItemMatchConfirmationService : IItemMatchConfirmationService
     public ItemMatchConfirmationService(IItemRepository itemRepo) => _itemRepo = itemRepo;
 
     public async Task ConfirmAsync(
-        PurchaseReceptionDocument document, PurchaseReceptionLine line, Guid itemId,
-        Guid matchedBy, DateTime matchedAtUtc, CancellationToken cancellationToken = default)
+        PurchaseReceptionDocument document,
+        PurchaseReceptionLine line,
+        Guid itemId,
+        Guid matchedBy,
+        DateTime matchedAtUtc,
+        CancellationToken cancellationToken = default
+    )
     {
         if (document.SupplierId is { } supplierId && !string.IsNullOrWhiteSpace(line.SupplierCode))
         {
-            var alreadyExists = await _itemRepo.SupplierCodeExistsAsync(supplierId, line.SupplierCode, document.TenantId, cancellationToken);
+            var alreadyExists = await _itemRepo.SupplierCodeExistsAsync(
+                supplierId,
+                line.SupplierCode,
+                document.TenantId,
+                cancellationToken
+            );
             if (!alreadyExists)
             {
-                var item = await _itemRepo.GetByIdAsync(itemId, document.TenantId, cancellationToken);
+                var item = await _itemRepo.GetByIdAsync(
+                    itemId,
+                    document.TenantId,
+                    cancellationToken
+                );
                 if (item is not null)
                 {
-                    item.AddSupplierCode(line.SupplierCode, isPrimary: false, supplierId, matchedBy);
+                    item.AddSupplierCode(
+                        line.SupplierCode,
+                        isPrimary: false,
+                        supplierId,
+                        matchedBy
+                    );
                     await _itemRepo.SaveChangesAsync(cancellationToken);
                 }
             }
@@ -53,12 +80,23 @@ public sealed class ItemMatchConfirmationService : IItemMatchConfirmationService
     }
 
     public async Task UnconfirmAsync(
-        PurchaseReceptionDocument document, PurchaseReceptionLine line, Guid unmatchedBy,
-        CancellationToken cancellationToken = default)
+        PurchaseReceptionDocument document,
+        PurchaseReceptionLine line,
+        Guid unmatchedBy,
+        CancellationToken cancellationToken = default
+    )
     {
-        if (document.SupplierId is { } supplierId && !string.IsNullOrWhiteSpace(line.SupplierCode) && line.ItemId is { } previousItemId)
+        if (
+            document.SupplierId is { } supplierId
+            && !string.IsNullOrWhiteSpace(line.SupplierCode)
+            && line.ItemId is { } previousItemId
+        )
         {
-            var item = await _itemRepo.GetByIdAsync(previousItemId, document.TenantId, cancellationToken);
+            var item = await _itemRepo.GetByIdAsync(
+                previousItemId,
+                document.TenantId,
+                cancellationToken
+            );
             if (item is not null)
             {
                 item.DisableSupplierCode(supplierId, line.SupplierCode, unmatchedBy);

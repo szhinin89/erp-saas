@@ -1,7 +1,7 @@
+using System.Reflection;
 using ERP.Application.Common;
 using FluentAssertions;
 using MediatR;
-using System.Reflection;
 
 namespace ERP.Architecture.Tests;
 
@@ -10,8 +10,7 @@ namespace ERP.Architecture.Tests;
 /// </summary>
 public sealed class SecurityArchitectureTests
 {
-    private static readonly Assembly AppAssembly =
-        typeof(ICurrentTenant).Assembly;
+    private static readonly Assembly AppAssembly = typeof(ICurrentTenant).Assembly;
 
     private static readonly Assembly DomainAssembly =
         typeof(ERP.Domain.Common.ITenantScopedEntity).Assembly;
@@ -51,21 +50,28 @@ public sealed class SecurityArchitectureTests
     [Fact]
     public void AR_SEC_1_subscriber_scoped_request_must_not_also_implement_company_scoped()
     {
-        var types = AppAssembly.GetTypes()
+        var types = AppAssembly
+            .GetTypes()
             .Where(t => t.IsClass && !t.IsAbstract)
-            .Where(t => typeof(ITenantScopedRequest).IsAssignableFrom(t)
-                     && typeof(ICompanyScopedRequest).IsAssignableFrom(t))
+            .Where(t =>
+                typeof(ITenantScopedRequest).IsAssignableFrom(t)
+                && typeof(ICompanyScopedRequest).IsAssignableFrom(t)
+            )
             .Select(t => t.FullName)
             .ToList();
 
-        types.Should().BeEmpty(
-            "un request no puede ser ITenantScopedRequest e ICompanyScopedRequest a la vez");
+        types
+            .Should()
+            .BeEmpty(
+                "un request no puede ser ITenantScopedRequest e ICompanyScopedRequest a la vez"
+            );
     }
 
     [Fact]
     public void AR_SEC_2_company_scoped_entity_must_also_implement_subscriber_scoped()
     {
-        var violators = DomainAssembly.GetTypes()
+        var violators = DomainAssembly
+            .GetTypes()
             .Concat(AppAssembly.GetTypes())
             .Where(t => t.IsClass && !t.IsAbstract)
             .Where(t => typeof(ERP.Domain.Common.ICompanyScopedEntity).IsAssignableFrom(t))
@@ -73,8 +79,11 @@ public sealed class SecurityArchitectureTests
             .Select(t => t.FullName)
             .ToList();
 
-        violators.Should().BeEmpty(
-            "toda entidad con ICompanyScopedEntity debe también implementar ITenantScopedEntity");
+        violators
+            .Should()
+            .BeEmpty(
+                "toda entidad con ICompanyScopedEntity debe también implementar ITenantScopedEntity"
+            );
     }
 
     [Fact]
@@ -82,51 +91,70 @@ public sealed class SecurityArchitectureTests
     {
         const string masterDataPrefix = "ERP.Application.MasterData";
 
-        var types = AppAssembly.GetTypes()
+        var types = AppAssembly
+            .GetTypes()
             .Where(t => t.IsClass && !t.IsAbstract)
-            .Where(t => (t.Namespace ?? string.Empty).StartsWith(masterDataPrefix, StringComparison.Ordinal))
+            .Where(t =>
+                (t.Namespace ?? string.Empty).StartsWith(masterDataPrefix, StringComparison.Ordinal)
+            )
             .Where(t => typeof(IBaseRequest).IsAssignableFrom(t))
             .Where(t => !HasExplicitScopeMarker(t))
             .Select(t => t.FullName)
             .ToList();
 
-        types.Should().BeEmpty(
-            "MasterData debe declarar ITenantScopedRequest, ICompanyScopedRequest o IPlatformScopedRequest");
+        types
+            .Should()
+            .BeEmpty(
+                "MasterData debe declarar ITenantScopedRequest, ICompanyScopedRequest o IPlatformScopedRequest"
+            );
     }
 
     [Fact]
     public void AR_SEC_4_operational_erp_requests_must_declare_explicit_scope_not_namespace_fallback()
     {
-        var violators = AppAssembly.GetTypes()
+        var violators = AppAssembly
+            .GetTypes()
             .Where(t => t.IsClass && !t.IsAbstract)
             .Where(t => typeof(IBaseRequest).IsAssignableFrom(t))
-            .Where(t => OperationalErpNamespacePrefixes.Any(p =>
-                (t.Namespace ?? string.Empty).StartsWith(p, StringComparison.Ordinal)))
+            .Where(t =>
+                OperationalErpNamespacePrefixes.Any(p =>
+                    (t.Namespace ?? string.Empty).StartsWith(p, StringComparison.Ordinal)
+                )
+            )
             .Where(t => !HasExplicitScopeMarker(t))
             .Select(t => t.FullName)
             .ToList();
 
-        violators.Should().BeEmpty(
-            "handlers ERP operativos deben implementar ICompanyScopedRequest (o IPlatformScopedRequest para jobs de sistema). " +
-            "El namespace-prefix es solo fallback legacy temporal");
+        violators
+            .Should()
+            .BeEmpty(
+                "handlers ERP operativos deben implementar ICompanyScopedRequest (o IPlatformScopedRequest para jobs de sistema). "
+                    + "El namespace-prefix es solo fallback legacy temporal"
+            );
     }
 
     [Fact]
     public void AR_SEC_5_namespace_prefix_debt_must_not_grow()
     {
-        var handlersConDeuda = AppAssembly.GetTypes()
+        var handlersConDeuda = AppAssembly
+            .GetTypes()
             .Where(t => t.IsClass && !t.IsAbstract)
             .Where(t =>
             {
                 var ns = t.Namespace ?? string.Empty;
-                return NamespacePrefixDebtPrefixes.Any(p => ns.StartsWith(p, StringComparison.Ordinal));
+                return NamespacePrefixDebtPrefixes.Any(p =>
+                    ns.StartsWith(p, StringComparison.Ordinal)
+                );
             })
             .Where(t => typeof(IBaseRequest).IsAssignableFrom(t))
             .Where(t => !HasExplicitScopeMarker(t))
             .ToList();
 
-        handlersConDeuda.Should().BeEmpty(
-            $"quedan {handlersConDeuda.Count} requests sin marcador explícito en namespaces con deuda de prefix");
+        handlersConDeuda
+            .Should()
+            .BeEmpty(
+                $"quedan {handlersConDeuda.Count} requests sin marcador explícito en namespaces con deuda de prefix"
+            );
     }
 
     private static readonly Assembly InfraAssembly =
@@ -139,22 +167,27 @@ public sealed class SecurityArchitectureTests
     [Fact]
     public void AR_SEC_6_company_operational_entities_must_have_non_nullable_company_id()
     {
-        var violators = DomainAssembly.GetTypes()
+        var violators = DomainAssembly
+            .GetTypes()
             .Where(t => t.IsClass && !t.IsAbstract)
             .Where(t => typeof(ERP.Domain.Common.ICompanyOperationalEntity).IsAssignableFrom(t))
             .Where(t =>
             {
                 var prop = t.GetProperty("CompanyId");
-                if (prop is null) return false;
+                if (prop is null)
+                    return false;
                 return prop.PropertyType == typeof(Guid?);
             })
             .Select(t => t.FullName)
             .ToList();
 
-        violators.Should().BeEmpty(
-            "ICompanyOperationalEntity.CompanyId debe ser Guid (NOT NULL). " +
-            "Migración FinalizeCompanyIdNotNull ya fue aplicada. " +
-            "Ninguna nueva entidad operacional puede tener CompanyId nullable.");
+        violators
+            .Should()
+            .BeEmpty(
+                "ICompanyOperationalEntity.CompanyId debe ser Guid (NOT NULL). "
+                    + "Migración FinalizeCompanyIdNotNull ya fue aplicada. "
+                    + "Ninguna nueva entidad operacional puede tener CompanyId nullable."
+            );
     }
 
     /// <summary>
@@ -174,9 +207,11 @@ public sealed class SecurityArchitectureTests
         foreach (var typeName in interceptorTypes)
         {
             var type = InfraAssembly.GetType(typeName);
-            type.Should().NotBeNull(
-                $"El interceptor {typeName} debe existir. " +
-                "Es parte del Zero-Leak enforcement layer y no puede eliminarse.");
+            type.Should()
+                .NotBeNull(
+                    $"El interceptor {typeName} debe existir. "
+                        + "Es parte del Zero-Leak enforcement layer y no puede eliminarse."
+                );
         }
     }
 
@@ -203,18 +238,33 @@ public sealed class SecurityArchitectureTests
             "ERP.Domain.Modules.Cash",
         };
 
-        var violators = DomainAssembly.GetTypes()
-            .Where(t => erpOperationalNamespaces.Any(ns =>
-                (t.Namespace ?? "").StartsWith(ns, StringComparison.Ordinal)))
-            .Where(t => t.GetFields(System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)
-                .Any(f => forbiddenNamespaces.Any(fn =>
-                    (f.FieldType.Namespace ?? "").StartsWith(fn, StringComparison.Ordinal))))
+        var violators = DomainAssembly
+            .GetTypes()
+            .Where(t =>
+                erpOperationalNamespaces.Any(ns =>
+                    (t.Namespace ?? "").StartsWith(ns, StringComparison.Ordinal)
+                )
+            )
+            .Where(t =>
+                t.GetFields(
+                        System.Reflection.BindingFlags.NonPublic
+                            | System.Reflection.BindingFlags.Instance
+                    )
+                    .Any(f =>
+                        forbiddenNamespaces.Any(fn =>
+                            (f.FieldType.Namespace ?? "").StartsWith(fn, StringComparison.Ordinal)
+                        )
+                    )
+            )
             .Select(t => t.FullName)
             .ToList();
 
-        violators.Should().BeEmpty(
-            "Entidades COMPANY no deben referenciar entidades SUBSCRIBER billing. " +
-            "Violación del boundary COMPANY ↔ SUBSCRIBER.");
+        violators
+            .Should()
+            .BeEmpty(
+                "Entidades COMPANY no deben referenciar entidades SUBSCRIBER billing. "
+                    + "Violación del boundary COMPANY ↔ SUBSCRIBER."
+            );
     }
 
     /// <summary>
@@ -223,21 +273,26 @@ public sealed class SecurityArchitectureTests
     [Fact]
     public void AR_SEC_9_company_scoped_entities_must_have_non_nullable_company_id()
     {
-        var violators = DomainAssembly.GetTypes()
+        var violators = DomainAssembly
+            .GetTypes()
             .Where(t => t.IsClass && !t.IsAbstract)
             .Where(t => typeof(ERP.Domain.Common.ICompanyScopedEntity).IsAssignableFrom(t))
             .Where(t =>
             {
                 var prop = t.GetProperty("CompanyId");
-                if (prop is null) return false;
+                if (prop is null)
+                    return false;
                 return prop.PropertyType == typeof(Guid?);
             })
             .Select(t => t.FullName)
             .ToList();
 
-        violators.Should().BeEmpty(
-            "ICompanyScopedEntity.CompanyId debe ser Guid (NOT NULL). " +
-            "Entidades con company scope estricto nunca pueden tener CompanyId nullable.");
+        violators
+            .Should()
+            .BeEmpty(
+                "ICompanyScopedEntity.CompanyId debe ser Guid (NOT NULL). "
+                    + "Entidades con company scope estricto nunca pueden tener CompanyId nullable."
+            );
     }
 
     private static bool HasExplicitScopeMarker(Type t) =>

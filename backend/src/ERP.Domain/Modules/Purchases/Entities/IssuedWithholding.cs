@@ -4,7 +4,10 @@ using ERP.Domain.Modules.Purchases.Events;
 
 namespace ERP.Domain.Modules.Purchases.Entities;
 
-public sealed class IssuedWithholding : AuditableEntity, ITenantScopedEntity, ICompanyOperationalEntity
+public sealed class IssuedWithholding
+    : AuditableEntity,
+        ITenantScopedEntity,
+        ICompanyOperationalEntity
 {
     public Guid CompanyId { get; private set; }
 
@@ -56,7 +59,8 @@ public sealed class IssuedWithholding : AuditableEntity, ITenantScopedEntity, IC
         Guid supplierId,
         Guid emissionPointId,
         DateOnly issueDate,
-        Guid createdBy)
+        Guid createdBy
+    )
     {
         var w = new IssuedWithholding
         {
@@ -85,7 +89,8 @@ public sealed class IssuedWithholding : AuditableEntity, ITenantScopedEntity, IC
     {
         EnsureEditable();
         _details.Clear();
-        foreach (var d in details) _details.Add(d);
+        foreach (var d in details)
+            _details.Add(d);
         RecalcTotals();
     }
 
@@ -95,13 +100,24 @@ public sealed class IssuedWithholding : AuditableEntity, ITenantScopedEntity, IC
         if (_details.Count == 0)
             throw new InvalidOperationException("No se puede emitir una retención sin líneas.");
         if (string.IsNullOrWhiteSpace(withholdingNumber))
-            throw new ArgumentException("El número de retención es obligatorio.", nameof(withholdingNumber));
+            throw new ArgumentException(
+                "El número de retención es obligatorio.",
+                nameof(withholdingNumber)
+            );
 
         WithholdingNumber = withholdingNumber.Trim();
         Status = WithholdingStatus.Issued;
         SetUpdated(updatedBy);
-        RaiseDomainEvent(new IssuedWithholdingIssuedEvent(
-            TenantId, Id, PurchaseInvoiceId, SupplierId, WithholdingNumber, TotalRetained));
+        RaiseDomainEvent(
+            new IssuedWithholdingIssuedEvent(
+                TenantId,
+                Id,
+                PurchaseInvoiceId,
+                SupplierId,
+                WithholdingNumber,
+                TotalRetained
+            )
+        );
     }
 
     public void Cancel(string reason, Guid cancelledBy)
@@ -117,8 +133,17 @@ public sealed class IssuedWithholding : AuditableEntity, ITenantScopedEntity, IC
         CancelledBy = cancelledBy;
         SriStatus = SriDocumentStatus.Voided;
         SetUpdated(cancelledBy);
-        RaiseDomainEvent(new IssuedWithholdingCancelledEvent(
-            TenantId, Id, PurchaseInvoiceId, SupplierId, WithholdingNumber, TotalRetained, CancelReason));
+        RaiseDomainEvent(
+            new IssuedWithholdingCancelledEvent(
+                TenantId,
+                Id,
+                PurchaseInvoiceId,
+                SupplierId,
+                WithholdingNumber,
+                TotalRetained,
+                CancelReason
+            )
+        );
     }
 
     // ── SRI Electronic Document Lifecycle ───────────────────────────────
@@ -126,23 +151,36 @@ public sealed class IssuedWithholding : AuditableEntity, ITenantScopedEntity, IC
     public void SetAccessKey(string accessKey)
     {
         if (string.IsNullOrWhiteSpace(accessKey) || accessKey.Trim().Length != AccessKeyLen)
-            throw new ArgumentException($"La clave de acceso debe tener {AccessKeyLen} dígitos.", nameof(accessKey));
+            throw new ArgumentException(
+                $"La clave de acceso debe tener {AccessKeyLen} dígitos.",
+                nameof(accessKey)
+            );
         AccessKey = accessKey.Trim();
     }
 
     public void MarkSigned(string signedXmlPath, Guid updatedBy)
     {
         if (string.IsNullOrWhiteSpace(signedXmlPath))
-            throw new ArgumentException("La ruta del XML firmado es obligatoria.", nameof(signedXmlPath));
+            throw new ArgumentException(
+                "La ruta del XML firmado es obligatoria.",
+                nameof(signedXmlPath)
+            );
         SignedXmlPath = signedXmlPath.Trim();
         SriStatus = SriDocumentStatus.Signed;
         SetUpdated(updatedBy);
     }
 
-    public void MarkAuthorized(string authorizationNumber, DateTime authorizationDate, Guid updatedBy)
+    public void MarkAuthorized(
+        string authorizationNumber,
+        DateTime authorizationDate,
+        Guid updatedBy
+    )
     {
         if (string.IsNullOrWhiteSpace(authorizationNumber))
-            throw new ArgumentException("El número de autorización SRI es obligatorio.", nameof(authorizationNumber));
+            throw new ArgumentException(
+                "El número de autorización SRI es obligatorio.",
+                nameof(authorizationNumber)
+            );
         SriAuthorizationNumber = authorizationNumber.Trim();
         SriAuthorizationDate = authorizationDate;
         SriStatus = SriDocumentStatus.Authorized;
@@ -157,7 +195,9 @@ public sealed class IssuedWithholding : AuditableEntity, ITenantScopedEntity, IC
     }
 
     public void SetXmlPath(string xmlPath) => XmlPath = xmlPath?.Trim();
+
     public void SetPdfPath(string pdfPath) => PdfPath = pdfPath?.Trim();
+
     public void SetSriReceiptNumber(string rn) => SriReceiptNumber = rn?.Trim();
 
     // ── Private ─────────────────────────────────────────────────────────
@@ -165,7 +205,9 @@ public sealed class IssuedWithholding : AuditableEntity, ITenantScopedEntity, IC
     private void EnsureEditable()
     {
         if (Status != WithholdingStatus.Draft)
-            throw new InvalidOperationException("Solo se pueden editar retenciones en estado borrador.");
+            throw new InvalidOperationException(
+                "Solo se pueden editar retenciones en estado borrador."
+            );
     }
 
     private void RecalcTotals()

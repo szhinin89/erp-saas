@@ -15,7 +15,8 @@ public sealed class MediaService : IMediaService
     public MediaService(
         IMediaFileRepository mediaFiles,
         IFileStorage fileStorage,
-        IImageValidationService imageValidation)
+        IImageValidationService imageValidation
+    )
     {
         _mediaFiles = mediaFiles;
         _fileStorage = fileStorage;
@@ -24,7 +25,8 @@ public sealed class MediaService : IMediaService
 
     public async Task<Result<MediaFile>> ReplacePrimaryImageAsync(
         ReplacePrimaryMediaRequest request,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default
+    )
     {
         var validation = _imageValidation.Validate(request.Content);
         if (!validation.IsSuccess)
@@ -33,19 +35,31 @@ public sealed class MediaService : IMediaService
         var metadata = validation.Value!;
 
         var existing = await _mediaFiles.GetActivePrimaryAsync(
-            request.TenantId, request.CompanyId, request.OwnerType, request.OwnerId, request.Role, cancellationToken);
+            request.TenantId,
+            request.CompanyId,
+            request.OwnerType,
+            request.OwnerId,
+            request.Role,
+            cancellationToken
+        );
 
         var storedFileName = $"{Guid.NewGuid():N}.{metadata.Extension}";
-        var relativePath = string.Join('/',
+        var relativePath = string.Join(
+            '/',
             "media",
             request.TenantId.ToString("N"),
             request.OwnerType.ToString().ToLowerInvariant(),
             request.OwnerId.ToString("N"),
             request.Role,
-            storedFileName);
+            storedFileName
+        );
 
         request.Content.Content.Position = 0;
-        var storedPath = await _fileStorage.SaveAsync(relativePath, request.Content.Content, cancellationToken);
+        var storedPath = await _fileStorage.SaveAsync(
+            relativePath,
+            request.Content.Content,
+            cancellationToken
+        );
 
         var mediaFile = MediaFile.Create(
             tenantId: request.TenantId,
@@ -64,7 +78,8 @@ public sealed class MediaService : IMediaService
             isPrimary: true,
             createdBy: request.UserId,
             width: metadata.Width,
-            height: metadata.Height);
+            height: metadata.Height
+        );
 
         if (existing is not null)
             existing.Disable(request.UserId);
@@ -81,9 +96,19 @@ public sealed class MediaService : IMediaService
         MediaOwnerType ownerType,
         Guid ownerId,
         string role,
-        CancellationToken cancellationToken = default)
-        => _mediaFiles.GetActivePrimaryAsync(tenantId, companyId, ownerType, ownerId, role, cancellationToken);
+        CancellationToken cancellationToken = default
+    ) =>
+        _mediaFiles.GetActivePrimaryAsync(
+            tenantId,
+            companyId,
+            ownerType,
+            ownerId,
+            role,
+            cancellationToken
+        );
 
-    public Task<Stream?> OpenContentAsync(MediaFile mediaFile, CancellationToken cancellationToken = default)
-        => _fileStorage.GetAsync(mediaFile.StoragePath, cancellationToken);
+    public Task<Stream?> OpenContentAsync(
+        MediaFile mediaFile,
+        CancellationToken cancellationToken = default
+    ) => _fileStorage.GetAsync(mediaFile.StoragePath, cancellationToken);
 }

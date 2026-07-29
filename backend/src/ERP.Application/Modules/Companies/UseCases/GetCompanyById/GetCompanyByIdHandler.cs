@@ -5,7 +5,8 @@ using MediatR;
 
 namespace ERP.Application.Modules.Companies.UseCases.GetCompanyById;
 
-public sealed class GetCompanyByIdHandler : IRequestHandler<GetCompanyByIdQuery, Result<CompanyDetailDto>>
+public sealed class GetCompanyByIdHandler
+    : IRequestHandler<GetCompanyByIdQuery, Result<CompanyDetailDto>>
 {
     private readonly ICompanyAccessGuard _accessGuard;
     private readonly ICompanyRepository _companies;
@@ -16,9 +17,16 @@ public sealed class GetCompanyByIdHandler : IRequestHandler<GetCompanyByIdQuery,
         _companies = companies;
     }
 
-    public async Task<Result<CompanyDetailDto>> Handle(GetCompanyByIdQuery request, CancellationToken cancellationToken)
+    public async Task<Result<CompanyDetailDto>> Handle(
+        GetCompanyByIdQuery request,
+        CancellationToken cancellationToken
+    )
     {
-        var access = await _accessGuard.RequireMembershipAsync(request.Id, requireActiveCompany: false, cancellationToken);
+        var access = await _accessGuard.RequireMembershipAsync(
+            request.Id,
+            requireActiveCompany: false,
+            cancellationToken
+        );
         if (!access.IsSuccess)
             return Result<CompanyDetailDto>.Failure(access.Error!);
 

@@ -17,19 +17,30 @@ public static class AdditionalInfoSection
 {
     public static void Compose(IContainer container, InvoiceRideDocumentLayout layout)
     {
-        container.RideBox().Column(column =>
-        {
-            column.Item().Background(Colors.Grey.Lighten3).Padding(4).Text("Información Adicional").Bold().FontSize(9);
-
-            if (layout.AdditionalInfo.Count == 0)
-                return;
-
-            column.Item().Padding(6).Column(inner =>
+        container
+            .RideBox()
+            .Column(column =>
             {
-                inner.Spacing(2);
-                foreach (var field in layout.AdditionalInfo)
-                    inner.Item().Text($"{field.Name} : {field.Value}").FontSize(8);
+                column
+                    .Item()
+                    .Background(Colors.Grey.Lighten3)
+                    .Padding(4)
+                    .Text("Información Adicional")
+                    .Bold()
+                    .FontSize(9);
+
+                if (layout.AdditionalInfo.Count == 0)
+                    return;
+
+                column
+                    .Item()
+                    .Padding(6)
+                    .Column(inner =>
+                    {
+                        inner.Spacing(2);
+                        foreach (var field in layout.AdditionalInfo)
+                            inner.Item().Text($"{field.Name} : {field.Value}").FontSize(8);
+                    });
             });
-        });
     }
 }

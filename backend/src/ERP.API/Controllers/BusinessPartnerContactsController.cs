@@ -39,13 +39,20 @@ public sealed class BusinessPartnerContactsController : ControllerBase
     /// <summary>Lista los contactos del BP. Por defecto solo activos.</summary>
     [HttpGet]
     [Authorize(Policy = $"perm:{MasterDataPermissions.BusinessPartnersView}")]
-    [ProducesResponseType(typeof(ApiResponse<IReadOnlyList<BpContactDto>>), StatusCodes.Status200OK)]
+    [ProducesResponseType(
+        typeof(ApiResponse<IReadOnlyList<BpContactDto>>),
+        StatusCodes.Status200OK
+    )]
     public async Task<IActionResult> GetContacts(
         [FromRoute] Guid bpId,
         [FromQuery] bool? onlyActive = true,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default
+    )
     {
-        var result = await _mediator.Send(new GetBpContactsQuery(bpId, onlyActive), cancellationToken);
+        var result = await _mediator.Send(
+            new GetBpContactsQuery(bpId, onlyActive),
+            cancellationToken
+        );
         return this.ToOkOrBadRequest(result);
     }
 
@@ -57,7 +64,8 @@ public sealed class BusinessPartnerContactsController : ControllerBase
     public async Task<IActionResult> GetContact(
         [FromRoute] Guid bpId,
         [FromRoute] Guid contactId,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default
+    )
     {
         _ = bpId;
         var result = await _mediator.Send(new GetBpContactByIdQuery(contactId), cancellationToken);
@@ -76,18 +84,26 @@ public sealed class BusinessPartnerContactsController : ControllerBase
     public async Task<IActionResult> CreateContact(
         [FromRoute] Guid bpId,
         [FromBody] CreateContactRequest body,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default
+    )
     {
         var cmd = new CreateBpContactCommand(
-            bpId, body.FirstName, body.Role,
-            body.LocationId, body.LastName, body.Position,
-            body.Phone, body.Mobile, body.Email,
-            body.Notes, body.IsPrimary, body.OtherDescription);
+            bpId,
+            body.FirstName,
+            body.Role,
+            body.LocationId,
+            body.LastName,
+            body.Position,
+            body.Phone,
+            body.Mobile,
+            body.Email,
+            body.Notes,
+            body.IsPrimary,
+            body.OtherDescription
+        );
 
         var result = await _mediator.Send(cmd, cancellationToken);
-        return result.IsSuccess
-            ? this.ApiCreated(result.Value!)
-            : this.ToOkOrBadRequest(result);
+        return result.IsSuccess ? this.ApiCreated(result.Value!) : this.ToOkOrBadRequest(result);
     }
 
     /// <summary>Actualiza los datos del contacto.</summary>
@@ -100,14 +116,23 @@ public sealed class BusinessPartnerContactsController : ControllerBase
         [FromRoute] Guid bpId,
         [FromRoute] Guid contactId,
         [FromBody] UpdateContactRequest body,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default
+    )
     {
         _ = bpId;
         var cmd = new UpdateBpContactCommand(
-            contactId, body.FirstName, body.Role,
-            body.LocationId, body.LastName, body.Position,
-            body.Phone, body.Mobile, body.Email,
-            body.Notes, body.OtherDescription);
+            contactId,
+            body.FirstName,
+            body.Role,
+            body.LocationId,
+            body.LastName,
+            body.Position,
+            body.Phone,
+            body.Mobile,
+            body.Email,
+            body.Notes,
+            body.OtherDescription
+        );
 
         var result = await _mediator.Send(cmd, cancellationToken);
         return this.ToOkOrBadRequest(result);
@@ -124,10 +149,14 @@ public sealed class BusinessPartnerContactsController : ControllerBase
     public async Task<IActionResult> SetPrimary(
         [FromRoute] Guid bpId,
         [FromRoute] Guid contactId,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default
+    )
     {
         _ = bpId;
-        var result = await _mediator.Send(new SetPrimaryBpContactCommand(contactId), cancellationToken);
+        var result = await _mediator.Send(
+            new SetPrimaryBpContactCommand(contactId),
+            cancellationToken
+        );
         return this.ToOkOrBadRequest(result);
     }
 
@@ -138,10 +167,14 @@ public sealed class BusinessPartnerContactsController : ControllerBase
     public async Task<IActionResult> Activate(
         [FromRoute] Guid bpId,
         [FromRoute] Guid contactId,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default
+    )
     {
         _ = bpId;
-        var result = await _mediator.Send(new ActivateBpContactCommand(contactId), cancellationToken);
+        var result = await _mediator.Send(
+            new ActivateBpContactCommand(contactId),
+            cancellationToken
+        );
         return this.ToOkOrBadRequest(result);
     }
 
@@ -153,10 +186,14 @@ public sealed class BusinessPartnerContactsController : ControllerBase
     public async Task<IActionResult> Deactivate(
         [FromRoute] Guid bpId,
         [FromRoute] Guid contactId,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default
+    )
     {
         _ = bpId;
-        var result = await _mediator.Send(new DeactivateBpContactCommand(contactId), cancellationToken);
+        var result = await _mediator.Send(
+            new DeactivateBpContactCommand(contactId),
+            cancellationToken
+        );
         return this.ToOkOrBadRequest(result);
     }
 }

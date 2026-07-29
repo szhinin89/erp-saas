@@ -20,7 +20,11 @@ public sealed class RequestCorrelationMiddlewareTests
         await middleware.InvokeAsync(context);
 
         RequestCorrelationMiddleware.Resolve(context).Should().Be("trace-xyz");
-        context.Response.Headers[RequestCorrelationMiddleware.HeaderName].ToString().Should().Be("trace-xyz");
+        context
+            .Response.Headers[RequestCorrelationMiddleware.HeaderName]
+            .ToString()
+            .Should()
+            .Be("trace-xyz");
     }
 
     [Fact]
@@ -29,12 +33,17 @@ public sealed class RequestCorrelationMiddlewareTests
         RequestDelegate next = _ => Task.CompletedTask;
         var middleware = new RequestCorrelationMiddleware(next);
         var context = new DefaultHttpContext { TraceIdentifier = "trace-internal" };
-        context.Request.Headers[RequestCorrelationMiddleware.HeaderName] = "gateway-correlation-123";
+        context.Request.Headers[RequestCorrelationMiddleware.HeaderName] =
+            "gateway-correlation-123";
 
         await middleware.InvokeAsync(context);
 
         RequestCorrelationMiddleware.Resolve(context).Should().Be("gateway-correlation-123");
-        context.Response.Headers[RequestCorrelationMiddleware.HeaderName].ToString().Should().Be("gateway-correlation-123");
+        context
+            .Response.Headers[RequestCorrelationMiddleware.HeaderName]
+            .ToString()
+            .Should()
+            .Be("gateway-correlation-123");
     }
 
     [Fact]

@@ -20,23 +20,33 @@ public sealed class RideInfrastructureBoundaryTests
     [Fact]
     public void Ride_infrastructure_must_not_reference_api()
     {
-        var result = Types.InAssembly(InfrastructureAssembly)
-            .That().ResideInNamespace(RideInfrastructureNamespace)
-            .ShouldNot().HaveDependencyOn("ERP.API")
+        var result = Types
+            .InAssembly(InfrastructureAssembly)
+            .That()
+            .ResideInNamespace(RideInfrastructureNamespace)
+            .ShouldNot()
+            .HaveDependencyOn("ERP.API")
             .GetResult();
 
-        result.IsSuccessful.Should().BeTrue(string.Join(", ", result.FailingTypeNames ?? Array.Empty<string>()));
+        result
+            .IsSuccessful.Should()
+            .BeTrue(string.Join(", ", result.FailingTypeNames ?? Array.Empty<string>()));
     }
 
     [Fact]
     public void Ride_infrastructure_must_not_reference_sales()
     {
-        var result = Types.InAssembly(InfrastructureAssembly)
-            .That().ResideInNamespace(RideInfrastructureNamespace)
-            .ShouldNot().HaveDependencyOn("ERP.Application.Modules.Sales")
+        var result = Types
+            .InAssembly(InfrastructureAssembly)
+            .That()
+            .ResideInNamespace(RideInfrastructureNamespace)
+            .ShouldNot()
+            .HaveDependencyOn("ERP.Application.Modules.Sales")
             .GetResult();
 
-        result.IsSuccessful.Should().BeTrue(string.Join(", ", result.FailingTypeNames ?? Array.Empty<string>()));
+        result
+            .IsSuccessful.Should()
+            .BeTrue(string.Join(", ", result.FailingTypeNames ?? Array.Empty<string>()));
     }
 
     [Fact]
@@ -44,11 +54,16 @@ public sealed class RideInfrastructureBoundaryTests
     {
         // El único punto de contacto con ElectronicDocuments debe ser sus requests públicos
         // (UseCases/*), nunca su entidad de dominio ni su repositorio interno.
-        var result = Types.InAssembly(InfrastructureAssembly)
-            .That().ResideInNamespace(RideInfrastructureNamespace)
-            .ShouldNot().HaveDependencyOn("ERP.Domain.Modules.ElectronicDocuments.Entities")
+        var result = Types
+            .InAssembly(InfrastructureAssembly)
+            .That()
+            .ResideInNamespace(RideInfrastructureNamespace)
+            .ShouldNot()
+            .HaveDependencyOn("ERP.Domain.Modules.ElectronicDocuments.Entities")
             .GetResult();
 
-        result.IsSuccessful.Should().BeTrue(string.Join(", ", result.FailingTypeNames ?? Array.Empty<string>()));
+        result
+            .IsSuccessful.Should()
+            .BeTrue(string.Join(", ", result.FailingTypeNames ?? Array.Empty<string>()));
     }
 }

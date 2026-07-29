@@ -6,4 +6,5 @@ namespace ERP.Application.Modules.ElectronicDocuments.UseCases.GetElectronicDocu
 
 /// <summary>Timeline de un documento electrónico (reconstruido desde su auditoría append-only).</summary>
 public sealed record GetElectronicDocumentTimelineQuery(Guid Id)
-    : IRequest<Result<IReadOnlyList<ElectronicDocumentTimelineEventDto>>>, ICompanyScopedRequest;
+    : IRequest<Result<IReadOnlyList<ElectronicDocumentTimelineEventDto>>>,
+        ICompanyScopedRequest;

@@ -5,4 +5,5 @@ using MediatR;
 namespace ERP.Application.Modules.Inventory.Stock.UseCases.ExecuteStockAdjustment;
 
 public sealed record ExecuteStockAdjustmentCommand(Guid Id)
-    : IRequest<Result<StockAdjustmentDto>>, IBranchScopedRequest;
+    : IRequest<Result<StockAdjustmentDto>>,
+        IBranchScopedRequest;

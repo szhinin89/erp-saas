@@ -34,7 +34,7 @@ public sealed class DataProtectionSecretProtector : ISecretProtector
         return _protector.Unprotect(payload);
     }
 
-    public bool IsProtected(string storedValue)
-        => !string.IsNullOrEmpty(storedValue)
-           && storedValue.StartsWith(ProtectedPrefix, StringComparison.Ordinal);
+    public bool IsProtected(string storedValue) =>
+        !string.IsNullOrEmpty(storedValue)
+        && storedValue.StartsWith(ProtectedPrefix, StringComparison.Ordinal);
 }

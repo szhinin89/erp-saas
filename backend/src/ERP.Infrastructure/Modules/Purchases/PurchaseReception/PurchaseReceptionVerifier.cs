@@ -22,8 +22,11 @@ public sealed class PurchaseReceptionVerifier : IPurchaseReceptionVerifier
     private readonly ICurrentTenant _tenant;
 
     public PurchaseReceptionVerifier(
-        IBusinessPartnerRepository bpRepo, IBusinessPartnerRoleRepository roleRepo,
-        IPurchaseInvoiceRepository purchaseRepo, ICurrentTenant tenant)
+        IBusinessPartnerRepository bpRepo,
+        IBusinessPartnerRoleRepository roleRepo,
+        IPurchaseInvoiceRepository purchaseRepo,
+        ICurrentTenant tenant
+    )
     {
         _bpRepo = bpRepo;
         _roleRepo = roleRepo;
@@ -32,7 +35,9 @@ public sealed class PurchaseReceptionVerifier : IPurchaseReceptionVerifier
     }
 
     public async Task<IReadOnlyList<PurchaseReceptionVerifiedItem>> VerifyAsync(
-        IReadOnlyList<PurchaseReceptionRecord> records, CancellationToken cancellationToken = default)
+        IReadOnlyList<PurchaseReceptionRecord> records,
+        CancellationToken cancellationToken = default
+    )
     {
         var items = new List<PurchaseReceptionVerifiedItem>(records.Count);
 
@@ -40,10 +45,18 @@ public sealed class PurchaseReceptionVerifier : IPurchaseReceptionVerifier
         {
             var supplierExists = false;
 
-            var businessPartner = await _bpRepo.GetByIdentificationAsync(TaxIdentification.SriRuc, record.SupplierRuc, cancellationToken);
+            var businessPartner = await _bpRepo.GetByIdentificationAsync(
+                TaxIdentification.SriRuc,
+                record.SupplierRuc,
+                cancellationToken
+            );
             if (businessPartner is not null)
             {
-                var supplierRole = await _roleRepo.GetByTypeAsync(businessPartner.Id, RoleType.Supplier, cancellationToken);
+                var supplierRole = await _roleRepo.GetByTypeAsync(
+                    businessPartner.Id,
+                    RoleType.Supplier,
+                    cancellationToken
+                );
                 supplierExists = supplierRole is not null;
             }
 
@@ -51,21 +64,32 @@ public sealed class PurchaseReceptionVerifier : IPurchaseReceptionVerifier
             Guid? purchaseId = null;
             if (supplierExists)
             {
-                var purchase = await _purchaseRepo.GetByAccessKeyAsync(_tenant.TenantId, record.AccessKey, cancellationToken);
+                var purchase = await _purchaseRepo.GetByAccessKeyAsync(
+                    _tenant.TenantId,
+                    record.AccessKey,
+                    cancellationToken
+                );
                 purchaseExists = purchase is not null;
                 purchaseId = purchase?.Id;
             }
 
-            var status = purchaseExists
-                ? PurchaseReceptionStatus.Imported
-                : supplierExists
-                    ? PurchaseReceptionStatus.Pending
-                    : PurchaseReceptionStatus.NewSupplier;
+            var status =
+                purchaseExists ? PurchaseReceptionStatus.Imported
+                : supplierExists ? PurchaseReceptionStatus.Pending
+                : PurchaseReceptionStatus.NewSupplier;
 
             var supplierId = supplierExists ? businessPartner?.Id : null;
 
-            items.Add(new PurchaseReceptionVerifiedItem(
-                record, supplierExists, purchaseExists, status, supplierId, purchaseId));
+            items.Add(
+                new PurchaseReceptionVerifiedItem(
+                    record,
+                    supplierExists,
+                    purchaseExists,
+                    status,
+                    supplierId,
+                    purchaseId
+                )
+            );
         }
 
         return items;

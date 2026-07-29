@@ -12,7 +12,14 @@ using Microsoft.AspNetCore.Mvc;
 namespace ERP.API.Controllers;
 
 /// <summary>Auditoría de actividad (ámbito del usuario o de una entidad en el tenant actual).</summary>
-[AppFeature("Actividad", $"perm:{AdminPermissions.ActivityView}", "📜", "/admin/activity", null, 200)]
+[AppFeature(
+    "Actividad",
+    $"perm:{AdminPermissions.ActivityView}",
+    "📜",
+    "/admin/activity",
+    null,
+    200
+)]
 [ApiController]
 [Route("api/v1/admin/activity")]
 [Authorize(Policy = $"perm:{AdminPermissions.ActivityView}")]
@@ -25,27 +32,41 @@ public class ActivityController : ControllerBase
 
     /// <summary>Historial del usuario autenticado (últimas acciones).</summary>
     [HttpGet("my")]
-    [ProducesResponseType(typeof(ApiResponse<IReadOnlyList<UserActivityDto>>), StatusCodes.Status200OK)]
+    [ProducesResponseType(
+        typeof(ApiResponse<IReadOnlyList<UserActivityDto>>),
+        StatusCodes.Status200OK
+    )]
     public async Task<IActionResult> GetMy(
         [FromQuery] string? module = null,
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = 25,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default
+    )
     {
-        var result = await _mediator.Send(new GetMyActivityQuery(module, page, pageSize), cancellationToken);
+        var result = await _mediator.Send(
+            new GetMyActivityQuery(module, page, pageSize),
+            cancellationToken
+        );
         return this.ToOkOrBadRequest(result, "OK", () => Array.Empty<UserActivityDto>());
     }
 
     /// <summary>Últimos movimientos de auditoría sobre una entidad (tenant actual).</summary>
     [HttpGet("entity")]
-    [ProducesResponseType(typeof(ApiResponse<IReadOnlyList<UserActivityDto>>), StatusCodes.Status200OK)]
+    [ProducesResponseType(
+        typeof(ApiResponse<IReadOnlyList<UserActivityDto>>),
+        StatusCodes.Status200OK
+    )]
     public async Task<IActionResult> GetForEntity(
         [FromQuery] string entityType,
         [FromQuery] Guid entityId,
         [FromQuery] int take = 10,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default
+    )
     {
-        var result = await _mediator.Send(new GetEntityActivityQuery(entityType, entityId, take), cancellationToken);
+        var result = await _mediator.Send(
+            new GetEntityActivityQuery(entityType, entityId, take),
+            cancellationToken
+        );
         return this.ToOkOrBadRequest(result, "OK", () => Array.Empty<UserActivityDto>());
     }
 }

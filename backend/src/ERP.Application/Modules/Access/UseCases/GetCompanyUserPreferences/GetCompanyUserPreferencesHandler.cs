@@ -16,10 +16,14 @@ public sealed class GetCompanyUserPreferencesHandler
     }
 
     public async Task<Result<CompanyUserPreferencesDto?>> Handle(
-        GetCompanyUserPreferencesQuery request, CancellationToken cancellationToken)
+        GetCompanyUserPreferencesQuery request,
+        CancellationToken cancellationToken
+    )
     {
         var preferences = await _preferencesRepository.GetByMembershipAsync(
-            request.CompanyUserMembershipId, cancellationToken);
+            request.CompanyUserMembershipId,
+            cancellationToken
+        );
 
         var dto = preferences is null ? null : CompanyUserPreferencesMapper.ToDto(preferences);
         return Result<CompanyUserPreferencesDto?>.Success(dto);

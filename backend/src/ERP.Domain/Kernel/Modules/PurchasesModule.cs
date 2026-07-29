@@ -7,21 +7,32 @@ namespace ERP.Domain.Kernel.Modules;
 public static class PurchasesModule
 {
     // ── Contenedor: Documentos ─────────────────────────────────────
-    [NavItem("Documentos",
-        LabelKey = "app.nav.item.purchases.invoices", SortOrder = 10,
+    [NavItem(
+        "Documentos",
+        LabelKey = "app.nav.item.purchases.invoices",
+        SortOrder = 10,
         Id = "e3000000-0000-4000-9000-000000000001",
-        PermissionsAnyCsv = PurchasePermissions.View)]
+        PermissionsAnyCsv = PurchasePermissions.View
+    )]
     public const string DocumentsGroup = "/purchases/documents-group";
 
-    [NavItem("Compras", Permission = PurchasePermissions.View,
-        LabelKey = "app.nav.item.purchases.invoices", SortOrder = 10,
+    [NavItem(
+        "Compras",
+        Permission = PurchasePermissions.View,
+        LabelKey = "app.nav.item.purchases.invoices",
+        SortOrder = 10,
         Id = "c1000000-0000-4000-9000-000000000001",
-        ParentId = "e3000000-0000-4000-9000-000000000001")]
+        ParentId = "e3000000-0000-4000-9000-000000000001"
+    )]
     public const string Invoices = "/purchases";
 
-    [NavItem("Recepción electrónica", Permission = PurchasePermissions.View,
-        LabelKey = "app.nav.item.purchases.reception", SortOrder = 20,
+    [NavItem(
+        "Recepción electrónica",
+        Permission = PurchasePermissions.View,
+        LabelKey = "app.nav.item.purchases.reception",
+        SortOrder = 20,
         Id = "c1000000-0000-4000-9000-000000000002",
-        ParentId = "e3000000-0000-4000-9000-000000000001")]
+        ParentId = "e3000000-0000-4000-9000-000000000001"
+    )]
     public const string Reception = "/purchases/reception";
 }

@@ -31,7 +31,8 @@ public sealed class GetCompanyUserBranchesAdminHandler
         ICurrentCompany currentCompany,
         ICurrentTenant currentTenant,
         IBranchRepository branchRepository,
-        ICompanyUserBranchRepository companyUserBranchRepository)
+        ICompanyUserBranchRepository companyUserBranchRepository
+    )
     {
         _accessRepository = accessRepository;
         _currentCompany = currentCompany;
@@ -41,23 +42,48 @@ public sealed class GetCompanyUserBranchesAdminHandler
     }
 
     public async Task<Result<CompanyUserBranchesAdminDto?>> Handle(
-        GetCompanyUserBranchesAdminQuery request, CancellationToken cancellationToken)
+        GetCompanyUserBranchesAdminQuery request,
+        CancellationToken cancellationToken
+    )
     {
-        var membership = await _accessRepository.GetCompanyUserMembershipByIdAsync(request.CompanyUserId, cancellationToken);
+        var membership = await _accessRepository.GetCompanyUserMembershipByIdAsync(
+            request.CompanyUserId,
+            cancellationToken
+        );
         if (membership is null || membership.CompanyId != _currentCompany.CompanyId)
-            return Result<CompanyUserBranchesAdminDto?>.NotFound("Usuario de empresa no encontrado.");
+            return Result<CompanyUserBranchesAdminDto?>.NotFound(
+                "Usuario de empresa no encontrado."
+            );
 
-        var companyBranches = (await _branchRepository.GetAsync(_currentTenant.TenantId, activeFilter: true, cancellationToken: cancellationToken))
+        var companyBranches = (
+            await _branchRepository.GetAsync(
+                _currentTenant.TenantId,
+                activeFilter: true,
+                cancellationToken: cancellationToken
+            )
+        )
             .Where(b => b.CompanyId == membership.CompanyId)
             .ToList();
 
-        var authorizations = await _companyUserBranchRepository.GetByMembershipAsync(membership.Id, cancellationToken);
-        var authorizedBranchIds = authorizations.Where(a => a.IsActive).Select(a => a.BranchId).ToHashSet();
+        var authorizations = await _companyUserBranchRepository.GetByMembershipAsync(
+            membership.Id,
+            cancellationToken
+        );
+        var authorizedBranchIds = authorizations
+            .Where(a => a.IsActive)
+            .Select(a => a.BranchId)
+            .ToHashSet();
 
         var options = companyBranches
-            .Select(b => new CompanyUserBranchOptionDto(b.Id, b.Name, authorizedBranchIds.Contains(b.Id)))
+            .Select(b => new CompanyUserBranchOptionDto(
+                b.Id,
+                b.Name,
+                authorizedBranchIds.Contains(b.Id)
+            ))
             .ToList();
 
-        return Result<CompanyUserBranchesAdminDto?>.Success(new CompanyUserBranchesAdminDto(membership.Id, options));
+        return Result<CompanyUserBranchesAdminDto?>.Success(
+            new CompanyUserBranchesAdminDto(membership.Id, options)
+        );
     }
 }

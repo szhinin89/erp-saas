@@ -19,4 +19,5 @@ public sealed record PurchaseReceptionRecord(
     decimal Subtotal,
     decimal VatAmount,
     decimal Total,
-    string? ModifiedDocumentNumber);
+    string? ModifiedDocumentNumber
+);

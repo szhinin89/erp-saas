@@ -22,17 +22,28 @@ public sealed record PersonName
     {
         var legal = (legalName ?? string.Empty).Trim();
         if (legal.Length < 2)
-            throw new ArgumentException("El nombre legal es obligatorio y debe tener al menos 2 caracteres.", nameof(legalName));
+            throw new ArgumentException(
+                "El nombre legal es obligatorio y debe tener al menos 2 caracteres.",
+                nameof(legalName)
+            );
         if (legal.Length > LegalNameMaxLen)
-            throw new ArgumentException($"El nombre legal no puede superar {LegalNameMaxLen} caracteres.", nameof(legalName));
+            throw new ArgumentException(
+                $"El nombre legal no puede superar {LegalNameMaxLen} caracteres.",
+                nameof(legalName)
+            );
 
         var trade = tradeName?.Trim();
-        if (trade is { Length: 0 }) trade = null;
+        if (trade is { Length: 0 })
+            trade = null;
         if (trade?.Length > TradeNameMaxLen)
-            throw new ArgumentException($"El nombre comercial no puede superar {TradeNameMaxLen} caracteres.", nameof(tradeName));
+            throw new ArgumentException(
+                $"El nombre comercial no puede superar {TradeNameMaxLen} caracteres.",
+                nameof(tradeName)
+            );
 
         return new PersonName(legal, trade);
     }
 
-    public override string ToString() => TradeName is not null ? $"{LegalName} ({TradeName})" : LegalName;
+    public override string ToString() =>
+        TradeName is not null ? $"{LegalName} ({TradeName})" : LegalName;
 }

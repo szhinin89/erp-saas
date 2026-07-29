@@ -1,6 +1,6 @@
-using ERP.Application.Navigation.DTOs;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using ERP.Application.Navigation.DTOs;
 
 namespace ERP.Application.Navigation;
 
@@ -16,8 +16,8 @@ public static class SessionMenuJsonParser
         AllowTrailingCommas = true,
     };
 
-    public static string Serialize(IReadOnlyList<SessionMenuGroupDto> groups)
-        => JsonSerializer.Serialize(groups, JsonOptions);
+    public static string Serialize(IReadOnlyList<SessionMenuGroupDto> groups) =>
+        JsonSerializer.Serialize(groups, JsonOptions);
 
     public static bool TryDeserialize(string? json, out IReadOnlyList<SessionMenuGroupDto>? groups)
     {
@@ -40,16 +40,19 @@ public static class SessionMenuJsonParser
                 var items = MapItems(g.Items);
                 if (items is null)
                     return false;
-                mapped.Add(new SessionMenuGroupDto(
-                    g.Code.Trim(),
-                    (g.Icon ?? string.Empty).Trim(),
-                    g.LabelKey.Trim(),
-                    g.SortOrder,
-                    string.IsNullOrWhiteSpace(g.ModuleKey) ? null : g.ModuleKey.Trim(),
-                    g.Roles is { Count: > 0 } ? g.Roles : null,
-                    g.RequirePlatformPanel,
-                    items,
-                    NormalizeMenuBarLayout(g.MenuBarLayout)));
+                mapped.Add(
+                    new SessionMenuGroupDto(
+                        g.Code.Trim(),
+                        (g.Icon ?? string.Empty).Trim(),
+                        g.LabelKey.Trim(),
+                        g.SortOrder,
+                        string.IsNullOrWhiteSpace(g.ModuleKey) ? null : g.ModuleKey.Trim(),
+                        g.Roles is { Count: > 0 } ? g.Roles : null,
+                        g.RequirePlatformPanel,
+                        items,
+                        NormalizeMenuBarLayout(g.MenuBarLayout)
+                    )
+                );
             }
 
             groups = mapped;
@@ -128,7 +131,8 @@ public static class SessionMenuJsonParser
                     i.PermissionKeysAny is { Count: > 0 } ? i.PermissionKeysAny : null,
                     i.ItemRoles is { Count: > 0 } ? i.ItemRoles : null,
                     null,
-                    string.IsNullOrWhiteSpace(icon) ? null : icon.Trim());
+                    string.IsNullOrWhiteSpace(icon) ? null : icon.Trim()
+                );
             }
 
             // carpeta
@@ -143,7 +147,8 @@ public static class SessionMenuJsonParser
                 i.PermissionKeysAny is { Count: > 0 } ? i.PermissionKeysAny : null,
                 i.ItemRoles is { Count: > 0 } ? i.ItemRoles : null,
                 children.Count > 0 ? children : null,
-                string.IsNullOrWhiteSpace(icon) ? null : icon.Trim());
+                string.IsNullOrWhiteSpace(icon) ? null : icon.Trim()
+            );
         }
 
         // Legacy: exige labelKey
@@ -165,7 +170,8 @@ public static class SessionMenuJsonParser
             keysAny,
             roles,
             children.Count > 0 ? children : null,
-            string.IsNullOrWhiteSpace(iconLegacy) ? null : iconLegacy.Trim());
+            string.IsNullOrWhiteSpace(iconLegacy) ? null : iconLegacy.Trim()
+        );
     }
 
     private static string SanitizeId(string raw)

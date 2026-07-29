@@ -34,10 +34,20 @@ public sealed class IdentityUsersController : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status409Conflict)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status422UnprocessableEntity)]
-    public async Task<IActionResult> Create([FromBody] CreateSystemUserRequest request, CancellationToken cancellationToken)
+    public async Task<IActionResult> Create(
+        [FromBody] CreateSystemUserRequest request,
+        CancellationToken cancellationToken
+    )
     {
         var command = new CreateSystemUserAdminCommand(
-            request.Username, request.FirstName, request.LastName, request.Email, request.Password, request.Role, request.ProfileId);
+            request.Username,
+            request.FirstName,
+            request.LastName,
+            request.Email,
+            request.Password,
+            request.Role,
+            request.ProfileId
+        );
 
         var result = await _mediator.Send(command, cancellationToken);
         return this.ToOkOrBadRequest(result);
@@ -56,7 +66,10 @@ public sealed class IdentityUsersController : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status422UnprocessableEntity)]
     public async Task<IActionResult> AssignTemporaryPassword(
-        string username, [FromBody] AssignTemporaryPasswordRequest request, CancellationToken cancellationToken)
+        string username,
+        [FromBody] AssignTemporaryPasswordRequest request,
+        CancellationToken cancellationToken
+    )
     {
         var command = new AssignTemporaryPasswordAdminCommand(username, request.TemporaryPassword);
         var result = await _mediator.Send(command, cancellationToken);
@@ -72,7 +85,8 @@ public sealed record CreateSystemUserRequest(
     string? Email,
     string Password,
     string Role,
-    Guid? ProfileId = null);
+    Guid? ProfileId = null
+);
 
 /// <summary>Body de POST assign-temporary-password. La contraseña la escribe el administrador a
 /// mano hoy; cuando exista envío por correo, este campo pasará a opcional en el Command (no aquí,

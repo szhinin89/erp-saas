@@ -1,4 +1,4 @@
-﻿namespace ERP.Infrastructure.Services;
+namespace ERP.Infrastructure.Services;
 
 /// <summary>
 /// Bootstrap y reset explícito de contexto tenant/empresa para jobs Hangfire y background.

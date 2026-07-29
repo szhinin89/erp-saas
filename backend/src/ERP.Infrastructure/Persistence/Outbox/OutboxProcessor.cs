@@ -18,8 +18,8 @@ internal sealed partial class OutboxProcessor : IOutboxProcessor
 
     public async Task ProcessPendingAsync(CancellationToken cancellationToken = default)
     {
-        var pending = await _db.OutboxMessages
-            .Where(m => m.ProcessedOnUtc == null)
+        var pending = await _db
+            .OutboxMessages.Where(m => m.ProcessedOnUtc == null)
             .OrderBy(m => m.OccurredOnUtc)
             .Take(BatchSize)
             .ToListAsync(cancellationToken);
@@ -44,7 +44,12 @@ internal sealed partial class OutboxProcessor : IOutboxProcessor
                 // for downstream routing once those phases are implemented.
                 message.MarkProcessed();
 
-                LogMessageProcessed(message.EventName, message.EventVersion, message.Id, message.TenantId ?? Guid.Empty);
+                LogMessageProcessed(
+                    message.EventName,
+                    message.EventVersion,
+                    message.Id,
+                    message.TenantId ?? Guid.Empty
+                );
             }
             catch (Exception ex)
             {
@@ -64,9 +69,15 @@ internal sealed partial class OutboxProcessor : IOutboxProcessor
     [LoggerMessage(Level = LogLevel.Debug, Message = "Outbox: processing {Count} pending messages")]
     private partial void LogProcessingBatch(int count);
 
-    [LoggerMessage(Level = LogLevel.Debug, Message = "Outbox: processed {EventName} v{Version} (Id={Id}, Tenant={TenantId})")]
+    [LoggerMessage(
+        Level = LogLevel.Debug,
+        Message = "Outbox: processed {EventName} v{Version} (Id={Id}, Tenant={TenantId})"
+    )]
     private partial void LogMessageProcessed(string eventName, int version, Guid id, Guid tenantId);
 
-    [LoggerMessage(Level = LogLevel.Error, Message = "Outbox: failed to process {EventName} (Id={Id})")]
+    [LoggerMessage(
+        Level = LogLevel.Error,
+        Message = "Outbox: failed to process {EventName} (Id={Id})"
+    )]
     private partial void LogMessageFailed(Exception ex, string eventName, Guid id);
 }

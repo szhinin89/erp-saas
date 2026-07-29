@@ -20,16 +20,48 @@ public sealed class JournalValidatorTests
     private static readonly Guid CreatedBy = Guid.NewGuid();
 
     private static PostingFact Fact(
-        decimal subtotal = 100m, decimal totalVat = 15m, decimal totalIce = 0m,
-        decimal totalDiscount = 0m, decimal grandTotal = 115m) => new(
-        TenantId, CompanyId, "Sales", "InvoiceIssued", Guid.NewGuid(), new DateOnly(2026, 7, 15),
-        subtotal, totalVat, totalIce, totalDiscount, grandTotal);
+        decimal subtotal = 100m,
+        decimal totalVat = 15m,
+        decimal totalIce = 0m,
+        decimal totalDiscount = 0m,
+        decimal grandTotal = 115m
+    ) =>
+        new(
+            TenantId,
+            CompanyId,
+            "Sales",
+            "InvoiceIssued",
+            Guid.NewGuid(),
+            new DateOnly(2026, 7, 15),
+            subtotal,
+            totalVat,
+            totalIce,
+            totalDiscount,
+            grandTotal
+        );
 
-    private static AccountingPeriod OpenPeriod() => AccountingPeriod.Create(
-        TenantId, CompanyId, 2026, 7, new DateOnly(2026, 7, 1), new DateOnly(2026, 7, 31), CreatedBy);
+    private static AccountingPeriod OpenPeriod() =>
+        AccountingPeriod.Create(
+            TenantId,
+            CompanyId,
+            2026,
+            7,
+            new DateOnly(2026, 7, 1),
+            new DateOnly(2026, 7, 31),
+            CreatedBy
+        );
 
-    private static PostingRule EmptyRule() => PostingRule.Create(
-        TenantId, CompanyId, "Sales", "InvoiceIssued", null, null, null, CreatedBy);
+    private static PostingRule EmptyRule() =>
+        PostingRule.Create(
+            TenantId,
+            CompanyId,
+            "Sales",
+            "InvoiceIssued",
+            null,
+            null,
+            null,
+            CreatedBy
+        );
 
     private sealed class Mocks
     {
@@ -41,26 +73,70 @@ public sealed class JournalValidatorTests
         public Mocks()
         {
             JournalEntries
-                .Setup(r => r.AcquireIdempotencyLockAsync(
-                    It.IsAny<Guid>(), It.IsAny<string>(), It.IsAny<Guid>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+                .Setup(r =>
+                    r.AcquireIdempotencyLockAsync(
+                        It.IsAny<Guid>(),
+                        It.IsAny<string>(),
+                        It.IsAny<Guid>(),
+                        It.IsAny<string>(),
+                        It.IsAny<CancellationToken>()
+                    )
+                )
                 .Returns(Task.CompletedTask);
             JournalEntries
-                .Setup(r => r.FindByKeyAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+                .Setup(r =>
+                    r.FindByKeyAsync(
+                        It.IsAny<Guid>(),
+                        It.IsAny<Guid>(),
+                        It.IsAny<string>(),
+                        It.IsAny<string>(),
+                        It.IsAny<Guid>(),
+                        It.IsAny<CancellationToken>()
+                    )
+                )
                 .ReturnsAsync((JournalEntry?)null);
             AccountingPeriods
-                .Setup(r => r.FindContainingDateAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<DateOnly>(), It.IsAny<CancellationToken>()))
+                .Setup(r =>
+                    r.FindContainingDateAsync(
+                        It.IsAny<Guid>(),
+                        It.IsAny<Guid>(),
+                        It.IsAny<DateOnly>(),
+                        It.IsAny<CancellationToken>()
+                    )
+                )
                 .ReturnsAsync(OpenPeriod());
             JournalEntrySequences
-                .Setup(r => r.ReserveNextNumberAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<int>(), It.IsAny<CancellationToken>()))
+                .Setup(r =>
+                    r.ReserveNextNumberAsync(
+                        It.IsAny<Guid>(),
+                        It.IsAny<Guid>(),
+                        It.IsAny<int>(),
+                        It.IsAny<CancellationToken>()
+                    )
+                )
                 .ReturnsAsync(1);
         }
 
-        public void SetupRule(PostingRule rule) => PostingRules
-            .Setup(r => r.FindByKeyAsync(TenantId, CompanyId, "Sales", "InvoiceIssued", It.IsAny<CancellationToken>()))
-            .ReturnsAsync(rule);
+        public void SetupRule(PostingRule rule) =>
+            PostingRules
+                .Setup(r =>
+                    r.FindByKeyAsync(
+                        TenantId,
+                        CompanyId,
+                        "Sales",
+                        "InvoiceIssued",
+                        It.IsAny<CancellationToken>()
+                    )
+                )
+                .ReturnsAsync(rule);
 
-        public PostingEngine BuildEngine() => new(
-            JournalEntries.Object, PostingRules.Object, AccountingPeriods.Object, JournalEntrySequences.Object);
+        public PostingEngine BuildEngine() =>
+            new(
+                JournalEntries.Object,
+                PostingRules.Object,
+                AccountingPeriods.Object,
+                JournalEntrySequences.Object
+            );
     }
 
     [Fact]
@@ -97,7 +173,10 @@ public sealed class JournalValidatorTests
         result.IsSuccess.Should().BeFalse();
         result.Code.Should().Be("VALIDATION_FAILED");
         result.Error.Should().Contain("no está balanceado");
-        m.JournalEntries.Verify(r => r.AddAsync(It.IsAny<JournalEntry>(), It.IsAny<CancellationToken>()), Times.Never);
+        m.JournalEntries.Verify(
+            r => r.AddAsync(It.IsAny<JournalEntry>(), It.IsAny<CancellationToken>()),
+            Times.Never
+        );
     }
 
     [Fact]

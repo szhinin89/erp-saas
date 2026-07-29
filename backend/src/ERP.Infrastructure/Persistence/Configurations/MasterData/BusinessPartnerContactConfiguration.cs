@@ -24,7 +24,8 @@ namespace ERP.Infrastructure.Persistence.Configurations.MasterData;
 /// QUERY FILTER:
 ///   ITenantScopedEntity → subscriber fail-closed (EnterpriseQueryFilterConfigurator).
 /// </summary>
-public sealed class BusinessPartnerContactConfiguration : IEntityTypeConfiguration<BusinessPartnerContact>
+public sealed class BusinessPartnerContactConfiguration
+    : IEntityTypeConfiguration<BusinessPartnerContact>
 {
     public void Configure(EntityTypeBuilder<BusinessPartnerContact> builder)
     {
@@ -33,63 +34,77 @@ public sealed class BusinessPartnerContactConfiguration : IEntityTypeConfigurati
         builder.HasKey(e => e.Id);
         builder.Property(e => e.Id).HasColumnName("id");
         builder.Property(e => e.TenantId).HasColumnName("tenant_id").IsRequired();
-        builder.Property(e => e.BusinessPartnerId).HasColumnName("business_partner_id").IsRequired();
+        builder
+            .Property(e => e.BusinessPartnerId)
+            .HasColumnName("business_partner_id")
+            .IsRequired();
         builder.Property(e => e.LocationId).HasColumnName("location_id");
 
-        builder.Property(e => e.FirstName)
-               .HasColumnName("first_name")
-               .HasMaxLength(BusinessPartnerContact.FirstNameMaxLen)
-               .IsRequired();
+        builder
+            .Property(e => e.FirstName)
+            .HasColumnName("first_name")
+            .HasMaxLength(BusinessPartnerContact.FirstNameMaxLen)
+            .IsRequired();
 
-        builder.Property(e => e.LastName)
-               .HasColumnName("last_name")
-               .HasMaxLength(BusinessPartnerContact.LastNameMaxLen);
+        builder
+            .Property(e => e.LastName)
+            .HasColumnName("last_name")
+            .HasMaxLength(BusinessPartnerContact.LastNameMaxLen);
 
-        builder.Property(e => e.Position)
-               .HasColumnName("position")
-               .HasMaxLength(BusinessPartnerContact.PositionMaxLen);
+        builder
+            .Property(e => e.Position)
+            .HasColumnName("position")
+            .HasMaxLength(BusinessPartnerContact.PositionMaxLen);
 
-        builder.Property(e => e.Role)
-               .HasColumnName("contact_role")
-               .HasConversion<short>()
-               .IsRequired();
+        builder
+            .Property(e => e.Role)
+            .HasColumnName("contact_role")
+            .HasConversion<short>()
+            .IsRequired();
 
-        builder.Property(e => e.OtherDescription)
-               .HasColumnName("other_description")
-               .HasMaxLength(BusinessPartnerContact.OtherDescriptionMaxLen);
+        builder
+            .Property(e => e.OtherDescription)
+            .HasColumnName("other_description")
+            .HasMaxLength(BusinessPartnerContact.OtherDescriptionMaxLen);
 
-        builder.Property(e => e.Notes)
-               .HasColumnName("notes")
-               .HasMaxLength(BusinessPartnerContact.NotesMaxLen);
+        builder
+            .Property(e => e.Notes)
+            .HasColumnName("notes")
+            .HasMaxLength(BusinessPartnerContact.NotesMaxLen);
 
-        builder.Property(e => e.IsPrimary)
-               .HasColumnName("is_primary")
-               .IsRequired()
-               .HasDefaultValue(false);
+        builder
+            .Property(e => e.IsPrimary)
+            .HasColumnName("is_primary")
+            .IsRequired()
+            .HasDefaultValue(false);
 
-        builder.Property(e => e.IsActive)
-               .HasColumnName("is_active")
-               .IsRequired()
-               .HasDefaultValue(true);
+        builder
+            .Property(e => e.IsActive)
+            .HasColumnName("is_active")
+            .IsRequired()
+            .HasDefaultValue(true);
 
         // FullName es propiedad computada — no persiste en BD
         builder.Ignore(e => e.FullName);
 
         // ── ContactInfo VO (owned, columnas aplanadas en master_bp_contacts) ──
-        builder.OwnsOne(e => e.Contact, ci =>
-        {
-            ci.Property(c => c.Phone)
-              .HasColumnName("phone")
-              .HasMaxLength(ContactInfo.PhoneMaxLen);
+        builder.OwnsOne(
+            e => e.Contact,
+            ci =>
+            {
+                ci.Property(c => c.Phone)
+                    .HasColumnName("phone")
+                    .HasMaxLength(ContactInfo.PhoneMaxLen);
 
-            ci.Property(c => c.Mobile)
-              .HasColumnName("mobile")
-              .HasMaxLength(ContactInfo.PhoneMaxLen);
+                ci.Property(c => c.Mobile)
+                    .HasColumnName("mobile")
+                    .HasMaxLength(ContactInfo.PhoneMaxLen);
 
-            ci.Property(c => c.Email)
-              .HasColumnName("email")
-              .HasMaxLength(ContactInfo.EmailMaxLen);
-        });
+                ci.Property(c => c.Email)
+                    .HasColumnName("email")
+                    .HasMaxLength(ContactInfo.EmailMaxLen);
+            }
+        );
 
         // ── Audit ────────────────────────────────────────────────────────────
         builder.Property(e => e.CreatedAt).HasColumnName("created_at").IsRequired();
@@ -98,43 +113,59 @@ public sealed class BusinessPartnerContactConfiguration : IEntityTypeConfigurati
         builder.Property(e => e.UpdatedBy).HasColumnName("updated_by");
 
         // ── FK a BusinessPartner ──────────────────────────────────────────────
-        builder.HasOne<BusinessPartner>()
-               .WithMany()
-               .HasForeignKey(e => e.BusinessPartnerId)
-               .OnDelete(DeleteBehavior.Restrict)
-               .HasConstraintName("fk_bpc_business_partner");
+        builder
+            .HasOne<BusinessPartner>()
+            .WithMany()
+            .HasForeignKey(e => e.BusinessPartnerId)
+            .OnDelete(DeleteBehavior.Restrict)
+            .HasConstraintName("fk_bpc_business_partner");
 
         // ── FK a BusinessPartnerLocation (RESTRICT, no SetNull) ──────────────
         // SetNull fue eliminado. Ver Problema 7 (Fase 4).
         // El sistema usa soft delete: la FK nunca se activa en operación normal.
         // RESTRICT = barrera administrativa contra DELETE físico accidental.
         // El handler de DeactivateLocation debe verificar HasActiveContactsAsync() antes de proceder.
-        builder.HasOne<BusinessPartnerLocation>()
-               .WithMany()
-               .HasForeignKey(e => e.LocationId)
-               .IsRequired(false)
-               .OnDelete(DeleteBehavior.Restrict)
-               .HasConstraintName("fk_bpc_location");
+        builder
+            .HasOne<BusinessPartnerLocation>()
+            .WithMany()
+            .HasForeignKey(e => e.LocationId)
+            .IsRequired(false)
+            .OnDelete(DeleteBehavior.Restrict)
+            .HasConstraintName("fk_bpc_location");
 
         // ── Índices ───────────────────────────────────────────────────────────
 
         // Contactos activos — query más frecuente
-        builder.HasIndex(e => new { e.TenantId, e.BusinessPartnerId, e.IsActive })
-               .HasDatabaseName("ix_bpc_subscriber_bp_active");
+        builder
+            .HasIndex(e => new
+            {
+                e.TenantId,
+                e.BusinessPartnerId,
+                e.IsActive,
+            })
+            .HasDatabaseName("ix_bpc_subscriber_bp_active");
 
         // Buscar el contacto Legal o de Facturación de un BP específico
-        builder.HasIndex(e => new { e.TenantId, e.BusinessPartnerId, e.Role })
-               .HasDatabaseName("ix_bpc_subscriber_bp_role");
+        builder
+            .HasIndex(e => new
+            {
+                e.TenantId,
+                e.BusinessPartnerId,
+                e.Role,
+            })
+            .HasDatabaseName("ix_bpc_subscriber_bp_role");
 
         // Qué contactos referencian una ubicación (para validar RESTRICT antes de desactivarla)
-        builder.HasIndex(e => e.LocationId)
-               .HasFilter("location_id IS NOT NULL")
-               .HasDatabaseName("ix_bpc_location");
+        builder
+            .HasIndex(e => e.LocationId)
+            .HasFilter("location_id IS NOT NULL")
+            .HasDatabaseName("ix_bpc_location");
 
         // Único contacto primario activo por BP
-        builder.HasIndex(e => new { e.TenantId, e.BusinessPartnerId })
-               .HasFilter("is_primary = true AND is_active = true")
-               .IsUnique()
-               .HasDatabaseName("uq_bpc_primary");
+        builder
+            .HasIndex(e => new { e.TenantId, e.BusinessPartnerId })
+            .HasFilter("is_primary = true AND is_active = true")
+            .IsUnique()
+            .HasDatabaseName("uq_bpc_primary");
     }
 }

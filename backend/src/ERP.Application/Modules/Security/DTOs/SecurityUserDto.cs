@@ -16,4 +16,3 @@ public record SecurityUserDto(
     bool IsActive,
     Guid CompanyUserMembershipId
 );
-

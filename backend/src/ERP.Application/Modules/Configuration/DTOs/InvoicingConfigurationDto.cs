@@ -23,4 +23,5 @@ public sealed record TenantBillingProfileDto(
     string? FooterText,
     int ReceiptWidth,
     // Vínculo SaaS
-    Guid? BusinessPartnerId);
+    Guid? BusinessPartnerId
+);

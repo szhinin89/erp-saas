@@ -3,15 +3,18 @@ using FluentValidation;
 
 namespace ERP.Application.Access.UseCases.CreateCompanyUserPreferences;
 
-public sealed class CreateCompanyUserPreferencesCommandValidator : AbstractValidator<CreateCompanyUserPreferencesCommand>
+public sealed class CreateCompanyUserPreferencesCommandValidator
+    : AbstractValidator<CreateCompanyUserPreferencesCommand>
 {
     public CreateCompanyUserPreferencesCommandValidator()
     {
-        RuleFor(x => x.CompanyUserMembershipId).NotEmpty()
+        RuleFor(x => x.CompanyUserMembershipId)
+            .NotEmpty()
             .WithMessage("La membresía es obligatoria.");
 
         RuleFor(x => x.LoginMode)
-            .NotEmpty().WithMessage("El modo de inicio de sesión es obligatorio.")
+            .NotEmpty()
+            .WithMessage("El modo de inicio de sesión es obligatorio.")
             .Must(value => Enum.TryParse<CompanyUserLoginMode>(value, out _))
             .WithMessage("El modo de inicio de sesión no es válido.");
 

@@ -20,5 +20,6 @@ public interface IPricingResolver
     Task<Result<PricingResult>> ResolveAsync(
         Guid itemId,
         Guid? priceListId = null,
-        CancellationToken ct = default);
+        CancellationToken ct = default
+    );
 }

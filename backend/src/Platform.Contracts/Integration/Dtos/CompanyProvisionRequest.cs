@@ -16,4 +16,5 @@ public sealed record CompanyProvisionRequest(
     string CountryCode = "ECU",
     string Timezone = "America/Guayaquil",
     string CurrencyCode = "USD",
-    string? BrandingJson = null);
+    string? BrandingJson = null
+);

@@ -16,7 +16,12 @@ public interface IRefreshTokenService
     /// Devuelve el token en texto plano (para enviar al cliente) y su fecha de expiración.
     /// </summary>
     Task<(string RawToken, DateTime Expiry)> CreateAsync(
-        Guid userId, Guid tenantId, Guid? companyId, string userType, CancellationToken cancellationToken = default);
+        Guid userId,
+        Guid tenantId,
+        Guid? companyId,
+        string userType,
+        CancellationToken cancellationToken = default
+    );
 
     /// <summary>
     /// Igual que <see cref="CreateAsync"/> (misma generación/hash, mismo <c>RefreshToken.Create</c>),
@@ -26,21 +31,36 @@ public interface IRefreshTokenService
     /// SaveChangesAsync exactamente una vez, vía cualquier repositorio que comparta el contexto.
     /// </summary>
     Task<(RefreshToken Entity, string RawToken)> CreateWithoutSaveAsync(
-        Guid userId, Guid tenantId, Guid? companyId, string userType, CancellationToken cancellationToken = default);
+        Guid userId,
+        Guid tenantId,
+        Guid? companyId,
+        string userType,
+        CancellationToken cancellationToken = default
+    );
 
     /// <summary>
     /// Valida el token recibido del cliente, lo rota (revoca el actual, emite uno nuevo)
     /// y devuelve los datos del usuario para regenerar el access token.
     /// </summary>
     Task<RefreshTokenValidationResult> ValidateAndRotateAsync(
-        string rawToken, CancellationToken cancellationToken = default);
+        string rawToken,
+        CancellationToken cancellationToken = default
+    );
 
     /// <summary>Revoca todos los refresh tokens activos del usuario (logout global / cambio contraseña).</summary>
     Task RevokeAllForUserAsync(
-        Guid userId, Guid tenantId, string reason, CancellationToken cancellationToken = default);
+        Guid userId,
+        Guid tenantId,
+        string reason,
+        CancellationToken cancellationToken = default
+    );
 
     /// <summary>Revoca la cadena de rotación comprometida sin afectar otras sesiones/dispositivos.</summary>
-    Task RevokeFamilyAsync(Guid familyId, string reason, CancellationToken cancellationToken = default);
+    Task RevokeFamilyAsync(
+        Guid familyId,
+        string reason,
+        CancellationToken cancellationToken = default
+    );
 
     /// <summary>
     /// Revoca un token específico por su valor en texto plano (logout de dispositivo). Devuelve el
@@ -49,7 +69,10 @@ public interface IRefreshTokenService
     /// nada de UserSession.
     /// </summary>
     Task<Guid?> RevokeAsync(
-        string rawToken, string reason, CancellationToken cancellationToken = default);
+        string rawToken,
+        string reason,
+        CancellationToken cancellationToken = default
+    );
 }
 
 public static class RefreshTokenAuditEvents
@@ -75,16 +98,26 @@ public sealed class RefreshTokenValidationResult
     public string? Error { get; init; }
     public bool IsRateLimited { get; init; }
 
-    public static RefreshTokenValidationResult Fail(string error)
-        => new() { IsValid = false, Error = error };
+    public static RefreshTokenValidationResult Fail(string error) =>
+        new() { IsValid = false, Error = error };
 
-    public static RefreshTokenValidationResult RateLimited(string error)
-        => new() { IsValid = false, IsRateLimited = true, Error = error };
+    public static RefreshTokenValidationResult RateLimited(string error) =>
+        new()
+        {
+            IsValid = false,
+            IsRateLimited = true,
+            Error = error,
+        };
 
     public static RefreshTokenValidationResult Ok(
-        Guid userId, Guid tenantId, Guid? companyId, string userType,
-        string newToken, DateTime newExpiry)
-        => new()
+        Guid userId,
+        Guid tenantId,
+        Guid? companyId,
+        string userType,
+        string newToken,
+        DateTime newExpiry
+    ) =>
+        new()
         {
             IsValid = true,
             UserId = userId,

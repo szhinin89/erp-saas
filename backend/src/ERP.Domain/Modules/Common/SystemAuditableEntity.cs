@@ -19,4 +19,3 @@ public abstract class SystemAuditableEntity : SystemAggregateRoot
         UpdatedBy = userId;
     }
 }
-

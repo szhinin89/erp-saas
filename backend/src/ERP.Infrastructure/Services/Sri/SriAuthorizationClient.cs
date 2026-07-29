@@ -15,14 +15,24 @@ public sealed class SriAuthorizationClient : ISriAuthorizationClient
     public SriAuthorizationClient(SriSoapClient client) => _client = client;
 
     public async Task<SriAuthorizationResult> CheckAsync(
-        string accessKey, string wsdlUrl, CancellationToken ct = default)
+        string accessKey,
+        string wsdlUrl,
+        CancellationToken ct = default
+    )
     {
-        var result = await _client.CheckAuthorizationAsync(accessKey, wsdlUrl, cancellationToken: ct);
+        var result = await _client.CheckAuthorizationAsync(
+            accessKey,
+            wsdlUrl,
+            cancellationToken: ct
+        );
         return new SriAuthorizationResult
         {
             Status = result.Status,
-            AuthorizationNumber = string.IsNullOrWhiteSpace(result.AuthorizationNumber) ? null : result.AuthorizationNumber,
-            AuthorizationDate = result.AuthorizationDate == default ? null : result.AuthorizationDate,
+            AuthorizationNumber = string.IsNullOrWhiteSpace(result.AuthorizationNumber)
+                ? null
+                : result.AuthorizationNumber,
+            AuthorizationDate =
+                result.AuthorizationDate == default ? null : result.AuthorizationDate,
             DocumentXml = string.IsNullOrWhiteSpace(result.DocumentXml) ? null : result.DocumentXml,
             Messages = result.Messages,
             StructuredMessages = result.StructuredMessages,

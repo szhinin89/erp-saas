@@ -10,7 +10,8 @@ public sealed record SessionMenuItemDto(
     IReadOnlyList<string>? PermissionKeysAny,
     IReadOnlyList<string>? ItemRoles = null,
     IReadOnlyList<SessionMenuItemDto>? Children = null,
-    string? Icon = null);
+    string? Icon = null
+);
 
 public sealed record SessionMenuGroupDto(
     string Code,
@@ -21,4 +22,5 @@ public sealed record SessionMenuGroupDto(
     IReadOnlyList<string>? Roles,
     bool RequirePlatformPanel,
     IReadOnlyList<SessionMenuItemDto> Items,
-    string? MenuBarLayout = null);
+    string? MenuBarLayout = null
+);

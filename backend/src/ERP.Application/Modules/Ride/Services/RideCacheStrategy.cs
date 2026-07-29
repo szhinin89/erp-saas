@@ -33,11 +33,19 @@ public sealed class RideCacheStrategy : IRideCacheStrategy
         string brandingVersion,
         string rendererVersion,
         string rideSpecificationVersion,
-        CancellationToken ct = default)
+        CancellationToken ct = default
+    )
     {
         var document = await _repository.GetByFingerprintAsync(
-            tenantId, electronicDocumentId, sourceXmlHash,
-            templateVersion, brandingVersion, rendererVersion, rideSpecificationVersion, ct);
+            tenantId,
+            electronicDocumentId,
+            sourceXmlHash,
+            templateVersion,
+            brandingVersion,
+            rendererVersion,
+            rideSpecificationVersion,
+            ct
+        );
 
         if (document is null || document.State != RidePdfState.Generated)
             return Result<RidePdfMetadataDto?>.Success(null);
@@ -49,7 +57,8 @@ public sealed class RideCacheStrategy : IRideCacheStrategy
             document.RendererVersion,
             document.SourceXmlHash.Value,
             document.GeneratedAtUtc!.Value,
-            WasCached: true);
+            WasCached: true
+        );
 
         return Result<RidePdfMetadataDto?>.Success(metadata);
     }

@@ -29,19 +29,32 @@ public sealed class JournalEntryLine : IMustHaveTenant
     /// <see cref="JournalEntry"/>, no de esta entidad.
     /// </summary>
     public static JournalEntryLine Create(
-        Guid journalEntryId, Guid tenantId, Guid accountId, string? description,
-        decimal debit, decimal credit, short sortOrder)
+        Guid journalEntryId,
+        Guid tenantId,
+        Guid accountId,
+        string? description,
+        decimal debit,
+        decimal credit,
+        short sortOrder
+    )
     {
         if (accountId == Guid.Empty)
             throw new ArgumentException("La cuenta contable es obligatoria.", nameof(accountId));
         if (debit < 0)
             throw new ArgumentException("El monto de débito no puede ser negativo.", nameof(debit));
         if (credit < 0)
-            throw new ArgumentException("El monto de crédito no puede ser negativo.", nameof(credit));
+            throw new ArgumentException(
+                "El monto de crédito no puede ser negativo.",
+                nameof(credit)
+            );
         if (debit > 0 && credit > 0)
-            throw new InvalidOperationException("Una línea de asiento no puede tener Débito y Crédito simultáneamente.");
+            throw new InvalidOperationException(
+                "Una línea de asiento no puede tener Débito y Crédito simultáneamente."
+            );
         if (debit == 0 && credit == 0)
-            throw new InvalidOperationException("Una línea de asiento debe tener un monto en Débito o en Crédito.");
+            throw new InvalidOperationException(
+                "Una línea de asiento debe tener un monto en Débito o en Crédito."
+            );
 
         return new JournalEntryLine
         {

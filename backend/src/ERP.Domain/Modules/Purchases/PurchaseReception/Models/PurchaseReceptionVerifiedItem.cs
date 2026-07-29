@@ -9,4 +9,5 @@ public sealed record PurchaseReceptionVerifiedItem(
     bool PurchaseExists,
     PurchaseReceptionStatus Status,
     Guid? SupplierId = null,
-    Guid? PurchaseId = null);
+    Guid? PurchaseId = null
+);

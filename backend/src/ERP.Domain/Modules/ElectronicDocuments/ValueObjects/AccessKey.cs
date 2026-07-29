@@ -21,7 +21,10 @@ public sealed record AccessKey
         var trimmed = value.Trim();
 
         if (trimmed.Length != Length || !trimmed.All(char.IsDigit))
-            throw new ArgumentException($"La clave de acceso debe tener exactamente {Length} dígitos numéricos.", nameof(value));
+            throw new ArgumentException(
+                $"La clave de acceso debe tener exactamente {Length} dígitos numéricos.",
+                nameof(value)
+            );
 
         return new AccessKey(trimmed);
     }

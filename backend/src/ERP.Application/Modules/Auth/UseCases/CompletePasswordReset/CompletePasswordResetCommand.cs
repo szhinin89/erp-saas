@@ -9,7 +9,5 @@ namespace ERP.Application.Auth.UseCases.CompletePasswordReset;
 /// por LoginHandler cuando IdentityUser.RequirePasswordReset estaba activo, fija la nueva
 /// contraseña y devuelve una sesión completa (JWT + refresh), igual que un login exitoso.
 /// </summary>
-public sealed record CompletePasswordResetCommand(
-    string PasswordResetToken,
-    string NewPassword
-) : IRequest<Result<AuthResponseDto>>;
+public sealed record CompletePasswordResetCommand(string PasswordResetToken, string NewPassword)
+    : IRequest<Result<AuthResponseDto>>;

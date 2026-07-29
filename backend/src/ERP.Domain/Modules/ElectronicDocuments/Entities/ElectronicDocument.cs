@@ -22,7 +22,10 @@ namespace ERP.Domain.Modules.ElectronicDocuments.Entities;
 /// transiciona la misma fila a <see cref="ElectronicDocumentState.Failed"/> con el motivo real —
 /// nunca se descarta el registro ni se pierde el intento.
 /// </summary>
-public sealed class ElectronicDocument : AuditableEntity, ITenantScopedEntity, ICompanyOperationalEntity
+public sealed class ElectronicDocument
+    : AuditableEntity,
+        ITenantScopedEntity,
+        ICompanyOperationalEntity
 {
     public const int SourceModuleMaxLen = 100;
     public const int PathMaxLen = 500;
@@ -46,13 +49,16 @@ public sealed class ElectronicDocument : AuditableEntity, ITenantScopedEntity, I
 
     /// <summary>Versión del esquema "factura" del XML generado (p.ej. "1.1.0") — la declara el XmlBuilder.</summary>
     public string? XmlVersion { get; private set; }
+
     /// <summary>Versión del XSD contra el que se validó el XML — la declara el SchemaValidator.</summary>
     public string? SchemaVersion { get; private set; }
 
     /// <summary>Ruta opaca de <c>IFileStorage</c> al XML generado (sin firmar) — nunca una ruta manual.</summary>
     public string? XmlDraftPath { get; private set; }
+
     /// <summary>Ruta opaca de <c>IFileStorage</c> al XML firmado.</summary>
     public string? SignedXmlPath { get; private set; }
+
     /// <summary>Ruta opaca de <c>IFileStorage</c> al XML autorizado por el SRI — aún no se persiste en esta fase.</summary>
     public string? AuthorizedXmlPath { get; private set; }
 
@@ -79,14 +85,24 @@ public sealed class ElectronicDocument : AuditableEntity, ITenantScopedEntity, I
         string sourceModule,
         Guid sourceEntityId,
         Guid createdBy,
-        Guid? id = null)
+        Guid? id = null
+    )
     {
         if (string.IsNullOrWhiteSpace(sourceModule))
-            throw new ArgumentException("El módulo de origen es obligatorio.", nameof(sourceModule));
+            throw new ArgumentException(
+                "El módulo de origen es obligatorio.",
+                nameof(sourceModule)
+            );
         if (sourceModule.Length > SourceModuleMaxLen)
-            throw new ArgumentException($"El módulo de origen no puede superar {SourceModuleMaxLen} caracteres.", nameof(sourceModule));
+            throw new ArgumentException(
+                $"El módulo de origen no puede superar {SourceModuleMaxLen} caracteres.",
+                nameof(sourceModule)
+            );
         if (sourceEntityId == Guid.Empty)
-            throw new ArgumentException("El identificador del documento de origen es obligatorio.", nameof(sourceEntityId));
+            throw new ArgumentException(
+                "El identificador del documento de origen es obligatorio.",
+                nameof(sourceEntityId)
+            );
 
         var document = new ElectronicDocument
         {
@@ -100,8 +116,15 @@ public sealed class ElectronicDocument : AuditableEntity, ITenantScopedEntity, I
             RetryCount = 0,
         };
         document.SetCreated(createdBy);
-        document.RaiseDomainEvent(new ElectronicDocumentCreatedEvent(
-            tenantId, document.Id, documentType, document.SourceModule, sourceEntityId));
+        document.RaiseDomainEvent(
+            new ElectronicDocumentCreatedEvent(
+                tenantId,
+                document.Id,
+                documentType,
+                document.SourceModule,
+                sourceEntityId
+            )
+        );
 
         return document;
     }
@@ -119,14 +142,27 @@ public sealed class ElectronicDocument : AuditableEntity, ITenantScopedEntity, I
     }
 
     /// <summary>Transición Draft/Failed→XmlGenerated: el XML ya fue construido, validado contra XSD y almacenado.</summary>
-    public void MarkXmlGenerated(string xmlDraftPath, string xmlVersion, string schemaVersion, Guid updatedBy)
+    public void MarkXmlGenerated(
+        string xmlDraftPath,
+        string xmlVersion,
+        string schemaVersion,
+        Guid updatedBy
+    )
     {
         if (CurrentState is not (ElectronicDocumentState.Draft or ElectronicDocumentState.Failed))
-            throw new InvalidOperationException($"Solo se puede marcar el XML como generado desde Draft o Failed (estado actual: {CurrentState}).");
+            throw new InvalidOperationException(
+                $"Solo se puede marcar el XML como generado desde Draft o Failed (estado actual: {CurrentState})."
+            );
         if (string.IsNullOrWhiteSpace(xmlDraftPath))
-            throw new ArgumentException("La ruta del XML generado es obligatoria.", nameof(xmlDraftPath));
+            throw new ArgumentException(
+                "La ruta del XML generado es obligatoria.",
+                nameof(xmlDraftPath)
+            );
         if (xmlDraftPath.Length > PathMaxLen)
-            throw new ArgumentException($"La ruta del XML generado no puede superar {PathMaxLen} caracteres.", nameof(xmlDraftPath));
+            throw new ArgumentException(
+                $"La ruta del XML generado no puede superar {PathMaxLen} caracteres.",
+                nameof(xmlDraftPath)
+            );
 
         var fromState = CurrentState;
         XmlDraftPath = xmlDraftPath;
@@ -137,7 +173,15 @@ public sealed class ElectronicDocument : AuditableEntity, ITenantScopedEntity, I
         LastAttemptUtc = DateTime.UtcNow;
         SetUpdated(updatedBy);
 
-        RaiseDomainEvent(new ElectronicDocumentXmlGeneratedEvent(TenantId, Id, DocumentType, fromState, CurrentState));
+        RaiseDomainEvent(
+            new ElectronicDocumentXmlGeneratedEvent(
+                TenantId,
+                Id,
+                DocumentType,
+                fromState,
+                CurrentState
+            )
+        );
     }
 
     /// <summary>
@@ -148,7 +192,9 @@ public sealed class ElectronicDocument : AuditableEntity, ITenantScopedEntity, I
     public void MarkFailed(string reason, Guid updatedBy)
     {
         if (CurrentState is not (ElectronicDocumentState.Draft or ElectronicDocumentState.Failed))
-            throw new InvalidOperationException($"Solo se puede marcar como fallido desde Draft o Failed (estado actual: {CurrentState}).");
+            throw new InvalidOperationException(
+                $"Solo se puede marcar como fallido desde Draft o Failed (estado actual: {CurrentState})."
+            );
         if (string.IsNullOrWhiteSpace(reason))
             throw new ArgumentException("El motivo del fallo es obligatorio.", nameof(reason));
 
@@ -159,18 +205,35 @@ public sealed class ElectronicDocument : AuditableEntity, ITenantScopedEntity, I
         LastAttemptUtc = DateTime.UtcNow;
         SetUpdated(updatedBy);
 
-        RaiseDomainEvent(new ElectronicDocumentFailedEvent(TenantId, Id, DocumentType, fromState, CurrentState, LastError));
+        RaiseDomainEvent(
+            new ElectronicDocumentFailedEvent(
+                TenantId,
+                Id,
+                DocumentType,
+                fromState,
+                CurrentState,
+                LastError
+            )
+        );
     }
 
     /// <summary>Transición XmlGenerated→Signed: el XML firmado ya fue almacenado.</summary>
     public void MarkSigned(string signedXmlPath, AccessKey accessKey, Guid updatedBy)
     {
         if (CurrentState != ElectronicDocumentState.XmlGenerated)
-            throw new InvalidOperationException($"Solo se puede marcar como firmado desde XmlGenerated (estado actual: {CurrentState}).");
+            throw new InvalidOperationException(
+                $"Solo se puede marcar como firmado desde XmlGenerated (estado actual: {CurrentState})."
+            );
         if (string.IsNullOrWhiteSpace(signedXmlPath))
-            throw new ArgumentException("La ruta del XML firmado es obligatoria.", nameof(signedXmlPath));
+            throw new ArgumentException(
+                "La ruta del XML firmado es obligatoria.",
+                nameof(signedXmlPath)
+            );
         if (signedXmlPath.Length > PathMaxLen)
-            throw new ArgumentException($"La ruta del XML firmado no puede superar {PathMaxLen} caracteres.", nameof(signedXmlPath));
+            throw new ArgumentException(
+                $"La ruta del XML firmado no puede superar {PathMaxLen} caracteres.",
+                nameof(signedXmlPath)
+            );
 
         var fromState = CurrentState;
         SignedXmlPath = signedXmlPath;
@@ -179,14 +242,18 @@ public sealed class ElectronicDocument : AuditableEntity, ITenantScopedEntity, I
         LastAttemptUtc = DateTime.UtcNow;
         SetUpdated(updatedBy);
 
-        RaiseDomainEvent(new ElectronicDocumentSignedEvent(TenantId, Id, DocumentType, fromState, CurrentState));
+        RaiseDomainEvent(
+            new ElectronicDocumentSignedEvent(TenantId, Id, DocumentType, fromState, CurrentState)
+        );
     }
 
     /// <summary>Transición Signed→Sent: el XML firmado fue enviado al servicio de recepción del SRI.</summary>
     public void MarkSent(Guid updatedBy)
     {
         if (CurrentState != ElectronicDocumentState.Signed)
-            throw new InvalidOperationException($"Solo se puede marcar como enviado desde Signed (estado actual: {CurrentState}).");
+            throw new InvalidOperationException(
+                $"Solo se puede marcar como enviado desde Signed (estado actual: {CurrentState})."
+            );
 
         var fromState = CurrentState;
         LastError = null;
@@ -194,14 +261,18 @@ public sealed class ElectronicDocument : AuditableEntity, ITenantScopedEntity, I
         LastAttemptUtc = DateTime.UtcNow;
         SetUpdated(updatedBy);
 
-        RaiseDomainEvent(new ElectronicDocumentSentEvent(TenantId, Id, DocumentType, fromState, CurrentState));
+        RaiseDomainEvent(
+            new ElectronicDocumentSentEvent(TenantId, Id, DocumentType, fromState, CurrentState)
+        );
     }
 
     /// <summary>Transición Sent→Received: el SRI acusó recibo del comprobante (respuesta RECIBIDA de recepción).</summary>
     public void MarkReceived(Guid updatedBy)
     {
         if (CurrentState != ElectronicDocumentState.Sent)
-            throw new InvalidOperationException($"Solo se puede marcar como recibido desde Sent (estado actual: {CurrentState}).");
+            throw new InvalidOperationException(
+                $"Solo se puede marcar como recibido desde Sent (estado actual: {CurrentState})."
+            );
 
         var fromState = CurrentState;
         LastError = null;
@@ -209,7 +280,9 @@ public sealed class ElectronicDocument : AuditableEntity, ITenantScopedEntity, I
         LastAttemptUtc = DateTime.UtcNow;
         SetUpdated(updatedBy);
 
-        RaiseDomainEvent(new ElectronicDocumentReceivedEvent(TenantId, Id, DocumentType, fromState, CurrentState));
+        RaiseDomainEvent(
+            new ElectronicDocumentReceivedEvent(TenantId, Id, DocumentType, fromState, CurrentState)
+        );
     }
 
     /// <summary>
@@ -218,15 +291,25 @@ public sealed class ElectronicDocument : AuditableEntity, ITenantScopedEntity, I
     /// puede resolver directamente sin haber pasado por un acuse de recibo explícito.
     /// </summary>
     public void MarkAuthorized(
-        AuthorizationNumber authorizationNumber, DateTime authorizationDate, string? authorizedXmlPath, Guid updatedBy)
+        AuthorizationNumber authorizationNumber,
+        DateTime authorizationDate,
+        string? authorizedXmlPath,
+        Guid updatedBy
+    )
     {
         if (CurrentState is not (ElectronicDocumentState.Sent or ElectronicDocumentState.Received))
-            throw new InvalidOperationException($"Solo se puede autorizar desde Sent o Received (estado actual: {CurrentState}).");
+            throw new InvalidOperationException(
+                $"Solo se puede autorizar desde Sent o Received (estado actual: {CurrentState})."
+            );
         if (authorizedXmlPath is not null && authorizedXmlPath.Length > PathMaxLen)
-            throw new ArgumentException($"La ruta del XML autorizado no puede superar {PathMaxLen} caracteres.", nameof(authorizedXmlPath));
+            throw new ArgumentException(
+                $"La ruta del XML autorizado no puede superar {PathMaxLen} caracteres.",
+                nameof(authorizedXmlPath)
+            );
 
         var fromState = CurrentState;
-        AuthorizationNumber = authorizationNumber ?? throw new ArgumentNullException(nameof(authorizationNumber));
+        AuthorizationNumber =
+            authorizationNumber ?? throw new ArgumentNullException(nameof(authorizationNumber));
         AuthorizationDate = authorizationDate;
         AuthorizedXmlPath = authorizedXmlPath;
         LastError = null;
@@ -234,7 +317,15 @@ public sealed class ElectronicDocument : AuditableEntity, ITenantScopedEntity, I
         LastAttemptUtc = DateTime.UtcNow;
         SetUpdated(updatedBy);
 
-        RaiseDomainEvent(new ElectronicDocumentAuthorizedEvent(TenantId, Id, DocumentType, fromState, CurrentState));
+        RaiseDomainEvent(
+            new ElectronicDocumentAuthorizedEvent(
+                TenantId,
+                Id,
+                DocumentType,
+                fromState,
+                CurrentState
+            )
+        );
     }
 
     /// <summary>
@@ -243,10 +334,16 @@ public sealed class ElectronicDocument : AuditableEntity, ITenantScopedEntity, I
     /// SRI real (recepción o autorización), lleva los mensajes estructurados tal cual el SRI los
     /// envió, para que <c>ElectronicDocumentSriMessageAuditHandler</c> los persista individualmente.
     /// </summary>
-    public void MarkRejected(string reason, Guid updatedBy, IReadOnlyList<SriMessage>? sriMessages = null)
+    public void MarkRejected(
+        string reason,
+        Guid updatedBy,
+        IReadOnlyList<SriMessage>? sriMessages = null
+    )
     {
         if (CurrentState is not (ElectronicDocumentState.Sent or ElectronicDocumentState.Received))
-            throw new InvalidOperationException($"Solo se puede rechazar desde Sent o Received (estado actual: {CurrentState}).");
+            throw new InvalidOperationException(
+                $"Solo se puede rechazar desde Sent o Received (estado actual: {CurrentState})."
+            );
         if (string.IsNullOrWhiteSpace(reason))
             throw new ArgumentException("El motivo de rechazo es obligatorio.", nameof(reason));
 
@@ -256,7 +353,17 @@ public sealed class ElectronicDocument : AuditableEntity, ITenantScopedEntity, I
         LastAttemptUtc = DateTime.UtcNow;
         SetUpdated(updatedBy);
 
-        RaiseDomainEvent(new ElectronicDocumentRejectedEvent(TenantId, Id, DocumentType, fromState, CurrentState, LastError, sriMessages));
+        RaiseDomainEvent(
+            new ElectronicDocumentRejectedEvent(
+                TenantId,
+                Id,
+                DocumentType,
+                fromState,
+                CurrentState,
+                LastError,
+                sriMessages
+            )
+        );
     }
 
     /// <summary>
@@ -267,9 +374,18 @@ public sealed class ElectronicDocument : AuditableEntity, ITenantScopedEntity, I
     /// </summary>
     public void MarkDeadLetter(string reason, Guid updatedBy)
     {
-        if (CurrentState is not (ElectronicDocumentState.Failed or ElectronicDocumentState.Signed
-            or ElectronicDocumentState.Sent or ElectronicDocumentState.Received))
-            throw new InvalidOperationException($"Solo se puede marcar como DeadLetter desde Failed, Signed, Sent o Received (estado actual: {CurrentState}).");
+        if (
+            CurrentState
+            is not (
+                ElectronicDocumentState.Failed
+                or ElectronicDocumentState.Signed
+                or ElectronicDocumentState.Sent
+                or ElectronicDocumentState.Received
+            )
+        )
+            throw new InvalidOperationException(
+                $"Solo se puede marcar como DeadLetter desde Failed, Signed, Sent o Received (estado actual: {CurrentState})."
+            );
         if (string.IsNullOrWhiteSpace(reason))
             throw new ArgumentException("El motivo del DeadLetter es obligatorio.", nameof(reason));
 
@@ -280,7 +396,16 @@ public sealed class ElectronicDocument : AuditableEntity, ITenantScopedEntity, I
         LastAttemptUtc = DateTime.UtcNow;
         SetUpdated(updatedBy);
 
-        RaiseDomainEvent(new ElectronicDocumentDeadLetterEvent(TenantId, Id, DocumentType, fromState, CurrentState, LastError));
+        RaiseDomainEvent(
+            new ElectronicDocumentDeadLetterEvent(
+                TenantId,
+                Id,
+                DocumentType,
+                fromState,
+                CurrentState,
+                LastError
+            )
+        );
     }
 
     /// <summary>
@@ -292,14 +417,27 @@ public sealed class ElectronicDocument : AuditableEntity, ITenantScopedEntity, I
     /// </summary>
     public void MarkRetryAttempted(Guid updatedBy)
     {
-        if (CurrentState is not (ElectronicDocumentState.Signed or ElectronicDocumentState.Received))
-            throw new InvalidOperationException($"Solo se puede reintentar desde Signed o Received (estado actual: {CurrentState}).");
+        if (
+            CurrentState is not (ElectronicDocumentState.Signed or ElectronicDocumentState.Received)
+        )
+            throw new InvalidOperationException(
+                $"Solo se puede reintentar desde Signed o Received (estado actual: {CurrentState})."
+            );
 
         RetryCount++;
         LastAttemptUtc = DateTime.UtcNow;
         SetUpdated(updatedBy);
 
-        RaiseDomainEvent(new ElectronicDocumentRetryAttemptedEvent(TenantId, Id, DocumentType, CurrentState, CurrentState, RetryCount));
+        RaiseDomainEvent(
+            new ElectronicDocumentRetryAttemptedEvent(
+                TenantId,
+                Id,
+                DocumentType,
+                CurrentState,
+                CurrentState,
+                RetryCount
+            )
+        );
     }
 
     /// <summary>
@@ -309,16 +447,28 @@ public sealed class ElectronicDocument : AuditableEntity, ITenantScopedEntity, I
     public void Reactivate(Guid updatedBy)
     {
         if (CurrentState != ElectronicDocumentState.DeadLetter)
-            throw new InvalidOperationException($"Solo se puede reactivar un documento en DeadLetter (estado actual: {CurrentState}).");
+            throw new InvalidOperationException(
+                $"Solo se puede reactivar un documento en DeadLetter (estado actual: {CurrentState})."
+            );
         if (PreDeadLetterState is null)
-            throw new InvalidOperationException("El documento no tiene un estado previo a DeadLetter registrado.");
+            throw new InvalidOperationException(
+                "El documento no tiene un estado previo a DeadLetter registrado."
+            );
 
         var fromState = CurrentState;
         CurrentState = PreDeadLetterState.Value;
         PreDeadLetterState = null;
         SetUpdated(updatedBy);
 
-        RaiseDomainEvent(new ElectronicDocumentReactivatedEvent(TenantId, Id, DocumentType, fromState, CurrentState));
+        RaiseDomainEvent(
+            new ElectronicDocumentReactivatedEvent(
+                TenantId,
+                Id,
+                DocumentType,
+                fromState,
+                CurrentState
+            )
+        );
     }
 
     /// <summary>
@@ -329,7 +479,9 @@ public sealed class ElectronicDocument : AuditableEntity, ITenantScopedEntity, I
     public void MarkCancelled(string reason, Guid updatedBy)
     {
         if (CurrentState != ElectronicDocumentState.Authorized)
-            throw new InvalidOperationException($"Solo se puede anular un documento Authorized (estado actual: {CurrentState}).");
+            throw new InvalidOperationException(
+                $"Solo se puede anular un documento Authorized (estado actual: {CurrentState})."
+            );
         if (string.IsNullOrWhiteSpace(reason))
             throw new ArgumentException("El motivo de anulación es obligatorio.", nameof(reason));
 
@@ -338,6 +490,15 @@ public sealed class ElectronicDocument : AuditableEntity, ITenantScopedEntity, I
         LastAttemptUtc = DateTime.UtcNow;
         SetUpdated(updatedBy);
 
-        RaiseDomainEvent(new ElectronicDocumentCancelledEvent(TenantId, Id, DocumentType, fromState, CurrentState, reason.Trim()));
+        RaiseDomainEvent(
+            new ElectronicDocumentCancelledEvent(
+                TenantId,
+                Id,
+                DocumentType,
+                fromState,
+                CurrentState,
+                reason.Trim()
+            )
+        );
     }
 }

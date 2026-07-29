@@ -14,10 +14,12 @@ public sealed record PurchaseReceptionItemDto(
     Guid DocumentId,
     string DocumentStatus,
     string ProcessingStatus,
-    string? ProcessingNotes);
+    string? ProcessingNotes
+);
 
 public sealed record PurchaseReceptionImportResultDto(
     IReadOnlyList<PurchaseReceptionItemDto> Items,
     int TotalParsed,
     int ParseErrorCount,
-    int SkippedUnsupportedCount);
+    int SkippedUnsupportedCount
+);

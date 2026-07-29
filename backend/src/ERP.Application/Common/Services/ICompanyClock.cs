@@ -17,5 +17,9 @@ public interface ICompanyClock
     Task<DateOnly> TodayAsync(Guid companyId, Guid tenantId, CancellationToken ct = default);
 
     /// <summary>Rango UTC que cubre el día calendario "hoy" en la zona horaria de la empresa.</summary>
-    Task<(DateTime StartUtc, DateTime EndUtc)> TodayUtcRangeAsync(Guid companyId, Guid tenantId, CancellationToken ct = default);
+    Task<(DateTime StartUtc, DateTime EndUtc)> TodayUtcRangeAsync(
+        Guid companyId,
+        Guid tenantId,
+        CancellationToken ct = default
+    );
 }

@@ -1,4 +1,4 @@
-﻿using ERP.Domain.MasterData.Entities;
+using ERP.Domain.MasterData.Entities;
 
 namespace ERP.Domain.MasterData.Interfaces;
 
@@ -11,10 +11,12 @@ public interface ICompanyBpTradingSettingsRepository
 {
     Task<CompanyBpTradingSettings?> GetByBusinessPartnerAsync(
         Guid businessPartnerId,
-        CancellationToken cancellationToken = default);
+        CancellationToken cancellationToken = default
+    );
 
     Task<IReadOnlyList<CompanyBpTradingSettings>> GetBlockedAsync(
-        CancellationToken cancellationToken = default);
+        CancellationToken cancellationToken = default
+    );
 
     Task AddAsync(CompanyBpTradingSettings settings, CancellationToken cancellationToken = default);
 

@@ -9,7 +9,12 @@ namespace ERP.Application.Modules.ElectronicDocuments.DTOs;
 /// <c>ElectronicDocument.LastError</c> (ver <see cref="ElectronicDocumentDiagnosticAssembler"/>).
 /// </summary>
 public sealed record ElectronicDocumentMessageDto(
-    string? Code, string MessageType, string Message, string? AdditionalInfo, DateTime OccurredAtUtc);
+    string? Code,
+    string MessageType,
+    string Message,
+    string? AdditionalInfo,
+    DateTime OccurredAtUtc
+);
 
 /// <summary>Datos técnicos "solo para soporte" — nunca para decisiones de negocio del módulo consumidor.</summary>
 public sealed record ElectronicDocumentTechnicalInfoDto(
@@ -19,7 +24,8 @@ public sealed record ElectronicDocumentTechnicalInfoDto(
     DateTime? AuthorizationDate,
     int RetryCount,
     DateTime? LastAttemptUtc,
-    string? CorrelationId);
+    string? CorrelationId
+);
 
 /// <summary>
 /// Contrato único y reutilizable del diagnóstico de un documento electrónico — consumido por
@@ -37,4 +43,5 @@ public sealed record ElectronicDocumentDiagnosticDto(
     ElectronicDocumentTechnicalInfoDto TechnicalInfo,
     bool XmlDraftAvailable,
     bool XmlSignedAvailable,
-    bool XmlAuthorizedAvailable);
+    bool XmlAuthorizedAvailable
+);

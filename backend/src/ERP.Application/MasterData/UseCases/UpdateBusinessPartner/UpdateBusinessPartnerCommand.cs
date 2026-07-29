@@ -14,8 +14,8 @@ public sealed record UpdateBusinessPartnerCommand(
     string LegalName,
     PersonType PersonType,
     string? TradeName = null,
-    string? CountryCode = null)
-    : IRequest<Result<BusinessPartnerSummaryDto>>, ITenantScopedRequest;
+    string? CountryCode = null
+) : IRequest<Result<BusinessPartnerSummaryDto>>, ITenantScopedRequest;
 
 /// <summary>
 /// Cambia la identificación fiscal. Operación de alto impacto — emite domain event de auditoría.
@@ -24,5 +24,5 @@ public sealed record UpdateBusinessPartnerCommand(
 public sealed record UpdateBusinessPartnerIdentificationCommand(
     Guid Id,
     string IdentificationType,
-    string IdentificationNumber)
-    : IRequest<Result<BusinessPartnerSummaryDto>>, ITenantScopedRequest;
+    string IdentificationNumber
+) : IRequest<Result<BusinessPartnerSummaryDto>>, ITenantScopedRequest;

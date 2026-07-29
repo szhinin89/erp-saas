@@ -1,6 +1,6 @@
-using ERP.Domain.Modules.Ride.ValueObjects;
 using System.Security.Cryptography;
 using System.Text;
+using ERP.Domain.Modules.Ride.ValueObjects;
 
 namespace ERP.Application.Modules.Ride.Branding;
 
@@ -20,11 +20,13 @@ public static class RideBrandingVersion
 {
     public static string Compute(RideBranding branding)
     {
-        var canonical = string.Join('|',
+        var canonical = string.Join(
+            '|',
             branding.LogoStoragePath ?? string.Empty,
             branding.PrimaryColorHex ?? string.Empty,
             branding.SecondaryColorHex ?? string.Empty,
-            branding.FooterText ?? string.Empty);
+            branding.FooterText ?? string.Empty
+        );
 
         var hash = SHA256.HashData(Encoding.UTF8.GetBytes(canonical));
         return Convert.ToHexStringLower(hash)[..16];

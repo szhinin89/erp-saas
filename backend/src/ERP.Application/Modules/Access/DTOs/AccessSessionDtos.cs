@@ -14,7 +14,8 @@ public sealed record UserSessionDto(
     string Status,
     DateTime StartedAt,
     DateTime? ClosedAt,
-    string? ClosedReason);
+    string? ClosedReason
+);
 
 /// <summary>
 /// Resultado de CreateAuthenticatedSessionCommand (Fase 6) — sesión creada + refresh token en
@@ -24,7 +25,8 @@ public sealed record UserSessionDto(
 public sealed record AuthenticatedSessionDto(
     UserSessionDto Session,
     string RefreshToken,
-    DateTime RefreshTokenExpiry);
+    DateTime RefreshTokenExpiry
+);
 
 /// <summary>
 /// Proyección administrativa para GetUserSessionsPagedQuery (Fase 10) — expone exactamente los
@@ -39,7 +41,8 @@ public sealed record UserSessionAdminDto(
     string TerminalId,
     string Status,
     DateTime CreatedAt,
-    DateTime? UpdatedAt);
+    DateTime? UpdatedAt
+);
 
 /// <summary>Métricas básicas de GetSessionStatisticsQuery (Fase 10) — solo conteos, sin PII.</summary>
 public sealed record SessionStatisticsDto(
@@ -47,4 +50,5 @@ public sealed record SessionStatisticsDto(
     int ClosedManually,
     int ClosedByNewLogin,
     int Expired,
-    int Total);
+    int Total
+);

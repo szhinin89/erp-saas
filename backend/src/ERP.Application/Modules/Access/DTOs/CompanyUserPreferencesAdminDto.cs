@@ -9,4 +9,5 @@ namespace ERP.Application.Access.DTOs;
 public sealed record CompanyUserPreferencesAdminDto(
     Guid CompanyUserId,
     Guid? DefaultBranchId,
-    string LoginMode);
+    string LoginMode
+);

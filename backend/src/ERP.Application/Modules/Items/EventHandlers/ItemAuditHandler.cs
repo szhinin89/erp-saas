@@ -12,12 +12,12 @@ namespace ERP.Application.Modules.Items.EventHandlers;
 /// infraestructura de auditoría (IAuditService/IAuditWriter/IAuditContext) es genérica y no
 /// conoce Items. Mismo patrón que PricingRuleAuditHandler/PriceListItemAuditHandler.
 /// </summary>
-public sealed class ItemAuditHandler :
-    INotificationHandler<ItemCreatedEvent>,
-    INotificationHandler<ItemUpdatedEvent>,
-    INotificationHandler<ItemPriceChangedEvent>,
-    INotificationHandler<ItemEnabledEvent>,
-    INotificationHandler<ItemDisabledEvent>
+public sealed class ItemAuditHandler
+    : INotificationHandler<ItemCreatedEvent>,
+        INotificationHandler<ItemUpdatedEvent>,
+        INotificationHandler<ItemPriceChangedEvent>,
+        INotificationHandler<ItemEnabledEvent>,
+        INotificationHandler<ItemDisabledEvent>
 {
     private readonly IAuditService _audit;
     private readonly IAuditContext _context;
@@ -28,21 +28,27 @@ public sealed class ItemAuditHandler :
         _context = context;
     }
 
-    public Task Handle(ItemCreatedEvent e, CancellationToken ct) => _audit.RecordAsync(
-        ItemAudit.Create(_context.Actor, e.ItemId, ((IAuditEvent)e).Action), ct);
+    public Task Handle(ItemCreatedEvent e, CancellationToken ct) =>
+        _audit.RecordAsync(ItemAudit.Create(_context.Actor, e.ItemId, ((IAuditEvent)e).Action), ct);
 
-    public Task Handle(ItemUpdatedEvent e, CancellationToken ct) => _audit.RecordAsync(
-        ItemAudit.Create(_context.Actor, e.ItemId, ((IAuditEvent)e).Action), ct);
+    public Task Handle(ItemUpdatedEvent e, CancellationToken ct) =>
+        _audit.RecordAsync(ItemAudit.Create(_context.Actor, e.ItemId, ((IAuditEvent)e).Action), ct);
 
-    public Task Handle(ItemPriceChangedEvent e, CancellationToken ct) => _audit.RecordAsync(
-        ItemAudit.Create(
-            _context.Actor, e.ItemId, ((IAuditEvent)e).Action,
-            e.OldBaseSalePrice, e.NewBaseSalePrice),
-        ct);
+    public Task Handle(ItemPriceChangedEvent e, CancellationToken ct) =>
+        _audit.RecordAsync(
+            ItemAudit.Create(
+                _context.Actor,
+                e.ItemId,
+                ((IAuditEvent)e).Action,
+                e.OldBaseSalePrice,
+                e.NewBaseSalePrice
+            ),
+            ct
+        );
 
-    public Task Handle(ItemEnabledEvent e, CancellationToken ct) => _audit.RecordAsync(
-        ItemAudit.Create(_context.Actor, e.ItemId, ((IAuditEvent)e).Action), ct);
+    public Task Handle(ItemEnabledEvent e, CancellationToken ct) =>
+        _audit.RecordAsync(ItemAudit.Create(_context.Actor, e.ItemId, ((IAuditEvent)e).Action), ct);
 
-    public Task Handle(ItemDisabledEvent e, CancellationToken ct) => _audit.RecordAsync(
-        ItemAudit.Create(_context.Actor, e.ItemId, ((IAuditEvent)e).Action), ct);
+    public Task Handle(ItemDisabledEvent e, CancellationToken ct) =>
+        _audit.RecordAsync(ItemAudit.Create(_context.Actor, e.ItemId, ((IAuditEvent)e).Action), ct);
 }

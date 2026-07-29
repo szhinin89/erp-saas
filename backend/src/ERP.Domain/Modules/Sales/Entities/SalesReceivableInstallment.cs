@@ -18,13 +18,23 @@ public sealed class SalesReceivableInstallment : IMustHaveTenant
     private SalesReceivableInstallment() { }
 
     internal static SalesReceivableInstallment Create(
-        Guid receivableId, Guid tenantId,
-        int installmentNumber, DateOnly dueDate, decimal amount)
+        Guid receivableId,
+        Guid tenantId,
+        int installmentNumber,
+        DateOnly dueDate,
+        decimal amount
+    )
     {
         if (installmentNumber < 1)
-            throw new ArgumentException("El número de cuota debe ser al menos 1.", nameof(installmentNumber));
+            throw new ArgumentException(
+                "El número de cuota debe ser al menos 1.",
+                nameof(installmentNumber)
+            );
         if (amount <= 0)
-            throw new ArgumentException("El monto de la cuota debe ser mayor a cero.", nameof(amount));
+            throw new ArgumentException(
+                "El monto de la cuota debe ser mayor a cero.",
+                nameof(amount)
+            );
 
         return new SalesReceivableInstallment
         {

@@ -17,22 +17,31 @@ public sealed class InstallDataBootstrapStepTests
     public async Task Si_InstallData_falla_el_step_no_relanza_la_excepcion()
     {
         var installData = new Mock<IInstallDataBootstrapService>();
-        installData.Setup(s => s.ApplyPendingAsync(It.IsAny<CancellationToken>()))
+        installData
+            .Setup(s => s.ApplyPendingAsync(It.IsAny<CancellationToken>()))
             .ThrowsAsync(new InvalidOperationException("boom"));
 
-        var step = new InstallDataBootstrapStep(installData.Object, NullLogger<InstallDataBootstrapStep>.Instance);
+        var step = new InstallDataBootstrapStep(
+            installData.Object,
+            NullLogger<InstallDataBootstrapStep>.Instance
+        );
 
         var act = async () => await step.ExecuteAsync(CancellationToken.None);
 
-        await act.Should().NotThrowAsync(
-            "un fallo de InstallData no debe bloquear el arranque de la API, igual que antes de este refactor");
+        await act.Should()
+            .NotThrowAsync(
+                "un fallo de InstallData no debe bloquear el arranque de la API, igual que antes de este refactor"
+            );
     }
 
     [Fact]
     public async Task Delega_en_IInstallDataBootstrapService()
     {
         var installData = new Mock<IInstallDataBootstrapService>();
-        var step = new InstallDataBootstrapStep(installData.Object, NullLogger<InstallDataBootstrapStep>.Instance);
+        var step = new InstallDataBootstrapStep(
+            installData.Object,
+            NullLogger<InstallDataBootstrapStep>.Instance
+        );
 
         await step.ExecuteAsync(CancellationToken.None);
 

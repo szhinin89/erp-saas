@@ -19,13 +19,20 @@ public sealed class ApiControllerGuardrailTests
         // These controllers ONLY read from schema 'global' tables.
         var exempted = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
         {
-            "SriCatalogsController.cs",  // global.sri_* — no tenant filtering needed
+            "SriCatalogsController.cs", // global.sri_* — no tenant filtering needed
         };
 
         var violations = new List<string>();
-        foreach (var file in Directory.EnumerateFiles(controllersDir, "*.cs", SearchOption.AllDirectories))
+        foreach (
+            var file in Directory.EnumerateFiles(
+                controllersDir,
+                "*.cs",
+                SearchOption.AllDirectories
+            )
+        )
         {
-            if (exempted.Contains(Path.GetFileName(file))) continue;
+            if (exempted.Contains(Path.GetFileName(file)))
+                continue;
             var text = File.ReadAllText(file);
             if (text.Contains("ErpDbContext", StringComparison.Ordinal))
             {
@@ -33,8 +40,12 @@ public sealed class ApiControllerGuardrailTests
             }
         }
 
-        violations.Should().BeEmpty("use MediatR desde controllers; ErpDbContext solo en Infrastructure/Program startup. " +
-            "Excepciones: controllers de catálogos globales (schema 'global') listados en exempted.");
+        violations
+            .Should()
+            .BeEmpty(
+                "use MediatR desde controllers; ErpDbContext solo en Infrastructure/Program startup. "
+                    + "Excepciones: controllers de catálogos globales (schema 'global') listados en exempted."
+            );
     }
 
     private static string ResolveBackendSrcRoot()

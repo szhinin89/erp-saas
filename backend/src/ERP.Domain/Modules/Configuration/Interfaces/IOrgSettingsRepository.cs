@@ -11,23 +11,32 @@ namespace ERP.Domain.Configuration.Interfaces;
 public interface IOrgSettingsRepository
 {
     Task<OrgSetting?> GetAsync(
-        Guid tenantId, Guid companyId,
-        OrgScope scope, Guid scopeId,
+        Guid tenantId,
+        Guid companyId,
+        OrgScope scope,
+        Guid scopeId,
         string key,
-        CancellationToken ct = default);
+        CancellationToken ct = default
+    );
 
     Task<IReadOnlyList<OrgSetting>> GetAllForScopeAsync(
-        Guid tenantId, Guid companyId,
-        OrgScope scope, Guid scopeId,
-        CancellationToken ct = default);
+        Guid tenantId,
+        Guid companyId,
+        OrgScope scope,
+        Guid scopeId,
+        CancellationToken ct = default
+    );
 
     Task UpsertAsync(OrgSetting setting, CancellationToken ct = default);
 
     Task DeleteAsync(
-        Guid tenantId, Guid companyId,
-        OrgScope scope, Guid scopeId,
+        Guid tenantId,
+        Guid companyId,
+        OrgScope scope,
+        Guid scopeId,
         string key,
-        CancellationToken ct = default);
+        CancellationToken ct = default
+    );
 
     Task SaveChangesAsync(CancellationToken ct = default);
 }

@@ -13,8 +13,12 @@ public sealed class ItemVariantAttribute : AuditableEntity
     private ItemVariantAttribute() { }
 
     public static ItemVariantAttribute Create(
-        Guid variantId, Guid tenantId,
-        Guid attributeDefinitionId, string value, Guid createdBy)
+        Guid variantId,
+        Guid tenantId,
+        Guid attributeDefinitionId,
+        string value,
+        Guid createdBy
+    )
     {
         if (string.IsNullOrWhiteSpace(value))
             throw new ArgumentException("El valor del atributo es obligatorio.", nameof(value));

@@ -13,7 +13,12 @@ public class AccessProfile : AuditableEntity
 
     private AccessProfile() { }
 
-    public static AccessProfile Create(Guid tenantId, string name, string? description, Guid createdBy)
+    public static AccessProfile Create(
+        Guid tenantId,
+        string name,
+        string? description,
+        Guid createdBy
+    )
     {
         var p = new AccessProfile
         {
@@ -21,7 +26,7 @@ public class AccessProfile : AuditableEntity
             TenantId = tenantId,
             Name = name.Trim(),
             Description = string.IsNullOrWhiteSpace(description) ? null : description.Trim(),
-            IsActive = true
+            IsActive = true,
         };
         p.SetCreated(createdBy);
         return p;
@@ -46,4 +51,3 @@ public class AccessProfile : AuditableEntity
         SetUpdated(updatedBy);
     }
 }
-

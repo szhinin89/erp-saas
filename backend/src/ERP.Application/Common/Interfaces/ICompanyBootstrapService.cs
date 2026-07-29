@@ -1,4 +1,4 @@
-﻿namespace ERP.Application.Common.Interfaces;
+namespace ERP.Application.Common.Interfaces;
 
 /// <summary>
 /// Crea los datos operativos mínimos cuando se registra una nueva empresa (Company) en un Tenant.
@@ -13,5 +13,10 @@
 /// </summary>
 public interface ICompanyBootstrapService
 {
-    Task BootstrapCompanyAsync(Guid tenantId, Guid companyId, Guid actorId, CancellationToken cancellationToken = default);
+    Task BootstrapCompanyAsync(
+        Guid tenantId,
+        Guid companyId,
+        Guid actorId,
+        CancellationToken cancellationToken = default
+    );
 }

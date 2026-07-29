@@ -1,6 +1,6 @@
-using ERP.Application.Common.Security;
 using System.Diagnostics;
 using System.Diagnostics.Metrics;
+using ERP.Application.Common.Security;
 
 namespace ERP.Infrastructure.Observability;
 
@@ -22,7 +22,9 @@ public sealed class SecurityMetrics : ISecurityMetrics
     public SecurityMetrics()
     {
         _crossCompanyDenied = Meter.CreateCounter<long>("security.cross_company_denied");
-        _membershipValidationFailed = Meter.CreateCounter<long>("security.membership_validation_failed");
+        _membershipValidationFailed = Meter.CreateCounter<long>(
+            "security.membership_validation_failed"
+        );
         _invalidCompanyContext = Meter.CreateCounter<long>("security.invalid_company_context");
         _jwtRefreshRevoked = Meter.CreateCounter<long>("security.jwt_refresh_revoked");
         _permissionDenied = Meter.CreateCounter<long>("security.permission_denied");
@@ -32,32 +34,32 @@ public sealed class SecurityMetrics : ISecurityMetrics
         _namespaceFallbackUsed = Meter.CreateCounter<long>("security.namespace_fallback_used");
     }
 
-    public void RecordCrossCompanyDenied(SecurityMetricTags? tags = null)
-        => Add(_crossCompanyDenied, tags);
+    public void RecordCrossCompanyDenied(SecurityMetricTags? tags = null) =>
+        Add(_crossCompanyDenied, tags);
 
-    public void RecordMembershipValidationFailed(SecurityMetricTags? tags = null)
-        => Add(_membershipValidationFailed, tags);
+    public void RecordMembershipValidationFailed(SecurityMetricTags? tags = null) =>
+        Add(_membershipValidationFailed, tags);
 
-    public void RecordInvalidCompanyContext(SecurityMetricTags? tags = null)
-        => Add(_invalidCompanyContext, tags);
+    public void RecordInvalidCompanyContext(SecurityMetricTags? tags = null) =>
+        Add(_invalidCompanyContext, tags);
 
-    public void RecordJwtRefreshRevoked(SecurityMetricTags? tags = null)
-        => Add(_jwtRefreshRevoked, tags);
+    public void RecordJwtRefreshRevoked(SecurityMetricTags? tags = null) =>
+        Add(_jwtRefreshRevoked, tags);
 
-    public void RecordPermissionDenied(SecurityMetricTags? tags = null)
-        => Add(_permissionDenied, tags);
+    public void RecordPermissionDenied(SecurityMetricTags? tags = null) =>
+        Add(_permissionDenied, tags);
 
-    public void RecordMasterDataDualWriteFailed(SecurityMetricTags? tags = null)
-        => Add(_dualWriteFailed, tags);
+    public void RecordMasterDataDualWriteFailed(SecurityMetricTags? tags = null) =>
+        Add(_dualWriteFailed, tags);
 
-    public void RecordMasterDataSyncInconsistency(SecurityMetricTags? tags = null)
-        => Add(_syncInconsistency, tags);
+    public void RecordMasterDataSyncInconsistency(SecurityMetricTags? tags = null) =>
+        Add(_syncInconsistency, tags);
 
-    public void RecordBackgroundContextLeakDetected(SecurityMetricTags? tags = null)
-        => Add(_backgroundContextLeak, tags);
+    public void RecordBackgroundContextLeakDetected(SecurityMetricTags? tags = null) =>
+        Add(_backgroundContextLeak, tags);
 
-    public void RecordNamespaceFallbackUsed(SecurityMetricTags? tags = null)
-        => Add(_namespaceFallbackUsed, tags);
+    public void RecordNamespaceFallbackUsed(SecurityMetricTags? tags = null) =>
+        Add(_namespaceFallbackUsed, tags);
 
     private static void Add(Counter<long> counter, SecurityMetricTags? tags)
     {

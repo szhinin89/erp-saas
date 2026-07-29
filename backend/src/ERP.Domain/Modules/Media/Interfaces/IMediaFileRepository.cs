@@ -15,7 +15,8 @@ public interface IMediaFileRepository
         MediaOwnerType ownerType,
         Guid ownerId,
         string role,
-        CancellationToken cancellationToken = default);
+        CancellationToken cancellationToken = default
+    );
 
     Task AddAsync(MediaFile mediaFile, CancellationToken cancellationToken = default);
 

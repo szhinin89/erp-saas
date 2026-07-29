@@ -12,7 +12,17 @@ public sealed class ImageValidationService : IImageValidationService
     public const long MaxSizeBytes = 5 * 1024 * 1024;
     public const int MaxDimensionPx = 4000;
 
-    private static readonly byte[] PngSignature = { 0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A };
+    private static readonly byte[] PngSignature =
+    {
+        0x89,
+        0x50,
+        0x4E,
+        0x47,
+        0x0D,
+        0x0A,
+        0x1A,
+        0x0A,
+    };
 
     public Result<ImageMetadata> Validate(MediaUploadContent content)
     {
@@ -20,7 +30,9 @@ public sealed class ImageValidationService : IImageValidationService
             return Result<ImageMetadata>.ValidationFailure("El archivo está vacío.");
 
         if (content.SizeBytes > MaxSizeBytes)
-            return Result<ImageMetadata>.ValidationFailure("El archivo supera el tamaño máximo permitido de 5 MB.");
+            return Result<ImageMetadata>.ValidationFailure(
+                "El archivo supera el tamaño máximo permitido de 5 MB."
+            );
 
         byte[] bytes;
         using (var ms = new MemoryStream())
@@ -32,19 +44,26 @@ public sealed class ImageValidationService : IImageValidationService
         }
 
         if (bytes.Length > MaxSizeBytes)
-            return Result<ImageMetadata>.ValidationFailure("El archivo supera el tamaño máximo permitido de 5 MB.");
+            return Result<ImageMetadata>.ValidationFailure(
+                "El archivo supera el tamaño máximo permitido de 5 MB."
+            );
 
         var metadata = TryReadPng(bytes) ?? TryReadJpeg(bytes) ?? TryReadWebp(bytes);
 
         if (metadata is null)
-            return Result<ImageMetadata>.ValidationFailure("Formato de imagen no soportado. Use PNG, JPG o WEBP.");
+            return Result<ImageMetadata>.ValidationFailure(
+                "Formato de imagen no soportado. Use PNG, JPG o WEBP."
+            );
 
         if (metadata.Width <= 0 || metadata.Height <= 0)
-            return Result<ImageMetadata>.ValidationFailure("No se pudo determinar las dimensiones de la imagen.");
+            return Result<ImageMetadata>.ValidationFailure(
+                "No se pudo determinar las dimensiones de la imagen."
+            );
 
         if (metadata.Width > MaxDimensionPx || metadata.Height > MaxDimensionPx)
             return Result<ImageMetadata>.ValidationFailure(
-                $"Las dimensiones de la imagen superan el máximo permitido de {MaxDimensionPx}x{MaxDimensionPx} px.");
+                $"Las dimensiones de la imagen superan el máximo permitido de {MaxDimensionPx}x{MaxDimensionPx} px."
+            );
 
         return Result<ImageMetadata>.Success(metadata);
     }
@@ -86,7 +105,12 @@ public sealed class ImageValidationService : IImageValidationService
             var marker = b[pos + 1];
 
             // Marcadores sin segmento de longitud.
-            if (marker == 0xD8 || marker == 0xD9 || marker == 0x01 || (marker >= 0xD0 && marker <= 0xD7))
+            if (
+                marker == 0xD8
+                || marker == 0xD9
+                || marker == 0x01
+                || (marker >= 0xD0 && marker <= 0xD7)
+            )
             {
                 pos += 2;
                 continue;
@@ -97,8 +121,12 @@ public sealed class ImageValidationService : IImageValidationService
 
             var segmentLength = (b[pos + 2] << 8) | b[pos + 3];
 
-            var isSof = marker >= 0xC0 && marker <= 0xCF
-                        && marker != 0xC4 && marker != 0xC8 && marker != 0xCC;
+            var isSof =
+                marker >= 0xC0
+                && marker <= 0xCF
+                && marker != 0xC4
+                && marker != 0xC8
+                && marker != 0xCC;
 
             if (isSof)
             {
@@ -164,6 +192,6 @@ public sealed class ImageValidationService : IImageValidationService
         }
     }
 
-    private static int ReadUInt32BigEndian(byte[] b, int offset)
-        => (b[offset] << 24) | (b[offset + 1] << 16) | (b[offset + 2] << 8) | b[offset + 3];
+    private static int ReadUInt32BigEndian(byte[] b, int offset) =>
+        (b[offset] << 24) | (b[offset + 1] << 16) | (b[offset + 2] << 8) | b[offset + 3];
 }

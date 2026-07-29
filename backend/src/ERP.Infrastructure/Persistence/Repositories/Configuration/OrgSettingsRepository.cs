@@ -12,31 +12,41 @@ public sealed class OrgSettingsRepository : IOrgSettingsRepository
     public OrgSettingsRepository(ErpDbContext db) => _db = db;
 
     public Task<OrgSetting?> GetAsync(
-        Guid tenantId, Guid companyId,
-        OrgScope scope, Guid scopeId,
+        Guid tenantId,
+        Guid companyId,
+        OrgScope scope,
+        Guid scopeId,
         string key,
-        CancellationToken ct = default)
-        => _db.OrgSettings
-            .IgnoreQueryFilters()
-            .FirstOrDefaultAsync(s =>
-                s.TenantId == tenantId &&
-                s.CompanyId == companyId &&
-                s.Scope == scope &&
-                s.ScopeId == scopeId &&
-                s.Key == key.Trim().ToLowerInvariant(), ct);
+        CancellationToken ct = default
+    ) =>
+        _db
+            .OrgSettings.IgnoreQueryFilters()
+            .FirstOrDefaultAsync(
+                s =>
+                    s.TenantId == tenantId
+                    && s.CompanyId == companyId
+                    && s.Scope == scope
+                    && s.ScopeId == scopeId
+                    && s.Key == key.Trim().ToLowerInvariant(),
+                ct
+            );
 
     public async Task<IReadOnlyList<OrgSetting>> GetAllForScopeAsync(
-        Guid tenantId, Guid companyId,
-        OrgScope scope, Guid scopeId,
-        CancellationToken ct = default)
+        Guid tenantId,
+        Guid companyId,
+        OrgScope scope,
+        Guid scopeId,
+        CancellationToken ct = default
+    )
     {
-        var list = await _db.OrgSettings
-            .IgnoreQueryFilters()
+        var list = await _db
+            .OrgSettings.IgnoreQueryFilters()
             .Where(s =>
-                s.TenantId == tenantId &&
-                s.CompanyId == companyId &&
-                s.Scope == scope &&
-                s.ScopeId == scopeId)
+                s.TenantId == tenantId
+                && s.CompanyId == companyId
+                && s.Scope == scope
+                && s.ScopeId == scopeId
+            )
             .ToListAsync(ct);
 
         return list.AsReadOnly();
@@ -45,9 +55,13 @@ public sealed class OrgSettingsRepository : IOrgSettingsRepository
     public async Task UpsertAsync(OrgSetting setting, CancellationToken ct = default)
     {
         var existing = await GetAsync(
-            setting.TenantId, setting.CompanyId,
-            setting.Scope, setting.ScopeId,
-            setting.Key, ct);
+            setting.TenantId,
+            setting.CompanyId,
+            setting.Scope,
+            setting.ScopeId,
+            setting.Key,
+            ct
+        );
 
         if (existing is null)
             _db.OrgSettings.Add(setting);
@@ -56,16 +70,18 @@ public sealed class OrgSettingsRepository : IOrgSettingsRepository
     }
 
     public async Task DeleteAsync(
-        Guid tenantId, Guid companyId,
-        OrgScope scope, Guid scopeId,
+        Guid tenantId,
+        Guid companyId,
+        OrgScope scope,
+        Guid scopeId,
         string key,
-        CancellationToken ct = default)
+        CancellationToken ct = default
+    )
     {
         var existing = await GetAsync(tenantId, companyId, scope, scopeId, key, ct);
         if (existing is not null)
             _db.OrgSettings.Remove(existing);
     }
 
-    public Task SaveChangesAsync(CancellationToken ct = default)
-        => _db.SaveChangesAsync(ct);
+    public Task SaveChangesAsync(CancellationToken ct = default) => _db.SaveChangesAsync(ct);
 }

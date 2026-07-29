@@ -7,13 +7,16 @@ namespace ERP.Domain.Navigation.Entities;
 public sealed class UiNavGroup
 {
     public Guid Id { get; private set; }
+
     /// <summary>Código estable (p. ej. home, catalog) usado por el front para lógica UI.</summary>
     public string Code { get; private set; } = null!;
     public string Icon { get; private set; } = null!;
+
     /// <summary>Clave i18n (p. ej. app.nav.group.inventario).</summary>
     public string LabelKey { get; private set; } = null!;
     public int SortOrder { get; private set; }
     public string? ModuleKey { get; private set; }
+
     /// <summary>Roles permitidos separados por coma; null o vacío = todos.</summary>
     public string? RolesCsv { get; private set; }
     public bool RequirePlatformPanel { get; private set; }
@@ -30,7 +33,8 @@ public sealed class UiNavGroup
         string? moduleKey,
         string? rolesCsv,
         bool requirePlatformPanel,
-        bool isActive = true)
+        bool isActive = true
+    )
     {
         return new UiNavGroup
         {
@@ -39,7 +43,9 @@ public sealed class UiNavGroup
             Icon = icon ?? string.Empty,
             LabelKey = (labelKey ?? string.Empty).Trim(),
             SortOrder = sortOrder,
-            ModuleKey = string.IsNullOrWhiteSpace(moduleKey) ? null : moduleKey.Trim().ToLowerInvariant(),
+            ModuleKey = string.IsNullOrWhiteSpace(moduleKey)
+                ? null
+                : moduleKey.Trim().ToLowerInvariant(),
             RolesCsv = string.IsNullOrWhiteSpace(rolesCsv) ? null : rolesCsv.Trim(),
             RequirePlatformPanel = requirePlatformPanel,
             IsActive = isActive,
@@ -51,7 +57,9 @@ public sealed class UiNavGroup
         Icon = icon ?? string.Empty;
         LabelKey = (labelKey ?? string.Empty).Trim();
         SortOrder = sortOrder;
-        ModuleKey = string.IsNullOrWhiteSpace(moduleKey) ? null : moduleKey.Trim().ToLowerInvariant();
+        ModuleKey = string.IsNullOrWhiteSpace(moduleKey)
+            ? null
+            : moduleKey.Trim().ToLowerInvariant();
         IsActive = true;
     }
 

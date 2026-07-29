@@ -20,5 +20,8 @@ public interface IElectronicDocumentAuthorizationService
     /// documento es responsabilidad del llamador.
     /// </summary>
     Task<Result<SriAuthorizationResult>> CheckAsync(
-        Guid companyId, string accessKey, CancellationToken ct = default);
+        Guid companyId,
+        string accessKey,
+        CancellationToken ct = default
+    );
 }

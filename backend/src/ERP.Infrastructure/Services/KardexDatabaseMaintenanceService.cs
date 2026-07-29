@@ -12,13 +12,16 @@ public sealed partial class KardexDatabaseMaintenanceService : IKardexDatabaseMa
 
     public KardexDatabaseMaintenanceService(
         IConfiguration configuration,
-        ILogger<KardexDatabaseMaintenanceService> logger)
+        ILogger<KardexDatabaseMaintenanceService> logger
+    )
     {
         _configuration = configuration;
         _logger = logger;
     }
 
-    public async Task RefreshDailyBalancesMaterializedViewAsync(CancellationToken cancellationToken = default)
+    public async Task RefreshDailyBalancesMaterializedViewAsync(
+        CancellationToken cancellationToken = default
+    )
     {
         var cs = _configuration.GetConnectionString("DefaultConnection");
         if (string.IsNullOrWhiteSpace(cs))
@@ -60,18 +63,33 @@ public sealed partial class KardexDatabaseMaintenanceService : IKardexDatabaseMa
         }
     }
 
-    [LoggerMessage(Level = LogLevel.Warning, Message = "No hay DefaultConnection; no se refresca mv_saldos_diarios.")]
+    [LoggerMessage(
+        Level = LogLevel.Warning,
+        Message = "No hay DefaultConnection; no se refresca mv_saldos_diarios."
+    )]
     private partial void LogNoConnectionString();
 
-    [LoggerMessage(Level = LogLevel.Information, Message = "mv_saldos_diarios refrescada (CONCURRENTLY).")]
+    [LoggerMessage(
+        Level = LogLevel.Information,
+        Message = "mv_saldos_diarios refrescada (CONCURRENTLY)."
+    )]
     private partial void LogViewRefreshedConcurrently();
 
-    [LoggerMessage(Level = LogLevel.Information, Message = "mv_saldos_diarios no existe aún; aplique migraciones.")]
+    [LoggerMessage(
+        Level = LogLevel.Information,
+        Message = "mv_saldos_diarios no existe aún; aplique migraciones."
+    )]
     private partial void LogViewNotYetExists();
 
-    [LoggerMessage(Level = LogLevel.Information, Message = "REFRESH CONCURRENTLY no aplicó; se intenta REFRESH bloqueante.")]
+    [LoggerMessage(
+        Level = LogLevel.Information,
+        Message = "REFRESH CONCURRENTLY no aplicó; se intenta REFRESH bloqueante."
+    )]
     private partial void LogConcurrentRefreshFailed(Exception ex);
 
-    [LoggerMessage(Level = LogLevel.Information, Message = "mv_saldos_diarios refrescada (bloqueante).")]
+    [LoggerMessage(
+        Level = LogLevel.Information,
+        Message = "mv_saldos_diarios refrescada (bloqueante)."
+    )]
     private partial void LogViewRefreshedBlocking();
 }

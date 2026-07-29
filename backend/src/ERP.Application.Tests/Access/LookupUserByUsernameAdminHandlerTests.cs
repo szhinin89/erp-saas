@@ -20,11 +20,13 @@ public sealed class LookupUserByUsernameAdminHandlerTests
     private static readonly Guid CompanyId = Guid.NewGuid();
     private const string Username = "ana.perez";
 
-    private static IdentityUser NewUser() => IdentityUser.Create(Username, "Ana", "Perez", "ana@test.com", "hash", CreatedBy);
+    private static IdentityUser NewUser() =>
+        IdentityUser.Create(Username, "Ana", "Perez", "ana@test.com", "hash", CreatedBy);
 
     private sealed class CurrentCompanyStub : ICurrentCompany
     {
         public CurrentCompanyStub(bool hasContext = true) => HasCompanyContext = hasContext;
+
         public Guid CompanyId => LookupUserByUsernameAdminHandlerTests.CompanyId;
         public bool IsAuthenticated => true;
         public bool HasCompanyContext { get; }
@@ -34,8 +36,8 @@ public sealed class LookupUserByUsernameAdminHandlerTests
     {
         public Mock<IAccessRepository> AccessRepo { get; } = new();
 
-        public LookupUserByUsernameAdminHandler BuildHandler(bool hasCompanyContext = true) => new(
-            AccessRepo.Object, new CurrentCompanyStub(hasCompanyContext));
+        public LookupUserByUsernameAdminHandler BuildHandler(bool hasCompanyContext = true) =>
+            new(AccessRepo.Object, new CurrentCompanyStub(hasCompanyContext));
     }
 
     [Fact]
@@ -44,7 +46,10 @@ public sealed class LookupUserByUsernameAdminHandlerTests
         var f = new Fixture();
         var handler = f.BuildHandler(hasCompanyContext: false);
 
-        var result = await handler.Handle(new LookupUserByUsernameAdminQuery(Username), CancellationToken.None);
+        var result = await handler.Handle(
+            new LookupUserByUsernameAdminQuery(Username),
+            CancellationToken.None
+        );
 
         result.IsSuccess.Should().BeFalse();
         result.Code.Should().Be(ApiResponseCodes.Common.Forbidden);
@@ -54,15 +59,27 @@ public sealed class LookupUserByUsernameAdminHandlerTests
     public async Task Username_inexistente_devuelve_IdentityUserExists_false()
     {
         var f = new Fixture();
-        f.AccessRepo.Setup(r => r.GetUserByUsernameAsync(Username, It.IsAny<CancellationToken>())).ReturnsAsync((IdentityUser?)null);
+        f.AccessRepo.Setup(r => r.GetUserByUsernameAsync(Username, It.IsAny<CancellationToken>()))
+            .ReturnsAsync((IdentityUser?)null);
 
         var handler = f.BuildHandler();
-        var result = await handler.Handle(new LookupUserByUsernameAdminQuery(Username), CancellationToken.None);
+        var result = await handler.Handle(
+            new LookupUserByUsernameAdminQuery(Username),
+            CancellationToken.None
+        );
 
         result.IsSuccess.Should().BeTrue();
         result.Value!.IdentityUserExists.Should().BeFalse();
         result.Value.Membership.Should().BeNull();
-        f.AccessRepo.Verify(r => r.GetCompanyUserMembershipAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()), Times.Never);
+        f.AccessRepo.Verify(
+            r =>
+                r.GetCompanyUserMembershipAsync(
+                    It.IsAny<Guid>(),
+                    It.IsAny<Guid>(),
+                    It.IsAny<CancellationToken>()
+                ),
+            Times.Never
+        );
     }
 
     [Fact]
@@ -70,12 +87,18 @@ public sealed class LookupUserByUsernameAdminHandlerTests
     {
         var user = NewUser();
         var f = new Fixture();
-        f.AccessRepo.Setup(r => r.GetUserByUsernameAsync(Username, It.IsAny<CancellationToken>())).ReturnsAsync(user);
-        f.AccessRepo.Setup(r => r.GetCompanyUserMembershipAsync(CompanyId, user.Id, It.IsAny<CancellationToken>()))
+        f.AccessRepo.Setup(r => r.GetUserByUsernameAsync(Username, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(user);
+        f.AccessRepo.Setup(r =>
+                r.GetCompanyUserMembershipAsync(CompanyId, user.Id, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync((CompanyUserMembership?)null);
 
         var handler = f.BuildHandler();
-        var result = await handler.Handle(new LookupUserByUsernameAdminQuery(Username), CancellationToken.None);
+        var result = await handler.Handle(
+            new LookupUserByUsernameAdminQuery(Username),
+            CancellationToken.None
+        );
 
         result.IsSuccess.Should().BeTrue();
         result.Value!.IdentityUserExists.Should().BeTrue();
@@ -88,14 +111,26 @@ public sealed class LookupUserByUsernameAdminHandlerTests
     {
         var user = NewUser();
         var profileId = Guid.NewGuid();
-        var membership = CompanyUserMembership.Create(CompanyId, user.Id, "Admin", profileId, CreatedBy);
+        var membership = CompanyUserMembership.Create(
+            CompanyId,
+            user.Id,
+            "Admin",
+            profileId,
+            CreatedBy
+        );
         var f = new Fixture();
-        f.AccessRepo.Setup(r => r.GetUserByUsernameAsync(Username, It.IsAny<CancellationToken>())).ReturnsAsync(user);
-        f.AccessRepo.Setup(r => r.GetCompanyUserMembershipAsync(CompanyId, user.Id, It.IsAny<CancellationToken>()))
+        f.AccessRepo.Setup(r => r.GetUserByUsernameAsync(Username, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(user);
+        f.AccessRepo.Setup(r =>
+                r.GetCompanyUserMembershipAsync(CompanyId, user.Id, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(membership);
 
         var handler = f.BuildHandler();
-        var result = await handler.Handle(new LookupUserByUsernameAdminQuery(Username), CancellationToken.None);
+        var result = await handler.Handle(
+            new LookupUserByUsernameAdminQuery(Username),
+            CancellationToken.None
+        );
 
         result.IsSuccess.Should().BeTrue();
         result.Value!.Membership.Should().NotBeNull();
@@ -111,12 +146,18 @@ public sealed class LookupUserByUsernameAdminHandlerTests
         var membership = CompanyUserMembership.Create(CompanyId, user.Id, "User", null, CreatedBy);
         membership.Deactivate(CreatedBy);
         var f = new Fixture();
-        f.AccessRepo.Setup(r => r.GetUserByUsernameAsync(Username, It.IsAny<CancellationToken>())).ReturnsAsync(user);
-        f.AccessRepo.Setup(r => r.GetCompanyUserMembershipAsync(CompanyId, user.Id, It.IsAny<CancellationToken>()))
+        f.AccessRepo.Setup(r => r.GetUserByUsernameAsync(Username, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(user);
+        f.AccessRepo.Setup(r =>
+                r.GetCompanyUserMembershipAsync(CompanyId, user.Id, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(membership);
 
         var handler = f.BuildHandler();
-        var result = await handler.Handle(new LookupUserByUsernameAdminQuery(Username), CancellationToken.None);
+        var result = await handler.Handle(
+            new LookupUserByUsernameAdminQuery(Username),
+            CancellationToken.None
+        );
 
         result.IsSuccess.Should().BeTrue();
         result.Value!.Membership!.IsActive.Should().BeFalse();

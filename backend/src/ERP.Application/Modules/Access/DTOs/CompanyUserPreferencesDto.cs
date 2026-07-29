@@ -11,4 +11,5 @@ public sealed record CompanyUserPreferencesDto(
     Guid CompanyId,
     Guid CompanyUserMembershipId,
     Guid? DefaultBranchId,
-    string LoginMode);
+    string LoginMode
+);

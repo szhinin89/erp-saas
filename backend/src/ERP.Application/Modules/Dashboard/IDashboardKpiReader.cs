@@ -10,5 +10,6 @@ public interface IDashboardKpiReader
         Guid tenantId,
         Guid companyId,
         DateTime asOf,
-        CancellationToken cancellationToken = default);
+        CancellationToken cancellationToken = default
+    );
 }

@@ -1,4 +1,4 @@
-﻿namespace ERP.Domain.Common;
+namespace ERP.Domain.Common;
 
 /// <summary>
 /// Entidad a nivel sistema (no multi-tenant).
@@ -8,4 +8,3 @@ public abstract class SystemBaseEntity
 {
     public Guid Id { get; protected set; } = Guid.NewGuid();
 }
-

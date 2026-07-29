@@ -20,7 +20,12 @@ public interface IRideSourceXmlProvider
     /// <see cref="RideSourceXmlLookup.Status"/> (H1, ADR-025 §7).
     /// </summary>
     Task<Result<RideSourceXmlLookup>> GetAuthorizedXmlAsync(
-        Guid tenantId, Guid companyId, string sourceModule, Guid sourceEntityId, CancellationToken ct = default);
+        Guid tenantId,
+        Guid companyId,
+        string sourceModule,
+        Guid sourceEntityId,
+        CancellationToken ct = default
+    );
 }
 
 /// <summary>
@@ -34,7 +39,8 @@ public sealed record RideSourceXmlLookup(
     RideSourceXmlStatus Status,
     string? AuthorizedXml,
     Guid ElectronicDocumentId,
-    RideDocumentType DocumentType);
+    RideDocumentType DocumentType
+);
 
 public enum RideSourceXmlStatus
 {

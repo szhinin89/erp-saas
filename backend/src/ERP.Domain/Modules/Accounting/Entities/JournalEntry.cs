@@ -27,6 +27,7 @@ public sealed class JournalEntry : AuditableEntity, ITenantScopedEntity, ICompan
     public Guid CompanyId { get; private set; }
     public DateOnly EntryDate { get; private set; }
     public Guid AccountingPeriodId { get; private set; }
+
     /// <summary>
     /// Ejercicio fiscal del período contable de este asiento (denormalizado desde
     /// <c>AccountingPeriod.FiscalYear</c> al momento de <see cref="Create"/>). Necesario para el
@@ -40,6 +41,7 @@ public sealed class JournalEntry : AuditableEntity, ITenantScopedEntity, ICompan
     public string Description { get; private set; } = null!;
     public JournalEntryStatus Status { get; private set; }
     public DateTime? PostedAtUtc { get; private set; }
+
     /// <summary>
     /// Numeración definitiva del asiento (Fase 5.3), correlativa por (CompanyId, FiscalYear) vía
     /// <c>JournalEntrySequence</c>. Nula hasta la publicación — <see cref="Post"/> es el único
@@ -47,11 +49,13 @@ public sealed class JournalEntry : AuditableEntity, ITenantScopedEntity, ICompan
     /// que queda inmutable una vez publicado el asiento.
     /// </summary>
     public int? EntryNumber { get; private set; }
+
     /// <summary>
     /// Fase 5.4: si este asiento ES un reverso, apunta al asiento original que revierte. Nulo en
     /// cualquier asiento que no sea, en sí mismo, un reverso.
     /// </summary>
     public Guid? OriginalJournalEntryId { get; private set; }
+
     /// <summary>
     /// Fase 5.4: si este asiento FUE reversado, apunta al asiento de reverso que lo invalida.
     /// Nulo mientras el asiento no haya sido reversado — <see cref="Reverse"/> es el único punto
@@ -77,12 +81,19 @@ public sealed class JournalEntry : AuditableEntity, ITenantScopedEntity, ICompan
         string sourceEventType,
         Guid sourceEventId,
         string description,
-        Guid createdBy)
+        Guid createdBy
+    )
     {
         if (string.IsNullOrWhiteSpace(sourceModule))
-            throw new ArgumentException("El módulo de origen es obligatorio.", nameof(sourceModule));
+            throw new ArgumentException(
+                "El módulo de origen es obligatorio.",
+                nameof(sourceModule)
+            );
         if (string.IsNullOrWhiteSpace(sourceEventType))
-            throw new ArgumentException("El tipo de hecho contable de origen es obligatorio.", nameof(sourceEventType));
+            throw new ArgumentException(
+                "El tipo de hecho contable de origen es obligatorio.",
+                nameof(sourceEventType)
+            );
         if (string.IsNullOrWhiteSpace(description))
             throw new ArgumentException("La descripción es obligatoria.", nameof(description));
 
@@ -113,7 +124,15 @@ public sealed class JournalEntry : AuditableEntity, ITenantScopedEntity, ICompan
     /// </summary>
     public void AddLine(Guid accountId, string? description, decimal debit, decimal credit)
     {
-        var line = JournalEntryLine.Create(Id, TenantId, accountId, description, debit, credit, (short)_lines.Count);
+        var line = JournalEntryLine.Create(
+            Id,
+            TenantId,
+            accountId,
+            description,
+            debit,
+            credit,
+            (short)_lines.Count
+        );
         _lines.Add(line);
     }
 
@@ -128,7 +147,8 @@ public sealed class JournalEntry : AuditableEntity, ITenantScopedEntity, ICompan
         var totalCredit = _lines.Sum(l => l.Credit);
         if (totalDebit != totalCredit)
             throw new InvalidOperationException(
-                $"El asiento no está balanceado: Débitos ({totalDebit:F2}) distintos de Créditos ({totalCredit:F2}).");
+                $"El asiento no está balanceado: Débitos ({totalDebit:F2}) distintos de Créditos ({totalCredit:F2})."
+            );
     }
 
     /// <summary>
@@ -146,10 +166,14 @@ public sealed class JournalEntry : AuditableEntity, ITenantScopedEntity, ICompan
     {
         if (Status != JournalEntryStatus.Draft)
             throw new InvalidOperationException(
-                $"Solo un asiento en estado Draft puede publicarse (estado actual: {Status}).");
+                $"Solo un asiento en estado Draft puede publicarse (estado actual: {Status})."
+            );
         if (entryNumber < 1)
             throw new ArgumentOutOfRangeException(
-                nameof(entryNumber), entryNumber, "El número de asiento debe ser mayor a cero.");
+                nameof(entryNumber),
+                entryNumber,
+                "El número de asiento debe ser mayor a cero."
+            );
 
         EnsureBalanced();
 
@@ -178,16 +202,25 @@ public sealed class JournalEntry : AuditableEntity, ITenantScopedEntity, ICompan
     {
         if (Status != JournalEntryStatus.Posted)
             throw new InvalidOperationException(
-                $"Solo un asiento Posted puede reversarse (estado actual: {Status}).");
+                $"Solo un asiento Posted puede reversarse (estado actual: {Status})."
+            );
         if (string.IsNullOrWhiteSpace(reason))
             throw new ArgumentException("El motivo del reverso es obligatorio.", nameof(reason));
 
         var trimmedReason = reason.Trim();
 
         var reversal = Create(
-            TenantId, CompanyId, EntryDate, AccountingPeriodId, FiscalYear,
-            "Accounting", "Reversal", Id,
-            $"Reverso del asiento N° {EntryNumber} — {trimmedReason}", reversedBy);
+            TenantId,
+            CompanyId,
+            EntryDate,
+            AccountingPeriodId,
+            FiscalYear,
+            "Accounting",
+            "Reversal",
+            Id,
+            $"Reverso del asiento N° {EntryNumber} — {trimmedReason}",
+            reversedBy
+        );
 
         foreach (var line in _lines)
             reversal.AddLine(line.AccountId, line.Description, line.Credit, line.Debit);

@@ -37,11 +37,9 @@ public class SecurityController : ControllerBase
         if (!result.IsSuccess)
             return this.ApiBadRequest(result.Error ?? "Error");
 
-        return this.ApiOk(new
-        {
-            users = result.Value.Users,
-            assignments = result.Value.Assignments
-        });
+        return this.ApiOk(
+            new { users = result.Value.Users, assignments = result.Value.Assignments }
+        );
     }
 
     /// <summary>Upsert de scopes de administración por sujeto (Role/User).</summary>
@@ -51,7 +49,10 @@ public class SecurityController : ControllerBase
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
-    public async Task<IActionResult> UpsertAdminScopes([FromBody] UpsertSecurityAdminScopesCommand command, CancellationToken cancellationToken)
+    public async Task<IActionResult> UpsertAdminScopes(
+        [FromBody] UpsertSecurityAdminScopesCommand command,
+        CancellationToken cancellationToken
+    )
     {
         var result = await _mediator.Send(command, cancellationToken);
         return this.ToOkOrBadRequest(result);

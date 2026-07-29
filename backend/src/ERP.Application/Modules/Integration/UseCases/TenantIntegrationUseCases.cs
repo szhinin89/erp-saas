@@ -7,13 +7,17 @@ namespace ERP.Application.Modules.Integration.UseCases;
 
 public sealed record CreateIntegrationTenantCommand(
     IntegrationTenantCreateRequest Request,
-    Guid ActorId) : IRequest<Result<IntegrationTenantStatusDto>>;
+    Guid ActorId
+) : IRequest<Result<IntegrationTenantStatusDto>>;
 
-public sealed record GetIntegrationTenantStatusQuery(Guid Id) : IRequest<Result<IntegrationTenantStatusDto>>;
+public sealed record GetIntegrationTenantStatusQuery(Guid Id)
+    : IRequest<Result<IntegrationTenantStatusDto>>;
 
-public sealed record ActivateIntegrationTenantCommand(Guid Id, Guid ActorId) : IRequest<Result<IntegrationTenantStatusDto>>;
+public sealed record ActivateIntegrationTenantCommand(Guid Id, Guid ActorId)
+    : IRequest<Result<IntegrationTenantStatusDto>>;
 
-public sealed record SuspendIntegrationTenantCommand(Guid Id, Guid ActorId) : IRequest<Result<IntegrationTenantStatusDto>>;
+public sealed record SuspendIntegrationTenantCommand(Guid Id, Guid ActorId)
+    : IRequest<Result<IntegrationTenantStatusDto>>;
 
 public sealed class CreateIntegrationTenantHandler
     : IRequestHandler<CreateIntegrationTenantCommand, Result<IntegrationTenantStatusDto>>
@@ -24,13 +28,19 @@ public sealed class CreateIntegrationTenantHandler
 
     public async Task<Result<IntegrationTenantStatusDto>> Handle(
         CreateIntegrationTenantCommand command,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken
+    )
     {
         var request = command.Request;
         if (string.IsNullOrWhiteSpace(request.Name) || string.IsNullOrWhiteSpace(request.Slug))
-            return Result<IntegrationTenantStatusDto>.ValidationFailure("Name y Slug son obligatorios.");
+            return Result<IntegrationTenantStatusDto>.ValidationFailure(
+                "Name y Slug son obligatorios."
+            );
 
-        var existing = await _tenants.GetBySlugAsync(request.Slug.Trim().ToLowerInvariant(), cancellationToken);
+        var existing = await _tenants.GetBySlugAsync(
+            request.Slug.Trim().ToLowerInvariant(),
+            cancellationToken
+        );
         if (existing is not null)
             return Result<IntegrationTenantStatusDto>.Conflict("Ya existe un tenant con ese slug.");
 
@@ -38,7 +48,8 @@ public sealed class CreateIntegrationTenantHandler
             request.Name.Trim(),
             request.Slug.Trim(),
             command.ActorId,
-            request.PreferredLanguage ?? "es");
+            request.PreferredLanguage ?? "es"
+        );
 
         await _tenants.AddAsync(tenant, cancellationToken);
         await _tenants.SaveChangesAsync(cancellationToken);
@@ -54,7 +65,8 @@ public sealed class CreateIntegrationTenantHandler
             tenant.IsActive,
             tenant.PreferredLanguage,
             tenant.CreatedAt,
-            tenant.UpdatedAt);
+            tenant.UpdatedAt
+        );
 }
 
 public sealed class GetIntegrationTenantStatusHandler
@@ -66,12 +78,15 @@ public sealed class GetIntegrationTenantStatusHandler
 
     public async Task<Result<IntegrationTenantStatusDto>> Handle(
         GetIntegrationTenantStatusQuery query,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken
+    )
     {
         var tenant = await _tenants.GetByIdAsync(query.Id, cancellationToken);
         return tenant is null
             ? Result<IntegrationTenantStatusDto>.NotFound("Tenant no encontrado.")
-            : Result<IntegrationTenantStatusDto>.Success(CreateIntegrationTenantHandler.ToDto(tenant));
+            : Result<IntegrationTenantStatusDto>.Success(
+                CreateIntegrationTenantHandler.ToDto(tenant)
+            );
     }
 }
 
@@ -84,7 +99,8 @@ public sealed class ActivateIntegrationTenantHandler
 
     public async Task<Result<IntegrationTenantStatusDto>> Handle(
         ActivateIntegrationTenantCommand command,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken
+    )
     {
         var tenant = await _tenants.GetByIdAsync(command.Id, cancellationToken);
         if (tenant is null)
@@ -92,7 +108,9 @@ public sealed class ActivateIntegrationTenantHandler
 
         tenant.Activate(command.ActorId);
         await _tenants.SaveChangesAsync(cancellationToken);
-        return Result<IntegrationTenantStatusDto>.Success(CreateIntegrationTenantHandler.ToDto(tenant));
+        return Result<IntegrationTenantStatusDto>.Success(
+            CreateIntegrationTenantHandler.ToDto(tenant)
+        );
     }
 }
 
@@ -105,7 +123,8 @@ public sealed class SuspendIntegrationTenantHandler
 
     public async Task<Result<IntegrationTenantStatusDto>> Handle(
         SuspendIntegrationTenantCommand command,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken
+    )
     {
         var tenant = await _tenants.GetByIdAsync(command.Id, cancellationToken);
         if (tenant is null)
@@ -113,6 +132,8 @@ public sealed class SuspendIntegrationTenantHandler
 
         tenant.Deactivate(command.ActorId);
         await _tenants.SaveChangesAsync(cancellationToken);
-        return Result<IntegrationTenantStatusDto>.Success(CreateIntegrationTenantHandler.ToDto(tenant));
+        return Result<IntegrationTenantStatusDto>.Success(
+            CreateIntegrationTenantHandler.ToDto(tenant)
+        );
     }
 }

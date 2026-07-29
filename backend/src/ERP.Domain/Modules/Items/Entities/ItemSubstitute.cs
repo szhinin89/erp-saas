@@ -13,8 +13,13 @@ public sealed class ItemSubstitute : AuditableEntity
     private ItemSubstitute() { }
 
     public static ItemSubstitute Create(
-        Guid itemId, Guid tenantId,
-        Guid substituteItemId, int priority, string? note, Guid createdBy)
+        Guid itemId,
+        Guid tenantId,
+        Guid substituteItemId,
+        int priority,
+        string? note,
+        Guid createdBy
+    )
     {
         if (itemId == substituteItemId)
             throw new ArgumentException("Un ítem no puede ser sustituto de sí mismo.");

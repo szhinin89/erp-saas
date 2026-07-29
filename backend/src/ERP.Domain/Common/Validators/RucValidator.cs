@@ -23,15 +23,19 @@ public static class RucValidator
     /// </summary>
     public static bool EsRucValido(string ruc)
     {
-        if (string.IsNullOrWhiteSpace(ruc)) return false;
+        if (string.IsNullOrWhiteSpace(ruc))
+            return false;
 
         ruc = ruc.Trim();
-        if (ruc.Length != 13) return false;
-        if (!ruc.All(char.IsDigit)) return false;
+        if (ruc.Length != 13)
+            return false;
+        if (!ruc.All(char.IsDigit))
+            return false;
 
         // Provincia: 01-24 o 30 (Gobierno Nacional)
         int provincia = int.Parse(ruc[..2], CultureInfo.InvariantCulture);
-        if (provincia < 1 || (provincia > 24 && provincia != 30)) return false;
+        if (provincia < 1 || (provincia > 24 && provincia != 30))
+            return false;
 
         int tercerDigito = ruc[2] - '0';
 
@@ -40,7 +44,7 @@ public static class RucValidator
             >= 0 and <= 5 => ValidarPersonaNatural(ruc),
             6 => ValidarEntidadPublica(ruc),
             9 => ValidarSociedadPrivada(ruc),
-            _ => false   // 7 y 8 no asignados
+            _ => false, // 7 y 8 no asignados
         };
     }
 
@@ -59,8 +63,7 @@ public static class RucValidator
         }
 
         int verificador = (10 - suma % 10) % 10;
-        return (ruc[9] - '0') == verificador
-            && ruc[10..] != "000";
+        return (ruc[9] - '0') == verificador && ruc[10..] != "000";
     }
 
     // ─────────────────────────────────────────────────────────────────────
@@ -75,11 +78,11 @@ public static class RucValidator
             suma += (ruc[i] - '0') * CoefSociedadPrivada[i];
 
         int residuo = suma % 11;
-        if (residuo == 10) return false; // dígito verificador inválido en M11
+        if (residuo == 10)
+            return false; // dígito verificador inválido en M11
         int verificador = residuo == 0 ? 0 : 11 - residuo;
 
-        return (ruc[9] - '0') == verificador
-            && ruc[10..] != "000";
+        return (ruc[9] - '0') == verificador && ruc[10..] != "000";
     }
 
     // ─────────────────────────────────────────────────────────────────────
@@ -94,10 +97,10 @@ public static class RucValidator
             suma += (ruc[i] - '0') * CoefEntidadPublica[i];
 
         int residuo = suma % 11;
-        if (residuo == 10) return false;
+        if (residuo == 10)
+            return false;
         int verificador = residuo == 0 ? 0 : 11 - residuo;
 
-        return (ruc[8] - '0') == verificador
-            && ruc[9..] != "0000";
+        return (ruc[8] - '0') == verificador && ruc[9..] != "0000";
     }
 }

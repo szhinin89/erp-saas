@@ -20,8 +20,14 @@ public sealed class PurchaseLinePvpUpdatedEvent : BaseDomainEvent, IAuditEvent
     public string ActionName { get; }
 
     public PurchaseLinePvpUpdatedEvent(
-        Guid tenantId, Guid invoiceId, string invoiceNumber, Guid itemId,
-        decimal oldPvp, decimal newPvp, string actionName)
+        Guid tenantId,
+        Guid invoiceId,
+        string invoiceNumber,
+        Guid itemId,
+        decimal oldPvp,
+        decimal newPvp,
+        string actionName
+    )
     {
         TenantId = tenantId;
         InvoiceId = invoiceId;

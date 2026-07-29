@@ -1,8 +1,8 @@
+using System.Globalization;
 using ERP.Application.Modules.Ride.Templates;
 using QuestPDF.Fluent;
 using QuestPDF.Helpers;
 using QuestPDF.Infrastructure;
-using System.Globalization;
 
 namespace ERP.Infrastructure.Ride.Rendering.Sections;
 
@@ -32,12 +32,12 @@ public static class LinesSection
                 columns.RelativeColumn(1.3f); // Cód. Principal
                 columns.RelativeColumn(1.3f); // Cód. Auxiliar
                 columns.RelativeColumn(0.8f); // Cantidad
-                columns.RelativeColumn(3f);   // Descripción
+                columns.RelativeColumn(3f); // Descripción
                 columns.RelativeColumn(1.5f); // Detalle Adicional
                 columns.RelativeColumn(1.2f); // Precio Unitario
-                columns.RelativeColumn(1f);   // Subsidio
+                columns.RelativeColumn(1f); // Subsidio
                 columns.RelativeColumn(1.2f); // Precio sin Subsidio
-                columns.RelativeColumn(1f);   // Descuento
+                columns.RelativeColumn(1f); // Descuento
                 columns.RelativeColumn(1.2f); // Precio Total
             });
 
@@ -59,21 +59,40 @@ public static class LinesSection
             {
                 table.Cell().Element(BodyCell).Text(line.Code);
                 table.Cell().Element(BodyCell).Text(string.Empty);
-                table.Cell().Element(BodyCell).AlignRight().Text(line.Quantity.ToString("F2", CultureInfo.InvariantCulture));
+                table
+                    .Cell()
+                    .Element(BodyCell)
+                    .AlignRight()
+                    .Text(line.Quantity.ToString("F2", CultureInfo.InvariantCulture));
                 table.Cell().Element(BodyCell).Text(line.Description);
                 table.Cell().Element(BodyCell).Text(string.Empty);
-                table.Cell().Element(BodyCell).AlignRight().Text(line.UnitPrice.ToString("F2", CultureInfo.InvariantCulture));
+                table
+                    .Cell()
+                    .Element(BodyCell)
+                    .AlignRight()
+                    .Text(line.UnitPrice.ToString("F2", CultureInfo.InvariantCulture));
                 table.Cell().Element(BodyCell).Text(string.Empty);
                 table.Cell().Element(BodyCell).Text(string.Empty);
-                table.Cell().Element(BodyCell).AlignRight().Text(line.Discount.ToString("F2", CultureInfo.InvariantCulture));
-                table.Cell().Element(BodyCell).AlignRight().Text(line.Subtotal.ToString("F2", CultureInfo.InvariantCulture));
+                table
+                    .Cell()
+                    .Element(BodyCell)
+                    .AlignRight()
+                    .Text(line.Discount.ToString("F2", CultureInfo.InvariantCulture));
+                table
+                    .Cell()
+                    .Element(BodyCell)
+                    .AlignRight()
+                    .Text(line.Subtotal.ToString("F2", CultureInfo.InvariantCulture));
             }
         });
     }
 
     private static IContainer HeaderCell(IContainer container) =>
-        container.Background(Colors.Grey.Lighten3).RideBox()
-            .Padding(2).DefaultTextStyle(x => x.Bold().FontSize(6.5f));
+        container
+            .Background(Colors.Grey.Lighten3)
+            .RideBox()
+            .Padding(2)
+            .DefaultTextStyle(x => x.Bold().FontSize(6.5f));
 
     private static IContainer BodyCell(IContainer container) =>
         container.RideBox().Padding(2).DefaultTextStyle(x => x.FontSize(7));

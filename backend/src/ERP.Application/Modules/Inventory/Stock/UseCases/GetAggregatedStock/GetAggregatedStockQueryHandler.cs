@@ -18,14 +18,20 @@ public sealed class GetAggregatedStockQueryHandler
     }
 
     public async Task<Result<AggregatedStockDto>> Handle(
-        GetAggregatedStockQuery request, CancellationToken ct)
+        GetAggregatedStockQuery request,
+        CancellationToken ct
+    )
     {
         var (totalQty, totalVal) = await _repo.GetAggregatedStockAsync(
-            _tenant.TenantId, request.ItemId, ct);
+            _tenant.TenantId,
+            request.ItemId,
+            ct
+        );
 
         var avgCost = totalQty > 0 ? totalVal / totalQty : 0m;
 
         return Result<AggregatedStockDto>.Success(
-            new AggregatedStockDto(request.ItemId, totalQty, totalVal, avgCost));
+            new AggregatedStockDto(request.ItemId, totalQty, totalVal, avgCost)
+        );
     }
 }

@@ -18,27 +18,38 @@ namespace ERP.Application.Modules.Finance.UseCases.Payments;
 /// <c>Payment</c>/<c>SalesReceivable</c> — este handler solo orquesta: carga, delega, persiste.
 /// </summary>
 public sealed record RegisterCollectionCommand(
-    Guid CustomerId, decimal Amount, DateOnly PaymentDate, Guid? PaymentMethodId, string? Reference,
-    IReadOnlyList<PaymentApplicationLineInput> Lines)
-    : IRequest<Result<PaymentDto>>, ICompanyScopedRequest;
+    Guid CustomerId,
+    decimal Amount,
+    DateOnly PaymentDate,
+    Guid? PaymentMethodId,
+    string? Reference,
+    IReadOnlyList<PaymentApplicationLineInput> Lines
+) : IRequest<Result<PaymentDto>>, ICompanyScopedRequest;
 
 /// <summary>Fase 5.5.5.3 — registra un pago (AP) aplicándolo contra una o más <c>PurchasePayable</c>.</summary>
 public sealed record RegisterPaymentCommand(
-    Guid SupplierId, decimal Amount, DateOnly PaymentDate, Guid? PaymentMethodId, string? Reference,
-    IReadOnlyList<PaymentApplicationLineInput> Lines)
-    : IRequest<Result<PaymentDto>>, ICompanyScopedRequest;
+    Guid SupplierId,
+    decimal Amount,
+    DateOnly PaymentDate,
+    Guid? PaymentMethodId,
+    string? Reference,
+    IReadOnlyList<PaymentApplicationLineInput> Lines
+) : IRequest<Result<PaymentDto>>, ICompanyScopedRequest;
 
 /// <summary>Fase 5.5.5.3 — reversa un cobro ya aplicado y decrementa el saldo de cada CxC afectada.</summary>
 public sealed record ReverseCollectionCommand(Guid PaymentId, string Reason)
-    : IRequest<Result<PaymentDto>>, ICompanyScopedRequest;
+    : IRequest<Result<PaymentDto>>,
+        ICompanyScopedRequest;
 
 /// <summary>Fase 5.5.5.3 — reversa un pago ya aplicado y decrementa el saldo de cada CxP afectada.</summary>
 public sealed record ReversePaymentCommand(Guid PaymentId, string Reason)
-    : IRequest<Result<PaymentDto>>, ICompanyScopedRequest;
+    : IRequest<Result<PaymentDto>>,
+        ICompanyScopedRequest;
 
 // ── Validators ──────────────────────────────────────────────────────────
 
-public sealed class PaymentApplicationLineInputValidator : AbstractValidator<PaymentApplicationLineInput>
+public sealed class PaymentApplicationLineInputValidator
+    : AbstractValidator<PaymentApplicationLineInput>
 {
     public PaymentApplicationLineInputValidator()
     {
@@ -47,13 +58,15 @@ public sealed class PaymentApplicationLineInputValidator : AbstractValidator<Pay
     }
 }
 
-public sealed class RegisterCollectionCommandValidator : AbstractValidator<RegisterCollectionCommand>
+public sealed class RegisterCollectionCommandValidator
+    : AbstractValidator<RegisterCollectionCommand>
 {
     public RegisterCollectionCommandValidator()
     {
         RuleFor(x => x.CustomerId).NotEmpty();
         RuleFor(x => x.Amount).GreaterThan(0);
-        RuleFor(x => x.Lines).NotEmpty()
+        RuleFor(x => x.Lines)
+            .NotEmpty()
             .WithMessage("El cobro debe tener al menos una línea de aplicación.");
         RuleForEach(x => x.Lines).SetValidator(new PaymentApplicationLineInputValidator());
     }
@@ -65,7 +78,8 @@ public sealed class RegisterPaymentCommandValidator : AbstractValidator<Register
     {
         RuleFor(x => x.SupplierId).NotEmpty();
         RuleFor(x => x.Amount).GreaterThan(0);
-        RuleFor(x => x.Lines).NotEmpty()
+        RuleFor(x => x.Lines)
+            .NotEmpty()
             .WithMessage("El pago debe tener al menos una línea de aplicación.");
         RuleForEach(x => x.Lines).SetValidator(new PaymentApplicationLineInputValidator());
     }
@@ -101,13 +115,24 @@ public sealed class RegisterCollectionCommandHandler
     private readonly ICurrentUser _u;
 
     public RegisterCollectionCommandHandler(
-        IPaymentRepository payments, ISalesReceivableRepository receivables,
-        ICurrentTenant t, ICurrentCompany c, ICurrentUser u)
+        IPaymentRepository payments,
+        ISalesReceivableRepository receivables,
+        ICurrentTenant t,
+        ICurrentCompany c,
+        ICurrentUser u
+    )
     {
-        _payments = payments; _receivables = receivables; _t = t; _c = c; _u = u;
+        _payments = payments;
+        _receivables = receivables;
+        _t = t;
+        _c = c;
+        _u = u;
     }
 
-    public async Task<Result<PaymentDto>> Handle(RegisterCollectionCommand cmd, CancellationToken ct)
+    public async Task<Result<PaymentDto>> Handle(
+        RegisterCollectionCommand cmd,
+        CancellationToken ct
+    )
     {
         var tenantId = _t.TenantId;
         var companyId = _c.CompanyId;
@@ -116,8 +141,16 @@ public sealed class RegisterCollectionCommandHandler
         try
         {
             payment = Payment.Create(
-                tenantId, companyId, PaymentDirection.Collection, cmd.CustomerId,
-                cmd.Amount, cmd.PaymentDate, cmd.PaymentMethodId, cmd.Reference, _u.UserId);
+                tenantId,
+                companyId,
+                PaymentDirection.Collection,
+                cmd.CustomerId,
+                cmd.Amount,
+                cmd.PaymentDate,
+                cmd.PaymentMethodId,
+                cmd.Reference,
+                _u.UserId
+            );
         }
         catch (ArgumentException ex)
         {
@@ -126,14 +159,17 @@ public sealed class RegisterCollectionCommandHandler
 
         // Carga cada CxC referenciada una sola vez, incluso si varias líneas la referencian
         // (p. ej. aplicación repartida entre cuotas de la misma factura).
-        var receivablesByDocId = new Dictionary<Guid, Domain.Modules.Sales.Entities.SalesReceivable>();
+        var receivablesByDocId =
+            new Dictionary<Guid, Domain.Modules.Sales.Entities.SalesReceivable>();
         foreach (var line in cmd.Lines)
         {
             if (!receivablesByDocId.ContainsKey(line.DocumentId))
             {
                 var receivable = await _receivables.GetByIdAsync(tenantId, line.DocumentId, ct);
                 if (receivable is null)
-                    return Result<PaymentDto>.NotFound($"Cuenta por cobrar {line.DocumentId} no encontrada.");
+                    return Result<PaymentDto>.NotFound(
+                        $"Cuenta por cobrar {line.DocumentId} no encontrada."
+                    );
                 receivablesByDocId[line.DocumentId] = receivable;
             }
 
@@ -160,7 +196,8 @@ public sealed class RegisterCollectionCommandHandler
         {
             try
             {
-                receivablesByDocId[line.DocumentId].RegisterCollection(line.AppliedAmount, _u.UserId);
+                receivablesByDocId[line.DocumentId]
+                    .RegisterCollection(line.AppliedAmount, _u.UserId);
             }
             catch (InvalidOperationException ex)
             {
@@ -185,10 +222,18 @@ public sealed class RegisterPaymentCommandHandler
     private readonly ICurrentUser _u;
 
     public RegisterPaymentCommandHandler(
-        IPaymentRepository payments, IPurchasePayableRepository payables,
-        ICurrentTenant t, ICurrentCompany c, ICurrentUser u)
+        IPaymentRepository payments,
+        IPurchasePayableRepository payables,
+        ICurrentTenant t,
+        ICurrentCompany c,
+        ICurrentUser u
+    )
     {
-        _payments = payments; _payables = payables; _t = t; _c = c; _u = u;
+        _payments = payments;
+        _payables = payables;
+        _t = t;
+        _c = c;
+        _u = u;
     }
 
     public async Task<Result<PaymentDto>> Handle(RegisterPaymentCommand cmd, CancellationToken ct)
@@ -200,22 +245,33 @@ public sealed class RegisterPaymentCommandHandler
         try
         {
             payment = Payment.Create(
-                tenantId, companyId, PaymentDirection.Payment, cmd.SupplierId,
-                cmd.Amount, cmd.PaymentDate, cmd.PaymentMethodId, cmd.Reference, _u.UserId);
+                tenantId,
+                companyId,
+                PaymentDirection.Payment,
+                cmd.SupplierId,
+                cmd.Amount,
+                cmd.PaymentDate,
+                cmd.PaymentMethodId,
+                cmd.Reference,
+                _u.UserId
+            );
         }
         catch (ArgumentException ex)
         {
             return Result<PaymentDto>.ValidationFailure(ex.Message);
         }
 
-        var payablesByDocId = new Dictionary<Guid, Domain.Modules.Purchases.Entities.PurchasePayable>();
+        var payablesByDocId =
+            new Dictionary<Guid, Domain.Modules.Purchases.Entities.PurchasePayable>();
         foreach (var line in cmd.Lines)
         {
             if (!payablesByDocId.ContainsKey(line.DocumentId))
             {
                 var payable = await _payables.GetByIdAsync(tenantId, line.DocumentId, ct);
                 if (payable is null)
-                    return Result<PaymentDto>.NotFound($"Cuenta por pagar {line.DocumentId} no encontrada.");
+                    return Result<PaymentDto>.NotFound(
+                        $"Cuenta por pagar {line.DocumentId} no encontrada."
+                    );
                 payablesByDocId[line.DocumentId] = payable;
             }
 
@@ -267,10 +323,18 @@ public sealed class ReverseCollectionCommandHandler
     private readonly ICurrentUser _u;
 
     public ReverseCollectionCommandHandler(
-        IPaymentRepository payments, ISalesReceivableRepository receivables,
-        ICurrentTenant t, ICurrentCompany c, ICurrentUser u)
+        IPaymentRepository payments,
+        ISalesReceivableRepository receivables,
+        ICurrentTenant t,
+        ICurrentCompany c,
+        ICurrentUser u
+    )
     {
-        _payments = payments; _receivables = receivables; _t = t; _c = c; _u = u;
+        _payments = payments;
+        _receivables = receivables;
+        _t = t;
+        _c = c;
+        _u = u;
     }
 
     public async Task<Result<PaymentDto>> Handle(ReverseCollectionCommand cmd, CancellationToken ct)
@@ -299,9 +363,15 @@ public sealed class ReverseCollectionCommandHandler
 
         foreach (var line in payment.Lines)
         {
-            var receivable = await _receivables.GetByIdAsync(tenantId, line.ReceivableId!.Value, ct);
+            var receivable = await _receivables.GetByIdAsync(
+                tenantId,
+                line.ReceivableId!.Value,
+                ct
+            );
             if (receivable is null)
-                return Result<PaymentDto>.NotFound($"Cuenta por cobrar {line.ReceivableId} no encontrada.");
+                return Result<PaymentDto>.NotFound(
+                    $"Cuenta por cobrar {line.ReceivableId} no encontrada."
+                );
 
             try
             {
@@ -328,10 +398,18 @@ public sealed class ReversePaymentCommandHandler
     private readonly ICurrentUser _u;
 
     public ReversePaymentCommandHandler(
-        IPaymentRepository payments, IPurchasePayableRepository payables,
-        ICurrentTenant t, ICurrentCompany c, ICurrentUser u)
+        IPaymentRepository payments,
+        IPurchasePayableRepository payables,
+        ICurrentTenant t,
+        ICurrentCompany c,
+        ICurrentUser u
+    )
     {
-        _payments = payments; _payables = payables; _t = t; _c = c; _u = u;
+        _payments = payments;
+        _payables = payables;
+        _t = t;
+        _c = c;
+        _u = u;
     }
 
     public async Task<Result<PaymentDto>> Handle(ReversePaymentCommand cmd, CancellationToken ct)
@@ -343,7 +421,9 @@ public sealed class ReversePaymentCommandHandler
         if (payment is null)
             return Result<PaymentDto>.NotFound("Pago no encontrado.");
         if (payment.Direction != PaymentDirection.Payment)
-            return Result<PaymentDto>.ValidationFailure("El pago indicado no es un pago a proveedor.");
+            return Result<PaymentDto>.ValidationFailure(
+                "El pago indicado no es un pago a proveedor."
+            );
 
         try
         {
@@ -362,7 +442,9 @@ public sealed class ReversePaymentCommandHandler
         {
             var payable = await _payables.GetByIdAsync(tenantId, line.PayableId!.Value, ct);
             if (payable is null)
-                return Result<PaymentDto>.NotFound($"Cuenta por pagar {line.PayableId} no encontrada.");
+                return Result<PaymentDto>.NotFound(
+                    $"Cuenta por pagar {line.PayableId} no encontrada."
+                );
 
             try
             {
@@ -383,11 +465,28 @@ public sealed class ReversePaymentCommandHandler
 
 file static class Map
 {
-    public static PaymentDto ToDto(Payment p) => new(
-        p.Id, p.Direction.ToString(), p.PartnerId, p.Amount, p.PaymentDate,
-        p.PaymentMethodId, p.Reference, p.Status.ToString(),
-        p.AppliedAtUtc, p.ReversedAtUtc, p.ReverseReason,
-        p.Lines.Select(l => new PaymentApplicationLineDto(
-            l.Id, l.ReceivableId, l.PayableId, l.InstallmentId, l.AppliedAmount)).ToList(),
-        p.CreatedAt, p.UpdatedAt);
+    public static PaymentDto ToDto(Payment p) =>
+        new(
+            p.Id,
+            p.Direction.ToString(),
+            p.PartnerId,
+            p.Amount,
+            p.PaymentDate,
+            p.PaymentMethodId,
+            p.Reference,
+            p.Status.ToString(),
+            p.AppliedAtUtc,
+            p.ReversedAtUtc,
+            p.ReverseReason,
+            p.Lines.Select(l => new PaymentApplicationLineDto(
+                    l.Id,
+                    l.ReceivableId,
+                    l.PayableId,
+                    l.InstallmentId,
+                    l.AppliedAmount
+                ))
+                .ToList(),
+            p.CreatedAt,
+            p.UpdatedAt
+        );
 }

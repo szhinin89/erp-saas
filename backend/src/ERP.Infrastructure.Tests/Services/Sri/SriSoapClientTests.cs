@@ -17,14 +17,17 @@ public sealed class SriSoapClientTests
     private sealed class ThrowingHandler : HttpMessageHandler
     {
         protected override Task<HttpResponseMessage> SendAsync(
-            HttpRequestMessage request, CancellationToken cancellationToken)
-            => throw new HttpRequestException("Simulated connection failure — no route to host.");
+            HttpRequestMessage request,
+            CancellationToken cancellationToken
+        ) => throw new HttpRequestException("Simulated connection failure — no route to host.");
     }
 
     private sealed class FakeHttpClientFactory : IHttpClientFactory
     {
         private readonly HttpMessageHandler _handler;
+
         public FakeHttpClientFactory(HttpMessageHandler handler) => _handler = handler;
+
         public HttpClient CreateClient(string name) => new(_handler);
     }
 
@@ -34,7 +37,9 @@ public sealed class SriSoapClientTests
         public int Calls { get; private set; }
 
         protected override Task<HttpResponseMessage> SendAsync(
-            HttpRequestMessage request, CancellationToken cancellationToken)
+            HttpRequestMessage request,
+            CancellationToken cancellationToken
+        )
         {
             Calls++;
             throw new HttpRequestException("Simulated connection failure — no route to host.");
@@ -55,16 +60,20 @@ public sealed class SriSoapClientTests
         }
 
         protected override Task<HttpResponseMessage> SendAsync(
-            HttpRequestMessage request, CancellationToken cancellationToken)
+            HttpRequestMessage request,
+            CancellationToken cancellationToken
+        )
         {
             _calls++;
             if (_calls <= _failuresBeforeSuccess)
                 throw new HttpRequestException("Simulated transient connection failure.");
 
-            return Task.FromResult(new HttpResponseMessage(System.Net.HttpStatusCode.OK)
-            {
-                Content = new StringContent(_body, System.Text.Encoding.UTF8, "text/xml"),
-            });
+            return Task.FromResult(
+                new HttpResponseMessage(System.Net.HttpStatusCode.OK)
+                {
+                    Content = new StringContent(_body, System.Text.Encoding.UTF8, "text/xml"),
+                }
+            );
         }
     }
 
@@ -72,26 +81,42 @@ public sealed class SriSoapClientTests
     {
         private readonly string _body;
         private readonly System.Net.HttpStatusCode _statusCode;
-        public RespondingHandler(string body, System.Net.HttpStatusCode statusCode = System.Net.HttpStatusCode.OK)
+
+        public RespondingHandler(
+            string body,
+            System.Net.HttpStatusCode statusCode = System.Net.HttpStatusCode.OK
+        )
         {
             _body = body;
             _statusCode = statusCode;
         }
 
         protected override Task<HttpResponseMessage> SendAsync(
-            HttpRequestMessage request, CancellationToken cancellationToken)
-            => Task.FromResult(new HttpResponseMessage(_statusCode)
-            {
-                Content = new StringContent(_body, System.Text.Encoding.UTF8, "text/xml"),
-            });
+            HttpRequestMessage request,
+            CancellationToken cancellationToken
+        ) =>
+            Task.FromResult(
+                new HttpResponseMessage(_statusCode)
+                {
+                    Content = new StringContent(_body, System.Text.Encoding.UTF8, "text/xml"),
+                }
+            );
     }
 
-    private static SriSoapClient BuildClient(HttpMessageHandler handler)
-        => new(new FakeHttpClientFactory(handler), NullLogger<SriSoapClient>.Instance);
+    private static SriSoapClient BuildClient(HttpMessageHandler handler) =>
+        new(new FakeHttpClientFactory(handler), NullLogger<SriSoapClient>.Instance);
 
-    private static SriSoapClient BuildClient(HttpMessageHandler handler, SriPollingOptions? pollingOptions)
-        => new(new FakeHttpClientFactory(handler), NullLogger<SriSoapClient>.Instance,
-            pollingOptions is null ? null : Microsoft.Extensions.Options.Options.Create(pollingOptions));
+    private static SriSoapClient BuildClient(
+        HttpMessageHandler handler,
+        SriPollingOptions? pollingOptions
+    ) =>
+        new(
+            new FakeHttpClientFactory(handler),
+            NullLogger<SriSoapClient>.Instance,
+            pollingOptions is null
+                ? null
+                : Microsoft.Extensions.Options.Options.Create(pollingOptions)
+        );
 
     [Fact]
     public async Task SendAsync_on_network_failure_returns_connection_error_status_never_throws()
@@ -153,7 +178,10 @@ public sealed class SriSoapClientTests
     {
         var client = BuildClient(new ThrowingHandler());
 
-        var result = await client.CheckAuthorizationAsync("0".PadLeft(49, '0'), "https://celcer.sri.gob.ec/fake?wsdl");
+        var result = await client.CheckAuthorizationAsync(
+            "0".PadLeft(49, '0'),
+            "https://celcer.sri.gob.ec/fake?wsdl"
+        );
 
         result.Status.Should().Be("ERROR_CONEXION");
         result.ErrorMessage.Should().NotBeNullOrWhiteSpace();
@@ -166,7 +194,9 @@ public sealed class SriSoapClientTests
         // Defecto real confirmado por auditoría (Fase 8): un cuerpo no-XML (p.ej. una página de
         // error de texto plano de un proxy/WAF) hacía que XmlDocument.LoadXml lanzara
         // XmlException sin capturar.
-        var client = BuildClient(new RespondingHandler("502 Bad Gateway - upstream connection reset"));
+        var client = BuildClient(
+            new RespondingHandler("502 Bad Gateway - upstream connection reset")
+        );
 
         var result = await client.SendAsync([1, 2, 3], "https://celcer.sri.gob.ec/fake?wsdl");
 
@@ -285,9 +315,14 @@ public sealed class SriSoapClientTests
     {
         // Mismo defecto real que en SendAsync (Fase 8), confirmado por auditoría (Fase 9):
         // ParseAutorizacionResponse no estaba protegido dentro del loop de polling.
-        var client = BuildClient(new RespondingHandler("502 Bad Gateway - upstream connection reset"));
+        var client = BuildClient(
+            new RespondingHandler("502 Bad Gateway - upstream connection reset")
+        );
 
-        var result = await client.CheckAuthorizationAsync(new string('1', 49), "https://celcer.sri.gob.ec/fake?wsdl");
+        var result = await client.CheckAuthorizationAsync(
+            new string('1', 49),
+            "https://celcer.sri.gob.ec/fake?wsdl"
+        );
 
         result.Status.Should().Be("ERROR_RESPUESTA_INVALIDA");
         result.ErrorMessage.Should().NotBeNullOrWhiteSpace();
@@ -320,7 +355,10 @@ public sealed class SriSoapClientTests
             """;
         var client = BuildClient(new RespondingHandler(soap));
 
-        var result = await client.CheckAuthorizationAsync(new string('1', 49), "https://celcer.sri.gob.ec/fake?wsdl");
+        var result = await client.CheckAuthorizationAsync(
+            new string('1', 49),
+            "https://celcer.sri.gob.ec/fake?wsdl"
+        );
 
         result.Status.Should().Be("AUTORIZADO");
         result.Authorized.Should().BeTrue();
@@ -334,7 +372,9 @@ public sealed class SriSoapClientTests
         // MarkAuthorized nunca llegaba a persistirse. AdjustToUniversal/AssumeUniversal garantiza
         // Kind=Utc siempre.
         result.AuthorizationDate.Kind.Should().Be(DateTimeKind.Utc);
-        result.AuthorizationDate.Should().Be(new DateTime(2012, 3, 5, 21, 57, 34, 997, DateTimeKind.Utc));
+        result
+            .AuthorizationDate.Should()
+            .Be(new DateTime(2012, 3, 5, 21, 57, 34, 997, DateTimeKind.Utc));
     }
 
     [Fact]
@@ -365,7 +405,10 @@ public sealed class SriSoapClientTests
         var client = BuildClient(new RespondingHandler(soap));
 
         var result = await client.CheckAuthorizationAsync(
-            new string('1', 49), "https://celcer.sri.gob.ec/fake?wsdl", maxAttempts: 5);
+            new string('1', 49),
+            "https://celcer.sri.gob.ec/fake?wsdl",
+            maxAttempts: 5
+        );
 
         result.Status.Should().Be("NO AUTORIZADO");
         result.Authorized.Should().BeFalse();
@@ -402,16 +445,25 @@ public sealed class SriSoapClientTests
         // verifica que SriSoapClient realmente respeta
         // SriPollingOptions.InitialAuthorizationDelaySeconds — no solo que el mecanismo de
         // configuración exista, sino que efectivamente espera.
-        var client = BuildClient(new RespondingHandler(AuthorizedSoap),
-            new SriPollingOptions { InitialAuthorizationDelaySeconds = 1 });
+        var client = BuildClient(
+            new RespondingHandler(AuthorizedSoap),
+            new SriPollingOptions { InitialAuthorizationDelaySeconds = 1 }
+        );
 
         var stopwatch = System.Diagnostics.Stopwatch.StartNew();
-        var result = await client.CheckAuthorizationAsync(new string('1', 49), "https://celcer.sri.gob.ec/fake?wsdl");
+        var result = await client.CheckAuthorizationAsync(
+            new string('1', 49),
+            "https://celcer.sri.gob.ec/fake?wsdl"
+        );
         stopwatch.Stop();
 
         result.Status.Should().Be("AUTORIZADO");
-        stopwatch.Elapsed.Should().BeGreaterThanOrEqualTo(TimeSpan.FromSeconds(1),
-            "debe esperar el tiempo configurado antes de la primera consulta de autorización");
+        stopwatch
+            .Elapsed.Should()
+            .BeGreaterThanOrEqualTo(
+                TimeSpan.FromSeconds(1),
+                "debe esperar el tiempo configurado antes de la primera consulta de autorización"
+            );
     }
 
     [Fact]
@@ -420,10 +472,17 @@ public sealed class SriSoapClientTests
         var client = BuildClient(new RespondingHandler(AuthorizedSoap), pollingOptions: null);
 
         var stopwatch = System.Diagnostics.Stopwatch.StartNew();
-        await client.CheckAuthorizationAsync(new string('1', 49), "https://celcer.sri.gob.ec/fake?wsdl");
+        await client.CheckAuthorizationAsync(
+            new string('1', 49),
+            "https://celcer.sri.gob.ec/fake?wsdl"
+        );
         stopwatch.Stop();
 
-        stopwatch.Elapsed.Should().BeLessThan(TimeSpan.FromMilliseconds(800),
-            "sin espera configurada (0, el default de SriPollingOptions) no debe introducirse ningún delay");
+        stopwatch
+            .Elapsed.Should()
+            .BeLessThan(
+                TimeSpan.FromMilliseconds(800),
+                "sin espera configurada (0, el default de SriPollingOptions) no debe introducirse ningún delay"
+            );
     }
 }

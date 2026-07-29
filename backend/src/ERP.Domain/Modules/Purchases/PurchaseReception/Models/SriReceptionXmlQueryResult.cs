@@ -10,4 +10,5 @@ public sealed record SriReceptionXmlQueryResult(
     string? AuthorizationNumber,
     DateTime? AuthorizationDate,
     string? XmlContent,
-    string? ErrorMessage);
+    string? ErrorMessage
+);

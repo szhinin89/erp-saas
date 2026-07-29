@@ -5,4 +5,5 @@ using MediatR;
 namespace ERP.Application.Modules.Inventory.Stock.UseCases.GetAggregatedStock;
 
 public sealed record GetAggregatedStockQuery(Guid ItemId)
-    : IRequest<Result<AggregatedStockDto>>, ICompanyScopedRequest;
+    : IRequest<Result<AggregatedStockDto>>,
+        ICompanyScopedRequest;

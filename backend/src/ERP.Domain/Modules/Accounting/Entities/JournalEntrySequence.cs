@@ -16,6 +16,7 @@ public sealed class JournalEntrySequence : BaseEntity, ITenantScopedEntity, ICom
 {
     public Guid CompanyId { get; private set; }
     public int FiscalYear { get; private set; }
+
     /// <summary>Último número asignado. 0 significa que todavía no se ha asignado ningún número.</summary>
     public int LastNumber { get; private set; }
     public DateTime CreatedAt { get; private set; }

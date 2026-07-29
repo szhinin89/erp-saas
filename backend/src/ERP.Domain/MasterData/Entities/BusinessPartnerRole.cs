@@ -58,16 +58,26 @@ public sealed class BusinessPartnerRole : AuditableEntity, ITenantScopedEntity
         SupplierRoleConfig? supplierConfig = null,
         CarrierRoleConfig? carrierConfig = null,
         CustomerRoleConfig? customerConfig = null,
-        SupplierClassificationConfig? classificationConfig = null)
+        SupplierClassificationConfig? classificationConfig = null
+    )
     {
         if (tenantId == Guid.Empty)
             throw new ArgumentException("tenantId es obligatorio.", nameof(tenantId));
         if (businessPartnerId == Guid.Empty)
-            throw new ArgumentException("BusinessPartnerId es obligatorio.", nameof(businessPartnerId));
+            throw new ArgumentException(
+                "BusinessPartnerId es obligatorio.",
+                nameof(businessPartnerId)
+            );
         if (assignedBy == Guid.Empty)
             throw new ArgumentException("AssignedBy es obligatorio.", nameof(assignedBy));
 
-        ValidateConfigCoherence(roleType, supplierConfig, carrierConfig, customerConfig, classificationConfig);
+        ValidateConfigCoherence(
+            roleType,
+            supplierConfig,
+            carrierConfig,
+            customerConfig,
+            classificationConfig
+        );
 
         var now = DateTime.UtcNow;
         var role = new BusinessPartnerRole
@@ -85,14 +95,16 @@ public sealed class BusinessPartnerRole : AuditableEntity, ITenantScopedEntity
             CustomerConfig = customerConfig,
         };
         role.SetCreated(assignedBy);
-        role.RaiseDomainEvent(new BusinessPartnerRoleAssignedEvent
-        {
-            TenantId = tenantId,
-            RoleId = role.Id,
-            BusinessPartnerId = businessPartnerId,
-            RoleType = roleType,
-            AssignedBy = assignedBy,
-        });
+        role.RaiseDomainEvent(
+            new BusinessPartnerRoleAssignedEvent
+            {
+                TenantId = tenantId,
+                RoleId = role.Id,
+                BusinessPartnerId = businessPartnerId,
+                RoleType = roleType,
+                AssignedBy = assignedBy,
+            }
+        );
         return role;
     }
 
@@ -114,14 +126,16 @@ public sealed class BusinessPartnerRole : AuditableEntity, ITenantScopedEntity
         RevokedAt = null;
         RevokedBy = null;
         SetUpdated(reactivatedBy);
-        RaiseDomainEvent(new BusinessPartnerRoleReactivatedEvent
-        {
-            TenantId = TenantId,
-            RoleId = Id,
-            BusinessPartnerId = BusinessPartnerId,
-            RoleType = RoleType,
-            ReactivatedBy = reactivatedBy,
-        });
+        RaiseDomainEvent(
+            new BusinessPartnerRoleReactivatedEvent
+            {
+                TenantId = TenantId,
+                RoleId = Id,
+                BusinessPartnerId = BusinessPartnerId,
+                RoleType = RoleType,
+                ReactivatedBy = reactivatedBy,
+            }
+        );
     }
 
     /// <summary>
@@ -142,25 +156,33 @@ public sealed class BusinessPartnerRole : AuditableEntity, ITenantScopedEntity
         RevokedAt = DateTime.UtcNow;
         RevokedBy = revokedBy;
         SetUpdated(revokedBy);
-        RaiseDomainEvent(new BusinessPartnerRoleRevokedEvent
-        {
-            TenantId = TenantId,
-            RoleId = Id,
-            BusinessPartnerId = BusinessPartnerId,
-            RoleType = RoleType,
-            RevokedBy = revokedBy,
-        });
+        RaiseDomainEvent(
+            new BusinessPartnerRoleRevokedEvent
+            {
+                TenantId = TenantId,
+                RoleId = Id,
+                BusinessPartnerId = BusinessPartnerId,
+                RoleType = RoleType,
+                RevokedBy = revokedBy,
+            }
+        );
     }
 
     public void UpdateNotes(string? notes, Guid updatedBy)
     {
         if (!IsActive)
-            throw new InvalidOperationException("No se puede actualizar las notas de un rol revocado.");
+            throw new InvalidOperationException(
+                "No se puede actualizar las notas de un rol revocado."
+            );
 
         var n = notes?.Trim();
-        if (n is { Length: 0 }) n = null;
+        if (n is { Length: 0 })
+            n = null;
         if (n?.Length > NotesMaxLen)
-            throw new ArgumentException($"Las notas no pueden superar {NotesMaxLen} caracteres.", nameof(notes));
+            throw new ArgumentException(
+                $"Las notas no pueden superar {NotesMaxLen} caracteres.",
+                nameof(notes)
+            );
 
         Notes = n;
         SetUpdated(updatedBy);
@@ -173,20 +195,26 @@ public sealed class BusinessPartnerRole : AuditableEntity, ITenantScopedEntity
     public void UpdateSupplierConfig(SupplierRoleConfig config, Guid updatedBy)
     {
         if (RoleType != RoleType.Supplier)
-            throw new InvalidOperationException($"UpdateSupplierConfig solo aplica al rol Supplier. Rol actual: {RoleType}.");
+            throw new InvalidOperationException(
+                $"UpdateSupplierConfig solo aplica al rol Supplier. Rol actual: {RoleType}."
+            );
         if (!IsActive)
-            throw new InvalidOperationException("No se puede actualizar la config de un rol revocado.");
+            throw new InvalidOperationException(
+                "No se puede actualizar la config de un rol revocado."
+            );
 
         SupplierConfig = config ?? throw new ArgumentNullException(nameof(config));
         SetUpdated(updatedBy);
-        RaiseDomainEvent(new BusinessPartnerRoleConfigUpdatedEvent
-        {
-            TenantId = TenantId,
-            RoleId = Id,
-            BusinessPartnerId = BusinessPartnerId,
-            RoleType = RoleType,
-            UpdatedBy = updatedBy,
-        });
+        RaiseDomainEvent(
+            new BusinessPartnerRoleConfigUpdatedEvent
+            {
+                TenantId = TenantId,
+                RoleId = Id,
+                BusinessPartnerId = BusinessPartnerId,
+                RoleType = RoleType,
+                UpdatedBy = updatedBy,
+            }
+        );
     }
 
     /// <summary>
@@ -196,20 +224,26 @@ public sealed class BusinessPartnerRole : AuditableEntity, ITenantScopedEntity
     public void UpdateCarrierConfig(CarrierRoleConfig config, Guid updatedBy)
     {
         if (RoleType != RoleType.Carrier)
-            throw new InvalidOperationException($"UpdateCarrierConfig solo aplica al rol Carrier. Rol actual: {RoleType}.");
+            throw new InvalidOperationException(
+                $"UpdateCarrierConfig solo aplica al rol Carrier. Rol actual: {RoleType}."
+            );
         if (!IsActive)
-            throw new InvalidOperationException("No se puede actualizar la config de un rol revocado.");
+            throw new InvalidOperationException(
+                "No se puede actualizar la config de un rol revocado."
+            );
 
         CarrierConfig = config ?? throw new ArgumentNullException(nameof(config));
         SetUpdated(updatedBy);
-        RaiseDomainEvent(new BusinessPartnerRoleConfigUpdatedEvent
-        {
-            TenantId = TenantId,
-            RoleId = Id,
-            BusinessPartnerId = BusinessPartnerId,
-            RoleType = RoleType,
-            UpdatedBy = updatedBy,
-        });
+        RaiseDomainEvent(
+            new BusinessPartnerRoleConfigUpdatedEvent
+            {
+                TenantId = TenantId,
+                RoleId = Id,
+                BusinessPartnerId = BusinessPartnerId,
+                RoleType = RoleType,
+                UpdatedBy = updatedBy,
+            }
+        );
     }
 
     /// <summary>
@@ -219,20 +253,26 @@ public sealed class BusinessPartnerRole : AuditableEntity, ITenantScopedEntity
     public void UpdateCustomerConfig(CustomerRoleConfig config, Guid updatedBy)
     {
         if (RoleType != RoleType.Customer)
-            throw new InvalidOperationException($"UpdateCustomerConfig solo aplica al rol Customer. Rol actual: {RoleType}.");
+            throw new InvalidOperationException(
+                $"UpdateCustomerConfig solo aplica al rol Customer. Rol actual: {RoleType}."
+            );
         if (!IsActive)
-            throw new InvalidOperationException("No se puede actualizar la config de un rol revocado.");
+            throw new InvalidOperationException(
+                "No se puede actualizar la config de un rol revocado."
+            );
 
         CustomerConfig = config ?? throw new ArgumentNullException(nameof(config));
         SetUpdated(updatedBy);
-        RaiseDomainEvent(new BusinessPartnerRoleConfigUpdatedEvent
-        {
-            TenantId = TenantId,
-            RoleId = Id,
-            BusinessPartnerId = BusinessPartnerId,
-            RoleType = RoleType,
-            UpdatedBy = updatedBy,
-        });
+        RaiseDomainEvent(
+            new BusinessPartnerRoleConfigUpdatedEvent
+            {
+                TenantId = TenantId,
+                RoleId = Id,
+                BusinessPartnerId = BusinessPartnerId,
+                RoleType = RoleType,
+                UpdatedBy = updatedBy,
+            }
+        );
     }
 
     /// <summary>
@@ -242,20 +282,26 @@ public sealed class BusinessPartnerRole : AuditableEntity, ITenantScopedEntity
     public void UpdateClassificationConfig(SupplierClassificationConfig config, Guid updatedBy)
     {
         if (RoleType != RoleType.Supplier)
-            throw new InvalidOperationException($"UpdateClassificationConfig solo aplica al rol Supplier. Rol actual: {RoleType}.");
+            throw new InvalidOperationException(
+                $"UpdateClassificationConfig solo aplica al rol Supplier. Rol actual: {RoleType}."
+            );
         if (!IsActive)
-            throw new InvalidOperationException("No se puede actualizar la config de un rol revocado.");
+            throw new InvalidOperationException(
+                "No se puede actualizar la config de un rol revocado."
+            );
 
         ClassificationConfig = config ?? throw new ArgumentNullException(nameof(config));
         SetUpdated(updatedBy);
-        RaiseDomainEvent(new BusinessPartnerRoleConfigUpdatedEvent
-        {
-            TenantId = TenantId,
-            RoleId = Id,
-            BusinessPartnerId = BusinessPartnerId,
-            RoleType = RoleType,
-            UpdatedBy = updatedBy,
-        });
+        RaiseDomainEvent(
+            new BusinessPartnerRoleConfigUpdatedEvent
+            {
+                TenantId = TenantId,
+                RoleId = Id,
+                BusinessPartnerId = BusinessPartnerId,
+                RoleType = RoleType,
+                UpdatedBy = updatedBy,
+            }
+        );
     }
 
     // ── Validación de coherencia tipo↔config ─────────────────────────────────
@@ -265,26 +311,31 @@ public sealed class BusinessPartnerRole : AuditableEntity, ITenantScopedEntity
         SupplierRoleConfig? supplierConfig,
         CarrierRoleConfig? carrierConfig,
         CustomerRoleConfig? customerConfig,
-        SupplierClassificationConfig? classificationConfig = null)
+        SupplierClassificationConfig? classificationConfig = null
+    )
     {
         if (supplierConfig is not null && roleType != RoleType.Supplier)
             throw new ArgumentException(
                 $"SupplierConfig solo es válido para el rol Supplier. Rol recibido: {roleType}.",
-                nameof(supplierConfig));
+                nameof(supplierConfig)
+            );
 
         if (carrierConfig is not null && roleType != RoleType.Carrier)
             throw new ArgumentException(
                 $"CarrierConfig solo es válido para el rol Carrier. Rol recibido: {roleType}.",
-                nameof(carrierConfig));
+                nameof(carrierConfig)
+            );
 
         if (customerConfig is not null && roleType != RoleType.Customer)
             throw new ArgumentException(
                 $"CustomerConfig solo es válido para el rol Customer. Rol recibido: {roleType}.",
-                nameof(customerConfig));
+                nameof(customerConfig)
+            );
 
         if (classificationConfig is not null && roleType != RoleType.Supplier)
             throw new ArgumentException(
                 $"ClassificationConfig solo es válido para el rol Supplier. Rol recibido: {roleType}.",
-                nameof(classificationConfig));
+                nameof(classificationConfig)
+            );
     }
 }

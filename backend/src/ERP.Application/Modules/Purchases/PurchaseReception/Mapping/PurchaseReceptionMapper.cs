@@ -7,45 +7,53 @@ namespace ERP.Application.Modules.Purchases.PurchaseReception.Mapping;
 
 public static class PurchaseReceptionMapper
 {
-    public static PurchaseReceptionItemDto ToDto(PurchaseReceptionVerifiedItem item, PurchaseReceptionDocument document) => new(
-        item.Record.SupplierRuc,
-        item.Record.SupplierName,
-        item.Record.InvoiceNumber,
-        item.Record.AccessKey,
-        item.Record.IssueDate,
-        item.Record.AuthorizationDate,
-        item.Record.Total,
-        item.SupplierExists,
-        item.PurchaseExists,
-        ToStatusCode(item.Status),
-        document.Id,
-        ToDocumentStatusCode(document.Status),
-        ToProcessingStatusCode(document.ProcessingStatus),
-        document.ProcessingNotes);
+    public static PurchaseReceptionItemDto ToDto(
+        PurchaseReceptionVerifiedItem item,
+        PurchaseReceptionDocument document
+    ) =>
+        new(
+            item.Record.SupplierRuc,
+            item.Record.SupplierName,
+            item.Record.InvoiceNumber,
+            item.Record.AccessKey,
+            item.Record.IssueDate,
+            item.Record.AuthorizationDate,
+            item.Record.Total,
+            item.SupplierExists,
+            item.PurchaseExists,
+            ToStatusCode(item.Status),
+            document.Id,
+            ToDocumentStatusCode(document.Status),
+            ToProcessingStatusCode(document.ProcessingStatus),
+            document.ProcessingNotes
+        );
 
-    private static string ToStatusCode(PurchaseReceptionStatus status) => status switch
-    {
-        PurchaseReceptionStatus.Imported => "IMPORTED",
-        PurchaseReceptionStatus.Pending => "PENDING",
-        PurchaseReceptionStatus.NewSupplier => "NEW_SUPPLIER",
-        _ => throw new ArgumentOutOfRangeException(nameof(status), status, null),
-    };
+    private static string ToStatusCode(PurchaseReceptionStatus status) =>
+        status switch
+        {
+            PurchaseReceptionStatus.Imported => "IMPORTED",
+            PurchaseReceptionStatus.Pending => "PENDING",
+            PurchaseReceptionStatus.NewSupplier => "NEW_SUPPLIER",
+            _ => throw new ArgumentOutOfRangeException(nameof(status), status, null),
+        };
 
-    public static string ToDocumentStatusCode(PurchaseReceptionDocumentStatus status) => status switch
-    {
-        PurchaseReceptionDocumentStatus.Imported => "IMPORTED",
-        PurchaseReceptionDocumentStatus.Verified => "VERIFIED",
-        PurchaseReceptionDocumentStatus.Processed => "PROCESSED",
-        PurchaseReceptionDocumentStatus.Cancelled => "CANCELLED",
-        _ => throw new ArgumentOutOfRangeException(nameof(status), status, null),
-    };
+    public static string ToDocumentStatusCode(PurchaseReceptionDocumentStatus status) =>
+        status switch
+        {
+            PurchaseReceptionDocumentStatus.Imported => "IMPORTED",
+            PurchaseReceptionDocumentStatus.Verified => "VERIFIED",
+            PurchaseReceptionDocumentStatus.Processed => "PROCESSED",
+            PurchaseReceptionDocumentStatus.Cancelled => "CANCELLED",
+            _ => throw new ArgumentOutOfRangeException(nameof(status), status, null),
+        };
 
-    public static string ToProcessingStatusCode(PurchaseReceptionProcessingStatus status) => status switch
-    {
-        PurchaseReceptionProcessingStatus.Pending => "PENDING",
-        PurchaseReceptionProcessingStatus.Processed => "PROCESSED",
-        PurchaseReceptionProcessingStatus.ProcessedWithWarnings => "PROCESSED_WITH_WARNINGS",
-        PurchaseReceptionProcessingStatus.Failed => "FAILED",
-        _ => throw new ArgumentOutOfRangeException(nameof(status), status, null),
-    };
+    public static string ToProcessingStatusCode(PurchaseReceptionProcessingStatus status) =>
+        status switch
+        {
+            PurchaseReceptionProcessingStatus.Pending => "PENDING",
+            PurchaseReceptionProcessingStatus.Processed => "PROCESSED",
+            PurchaseReceptionProcessingStatus.ProcessedWithWarnings => "PROCESSED_WITH_WARNINGS",
+            PurchaseReceptionProcessingStatus.Failed => "FAILED",
+            _ => throw new ArgumentOutOfRangeException(nameof(status), status, null),
+        };
 }

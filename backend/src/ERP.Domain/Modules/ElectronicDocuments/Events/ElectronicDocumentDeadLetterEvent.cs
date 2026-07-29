@@ -19,8 +19,13 @@ public sealed class ElectronicDocumentDeadLetterEvent : BaseDomainEvent, IAuditE
     public string Reason { get; }
 
     public ElectronicDocumentDeadLetterEvent(
-        Guid tenantId, Guid electronicDocumentId, ElectronicDocumentType documentType,
-        ElectronicDocumentState fromState, ElectronicDocumentState toState, string reason)
+        Guid tenantId,
+        Guid electronicDocumentId,
+        ElectronicDocumentType documentType,
+        ElectronicDocumentState fromState,
+        ElectronicDocumentState toState,
+        string reason
+    )
     {
         TenantId = tenantId;
         ElectronicDocumentId = electronicDocumentId;

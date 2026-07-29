@@ -15,13 +15,15 @@ namespace ERP.Infrastructure.Migrations
                 name: "purchase_reception_line_id",
                 table: "purchase_invoice_details",
                 type: "uuid",
-                nullable: true);
+                nullable: true
+            );
 
             migrationBuilder.CreateIndex(
                 name: "ix_purchase_invoice_details_reception_line",
                 table: "purchase_invoice_details",
                 column: "purchase_reception_line_id",
-                filter: "purchase_reception_line_id IS NOT NULL");
+                filter: "purchase_reception_line_id IS NOT NULL"
+            );
         }
 
         /// <inheritdoc />
@@ -29,11 +31,13 @@ namespace ERP.Infrastructure.Migrations
         {
             migrationBuilder.DropIndex(
                 name: "ix_purchase_invoice_details_reception_line",
-                table: "purchase_invoice_details");
+                table: "purchase_invoice_details"
+            );
 
             migrationBuilder.DropColumn(
                 name: "purchase_reception_line_id",
-                table: "purchase_invoice_details");
+                table: "purchase_invoice_details"
+            );
         }
     }
 }

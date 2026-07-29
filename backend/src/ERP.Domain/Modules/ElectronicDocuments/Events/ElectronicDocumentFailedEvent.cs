@@ -14,8 +14,13 @@ public sealed class ElectronicDocumentFailedEvent : BaseDomainEvent, IAuditEvent
     public string Reason { get; }
 
     public ElectronicDocumentFailedEvent(
-        Guid tenantId, Guid electronicDocumentId, ElectronicDocumentType documentType,
-        ElectronicDocumentState fromState, ElectronicDocumentState toState, string reason)
+        Guid tenantId,
+        Guid electronicDocumentId,
+        ElectronicDocumentType documentType,
+        ElectronicDocumentState fromState,
+        ElectronicDocumentState toState,
+        string reason
+    )
     {
         TenantId = tenantId;
         ElectronicDocumentId = electronicDocumentId;

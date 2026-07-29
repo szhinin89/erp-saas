@@ -16,7 +16,14 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace ERP.API.Controllers;
 
-[AppFeature("Facturación electrónica", $"perm:{ElectronicInvoicingPermissions.View}", "🧾", "/settings/electronic-invoicing", "perm:settings.group", 25)]
+[AppFeature(
+    "Facturación electrónica",
+    $"perm:{ElectronicInvoicingPermissions.View}",
+    "🧾",
+    "/settings/electronic-invoicing",
+    "perm:settings.group",
+    25
+)]
 [ApiController]
 [Route("api/v1/electronic-invoicing")]
 [Authorize]
@@ -36,17 +43,25 @@ public sealed class ElectronicInvoicingController : ControllerBase
     /// Configuración SRI: no expone datos sensibles, solo ambiente/estado de emisión.
     /// </summary>
     [HttpGet("status")]
-    [ProducesResponseType(typeof(ApiResponse<ElectronicInvoicingStatusDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(
+        typeof(ApiResponse<ElectronicInvoicingStatusDto>),
+        StatusCodes.Status200OK
+    )]
     public async Task<IActionResult> GetStatus(CancellationToken cancellationToken = default)
     {
-        var result = await _mediator.Send(new GetElectronicInvoicingStatusQuery(), cancellationToken);
+        var result = await _mediator.Send(
+            new GetElectronicInvoicingStatusQuery(),
+            cancellationToken
+        );
         return this.ToOkOrBadRequest(result);
     }
 
     [HttpGet("sri-configuration")]
     [Authorize(Policy = $"perm:{ElectronicInvoicingPermissions.View}")]
     [ProducesResponseType(typeof(ApiResponse<SriConfigurationDto?>), StatusCodes.Status200OK)]
-    public async Task<IActionResult> GetSriConfiguration(CancellationToken cancellationToken = default)
+    public async Task<IActionResult> GetSriConfiguration(
+        CancellationToken cancellationToken = default
+    )
     {
         var result = await _mediator.Send(new GetSriConfigurationQuery(), cancellationToken);
         return this.ToOkOrBadRequest(result);
@@ -56,7 +71,10 @@ public sealed class ElectronicInvoicingController : ControllerBase
     [Authorize(Policy = $"perm:{ElectronicInvoicingPermissions.Configure}")]
     [ProducesResponseType(typeof(ApiResponse<SriConfigurationDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
-    public async Task<IActionResult> UpsertSriConfiguration([FromBody] UpsertSriConfigurationCommand command, CancellationToken cancellationToken = default)
+    public async Task<IActionResult> UpsertSriConfiguration(
+        [FromBody] UpsertSriConfigurationCommand command,
+        CancellationToken cancellationToken = default
+    )
     {
         var result = await _mediator.Send(command, cancellationToken);
         return this.ToOkOrBadRequest(result);
@@ -68,8 +86,13 @@ public sealed class ElectronicInvoicingController : ControllerBase
     /// </summary>
     [HttpGet("sri-configuration/validate")]
     [Authorize(Policy = $"perm:{ElectronicInvoicingPermissions.View}")]
-    [ProducesResponseType(typeof(ApiResponse<SriConfigurationValidationDto>), StatusCodes.Status200OK)]
-    public async Task<IActionResult> ValidateSriConfiguration(CancellationToken cancellationToken = default)
+    [ProducesResponseType(
+        typeof(ApiResponse<SriConfigurationValidationDto>),
+        StatusCodes.Status200OK
+    )]
+    public async Task<IActionResult> ValidateSriConfiguration(
+        CancellationToken cancellationToken = default
+    )
     {
         var result = await _mediator.Send(new ValidateSriConfigurationQuery(), cancellationToken);
         return this.ToOkOrBadRequest(result);
@@ -82,9 +105,15 @@ public sealed class ElectronicInvoicingController : ControllerBase
     [HttpPost("sri-configuration/certificate")]
     [Authorize(Policy = $"perm:{ElectronicInvoicingPermissions.Configure}")]
     [Consumes("multipart/form-data")]
-    [ProducesResponseType(typeof(ApiResponse<SriCertificateUploadResultDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(
+        typeof(ApiResponse<SriCertificateUploadResultDto>),
+        StatusCodes.Status200OK
+    )]
     [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
-    public async Task<IActionResult> UploadCertificate(IFormFile? file, CancellationToken cancellationToken = default)
+    public async Task<IActionResult> UploadCertificate(
+        IFormFile? file,
+        CancellationToken cancellationToken = default
+    )
     {
         if (file is null || file.Length == 0)
             return this.ApiBadRequest("Debe adjuntar el archivo del certificado.");
@@ -94,7 +123,10 @@ public sealed class ElectronicInvoicingController : ControllerBase
         stream.Position = 0;
 
         var content = new MediaUploadContent(stream, file.FileName, file.ContentType, file.Length);
-        var result = await _mediator.Send(new UploadSriCertificateCommand(content), cancellationToken);
+        var result = await _mediator.Send(
+            new UploadSriCertificateCommand(content),
+            cancellationToken
+        );
         return this.ToOkOrBadRequest(result);
     }
 
@@ -105,7 +137,10 @@ public sealed class ElectronicInvoicingController : ControllerBase
     [HttpPost("sri-configuration/certificate/inspect")]
     [Authorize(Policy = $"perm:{ElectronicInvoicingPermissions.Configure}")]
     [ProducesResponseType(typeof(ApiResponse<SriCertificateInfoDto>), StatusCodes.Status200OK)]
-    public async Task<IActionResult> InspectCertificate([FromBody] InspectSriCertificateQuery query, CancellationToken cancellationToken = default)
+    public async Task<IActionResult> InspectCertificate(
+        [FromBody] InspectSriCertificateQuery query,
+        CancellationToken cancellationToken = default
+    )
     {
         var result = await _mediator.Send(query, cancellationToken);
         return this.ToOkOrBadRequest(result);

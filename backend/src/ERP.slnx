@@ -1,13 +1,13 @@
 <Solution>
-  <Folder Name="/src/">
-    <Project Path="ERP.API/ERP.API.csproj" />
-    <Project Path="ERP.API.Tests/ERP.API.Tests.csproj" />
-    <Project Path="ERP.Application/ERP.Application.csproj" />
-    <Project Path="ERP.Application.Tests/ERP.Application.Tests.csproj" />
-    <Project Path="ERP.Domain/ERP.Domain.csproj" />
-    <Project Path="ERP.Domain.Tests/ERP.Domain.Tests.csproj" />
-    <Project Path="ERP.Infrastructure/ERP.Infrastructure.csproj" />
-    <Project Path="ERP.Infrastructure.Tests/ERP.Infrastructure.Tests.csproj" />
-    <Project Path="ERP.Architecture.Tests/ERP.Architecture.Tests.csproj" />
-  </Folder>
+    <Folder Name="/src/">
+        <Project Path="ERP.API/ERP.API.csproj" />
+        <Project Path="ERP.API.Tests/ERP.API.Tests.csproj" />
+        <Project Path="ERP.Application/ERP.Application.csproj" />
+        <Project Path="ERP.Application.Tests/ERP.Application.Tests.csproj" />
+        <Project Path="ERP.Domain/ERP.Domain.csproj" />
+        <Project Path="ERP.Domain.Tests/ERP.Domain.Tests.csproj" />
+        <Project Path="ERP.Infrastructure/ERP.Infrastructure.csproj" />
+        <Project Path="ERP.Infrastructure.Tests/ERP.Infrastructure.Tests.csproj" />
+        <Project Path="ERP.Architecture.Tests/ERP.Architecture.Tests.csproj" />
+    </Folder>
 </Solution>

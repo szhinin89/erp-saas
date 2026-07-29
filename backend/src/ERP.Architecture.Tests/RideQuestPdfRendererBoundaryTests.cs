@@ -18,45 +18,65 @@ public sealed class RideQuestPdfRendererBoundaryTests
     [Fact]
     public void Renderer_and_sections_do_not_depend_on_system_xml()
     {
-        var result = Types.InAssembly(InfrastructureAssembly)
-            .That().ResideInNamespace(RenderingNamespace)
-            .ShouldNot().HaveDependencyOn("System.Xml")
+        var result = Types
+            .InAssembly(InfrastructureAssembly)
+            .That()
+            .ResideInNamespace(RenderingNamespace)
+            .ShouldNot()
+            .HaveDependencyOn("System.Xml")
             .GetResult();
 
-        result.IsSuccessful.Should().BeTrue(string.Join(", ", result.FailingTypeNames ?? Array.Empty<string>()));
+        result
+            .IsSuccessful.Should()
+            .BeTrue(string.Join(", ", result.FailingTypeNames ?? Array.Empty<string>()));
     }
 
     [Fact]
     public void Renderer_and_sections_do_not_depend_on_electronic_documents()
     {
-        var result = Types.InAssembly(InfrastructureAssembly)
-            .That().ResideInNamespace(RenderingNamespace)
-            .ShouldNot().HaveDependencyOn("ERP.Application.Modules.ElectronicDocuments")
+        var result = Types
+            .InAssembly(InfrastructureAssembly)
+            .That()
+            .ResideInNamespace(RenderingNamespace)
+            .ShouldNot()
+            .HaveDependencyOn("ERP.Application.Modules.ElectronicDocuments")
             .GetResult();
 
-        result.IsSuccessful.Should().BeTrue(string.Join(", ", result.FailingTypeNames ?? Array.Empty<string>()));
+        result
+            .IsSuccessful.Should()
+            .BeTrue(string.Join(", ", result.FailingTypeNames ?? Array.Empty<string>()));
     }
 
     [Fact]
     public void Renderer_and_sections_do_not_depend_on_sales()
     {
-        var result = Types.InAssembly(InfrastructureAssembly)
-            .That().ResideInNamespace(RenderingNamespace)
-            .ShouldNot().HaveDependencyOn("ERP.Application.Modules.Sales")
+        var result = Types
+            .InAssembly(InfrastructureAssembly)
+            .That()
+            .ResideInNamespace(RenderingNamespace)
+            .ShouldNot()
+            .HaveDependencyOn("ERP.Application.Modules.Sales")
             .GetResult();
 
-        result.IsSuccessful.Should().BeTrue(string.Join(", ", result.FailingTypeNames ?? Array.Empty<string>()));
+        result
+            .IsSuccessful.Should()
+            .BeTrue(string.Join(", ", result.FailingTypeNames ?? Array.Empty<string>()));
     }
 
     [Fact]
     public void Renderer_and_sections_do_not_depend_on_the_parser()
     {
-        var result = Types.InAssembly(InfrastructureAssembly)
-            .That().ResideInNamespace(RenderingNamespace)
-            .ShouldNot().HaveDependencyOn("ERP.Application.Modules.Ride.Parsers")
+        var result = Types
+            .InAssembly(InfrastructureAssembly)
+            .That()
+            .ResideInNamespace(RenderingNamespace)
+            .ShouldNot()
+            .HaveDependencyOn("ERP.Application.Modules.Ride.Parsers")
             .GetResult();
 
-        result.IsSuccessful.Should().BeTrue(string.Join(", ", result.FailingTypeNames ?? Array.Empty<string>()));
+        result
+            .IsSuccessful.Should()
+            .BeTrue(string.Join(", ", result.FailingTypeNames ?? Array.Empty<string>()));
     }
 
     [Fact]
@@ -67,6 +87,8 @@ public sealed class RideQuestPdfRendererBoundaryTests
 
         renderMethod.Should().NotBeNull();
         var parameters = renderMethod!.GetParameters();
-        parameters[0].ParameterType.Name.Should().Be(nameof(ERP.Application.Modules.Ride.Rendering.IRideDocumentLayout));
+        parameters[0]
+            .ParameterType.Name.Should()
+            .Be(nameof(ERP.Application.Modules.Ride.Rendering.IRideDocumentLayout));
     }
 }

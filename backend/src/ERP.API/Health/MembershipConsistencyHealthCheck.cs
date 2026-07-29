@@ -13,7 +13,8 @@ public sealed class MembershipConsistencyHealthCheck : IHealthCheck
 
     public async Task<HealthCheckResult> CheckHealthAsync(
         HealthCheckContext context,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default
+    )
     {
         var provider = _db.Database.ProviderName ?? string.Empty;
         if (provider.Contains("InMemory", StringComparison.OrdinalIgnoreCase))
@@ -22,13 +23,15 @@ public sealed class MembershipConsistencyHealthCheck : IHealthCheck
         if (!await _db.Database.CanConnectAsync(cancellationToken))
             return HealthCheckResult.Unhealthy("Database unreachable.");
 
-        var orphanMemberships = await _db.CompanyUserMemberships
-            .Where(m => !_db.Companies.Any(c => c.Id == m.CompanyId))
+        var orphanMemberships = await _db
+            .CompanyUserMemberships.Where(m => !_db.Companies.Any(c => c.Id == m.CompanyId))
             .Take(1)
             .AnyAsync(cancellationToken);
 
         if (orphanMemberships)
-            return HealthCheckResult.Degraded("Memberships sin company/subscriber coherente detectadas.");
+            return HealthCheckResult.Degraded(
+                "Memberships sin company/subscriber coherente detectadas."
+            );
 
         return HealthCheckResult.Healthy("Membership consistency OK.");
     }

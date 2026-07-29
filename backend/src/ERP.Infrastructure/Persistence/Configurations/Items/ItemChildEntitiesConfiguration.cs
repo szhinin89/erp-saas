@@ -40,8 +40,16 @@ public sealed class ItemUnitConversionConfiguration : IEntityTypeConfiguration<I
         builder.Property(x => x.Id).HasColumnName("id");
         builder.Property(x => x.TenantId).HasColumnName("tenant_id").IsRequired();
         builder.Property(x => x.ItemId).HasColumnName("item_id").IsRequired();
-        builder.Property(x => x.FromUomCode).HasColumnName("from_uom_code").HasMaxLength(10).IsRequired();
-        builder.Property(x => x.ToUomCode).HasColumnName("to_uom_code").HasMaxLength(10).IsRequired();
+        builder
+            .Property(x => x.FromUomCode)
+            .HasColumnName("from_uom_code")
+            .HasMaxLength(10)
+            .IsRequired();
+        builder
+            .Property(x => x.ToUomCode)
+            .HasColumnName("to_uom_code")
+            .HasMaxLength(10)
+            .IsRequired();
         builder.Property(x => x.Factor).HasColumnName("factor").HasPrecision(14, 6).IsRequired();
         builder.Property(x => x.IsActive).HasColumnName("is_active").IsRequired();
         builder.Property(x => x.CreatedAt).HasColumnName("created_at");
@@ -49,7 +57,13 @@ public sealed class ItemUnitConversionConfiguration : IEntityTypeConfiguration<I
         builder.Property(x => x.CreatedBy).HasColumnName("created_by");
         builder.Property(x => x.UpdatedBy).HasColumnName("updated_by");
 
-        builder.HasIndex(x => new { x.ItemId, x.FromUomCode, x.ToUomCode })
+        builder
+            .HasIndex(x => new
+            {
+                x.ItemId,
+                x.FromUomCode,
+                x.ToUomCode,
+            })
             .IsUnique()
             .HasDatabaseName("uq_item_unit_conversion");
     }
@@ -74,7 +88,8 @@ public sealed class ItemSubstituteConfiguration : IEntityTypeConfiguration<ItemS
         builder.Property(x => x.CreatedBy).HasColumnName("created_by");
         builder.Property(x => x.UpdatedBy).HasColumnName("updated_by");
 
-        builder.HasIndex(x => new { x.ItemId, x.SubstituteItemId })
+        builder
+            .HasIndex(x => new { x.ItemId, x.SubstituteItemId })
             .IsUnique()
             .HasDatabaseName("uq_item_substitute");
     }
@@ -92,12 +107,19 @@ public sealed class ItemPackagingLevelConfiguration : IEntityTypeConfiguration<I
         builder.Property(x => x.ItemId).HasColumnName("item_id").IsRequired();
         builder.Property(x => x.Name).HasColumnName("name").HasMaxLength(50).IsRequired();
         builder.Property(x => x.Level).HasColumnName("level").IsRequired();
-        builder.Property(x => x.BaseQuantity).HasColumnName("base_quantity").HasPrecision(14, 4).IsRequired();
+        builder
+            .Property(x => x.BaseQuantity)
+            .HasColumnName("base_quantity")
+            .HasPrecision(14, 4)
+            .IsRequired();
         builder.Property(x => x.UomCode).HasColumnName("uom_code").HasMaxLength(10).IsRequired();
         builder.Property(x => x.Barcode).HasColumnName("barcode").HasMaxLength(100);
         builder.Property(x => x.Weight).HasColumnName("weight").HasPrecision(10, 3);
         builder.Property(x => x.IsBaseUnit).HasColumnName("is_base_unit").IsRequired();
-        builder.Property(x => x.IsPurchaseDefault).HasColumnName("is_purchase_default").IsRequired();
+        builder
+            .Property(x => x.IsPurchaseDefault)
+            .HasColumnName("is_purchase_default")
+            .IsRequired();
         builder.Property(x => x.IsSaleDefault).HasColumnName("is_sale_default").IsRequired();
         builder.Property(x => x.IsActive).HasColumnName("is_active").IsRequired();
         builder.Property(x => x.CreatedAt).HasColumnName("created_at");
@@ -105,15 +127,18 @@ public sealed class ItemPackagingLevelConfiguration : IEntityTypeConfiguration<I
         builder.Property(x => x.CreatedBy).HasColumnName("created_by");
         builder.Property(x => x.UpdatedBy).HasColumnName("updated_by");
 
-        builder.HasIndex(x => new { x.ItemId, x.Level })
+        builder
+            .HasIndex(x => new { x.ItemId, x.Level })
             .IsUnique()
             .HasDatabaseName("uq_item_packaging_level");
 
-        builder.HasIndex(x => new { x.ItemId, x.UomCode })
+        builder
+            .HasIndex(x => new { x.ItemId, x.UomCode })
             .IsUnique()
             .HasDatabaseName("uq_item_packaging_uom");
 
-        builder.HasIndex(x => x.Barcode)
+        builder
+            .HasIndex(x => x.Barcode)
             .HasDatabaseName("ix_item_packaging_levels_barcode")
             .HasFilter("barcode IS NOT NULL");
     }

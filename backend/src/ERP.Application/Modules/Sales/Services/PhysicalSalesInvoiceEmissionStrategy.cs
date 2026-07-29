@@ -14,8 +14,9 @@ public sealed class PhysicalSalesInvoiceEmissionStrategy : ISalesInvoiceEmission
 {
     private readonly ILogger<PhysicalSalesInvoiceEmissionStrategy> _logger;
 
-    public PhysicalSalesInvoiceEmissionStrategy(ILogger<PhysicalSalesInvoiceEmissionStrategy> logger)
-        => _logger = logger;
+    public PhysicalSalesInvoiceEmissionStrategy(
+        ILogger<PhysicalSalesInvoiceEmissionStrategy> logger
+    ) => _logger = logger;
 
     public EmissionType SupportedType => EmissionType.Physical;
 
@@ -24,7 +25,9 @@ public sealed class PhysicalSalesInvoiceEmissionStrategy : ISalesInvoiceEmission
         var inv = context.Invoice;
         _logger.LogInformation(
             "Sales invoice {InvoiceNumber} ({InvoiceId}) authorized on a Physical emission point — no electronic document generated.",
-            inv.InvoiceNumber, inv.Id);
+            inv.InvoiceNumber,
+            inv.Id
+        );
         return Task.FromResult<string?>(null);
     }
 }

@@ -1,7 +1,7 @@
+using System.Security.Claims;
 using ERP.Infrastructure.Services;
 using FluentAssertions;
 using Microsoft.AspNetCore.Http;
-using System.Security.Claims;
 
 namespace ERP.Infrastructure.Tests.Services;
 
@@ -15,9 +15,8 @@ public sealed class CurrentUserServiceTests
 {
     private static CurrentUserService BuildService(params Claim[] claims)
     {
-        var identity = claims.Length == 0
-            ? new ClaimsIdentity()
-            : new ClaimsIdentity(claims, "TestAuth");
+        var identity =
+            claims.Length == 0 ? new ClaimsIdentity() : new ClaimsIdentity(claims, "TestAuth");
 
         var httpContext = new DefaultHttpContext { User = new ClaimsPrincipal(identity) };
         var accessor = new HttpContextAccessor { HttpContext = httpContext };
@@ -46,7 +45,8 @@ public sealed class CurrentUserServiceTests
     {
         var service = BuildService(
             new Claim(ClaimTypes.Name, "Nombre Correcto"),
-            new Claim(ClaimTypes.GivenName, "Nombre Legado"));
+            new Claim(ClaimTypes.GivenName, "Nombre Legado")
+        );
 
         service.FullName.Should().Be("Nombre Correcto");
     }

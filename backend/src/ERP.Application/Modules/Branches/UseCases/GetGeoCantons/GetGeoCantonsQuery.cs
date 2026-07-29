@@ -4,4 +4,6 @@ using MediatR;
 
 namespace ERP.Application.Modules.Branches.UseCases.GetGeoCantons;
 
-public record GetGeoCantonsQuery(string ProvinceId) : IRequest<Result<IReadOnlyList<GeographyItemDto>>>, ICompanyScopedRequest;
+public record GetGeoCantonsQuery(string ProvinceId)
+    : IRequest<Result<IReadOnlyList<GeographyItemDto>>>,
+        ICompanyScopedRequest;

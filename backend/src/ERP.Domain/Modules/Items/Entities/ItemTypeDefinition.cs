@@ -23,16 +23,23 @@ public sealed class ItemTypeDefinition : MasterEntity, ITenantScopedEntity
         string code,
         string name,
         int sortOrder,
-        Guid createdBy)
+        Guid createdBy
+    )
     {
         if (string.IsNullOrWhiteSpace(code))
             throw new ArgumentException("El código es obligatorio.", nameof(code));
         if (code.Length > MaxCodeLength)
-            throw new ArgumentException($"El código no puede superar {MaxCodeLength} caracteres.", nameof(code));
+            throw new ArgumentException(
+                $"El código no puede superar {MaxCodeLength} caracteres.",
+                nameof(code)
+            );
         if (string.IsNullOrWhiteSpace(name))
             throw new ArgumentException("El nombre es obligatorio.", nameof(name));
         if (name.Length > MaxNameLength)
-            throw new ArgumentException($"El nombre no puede superar {MaxNameLength} caracteres.", nameof(name));
+            throw new ArgumentException(
+                $"El nombre no puede superar {MaxNameLength} caracteres.",
+                nameof(name)
+            );
 
         var entity = new ItemTypeDefinition
         {
@@ -60,7 +67,8 @@ public sealed class ItemTypeDefinition : MasterEntity, ITenantScopedEntity
         string code,
         string name,
         int sortOrder,
-        Guid createdBy)
+        Guid createdBy
+    )
     {
         var entity = Create(tenantId, code, name, sortOrder, createdBy);
         entity.MarkAsSystemSeeded();

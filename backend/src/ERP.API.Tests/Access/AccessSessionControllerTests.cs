@@ -26,7 +26,10 @@ public sealed class AccessSessionControllerTests
         services.AddSingleton<IWebHostEnvironment>(new StubWebHostEnvironment());
         controller.ControllerContext = new ControllerContext
         {
-            HttpContext = new DefaultHttpContext { RequestServices = services.BuildServiceProvider() },
+            HttpContext = new DefaultHttpContext
+            {
+                RequestServices = services.BuildServiceProvider(),
+            },
         };
         return controller;
     }
@@ -36,16 +39,21 @@ public sealed class AccessSessionControllerTests
         public string EnvironmentName { get; set; } = "Development";
         public string ApplicationName { get; set; } = "ERP.API.Tests";
         public string WebRootPath { get; set; } = "";
-        public Microsoft.Extensions.FileProviders.IFileProvider WebRootFileProvider { get; set; } = null!;
+        public Microsoft.Extensions.FileProviders.IFileProvider WebRootFileProvider { get; set; } =
+            null!;
         public string ContentRootPath { get; set; } = "";
-        public Microsoft.Extensions.FileProviders.IFileProvider ContentRootFileProvider { get; set; } = null!;
+        public Microsoft.Extensions.FileProviders.IFileProvider ContentRootFileProvider { get; set; } =
+            null!;
     }
 
     [Fact]
     public void ChangeMyPassword_exige_policy_Session()
     {
-        var method = typeof(AccessSessionController).GetMethod(nameof(AccessSessionController.ChangeMyPassword))!;
-        var attr = method.GetCustomAttributes(typeof(AuthorizeAttribute), inherit: true)
+        var method = typeof(AccessSessionController).GetMethod(
+            nameof(AccessSessionController.ChangeMyPassword)
+        )!;
+        var attr = method
+            .GetCustomAttributes(typeof(AuthorizeAttribute), inherit: true)
             .Cast<AuthorizeAttribute>()
             .Single();
 
@@ -63,7 +71,9 @@ public sealed class AccessSessionControllerTests
         });
 
         var response = await controller.ChangeMyPassword(
-            new ChangeMyPasswordRequest("old-pass", "N3wPassword!"), CancellationToken.None);
+            new ChangeMyPasswordRequest("old-pass", "N3wPassword!"),
+            CancellationToken.None
+        );
 
         response.Should().BeOfType<OkObjectResult>();
         var sentCommand = sentRequest.Should().BeOfType<ChangeMyPasswordCommand>().Subject;
@@ -74,10 +84,14 @@ public sealed class AccessSessionControllerTests
     [Fact]
     public async Task ChangeMyPassword_con_contrasena_actual_incorrecta_retorna_400()
     {
-        var controller = BuildController(_ => Result<bool>.Failure("La contraseña actual no es correcta."));
+        var controller = BuildController(_ =>
+            Result<bool>.Failure("La contraseña actual no es correcta.")
+        );
 
         var response = await controller.ChangeMyPassword(
-            new ChangeMyPasswordRequest("wrong", "N3wPassword!"), CancellationToken.None);
+            new ChangeMyPasswordRequest("wrong", "N3wPassword!"),
+            CancellationToken.None
+        );
 
         response.Should().BeOfType<BadRequestObjectResult>();
     }

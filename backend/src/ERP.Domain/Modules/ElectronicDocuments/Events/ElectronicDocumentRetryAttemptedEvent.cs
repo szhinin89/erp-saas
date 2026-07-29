@@ -14,8 +14,13 @@ public sealed class ElectronicDocumentRetryAttemptedEvent : BaseDomainEvent, IAu
     public int RetryCount { get; }
 
     public ElectronicDocumentRetryAttemptedEvent(
-        Guid tenantId, Guid electronicDocumentId, ElectronicDocumentType documentType,
-        ElectronicDocumentState fromState, ElectronicDocumentState toState, int retryCount)
+        Guid tenantId,
+        Guid electronicDocumentId,
+        ElectronicDocumentType documentType,
+        ElectronicDocumentState fromState,
+        ElectronicDocumentState toState,
+        int retryCount
+    )
     {
         TenantId = tenantId;
         ElectronicDocumentId = electronicDocumentId;

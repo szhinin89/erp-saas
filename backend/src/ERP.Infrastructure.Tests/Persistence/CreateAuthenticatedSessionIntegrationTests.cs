@@ -49,14 +49,48 @@ public sealed class CreateAuthenticatedSessionIntegrationTests : IAsyncLifetime
 
         var createdBy = Guid.NewGuid();
         var tenant = Tenant.Create("Test Tenant", $"test-{Guid.NewGuid():N}"[..16], createdBy);
-        var company = Company.CreateManaged(tenant.Id, "1790012345001", "Test S.A.", createdBy: createdBy);
+        var company = Company.CreateManaged(
+            tenant.Id,
+            "1790012345001",
+            "Test S.A.",
+            createdBy: createdBy
+        );
         var user = ERP.Domain.Access.Entities.IdentityUser.Create(
-            $"ana{Guid.NewGuid():N}", "Ana", "Perez", $"ana{Guid.NewGuid():N}@test.com", "hash", createdBy);
+            $"ana{Guid.NewGuid():N}",
+            "Ana",
+            "Perez",
+            $"ana{Guid.NewGuid():N}@test.com",
+            "hash",
+            createdBy
+        );
         var branch = Branch.Create(
-            tenant.Id, "Matriz", "Av. Principal 123", "001",
-            null, null, null, null, null, null, null, null, null, null, null,
-            null, null, null, null, null, null, null, null, true, createdBy,
-            companyId: company.Id);
+            tenant.Id,
+            "Matriz",
+            "Av. Principal 123",
+            "001",
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            true,
+            createdBy,
+            companyId: company.Id
+        );
 
         db.Tenants.Add(tenant);
         db.Companies.Add(company);
@@ -78,14 +112,23 @@ public sealed class CreateAuthenticatedSessionIntegrationTests : IAsyncLifetime
             .UseNpgsql(_postgres.GetConnectionString())
             .Options;
 
-        return new ErpDbContext(options, new FixedCurrentTenant(_tenantId), new NoOpPublisher(), new FixedCurrentCompany(_companyId));
+        return new ErpDbContext(
+            options,
+            new FixedCurrentTenant(_tenantId),
+            new NoOpPublisher(),
+            new FixedCurrentCompany(_companyId)
+        );
     }
 
-    private static CreateAuthenticatedSessionHandler BuildHandler(ErpDbContext db)
-        => new(new UserSessionRepository(db), BuildRefreshService(db), new PostgresDatabaseExceptionTranslator());
+    private static CreateAuthenticatedSessionHandler BuildHandler(ErpDbContext db) =>
+        new(
+            new UserSessionRepository(db),
+            BuildRefreshService(db),
+            new PostgresDatabaseExceptionTranslator()
+        );
 
-    private CreateAuthenticatedSessionCommand Command(string terminalId = "device-1") => new(
-        _tenantId, _companyId, _identityUserId, _branchId, terminalId);
+    private CreateAuthenticatedSessionCommand Command(string terminalId = "device-1") =>
+        new(_tenantId, _companyId, _identityUserId, _branchId, terminalId);
 
     [Fact]
     public async Task RefreshToken_creado_y_UserSession_referencia_correctamente_su_Id()
@@ -99,12 +142,14 @@ public sealed class CreateAuthenticatedSessionIntegrationTests : IAsyncLifetime
         result.Value!.RefreshToken.Should().NotBeNullOrEmpty();
 
         await using var verifyDb = CreateContext();
-        var storedSession = await verifyDb.UserSessions.IgnoreQueryFilters()
+        var storedSession = await verifyDb
+            .UserSessions.IgnoreQueryFilters()
             .SingleAsync(x => x.Id == result.Value.Session.Id);
         storedSession.RefreshTokenId.Should().NotBeNull();
 
-        var storedToken = await verifyDb.RefreshTokens
-            .SingleAsync(t => t.Id == storedSession.RefreshTokenId!.Value);
+        var storedToken = await verifyDb.RefreshTokens.SingleAsync(t =>
+            t.Id == storedSession.RefreshTokenId!.Value
+        );
         storedToken.UserId.Should().Be(_identityUserId);
         storedToken.TenantId.Should().Be(_tenantId);
         storedToken.CompanyId.Should().Be(_companyId);
@@ -139,9 +184,20 @@ public sealed class CreateAuthenticatedSessionIntegrationTests : IAsyncLifetime
         var translator = new PostgresDatabaseExceptionTranslator();
 
         var (loserToken, _) = await refreshService2.CreateWithoutSaveAsync(
-            _identityUserId, _tenantId, _companyId, RefreshUserType.Identity, CancellationToken.None);
+            _identityUserId,
+            _tenantId,
+            _companyId,
+            RefreshUserType.Identity,
+            CancellationToken.None
+        );
         var loserSession = ERP.Domain.Access.Entities.UserSession.Create(
-            _tenantId, _companyId, _identityUserId, _branchId, "device-loser", loserToken.Id);
+            _tenantId,
+            _companyId,
+            _identityUserId,
+            _branchId,
+            "device-loser",
+            loserToken.Id
+        );
         await sessionRepo2.AddAsync(loserSession, CancellationToken.None);
 
         Exception? caught = null;
@@ -159,12 +215,17 @@ public sealed class CreateAuthenticatedSessionIntegrationTests : IAsyncLifetime
         info.ConstraintName.Should().Be("ux_user_sessions_active_per_company");
 
         await using var verifyDb = CreateContext();
-        var refreshTokensCount = await verifyDb.RefreshTokens.CountAsync(t => t.UserId == _identityUserId);
-        var activeSessionsCount = await verifyDb.UserSessions.IgnoreQueryFilters()
-            .CountAsync(s => s.IdentityUserId == _identityUserId
+        var refreshTokensCount = await verifyDb.RefreshTokens.CountAsync(t =>
+            t.UserId == _identityUserId
+        );
+        var activeSessionsCount = await verifyDb
+            .UserSessions.IgnoreQueryFilters()
+            .CountAsync(s =>
+                s.IdentityUserId == _identityUserId
                 && s.TenantId == _tenantId
                 && s.CompanyId == _companyId
-                && s.Status == UserSessionStatus.Active);
+                && s.Status == UserSessionStatus.Active
+            );
 
         // El intento perdedor no debe haber dejado un RefreshToken huérfano: solo el del ganador.
         refreshTokensCount.Should().Be(1);
@@ -173,12 +234,23 @@ public sealed class CreateAuthenticatedSessionIntegrationTests : IAsyncLifetime
 
     private static RefreshTokenService BuildRefreshService(ErpDbContext db)
     {
-        var cache = new MemoryDistributedCache(Microsoft.Extensions.Options.Options.Create(new MemoryDistributedCacheOptions()));
-        var rateLimiter = new RefreshTokenRateLimiter(cache, NullLogger<RefreshTokenRateLimiter>.Instance);
-        var authOptions = Microsoft.Extensions.Options.Options.Create(new AuthOptions { RefreshRotationGraceSeconds = 5 });
+        var cache = new MemoryDistributedCache(
+            Microsoft.Extensions.Options.Options.Create(new MemoryDistributedCacheOptions())
+        );
+        var rateLimiter = new RefreshTokenRateLimiter(
+            cache,
+            NullLogger<RefreshTokenRateLimiter>.Instance
+        );
+        var authOptions = Microsoft.Extensions.Options.Options.Create(
+            new AuthOptions { RefreshRotationGraceSeconds = 5 }
+        );
         return new RefreshTokenService(
-            new RefreshTokenRepository(db), rateLimiter, authOptions,
-            new NoOpSecurityMetrics(), NullLogger<RefreshTokenService>.Instance);
+            new RefreshTokenRepository(db),
+            rateLimiter,
+            authOptions,
+            new NoOpSecurityMetrics(),
+            NullLogger<RefreshTokenService>.Instance
+        );
     }
 
     private sealed class FixedCurrentTenant(Guid tenantId) : ICurrentTenant
@@ -196,24 +268,34 @@ public sealed class CreateAuthenticatedSessionIntegrationTests : IAsyncLifetime
 
     private sealed class NoOpPublisher : IPublisher
     {
-        public Task Publish(object notification, CancellationToken cancellationToken = default)
-            => Task.CompletedTask;
+        public Task Publish(object notification, CancellationToken cancellationToken = default) =>
+            Task.CompletedTask;
 
-        public Task Publish<TNotification>(TNotification notification, CancellationToken cancellationToken = default)
-            where TNotification : INotification
-            => Task.CompletedTask;
+        public Task Publish<TNotification>(
+            TNotification notification,
+            CancellationToken cancellationToken = default
+        )
+            where TNotification : INotification => Task.CompletedTask;
     }
 
     private sealed class NoOpSecurityMetrics : ISecurityMetrics
     {
         public void RecordCrossCompanyDenied(SecurityMetricTags? tags = null) { }
+
         public void RecordMembershipValidationFailed(SecurityMetricTags? tags = null) { }
+
         public void RecordInvalidCompanyContext(SecurityMetricTags? tags = null) { }
+
         public void RecordJwtRefreshRevoked(SecurityMetricTags? tags = null) { }
+
         public void RecordPermissionDenied(SecurityMetricTags? tags = null) { }
+
         public void RecordMasterDataDualWriteFailed(SecurityMetricTags? tags = null) { }
+
         public void RecordMasterDataSyncInconsistency(SecurityMetricTags? tags = null) { }
+
         public void RecordBackgroundContextLeakDetected(SecurityMetricTags? tags = null) { }
+
         public void RecordNamespaceFallbackUsed(SecurityMetricTags? tags = null) { }
     }
 }

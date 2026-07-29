@@ -30,22 +30,40 @@ public sealed class CompanyUserBranchesController : ControllerBase
     public CompanyUserBranchesController(IMediator mediator) => _mediator = mediator;
 
     [HttpGet]
-    [ProducesResponseType(typeof(ApiResponse<CompanyUserBranchesAdminDto?>), StatusCodes.Status200OK)]
+    [ProducesResponseType(
+        typeof(ApiResponse<CompanyUserBranchesAdminDto?>),
+        StatusCodes.Status200OK
+    )]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> Get([FromRoute] Guid membershipId, CancellationToken cancellationToken)
+    public async Task<IActionResult> Get(
+        [FromRoute] Guid membershipId,
+        CancellationToken cancellationToken
+    )
     {
-        var result = await _mediator.Send(new GetCompanyUserBranchesAdminQuery(membershipId), cancellationToken);
+        var result = await _mediator.Send(
+            new GetCompanyUserBranchesAdminQuery(membershipId),
+            cancellationToken
+        );
         return this.ToOkOrBadRequest(result);
     }
 
     [HttpPut]
-    [ProducesResponseType(typeof(ApiResponse<CompanyUserBranchesAdminDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(
+        typeof(ApiResponse<CompanyUserBranchesAdminDto>),
+        StatusCodes.Status200OK
+    )]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status422UnprocessableEntity)]
     public async Task<IActionResult> Update(
-        [FromRoute] Guid membershipId, [FromBody] UpdateCompanyUserBranchesRequest request, CancellationToken cancellationToken)
+        [FromRoute] Guid membershipId,
+        [FromBody] UpdateCompanyUserBranchesRequest request,
+        CancellationToken cancellationToken
+    )
     {
-        var command = new UpdateCompanyUserBranchesAdminCommand(membershipId, request.AuthorizedBranchIds);
+        var command = new UpdateCompanyUserBranchesAdminCommand(
+            membershipId,
+            request.AuthorizedBranchIds
+        );
         var result = await _mediator.Send(command, cancellationToken);
         return this.ToOkOrBadRequest(result);
     }

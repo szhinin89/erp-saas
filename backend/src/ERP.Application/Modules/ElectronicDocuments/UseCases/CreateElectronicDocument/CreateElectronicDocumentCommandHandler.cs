@@ -22,7 +22,8 @@ public sealed class CreateElectronicDocumentCommandHandler
         IElectronicDocumentIssuer issuer,
         ICurrentTenant currentTenant,
         ICurrentCompany currentCompany,
-        ICurrentUser currentUser)
+        ICurrentUser currentUser
+    )
     {
         _issuer = issuer;
         _currentTenant = currentTenant;
@@ -31,7 +32,9 @@ public sealed class CreateElectronicDocumentCommandHandler
     }
 
     public Task<Result<ElectronicDocumentDto>> Handle(
-        CreateElectronicDocumentCommand command, CancellationToken cancellationToken)
+        CreateElectronicDocumentCommand command,
+        CancellationToken cancellationToken
+    )
     {
         var request = new RegisterElectronicDocumentRequest(
             TenantId: _currentTenant.TenantId,
@@ -39,7 +42,8 @@ public sealed class CreateElectronicDocumentCommandHandler
             DocumentType: command.DocumentType,
             SourceModule: command.SourceModule,
             SourceEntityId: command.SourceEntityId,
-            UserId: _currentUser.UserId);
+            UserId: _currentUser.UserId
+        );
 
         return _issuer.RegisterAsync(request, cancellationToken);
     }

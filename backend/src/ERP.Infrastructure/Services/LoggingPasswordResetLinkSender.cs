@@ -13,12 +13,19 @@ public sealed partial class LoggingPasswordResetLinkSender : IPasswordResetLinkS
         _logger = logger;
     }
 
-    public Task SendPasswordResetLinkAsync(string toEmail, string resetLink, CancellationToken cancellationToken = default)
+    public Task SendPasswordResetLinkAsync(
+        string toEmail,
+        string resetLink,
+        CancellationToken cancellationToken = default
+    )
     {
         LogPasswordResetLink(toEmail, resetLink);
         return Task.CompletedTask;
     }
 
-    [LoggerMessage(Level = LogLevel.Information, Message = "Password reset link for {Email}: {Link}")]
+    [LoggerMessage(
+        Level = LogLevel.Information,
+        Message = "Password reset link for {Email}: {Link}"
+    )]
     private partial void LogPasswordResetLink(string email, string link);
 }

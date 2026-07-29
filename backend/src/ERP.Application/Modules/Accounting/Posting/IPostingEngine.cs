@@ -18,5 +18,8 @@ public interface IPostingEngine
     /// flush final del mismo <c>SaveChangesAsync</c> (ADR-026 §8, Fase 3.3.1). Un consumidor
     /// que invoque <c>PostAsync</c> fuera de ese ciclo es responsable de comitear él mismo.
     /// </summary>
-    Task<Result<PostingOutcomeDto>> PostAsync(PostingFact fact, CancellationToken cancellationToken = default);
+    Task<Result<PostingOutcomeDto>> PostAsync(
+        PostingFact fact,
+        CancellationToken cancellationToken = default
+    );
 }

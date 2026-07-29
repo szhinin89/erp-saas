@@ -9,7 +9,8 @@ internal static class CompanyOperationalQueryExtensions
     public static IQueryable<T> ForOperationalScope<T>(
         this IQueryable<T> query,
         Guid tenantId,
-        ICurrentCompany company)
+        ICurrentCompany company
+    )
         where T : class, ITenantScopedEntity, ICompanyOperationalEntity
     {
         query = query.Where(e => e.TenantId == tenantId);

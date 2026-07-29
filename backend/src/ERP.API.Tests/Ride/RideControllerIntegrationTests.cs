@@ -1,3 +1,8 @@
+using System.Net;
+using System.Net.Http.Headers;
+using System.Net.Http.Json;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using ERP.API.Tests.Support;
 using ERP.Application.Common.Interfaces;
 using ERP.Application.Modules.Ride.DTOs;
@@ -11,11 +16,6 @@ using ERP.Infrastructure.Persistence;
 using ERP.Infrastructure.Services;
 using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
-using System.Net;
-using System.Net.Http.Headers;
-using System.Net.Http.Json;
-using System.Text.Json;
-using System.Text.Json.Serialization;
 
 namespace ERP.API.Tests.Ride;
 
@@ -37,6 +37,7 @@ public sealed class RideControllerIntegrationFixture : IAsyncLifetime
     public Guid CompanyAId { get; private set; }
     public Guid CompanyBId { get; private set; }
     public Guid UserId { get; private set; }
+
     /// <summary>Empresa operativa activa para el próximo request — mismo mecanismo que el resto de la suite de integración HTTP.</summary>
     public Guid CurrentCompanyId
     {
@@ -51,7 +52,8 @@ public sealed class RideControllerIntegrationFixture : IAsyncLifetime
     // was not found" — hallazgo real de esta fase). El aislamiento entre corridas de test queda
     // garantizado igual: cada fixture usa un TenantId nuevo, y la ruta de Ride ya empieza por
     // "ride/{tenantId:N}/..." (ADR-025 §15).
-    private string DefaultFileStorageRoot => Path.Combine(Directory.GetCurrentDirectory(), "files", "ride", TenantId.ToString("N"));
+    private string DefaultFileStorageRoot =>
+        Path.Combine(Directory.GetCurrentDirectory(), "files", "ride", TenantId.ToString("N"));
 
     public async Task InitializeAsync()
     {
@@ -77,8 +79,10 @@ public sealed class RideControllerIntegrationFixture : IAsyncLifetime
         await SeedAsync();
 
         Client = Factory.CreateClient();
-        Client.DefaultRequestHeaders.Authorization =
-            new AuthenticationHeaderValue("Bearer", TestJwtFactory.CreateSessionJwt(TenantId, UserId));
+        Client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue(
+            "Bearer",
+            TestJwtFactory.CreateSessionJwt(TenantId, UserId)
+        );
 
         _baseFactory.MutableTenant.TenantId = TenantId;
         _baseFactory.MutableUser.UserId = UserId;
@@ -103,28 +107,51 @@ public sealed class RideControllerIntegrationFixture : IAsyncLifetime
         TenantId = tenant.Id;
 
         var companyA = Company.CreateManaged(
-            TenantId, taxIdentificationNumber: $"179{TenantId:N}"[..13], legalName: "Empresa A S.A.", createdBy: adminId);
+            TenantId,
+            taxIdentificationNumber: $"179{TenantId:N}"[..13],
+            legalName: "Empresa A S.A.",
+            createdBy: adminId
+        );
         var companyB = Company.CreateManaged(
-            TenantId, taxIdentificationNumber: $"180{TenantId:N}"[..13], legalName: "Empresa B S.A.", createdBy: adminId);
+            TenantId,
+            taxIdentificationNumber: $"180{TenantId:N}"[..13],
+            legalName: "Empresa B S.A.",
+            createdBy: adminId
+        );
         db.Companies.AddRange(companyA, companyB);
         await db.SaveChangesAsync();
         CompanyAId = companyA.Id;
         CompanyBId = companyB.Id;
 
-        var user = IdentityUser.Create($"ride-api-{Guid.NewGuid():N}", "Test", "User", $"ride-api-{Guid.NewGuid():N}@example.com", "hash", adminId);
+        var user = IdentityUser.Create(
+            $"ride-api-{Guid.NewGuid():N}",
+            "Test",
+            "User",
+            $"ride-api-{Guid.NewGuid():N}@example.com",
+            "hash",
+            adminId
+        );
         db.IdentityUsers.Add(user);
         await db.SaveChangesAsync();
         UserId = user.Id;
 
         // Usuario legítimo de AMBAS empresas — así "company diferente" prueba el filtro real de
         // datos (EF global query filter), no un simple 403 por falta de membership.
-        db.CompanyUserMemberships.Add(CompanyUserMembership.Create(CompanyAId, UserId, "ADMIN", null, adminId));
-        db.CompanyUserMemberships.Add(CompanyUserMembership.Create(CompanyBId, UserId, "ADMIN", null, adminId));
+        db.CompanyUserMemberships.Add(
+            CompanyUserMembership.Create(CompanyAId, UserId, "ADMIN", null, adminId)
+        );
+        db.CompanyUserMemberships.Add(
+            CompanyUserMembership.Create(CompanyBId, UserId, "ADMIN", null, adminId)
+        );
         await db.SaveChangesAsync();
     }
 
     /// <summary>Registra un ElectronicDocument Authorized con XML real para <paramref name="companyId"/>.</summary>
-    public async Task<Guid> SeedAuthorizedInvoiceAsync(Guid companyId, string sourceModule, Guid sourceEntityId)
+    public async Task<Guid> SeedAuthorizedInvoiceAsync(
+        Guid companyId,
+        string sourceModule,
+        Guid sourceEntityId
+    )
     {
         using var scope = Factory.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<ErpDbContext>();
@@ -133,23 +160,35 @@ public sealed class RideControllerIntegrationFixture : IAsyncLifetime
         var userId = Guid.NewGuid();
         // Clave de acceso única por documento (uq_electronic_document_access_key) — derivada de
         // sourceEntityId (único por llamada en esta suite), cada carácter hex mapeado a un dígito.
-        var hexDigits = sourceEntityId.ToString("N")
+        var hexDigits = sourceEntityId
+            .ToString("N")
             .Select(c => char.IsDigit(c) ? c : (char)('0' + (c - 'a')));
         var accessKeyDigits = (new string(hexDigits.ToArray()) + new string('9', 49))[..49];
         var document = ElectronicDocument.Create(
-            TenantId, companyId, ElectronicDocumentType.Invoice, sourceModule, sourceEntityId, userId);
+            TenantId,
+            companyId,
+            ElectronicDocumentType.Invoice,
+            sourceModule,
+            sourceEntityId,
+            userId
+        );
         document.MarkXmlGenerated("path/draft.xml", "1.1.0", "1.1.0", userId);
         document.MarkSigned("path/signed.xml", AccessKey.Create(accessKeyDigits), userId);
         document.MarkSent(userId);
         document.MarkReceived(userId);
 
-        var authorizedPath = $"electronic-documents/{TenantId:N}/invoice/{document.Id:N}/authorized.xml";
+        var authorizedPath =
+            $"electronic-documents/{TenantId:N}/invoice/{document.Id:N}/authorized.xml";
         var xml = RideApiTestXmlFactory.RealAuthorizedInvoiceXml();
         await using (var content = new MemoryStream(System.Text.Encoding.UTF8.GetBytes(xml)))
             await fileStorage.SaveAsync(authorizedPath, content);
 
         document.MarkAuthorized(
-            AuthorizationNumber.Create(accessKeyDigits), DateTime.UtcNow, authorizedPath, userId);
+            AuthorizationNumber.Create(accessKeyDigits),
+            DateTime.UtcNow,
+            authorizedPath,
+            userId
+        );
 
         db.ElectronicDocuments.Add(document);
         await db.SaveChangesAsync();
@@ -167,7 +206,9 @@ public sealed class RideControllerIntegrationTests : IClassFixture<RideControlle
     // la API serializa RideOutcome como string ("Generated", no 0). ReadFromJsonAsync<T> con
     // opciones por defecto no lo sabe y lanza JsonException al leer $.data.outcome — mismo
     // convertidor replicado aquí, solo dentro del test, sin tocar Program.cs ni los contratos.
-    private static readonly JsonSerializerOptions ResponseJsonOptions = new(JsonSerializerDefaults.Web)
+    private static readonly JsonSerializerOptions ResponseJsonOptions = new(
+        JsonSerializerDefaults.Web
+    )
     {
         Converters = { new JsonStringEnumConverter() },
     };
@@ -179,7 +220,9 @@ public sealed class RideControllerIntegrationTests : IClassFixture<RideControlle
     {
         using var anonymousClient = _f.Factory.CreateClient();
 
-        var response = await anonymousClient.GetAsync($"/api/v1/ride?sourceModule=Sales&sourceEntityId={Guid.NewGuid()}");
+        var response = await anonymousClient.GetAsync(
+            $"/api/v1/ride?sourceModule=Sales&sourceEntityId={Guid.NewGuid()}"
+        );
 
         response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
     }
@@ -191,10 +234,14 @@ public sealed class RideControllerIntegrationTests : IClassFixture<RideControlle
         var sourceEntityId = Guid.NewGuid();
         await _f.SeedAuthorizedInvoiceAsync(_f.CompanyAId, "Sales", sourceEntityId);
 
-        var response = await _f.Client.GetAsync($"/api/v1/ride?sourceModule=Sales&sourceEntityId={sourceEntityId}");
+        var response = await _f.Client.GetAsync(
+            $"/api/v1/ride?sourceModule=Sales&sourceEntityId={sourceEntityId}"
+        );
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
-        var body = await response.Content.ReadFromJsonAsync<RideApiResponseEnvelope>(ResponseJsonOptions);
+        var body = await response.Content.ReadFromJsonAsync<RideApiResponseEnvelope>(
+            ResponseJsonOptions
+        );
         body!.Data!.Outcome.Should().Be(RideOutcome.Generated);
         body.Data.StoragePath.Should().NotBeNullOrWhiteSpace();
     }
@@ -204,10 +251,14 @@ public sealed class RideControllerIntegrationTests : IClassFixture<RideControlle
     {
         _f.CurrentCompanyId = _f.CompanyAId;
 
-        var response = await _f.Client.GetAsync($"/api/v1/ride?sourceModule=Sales&sourceEntityId={Guid.NewGuid()}");
+        var response = await _f.Client.GetAsync(
+            $"/api/v1/ride?sourceModule=Sales&sourceEntityId={Guid.NewGuid()}"
+        );
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
-        var body = await response.Content.ReadFromJsonAsync<RideApiResponseEnvelope>(ResponseJsonOptions);
+        var body = await response.Content.ReadFromJsonAsync<RideApiResponseEnvelope>(
+            ResponseJsonOptions
+        );
         body!.Data!.Outcome.Should().Be(RideOutcome.NotApplicable);
     }
 
@@ -220,10 +271,14 @@ public sealed class RideControllerIntegrationTests : IClassFixture<RideControlle
         // Mismo usuario, contexto operativo en la OTRA empresa (miembro legítimo de ambas).
         _f.CurrentCompanyId = _f.CompanyBId;
 
-        var response = await _f.Client.GetAsync($"/api/v1/ride?sourceModule=Sales&sourceEntityId={sourceEntityId}");
+        var response = await _f.Client.GetAsync(
+            $"/api/v1/ride?sourceModule=Sales&sourceEntityId={sourceEntityId}"
+        );
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
-        var body = await response.Content.ReadFromJsonAsync<RideApiResponseEnvelope>(ResponseJsonOptions);
+        var body = await response.Content.ReadFromJsonAsync<RideApiResponseEnvelope>(
+            ResponseJsonOptions
+        );
         body!.Data!.Outcome.Should().Be(RideOutcome.NotApplicable);
     }
 
@@ -235,10 +290,14 @@ public sealed class RideControllerIntegrationTests : IClassFixture<RideControlle
         await _f.SeedAuthorizedInvoiceAsync(_f.CompanyAId, "Sales", sourceEntityId);
 
         var response = await _f.Client.PostAsJsonAsync(
-            "/api/v1/ride/regenerate", new { sourceModule = "Sales", sourceEntityId });
+            "/api/v1/ride/regenerate",
+            new { sourceModule = "Sales", sourceEntityId }
+        );
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
-        var body = await response.Content.ReadFromJsonAsync<RideApiResponseEnvelope>(ResponseJsonOptions);
+        var body = await response.Content.ReadFromJsonAsync<RideApiResponseEnvelope>(
+            ResponseJsonOptions
+        );
         body!.Data!.Outcome.Should().Be(RideOutcome.Generated);
     }
 
@@ -248,10 +307,14 @@ public sealed class RideControllerIntegrationTests : IClassFixture<RideControlle
         _f.CurrentCompanyId = _f.CompanyAId;
 
         var response = await _f.Client.PostAsJsonAsync(
-            "/api/v1/ride/regenerate", new { sourceModule = "Sales", sourceEntityId = Guid.NewGuid() });
+            "/api/v1/ride/regenerate",
+            new { sourceModule = "Sales", sourceEntityId = Guid.NewGuid() }
+        );
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
-        var body = await response.Content.ReadFromJsonAsync<RideApiResponseEnvelope>(ResponseJsonOptions);
+        var body = await response.Content.ReadFromJsonAsync<RideApiResponseEnvelope>(
+            ResponseJsonOptions
+        );
         body!.Data!.Outcome.Should().Be(RideOutcome.NotApplicable);
     }
 
@@ -263,10 +326,14 @@ public sealed class RideControllerIntegrationTests : IClassFixture<RideControlle
         _f.CurrentCompanyId = _f.CompanyBId;
 
         var response = await _f.Client.PostAsJsonAsync(
-            "/api/v1/ride/regenerate", new { sourceModule = "Sales", sourceEntityId });
+            "/api/v1/ride/regenerate",
+            new { sourceModule = "Sales", sourceEntityId }
+        );
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
-        var body = await response.Content.ReadFromJsonAsync<RideApiResponseEnvelope>(ResponseJsonOptions);
+        var body = await response.Content.ReadFromJsonAsync<RideApiResponseEnvelope>(
+            ResponseJsonOptions
+        );
         body!.Data!.Outcome.Should().Be(RideOutcome.NotApplicable);
     }
 }

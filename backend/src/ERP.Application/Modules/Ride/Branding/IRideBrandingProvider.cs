@@ -12,5 +12,10 @@ namespace ERP.Application.Modules.Ride.Branding;
 public interface IRideBrandingProvider
 {
     Task<Result<RideBranding>> GetAsync(
-        Guid tenantId, Guid companyId, Guid? branchId, Guid? emissionPointId, CancellationToken ct = default);
+        Guid tenantId,
+        Guid companyId,
+        Guid? branchId,
+        Guid? emissionPointId,
+        CancellationToken ct = default
+    );
 }

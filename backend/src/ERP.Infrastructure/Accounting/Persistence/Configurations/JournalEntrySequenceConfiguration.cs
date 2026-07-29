@@ -4,12 +4,15 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace ERP.Infrastructure.Accounting.Persistence.Configurations;
 
-public sealed class JournalEntrySequenceConfiguration : IEntityTypeConfiguration<JournalEntrySequence>
+public sealed class JournalEntrySequenceConfiguration
+    : IEntityTypeConfiguration<JournalEntrySequence>
 {
     public void Configure(EntityTypeBuilder<JournalEntrySequence> builder)
     {
-        builder.ToTable("journal_entry_sequences", t =>
-            t.HasCheckConstraint("chk_journal_entry_seq_non_negative", "last_number >= 0"));
+        builder.ToTable(
+            "journal_entry_sequences",
+            t => t.HasCheckConstraint("chk_journal_entry_seq_non_negative", "last_number >= 0")
+        );
 
         builder.HasKey(x => x.Id);
         builder.Property(x => x.Id).HasColumnName("id").IsRequired();
@@ -23,7 +26,13 @@ public sealed class JournalEntrySequenceConfiguration : IEntityTypeConfiguration
         // Una fila por (CompanyId, FiscalYear) — el advisory lock de
         // JournalEntrySequenceRepository.ReserveNextNumberAsync serializa la creación on-demand
         // de esta fila; este índice es la garantía final a nivel de BD.
-        builder.HasIndex(x => new { x.TenantId, x.CompanyId, x.FiscalYear })
+        builder
+            .HasIndex(x => new
+            {
+                x.TenantId,
+                x.CompanyId,
+                x.FiscalYear,
+            })
             .IsUnique()
             .HasDatabaseName("uq_journal_entry_sequences_company_fiscal_year");
     }

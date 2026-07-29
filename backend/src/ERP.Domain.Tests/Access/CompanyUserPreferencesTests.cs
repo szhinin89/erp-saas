@@ -8,9 +8,16 @@ public sealed class CompanyUserPreferencesTests
 {
     private static CompanyUserPreferences CreateEntity(
         CompanyUserLoginMode loginMode = CompanyUserLoginMode.AskBranch,
-        Guid? defaultBranchId = null) =>
+        Guid? defaultBranchId = null
+    ) =>
         CompanyUserPreferences.Create(
-            Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), loginMode, defaultBranchId, Guid.NewGuid());
+            Guid.NewGuid(),
+            Guid.NewGuid(),
+            Guid.NewGuid(),
+            loginMode,
+            defaultBranchId,
+            Guid.NewGuid()
+        );
 
     [Fact]
     public void Create_con_AskBranch_y_sin_sucursal_por_defecto_es_valida()
@@ -38,8 +45,13 @@ public sealed class CompanyUserPreferencesTests
         var createdBy = Guid.NewGuid();
 
         var entity = CompanyUserPreferences.Create(
-            Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(),
-            CompanyUserLoginMode.AskBranch, null, createdBy);
+            Guid.NewGuid(),
+            Guid.NewGuid(),
+            Guid.NewGuid(),
+            CompanyUserLoginMode.AskBranch,
+            null,
+            createdBy
+        );
 
         entity.CreatedBy.Should().Be(createdBy);
     }
@@ -47,9 +59,15 @@ public sealed class CompanyUserPreferencesTests
     [Fact]
     public void Create_con_DirectToDefault_sin_sucursal_por_defecto_lanza_ArgumentException()
     {
-        var act = () => CompanyUserPreferences.Create(
-            Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(),
-            CompanyUserLoginMode.DirectToDefault, null, Guid.NewGuid());
+        var act = () =>
+            CompanyUserPreferences.Create(
+                Guid.NewGuid(),
+                Guid.NewGuid(),
+                Guid.NewGuid(),
+                CompanyUserLoginMode.DirectToDefault,
+                null,
+                Guid.NewGuid()
+            );
 
         act.Should().Throw<ArgumentException>();
     }
@@ -57,9 +75,15 @@ public sealed class CompanyUserPreferencesTests
     [Fact]
     public void Create_con_CompanyId_vacio_lanza_ArgumentException()
     {
-        var act = () => CompanyUserPreferences.Create(
-            Guid.NewGuid(), Guid.Empty, Guid.NewGuid(),
-            CompanyUserLoginMode.AskBranch, null, Guid.NewGuid());
+        var act = () =>
+            CompanyUserPreferences.Create(
+                Guid.NewGuid(),
+                Guid.Empty,
+                Guid.NewGuid(),
+                CompanyUserLoginMode.AskBranch,
+                null,
+                Guid.NewGuid()
+            );
 
         act.Should().Throw<ArgumentException>();
     }
@@ -67,9 +91,15 @@ public sealed class CompanyUserPreferencesTests
     [Fact]
     public void Create_con_CompanyUserMembershipId_vacio_lanza_ArgumentException()
     {
-        var act = () => CompanyUserPreferences.Create(
-            Guid.NewGuid(), Guid.NewGuid(), Guid.Empty,
-            CompanyUserLoginMode.AskBranch, null, Guid.NewGuid());
+        var act = () =>
+            CompanyUserPreferences.Create(
+                Guid.NewGuid(),
+                Guid.NewGuid(),
+                Guid.Empty,
+                CompanyUserLoginMode.AskBranch,
+                null,
+                Guid.NewGuid()
+            );
 
         act.Should().Throw<ArgumentException>();
     }
@@ -77,9 +107,15 @@ public sealed class CompanyUserPreferencesTests
     [Fact]
     public void Create_con_DefaultBranchId_Guid_Empty_lanza_ArgumentException()
     {
-        var act = () => CompanyUserPreferences.Create(
-            Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(),
-            CompanyUserLoginMode.AskBranch, Guid.Empty, Guid.NewGuid());
+        var act = () =>
+            CompanyUserPreferences.Create(
+                Guid.NewGuid(),
+                Guid.NewGuid(),
+                Guid.NewGuid(),
+                CompanyUserLoginMode.AskBranch,
+                Guid.Empty,
+                Guid.NewGuid()
+            );
 
         act.Should().Throw<ArgumentException>();
     }
@@ -161,7 +197,8 @@ public sealed class CompanyUserPreferencesTests
     {
         var entity = CreateEntity(CompanyUserLoginMode.AskBranch, defaultBranchId: null);
 
-        var act = () => entity.ChangeLoginMode(CompanyUserLoginMode.DirectToDefault, Guid.NewGuid());
+        var act = () =>
+            entity.ChangeLoginMode(CompanyUserLoginMode.DirectToDefault, Guid.NewGuid());
 
         act.Should().Throw<ArgumentException>();
     }

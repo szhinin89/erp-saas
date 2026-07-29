@@ -15,7 +15,13 @@ public sealed record RideTaxSummary
     public decimal TaxableBase { get; }
     public decimal TaxAmount { get; }
 
-    private RideTaxSummary(string taxCode, string taxPercentageCode, decimal? rate, decimal taxableBase, decimal taxAmount)
+    private RideTaxSummary(
+        string taxCode,
+        string taxPercentageCode,
+        decimal? rate,
+        decimal taxableBase,
+        decimal taxAmount
+    )
     {
         TaxCode = taxCode;
         TaxPercentageCode = taxPercentageCode;
@@ -24,19 +30,40 @@ public sealed record RideTaxSummary
         TaxAmount = taxAmount;
     }
 
-    public static RideTaxSummary Create(string taxCode, string taxPercentageCode, decimal taxableBase, decimal taxAmount, decimal? rate = null)
+    public static RideTaxSummary Create(
+        string taxCode,
+        string taxPercentageCode,
+        decimal taxableBase,
+        decimal taxAmount,
+        decimal? rate = null
+    )
     {
         if (string.IsNullOrWhiteSpace(taxCode))
             throw new ArgumentException("El código de impuesto es obligatorio.", nameof(taxCode));
         if (string.IsNullOrWhiteSpace(taxPercentageCode))
-            throw new ArgumentException("El código de porcentaje es obligatorio.", nameof(taxPercentageCode));
+            throw new ArgumentException(
+                "El código de porcentaje es obligatorio.",
+                nameof(taxPercentageCode)
+            );
         if (taxableBase < 0)
-            throw new ArgumentException("La base imponible no puede ser negativa.", nameof(taxableBase));
+            throw new ArgumentException(
+                "La base imponible no puede ser negativa.",
+                nameof(taxableBase)
+            );
         if (taxAmount < 0)
-            throw new ArgumentException("El valor del impuesto no puede ser negativo.", nameof(taxAmount));
+            throw new ArgumentException(
+                "El valor del impuesto no puede ser negativo.",
+                nameof(taxAmount)
+            );
         if (rate is < 0)
             throw new ArgumentException("La tarifa no puede ser negativa.", nameof(rate));
 
-        return new RideTaxSummary(taxCode.Trim(), taxPercentageCode.Trim(), rate, taxableBase, taxAmount);
+        return new RideTaxSummary(
+            taxCode.Trim(),
+            taxPercentageCode.Trim(),
+            rate,
+            taxableBase,
+            taxAmount
+        );
     }
 }

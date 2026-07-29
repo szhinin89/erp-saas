@@ -22,11 +22,21 @@ public sealed class PricingRuleAudit : AuditRecordBase, ICompanyOperationalEntit
     private PricingRuleAudit() { }
 
     public static PricingRuleAudit Create(
-        AuditActor actor, Guid companyId, Guid ruleId, Guid priceListId, Guid itemId, string action,
-        PricingRuleType oldRuleType, decimal oldRuleValue, PricingRuleType newRuleType, decimal newRuleValue,
-        string? reason = null)
+        AuditActor actor,
+        Guid companyId,
+        Guid ruleId,
+        Guid priceListId,
+        Guid itemId,
+        string action,
+        PricingRuleType oldRuleType,
+        decimal oldRuleValue,
+        PricingRuleType newRuleType,
+        decimal newRuleValue,
+        string? reason = null
+    )
     {
-        if (companyId == Guid.Empty) throw new ArgumentException("companyId requerido.", nameof(companyId));
+        if (companyId == Guid.Empty)
+            throw new ArgumentException("companyId requerido.", nameof(companyId));
 
         var audit = new PricingRuleAudit
         {

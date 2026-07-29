@@ -13,8 +13,18 @@ public sealed class ElectronicDocumentStorageNamingStrategyTests
         var tenantId = Guid.NewGuid();
         var docId = Guid.NewGuid();
 
-        var draft = strategy.BuildRelativePath(tenantId, ElectronicDocumentType.Invoice, docId, ElectronicDocumentXmlVariant.Draft);
-        var signed = strategy.BuildRelativePath(tenantId, ElectronicDocumentType.Invoice, docId, ElectronicDocumentXmlVariant.Signed);
+        var draft = strategy.BuildRelativePath(
+            tenantId,
+            ElectronicDocumentType.Invoice,
+            docId,
+            ElectronicDocumentXmlVariant.Draft
+        );
+        var signed = strategy.BuildRelativePath(
+            tenantId,
+            ElectronicDocumentType.Invoice,
+            docId,
+            ElectronicDocumentXmlVariant.Signed
+        );
 
         draft.Should().NotBe(signed);
         draft.Should().EndWith("draft.xml");
@@ -31,8 +41,18 @@ public sealed class ElectronicDocumentStorageNamingStrategyTests
         var tenantId = Guid.NewGuid();
         var docId = Guid.NewGuid();
 
-        var first = strategy.BuildRelativePath(tenantId, ElectronicDocumentType.Invoice, docId, ElectronicDocumentXmlVariant.Draft);
-        var second = strategy.BuildRelativePath(tenantId, ElectronicDocumentType.Invoice, docId, ElectronicDocumentXmlVariant.Draft);
+        var first = strategy.BuildRelativePath(
+            tenantId,
+            ElectronicDocumentType.Invoice,
+            docId,
+            ElectronicDocumentXmlVariant.Draft
+        );
+        var second = strategy.BuildRelativePath(
+            tenantId,
+            ElectronicDocumentType.Invoice,
+            docId,
+            ElectronicDocumentXmlVariant.Draft
+        );
 
         first.Should().Be(second);
     }

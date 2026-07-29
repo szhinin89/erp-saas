@@ -40,7 +40,12 @@ public sealed class PostingRuleLinePersistenceTests : IAsyncLifetime
 
         _createdBy = Guid.NewGuid();
         var tenant = Tenant.Create("Test Tenant", $"test-{Guid.NewGuid():N}"[..16], _createdBy);
-        var company = Company.CreateManaged(tenant.Id, "1790012345001", "Test S.A.", createdBy: _createdBy);
+        var company = Company.CreateManaged(
+            tenant.Id,
+            "1790012345001",
+            "Test S.A.",
+            createdBy: _createdBy
+        );
 
         db.Tenants.Add(tenant);
         db.Companies.Add(company);
@@ -58,7 +63,12 @@ public sealed class PostingRuleLinePersistenceTests : IAsyncLifetime
             .UseNpgsql(_postgres.GetConnectionString())
             .Options;
 
-        return new ErpDbContext(options, new FixedCurrentTenant(_tenantId), new NoOpPublisher(), new FixedCurrentCompany(_companyId));
+        return new ErpDbContext(
+            options,
+            new FixedCurrentTenant(_tenantId),
+            new NoOpPublisher(),
+            new FixedCurrentCompany(_companyId)
+        );
     }
 
     private PostingRule BuildRuleWithLines(out Guid debitAccountId, out Guid creditAccountId)
@@ -66,7 +76,16 @@ public sealed class PostingRuleLinePersistenceTests : IAsyncLifetime
         debitAccountId = Guid.NewGuid();
         creditAccountId = Guid.NewGuid();
 
-        var rule = PostingRule.Create(_tenantId, _companyId, "Sales", "InvoiceIssued", null, null, null, _createdBy);
+        var rule = PostingRule.Create(
+            _tenantId,
+            _companyId,
+            "Sales",
+            "InvoiceIssued",
+            null,
+            null,
+            null,
+            _createdBy
+        );
         rule.AddLine(debitAccountId, AccountNature.Debit, PostingAmountKind.Subtotal);
         rule.AddLine(creditAccountId, AccountNature.Credit, PostingAmountKind.TaxVat);
         return rule;
@@ -96,11 +115,25 @@ public sealed class PostingRuleLinePersistenceTests : IAsyncLifetime
         await db.SaveChangesAsync();
 
         await using var verifyDb = CreateContext();
-        var loaded = await verifyDb.PostingRules.Include(x => x.Lines).FirstAsync(x => x.Id == rule.Id);
+        var loaded = await verifyDb
+            .PostingRules.Include(x => x.Lines)
+            .FirstAsync(x => x.Id == rule.Id);
 
         loaded.Lines.Should().HaveCount(2);
-        loaded.Lines.Should().Contain(l => l.AccountId == debitAccountId && l.Nature == AccountNature.Debit && l.AmountKind == PostingAmountKind.Subtotal);
-        loaded.Lines.Should().Contain(l => l.AccountId == creditAccountId && l.Nature == AccountNature.Credit && l.AmountKind == PostingAmountKind.TaxVat);
+        loaded
+            .Lines.Should()
+            .Contain(l =>
+                l.AccountId == debitAccountId
+                && l.Nature == AccountNature.Debit
+                && l.AmountKind == PostingAmountKind.Subtotal
+            );
+        loaded
+            .Lines.Should()
+            .Contain(l =>
+                l.AccountId == creditAccountId
+                && l.Nature == AccountNature.Credit
+                && l.AmountKind == PostingAmountKind.TaxVat
+            );
     }
 
     [Fact]
@@ -110,7 +143,16 @@ public sealed class PostingRuleLinePersistenceTests : IAsyncLifetime
         // FK — la validación de existencia/pertenencia a la Company es responsabilidad de
         // Application/Infrastructure al resolver, no de la base de datos. Esto contrasta
         // deliberadamente con JournalEntryLine.AccountId, que sí tiene FK real.
-        var rule = PostingRule.Create(_tenantId, _companyId, "Sales", "InvoiceIssued", null, null, null, _createdBy);
+        var rule = PostingRule.Create(
+            _tenantId,
+            _companyId,
+            "Sales",
+            "InvoiceIssued",
+            null,
+            null,
+            null,
+            _createdBy
+        );
         rule.AddLine(Guid.NewGuid(), AccountNature.Debit, PostingAmountKind.Subtotal);
 
         await using var db = CreateContext();
@@ -140,7 +182,9 @@ public sealed class PostingRuleLinePersistenceTests : IAsyncLifetime
 
         await using var verifyDb = CreateContext();
         var remaining = await verifyDb.PostingRuleLines.CountAsync(x => x.PostingRuleId == rule.Id);
-        remaining.Should().Be(0, because: "ON DELETE CASCADE elimina las líneas junto con su regla padre");
+        remaining
+            .Should()
+            .Be(0, because: "ON DELETE CASCADE elimina las líneas junto con su regla padre");
     }
 
     private sealed class FixedCurrentTenant(Guid tenantId) : ICurrentTenant
@@ -158,11 +202,13 @@ public sealed class PostingRuleLinePersistenceTests : IAsyncLifetime
 
     private sealed class NoOpPublisher : IPublisher
     {
-        public Task Publish(object notification, CancellationToken cancellationToken = default)
-            => Task.CompletedTask;
+        public Task Publish(object notification, CancellationToken cancellationToken = default) =>
+            Task.CompletedTask;
 
-        public Task Publish<TNotification>(TNotification notification, CancellationToken cancellationToken = default)
-            where TNotification : INotification
-            => Task.CompletedTask;
+        public Task Publish<TNotification>(
+            TNotification notification,
+            CancellationToken cancellationToken = default
+        )
+            where TNotification : INotification => Task.CompletedTask;
     }
 }

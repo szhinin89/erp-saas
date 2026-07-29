@@ -1,4 +1,4 @@
-﻿namespace ERP.Application.Common.Interfaces;
+namespace ERP.Application.Common.Interfaces;
 
 /// <summary>
 /// Seeds the default access profiles for a newly created tenant. Currently seeds only "DataEntry";
@@ -13,5 +13,9 @@ public interface IDefaultProfileSeeder
     /// Creates the default profiles and their permissions for <paramref name="tenantId"/>.
     /// Idempotent — safe to call on a tenant that already has the profiles.
     /// </summary>
-    Task SeedForTenantAsync(Guid tenantId, Guid actorId, CancellationToken cancellationToken = default);
+    Task SeedForTenantAsync(
+        Guid tenantId,
+        Guid actorId,
+        CancellationToken cancellationToken = default
+    );
 }

@@ -1,4 +1,4 @@
-﻿using ERP.Domain.Tenants.Entities;
+using ERP.Domain.Tenants.Entities;
 
 namespace ERP.Domain.Tenants.Interfaces;
 

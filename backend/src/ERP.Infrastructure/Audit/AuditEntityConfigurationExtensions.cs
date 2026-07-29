@@ -14,7 +14,10 @@ namespace ERP.Infrastructure.Audit;
 /// </summary>
 public static class AuditEntityConfigurationExtensions
 {
-    public static void ConfigureAuditBase<TAudit>(this EntityTypeBuilder<TAudit> builder, string tableName)
+    public static void ConfigureAuditBase<TAudit>(
+        this EntityTypeBuilder<TAudit> builder,
+        string tableName
+    )
         where TAudit : AuditRecordBase
     {
         builder.ToTable(tableName);
@@ -32,9 +35,21 @@ public static class AuditEntityConfigurationExtensions
         builder.Property(x => x.Source).HasColumnName("source").HasConversion<int>().IsRequired();
         builder.Property(x => x.Reason).HasColumnName("reason").HasMaxLength(500);
 
-        builder.HasIndex(x => new { x.TenantId, x.EntityId, x.OccurredAtUtc })
+        builder
+            .HasIndex(x => new
+            {
+                x.TenantId,
+                x.EntityId,
+                x.OccurredAtUtc,
+            })
             .HasDatabaseName($"ix_{tableName}_entity_occurred_at");
-        builder.HasIndex(x => new { x.TenantId, x.UserId, x.OccurredAtUtc })
+        builder
+            .HasIndex(x => new
+            {
+                x.TenantId,
+                x.UserId,
+                x.OccurredAtUtc,
+            })
             .HasDatabaseName($"ix_{tableName}_user_occurred_at");
     }
 }

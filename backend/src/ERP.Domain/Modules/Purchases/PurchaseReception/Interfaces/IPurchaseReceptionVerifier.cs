@@ -9,5 +9,7 @@ namespace ERP.Domain.Modules.Purchases.PurchaseReception.Interfaces;
 public interface IPurchaseReceptionVerifier
 {
     Task<IReadOnlyList<PurchaseReceptionVerifiedItem>> VerifyAsync(
-        IReadOnlyList<PurchaseReceptionRecord> records, CancellationToken cancellationToken = default);
+        IReadOnlyList<PurchaseReceptionRecord> records,
+        CancellationToken cancellationToken = default
+    );
 }

@@ -1,11 +1,11 @@
-using ERP.Infrastructure.Services.Sri;
-using FluentAssertions;
 using System.Globalization;
 using System.Numerics;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 using System.Security.Cryptography.Xml;
 using System.Xml;
+using ERP.Infrastructure.Services.Sri;
+using FluentAssertions;
 
 namespace ERP.Infrastructure.Tests.Services.Sri;
 
@@ -22,9 +22,9 @@ namespace ERP.Infrastructure.Tests.Services.Sri;
 public sealed class XadesBesSignerTests
 {
     private const string SampleXml =
-        "<factura id=\"comprobante\" version=\"1.1.0\">" +
-        "<infoTributaria><ruc>1790012345001</ruc><claveAcceso>0000000000000000000000000000000000000000000000</claveAcceso></infoTributaria>" +
-        "</factura>";
+        "<factura id=\"comprobante\" version=\"1.1.0\">"
+        + "<infoTributaria><ruc>1790012345001</ruc><claveAcceso>0000000000000000000000000000000000000000000000</claveAcceso></infoTributaria>"
+        + "</factura>";
 
     [Fact]
     public void Sign_produces_a_signature_that_passes_SignedXml_CheckSignature()
@@ -32,7 +32,11 @@ public sealed class XadesBesSignerTests
         var p12Path = TestP12CertificateFactory.CreateTempP12File();
         try
         {
-            var signedBytes = XadesBesSigner.Sign(SampleXml, p12Path, TestP12CertificateFactory.Password);
+            var signedBytes = XadesBesSigner.Sign(
+                SampleXml,
+                p12Path,
+                TestP12CertificateFactory.Password
+            );
 
             var doc = new XmlDocument { PreserveWhitespace = true };
             using (var ms = new MemoryStream(signedBytes))
@@ -41,16 +45,21 @@ public sealed class XadesBesSignerTests
             var nsMgr = new XmlNamespaceManager(doc.NameTable);
             nsMgr.AddNamespace("ds", "http://www.w3.org/2000/09/xmldsig#");
             var signatureNode = doc.SelectSingleNode("//ds:Signature", nsMgr) as XmlElement;
-            signatureNode.Should().NotBeNull("el XML firmado debe contener un elemento ds:Signature embebido");
+            signatureNode
+                .Should()
+                .NotBeNull("el XML firmado debe contener un elemento ds:Signature embebido");
 
             var signedXml = new XadesSignedXml(doc);
             signedXml.LoadXml(signatureNode!);
 
             var isValid = signedXml.CheckSignature();
 
-            isValid.Should().BeTrue(
-                "SignedXml.CheckSignature() debe validar tanto los digests de las referencias " +
-                "como la firma criptográfica contra la clave pública del certificado embebido");
+            isValid
+                .Should()
+                .BeTrue(
+                    "SignedXml.CheckSignature() debe validar tanto los digests de las referencias "
+                        + "como la firma criptográfica contra la clave pública del certificado embebido"
+                );
         }
         finally
         {
@@ -69,10 +78,10 @@ public sealed class XadesBesSignerTests
         var p12Path = TestP12CertificateFactory.CreateExpiredTempP12File();
         try
         {
-            var act = () => XadesBesSigner.Sign(SampleXml, p12Path, TestP12CertificateFactory.Password);
+            var act = () =>
+                XadesBesSigner.Sign(SampleXml, p12Path, TestP12CertificateFactory.Password);
 
-            act.Should().Throw<InvalidOperationException>()
-                .WithMessage("*no está vigente*");
+            act.Should().Throw<InvalidOperationException>().WithMessage("*no está vigente*");
         }
         finally
         {
@@ -86,10 +95,10 @@ public sealed class XadesBesSignerTests
         var p12Path = TestP12CertificateFactory.CreateNotYetValidTempP12File();
         try
         {
-            var act = () => XadesBesSigner.Sign(SampleXml, p12Path, TestP12CertificateFactory.Password);
+            var act = () =>
+                XadesBesSigner.Sign(SampleXml, p12Path, TestP12CertificateFactory.Password);
 
-            act.Should().Throw<InvalidOperationException>()
-                .WithMessage("*no está vigente*");
+            act.Should().Throw<InvalidOperationException>().WithMessage("*no está vigente*");
         }
         finally
         {
@@ -103,7 +112,11 @@ public sealed class XadesBesSignerTests
         var p12Path = TestP12CertificateFactory.CreateTempP12File();
         try
         {
-            var signedBytes = XadesBesSigner.Sign(SampleXml, p12Path, TestP12CertificateFactory.Password);
+            var signedBytes = XadesBesSigner.Sign(
+                SampleXml,
+                p12Path,
+                TestP12CertificateFactory.Password
+            );
 
             var doc = new XmlDocument { PreserveWhitespace = true };
             using (var ms = new MemoryStream(signedBytes))
@@ -113,7 +126,10 @@ public sealed class XadesBesSignerTests
             nsMgr.AddNamespace("ds", "http://www.w3.org/2000/09/xmldsig#");
 
             doc.SelectSingleNode("//ds:KeyInfo/ds:X509Data/ds:X509Certificate", nsMgr)
-                .Should().NotBeNull("la firma debe incluir el certificado X.509 en KeyInfo (KeyInfoX509Data)");
+                .Should()
+                .NotBeNull(
+                    "la firma debe incluir el certificado X.509 en KeyInfo (KeyInfoX509Data)"
+                );
         }
         finally
         {
@@ -127,7 +143,11 @@ public sealed class XadesBesSignerTests
         var p12Path = TestP12CertificateFactory.CreateTempP12File();
         try
         {
-            var signedBytes = XadesBesSigner.Sign(SampleXml, p12Path, TestP12CertificateFactory.Password);
+            var signedBytes = XadesBesSigner.Sign(
+                SampleXml,
+                p12Path,
+                TestP12CertificateFactory.Password
+            );
 
             var doc = new XmlDocument { PreserveWhitespace = true };
             using (var ms = new MemoryStream(signedBytes))
@@ -136,8 +156,11 @@ public sealed class XadesBesSignerTests
             var nsMgr = new XmlNamespaceManager(doc.NameTable);
             nsMgr.AddNamespace("xades", "http://uri.etsi.org/01903/v1.3.2#");
 
-            var qualifyingProps = doc.SelectSingleNode("//xades:QualifyingProperties", nsMgr) as XmlElement;
-            qualifyingProps.Should().NotBeNull("XAdES-BES exige QualifyingProperties dentro del DataObject");
+            var qualifyingProps =
+                doc.SelectSingleNode("//xades:QualifyingProperties", nsMgr) as XmlElement;
+            qualifyingProps
+                .Should()
+                .NotBeNull("XAdES-BES exige QualifyingProperties dentro del DataObject");
 
             var signedProps = doc.SelectSingleNode("//xades:SignedProperties", nsMgr) as XmlElement;
             signedProps.Should().NotBeNull();
@@ -160,7 +183,11 @@ public sealed class XadesBesSignerTests
         var p12Path = TestP12CertificateFactory.CreateTempP12File();
         try
         {
-            var signedBytes = XadesBesSigner.Sign(SampleXml, p12Path, TestP12CertificateFactory.Password);
+            var signedBytes = XadesBesSigner.Sign(
+                SampleXml,
+                p12Path,
+                TestP12CertificateFactory.Password
+            );
 
             var doc = new XmlDocument { PreserveWhitespace = true };
             using (var ms = new MemoryStream(signedBytes))
@@ -171,22 +198,36 @@ public sealed class XadesBesSignerTests
 
             var keyInfo = doc.SelectSingleNode("//ds:Signature/ds:KeyInfo", nsMgr) as XmlElement;
             keyInfo.Should().NotBeNull();
-            keyInfo!.GetAttribute("Id").Should().NotBeNullOrEmpty(
-                "KeyInfo debe tener un Id propio para poder ser referenciado desde SignedInfo");
+            keyInfo!
+                .GetAttribute("Id")
+                .Should()
+                .NotBeNullOrEmpty(
+                    "KeyInfo debe tener un Id propio para poder ser referenciado desde SignedInfo"
+                );
 
             var references = doc.SelectNodes("//ds:Signature/ds:SignedInfo/ds:Reference", nsMgr)!;
-            references.Count.Should().Be(3, "el Anexo 14 exige 3 referencias: documento, SignedProperties y KeyInfo");
+            references
+                .Count.Should()
+                .Be(3, "el Anexo 14 exige 3 referencias: documento, SignedProperties y KeyInfo");
 
             var certReferenceUri = "#" + keyInfo.GetAttribute("Id");
-            var hasCertReference = references.OfType<XmlElement>()
+            var hasCertReference = references
+                .OfType<XmlElement>()
                 .Any(r => r.GetAttribute("URI") == certReferenceUri);
-            hasCertReference.Should().BeTrue(
-                "debe existir una <ds:Reference> cuyo URI apunte al Id de KeyInfo, cubriéndolo con la firma");
+            hasCertReference
+                .Should()
+                .BeTrue(
+                    "debe existir una <ds:Reference> cuyo URI apunte al Id de KeyInfo, cubriéndolo con la firma"
+                );
 
             var signedXml = new XadesSignedXml(doc);
             signedXml.LoadXml((doc.SelectSingleNode("//ds:Signature", nsMgr) as XmlElement)!);
-            signedXml.CheckSignature().Should().BeTrue(
-                "la referencia a KeyInfo debe validar su digest correctamente, no solo estar presente");
+            signedXml
+                .CheckSignature()
+                .Should()
+                .BeTrue(
+                    "la referencia a KeyInfo debe validar su digest correctamente, no solo estar presente"
+                );
         }
         finally
         {
@@ -210,14 +251,23 @@ public sealed class XadesBesSignerTests
         try
         {
             var cert = X509CertificateLoader.LoadPkcs12FromFile(
-                p12Path, TestP12CertificateFactory.Password,
-                X509KeyStorageFlags.Exportable);
+                p12Path,
+                TestP12CertificateFactory.Password,
+                X509KeyStorageFlags.Exportable
+            );
             var serialBytes = cert.GetSerialNumber();
             Array.Reverse(serialBytes);
-            var expectedDecimal = new BigInteger(serialBytes, isUnsigned: true, isBigEndian: true)
-                .ToString(CultureInfo.InvariantCulture);
+            var expectedDecimal = new BigInteger(
+                serialBytes,
+                isUnsigned: true,
+                isBigEndian: true
+            ).ToString(CultureInfo.InvariantCulture);
 
-            var signedBytes = XadesBesSigner.Sign(SampleXml, p12Path, TestP12CertificateFactory.Password);
+            var signedBytes = XadesBesSigner.Sign(
+                SampleXml,
+                p12Path,
+                TestP12CertificateFactory.Password
+            );
 
             var doc = new XmlDocument { PreserveWhitespace = true };
             using (var ms = new MemoryStream(signedBytes))
@@ -228,10 +278,18 @@ public sealed class XadesBesSignerTests
 
             var serialNode = doc.SelectSingleNode("//ds:X509SerialNumber", nsMgr);
             serialNode.Should().NotBeNull();
-            serialNode!.InnerText.Should().MatchRegex("^[0-9]+$",
-                "ds:X509SerialNumber es xsd:integer — el SRI lo rechaza si contiene dígitos hexadecimales A-F");
-            serialNode.InnerText.Should().Be(expectedDecimal,
-                "debe representar el mismo número de serie del certificado, solo que en base 10");
+            serialNode!
+                .InnerText.Should()
+                .MatchRegex(
+                    "^[0-9]+$",
+                    "ds:X509SerialNumber es xsd:integer — el SRI lo rechaza si contiene dígitos hexadecimales A-F"
+                );
+            serialNode
+                .InnerText.Should()
+                .Be(
+                    expectedDecimal,
+                    "debe representar el mismo número de serie del certificado, solo que en base 10"
+                );
         }
         finally
         {
@@ -245,7 +303,11 @@ public sealed class XadesBesSignerTests
         var p12Path = TestP12CertificateFactory.CreateTempP12File();
         try
         {
-            var signedBytes = XadesBesSigner.Sign(SampleXml, p12Path, TestP12CertificateFactory.Password);
+            var signedBytes = XadesBesSigner.Sign(
+                SampleXml,
+                p12Path,
+                TestP12CertificateFactory.Password
+            );
 
             var doc = new XmlDocument { PreserveWhitespace = true };
             using (var ms = new MemoryStream(signedBytes))
@@ -256,8 +318,12 @@ public sealed class XadesBesSignerTests
 
             var signingTime = doc.SelectSingleNode("//xades:SigningTime", nsMgr);
             signingTime.Should().NotBeNull();
-            signingTime!.InnerText.Should().EndWith("Z",
-                "el ejemplo oficial del Anexo 14 usa un offset explícito (ej. -05:00); UTC sin offset es ambiguo");
+            signingTime!
+                .InnerText.Should()
+                .EndWith(
+                    "Z",
+                    "el ejemplo oficial del Anexo 14 usa un offset explícito (ej. -05:00); UTC sin offset es ambiguo"
+                );
         }
         finally
         {
@@ -271,7 +337,11 @@ public sealed class XadesBesSignerTests
         var p12Path = TestP12CertificateFactory.CreateTempP12File();
         try
         {
-            var signedBytes = XadesBesSigner.Sign(SampleXml, p12Path, TestP12CertificateFactory.Password);
+            var signedBytes = XadesBesSigner.Sign(
+                SampleXml,
+                p12Path,
+                TestP12CertificateFactory.Password
+            );
 
             var doc = new XmlDocument { PreserveWhitespace = true };
             using (var ms = new MemoryStream(signedBytes))
@@ -280,8 +350,15 @@ public sealed class XadesBesSignerTests
             var nsMgr = new XmlNamespaceManager(doc.NameTable);
             nsMgr.AddNamespace("xades", "http://uri.etsi.org/01903/v1.3.2#");
 
-            var mimeType = doc.SelectSingleNode("//xades:SignedDataObjectProperties/xades:DataObjectFormat/xades:MimeType", nsMgr);
-            mimeType.Should().NotBeNull("el Anexo 14 incluye SignedDataObjectProperties/DataObjectFormat/MimeType");
+            var mimeType = doc.SelectSingleNode(
+                "//xades:SignedDataObjectProperties/xades:DataObjectFormat/xades:MimeType",
+                nsMgr
+            );
+            mimeType
+                .Should()
+                .NotBeNull(
+                    "el Anexo 14 incluye SignedDataObjectProperties/DataObjectFormat/MimeType"
+                );
             mimeType!.InnerText.Should().Be("text/xml");
         }
         finally
@@ -303,7 +380,11 @@ public sealed class XadesBesSignerTests
         var p12Path = TestP12CertificateFactory.CreateTempP12File();
         try
         {
-            var signedBytes = XadesBesSigner.Sign(SampleXml, p12Path, TestP12CertificateFactory.Password);
+            var signedBytes = XadesBesSigner.Sign(
+                SampleXml,
+                p12Path,
+                TestP12CertificateFactory.Password
+            );
 
             var doc = new XmlDocument { PreserveWhitespace = true };
             using (var ms = new MemoryStream(signedBytes))
@@ -314,17 +395,25 @@ public sealed class XadesBesSignerTests
 
             var references = doc.SelectNodes("//ds:Signature/ds:SignedInfo/ds:Reference", nsMgr)!;
             var uris = references.OfType<XmlElement>().Select(r => r.GetAttribute("URI")).ToList();
-            uris.Should().Contain("#comprobante",
-                "el validador del SRI exige que la referencia al documento apunte explícitamente " +
-                "al Id del elemento raíz (id=\"comprobante\"), no Uri=\"\"");
-            uris.Should().NotContain("",
-                "Uri=\"\" es válido para XMLDSig genérico pero el SRI lo rechaza con " +
-                "\"El nodo [comprobante] no se encuentra firmado\"");
+            uris.Should()
+                .Contain(
+                    "#comprobante",
+                    "el validador del SRI exige que la referencia al documento apunte explícitamente "
+                        + "al Id del elemento raíz (id=\"comprobante\"), no Uri=\"\""
+                );
+            uris.Should()
+                .NotContain(
+                    "",
+                    "Uri=\"\" es válido para XMLDSig genérico pero el SRI lo rechaza con "
+                        + "\"El nodo [comprobante] no se encuentra firmado\""
+                );
 
             var signedXml = new XadesSignedXml(doc);
             signedXml.LoadXml((doc.SelectSingleNode("//ds:Signature", nsMgr) as XmlElement)!);
-            signedXml.CheckSignature().Should().BeTrue(
-                "la referencia al comprobante por Id debe validar su digest correctamente");
+            signedXml
+                .CheckSignature()
+                .Should()
+                .BeTrue("la referencia al comprobante por Id debe validar su digest correctamente");
         }
         finally
         {
@@ -345,7 +434,11 @@ public sealed class XadesBesSignerTests
         var p12Path = TestP12CertificateFactory.CreateTempP12File();
         try
         {
-            var signedBytes = XadesBesSigner.Sign(SampleXml, p12Path, TestP12CertificateFactory.Password);
+            var signedBytes = XadesBesSigner.Sign(
+                SampleXml,
+                p12Path,
+                TestP12CertificateFactory.Password
+            );
 
             var doc = new XmlDocument { PreserveWhitespace = true };
             using (var ms = new MemoryStream(signedBytes))
@@ -355,15 +448,20 @@ public sealed class XadesBesSignerTests
             nsMgr.AddNamespace("ds", "http://www.w3.org/2000/09/xmldsig#");
 
             var digestMethods = doc.SelectNodes(
-                "//ds:Signature/ds:SignedInfo/ds:Reference/ds:DigestMethod", nsMgr)!;
+                "//ds:Signature/ds:SignedInfo/ds:Reference/ds:DigestMethod",
+                nsMgr
+            )!;
             digestMethods.Count.Should().Be(3);
 
             foreach (XmlElement dm in digestMethods)
             {
-                dm.GetAttribute("Algorithm").Should().Be(
-                    "http://www.w3.org/2001/04/xmlenc#sha256",
-                    "una factura real autorizada por el SRI usa SHA-256 uniformemente en las 3 " +
-                    "referencias — no SHA-1, a pesar de que SignatureMethod sea rsa-sha1");
+                dm.GetAttribute("Algorithm")
+                    .Should()
+                    .Be(
+                        "http://www.w3.org/2001/04/xmlenc#sha256",
+                        "una factura real autorizada por el SRI usa SHA-256 uniformemente en las 3 "
+                            + "referencias — no SHA-1, a pesar de que SignatureMethod sea rsa-sha1"
+                    );
             }
         }
         finally

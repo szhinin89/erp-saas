@@ -44,8 +44,14 @@ public sealed class ChangeMyPasswordHandlerTests
         public Mock<IPasswordHasher> Hasher { get; } = new();
         public Mock<IRefreshTokenService> RefreshTokenService { get; } = new();
 
-        public ChangeMyPasswordHandler BuildHandler() => new(
-            AccessRepo.Object, Hasher.Object, new CurrentUserStub(), new CurrentTenantStub(), RefreshTokenService.Object);
+        public ChangeMyPasswordHandler BuildHandler() =>
+            new(
+                AccessRepo.Object,
+                Hasher.Object,
+                new CurrentUserStub(),
+                new CurrentTenantStub(),
+                RefreshTokenService.Object
+            );
     }
 
     [Fact]
@@ -53,18 +59,30 @@ public sealed class ChangeMyPasswordHandlerTests
     {
         var user = NewUser();
         var f = new Fixture();
-        f.AccessRepo.Setup(r => r.GetUserByIdAsync(UserId, It.IsAny<CancellationToken>())).ReturnsAsync(user);
+        f.AccessRepo.Setup(r => r.GetUserByIdAsync(UserId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(user);
         f.Hasher.Setup(h => h.VerifyPassword("wrong", "old-hash")).Returns(false);
 
         var handler = f.BuildHandler();
-        var result = await handler.Handle(new ChangeMyPasswordCommand("wrong", "N3wPassword!"), CancellationToken.None);
+        var result = await handler.Handle(
+            new ChangeMyPasswordCommand("wrong", "N3wPassword!"),
+            CancellationToken.None
+        );
 
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Be("La contraseña actual no es correcta.");
         user.PasswordHash.Should().Be("old-hash");
         f.AccessRepo.Verify(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
         f.RefreshTokenService.Verify(
-            s => s.RevokeAllForUserAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
+            s =>
+                s.RevokeAllForUserAsync(
+                    It.IsAny<Guid>(),
+                    It.IsAny<Guid>(),
+                    It.IsAny<string>(),
+                    It.IsAny<CancellationToken>()
+                ),
+            Times.Never
+        );
     }
 
     [Fact]
@@ -73,29 +91,45 @@ public sealed class ChangeMyPasswordHandlerTests
         var user = NewUser();
         user.MarkRequirePasswordReset(UserId);
         var f = new Fixture();
-        f.AccessRepo.Setup(r => r.GetUserByIdAsync(UserId, It.IsAny<CancellationToken>())).ReturnsAsync(user);
+        f.AccessRepo.Setup(r => r.GetUserByIdAsync(UserId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(user);
         f.Hasher.Setup(h => h.VerifyPassword("old-pass", "old-hash")).Returns(true);
         f.Hasher.Setup(h => h.HashPassword("N3wPassword!")).Returns("new-hash");
 
         var handler = f.BuildHandler();
-        var result = await handler.Handle(new ChangeMyPasswordCommand("old-pass", "N3wPassword!"), CancellationToken.None);
+        var result = await handler.Handle(
+            new ChangeMyPasswordCommand("old-pass", "N3wPassword!"),
+            CancellationToken.None
+        );
 
         result.IsSuccess.Should().BeTrue();
         user.PasswordHash.Should().Be("new-hash");
         user.RequirePasswordReset.Should().BeFalse();
         f.AccessRepo.Verify(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
         f.RefreshTokenService.Verify(
-            s => s.RevokeAllForUserAsync(user.Id, TenantId, "Cambio de contraseña (self-service)", It.IsAny<CancellationToken>()), Times.Once);
+            s =>
+                s.RevokeAllForUserAsync(
+                    user.Id,
+                    TenantId,
+                    "Cambio de contraseña (self-service)",
+                    It.IsAny<CancellationToken>()
+                ),
+            Times.Once
+        );
     }
 
     [Fact]
     public async Task Usuario_no_encontrado_devuelve_Failure()
     {
         var f = new Fixture();
-        f.AccessRepo.Setup(r => r.GetUserByIdAsync(UserId, It.IsAny<CancellationToken>())).ReturnsAsync((IdentityUser?)null);
+        f.AccessRepo.Setup(r => r.GetUserByIdAsync(UserId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync((IdentityUser?)null);
 
         var handler = f.BuildHandler();
-        var result = await handler.Handle(new ChangeMyPasswordCommand("old-pass", "N3wPassword!"), CancellationToken.None);
+        var result = await handler.Handle(
+            new ChangeMyPasswordCommand("old-pass", "N3wPassword!"),
+            CancellationToken.None
+        );
 
         result.IsSuccess.Should().BeFalse();
     }

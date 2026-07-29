@@ -11,4 +11,5 @@ namespace ERP.Application.Modules.Sales.UseCases.GetSalesItemPricing;
 /// Engine v2) — nunca calcula el precio localmente.
 /// </summary>
 public sealed record GetSalesItemPricingQuery(Guid ItemId)
-    : IRequest<Result<SalesItemPricingDto>>, ICompanyScopedRequest;
+    : IRequest<Result<SalesItemPricingDto>>,
+        ICompanyScopedRequest;

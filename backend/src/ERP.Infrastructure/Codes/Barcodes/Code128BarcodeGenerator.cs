@@ -32,7 +32,8 @@ public sealed partial class Code128BarcodeGenerator : IBarcodeGenerator
 
         if (request.Symbology != BarcodeSymbology.Code128)
             throw new NotSupportedException(
-                $"Code128BarcodeGenerator solo soporta {nameof(BarcodeSymbology.Code128)} — simbología recibida: {request.Symbology}.");
+                $"Code128BarcodeGenerator solo soporta {nameof(BarcodeSymbology.Code128)} — simbología recibida: {request.Symbology}."
+            );
 
         try
         {
@@ -63,15 +64,31 @@ public sealed partial class Code128BarcodeGenerator : IBarcodeGenerator
 
     private static byte[] ToPng(PixelData pixelData)
     {
-        var info = new SKImageInfo(pixelData.Width, pixelData.Height, SKColorType.Bgra8888, SKAlphaType.Premul);
+        var info = new SKImageInfo(
+            pixelData.Width,
+            pixelData.Height,
+            SKColorType.Bgra8888,
+            SKAlphaType.Premul
+        );
         using var bitmap = new SKBitmap(info);
-        System.Runtime.InteropServices.Marshal.Copy(pixelData.Pixels, 0, bitmap.GetPixels(), pixelData.Pixels.Length);
+        System.Runtime.InteropServices.Marshal.Copy(
+            pixelData.Pixels,
+            0,
+            bitmap.GetPixels(),
+            pixelData.Pixels.Length
+        );
         using var image = SKImage.FromBitmap(bitmap);
         using var encoded = image.Encode(SKEncodedImageFormat.Png, 100);
         return encoded.ToArray();
     }
 
-    [LoggerMessage(Level = LogLevel.Error,
-        Message = "Fallo inesperado generando un código de barras (longitud de contenido: {ContentLength}, simbología: {Symbology}).")]
-    private partial void LogGenerationFailed(Exception ex, int contentLength, BarcodeSymbology symbology);
+    [LoggerMessage(
+        Level = LogLevel.Error,
+        Message = "Fallo inesperado generando un código de barras (longitud de contenido: {ContentLength}, simbología: {Symbology})."
+    )]
+    private partial void LogGenerationFailed(
+        Exception ex,
+        int contentLength,
+        BarcodeSymbology symbology
+    );
 }

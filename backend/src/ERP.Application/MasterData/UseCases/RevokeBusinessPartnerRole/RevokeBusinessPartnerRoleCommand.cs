@@ -9,4 +9,5 @@ namespace ERP.Application.MasterData.UseCases.RevokeBusinessPartnerRole;
 /// documentos activos en este rol antes de revocar. Ver ADR-BP-14.
 /// </summary>
 public sealed record RevokeBusinessPartnerRoleCommand(Guid RoleId)
-    : IRequest<Result<bool>>, ITenantScopedRequest;
+    : IRequest<Result<bool>>,
+        ITenantScopedRequest;

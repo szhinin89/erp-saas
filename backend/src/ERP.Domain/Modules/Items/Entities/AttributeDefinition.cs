@@ -30,7 +30,8 @@ public sealed class AttributeDefinition : MasterEntity, ITenantScopedEntity
         bool isVariantAxis = false,
         string? allowedValues = null,
         bool isRequired = false,
-        int sortOrder = 0)
+        int sortOrder = 0
+    )
     {
         if (string.IsNullOrWhiteSpace(code))
             throw new ArgumentException("El código del atributo es obligatorio.", nameof(code));
@@ -39,7 +40,10 @@ public sealed class AttributeDefinition : MasterEntity, ITenantScopedEntity
         if (string.IsNullOrWhiteSpace(name))
             throw new ArgumentException("El nombre del atributo es obligatorio.", nameof(name));
         if (dataType == AttributeDataType.List && string.IsNullOrWhiteSpace(allowedValues))
-            throw new ArgumentException("Debe especificar los valores permitidos para atributos de tipo List.", nameof(allowedValues));
+            throw new ArgumentException(
+                "Debe especificar los valores permitidos para atributos de tipo List.",
+                nameof(allowedValues)
+            );
 
         var def = new AttributeDefinition
         {
@@ -58,11 +62,19 @@ public sealed class AttributeDefinition : MasterEntity, ITenantScopedEntity
     }
 
     public void Update(
-        string name, bool isVariantAxis, string? allowedValues,
-        bool isRequired, int sortOrder, Guid updatedBy)
+        string name,
+        bool isVariantAxis,
+        string? allowedValues,
+        bool isRequired,
+        int sortOrder,
+        Guid updatedBy
+    )
     {
         if (DataType == AttributeDataType.List && string.IsNullOrWhiteSpace(allowedValues))
-            throw new ArgumentException("Debe especificar los valores permitidos para atributos de tipo List.", nameof(allowedValues));
+            throw new ArgumentException(
+                "Debe especificar los valores permitidos para atributos de tipo List.",
+                nameof(allowedValues)
+            );
 
         Name = name.Trim();
         IsVariantAxis = isVariantAxis;

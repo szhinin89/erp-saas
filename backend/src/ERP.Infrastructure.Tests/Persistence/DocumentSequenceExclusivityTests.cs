@@ -22,32 +22,36 @@ public sealed class DocumentSequenceExclusivityTests
     // SEQ-GATE-01: nadie debería llamar .CaptureAndIncrement() — la definición
     // no tiene punto prefijo, así que el patrón "." captura solo llamadas externas.
     // Lista vacía: cero callers autorizados.
-    private static readonly HashSet<string> AllowedCaptureAndIncrementCallers =
-        new(StringComparer.OrdinalIgnoreCase);
+    private static readonly HashSet<string> AllowedCaptureAndIncrementCallers = new(
+        StringComparer.OrdinalIgnoreCase
+    );
 
     // SEQ-GATE-02: solo la entidad puede mutar su propio CurrentSeq.
-    private static readonly HashSet<string> AllowedCurrentSeqMutators =
-        new(StringComparer.OrdinalIgnoreCase)
-        {
-            "src/ERP.Domain/Modules/Company/Entities/DocumentSequence.cs",
-        };
+    private static readonly HashSet<string> AllowedCurrentSeqMutators = new(
+        StringComparer.OrdinalIgnoreCase
+    )
+    {
+        "src/ERP.Domain/Modules/Company/Entities/DocumentSequence.cs",
+    };
 
     // SEQ-GATE-03: solo el repositorio puede emitir SQL de escritura sobre la tabla.
-    private static readonly HashSet<string> AllowedRawSqlWriters =
-        new(StringComparer.OrdinalIgnoreCase)
-        {
-            "src/ERP.Infrastructure/Persistence/Repositories/DocumentSequenceRepository.cs",
-        };
+    private static readonly HashSet<string> AllowedRawSqlWriters = new(
+        StringComparer.OrdinalIgnoreCase
+    )
+    {
+        "src/ERP.Infrastructure/Persistence/Repositories/DocumentSequenceRepository.cs",
+    };
 
     // SEQ-GATE-04: .GetForUpdateAsync() solo está autorizado en la definición de
     // interfaz y en la implementación del repositorio; ningún handler de Application
     // puede invocarlo (implica transacción manual — patrón reemplazado por CaptureNextAsync).
-    private static readonly HashSet<string> AllowedGetForUpdateCallers =
-        new(StringComparer.OrdinalIgnoreCase)
-        {
-            "src/ERP.Domain/Modules/Company/Interfaces/IDocumentSequenceRepository.cs",
-            "src/ERP.Infrastructure/Persistence/Repositories/DocumentSequenceRepository.cs",
-        };
+    private static readonly HashSet<string> AllowedGetForUpdateCallers = new(
+        StringComparer.OrdinalIgnoreCase
+    )
+    {
+        "src/ERP.Domain/Modules/Company/Interfaces/IDocumentSequenceRepository.cs",
+        "src/ERP.Infrastructure/Persistence/Repositories/DocumentSequenceRepository.cs",
+    };
 
     // ── SEQ-GATE-01 ───────────────────────────────────────────────────────────
 
@@ -62,13 +66,17 @@ public sealed class DocumentSequenceExclusivityTests
     {
         var violations = ScanForPattern(
             pattern: ".CaptureAndIncrement(",
-            allowedPaths: AllowedCaptureAndIncrementCallers);
+            allowedPaths: AllowedCaptureAndIncrementCallers
+        );
 
-        violations.Should().BeEmpty(
-            "CaptureAndIncrement() está reservado para la entidad de dominio. " +
-            "Todo código que necesite el siguiente número debe invocar " +
-            "IDocumentSequenceRepository.CaptureNextAsync() — el único punto de entrada " +
-            "autorizado para asignar numeración documental.");
+        violations
+            .Should()
+            .BeEmpty(
+                "CaptureAndIncrement() está reservado para la entidad de dominio. "
+                    + "Todo código que necesite el siguiente número debe invocar "
+                    + "IDocumentSequenceRepository.CaptureNextAsync() — el único punto de entrada "
+                    + "autorizado para asignar numeración documental."
+            );
     }
 
     // ── SEQ-GATE-02 ───────────────────────────────────────────────────────────
@@ -84,19 +92,22 @@ public sealed class DocumentSequenceExclusivityTests
         // Captura cualquier forma de escritura directa sobre la propiedad.
         var mutationPatterns = new[]
         {
-            "CurrentSeq =",   // asignación directa (incluye CurrentSeq = 1, CurrentSeq = value)
-            "CurrentSeq++",   // post-incremento
-            "CurrentSeq +=",  // incremento compuesto
-            "CurrentSeq--",   // post-decremento
-            "CurrentSeq -=",  // decremento compuesto
+            "CurrentSeq =", // asignación directa (incluye CurrentSeq = 1, CurrentSeq = value)
+            "CurrentSeq++", // post-incremento
+            "CurrentSeq +=", // incremento compuesto
+            "CurrentSeq--", // post-decremento
+            "CurrentSeq -=", // decremento compuesto
         };
 
         var violations = ScanForAnyPattern(mutationPatterns, AllowedCurrentSeqMutators);
 
-        violations.Should().BeEmpty(
-            "CurrentSeq es el estado interno de la secuencia. " +
-            "Solo DocumentSequence puede mutarlo a través de CaptureAndIncrement(). " +
-            "Toda otra modificación introduce inconsistencias y posibles duplicados.");
+        violations
+            .Should()
+            .BeEmpty(
+                "CurrentSeq es el estado interno de la secuencia. "
+                    + "Solo DocumentSequence puede mutarlo a través de CaptureAndIncrement(). "
+                    + "Toda otra modificación introduce inconsistencias y posibles duplicados."
+            );
     }
 
     // ── SEQ-GATE-03 ───────────────────────────────────────────────────────────
@@ -119,10 +130,13 @@ public sealed class DocumentSequenceExclusivityTests
 
         var violations = ScanForAnyPattern(sqlWritePatterns, AllowedRawSqlWriters);
 
-        violations.Should().BeEmpty(
-            "Solo DocumentSequenceRepository puede ejecutar SQL de escritura sobre " +
-            "document_sequence. El advisory lock y la transacción explícita que garantizan " +
-            "unicidad solo operan correctamente dentro del repositorio autorizado.");
+        violations
+            .Should()
+            .BeEmpty(
+                "Solo DocumentSequenceRepository puede ejecutar SQL de escritura sobre "
+                    + "document_sequence. El advisory lock y la transacción explícita que garantizan "
+                    + "unicidad solo operan correctamente dentro del repositorio autorizado."
+            );
     }
 
     // ── SEQ-GATE-04 ───────────────────────────────────────────────────────────
@@ -138,37 +152,57 @@ public sealed class DocumentSequenceExclusivityTests
     {
         var violations = ScanForPattern(
             pattern: ".GetForUpdateAsync(",
-            allowedPaths: AllowedGetForUpdateCallers);
+            allowedPaths: AllowedGetForUpdateCallers
+        );
 
-        violations.Should().BeEmpty(
-            "GetForUpdateAsync() requiere que el caller gestione su propia transacción " +
-            "y bloqueo — patrón obsoleto reemplazado por CaptureNextAsync(). " +
-            "Los handlers deben llamar únicamente a CaptureNextAsync().");
+        violations
+            .Should()
+            .BeEmpty(
+                "GetForUpdateAsync() requiere que el caller gestione su propia transacción "
+                    + "y bloqueo — patrón obsoleto reemplazado por CaptureNextAsync(). "
+                    + "Los handlers deben llamar únicamente a CaptureNextAsync()."
+            );
     }
 
     // ── Infraestructura de scan ───────────────────────────────────────────────
 
-    private static List<string> ScanForPattern(
-        string pattern,
-        HashSet<string> allowedPaths)
-        => ScanForAnyPattern(new[] { pattern }, allowedPaths);
+    private static List<string> ScanForPattern(string pattern, HashSet<string> allowedPaths) =>
+        ScanForAnyPattern(new[] { pattern }, allowedPaths);
 
     private static List<string> ScanForAnyPattern(
         IEnumerable<string> patterns,
-        HashSet<string> allowedPaths)
+        HashSet<string> allowedPaths
+    )
     {
         var backendRoot = ResolveBackendRoot();
         var patternArray = patterns.ToArray();
         var violations = new List<string>();
 
-        foreach (var file in Directory.EnumerateFiles(backendRoot, "*.cs", SearchOption.AllDirectories))
+        foreach (
+            var file in Directory.EnumerateFiles(backendRoot, "*.cs", SearchOption.AllDirectories)
+        )
         {
             // Excluir archivos generados / no productivos.
-            if (file.Contains($"{Path.DirectorySeparatorChar}Migrations{Path.DirectorySeparatorChar}", StringComparison.OrdinalIgnoreCase))
+            if (
+                file.Contains(
+                    $"{Path.DirectorySeparatorChar}Migrations{Path.DirectorySeparatorChar}",
+                    StringComparison.OrdinalIgnoreCase
+                )
+            )
                 continue;
-            if (file.Contains($"{Path.DirectorySeparatorChar}bin{Path.DirectorySeparatorChar}", StringComparison.OrdinalIgnoreCase))
+            if (
+                file.Contains(
+                    $"{Path.DirectorySeparatorChar}bin{Path.DirectorySeparatorChar}",
+                    StringComparison.OrdinalIgnoreCase
+                )
+            )
                 continue;
-            if (file.Contains($"{Path.DirectorySeparatorChar}obj{Path.DirectorySeparatorChar}", StringComparison.OrdinalIgnoreCase))
+            if (
+                file.Contains(
+                    $"{Path.DirectorySeparatorChar}obj{Path.DirectorySeparatorChar}",
+                    StringComparison.OrdinalIgnoreCase
+                )
+            )
                 continue;
             if (file.Contains(".Tests", StringComparison.OrdinalIgnoreCase))
                 continue;
@@ -190,13 +224,17 @@ public sealed class DocumentSequenceExclusivityTests
         var dir = new DirectoryInfo(AppContext.BaseDirectory);
         while (dir is not null)
         {
-            if (File.Exists(Path.Combine(dir.FullName, "ERP.sln")) ||
-                Directory.Exists(Path.Combine(dir.FullName, "src", "ERP.API")))
+            if (
+                File.Exists(Path.Combine(dir.FullName, "ERP.sln"))
+                || Directory.Exists(Path.Combine(dir.FullName, "src", "ERP.API"))
+            )
                 return dir.FullName;
 
             dir = dir.Parent;
         }
 
-        throw new InvalidOperationException("No se encontró la raíz backend (ERP.sln / src/ERP.API).");
+        throw new InvalidOperationException(
+            "No se encontró la raíz backend (ERP.sln / src/ERP.API)."
+        );
     }
 }

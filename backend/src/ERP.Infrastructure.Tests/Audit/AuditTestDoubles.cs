@@ -26,20 +26,26 @@ internal sealed class FixedCurrentCompany(Func<Guid> companyId) : ICurrentCompan
 /// haría <c>HttpAuditContext</c> leyendo el JWT del request en curso.
 /// </summary>
 internal sealed class FixedAuditContext(
-    Func<Guid> tenantId, Func<Guid> companyId, Guid userId, Func<string>? userName = null) : IAuditContext
+    Func<Guid> tenantId,
+    Func<Guid> companyId,
+    Guid userId,
+    Func<string>? userName = null
+) : IAuditContext
 {
     private readonly Func<string> _userName = userName ?? (() => "Test User");
 
     public Guid TenantId => tenantId();
     public Guid CompanyId => companyId();
-    public AuditActor Actor => new(
-        TenantId: tenantId(),
-        UserId: userId,
-        UserName: _userName(),
-        FullName: _userName(),
-        Email: "test.user@example.com",
-        RoleName: "Admin",
-        CorrelationId: "test-correlation",
-        RequestId: "test-request",
-        Source: AuditSource.UserAction);
+    public AuditActor Actor =>
+        new(
+            TenantId: tenantId(),
+            UserId: userId,
+            UserName: _userName(),
+            FullName: _userName(),
+            Email: "test.user@example.com",
+            RoleName: "Admin",
+            CorrelationId: "test-correlation",
+            RequestId: "test-request",
+            Source: AuditSource.UserAction
+        );
 }

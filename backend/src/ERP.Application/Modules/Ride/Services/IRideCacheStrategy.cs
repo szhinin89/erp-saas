@@ -21,5 +21,6 @@ public interface IRideCacheStrategy
         string brandingVersion,
         string rendererVersion,
         string rideSpecificationVersion,
-        CancellationToken ct = default);
+        CancellationToken ct = default
+    );
 }

@@ -17,7 +17,15 @@ public sealed class SnowflakeIdGenerator : ISnowflakeIdGenerator
     private const int WorkerIdShift = SequenceBits;
     private const int TimestampShift = SequenceBits + WorkerIdBits;
 
-    private static readonly long EpochMs = new DateTimeOffset(2024, 1, 1, 0, 0, 0, TimeSpan.Zero).ToUnixTimeMilliseconds();
+    private static readonly long EpochMs = new DateTimeOffset(
+        2024,
+        1,
+        1,
+        0,
+        0,
+        0,
+        TimeSpan.Zero
+    ).ToUnixTimeMilliseconds();
 
     private readonly long _workerId;
     private readonly object _lock = new();
@@ -28,7 +36,10 @@ public sealed class SnowflakeIdGenerator : ISnowflakeIdGenerator
     {
         var workerId = options.Value.WorkerId;
         if (workerId < 0 || workerId > MaxWorkerId)
-            throw new ArgumentOutOfRangeException(nameof(options), $"WorkerId must be between 0 and {MaxWorkerId}.");
+            throw new ArgumentOutOfRangeException(
+                nameof(options),
+                $"WorkerId must be between 0 and {MaxWorkerId}."
+            );
         _workerId = workerId;
     }
 
@@ -38,7 +49,9 @@ public sealed class SnowflakeIdGenerator : ISnowflakeIdGenerator
         {
             var timestamp = CurrentTimeMillis();
             if (timestamp < _lastTimestamp)
-                throw new InvalidOperationException("Clock moved backwards. Refusing to generate Snowflake id.");
+                throw new InvalidOperationException(
+                    "Clock moved backwards. Refusing to generate Snowflake id."
+                );
 
             if (timestamp == _lastTimestamp)
             {
@@ -56,8 +69,8 @@ public sealed class SnowflakeIdGenerator : ISnowflakeIdGenerator
             _lastTimestamp = timestamp;
 
             return ((timestamp - EpochMs) << TimestampShift)
-                   | (_workerId << WorkerIdShift)
-                   | _sequence;
+                | (_workerId << WorkerIdShift)
+                | _sequence;
         }
     }
 

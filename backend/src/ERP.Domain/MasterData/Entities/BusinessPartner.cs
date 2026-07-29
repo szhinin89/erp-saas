@@ -44,7 +44,8 @@ public sealed class BusinessPartner : AuditableEntity, ITenantScopedEntity, ISys
         string legalName,
         Guid createdBy,
         string? tradeName = null,
-        string? countryCode = null)
+        string? countryCode = null
+    )
     {
         if (tenantId == Guid.Empty)
             throw new ArgumentException("tenantId es obligatorio.", nameof(tenantId));
@@ -62,15 +63,17 @@ public sealed class BusinessPartner : AuditableEntity, ITenantScopedEntity, ISys
             IsActive = true,
         };
         bp.SetCreated(createdBy);
-        bp.RaiseDomainEvent(new BusinessPartnerCreatedEvent
-        {
-            TenantId = tenantId,
-            BusinessPartnerId = bp.Id,
-            IdentificationType = bp.Identification.Type,
-            IdentificationNumber = bp.Identification.Number,
-            LegalName = bp.Name.LegalName,
-            CreatedBy = createdBy,
-        });
+        bp.RaiseDomainEvent(
+            new BusinessPartnerCreatedEvent
+            {
+                TenantId = tenantId,
+                BusinessPartnerId = bp.Id,
+                IdentificationType = bp.Identification.Type,
+                IdentificationNumber = bp.Identification.Number,
+                LegalName = bp.Name.LegalName,
+                CreatedBy = createdBy,
+            }
+        );
         return bp;
     }
 
@@ -89,9 +92,19 @@ public sealed class BusinessPartner : AuditableEntity, ITenantScopedEntity, ISys
         string legalName,
         Guid createdBy,
         string? tradeName = null,
-        string? countryCode = null)
+        string? countryCode = null
+    )
     {
-        var bp = Create(tenantId, identificationType, identificationNumber, personType, legalName, createdBy, tradeName, countryCode);
+        var bp = Create(
+            tenantId,
+            identificationType,
+            identificationNumber,
+            personType,
+            legalName,
+            createdBy,
+            tradeName,
+            countryCode
+        );
         bp.IsSystemSeeded = true;
         return bp;
     }
@@ -105,22 +118,27 @@ public sealed class BusinessPartner : AuditableEntity, ITenantScopedEntity, ISys
         PersonType personType,
         Guid updatedBy,
         string? tradeName = null,
-        string? countryCode = null)
+        string? countryCode = null
+    )
     {
         if (!IsActive)
-            throw new InvalidOperationException("No se puede actualizar un BusinessPartner inactivo.");
+            throw new InvalidOperationException(
+                "No se puede actualizar un BusinessPartner inactivo."
+            );
 
         Name = PersonName.Create(legalName, tradeName);
         PersonType = personType;
         CountryCode = NormalizeCountryCode(countryCode);
         SetUpdated(updatedBy);
-        RaiseDomainEvent(new BusinessPartnerProfileUpdatedEvent
-        {
-            TenantId = TenantId,
-            BusinessPartnerId = Id,
-            LegalName = Name.LegalName,
-            UpdatedBy = updatedBy,
-        });
+        RaiseDomainEvent(
+            new BusinessPartnerProfileUpdatedEvent
+            {
+                TenantId = TenantId,
+                BusinessPartnerId = Id,
+                LegalName = Name.LegalName,
+                UpdatedBy = updatedBy,
+            }
+        );
     }
 
     /// <summary>
@@ -132,23 +150,27 @@ public sealed class BusinessPartner : AuditableEntity, ITenantScopedEntity, ISys
     {
         this.EnsureEditable("La identificación tributaria de este tercero", "modificarse");
         if (!IsActive)
-            throw new InvalidOperationException("No se puede modificar la identificación de un BusinessPartner inactivo.");
+            throw new InvalidOperationException(
+                "No se puede modificar la identificación de un BusinessPartner inactivo."
+            );
 
         var oldType = Identification.Type;
         var oldNumber = Identification.Number;
 
         Identification = TaxIdentification.Create(type, number);
         SetUpdated(updatedBy);
-        RaiseDomainEvent(new BusinessPartnerIdentificationChangedEvent
-        {
-            TenantId = TenantId,
-            BusinessPartnerId = Id,
-            OldType = oldType,
-            OldNumber = oldNumber,
-            NewType = Identification.Type,
-            NewNumber = Identification.Number,
-            ChangedBy = updatedBy,
-        });
+        RaiseDomainEvent(
+            new BusinessPartnerIdentificationChangedEvent
+            {
+                TenantId = TenantId,
+                BusinessPartnerId = Id,
+                OldType = oldType,
+                OldNumber = oldNumber,
+                NewType = Identification.Type,
+                NewNumber = Identification.Number,
+                ChangedBy = updatedBy,
+            }
+        );
     }
 
     public void Deactivate(Guid updatedBy)
@@ -158,12 +180,14 @@ public sealed class BusinessPartner : AuditableEntity, ITenantScopedEntity, ISys
             throw new InvalidOperationException("El BusinessPartner ya está inactivo.");
         IsActive = false;
         SetUpdated(updatedBy);
-        RaiseDomainEvent(new BusinessPartnerDeactivatedEvent
-        {
-            TenantId = TenantId,
-            BusinessPartnerId = Id,
-            DeactivatedBy = updatedBy,
-        });
+        RaiseDomainEvent(
+            new BusinessPartnerDeactivatedEvent
+            {
+                TenantId = TenantId,
+                BusinessPartnerId = Id,
+                DeactivatedBy = updatedBy,
+            }
+        );
     }
 
     public void Activate(Guid updatedBy)
@@ -172,20 +196,26 @@ public sealed class BusinessPartner : AuditableEntity, ITenantScopedEntity, ISys
             throw new InvalidOperationException("El BusinessPartner ya está activo.");
         IsActive = true;
         SetUpdated(updatedBy);
-        RaiseDomainEvent(new BusinessPartnerActivatedEvent
-        {
-            TenantId = TenantId,
-            BusinessPartnerId = Id,
-            ActivatedBy = updatedBy,
-        });
+        RaiseDomainEvent(
+            new BusinessPartnerActivatedEvent
+            {
+                TenantId = TenantId,
+                BusinessPartnerId = Id,
+                ActivatedBy = updatedBy,
+            }
+        );
     }
 
     private static string? NormalizeCountryCode(string? code)
     {
         var c = code?.Trim().ToUpperInvariant();
-        if (string.IsNullOrEmpty(c)) return null;
+        if (string.IsNullOrEmpty(c))
+            return null;
         if (c.Length != CountryCodeLen)
-            throw new ArgumentException($"CountryCode debe ser un código ISO 3166-1 alpha-2 de {CountryCodeLen} caracteres.", nameof(code));
+            throw new ArgumentException(
+                $"CountryCode debe ser un código ISO 3166-1 alpha-2 de {CountryCodeLen} caracteres.",
+                nameof(code)
+            );
         return c;
     }
 }

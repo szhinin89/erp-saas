@@ -31,7 +31,14 @@ public sealed class CompletePasswordResetHandlerTests
 
     private static IdentityUser NewUser()
     {
-        var user = IdentityUser.Create(Username, "Ana", "Perez", "ana@test.com", "old-hash", CreatedBy);
+        var user = IdentityUser.Create(
+            Username,
+            "Ana",
+            "Perez",
+            "ana@test.com",
+            "old-hash",
+            CreatedBy
+        );
         user.MarkRequirePasswordReset(CreatedBy);
         return user;
     }
@@ -47,31 +54,57 @@ public sealed class CompletePasswordResetHandlerTests
 
         public Fixture()
         {
-            Validator.Setup(v => v.ValidateAsync(It.IsAny<CompletePasswordResetCommand>(), It.IsAny<CancellationToken>()))
+            Validator
+                .Setup(v =>
+                    v.ValidateAsync(
+                        It.IsAny<CompletePasswordResetCommand>(),
+                        It.IsAny<CancellationToken>()
+                    )
+                )
                 .ReturnsAsync(new ValidationResult());
         }
 
-        public CompletePasswordResetHandler BuildHandler() => new(
-            TokenRepo.Object, AccessRepo.Object, Hasher.Object, RefreshTokenService.Object,
-            Mediator.Object, Validator.Object);
+        public CompletePasswordResetHandler BuildHandler() =>
+            new(
+                TokenRepo.Object,
+                AccessRepo.Object,
+                Hasher.Object,
+                RefreshTokenService.Object,
+                Mediator.Object,
+                Validator.Object
+            );
     }
 
     private static PasswordResetToken StoredToken(Guid userId, string hash) =>
-        PasswordResetToken.Create(hash, userId, PasswordResetToken.KindIdentity, Guid.NewGuid(), DateTime.UtcNow.AddMinutes(5));
+        PasswordResetToken.Create(
+            hash,
+            userId,
+            PasswordResetToken.KindIdentity,
+            Guid.NewGuid(),
+            DateTime.UtcNow.AddMinutes(5)
+        );
 
     [Fact]
     public async Task Token_inexistente_devuelve_Failure_sin_tocar_nada()
     {
         var f = new Fixture();
-        f.TokenRepo.Setup(r => r.GetByTokenHashAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+        f.TokenRepo.Setup(r =>
+                r.GetByTokenHashAsync(It.IsAny<string>(), It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync((PasswordResetToken?)null);
 
         var handler = f.BuildHandler();
-        var result = await handler.Handle(new CompletePasswordResetCommand(RawToken, NewPassword), CancellationToken.None);
+        var result = await handler.Handle(
+            new CompletePasswordResetCommand(RawToken, NewPassword),
+            CancellationToken.None
+        );
 
         result.IsSuccess.Should().BeFalse();
         f.AccessRepo.Verify(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
-        f.Mediator.Verify(m => m.Send(It.IsAny<LoginCommand>(), It.IsAny<CancellationToken>()), Times.Never);
+        f.Mediator.Verify(
+            m => m.Send(It.IsAny<LoginCommand>(), It.IsAny<CancellationToken>()),
+            Times.Never
+        );
     }
 
     [Fact]
@@ -81,14 +114,22 @@ public sealed class CompletePasswordResetHandlerTests
         var f = new Fixture();
         var stored = StoredToken(user.Id, "irrelevant-hash");
         stored.MarkUsed();
-        f.TokenRepo.Setup(r => r.GetByTokenHashAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+        f.TokenRepo.Setup(r =>
+                r.GetByTokenHashAsync(It.IsAny<string>(), It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(stored);
 
         var handler = f.BuildHandler();
-        var result = await handler.Handle(new CompletePasswordResetCommand(RawToken, NewPassword), CancellationToken.None);
+        var result = await handler.Handle(
+            new CompletePasswordResetCommand(RawToken, NewPassword),
+            CancellationToken.None
+        );
 
         result.IsSuccess.Should().BeFalse();
-        f.Mediator.Verify(m => m.Send(It.IsAny<LoginCommand>(), It.IsAny<CancellationToken>()), Times.Never);
+        f.Mediator.Verify(
+            m => m.Send(It.IsAny<LoginCommand>(), It.IsAny<CancellationToken>()),
+            Times.Never
+        );
     }
 
     [Fact]
@@ -97,20 +138,37 @@ public sealed class CompletePasswordResetHandlerTests
         var user = NewUser();
         var f = new Fixture();
         var stored = StoredToken(user.Id, "irrelevant-hash");
-        f.TokenRepo.Setup(r => r.GetByTokenHashAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+        f.TokenRepo.Setup(r =>
+                r.GetByTokenHashAsync(It.IsAny<string>(), It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(stored);
-        f.AccessRepo.Setup(r => r.GetUserByIdAsync(user.Id, It.IsAny<CancellationToken>())).ReturnsAsync(user);
+        f.AccessRepo.Setup(r => r.GetUserByIdAsync(user.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(user);
         f.Hasher.Setup(h => h.HashPassword(NewPassword)).Returns("new-hash");
 
         var expectedResponse = Result<AuthResponseDto>.Success(
-            new AuthResponseDto(user.Id, user.FullName, user.Username, user.Email?.Value, "Admin", Guid.NewGuid(), "jwt-token"));
+            new AuthResponseDto(
+                user.Id,
+                user.FullName,
+                user.Username,
+                user.Email?.Value,
+                "Admin",
+                Guid.NewGuid(),
+                "jwt-token"
+            )
+        );
         LoginCommand? sentCommand = null;
         f.Mediator.Setup(m => m.Send(It.IsAny<LoginCommand>(), It.IsAny<CancellationToken>()))
-            .Callback<IRequest<Result<AuthResponseDto>>, CancellationToken>((cmd, _) => sentCommand = (LoginCommand)cmd)
+            .Callback<IRequest<Result<AuthResponseDto>>, CancellationToken>(
+                (cmd, _) => sentCommand = (LoginCommand)cmd
+            )
             .ReturnsAsync(expectedResponse);
 
         var handler = f.BuildHandler();
-        var result = await handler.Handle(new CompletePasswordResetCommand(RawToken, NewPassword), CancellationToken.None);
+        var result = await handler.Handle(
+            new CompletePasswordResetCommand(RawToken, NewPassword),
+            CancellationToken.None
+        );
 
         result.IsSuccess.Should().BeTrue();
         result.Value!.Token.Should().Be("jwt-token");
@@ -120,7 +178,15 @@ public sealed class CompletePasswordResetHandlerTests
         stored.Used.Should().BeTrue();
 
         f.RefreshTokenService.Verify(
-            s => s.RevokeAllForUserAsync(user.Id, It.IsAny<Guid>(), It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Once);
+            s =>
+                s.RevokeAllForUserAsync(
+                    user.Id,
+                    It.IsAny<Guid>(),
+                    It.IsAny<string>(),
+                    It.IsAny<CancellationToken>()
+                ),
+            Times.Once
+        );
 
         sentCommand.Should().NotBeNull();
         sentCommand!.Username.Should().Be(user.Username);
@@ -131,13 +197,31 @@ public sealed class CompletePasswordResetHandlerTests
     public async Task Validacion_fallida_no_consulta_el_repositorio_de_tokens()
     {
         var f = new Fixture();
-        f.Validator.Setup(v => v.ValidateAsync(It.IsAny<CompletePasswordResetCommand>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new ValidationResult(new[] { new ValidationFailure("NewPassword", "La nueva contraseña es obligatoria.") }));
+        f.Validator.Setup(v =>
+                v.ValidateAsync(
+                    It.IsAny<CompletePasswordResetCommand>(),
+                    It.IsAny<CancellationToken>()
+                )
+            )
+            .ReturnsAsync(
+                new ValidationResult(
+                    new[]
+                    {
+                        new ValidationFailure("NewPassword", "La nueva contraseña es obligatoria."),
+                    }
+                )
+            );
 
         var handler = f.BuildHandler();
-        var result = await handler.Handle(new CompletePasswordResetCommand(RawToken, ""), CancellationToken.None);
+        var result = await handler.Handle(
+            new CompletePasswordResetCommand(RawToken, ""),
+            CancellationToken.None
+        );
 
         result.IsSuccess.Should().BeFalse();
-        f.TokenRepo.Verify(r => r.GetByTokenHashAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
+        f.TokenRepo.Verify(
+            r => r.GetByTokenHashAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()),
+            Times.Never
+        );
     }
 }

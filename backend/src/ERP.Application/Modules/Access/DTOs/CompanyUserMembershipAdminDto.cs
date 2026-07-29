@@ -17,4 +17,5 @@ public sealed record CompanyUserMembershipAdminDto(
     string Role,
     bool IsActive,
     Guid? ProfileId,
-    string? ProfileName);
+    string? ProfileName
+);

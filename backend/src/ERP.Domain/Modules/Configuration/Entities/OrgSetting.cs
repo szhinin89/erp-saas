@@ -31,7 +31,8 @@ public sealed class OrgSetting : AuditableEntity, ITenantScopedEntity, ICompanyS
         string key,
         string? value,
         SettingDataType dataType,
-        Guid createdBy)
+        Guid createdBy
+    )
     {
         var s = new OrgSetting
         {
@@ -53,6 +54,6 @@ public sealed class OrgSetting : AuditableEntity, ITenantScopedEntity, ICompanyS
         SetUpdated(updatedBy);
     }
 
-    private static string? NormalizeValue(string? value)
-        => string.IsNullOrWhiteSpace(value) ? null : value.Trim();
+    private static string? NormalizeValue(string? value) =>
+        string.IsNullOrWhiteSpace(value) ? null : value.Trim();
 }

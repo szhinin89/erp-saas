@@ -15,7 +15,14 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace ERP.API.Controllers;
 
-[AppFeature("Sucursales", $"perm:{SettingsPermissions.BranchesView}", "🏢", "/settings/branches", "perm:settings.group", 30)]
+[AppFeature(
+    "Sucursales",
+    $"perm:{SettingsPermissions.BranchesView}",
+    "🏢",
+    "/settings/branches",
+    "perm:settings.group",
+    30
+)]
 [ApiController]
 [Route("api/v1/settings/branches")]
 [Authorize]
@@ -31,12 +38,18 @@ public sealed class BranchesController : ControllerBase
 
     [HttpGet]
     [Authorize(Policy = $"perm:{SettingsPermissions.BranchesView}")]
-    [ProducesResponseType(typeof(ApiResponse<IReadOnlyList<BranchListItemDto>>), StatusCodes.Status200OK)]
+    [ProducesResponseType(
+        typeof(ApiResponse<IReadOnlyList<BranchListItemDto>>),
+        StatusCodes.Status200OK
+    )]
     public async Task<IActionResult> GetAll(CancellationToken cancellationToken = default)
     {
         var activeFilter = CatalogQueryParameters.ParseActiveFilter(Request.Query);
         var search = CatalogQueryParameters.ParseSearch(Request.Query);
-        var result = await _mediator.Send(new GetBranchesQuery(activeFilter, search), cancellationToken);
+        var result = await _mediator.Send(
+            new GetBranchesQuery(activeFilter, search),
+            cancellationToken
+        );
         return this.ToOkOrBadRequest(result, "OK", () => Array.Empty<BranchListItemDto>());
     }
 
@@ -54,7 +67,10 @@ public sealed class BranchesController : ControllerBase
     [Authorize(Policy = $"perm:{SettingsPermissions.BranchesCreate}")]
     [ProducesResponseType(typeof(ApiResponse<BranchListItemDto?>), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
-    public async Task<IActionResult> Create([FromBody] CreateBranchCommand command, CancellationToken cancellationToken = default)
+    public async Task<IActionResult> Create(
+        [FromBody] CreateBranchCommand command,
+        CancellationToken cancellationToken = default
+    )
     {
         var result = await _mediator.Send(command, cancellationToken);
         return this.ToCreatedOrBadRequest(result);
@@ -64,7 +80,11 @@ public sealed class BranchesController : ControllerBase
     [Authorize(Policy = $"perm:{SettingsPermissions.BranchesUpdate}")]
     [ProducesResponseType(typeof(ApiResponse<BranchListItemDto?>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
-    public async Task<IActionResult> Update(Guid id, [FromBody] UpdateBranchCommand command, CancellationToken cancellationToken = default)
+    public async Task<IActionResult> Update(
+        Guid id,
+        [FromBody] UpdateBranchCommand command,
+        CancellationToken cancellationToken = default
+    )
     {
         if (id != command.Id)
             return this.ApiBadRequest("El id de ruta no coincide con el cuerpo.");

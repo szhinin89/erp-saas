@@ -22,5 +22,6 @@ public static class AccessPermissions
     /// <summary>Asignar una contraseña temporal a un usuario existente de la empresa activa
     /// (fuerza RequirePasswordReset + revoca todo su acceso vivo) — permiso propio, más sensible
     /// que IdentityUsersCreate porque actúa sobre la credencial de un usuario ya operativo.</summary>
-    public const string IdentityUsersAssignTemporaryPassword = "access.identity_users.assign_temporary_password";
+    public const string IdentityUsersAssignTemporaryPassword =
+        "access.identity_users.assign_temporary_password";
 }

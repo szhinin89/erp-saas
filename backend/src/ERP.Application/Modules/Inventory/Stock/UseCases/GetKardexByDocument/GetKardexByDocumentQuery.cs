@@ -11,4 +11,5 @@ namespace ERP.Application.Modules.Inventory.Stock.UseCases.GetKardexByDocument;
 /// no es la fuente de verdad para localizar documentos).
 /// </summary>
 public sealed record GetKardexByDocumentQuery(Guid SourceDocId, string SourceDocType)
-    : IRequest<Result<IReadOnlyList<StockMovementDto>>>, IBranchScopedRequest;
+    : IRequest<Result<IReadOnlyList<StockMovementDto>>>,
+        IBranchScopedRequest;

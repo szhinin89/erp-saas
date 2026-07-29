@@ -14,4 +14,5 @@ public sealed record RideTemplateSelector(
     Guid CompanyId,
     Guid? BranchId,
     Guid? EmissionPointId,
-    RideDocumentType DocumentType);
+    RideDocumentType DocumentType
+);

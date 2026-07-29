@@ -14,7 +14,14 @@ using Microsoft.AspNetCore.Mvc;
 namespace ERP.API.Controllers;
 
 /// <summary>Catálogo de ubicación (solo lectura) para combos en cascada.</summary>
-[AppFeature("Geografía", $"perm:{SettingsPermissions.GeographyView}", "🌎", "/settings/geography", "perm:settings.group", 210)]
+[AppFeature(
+    "Geografía",
+    $"perm:{SettingsPermissions.GeographyView}",
+    "🌎",
+    "/settings/geography",
+    "perm:settings.group",
+    210
+)]
 [ApiController]
 [Route("api/v1/settings/geography")]
 [Authorize(Policy = $"perm:{SettingsPermissions.GeographyView}")]
@@ -26,7 +33,10 @@ public sealed class GeographyController : ControllerBase
     public GeographyController(IMediator mediator) => _mediator = mediator;
 
     [HttpGet("countries")]
-    [ProducesResponseType(typeof(ApiResponse<IReadOnlyList<GeographyItemDto>>), StatusCodes.Status200OK)]
+    [ProducesResponseType(
+        typeof(ApiResponse<IReadOnlyList<GeographyItemDto>>),
+        StatusCodes.Status200OK
+    )]
     public async Task<IActionResult> Countries(CancellationToken cancellationToken = default)
     {
         var result = await _mediator.Send(new GetGeoCountriesQuery(), cancellationToken);
@@ -34,24 +44,42 @@ public sealed class GeographyController : ControllerBase
     }
 
     [HttpGet("provinces")]
-    [ProducesResponseType(typeof(ApiResponse<IReadOnlyList<GeographyItemDto>>), StatusCodes.Status200OK)]
-    public async Task<IActionResult> Provinces([FromQuery] string countryId, CancellationToken cancellationToken = default)
+    [ProducesResponseType(
+        typeof(ApiResponse<IReadOnlyList<GeographyItemDto>>),
+        StatusCodes.Status200OK
+    )]
+    public async Task<IActionResult> Provinces(
+        [FromQuery] string countryId,
+        CancellationToken cancellationToken = default
+    )
     {
         var result = await _mediator.Send(new GetGeoProvincesQuery(countryId), cancellationToken);
         return this.ToOkOrBadRequest(result, "OK", () => Array.Empty<GeographyItemDto>());
     }
 
     [HttpGet("cantons")]
-    [ProducesResponseType(typeof(ApiResponse<IReadOnlyList<GeographyItemDto>>), StatusCodes.Status200OK)]
-    public async Task<IActionResult> Cantons([FromQuery] string provinceId, CancellationToken cancellationToken = default)
+    [ProducesResponseType(
+        typeof(ApiResponse<IReadOnlyList<GeographyItemDto>>),
+        StatusCodes.Status200OK
+    )]
+    public async Task<IActionResult> Cantons(
+        [FromQuery] string provinceId,
+        CancellationToken cancellationToken = default
+    )
     {
         var result = await _mediator.Send(new GetGeoCantonsQuery(provinceId), cancellationToken);
         return this.ToOkOrBadRequest(result, "OK", () => Array.Empty<GeographyItemDto>());
     }
 
     [HttpGet("parishes")]
-    [ProducesResponseType(typeof(ApiResponse<IReadOnlyList<GeographyItemDto>>), StatusCodes.Status200OK)]
-    public async Task<IActionResult> Parishes([FromQuery] string cantonId, CancellationToken cancellationToken = default)
+    [ProducesResponseType(
+        typeof(ApiResponse<IReadOnlyList<GeographyItemDto>>),
+        StatusCodes.Status200OK
+    )]
+    public async Task<IActionResult> Parishes(
+        [FromQuery] string cantonId,
+        CancellationToken cancellationToken = default
+    )
     {
         var result = await _mediator.Send(new GetGeoParishesQuery(cantonId), cancellationToken);
         return this.ToOkOrBadRequest(result, "OK", () => Array.Empty<GeographyItemDto>());

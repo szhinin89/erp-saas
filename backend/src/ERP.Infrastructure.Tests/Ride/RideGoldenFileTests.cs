@@ -1,7 +1,7 @@
-using ERP.Infrastructure.Ride.Rendering;
-using FluentAssertions;
 using System.Text;
 using System.Text.RegularExpressions;
+using ERP.Infrastructure.Ride.Rendering;
+using FluentAssertions;
 
 namespace ERP.Infrastructure.Tests.Ride;
 
@@ -25,8 +25,14 @@ namespace ERP.Infrastructure.Tests.Ride;
 public sealed class RideGoldenFileTests
 {
     private const string NormalizedDate = "D:20260101000000+00'00'";
-    private static readonly Regex CreationDatePattern = new(@"/CreationDate \(D:[^)]*\)", RegexOptions.Compiled);
-    private static readonly Regex ModDatePattern = new(@"/ModDate \(D:[^)]*\)", RegexOptions.Compiled);
+    private static readonly Regex CreationDatePattern = new(
+        @"/CreationDate \(D:[^)]*\)",
+        RegexOptions.Compiled
+    );
+    private static readonly Regex ModDatePattern = new(
+        @"/ModDate \(D:[^)]*\)",
+        RegexOptions.Compiled
+    );
 
     private static byte[] Normalize(byte[] pdf)
     {
@@ -41,28 +47,49 @@ public sealed class RideGoldenFileTests
         var dir = new DirectoryInfo(AppContext.BaseDirectory);
         while (dir is not null)
         {
-            var candidate = Path.Combine(dir.FullName, "src", "ERP.Infrastructure.Tests", "Ride", "GoldenFiles");
+            var candidate = Path.Combine(
+                dir.FullName,
+                "src",
+                "ERP.Infrastructure.Tests",
+                "Ride",
+                "GoldenFiles"
+            );
             if (Directory.Exists(candidate))
                 return candidate;
             dir = dir.Parent;
         }
 
-        throw new InvalidOperationException("No se encontró backend/src/ERP.Infrastructure.Tests/Ride/GoldenFiles.");
+        throw new InvalidOperationException(
+            "No se encontró backend/src/ERP.Infrastructure.Tests/Ride/GoldenFiles."
+        );
     }
 
-    private static async Task AssertMatchesGolden(string scenarioFileName, Func<
-        ERP.Application.Modules.Ride.Templates.InvoiceRideDocumentLayout> fixture)
+    private static async Task AssertMatchesGolden(
+        string scenarioFileName,
+        Func<ERP.Application.Modules.Ride.Templates.InvoiceRideDocumentLayout> fixture
+    )
     {
-        var renderer = new QuestPdfRideRenderer(RideQrCodeGeneratorTestFactory.Create(), RideBarcodeGeneratorTestFactory.Create(), new NoOpFileStorage());
+        var renderer = new QuestPdfRideRenderer(
+            RideQrCodeGeneratorTestFactory.Create(),
+            RideBarcodeGeneratorTestFactory.Create(),
+            new NoOpFileStorage()
+        );
         var actual = Normalize(await renderer.RenderAsync(fixture()));
 
         var goldenPath = Path.Combine(GoldenFilesDirectory(), scenarioFileName);
-        File.Exists(goldenPath).Should().BeTrue(
-            $"debe existir un golden file aprobado en {goldenPath} — generarlo y revisarlo manualmente antes de aprobarlo");
+        File.Exists(goldenPath)
+            .Should()
+            .BeTrue(
+                $"debe existir un golden file aprobado en {goldenPath} — generarlo y revisarlo manualmente antes de aprobarlo"
+            );
 
         var expected = await File.ReadAllBytesAsync(goldenPath);
-        actual.Should().Equal(expected,
-            "el PDF renderizado no coincide byte a byte (tras normalizar CreationDate/ModDate) con el golden file aprobado");
+        actual
+            .Should()
+            .Equal(
+                expected,
+                "el PDF renderizado no coincide byte a byte (tras normalizar CreationDate/ModDate) con el golden file aprobado"
+            );
     }
 
     [Fact]
@@ -83,9 +110,15 @@ public sealed class RideGoldenFileTests
 
     [Fact]
     public Task Invoice_with_additional_info_matches_the_approved_golden_file() =>
-        AssertMatchesGolden("05-invoice-with-additional-info.pdf", RideRenderingFixtures.WithAdditionalInfo);
+        AssertMatchesGolden(
+            "05-invoice-with-additional-info.pdf",
+            RideRenderingFixtures.WithAdditionalInfo
+        );
 
     [Fact]
     public Task Invoice_with_multiple_payments_matches_the_approved_golden_file() =>
-        AssertMatchesGolden("06-invoice-with-multiple-payments.pdf", RideRenderingFixtures.WithMultiplePayments);
+        AssertMatchesGolden(
+            "06-invoice-with-multiple-payments.pdf",
+            RideRenderingFixtures.WithMultiplePayments
+        );
 }

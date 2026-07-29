@@ -20,14 +20,17 @@ public sealed class MasterDataSyncHealthCheck : IHealthCheck
 
     public async Task<HealthCheckResult> CheckHealthAsync(
         HealthCheckContext context,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default
+    )
     {
         var provider = _db.Database.ProviderName ?? string.Empty;
         if (provider.Contains("InMemory", StringComparison.OrdinalIgnoreCase))
             return HealthCheckResult.Healthy("Skipped for in-memory provider.");
 
-        var orphanRoles = await _db.BusinessPartnerRoles
-            .Where(r => !_db.BusinessPartners.Any(b => b.Id == r.BusinessPartnerId))
+        var orphanRoles = await _db
+            .BusinessPartnerRoles.Where(r =>
+                !_db.BusinessPartners.Any(b => b.Id == r.BusinessPartnerId)
+            )
             .Take(1)
             .AnyAsync(cancellationToken);
 

@@ -18,7 +18,8 @@ namespace ERP.Application.Access.UseCases;
 /// </summary>
 internal static class CompanyAdministratorInvariant
 {
-    public const string ViolationMessage = "La empresa debe conservar al menos un administrador activo.";
+    public const string ViolationMessage =
+        "La empresa debe conservar al menos un administrador activo.";
 
     /// <summary>Estado al que quedará la membership tras la operación — no cómo se llega a él.</summary>
     public readonly record struct FutureState(bool IsActive, string Role);
@@ -33,7 +34,8 @@ internal static class CompanyAdministratorInvariant
     public static Result<T>? Validate<T>(
         CompanyUserMembership membership,
         FutureState futureState,
-        IReadOnlyCollection<CompanyUserMembership> activeCompanyMemberships)
+        IReadOnlyCollection<CompanyUserMembership> activeCompanyMemberships
+    )
     {
         // Si la membership continuará siendo un Administrador activo, el invariante queda
         // satisfecho independientemente del resto de administradores existentes — no hace falta
@@ -42,7 +44,8 @@ internal static class CompanyAdministratorInvariant
             return null;
 
         var anotherActiveAdminExists = activeCompanyMemberships.Any(m =>
-            m.Id != membership.Id && m.Role == SecurityRoles.Admin);
+            m.Id != membership.Id && m.Role == SecurityRoles.Admin
+        );
 
         return anotherActiveAdminExists ? null : Result<T>.ValidationFailure(ViolationMessage);
     }

@@ -1,45 +1,48 @@
 <Project Sdk="Microsoft.NET.Sdk">
-  <ItemGroup>
-    <ProjectReference Include="..\ERP.Domain\ERP.Domain.csproj" />
-    <ProjectReference Include="..\ERP.Application\ERP.Application.csproj" />
-  </ItemGroup>
-  <ItemGroup>
-    <PackageReference Include="MediatR" Version="12.5.0" />
-    <PackageReference Include="BCrypt.Net-Next" Version="4.1.0" />
-    <PackageReference Include="Microsoft.AspNetCore.Http" Version="2.3.9" />
-    <PackageReference Include="Microsoft.AspNetCore.Http.Abstractions" Version="2.3.9" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.4">
-      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-      <PrivateAssets>all</PrivateAssets>
-    </PackageReference>
-    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.7" />
-    <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="10.0.7" />
-    <PackageReference Include="Microsoft.Extensions.Http" Version="10.0.7" />
-    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.7" />
-    <PackageReference Include="Microsoft.AspNetCore.Hosting.Abstractions" Version="2.3.9" />
-    <PackageReference Include="RazorLight" Version="2.0.0" />
-    <PackageReference Include="System.Security.Cryptography.Xml" Version="10.0.10" />
-    <PackageReference Include="QuestPDF" Version="2025.4.0" />
-    <PackageReference Include="QRCoder" Version="1.6.0" />
-    <PackageReference Include="ZXing.Net" Version="0.16.10" />
-    <PackageReference Include="SkiaSharp" Version="2.88.8" />
-    <PackageReference Include="Microsoft.IdentityModel.Tokens" Version="8.17.0" />
-    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="10.0.1" />
-    <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.17.0" />
-  </ItemGroup>
-  <PropertyGroup>
-    <TargetFramework>net10.0</TargetFramework>
-    <Nullable>enable</Nullable>
-    <ImplicitUsings>enable</ImplicitUsings>
-    <RootNamespace>ERP.Infrastructure</RootNamespace>
-  </PropertyGroup>
-  <ItemGroup>
-    <EmbeddedResource Include="Seeding\InstallData\*.sql" />
-    <!-- Recursos oficiales del SRI (ver ElectronicDocuments/Resources/SRI/**/README.md y
+    <ItemGroup>
+        <ProjectReference Include="..\ERP.Domain\ERP.Domain.csproj" />
+        <ProjectReference Include="..\ERP.Application\ERP.Application.csproj" />
+    </ItemGroup>
+    <ItemGroup>
+        <PackageReference Include="MediatR" Version="12.5.0" />
+        <PackageReference Include="BCrypt.Net-Next" Version="4.1.0" />
+        <PackageReference Include="Microsoft.AspNetCore.Http" Version="2.3.9" />
+        <PackageReference Include="Microsoft.AspNetCore.Http.Abstractions" Version="2.3.9" />
+        <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.4">
+            <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+            <PrivateAssets>all</PrivateAssets>
+        </PackageReference>
+        <PackageReference
+            Include="Microsoft.Extensions.DependencyInjection.Abstractions"
+            Version="10.0.7"
+        />
+        <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="10.0.7" />
+        <PackageReference Include="Microsoft.Extensions.Http" Version="10.0.7" />
+        <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.7" />
+        <PackageReference Include="Microsoft.AspNetCore.Hosting.Abstractions" Version="2.3.9" />
+        <PackageReference Include="RazorLight" Version="2.0.0" />
+        <PackageReference Include="System.Security.Cryptography.Xml" Version="10.0.10" />
+        <PackageReference Include="QuestPDF" Version="2025.4.0" />
+        <PackageReference Include="QRCoder" Version="1.6.0" />
+        <PackageReference Include="ZXing.Net" Version="0.16.10" />
+        <PackageReference Include="SkiaSharp" Version="2.88.8" />
+        <PackageReference Include="Microsoft.IdentityModel.Tokens" Version="8.17.0" />
+        <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="10.0.1" />
+        <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.17.0" />
+    </ItemGroup>
+    <PropertyGroup>
+        <TargetFramework>net10.0</TargetFramework>
+        <Nullable>enable</Nullable>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <RootNamespace>ERP.Infrastructure</RootNamespace>
+    </PropertyGroup>
+    <ItemGroup>
+        <EmbeddedResource Include="Seeding\InstallData\*.sql" />
+        <!-- Recursos oficiales del SRI (ver ElectronicDocuments/Resources/SRI/**/README.md y
          manifest.json) — el glob recoge automáticamente cualquier .xsd/manifest que se
          incorpore, sin tocar este archivo. Los .xml de Examples/ son solo documentación
          (comparación manual), nunca se embeben ni se consumen desde código. -->
-    <EmbeddedResource Include="ElectronicDocuments\Resources\SRI\**\*.xsd" />
-    <EmbeddedResource Include="ElectronicDocuments\Resources\SRI\manifest.json" />
-  </ItemGroup>
+        <EmbeddedResource Include="ElectronicDocuments\Resources\SRI\**\*.xsd" />
+        <EmbeddedResource Include="ElectronicDocuments\Resources\SRI\manifest.json" />
+    </ItemGroup>
 </Project>

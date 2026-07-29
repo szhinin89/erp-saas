@@ -18,23 +18,32 @@ public sealed class JournalEntryLineConfiguration : IEntityTypeConfiguration<Jou
         builder.Property(x => x.Description).HasColumnName("description").HasMaxLength(500);
 
         // numeric(18,2) — montos (CLAUDE.md, Estándar de Precisión Numérica INMUTABLE).
-        builder.Property(x => x.Debit).HasColumnName("debit").HasColumnType("numeric(18,2)").IsRequired();
-        builder.Property(x => x.Credit).HasColumnName("credit").HasColumnType("numeric(18,2)").IsRequired();
+        builder
+            .Property(x => x.Debit)
+            .HasColumnName("debit")
+            .HasColumnType("numeric(18,2)")
+            .IsRequired();
+        builder
+            .Property(x => x.Credit)
+            .HasColumnName("credit")
+            .HasColumnType("numeric(18,2)")
+            .IsRequired();
 
         builder.Property(x => x.SortOrder).HasColumnName("sort_order").IsRequired();
 
         // FK real a Account (a diferencia de PostingRule.DebitAccountId/CreditAccountId, que son
         // configuración sin FK) — JournalEntryLine es el hecho contable ya persistido, no
         // configuración; integridad referencial real importa más aquí (ver diseño Fase 3.5.1).
-        builder.HasOne<Account>()
+        builder
+            .HasOne<Account>()
             .WithMany()
             .HasForeignKey(x => x.AccountId)
             .OnDelete(DeleteBehavior.Restrict);
 
-        builder.HasIndex(x => x.JournalEntryId)
+        builder
+            .HasIndex(x => x.JournalEntryId)
             .HasDatabaseName("ix_journal_entry_lines_journal_entry");
 
-        builder.HasIndex(x => x.TenantId)
-            .HasDatabaseName("ix_journal_entry_lines_tenant");
+        builder.HasIndex(x => x.TenantId).HasDatabaseName("ix_journal_entry_lines_tenant");
     }
 }

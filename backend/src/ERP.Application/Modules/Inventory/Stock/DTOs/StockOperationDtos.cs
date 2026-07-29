@@ -13,7 +13,8 @@ public sealed record StockAdjustmentDto(
     string? Notes,
     DateTime AdjustmentDate,
     string Status,
-    DateTime? ExecutedAt);
+    DateTime? ExecutedAt
+);
 
 public sealed record StockTransferDto(
     Guid Id,
@@ -25,10 +26,12 @@ public sealed record StockTransferDto(
     string? Reason,
     string? Notes,
     DateTime? ConfirmedAt,
-    IReadOnlyList<StockTransferLineDto> Lines);
+    IReadOnlyList<StockTransferLineDto> Lines
+);
 
 public sealed record StockTransferLineDto(
     Guid Id,
     Guid ProductId,
     decimal Quantity,
-    string Description);
+    string Description
+);

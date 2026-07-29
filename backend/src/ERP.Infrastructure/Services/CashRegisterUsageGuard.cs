@@ -10,13 +10,21 @@ public sealed class CashRegisterUsageGuard : ICashRegisterUsageGuard
 
     public CashRegisterUsageGuard(ICashSessionRepository sessions) => _sessions = sessions;
 
-    public Task<bool> HasHistoryAsync(Guid tenantId, Guid cashRegisterId, CancellationToken ct = default)
-        => _sessions.ExistsByCashRegisterAsync(tenantId, cashRegisterId, ct);
+    public Task<bool> HasHistoryAsync(
+        Guid tenantId,
+        Guid cashRegisterId,
+        CancellationToken ct = default
+    ) => _sessions.ExistsByCashRegisterAsync(tenantId, cashRegisterId, ct);
 
-    public async Task<bool> HasOpenSessionAsync(Guid tenantId, Guid cashRegisterId, CancellationToken ct = default)
-        => await _sessions.GetOpenByCashRegisterAsync(tenantId, cashRegisterId, ct) is not null;
+    public async Task<bool> HasOpenSessionAsync(
+        Guid tenantId,
+        Guid cashRegisterId,
+        CancellationToken ct = default
+    ) => await _sessions.GetOpenByCashRegisterAsync(tenantId, cashRegisterId, ct) is not null;
 
     public Task<IReadOnlyCollection<Guid>> GetUsedIdsAsync(
-        Guid tenantId, IReadOnlyCollection<Guid> cashRegisterIds, CancellationToken ct = default)
-        => _sessions.GetUsedCashRegisterIdsAsync(tenantId, cashRegisterIds, ct);
+        Guid tenantId,
+        IReadOnlyCollection<Guid> cashRegisterIds,
+        CancellationToken ct = default
+    ) => _sessions.GetUsedCashRegisterIdsAsync(tenantId, cashRegisterIds, ct);
 }

@@ -24,7 +24,8 @@ public sealed class CompanyAccessGuard : ICompanyAccessGuard
         ICurrentTenant currentTenant,
         ICurrentCompany currentCompany,
         ITenantRepository tenants,
-        ISecurityMetrics metrics)
+        ISecurityMetrics metrics
+    )
     {
         _access = access;
         _companies = companies;
@@ -35,7 +36,9 @@ public sealed class CompanyAccessGuard : ICompanyAccessGuard
         _metrics = metrics;
     }
 
-    public async Task<Result<Guid>> RequireActiveTenantAsync(CancellationToken cancellationToken = default)
+    public async Task<Result<Guid>> RequireActiveTenantAsync(
+        CancellationToken cancellationToken = default
+    )
     {
         if (!_currentUser.IsAuthenticated)
             return Result<Guid>.Failure("No autenticado.");
@@ -54,7 +57,8 @@ public sealed class CompanyAccessGuard : ICompanyAccessGuard
     public async Task<Result<CompanyAccessContext>> RequireMembershipAsync(
         Guid companyId,
         bool requireActiveCompany = true,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default
+    )
     {
         var subResult = await RequireActiveTenantAsync(cancellationToken);
         if (!subResult.IsSuccess)
@@ -66,13 +70,19 @@ public sealed class CompanyAccessGuard : ICompanyAccessGuard
         if (company is null || company.TenantId != tenantId)
         {
             _metrics.RecordCrossCompanyDenied();
-            return Result<CompanyAccessContext>.Failure("Empresa no encontrada o no pertenece al tenant activo.");
+            return Result<CompanyAccessContext>.Failure(
+                "Empresa no encontrada o no pertenece al tenant activo."
+            );
         }
 
         if (requireActiveCompany && !company.IsActive)
             return Result<CompanyAccessContext>.Failure("La empresa está inactiva.");
 
-        var membership = await _access.GetCompanyUserMembershipAsync(companyId, _currentUser.UserId, cancellationToken);
+        var membership = await _access.GetCompanyUserMembershipAsync(
+            companyId,
+            _currentUser.UserId,
+            cancellationToken
+        );
         if (membership is null || !membership.IsActive)
         {
             _metrics.RecordMembershipValidationFailed();
@@ -81,23 +91,34 @@ public sealed class CompanyAccessGuard : ICompanyAccessGuard
 
         var tenantEntity = await _tenants.GetByIdAsync(tenantId, cancellationToken);
 
-        return Result<CompanyAccessContext>.Success(new CompanyAccessContext(
-            _currentUser.UserId,
-            tenantId,
-            companyId,
-            membership.Role,
-            tenantEntity?.IsActive ?? false,
-            company.IsActive));
+        return Result<CompanyAccessContext>.Success(
+            new CompanyAccessContext(
+                _currentUser.UserId,
+                tenantId,
+                companyId,
+                membership.Role,
+                tenantEntity?.IsActive ?? false,
+                company.IsActive
+            )
+        );
     }
 
-    public Task<Result<CompanyAccessContext>> RequireCurrentCompanyAsync(CancellationToken cancellationToken = default)
+    public Task<Result<CompanyAccessContext>> RequireCurrentCompanyAsync(
+        CancellationToken cancellationToken = default
+    )
     {
         if (!_currentCompany.HasCompanyContext)
         {
             _metrics.RecordInvalidCompanyContext();
-            return Task.FromResult(Result<CompanyAccessContext>.Failure("No hay empresa operativa seleccionada."));
+            return Task.FromResult(
+                Result<CompanyAccessContext>.Failure("No hay empresa operativa seleccionada.")
+            );
         }
 
-        return RequireMembershipAsync(_currentCompany.CompanyId, requireActiveCompany: true, cancellationToken);
+        return RequireMembershipAsync(
+            _currentCompany.CompanyId,
+            requireActiveCompany: true,
+            cancellationToken
+        );
     }
 }

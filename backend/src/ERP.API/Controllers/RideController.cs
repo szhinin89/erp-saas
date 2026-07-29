@@ -49,14 +49,22 @@ public sealed class RideController : ControllerBase
     [HttpGet]
     [Authorize(Policy = $"perm:{RidePermissions.View}")]
     public async Task<IActionResult> GetOrGenerate(
-        [FromQuery] string sourceModule, [FromQuery] Guid sourceEntityId, CancellationToken ct)
-        => this.ToOkOrBadRequest(await _mediator.Send(new GetOrGenerateRideQuery(sourceModule, sourceEntityId), ct), "OK");
+        [FromQuery] string sourceModule,
+        [FromQuery] Guid sourceEntityId,
+        CancellationToken ct
+    ) =>
+        this.ToOkOrBadRequest(
+            await _mediator.Send(new GetOrGenerateRideQuery(sourceModule, sourceEntityId), ct),
+            "OK"
+        );
 
     /// <summary>Fuerza la regeneración del RIDE aunque el cache siga siendo válido.</summary>
     [HttpPost("regenerate")]
     [Authorize(Policy = $"perm:{RidePermissions.Regenerate}")]
-    public async Task<IActionResult> Regenerate([FromBody] RegenerateRideCommand command, CancellationToken ct)
-        => this.ToOkOrBadRequest(await _mediator.Send(command, ct), "OK");
+    public async Task<IActionResult> Regenerate(
+        [FromBody] RegenerateRideCommand command,
+        CancellationToken ct
+    ) => this.ToOkOrBadRequest(await _mediator.Send(command, ct), "OK");
 
     /// <summary>
     /// Sirve los bytes del PDF ya generado (o lo genera si corresponde), vía el mismo
@@ -68,14 +76,23 @@ public sealed class RideController : ControllerBase
     [HttpGet("content")]
     [Authorize(Policy = $"perm:{RidePermissions.View}")]
     public async Task<IActionResult> GetContent(
-        [FromQuery] string sourceModule, [FromQuery] Guid sourceEntityId, CancellationToken ct)
+        [FromQuery] string sourceModule,
+        [FromQuery] Guid sourceEntityId,
+        CancellationToken ct
+    )
     {
-        var result = await _mediator.Send(new GetOrGenerateRideQuery(sourceModule, sourceEntityId), ct);
+        var result = await _mediator.Send(
+            new GetOrGenerateRideQuery(sourceModule, sourceEntityId),
+            ct
+        );
         if (!result.IsSuccess)
             return this.ApiBadRequest(result.Error ?? "No se pudo obtener el RIDE.");
 
         var generation = result.Value!;
-        if (generation.Outcome is not (RideOutcome.Generated or RideOutcome.Cached) || generation.StoragePath is null)
+        if (
+            generation.Outcome is not (RideOutcome.Generated or RideOutcome.Cached)
+            || generation.StoragePath is null
+        )
             return this.ApiNotFound("No hay un RIDE disponible para este documento todavía.");
 
         var stream = await _fileStorage.GetAsync(generation.StoragePath, ct);

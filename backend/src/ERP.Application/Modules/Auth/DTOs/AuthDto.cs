@@ -11,10 +11,7 @@ public record RefreshRequest(string? RefreshToken = null);
 /// <param name="AllDevices">Si true, revoca todos los tokens del usuario (logout global).</param>
 public record LogoutRequest(string? RefreshToken, bool AllDevices = false);
 
-public record LoginDto(
-    string Username,
-    string Password
-);
+public record LoginDto(string Username, string Password);
 
 public record AuthResponseDto(
     Guid UserId,
@@ -23,7 +20,8 @@ public record AuthResponseDto(
     string? Email,
     string Role,
     Guid TenantId,
-    string Token)
+    string Token
+)
 {
     /// <summary>Empresa operativa activa. Null si RequiresCompanySelection=true.</summary>
     public Guid? CompanyId { get; init; }

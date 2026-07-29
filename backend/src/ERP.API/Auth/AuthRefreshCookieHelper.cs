@@ -7,7 +7,8 @@ internal static class AuthRefreshCookieHelper
         httpContext.Response.Cookies.Append(
             AuthRefreshCookie.Name,
             rawToken,
-            AuthRefreshCookie.BuildOptions(httpContext.Request, expiry));
+            AuthRefreshCookie.BuildOptions(httpContext.Request, expiry)
+        );
     }
 
     public static void ClearRefreshCookie(HttpContext httpContext)
@@ -16,12 +17,11 @@ internal static class AuthRefreshCookieHelper
         {
             httpContext.Response.Cookies.Delete(
                 AuthRefreshCookie.Name,
-                AuthRefreshCookie.BuildDeleteOptions(httpContext.Request, path));
+                AuthRefreshCookie.BuildDeleteOptions(httpContext.Request, path)
+            );
         }
     }
 
-    public static string? ResolveRefreshToken(HttpRequest request, string? fromBody)
-        => string.IsNullOrWhiteSpace(fromBody)
-            ? request.Cookies[AuthRefreshCookie.Name]
-            : fromBody;
+    public static string? ResolveRefreshToken(HttpRequest request, string? fromBody) =>
+        string.IsNullOrWhiteSpace(fromBody) ? request.Cookies[AuthRefreshCookie.Name] : fromBody;
 }

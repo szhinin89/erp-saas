@@ -8,7 +8,8 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace ERP.Infrastructure.Persistence.Configurations.Purchases;
 
-public sealed class PurchaseReceptionDocumentConfiguration : IEntityTypeConfiguration<PurchaseReceptionDocument>
+public sealed class PurchaseReceptionDocumentConfiguration
+    : IEntityTypeConfiguration<PurchaseReceptionDocument>
 {
     public void Configure(EntityTypeBuilder<PurchaseReceptionDocument> builder)
     {
@@ -20,102 +21,151 @@ public sealed class PurchaseReceptionDocumentConfiguration : IEntityTypeConfigur
         builder.Property(x => x.CompanyId).HasColumnName("company_id").IsRequired();
         builder.Property(x => x.BranchId).HasColumnName("branch_id").IsRequired();
 
-        builder.Property(x => x.SourceDocType).HasColumnName("source_doc_type")
-            .HasConversion<int>().IsRequired();
+        builder
+            .Property(x => x.SourceDocType)
+            .HasColumnName("source_doc_type")
+            .HasConversion<int>()
+            .IsRequired();
 
-        builder.Property(x => x.SupplierRuc).HasColumnName("supplier_ruc")
-            .HasMaxLength(PurchaseReceptionDocument.SupplierRucMaxLen).IsRequired();
-        builder.Property(x => x.SupplierName).HasColumnName("supplier_name")
-            .HasMaxLength(PurchaseReceptionDocument.SupplierNameMaxLen).IsRequired();
+        builder
+            .Property(x => x.SupplierRuc)
+            .HasColumnName("supplier_ruc")
+            .HasMaxLength(PurchaseReceptionDocument.SupplierRucMaxLen)
+            .IsRequired();
+        builder
+            .Property(x => x.SupplierName)
+            .HasColumnName("supplier_name")
+            .HasMaxLength(PurchaseReceptionDocument.SupplierNameMaxLen)
+            .IsRequired();
         builder.Property(x => x.SupplierId).HasColumnName("supplier_id");
 
-        builder.Property(x => x.AccessKey).HasColumnName("access_key")
-            .HasMaxLength(PurchaseReceptionDocument.AccessKeyMaxLen).IsRequired();
-        builder.Property(x => x.InvoiceNumber).HasColumnName("invoice_number")
-            .HasMaxLength(PurchaseReceptionDocument.InvoiceNumberMaxLen).IsRequired();
+        builder
+            .Property(x => x.AccessKey)
+            .HasColumnName("access_key")
+            .HasMaxLength(PurchaseReceptionDocument.AccessKeyMaxLen)
+            .IsRequired();
+        builder
+            .Property(x => x.InvoiceNumber)
+            .HasColumnName("invoice_number")
+            .HasMaxLength(PurchaseReceptionDocument.InvoiceNumberMaxLen)
+            .IsRequired();
         builder.Property(x => x.IssueDate).HasColumnName("issue_date").IsRequired();
         builder.Property(x => x.AuthorizationDate).HasColumnName("authorization_date");
-        builder.Property(x => x.AuthorizationNumber).HasColumnName("authorization_number")
+        builder
+            .Property(x => x.AuthorizationNumber)
+            .HasColumnName("authorization_number")
             .HasMaxLength(PurchaseReceptionDocument.AuthorizationNumberMaxLen);
         builder.Property(x => x.XmlDownloadedAt).HasColumnName("xml_downloaded_at");
-        builder.Property(x => x.DocTypeCode).HasColumnName("doc_type_code")
+        builder
+            .Property(x => x.DocTypeCode)
+            .HasColumnName("doc_type_code")
             .HasMaxLength(PurchaseReceptionDocument.DocTypeCodeMaxLen);
-        builder.Property(x => x.SriPaymentMethodCode).HasColumnName("sri_payment_method_code")
+        builder
+            .Property(x => x.SriPaymentMethodCode)
+            .HasColumnName("sri_payment_method_code")
             .HasMaxLength(PurchaseReceptionDocument.SriPaymentMethodCodeMaxLen);
 
-        builder.Property(x => x.ProcessingStatus).HasColumnName("processing_status")
-            .HasConversion<int>().IsRequired();
-        builder.Property(x => x.LinesDetectedCount).HasColumnName("lines_detected_count").IsRequired();
-        builder.Property(x => x.LinesProcessedCount).HasColumnName("lines_processed_count").IsRequired();
-        builder.Property(x => x.ProcessingNotes).HasColumnName("processing_notes")
+        builder
+            .Property(x => x.ProcessingStatus)
+            .HasColumnName("processing_status")
+            .HasConversion<int>()
+            .IsRequired();
+        builder
+            .Property(x => x.LinesDetectedCount)
+            .HasColumnName("lines_detected_count")
+            .IsRequired();
+        builder
+            .Property(x => x.LinesProcessedCount)
+            .HasColumnName("lines_processed_count")
+            .IsRequired();
+        builder
+            .Property(x => x.ProcessingNotes)
+            .HasColumnName("processing_notes")
             .HasMaxLength(PurchaseReceptionDocument.ProcessingNotesMaxLen);
 
-        builder.Property(x => x.Subtotal).HasColumnName("subtotal")
-            .HasColumnType("numeric(18,2)").IsRequired();
-        builder.Property(x => x.VatAmount).HasColumnName("vat_amount")
-            .HasColumnType("numeric(18,2)").IsRequired();
-        builder.Property(x => x.TotalAmount).HasColumnName("total_amount")
-            .HasColumnType("numeric(18,2)").IsRequired();
+        builder
+            .Property(x => x.Subtotal)
+            .HasColumnName("subtotal")
+            .HasColumnType("numeric(18,2)")
+            .IsRequired();
+        builder
+            .Property(x => x.VatAmount)
+            .HasColumnName("vat_amount")
+            .HasColumnType("numeric(18,2)")
+            .IsRequired();
+        builder
+            .Property(x => x.TotalAmount)
+            .HasColumnName("total_amount")
+            .HasColumnType("numeric(18,2)")
+            .IsRequired();
 
-        builder.Property(x => x.Status).HasColumnName("status")
-            .HasConversion<int>().IsRequired();
+        builder.Property(x => x.Status).HasColumnName("status").HasConversion<int>().IsRequired();
 
         builder.Property(x => x.PurchaseId).HasColumnName("purchase_id");
-        builder.Property(x => x.XmlContent).HasColumnName("xml_content")
-            .HasColumnType("text");
+        builder.Property(x => x.XmlContent).HasColumnName("xml_content").HasColumnType("text");
 
         builder.Property(x => x.CreatedAt).HasColumnName("created_at");
         builder.Property(x => x.UpdatedAt).HasColumnName("updated_at");
         builder.Property(x => x.CreatedBy).HasColumnName("created_by");
         builder.Property(x => x.UpdatedBy).HasColumnName("updated_by");
 
-        builder.Property<uint>("xmin")
+        builder
+            .Property<uint>("xmin")
             .HasColumnName("xmin")
             .HasColumnType("xid")
             .IsRequired()
             .ValueGeneratedOnAddOrUpdate()
             .IsConcurrencyToken();
 
-        builder.HasMany(x => x.Lines)
+        builder
+            .HasMany(x => x.Lines)
             .WithOne()
             .HasForeignKey(x => x.PurchaseReceptionDocumentId)
             .OnDelete(DeleteBehavior.Cascade);
 
-        builder.HasOne<Company>()
+        builder
+            .HasOne<Company>()
             .WithMany()
             .HasForeignKey(x => x.CompanyId)
             .OnDelete(DeleteBehavior.Restrict);
 
-        builder.HasOne<Branch>()
+        builder
+            .HasOne<Branch>()
             .WithMany()
             .HasForeignKey(x => x.BranchId)
             .OnDelete(DeleteBehavior.Restrict);
 
-        builder.HasOne<BusinessPartner>()
+        builder
+            .HasOne<BusinessPartner>()
             .WithMany()
             .HasForeignKey(x => x.SupplierId)
             .IsRequired(false)
             .OnDelete(DeleteBehavior.SetNull);
 
         // No modifica ni depende del ciclo de vida de PurchaseInvoice — solo referencia opcional a su Id.
-        builder.HasOne<PurchaseInvoice>()
+        builder
+            .HasOne<PurchaseInvoice>()
             .WithMany()
             .HasForeignKey(x => x.PurchaseId)
             .IsRequired(false)
             .OnDelete(DeleteBehavior.SetNull);
 
-        builder.HasIndex(x => new { x.TenantId, x.CompanyId })
+        builder
+            .HasIndex(x => new { x.TenantId, x.CompanyId })
             .HasDatabaseName("ix_purchase_reception_documents_tenant_company");
 
-        builder.HasIndex(x => new { x.TenantId, x.AccessKey })
+        builder
+            .HasIndex(x => new { x.TenantId, x.AccessKey })
             .IsUnique()
             .HasDatabaseName("uq_purchase_reception_documents_tenant_access_key");
 
-        builder.HasIndex(x => new { x.TenantId, x.Status })
+        builder
+            .HasIndex(x => new { x.TenantId, x.Status })
             .HasDatabaseName("ix_purchase_reception_documents_tenant_status");
 
         // Soporte técnico: localizar rápidamente comprobantes con detalle no interpretado.
-        builder.HasIndex(x => new { x.TenantId, x.ProcessingStatus })
+        builder
+            .HasIndex(x => new { x.TenantId, x.ProcessingStatus })
             .HasDatabaseName("ix_purchase_reception_documents_tenant_processing_status");
     }
 }

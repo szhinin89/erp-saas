@@ -9,7 +9,10 @@ using MediatR;
 namespace ERP.Application.Modules.ElectronicDocuments.UseCases.GetElectronicDocumentTimeline;
 
 public sealed class GetElectronicDocumentTimelineQueryHandler
-    : IRequestHandler<GetElectronicDocumentTimelineQuery, Result<IReadOnlyList<ElectronicDocumentTimelineEventDto>>>
+    : IRequestHandler<
+        GetElectronicDocumentTimelineQuery,
+        Result<IReadOnlyList<ElectronicDocumentTimelineEventDto>>
+    >
 {
     private const int TimelineTake = 20;
 
@@ -22,7 +25,8 @@ public sealed class GetElectronicDocumentTimelineQueryHandler
         IElectronicDocumentRepository repository,
         IAuditReader<ElectronicDocumentAudit> auditReader,
         ICurrentTenant currentTenant,
-        ICurrentCompany currentCompany)
+        ICurrentCompany currentCompany
+    )
     {
         _repository = repository;
         _auditReader = auditReader;
@@ -31,19 +35,35 @@ public sealed class GetElectronicDocumentTimelineQueryHandler
     }
 
     public async Task<Result<IReadOnlyList<ElectronicDocumentTimelineEventDto>>> Handle(
-        GetElectronicDocumentTimelineQuery query, CancellationToken cancellationToken)
+        GetElectronicDocumentTimelineQuery query,
+        CancellationToken cancellationToken
+    )
     {
-        var document = await _repository.GetByIdAsync(_currentTenant.TenantId, query.Id, cancellationToken);
+        var document = await _repository.GetByIdAsync(
+            _currentTenant.TenantId,
+            query.Id,
+            cancellationToken
+        );
         if (document is null)
-            return Result<IReadOnlyList<ElectronicDocumentTimelineEventDto>>.NotFound("El documento electrónico no existe.");
+            return Result<IReadOnlyList<ElectronicDocumentTimelineEventDto>>.NotFound(
+                "El documento electrónico no existe."
+            );
 
         if (_currentCompany.HasCompanyContext && document.CompanyId != _currentCompany.CompanyId)
-            return Result<IReadOnlyList<ElectronicDocumentTimelineEventDto>>.NotFound("El documento electrónico no existe.");
+            return Result<IReadOnlyList<ElectronicDocumentTimelineEventDto>>.NotFound(
+                "El documento electrónico no existe."
+            );
 
         var records = await ElectronicDocumentTimelineBuilder.FetchRecordsAsync(
-            _auditReader, _currentTenant.TenantId, document.Id, TimelineTake, cancellationToken);
+            _auditReader,
+            _currentTenant.TenantId,
+            document.Id,
+            TimelineTake,
+            cancellationToken
+        );
 
         return Result<IReadOnlyList<ElectronicDocumentTimelineEventDto>>.Success(
-            ElectronicDocumentTimelineBuilder.Build(records));
+            ElectronicDocumentTimelineBuilder.Build(records)
+        );
     }
 }

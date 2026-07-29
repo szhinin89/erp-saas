@@ -5,7 +5,10 @@ namespace ERP.Application.Common;
 
 public interface ICompanyProvisioningService
 {
-    Task<Company> EnsureDefaultCompanyAsync(Tenant tenant, CancellationToken cancellationToken = default);
+    Task<Company> EnsureDefaultCompanyAsync(
+        Tenant tenant,
+        CancellationToken cancellationToken = default
+    );
 
     Task<Company> CreateManagedCompanyAsync(
         Guid tenantId,
@@ -22,5 +25,6 @@ public interface ICompanyProvisioningService
         string currencyCode = "USD",
         string? brandingJson = null,
         string? website = null,
-        CancellationToken cancellationToken = default);
+        CancellationToken cancellationToken = default
+    );
 }

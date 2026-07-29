@@ -9,9 +9,7 @@ namespace ERP.Application.Access.DTOs;
 /// </summary>
 public sealed record CompanyUserBranchesAdminDto(
     Guid CompanyUserId,
-    IReadOnlyList<CompanyUserBranchOptionDto> Branches);
+    IReadOnlyList<CompanyUserBranchOptionDto> Branches
+);
 
-public sealed record CompanyUserBranchOptionDto(
-    Guid BranchId,
-    string BranchName,
-    bool Authorized);
+public sealed record CompanyUserBranchOptionDto(Guid BranchId, string BranchName, bool Authorized);

@@ -30,7 +30,10 @@ public sealed class CompanyUserPreferencesControllerTests
         services.AddSingleton<IWebHostEnvironment>(new StubWebHostEnvironment());
         controller.ControllerContext = new ControllerContext
         {
-            HttpContext = new DefaultHttpContext { RequestServices = services.BuildServiceProvider() },
+            HttpContext = new DefaultHttpContext
+            {
+                RequestServices = services.BuildServiceProvider(),
+            },
         };
         return controller;
     }
@@ -40,9 +43,11 @@ public sealed class CompanyUserPreferencesControllerTests
         public string EnvironmentName { get; set; } = "Development";
         public string ApplicationName { get; set; } = "ERP.API.Tests";
         public string WebRootPath { get; set; } = "";
-        public Microsoft.Extensions.FileProviders.IFileProvider WebRootFileProvider { get; set; } = null!;
+        public Microsoft.Extensions.FileProviders.IFileProvider WebRootFileProvider { get; set; } =
+            null!;
         public string ContentRootPath { get; set; } = "";
-        public Microsoft.Extensions.FileProviders.IFileProvider ContentRootFileProvider { get; set; } = null!;
+        public Microsoft.Extensions.FileProviders.IFileProvider ContentRootFileProvider { get; set; } =
+            null!;
     }
 
     // ── Autorización declarativa ─────────────────────────────────────────────
@@ -69,7 +74,8 @@ public sealed class CompanyUserPreferencesControllerTests
         {
             sentRequest = req;
             return Result<CompanyUserPreferencesAdminDto?>.Success(
-                new CompanyUserPreferencesAdminDto(companyUserId, null, "AskBranch"));
+                new CompanyUserPreferencesAdminDto(companyUserId, null, "AskBranch")
+            );
         });
 
         var response = await controller.Get(companyUserId, CancellationToken.None);
@@ -82,7 +88,8 @@ public sealed class CompanyUserPreferencesControllerTests
     public async Task Get_de_usuario_inexistente_o_de_otra_empresa_retorna_404()
     {
         var controller = BuildController(_ =>
-            Result<CompanyUserPreferencesAdminDto?>.NotFound("Usuario de empresa no encontrado."));
+            Result<CompanyUserPreferencesAdminDto?>.NotFound("Usuario de empresa no encontrado.")
+        );
 
         var response = await controller.Get(Guid.NewGuid(), CancellationToken.None);
 
@@ -101,14 +108,26 @@ public sealed class CompanyUserPreferencesControllerTests
         {
             sentRequest = req;
             return Result<CompanyUserPreferencesAdminDto>.Success(
-                new CompanyUserPreferencesAdminDto(companyUserId, branchId, "DirectToDefault"));
+                new CompanyUserPreferencesAdminDto(companyUserId, branchId, "DirectToDefault")
+            );
         });
 
         var response = await controller.Update(
-            companyUserId, new UpdateCompanyUserPreferencesRequest("DirectToDefault", branchId), CancellationToken.None);
+            companyUserId,
+            new UpdateCompanyUserPreferencesRequest("DirectToDefault", branchId),
+            CancellationToken.None
+        );
 
         response.Should().BeOfType<OkObjectResult>();
-        sentRequest.Should().Be(new UpdateCompanyUserPreferencesAdminCommand(companyUserId, "DirectToDefault", branchId));
+        sentRequest
+            .Should()
+            .Be(
+                new UpdateCompanyUserPreferencesAdminCommand(
+                    companyUserId,
+                    "DirectToDefault",
+                    branchId
+                )
+            );
     }
 
     [Fact]
@@ -116,10 +135,15 @@ public sealed class CompanyUserPreferencesControllerTests
     {
         var controller = BuildController(_ =>
             Result<CompanyUserPreferencesAdminDto>.ValidationFailure(
-                "La sucursal por defecto debe estar previamente autorizada para este usuario (CompanyUserBranch)."));
+                "La sucursal por defecto debe estar previamente autorizada para este usuario (CompanyUserBranch)."
+            )
+        );
 
         var response = await controller.Update(
-            Guid.NewGuid(), new UpdateCompanyUserPreferencesRequest("DirectToDefault", Guid.NewGuid()), CancellationToken.None);
+            Guid.NewGuid(),
+            new UpdateCompanyUserPreferencesRequest("DirectToDefault", Guid.NewGuid()),
+            CancellationToken.None
+        );
 
         response.Should().BeOfType<UnprocessableEntityObjectResult>();
     }
@@ -128,10 +152,14 @@ public sealed class CompanyUserPreferencesControllerTests
     public async Task Update_de_usuario_de_otra_empresa_retorna_404()
     {
         var controller = BuildController(_ =>
-            Result<CompanyUserPreferencesAdminDto>.NotFound("Usuario de empresa no encontrado."));
+            Result<CompanyUserPreferencesAdminDto>.NotFound("Usuario de empresa no encontrado.")
+        );
 
         var response = await controller.Update(
-            Guid.NewGuid(), new UpdateCompanyUserPreferencesRequest("AskBranch", null), CancellationToken.None);
+            Guid.NewGuid(),
+            new UpdateCompanyUserPreferencesRequest("AskBranch", null),
+            CancellationToken.None
+        );
 
         response.Should().BeOfType<NotFoundObjectResult>();
     }

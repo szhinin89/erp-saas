@@ -16,19 +16,25 @@ public sealed class PriceListRepository : IPriceListRepository
         _company = company;
     }
 
-    private IQueryable<PriceList> Scoped(Guid tenantId)
-        => _context.PriceLists.ForOperationalScope(tenantId, _company);
+    private IQueryable<PriceList> Scoped(Guid tenantId) =>
+        _context.PriceLists.ForOperationalScope(tenantId, _company);
 
-    public Task<PriceList?> GetByIdAsync(Guid tenantId, Guid id, CancellationToken ct = default)
-        => Scoped(tenantId).FirstOrDefaultAsync(p => p.Id == id, ct);
+    public Task<PriceList?> GetByIdAsync(Guid tenantId, Guid id, CancellationToken ct = default) =>
+        Scoped(tenantId).FirstOrDefaultAsync(p => p.Id == id, ct);
 
     public async Task<IReadOnlyList<PriceList>> GetAllAsync(
-        Guid tenantId, bool? activeFilter, string? search, CancellationToken ct = default)
+        Guid tenantId,
+        bool? activeFilter,
+        string? search,
+        CancellationToken ct = default
+    )
     {
         var q = Scoped(tenantId);
 
-        if (activeFilter is true) q = q.Where(p => p.IsActive);
-        else if (activeFilter is false) q = q.Where(p => !p.IsActive);
+        if (activeFilter is true)
+            q = q.Where(p => p.IsActive);
+        else if (activeFilter is false)
+            q = q.Where(p => !p.IsActive);
 
         if (!string.IsNullOrWhiteSpace(search))
         {
@@ -39,23 +45,33 @@ public sealed class PriceListRepository : IPriceListRepository
         return await q.OrderBy(p => p.Code).ToListAsync(ct);
     }
 
-    public async Task<bool> CodeExistsAsync(Guid tenantId, string code, Guid? excludeId, CancellationToken ct = default)
+    public async Task<bool> CodeExistsAsync(
+        Guid tenantId,
+        string code,
+        Guid? excludeId,
+        CancellationToken ct = default
+    )
     {
         var q = Scoped(tenantId).Where(p => p.Code == code.Trim().ToUpperInvariant());
-        if (excludeId.HasValue) q = q.Where(p => p.Id != excludeId.Value);
+        if (excludeId.HasValue)
+            q = q.Where(p => p.Id != excludeId.Value);
         return await q.AnyAsync(ct);
     }
 
-    public async Task<bool> DefaultExistsAsync(Guid tenantId, Guid? excludeId, CancellationToken ct = default)
+    public async Task<bool> DefaultExistsAsync(
+        Guid tenantId,
+        Guid? excludeId,
+        CancellationToken ct = default
+    )
     {
         var q = Scoped(tenantId).Where(p => p.IsDefault && p.IsActive);
-        if (excludeId.HasValue) q = q.Where(p => p.Id != excludeId.Value);
+        if (excludeId.HasValue)
+            q = q.Where(p => p.Id != excludeId.Value);
         return await q.AnyAsync(ct);
     }
 
-    public Task AddAsync(PriceList priceList, CancellationToken ct = default)
-        => _context.PriceLists.AddAsync(priceList, ct).AsTask();
+    public Task AddAsync(PriceList priceList, CancellationToken ct = default) =>
+        _context.PriceLists.AddAsync(priceList, ct).AsTask();
 
-    public Task SaveChangesAsync(CancellationToken ct = default)
-        => _context.SaveChangesAsync(ct);
+    public Task SaveChangesAsync(CancellationToken ct = default) => _context.SaveChangesAsync(ct);
 }

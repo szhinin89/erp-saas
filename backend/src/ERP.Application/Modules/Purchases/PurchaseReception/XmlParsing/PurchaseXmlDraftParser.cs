@@ -1,6 +1,6 @@
-using ERP.Application.Common;
 using System.Globalization;
 using System.Xml.Linq;
+using ERP.Application.Common;
 
 namespace ERP.Application.Modules.Purchases.PurchaseReception.XmlParsing;
 
@@ -13,25 +13,46 @@ namespace ERP.Application.Modules.Purchases.PurchaseReception.XmlParsing;
 /// exactamente lo que trae el XML antes de emparejar el producto.
 /// </summary>
 public sealed record ParsedPurchaseXmlLine(
-    string Description, decimal Quantity, decimal UnitPrice, decimal DiscountPct,
-    string VatCode, string? IceCode, decimal IceValue,
-    string? SupplierCode, string? SupplierAuxCode, decimal Discount, decimal LineSubtotal,
-    string TaxCode, decimal VatPercentage, decimal TaxValue, decimal TotalLine);
+    string Description,
+    decimal Quantity,
+    decimal UnitPrice,
+    decimal DiscountPct,
+    string VatCode,
+    string? IceCode,
+    decimal IceValue,
+    string? SupplierCode,
+    string? SupplierAuxCode,
+    decimal Discount,
+    decimal LineSubtotal,
+    string TaxCode,
+    decimal VatPercentage,
+    decimal TaxValue,
+    decimal TotalLine
+);
 
 /// <summary>
 /// Un &lt;detalle&gt; del XML que no pudo interpretarse — no aborta el resto del comprobante (ver
 /// <see cref="PurchaseXmlDraftParser.Parse"/>). Mismo patrón que <c>PurchaseReceptionParseError</c>
 /// usa para el parser TXT: una línea defectuosa se registra, nunca descarta las demás.
 /// </summary>
-public sealed record ParsedPurchaseXmlLineError(int LineIndex, string? SupplierCode, string? Description, string Reason);
+public sealed record ParsedPurchaseXmlLineError(
+    int LineIndex,
+    string? SupplierCode,
+    string? Description,
+    string Reason
+);
 
 /// <summary>Cabecera + detalle de un comprobante &lt;factura&gt; extraído únicamente de su XML autorizado.</summary>
 public sealed record ParsedPurchaseXml(
-    string SupplierRuc, string SupplierName,
-    string DocTypeCode, string InvoiceNumber, DateOnly IssueDate,
+    string SupplierRuc,
+    string SupplierName,
+    string DocTypeCode,
+    string InvoiceNumber,
+    DateOnly IssueDate,
     string? SriPaymentMethodCode,
     IReadOnlyList<ParsedPurchaseXmlLine> Lines,
-    IReadOnlyList<ParsedPurchaseXmlLineError> LineErrors);
+    IReadOnlyList<ParsedPurchaseXmlLineError> LineErrors
+);
 
 public interface IPurchaseXmlDraftParser
 {
@@ -65,7 +86,8 @@ public sealed class PurchaseXmlDraftParser : IPurchaseXmlDraftParser
     {
         try
         {
-            var factura = XDocument.Parse(xmlContent).Root
+            var factura =
+                XDocument.Parse(xmlContent).Root
                 ?? throw new FormatException("El XML no tiene un elemento raíz.");
 
             var infoTributaria = RequireElement(factura, "infoTributaria");
@@ -77,8 +99,11 @@ public sealed class PurchaseXmlDraftParser : IPurchaseXmlDraftParser
             var docTypeCode = RequireText(infoTributaria, "codDoc");
             var invoiceNumber = BuildInvoiceNumber(infoTributaria);
             var issueDate = ParseDate(RequireText(infoFactura, "fechaEmision"));
-            var sriPaymentMethodCode = infoFactura.Element("pagos")?.Elements("pago")
-                .Select(p => OptionalText(p, "formaPago")).FirstOrDefault(v => v is not null);
+            var sriPaymentMethodCode = infoFactura
+                .Element("pagos")
+                ?.Elements("pago")
+                .Select(p => OptionalText(p, "formaPago"))
+                .FirstOrDefault(v => v is not null);
 
             var lines = new List<ParsedPurchaseXmlLine>();
             var lineErrors = new List<ParsedPurchaseXmlLineError>();
@@ -92,39 +117,56 @@ public sealed class PurchaseXmlDraftParser : IPurchaseXmlDraftParser
                 }
                 catch (Exception ex) when (ex is FormatException or ArgumentException)
                 {
-                    lineErrors.Add(new ParsedPurchaseXmlLineError(
-                        index,
-                        OptionalText(detalle, "codigoPrincipal") ?? OptionalText(detalle, "codigoAuxiliar"),
-                        OptionalText(detalle, "descripcion"),
-                        ex.Message));
+                    lineErrors.Add(
+                        new ParsedPurchaseXmlLineError(
+                            index,
+                            OptionalText(detalle, "codigoPrincipal")
+                                ?? OptionalText(detalle, "codigoAuxiliar"),
+                            OptionalText(detalle, "descripcion"),
+                            ex.Message
+                        )
+                    );
                 }
             }
 
             var header = new ParsedPurchaseXml(
-                SupplierRuc: supplierRuc, SupplierName: supplierName, DocTypeCode: docTypeCode,
-                InvoiceNumber: invoiceNumber, IssueDate: issueDate, SriPaymentMethodCode: sriPaymentMethodCode,
-                Lines: lines, LineErrors: lineErrors);
+                SupplierRuc: supplierRuc,
+                SupplierName: supplierName,
+                DocTypeCode: docTypeCode,
+                InvoiceNumber: invoiceNumber,
+                IssueDate: issueDate,
+                SriPaymentMethodCode: sriPaymentMethodCode,
+                Lines: lines,
+                LineErrors: lineErrors
+            );
 
             return Result<ParsedPurchaseXml>.Success(header);
         }
-        catch (Exception ex) when (ex is FormatException or ArgumentException or InvalidOperationException)
+        catch (Exception ex)
+            when (ex is FormatException or ArgumentException or InvalidOperationException)
         {
             return Result<ParsedPurchaseXml>.ValidationFailure(
-                $"El XML del comprobante no se pudo interpretar: {ex.Message}");
+                $"El XML del comprobante no se pudo interpretar: {ex.Message}"
+            );
         }
     }
 
-    private static string BuildInvoiceNumber(XElement infoTributaria) => string.Join("-",
-        RequireText(infoTributaria, "estab"),
-        RequireText(infoTributaria, "ptoEmi"),
-        RequireText(infoTributaria, "secuencial"));
+    private static string BuildInvoiceNumber(XElement infoTributaria) =>
+        string.Join(
+            "-",
+            RequireText(infoTributaria, "estab"),
+            RequireText(infoTributaria, "ptoEmi"),
+            RequireText(infoTributaria, "secuencial")
+        );
 
     private static ParsedPurchaseXmlLine ParseLine(XElement detalle)
     {
-        var impuestos = detalle.Element("impuestos")?.Elements("impuesto").ToList()
+        var impuestos =
+            detalle.Element("impuestos")?.Elements("impuesto").ToList()
             ?? throw new FormatException("La línea no tiene impuestos.");
 
-        var vat = impuestos.FirstOrDefault(i => RequireText(i, "codigo") == SriVatTaxCode)
+        var vat =
+            impuestos.FirstOrDefault(i => RequireText(i, "codigo") == SriVatTaxCode)
             ?? throw new FormatException("La línea no tiene impuesto IVA.");
         var vatCode = RequireText(vat, "codigoPorcentaje");
         var taxCode = RequireText(vat, "codigo");
@@ -140,12 +182,14 @@ public sealed class PurchaseXmlDraftParser : IPurchaseXmlDraftParser
         var discount = ParseDecimal(RequireText(detalle, "descuento"));
         var lineSubtotal = ParseDecimal(RequireText(detalle, "precioTotalSinImpuesto"));
         var gross = quantity * unitPrice;
-        var discountPct = gross > 0 ? Math.Round(discount / gross * 100, 2, MidpointRounding.AwayFromZero) : 0;
+        var discountPct =
+            gross > 0 ? Math.Round(discount / gross * 100, 2, MidpointRounding.AwayFromZero) : 0;
         var totalLine = lineSubtotal + impuestos.Sum(i => ParseDecimal(RequireText(i, "valor")));
 
         // El esquema SRI admite codigoPrincipal o codigoAuxiliar indistintamente — no es un dato
         // tributario, solo el identificador de producto usado luego por Item Matching.
-        var supplierCode = OptionalText(detalle, "codigoPrincipal") ?? OptionalText(detalle, "codigoAuxiliar");
+        var supplierCode =
+            OptionalText(detalle, "codigoPrincipal") ?? OptionalText(detalle, "codigoAuxiliar");
 
         return new ParsedPurchaseXmlLine(
             Description: RequireText(detalle, "descripcion"),
@@ -162,11 +206,13 @@ public sealed class PurchaseXmlDraftParser : IPurchaseXmlDraftParser
             TaxCode: taxCode,
             VatPercentage: vatPercentage,
             TaxValue: taxValue,
-            TotalLine: totalLine);
+            TotalLine: totalLine
+        );
     }
 
     private static XElement RequireElement(XElement parent, string name) =>
-        parent.Element(name) ?? throw new FormatException($"Falta el elemento obligatorio '{name}'.");
+        parent.Element(name)
+        ?? throw new FormatException($"Falta el elemento obligatorio '{name}'.");
 
     private static string RequireText(XElement parent, string name) =>
         parent.Element(name)?.Value is { Length: > 0 } value

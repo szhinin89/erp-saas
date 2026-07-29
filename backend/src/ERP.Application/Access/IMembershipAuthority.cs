@@ -1,4 +1,4 @@
-﻿using ERP.Domain.Access.Entities;
+using ERP.Domain.Access.Entities;
 
 namespace ERP.Application.Access;
 
@@ -19,7 +19,8 @@ public interface IMembershipAuthority
     Task<CompanyUserMembership?> GetActiveMembershipAsync(
         Guid companyId,
         Guid userId,
-        CancellationToken cancellationToken = default);
+        CancellationToken cancellationToken = default
+    );
 
     /// <summary>
     /// True si el usuario tiene al menos una membresía activa en alguna empresa del suscriptor.
@@ -28,5 +29,6 @@ public interface IMembershipAuthority
     Task<bool> HasActiveMembershipInTenantAsync(
         Guid tenantId,
         Guid userId,
-        CancellationToken cancellationToken = default);
+        CancellationToken cancellationToken = default
+    );
 }

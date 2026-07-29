@@ -32,9 +32,12 @@ public abstract class AuditRecordBase : ITenantScopedEntity
 
     protected void SetCommon(AuditActor actor, Guid entityId, string action, string? reason)
     {
-        if (actor.TenantId == Guid.Empty) throw new ArgumentException("tenantId requerido.", nameof(actor));
-        if (entityId == Guid.Empty) throw new ArgumentException("entityId requerido.", nameof(entityId));
-        if (string.IsNullOrWhiteSpace(action)) throw new ArgumentException("action requerida.", nameof(action));
+        if (actor.TenantId == Guid.Empty)
+            throw new ArgumentException("tenantId requerido.", nameof(actor));
+        if (entityId == Guid.Empty)
+            throw new ArgumentException("entityId requerido.", nameof(entityId));
+        if (string.IsNullOrWhiteSpace(action))
+            throw new ArgumentException("action requerida.", nameof(action));
 
         TenantId = actor.TenantId;
         EntityId = entityId;

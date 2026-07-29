@@ -23,17 +23,24 @@ public sealed class MembershipAuthority : IMembershipAuthority
     public Task<CompanyUserMembership?> GetActiveMembershipAsync(
         Guid companyId,
         Guid userId,
-        CancellationToken cancellationToken = default)
-        => _access.GetCompanyUserMembershipAsync(companyId, userId, cancellationToken)
+        CancellationToken cancellationToken = default
+    ) =>
+        _access
+            .GetCompanyUserMembershipAsync(companyId, userId, cancellationToken)
             .ContinueWith(t => t.Result is { IsActive: true } m ? m : null, cancellationToken);
 
     public async Task<bool> HasActiveMembershipInTenantAsync(
         Guid tenantId,
         Guid userId,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default
+    )
     {
-        var memberships = await _access.GetActiveCompanyUserMembershipsForUserSystemAsync(userId, cancellationToken);
-        if (memberships.Count == 0) return false;
+        var memberships = await _access.GetActiveCompanyUserMembershipsForUserSystemAsync(
+            userId,
+            cancellationToken
+        );
+        if (memberships.Count == 0)
+            return false;
 
         var companyIds = memberships.Select(m => m.CompanyId).Distinct().ToList();
         var companies = await _companies.GetByIdsAsync(companyIds, cancellationToken);

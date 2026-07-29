@@ -16,17 +16,25 @@ public sealed class GetElectronicDocumentXmlQueryHandler
     public GetElectronicDocumentXmlQueryHandler(
         IElectronicDocumentRepository repository,
         IFileStorage fileStorage,
-        ICurrentTenant currentTenant)
+        ICurrentTenant currentTenant
+    )
     {
         _repository = repository;
         _fileStorage = fileStorage;
         _currentTenant = currentTenant;
     }
 
-    public async Task<Result<string>> Handle(GetElectronicDocumentXmlQuery query, CancellationToken cancellationToken)
+    public async Task<Result<string>> Handle(
+        GetElectronicDocumentXmlQuery query,
+        CancellationToken cancellationToken
+    )
     {
         var document = await _repository.GetBySourceAsync(
-            _currentTenant.TenantId, query.SourceModule, query.SourceEntityId, cancellationToken);
+            _currentTenant.TenantId,
+            query.SourceModule,
+            query.SourceEntityId,
+            cancellationToken
+        );
         if (document is null)
             return Result<string>.NotFound("El documento electrónico no existe.");
 
@@ -38,11 +46,15 @@ public sealed class GetElectronicDocumentXmlQueryHandler
             _ => null,
         };
         if (string.IsNullOrWhiteSpace(storedPath))
-            return Result<string>.NotFound($"El documento electrónico todavía no tiene un XML '{query.Variant}' almacenado.");
+            return Result<string>.NotFound(
+                $"El documento electrónico todavía no tiene un XML '{query.Variant}' almacenado."
+            );
 
         await using var stream = await _fileStorage.GetAsync(storedPath, cancellationToken);
         if (stream is null)
-            return Result<string>.NotFound("El archivo XML registrado ya no está disponible en el almacenamiento.");
+            return Result<string>.NotFound(
+                "El archivo XML registrado ya no está disponible en el almacenamiento."
+            );
 
         using var reader = new StreamReader(stream);
         var xml = await reader.ReadToEndAsync(cancellationToken);

@@ -1,3 +1,4 @@
+using System.Text;
 using ERP.Application.Common;
 using ERP.Application.Common.Interfaces;
 using ERP.Application.Common.Interfaces.SRI;
@@ -12,7 +13,6 @@ using ERP.Domain.Modules.ElectronicDocuments.ValueObjects;
 using FluentAssertions;
 using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
-using System.Text;
 
 namespace ERP.Application.Tests.ElectronicDocuments;
 
@@ -31,7 +31,14 @@ public sealed class ElectronicDocumentIssuerRetryTests
 
     private static ElectronicDocument NewSignedDocument()
     {
-        var document = ElectronicDocument.Create(TenantId, CompanyId, ElectronicDocumentType.Invoice, "Sales", Guid.NewGuid(), UserId);
+        var document = ElectronicDocument.Create(
+            TenantId,
+            CompanyId,
+            ElectronicDocumentType.Invoice,
+            "Sales",
+            Guid.NewGuid(),
+            UserId
+        );
         document.MarkXmlGenerated("draft/path.xml", "1.1.0", "1.1.0", UserId);
         document.MarkSigned("signed/path.xml", AccessKey.Create(ValidAccessKey), UserId);
         return document;
@@ -50,9 +57,12 @@ public sealed class ElectronicDocumentIssuerRetryTests
         Mock<IElectronicDocumentReceptionService>? reception = null,
         Mock<IElectronicDocumentAuthorizationService>? authorization = null,
         Mock<IFileStorage>? fileStorage = null,
-        Mock<IElectronicDocumentXmlStorageService>? xmlStorage = null)
+        Mock<IElectronicDocumentXmlStorageService>? xmlStorage = null
+    )
     {
-        repository.Setup(r => r.SaveChangesAsync(It.IsAny<CancellationToken>())).Returns(Task.CompletedTask);
+        repository
+            .Setup(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
 
         fileStorage ??= DefaultFileStorage();
         xmlStorage ??= new Mock<IElectronicDocumentXmlStorageService>();
@@ -74,14 +84,17 @@ public sealed class ElectronicDocumentIssuerRetryTests
             authorization.Object,
             fileStorage.Object,
             dbEx.Object,
-            NullLogger<ElectronicDocumentIssuer>.Instance);
+            NullLogger<ElectronicDocumentIssuer>.Instance
+        );
     }
 
     private static Mock<IFileStorage> DefaultFileStorage()
     {
         var mock = new Mock<IFileStorage>();
         mock.Setup(f => f.GetAsync("signed/path.xml", It.IsAny<CancellationToken>()))
-            .ReturnsAsync(() => new MemoryStream(Encoding.UTF8.GetBytes("<factura><ds:Signature/></factura>")));
+            .ReturnsAsync(() =>
+                new MemoryStream(Encoding.UTF8.GetBytes("<factura><ds:Signature/></factura>"))
+            );
         return mock;
     }
 
@@ -89,7 +102,11 @@ public sealed class ElectronicDocumentIssuerRetryTests
     {
         var mock = new Mock<IElectronicDocumentReceptionService>();
         mock.Setup(r => r.SendAsync(CompanyId, It.IsAny<byte[]>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Result<SriReceptionResult>.Failure("No se pudo contactar al servicio de recepción del SRI."));
+            .ReturnsAsync(
+                Result<SriReceptionResult>.Failure(
+                    "No se pudo contactar al servicio de recepción del SRI."
+                )
+            );
         return mock;
     }
 
@@ -97,14 +114,21 @@ public sealed class ElectronicDocumentIssuerRetryTests
     {
         var mock = new Mock<IElectronicDocumentAuthorizationService>();
         mock.Setup(a => a.CheckAsync(CompanyId, It.IsAny<string>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Result<SriAuthorizationResult>.Failure("No se pudo contactar al servicio de autorización del SRI."));
+            .ReturnsAsync(
+                Result<SriAuthorizationResult>.Failure(
+                    "No se pudo contactar al servicio de autorización del SRI."
+                )
+            );
         return mock;
     }
 
-    private static Mock<IElectronicDocumentRepository> RepositoryReturning(ElectronicDocument? document)
+    private static Mock<IElectronicDocumentRepository> RepositoryReturning(
+        ElectronicDocument? document
+    )
     {
         var repository = new Mock<IElectronicDocumentRepository>();
-        repository.Setup(r => r.GetByIdAsync(TenantId, It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+        repository
+            .Setup(r => r.GetByIdAsync(TenantId, It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(document);
         return repository;
     }
@@ -124,7 +148,12 @@ public sealed class ElectronicDocumentIssuerRetryTests
     public async Task RetryAsync_when_document_is_authorized_returns_validation_failure()
     {
         var document = NewReceivedDocument();
-        document.MarkAuthorized(AuthorizationNumber.Create(ValidAccessKey), DateTime.UtcNow, null, UserId);
+        document.MarkAuthorized(
+            AuthorizationNumber.Create(ValidAccessKey),
+            DateTime.UtcNow,
+            null,
+            UserId
+        );
         var repository = RepositoryReturning(document);
         var issuer = BuildIssuer(repository);
 
@@ -140,9 +169,12 @@ public sealed class ElectronicDocumentIssuerRetryTests
         var repository = RepositoryReturning(document);
         byte[]? sentBytes = null;
         var reception = new Mock<IElectronicDocumentReceptionService>();
-        reception.Setup(r => r.SendAsync(CompanyId, It.IsAny<byte[]>(), It.IsAny<CancellationToken>()))
+        reception
+            .Setup(r => r.SendAsync(CompanyId, It.IsAny<byte[]>(), It.IsAny<CancellationToken>()))
             .Callback<Guid, byte[], CancellationToken>((_, bytes, _) => sentBytes = bytes)
-            .ReturnsAsync(Result<SriReceptionResult>.Success(new SriReceptionResult { Status = "RECIBIDA" }));
+            .ReturnsAsync(
+                Result<SriReceptionResult>.Success(new SriReceptionResult { Status = "RECIBIDA" })
+            );
         var issuer = BuildIssuer(repository, reception: reception);
 
         var result = await issuer.RetryAsync(TenantId, document.Id, UserId);
@@ -161,20 +193,28 @@ public sealed class ElectronicDocumentIssuerRetryTests
         var repository = RepositoryReturning(document);
         var reception = new Mock<IElectronicDocumentReceptionService>();
         var authorization = new Mock<IElectronicDocumentAuthorizationService>();
-        authorization.Setup(a => a.CheckAsync(CompanyId, ValidAccessKey, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Result<SriAuthorizationResult>.Success(new SriAuthorizationResult
-            {
-                Status = "AUTORIZADO",
-                AuthorizationNumber = ValidAccessKey,
-                AuthorizationDate = DateTime.UtcNow,
-            }));
+        authorization
+            .Setup(a => a.CheckAsync(CompanyId, ValidAccessKey, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(
+                Result<SriAuthorizationResult>.Success(
+                    new SriAuthorizationResult
+                    {
+                        Status = "AUTORIZADO",
+                        AuthorizationNumber = ValidAccessKey,
+                        AuthorizationDate = DateTime.UtcNow,
+                    }
+                )
+            );
         var issuer = BuildIssuer(repository, reception: reception, authorization: authorization);
 
         var result = await issuer.RetryAsync(TenantId, document.Id, UserId);
 
         result.IsSuccess.Should().BeTrue(result.Error);
         document.CurrentState.Should().Be(ElectronicDocumentState.Authorized);
-        reception.Verify(r => r.SendAsync(It.IsAny<Guid>(), It.IsAny<byte[]>(), It.IsAny<CancellationToken>()), Times.Never);
+        reception.Verify(
+            r => r.SendAsync(It.IsAny<Guid>(), It.IsAny<byte[]>(), It.IsAny<CancellationToken>()),
+            Times.Never
+        );
     }
 
     [Fact]
@@ -201,12 +241,17 @@ public sealed class ElectronicDocumentIssuerRetryTests
         var document = NewReceivedDocument();
         var repository = RepositoryReturning(document);
         var authorization = new Mock<IElectronicDocumentAuthorizationService>();
-        authorization.Setup(a => a.CheckAsync(CompanyId, ValidAccessKey, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Result<SriAuthorizationResult>.Success(new SriAuthorizationResult
-            {
-                Status = "TIMEOUT",
-                ErrorMessage = "El SRI no respondió tras varios reintentos.",
-            }));
+        authorization
+            .Setup(a => a.CheckAsync(CompanyId, ValidAccessKey, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(
+                Result<SriAuthorizationResult>.Success(
+                    new SriAuthorizationResult
+                    {
+                        Status = "TIMEOUT",
+                        ErrorMessage = "El SRI no respondió tras varios reintentos.",
+                    }
+                )
+            );
         var issuer = BuildIssuer(repository, authorization: authorization);
 
         var result = await issuer.RetryAsync(TenantId, document.Id, UserId);
@@ -224,12 +269,17 @@ public sealed class ElectronicDocumentIssuerRetryTests
             document.MarkRetryAttempted(UserId);
         var repository = RepositoryReturning(document);
         var authorization = new Mock<IElectronicDocumentAuthorizationService>();
-        authorization.Setup(a => a.CheckAsync(CompanyId, ValidAccessKey, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Result<SriAuthorizationResult>.Success(new SriAuthorizationResult
-            {
-                Status = "TIMEOUT",
-                ErrorMessage = "El SRI no respondió tras varios reintentos.",
-            }));
+        authorization
+            .Setup(a => a.CheckAsync(CompanyId, ValidAccessKey, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(
+                Result<SriAuthorizationResult>.Success(
+                    new SriAuthorizationResult
+                    {
+                        Status = "TIMEOUT",
+                        ErrorMessage = "El SRI no respondió tras varios reintentos.",
+                    }
+                )
+            );
         var issuer = BuildIssuer(repository, authorization: authorization);
 
         var result = await issuer.RetryAsync(TenantId, document.Id, UserId);
@@ -247,13 +297,18 @@ public sealed class ElectronicDocumentIssuerRetryTests
         document.MarkDeadLetter("Timeout de autorización.", UserId);
         var repository = RepositoryReturning(document);
         var authorization = new Mock<IElectronicDocumentAuthorizationService>();
-        authorization.Setup(a => a.CheckAsync(CompanyId, ValidAccessKey, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Result<SriAuthorizationResult>.Success(new SriAuthorizationResult
-            {
-                Status = "AUTORIZADO",
-                AuthorizationNumber = ValidAccessKey,
-                AuthorizationDate = DateTime.UtcNow,
-            }));
+        authorization
+            .Setup(a => a.CheckAsync(CompanyId, ValidAccessKey, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(
+                Result<SriAuthorizationResult>.Success(
+                    new SriAuthorizationResult
+                    {
+                        Status = "AUTORIZADO",
+                        AuthorizationNumber = ValidAccessKey,
+                        AuthorizationDate = DateTime.UtcNow,
+                    }
+                )
+            );
         var issuer = BuildIssuer(repository, authorization: authorization);
 
         var result = await issuer.RetryAsync(TenantId, document.Id, UserId);
@@ -268,7 +323,8 @@ public sealed class ElectronicDocumentIssuerRetryTests
         var document = NewSignedDocument();
         var repository = RepositoryReturning(document);
         var fileStorage = new Mock<IFileStorage>();
-        fileStorage.Setup(f => f.GetAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+        fileStorage
+            .Setup(f => f.GetAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync((Stream?)null);
         var issuer = BuildIssuer(repository, fileStorage: fileStorage);
 

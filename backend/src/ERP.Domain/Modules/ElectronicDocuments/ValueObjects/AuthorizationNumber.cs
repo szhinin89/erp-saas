@@ -28,7 +28,9 @@ public sealed record AuthorizationNumber
 
         if (trimmed.Length != MaxLength || !trimmed.All(char.IsDigit))
             throw new ArgumentException(
-                $"El número de autorización debe tener exactamente {MaxLength} dígitos numéricos.", nameof(value));
+                $"El número de autorización debe tener exactamente {MaxLength} dígitos numéricos.",
+                nameof(value)
+            );
 
         return new AuthorizationNumber(trimmed);
     }

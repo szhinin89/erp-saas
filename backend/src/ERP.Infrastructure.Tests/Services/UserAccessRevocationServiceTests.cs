@@ -29,21 +29,32 @@ public sealed class UserAccessRevocationServiceTests
         public Mock<IRefreshTokenService> RefreshTokenService { get; } = new();
         public Mock<IUserSessionRepository> UserSessionRepo { get; } = new();
 
-        public UserAccessRevocationService Build() => new(RefreshTokenService.Object, UserSessionRepo.Object);
+        public UserAccessRevocationService Build() =>
+            new(RefreshTokenService.Object, UserSessionRepo.Object);
     }
 
     [Fact]
     public async Task Revoca_todos_los_RefreshTokens_activos_del_usuario()
     {
         var f = new Fixture();
-        f.UserSessionRepo.Setup(r => r.GetActiveSessionsAsync(UserId, TenantId, It.IsAny<CancellationToken>()))
+        f.UserSessionRepo.Setup(r =>
+                r.GetActiveSessionsAsync(UserId, TenantId, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(Array.Empty<UserSession>());
 
         var service = f.Build();
-        await service.RevokeAllAccessAsync(UserId, TenantId, ActorId, Reason, CancellationToken.None);
+        await service.RevokeAllAccessAsync(
+            UserId,
+            TenantId,
+            ActorId,
+            Reason,
+            CancellationToken.None
+        );
 
         f.RefreshTokenService.Verify(
-            s => s.RevokeAllForUserAsync(UserId, TenantId, Reason, It.IsAny<CancellationToken>()), Times.Once);
+            s => s.RevokeAllForUserAsync(UserId, TenantId, Reason, It.IsAny<CancellationToken>()),
+            Times.Once
+        );
     }
 
     [Fact]
@@ -52,30 +63,52 @@ public sealed class UserAccessRevocationServiceTests
         var session1 = NewActiveSession();
         var session2 = NewActiveSession();
         var f = new Fixture();
-        f.UserSessionRepo.Setup(r => r.GetActiveSessionsAsync(UserId, TenantId, It.IsAny<CancellationToken>()))
+        f.UserSessionRepo.Setup(r =>
+                r.GetActiveSessionsAsync(UserId, TenantId, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(new[] { session1, session2 });
 
         var service = f.Build();
-        await service.RevokeAllAccessAsync(UserId, TenantId, ActorId, Reason, CancellationToken.None);
+        await service.RevokeAllAccessAsync(
+            UserId,
+            TenantId,
+            ActorId,
+            Reason,
+            CancellationToken.None
+        );
 
         session1.Status.Should().Be(UserSessionStatus.ClosedManually);
         session1.UpdatedBy.Should().Be(ActorId);
         session2.Status.Should().Be(UserSessionStatus.ClosedManually);
         session2.UpdatedBy.Should().Be(ActorId);
-        f.UserSessionRepo.Verify(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
+        f.UserSessionRepo.Verify(
+            r => r.SaveChangesAsync(It.IsAny<CancellationToken>()),
+            Times.Once
+        );
     }
 
     [Fact]
     public async Task Sin_sesiones_activas_no_llama_SaveChangesAsync()
     {
         var f = new Fixture();
-        f.UserSessionRepo.Setup(r => r.GetActiveSessionsAsync(UserId, TenantId, It.IsAny<CancellationToken>()))
+        f.UserSessionRepo.Setup(r =>
+                r.GetActiveSessionsAsync(UserId, TenantId, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(Array.Empty<UserSession>());
 
         var service = f.Build();
-        await service.RevokeAllAccessAsync(UserId, TenantId, ActorId, Reason, CancellationToken.None);
+        await service.RevokeAllAccessAsync(
+            UserId,
+            TenantId,
+            ActorId,
+            Reason,
+            CancellationToken.None
+        );
 
-        f.UserSessionRepo.Verify(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
+        f.UserSessionRepo.Verify(
+            r => r.SaveChangesAsync(It.IsAny<CancellationToken>()),
+            Times.Never
+        );
     }
 
     [Fact]
@@ -86,13 +119,21 @@ public sealed class UserAccessRevocationServiceTests
         var closedAtBefore = alreadyClosed.ClosedAt;
 
         var f = new Fixture();
-        f.UserSessionRepo.Setup(r => r.GetActiveSessionsAsync(UserId, TenantId, It.IsAny<CancellationToken>()))
+        f.UserSessionRepo.Setup(r =>
+                r.GetActiveSessionsAsync(UserId, TenantId, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(new[] { alreadyClosed });
 
         var service = f.Build();
-        var act = () => service.RevokeAllAccessAsync(UserId, TenantId, ActorId, Reason, CancellationToken.None);
+        var act = () =>
+            service.RevokeAllAccessAsync(UserId, TenantId, ActorId, Reason, CancellationToken.None);
 
         await act.Should().NotThrowAsync();
-        alreadyClosed.ClosedAt.Should().Be(closedAtBefore, "CloseManually es idempotente — no debe reabrir ni recalcular el cierre");
+        alreadyClosed
+            .ClosedAt.Should()
+            .Be(
+                closedAtBefore,
+                "CloseManually es idempotente — no debe reabrir ni recalcular el cierre"
+            );
     }
 }

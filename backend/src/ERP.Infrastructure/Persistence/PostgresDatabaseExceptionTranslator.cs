@@ -17,7 +17,8 @@ public sealed class PostgresDatabaseExceptionTranslator : IDatabaseExceptionTran
             pg.SqlState,
             pg.ConstraintName,
             pg.TableName,
-            pg.Detail);
+            pg.Detail
+        );
         return true;
     }
 

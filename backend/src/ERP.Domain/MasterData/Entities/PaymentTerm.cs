@@ -21,7 +21,8 @@ public sealed class PaymentTerm : MasterEntity, ITenantScopedEntity
         string name,
         int installments,
         int daysBetweenInstallments,
-        Guid createdBy)
+        Guid createdBy
+    )
     {
         Validate(code, name, installments, daysBetweenInstallments);
 
@@ -50,7 +51,8 @@ public sealed class PaymentTerm : MasterEntity, ITenantScopedEntity
         string name,
         int installments,
         int daysBetweenInstallments,
-        Guid createdBy)
+        Guid createdBy
+    )
     {
         var pt = Create(tenantId, code, name, installments, daysBetweenInstallments, createdBy);
         pt.MarkAsSystemSeeded();
@@ -69,9 +71,15 @@ public sealed class PaymentTerm : MasterEntity, ITenantScopedEntity
         if (string.IsNullOrWhiteSpace(name))
             throw new ArgumentException("El nombre es obligatorio.", nameof(name));
         if (installments < 1 || installments > MaxInstallments)
-            throw new ArgumentException($"Las cuotas deben estar entre 1 y {MaxInstallments}.", nameof(installments));
+            throw new ArgumentException(
+                $"Las cuotas deben estar entre 1 y {MaxInstallments}.",
+                nameof(installments)
+            );
         if (daysBetweenInstallments < 0)
-            throw new ArgumentException("Los días entre cuotas no pueden ser negativos.", nameof(daysBetweenInstallments));
+            throw new ArgumentException(
+                "Los días entre cuotas no pueden ser negativos.",
+                nameof(daysBetweenInstallments)
+            );
 
         Name = name.Trim();
         Installments = installments;
@@ -81,25 +89,41 @@ public sealed class PaymentTerm : MasterEntity, ITenantScopedEntity
 
     public int TotalDays => Installments * DaysBetweenInstallments;
 
-    public string Summary => Installments == 1 && DaysBetweenInstallments == 0
-        ? "Contado"
-        : Installments == 1
-            ? $"{DaysBetweenInstallments} días"
-            : $"{Installments}x{DaysBetweenInstallments}";
+    public string Summary =>
+        Installments == 1 && DaysBetweenInstallments == 0 ? "Contado"
+        : Installments == 1 ? $"{DaysBetweenInstallments} días"
+        : $"{Installments}x{DaysBetweenInstallments}";
 
-    private static void Validate(string code, string name, int installments, int daysBetweenInstallments)
+    private static void Validate(
+        string code,
+        string name,
+        int installments,
+        int daysBetweenInstallments
+    )
     {
         if (string.IsNullOrWhiteSpace(code))
             throw new ArgumentException("El código es obligatorio.", nameof(code));
         if (code.Trim().Length > MaxCodeLength)
-            throw new ArgumentException($"El código no puede superar {MaxCodeLength} caracteres.", nameof(code));
+            throw new ArgumentException(
+                $"El código no puede superar {MaxCodeLength} caracteres.",
+                nameof(code)
+            );
         if (string.IsNullOrWhiteSpace(name))
             throw new ArgumentException("El nombre es obligatorio.", nameof(name));
         if (name.Trim().Length > MaxNameLength)
-            throw new ArgumentException($"El nombre no puede superar {MaxNameLength} caracteres.", nameof(name));
+            throw new ArgumentException(
+                $"El nombre no puede superar {MaxNameLength} caracteres.",
+                nameof(name)
+            );
         if (installments < 1 || installments > MaxInstallments)
-            throw new ArgumentException($"Las cuotas deben estar entre 1 y {MaxInstallments}.", nameof(installments));
+            throw new ArgumentException(
+                $"Las cuotas deben estar entre 1 y {MaxInstallments}.",
+                nameof(installments)
+            );
         if (daysBetweenInstallments < 0)
-            throw new ArgumentException("Los días entre cuotas no pueden ser negativos.", nameof(daysBetweenInstallments));
+            throw new ArgumentException(
+                "Los días entre cuotas no pueden ser negativos.",
+                nameof(daysBetweenInstallments)
+            );
     }
 }

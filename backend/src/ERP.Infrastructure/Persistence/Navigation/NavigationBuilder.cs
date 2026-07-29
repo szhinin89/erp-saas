@@ -1,3 +1,4 @@
+using System.Text.Json;
 using ERP.Application.Access;
 using ERP.Application.Access.Caching;
 using ERP.Application.Common;
@@ -7,7 +8,6 @@ using ERP.Domain.Kernel.Security;
 using ERP.Domain.Navigation.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
-using System.Text.Json;
 
 namespace ERP.Infrastructure.Persistence.Navigation;
 
@@ -38,7 +38,8 @@ public sealed class NavigationBuilder : INavigationBuilder
         ICurrentUser user,
         ICompanyContextProvider companyCtx,
         IEffectivePermissionKeysProvider permKeys,
-        IMemoryCache cache)
+        IMemoryCache cache
+    )
     {
         _db = db;
         _tenant = tenant;
@@ -48,13 +49,15 @@ public sealed class NavigationBuilder : INavigationBuilder
         _cache = cache;
     }
 
-    public void InvalidateCache(Guid tenantId, Guid companyId, Guid userId)
-        => _cache.Remove(BuildCacheKey(tenantId, companyId, userId));
+    public void InvalidateCache(Guid tenantId, Guid companyId, Guid userId) =>
+        _cache.Remove(BuildCacheKey(tenantId, companyId, userId));
 
-    private static string BuildCacheKey(Guid tenantId, Guid companyId, Guid userId)
-        => $"{CachePrefix}:{tenantId}:{companyId}:{userId}";
+    private static string BuildCacheKey(Guid tenantId, Guid companyId, Guid userId) =>
+        $"{CachePrefix}:{tenantId}:{companyId}:{userId}";
 
-    public async Task<IReadOnlyList<NavMenuGroupDto>> BuildMenuAsync(CancellationToken cancellationToken = default)
+    public async Task<IReadOnlyList<NavMenuGroupDto>> BuildMenuAsync(
+        CancellationToken cancellationToken = default
+    )
     {
         var tenantId = _tenant.TenantId;
         var userId = _user.UserId;
@@ -62,14 +65,18 @@ public sealed class NavigationBuilder : INavigationBuilder
 
         // CompanyId del contexto operativo de la sesión autenticada (membresía validada),
         // nunca un valor crudo enviado por el frontend sin validar.
-        var ctx = userId != Guid.Empty
-            ? await _companyCtx.ResolveOperationalForCurrentUserAsync(cancellationToken)
-            : null;
+        var ctx =
+            userId != Guid.Empty
+                ? await _companyCtx.ResolveOperationalForCurrentUserAsync(cancellationToken)
+                : null;
         var companyId = ctx?.CompanyId ?? Guid.Empty;
 
         var cacheKey = BuildCacheKey(tenantId, companyId, userId);
 
-        if (_cache.TryGetValue(cacheKey, out IReadOnlyList<NavMenuGroupDto>? cached) && cached is not null)
+        if (
+            _cache.TryGetValue(cacheKey, out IReadOnlyList<NavMenuGroupDto>? cached)
+            && cached is not null
+        )
             return cached;
 
         var result = await BuildInternalAsync(tenantId, userId, role, ctx, cancellationToken);
@@ -79,7 +86,12 @@ public sealed class NavigationBuilder : INavigationBuilder
     }
 
     private async Task<IReadOnlyList<NavMenuGroupDto>> BuildInternalAsync(
-        Guid tenantId, Guid userId, string role, OperationalCompanyContext? ctx, CancellationToken ct)
+        Guid tenantId,
+        Guid userId,
+        string role,
+        OperationalCompanyContext? ctx,
+        CancellationToken ct
+    )
     {
         var isAdmin = string.Equals(role, SecurityRoles.Admin, StringComparison.OrdinalIgnoreCase);
 
@@ -90,36 +102,44 @@ public sealed class NavigationBuilder : INavigationBuilder
             if (ctx?.ProfileId is not null && ctx.IsActiveMembership)
             {
                 var keys = await _permKeys.GetAllowedKeysAsync(
-                    tenantId, ctx.CompanyId, userId, ctx.ProfileId.Value, ct);
+                    tenantId,
+                    ctx.CompanyId,
+                    userId,
+                    ctx.ProfileId.Value,
+                    ct
+                );
                 allowed = new HashSet<string>(keys, StringComparer.OrdinalIgnoreCase);
             }
         }
 
-        var groups = await _db.UiNavGroups.AsNoTracking()
+        var groups = await _db
+            .UiNavGroups.AsNoTracking()
             .Where(g => g.IsActive)
             .OrderBy(g => g.SortOrder)
             .ThenBy(g => g.Code)
             .ToListAsync(ct);
 
-        var items = await _db.UiNavItems.AsNoTracking()
+        var items = await _db
+            .UiNavItems.AsNoTracking()
             .Where(i => i.IsActive)
             .OrderBy(i => i.SortOrder)
             .ThenBy(i => i.RoutePath)
             .ToListAsync(ct);
 
-        var byGroup = items.GroupBy(i => i.GroupId)
-                          .ToDictionary(g => g.Key, g => g.ToList());
+        var byGroup = items.GroupBy(i => i.GroupId).ToDictionary(g => g.Key, g => g.ToList());
 
         var result = new List<NavMenuGroupDto>();
 
         foreach (var g in groups)
         {
-            if (!IsGroupVisible(g, role)) continue;
+            if (!IsGroupVisible(g, role))
+                continue;
 
             var groupItems = byGroup.TryGetValue(g.Id, out var list) ? list : [];
             var itemDtos = BuildItemTree(groupItems, null, role, allowed, isAdmin);
 
-            if (itemDtos.Count == 0) continue;
+            if (itemDtos.Count == 0)
+                continue;
 
             result.Add(new NavMenuGroupDto(g.Id, g.Code, g.Icon, g.LabelKey, itemDtos));
         }
@@ -129,8 +149,12 @@ public sealed class NavigationBuilder : INavigationBuilder
 
     private static bool IsGroupVisible(UiNavGroup g, string role)
     {
-        if (string.IsNullOrWhiteSpace(g.RolesCsv)) return true;
-        var roles = g.RolesCsv.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        if (string.IsNullOrWhiteSpace(g.RolesCsv))
+            return true;
+        var roles = g.RolesCsv.Split(
+            ',',
+            StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries
+        );
         return roles.Any(r => string.Equals(r, role, StringComparison.OrdinalIgnoreCase));
     }
 
@@ -139,7 +163,8 @@ public sealed class NavigationBuilder : INavigationBuilder
         Guid? parentId,
         string role,
         HashSet<string>? allowed,
-        bool isAdmin)
+        bool isAdmin
+    )
     {
         var siblings = groupItems
             .Where(i => i.ParentItemId == parentId)
@@ -149,47 +174,64 @@ public sealed class NavigationBuilder : INavigationBuilder
         var result = new List<NavMenuItemDto>();
         foreach (var item in siblings)
         {
-            if (!IsItemVisible(item, role, allowed, isAdmin)) continue;
+            if (!IsItemVisible(item, role, allowed, isAdmin))
+                continue;
 
             var children = BuildItemTree(groupItems, item.Id, role, allowed, isAdmin);
-            result.Add(new NavMenuItemDto(
-                item.Id,
-                item.LabelKey,
-                item.DisplayLabel,
-                item.RoutePath,
-                children));
+            result.Add(
+                new NavMenuItemDto(
+                    item.Id,
+                    item.LabelKey,
+                    item.DisplayLabel,
+                    item.RoutePath,
+                    children
+                )
+            );
         }
 
         return result;
     }
 
-    private static bool IsItemVisible(UiNavItem item, string role, HashSet<string>? allowed, bool isAdmin)
+    private static bool IsItemVisible(
+        UiNavItem item,
+        string role,
+        HashSet<string>? allowed,
+        bool isAdmin
+    )
     {
         // Role restriction check.
         if (!string.IsNullOrWhiteSpace(item.RolesCsv))
         {
-            var roles = item.RolesCsv.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+            var roles = item.RolesCsv.Split(
+                ',',
+                StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries
+            );
             if (!roles.Any(r => string.Equals(r, role, StringComparison.OrdinalIgnoreCase)))
                 return false;
         }
 
         // Admin bypasses permission checks.
-        if (isAdmin) return true;
+        if (isAdmin)
+            return true;
 
         // Items with no permission requirement are visible to all authenticated users.
         var hasSingle = !string.IsNullOrWhiteSpace(item.PermissionKey);
         var hasAny = !string.IsNullOrWhiteSpace(item.PermissionKeysAnyJson);
 
-        if (!hasSingle && !hasAny) return true;
+        if (!hasSingle && !hasAny)
+            return true;
 
-        if (allowed is null) return false;
+        if (allowed is null)
+            return false;
 
-        if (hasSingle && allowed.Contains(item.PermissionKey!)) return true;
+        if (hasSingle && allowed.Contains(item.PermissionKey!))
+            return true;
 
         if (hasAny)
         {
             var keysAny = ParseKeysAny(item.PermissionKeysAnyJson);
-            if (keysAny?.Any(k => allowed.Contains(k)) == true) return true;
+            if (keysAny?.Any(k => allowed.Contains(k)) == true)
+                return true;
         }
 
         return false;
@@ -197,8 +239,15 @@ public sealed class NavigationBuilder : INavigationBuilder
 
     private static List<string>? ParseKeysAny(string? json)
     {
-        if (string.IsNullOrWhiteSpace(json)) return null;
-        try { return JsonSerializer.Deserialize<List<string>>(json); }
-        catch { return null; }
+        if (string.IsNullOrWhiteSpace(json))
+            return null;
+        try
+        {
+            return JsonSerializer.Deserialize<List<string>>(json);
+        }
+        catch
+        {
+            return null;
+        }
     }
 }

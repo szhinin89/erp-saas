@@ -7,7 +7,8 @@ public sealed record AppFeatureMenuRow(
     string? Path,
     string Permission,
     Guid? ParentId,
-    int SortOrder);
+    int SortOrder
+);
 
 public sealed record AppFeatureSyncRow(
     string Permission,
@@ -16,11 +17,17 @@ public sealed record AppFeatureSyncRow(
     string? Path,
     string? ParentPermission,
     int SortOrder,
-    bool IsVisibleInMenu);
+    bool IsVisibleInMenu
+);
 
 public interface IAppFeatureRepository
 {
-    Task<IReadOnlyList<AppFeatureMenuRow>> ListVisibleMenuRowsAsync(CancellationToken cancellationToken = default);
+    Task<IReadOnlyList<AppFeatureMenuRow>> ListVisibleMenuRowsAsync(
+        CancellationToken cancellationToken = default
+    );
 
-    Task<int> SyncDiscoveredFeaturesAsync(IReadOnlyList<AppFeatureSyncRow> rows, CancellationToken cancellationToken = default);
+    Task<int> SyncDiscoveredFeaturesAsync(
+        IReadOnlyList<AppFeatureSyncRow> rows,
+        CancellationToken cancellationToken = default
+    );
 }

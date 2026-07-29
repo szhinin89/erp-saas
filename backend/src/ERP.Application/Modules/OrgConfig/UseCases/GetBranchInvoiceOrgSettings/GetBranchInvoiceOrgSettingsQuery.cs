@@ -5,4 +5,5 @@ using MediatR;
 namespace ERP.Application.Modules.OrgConfig.UseCases.GetBranchInvoiceOrgSettings;
 
 public sealed record GetBranchInvoiceOrgSettingsQuery(Guid BranchId)
-    : IRequest<Result<BranchInvoiceOrgSettingsDto>>, IBranchScopedRequest;
+    : IRequest<Result<BranchInvoiceOrgSettingsDto>>,
+        IBranchScopedRequest;

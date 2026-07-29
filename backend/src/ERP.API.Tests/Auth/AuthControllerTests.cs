@@ -27,7 +27,10 @@ public sealed class AuthControllerTests
         services.AddSingleton<IWebHostEnvironment>(new StubWebHostEnvironment());
         controller.ControllerContext = new ControllerContext
         {
-            HttpContext = new DefaultHttpContext { RequestServices = services.BuildServiceProvider() },
+            HttpContext = new DefaultHttpContext
+            {
+                RequestServices = services.BuildServiceProvider(),
+            },
         };
         return controller;
     }
@@ -37,9 +40,11 @@ public sealed class AuthControllerTests
         public string EnvironmentName { get; set; } = "Development";
         public string ApplicationName { get; set; } = "ERP.API.Tests";
         public string WebRootPath { get; set; } = "";
-        public Microsoft.Extensions.FileProviders.IFileProvider WebRootFileProvider { get; set; } = null!;
+        public Microsoft.Extensions.FileProviders.IFileProvider WebRootFileProvider { get; set; } =
+            null!;
         public string ContentRootPath { get; set; } = "";
-        public Microsoft.Extensions.FileProviders.IFileProvider ContentRootFileProvider { get; set; } = null!;
+        public Microsoft.Extensions.FileProviders.IFileProvider ContentRootFileProvider { get; set; } =
+            null!;
     }
 
     // ── 5A / 5B: endpoints eliminados — no deben poder reintroducirse sin que este test falle ──
@@ -47,15 +52,23 @@ public sealed class AuthControllerTests
     [Fact]
     public void AuthController_ya_no_expone_una_accion_Register()
     {
-        typeof(AuthController).GetMethod("Register").Should().BeNull(
-            "POST /auth/register permitía crear un usuario Admin en cualquier tenant existente sin autenticación (hallazgo 5A)");
+        typeof(AuthController)
+            .GetMethod("Register")
+            .Should()
+            .BeNull(
+                "POST /auth/register permitía crear un usuario Admin en cualquier tenant existente sin autenticación (hallazgo 5A)"
+            );
     }
 
     [Fact]
     public void AuthController_ya_no_expone_una_accion_DirectPasswordReset()
     {
-        typeof(AuthController).GetMethod("DirectPasswordReset").Should().BeNull(
-            "POST /auth/password-reset cambiaba la contraseña de cualquier usuario solo con TenantId+Email, sin token ni OTP (hallazgo 5B)");
+        typeof(AuthController)
+            .GetMethod("DirectPasswordReset")
+            .Should()
+            .BeNull(
+                "POST /auth/password-reset cambiaba la contraseña de cualquier usuario solo con TenantId+Email, sin token ni OTP (hallazgo 5B)"
+            );
     }
 
     // ── El flujo oficial de reset por token sigue funcionando sin cambios ──
@@ -70,7 +83,10 @@ public sealed class AuthControllerTests
             return Result<bool>.Success(true);
         });
 
-        var response = await controller.ForgotPassword(new ForgotPasswordCommand("ana@test.com"), CancellationToken.None);
+        var response = await controller.ForgotPassword(
+            new ForgotPasswordCommand("ana@test.com"),
+            CancellationToken.None
+        );
 
         response.Should().BeOfType<OkObjectResult>();
         sentRequest.Should().Be(new ForgotPasswordCommand("ana@test.com"));

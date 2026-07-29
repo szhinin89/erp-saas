@@ -32,12 +32,17 @@ public sealed class GlobalBootstrapOrchestratorTests
 
         var orchestrator = new GlobalBootstrapOrchestrator(
             new[] { stepB.Object, stepA.Object },
-            NullLogger<GlobalBootstrapOrchestrator>.Instance);
+            NullLogger<GlobalBootstrapOrchestrator>.Instance
+        );
 
         await orchestrator.RunAsync(CancellationToken.None);
 
-        executionLog.Should().Equal(new List<int> { 10, 20 },
-            "el orden de ejecución debe ser explícito por Order, no el de registro en DI");
+        executionLog
+            .Should()
+            .Equal(
+                new List<int> { 10, 20 },
+                "el orden de ejecución debe ser explícito por Order, no el de registro en DI"
+            );
     }
 
     [Fact]
@@ -45,7 +50,8 @@ public sealed class GlobalBootstrapOrchestratorTests
     {
         var orchestrator = new GlobalBootstrapOrchestrator(
             Array.Empty<IGlobalBootstrapStep>(),
-            NullLogger<GlobalBootstrapOrchestrator>.Instance);
+            NullLogger<GlobalBootstrapOrchestrator>.Instance
+        );
 
         var act = async () => await orchestrator.RunAsync(CancellationToken.None);
 
@@ -60,7 +66,8 @@ public sealed class GlobalBootstrapOrchestratorTests
 
         var orchestrator = new GlobalBootstrapOrchestrator(
             new[] { stepA.Object, stepB.Object },
-            NullLogger<GlobalBootstrapOrchestrator>.Instance);
+            NullLogger<GlobalBootstrapOrchestrator>.Instance
+        );
 
         await orchestrator.RunAsync(CancellationToken.None);
         await orchestrator.RunAsync(CancellationToken.None);

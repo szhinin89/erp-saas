@@ -16,66 +16,96 @@ public sealed class RideControllerBoundaryTests
     [Fact]
     public void RideController_does_not_depend_on_infrastructure()
     {
-        var result = Types.InAssembly(ApiAssembly)
-            .That().HaveNameStartingWith("RideController")
-            .ShouldNot().HaveDependencyOn("ERP.Infrastructure")
+        var result = Types
+            .InAssembly(ApiAssembly)
+            .That()
+            .HaveNameStartingWith("RideController")
+            .ShouldNot()
+            .HaveDependencyOn("ERP.Infrastructure")
             .GetResult();
 
-        result.IsSuccessful.Should().BeTrue(string.Join(", ", result.FailingTypeNames ?? Array.Empty<string>()));
+        result
+            .IsSuccessful.Should()
+            .BeTrue(string.Join(", ", result.FailingTypeNames ?? Array.Empty<string>()));
     }
 
     [Fact]
     public void RideController_does_not_depend_on_ErpDbContext()
     {
-        var result = Types.InAssembly(ApiAssembly)
-            .That().HaveNameStartingWith("RideController")
-            .ShouldNot().HaveDependencyOn("ERP.Infrastructure.Persistence.ErpDbContext")
+        var result = Types
+            .InAssembly(ApiAssembly)
+            .That()
+            .HaveNameStartingWith("RideController")
+            .ShouldNot()
+            .HaveDependencyOn("ERP.Infrastructure.Persistence.ErpDbContext")
             .GetResult();
 
-        result.IsSuccessful.Should().BeTrue(string.Join(", ", result.FailingTypeNames ?? Array.Empty<string>()));
+        result
+            .IsSuccessful.Should()
+            .BeTrue(string.Join(", ", result.FailingTypeNames ?? Array.Empty<string>()));
     }
 
     [Fact]
     public void RideController_does_not_depend_on_ride_repositories()
     {
-        var result = Types.InAssembly(ApiAssembly)
-            .That().HaveNameStartingWith("RideController")
-            .ShouldNot().HaveDependencyOn("ERP.Infrastructure.Persistence.Repositories.Ride")
+        var result = Types
+            .InAssembly(ApiAssembly)
+            .That()
+            .HaveNameStartingWith("RideController")
+            .ShouldNot()
+            .HaveDependencyOn("ERP.Infrastructure.Persistence.Repositories.Ride")
             .GetResult();
 
-        result.IsSuccessful.Should().BeTrue(string.Join(", ", result.FailingTypeNames ?? Array.Empty<string>()));
+        result
+            .IsSuccessful.Should()
+            .BeTrue(string.Join(", ", result.FailingTypeNames ?? Array.Empty<string>()));
     }
 
     [Fact]
     public void RideController_does_not_depend_on_questpdf()
     {
-        var result = Types.InAssembly(ApiAssembly)
-            .That().HaveNameStartingWith("RideController")
-            .ShouldNot().HaveDependencyOn("QuestPDF")
+        var result = Types
+            .InAssembly(ApiAssembly)
+            .That()
+            .HaveNameStartingWith("RideController")
+            .ShouldNot()
+            .HaveDependencyOn("QuestPDF")
             .GetResult();
 
-        result.IsSuccessful.Should().BeTrue(string.Join(", ", result.FailingTypeNames ?? Array.Empty<string>()));
+        result
+            .IsSuccessful.Should()
+            .BeTrue(string.Join(", ", result.FailingTypeNames ?? Array.Empty<string>()));
     }
 
     [Fact]
     public void RideController_does_not_depend_on_electronic_documents()
     {
-        var result = Types.InAssembly(ApiAssembly)
-            .That().HaveNameStartingWith("RideController")
-            .ShouldNot().HaveDependencyOn("ERP.Application.Modules.ElectronicDocuments")
+        var result = Types
+            .InAssembly(ApiAssembly)
+            .That()
+            .HaveNameStartingWith("RideController")
+            .ShouldNot()
+            .HaveDependencyOn("ERP.Application.Modules.ElectronicDocuments")
             .GetResult();
 
-        result.IsSuccessful.Should().BeTrue(string.Join(", ", result.FailingTypeNames ?? Array.Empty<string>()));
+        result
+            .IsSuccessful.Should()
+            .BeTrue(string.Join(", ", result.FailingTypeNames ?? Array.Empty<string>()));
     }
 
     [Fact]
     public void RideController_depends_only_on_mediatr_and_ride_application_contracts()
     {
-        var result = Types.InAssembly(ApiAssembly)
-            .That().HaveNameStartingWith("RideController")
-            .Should().HaveDependencyOnAny("MediatR", "ERP.Application.Modules.Ride")
+        var result = Types
+            .InAssembly(ApiAssembly)
+            .That()
+            .HaveNameStartingWith("RideController")
+            .Should()
+            .HaveDependencyOnAny("MediatR", "ERP.Application.Modules.Ride")
             .GetResult();
 
-        result.IsSuccessful.Should().BeTrue(string.Join(", ", result.FailingTypeNames ?? Array.Empty<string>()));
+        result
+            .IsSuccessful.Should()
+            .BeTrue(string.Join(", ", result.FailingTypeNames ?? Array.Empty<string>()));
     }
 }

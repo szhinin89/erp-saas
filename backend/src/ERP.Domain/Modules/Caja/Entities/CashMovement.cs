@@ -35,7 +35,8 @@ public sealed class CashMovement : IMustHaveTenant
         Guid createdBy,
         CashReferenceType referenceType = CashReferenceType.None,
         Guid? referenceId = null,
-        string? referenceNumber = null)
+        string? referenceNumber = null
+    )
     {
         if (cashSessionId == Guid.Empty)
             throw new ArgumentException("La sesión de caja es obligatoria.", nameof(cashSessionId));

@@ -1,5 +1,5 @@
-using ERP.Application.Common.Interfaces;
 using System.Collections.Concurrent;
+using ERP.Application.Common.Interfaces;
 
 namespace ERP.Infrastructure.Caching;
 
@@ -8,8 +8,12 @@ public sealed class CacheDiagnosticsMetrics : ICacheDiagnosticsMetrics
     private long _hits;
     private long _misses;
     private long _sets;
-    private readonly ConcurrentDictionary<string, long> _hitsByCategory = new(StringComparer.Ordinal);
-    private readonly ConcurrentDictionary<string, long> _missesByCategory = new(StringComparer.Ordinal);
+    private readonly ConcurrentDictionary<string, long> _hitsByCategory = new(
+        StringComparer.Ordinal
+    );
+    private readonly ConcurrentDictionary<string, long> _missesByCategory = new(
+        StringComparer.Ordinal
+    );
 
     public void RecordHit(string category)
     {
@@ -42,9 +46,10 @@ public sealed class CacheDiagnosticsMetrics : ICacheDiagnosticsMetrics
             sets,
             ratio,
             _hitsByCategory.ToDictionary(static kv => kv.Key, static kv => kv.Value),
-            _missesByCategory.ToDictionary(static kv => kv.Key, static kv => kv.Value));
+            _missesByCategory.ToDictionary(static kv => kv.Key, static kv => kv.Value)
+        );
     }
 
-    private static string Normalize(string category)
-        => string.IsNullOrWhiteSpace(category) ? "unknown" : category.Trim().ToLowerInvariant();
+    private static string Normalize(string category) =>
+        string.IsNullOrWhiteSpace(category) ? "unknown" : category.Trim().ToLowerInvariant();
 }

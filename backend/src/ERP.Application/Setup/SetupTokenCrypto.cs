@@ -25,8 +25,9 @@ public static class SetupTokenCrypto
         return Convert.ToHexString(hashBytes);
     }
 
-    public static bool Matches(string raw, string hash)
-        => CryptographicOperations.FixedTimeEquals(
+    public static bool Matches(string raw, string hash) =>
+        CryptographicOperations.FixedTimeEquals(
             Encoding.UTF8.GetBytes(Hash(raw)),
-            Encoding.UTF8.GetBytes(hash));
+            Encoding.UTF8.GetBytes(hash)
+        );
 }

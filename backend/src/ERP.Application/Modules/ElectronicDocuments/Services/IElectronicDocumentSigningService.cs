@@ -17,5 +17,9 @@ namespace ERP.Application.Modules.ElectronicDocuments.Services;
 public interface IElectronicDocumentSigningService
 {
     Task<Result<SignedElectronicDocumentXml>> SignAsync(
-        Guid tenantId, Guid companyId, ElectronicDocumentXml xml, CancellationToken ct = default);
+        Guid tenantId,
+        Guid companyId,
+        ElectronicDocumentXml xml,
+        CancellationToken ct = default
+    );
 }

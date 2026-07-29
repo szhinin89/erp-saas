@@ -17,15 +17,23 @@ public sealed class ItemUnitConversion : AuditableEntity
     private ItemUnitConversion() { }
 
     public static ItemUnitConversion Create(
-        Guid itemId, Guid tenantId,
-        string fromUomCode, string toUomCode, decimal factor, Guid createdBy)
+        Guid itemId,
+        Guid tenantId,
+        string fromUomCode,
+        string toUomCode,
+        decimal factor,
+        Guid createdBy
+    )
     {
         if (string.IsNullOrWhiteSpace(fromUomCode))
             throw new ArgumentException("UOM origen es obligatorio.", nameof(fromUomCode));
         if (string.IsNullOrWhiteSpace(toUomCode))
             throw new ArgumentException("UOM destino es obligatorio.", nameof(toUomCode));
         if (factor <= 0)
-            throw new ArgumentException("El factor de conversión debe ser mayor que cero.", nameof(factor));
+            throw new ArgumentException(
+                "El factor de conversión debe ser mayor que cero.",
+                nameof(factor)
+            );
 
         var entity = new ItemUnitConversion
         {

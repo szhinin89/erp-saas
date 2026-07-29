@@ -1,4 +1,4 @@
-﻿using ERP.Domain.Common;
+using ERP.Domain.Common;
 
 namespace ERP.Domain.Audit.Entities;
 
@@ -31,12 +31,17 @@ public class UserActivity : SystemBaseEntity, IMustHaveTenant
         string action,
         string? entityType,
         Guid? entityId,
-        string? description)
+        string? description
+    )
     {
-        if (tenantId == Guid.Empty) throw new ArgumentException("tenantId requerido.", nameof(tenantId));
-        if (userId == Guid.Empty) throw new ArgumentException("UserId requerido.", nameof(userId));
-        if (string.IsNullOrWhiteSpace(module)) throw new ArgumentException("Module requerido.", nameof(module));
-        if (string.IsNullOrWhiteSpace(action)) throw new ArgumentException("Action requerida.", nameof(action));
+        if (tenantId == Guid.Empty)
+            throw new ArgumentException("tenantId requerido.", nameof(tenantId));
+        if (userId == Guid.Empty)
+            throw new ArgumentException("UserId requerido.", nameof(userId));
+        if (string.IsNullOrWhiteSpace(module))
+            throw new ArgumentException("Module requerido.", nameof(module));
+        if (string.IsNullOrWhiteSpace(action))
+            throw new ArgumentException("Action requerida.", nameof(action));
 
         return new UserActivity
         {
@@ -54,4 +59,3 @@ public class UserActivity : SystemBaseEntity, IMustHaveTenant
         };
     }
 }
-

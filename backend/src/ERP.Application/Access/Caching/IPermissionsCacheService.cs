@@ -1,4 +1,4 @@
-﻿namespace ERP.Application.Access.Caching;
+namespace ERP.Application.Access.Caching;
 
 /// <summary>
 /// Cache-aside de permisos efectivos (read/write). Solo lo consume <see cref="IEffectivePermissionKeysProvider"/>.
@@ -10,7 +10,8 @@ public interface IPermissionsCacheService
         Guid tenantId,
         Guid companyId,
         Guid userId,
-        CancellationToken cancellationToken = default);
+        CancellationToken cancellationToken = default
+    );
 
     Task WriteAsync(
         Guid tenantId,
@@ -18,5 +19,6 @@ public interface IPermissionsCacheService
         Guid userId,
         IReadOnlyList<string> keys,
         TimeSpan? ttl = null,
-        CancellationToken cancellationToken = default);
+        CancellationToken cancellationToken = default
+    );
 }

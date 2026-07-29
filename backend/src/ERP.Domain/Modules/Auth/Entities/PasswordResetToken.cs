@@ -12,6 +12,7 @@ public sealed class PasswordResetToken
     public Guid Id { get; private set; }
     public string TokenHash { get; private set; } = null!;
     public Guid UserId { get; private set; }
+
     /// <summary>Tipo de cuenta: <see cref="KindIdentity"/> o <see cref="KindLegacy"/>.</summary>
     public string UserKind { get; private set; } = null!;
     public Guid? TenantId { get; private set; }
@@ -26,7 +27,8 @@ public sealed class PasswordResetToken
         Guid userId,
         string userKind,
         Guid? tenantId,
-        DateTime expiresAtUtc)
+        DateTime expiresAtUtc
+    )
     {
         return new PasswordResetToken
         {

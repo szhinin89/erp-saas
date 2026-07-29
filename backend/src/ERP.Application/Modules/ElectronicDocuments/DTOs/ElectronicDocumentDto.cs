@@ -13,4 +13,5 @@ public sealed record ElectronicDocumentDto(
     int RetryCount,
     DateTime? LastAttemptUtc,
     DateTime CreatedAt,
-    DateTime? UpdatedAt);
+    DateTime? UpdatedAt
+);

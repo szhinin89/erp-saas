@@ -4,5 +4,9 @@ namespace ERP.Application.Common;
 
 public interface IIdentificationUsageValidator
 {
-    Task<bool> IsAllowedAsync(string idTypeCode, IdentificationUsageType usageType, CancellationToken ct = default);
+    Task<bool> IsAllowedAsync(
+        string idTypeCode,
+        IdentificationUsageType usageType,
+        CancellationToken ct = default
+    );
 }

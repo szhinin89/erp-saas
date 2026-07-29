@@ -24,20 +24,33 @@ public sealed class OrgSettingsRideBrandingProvider : IRideBrandingProvider
         _orgSettingsRepository = orgSettingsRepository;
 
     public async Task<Result<RideBranding>> GetAsync(
-        Guid tenantId, Guid companyId, Guid? branchId, Guid? emissionPointId, CancellationToken ct = default)
+        Guid tenantId,
+        Guid companyId,
+        Guid? branchId,
+        Guid? emissionPointId,
+        CancellationToken ct = default
+    )
     {
         var settings = await _orgSettingsRepository.GetAllForScopeAsync(
-            tenantId, companyId, OrgScope.Company, companyId, ct);
+            tenantId,
+            companyId,
+            OrgScope.Company,
+            companyId,
+            ct
+        );
         var lookup = settings.ToDictionary(s => s.Key, s => s.Value);
 
         string? Resolve(string key) =>
-            lookup.TryGetValue(key, out var value) && !string.IsNullOrWhiteSpace(value) ? value : null;
+            lookup.TryGetValue(key, out var value) && !string.IsNullOrWhiteSpace(value)
+                ? value
+                : null;
 
         var branding = RideBranding.Create(
             logoStoragePath: Resolve(OrgSettingKeys.Ride.LogoStoragePath),
             primaryColorHex: Resolve(OrgSettingKeys.Ride.PrimaryColorHex),
             secondaryColorHex: Resolve(OrgSettingKeys.Ride.SecondaryColorHex),
-            footerText: Resolve(OrgSettingKeys.Ride.FooterText));
+            footerText: Resolve(OrgSettingKeys.Ride.FooterText)
+        );
 
         return Result<RideBranding>.Success(branding);
     }

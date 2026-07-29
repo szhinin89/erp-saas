@@ -6,4 +6,5 @@ namespace ERP.Application.Modules.Inventory.ItemMatching.UseCases.MatchItem;
 
 /// <summary>Vinculación manual de una línea de recepción a un Item existente — Item Matching.</summary>
 public sealed record MatchItemCommand(Guid PurchaseReceptionLineId, Guid ItemId)
-    : IRequest<Result<PurchaseReceptionLineMatchDto>>, IBranchScopedRequest;
+    : IRequest<Result<PurchaseReceptionLineMatchDto>>,
+        IBranchScopedRequest;

@@ -10,10 +10,12 @@ namespace ERP.Application.Modules.Purchases.UseCases;
 // ── Commands ────────────────────────────────────────────────────────────
 
 public sealed record LoadPvpSnapshotsCommand(Guid InvoiceId)
-    : IRequest<Result<PurchaseInvoiceDto>>, IBranchScopedRequest;
+    : IRequest<Result<PurchaseInvoiceDto>>,
+        IBranchScopedRequest;
 
 public sealed record UpdateLinePvpCommand(Guid InvoiceId, Guid LineId, decimal NewPvp)
-    : IRequest<Result<PurchaseInvoiceDto>>, IBranchScopedRequest;
+    : IRequest<Result<PurchaseInvoiceDto>>,
+        IBranchScopedRequest;
 
 // ── Validators ──────────────────────────────────────────────────────────
 
@@ -38,20 +40,35 @@ public sealed class LoadPvpSnapshotsHandler
     private readonly ICurrentUser _u;
 
     public LoadPvpSnapshotsHandler(
-        IPurchaseInvoiceRepository repo, IPricingResolver pricingResolver,
-        ICurrentTenant t, ICurrentUser u)
-    { _repo = repo; _pricingResolver = pricingResolver; _t = t; _u = u; }
+        IPurchaseInvoiceRepository repo,
+        IPricingResolver pricingResolver,
+        ICurrentTenant t,
+        ICurrentUser u
+    )
+    {
+        _repo = repo;
+        _pricingResolver = pricingResolver;
+        _t = t;
+        _u = u;
+    }
 
-    public async Task<Result<PurchaseInvoiceDto>> Handle(LoadPvpSnapshotsCommand cmd, CancellationToken ct)
+    public async Task<Result<PurchaseInvoiceDto>> Handle(
+        LoadPvpSnapshotsCommand cmd,
+        CancellationToken ct
+    )
     {
         var inv = await _repo.GetByIdAsync(_t.TenantId, cmd.InvoiceId, ct);
-        if (inv is null) return Result<PurchaseInvoiceDto>.NotFound("Compra no encontrada.");
+        if (inv is null)
+            return Result<PurchaseInvoiceDto>.NotFound("Compra no encontrada.");
         if (inv.Status != ERP.Domain.Modules.Purchases.Enums.PurchaseStatus.Draft)
-            return Result<PurchaseInvoiceDto>.ValidationFailure("Solo se pueden modificar precios de venta en compras en borrador.");
+            return Result<PurchaseInvoiceDto>.ValidationFailure(
+                "Solo se pueden modificar precios de venta en compras en borrador."
+            );
 
         foreach (var line in inv.Lines)
         {
-            if (line.ItemId is null) continue;
+            if (line.ItemId is null)
+                continue;
             var pricingResult = await _pricingResolver.ResolveAsync(line.ItemId.Value, ct: ct);
             line.SetItemPvpSnapshot(pricingResult.IsSuccess ? pricingResult.Value!.UnitPrice : 0);
         }
@@ -68,17 +85,25 @@ public sealed class UpdateLinePvpHandler
     private readonly ICurrentTenant _t;
     private readonly ICurrentUser _u;
 
-    public UpdateLinePvpHandler(
-        IPurchaseInvoiceRepository repo,
-        ICurrentTenant t, ICurrentUser u)
-    { _repo = repo; _t = t; _u = u; }
+    public UpdateLinePvpHandler(IPurchaseInvoiceRepository repo, ICurrentTenant t, ICurrentUser u)
+    {
+        _repo = repo;
+        _t = t;
+        _u = u;
+    }
 
-    public async Task<Result<PurchaseInvoiceDto>> Handle(UpdateLinePvpCommand cmd, CancellationToken ct)
+    public async Task<Result<PurchaseInvoiceDto>> Handle(
+        UpdateLinePvpCommand cmd,
+        CancellationToken ct
+    )
     {
         var inv = await _repo.GetByIdAsync(_t.TenantId, cmd.InvoiceId, ct);
-        if (inv is null) return Result<PurchaseInvoiceDto>.NotFound("Compra no encontrada.");
+        if (inv is null)
+            return Result<PurchaseInvoiceDto>.NotFound("Compra no encontrada.");
         if (inv.Status != ERP.Domain.Modules.Purchases.Enums.PurchaseStatus.Draft)
-            return Result<PurchaseInvoiceDto>.ValidationFailure("Solo se pueden modificar precios de venta en compras en borrador.");
+            return Result<PurchaseInvoiceDto>.ValidationFailure(
+                "Solo se pueden modificar precios de venta en compras en borrador."
+            );
 
         if (inv.Lines.All(l => l.Id != cmd.LineId))
             return Result<PurchaseInvoiceDto>.NotFound("Línea no encontrada.");
@@ -91,4 +116,3 @@ public sealed class UpdateLinePvpHandler
         return Result<PurchaseInvoiceDto>.Success(PurchaseMapper.ToDto(inv));
     }
 }
-

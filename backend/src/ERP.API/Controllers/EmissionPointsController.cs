@@ -14,7 +14,14 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace ERP.API.Controllers;
 
-[AppFeature("Puntos de Emisión", $"perm:{SettingsPermissions.EmissionPointsView}", "point_of_sale", "/settings/emission-points", "perm:settings.group", 27)]
+[AppFeature(
+    "Puntos de Emisión",
+    $"perm:{SettingsPermissions.EmissionPointsView}",
+    "point_of_sale",
+    "/settings/emission-points",
+    "perm:settings.group",
+    27
+)]
 [ApiController]
 [Route("api/v1/settings/emission-points")]
 [Authorize]
@@ -31,12 +38,18 @@ public sealed class EmissionPointsController : ControllerBase
     /// <summary>Lista todos los puntos de emisión de la empresa activa.</summary>
     [HttpGet]
     [Authorize(Policy = $"perm:{SettingsPermissions.EmissionPointsView}")]
-    [ProducesResponseType(typeof(ApiResponse<IReadOnlyList<EmissionPointListItemDto>>), StatusCodes.Status200OK)]
+    [ProducesResponseType(
+        typeof(ApiResponse<IReadOnlyList<EmissionPointListItemDto>>),
+        StatusCodes.Status200OK
+    )]
     public async Task<IActionResult> GetAll(CancellationToken cancellationToken = default)
     {
         var activeFilter = CatalogQueryParameters.ParseActiveFilter(Request.Query);
         var search = CatalogQueryParameters.ParseSearch(Request.Query);
-        var result = await _mediator.Send(new GetAllEmissionPointsQuery(activeFilter, search), cancellationToken);
+        var result = await _mediator.Send(
+            new GetAllEmissionPointsQuery(activeFilter, search),
+            cancellationToken
+        );
         return this.ToOkOrBadRequest(result, "OK", () => Array.Empty<EmissionPointListItemDto>());
     }
 
@@ -45,7 +58,10 @@ public sealed class EmissionPointsController : ControllerBase
     [Authorize(Policy = $"perm:{SettingsPermissions.EmissionPointsCreate}")]
     [ProducesResponseType(typeof(ApiResponse<EmissionPointDto>), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
-    public async Task<IActionResult> Create([FromBody] CreateEmissionPointCommand command, CancellationToken cancellationToken = default)
+    public async Task<IActionResult> Create(
+        [FromBody] CreateEmissionPointCommand command,
+        CancellationToken cancellationToken = default
+    )
     {
         var result = await _mediator.Send(command, cancellationToken);
         return this.ToCreatedOrBadRequest(result);
@@ -56,7 +72,11 @@ public sealed class EmissionPointsController : ControllerBase
     [Authorize(Policy = $"perm:{SettingsPermissions.EmissionPointsUpdate}")]
     [ProducesResponseType(typeof(ApiResponse<EmissionPointDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
-    public async Task<IActionResult> Update(Guid id, [FromBody] UpdateEmissionPointCommand command, CancellationToken cancellationToken = default)
+    public async Task<IActionResult> Update(
+        Guid id,
+        [FromBody] UpdateEmissionPointCommand command,
+        CancellationToken cancellationToken = default
+    )
     {
         if (id != command.Id)
             return this.ApiBadRequest("El id de ruta no coincide con el cuerpo.");

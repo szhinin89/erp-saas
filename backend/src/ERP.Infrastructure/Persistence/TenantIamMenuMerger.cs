@@ -1,4 +1,4 @@
-﻿using ERP.Application.Navigation.DTOs;
+using ERP.Application.Navigation.DTOs;
 
 namespace ERP.Infrastructure.Persistence;
 
@@ -14,7 +14,9 @@ public static class TenantIamMenuMerger
     private const string CompanyUserMembershipsPerm = "access.company_user_memberships.view";
     private const string ProfilesPerm = "access.profiles.view";
 
-    public static IReadOnlyList<SessionMenuGroupDto> EnsureCompanyIamGroup(IReadOnlyList<SessionMenuGroupDto> source)
+    public static IReadOnlyList<SessionMenuGroupDto> EnsureCompanyIamGroup(
+        IReadOnlyList<SessionMenuGroupDto> source
+    )
     {
         // Regla actual: no inyectar entradas IAM de forma estática.
         // El menú resuelto debe reflejar exactamente lo configurado en plan/empresa/global.
@@ -24,7 +26,8 @@ public static class TenantIamMenuMerger
     private static bool ContainsRouteOrPermission(
         IReadOnlyList<SessionMenuGroupDto> groups,
         string route,
-        string permissionKey)
+        string permissionKey
+    )
     {
         var r = NormalizeRoute(route);
         var pk = NormalizePerm(permissionKey);
@@ -37,7 +40,11 @@ public static class TenantIamMenuMerger
         return false;
     }
 
-    private static bool WalkItems(IReadOnlyList<SessionMenuItemDto> items, string routeNorm, string permNorm)
+    private static bool WalkItems(
+        IReadOnlyList<SessionMenuItemDto> items,
+        string routeNorm,
+        string permNorm
+    )
     {
         foreach (var it in items)
         {

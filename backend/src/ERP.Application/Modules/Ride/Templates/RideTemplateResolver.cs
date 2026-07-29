@@ -18,6 +18,6 @@ public sealed class RideTemplateResolver : IRideTemplateResolver
         _templates = templates.ToDictionary(t => t.DocumentType);
     }
 
-    public IRideTemplate? Resolve(RideTemplateSelector selector)
-        => _templates.TryGetValue(selector.DocumentType, out var template) ? template : null;
+    public IRideTemplate? Resolve(RideTemplateSelector selector) =>
+        _templates.TryGetValue(selector.DocumentType, out var template) ? template : null;
 }

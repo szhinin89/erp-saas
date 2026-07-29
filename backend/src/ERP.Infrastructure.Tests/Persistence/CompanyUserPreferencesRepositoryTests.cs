@@ -47,14 +47,55 @@ public sealed class CompanyUserPreferencesRepositoryTests : IAsyncLifetime
 
         var createdBy = Guid.NewGuid();
         var tenant = Tenant.Create("Test Tenant", $"test-{Guid.NewGuid():N}"[..16], createdBy);
-        var company = Company.CreateManaged(tenant.Id, "1790012345001", "Test S.A.", createdBy: createdBy);
-        var user = IdentityUser.Create($"ana{Guid.NewGuid():N}", "Ana", "Perez", $"ana{Guid.NewGuid():N}@test.com", "hash", createdBy);
+        var company = Company.CreateManaged(
+            tenant.Id,
+            "1790012345001",
+            "Test S.A.",
+            createdBy: createdBy
+        );
+        var user = IdentityUser.Create(
+            $"ana{Guid.NewGuid():N}",
+            "Ana",
+            "Perez",
+            $"ana{Guid.NewGuid():N}@test.com",
+            "hash",
+            createdBy
+        );
         var branch = Branch.Create(
-            tenant.Id, "Matriz", "Av. Principal 123", "001",
-            null, null, null, null, null, null, null, null, null, null, null,
-            null, null, null, null, null, null, null, null, true, createdBy,
-            companyId: company.Id);
-        var membership = CompanyUserMembership.Create(company.Id, user.Id, "Admin", null, createdBy);
+            tenant.Id,
+            "Matriz",
+            "Av. Principal 123",
+            "001",
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            true,
+            createdBy,
+            companyId: company.Id
+        );
+        var membership = CompanyUserMembership.Create(
+            company.Id,
+            user.Id,
+            "Admin",
+            null,
+            createdBy
+        );
 
         db.Tenants.Add(tenant);
         db.Companies.Add(company);
@@ -78,7 +119,12 @@ public sealed class CompanyUserPreferencesRepositoryTests : IAsyncLifetime
             .UseNpgsql(_postgres.GetConnectionString())
             .Options;
 
-        return new ErpDbContext(options, new FixedCurrentTenant(_tenantId), new NoOpPublisher(), new FixedCurrentCompany(companyId));
+        return new ErpDbContext(
+            options,
+            new FixedCurrentTenant(_tenantId),
+            new NoOpPublisher(),
+            new FixedCurrentCompany(companyId)
+        );
     }
 
     private ErpDbContext CreateContext() => CreateContext(_companyId);
@@ -89,13 +135,21 @@ public sealed class CompanyUserPreferencesRepositoryTests : IAsyncLifetime
         await using var db = CreateContext();
         var repo = new CompanyUserPreferencesRepository(db);
         var entity = CompanyUserPreferences.Create(
-            _tenantId, _companyId, _membershipId, CompanyUserLoginMode.DirectToDefault, _branchId, _identityUserId);
+            _tenantId,
+            _companyId,
+            _membershipId,
+            CompanyUserLoginMode.DirectToDefault,
+            _branchId,
+            _identityUserId
+        );
 
         await repo.AddAsync(entity);
         await repo.SaveChangesAsync();
 
         await using var verifyDb = CreateContext();
-        var stored = await verifyDb.CompanyUserPreferences.IgnoreQueryFilters().SingleAsync(x => x.Id == entity.Id);
+        var stored = await verifyDb
+            .CompanyUserPreferences.IgnoreQueryFilters()
+            .SingleAsync(x => x.Id == entity.Id);
         stored.CompanyUserMembershipId.Should().Be(_membershipId);
         stored.DefaultBranchId.Should().Be(_branchId);
         stored.LoginMode.Should().Be(CompanyUserLoginMode.DirectToDefault);
@@ -107,13 +161,21 @@ public sealed class CompanyUserPreferencesRepositoryTests : IAsyncLifetime
         await using var db = CreateContext();
         var repo = new CompanyUserPreferencesRepository(db);
         var entity = CompanyUserPreferences.Create(
-            _tenantId, _companyId, _membershipId, CompanyUserLoginMode.AskBranch, null, _identityUserId);
+            _tenantId,
+            _companyId,
+            _membershipId,
+            CompanyUserLoginMode.AskBranch,
+            null,
+            _identityUserId
+        );
 
         await repo.AddAsync(entity);
         await repo.SaveChangesAsync();
 
         await using var verifyDb = CreateContext();
-        var stored = await verifyDb.CompanyUserPreferences.IgnoreQueryFilters().SingleAsync(x => x.Id == entity.Id);
+        var stored = await verifyDb
+            .CompanyUserPreferences.IgnoreQueryFilters()
+            .SingleAsync(x => x.Id == entity.Id);
         stored.DefaultBranchId.Should().BeNull();
         stored.LoginMode.Should().Be(CompanyUserLoginMode.AskBranch);
     }
@@ -124,7 +186,13 @@ public sealed class CompanyUserPreferencesRepositoryTests : IAsyncLifetime
         await using var seedDb = CreateContext();
         var repo = new CompanyUserPreferencesRepository(seedDb);
         var entity = CompanyUserPreferences.Create(
-            _tenantId, _companyId, _membershipId, CompanyUserLoginMode.DirectToDefault, _branchId, _identityUserId);
+            _tenantId,
+            _companyId,
+            _membershipId,
+            CompanyUserLoginMode.DirectToDefault,
+            _branchId,
+            _identityUserId
+        );
         await repo.AddAsync(entity);
         await repo.SaveChangesAsync();
 
@@ -158,18 +226,24 @@ public sealed class CompanyUserPreferencesRepositoryTests : IAsyncLifetime
         await using var seedDb = CreateContext();
         var repo = new CompanyUserPreferencesRepository(seedDb);
         var entity = CompanyUserPreferences.Create(
-            _tenantId, _companyId, _membershipId, CompanyUserLoginMode.DirectToDefault, _branchId, _identityUserId);
+            _tenantId,
+            _companyId,
+            _membershipId,
+            CompanyUserLoginMode.DirectToDefault,
+            _branchId,
+            _identityUserId
+        );
         await repo.AddAsync(entity);
         await repo.SaveChangesAsync();
 
         await using var otherCompanyDb = CreateContext(Guid.NewGuid());
-        var visibleForOtherCompany = await otherCompanyDb.CompanyUserPreferences
-            .Where(x => x.Id == entity.Id)
+        var visibleForOtherCompany = await otherCompanyDb
+            .CompanyUserPreferences.Where(x => x.Id == entity.Id)
             .ToListAsync();
 
         await using var sameCompanyDb = CreateContext(_companyId);
-        var visibleForSameCompany = await sameCompanyDb.CompanyUserPreferences
-            .Where(x => x.Id == entity.Id)
+        var visibleForSameCompany = await sameCompanyDb
+            .CompanyUserPreferences.Where(x => x.Id == entity.Id)
             .ToListAsync();
 
         visibleForOtherCompany.Should().BeEmpty();
@@ -181,23 +255,40 @@ public sealed class CompanyUserPreferencesRepositoryTests : IAsyncLifetime
     {
         await using var db1 = CreateContext();
         var repo1 = new CompanyUserPreferencesRepository(db1);
-        await repo1.AddAsync(CompanyUserPreferences.Create(
-            _tenantId, _companyId, _membershipId, CompanyUserLoginMode.AskBranch, null, _identityUserId));
+        await repo1.AddAsync(
+            CompanyUserPreferences.Create(
+                _tenantId,
+                _companyId,
+                _membershipId,
+                CompanyUserLoginMode.AskBranch,
+                null,
+                _identityUserId
+            )
+        );
         await repo1.SaveChangesAsync();
 
         await using var db2 = CreateContext();
         var repo2 = new CompanyUserPreferencesRepository(db2);
-        await repo2.AddAsync(CompanyUserPreferences.Create(
-            _tenantId, _companyId, _membershipId, CompanyUserLoginMode.AskBranch, null, _identityUserId));
+        await repo2.AddAsync(
+            CompanyUserPreferences.Create(
+                _tenantId,
+                _companyId,
+                _membershipId,
+                CompanyUserLoginMode.AskBranch,
+                null,
+                _identityUserId
+            )
+        );
 
         var act = () => repo2.SaveChangesAsync();
 
-        await act.Should().ThrowAsync<DbUpdateException>()
+        await act.Should()
+            .ThrowAsync<DbUpdateException>()
             .Where(e => IsUniqueViolation(e.InnerException));
     }
 
-    private static bool IsUniqueViolation(Exception? inner)
-        => inner is PostgresException pg && pg.SqlState == PostgresErrorCodes.UniqueViolation;
+    private static bool IsUniqueViolation(Exception? inner) =>
+        inner is PostgresException pg && pg.SqlState == PostgresErrorCodes.UniqueViolation;
 
     // ── Helpers de identidad para el DbContext ───────────────────────────────
 
@@ -216,11 +307,13 @@ public sealed class CompanyUserPreferencesRepositoryTests : IAsyncLifetime
 
     private sealed class NoOpPublisher : IPublisher
     {
-        public Task Publish(object notification, CancellationToken cancellationToken = default)
-            => Task.CompletedTask;
+        public Task Publish(object notification, CancellationToken cancellationToken = default) =>
+            Task.CompletedTask;
 
-        public Task Publish<TNotification>(TNotification notification, CancellationToken cancellationToken = default)
-            where TNotification : INotification
-            => Task.CompletedTask;
+        public Task Publish<TNotification>(
+            TNotification notification,
+            CancellationToken cancellationToken = default
+        )
+            where TNotification : INotification => Task.CompletedTask;
     }
 }

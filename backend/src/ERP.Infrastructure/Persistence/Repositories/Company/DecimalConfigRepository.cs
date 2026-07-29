@@ -19,13 +19,19 @@ public sealed class DecimalConfigRepository : IDecimalConfigRepository
     private const int DefaultTotalAmount = 2;
 
     private readonly ErpDbContext _db;
+
     public DecimalConfigRepository(ErpDbContext db) => _db = db;
 
-    public async Task<DecimalConfigDto> GetAsync(Guid tenantId, Guid companyId, CancellationToken ct = default)
+    public async Task<DecimalConfigDto> GetAsync(
+        Guid tenantId,
+        Guid companyId,
+        CancellationToken ct = default
+    )
     {
-        var pars = await _db.GeneralParameters
-            .Where(p => p.TenantId == tenantId && p.CompanyId == companyId
-                     && p.Key.StartsWith("decimal."))
+        var pars = await _db
+            .GeneralParameters.Where(p =>
+                p.TenantId == tenantId && p.CompanyId == companyId && p.Key.StartsWith("decimal.")
+            )
             .AsNoTracking()
             .ToListAsync(ct);
 
@@ -34,16 +40,25 @@ public sealed class DecimalConfigRepository : IDecimalConfigRepository
             GetInt(pars, KeyPurchasePrice, DefaultPurchasePrice),
             GetInt(pars, KeyQuantity, DefaultQuantity),
             GetInt(pars, KeyPercentage, DefaultPercentage),
-            GetInt(pars, KeyTotalAmount, DefaultTotalAmount));
+            GetInt(pars, KeyTotalAmount, DefaultTotalAmount)
+        );
     }
 
-    public async Task SaveAsync(Guid tenantId, Guid companyId,
-        int salesUnitPrice, int purchaseUnitPrice, int quantity,
-        int percentage, int totalAmount, CancellationToken ct = default)
+    public async Task SaveAsync(
+        Guid tenantId,
+        Guid companyId,
+        int salesUnitPrice,
+        int purchaseUnitPrice,
+        int quantity,
+        int percentage,
+        int totalAmount,
+        CancellationToken ct = default
+    )
     {
-        var pars = await _db.GeneralParameters
-            .Where(p => p.TenantId == tenantId && p.CompanyId == companyId
-                     && p.Key.StartsWith("decimal."))
+        var pars = await _db
+            .GeneralParameters.Where(p =>
+                p.TenantId == tenantId && p.CompanyId == companyId && p.Key.StartsWith("decimal.")
+            )
             .ToListAsync(ct);
 
         Upsert(pars, tenantId, companyId, KeySalesPrice, Clamp(salesUnitPrice));
@@ -63,7 +78,13 @@ public sealed class DecimalConfigRepository : IDecimalConfigRepository
 
     private static int Clamp(int v) => Math.Clamp(v, 0, 6);
 
-    private void Upsert(List<GeneralParameter> pars, Guid tenantId, Guid companyId, string key, int val)
+    private void Upsert(
+        List<GeneralParameter> pars,
+        Guid tenantId,
+        Guid companyId,
+        string key,
+        int val
+    )
     {
         var existing = pars.Find(x => x.Key == key);
         if (existing is not null)
@@ -72,23 +93,25 @@ public sealed class DecimalConfigRepository : IDecimalConfigRepository
         }
         else
         {
-            _db.GeneralParameters.Add(new GeneralParameter
-            {
-                Id = Guid.NewGuid(),
-                TenantId = tenantId,
-                CompanyId = companyId,
-                Key = key,
-                Value = val.ToString(),
-                Description = key switch
+            _db.GeneralParameters.Add(
+                new GeneralParameter
                 {
-                    KeySalesPrice => "Decimales precio unitario ventas",
-                    KeyPurchasePrice => "Decimales precio unitario compras",
-                    KeyQuantity => "Decimales cantidad",
-                    KeyPercentage => "Decimales porcentaje",
-                    KeyTotalAmount => "Decimales total",
-                    _ => null,
-                },
-            });
+                    Id = Guid.NewGuid(),
+                    TenantId = tenantId,
+                    CompanyId = companyId,
+                    Key = key,
+                    Value = val.ToString(),
+                    Description = key switch
+                    {
+                        KeySalesPrice => "Decimales precio unitario ventas",
+                        KeyPurchasePrice => "Decimales precio unitario compras",
+                        KeyQuantity => "Decimales cantidad",
+                        KeyPercentage => "Decimales porcentaje",
+                        KeyTotalAmount => "Decimales total",
+                        _ => null,
+                    },
+                }
+            );
         }
     }
 }

@@ -1,4 +1,4 @@
-﻿namespace ERP.Application.Access;
+namespace ERP.Application.Access;
 
 /// <summary>
 /// Única fuente de resolución de contexto multi-tenant (empresa + membresía operativa).
@@ -7,15 +7,26 @@
 public interface ICompanyContextProvider
 {
     /// <summary>Empresa activa por defecto del suscriptor (login, provisioning).</summary>
-    Task<Guid?> ResolveDefaultCompanyIdAsync(Guid tenantId, CancellationToken cancellationToken = default);
+    Task<Guid?> ResolveDefaultCompanyIdAsync(
+        Guid tenantId,
+        CancellationToken cancellationToken = default
+    );
 
-    Task<int> CountActiveCompaniesAsync(Guid tenantId, CancellationToken cancellationToken = default);
+    Task<int> CountActiveCompaniesAsync(
+        Guid tenantId,
+        CancellationToken cancellationToken = default
+    );
 
     /// <summary>Contexto operativo del usuario autenticado en el suscriptor activo.</summary>
-    Task<OperationalCompanyContext?> ResolveOperationalForCurrentUserAsync(CancellationToken cancellationToken = default);
+    Task<OperationalCompanyContext?> ResolveOperationalForCurrentUserAsync(
+        CancellationToken cancellationToken = default
+    );
 
     /// <summary>Contexto operativo explícito por userId (autorización runtime).</summary>
-    Task<OperationalCompanyContext?> ResolveOperationalForUserAsync(Guid userId, CancellationToken cancellationToken = default);
+    Task<OperationalCompanyContext?> ResolveOperationalForUserAsync(
+        Guid userId,
+        CancellationToken cancellationToken = default
+    );
 }
 
 /// <summary>Contexto operativo mínimo para evaluar permisos de perfil.</summary>
@@ -23,4 +34,5 @@ public sealed record OperationalCompanyContext(
     Guid CompanyId,
     Guid UserId,
     Guid? ProfileId,
-    bool IsActiveMembership);
+    bool IsActiveMembership
+);

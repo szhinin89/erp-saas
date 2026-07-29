@@ -11,13 +11,19 @@ public sealed class LookupUserByUsernameAdminHandler
     private readonly IAccessRepository _accessRepository;
     private readonly ICurrentCompany _currentCompany;
 
-    public LookupUserByUsernameAdminHandler(IAccessRepository accessRepository, ICurrentCompany currentCompany)
+    public LookupUserByUsernameAdminHandler(
+        IAccessRepository accessRepository,
+        ICurrentCompany currentCompany
+    )
     {
         _accessRepository = accessRepository;
         _currentCompany = currentCompany;
     }
 
-    public async Task<Result<UsernameLookupDto>> Handle(LookupUserByUsernameAdminQuery request, CancellationToken cancellationToken)
+    public async Task<Result<UsernameLookupDto>> Handle(
+        LookupUserByUsernameAdminQuery request,
+        CancellationToken cancellationToken
+    )
     {
         if (!_currentCompany.HasCompanyContext)
             return Result<UsernameLookupDto>.Forbidden("No hay una empresa activa en la sesión.");
@@ -27,11 +33,22 @@ public sealed class LookupUserByUsernameAdminHandler
         if (user is null)
             return Result<UsernameLookupDto>.Success(new UsernameLookupDto(false, null, null));
 
-        var membership = await _accessRepository.GetCompanyUserMembershipAsync(_currentCompany.CompanyId, user.Id, cancellationToken);
+        var membership = await _accessRepository.GetCompanyUserMembershipAsync(
+            _currentCompany.CompanyId,
+            user.Id,
+            cancellationToken
+        );
         var membershipDto = membership is null
             ? null
-            : new UsernameMembershipLookupDto(membership.Id, membership.IsActive, membership.Role, membership.ProfileId);
+            : new UsernameMembershipLookupDto(
+                membership.Id,
+                membership.IsActive,
+                membership.Role,
+                membership.ProfileId
+            );
 
-        return Result<UsernameLookupDto>.Success(new UsernameLookupDto(true, user.FullName, membershipDto));
+        return Result<UsernameLookupDto>.Success(
+            new UsernameLookupDto(true, user.FullName, membershipDto)
+        );
     }
 }

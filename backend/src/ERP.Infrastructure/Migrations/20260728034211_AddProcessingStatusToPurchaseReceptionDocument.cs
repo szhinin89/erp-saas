@@ -15,40 +15,46 @@ namespace ERP.Infrastructure.Migrations
                 table: "purchase_reception_lines",
                 type: "numeric(18,2)",
                 nullable: false,
-                defaultValue: 0m);
+                defaultValue: 0m
+            );
 
             migrationBuilder.AddColumn<int>(
                 name: "lines_detected_count",
                 table: "purchase_reception_documents",
                 type: "integer",
                 nullable: false,
-                defaultValue: 0);
+                defaultValue: 0
+            );
 
             migrationBuilder.AddColumn<int>(
                 name: "lines_processed_count",
                 table: "purchase_reception_documents",
                 type: "integer",
                 nullable: false,
-                defaultValue: 0);
+                defaultValue: 0
+            );
 
             migrationBuilder.AddColumn<string>(
                 name: "processing_notes",
                 table: "purchase_reception_documents",
                 type: "character varying(2000)",
                 maxLength: 2000,
-                nullable: true);
+                nullable: true
+            );
 
             migrationBuilder.AddColumn<int>(
                 name: "processing_status",
                 table: "purchase_reception_documents",
                 type: "integer",
                 nullable: false,
-                defaultValue: 0);
+                defaultValue: 0
+            );
 
             migrationBuilder.CreateIndex(
                 name: "ix_purchase_reception_documents_tenant_processing_status",
                 table: "purchase_reception_documents",
-                columns: new[] { "tenant_id", "processing_status" });
+                columns: new[] { "tenant_id", "processing_status" }
+            );
 
             // Backfill de compatibilidad: los documentos ya existentes no tienen historial de
             // procesamiento — se infiere el mejor estado posible a partir de datos ya persistidos
@@ -56,7 +62,8 @@ namespace ERP.Infrastructure.Migrations
             // descargado -> Pending); si ya tiene líneas persistidas, se interpretó correctamente
             // (Processed); si está Verified/Processed/Cancelled sin líneas, nunca se obtuvo detalle
             // real -> Failed, para que quede visible en vez de parecer un éxito silencioso.
-            migrationBuilder.Sql(@"
+            migrationBuilder.Sql(
+                @"
                 UPDATE purchase_reception_documents d SET
                     processing_status = CASE
                         WHEN d.status = 1 THEN 0
@@ -65,7 +72,8 @@ namespace ERP.Infrastructure.Migrations
                     END,
                     lines_detected_count = (SELECT COUNT(*) FROM purchase_reception_lines l WHERE l.purchase_reception_document_id = d.id),
                     lines_processed_count = (SELECT COUNT(*) FROM purchase_reception_lines l WHERE l.purchase_reception_document_id = d.id);
-            ");
+            "
+            );
         }
 
         /// <inheritdoc />
@@ -73,27 +81,30 @@ namespace ERP.Infrastructure.Migrations
         {
             migrationBuilder.DropIndex(
                 name: "ix_purchase_reception_documents_tenant_processing_status",
-                table: "purchase_reception_documents");
+                table: "purchase_reception_documents"
+            );
 
-            migrationBuilder.DropColumn(
-                name: "ice_value",
-                table: "purchase_reception_lines");
+            migrationBuilder.DropColumn(name: "ice_value", table: "purchase_reception_lines");
 
             migrationBuilder.DropColumn(
                 name: "lines_detected_count",
-                table: "purchase_reception_documents");
+                table: "purchase_reception_documents"
+            );
 
             migrationBuilder.DropColumn(
                 name: "lines_processed_count",
-                table: "purchase_reception_documents");
+                table: "purchase_reception_documents"
+            );
 
             migrationBuilder.DropColumn(
                 name: "processing_notes",
-                table: "purchase_reception_documents");
+                table: "purchase_reception_documents"
+            );
 
             migrationBuilder.DropColumn(
                 name: "processing_status",
-                table: "purchase_reception_documents");
+                table: "purchase_reception_documents"
+            );
         }
     }
 }

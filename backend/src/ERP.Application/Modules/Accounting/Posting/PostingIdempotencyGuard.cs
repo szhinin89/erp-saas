@@ -19,9 +19,20 @@ internal sealed class PostingIdempotencyGuard
         // concurrentes podrían ver "no existe" al mismo tiempo y competir por crear el mismo
         // JournalEntry (ver ADR-026 §8, Fase 3.3.2/3.3.3).
         await _journalEntryRepository.AcquireIdempotencyLockAsync(
-            fact.CompanyId, fact.SourceModule, fact.SourceEventId, fact.FactType, ct);
+            fact.CompanyId,
+            fact.SourceModule,
+            fact.SourceEventId,
+            fact.FactType,
+            ct
+        );
 
         return await _journalEntryRepository.FindByKeyAsync(
-            fact.TenantId, fact.CompanyId, fact.SourceModule, fact.FactType, fact.SourceEventId, ct);
+            fact.TenantId,
+            fact.CompanyId,
+            fact.SourceModule,
+            fact.FactType,
+            fact.SourceEventId,
+            ct
+        );
     }
 }

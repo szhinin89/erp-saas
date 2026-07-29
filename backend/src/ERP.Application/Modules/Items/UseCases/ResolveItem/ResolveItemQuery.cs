@@ -6,7 +6,8 @@ using MediatR;
 namespace ERP.Application.Items.UseCases.ResolveItem;
 
 public sealed record ResolveItemQuery(string Code)
-    : IRequest<Result<ItemDto?>>, ICompanyScopedRequest;
+    : IRequest<Result<ItemDto?>>,
+        ICompanyScopedRequest;
 
 public sealed class ResolveItemQueryHandler : IRequestHandler<ResolveItemQuery, Result<ItemDto?>>
 {
@@ -16,8 +17,17 @@ public sealed class ResolveItemQueryHandler : IRequestHandler<ResolveItemQuery, 
     private readonly IItemTypeRepository _itemTypeRepo;
 
     public ResolveItemQueryHandler(
-        IItemRepository repo, ICurrentTenant t, ISriCatalogResolver sri, IItemTypeRepository itemTypeRepo)
-    { _repo = repo; _t = t; _sri = sri; _itemTypeRepo = itemTypeRepo; }
+        IItemRepository repo,
+        ICurrentTenant t,
+        ISriCatalogResolver sri,
+        IItemTypeRepository itemTypeRepo
+    )
+    {
+        _repo = repo;
+        _t = t;
+        _sri = sri;
+        _itemTypeRepo = itemTypeRepo;
+    }
 
     public async Task<Result<ItemDto?>> Handle(ResolveItemQuery q, CancellationToken ct)
     {

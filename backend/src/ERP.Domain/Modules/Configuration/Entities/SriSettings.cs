@@ -19,8 +19,10 @@ public sealed class SriSettings : AuditableEntity, ITenantScopedEntity, ICompany
     public const string FallbackSriPaymentMethodCode = "01";
 
     public Guid CompanyId { get; private set; }
+
     /// <summary>Clave de almacenamiento opaca de <see cref="Application.Common.Interfaces.IFileStorage"/> — nunca una ruta de filesystem escrita por el usuario.</summary>
     public string? CertP12Path { get; private set; }
+
     /// <summary>Contraseña del certificado cifrada en reposo (prefijo dp1:). Legacy: texto plano hasta próximo guardado.</summary>
     public string? CertPassword { get; private set; }
     public string? CertFileName { get; private set; }
@@ -38,7 +40,8 @@ public sealed class SriSettings : AuditableEntity, ITenantScopedEntity, ICompany
         int environment,
         int emissionType,
         string wsdlUrl,
-        Guid createdBy)
+        Guid createdBy
+    )
     {
         var s = new SriSettings
         {
@@ -57,7 +60,8 @@ public sealed class SriSettings : AuditableEntity, ITenantScopedEntity, ICompany
         int emissionType,
         string wsdlUrl,
         string? certPassword,
-        Guid updatedBy)
+        Guid updatedBy
+    )
     {
         Environment = environment;
         EmissionType = emissionType;
@@ -72,7 +76,8 @@ public sealed class SriSettings : AuditableEntity, ITenantScopedEntity, ICompany
         string certFileName,
         long certSizeBytes,
         DateTime uploadedAtUtc,
-        Guid updatedBy)
+        Guid updatedBy
+    )
     {
         CertP12Path = certP12Path;
         CertFileName = certFileName;

@@ -16,7 +16,12 @@ public sealed class PurchasePayableInstallment : IMustHaveTenant
     private PurchasePayableInstallment() { }
 
     internal static PurchasePayableInstallment Create(
-        Guid payableId, Guid tenantId, int number, DateOnly dueDate, decimal amount)
+        Guid payableId,
+        Guid tenantId,
+        int number,
+        DateOnly dueDate,
+        decimal amount
+    )
     {
         return new PurchasePayableInstallment
         {

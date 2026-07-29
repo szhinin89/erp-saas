@@ -4,7 +4,10 @@ using ERP.Domain.Modules.Purchases.Events;
 
 namespace ERP.Domain.Modules.Purchases.Entities;
 
-public sealed class PurchaseInvoice : AuditableEntity, ITenantScopedEntity, ICompanyOperationalEntity
+public sealed class PurchaseInvoice
+    : AuditableEntity,
+        ITenantScopedEntity,
+        ICompanyOperationalEntity
 {
     public Guid CompanyId { get; private set; }
 
@@ -72,7 +75,8 @@ public sealed class PurchaseInvoice : AuditableEntity, ITenantScopedEntity, ICom
     public IReadOnlyList<PurchaseInvoiceDetail> Lines => _lines.AsReadOnly();
 
     private readonly List<PurchasePaymentSchedule> _paymentSchedules = new();
-    public IReadOnlyList<PurchasePaymentSchedule> PaymentSchedules => _paymentSchedules.AsReadOnly();
+    public IReadOnlyList<PurchasePaymentSchedule> PaymentSchedules =>
+        _paymentSchedules.AsReadOnly();
 
     public decimal Subtotal => ConfirmedSubtotal ?? _lines.Sum(l => l.LineSubtotal);
     public decimal TotalDiscount => ConfirmedTotalDiscount ?? _lines.Sum(l => l.DiscountAmount);
@@ -81,7 +85,8 @@ public sealed class PurchaseInvoice : AuditableEntity, ITenantScopedEntity, ICom
     public decimal TotalTax => TotalIce + TotalVat;
     public decimal TotalFreight => _lines.Sum(l => l.FreightAllocated);
     public decimal TotalOtherCosts => _lines.Sum(l => l.OtherCostsAllocated);
-    public decimal GrandTotal => ConfirmedGrandTotal
+    public decimal GrandTotal =>
+        ConfirmedGrandTotal
         ?? (_lines.Sum(l => l.TaxInclusiveTotal) + TotalFreight + TotalOtherCosts);
 
     public decimal TotalCostValue => _lines.Sum(l => l.TotalLineCost);
@@ -117,26 +122,48 @@ public sealed class PurchaseInvoice : AuditableEntity, ITenantScopedEntity, ICom
         string currencyCode = "USD",
         decimal exchangeRate = 1m,
         Guid? purchaseOrderId = null,
-        string? purchaseOrderNumber = null)
+        string? purchaseOrderNumber = null
+    )
     {
         if (branchId == Guid.Empty)
             throw new ArgumentException("La sucursal es obligatoria.", nameof(branchId));
         if (string.IsNullOrWhiteSpace(docTypeCode))
-            throw new ArgumentException("El tipo de comprobante es obligatorio.", nameof(docTypeCode));
+            throw new ArgumentException(
+                "El tipo de comprobante es obligatorio.",
+                nameof(docTypeCode)
+            );
         if (string.IsNullOrWhiteSpace(invoiceNumber))
-            throw new ArgumentException("El número de factura es obligatorio.", nameof(invoiceNumber));
+            throw new ArgumentException(
+                "El número de factura es obligatorio.",
+                nameof(invoiceNumber)
+            );
         if (supplierId == Guid.Empty)
             throw new ArgumentException("El proveedor es obligatorio.", nameof(supplierId));
         if (string.IsNullOrWhiteSpace(supplierName))
-            throw new ArgumentException("El nombre del proveedor es obligatorio.", nameof(supplierName));
+            throw new ArgumentException(
+                "El nombre del proveedor es obligatorio.",
+                nameof(supplierName)
+            );
         if (string.IsNullOrWhiteSpace(supplierTaxId))
-            throw new ArgumentException("El RUC/CI del proveedor es obligatorio.", nameof(supplierTaxId));
+            throw new ArgumentException(
+                "El RUC/CI del proveedor es obligatorio.",
+                nameof(supplierTaxId)
+            );
         if (paymentTermId == Guid.Empty)
-            throw new ArgumentException("La condición de pago es obligatoria.", nameof(paymentTermId));
+            throw new ArgumentException(
+                "La condición de pago es obligatoria.",
+                nameof(paymentTermId)
+            );
         if (paymentTermInstallments < 1)
-            throw new ArgumentException("Las cuotas deben ser al menos 1.", nameof(paymentTermInstallments));
+            throw new ArgumentException(
+                "Las cuotas deben ser al menos 1.",
+                nameof(paymentTermInstallments)
+            );
         if (exchangeRate <= 0)
-            throw new ArgumentException("El tipo de cambio debe ser mayor a cero.", nameof(exchangeRate));
+            throw new ArgumentException(
+                "El tipo de cambio debe ser mayor a cero.",
+                nameof(exchangeRate)
+            );
 
         var inv = new PurchaseInvoice
         {
@@ -193,16 +220,28 @@ public sealed class PurchaseInvoice : AuditableEntity, ITenantScopedEntity, ICom
         string currencyCode = "USD",
         decimal exchangeRate = 1m,
         Guid? purchaseOrderId = null,
-        string? purchaseOrderNumber = null)
+        string? purchaseOrderNumber = null
+    )
     {
         if (Status != PurchaseStatus.Draft)
-            throw new InvalidOperationException("Solo se pueden editar compras en estado borrador.");
+            throw new InvalidOperationException(
+                "Solo se pueden editar compras en estado borrador."
+            );
         if (string.IsNullOrWhiteSpace(docTypeCode))
-            throw new ArgumentException("El tipo de comprobante es obligatorio.", nameof(docTypeCode));
+            throw new ArgumentException(
+                "El tipo de comprobante es obligatorio.",
+                nameof(docTypeCode)
+            );
         if (string.IsNullOrWhiteSpace(invoiceNumber))
-            throw new ArgumentException("El número de factura es obligatorio.", nameof(invoiceNumber));
+            throw new ArgumentException(
+                "El número de factura es obligatorio.",
+                nameof(invoiceNumber)
+            );
         if (exchangeRate <= 0)
-            throw new ArgumentException("El tipo de cambio debe ser mayor a cero.", nameof(exchangeRate));
+            throw new ArgumentException(
+                "El tipo de cambio debe ser mayor a cero.",
+                nameof(exchangeRate)
+            );
 
         SupplierId = supplierId;
         SupplierName = supplierName.Trim();
@@ -256,8 +295,13 @@ public sealed class PurchaseInvoice : AuditableEntity, ITenantScopedEntity, ICom
     public void DistributeCosts(decimal freightCost, decimal otherCosts, Guid updatedBy)
     {
         EnsureDraft();
-        if (freightCost < 0) throw new ArgumentException("El flete no puede ser negativo.", nameof(freightCost));
-        if (otherCosts < 0) throw new ArgumentException("Los otros costos no pueden ser negativos.", nameof(otherCosts));
+        if (freightCost < 0)
+            throw new ArgumentException("El flete no puede ser negativo.", nameof(freightCost));
+        if (otherCosts < 0)
+            throw new ArgumentException(
+                "Los otros costos no pueden ser negativos.",
+                nameof(otherCosts)
+            );
         RedistributeCosts(freightCost, otherCosts);
         SetUpdated(updatedBy);
     }
@@ -273,11 +317,15 @@ public sealed class PurchaseInvoice : AuditableEntity, ITenantScopedEntity, ICom
         ProrateCostToLines(otherCosts, (line, amount) => line.SetOtherCostsAllocated(amount));
     }
 
-    private void ProrateCostToLines(decimal totalCost, Action<PurchaseInvoiceDetail, decimal> setter)
+    private void ProrateCostToLines(
+        decimal totalCost,
+        Action<PurchaseInvoiceDetail, decimal> setter
+    )
     {
         if (totalCost <= 0)
         {
-            foreach (var line in _lines) setter(line, 0);
+            foreach (var line in _lines)
+                setter(line, 0);
             return;
         }
 
@@ -285,7 +333,8 @@ public sealed class PurchaseInvoice : AuditableEntity, ITenantScopedEntity, ICom
         if (totalBase <= 0)
         {
             var equal = Math.Round(totalCost / _lines.Count, 6);
-            foreach (var line in _lines) setter(line, equal);
+            foreach (var line in _lines)
+                setter(line, equal);
         }
         else
         {
@@ -317,11 +366,17 @@ public sealed class PurchaseInvoice : AuditableEntity, ITenantScopedEntity, ICom
         foreach (var line in _lines)
         {
             if (line.Quantity <= 0)
-                throw new InvalidOperationException($"Línea '{line.Description}': cantidad debe ser mayor a cero.");
+                throw new InvalidOperationException(
+                    $"Línea '{line.Description}': cantidad debe ser mayor a cero."
+                );
             if (string.IsNullOrWhiteSpace(line.VatCode))
-                throw new InvalidOperationException($"Línea '{line.Description}': código IVA es obligatorio.");
+                throw new InvalidOperationException(
+                    $"Línea '{line.Description}': código IVA es obligatorio."
+                );
             if (line.ItemId.HasValue && line.WarehouseId is null && GlobalWarehouseId is null)
-                throw new InvalidOperationException($"Línea '{line.Description}': el producto requiere una bodega destino.");
+                throw new InvalidOperationException(
+                    $"Línea '{line.Description}': el producto requiere una bodega destino."
+                );
         }
 
         // Líneas que provienen de Recepción Electrónica (PurchaseReceptionLineId != null) y aún no
@@ -329,12 +384,15 @@ public sealed class PurchaseInvoice : AuditableEntity, ITenantScopedEntity, ICom
         // — no se confirma la compra, para no generar Inventario/Kardex/CxP/Contabilidad con un
         // vínculo de producto sin resolver. Líneas manuales (PurchaseReceptionLineId == null) siguen
         // permitiendo ItemId nulo, igual que antes — ese caso no es "matching pendiente".
-        var unresolved = _lines.Where(l => l.PurchaseReceptionLineId.HasValue && l.ItemId is null).ToList();
+        var unresolved = _lines
+            .Where(l => l.PurchaseReceptionLineId.HasValue && l.ItemId is null)
+            .ToList();
         if (unresolved.Count > 0)
         {
             var names = string.Join(", ", unresolved.Select(l => l.Description));
             throw new InvalidOperationException(
-                $"No se puede confirmar la compra: hay productos pendientes de vinculación ({names}).");
+                $"No se puede confirmar la compra: hay productos pendientes de vinculación ({names})."
+            );
         }
 
         foreach (var line in _lines)
@@ -347,9 +405,21 @@ public sealed class PurchaseInvoice : AuditableEntity, ITenantScopedEntity, ICom
 
         Status = PurchaseStatus.Confirmed;
         SetUpdated(updatedBy);
-        RaiseDomainEvent(new PurchaseInvoiceConfirmedEvent(
-            TenantId, Id, SupplierId, InvoiceNumber, GrandTotal, CompanyId, IssueDate,
-            Subtotal, TotalVat, TotalIce, TotalDiscount));
+        RaiseDomainEvent(
+            new PurchaseInvoiceConfirmedEvent(
+                TenantId,
+                Id,
+                SupplierId,
+                InvoiceNumber,
+                GrandTotal,
+                CompanyId,
+                IssueDate,
+                Subtotal,
+                TotalVat,
+                TotalIce,
+                TotalDiscount
+            )
+        );
     }
 
     /// <summary>
@@ -357,9 +427,18 @@ public sealed class PurchaseInvoice : AuditableEntity, ITenantScopedEntity, ICom
     /// <paramref name="itemId"/> — el propio agregado Item se muta aparte vía su repositorio;
     /// este método solo levanta el evento de auditoría correspondiente a esa decisión de negocio.
     /// </summary>
-    public void RecordConfirmedItemPvpUpdate(Guid itemId, decimal oldPvp, decimal newPvp)
-        => RaiseDomainEvent(new PurchaseLinePvpUpdatedEvent(
-            TenantId, Id, InvoiceNumber, itemId, oldPvp, newPvp, "ConfirmedUpdate"));
+    public void RecordConfirmedItemPvpUpdate(Guid itemId, decimal oldPvp, decimal newPvp) =>
+        RaiseDomainEvent(
+            new PurchaseLinePvpUpdatedEvent(
+                TenantId,
+                Id,
+                InvoiceNumber,
+                itemId,
+                oldPvp,
+                newPvp,
+                "ConfirmedUpdate"
+            )
+        );
 
     /// <summary>
     /// Edita el PVP snapshot de una línea en borrador. Único punto autorizado de mutación —
@@ -369,7 +448,8 @@ public sealed class PurchaseInvoice : AuditableEntity, ITenantScopedEntity, ICom
     public void UpdateLinePvp(Guid lineId, decimal newPvp, Guid updatedBy)
     {
         EnsureDraft();
-        var line = _lines.FirstOrDefault(l => l.Id == lineId)
+        var line =
+            _lines.FirstOrDefault(l => l.Id == lineId)
             ?? throw new InvalidOperationException("Línea no encontrada.");
 
         var oldPvp = line.SnapshotItemPvp;
@@ -377,8 +457,17 @@ public sealed class PurchaseInvoice : AuditableEntity, ITenantScopedEntity, ICom
         SetUpdated(updatedBy);
 
         if (line.ItemId is Guid itemId)
-            RaiseDomainEvent(new PurchaseLinePvpUpdatedEvent(
-                TenantId, Id, InvoiceNumber, itemId, oldPvp, newPvp, "Updated"));
+            RaiseDomainEvent(
+                new PurchaseLinePvpUpdatedEvent(
+                    TenantId,
+                    Id,
+                    InvoiceNumber,
+                    itemId,
+                    oldPvp,
+                    newPvp,
+                    "Updated"
+                )
+            );
     }
 
     public const int CancelReasonMaxLen = 500;
@@ -399,14 +488,30 @@ public sealed class PurchaseInvoice : AuditableEntity, ITenantScopedEntity, ICom
         CancelledAt = DateTime.UtcNow;
         CancelledBy = cancelledBy;
         SetUpdated(cancelledBy);
-        RaiseDomainEvent(new PurchaseInvoiceCancelledEvent(TenantId, Id, SupplierId, InvoiceNumber, GrandTotal, CancelReason));
+        RaiseDomainEvent(
+            new PurchaseInvoiceCancelledEvent(
+                TenantId,
+                Id,
+                SupplierId,
+                InvoiceNumber,
+                GrandTotal,
+                CancelReason
+            )
+        );
     }
 
-    public void UpdatePaymentTermSnapshot(Guid paymentTermId, string paymentTermName, int installments, int daysBetween)
+    public void UpdatePaymentTermSnapshot(
+        Guid paymentTermId,
+        string paymentTermName,
+        int installments,
+        int daysBetween
+    )
     {
         EnsureDraft();
         if (_paymentSchedules.Count > 0)
-            throw new InvalidOperationException("No se puede cambiar la condición de pago después de generar el cronograma.");
+            throw new InvalidOperationException(
+                "No se puede cambiar la condición de pago después de generar el cronograma."
+            );
 
         PaymentTermId = paymentTermId;
         PaymentTermName = paymentTermName.Trim();
@@ -418,15 +523,18 @@ public sealed class PurchaseInvoice : AuditableEntity, ITenantScopedEntity, ICom
     {
         if (_paymentSchedules.Count > 0)
             throw new InvalidOperationException(
-                "El cronograma de pagos ya fue generado. No se permite regeneración.");
+                "El cronograma de pagos ya fue generado. No se permite regeneración."
+            );
 
         if (GrandTotal <= 0)
             throw new InvalidOperationException(
-                "No se puede generar cronograma para una compra con total cero o negativo.");
+                "No se puede generar cronograma para una compra con total cero o negativo."
+            );
 
         if (PaymentTermInstallments < 1)
             throw new InvalidOperationException(
-                "La condición de pago debe tener al menos 1 cuota.");
+                "La condición de pago debe tener al menos 1 cuota."
+            );
 
         var total = GrandTotal;
         var installmentAmount = Math.Round(total / PaymentTermInstallments, 2);
@@ -435,12 +543,9 @@ public sealed class PurchaseInvoice : AuditableEntity, ITenantScopedEntity, ICom
         for (var i = 1; i <= PaymentTermInstallments; i++)
         {
             var dueDate = IssueDate.AddDays(PaymentTermDaysBetween * i);
-            var amount = i == PaymentTermInstallments
-                ? total - accumulated
-                : installmentAmount;
+            var amount = i == PaymentTermInstallments ? total - accumulated : installmentAmount;
 
-            _paymentSchedules.Add(PurchasePaymentSchedule.Create(
-                Id, TenantId, i, dueDate, amount));
+            _paymentSchedules.Add(PurchasePaymentSchedule.Create(Id, TenantId, i, dueDate, amount));
             accumulated += amount;
         }
 
@@ -448,7 +553,8 @@ public sealed class PurchaseInvoice : AuditableEntity, ITenantScopedEntity, ICom
     }
 
     public void ReplacePaymentSchedule(
-        IReadOnlyList<(int Number, DateOnly DueDate, decimal Amount, string? Notes)> installments)
+        IReadOnlyList<(int Number, DateOnly DueDate, decimal Amount, string? Notes)> installments
+    )
     {
         if (installments.Count == 0)
             throw new ArgumentException("Debe incluir al menos una cuota.", nameof(installments));
@@ -456,17 +562,24 @@ public sealed class PurchaseInvoice : AuditableEntity, ITenantScopedEntity, ICom
         var total = GrandTotal;
         if (total <= 0)
             throw new InvalidOperationException(
-                "No se puede generar cronograma para una compra con total cero o negativo.");
+                "No se puede generar cronograma para una compra con total cero o negativo."
+            );
 
         var numbers = new HashSet<int>();
         foreach (var inst in installments)
         {
             if (inst.Number < 1)
-                throw new ArgumentException($"El número de cuota debe ser >= 1 (recibido: {inst.Number}).");
+                throw new ArgumentException(
+                    $"El número de cuota debe ser >= 1 (recibido: {inst.Number})."
+                );
             if (inst.Amount <= 0)
-                throw new ArgumentException($"Cuota #{inst.Number}: el monto debe ser mayor a cero.");
+                throw new ArgumentException(
+                    $"Cuota #{inst.Number}: el monto debe ser mayor a cero."
+                );
             if (inst.DueDate < IssueDate)
-                throw new ArgumentException($"Cuota #{inst.Number}: la fecha de vencimiento no puede ser anterior a la fecha de emisión.");
+                throw new ArgumentException(
+                    $"Cuota #{inst.Number}: la fecha de vencimiento no puede ser anterior a la fecha de emisión."
+                );
             if (!numbers.Add(inst.Number))
                 throw new ArgumentException($"Cuota #{inst.Number}: número de cuota duplicado.");
         }
@@ -474,13 +587,22 @@ public sealed class PurchaseInvoice : AuditableEntity, ITenantScopedEntity, ICom
         var sum = installments.Sum(i => i.Amount);
         if (sum != total)
             throw new InvalidOperationException(
-                $"La suma de las cuotas ({sum:F2}) no coincide con el total de la compra ({total:F2}).");
+                $"La suma de las cuotas ({sum:F2}) no coincide con el total de la compra ({total:F2})."
+            );
 
         _paymentSchedules.Clear();
         foreach (var inst in installments.OrderBy(i => i.Number))
         {
-            _paymentSchedules.Add(PurchasePaymentSchedule.Create(
-                Id, TenantId, inst.Number, inst.DueDate, inst.Amount, inst.Notes));
+            _paymentSchedules.Add(
+                PurchasePaymentSchedule.Create(
+                    Id,
+                    TenantId,
+                    inst.Number,
+                    inst.DueDate,
+                    inst.Amount,
+                    inst.Notes
+                )
+            );
         }
     }
 
@@ -489,12 +611,15 @@ public sealed class PurchaseInvoice : AuditableEntity, ITenantScopedEntity, ICom
         var sum = _paymentSchedules.Sum(s => s.Amount);
         if (sum != expectedTotal)
             throw new InvalidOperationException(
-                $"La suma de las cuotas ({sum:F2}) no coincide con el total de la compra ({expectedTotal:F2}).");
+                $"La suma de las cuotas ({sum:F2}) no coincide con el total de la compra ({expectedTotal:F2})."
+            );
     }
 
     private void EnsureDraft()
     {
         if (Status != PurchaseStatus.Draft)
-            throw new InvalidOperationException("Solo se pueden editar compras en estado borrador.");
+            throw new InvalidOperationException(
+                "Solo se pueden editar compras en estado borrador."
+            );
     }
 }

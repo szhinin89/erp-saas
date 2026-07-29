@@ -30,8 +30,23 @@ public sealed class SerialNumberConfiguration : IEntityTypeConfiguration<SerialN
         builder.Property(e => e.UpdatedAt).HasColumnName("updated_at");
         builder.Property(e => e.UpdatedBy).HasColumnName("updated_by");
 
-        builder.HasIndex(e => new { e.TenantId, e.CompanyId, e.ItemId }).HasDatabaseName("ix_inv_serials_tenant_company_item");
-        builder.HasIndex(e => new { e.TenantId, e.CompanyId, e.ItemId, e.Serial })
-               .IsUnique().HasDatabaseName("uq_inv_serials_item_serial");
+        builder
+            .HasIndex(e => new
+            {
+                e.TenantId,
+                e.CompanyId,
+                e.ItemId,
+            })
+            .HasDatabaseName("ix_inv_serials_tenant_company_item");
+        builder
+            .HasIndex(e => new
+            {
+                e.TenantId,
+                e.CompanyId,
+                e.ItemId,
+                e.Serial,
+            })
+            .IsUnique()
+            .HasDatabaseName("uq_inv_serials_item_serial");
     }
 }

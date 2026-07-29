@@ -64,9 +64,16 @@ public sealed class AssignTemporaryPasswordAdminHandlerTests
             Hasher.Setup(h => h.HashPassword(It.IsAny<string>())).Returns("new-temp-hash");
         }
 
-        public AssignTemporaryPasswordAdminHandler BuildHandler() => new(
-            AccessRepo.Object, Hasher.Object, RevocationService.Object, UnitOfWork.Object,
-            new CurrentUserStub(), new CurrentTenantStub(), new CurrentCompanyStub());
+        public AssignTemporaryPasswordAdminHandler BuildHandler() =>
+            new(
+                AccessRepo.Object,
+                Hasher.Object,
+                RevocationService.Object,
+                UnitOfWork.Object,
+                new CurrentUserStub(),
+                new CurrentTenantStub(),
+                new CurrentCompanyStub()
+            );
     }
 
     private static AssignTemporaryPasswordAdminCommand ValidCommand() =>
@@ -78,8 +85,11 @@ public sealed class AssignTemporaryPasswordAdminHandlerTests
         var user = NewTargetUser();
         var membership = ActiveMembership(user.Id);
         var f = new Fixture();
-        f.AccessRepo.Setup(r => r.GetUserByUsernameAsync(Username, It.IsAny<CancellationToken>())).ReturnsAsync(user);
-        f.AccessRepo.Setup(r => r.GetCompanyUserMembershipAsync(CompanyId, user.Id, It.IsAny<CancellationToken>()))
+        f.AccessRepo.Setup(r => r.GetUserByUsernameAsync(Username, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(user);
+        f.AccessRepo.Setup(r =>
+                r.GetCompanyUserMembershipAsync(CompanyId, user.Id, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(membership);
 
         var handler = f.BuildHandler();
@@ -95,15 +105,27 @@ public sealed class AssignTemporaryPasswordAdminHandlerTests
     public async Task Usuario_inexistente_devuelve_NotFound_y_no_abre_transaccion()
     {
         var f = new Fixture();
-        f.AccessRepo.Setup(r => r.GetUserByUsernameAsync(Username, It.IsAny<CancellationToken>())).ReturnsAsync((IdentityUser?)null);
+        f.AccessRepo.Setup(r => r.GetUserByUsernameAsync(Username, It.IsAny<CancellationToken>()))
+            .ReturnsAsync((IdentityUser?)null);
 
         var handler = f.BuildHandler();
         var result = await handler.Handle(ValidCommand(), CancellationToken.None);
 
         result.IsSuccess.Should().BeFalse();
         result.Code.Should().Be(ApiResponseCodes.Common.NotFound);
-        f.AccessRepo.Verify(r => r.GetCompanyUserMembershipAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()), Times.Never);
-        f.UnitOfWork.Verify(u => u.BeginTransactionAsync(It.IsAny<CancellationToken>()), Times.Never);
+        f.AccessRepo.Verify(
+            r =>
+                r.GetCompanyUserMembershipAsync(
+                    It.IsAny<Guid>(),
+                    It.IsAny<Guid>(),
+                    It.IsAny<CancellationToken>()
+                ),
+            Times.Never
+        );
+        f.UnitOfWork.Verify(
+            u => u.BeginTransactionAsync(It.IsAny<CancellationToken>()),
+            Times.Never
+        );
         f.Hasher.Verify(h => h.HashPassword(It.IsAny<string>()), Times.Never);
     }
 
@@ -112,8 +134,11 @@ public sealed class AssignTemporaryPasswordAdminHandlerTests
     {
         var user = NewTargetUser();
         var f = new Fixture();
-        f.AccessRepo.Setup(r => r.GetUserByUsernameAsync(Username, It.IsAny<CancellationToken>())).ReturnsAsync(user);
-        f.AccessRepo.Setup(r => r.GetCompanyUserMembershipAsync(CompanyId, user.Id, It.IsAny<CancellationToken>()))
+        f.AccessRepo.Setup(r => r.GetUserByUsernameAsync(Username, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(user);
+        f.AccessRepo.Setup(r =>
+                r.GetCompanyUserMembershipAsync(CompanyId, user.Id, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync((CompanyUserMembership?)null);
 
         var handler = f.BuildHandler();
@@ -121,11 +146,23 @@ public sealed class AssignTemporaryPasswordAdminHandlerTests
 
         result.IsSuccess.Should().BeFalse();
         result.Code.Should().Be(ApiResponseCodes.Common.Forbidden);
-        user.PasswordHash.Should().Be("old-hash", "no debe tocarse el password si el scoping de empresa falla");
-        f.UnitOfWork.Verify(u => u.BeginTransactionAsync(It.IsAny<CancellationToken>()), Times.Never);
+        user.PasswordHash.Should()
+            .Be("old-hash", "no debe tocarse el password si el scoping de empresa falla");
+        f.UnitOfWork.Verify(
+            u => u.BeginTransactionAsync(It.IsAny<CancellationToken>()),
+            Times.Never
+        );
         f.RevocationService.Verify(
-            s => s.RevokeAllAccessAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<string>(), It.IsAny<CancellationToken>()),
-            Times.Never);
+            s =>
+                s.RevokeAllAccessAsync(
+                    It.IsAny<Guid>(),
+                    It.IsAny<Guid>(),
+                    It.IsAny<Guid>(),
+                    It.IsAny<string>(),
+                    It.IsAny<CancellationToken>()
+                ),
+            Times.Never
+        );
     }
 
     [Fact]
@@ -135,8 +172,11 @@ public sealed class AssignTemporaryPasswordAdminHandlerTests
         var membership = ActiveMembership(user.Id);
         membership.Deactivate(AdminUserId);
         var f = new Fixture();
-        f.AccessRepo.Setup(r => r.GetUserByUsernameAsync(Username, It.IsAny<CancellationToken>())).ReturnsAsync(user);
-        f.AccessRepo.Setup(r => r.GetCompanyUserMembershipAsync(CompanyId, user.Id, It.IsAny<CancellationToken>()))
+        f.AccessRepo.Setup(r => r.GetUserByUsernameAsync(Username, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(user);
+        f.AccessRepo.Setup(r =>
+                r.GetCompanyUserMembershipAsync(CompanyId, user.Id, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(membership);
 
         var handler = f.BuildHandler();
@@ -145,7 +185,10 @@ public sealed class AssignTemporaryPasswordAdminHandlerTests
         result.IsSuccess.Should().BeFalse();
         result.Code.Should().Be(ApiResponseCodes.Common.Forbidden);
         user.PasswordHash.Should().Be("old-hash");
-        f.UnitOfWork.Verify(u => u.BeginTransactionAsync(It.IsAny<CancellationToken>()), Times.Never);
+        f.UnitOfWork.Verify(
+            u => u.BeginTransactionAsync(It.IsAny<CancellationToken>()),
+            Times.Never
+        );
     }
 
     [Fact]
@@ -154,8 +197,11 @@ public sealed class AssignTemporaryPasswordAdminHandlerTests
         var user = NewTargetUser();
         var membership = ActiveMembership(user.Id);
         var f = new Fixture();
-        f.AccessRepo.Setup(r => r.GetUserByUsernameAsync(Username, It.IsAny<CancellationToken>())).ReturnsAsync(user);
-        f.AccessRepo.Setup(r => r.GetCompanyUserMembershipAsync(CompanyId, user.Id, It.IsAny<CancellationToken>()))
+        f.AccessRepo.Setup(r => r.GetUserByUsernameAsync(Username, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(user);
+        f.AccessRepo.Setup(r =>
+                r.GetCompanyUserMembershipAsync(CompanyId, user.Id, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(membership);
 
         var handler = f.BuildHandler();
@@ -172,14 +218,18 @@ public sealed class AssignTemporaryPasswordAdminHandlerTests
         var user = NewTargetUser();
         var membership = ActiveMembership(user.Id);
         var f = new Fixture();
-        f.AccessRepo.Setup(r => r.GetUserByUsernameAsync(Username, It.IsAny<CancellationToken>())).ReturnsAsync(user);
-        f.AccessRepo.Setup(r => r.GetCompanyUserMembershipAsync(CompanyId, user.Id, It.IsAny<CancellationToken>()))
+        f.AccessRepo.Setup(r => r.GetUserByUsernameAsync(Username, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(user);
+        f.AccessRepo.Setup(r =>
+                r.GetCompanyUserMembershipAsync(CompanyId, user.Id, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(membership);
 
         var handler = f.BuildHandler();
         await handler.Handle(ValidCommand(), CancellationToken.None);
 
-        user.RequirePasswordReset.Should().BeTrue("el usuario debe cambiar la contraseña temporal en su próximo login");
+        user.RequirePasswordReset.Should()
+            .BeTrue("el usuario debe cambiar la contraseña temporal en su próximo login");
     }
 
     [Fact]
@@ -188,18 +238,27 @@ public sealed class AssignTemporaryPasswordAdminHandlerTests
         var user = NewTargetUser();
         var membership = ActiveMembership(user.Id);
         var f = new Fixture();
-        f.AccessRepo.Setup(r => r.GetUserByUsernameAsync(Username, It.IsAny<CancellationToken>())).ReturnsAsync(user);
-        f.AccessRepo.Setup(r => r.GetCompanyUserMembershipAsync(CompanyId, user.Id, It.IsAny<CancellationToken>()))
+        f.AccessRepo.Setup(r => r.GetUserByUsernameAsync(Username, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(user);
+        f.AccessRepo.Setup(r =>
+                r.GetCompanyUserMembershipAsync(CompanyId, user.Id, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(membership);
 
         var handler = f.BuildHandler();
         await handler.Handle(ValidCommand(), CancellationToken.None);
 
         f.RevocationService.Verify(
-            s => s.RevokeAllAccessAsync(
-                user.Id, TenantId, AdminUserId,
-                "Contraseña temporal asignada por administrador", It.IsAny<CancellationToken>()),
-            Times.Once);
+            s =>
+                s.RevokeAllAccessAsync(
+                    user.Id,
+                    TenantId,
+                    AdminUserId,
+                    "Contraseña temporal asignada por administrador",
+                    It.IsAny<CancellationToken>()
+                ),
+            Times.Once
+        );
     }
 
     [Fact]
@@ -208,11 +267,21 @@ public sealed class AssignTemporaryPasswordAdminHandlerTests
         var user = NewTargetUser();
         var membership = ActiveMembership(user.Id);
         var f = new Fixture();
-        f.AccessRepo.Setup(r => r.GetUserByUsernameAsync(Username, It.IsAny<CancellationToken>())).ReturnsAsync(user);
-        f.AccessRepo.Setup(r => r.GetCompanyUserMembershipAsync(CompanyId, user.Id, It.IsAny<CancellationToken>()))
+        f.AccessRepo.Setup(r => r.GetUserByUsernameAsync(Username, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(user);
+        f.AccessRepo.Setup(r =>
+                r.GetCompanyUserMembershipAsync(CompanyId, user.Id, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(membership);
-        f.RevocationService
-            .Setup(s => s.RevokeAllAccessAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+        f.RevocationService.Setup(s =>
+                s.RevokeAllAccessAsync(
+                    It.IsAny<Guid>(),
+                    It.IsAny<Guid>(),
+                    It.IsAny<Guid>(),
+                    It.IsAny<string>(),
+                    It.IsAny<CancellationToken>()
+                )
+            )
             .ThrowsAsync(new InvalidOperationException("boom"));
 
         var handler = f.BuildHandler();

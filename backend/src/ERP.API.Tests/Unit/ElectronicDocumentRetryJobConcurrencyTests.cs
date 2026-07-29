@@ -16,14 +16,20 @@ public sealed class ElectronicDocumentRetryJobConcurrencyTests
     [Fact]
     public void ExecuteAsync_has_DisableConcurrentExecution_attribute()
     {
-        var method = typeof(ElectronicDocumentRetryJob).GetMethod(nameof(ElectronicDocumentRetryJob.ExecuteAsync));
+        var method = typeof(ElectronicDocumentRetryJob).GetMethod(
+            nameof(ElectronicDocumentRetryJob.ExecuteAsync)
+        );
 
         method.Should().NotBeNull();
-        var attribute = method!.GetCustomAttributes(typeof(DisableConcurrentExecutionAttribute), inherit: false)
+        var attribute = method!
+            .GetCustomAttributes(typeof(DisableConcurrentExecutionAttribute), inherit: false)
             .Cast<DisableConcurrentExecutionAttribute>()
             .SingleOrDefault();
 
-        attribute.Should().NotBeNull(
-            "el job corre cada minuto (Program.cs) y una corrida que exceda 60s no debe solaparse con la siguiente");
+        attribute
+            .Should()
+            .NotBeNull(
+                "el job corre cada minuto (Program.cs) y una corrida que exceda 60s no debe solaparse con la siguiente"
+            );
     }
 }

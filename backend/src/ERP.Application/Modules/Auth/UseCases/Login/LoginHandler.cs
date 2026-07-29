@@ -47,7 +47,8 @@ public class LoginHandler : IRequestHandler<LoginCommand, Result<AuthResponseDto
         IBranchRepository branchRepository,
         IMediator mediator,
         IPasswordResetTokenRepository passwordResetTokenRepository,
-        IOptions<PasswordResetOptions> passwordResetOptions)
+        IOptions<PasswordResetOptions> passwordResetOptions
+    )
     {
         _tenantRepository = TenantRepository;
         _companyRepository = companyRepository;
@@ -62,23 +63,38 @@ public class LoginHandler : IRequestHandler<LoginCommand, Result<AuthResponseDto
         _passwordResetOptions = passwordResetOptions;
     }
 
-    public async Task<Result<AuthResponseDto>> Handle(LoginCommand command, CancellationToken cancellationToken)
+    public async Task<Result<AuthResponseDto>> Handle(
+        LoginCommand command,
+        CancellationToken cancellationToken
+    )
     {
         var username = command.Username.Trim();
 
-        var identityUser = await _accessRepository.GetUserByUsernameAsync(username, cancellationToken);
+        var identityUser = await _accessRepository.GetUserByUsernameAsync(
+            username,
+            cancellationToken
+        );
         if (identityUser is null)
-            return Result<AuthResponseDto>.Failure("No estás registrado a una empresa. Comunícate con el administrador.");
+            return Result<AuthResponseDto>.Failure(
+                "No estás registrado a una empresa. Comunícate con el administrador."
+            );
 
         if (!identityUser.IsActive)
             return Result<AuthResponseDto>.Failure("Usuario inactivo.");
 
         if (!_passwordHasher.VerifyPassword(command.Password, identityUser.PasswordHash))
-            return Result<AuthResponseDto>.Failure("Credenciales inválidas. Si olvidaste tus datos, comunícate con el administrador.");
+            return Result<AuthResponseDto>.Failure(
+                "Credenciales inválidas. Si olvidaste tus datos, comunícate con el administrador."
+            );
 
-        var memberships = await _accessRepository.GetActiveCompanyUserMembershipsForUserSystemAsync(identityUser.Id, cancellationToken);
+        var memberships = await _accessRepository.GetActiveCompanyUserMembershipsForUserSystemAsync(
+            identityUser.Id,
+            cancellationToken
+        );
         if (memberships.Count == 0)
-            return Result<AuthResponseDto>.Failure("No estás registrado a una empresa. Comunícate con el administrador.");
+            return Result<AuthResponseDto>.Failure(
+                "No estás registrado a una empresa. Comunícate con el administrador."
+            );
 
         var companyIds = memberships.Select(m => m.CompanyId).Distinct().ToList();
         var companies = await _companyRepository.GetByIdsAsync(companyIds, cancellationToken);
@@ -87,10 +103,14 @@ public class LoginHandler : IRequestHandler<LoginCommand, Result<AuthResponseDto
         var tenantGroups = companies.GroupBy(c => c.TenantId).ToList();
 
         if (tenantGroups.Count > 1)
-            return Result<AuthResponseDto>.Failure("Tu usuario está asociado a múltiples tenants. Usa el flujo de selección de tenant.");
+            return Result<AuthResponseDto>.Failure(
+                "Tu usuario está asociado a múltiples tenants. Usa el flujo de selección de tenant."
+            );
 
         if (tenantGroups.Count == 0)
-            return Result<AuthResponseDto>.Failure("No estás registrado a una empresa. Comunícate con el administrador.");
+            return Result<AuthResponseDto>.Failure(
+                "No estás registrado a una empresa. Comunícate con el administrador."
+            );
 
         var tenantId = tenantGroups[0].Key;
 
@@ -103,19 +123,32 @@ public class LoginHandler : IRequestHandler<LoginCommand, Result<AuthResponseDto
         if (identityUser.RequirePasswordReset)
         {
             var (rawToken, expiresAtUtc) = await PasswordResetTokenIssuer.IssueAsync(
-                _passwordResetTokenRepository, _passwordResetOptions, identityUser.Id,
-                PasswordResetToken.KindIdentity, tenantId,
+                _passwordResetTokenRepository,
+                _passwordResetOptions,
+                identityUser.Id,
+                PasswordResetToken.KindIdentity,
+                tenantId,
                 overrideLifetimeMinutes: _passwordResetOptions.Value.FirstLoginTokenLifetimeMinutes,
-                cancellationToken);
+                cancellationToken
+            );
 
-            return Result<AuthResponseDto>.Success(new AuthResponseDto(
-                identityUser.Id, identityUser.FullName, identityUser.Username, identityUser.Email?.Value,
-                Role: string.Empty, tenantId, Token: string.Empty)
-            {
-                RequiresPasswordReset = true,
-                PasswordResetToken = rawToken,
-                PasswordResetTokenExpiresIn = (int)Math.Round((expiresAtUtc - DateTime.UtcNow).TotalSeconds),
-            });
+            return Result<AuthResponseDto>.Success(
+                new AuthResponseDto(
+                    identityUser.Id,
+                    identityUser.FullName,
+                    identityUser.Username,
+                    identityUser.Email?.Value,
+                    Role: string.Empty,
+                    tenantId,
+                    Token: string.Empty
+                )
+                {
+                    RequiresPasswordReset = true,
+                    PasswordResetToken = rawToken,
+                    PasswordResetTokenExpiresIn = (int)
+                        Math.Round((expiresAtUtc - DateTime.UtcNow).TotalSeconds),
+                }
+            );
         }
 
         var tenant = await _tenantRepository.GetByIdAsync(tenantId, cancellationToken);
@@ -127,17 +160,35 @@ public class LoginHandler : IRequestHandler<LoginCommand, Result<AuthResponseDto
         {
             const string pendingCompanyRole = SecurityRoles.User;
             var tokenWithoutCompany = _accessTokenService.GenerateSessionToken(
-                identityUser, tenantId, pendingCompanyRole);
+                identityUser,
+                tenantId,
+                pendingCompanyRole
+            );
             var (refreshMulti, refreshExpiryMulti) = await _refreshTokenService.CreateAsync(
-                identityUser.Id, tenantId, null, RefreshUserType.Identity, cancellationToken);
+                identityUser.Id,
+                tenantId,
+                null,
+                RefreshUserType.Identity,
+                cancellationToken
+            );
 
-            return Result<AuthResponseDto>.Success(new AuthResponseDto(identityUser.Id, identityUser.FullName, identityUser.Username, identityUser.Email?.Value, pendingCompanyRole, tenantId, tokenWithoutCompany)
-            {
-                CompanyId = null,
-                RequiresCompanySelection = true,
-                RefreshToken = refreshMulti,
-                RefreshTokenExpiry = refreshExpiryMulti,
-            });
+            return Result<AuthResponseDto>.Success(
+                new AuthResponseDto(
+                    identityUser.Id,
+                    identityUser.FullName,
+                    identityUser.Username,
+                    identityUser.Email?.Value,
+                    pendingCompanyRole,
+                    tenantId,
+                    tokenWithoutCompany
+                )
+                {
+                    CompanyId = null,
+                    RequiresCompanySelection = true,
+                    RefreshToken = refreshMulti,
+                    RefreshTokenExpiry = refreshExpiryMulti,
+                }
+            );
         }
 
         var company = companiesInTenant[0];
@@ -147,15 +198,20 @@ public class LoginHandler : IRequestHandler<LoginCommand, Result<AuthResponseDto
         await _companyProvisioning.EnsureDefaultCompanyAsync(tenant, cancellationToken);
 
         var identityToken = _accessTokenService.GenerateSessionToken(
-            identityUser, tenantId, membership.Role);
+            identityUser,
+            tenantId,
+            membership.Role
+        );
 
         string identityRefresh;
         DateTime identityRefreshExpiry;
 
         var (branchId, preferencesFailure) = await CompanyUserPreferencesLoginResolver.ResolveAsync(
-            _mediator, membership.Id,
+            _mediator,
+            membership.Id,
             () => ResolveMainBranchIdAsync(tenantId, company.Id, cancellationToken),
-            cancellationToken);
+            cancellationToken
+        );
         if (preferencesFailure is not null)
             return preferencesFailure;
 
@@ -163,16 +219,23 @@ public class LoginHandler : IRequestHandler<LoginCommand, Result<AuthResponseDto
         {
             var sessionResult = await _mediator.Send(
                 new CreateAuthenticatedSessionCommand(
-                    tenantId, company.Id, identityUser.Id, resolvedBranchId,
-                    command.TerminalId ?? UnresolvedTerminalId),
-                cancellationToken);
+                    tenantId,
+                    company.Id,
+                    identityUser.Id,
+                    resolvedBranchId,
+                    command.TerminalId ?? UnresolvedTerminalId
+                ),
+                cancellationToken
+            );
 
             if (!sessionResult.IsSuccess)
                 return sessionResult.Code == ApiResponseCodes.Common.Conflict
                     ? Result<AuthResponseDto>.Conflict(
-                        sessionResult.Error ?? "No se pudo iniciar la sesión. Intenta nuevamente.")
+                        sessionResult.Error ?? "No se pudo iniciar la sesión. Intenta nuevamente."
+                    )
                     : Result<AuthResponseDto>.Failure(
-                        sessionResult.Error ?? "No se pudo iniciar la sesión.");
+                        sessionResult.Error ?? "No se pudo iniciar la sesión."
+                    );
 
             identityRefresh = sessionResult.Value!.RefreshToken;
             identityRefreshExpiry = sessionResult.Value.RefreshTokenExpiry;
@@ -184,18 +247,33 @@ public class LoginHandler : IRequestHandler<LoginCommand, Result<AuthResponseDto
             // El frontend completa la selección después, vía GetSessionContext + BranchSelectorModal
             // (useBranchGate) y POST /session/switch-branch, que sí crea la sucursal activa.
             (identityRefresh, identityRefreshExpiry) = await _refreshTokenService.CreateAsync(
-                identityUser.Id, tenantId, company.Id, RefreshUserType.Identity, cancellationToken);
+                identityUser.Id,
+                tenantId,
+                company.Id,
+                RefreshUserType.Identity,
+                cancellationToken
+            );
         }
 
-        return Result<AuthResponseDto>.Success(new AuthResponseDto(identityUser.Id, identityUser.FullName, identityUser.Username, identityUser.Email?.Value, membership.Role, tenantId, identityToken)
-        {
-            CompanyId = company.Id,
-            RequiresCompanySelection = false,
-            OnboardingCompleted = company.OnboardingCompleted,
-            OperationalStatus = company.OperationalStatus,
-            RefreshToken = identityRefresh,
-            RefreshTokenExpiry = identityRefreshExpiry,
-        });
+        return Result<AuthResponseDto>.Success(
+            new AuthResponseDto(
+                identityUser.Id,
+                identityUser.FullName,
+                identityUser.Username,
+                identityUser.Email?.Value,
+                membership.Role,
+                tenantId,
+                identityToken
+            )
+            {
+                CompanyId = company.Id,
+                RequiresCompanySelection = false,
+                OnboardingCompleted = company.OnboardingCompleted,
+                OperationalStatus = company.OperationalStatus,
+                RefreshToken = identityRefresh,
+                RefreshTokenExpiry = identityRefreshExpiry,
+            }
+        );
     }
 
     /// <summary>
@@ -205,11 +283,19 @@ public class LoginHandler : IRequestHandler<LoginCommand, Result<AuthResponseDto
     /// hay exactamente una — nunca adivina: 0 sucursales o más de una marcada como principal
     /// dejan el login sin UserSession en vez de elegir una al azar.
     /// </summary>
-    private async Task<Guid?> ResolveMainBranchIdAsync(Guid tenantId, Guid companyId, CancellationToken cancellationToken)
+    private async Task<Guid?> ResolveMainBranchIdAsync(
+        Guid tenantId,
+        Guid companyId,
+        CancellationToken cancellationToken
+    )
     {
-        var branches = await _branchRepository.GetAsync(tenantId, activeFilter: true, search: null, cancellationToken);
+        var branches = await _branchRepository.GetAsync(
+            tenantId,
+            activeFilter: true,
+            search: null,
+            cancellationToken
+        );
         var mainBranches = branches.Where(b => b.CompanyId == companyId && b.IsMainBranch).ToList();
         return mainBranches.Count == 1 ? mainBranches[0].Id : null;
     }
 }
-

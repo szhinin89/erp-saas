@@ -12,4 +12,3 @@ public abstract class SystemAggregateRoot : SystemBaseEntity, IHasDomainEvents
 
     public void ClearDomainEvents() => _domainEvents.Clear();
 }
-

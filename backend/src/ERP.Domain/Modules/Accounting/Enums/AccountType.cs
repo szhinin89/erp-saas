@@ -11,5 +11,5 @@ public enum AccountType
     Liability,
     Equity,
     Income,
-    Expense
+    Expense,
 }

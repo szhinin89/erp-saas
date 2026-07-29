@@ -6,8 +6,19 @@ namespace ERP.Domain.Tests.Pricing;
 
 public sealed class PricingRuleTests
 {
-    private static PricingRule CreateRule(PricingRuleType type = PricingRuleType.FixedPrice, decimal value = 10m) =>
-        PricingRule.Create(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), type, value, Guid.NewGuid());
+    private static PricingRule CreateRule(
+        PricingRuleType type = PricingRuleType.FixedPrice,
+        decimal value = 10m
+    ) =>
+        PricingRule.Create(
+            Guid.NewGuid(),
+            Guid.NewGuid(),
+            Guid.NewGuid(),
+            Guid.NewGuid(),
+            type,
+            value,
+            Guid.NewGuid()
+        );
 
     [Fact]
     public void Create_es_activa_por_defecto()

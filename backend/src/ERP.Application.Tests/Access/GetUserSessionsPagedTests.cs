@@ -23,14 +23,18 @@ public sealed class GetUserSessionsPagedValidatorTests
     public void PageNumber_menor_a_1_es_invalido()
     {
         var result = Validator.Validate(new GetUserSessionsPagedQuery(PageNumber: 0));
-        result.Errors.Should().Contain(e => e.PropertyName == nameof(GetUserSessionsPagedQuery.PageNumber));
+        result
+            .Errors.Should()
+            .Contain(e => e.PropertyName == nameof(GetUserSessionsPagedQuery.PageNumber));
     }
 
     [Fact]
     public void PageSize_mayor_a_200_es_invalido()
     {
         var result = Validator.Validate(new GetUserSessionsPagedQuery(PageSize: 500));
-        result.Errors.Should().Contain(e => e.PropertyName == nameof(GetUserSessionsPagedQuery.PageSize));
+        result
+            .Errors.Should()
+            .Contain(e => e.PropertyName == nameof(GetUserSessionsPagedQuery.PageSize));
     }
 
     [Fact]
@@ -50,8 +54,12 @@ public sealed class GetUserSessionsPagedValidatorTests
     [Fact]
     public void FromUtc_posterior_a_ToUtc_es_invalido()
     {
-        var result = Validator.Validate(new GetUserSessionsPagedQuery(
-            FromUtc: DateTime.UtcNow, ToUtc: DateTime.UtcNow.AddDays(-1)));
+        var result = Validator.Validate(
+            new GetUserSessionsPagedQuery(
+                FromUtc: DateTime.UtcNow,
+                ToUtc: DateTime.UtcNow.AddDays(-1)
+            )
+        );
         result.IsValid.Should().BeFalse();
     }
 }
@@ -75,13 +83,29 @@ public sealed class GetUserSessionsPagedHandlerTests
     public async Task Aplica_los_filtros_recibidos_al_repositorio()
     {
         var (repo, tenant) = BuildMocks();
-        repo.Setup(r => r.GetPagedAsync(
-                TenantId, IdentityUserId, CompanyId, UserSessionStatus.Active,
-                It.IsAny<DateTime?>(), It.IsAny<DateTime?>(), 2, 10, It.IsAny<CancellationToken>()))
+        repo.Setup(r =>
+                r.GetPagedAsync(
+                    TenantId,
+                    IdentityUserId,
+                    CompanyId,
+                    UserSessionStatus.Active,
+                    It.IsAny<DateTime?>(),
+                    It.IsAny<DateTime?>(),
+                    2,
+                    10,
+                    It.IsAny<CancellationToken>()
+                )
+            )
             .ReturnsAsync((Array.Empty<UserSession>(), 0));
 
         var handler = new GetUserSessionsPagedHandler(repo.Object, tenant.Object);
-        var query = new GetUserSessionsPagedQuery(IdentityUserId, CompanyId, "Active", PageNumber: 2, PageSize: 10);
+        var query = new GetUserSessionsPagedQuery(
+            IdentityUserId,
+            CompanyId,
+            "Active",
+            PageNumber: 2,
+            PageSize: 10
+        );
 
         var result = await handler.Handle(query, CancellationToken.None);
 
@@ -94,8 +118,19 @@ public sealed class GetUserSessionsPagedHandlerTests
     {
         var (repo, tenant) = BuildMocks();
         var session = UserSession.Create(TenantId, CompanyId, IdentityUserId, BranchId, "device-1");
-        repo.Setup(r => r.GetPagedAsync(
-                TenantId, null, null, null, null, null, 1, 25, It.IsAny<CancellationToken>()))
+        repo.Setup(r =>
+                r.GetPagedAsync(
+                    TenantId,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    1,
+                    25,
+                    It.IsAny<CancellationToken>()
+                )
+            )
             .ReturnsAsync((new[] { session }, 1));
 
         var handler = new GetUserSessionsPagedHandler(repo.Object, tenant.Object);
@@ -116,9 +151,12 @@ public sealed class GetUserSessionsPagedHandlerTests
     public void UserSessionAdminDto_no_expone_RefreshTokenId_ni_datos_internos()
     {
         var properties = typeof(UserSessionAdminDto).GetProperties();
-        properties.Should().NotContain(p =>
-            p.Name.Contains("RefreshToken", StringComparison.OrdinalIgnoreCase) ||
-            p.Name.Contains("Hash", StringComparison.OrdinalIgnoreCase) ||
-            p.Name.Contains("Token", StringComparison.OrdinalIgnoreCase));
+        properties
+            .Should()
+            .NotContain(p =>
+                p.Name.Contains("RefreshToken", StringComparison.OrdinalIgnoreCase)
+                || p.Name.Contains("Hash", StringComparison.OrdinalIgnoreCase)
+                || p.Name.Contains("Token", StringComparison.OrdinalIgnoreCase)
+            );
     }
 }

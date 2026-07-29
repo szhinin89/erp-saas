@@ -13,26 +13,42 @@ public sealed class UpdateEmissionPointCommandHandler
     private readonly ICurrentTenant _currentTenant;
     private readonly ICurrentUser _user;
 
-    public UpdateEmissionPointCommandHandler(IEmissionPointRepository repo, ICurrentTenant currentTenant, ICurrentUser user)
+    public UpdateEmissionPointCommandHandler(
+        IEmissionPointRepository repo,
+        ICurrentTenant currentTenant,
+        ICurrentUser user
+    )
     {
         _repo = repo;
         _currentTenant = currentTenant;
         _user = user;
     }
 
-    public async Task<Result<EmissionPointDto>> Handle(UpdateEmissionPointCommand command, CancellationToken cancellationToken)
+    public async Task<Result<EmissionPointDto>> Handle(
+        UpdateEmissionPointCommand command,
+        CancellationToken cancellationToken
+    )
     {
         var tenantId = _currentTenant.TenantId;
         var entity = await _repo.GetByIdAsync(command.Id, tenantId, cancellationToken);
-        if (entity is null) return Result<EmissionPointDto>.Failure("Punto de emisión no encontrado.");
+        if (entity is null)
+            return Result<EmissionPointDto>.Failure("Punto de emisión no encontrado.");
 
         if (command.IsDefault && !entity.IsDefault)
-            await _repo.ClearDefaultExceptAsync(tenantId, entity.EstablishmentId, command.Id, _user.UserId, cancellationToken);
+            await _repo.ClearDefaultExceptAsync(
+                tenantId,
+                entity.EstablishmentId,
+                command.Id,
+                _user.UserId,
+                cancellationToken
+            );
 
         entity.Update(command.Name, command.EmissionType, _user.UserId);
         entity.SetDefault(command.IsDefault, _user.UserId);
         await _repo.SaveChangesAsync(cancellationToken);
 
-        return Result<EmissionPointDto>.Success(GetEmissionPointsByEstablishmentQueryHandler.ToDto(entity));
+        return Result<EmissionPointDto>.Success(
+            GetEmissionPointsByEstablishmentQueryHandler.ToDto(entity)
+        );
     }
 }

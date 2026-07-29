@@ -10,4 +10,5 @@ public sealed record InvoiceIssuedIntegrationEvent(
     Guid InvoiceId,
     string InvoiceNumber,
     decimal TotalAmount,
-    string Currency) : IIntegrationEvent;
+    string Currency
+) : IIntegrationEvent;

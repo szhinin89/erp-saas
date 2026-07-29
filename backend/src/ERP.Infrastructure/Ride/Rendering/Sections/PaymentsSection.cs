@@ -1,8 +1,8 @@
+using System.Globalization;
 using ERP.Application.Modules.Ride.Templates;
 using QuestPDF.Fluent;
 using QuestPDF.Helpers;
 using QuestPDF.Infrastructure;
-using System.Globalization;
 
 namespace ERP.Infrastructure.Ride.Rendering.Sections;
 
@@ -51,10 +51,18 @@ public static class PaymentsSection
             foreach (var payment in layout.Payments)
             {
                 table.Cell().Element(BodyCell).Text(payment.PaymentMethodCode);
-                table.Cell().Element(BodyCell).AlignRight().Text(payment.Amount.ToString("F2", CultureInfo.InvariantCulture));
+                table
+                    .Cell()
+                    .Element(BodyCell)
+                    .AlignRight()
+                    .Text(payment.Amount.ToString("F2", CultureInfo.InvariantCulture));
                 if (hasCreditTerms)
                 {
-                    table.Cell().Element(BodyCell).AlignRight().Text(payment.Term?.ToString(CultureInfo.InvariantCulture) ?? "-");
+                    table
+                        .Cell()
+                        .Element(BodyCell)
+                        .AlignRight()
+                        .Text(payment.Term?.ToString(CultureInfo.InvariantCulture) ?? "-");
                     table.Cell().Element(BodyCell).Text(payment.TimeUnit ?? "-");
                 }
             }
@@ -62,8 +70,11 @@ public static class PaymentsSection
     }
 
     private static IContainer HeaderCell(IContainer container) =>
-        container.Background(Colors.Grey.Lighten3).RideBox()
-            .Padding(3).DefaultTextStyle(x => x.Bold().FontSize(8));
+        container
+            .Background(Colors.Grey.Lighten3)
+            .RideBox()
+            .Padding(3)
+            .DefaultTextStyle(x => x.Bold().FontSize(8));
 
     private static IContainer BodyCell(IContainer container) =>
         container.RideBox().Padding(3).DefaultTextStyle(x => x.FontSize(8));

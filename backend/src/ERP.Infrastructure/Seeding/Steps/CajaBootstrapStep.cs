@@ -28,11 +28,15 @@ public sealed partial class CajaBootstrapStep : ICompanyBootstrapStep
         _logger = logger;
     }
 
-    public async Task ExecuteAsync(CompanyBootstrapContext context, CancellationToken cancellationToken = default)
+    public async Task ExecuteAsync(
+        CompanyBootstrapContext context,
+        CancellationToken cancellationToken = default
+    )
     {
         var (tenantId, companyId, actorId) = context;
 
-        var branchId = await _db.Branches.IgnoreQueryFilters()
+        var branchId = await _db
+            .Branches.IgnoreQueryFilters()
             .Where(b => b.TenantId == tenantId && b.CompanyId == companyId && b.IsMainBranch)
             .Select(b => (Guid?)b.Id)
             .FirstOrDefaultAsync(cancellationToken);
@@ -43,10 +47,15 @@ public sealed partial class CajaBootstrapStep : ICompanyBootstrapStep
             return;
         }
 
-        var exists = await _db.CashRegisters.IgnoreQueryFilters()
-            .AnyAsync(cr => cr.TenantId == tenantId
-                         && cr.BranchId == branchId.Value
-                         && cr.Code == MainCashRegisterCode, cancellationToken);
+        var exists = await _db
+            .CashRegisters.IgnoreQueryFilters()
+            .AnyAsync(
+                cr =>
+                    cr.TenantId == tenantId
+                    && cr.BranchId == branchId.Value
+                    && cr.Code == MainCashRegisterCode,
+                cancellationToken
+            );
 
         if (exists)
         {
@@ -54,7 +63,8 @@ public sealed partial class CajaBootstrapStep : ICompanyBootstrapStep
             return;
         }
 
-        var emissionPointId = await _db.EmissionPoints.IgnoreQueryFilters()
+        var emissionPointId = await _db
+            .EmissionPoints.IgnoreQueryFilters()
             .Where(ep => ep.TenantId == tenantId && ep.CompanyId == companyId && ep.IsDefault)
             .Select(ep => (Guid?)ep.Id)
             .FirstOrDefaultAsync(cancellationToken);
@@ -66,7 +76,8 @@ public sealed partial class CajaBootstrapStep : ICompanyBootstrapStep
             code: MainCashRegisterCode,
             name: MainCashRegisterName,
             createdBy: actorId,
-            emissionPointId: emissionPointId);
+            emissionPointId: emissionPointId
+        );
 
         _db.CashRegisters.Add(cashRegister);
         await _db.SaveChangesAsync(cancellationToken);
@@ -74,12 +85,21 @@ public sealed partial class CajaBootstrapStep : ICompanyBootstrapStep
         LogCashRegisterSeeded(MainCashRegisterCode, branchId.Value, cashRegister.Id);
     }
 
-    [LoggerMessage(Level = LogLevel.Warning, Message = "No main Branch found for company {CompanyId}. Skipping cash register seeding.")]
+    [LoggerMessage(
+        Level = LogLevel.Warning,
+        Message = "No main Branch found for company {CompanyId}. Skipping cash register seeding."
+    )]
     private partial void LogNoMainBranch(Guid companyId);
 
-    [LoggerMessage(Level = LogLevel.Debug, Message = "CashRegister {Code} already exists for branch {BranchId}. Skipping.")]
+    [LoggerMessage(
+        Level = LogLevel.Debug,
+        Message = "CashRegister {Code} already exists for branch {BranchId}. Skipping."
+    )]
     private partial void LogCashRegisterSkipped(string code, Guid branchId);
 
-    [LoggerMessage(Level = LogLevel.Information, Message = "CashRegister {Code} seeded for branch {BranchId} (id={CashRegisterId}).")]
+    [LoggerMessage(
+        Level = LogLevel.Information,
+        Message = "CashRegister {Code} seeded for branch {BranchId} (id={CashRegisterId})."
+    )]
     private partial void LogCashRegisterSeeded(string code, Guid branchId, Guid cashRegisterId);
 }

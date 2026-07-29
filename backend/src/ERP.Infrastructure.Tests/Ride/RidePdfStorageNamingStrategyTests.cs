@@ -13,8 +13,18 @@ public sealed class RidePdfStorageNamingStrategyTests
         var tenantId = Guid.NewGuid();
         var electronicDocumentId = Guid.NewGuid();
 
-        var first = strategy.BuildRelativePath(tenantId, RideDocumentType.Invoice, electronicDocumentId, "1.0.0");
-        var second = strategy.BuildRelativePath(tenantId, RideDocumentType.Invoice, electronicDocumentId, "1.0.0");
+        var first = strategy.BuildRelativePath(
+            tenantId,
+            RideDocumentType.Invoice,
+            electronicDocumentId,
+            "1.0.0"
+        );
+        var second = strategy.BuildRelativePath(
+            tenantId,
+            RideDocumentType.Invoice,
+            electronicDocumentId,
+            "1.0.0"
+        );
 
         second.Should().Be(first);
     }
@@ -26,8 +36,16 @@ public sealed class RidePdfStorageNamingStrategyTests
         var tenantId = Guid.NewGuid();
         var electronicDocumentId = Guid.NewGuid();
 
-        var calls = Enumerable.Range(0, 5)
-            .Select(_ => strategy.BuildRelativePath(tenantId, RideDocumentType.Invoice, electronicDocumentId, "1.0.0"))
+        var calls = Enumerable
+            .Range(0, 5)
+            .Select(_ =>
+                strategy.BuildRelativePath(
+                    tenantId,
+                    RideDocumentType.Invoice,
+                    electronicDocumentId,
+                    "1.0.0"
+                )
+            )
             .Distinct();
 
         calls.Should().ContainSingle();
@@ -39,8 +57,18 @@ public sealed class RidePdfStorageNamingStrategyTests
         var strategy = new RidePdfStorageNamingStrategy();
         var electronicDocumentId = Guid.NewGuid();
 
-        var a = strategy.BuildRelativePath(Guid.NewGuid(), RideDocumentType.Invoice, electronicDocumentId, "1.0.0");
-        var b = strategy.BuildRelativePath(Guid.NewGuid(), RideDocumentType.Invoice, electronicDocumentId, "1.0.0");
+        var a = strategy.BuildRelativePath(
+            Guid.NewGuid(),
+            RideDocumentType.Invoice,
+            electronicDocumentId,
+            "1.0.0"
+        );
+        var b = strategy.BuildRelativePath(
+            Guid.NewGuid(),
+            RideDocumentType.Invoice,
+            electronicDocumentId,
+            "1.0.0"
+        );
 
         a.Should().NotBe(b);
     }
@@ -51,8 +79,18 @@ public sealed class RidePdfStorageNamingStrategyTests
         var strategy = new RidePdfStorageNamingStrategy();
         var tenantId = Guid.NewGuid();
 
-        var a = strategy.BuildRelativePath(tenantId, RideDocumentType.Invoice, Guid.NewGuid(), "1.0.0");
-        var b = strategy.BuildRelativePath(tenantId, RideDocumentType.Invoice, Guid.NewGuid(), "1.0.0");
+        var a = strategy.BuildRelativePath(
+            tenantId,
+            RideDocumentType.Invoice,
+            Guid.NewGuid(),
+            "1.0.0"
+        );
+        var b = strategy.BuildRelativePath(
+            tenantId,
+            RideDocumentType.Invoice,
+            Guid.NewGuid(),
+            "1.0.0"
+        );
 
         a.Should().NotBe(b);
     }

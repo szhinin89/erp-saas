@@ -15,23 +15,27 @@ namespace ERP.Infrastructure.Migrations
                 name: "default_customer_id",
                 table: "cash_registers",
                 type: "uuid",
-                nullable: true);
+                nullable: true
+            );
 
             migrationBuilder.AddColumn<Guid>(
                 name: "default_warehouse_id",
                 table: "cash_registers",
                 type: "uuid",
-                nullable: true);
+                nullable: true
+            );
 
             migrationBuilder.CreateIndex(
                 name: "IX_cash_registers_default_customer_id",
                 table: "cash_registers",
-                column: "default_customer_id");
+                column: "default_customer_id"
+            );
 
             migrationBuilder.CreateIndex(
                 name: "IX_cash_registers_default_warehouse_id",
                 table: "cash_registers",
-                column: "default_warehouse_id");
+                column: "default_warehouse_id"
+            );
 
             migrationBuilder.AddForeignKey(
                 name: "FK_cash_registers_master_business_partners_default_customer_id",
@@ -39,7 +43,8 @@ namespace ERP.Infrastructure.Migrations
                 column: "default_customer_id",
                 principalTable: "master_business_partners",
                 principalColumn: "id",
-                onDelete: ReferentialAction.Restrict);
+                onDelete: ReferentialAction.Restrict
+            );
 
             migrationBuilder.AddForeignKey(
                 name: "FK_cash_registers_warehouses_default_warehouse_id",
@@ -47,7 +52,8 @@ namespace ERP.Infrastructure.Migrations
                 column: "default_warehouse_id",
                 principalTable: "warehouses",
                 principalColumn: "id",
-                onDelete: ReferentialAction.Restrict);
+                onDelete: ReferentialAction.Restrict
+            );
         }
 
         /// <inheritdoc />
@@ -55,27 +61,27 @@ namespace ERP.Infrastructure.Migrations
         {
             migrationBuilder.DropForeignKey(
                 name: "FK_cash_registers_master_business_partners_default_customer_id",
-                table: "cash_registers");
+                table: "cash_registers"
+            );
 
             migrationBuilder.DropForeignKey(
                 name: "FK_cash_registers_warehouses_default_warehouse_id",
-                table: "cash_registers");
+                table: "cash_registers"
+            );
 
             migrationBuilder.DropIndex(
                 name: "IX_cash_registers_default_customer_id",
-                table: "cash_registers");
+                table: "cash_registers"
+            );
 
             migrationBuilder.DropIndex(
                 name: "IX_cash_registers_default_warehouse_id",
-                table: "cash_registers");
+                table: "cash_registers"
+            );
 
-            migrationBuilder.DropColumn(
-                name: "default_customer_id",
-                table: "cash_registers");
+            migrationBuilder.DropColumn(name: "default_customer_id", table: "cash_registers");
 
-            migrationBuilder.DropColumn(
-                name: "default_warehouse_id",
-                table: "cash_registers");
+            migrationBuilder.DropColumn(name: "default_warehouse_id", table: "cash_registers");
         }
     }
 }

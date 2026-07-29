@@ -20,11 +20,18 @@ public sealed class ElectronicDocumentAudit : AuditRecordBase, ICompanyOperation
     private ElectronicDocumentAudit() { }
 
     public static ElectronicDocumentAudit Create(
-        AuditActor actor, Guid companyId, Guid electronicDocumentId, string action,
-        ElectronicDocumentType documentType, ElectronicDocumentState? fromState, ElectronicDocumentState toState,
-        string? reason = null)
+        AuditActor actor,
+        Guid companyId,
+        Guid electronicDocumentId,
+        string action,
+        ElectronicDocumentType documentType,
+        ElectronicDocumentState? fromState,
+        ElectronicDocumentState toState,
+        string? reason = null
+    )
     {
-        if (companyId == Guid.Empty) throw new ArgumentException("companyId requerido.", nameof(companyId));
+        if (companyId == Guid.Empty)
+            throw new ArgumentException("companyId requerido.", nameof(companyId));
 
         var audit = new ElectronicDocumentAudit
         {

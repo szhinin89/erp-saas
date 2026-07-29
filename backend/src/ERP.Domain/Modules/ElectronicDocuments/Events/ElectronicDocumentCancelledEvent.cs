@@ -14,8 +14,13 @@ public sealed class ElectronicDocumentCancelledEvent : BaseDomainEvent, IAuditEv
     public string Reason { get; }
 
     public ElectronicDocumentCancelledEvent(
-        Guid tenantId, Guid electronicDocumentId, ElectronicDocumentType documentType,
-        ElectronicDocumentState fromState, ElectronicDocumentState toState, string reason)
+        Guid tenantId,
+        Guid electronicDocumentId,
+        ElectronicDocumentType documentType,
+        ElectronicDocumentState fromState,
+        ElectronicDocumentState toState,
+        string reason
+    )
     {
         TenantId = tenantId;
         ElectronicDocumentId = electronicDocumentId;

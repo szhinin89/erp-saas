@@ -20,7 +20,8 @@ public sealed class EnableWarehouseCommandHandler
         IWarehouseRepository repo,
         IUserActivityRepository activity,
         ICurrentTenant currentTenant,
-        ICurrentUser user)
+        ICurrentUser user
+    )
     {
         _repo = repo;
         _activity = activity;
@@ -29,7 +30,9 @@ public sealed class EnableWarehouseCommandHandler
     }
 
     public async Task<Result<WarehouseListItemDto>> Handle(
-        EnableWarehouseCommand request, CancellationToken cancellationToken)
+        EnableWarehouseCommand request,
+        CancellationToken cancellationToken
+    )
     {
         var tenantId = _currentTenant.TenantId;
 
@@ -39,16 +42,20 @@ public sealed class EnableWarehouseCommandHandler
 
         entity.Enable(_user.UserId);
 
-        await _activity.AddAsync(UserActivity.Create(
-            tenantId,
-            _user.UserId,
-            _user.Email,
-            _user.FullName,
-            module: "inventory",
-            action: "warehouse.enable",
-            entityType: "Warehouse",
-            entityId: entity.Id,
-            description: entity.Name), cancellationToken);
+        await _activity.AddAsync(
+            UserActivity.Create(
+                tenantId,
+                _user.UserId,
+                _user.Email,
+                _user.FullName,
+                module: "inventory",
+                action: "warehouse.enable",
+                entityType: "Warehouse",
+                entityId: entity.Id,
+                description: entity.Name
+            ),
+            cancellationToken
+        );
         await _repo.SaveChangesAsync(cancellationToken);
 
         return Result<WarehouseListItemDto>.Success(GetWarehousesQueryHandler.ToDto(entity));

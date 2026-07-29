@@ -13,8 +13,12 @@ public sealed class RidePdfGeneratedEvent : BaseDomainEvent, IAuditEvent
     public string StoragePath { get; }
 
     public RidePdfGeneratedEvent(
-        Guid tenantId, Guid ridePdfDocumentId, Guid electronicDocumentId,
-        RideDocumentType documentType, string storagePath)
+        Guid tenantId,
+        Guid ridePdfDocumentId,
+        Guid electronicDocumentId,
+        RideDocumentType documentType,
+        string storagePath
+    )
     {
         TenantId = tenantId;
         RidePdfDocumentId = ridePdfDocumentId;

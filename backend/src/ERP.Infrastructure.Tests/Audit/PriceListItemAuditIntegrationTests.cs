@@ -43,8 +43,14 @@ public sealed class PriceListItemAuditIntegrationTests : IAsyncLifetime
         services.AddScoped(typeof(IAuditWriter<>), typeof(EfAuditWriter<>));
         services.AddScoped(typeof(IAuditReader<>), typeof(EfAuditReader<>));
         services.AddScoped<IAuditService, AuditService>();
-        services.AddScoped<IAuditContext>(_ => new FixedAuditContext(() => _tenantId, () => _companyId, _userId));
-        services.AddDbContext<ErpDbContext>((sp, options) => options.UseNpgsql(_postgres.GetConnectionString()));
+        services.AddScoped<IAuditContext>(_ => new FixedAuditContext(
+            () => _tenantId,
+            () => _companyId,
+            _userId
+        ));
+        services.AddDbContext<ErpDbContext>(
+            (sp, options) => options.UseNpgsql(_postgres.GetConnectionString())
+        );
         services.AddScoped<ICurrentTenant>(_ => new FixedCurrentTenant(() => _tenantId));
         services.AddScoped<ICurrentCompany>(_ => new FixedCurrentCompany(() => _companyId));
 
@@ -55,7 +61,12 @@ public sealed class PriceListItemAuditIntegrationTests : IAsyncLifetime
         await db.Database.MigrateAsync();
 
         var tenant = Tenant.Create("Test Tenant", $"test-{Guid.NewGuid():N}"[..16], _userId);
-        var company = Company.CreateManaged(tenant.Id, "1790012345001", "Test S.A.", createdBy: _userId);
+        var company = Company.CreateManaged(
+            tenant.Id,
+            "1790012345001",
+            "Test S.A.",
+            createdBy: _userId
+        );
         db.Tenants.Add(tenant);
         db.Companies.Add(company);
         await db.SaveChangesAsync();
@@ -63,7 +74,15 @@ public sealed class PriceListItemAuditIntegrationTests : IAsyncLifetime
         _tenantId = tenant.Id;
         _companyId = company.Id;
 
-        var priceList = PriceList.Create(_tenantId, _companyId, "GEN", "Lista general", "USD", isDefault: true, createdBy: _userId);
+        var priceList = PriceList.Create(
+            _tenantId,
+            _companyId,
+            "GEN",
+            "Lista general",
+            "USD",
+            isDefault: true,
+            createdBy: _userId
+        );
         db.PriceLists.Add(priceList);
         await db.SaveChangesAsync();
         _priceListId = priceList.Id;
@@ -105,7 +124,13 @@ public sealed class PriceListItemAuditIntegrationTests : IAsyncLifetime
         await using (var scope = _serviceProvider.CreateAsyncScope())
         {
             var db = scope.ServiceProvider.GetRequiredService<ErpDbContext>();
-            var assignment = PriceListItem.Create(_tenantId, _companyId, _priceListId, itemId, _userId);
+            var assignment = PriceListItem.Create(
+                _tenantId,
+                _companyId,
+                _priceListId,
+                itemId,
+                _userId
+            );
             db.PriceListItems.Add(assignment);
             await db.SaveChangesAsync();
             assignmentId = assignment.Id;
@@ -129,8 +154,8 @@ public sealed class PriceListItemAuditIntegrationTests : IAsyncLifetime
 
         await using var verify = _serviceProvider.CreateAsyncScope();
         var verifyDb = verify.ServiceProvider.GetRequiredService<ErpDbContext>();
-        var rows = await verifyDb.PriceListItemAudits
-            .Where(a => a.EntityId == assignmentId)
+        var rows = await verifyDb
+            .PriceListItemAudits.Where(a => a.EntityId == assignmentId)
             .OrderBy(a => a.OccurredAtUtc)
             .ToListAsync();
 

@@ -8,9 +8,11 @@ using MediatR;
 
 namespace ERP.Application.Auth.UseCases.PasswordReset;
 
-public sealed class ResetPasswordWithTokenHandler : IRequestHandler<ResetPasswordWithTokenCommand, Result<bool>>
+public sealed class ResetPasswordWithTokenHandler
+    : IRequestHandler<ResetPasswordWithTokenCommand, Result<bool>>
 {
-    public const string InvalidTokenMessage = "El enlace de recuperación no es válido o ha expirado.";
+    public const string InvalidTokenMessage =
+        "El enlace de recuperación no es válido o ha expirado.";
 
     private readonly IPasswordResetTokenRepository _tokenRepository;
     private readonly IAccessRepository _accessRepository;
@@ -25,7 +27,8 @@ public sealed class ResetPasswordWithTokenHandler : IRequestHandler<ResetPasswor
         ITenantRepository TenantRepository,
         IPasswordHasher passwordHasher,
         IRefreshTokenService refreshTokenService,
-        IValidator<ResetPasswordWithTokenCommand> validator)
+        IValidator<ResetPasswordWithTokenCommand> validator
+    )
     {
         _tokenRepository = tokenRepository;
         _accessRepository = accessRepository;
@@ -35,14 +38,21 @@ public sealed class ResetPasswordWithTokenHandler : IRequestHandler<ResetPasswor
         _validator = validator;
     }
 
-    public async Task<Result<bool>> Handle(ResetPasswordWithTokenCommand command, CancellationToken cancellationToken)
+    public async Task<Result<bool>> Handle(
+        ResetPasswordWithTokenCommand command,
+        CancellationToken cancellationToken
+    )
     {
         var vr = await _validator.ValidateAsync(command, cancellationToken);
         if (!vr.IsValid)
             return Result<bool>.Failure(string.Join(" ", vr.Errors.Select(e => e.ErrorMessage)));
 
         var stored = await PasswordResetTokenConsumer.TryGetValidAsync(
-            _tokenRepository, command.Token, PasswordResetToken.KindIdentity, cancellationToken);
+            _tokenRepository,
+            command.Token,
+            PasswordResetToken.KindIdentity,
+            cancellationToken
+        );
         if (stored is null)
             return Result<bool>.Failure(InvalidTokenMessage);
 
@@ -50,11 +60,20 @@ public sealed class ResetPasswordWithTokenHandler : IRequestHandler<ResetPasswor
             return Result<bool>.Failure(InvalidTokenMessage);
 
         if (!command.TenantId.HasValue || command.TenantId.Value != stored.TenantId.Value)
-            return Result<bool>.Failure("El enlace de recuperación no coincide con la empresa indicada.");
+            return Result<bool>.Failure(
+                "El enlace de recuperación no coincide con la empresa indicada."
+            );
 
         var identity = await PasswordResetTokenConsumer.ApplyAsync(
-            _tokenRepository, _accessRepository, _passwordHasher, _refreshTokenService,
-            stored, command.NewPassword, "Cambio de contraseña (reset)", cancellationToken);
+            _tokenRepository,
+            _accessRepository,
+            _passwordHasher,
+            _refreshTokenService,
+            stored,
+            command.NewPassword,
+            "Cambio de contraseña (reset)",
+            cancellationToken
+        );
         if (identity is null)
             return Result<bool>.Failure(InvalidTokenMessage);
 

@@ -14,9 +14,11 @@ public sealed class AuditService : IAuditService
 
     public AuditService(IServiceProvider serviceProvider) => _serviceProvider = serviceProvider;
 
-    public Task RecordAsync<TAudit>(TAudit record, CancellationToken ct = default) where TAudit : AuditRecordBase
+    public Task RecordAsync<TAudit>(TAudit record, CancellationToken ct = default)
+        where TAudit : AuditRecordBase
     {
-        var writer = (IAuditWriter<TAudit>)_serviceProvider.GetService(typeof(IAuditWriter<TAudit>))!;
+        var writer =
+            (IAuditWriter<TAudit>)_serviceProvider.GetService(typeof(IAuditWriter<TAudit>))!;
         return writer.RecordAsync(record, ct);
     }
 }

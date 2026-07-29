@@ -1,10 +1,10 @@
+using System.Text.Json;
 using ERP.API.Extensions;
 using ERP.Application.Common;
 using FluentAssertions;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.FileProviders;
-using System.Text.Json;
 
 namespace ERP.API.Tests;
 
@@ -54,7 +54,12 @@ public sealed class ApiResponseContractSnapshotTests
         var context = new DefaultHttpContext { TraceIdentifier = "trace-success" };
         var environment = new FakeWebHostEnvironment();
 
-        var response = ResponseFactory.Success(context, environment, ApiResponseCodes.Common.Ok, new { id = 1 });
+        var response = ResponseFactory.Success(
+            context,
+            environment,
+            ApiResponseCodes.Common.Ok,
+            new { id = 1 }
+        );
         var json = JsonSerializer.Serialize(response, JsonOptions);
         using var doc = JsonDocument.Parse(json);
         var root = doc.RootElement;
@@ -66,7 +71,11 @@ public sealed class ApiResponseContractSnapshotTests
         root.GetProperty("code").GetString().Should().Be(ApiResponseCodes.Common.Ok);
         root.GetProperty("severity").GetString().Should().Be(ApiSeverity.Success);
         root.GetProperty("data").GetProperty("id").GetInt32().Should().Be(1);
-        root.GetProperty("meta").GetProperty("correlationId").GetString().Should().Be("trace-success");
+        root.GetProperty("meta")
+            .GetProperty("correlationId")
+            .GetString()
+            .Should()
+            .Be("trace-success");
     }
 
     [Fact]
@@ -75,7 +84,12 @@ public sealed class ApiResponseContractSnapshotTests
         var context = new DefaultHttpContext { TraceIdentifier = "trace-error" };
         var environment = new FakeWebHostEnvironment();
 
-        var response = ResponseFactory.Error(context, environment, ApiResponseCodes.Common.NotFound, ["El item 42 no existe."]);
+        var response = ResponseFactory.Error(
+            context,
+            environment,
+            ApiResponseCodes.Common.NotFound,
+            ["El item 42 no existe."]
+        );
         var json = JsonSerializer.Serialize(response, JsonOptions);
         using var doc = JsonDocument.Parse(json);
         var root = doc.RootElement;
@@ -98,7 +112,11 @@ public sealed class ApiResponseContractSnapshotTests
         var context = new DefaultHttpContext();
         var environment = new FakeWebHostEnvironment();
 
-        var response = ResponseFactory.Error(context, environment, ApiResponseCodes.Common.InternalError);
+        var response = ResponseFactory.Error(
+            context,
+            environment,
+            ApiResponseCodes.Common.InternalError
+        );
         var json = JsonSerializer.Serialize(response, JsonOptions);
         using var doc = JsonDocument.Parse(json);
 
@@ -113,7 +131,11 @@ public sealed class ApiResponseContractSnapshotTests
         var context = new DefaultHttpContext();
         var environment = new FakeWebHostEnvironment { EnvironmentName = environmentName };
 
-        var response = ResponseFactory.Error(context, environment, ApiResponseCodes.Common.InternalError);
+        var response = ResponseFactory.Error(
+            context,
+            environment,
+            ApiResponseCodes.Common.InternalError
+        );
         var json = JsonSerializer.Serialize(response, JsonOptions);
         using var doc = JsonDocument.Parse(json);
 
@@ -131,8 +153,18 @@ public sealed class ApiResponseContractSnapshotTests
         var context = new DefaultHttpContext();
         var environment = new FakeWebHostEnvironment { EnvironmentName = "Development" };
 
-        var success = ResponseFactory.Success(context, environment, ApiResponseCodes.Common.Created, new { id = 1, name = "x" });
-        var error = ResponseFactory.Error(context, environment, ApiResponseCodes.Common.ValidationError, ["Campo: inválido"]);
+        var success = ResponseFactory.Success(
+            context,
+            environment,
+            ApiResponseCodes.Common.Created,
+            new { id = 1, name = "x" }
+        );
+        var error = ResponseFactory.Error(
+            context,
+            environment,
+            ApiResponseCodes.Common.ValidationError,
+            ["Campo: inválido"]
+        );
 
         var successJson = JsonSerializer.Serialize(success, JsonOptions);
         var errorJson = JsonSerializer.Serialize(error, JsonOptions);
@@ -150,7 +182,12 @@ public sealed class ApiResponseContractSnapshotTests
         var context = new DefaultHttpContext();
         var environment = new FakeWebHostEnvironment { EnvironmentName = "Development" };
 
-        var response = ResponseFactory.Success(context, environment, ApiResponseCodes.Common.Ok, new { itemId = 1 });
+        var response = ResponseFactory.Success(
+            context,
+            environment,
+            ApiResponseCodes.Common.Ok,
+            new { itemId = 1 }
+        );
         var json = JsonSerializer.Serialize(response, JsonOptions);
         using var doc = JsonDocument.Parse(json);
 
@@ -177,6 +214,6 @@ public sealed class ApiResponseContractSnapshotTests
         }
     }
 
-    private static IEnumerable<string> PropertyNames(JsonElement element)
-        => element.EnumerateObject().Select(p => p.Name);
+    private static IEnumerable<string> PropertyNames(JsonElement element) =>
+        element.EnumerateObject().Select(p => p.Name);
 }

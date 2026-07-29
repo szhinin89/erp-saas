@@ -10,7 +10,8 @@ public sealed record SriCertificateStatus(
     DateTime? NotAfterUtc,
     string? Subject,
     string? Issuer,
-    string? ErrorMessage);
+    string? ErrorMessage
+);
 
 /// <summary>
 /// Resuelve si el certificado de una empresa está instalado y es válido (contraseña correcta,
@@ -21,5 +22,8 @@ public sealed record SriCertificateStatus(
 /// </summary>
 public interface ISriCertificateStatusResolver
 {
-    Task<SriCertificateStatus> ResolveAsync(SriSettings settings, CancellationToken cancellationToken = default);
+    Task<SriCertificateStatus> ResolveAsync(
+        SriSettings settings,
+        CancellationToken cancellationToken = default
+    );
 }

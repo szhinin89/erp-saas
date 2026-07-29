@@ -9,7 +9,5 @@ namespace ERP.Domain.Exceptions;
 public sealed class SystemSeededRecordException : InvalidOperationException
 {
     public SystemSeededRecordException(string entityLabel, string action)
-        : base($"{entityLabel} es un registro sembrado por el sistema y no puede {action}.")
-    {
-    }
+        : base($"{entityLabel} es un registro sembrado por el sistema y no puede {action}.") { }
 }

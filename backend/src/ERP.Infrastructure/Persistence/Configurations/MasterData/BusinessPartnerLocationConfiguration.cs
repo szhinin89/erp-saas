@@ -28,7 +28,8 @@ namespace ERP.Infrastructure.Persistence.Configurations.MasterData;
 ///   ITenantScopedEntity → subscriber fail-closed (EnterpriseQueryFilterConfigurator).
 ///   No hay company_id → no se aplica company filter (correcto por diseño).
 /// </summary>
-public sealed class BusinessPartnerLocationConfiguration : IEntityTypeConfiguration<BusinessPartnerLocation>
+public sealed class BusinessPartnerLocationConfiguration
+    : IEntityTypeConfiguration<BusinessPartnerLocation>
 {
     public void Configure(EntityTypeBuilder<BusinessPartnerLocation> builder)
     {
@@ -37,97 +38,105 @@ public sealed class BusinessPartnerLocationConfiguration : IEntityTypeConfigurat
         builder.HasKey(e => e.Id);
         builder.Property(e => e.Id).HasColumnName("id");
         builder.Property(e => e.TenantId).HasColumnName("tenant_id").IsRequired();
-        builder.Property(e => e.BusinessPartnerId).HasColumnName("business_partner_id").IsRequired();
+        builder
+            .Property(e => e.BusinessPartnerId)
+            .HasColumnName("business_partner_id")
+            .IsRequired();
 
-        builder.Property(e => e.Name)
-               .HasColumnName("name")
-               .HasMaxLength(BusinessPartnerLocation.NameMaxLen)
-               .IsRequired();
+        builder
+            .Property(e => e.Name)
+            .HasColumnName("name")
+            .HasMaxLength(BusinessPartnerLocation.NameMaxLen)
+            .IsRequired();
 
-        builder.Property(e => e.Type)
-               .HasColumnName("location_type")
-               .HasConversion<short>()
-               .IsRequired();
+        builder
+            .Property(e => e.Type)
+            .HasColumnName("location_type")
+            .HasConversion<short>()
+            .IsRequired();
 
         // LocationPurpose: [Flags] enum almacenado como int bitmask.
         // Permite Billing | Delivery | Fiscal en una sola columna.
-        builder.Property(e => e.Purpose)
-               .HasColumnName("location_purpose")
-               .HasConversion<int>()
-               .IsRequired()
-               .HasDefaultValue(LocationPurpose.None);
+        builder
+            .Property(e => e.Purpose)
+            .HasColumnName("location_purpose")
+            .HasConversion<int>()
+            .IsRequired()
+            .HasDefaultValue(LocationPurpose.None);
 
-        builder.Property(e => e.OtherDescription)
-               .HasColumnName("other_description")
-               .HasMaxLength(BusinessPartnerLocation.OtherDescriptionMaxLen);
+        builder
+            .Property(e => e.OtherDescription)
+            .HasColumnName("other_description")
+            .HasMaxLength(BusinessPartnerLocation.OtherDescriptionMaxLen);
 
         // ── PhysicalAddress VO (owned, columnas aplanadas en master_bp_locations) ──
-        builder.OwnsOne(e => e.Address, addr =>
-        {
-            addr.Property(a => a.AddressLine)
-                .HasColumnName("address_line")
-                .HasMaxLength(PhysicalAddress.AddressLineMaxLen)
-                .IsRequired();
+        builder.OwnsOne(
+            e => e.Address,
+            addr =>
+            {
+                addr.Property(a => a.AddressLine)
+                    .HasColumnName("address_line")
+                    .HasMaxLength(PhysicalAddress.AddressLineMaxLen)
+                    .IsRequired();
 
-            addr.Property(a => a.ProvinceCode)
-                .HasColumnName("province_code")
-                .HasMaxLength(PhysicalAddress.ProvinceCodeLen)
-                .IsFixedLength();
+                addr.Property(a => a.ProvinceCode)
+                    .HasColumnName("province_code")
+                    .HasMaxLength(PhysicalAddress.ProvinceCodeLen)
+                    .IsFixedLength();
 
-            addr.Property(a => a.CantonCode)
-                .HasColumnName("canton_code")
-                .HasMaxLength(PhysicalAddress.CantonCodeLen)
-                .IsFixedLength();
+                addr.Property(a => a.CantonCode)
+                    .HasColumnName("canton_code")
+                    .HasMaxLength(PhysicalAddress.CantonCodeLen)
+                    .IsFixedLength();
 
-            addr.Property(a => a.ParishCode)
-                .HasColumnName("parish_code")
-                .HasMaxLength(PhysicalAddress.ParishCodeLen)
-                .IsFixedLength();
+                addr.Property(a => a.ParishCode)
+                    .HasColumnName("parish_code")
+                    .HasMaxLength(PhysicalAddress.ParishCodeLen)
+                    .IsFixedLength();
 
-            // FKs a catálogos geográficos INEC (tablas global.geo_*)
-            // OnDelete Restrict: los catálogos son inmutables — nunca se eliminan
-            addr.HasOne<GeoProvince>()
-                .WithMany()
-                .HasForeignKey(a => a.ProvinceCode)
-                .HasPrincipalKey(p => p.Id)
-                .IsRequired(false)
-                .OnDelete(DeleteBehavior.Restrict)
-                .HasConstraintName("fk_bpl_province");
+                // FKs a catálogos geográficos INEC (tablas global.geo_*)
+                // OnDelete Restrict: los catálogos son inmutables — nunca se eliminan
+                addr.HasOne<GeoProvince>()
+                    .WithMany()
+                    .HasForeignKey(a => a.ProvinceCode)
+                    .HasPrincipalKey(p => p.Id)
+                    .IsRequired(false)
+                    .OnDelete(DeleteBehavior.Restrict)
+                    .HasConstraintName("fk_bpl_province");
 
-            addr.HasOne<GeoCanton>()
-                .WithMany()
-                .HasForeignKey(a => a.CantonCode)
-                .HasPrincipalKey(c => c.Id)
-                .IsRequired(false)
-                .OnDelete(DeleteBehavior.Restrict)
-                .HasConstraintName("fk_bpl_canton");
+                addr.HasOne<GeoCanton>()
+                    .WithMany()
+                    .HasForeignKey(a => a.CantonCode)
+                    .HasPrincipalKey(c => c.Id)
+                    .IsRequired(false)
+                    .OnDelete(DeleteBehavior.Restrict)
+                    .HasConstraintName("fk_bpl_canton");
 
-            addr.HasOne<GeoParish>()
-                .WithMany()
-                .HasForeignKey(a => a.ParishCode)
-                .HasPrincipalKey(p => p.Id)
-                .IsRequired(false)
-                .OnDelete(DeleteBehavior.Restrict)
-                .HasConstraintName("fk_bpl_parish");
-        });
+                addr.HasOne<GeoParish>()
+                    .WithMany()
+                    .HasForeignKey(a => a.ParishCode)
+                    .HasPrincipalKey(p => p.Id)
+                    .IsRequired(false)
+                    .OnDelete(DeleteBehavior.Restrict)
+                    .HasConstraintName("fk_bpl_parish");
+            }
+        );
 
-        builder.Property(e => e.Phone)
-               .HasColumnName("phone")
-               .HasMaxLength(20);
+        builder.Property(e => e.Phone).HasColumnName("phone").HasMaxLength(20);
 
-        builder.Property(e => e.Email)
-               .HasColumnName("email")
-               .HasMaxLength(254);
+        builder.Property(e => e.Email).HasColumnName("email").HasMaxLength(254);
 
-        builder.Property(e => e.IsPrimary)
-               .HasColumnName("is_primary")
-               .IsRequired()
-               .HasDefaultValue(false);
+        builder
+            .Property(e => e.IsPrimary)
+            .HasColumnName("is_primary")
+            .IsRequired()
+            .HasDefaultValue(false);
 
-        builder.Property(e => e.IsActive)
-               .HasColumnName("is_active")
-               .IsRequired()
-               .HasDefaultValue(true);
+        builder
+            .Property(e => e.IsActive)
+            .HasColumnName("is_active")
+            .IsRequired()
+            .HasDefaultValue(true);
 
         // ── Audit ────────────────────────────────────────────────────────────
         builder.Property(e => e.CreatedAt).HasColumnName("created_at").IsRequired();
@@ -136,23 +145,31 @@ public sealed class BusinessPartnerLocationConfiguration : IEntityTypeConfigurat
         builder.Property(e => e.UpdatedBy).HasColumnName("updated_by");
 
         // ── FK a BusinessPartner ──────────────────────────────────────────────
-        builder.HasOne<BusinessPartner>()
-               .WithMany()
-               .HasForeignKey(e => e.BusinessPartnerId)
-               .OnDelete(DeleteBehavior.Restrict)
-               .HasConstraintName("fk_bpl_business_partner");
+        builder
+            .HasOne<BusinessPartner>()
+            .WithMany()
+            .HasForeignKey(e => e.BusinessPartnerId)
+            .OnDelete(DeleteBehavior.Restrict)
+            .HasConstraintName("fk_bpl_business_partner");
 
         // ── Índices ───────────────────────────────────────────────────────────
 
         // Ubicaciones activas — query más frecuente
-        builder.HasIndex(e => new { e.TenantId, e.BusinessPartnerId, e.IsActive })
-               .HasDatabaseName("ix_bpl_subscriber_bp_active");
+        builder
+            .HasIndex(e => new
+            {
+                e.TenantId,
+                e.BusinessPartnerId,
+                e.IsActive,
+            })
+            .HasDatabaseName("ix_bpl_subscriber_bp_active");
 
         // Única ubicación primaria activa por BP.
         // HasFilter genera la cláusula WHERE en la migración para PostgreSQL.
-        builder.HasIndex(e => new { e.TenantId, e.BusinessPartnerId })
-               .HasFilter("is_primary = true AND is_active = true")
-               .IsUnique()
-               .HasDatabaseName("uq_bpl_primary");
+        builder
+            .HasIndex(e => new { e.TenantId, e.BusinessPartnerId })
+            .HasFilter("is_primary = true AND is_active = true")
+            .IsUnique()
+            .HasDatabaseName("uq_bpl_primary");
     }
 }

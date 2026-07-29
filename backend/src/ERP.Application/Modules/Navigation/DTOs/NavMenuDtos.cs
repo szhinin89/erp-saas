@@ -6,7 +6,8 @@ public sealed record NavMenuGroupDto(
     string Code,
     string Icon,
     string LabelKey,
-    IReadOnlyList<NavMenuItemDto> Items);
+    IReadOnlyList<NavMenuItemDto> Items
+);
 
 /// <summary>Ítem de menú ya filtrado — sin metadatos de permiso ni rol.</summary>
 public sealed record NavMenuItemDto(
@@ -14,4 +15,5 @@ public sealed record NavMenuItemDto(
     string LabelKey,
     string? DisplayLabel,
     string RoutePath,
-    IReadOnlyList<NavMenuItemDto> Children);
+    IReadOnlyList<NavMenuItemDto> Children
+);

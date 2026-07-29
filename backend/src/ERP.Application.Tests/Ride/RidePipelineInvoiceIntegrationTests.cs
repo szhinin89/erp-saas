@@ -30,25 +30,59 @@ public sealed class RidePipelineInvoiceIntegrationTests
 {
     private sealed class FakeTaxCategoryCodeResolver : ISriTaxCategoryCodeResolver
     {
-        public string? Resolve(string taxCode) => taxCode switch { "VAT" => "2", _ => null };
+        public string? Resolve(string taxCode) =>
+            taxCode switch
+            {
+                "VAT" => "2",
+                _ => null,
+            };
     }
 
     private static string RealAuthorizedInvoiceXml()
     {
         var data = new ElectronicDocumentData(
             Emission: new ElectronicDocumentEmissionContext(
-                "1", "1", "01", "001", "Av. Amazonas y Naciones Unidas", "001", "000000123", new DateTime(2026, 7, 8)),
+                "1",
+                "1",
+                "01",
+                "001",
+                "Av. Amazonas y Naciones Unidas",
+                "001",
+                "000000123",
+                new DateTime(2026, 7, 8)
+            ),
             Issuer: new ElectronicDocumentIssuerData(
-                "1790012345001", "ACME CIA LTDA", "ACME", "Av. Amazonas y Naciones Unidas", null, true),
+                "1790012345001",
+                "ACME CIA LTDA",
+                "ACME",
+                "Av. Amazonas y Naciones Unidas",
+                null,
+                true
+            ),
             Counterparty: new ElectronicDocumentCounterpartyData(
-                "05", "1710034065", "Juan Pérez", "Calle Falsa 123", "juan@example.com"),
-            Details: [new ElectronicDocumentDetailLine(
-                "SKU-001", "Producto de prueba", 2m, 10m, 0m, 20m,
-                [new ElectronicDocumentDetailTax("VAT", "2", 20m, 15m, 3m)])],
+                "05",
+                "1710034065",
+                "Juan Pérez",
+                "Calle Falsa 123",
+                "juan@example.com"
+            ),
+            Details:
+            [
+                new ElectronicDocumentDetailLine(
+                    "SKU-001",
+                    "Producto de prueba",
+                    2m,
+                    10m,
+                    0m,
+                    20m,
+                    [new ElectronicDocumentDetailTax("VAT", "2", 20m, 15m, 3m)]
+                ),
+            ],
             TaxSummary: [new ElectronicDocumentTaxSummary("VAT", "2", 20m, 3m)],
             Totals: new ElectronicDocumentTotals(20m, 0m, 3m, 23m, "USD"),
             Payments: [new ElectronicDocumentPayment("01", 23m, null, null)],
-            AdditionalInfo: []);
+            AdditionalInfo: []
+        );
 
         var result = new InvoiceXmlBuilder(new FakeTaxCategoryCodeResolver()).Build(data);
         result.IsSuccess.Should().BeTrue(result.Error);
@@ -73,15 +107,41 @@ public sealed class RidePipelineInvoiceIntegrationTests
 
         var sourceXmlProvider = new Mock<IRideSourceXmlProvider>();
         sourceXmlProvider
-            .Setup(p => p.GetAuthorizedXmlAsync(tenantId, companyId, sourceModule, sourceEntityId, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Result<RideSourceXmlLookup>.Success(new RideSourceXmlLookup(
-                RideSourceXmlStatus.Available, xml, electronicDocumentId, RideDocumentType.Invoice)));
+            .Setup(p =>
+                p.GetAuthorizedXmlAsync(
+                    tenantId,
+                    companyId,
+                    sourceModule,
+                    sourceEntityId,
+                    It.IsAny<CancellationToken>()
+                )
+            )
+            .ReturnsAsync(
+                Result<RideSourceXmlLookup>.Success(
+                    new RideSourceXmlLookup(
+                        RideSourceXmlStatus.Available,
+                        xml,
+                        electronicDocumentId,
+                        RideDocumentType.Invoice
+                    )
+                )
+            );
 
         var cacheStrategy = new Mock<IRideCacheStrategy>();
         cacheStrategy
-            .Setup(c => c.TryGetCachedAsync(
-                It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<RideContentHash>(), It.IsAny<string>(),
-                It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .Setup(c =>
+                c.TryGetCachedAsync(
+                    It.IsAny<Guid>(),
+                    It.IsAny<Guid>(),
+                    It.IsAny<RideContentHash>(),
+                    It.IsAny<string>(),
+                    It.IsAny<string>(),
+                    It.IsAny<string>(),
+                    It.IsAny<string>(),
+                    It.IsAny<string>(),
+                    It.IsAny<CancellationToken>()
+                )
+            )
             .ReturnsAsync(Result<RidePdfMetadataDto?>.Success(null));
 
         var brandingProvider = new Mock<IRideBrandingProvider>();
@@ -92,31 +152,68 @@ public sealed class RidePipelineInvoiceIntegrationTests
         IRideDocumentLayout? capturedLayout = null;
         var renderer = new Mock<IRideRenderer>();
         renderer
-            .Setup(r => r.RenderAsync(It.IsAny<IRideDocumentLayout>(), It.IsAny<CancellationToken>()))
-            .Callback<IRideDocumentLayout, CancellationToken>((layout, _) => capturedLayout = layout)
+            .Setup(r =>
+                r.RenderAsync(It.IsAny<IRideDocumentLayout>(), It.IsAny<CancellationToken>())
+            )
+            .Callback<IRideDocumentLayout, CancellationToken>(
+                (layout, _) => capturedLayout = layout
+            )
             .ReturnsAsync([1, 2, 3]);
 
         var storageService = new Mock<IRidePdfStorageService>();
         storageService
-            .Setup(s => s.StoreAsync(tenantId, RideDocumentType.Invoice, electronicDocumentId, It.IsAny<string>(), It.IsAny<byte[]>(), It.IsAny<CancellationToken>()))
+            .Setup(s =>
+                s.StoreAsync(
+                    tenantId,
+                    RideDocumentType.Invoice,
+                    electronicDocumentId,
+                    It.IsAny<string>(),
+                    It.IsAny<byte[]>(),
+                    It.IsAny<CancellationToken>()
+                )
+            )
             .ReturnsAsync(Result<string>.Success("ride/path/invoice.pdf"));
 
         var repository = new Mock<IRidePdfDocumentRepository>();
         repository
-            .Setup(r => r.GetByFingerprintAsync(
-                tenantId, electronicDocumentId, It.IsAny<RideContentHash>(), It.IsAny<string>(), It.IsAny<string>(),
-                It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .Setup(r =>
+                r.GetByFingerprintAsync(
+                    tenantId,
+                    electronicDocumentId,
+                    It.IsAny<RideContentHash>(),
+                    It.IsAny<string>(),
+                    It.IsAny<string>(),
+                    It.IsAny<string>(),
+                    It.IsAny<string>(),
+                    It.IsAny<CancellationToken>()
+                )
+            )
             .ReturnsAsync((RidePdfDocument?)null);
 
         var currentUser = new Mock<ICurrentUser>();
         currentUser.SetupGet(u => u.UserId).Returns(userId);
 
         var pipeline = new RidePipeline(
-            sourceXmlProvider.Object, parserResolver, templateResolver, cacheStrategy.Object,
-            new RideContentHasher(), brandingProvider.Object, renderer.Object, storageService.Object,
-            repository.Object, currentUser.Object);
+            sourceXmlProvider.Object,
+            parserResolver,
+            templateResolver,
+            cacheStrategy.Object,
+            new RideContentHasher(),
+            brandingProvider.Object,
+            renderer.Object,
+            storageService.Object,
+            repository.Object,
+            currentUser.Object
+        );
 
-        var result = await pipeline.ExecuteAsync(tenantId, companyId, sourceModule, sourceEntityId, forceRegenerate: false, CancellationToken.None);
+        var result = await pipeline.ExecuteAsync(
+            tenantId,
+            companyId,
+            sourceModule,
+            sourceEntityId,
+            forceRegenerate: false,
+            CancellationToken.None
+        );
 
         result.IsSuccess.Should().BeTrue(result.Error);
         result.Value!.Outcome.Should().Be(RideOutcome.Generated);
@@ -128,6 +225,9 @@ public sealed class RidePipelineInvoiceIntegrationTests
         invoiceLayout.Lines.Should().ContainSingle();
         invoiceLayout.TaxSummary.Should().ContainSingle();
 
-        repository.Verify(r => r.AddAsync(It.IsAny<RidePdfDocument>(), It.IsAny<CancellationToken>()), Times.Once);
+        repository.Verify(
+            r => r.AddAsync(It.IsAny<RidePdfDocument>(), It.IsAny<CancellationToken>()),
+            Times.Once
+        );
     }
 }

@@ -3,7 +3,10 @@ using static ERP.Domain.Common.FiscalPrecision;
 
 namespace ERP.Domain.Modules.Sales.Entities;
 
-public sealed class SalesReceivable : AuditableEntity, ITenantScopedEntity, ICompanyOperationalEntity
+public sealed class SalesReceivable
+    : AuditableEntity,
+        ITenantScopedEntity,
+        ICompanyOperationalEntity
 {
     public const int StatusMaxLen = 20;
 
@@ -22,15 +25,23 @@ public sealed class SalesReceivable : AuditableEntity, ITenantScopedEntity, ICom
     private SalesReceivable() { }
 
     public static SalesReceivable Create(
-        Guid tenantId, Guid companyId, Guid invoiceId,
-        Guid customerId, decimal originalAmount, Guid createdBy)
+        Guid tenantId,
+        Guid companyId,
+        Guid invoiceId,
+        Guid customerId,
+        decimal originalAmount,
+        Guid createdBy
+    )
     {
         if (invoiceId == Guid.Empty)
             throw new ArgumentException("La factura es obligatoria.", nameof(invoiceId));
         if (customerId == Guid.Empty)
             throw new ArgumentException("El cliente es obligatorio.", nameof(customerId));
         if (originalAmount <= 0)
-            throw new ArgumentException("El monto original debe ser mayor a cero.", nameof(originalAmount));
+            throw new ArgumentException(
+                "El monto original debe ser mayor a cero.",
+                nameof(originalAmount)
+            );
 
         var r = new SalesReceivable
         {
@@ -51,10 +62,16 @@ public sealed class SalesReceivable : AuditableEntity, ITenantScopedEntity, ICom
     {
         _installments.Clear();
 
-        if (installmentCount <= 0) installmentCount = 1;
-        var intervalDays = installmentCount > 1 ? creditTermDays / installmentCount : creditTermDays;
+        if (installmentCount <= 0)
+            installmentCount = 1;
+        var intervalDays =
+            installmentCount > 1 ? creditTermDays / installmentCount : creditTermDays;
 
-        var baseAmount = Math.Round(OriginalAmount / installmentCount, TaxAmount, MidpointRounding.AwayFromZero);
+        var baseAmount = Math.Round(
+            OriginalAmount / installmentCount,
+            TaxAmount,
+            MidpointRounding.AwayFromZero
+        );
         var accumulated = 0m;
 
         for (var i = 1; i <= installmentCount; i++)
@@ -63,8 +80,7 @@ public sealed class SalesReceivable : AuditableEntity, ITenantScopedEntity, ICom
             var amount = isLast ? OriginalAmount - accumulated : baseAmount;
             var dueDate = baseDate.AddDays(intervalDays * i);
 
-            _installments.Add(SalesReceivableInstallment.Create(
-                Id, TenantId, i, dueDate, amount));
+            _installments.Add(SalesReceivableInstallment.Create(Id, TenantId, i, dueDate, amount));
 
             accumulated += amount;
         }
@@ -74,7 +90,8 @@ public sealed class SalesReceivable : AuditableEntity, ITenantScopedEntity, ICom
     {
         if (PaidAmount > 0)
             throw new InvalidOperationException(
-                "No se puede cancelar una cuenta por cobrar con pagos registrados.");
+                "No se puede cancelar una cuenta por cobrar con pagos registrados."
+            );
 
         Status = "cancelled";
         _installments.Clear();
@@ -91,11 +108,18 @@ public sealed class SalesReceivable : AuditableEntity, ITenantScopedEntity, ICom
     public void RegisterCollection(decimal amount, Guid updatedBy)
     {
         if (amount <= 0)
-            throw new ArgumentException("El monto del cobro debe ser mayor a cero.", nameof(amount));
+            throw new ArgumentException(
+                "El monto del cobro debe ser mayor a cero.",
+                nameof(amount)
+            );
         if (Status == "cancelled")
-            throw new InvalidOperationException("No se puede registrar un cobro sobre una cuenta por cobrar cancelada.");
+            throw new InvalidOperationException(
+                "No se puede registrar un cobro sobre una cuenta por cobrar cancelada."
+            );
         if (amount > BalanceDue)
-            throw new InvalidOperationException("El monto del cobro excede el saldo pendiente de la cuenta por cobrar.");
+            throw new InvalidOperationException(
+                "El monto del cobro excede el saldo pendiente de la cuenta por cobrar."
+            );
 
         PaidAmount += amount;
         SetUpdated(updatedBy);
@@ -109,9 +133,14 @@ public sealed class SalesReceivable : AuditableEntity, ITenantScopedEntity, ICom
     public void ReverseCollection(decimal amount, Guid updatedBy)
     {
         if (amount <= 0)
-            throw new ArgumentException("El monto a reversar debe ser mayor a cero.", nameof(amount));
+            throw new ArgumentException(
+                "El monto a reversar debe ser mayor a cero.",
+                nameof(amount)
+            );
         if (amount > PaidAmount)
-            throw new InvalidOperationException("El monto a reversar excede el monto cobrado registrado en la cuenta por cobrar.");
+            throw new InvalidOperationException(
+                "El monto a reversar excede el monto cobrado registrado en la cuenta por cobrar."
+            );
 
         PaidAmount -= amount;
         SetUpdated(updatedBy);

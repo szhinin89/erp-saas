@@ -17,6 +17,6 @@ public sealed class RideXmlParserResolver : IRideXmlParserResolver
         _parsers = parsers.ToDictionary(p => p.DocumentType);
     }
 
-    public IRideXmlParser? Resolve(RideDocumentType documentType)
-        => _parsers.TryGetValue(documentType, out var parser) ? parser : null;
+    public IRideXmlParser? Resolve(RideDocumentType documentType) =>
+        _parsers.TryGetValue(documentType, out var parser) ? parser : null;
 }

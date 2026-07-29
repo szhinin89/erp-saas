@@ -23,7 +23,10 @@ public sealed class ExpireUserSessionsJobTests
         services.AddSingleton<IMediator>(new StubMediator(handler));
         var provider = services.BuildServiceProvider();
 
-        return new ExpireUserSessionsJob(provider.GetRequiredService<IServiceScopeFactory>(), NullLogger<ExpireUserSessionsJob>.Instance);
+        return new ExpireUserSessionsJob(
+            provider.GetRequiredService<IServiceScopeFactory>(),
+            NullLogger<ExpireUserSessionsJob>.Instance
+        );
     }
 
     [Fact]
@@ -57,7 +60,10 @@ public sealed class ExpireUserSessionsJobTests
         var services = new ServiceCollection();
         services.AddSingleton<IMediator>(new ThrowingMediator());
         var provider = services.BuildServiceProvider();
-        var job = new ExpireUserSessionsJob(provider.GetRequiredService<IServiceScopeFactory>(), NullLogger<ExpireUserSessionsJob>.Instance);
+        var job = new ExpireUserSessionsJob(
+            provider.GetRequiredService<IServiceScopeFactory>(),
+            NullLogger<ExpireUserSessionsJob>.Instance
+        );
 
         var act = () => job.ExecuteAsync(CancellationToken.None);
 
@@ -66,23 +72,35 @@ public sealed class ExpireUserSessionsJobTests
 
     private sealed class ThrowingMediator : IMediator
     {
-        public Task<TResponse> Send<TResponse>(IRequest<TResponse> request, CancellationToken ct = default)
-            => throw new InvalidOperationException("Fallo simulado de infraestructura.");
+        public Task<TResponse> Send<TResponse>(
+            IRequest<TResponse> request,
+            CancellationToken ct = default
+        ) => throw new InvalidOperationException("Fallo simulado de infraestructura.");
 
-        public Task<object?> Send(object request, CancellationToken ct = default)
-            => throw new InvalidOperationException("Fallo simulado de infraestructura.");
+        public Task<object?> Send(object request, CancellationToken ct = default) =>
+            throw new InvalidOperationException("Fallo simulado de infraestructura.");
 
-        public Task Send<TRequest>(TRequest request, CancellationToken ct = default) where TRequest : IRequest
-            => throw new InvalidOperationException("Fallo simulado de infraestructura.");
+        public Task Send<TRequest>(TRequest request, CancellationToken ct = default)
+            where TRequest : IRequest =>
+            throw new InvalidOperationException("Fallo simulado de infraestructura.");
 
-        public IAsyncEnumerable<TResponse> CreateStream<TResponse>(IStreamRequest<TResponse> request, CancellationToken ct = default)
-            => AsyncEnumerable.Empty<TResponse>();
+        public IAsyncEnumerable<TResponse> CreateStream<TResponse>(
+            IStreamRequest<TResponse> request,
+            CancellationToken ct = default
+        ) => AsyncEnumerable.Empty<TResponse>();
 
-        public IAsyncEnumerable<object?> CreateStream(object request, CancellationToken ct = default)
-            => AsyncEnumerable.Empty<object?>();
+        public IAsyncEnumerable<object?> CreateStream(
+            object request,
+            CancellationToken ct = default
+        ) => AsyncEnumerable.Empty<object?>();
 
-        public Task Publish(object notification, CancellationToken ct = default) => Task.CompletedTask;
-        public Task Publish<TNotification>(TNotification notification, CancellationToken ct = default)
+        public Task Publish(object notification, CancellationToken ct = default) =>
+            Task.CompletedTask;
+
+        public Task Publish<TNotification>(
+            TNotification notification,
+            CancellationToken ct = default
+        )
             where TNotification : INotification => Task.CompletedTask;
     }
 }

@@ -15,10 +15,12 @@ namespace ERP.Application.Modules.Pricing.UseCases.PriceListItems;
 /// Puramente administrativo — no crea ni modifica ninguna PricingRule ni precio.
 /// </summary>
 public sealed record SetItemPriceListsCommand(Guid ItemId, IReadOnlyList<Guid> PriceListIds)
-    : IRequest<Result<IReadOnlyList<Guid>>>, ICompanyScopedRequest;
+    : IRequest<Result<IReadOnlyList<Guid>>>,
+        ICompanyScopedRequest;
 
 public sealed record GetItemPriceListsQuery(Guid ItemId)
-    : IRequest<Result<IReadOnlyList<Guid>>>, ICompanyScopedRequest;
+    : IRequest<Result<IReadOnlyList<Guid>>>,
+        ICompanyScopedRequest;
 
 /// <summary>
 /// Responsabilidad única: qué ítems pertenecen a una PriceList (identidad + precio base).
@@ -27,7 +29,8 @@ public sealed record GetItemPriceListsQuery(Guid ItemId)
 /// (composición en Application/frontend, nunca un DTO que mezcle ambos agregados).
 /// </summary>
 public sealed record GetItemsAssignedToPriceListQuery(Guid PriceListId)
-    : IRequest<Result<IReadOnlyList<PriceListAssignedItemDto>>>, ICompanyScopedRequest;
+    : IRequest<Result<IReadOnlyList<PriceListAssignedItemDto>>>,
+        ICompanyScopedRequest;
 
 // ── Validators ──────────────────────────────────────────────────────────
 
@@ -46,7 +49,8 @@ public sealed class SetItemPriceListsCommandValidator : AbstractValidator<SetIte
 
 // ── Handlers ────────────────────────────────────────────────────────────
 
-public sealed class SetItemPriceListsHandler : IRequestHandler<SetItemPriceListsCommand, Result<IReadOnlyList<Guid>>>
+public sealed class SetItemPriceListsHandler
+    : IRequestHandler<SetItemPriceListsCommand, Result<IReadOnlyList<Guid>>>
 {
     private readonly IItemRepository _itemRepo;
     private readonly IPriceListRepository _priceListRepo;
@@ -57,14 +61,28 @@ public sealed class SetItemPriceListsHandler : IRequestHandler<SetItemPriceLists
     private readonly ICurrentUser _u;
 
     public SetItemPriceListsHandler(
-        IItemRepository itemRepo, IPriceListRepository priceListRepo, IPriceListItemRepository assignmentRepo,
-        IPricingRuleRepository ruleRepo, ICurrentTenant t, ICurrentCompany c, ICurrentUser u)
+        IItemRepository itemRepo,
+        IPriceListRepository priceListRepo,
+        IPriceListItemRepository assignmentRepo,
+        IPricingRuleRepository ruleRepo,
+        ICurrentTenant t,
+        ICurrentCompany c,
+        ICurrentUser u
+    )
     {
-        _itemRepo = itemRepo; _priceListRepo = priceListRepo; _assignmentRepo = assignmentRepo;
-        _ruleRepo = ruleRepo; _t = t; _c = c; _u = u;
+        _itemRepo = itemRepo;
+        _priceListRepo = priceListRepo;
+        _assignmentRepo = assignmentRepo;
+        _ruleRepo = ruleRepo;
+        _t = t;
+        _c = c;
+        _u = u;
     }
 
-    public async Task<Result<IReadOnlyList<Guid>>> Handle(SetItemPriceListsCommand cmd, CancellationToken ct)
+    public async Task<Result<IReadOnlyList<Guid>>> Handle(
+        SetItemPriceListsCommand cmd,
+        CancellationToken ct
+    )
     {
         var tid = _t.TenantId;
 
@@ -80,13 +98,18 @@ public sealed class SetItemPriceListsHandler : IRequestHandler<SetItemPriceLists
             var invalid = requestedIds.Where(id => !activeIds.Contains(id)).ToList();
             if (invalid.Count > 0)
                 return Result<IReadOnlyList<Guid>>.ValidationFailure(
-                    "Una o más listas de precios seleccionadas no existen o no están activas.");
+                    "Una o más listas de precios seleccionadas no existen o no están activas."
+                );
         }
 
         var existing = await _assignmentRepo.GetByItemAsync(tid, cmd.ItemId, ct);
         var existingByList = existing.ToDictionary(a => a.PriceListId);
 
-        foreach (var assignment in existing.Where(a => a.IsActive && !requestedIds.Contains(a.PriceListId)))
+        foreach (
+            var assignment in existing.Where(a =>
+                a.IsActive && !requestedIds.Contains(a.PriceListId)
+            )
+        )
         {
             assignment.Disable(_u.UserId);
 
@@ -96,7 +119,12 @@ public sealed class SetItemPriceListsHandler : IRequestHandler<SetItemPriceLists
             // que la excepción seguiría aplicando si esa combinación se resolviera de forma
             // directa. Se deshabilita para que el comportamiento real coincida con la
             // intención administrativa de "ya no pertenece a esta lista".
-            var orphanedRule = await _ruleRepo.FindByKeyAsync(tid, assignment.PriceListId, cmd.ItemId, ct);
+            var orphanedRule = await _ruleRepo.FindByKeyAsync(
+                tid,
+                assignment.PriceListId,
+                cmd.ItemId,
+                ct
+            );
             if (orphanedRule is { IsActive: true })
                 orphanedRule.Disable(_u.UserId);
         }
@@ -110,7 +138,13 @@ public sealed class SetItemPriceListsHandler : IRequestHandler<SetItemPriceLists
             }
             else
             {
-                var created = PriceListItem.Create(tid, _c.CompanyId, priceListId, cmd.ItemId, _u.UserId);
+                var created = PriceListItem.Create(
+                    tid,
+                    _c.CompanyId,
+                    priceListId,
+                    cmd.ItemId,
+                    _u.UserId
+                );
                 await _assignmentRepo.AddAsync(created, ct);
             }
         }
@@ -120,14 +154,22 @@ public sealed class SetItemPriceListsHandler : IRequestHandler<SetItemPriceLists
     }
 }
 
-public sealed class GetItemPriceListsHandler : IRequestHandler<GetItemPriceListsQuery, Result<IReadOnlyList<Guid>>>
+public sealed class GetItemPriceListsHandler
+    : IRequestHandler<GetItemPriceListsQuery, Result<IReadOnlyList<Guid>>>
 {
     private readonly IPriceListItemRepository _assignmentRepo;
     private readonly ICurrentTenant _t;
-    public GetItemPriceListsHandler(IPriceListItemRepository assignmentRepo, ICurrentTenant t)
-    { _assignmentRepo = assignmentRepo; _t = t; }
 
-    public async Task<Result<IReadOnlyList<Guid>>> Handle(GetItemPriceListsQuery q, CancellationToken ct)
+    public GetItemPriceListsHandler(IPriceListItemRepository assignmentRepo, ICurrentTenant t)
+    {
+        _assignmentRepo = assignmentRepo;
+        _t = t;
+    }
+
+    public async Task<Result<IReadOnlyList<Guid>>> Handle(
+        GetItemPriceListsQuery q,
+        CancellationToken ct
+    )
     {
         var assignments = await _assignmentRepo.GetByItemAsync(_t.TenantId, q.ItemId, ct);
         var activeListIds = assignments.Where(a => a.IsActive).Select(a => a.PriceListId).ToList();
@@ -136,18 +178,30 @@ public sealed class GetItemPriceListsHandler : IRequestHandler<GetItemPriceLists
 }
 
 public sealed class GetItemsAssignedToPriceListHandler
-    : IRequestHandler<GetItemsAssignedToPriceListQuery, Result<IReadOnlyList<PriceListAssignedItemDto>>>
+    : IRequestHandler<
+        GetItemsAssignedToPriceListQuery,
+        Result<IReadOnlyList<PriceListAssignedItemDto>>
+    >
 {
     private readonly IPriceListItemRepository _assignmentRepo;
     private readonly IItemRepository _itemRepo;
     private readonly ICurrentTenant _t;
 
     public GetItemsAssignedToPriceListHandler(
-        IPriceListItemRepository assignmentRepo, IItemRepository itemRepo, ICurrentTenant t)
-    { _assignmentRepo = assignmentRepo; _itemRepo = itemRepo; _t = t; }
+        IPriceListItemRepository assignmentRepo,
+        IItemRepository itemRepo,
+        ICurrentTenant t
+    )
+    {
+        _assignmentRepo = assignmentRepo;
+        _itemRepo = itemRepo;
+        _t = t;
+    }
 
     public async Task<Result<IReadOnlyList<PriceListAssignedItemDto>>> Handle(
-        GetItemsAssignedToPriceListQuery q, CancellationToken ct)
+        GetItemsAssignedToPriceListQuery q,
+        CancellationToken ct
+    )
     {
         var tenantId = _t.TenantId;
 
@@ -158,7 +212,12 @@ public sealed class GetItemsAssignedToPriceListHandler
         var items = await _itemRepo.GetByIdsLightAsync(itemIds, tenantId, ct);
 
         var rows = items
-            .Select(i => new PriceListAssignedItemDto(i.Id, i.Code.SKU, i.Code.ShortName, i.BaseSalePrice))
+            .Select(i => new PriceListAssignedItemDto(
+                i.Id,
+                i.Code.SKU,
+                i.Code.ShortName,
+                i.BaseSalePrice
+            ))
             .OrderBy(r => r.Sku)
             .ToList();
 

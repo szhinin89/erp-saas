@@ -20,11 +20,17 @@ public sealed class ItemCode
         if (string.IsNullOrWhiteSpace(shortName))
             throw new ArgumentException("El nombre corto es obligatorio.", nameof(shortName));
         if (shortName.Length > 50)
-            throw new ArgumentException("El nombre corto no puede superar 50 caracteres.", nameof(shortName));
+            throw new ArgumentException(
+                "El nombre corto no puede superar 50 caracteres.",
+                nameof(shortName)
+            );
         if (string.IsNullOrWhiteSpace(description))
             throw new ArgumentException("La descripción es obligatoria.", nameof(description));
         if (description.Length > 254)
-            throw new ArgumentException("La descripción no puede superar 254 caracteres.", nameof(description));
+            throw new ArgumentException(
+                "La descripción no puede superar 254 caracteres.",
+                nameof(description)
+            );
 
         return new ItemCode
         {

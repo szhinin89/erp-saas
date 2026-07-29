@@ -26,20 +26,27 @@ public sealed class CompanyProvisioningService : ICompanyProvisioningService
     public CompanyProvisioningService(
         ICompanyRepository companies,
         IAccessRepository access,
-        ICompanyBootstrapService bootstrap)
+        ICompanyBootstrapService bootstrap
+    )
     {
         _companies = companies;
         _access = access;
         _bootstrap = bootstrap;
     }
 
-    public async Task<Company> EnsureDefaultCompanyAsync(Tenant tenant, CancellationToken cancellationToken = default)
+    public async Task<Company> EnsureDefaultCompanyAsync(
+        Tenant tenant,
+        CancellationToken cancellationToken = default
+    )
     {
         var active = await _companies.GetActiveByTenantIdAsync(tenant.Id, cancellationToken);
         if (active.Count > 0)
             return active[0];
 
-        var company = await CreateDefaultCompanyForTenantAsync(tenant, cancellationToken: cancellationToken);
+        var company = await CreateDefaultCompanyForTenantAsync(
+            tenant,
+            cancellationToken: cancellationToken
+        );
         await _companies.AddAsync(company, cancellationToken);
 
         // Actor de sistema: esta rama solo se activa cuando el tenant se quedó sin ninguna
@@ -53,7 +60,12 @@ public sealed class CompanyProvisioningService : ICompanyProvisioningService
         // para este caso (mismo usado por ElectronicDocumentRetryJob) — sin él, cualquier
         // *AuditHandler que dependa de CompanyId lanza ArgumentException("companyId requerido").
         using var _ = JobExecutionContext.Begin(tenant.Id, company.Id);
-        await _bootstrap.BootstrapCompanyAsync(tenant.Id, company.Id, systemActorId, cancellationToken);
+        await _bootstrap.BootstrapCompanyAsync(
+            tenant.Id,
+            company.Id,
+            systemActorId,
+            cancellationToken
+        );
 
         return company;
     }
@@ -62,7 +74,8 @@ public sealed class CompanyProvisioningService : ICompanyProvisioningService
         Tenant tenant,
         string? countryCode = "ECU",
         string? timezone = "America/Guayaquil",
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default
+    )
     {
         var (taxId, isProvisional, status) = await ResolveTaxIdAsync(null, cancellationToken);
 
@@ -76,7 +89,8 @@ public sealed class CompanyProvisioningService : ICompanyProvisioningService
             timezone: string.IsNullOrWhiteSpace(timezone) ? "America/Guayaquil" : timezone,
             currencyCode: "USD",
             isTemporaryTaxIdentification: isProvisional,
-            taxIdentificationStatus: status);
+            taxIdentificationStatus: status
+        );
     }
 
     /// <summary>
@@ -99,26 +113,40 @@ public sealed class CompanyProvisioningService : ICompanyProvisioningService
         string currencyCode = "USD",
         string? brandingJson = null,
         string? website = null,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default
+    )
     {
         var normalized = NormalizeProvidedTaxId(ruc);
         await EnsureTaxIdAvailableGloballyAsync(normalized, cancellationToken);
 
         var company = Company.CreateManaged(
-            tenantId, normalized, legalName,
-            tradeName, corporateEmail: email, countryCode, timezone, currencyCode,
-            brandingJson, website,
+            tenantId,
+            normalized,
+            legalName,
+            tradeName,
+            corporateEmail: email,
+            countryCode,
+            timezone,
+            currencyCode,
+            brandingJson,
+            website,
             isTemporaryTaxIdentification: ProvisionalTaxIdGenerator.IsProvisional(normalized),
             taxIdentificationStatus: ProvisionalTaxIdGenerator.IsProvisional(normalized)
                 ? TaxIdentificationStatus.Pending
                 : TaxIdentificationStatus.Verified,
-            createdBy: createdByUserId);
+            createdBy: createdByUserId
+        );
 
         await _companies.AddAsync(company, cancellationToken);
         await _companies.SaveChangesAsync(cancellationToken);
 
         var membership = CompanyUserMembership.Create(
-            company.Id, createdByUserId, creatorRole, profileId: null, createdByUserId);
+            company.Id,
+            createdByUserId,
+            creatorRole,
+            profileId: null,
+            createdByUserId
+        );
         await _access.AddCompanyUserMembershipAsync(membership, cancellationToken);
         await _access.SaveChangesAsync(cancellationToken);
 
@@ -126,20 +154,34 @@ public sealed class CompanyProvisioningService : ICompanyProvisioningService
         // events auditados que necesitan CompanyId, y esta empresa nueva nunca fue "la empresa
         // actual" de ningún HttpContext todavía.
         using var _ = JobExecutionContext.Begin(tenantId, company.Id);
-        await _bootstrap.BootstrapCompanyAsync(tenantId, company.Id, createdByUserId, cancellationToken);
+        await _bootstrap.BootstrapCompanyAsync(
+            tenantId,
+            company.Id,
+            createdByUserId,
+            cancellationToken
+        );
 
         return company;
     }
 
-    private async Task<(string TaxId, bool IsProvisional, TaxIdentificationStatus Status)> ResolveTaxIdAsync(
-        string? providedRuc, CancellationToken cancellationToken)
+    private async Task<(
+        string TaxId,
+        bool IsProvisional,
+        TaxIdentificationStatus Status
+    )> ResolveTaxIdAsync(string? providedRuc, CancellationToken cancellationToken)
     {
         if (string.IsNullOrWhiteSpace(providedRuc))
         {
             for (var attempt = 0; attempt < 5; attempt++)
             {
                 var provisional = ProvisionalTaxIdGenerator.Create();
-                if (await _companies.GetByTaxIdentificationNumberAsync(provisional, cancellationToken) is null)
+                if (
+                    await _companies.GetByTaxIdentificationNumberAsync(
+                        provisional,
+                        cancellationToken
+                    )
+                    is null
+                )
                     return (provisional, true, TaxIdentificationStatus.Pending);
             }
             throw new InvalidOperationException("No se pudo generar un RUC provisional único.");
@@ -155,7 +197,10 @@ public sealed class CompanyProvisioningService : ICompanyProvisioningService
             ? ruc.Trim()
             : ProvisionalTaxIdGenerator.NormalizeOfficial(ruc);
 
-    private async Task EnsureTaxIdAvailableGloballyAsync(string taxId, CancellationToken cancellationToken)
+    private async Task EnsureTaxIdAvailableGloballyAsync(
+        string taxId,
+        CancellationToken cancellationToken
+    )
     {
         var existing = await _companies.GetByTaxIdentificationNumberAsync(taxId, cancellationToken);
         if (existing is not null)

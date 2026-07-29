@@ -30,5 +30,8 @@ public interface ICompanyBootstrapStep
     /// </summary>
     int Order { get; }
 
-    Task ExecuteAsync(CompanyBootstrapContext context, CancellationToken cancellationToken = default);
+    Task ExecuteAsync(
+        CompanyBootstrapContext context,
+        CancellationToken cancellationToken = default
+    );
 }

@@ -20,14 +20,24 @@ public sealed class PurchasePaymentSchedule : IMustHaveTenant
     private PurchasePaymentSchedule() { }
 
     public static PurchasePaymentSchedule Create(
-        Guid purchaseInvoiceId, Guid tenantId,
-        int installmentNumber, DateOnly dueDate, decimal amount,
-        string? notes = null)
+        Guid purchaseInvoiceId,
+        Guid tenantId,
+        int installmentNumber,
+        DateOnly dueDate,
+        decimal amount,
+        string? notes = null
+    )
     {
         if (installmentNumber < 1)
-            throw new ArgumentException("El número de cuota debe ser >= 1.", nameof(installmentNumber));
+            throw new ArgumentException(
+                "El número de cuota debe ser >= 1.",
+                nameof(installmentNumber)
+            );
         if (amount <= 0)
-            throw new ArgumentException("El monto de la cuota debe ser mayor a cero.", nameof(amount));
+            throw new ArgumentException(
+                "El monto de la cuota debe ser mayor a cero.",
+                nameof(amount)
+            );
 
         return new PurchasePaymentSchedule
         {

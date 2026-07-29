@@ -5,4 +5,5 @@ using MediatR;
 namespace ERP.Application.Modules.ElectronicInvoicing.UseCases.InspectSriCertificate;
 
 /// <summary>Prueba una contraseña contra el certificado ya subido sin persistirla — feedback en vivo mientras el usuario escribe.</summary>
-public sealed record InspectSriCertificateQuery(string Password) : IRequest<Result<SriCertificateInfoDto>>;
+public sealed record InspectSriCertificateQuery(string Password)
+    : IRequest<Result<SriCertificateInfoDto>>;

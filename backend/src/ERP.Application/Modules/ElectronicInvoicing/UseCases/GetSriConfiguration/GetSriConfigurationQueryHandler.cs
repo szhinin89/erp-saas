@@ -13,27 +13,33 @@ public sealed class GetSriConfigurationQueryHandler
 
     public GetSriConfigurationQueryHandler(
         ISriSettingsRepository repo,
-        ICurrentCompany currentCompany)
+        ICurrentCompany currentCompany
+    )
     {
         _repo = repo;
         _currentCompany = currentCompany;
     }
 
     public async Task<Result<SriConfigurationDto?>> Handle(
-        GetSriConfigurationQuery query, CancellationToken cancellationToken)
+        GetSriConfigurationQuery query,
+        CancellationToken cancellationToken
+    )
     {
         var config = await _repo.GetByCompanyIdAsync(_currentCompany.CompanyId, cancellationToken);
         if (config is null)
             return Result<SriConfigurationDto?>.Success(null);
 
-        return Result<SriConfigurationDto?>.Success(new SriConfigurationDto(
-            config.CompanyId,
-            HasCertificate: !string.IsNullOrWhiteSpace(config.CertP12Path),
-            config.CertFileName,
-            config.CertSizeBytes,
-            config.CertUploadedAtUtc,
-            config.Environment,
-            config.EmissionType,
-            config.WsdlUrl));
+        return Result<SriConfigurationDto?>.Success(
+            new SriConfigurationDto(
+                config.CompanyId,
+                HasCertificate: !string.IsNullOrWhiteSpace(config.CertP12Path),
+                config.CertFileName,
+                config.CertSizeBytes,
+                config.CertUploadedAtUtc,
+                config.Environment,
+                config.EmissionType,
+                config.WsdlUrl
+            )
+        );
     }
 }

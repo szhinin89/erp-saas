@@ -10,4 +10,5 @@ public sealed record StockAdjustedIntegrationEvent(
     Guid WarehouseId,
     Guid ItemId,
     decimal QuantityDelta,
-    string Reason) : IIntegrationEvent;
+    string Reason
+) : IIntegrationEvent;

@@ -14,14 +14,25 @@ public sealed class RegenerateRideCommandHandler
     private readonly ICurrentCompany _currentCompany;
 
     public RegenerateRideCommandHandler(
-        IRideDocumentService rideDocumentService, ICurrentTenant currentTenant, ICurrentCompany currentCompany)
+        IRideDocumentService rideDocumentService,
+        ICurrentTenant currentTenant,
+        ICurrentCompany currentCompany
+    )
     {
         _rideDocumentService = rideDocumentService;
         _currentTenant = currentTenant;
         _currentCompany = currentCompany;
     }
 
-    public Task<Result<RideGenerationResultDto>> Handle(RegenerateRideCommand request, CancellationToken cancellationToken)
-        => _rideDocumentService.RegenerateAsync(
-            _currentTenant.TenantId, _currentCompany.CompanyId, request.SourceModule, request.SourceEntityId, cancellationToken);
+    public Task<Result<RideGenerationResultDto>> Handle(
+        RegenerateRideCommand request,
+        CancellationToken cancellationToken
+    ) =>
+        _rideDocumentService.RegenerateAsync(
+            _currentTenant.TenantId,
+            _currentCompany.CompanyId,
+            request.SourceModule,
+            request.SourceEntityId,
+            cancellationToken
+        );
 }

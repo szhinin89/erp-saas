@@ -18,8 +18,13 @@ public sealed class PaymentCardDetail
     private PaymentCardDetail() { }
 
     public static PaymentCardDetail Create(
-        Guid paymentId, string? cardBrand, string? lastFour,
-        string? bankName, string? authorizationCode, string? lotNumber)
+        Guid paymentId,
+        string? cardBrand,
+        string? lastFour,
+        string? bankName,
+        string? authorizationCode,
+        string? lotNumber
+    )
     {
         return new PaymentCardDetail
         {

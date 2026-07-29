@@ -16,7 +16,9 @@ public sealed class ElectronicSalesInvoiceEmissionStrategy : ISalesInvoiceEmissi
     private readonly ILogger<ElectronicSalesInvoiceEmissionStrategy> _logger;
 
     public ElectronicSalesInvoiceEmissionStrategy(
-        IElectronicDocumentIssuer edocIssuer, ILogger<ElectronicSalesInvoiceEmissionStrategy> logger)
+        IElectronicDocumentIssuer edocIssuer,
+        ILogger<ElectronicSalesInvoiceEmissionStrategy> logger
+    )
     {
         _edocIssuer = edocIssuer;
         _logger = logger;
@@ -24,30 +26,45 @@ public sealed class ElectronicSalesInvoiceEmissionStrategy : ISalesInvoiceEmissi
 
     public EmissionType SupportedType => EmissionType.Electronic;
 
-    public async Task<string?> ExecuteAsync(SalesInvoiceEmissionContext context, CancellationToken ct)
+    public async Task<string?> ExecuteAsync(
+        SalesInvoiceEmissionContext context,
+        CancellationToken ct
+    )
     {
         var inv = context.Invoice;
         try
         {
             var issueResult = await _edocIssuer.RegisterAsync(
                 new RegisterElectronicDocumentRequest(
-                    context.TenantId, context.CompanyId, ElectronicDocumentType.Invoice,
-                    "Sales", inv.Id, context.UserId),
-                ct);
+                    context.TenantId,
+                    context.CompanyId,
+                    ElectronicDocumentType.Invoice,
+                    "Sales",
+                    inv.Id,
+                    context.UserId
+                ),
+                ct
+            );
             if (!issueResult.IsSuccess)
             {
                 _logger.LogWarning(
                     "Electronic document issuance failed for sales invoice {InvoiceNumber} ({InvoiceId}): {Reason}",
-                    inv.InvoiceNumber, inv.Id, issueResult.Error);
+                    inv.InvoiceNumber,
+                    inv.Id,
+                    issueResult.Error
+                );
                 return issueResult.Error;
             }
             return null;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex,
+            _logger.LogError(
+                ex,
                 "Unexpected error issuing electronic document for sales invoice {InvoiceNumber} ({InvoiceId})",
-                inv.InvoiceNumber, inv.Id);
+                inv.InvoiceNumber,
+                inv.Id
+            );
             return "Error inesperado al generar el documento electrónico. Revise el Monitor de Documentos Electrónicos.";
         }
     }

@@ -4,4 +4,5 @@ using MediatR;
 
 namespace ERP.Application.Modules.Companies.UseCases.UpdateCompanyDocuments;
 
-public sealed record UpdateCompanyDocumentsCommand(string? ExtraLegend) : IRequest<Result<CompanyProfileDto>>;
+public sealed record UpdateCompanyDocumentsCommand(string? ExtraLegend)
+    : IRequest<Result<CompanyProfileDto>>;

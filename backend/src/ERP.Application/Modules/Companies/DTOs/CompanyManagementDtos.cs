@@ -10,7 +10,8 @@ public sealed record CompanyListItemDto(
     string Timezone,
     string CurrencyCode,
     bool IsActive,
-    string Role);
+    string Role
+);
 
 public sealed record CompanyDetailDto(
     Guid Id,
@@ -26,7 +27,8 @@ public sealed record CompanyDetailDto(
     string? BrandingJson,
     bool IsActive,
     DateTime CreatedAt,
-    DateTime UpdatedAt)
+    DateTime UpdatedAt
+)
 {
     public static CompanyDetailDto FromEntity(Domain.Modules.Company.Entities.Company c) =>
         new(
@@ -43,5 +45,6 @@ public sealed record CompanyDetailDto(
             c.BrandingConfiguration,
             c.IsActive,
             c.CreatedAt,
-            c.UpdatedAt);
+            c.UpdatedAt
+        );
 }

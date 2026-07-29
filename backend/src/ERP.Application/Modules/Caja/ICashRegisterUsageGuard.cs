@@ -13,8 +13,16 @@ public interface ICashRegisterUsageGuard
     Task<bool> HasHistoryAsync(Guid tenantId, Guid cashRegisterId, CancellationToken ct = default);
 
     /// <summary>True si la Caja tiene una sesión actualmente abierta (bloquea la desactivación).</summary>
-    Task<bool> HasOpenSessionAsync(Guid tenantId, Guid cashRegisterId, CancellationToken ct = default);
+    Task<bool> HasOpenSessionAsync(
+        Guid tenantId,
+        Guid cashRegisterId,
+        CancellationToken ct = default
+    );
 
     /// <summary>Versión masiva de <see cref="HasHistoryAsync"/> para proyecciones de listado.</summary>
-    Task<IReadOnlyCollection<Guid>> GetUsedIdsAsync(Guid tenantId, IReadOnlyCollection<Guid> cashRegisterIds, CancellationToken ct = default);
+    Task<IReadOnlyCollection<Guid>> GetUsedIdsAsync(
+        Guid tenantId,
+        IReadOnlyCollection<Guid> cashRegisterIds,
+        CancellationToken ct = default
+    );
 }

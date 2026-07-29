@@ -15,11 +15,21 @@ public sealed class PurchaseInvoiceBranchOwnershipTests
 
     private static PurchaseInvoice CreateDraft(Guid branchId) =>
         PurchaseInvoice.CreateDraft(
-            TenantId, CompanyId, branchId, Guid.NewGuid(),
-            "Proveedor Test", "1234567890001",
-            "01", $"001-001-{Random.Shared.Next(100000000, 999999999)}",
-            DateOnly.FromDateTime(DateTime.UtcNow), UserId,
-            Guid.NewGuid(), "Contado", 1, 0);
+            TenantId,
+            CompanyId,
+            branchId,
+            Guid.NewGuid(),
+            "Proveedor Test",
+            "1234567890001",
+            "01",
+            $"001-001-{Random.Shared.Next(100000000, 999999999)}",
+            DateOnly.FromDateTime(DateTime.UtcNow),
+            UserId,
+            Guid.NewGuid(),
+            "Contado",
+            1,
+            0
+        );
 
     [Fact]
     public void CreateDraft_con_sucursal_valida_persiste_BranchId()
@@ -46,9 +56,11 @@ public sealed class PurchaseInvoiceBranchOwnershipTests
         property.SetMethod.Should().NotBeNull();
         property.SetMethod!.IsPublic.Should().BeFalse("BranchId solo se asigna en CreateDraft");
 
-        typeof(PurchaseInvoice).GetMethods()
+        typeof(PurchaseInvoice)
+            .GetMethods()
             .Any(m => m.Name is "ChangeBranch" or "SetBranch" or "UpdateBranch")
-            .Should().BeFalse("no debe existir ningún método para mutar la sucursal tras la creación");
+            .Should()
+            .BeFalse("no debe existir ningún método para mutar la sucursal tras la creación");
     }
 
     [Fact]

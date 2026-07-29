@@ -5,10 +5,15 @@ namespace ERP.Domain.Access.Interfaces;
 public interface ICompanyUserBranchRepository
 {
     Task<IReadOnlyList<CompanyUserBranch>> GetByMembershipAsync(
-        Guid companyUserMembershipId, CancellationToken cancellationToken = default);
+        Guid companyUserMembershipId,
+        CancellationToken cancellationToken = default
+    );
 
     Task<bool> ExistsAsync(
-        Guid companyUserMembershipId, Guid branchId, CancellationToken cancellationToken = default);
+        Guid companyUserMembershipId,
+        Guid branchId,
+        CancellationToken cancellationToken = default
+    );
 
     Task AddAsync(CompanyUserBranch entity, CancellationToken cancellationToken = default);
 

@@ -7,8 +7,11 @@ public sealed class ForgotPasswordCommandValidator : AbstractValidator<ForgotPas
     public ForgotPasswordCommandValidator()
     {
         RuleFor(x => x.Email)
-            .NotEmpty().WithMessage("El email es obligatorio.")
-            .EmailAddress().WithMessage("El email no tiene un formato válido.")
-            .MaximumLength(200).WithMessage("El email no puede exceder 200 caracteres.");
+            .NotEmpty()
+            .WithMessage("El email es obligatorio.")
+            .EmailAddress()
+            .WithMessage("El email no tiene un formato válido.")
+            .MaximumLength(200)
+            .WithMessage("El email no puede exceder 200 caracteres.");
     }
 }

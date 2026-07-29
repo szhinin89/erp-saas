@@ -18,15 +18,18 @@ public class Company : ITenantScopedEntity
     public Guid TenantId { get; set; }
     public string TaxIdentificationNumber { get; set; } = null!;
     public bool IsTemporaryTaxIdentification { get; set; }
-    public TaxIdentificationStatus TaxIdentificationStatus { get; set; } = TaxIdentificationStatus.Verified;
+    public TaxIdentificationStatus TaxIdentificationStatus { get; set; } =
+        TaxIdentificationStatus.Verified;
     public string LegalName { get; set; } = null!;
     public string? TradeName { get; set; }
     public string? CorporateEmail { get; set; }
     public string? Phone { get; set; }
     public string? Website { get; set; }
     public string CountryCode { get; set; } = "ECU";
+
     /// <summary>IANA timezone (e.g. America/Guayaquil).</summary>
     public string Timezone { get; set; } = "America/Guayaquil";
+
     /// <summary>ISO 4217 currency (e.g. USD).</summary>
     public string CurrencyCode { get; set; } = "USD";
     public string? TaxRegimeCode { get; set; }
@@ -35,12 +38,15 @@ public class Company : ITenantScopedEntity
     public bool IsForeignTrade { get; set; }
     public bool WithholdsRenta { get; set; } = true;
     public bool WithholdsVat { get; set; } = true;
+
     // UI / white-label
     /// <summary>JSON theme tokens (colors, fonts) para white-label; validado en capa Application.</summary>
     public string? BrandingConfiguration { get; set; }
     public string? ExtraLegend { get; set; }
+
     /// <summary>Idioma principal de la empresa (es/en/qu).</summary>
     public string LanguageCode { get; set; } = "es";
+
     // Representante legal
     public string? LegalRepName { get; set; }
     public string? LegalRepPosition { get; set; }
@@ -65,7 +71,8 @@ public class Company : ITenantScopedEntity
     /// <summary>
     /// Operational: empresa lista para operar. Suspended: suspendida por el operador platform.
     /// </summary>
-    public CompanyOperationalStatus OperationalStatus { get; private set; } = CompanyOperationalStatus.Operational;
+    public CompanyOperationalStatus OperationalStatus { get; private set; } =
+        CompanyOperationalStatus.Operational;
 
     // Navigation
     public SriCountry? Country { get; set; }
@@ -100,8 +107,9 @@ public class Company : ITenantScopedEntity
         string? corporateEmail = null,
         string countryCode = "ECU",
         string timezone = "America/Guayaquil",
-        string currencyCode = "USD")
-        => CreateManaged(
+        string currencyCode = "USD"
+    ) =>
+        CreateManaged(
             tenantId,
             taxIdentificationNumber,
             legalName,
@@ -109,7 +117,8 @@ public class Company : ITenantScopedEntity
             corporateEmail,
             countryCode,
             timezone,
-            currencyCode);
+            currencyCode
+        );
 
     public static Company CreateManaged(
         Guid tenantId,
@@ -124,24 +133,34 @@ public class Company : ITenantScopedEntity
         string? website = null,
         bool isTemporaryTaxIdentification = false,
         TaxIdentificationStatus taxIdentificationStatus = TaxIdentificationStatus.Verified,
-        Guid? createdBy = null)
+        Guid? createdBy = null
+    )
     {
         var now = DateTime.UtcNow;
         return new Company
         {
             Id = Guid.NewGuid(),
             TenantId = tenantId,
-            TaxIdentificationNumber = NormalizeTaxIdentificationNumber(taxIdentificationNumber, isTemporaryTaxIdentification),
+            TaxIdentificationNumber = NormalizeTaxIdentificationNumber(
+                taxIdentificationNumber,
+                isTemporaryTaxIdentification
+            ),
             IsTemporaryTaxIdentification = isTemporaryTaxIdentification,
             TaxIdentificationStatus = taxIdentificationStatus,
             LegalName = legalName.Trim(),
             TradeName = string.IsNullOrWhiteSpace(tradeName) ? null : tradeName.Trim(),
             CorporateEmail = NormalizeEmail(corporateEmail),
             Website = NormalizeWebsite(website),
-            CountryCode = string.IsNullOrWhiteSpace(countryCode) ? "ECU" : countryCode.Trim().ToUpperInvariant(),
+            CountryCode = string.IsNullOrWhiteSpace(countryCode)
+                ? "ECU"
+                : countryCode.Trim().ToUpperInvariant(),
             Timezone = string.IsNullOrWhiteSpace(timezone) ? "America/Guayaquil" : timezone.Trim(),
-            CurrencyCode = string.IsNullOrWhiteSpace(currencyCode) ? "USD" : currencyCode.Trim().ToUpperInvariant(),
-            BrandingConfiguration = string.IsNullOrWhiteSpace(brandingConfiguration) ? null : brandingConfiguration.Trim(),
+            CurrencyCode = string.IsNullOrWhiteSpace(currencyCode)
+                ? "USD"
+                : currencyCode.Trim().ToUpperInvariant(),
+            BrandingConfiguration = string.IsNullOrWhiteSpace(brandingConfiguration)
+                ? null
+                : brandingConfiguration.Trim(),
             IsActive = true,
             OnboardingCompleted = true,
             OperationalStatus = CompanyOperationalStatus.Operational,
@@ -165,19 +184,28 @@ public class Company : ITenantScopedEntity
         string? legalRepPosition = null,
         string? legalRepIdNumber = null,
         string? legalRepEmail = null,
-        string? legalRepPhone = null)
+        string? legalRepPhone = null
+    )
     {
         LegalName = legalName.Trim();
         TradeName = string.IsNullOrWhiteSpace(tradeName) ? null : tradeName.Trim();
         CorporateEmail = NormalizeEmail(corporateEmail);
         Phone = string.IsNullOrWhiteSpace(phone) ? null : phone.Trim();
         Website = NormalizeWebsite(website);
-        CountryCode = string.IsNullOrWhiteSpace(countryCode) ? CountryCode : countryCode.Trim().ToUpperInvariant();
+        CountryCode = string.IsNullOrWhiteSpace(countryCode)
+            ? CountryCode
+            : countryCode.Trim().ToUpperInvariant();
         Timezone = string.IsNullOrWhiteSpace(timezone) ? Timezone : timezone.Trim();
-        CurrencyCode = string.IsNullOrWhiteSpace(currencyCode) ? CurrencyCode : currencyCode.Trim().ToUpperInvariant();
+        CurrencyCode = string.IsNullOrWhiteSpace(currencyCode)
+            ? CurrencyCode
+            : currencyCode.Trim().ToUpperInvariant();
         LegalRepName = string.IsNullOrWhiteSpace(legalRepName) ? null : legalRepName.Trim();
-        LegalRepPosition = string.IsNullOrWhiteSpace(legalRepPosition) ? null : legalRepPosition.Trim();
-        LegalRepIdNumber = string.IsNullOrWhiteSpace(legalRepIdNumber) ? null : legalRepIdNumber.Trim();
+        LegalRepPosition = string.IsNullOrWhiteSpace(legalRepPosition)
+            ? null
+            : legalRepPosition.Trim();
+        LegalRepIdNumber = string.IsNullOrWhiteSpace(legalRepIdNumber)
+            ? null
+            : legalRepIdNumber.Trim();
         LegalRepEmail = NormalizeEmail(legalRepEmail);
         LegalRepPhone = string.IsNullOrWhiteSpace(legalRepPhone) ? null : legalRepPhone.Trim();
         UpdatedAt = DateTime.UtcNow;
@@ -195,16 +223,36 @@ public class Company : ITenantScopedEntity
         string currencyCode,
         string? brandingConfiguration,
         bool isActive,
-        Guid? updatedBy)
+        Guid? updatedBy
+    )
     {
-        UpdateProfile(legalName, tradeName, corporateEmail, website, countryCode, timezone, currencyCode, updatedBy);
-        BrandingConfiguration = string.IsNullOrWhiteSpace(brandingConfiguration) ? null : brandingConfiguration.Trim();
+        UpdateProfile(
+            legalName,
+            tradeName,
+            corporateEmail,
+            website,
+            countryCode,
+            timezone,
+            currencyCode,
+            updatedBy
+        );
+        BrandingConfiguration = string.IsNullOrWhiteSpace(brandingConfiguration)
+            ? null
+            : brandingConfiguration.Trim();
         IsActive = isActive;
     }
 
-    public void UpdateTaxIdentification(string taxIdentificationNumber, bool isTemporary, TaxIdentificationStatus status, Guid? updatedBy = null)
+    public void UpdateTaxIdentification(
+        string taxIdentificationNumber,
+        bool isTemporary,
+        TaxIdentificationStatus status,
+        Guid? updatedBy = null
+    )
     {
-        TaxIdentificationNumber = NormalizeTaxIdentificationNumber(taxIdentificationNumber, isTemporary);
+        TaxIdentificationNumber = NormalizeTaxIdentificationNumber(
+            taxIdentificationNumber,
+            isTemporary
+        );
         IsTemporaryTaxIdentification = isTemporary;
         TaxIdentificationStatus = status;
         UpdatedAt = DateTime.UtcNow;
@@ -219,11 +267,16 @@ public class Company : ITenantScopedEntity
         bool isForeignTrade,
         bool withholdsRenta,
         bool withholdsVat,
-        Guid? updatedBy)
+        Guid? updatedBy
+    )
     {
-        TaxRegimeCode = string.IsNullOrWhiteSpace(taxRegimeCode) ? null : taxRegimeCode.Trim().ToUpperInvariant();
+        TaxRegimeCode = string.IsNullOrWhiteSpace(taxRegimeCode)
+            ? null
+            : taxRegimeCode.Trim().ToUpperInvariant();
         IsAccountingReq = isAccountingReq;
-        SpecialTaxpayerNo = string.IsNullOrWhiteSpace(specialTaxpayerNo) ? null : specialTaxpayerNo.Trim();
+        SpecialTaxpayerNo = string.IsNullOrWhiteSpace(specialTaxpayerNo)
+            ? null
+            : specialTaxpayerNo.Trim();
         IsForeignTrade = isForeignTrade;
         WithholdsRenta = withholdsRenta;
         WithholdsVat = withholdsVat;
@@ -234,7 +287,9 @@ public class Company : ITenantScopedEntity
     /// <summary>Actualiza el idioma principal (pestaña "Operación" de Configuración → Empresa).</summary>
     public void UpdateOperationSettings(string languageCode, Guid? updatedBy)
     {
-        LanguageCode = string.IsNullOrWhiteSpace(languageCode) ? LanguageCode : languageCode.Trim().ToLowerInvariant();
+        LanguageCode = string.IsNullOrWhiteSpace(languageCode)
+            ? LanguageCode
+            : languageCode.Trim().ToLowerInvariant();
         UpdatedAt = DateTime.UtcNow;
         UpdatedBy = updatedBy;
     }
@@ -250,26 +305,38 @@ public class Company : ITenantScopedEntity
     /// <summary>Actualiza colores corporativos y eslogan (pestaña "Marca" de Configuración → Empresa).</summary>
     public void UpdateBrandingConfiguration(string? brandingConfigurationJson, Guid? updatedBy)
     {
-        BrandingConfiguration = string.IsNullOrWhiteSpace(brandingConfigurationJson) ? null : brandingConfigurationJson.Trim();
+        BrandingConfiguration = string.IsNullOrWhiteSpace(brandingConfigurationJson)
+            ? null
+            : brandingConfigurationJson.Trim();
         UpdatedAt = DateTime.UtcNow;
         UpdatedBy = updatedBy;
     }
 
-    private static string NormalizeTaxIdentificationNumber(string taxIdentificationNumber, bool isTemporary)
+    private static string NormalizeTaxIdentificationNumber(
+        string taxIdentificationNumber,
+        bool isTemporary
+    )
     {
         var t = taxIdentificationNumber.Trim();
-        if (isTemporary) return t;
-        if (t.Length == 13) return t;
-        if (t.Length < 13) return t.PadRight(13, '0')[..13];
+        if (isTemporary)
+            return t;
+        if (t.Length == 13)
+            return t;
+        if (t.Length < 13)
+            return t.PadRight(13, '0')[..13];
         return t[..13];
     }
 
     private static string? NormalizeEmail(string? email)
     {
         var e = email?.Trim().ToLowerInvariant();
-        if (string.IsNullOrEmpty(e)) return null;
+        if (string.IsNullOrEmpty(e))
+            return null;
         if (e.Length > CorporateEmailMaxLen)
-            throw new ArgumentException($"El email no puede superar {CorporateEmailMaxLen} caracteres.", nameof(email));
+            throw new ArgumentException(
+                $"El email no puede superar {CorporateEmailMaxLen} caracteres.",
+                nameof(email)
+            );
         if (!e.Contains('@') || e.IndexOf('.', e.IndexOf('@')) < 0)
             throw new ArgumentException("Formato de email inválido.", nameof(email));
         return e;
@@ -278,9 +345,13 @@ public class Company : ITenantScopedEntity
     private static string? NormalizeWebsite(string? website)
     {
         var w = website?.Trim();
-        if (string.IsNullOrEmpty(w)) return null;
+        if (string.IsNullOrEmpty(w))
+            return null;
         if (w.Length > WebsiteMaxLen)
-            throw new ArgumentException($"El sitio web no puede superar {WebsiteMaxLen} caracteres.", nameof(website));
+            throw new ArgumentException(
+                $"El sitio web no puede superar {WebsiteMaxLen} caracteres.",
+                nameof(website)
+            );
         return w;
     }
 }

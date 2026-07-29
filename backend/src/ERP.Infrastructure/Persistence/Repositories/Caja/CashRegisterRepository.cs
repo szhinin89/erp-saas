@@ -16,18 +16,27 @@ public sealed class CashRegisterRepository : ICashRegisterRepository
         _company = company;
     }
 
-    private IQueryable<CashRegister> Scoped(Guid tenantId)
-        => _db.CashRegisters.ForOperationalScope(tenantId, _company)
+    private IQueryable<CashRegister> Scoped(Guid tenantId) =>
+        _db
+            .CashRegisters.ForOperationalScope(tenantId, _company)
             .Include(x => x.Branch)
-            .Include(x => x.EmissionPoint).ThenInclude(ep => ep!.Establishment)
+            .Include(x => x.EmissionPoint)
+                .ThenInclude(ep => ep!.Establishment)
             .Include(x => x.DefaultWarehouse)
             .Include(x => x.DefaultCustomer);
 
-    public Task<CashRegister?> GetByIdAsync(Guid tenantId, Guid id, CancellationToken ct = default)
-        => Scoped(tenantId).FirstOrDefaultAsync(x => x.Id == id, ct);
+    public Task<CashRegister?> GetByIdAsync(
+        Guid tenantId,
+        Guid id,
+        CancellationToken ct = default
+    ) => Scoped(tenantId).FirstOrDefaultAsync(x => x.Id == id, ct);
 
     public async Task<IReadOnlyList<CashRegister>> GetByBranchAsync(
-        Guid tenantId, Guid branchId, bool? activeFilter, CancellationToken ct = default)
+        Guid tenantId,
+        Guid branchId,
+        bool? activeFilter,
+        CancellationToken ct = default
+    )
     {
         var q = Scoped(tenantId).Where(x => x.BranchId == branchId);
 
@@ -38,12 +47,18 @@ public sealed class CashRegisterRepository : ICashRegisterRepository
     }
 
     public async Task<IReadOnlyList<CashRegister>> GetAllByCompanyAsync(
-        Guid tenantId, Guid companyId, bool? activeFilter, string? search, CancellationToken ct = default)
+        Guid tenantId,
+        Guid companyId,
+        bool? activeFilter,
+        string? search,
+        CancellationToken ct = default
+    )
     {
-        var q = _db.CashRegisters
-            .AsNoTracking()
+        var q = _db
+            .CashRegisters.AsNoTracking()
             .Include(x => x.Branch)
-            .Include(x => x.EmissionPoint).ThenInclude(ep => ep!.Establishment)
+            .Include(x => x.EmissionPoint)
+                .ThenInclude(ep => ep!.Establishment)
             .Include(x => x.DefaultWarehouse)
             .Include(x => x.DefaultCustomer)
             .Where(x => x.TenantId == tenantId && x.CompanyId == companyId);
@@ -55,19 +70,25 @@ public sealed class CashRegisterRepository : ICashRegisterRepository
         {
             var term = search.Trim();
             q = q.Where(x =>
-                EF.Functions.ILike(x.Code, $"%{term}%") ||
-                EF.Functions.ILike(x.Name, $"%{term}%") ||
-                EF.Functions.ILike(x.Branch.Name, $"%{term}%"));
+                EF.Functions.ILike(x.Code, $"%{term}%")
+                || EF.Functions.ILike(x.Name, $"%{term}%")
+                || EF.Functions.ILike(x.Branch.Name, $"%{term}%")
+            );
         }
 
         return await q.OrderBy(x => x.Branch.Name).ThenBy(x => x.Code).ToListAsync(ct);
     }
 
     public Task<bool> ExistsByCodeAsync(
-        Guid tenantId, Guid branchId, string code, Guid? exceptId = null, CancellationToken ct = default)
+        Guid tenantId,
+        Guid branchId,
+        string code,
+        Guid? exceptId = null,
+        CancellationToken ct = default
+    )
     {
-        var q = _db.CashRegisters
-            .IgnoreQueryFilters()
+        var q = _db
+            .CashRegisters.IgnoreQueryFilters()
             .Where(x => x.TenantId == tenantId && x.BranchId == branchId && x.Code == code);
 
         if (exceptId.HasValue)
@@ -76,9 +97,8 @@ public sealed class CashRegisterRepository : ICashRegisterRepository
         return q.AnyAsync(ct);
     }
 
-    public Task AddAsync(CashRegister cashRegister, CancellationToken ct = default)
-        => _db.CashRegisters.AddAsync(cashRegister, ct).AsTask();
+    public Task AddAsync(CashRegister cashRegister, CancellationToken ct = default) =>
+        _db.CashRegisters.AddAsync(cashRegister, ct).AsTask();
 
-    public Task SaveChangesAsync(CancellationToken ct = default)
-        => _db.SaveChangesAsync(ct);
+    public Task SaveChangesAsync(CancellationToken ct = default) => _db.SaveChangesAsync(ct);
 }

@@ -17,4 +17,5 @@ public sealed record PostingFact(
     decimal TotalVat,
     decimal TotalIce,
     decimal TotalDiscount,
-    decimal GrandTotal);
+    decimal GrandTotal
+);

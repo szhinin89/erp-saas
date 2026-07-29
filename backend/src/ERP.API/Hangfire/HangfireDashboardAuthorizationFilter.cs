@@ -1,6 +1,6 @@
-using Hangfire.Dashboard;
 using System.Net;
 using System.Net.Sockets;
+using Hangfire.Dashboard;
 
 namespace ERP.API.Hangfire;
 
@@ -31,7 +31,7 @@ public sealed class HangfireDashboardAuthorizationFilter : IDashboardAuthorizati
         }
 
         return section.GetValue("AllowAnyAuthenticatedUser", false)
-               && http.User.Identity?.IsAuthenticated == true;
+            && http.User.Identity?.IsAuthenticated == true;
     }
 
     private static bool IsLocalOrLoopback(HttpContext http)

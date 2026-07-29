@@ -5,4 +5,5 @@ using MediatR;
 
 namespace ERP.Application.Modules.ElectronicInvoicing.UseCases.UploadSriCertificate;
 
-public sealed record UploadSriCertificateCommand(MediaUploadContent File) : IRequest<Result<SriCertificateUploadResultDto>>;
+public sealed record UploadSriCertificateCommand(MediaUploadContent File)
+    : IRequest<Result<SriCertificateUploadResultDto>>;

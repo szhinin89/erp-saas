@@ -14,7 +14,11 @@ public sealed class GetKardexByProductQueryHandler
     private readonly IAccessRepository _accessRepo;
     private readonly ICurrentTenant _tenant;
 
-    public GetKardexByProductQueryHandler(IStockRepository repo, IAccessRepository accessRepo, ICurrentTenant tenant)
+    public GetKardexByProductQueryHandler(
+        IStockRepository repo,
+        IAccessRepository accessRepo,
+        ICurrentTenant tenant
+    )
     {
         _repo = repo;
         _accessRepo = accessRepo;
@@ -22,14 +26,23 @@ public sealed class GetKardexByProductQueryHandler
     }
 
     public async Task<Result<IReadOnlyList<StockMovementDto>>> Handle(
-        GetKardexByProductQuery request, CancellationToken ct)
+        GetKardexByProductQuery request,
+        CancellationToken ct
+    )
     {
         var movements = await _repo.GetMovementsByProductAsync(
-            _tenant.TenantId, request.ProductId, request.WarehouseId,
-            request.From, request.To, ct);
+            _tenant.TenantId,
+            request.ProductId,
+            request.WarehouseId,
+            request.From,
+            request.To,
+            ct
+        );
 
         var userNames = await ResolveActorNamesAsync(_accessRepo, movements, ct);
-        var dtos = movements.Select(m => ToDto(m) with { CreatedByName = userNames.GetValueOrDefault(m.CreatedBy) }).ToList();
+        var dtos = movements
+            .Select(m => ToDto(m) with { CreatedByName = userNames.GetValueOrDefault(m.CreatedBy) })
+            .ToList();
         return Result<IReadOnlyList<StockMovementDto>>.Success(dtos);
     }
 }

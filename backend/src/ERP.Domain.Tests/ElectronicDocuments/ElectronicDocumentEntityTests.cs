@@ -7,20 +7,27 @@ namespace ERP.Domain.Tests.ElectronicDocuments;
 
 public sealed class ElectronicDocumentEntityTests
 {
-    private static ElectronicDocument NewDraft() => ElectronicDocument.Create(
-        tenantId: Guid.NewGuid(),
-        companyId: Guid.NewGuid(),
-        documentType: ElectronicDocumentType.Invoice,
-        sourceModule: "Sales",
-        sourceEntityId: Guid.NewGuid(),
-        createdBy: Guid.NewGuid());
+    private static ElectronicDocument NewDraft() =>
+        ElectronicDocument.Create(
+            tenantId: Guid.NewGuid(),
+            companyId: Guid.NewGuid(),
+            documentType: ElectronicDocumentType.Invoice,
+            sourceModule: "Sales",
+            sourceEntityId: Guid.NewGuid(),
+            createdBy: Guid.NewGuid()
+        );
 
     [Fact]
     public void MarkXmlGenerated_from_draft_transitions_and_sets_paths()
     {
         var document = NewDraft();
 
-        document.MarkXmlGenerated("electronic-documents/x/invoice/y/draft.xml", "1.1.0", "1.1.0", Guid.NewGuid());
+        document.MarkXmlGenerated(
+            "electronic-documents/x/invoice/y/draft.xml",
+            "1.1.0",
+            "1.1.0",
+            Guid.NewGuid()
+        );
 
         document.CurrentState.Should().Be(ElectronicDocumentState.XmlGenerated);
         document.XmlDraftPath.Should().Be("electronic-documents/x/invoice/y/draft.xml");
@@ -34,7 +41,8 @@ public sealed class ElectronicDocumentEntityTests
         var document = NewDraft();
         document.MarkXmlGenerated("path/draft.xml", "1.1.0", "1.1.0", Guid.NewGuid());
 
-        var act = () => document.MarkXmlGenerated("path/draft2.xml", "1.1.0", "1.1.0", Guid.NewGuid());
+        var act = () =>
+            document.MarkXmlGenerated("path/draft2.xml", "1.1.0", "1.1.0", Guid.NewGuid());
 
         act.Should().Throw<InvalidOperationException>();
     }
@@ -44,7 +52,12 @@ public sealed class ElectronicDocumentEntityTests
     {
         var document = NewDraft();
 
-        var act = () => document.MarkSigned("path/signed.xml", AccessKey.Create(new string('1', 49)), Guid.NewGuid());
+        var act = () =>
+            document.MarkSigned(
+                "path/signed.xml",
+                AccessKey.Create(new string('1', 49)),
+                Guid.NewGuid()
+            );
 
         act.Should().Throw<InvalidOperationException>();
     }
@@ -68,7 +81,11 @@ public sealed class ElectronicDocumentEntityTests
     {
         var document = NewDraft();
         document.MarkXmlGenerated("path/draft.xml", "1.1.0", "1.1.0", Guid.NewGuid());
-        document.MarkSigned("path/signed.xml", AccessKey.Create(new string('3', 49)), Guid.NewGuid());
+        document.MarkSigned(
+            "path/signed.xml",
+            AccessKey.Create(new string('3', 49)),
+            Guid.NewGuid()
+        );
 
         document.AuthorizedXmlPath.Should().BeNull();
         document.AuthorizationNumber.Should().BeNull();
@@ -78,7 +95,11 @@ public sealed class ElectronicDocumentEntityTests
     {
         var document = NewDraft();
         document.MarkXmlGenerated("path/draft.xml", "1.1.0", "1.1.0", Guid.NewGuid());
-        document.MarkSigned("path/signed.xml", AccessKey.Create(new string('3', 49)), Guid.NewGuid());
+        document.MarkSigned(
+            "path/signed.xml",
+            AccessKey.Create(new string('3', 49)),
+            Guid.NewGuid()
+        );
         return document;
     }
 
@@ -148,7 +169,12 @@ public sealed class ElectronicDocumentEntityTests
         document.MarkSent(Guid.NewGuid());
         document.MarkReceived(Guid.NewGuid());
 
-        document.MarkAuthorized(AuthorizationNumber.Create(new string('9', 49)), DateTime.UtcNow, null, Guid.NewGuid());
+        document.MarkAuthorized(
+            AuthorizationNumber.Create(new string('9', 49)),
+            DateTime.UtcNow,
+            null,
+            Guid.NewGuid()
+        );
 
         document.CurrentState.Should().Be(ElectronicDocumentState.Authorized);
     }
@@ -158,7 +184,13 @@ public sealed class ElectronicDocumentEntityTests
     {
         var document = SignedDocument();
 
-        var act = () => document.MarkAuthorized(AuthorizationNumber.Create(new string('9', 49)), DateTime.UtcNow, null, Guid.NewGuid());
+        var act = () =>
+            document.MarkAuthorized(
+                AuthorizationNumber.Create(new string('9', 49)),
+                DateTime.UtcNow,
+                null,
+                Guid.NewGuid()
+            );
 
         act.Should().Throw<InvalidOperationException>();
     }
@@ -291,7 +323,12 @@ public sealed class ElectronicDocumentEntityTests
     {
         var document = SignedDocument();
         document.MarkSent(Guid.NewGuid());
-        document.MarkAuthorized(AuthorizationNumber.Create(new string('9', 49)), DateTime.UtcNow, null, Guid.NewGuid());
+        document.MarkAuthorized(
+            AuthorizationNumber.Create(new string('9', 49)),
+            DateTime.UtcNow,
+            null,
+            Guid.NewGuid()
+        );
 
         document.MarkCancelled("Anulación solicitada por el cliente.", Guid.NewGuid());
 

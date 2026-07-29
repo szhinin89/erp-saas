@@ -5,7 +5,8 @@ using MediatR;
 namespace ERP.Application.Items.UseCases.DisableItemVariant;
 
 public sealed record DisableItemVariantCommand(Guid ItemId, Guid VariantId)
-    : IRequest<Result<bool>>, ICompanyScopedRequest;
+    : IRequest<Result<bool>>,
+        ICompanyScopedRequest;
 
 public sealed class DisableItemVariantCommandHandler
     : IRequestHandler<DisableItemVariantCommand, Result<bool>>
@@ -15,16 +16,26 @@ public sealed class DisableItemVariantCommandHandler
     private readonly ICurrentUser _user;
 
     public DisableItemVariantCommandHandler(
-        IItemRepository repository, ICurrentTenant tenant, ICurrentUser user)
+        IItemRepository repository,
+        ICurrentTenant tenant,
+        ICurrentUser user
+    )
     {
         _repository = repository;
         _currentTenant = tenant;
         _user = user;
     }
 
-    public async Task<Result<bool>> Handle(DisableItemVariantCommand cmd, CancellationToken cancellationToken)
+    public async Task<Result<bool>> Handle(
+        DisableItemVariantCommand cmd,
+        CancellationToken cancellationToken
+    )
     {
-        var item = await _repository.GetByIdAsync(cmd.ItemId, _currentTenant.TenantId, cancellationToken);
+        var item = await _repository.GetByIdAsync(
+            cmd.ItemId,
+            _currentTenant.TenantId,
+            cancellationToken
+        );
         if (item is null)
             return Result<bool>.NotFound("Ítem no encontrado.");
 

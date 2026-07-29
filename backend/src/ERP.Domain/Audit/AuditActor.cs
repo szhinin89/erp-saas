@@ -22,4 +22,5 @@ public readonly record struct AuditActor(
     string? RoleName,
     string? CorrelationId,
     string? RequestId,
-    AuditSource Source);
+    AuditSource Source
+);

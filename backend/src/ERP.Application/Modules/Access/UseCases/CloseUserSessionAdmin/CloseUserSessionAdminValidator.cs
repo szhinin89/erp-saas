@@ -6,7 +6,8 @@ public sealed class CloseUserSessionAdminValidator : AbstractValidator<CloseUser
 {
     public CloseUserSessionAdminValidator()
     {
-        RuleFor(x => x.SessionId).NotEmpty()
+        RuleFor(x => x.SessionId)
+            .NotEmpty()
             .WithMessage("El identificador de la sesión es obligatorio.");
     }
 }

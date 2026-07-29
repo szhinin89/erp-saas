@@ -18,53 +18,77 @@ namespace ERP.API.Controllers;
 public sealed class SalesController : ControllerBase
 {
     private readonly IMediator _mediator;
+
     public SalesController(IMediator mediator) => _mediator = mediator;
 
     [HttpPost]
     [Authorize(Policy = $"perm:{SalesPermissions.Create}")]
     public async Task<IActionResult> CreateDraft(
-        [FromBody] CreateSalesDraftCommand command, CancellationToken ct)
-        => this.ToCreatedOrBadRequest(await _mediator.Send(command, ct));
+        [FromBody] CreateSalesDraftCommand command,
+        CancellationToken ct
+    ) => this.ToCreatedOrBadRequest(await _mediator.Send(command, ct));
 
     [HttpPut("{id:guid}")]
     [Authorize(Policy = $"perm:{SalesPermissions.Update}")]
     public async Task<IActionResult> UpdateDraft(
-        Guid id, [FromBody] UpdateSalesDraftCommand command, CancellationToken ct)
+        Guid id,
+        [FromBody] UpdateSalesDraftCommand command,
+        CancellationToken ct
+    )
     {
-        if (id != command.Id) return this.ApiBadRequest("El ID no coincide.");
+        if (id != command.Id)
+            return this.ApiBadRequest("El ID no coincide.");
         return this.ToOkOrBadRequest(await _mediator.Send(command, ct));
     }
 
     [HttpGet("{id:guid}")]
     [Authorize(Policy = $"perm:{SalesPermissions.View}")]
-    public async Task<IActionResult> GetById(Guid id, CancellationToken ct)
-        => this.ToOkOrNotFound(await _mediator.Send(new GetSalesInvoiceByIdQuery(id), ct));
+    public async Task<IActionResult> GetById(Guid id, CancellationToken ct) =>
+        this.ToOkOrNotFound(await _mediator.Send(new GetSalesInvoiceByIdQuery(id), ct));
 
     [HttpGet]
     [Authorize(Policy = $"perm:{SalesPermissions.View}")]
     public async Task<IActionResult> GetList(
-        [FromQuery] string? search = null, [FromQuery] string? status = null,
-        [FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 25,
-        CancellationToken ct = default)
-        => this.ToOkOrBadRequest(await _mediator.Send(
-            new GetSalesInvoiceListQuery(search, status, pageNumber, pageSize), ct), "OK");
+        [FromQuery] string? search = null,
+        [FromQuery] string? status = null,
+        [FromQuery] int pageNumber = 1,
+        [FromQuery] int pageSize = 25,
+        CancellationToken ct = default
+    ) =>
+        this.ToOkOrBadRequest(
+            await _mediator.Send(
+                new GetSalesInvoiceListQuery(search, status, pageNumber, pageSize),
+                ct
+            ),
+            "OK"
+        );
 
     [HttpPost("{id:guid}/apply-discount")]
     [Authorize(Policy = $"perm:{SalesPermissions.Update}")]
     public async Task<IActionResult> ApplyGlobalDiscount(
-        Guid id, [FromBody] SalesApplyDiscountRequest request, CancellationToken ct)
-        => this.ToOkOrBadRequest(await _mediator.Send(new ApplySalesDiscountCommand(id, request.DiscountPct), ct));
+        Guid id,
+        [FromBody] SalesApplyDiscountRequest request,
+        CancellationToken ct
+    ) =>
+        this.ToOkOrBadRequest(
+            await _mediator.Send(new ApplySalesDiscountCommand(id, request.DiscountPct), ct)
+        );
 
     [HttpPost("{id:guid}/authorize")]
     [Authorize(Policy = $"perm:{SalesPermissions.Update}")]
-    public async Task<IActionResult> AuthorizeInvoice(Guid id, CancellationToken ct)
-        => this.ToOkOrBadRequest(await _mediator.Send(new AuthorizeSalesInvoiceCommand(id), ct));
+    public async Task<IActionResult> AuthorizeInvoice(Guid id, CancellationToken ct) =>
+        this.ToOkOrBadRequest(await _mediator.Send(new AuthorizeSalesInvoiceCommand(id), ct));
 
     [HttpPost("{id:guid}/cancel")]
     [Authorize(Policy = $"perm:{SalesPermissions.Update}")]
     public async Task<IActionResult> CancelInvoice(
-        Guid id, [FromBody] CancelSalesRequest request, CancellationToken ct)
-        => this.ToOkOrBadRequest(await _mediator.Send(new CancelSalesInvoiceCommand(id, request.Reason), ct));
+        Guid id,
+        [FromBody] CancelSalesRequest request,
+        CancellationToken ct
+    ) =>
+        this.ToOkOrBadRequest(
+            await _mediator.Send(new CancelSalesInvoiceCommand(id, request.Reason), ct)
+        );
 
     /// <summary>
     /// Devuelve los valores por defecto para inicializar una nueva factura de venta.
@@ -72,8 +96,8 @@ public sealed class SalesController : ControllerBase
     /// </summary>
     [HttpGet("invoice-defaults")]
     [Authorize]
-    public async Task<IActionResult> GetInvoiceDefaults(CancellationToken ct)
-        => this.ToOkOrBadRequest(await _mediator.Send(new GetSalesInvoiceDefaultsQuery(), ct));
+    public async Task<IActionResult> GetInvoiceDefaults(CancellationToken ct) =>
+        this.ToOkOrBadRequest(await _mediator.Send(new GetSalesInvoiceDefaultsQuery(), ct));
 
     [HttpGet("item-search")]
     [Authorize(Policy = $"perm:{SalesPermissions.View}")]
@@ -81,9 +105,15 @@ public sealed class SalesController : ControllerBase
         [FromQuery] string? q,
         [FromQuery] Guid? warehouseId,
         [FromQuery] int pageSize = 10,
-        CancellationToken ct = default)
-        => this.ToOkOrBadRequest(await _mediator.Send(
-            new SearchItemsForInvoiceQuery(q ?? string.Empty, warehouseId, pageSize), ct), "OK");
+        CancellationToken ct = default
+    ) =>
+        this.ToOkOrBadRequest(
+            await _mediator.Send(
+                new SearchItemsForInvoiceQuery(q ?? string.Empty, warehouseId, pageSize),
+                ct
+            ),
+            "OK"
+        );
 
     /// <summary>
     /// Precio e impuestos oficiales de un ítem, resueltos vía el Pricing Engine v2
@@ -92,9 +122,10 @@ public sealed class SalesController : ControllerBase
     /// </summary>
     [HttpGet("items/{itemId:guid}/pricing")]
     [Authorize(Policy = $"perm:{SalesPermissions.View}")]
-    public async Task<IActionResult> GetItemPricing(Guid itemId, CancellationToken ct)
-        => this.ToOkOrBadRequest(await _mediator.Send(new GetSalesItemPricingQuery(itemId), ct));
+    public async Task<IActionResult> GetItemPricing(Guid itemId, CancellationToken ct) =>
+        this.ToOkOrBadRequest(await _mediator.Send(new GetSalesItemPricingQuery(itemId), ct));
 }
 
 public record SalesApplyDiscountRequest(decimal DiscountPct);
+
 public record CancelSalesRequest(string Reason);

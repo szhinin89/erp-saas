@@ -22,5 +22,4 @@ public interface IOperationalContext
 
     /// <summary>True cuando el usuario está autenticado con JWT válido.</summary>
     bool IsAuthenticated { get; }
-
 }

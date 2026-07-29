@@ -20,12 +20,14 @@ public sealed class UserSessionConfiguration : IEntityTypeConfiguration<UserSess
 
         builder.Property(x => x.IdentityUserId).HasColumnName("identity_user_id").IsRequired();
         builder.Property(x => x.BranchId).HasColumnName("branch_id").IsRequired();
-        builder.Property(x => x.TerminalId).HasColumnName("terminal_id")
-            .HasMaxLength(UserSession.TerminalIdMaxLen).IsRequired();
+        builder
+            .Property(x => x.TerminalId)
+            .HasColumnName("terminal_id")
+            .HasMaxLength(UserSession.TerminalIdMaxLen)
+            .IsRequired();
         builder.Property(x => x.RefreshTokenId).HasColumnName("refresh_token_id");
 
-        builder.Property(x => x.Status).HasColumnName("status")
-            .HasConversion<int>().IsRequired();
+        builder.Property(x => x.Status).HasColumnName("status").HasConversion<int>().IsRequired();
 
         builder.Property(x => x.StartedAt).HasColumnName("started_at").IsRequired();
         builder.Property(x => x.ClosedAt).HasColumnName("closed_at");
@@ -38,7 +40,8 @@ public sealed class UserSessionConfiguration : IEntityTypeConfiguration<UserSess
         builder.Property(x => x.UpdatedBy).HasColumnName("updated_by");
 
         // ── Concurrency token (PostgreSQL xid) ──────────────────────
-        builder.Property<uint>("xmin")
+        builder
+            .Property<uint>("xmin")
             .HasColumnName("xmin")
             .HasColumnType("xid")
             .IsRequired()
@@ -49,23 +52,27 @@ public sealed class UserSessionConfiguration : IEntityTypeConfiguration<UserSess
         builder.Ignore(x => x.IsActive);
 
         // ── Relationships (FK sin navigation — entidad ligera) ──────
-        builder.HasOne<Company>()
+        builder
+            .HasOne<Company>()
             .WithMany()
             .HasForeignKey(x => x.CompanyId)
             .OnDelete(DeleteBehavior.Restrict);
 
-        builder.HasOne<Branch>()
+        builder
+            .HasOne<Branch>()
             .WithMany()
             .HasForeignKey(x => x.BranchId)
             .OnDelete(DeleteBehavior.Restrict);
 
-        builder.HasOne<IdentityUser>()
+        builder
+            .HasOne<IdentityUser>()
             .WithMany()
             .HasForeignKey(x => x.IdentityUserId)
             .OnDelete(DeleteBehavior.Restrict);
 
         // Unidireccional: RefreshToken (Auth) nunca referencia UserSession (Access).
-        builder.HasOne<RefreshToken>()
+        builder
+            .HasOne<RefreshToken>()
             .WithMany()
             .HasForeignKey(x => x.RefreshTokenId)
             .OnDelete(DeleteBehavior.Restrict);
@@ -73,15 +80,26 @@ public sealed class UserSessionConfiguration : IEntityTypeConfiguration<UserSess
         // ── Indexes ─────────────────────────────────────────────────
         // Invariante dura: máximo una sesión Active por (tenant, empresa, usuario).
         // Status.Active = 1 (ver UserSessionStatus).
-        builder.HasIndex(x => new { x.TenantId, x.CompanyId, x.IdentityUserId })
+        builder
+            .HasIndex(x => new
+            {
+                x.TenantId,
+                x.CompanyId,
+                x.IdentityUserId,
+            })
             .IsUnique()
             .HasFilter("status = 1")
             .HasDatabaseName("ux_user_sessions_active_per_company");
 
-        builder.HasIndex(x => new { x.IdentityUserId, x.TenantId, x.Status })
+        builder
+            .HasIndex(x => new
+            {
+                x.IdentityUserId,
+                x.TenantId,
+                x.Status,
+            })
             .HasDatabaseName("ix_user_sessions_identity_user_tenant_status");
 
-        builder.HasIndex(x => x.CompanyId)
-            .HasDatabaseName("ix_user_sessions_company");
+        builder.HasIndex(x => x.CompanyId).HasDatabaseName("ix_user_sessions_company");
     }
 }

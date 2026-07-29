@@ -50,12 +50,16 @@ public sealed class BusinessPartnerLocation : AuditableEntity, ITenantScopedEnti
         string? phone = null,
         string? email = null,
         bool isPrimary = false,
-        string? otherDescription = null)
+        string? otherDescription = null
+    )
     {
         if (tenantId == Guid.Empty)
             throw new ArgumentException("tenantId es obligatorio.", nameof(tenantId));
         if (businessPartnerId == Guid.Empty)
-            throw new ArgumentException("BusinessPartnerId es obligatorio.", nameof(businessPartnerId));
+            throw new ArgumentException(
+                "BusinessPartnerId es obligatorio.",
+                nameof(businessPartnerId)
+            );
 
         var loc = new BusinessPartnerLocation
         {
@@ -73,14 +77,16 @@ public sealed class BusinessPartnerLocation : AuditableEntity, ITenantScopedEnti
             IsActive = true,
         };
         loc.SetCreated(createdBy);
-        loc.RaiseDomainEvent(new BusinessPartnerLocationCreatedEvent
-        {
-            TenantId = tenantId,
-            LocationId = loc.Id,
-            BusinessPartnerId = businessPartnerId,
-            LocationType = type,
-            CreatedBy = createdBy,
-        });
+        loc.RaiseDomainEvent(
+            new BusinessPartnerLocationCreatedEvent
+            {
+                TenantId = tenantId,
+                LocationId = loc.Id,
+                BusinessPartnerId = businessPartnerId,
+                LocationType = type,
+                CreatedBy = createdBy,
+            }
+        );
         return loc;
     }
 
@@ -95,7 +101,8 @@ public sealed class BusinessPartnerLocation : AuditableEntity, ITenantScopedEnti
         string? parishCode = null,
         string? phone = null,
         string? email = null,
-        string? otherDescription = null)
+        string? otherDescription = null
+    )
     {
         if (!IsActive)
             throw new InvalidOperationException("No se puede actualizar una ubicación inactiva.");
@@ -108,12 +115,14 @@ public sealed class BusinessPartnerLocation : AuditableEntity, ITenantScopedEnti
         Email = NormalizeEmail(email);
         OtherDescription = ValidateOtherDescription(type, otherDescription);
         SetUpdated(updatedBy);
-        RaiseDomainEvent(new BusinessPartnerLocationUpdatedEvent
-        {
-            TenantId = TenantId,
-            LocationId = Id,
-            UpdatedBy = updatedBy,
-        });
+        RaiseDomainEvent(
+            new BusinessPartnerLocationUpdatedEvent
+            {
+                TenantId = TenantId,
+                LocationId = Id,
+                UpdatedBy = updatedBy,
+            }
+        );
     }
 
     /// <summary>
@@ -124,17 +133,21 @@ public sealed class BusinessPartnerLocation : AuditableEntity, ITenantScopedEnti
     public void SetPrimary(Guid updatedBy)
     {
         if (!IsActive)
-            throw new InvalidOperationException("No se puede marcar como principal una ubicación inactiva.");
+            throw new InvalidOperationException(
+                "No se puede marcar como principal una ubicación inactiva."
+            );
 
         IsPrimary = true;
         SetUpdated(updatedBy);
-        RaiseDomainEvent(new BusinessPartnerPrimaryLocationChangedEvent
-        {
-            TenantId = TenantId,
-            NewPrimaryLocationId = Id,
-            BusinessPartnerId = BusinessPartnerId,
-            ChangedBy = updatedBy,
-        });
+        RaiseDomainEvent(
+            new BusinessPartnerPrimaryLocationChangedEvent
+            {
+                TenantId = TenantId,
+                NewPrimaryLocationId = Id,
+                BusinessPartnerId = BusinessPartnerId,
+                ChangedBy = updatedBy,
+            }
+        );
     }
 
     internal void ClearPrimary(Guid updatedBy)
@@ -154,17 +167,20 @@ public sealed class BusinessPartnerLocation : AuditableEntity, ITenantScopedEnti
             throw new InvalidOperationException("La ubicación ya está inactiva.");
         if (IsPrimary)
             throw new InvalidOperationException(
-                "No se puede desactivar la ubicación principal. Asigne otra ubicación como principal primero.");
+                "No se puede desactivar la ubicación principal. Asigne otra ubicación como principal primero."
+            );
 
         IsActive = false;
         SetUpdated(updatedBy);
-        RaiseDomainEvent(new BusinessPartnerLocationDeactivatedEvent
-        {
-            TenantId = TenantId,
-            LocationId = Id,
-            BusinessPartnerId = BusinessPartnerId,
-            DeactivatedBy = updatedBy,
-        });
+        RaiseDomainEvent(
+            new BusinessPartnerLocationDeactivatedEvent
+            {
+                TenantId = TenantId,
+                LocationId = Id,
+                BusinessPartnerId = BusinessPartnerId,
+                DeactivatedBy = updatedBy,
+            }
+        );
     }
 
     public void Activate(Guid updatedBy)
@@ -181,23 +197,31 @@ public sealed class BusinessPartnerLocation : AuditableEntity, ITenantScopedEnti
         if (string.IsNullOrEmpty(n))
             throw new ArgumentException("El nombre de la ubicación es obligatorio.", nameof(name));
         if (n.Length > NameMaxLen)
-            throw new ArgumentException($"El nombre no puede superar {NameMaxLen} caracteres.", nameof(name));
+            throw new ArgumentException(
+                $"El nombre no puede superar {NameMaxLen} caracteres.",
+                nameof(name)
+            );
         return n;
     }
 
     private static string? NormalizeOptional(string? value, int maxLen, string paramName)
     {
         var v = value?.Trim();
-        if (string.IsNullOrEmpty(v)) return null;
+        if (string.IsNullOrEmpty(v))
+            return null;
         if (v.Length > maxLen)
-            throw new ArgumentException($"{paramName} no puede superar {maxLen} caracteres.", paramName);
+            throw new ArgumentException(
+                $"{paramName} no puede superar {maxLen} caracteres.",
+                paramName
+            );
         return v;
     }
 
     private static string? NormalizeEmail(string? email)
     {
         var e = email?.Trim().ToLowerInvariant();
-        if (string.IsNullOrEmpty(e)) return null;
+        if (string.IsNullOrEmpty(e))
+            return null;
         if (e.Length > 254)
             throw new ArgumentException("El email no puede superar 254 caracteres.", nameof(email));
         if (!e.Contains('@'))
@@ -209,15 +233,20 @@ public sealed class BusinessPartnerLocation : AuditableEntity, ITenantScopedEnti
     private static string? ValidateOtherDescription(LocationType type, string? description)
     {
         var d = description?.Trim();
-        if (d is { Length: 0 }) d = null;
+        if (d is { Length: 0 })
+            d = null;
 
         if (type == LocationType.Other && string.IsNullOrEmpty(d))
             throw new ArgumentException(
-                "OtherDescription es obligatorio cuando LocationType = Other.", nameof(description));
+                "OtherDescription es obligatorio cuando LocationType = Other.",
+                nameof(description)
+            );
 
         if (d?.Length > OtherDescriptionMaxLen)
             throw new ArgumentException(
-                $"OtherDescription no puede superar {OtherDescriptionMaxLen} caracteres.", nameof(description));
+                $"OtherDescription no puede superar {OtherDescriptionMaxLen} caracteres.",
+                nameof(description)
+            );
 
         return type == LocationType.Other ? d : null;
     }

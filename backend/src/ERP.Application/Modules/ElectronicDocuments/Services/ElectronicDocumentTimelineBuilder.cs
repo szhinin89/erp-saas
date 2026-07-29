@@ -16,12 +16,13 @@ public static class ElectronicDocumentTimelineBuilder
         Guid tenantId,
         Guid documentId,
         int take,
-        CancellationToken ct)
-        => await auditReader.GetByEntityAsync(tenantId, documentId, take, ct);
+        CancellationToken ct
+    ) => await auditReader.GetByEntityAsync(tenantId, documentId, take, ct);
 
     /// <summary>Construye el timeline a partir de registros ya obtenidos (más reciente primero) — evita una segunda consulta.</summary>
     public static IReadOnlyList<ElectronicDocumentTimelineEventDto> Build(
-        IReadOnlyList<ElectronicDocumentAudit> records)
+        IReadOnlyList<ElectronicDocumentAudit> records
+    )
     {
         var ordered = records.OrderBy(r => r.OccurredAtUtc).ToList();
 
@@ -34,13 +35,16 @@ public static class ElectronicDocumentTimelineBuilder
                 ? (record.OccurredAtUtc - previous.Value).TotalMinutes
                 : null;
 
-            events.Add(new ElectronicDocumentTimelineEventDto(
-                record.Action,
-                record.FromState?.ToString(),
-                record.ToState.ToString(),
-                record.OccurredAtUtc,
-                record.UserName,
-                durationMinutes));
+            events.Add(
+                new ElectronicDocumentTimelineEventDto(
+                    record.Action,
+                    record.FromState?.ToString(),
+                    record.ToState.ToString(),
+                    record.OccurredAtUtc,
+                    record.UserName,
+                    durationMinutes
+                )
+            );
 
             previous = record.OccurredAtUtc;
         }

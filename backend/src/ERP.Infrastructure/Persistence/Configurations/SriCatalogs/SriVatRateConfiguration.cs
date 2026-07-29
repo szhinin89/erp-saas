@@ -25,16 +25,88 @@ public class SriVatRateConfiguration : IEntityTypeConfiguration<SriVatRate>
         // vigente) declaraba al SRI <codigoPorcentaje>10</codigoPorcentaje>, que el SRI
         // interpreta como 13% — no como 15%. Ver informe de auditoría, hallazgo CAT-01.
         builder.HasData(
-            new SriVatRate { Code = "0", Name = "0% IVA", Percentage = 0.00m, IsActive = true, ValidFrom = new DateOnly(2008, 1, 1), ValidUntil = null },
-            new SriVatRate { Code = "2", Name = "12% IVA (histórico)", Percentage = 12.00m, IsActive = false, ValidFrom = new DateOnly(2008, 1, 1), ValidUntil = new DateOnly(2016, 5, 31) },
-            new SriVatRate { Code = "3", Name = "14% IVA (histórico)", Percentage = 14.00m, IsActive = false, ValidFrom = new DateOnly(2016, 6, 1), ValidUntil = new DateOnly(2017, 5, 31) },
-            new SriVatRate { Code = "4", Name = "15% IVA (tarifa general vigente)", Percentage = 15.00m, IsActive = true, ValidFrom = new DateOnly(2024, 4, 1), ValidUntil = null },
-            new SriVatRate { Code = "5", Name = "5% IVA", Percentage = 5.00m, IsActive = true, ValidFrom = new DateOnly(2024, 1, 1), ValidUntil = null },
-            new SriVatRate { Code = "6", Name = "No objeto de Impuesto", Percentage = 0.00m, IsActive = true, ValidFrom = new DateOnly(2008, 1, 1), ValidUntil = null },
-            new SriVatRate { Code = "7", Name = "Exento de IVA", Percentage = 0.00m, IsActive = true, ValidFrom = new DateOnly(2008, 1, 1), ValidUntil = null },
-            new SriVatRate { Code = "8", Name = "IVA diferenciado (tarifa variable por decreto — turismo)", Percentage = 8.00m, IsActive = true, ValidFrom = new DateOnly(2008, 1, 1), ValidUntil = null },
-            new SriVatRate { Code = "10", Name = "13% IVA", Percentage = 13.00m, IsActive = true, ValidFrom = new DateOnly(2008, 1, 1), ValidUntil = null }
-            // Code "11" ("13% IVA transitorio") eliminado: no existe en la Tabla 17 oficial del SRI.
+            new SriVatRate
+            {
+                Code = "0",
+                Name = "0% IVA",
+                Percentage = 0.00m,
+                IsActive = true,
+                ValidFrom = new DateOnly(2008, 1, 1),
+                ValidUntil = null,
+            },
+            new SriVatRate
+            {
+                Code = "2",
+                Name = "12% IVA (histórico)",
+                Percentage = 12.00m,
+                IsActive = false,
+                ValidFrom = new DateOnly(2008, 1, 1),
+                ValidUntil = new DateOnly(2016, 5, 31),
+            },
+            new SriVatRate
+            {
+                Code = "3",
+                Name = "14% IVA (histórico)",
+                Percentage = 14.00m,
+                IsActive = false,
+                ValidFrom = new DateOnly(2016, 6, 1),
+                ValidUntil = new DateOnly(2017, 5, 31),
+            },
+            new SriVatRate
+            {
+                Code = "4",
+                Name = "15% IVA (tarifa general vigente)",
+                Percentage = 15.00m,
+                IsActive = true,
+                ValidFrom = new DateOnly(2024, 4, 1),
+                ValidUntil = null,
+            },
+            new SriVatRate
+            {
+                Code = "5",
+                Name = "5% IVA",
+                Percentage = 5.00m,
+                IsActive = true,
+                ValidFrom = new DateOnly(2024, 1, 1),
+                ValidUntil = null,
+            },
+            new SriVatRate
+            {
+                Code = "6",
+                Name = "No objeto de Impuesto",
+                Percentage = 0.00m,
+                IsActive = true,
+                ValidFrom = new DateOnly(2008, 1, 1),
+                ValidUntil = null,
+            },
+            new SriVatRate
+            {
+                Code = "7",
+                Name = "Exento de IVA",
+                Percentage = 0.00m,
+                IsActive = true,
+                ValidFrom = new DateOnly(2008, 1, 1),
+                ValidUntil = null,
+            },
+            new SriVatRate
+            {
+                Code = "8",
+                Name = "IVA diferenciado (tarifa variable por decreto — turismo)",
+                Percentage = 8.00m,
+                IsActive = true,
+                ValidFrom = new DateOnly(2008, 1, 1),
+                ValidUntil = null,
+            },
+            new SriVatRate
+            {
+                Code = "10",
+                Name = "13% IVA",
+                Percentage = 13.00m,
+                IsActive = true,
+                ValidFrom = new DateOnly(2008, 1, 1),
+                ValidUntil = null,
+            }
+        // Code "11" ("13% IVA transitorio") eliminado: no existe en la Tabla 17 oficial del SRI.
         );
     }
 }

@@ -1,5 +1,5 @@
-using FluentAssertions;
 using System.Text.RegularExpressions;
+using FluentAssertions;
 
 namespace ERP.Architecture.Tests;
 
@@ -11,7 +11,8 @@ public sealed class PlatformControlPlaneGuardTests
 {
     private static readonly Regex RouteAttributeRegex = new(
         @"\[Route\s*\(\s*""([^""]+)""\s*\)\]",
-        RegexOptions.Compiled | RegexOptions.CultureInvariant);
+        RegexOptions.Compiled | RegexOptions.CultureInvariant
+    );
 
     [Fact]
     public void Controllers_must_not_expose_api_superadmin_routes()
@@ -21,7 +22,13 @@ public sealed class PlatformControlPlaneGuardTests
         Directory.Exists(controllersDir).Should().BeTrue();
 
         var violations = new List<string>();
-        foreach (var file in Directory.EnumerateFiles(controllersDir, "*.cs", SearchOption.AllDirectories))
+        foreach (
+            var file in Directory.EnumerateFiles(
+                controllersDir,
+                "*.cs",
+                SearchOption.AllDirectories
+            )
+        )
         {
             var rel = Path.GetRelativePath(backendRoot, file).Replace('\\', '/');
             var text = File.ReadAllText(file);
@@ -39,15 +46,19 @@ public sealed class PlatformControlPlaneGuardTests
             foreach (var line in text.Split('\n'))
             {
                 var trimmed = line.Trim();
-                if (trimmed.StartsWith("//", StringComparison.Ordinal) ||
-                    trimmed.StartsWith("///", StringComparison.Ordinal) ||
-                    trimmed.StartsWith('*'))
+                if (
+                    trimmed.StartsWith("//", StringComparison.Ordinal)
+                    || trimmed.StartsWith("///", StringComparison.Ordinal)
+                    || trimmed.StartsWith('*')
+                )
                     continue;
 
-                if (line.Contains("SuperAdminController", StringComparison.Ordinal) ||
-                    line.Contains("SuperAdminService", StringComparison.Ordinal) ||
-                    line.Contains("superadmin-login", StringComparison.OrdinalIgnoreCase) ||
-                    line.Contains("/api/superadmin/", StringComparison.OrdinalIgnoreCase))
+                if (
+                    line.Contains("SuperAdminController", StringComparison.Ordinal)
+                    || line.Contains("SuperAdminService", StringComparison.Ordinal)
+                    || line.Contains("superadmin-login", StringComparison.OrdinalIgnoreCase)
+                    || line.Contains("/api/superadmin/", StringComparison.OrdinalIgnoreCase)
+                )
                     violations.Add($"{rel}: {trimmed[..Math.Min(trimmed.Length, 120)]}");
             }
         }
@@ -61,8 +72,12 @@ public sealed class PlatformControlPlaneGuardTests
     {
         var backendRoot = ResolveBackendSrcRoot();
         var platformDir = Path.Combine(backendRoot, "ERP.API", "Controllers", "Platform");
-        Directory.Exists(platformDir).Should().BeFalse(
-            "ERP does not own the Platform control plane. Platform is a separate future bounded context.");
+        Directory
+            .Exists(platformDir)
+            .Should()
+            .BeFalse(
+                "ERP does not own the Platform control plane. Platform is a separate future bounded context."
+            );
     }
 
     [Fact]
@@ -81,9 +96,14 @@ public sealed class PlatformControlPlaneGuardTests
             "[DeprecatedApi(",
         };
 
-        var violations = forbidden.Where(marker => text.Contains(marker, StringComparison.Ordinal)).ToList();
-        violations.Should().BeEmpty(
-            "TenantsController is ERP runtime only. Subscription/billing control lives in future ZH.Platform.");
+        var violations = forbidden
+            .Where(marker => text.Contains(marker, StringComparison.Ordinal))
+            .ToList();
+        violations
+            .Should()
+            .BeEmpty(
+                "TenantsController is ERP runtime only. Subscription/billing control lives in future ZH.Platform."
+            );
     }
 
     [Fact]
@@ -94,10 +114,18 @@ public sealed class PlatformControlPlaneGuardTests
         if (!Directory.Exists(domainDir))
             return;
 
-        var forbiddenTerms = new[] { "Subscription", "CommercialPlan", "BillingCycle", "SaasBilling" };
+        var forbiddenTerms = new[]
+        {
+            "Subscription",
+            "CommercialPlan",
+            "BillingCycle",
+            "SaasBilling",
+        };
         var violations = new List<string>();
 
-        foreach (var csFile in Directory.EnumerateFiles(domainDir, "*.cs", SearchOption.AllDirectories))
+        foreach (
+            var csFile in Directory.EnumerateFiles(domainDir, "*.cs", SearchOption.AllDirectories)
+        )
         {
             var rel = Path.GetRelativePath(backendRoot, csFile).Replace('\\', '/');
             var text = File.ReadAllText(csFile);
@@ -108,7 +136,9 @@ public sealed class PlatformControlPlaneGuardTests
             }
         }
 
-        violations.Should().BeEmpty("ERP.Domain must be free of SaaS billing/subscription concepts");
+        violations
+            .Should()
+            .BeEmpty("ERP.Domain must be free of SaaS billing/subscription concepts");
     }
 
     private static string ResolveBackendSrcRoot()

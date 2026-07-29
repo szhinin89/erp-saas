@@ -6,7 +6,8 @@ namespace ERP.Application.Modules.Integration;
 public sealed record IntegrationTenantCreateRequest(
     string Name,
     string Slug,
-    string? PreferredLanguage = "es");
+    string? PreferredLanguage = "es"
+);
 
 public sealed record IntegrationTenantStatusDto(
     Guid Id,
@@ -15,7 +16,8 @@ public sealed record IntegrationTenantStatusDto(
     bool IsActive,
     string PreferredLanguage,
     DateTime CreatedAt,
-    DateTime? UpdatedAt);
+    DateTime? UpdatedAt
+);
 
 public sealed record IntegrationCompanyCreateRequest(
     Guid TenantId,
@@ -30,7 +32,8 @@ public sealed record IntegrationCompanyCreateRequest(
     string CountryCode = "ECU",
     string Timezone = "America/Guayaquil",
     string CurrencyCode = "USD",
-    string? BrandingJson = null);
+    string? BrandingJson = null
+);
 
 public sealed record IntegrationCompanyStatusDto(
     Guid Id,
@@ -41,4 +44,5 @@ public sealed record IntegrationCompanyStatusDto(
     bool OnboardingCompleted,
     CompanyOperationalStatus OperationalStatus,
     DateTime CreatedAt,
-    DateTime UpdatedAt);
+    DateTime UpdatedAt
+);

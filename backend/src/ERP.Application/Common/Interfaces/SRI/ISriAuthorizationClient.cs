@@ -17,6 +17,7 @@ public sealed class SriAuthorizationResult
     public DateTime? AuthorizationDate { get; init; }
     public string? DocumentXml { get; init; }
     public IReadOnlyList<string> Messages { get; init; } = Array.Empty<string>();
+
     /// <summary>Mismos mensajes de <see cref="Messages"/>, sin aplanar — código/tipo/mensaje/información adicional por separado.</summary>
     public IReadOnlyList<SriMessage> StructuredMessages { get; init; } = Array.Empty<SriMessage>();
     public string? ErrorMessage { get; init; }
@@ -38,5 +39,8 @@ public interface ISriAuthorizationClient
     /// transporte, nunca un estado intermedio (PENDIENTE/EN_PROCESO). Nunca lanza una excepción.
     /// </summary>
     Task<SriAuthorizationResult> CheckAsync(
-        string accessKey, string wsdlUrl, CancellationToken ct = default);
+        string accessKey,
+        string wsdlUrl,
+        CancellationToken ct = default
+    );
 }

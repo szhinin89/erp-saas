@@ -17,7 +17,14 @@ public sealed class ConfigModule : AuditableEntity
 
     private ConfigModule() { }
 
-    public static ConfigModule Create(Guid tenantId, string module, string key, string value, string dataType, Guid userId)
+    public static ConfigModule Create(
+        Guid tenantId,
+        string module,
+        string key,
+        string value,
+        string dataType,
+        Guid userId
+    )
     {
         var row = new ConfigModule
         {
@@ -45,10 +52,8 @@ public sealed class ConfigModule : AuditableEntity
     private static string NormalizeKey(string key) =>
         (key ?? string.Empty).Trim().ToLowerInvariant();
 
-    private static string NormalizeValue(string value) =>
-        (value ?? string.Empty).Trim();
+    private static string NormalizeValue(string value) => (value ?? string.Empty).Trim();
 
     private static string NormalizeDataType(string dataType) =>
         (dataType ?? "string").Trim().ToLowerInvariant();
 }
-

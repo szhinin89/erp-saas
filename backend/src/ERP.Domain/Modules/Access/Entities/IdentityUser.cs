@@ -1,6 +1,6 @@
+using System.Text.RegularExpressions;
 using ERP.Domain.Auth.ValueObjects;
 using ERP.Domain.Common;
-using System.Text.RegularExpressions;
 
 namespace ERP.Domain.Access.Entities;
 
@@ -13,6 +13,7 @@ public class IdentityUser : SystemAuditableEntity
     public string UsernameNormalized { get; private set; } = null!;
     public string FirstName { get; private set; } = null!;
     public string LastName { get; private set; } = null!;
+
     /// <summary>
     /// Dato de contacto — opcional (Fase G). No es identidad de login; algunas cuentas operativas
     /// (bodega, caja01, ventas01) no tienen buzón individual. Solo se usa hoy para el flujo
@@ -22,19 +23,24 @@ public class IdentityUser : SystemAuditableEntity
     public string? EmailNormalized { get; private set; }
     public string PasswordHash { get; private set; } = null!;
     public bool IsActive { get; private set; }
+
     /// <summary>
     /// Legado: asociación directa usuario→subscriber para usuarios single-tenant.
     /// En arquitectura multi-empresa la relación canónica es:
     /// IdentityUser → CompanyUserMembership → Company → Subscriber.
     /// No usar en guards, policies ni handlers de autorización nuevos.
     /// </summary>
-    [Obsolete("Use CompanyUserMembership chain instead. Kept for backward compat with single-tenant user records.")]
+    [Obsolete(
+        "Use CompanyUserMembership chain instead. Kept for backward compat with single-tenant user records."
+    )]
     public Guid? TenantId { get; private set; }
     public string SecurityStamp { get; private set; } = null!;
     public bool RequirePasswordReset { get; private set; }
 
-    private static readonly Regex UsernamePattern =
-        new(@"^[a-z0-9](?:[a-z0-9._-]{1,48}[a-z0-9])?$", RegexOptions.Compiled);
+    private static readonly Regex UsernamePattern = new(
+        @"^[a-z0-9](?:[a-z0-9._-]{1,48}[a-z0-9])?$",
+        RegexOptions.Compiled
+    );
 
     private IdentityUser() { }
 
@@ -48,12 +54,15 @@ public class IdentityUser : SystemAuditableEntity
         string lastName,
         string? email,
         string passwordHash,
-        Guid createdBy)
+        Guid createdBy
+    )
     {
         var normalizedUsername = NormalizeUsername(username);
         if (!UsernamePattern.IsMatch(normalizedUsername))
             throw new ArgumentException(
-                "El username debe tener 3-50 caracteres, minúsculas/números/./_/-,  sin espacios ni '@'.", nameof(username));
+                "El username debe tener 3-50 caracteres, minúsculas/números/./_/-,  sin espacios ni '@'.",
+                nameof(username)
+            );
 
         var user = new IdentityUser
         {
@@ -119,9 +128,7 @@ public class IdentityUser : SystemAuditableEntity
         SetUpdated(updatedBy);
     }
 
-    private static string NormalizeEmail(string email)
-        => email.Trim().ToLowerInvariant();
+    private static string NormalizeEmail(string email) => email.Trim().ToLowerInvariant();
 
-    private static string NormalizeUsername(string username)
-        => username.Trim().ToLowerInvariant();
+    private static string NormalizeUsername(string username) => username.Trim().ToLowerInvariant();
 }

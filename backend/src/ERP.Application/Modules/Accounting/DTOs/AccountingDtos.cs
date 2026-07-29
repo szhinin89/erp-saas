@@ -10,7 +10,8 @@ public sealed record AccountDto(
     bool AllowsPosting,
     bool IsActive,
     DateTime CreatedAt,
-    DateTime? UpdatedAt);
+    DateTime? UpdatedAt
+);
 
 public sealed record AccountingPeriodDto(
     Guid Id,
@@ -22,7 +23,8 @@ public sealed record AccountingPeriodDto(
     DateTime? ClosedAtUtc,
     Guid? ClosedBy,
     DateTime CreatedAt,
-    DateTime? UpdatedAt);
+    DateTime? UpdatedAt
+);
 
 public sealed record PostingRuleDto(
     Guid Id,
@@ -34,11 +36,17 @@ public sealed record PostingRuleDto(
     bool IsActive,
     IReadOnlyList<PostingRuleLineDto> Lines,
     DateTime CreatedAt,
-    DateTime? UpdatedAt);
+    DateTime? UpdatedAt
+);
 
 /// <summary>Fase 5.6.2 — expone las líneas reales que consume JournalFactory (rule.Lines), a diferencia de los campos planos legacy DebitAccountId/CreditAccountId.</summary>
 public sealed record PostingRuleLineDto(
-    Guid Id, Guid AccountId, string Nature, string AmountKind, short SortOrder);
+    Guid Id,
+    Guid AccountId,
+    string Nature,
+    string AmountKind,
+    short SortOrder
+);
 
 /// <summary>Fase 5.4 — expone el resultado de ReverseJournalEntryCommand.</summary>
 public sealed record JournalEntryDto(
@@ -56,4 +64,5 @@ public sealed record JournalEntryDto(
     Guid? OriginalJournalEntryId,
     Guid? ReverseJournalEntryId,
     DateTime? ReversedAtUtc,
-    string? ReverseReason);
+    string? ReverseReason
+);

@@ -11,10 +11,12 @@ public sealed record SriCertificateInfoDto(
     int? DaysRemaining,
     string? Subject,
     string? Issuer,
-    string? ErrorMessage);
+    string? ErrorMessage
+);
 
 public sealed record SriCertificateUploadResultDto(
     string FileName,
     long SizeBytes,
     DateTime UploadedAtUtc,
-    SriCertificateInfoDto? Inspection);
+    SriCertificateInfoDto? Inspection
+);

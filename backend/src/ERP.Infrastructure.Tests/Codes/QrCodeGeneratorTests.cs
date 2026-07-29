@@ -16,7 +16,9 @@ public sealed class QrCodeGeneratorTests
     {
         var sut = CreateSut();
 
-        var result = sut.Generate(new QrGenerationRequest("1234567890123456789012345678901234567890123456789"));
+        var result = sut.Generate(
+            new QrGenerationRequest("1234567890123456789012345678901234567890123456789")
+        );
 
         result.PngBytes.Should().NotBeNullOrEmpty();
         result.PngBytes.Take(4).Should().Equal(PngSignature);

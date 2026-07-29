@@ -13,8 +13,8 @@ namespace ERP.Infrastructure.Tests.Services.ElectronicDocuments;
 /// </summary>
 public sealed class EmbeddedXmlSchemaProviderTests
 {
-    private static EmbeddedXmlSchemaProvider BuildProvider()
-        => new(NullLogger<EmbeddedXmlSchemaProvider>.Instance);
+    private static EmbeddedXmlSchemaProvider BuildProvider() =>
+        new(NullLogger<EmbeddedXmlSchemaProvider>.Instance);
 
     [Fact]
     public async Task GetSchemaSetAsync_for_unknown_document_type_returns_null()
@@ -57,7 +57,9 @@ public sealed class EmbeddedXmlSchemaProviderTests
     [InlineData(ElectronicDocumentType.ShippingGuide, "1.1.0")]
     [InlineData(ElectronicDocumentType.PurchaseSettlement, "1.1.0")]
     public async Task GetSchemaSetAsync_resolves_manifest_entry_for_every_document_type_present(
-        ElectronicDocumentType documentType, string version)
+        ElectronicDocumentType documentType,
+        string version
+    )
     {
         // Todos los tipos declaran la misma dependencia común (Common/xmldsig-core-schema.xsd,
         // ver manifest.json) — con ella embebida y los XSD propios bien formados, ninguno debe

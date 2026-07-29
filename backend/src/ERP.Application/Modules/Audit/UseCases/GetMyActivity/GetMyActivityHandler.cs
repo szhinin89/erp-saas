@@ -5,7 +5,8 @@ using MediatR;
 
 namespace ERP.Application.Audit.UseCases.GetMyActivity;
 
-public class GetMyActivityHandler : IRequestHandler<GetMyActivityQuery, Result<IReadOnlyList<UserActivityDto>>>
+public class GetMyActivityHandler
+    : IRequestHandler<GetMyActivityQuery, Result<IReadOnlyList<UserActivityDto>>>
 {
     private readonly IUserActivityRepository _repo;
     private readonly ICurrentTenant _currentTenant;
@@ -14,20 +15,27 @@ public class GetMyActivityHandler : IRequestHandler<GetMyActivityQuery, Result<I
     public GetMyActivityHandler(
         IUserActivityRepository repo,
         ICurrentTenant currentTenant,
-        ICurrentUser currentUser)
+        ICurrentUser currentUser
+    )
     {
         _repo = repo;
         _currentTenant = currentTenant;
         _currentUser = currentUser;
     }
 
-    public async Task<Result<IReadOnlyList<UserActivityDto>>> Handle(GetMyActivityQuery query, CancellationToken cancellationToken)
+    public async Task<Result<IReadOnlyList<UserActivityDto>>> Handle(
+        GetMyActivityQuery query,
+        CancellationToken cancellationToken
+    )
     {
         if (!_currentUser.IsAuthenticated || _currentUser.UserId == Guid.Empty)
             return Result<IReadOnlyList<UserActivityDto>>.Failure("No autenticado.");
 
         var page = query.Page < 1 ? 1 : query.Page;
-        var pageSize = query.PageSize < 1 ? 25 : query.PageSize > 100 ? 100 : query.PageSize;
+        var pageSize =
+            query.PageSize < 1 ? 25
+            : query.PageSize > 100 ? 100
+            : query.PageSize;
         var skip = (page - 1) * pageSize;
 
         var list = await _repo.GetMyRecentAsync(
@@ -36,10 +44,10 @@ public class GetMyActivityHandler : IRequestHandler<GetMyActivityQuery, Result<I
             query.Module,
             skip,
             pageSize,
-            cancellationToken);
+            cancellationToken
+        );
 
-        var dto = list
-            .Select(x => new UserActivityDto(
+        var dto = list.Select(x => new UserActivityDto(
                 x.Id,
                 x.Module,
                 x.Action,
@@ -48,7 +56,8 @@ public class GetMyActivityHandler : IRequestHandler<GetMyActivityQuery, Result<I
                 x.Description,
                 x.CreatedAt,
                 x.UserEmail,
-                x.UserFullName))
+                x.UserFullName
+            ))
             .ToList();
 
         return Result<IReadOnlyList<UserActivityDto>>.Success(dto);

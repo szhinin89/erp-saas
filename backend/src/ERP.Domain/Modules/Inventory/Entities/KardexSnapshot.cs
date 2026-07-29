@@ -23,8 +23,9 @@ public sealed class KardexSnapshot : ITenantScopedEntity
         DateTime snapshotDate,
         decimal balanceQty,
         decimal balanceValue,
-        decimal averageCost)
-        => new()
+        decimal averageCost
+    ) =>
+        new()
         {
             Id = Guid.NewGuid(),
             TenantId = tenantId,

@@ -11,7 +11,13 @@ public sealed class ItemAuditConfiguration : IEntityTypeConfiguration<ItemAudit>
     {
         builder.ConfigureAuditBase("item_audit");
 
-        builder.Property(x => x.OldBaseSalePrice).HasColumnName("old_base_sale_price").HasColumnType("numeric(18,6)");
-        builder.Property(x => x.NewBaseSalePrice).HasColumnName("new_base_sale_price").HasColumnType("numeric(18,6)");
+        builder
+            .Property(x => x.OldBaseSalePrice)
+            .HasColumnName("old_base_sale_price")
+            .HasColumnType("numeric(18,6)");
+        builder
+            .Property(x => x.NewBaseSalePrice)
+            .HasColumnName("new_base_sale_price")
+            .HasColumnType("numeric(18,6)");
     }
 }

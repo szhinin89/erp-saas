@@ -12,7 +12,8 @@ namespace ERP.Application.Modules.Accounting.Posting.Translators;
 /// GrandTotal transporta el monto cobrado, mismo campo genérico que ya usan los traductores de
 /// Ventas/Compras para "el monto total del hecho".
 /// </summary>
-public sealed class CollectionAppliedPostingTranslator : INotificationHandler<CollectionAppliedEvent>
+public sealed class CollectionAppliedPostingTranslator
+    : INotificationHandler<CollectionAppliedEvent>
 {
     private const string SourceModuleName = "Finance";
     private const string FactTypeName = "CollectionApplied";
@@ -21,7 +22,9 @@ public sealed class CollectionAppliedPostingTranslator : INotificationHandler<Co
     private readonly ILogger<CollectionAppliedPostingTranslator> _logger;
 
     public CollectionAppliedPostingTranslator(
-        IPostingEngine postingEngine, ILogger<CollectionAppliedPostingTranslator> logger)
+        IPostingEngine postingEngine,
+        ILogger<CollectionAppliedPostingTranslator> logger
+    )
     {
         _postingEngine = postingEngine;
         _logger = logger;
@@ -30,8 +33,18 @@ public sealed class CollectionAppliedPostingTranslator : INotificationHandler<Co
     public async Task Handle(CollectionAppliedEvent e, CancellationToken ct)
     {
         var fact = new PostingFact(
-            e.TenantId!.Value, e.CompanyId, SourceModuleName, FactTypeName, e.PaymentId, e.PaymentDate,
-            0m, 0m, 0m, 0m, e.Amount);
+            e.TenantId!.Value,
+            e.CompanyId,
+            SourceModuleName,
+            FactTypeName,
+            e.PaymentId,
+            e.PaymentDate,
+            0m,
+            0m,
+            0m,
+            0m,
+            e.Amount
+        );
 
         var result = await _postingEngine.PostAsync(fact, ct);
 
@@ -39,7 +52,10 @@ public sealed class CollectionAppliedPostingTranslator : INotificationHandler<Co
         {
             _logger.LogWarning(
                 "Posting failed for Collection {PaymentId}: {Code} — {Error}",
-                e.PaymentId, result.Code, result.Error);
+                e.PaymentId,
+                result.Code,
+                result.Error
+            );
         }
     }
 }

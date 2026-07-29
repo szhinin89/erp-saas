@@ -12,7 +12,8 @@ public sealed class SecurityContextHealthCheck : IHealthCheck
 
     public Task<HealthCheckResult> CheckHealthAsync(
         HealthCheckContext context,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default
+    )
     {
         using var scope = _services.CreateScope();
         var tenant = scope.ServiceProvider.GetService<ICurrentTenant>();
@@ -20,7 +21,9 @@ public sealed class SecurityContextHealthCheck : IHealthCheck
         var user = scope.ServiceProvider.GetService<ICurrentUser>();
 
         if (tenant is null || company is null || user is null)
-            return Task.FromResult(HealthCheckResult.Unhealthy("Servicios de contexto no registrados."));
+            return Task.FromResult(
+                HealthCheckResult.Unhealthy("Servicios de contexto no registrados.")
+            );
 
         return Task.FromResult(HealthCheckResult.Healthy("Context services registered."));
     }

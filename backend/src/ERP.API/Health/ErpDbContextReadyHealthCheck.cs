@@ -10,7 +10,8 @@ public sealed partial class ErpDbContextReadyHealthCheck : IHealthCheck
 
     public ErpDbContextReadyHealthCheck(
         IServiceScopeFactory scopeFactory,
-        ILogger<ErpDbContextReadyHealthCheck> logger)
+        ILogger<ErpDbContextReadyHealthCheck> logger
+    )
     {
         _scopeFactory = scopeFactory;
         _logger = logger;
@@ -18,7 +19,8 @@ public sealed partial class ErpDbContextReadyHealthCheck : IHealthCheck
 
     public async Task<HealthCheckResult> CheckHealthAsync(
         HealthCheckContext context,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default
+    )
     {
         try
         {
@@ -44,10 +46,16 @@ public sealed partial class ErpDbContextReadyHealthCheck : IHealthCheck
         }
     }
 
-    [LoggerMessage(Level = LogLevel.Information, Message = "Health/ready database provider: {Provider}")]
+    [LoggerMessage(
+        Level = LogLevel.Information,
+        Message = "Health/ready database provider: {Provider}"
+    )]
     private partial void LogDatabaseProvider(string provider);
 
-    [LoggerMessage(Level = LogLevel.Information, Message = "Health/ready CanConnect result: {CanConnect}")]
+    [LoggerMessage(
+        Level = LogLevel.Information,
+        Message = "Health/ready CanConnect result: {CanConnect}"
+    )]
     private partial void LogCanConnectResult(bool canConnect);
 
     [LoggerMessage(Level = LogLevel.Error, Message = "Health/ready database check failed.")]

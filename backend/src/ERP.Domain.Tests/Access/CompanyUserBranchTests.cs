@@ -6,7 +6,13 @@ namespace ERP.Domain.Tests.Access;
 public sealed class CompanyUserBranchTests
 {
     private static CompanyUserBranch CreateEntity() =>
-        CompanyUserBranch.Create(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid());
+        CompanyUserBranch.Create(
+            Guid.NewGuid(),
+            Guid.NewGuid(),
+            Guid.NewGuid(),
+            Guid.NewGuid(),
+            Guid.NewGuid()
+        );
 
     [Fact]
     public void Create_queda_activa_por_defecto()
@@ -21,7 +27,13 @@ public sealed class CompanyUserBranchTests
     {
         var createdBy = Guid.NewGuid();
 
-        var entity = CompanyUserBranch.Create(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), createdBy);
+        var entity = CompanyUserBranch.Create(
+            Guid.NewGuid(),
+            Guid.NewGuid(),
+            Guid.NewGuid(),
+            Guid.NewGuid(),
+            createdBy
+        );
 
         entity.CreatedBy.Should().Be(createdBy);
     }
@@ -29,7 +41,14 @@ public sealed class CompanyUserBranchTests
     [Fact]
     public void Create_con_CompanyId_vacio_lanza_ArgumentException()
     {
-        var act = () => CompanyUserBranch.Create(Guid.NewGuid(), Guid.Empty, Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid());
+        var act = () =>
+            CompanyUserBranch.Create(
+                Guid.NewGuid(),
+                Guid.Empty,
+                Guid.NewGuid(),
+                Guid.NewGuid(),
+                Guid.NewGuid()
+            );
 
         act.Should().Throw<ArgumentException>();
     }
@@ -37,7 +56,14 @@ public sealed class CompanyUserBranchTests
     [Fact]
     public void Create_con_CompanyUserMembershipId_vacio_lanza_ArgumentException()
     {
-        var act = () => CompanyUserBranch.Create(Guid.NewGuid(), Guid.NewGuid(), Guid.Empty, Guid.NewGuid(), Guid.NewGuid());
+        var act = () =>
+            CompanyUserBranch.Create(
+                Guid.NewGuid(),
+                Guid.NewGuid(),
+                Guid.Empty,
+                Guid.NewGuid(),
+                Guid.NewGuid()
+            );
 
         act.Should().Throw<ArgumentException>();
     }
@@ -45,7 +71,14 @@ public sealed class CompanyUserBranchTests
     [Fact]
     public void Create_con_BranchId_vacio_lanza_ArgumentException()
     {
-        var act = () => CompanyUserBranch.Create(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), Guid.Empty, Guid.NewGuid());
+        var act = () =>
+            CompanyUserBranch.Create(
+                Guid.NewGuid(),
+                Guid.NewGuid(),
+                Guid.NewGuid(),
+                Guid.Empty,
+                Guid.NewGuid()
+            );
 
         act.Should().Throw<ArgumentException>();
     }

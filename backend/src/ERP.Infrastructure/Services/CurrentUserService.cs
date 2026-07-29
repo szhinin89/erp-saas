@@ -1,6 +1,6 @@
+using System.Security.Claims;
 using ERP.Application.Common;
 using Microsoft.AspNetCore.Http;
-using System.Security.Claims;
 
 namespace ERP.Infrastructure.Services;
 
@@ -17,23 +17,21 @@ public class CurrentUserService : ICurrentUser
     {
         get
         {
-            var claim = _httpContextAccessor.HttpContext?
-                .User.FindFirst(ClaimTypes.NameIdentifier)?.Value
-                ?? _httpContextAccessor.HttpContext?
-                .User.FindFirst("sub")?.Value;
+            var claim =
+                _httpContextAccessor.HttpContext?.User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                ?? _httpContextAccessor.HttpContext?.User.FindFirst("sub")?.Value;
 
             return Guid.TryParse(claim, out var id) ? id : Guid.Empty;
         }
     }
 
-    public bool IsAuthenticated
-        => _httpContextAccessor.HttpContext?.User.Identity?.IsAuthenticated ?? false;
+    public bool IsAuthenticated =>
+        _httpContextAccessor.HttpContext?.User.Identity?.IsAuthenticated ?? false;
 
-    public string? Username
-        => _httpContextAccessor.HttpContext?.User.FindFirst("username")?.Value;
+    public string? Username => _httpContextAccessor.HttpContext?.User.FindFirst("username")?.Value;
 
-    public string? Email
-        => _httpContextAccessor.HttpContext?.User.FindFirst(ClaimTypes.Email)?.Value;
+    public string? Email =>
+        _httpContextAccessor.HttpContext?.User.FindFirst(ClaimTypes.Email)?.Value;
 
     /// <summary>
     /// Nombre visible completo, leído de <c>ClaimTypes.Name</c> (claim vigente, emitida por
@@ -43,10 +41,9 @@ public class CurrentUserService : ICurrentUser
     /// de emitirse en tokens nuevos. Retirar el fallback una vez expiren los tokens antiguos
     /// (≤ Jwt:ExpirationMinutes desde el despliegue de este cambio).
     /// </summary>
-    public string? FullName
-        => _httpContextAccessor.HttpContext?.User.FindFirst(ClaimTypes.Name)?.Value
+    public string? FullName =>
+        _httpContextAccessor.HttpContext?.User.FindFirst(ClaimTypes.Name)?.Value
         ?? _httpContextAccessor.HttpContext?.User.FindFirst(ClaimTypes.GivenName)?.Value;
 
-    public string? Role
-        => _httpContextAccessor.HttpContext?.User.FindFirst(ClaimTypes.Role)?.Value;
+    public string? Role => _httpContextAccessor.HttpContext?.User.FindFirst(ClaimTypes.Role)?.Value;
 }

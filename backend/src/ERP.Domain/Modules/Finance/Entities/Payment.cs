@@ -56,10 +56,14 @@ public sealed class Payment : AuditableEntity, ITenantScopedEntity, ICompanyOper
         DateOnly paymentDate,
         Guid? paymentMethodId,
         string? reference,
-        Guid createdBy)
+        Guid createdBy
+    )
     {
         if (partnerId == Guid.Empty)
-            throw new ArgumentException("El cliente o proveedor es obligatorio.", nameof(partnerId));
+            throw new ArgumentException(
+                "El cliente o proveedor es obligatorio.",
+                nameof(partnerId)
+            );
         if (amount <= 0)
             throw new ArgumentException("El monto del pago debe ser mayor a cero.", nameof(amount));
 
@@ -93,11 +97,27 @@ public sealed class Payment : AuditableEntity, ITenantScopedEntity, ICompanyOper
     {
         if (Status != PaymentStatus.Draft)
             throw new InvalidOperationException(
-                $"Solo se pueden agregar líneas de aplicación mientras el pago está en Draft (estado actual: {Status}).");
+                $"Solo se pueden agregar líneas de aplicación mientras el pago está en Draft (estado actual: {Status})."
+            );
 
-        var line = Direction == PaymentDirection.Collection
-            ? PaymentApplicationLine.CreateForReceivable(Id, TenantId, documentId, installmentId, appliedAmount, (short)_lines.Count)
-            : PaymentApplicationLine.CreateForPayable(Id, TenantId, documentId, installmentId, appliedAmount, (short)_lines.Count);
+        var line =
+            Direction == PaymentDirection.Collection
+                ? PaymentApplicationLine.CreateForReceivable(
+                    Id,
+                    TenantId,
+                    documentId,
+                    installmentId,
+                    appliedAmount,
+                    (short)_lines.Count
+                )
+                : PaymentApplicationLine.CreateForPayable(
+                    Id,
+                    TenantId,
+                    documentId,
+                    installmentId,
+                    appliedAmount,
+                    (short)_lines.Count
+                );
 
         _lines.Add(line);
     }
@@ -114,7 +134,8 @@ public sealed class Payment : AuditableEntity, ITenantScopedEntity, ICompanyOper
         var totalApplied = _lines.Sum(l => l.AppliedAmount);
         if (totalApplied != Amount)
             throw new InvalidOperationException(
-                $"El pago no está balanceado: aplicado ({totalApplied:F2}) distinto del monto del pago ({Amount:F2}).");
+                $"El pago no está balanceado: aplicado ({totalApplied:F2}) distinto del monto del pago ({Amount:F2})."
+            );
     }
 
     /// <summary>
@@ -126,9 +147,12 @@ public sealed class Payment : AuditableEntity, ITenantScopedEntity, ICompanyOper
     {
         if (Status != PaymentStatus.Draft)
             throw new InvalidOperationException(
-                $"Solo un pago en estado Draft puede aplicarse (estado actual: {Status}).");
+                $"Solo un pago en estado Draft puede aplicarse (estado actual: {Status})."
+            );
         if (_lines.Count == 0)
-            throw new InvalidOperationException("El pago debe tener al menos una línea de aplicación.");
+            throw new InvalidOperationException(
+                "El pago debe tener al menos una línea de aplicación."
+            );
 
         EnsureBalanced();
 
@@ -136,9 +160,25 @@ public sealed class Payment : AuditableEntity, ITenantScopedEntity, ICompanyOper
         AppliedAtUtc = DateTime.UtcNow;
         SetUpdated(appliedBy);
 
-        RaiseDomainEvent(Direction == PaymentDirection.Collection
-            ? new CollectionAppliedEvent(TenantId, Id, CompanyId, PartnerId, Amount, PaymentDate)
-            : new SupplierPaymentAppliedEvent(TenantId, Id, CompanyId, PartnerId, Amount, PaymentDate));
+        RaiseDomainEvent(
+            Direction == PaymentDirection.Collection
+                ? new CollectionAppliedEvent(
+                    TenantId,
+                    Id,
+                    CompanyId,
+                    PartnerId,
+                    Amount,
+                    PaymentDate
+                )
+                : new SupplierPaymentAppliedEvent(
+                    TenantId,
+                    Id,
+                    CompanyId,
+                    PartnerId,
+                    Amount,
+                    PaymentDate
+                )
+        );
     }
 
     /// <summary>
@@ -154,7 +194,8 @@ public sealed class Payment : AuditableEntity, ITenantScopedEntity, ICompanyOper
     {
         if (Status != PaymentStatus.Applied)
             throw new InvalidOperationException(
-                $"Solo un pago Applied puede reversarse (estado actual: {Status}).");
+                $"Solo un pago Applied puede reversarse (estado actual: {Status})."
+            );
         if (string.IsNullOrWhiteSpace(reason))
             throw new ArgumentException("El motivo del reverso es obligatorio.", nameof(reason));
 
@@ -165,8 +206,24 @@ public sealed class Payment : AuditableEntity, ITenantScopedEntity, ICompanyOper
         ReverseReason = trimmedReason;
         SetUpdated(reversedBy);
 
-        RaiseDomainEvent(Direction == PaymentDirection.Collection
-            ? new CollectionReversedEvent(TenantId, Id, CompanyId, PartnerId, Amount, trimmedReason)
-            : new SupplierPaymentReversedEvent(TenantId, Id, CompanyId, PartnerId, Amount, trimmedReason));
+        RaiseDomainEvent(
+            Direction == PaymentDirection.Collection
+                ? new CollectionReversedEvent(
+                    TenantId,
+                    Id,
+                    CompanyId,
+                    PartnerId,
+                    Amount,
+                    trimmedReason
+                )
+                : new SupplierPaymentReversedEvent(
+                    TenantId,
+                    Id,
+                    CompanyId,
+                    PartnerId,
+                    Amount,
+                    trimmedReason
+                )
+        );
     }
 }

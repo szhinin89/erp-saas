@@ -21,8 +21,10 @@ public sealed class PricingAdjustmentStrategyResolver : IPricingAdjustmentStrate
         _strategies = strategies.ToDictionary(s => s.RuleType);
     }
 
-    public IPricingAdjustmentStrategy Resolve(PricingRuleType ruleType)
-        => _strategies.TryGetValue(ruleType, out var strategy)
+    public IPricingAdjustmentStrategy Resolve(PricingRuleType ruleType) =>
+        _strategies.TryGetValue(ruleType, out var strategy)
             ? strategy
-            : throw new InvalidOperationException($"No hay una estrategia de ajuste registrada para el tipo de regla '{ruleType}'.");
+            : throw new InvalidOperationException(
+                $"No hay una estrategia de ajuste registrada para el tipo de regla '{ruleType}'."
+            );
 }

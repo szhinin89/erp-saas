@@ -11,7 +11,8 @@ internal static class TestErpDbContextFactory
         DbContextOptions<ErpDbContext> options,
         ICurrentTenant tenant,
         IPublisher publisher,
-        ICurrentCompany? company = null)
+        ICurrentCompany? company = null
+    )
     {
         company ??= new TestCurrentCompany();
         return new ErpDbContext(options, tenant, publisher, company);

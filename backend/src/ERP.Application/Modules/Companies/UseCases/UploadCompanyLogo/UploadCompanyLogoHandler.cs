@@ -7,7 +7,8 @@ using MediatR;
 
 namespace ERP.Application.Modules.Companies.UseCases.UploadCompanyLogo;
 
-public sealed class UploadCompanyLogoHandler : IRequestHandler<UploadCompanyLogoCommand, Result<CompanyProfileDto>>
+public sealed class UploadCompanyLogoHandler
+    : IRequestHandler<UploadCompanyLogoCommand, Result<CompanyProfileDto>>
 {
     private const string LogoRole = "logo";
 
@@ -20,7 +21,8 @@ public sealed class UploadCompanyLogoHandler : IRequestHandler<UploadCompanyLogo
         ICompanyAccessGuard accessGuard,
         ICompanyRepository companies,
         IMediaService media,
-        ICurrentUser currentUser)
+        ICurrentUser currentUser
+    )
     {
         _accessGuard = accessGuard;
         _companies = companies;
@@ -28,7 +30,10 @@ public sealed class UploadCompanyLogoHandler : IRequestHandler<UploadCompanyLogo
         _currentUser = currentUser;
     }
 
-    public async Task<Result<CompanyProfileDto>> Handle(UploadCompanyLogoCommand request, CancellationToken cancellationToken)
+    public async Task<Result<CompanyProfileDto>> Handle(
+        UploadCompanyLogoCommand request,
+        CancellationToken cancellationToken
+    )
     {
         var access = await _accessGuard.RequireCurrentCompanyAsync(cancellationToken);
         if (!access.IsSuccess)
@@ -48,12 +53,16 @@ public sealed class UploadCompanyLogoHandler : IRequestHandler<UploadCompanyLogo
                 MediaType: MediaType.Image,
                 Visibility: MediaVisibility.TenantOnly,
                 Content: request.File,
-                UserId: _currentUser.UserId),
-            cancellationToken);
+                UserId: _currentUser.UserId
+            ),
+            cancellationToken
+        );
 
         if (!uploadResult.IsSuccess)
             return Result<CompanyProfileDto>.Failure(uploadResult.Error!, uploadResult.Code);
 
-        return Result<CompanyProfileDto>.Success(CompanyProfileDto.FromEntity(company, uploadResult.Value!));
+        return Result<CompanyProfileDto>.Success(
+            CompanyProfileDto.FromEntity(company, uploadResult.Value!)
+        );
     }
 }

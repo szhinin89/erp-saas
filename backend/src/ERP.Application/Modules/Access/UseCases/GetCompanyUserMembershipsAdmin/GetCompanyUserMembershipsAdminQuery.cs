@@ -17,6 +17,6 @@ namespace ERP.Application.Access.UseCases.GetCompanyUserMembershipsAdmin;
 /// RequireCurrentCompanyAsync antes de que el handler se ejecute — mismo mecanismo ya usado por
 /// UpsertCompanyUserMembershipAdminCommand/RevokeCompanyUserMembershipAdminCommand (Fase I-A).
 /// </summary>
-public sealed record GetCompanyUserMembershipsAdminQuery(
-    bool OnlyActive = false
-) : IRequest<Result<IReadOnlyList<CompanyUserMembershipAdminDto>>>, IRequiresCompanyContext;
+public sealed record GetCompanyUserMembershipsAdminQuery(bool OnlyActive = false)
+    : IRequest<Result<IReadOnlyList<CompanyUserMembershipAdminDto>>>,
+        IRequiresCompanyContext;

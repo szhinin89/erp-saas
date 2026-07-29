@@ -23,15 +23,30 @@ public sealed class ItemPackagingLevel : AuditableEntity
     private ItemPackagingLevel() { }
 
     public static ItemPackagingLevel Create(
-        Guid itemId, Guid tenantId,
-        string name, int level, decimal baseQuantity, string uomCode,
-        string? barcode, decimal? weight,
-        bool isBaseUnit, bool isPurchaseDefault, bool isSaleDefault, Guid createdBy)
+        Guid itemId,
+        Guid tenantId,
+        string name,
+        int level,
+        decimal baseQuantity,
+        string uomCode,
+        string? barcode,
+        decimal? weight,
+        bool isBaseUnit,
+        bool isPurchaseDefault,
+        bool isSaleDefault,
+        Guid createdBy
+    )
     {
         if (string.IsNullOrWhiteSpace(name))
-            throw new ArgumentException("El nombre del nivel de empaque es obligatorio.", nameof(name));
+            throw new ArgumentException(
+                "El nombre del nivel de empaque es obligatorio.",
+                nameof(name)
+            );
         if (baseQuantity <= 0)
-            throw new ArgumentException("La cantidad base debe ser mayor que cero.", nameof(baseQuantity));
+            throw new ArgumentException(
+                "La cantidad base debe ser mayor que cero.",
+                nameof(baseQuantity)
+            );
         if (string.IsNullOrWhiteSpace(uomCode))
             throw new ArgumentException("El código UOM es obligatorio.", nameof(uomCode));
 

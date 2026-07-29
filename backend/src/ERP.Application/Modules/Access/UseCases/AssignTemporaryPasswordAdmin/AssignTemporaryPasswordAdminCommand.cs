@@ -16,7 +16,6 @@ namespace ERP.Application.Access.UseCases.AssignTemporaryPasswordAdmin;
 /// implemente el envío por correo, este campo pasará a nullable — null significará "generar
 /// automáticamente" — sin cambiar el resto de la firma ni del handler.
 /// </summary>
-public sealed record AssignTemporaryPasswordAdminCommand(
-    string Username,
-    string TemporaryPassword
-) : IRequest<Result<string>>, IRequiresCompanyContext;
+public sealed record AssignTemporaryPasswordAdminCommand(string Username, string TemporaryPassword)
+    : IRequest<Result<string>>,
+        IRequiresCompanyContext;

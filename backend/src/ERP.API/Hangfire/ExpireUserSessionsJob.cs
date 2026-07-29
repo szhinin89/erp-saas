@@ -15,7 +15,10 @@ public sealed partial class ExpireUserSessionsJob : IExpireUserSessionsJob
     private readonly IServiceScopeFactory _scopeFactory;
     private readonly ILogger<ExpireUserSessionsJob> _logger;
 
-    public ExpireUserSessionsJob(IServiceScopeFactory scopeFactory, ILogger<ExpireUserSessionsJob> logger)
+    public ExpireUserSessionsJob(
+        IServiceScopeFactory scopeFactory,
+        ILogger<ExpireUserSessionsJob> logger
+    )
     {
         _scopeFactory = scopeFactory;
         _logger = logger;
@@ -43,12 +46,21 @@ public sealed partial class ExpireUserSessionsJob : IExpireUserSessionsJob
         }
     }
 
-    [LoggerMessage(Level = LogLevel.Information, Message = "ExpireUserSessionsJob: {Count} sesiones expiradas")]
+    [LoggerMessage(
+        Level = LogLevel.Information,
+        Message = "ExpireUserSessionsJob: {Count} sesiones expiradas"
+    )]
     private partial void LogExpired(int count);
 
-    [LoggerMessage(Level = LogLevel.Warning, Message = "ExpireUserSessionsJob: el comando no resolvió: {Reason}")]
+    [LoggerMessage(
+        Level = LogLevel.Warning,
+        Message = "ExpireUserSessionsJob: el comando no resolvió: {Reason}"
+    )]
     private partial void LogCommandFailed(string? reason);
 
-    [LoggerMessage(Level = LogLevel.Error, Message = "ExpireUserSessionsJob: excepción no controlada")]
+    [LoggerMessage(
+        Level = LogLevel.Error,
+        Message = "ExpireUserSessionsJob: excepción no controlada"
+    )]
     private partial void LogThrew(Exception ex);
 }

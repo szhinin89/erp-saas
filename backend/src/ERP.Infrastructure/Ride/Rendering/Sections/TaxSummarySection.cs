@@ -1,7 +1,7 @@
+using System.Globalization;
 using ERP.Application.Modules.Ride.Templates;
 using QuestPDF.Fluent;
 using QuestPDF.Infrastructure;
-using System.Globalization;
 
 namespace ERP.Infrastructure.Ride.Rendering.Sections;
 
@@ -55,77 +55,115 @@ public static class TaxSummarySection
         // ver InvoiceRideXmlParser.ParseDocumentTax). "No objeto"/"Exento" se excluyen de esta
         // agrupación por tarifa numérica — tienen sus propias filas dedicadas más abajo (por
         // codigoPorcentaje, no por Rate) para no contar dos veces la misma base imponible.
-        var actualRatesFound = layout.Lines
-            .SelectMany(l => l.Taxes)
-            .Where(t => t.TaxCode == VatTaxCode && t.Rate.HasValue
+        var actualRatesFound = layout
+            .Lines.SelectMany(l => l.Taxes)
+            .Where(t =>
+                t.TaxCode == VatTaxCode
+                && t.Rate.HasValue
                 && t.TaxPercentageCode != NotSubjectToVatPercentageCode
-                && t.TaxPercentageCode != ExemptFromVatPercentageCode)
+                && t.TaxPercentageCode != ExemptFromVatPercentageCode
+            )
             .GroupBy(t => t.Rate!.Value)
-            .ToDictionary(g => g.Key, g => (Base: g.Sum(t => t.TaxableBase), Amount: g.Sum(t => t.TaxAmount)));
+            .ToDictionary(
+                g => g.Key,
+                g => (Base: g.Sum(t => t.TaxableBase), Amount: g.Sum(t => t.TaxAmount))
+            );
 
         // Las tarifas estándar siempre se muestran (0.00 si no aplican); cualquier tarifa real
         // adicional encontrada en el XML se agrega sin reemplazarlas — nunca se oculta un valor
         // real por no estar en la lista estándar.
-        var vatByRate = StandardVatRates.Concat(actualRatesFound.Keys).Distinct()
+        var vatByRate = StandardVatRates
+            .Concat(actualRatesFound.Keys)
+            .Distinct()
             .OrderByDescending(rate => rate)
             .Select(rate =>
             {
-                var (baseAmount, amount) = actualRatesFound.TryGetValue(rate, out var found) ? found : (0m, 0m);
+                var (baseAmount, amount) = actualRatesFound.TryGetValue(rate, out var found)
+                    ? found
+                    : (0m, 0m);
                 return (Rate: rate, Base: baseAmount, Amount: amount);
             })
             .ToList();
 
-        var notSubjectToVatBase = layout.TaxSummary
-            .Where(t => t.TaxCode == VatTaxCode && t.TaxPercentageCode == NotSubjectToVatPercentageCode)
+        var notSubjectToVatBase = layout
+            .TaxSummary.Where(t =>
+                t.TaxCode == VatTaxCode && t.TaxPercentageCode == NotSubjectToVatPercentageCode
+            )
             .Sum(t => t.TaxableBase);
-        var exemptFromVatBase = layout.TaxSummary
-            .Where(t => t.TaxCode == VatTaxCode && t.TaxPercentageCode == ExemptFromVatPercentageCode)
+        var exemptFromVatBase = layout
+            .TaxSummary.Where(t =>
+                t.TaxCode == VatTaxCode && t.TaxPercentageCode == ExemptFromVatPercentageCode
+            )
             .Sum(t => t.TaxableBase);
         var iceTotal = layout.TaxSummary.Where(t => t.TaxCode == IceTaxCode).Sum(t => t.TaxAmount);
-        var irbpnrTotal = layout.TaxSummary.Where(t => t.TaxCode == IrbpnrTaxCode).Sum(t => t.TaxAmount);
+        var irbpnrTotal = layout
+            .TaxSummary.Where(t => t.TaxCode == IrbpnrTaxCode)
+            .Sum(t => t.TaxAmount);
 
-        container.RideBox().Padding(8).Column(column =>
-        {
-            column.Spacing(2);
+        container
+            .RideBox()
+            .Padding(8)
+            .Column(column =>
+            {
+                column.Spacing(2);
 
-            foreach (var (rate, baseAmount, _) in vatByRate)
-                TotalRow(column, $"SUBTOTAL {rate.ToString("0.##", CultureInfo.InvariantCulture)}%", baseAmount, bold: false);
+                foreach (var (rate, baseAmount, _) in vatByRate)
+                    TotalRow(
+                        column,
+                        $"SUBTOTAL {rate.ToString("0.##", CultureInfo.InvariantCulture)}%",
+                        baseAmount,
+                        bold: false
+                    );
 
-            TotalRow(column, "SUBTOTAL NO OBJETO DE IVA", notSubjectToVatBase, bold: false);
-            TotalRow(column, "SUBTOTAL EXENTO DE IVA", exemptFromVatBase, bold: false);
-            TotalRow(column, "SUBTOTAL SIN IMPUESTOS", header.SubtotalWithoutTax, bold: false);
-            TotalRow(column, "TOTAL DESCUENTO", header.TotalDiscount, bold: false);
-            TotalRow(column, "ICE", iceTotal, bold: false);
+                TotalRow(column, "SUBTOTAL NO OBJETO DE IVA", notSubjectToVatBase, bold: false);
+                TotalRow(column, "SUBTOTAL EXENTO DE IVA", exemptFromVatBase, bold: false);
+                TotalRow(column, "SUBTOTAL SIN IMPUESTOS", header.SubtotalWithoutTax, bold: false);
+                TotalRow(column, "TOTAL DESCUENTO", header.TotalDiscount, bold: false);
+                TotalRow(column, "ICE", iceTotal, bold: false);
 
-            foreach (var (rate, _, amount) in vatByRate)
-                TotalRow(column, $"IVA {rate.ToString("0.##", CultureInfo.InvariantCulture)}%", amount, bold: false);
+                foreach (var (rate, _, amount) in vatByRate)
+                    TotalRow(
+                        column,
+                        $"IVA {rate.ToString("0.##", CultureInfo.InvariantCulture)}%",
+                        amount,
+                        bold: false
+                    );
 
-            TotalRow(column, "IRBPNR", irbpnrTotal, bold: false);
-            TotalRow(column, "PROPINA", header.Tip, bold: false);
-            TotalRow(column, "VALOR TOTAL", header.GrandTotal, bold: true);
+                TotalRow(column, "IRBPNR", irbpnrTotal, bold: false);
+                TotalRow(column, "PROPINA", header.Tip, bold: false);
+                TotalRow(column, "VALOR TOTAL", header.GrandTotal, bold: true);
 
-            // Siempre 0.00: RideModel no modela subsidios (combustibles) — ningún dato real
-            // existe para calcular esto distinto de cero, mismo criterio que IRBPNR/ICE cuando
-            // no aplican. No es un valor inventado: es la ausencia real de esa característica.
-            TotalRow(column, "VALOR TOTAL SIN SUBSIDIO", 0m, bold: false);
-            TotalRow(column, "AHORRO POR SUBSIDIO", 0m, bold: false);
-        });
+                // Siempre 0.00: RideModel no modela subsidios (combustibles) — ningún dato real
+                // existe para calcular esto distinto de cero, mismo criterio que IRBPNR/ICE cuando
+                // no aplican. No es un valor inventado: es la ausencia real de esa característica.
+                TotalRow(column, "VALOR TOTAL SIN SUBSIDIO", 0m, bold: false);
+                TotalRow(column, "AHORRO POR SUBSIDIO", 0m, bold: false);
+            });
     }
 
     private static void TotalRow(ColumnDescriptor column, string label, decimal amount, bool bold)
     {
-        column.Item().Row(r =>
-        {
-            if (bold)
+        column
+            .Item()
+            .Row(r =>
             {
-                r.RelativeItem().Text(label).Bold().FontSize(9);
-                r.ConstantItem(70).AlignRight().Text(amount.ToString("F2", CultureInfo.InvariantCulture)).Bold().FontSize(9);
-            }
-            else
-            {
-                r.RelativeItem().Text(label).FontSize(8);
-                r.ConstantItem(70).AlignRight().Text(amount.ToString("F2", CultureInfo.InvariantCulture)).FontSize(8);
-            }
-        });
+                if (bold)
+                {
+                    r.RelativeItem().Text(label).Bold().FontSize(9);
+                    r.ConstantItem(70)
+                        .AlignRight()
+                        .Text(amount.ToString("F2", CultureInfo.InvariantCulture))
+                        .Bold()
+                        .FontSize(9);
+                }
+                else
+                {
+                    r.RelativeItem().Text(label).FontSize(8);
+                    r.ConstantItem(70)
+                        .AlignRight()
+                        .Text(amount.ToString("F2", CultureInfo.InvariantCulture))
+                        .FontSize(8);
+                }
+            });
     }
 }

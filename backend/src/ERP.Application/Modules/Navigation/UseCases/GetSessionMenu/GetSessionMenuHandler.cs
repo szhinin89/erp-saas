@@ -12,7 +12,9 @@ public sealed class GetSessionMenuHandler
     public GetSessionMenuHandler(INavigationBuilder builder) => _builder = builder;
 
     public async Task<Result<IReadOnlyList<NavMenuGroupDto>>> Handle(
-        GetSessionMenuQuery request, CancellationToken cancellationToken)
+        GetSessionMenuQuery request,
+        CancellationToken cancellationToken
+    )
     {
         var groups = await _builder.BuildMenuAsync(cancellationToken);
         return Result<IReadOnlyList<NavMenuGroupDto>>.Success(groups);

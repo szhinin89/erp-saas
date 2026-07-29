@@ -10,6 +10,8 @@ namespace ERP.Application.Modules.Inventory.Stock.UseCases.GetKardexByProduct;
 /// (el Kardex es por producto+bodega, nunca se mezclan saldos entre bodegas).
 /// </summary>
 public sealed record GetKardexByProductQuery(
-    Guid ProductId, Guid? WarehouseId = null,
-    DateTime? From = null, DateTime? To = null)
-    : IRequest<Result<IReadOnlyList<StockMovementDto>>>, IBranchScopedRequest;
+    Guid ProductId,
+    Guid? WarehouseId = null,
+    DateTime? From = null,
+    DateTime? To = null
+) : IRequest<Result<IReadOnlyList<StockMovementDto>>>, IBranchScopedRequest;

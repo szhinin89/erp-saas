@@ -8,29 +8,31 @@ namespace ERP.Application.Modules.Items.UseCases;
 
 // ── DTOs ────────────────────────────────────────────────────────────────
 
-public sealed record ItemTypeDto(
-    Guid Id, string Code, string Name, bool IsActive, int SortOrder);
+public sealed record ItemTypeDto(Guid Id, string Code, string Name, bool IsActive, int SortOrder);
 
 // ── Queries ─────────────────────────────────────────────────────────────
 
 public sealed record GetItemTypesQuery(bool OnlyActive = true)
-    : IRequest<Result<IReadOnlyList<ItemTypeDto>>>, ICompanyScopedRequest;
+    : IRequest<Result<IReadOnlyList<ItemTypeDto>>>,
+        ICompanyScopedRequest;
 
 public sealed record GetItemTypeByIdQuery(Guid Id)
-    : IRequest<Result<ItemTypeDto>>, ICompanyScopedRequest;
+    : IRequest<Result<ItemTypeDto>>,
+        ICompanyScopedRequest;
 
 // ── Commands ────────────────────────────────────────────────────────────
 
-public sealed record CreateItemTypeCommand(
-    string Code, string Name, int SortOrder = 0)
-    : IRequest<Result<ItemTypeDto>>, ICompanyScopedRequest;
+public sealed record CreateItemTypeCommand(string Code, string Name, int SortOrder = 0)
+    : IRequest<Result<ItemTypeDto>>,
+        ICompanyScopedRequest;
 
-public sealed record UpdateItemTypeCommand(
-    Guid Id, string Name, int SortOrder)
-    : IRequest<Result<ItemTypeDto>>, ICompanyScopedRequest;
+public sealed record UpdateItemTypeCommand(Guid Id, string Name, int SortOrder)
+    : IRequest<Result<ItemTypeDto>>,
+        ICompanyScopedRequest;
 
 public sealed record ToggleItemTypeCommand(Guid Id)
-    : IRequest<Result<ItemTypeDto>>, ICompanyScopedRequest;
+    : IRequest<Result<ItemTypeDto>>,
+        ICompanyScopedRequest;
 
 // ── Validators ──────────────────────────────────────────────────────────
 
@@ -38,9 +40,13 @@ public sealed class CreateItemTypeValidator : AbstractValidator<CreateItemTypeCo
 {
     public CreateItemTypeValidator()
     {
-        RuleFor(x => x.Code).NotEmpty().MaximumLength(ItemTypeDefinition.MaxCodeLength)
+        RuleFor(x => x.Code)
+            .NotEmpty()
+            .MaximumLength(ItemTypeDefinition.MaxCodeLength)
             .WithMessage("El código es obligatorio (máx 30 caracteres).");
-        RuleFor(x => x.Name).NotEmpty().MaximumLength(ItemTypeDefinition.MaxNameLength)
+        RuleFor(x => x.Name)
+            .NotEmpty()
+            .MaximumLength(ItemTypeDefinition.MaxNameLength)
             .WithMessage("El nombre es obligatorio (máx 100 caracteres).");
     }
 }
@@ -61,18 +67,25 @@ public sealed class GetItemTypesHandler
 {
     private readonly IItemTypeRepository _repo;
     private readonly ICurrentTenant _t;
-    public GetItemTypesHandler(IItemTypeRepository repo, ICurrentTenant t) { _repo = repo; _t = t; }
+
+    public GetItemTypesHandler(IItemTypeRepository repo, ICurrentTenant t)
+    {
+        _repo = repo;
+        _t = t;
+    }
 
     public async Task<Result<IReadOnlyList<ItemTypeDto>>> Handle(
-        GetItemTypesQuery q, CancellationToken ct)
+        GetItemTypesQuery q,
+        CancellationToken ct
+    )
     {
         var list = await _repo.ListAsync(_t.TenantId, q.OnlyActive, ct);
         var dtos = list.Select(ToDto).ToList();
         return Result<IReadOnlyList<ItemTypeDto>>.Success(dtos);
     }
 
-    internal static ItemTypeDto ToDto(ItemTypeDefinition x) => new(
-        x.Id, x.Code, x.Name, x.IsActive, x.SortOrder);
+    internal static ItemTypeDto ToDto(ItemTypeDefinition x) =>
+        new(x.Id, x.Code, x.Name, x.IsActive, x.SortOrder);
 }
 
 public sealed class GetItemTypeByIdHandler
@@ -80,7 +93,12 @@ public sealed class GetItemTypeByIdHandler
 {
     private readonly IItemTypeRepository _repo;
     private readonly ICurrentTenant _t;
-    public GetItemTypeByIdHandler(IItemTypeRepository repo, ICurrentTenant t) { _repo = repo; _t = t; }
+
+    public GetItemTypeByIdHandler(IItemTypeRepository repo, ICurrentTenant t)
+    {
+        _repo = repo;
+        _t = t;
+    }
 
     public async Task<Result<ItemTypeDto>> Handle(GetItemTypeByIdQuery q, CancellationToken ct)
     {
@@ -97,14 +115,21 @@ public sealed class CreateItemTypeHandler
     private readonly IItemTypeRepository _repo;
     private readonly ICurrentTenant _t;
     private readonly ICurrentUser _u;
+
     public CreateItemTypeHandler(IItemTypeRepository repo, ICurrentTenant t, ICurrentUser u)
-    { _repo = repo; _t = t; _u = u; }
+    {
+        _repo = repo;
+        _t = t;
+        _u = u;
+    }
 
     public async Task<Result<ItemTypeDto>> Handle(CreateItemTypeCommand cmd, CancellationToken ct)
     {
         var tid = _t.TenantId;
         if (await _repo.ExistsByCodeAsync(tid, cmd.Code, null, ct))
-            return Result<ItemTypeDto>.ValidationFailure($"Ya existe un tipo de ítem con código '{cmd.Code}'.");
+            return Result<ItemTypeDto>.ValidationFailure(
+                $"Ya existe un tipo de ítem con código '{cmd.Code}'."
+            );
 
         var entity = ItemTypeDefinition.Create(tid, cmd.Code, cmd.Name, cmd.SortOrder, _u.UserId);
 
@@ -120,13 +145,19 @@ public sealed class UpdateItemTypeHandler
     private readonly IItemTypeRepository _repo;
     private readonly ICurrentTenant _t;
     private readonly ICurrentUser _u;
+
     public UpdateItemTypeHandler(IItemTypeRepository repo, ICurrentTenant t, ICurrentUser u)
-    { _repo = repo; _t = t; _u = u; }
+    {
+        _repo = repo;
+        _t = t;
+        _u = u;
+    }
 
     public async Task<Result<ItemTypeDto>> Handle(UpdateItemTypeCommand cmd, CancellationToken ct)
     {
         var entity = await _repo.GetByIdAsync(_t.TenantId, cmd.Id, ct);
-        if (entity is null) return Result<ItemTypeDto>.NotFound("Tipo de ítem no encontrado.");
+        if (entity is null)
+            return Result<ItemTypeDto>.NotFound("Tipo de ítem no encontrado.");
 
         entity.Update(cmd.Name, cmd.SortOrder, _u.UserId);
         await _repo.SaveChangesAsync(ct);
@@ -140,19 +171,26 @@ public sealed class ToggleItemTypeHandler
     private readonly IItemTypeRepository _repo;
     private readonly ICurrentTenant _t;
     private readonly ICurrentUser _u;
+
     public ToggleItemTypeHandler(IItemTypeRepository repo, ICurrentTenant t, ICurrentUser u)
-    { _repo = repo; _t = t; _u = u; }
+    {
+        _repo = repo;
+        _t = t;
+        _u = u;
+    }
 
     public async Task<Result<ItemTypeDto>> Handle(ToggleItemTypeCommand cmd, CancellationToken ct)
     {
         var entity = await _repo.GetByIdAsync(_t.TenantId, cmd.Id, ct);
-        if (entity is null) return Result<ItemTypeDto>.NotFound("Tipo de ítem no encontrado.");
+        if (entity is null)
+            return Result<ItemTypeDto>.NotFound("Tipo de ítem no encontrado.");
 
         if (entity.IsActive)
         {
             if (await _repo.HasActiveItemsAsync(_t.TenantId, entity.Code, ct))
                 return Result<ItemTypeDto>.ValidationFailure(
-                    "No se puede desactivar: existen ítems activos con este tipo.");
+                    "No se puede desactivar: existen ítems activos con este tipo."
+                );
 
             entity.Disable(_u.UserId);
         }

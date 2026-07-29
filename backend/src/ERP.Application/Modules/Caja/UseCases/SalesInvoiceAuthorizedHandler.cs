@@ -7,7 +7,8 @@ using Microsoft.Extensions.Logging;
 
 namespace ERP.Application.Modules.Caja.UseCases;
 
-public sealed class SalesInvoiceAuthorizedHandler : INotificationHandler<SalesInvoiceAuthorizedEvent>
+public sealed class SalesInvoiceAuthorizedHandler
+    : INotificationHandler<SalesInvoiceAuthorizedEvent>
 {
     private readonly ICashSessionRepository _cashRepo;
     private readonly ICurrentTenant _t;
@@ -16,7 +17,8 @@ public sealed class SalesInvoiceAuthorizedHandler : INotificationHandler<SalesIn
     public SalesInvoiceAuthorizedHandler(
         ICashSessionRepository cashRepo,
         ICurrentTenant t,
-        ILogger<SalesInvoiceAuthorizedHandler> logger)
+        ILogger<SalesInvoiceAuthorizedHandler> logger
+    )
     {
         _cashRepo = cashRepo;
         _t = t;
@@ -32,7 +34,9 @@ public sealed class SalesInvoiceAuthorizedHandler : INotificationHandler<SalesIn
         {
             _logger.LogWarning(
                 "CashSession {CashSessionId} not found when processing SalesInvoiceAuthorized {InvoiceId}. Movement skipped.",
-                e.CashSessionId, e.InvoiceId);
+                e.CashSessionId,
+                e.InvoiceId
+            );
             return;
         }
 
@@ -43,10 +47,15 @@ public sealed class SalesInvoiceAuthorizedHandler : INotificationHandler<SalesIn
             e.UserId,
             CashReferenceType.SalesInvoice,
             e.InvoiceId,
-            e.InvoiceNumber);
+            e.InvoiceNumber
+        );
 
         _logger.LogInformation(
             "Cash movement SaleIncome recorded for invoice {InvoiceNumber} ({InvoiceId}) in session {SessionId}. Amount: {Amount}",
-            e.InvoiceNumber, e.InvoiceId, session.Id, e.GrandTotal);
+            e.InvoiceNumber,
+            e.InvoiceId,
+            session.Id,
+            e.GrandTotal
+        );
     }
 }

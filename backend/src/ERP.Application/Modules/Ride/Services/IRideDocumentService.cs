@@ -12,8 +12,18 @@ namespace ERP.Application.Modules.Ride.Services;
 public interface IRideDocumentService
 {
     Task<Result<RideGenerationResultDto>> GetOrGenerateAsync(
-        Guid tenantId, Guid companyId, string sourceModule, Guid sourceEntityId, CancellationToken ct = default);
+        Guid tenantId,
+        Guid companyId,
+        string sourceModule,
+        Guid sourceEntityId,
+        CancellationToken ct = default
+    );
 
     Task<Result<RideGenerationResultDto>> RegenerateAsync(
-        Guid tenantId, Guid companyId, string sourceModule, Guid sourceEntityId, CancellationToken ct = default);
+        Guid tenantId,
+        Guid companyId,
+        string sourceModule,
+        Guid sourceEntityId,
+        CancellationToken ct = default
+    );
 }

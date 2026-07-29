@@ -1,3 +1,4 @@
+using System.Text.Json;
 using ERP.API.Middleware;
 using FluentAssertions;
 using FluentValidation;
@@ -6,7 +7,6 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Logging.Abstractions;
-using System.Text.Json;
 
 namespace ERP.API.Tests;
 
@@ -28,15 +28,21 @@ public class ExceptionMiddlewareValidationTests
         // Arrange
         RequestDelegate next = _ =>
         {
-            throw new ValidationException(new[]
-            {
-                new ValidationFailure("SaleCode", "El código de venta es obligatorio."),
-                new ValidationFailure("ShortName", "El nombre corto es obligatorio.")
-            });
+            throw new ValidationException(
+                new[]
+                {
+                    new ValidationFailure("SaleCode", "El código de venta es obligatorio."),
+                    new ValidationFailure("ShortName", "El nombre corto es obligatorio."),
+                }
+            );
         };
 
         var environment = new FakeWebHostEnvironment();
-        var middleware = new ExceptionMiddleware(next, NullLogger<ExceptionMiddleware>.Instance, environment);
+        var middleware = new ExceptionMiddleware(
+            next,
+            NullLogger<ExceptionMiddleware>.Instance,
+            environment
+        );
         var context = new DefaultHttpContext();
         context.Response.Body = new MemoryStream();
 
@@ -54,11 +60,23 @@ public class ExceptionMiddlewareValidationTests
         doc.RootElement.GetProperty("severity").GetString().Should().Be("error");
 
         var message = doc.RootElement.GetProperty("message");
-        message.GetProperty("user").GetString().Should().Be("Datos inválidos. Revisa el formulario.");
+        message
+            .GetProperty("user")
+            .GetString()
+            .Should()
+            .Be("Datos inválidos. Revisa el formulario.");
         message.GetProperty("dev").ValueKind.Should().Be(JsonValueKind.Null);
 
         var errors = doc.RootElement.GetProperty("data").GetProperty("errors");
-        errors.GetProperty("saleCode")[0].GetString().Should().Be("El código de venta es obligatorio.");
-        errors.GetProperty("shortName")[0].GetString().Should().Be("El nombre corto es obligatorio.");
+        errors
+            .GetProperty("saleCode")[0]
+            .GetString()
+            .Should()
+            .Be("El código de venta es obligatorio.");
+        errors
+            .GetProperty("shortName")[0]
+            .GetString()
+            .Should()
+            .Be("El nombre corto es obligatorio.");
     }
 }

@@ -20,4 +20,5 @@ public sealed record ElectronicInvoicingStatusDto(
     DateTime? CertificateExpiresAt,
     int? CertificateDaysRemaining,
     SriAvailability SriAvailability,
-    bool CanIssue);
+    bool CanIssue
+);

@@ -15,15 +15,14 @@ namespace ERP.Infrastructure.Migrations
                 name: "posted_at_utc",
                 table: "journal_entries",
                 type: "timestamp with time zone",
-                nullable: true);
+                nullable: true
+            );
         }
 
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.DropColumn(
-                name: "posted_at_utc",
-                table: "journal_entries");
+            migrationBuilder.DropColumn(name: "posted_at_utc", table: "journal_entries");
         }
     }
 }

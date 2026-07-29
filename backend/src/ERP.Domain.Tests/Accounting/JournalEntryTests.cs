@@ -13,9 +13,19 @@ public sealed class JournalEntryTests
     private static readonly Guid DebitAccountId = Guid.NewGuid();
     private static readonly Guid CreditAccountId = Guid.NewGuid();
 
-    private static JournalEntry CreateEntry() => JournalEntry.Create(
-        TenantId, CompanyId, new DateOnly(2026, 7, 25), AccountingPeriodId, 2026,
-        "Sales", "InvoiceIssued", Guid.NewGuid(), "Asiento test", CreatedBy);
+    private static JournalEntry CreateEntry() =>
+        JournalEntry.Create(
+            TenantId,
+            CompanyId,
+            new DateOnly(2026, 7, 25),
+            AccountingPeriodId,
+            2026,
+            "Sales",
+            "InvoiceIssued",
+            Guid.NewGuid(),
+            "Asiento test",
+            CreatedBy
+        );
 
     [Fact]
     public void Create_sin_lineas_expone_Lines_vacio()
@@ -107,7 +117,9 @@ public sealed class JournalEntryTests
 
         var act = () => entry.AddLine(DebitAccountId, null, 100m, 50m);
 
-        act.Should().Throw<InvalidOperationException>().WithMessage("*Débito y Crédito simultáneamente*");
+        act.Should()
+            .Throw<InvalidOperationException>()
+            .WithMessage("*Débito y Crédito simultáneamente*");
     }
 
     [Fact]
@@ -173,7 +185,12 @@ public sealed class JournalEntryTests
 
         act.Should().Throw<InvalidOperationException>().WithMessage("*Draft*");
         entry.Status.Should().Be(JournalEntryStatus.Posted);
-        entry.EntryNumber.Should().Be(1, because: "el número asignado en la primera publicación debe permanecer inmutable");
+        entry
+            .EntryNumber.Should()
+            .Be(
+                1,
+                because: "el número asignado en la primera publicación debe permanecer inmutable"
+            );
     }
 
     [Fact]
@@ -276,11 +293,16 @@ public sealed class JournalEntryTests
         reversal.EntryDate.Should().Be(original.EntryDate);
         reversal.Lines.Should().HaveCount(original.Lines.Count);
 
-        reversal.Lines.Should().Contain(l => l.AccountId == DebitAccountId && l.Credit == 100m && l.Debit == 0m);
-        reversal.Lines.Should().Contain(l => l.AccountId == CreditAccountId && l.Debit == 100m && l.Credit == 0m);
+        reversal
+            .Lines.Should()
+            .Contain(l => l.AccountId == DebitAccountId && l.Credit == 100m && l.Debit == 0m);
+        reversal
+            .Lines.Should()
+            .Contain(l => l.AccountId == CreditAccountId && l.Debit == 100m && l.Credit == 0m);
 
         var act = () => reversal.EnsureBalanced();
-        act.Should().NotThrow(because: "invertir un asiento ya balanceado preserva Σ Debit == Σ Credit");
+        act.Should()
+            .NotThrow(because: "invertir un asiento ya balanceado preserva Σ Debit == Σ Credit");
     }
 
     [Fact]
@@ -327,8 +349,12 @@ public sealed class JournalEntryTests
         var act = () => original.Reverse(CreatedBy, 3, "Segundo intento");
 
         act.Should().Throw<InvalidOperationException>().WithMessage("*Posted*");
-        original.ReverseReason.Should().Be(
-            "Primer reverso", because: "el segundo intento de reverso no debe pisar la trazabilidad del primero");
+        original
+            .ReverseReason.Should()
+            .Be(
+                "Primer reverso",
+                because: "el segundo intento de reverso no debe pisar la trazabilidad del primero"
+            );
     }
 
     [Fact]
@@ -339,6 +365,11 @@ public sealed class JournalEntryTests
         var act = () => original.Reverse(CreatedBy, 2, "   ");
 
         act.Should().Throw<ArgumentException>();
-        original.Status.Should().Be(JournalEntryStatus.Posted, because: "un reverso rechazado no debe dejar el original a medio mutar");
+        original
+            .Status.Should()
+            .Be(
+                JournalEntryStatus.Posted,
+                because: "un reverso rechazado no debe dejar el original a medio mutar"
+            );
     }
 }

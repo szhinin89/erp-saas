@@ -16,6 +16,7 @@ public enum ElectronicDocumentState
     Rejected = 7,
     DeadLetter = 8,
     Cancelled = 9,
+
     /// <summary>
     /// Falló alguna etapa previa a la firma/persistencia definitiva (proveedor de datos,
     /// construcción de XML, validación XSD, firma) o el almacenamiento del XML. El documento

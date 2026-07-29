@@ -28,22 +28,41 @@ public sealed class CompanyUserPreferencesController : ControllerBase
     public CompanyUserPreferencesController(IMediator mediator) => _mediator = mediator;
 
     [HttpGet]
-    [ProducesResponseType(typeof(ApiResponse<CompanyUserPreferencesAdminDto?>), StatusCodes.Status200OK)]
+    [ProducesResponseType(
+        typeof(ApiResponse<CompanyUserPreferencesAdminDto?>),
+        StatusCodes.Status200OK
+    )]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> Get([FromRoute] Guid companyUserId, CancellationToken cancellationToken)
+    public async Task<IActionResult> Get(
+        [FromRoute] Guid companyUserId,
+        CancellationToken cancellationToken
+    )
     {
-        var result = await _mediator.Send(new GetCompanyUserPreferencesAdminQuery(companyUserId), cancellationToken);
+        var result = await _mediator.Send(
+            new GetCompanyUserPreferencesAdminQuery(companyUserId),
+            cancellationToken
+        );
         return this.ToOkOrBadRequest(result);
     }
 
     [HttpPut]
-    [ProducesResponseType(typeof(ApiResponse<CompanyUserPreferencesAdminDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(
+        typeof(ApiResponse<CompanyUserPreferencesAdminDto>),
+        StatusCodes.Status200OK
+    )]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status422UnprocessableEntity)]
     public async Task<IActionResult> Update(
-        [FromRoute] Guid companyUserId, [FromBody] UpdateCompanyUserPreferencesRequest request, CancellationToken cancellationToken)
+        [FromRoute] Guid companyUserId,
+        [FromBody] UpdateCompanyUserPreferencesRequest request,
+        CancellationToken cancellationToken
+    )
     {
-        var command = new UpdateCompanyUserPreferencesAdminCommand(companyUserId, request.LoginMode, request.DefaultBranchId);
+        var command = new UpdateCompanyUserPreferencesAdminCommand(
+            companyUserId,
+            request.LoginMode,
+            request.DefaultBranchId
+        );
         var result = await _mediator.Send(command, cancellationToken);
         return this.ToOkOrBadRequest(result);
     }

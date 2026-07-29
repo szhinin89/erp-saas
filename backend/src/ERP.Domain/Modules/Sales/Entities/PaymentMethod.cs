@@ -13,6 +13,7 @@ public sealed class PaymentMethod : MasterEntity, ITenantScopedEntity
     public bool RequiresReference { get; private set; }
     public bool IsCreditAllowed { get; private set; }
     public int SortOrder { get; private set; }
+
     /// <summary>Esquema de detalle que la UI debe capturar para este método (tarjeta/transferencia/cheque/ninguno).</summary>
     public PaymentMethodDetailType DetailType { get; private set; }
 
@@ -26,16 +27,23 @@ public sealed class PaymentMethod : MasterEntity, ITenantScopedEntity
         bool isCreditAllowed,
         int sortOrder,
         Guid createdBy,
-        PaymentMethodDetailType detailType = PaymentMethodDetailType.None)
+        PaymentMethodDetailType detailType = PaymentMethodDetailType.None
+    )
     {
         if (string.IsNullOrWhiteSpace(code))
             throw new ArgumentException("El código es obligatorio.", nameof(code));
         if (code.Length > MaxCodeLength)
-            throw new ArgumentException($"El código no puede superar {MaxCodeLength} caracteres.", nameof(code));
+            throw new ArgumentException(
+                $"El código no puede superar {MaxCodeLength} caracteres.",
+                nameof(code)
+            );
         if (string.IsNullOrWhiteSpace(name))
             throw new ArgumentException("El nombre es obligatorio.", nameof(name));
         if (name.Length > MaxNameLength)
-            throw new ArgumentException($"El nombre no puede superar {MaxNameLength} caracteres.", nameof(name));
+            throw new ArgumentException(
+                $"El nombre no puede superar {MaxNameLength} caracteres.",
+                nameof(name)
+            );
 
         var pm = new PaymentMethod
         {
@@ -69,9 +77,19 @@ public sealed class PaymentMethod : MasterEntity, ITenantScopedEntity
         bool isCreditAllowed,
         int sortOrder,
         Guid createdBy,
-        PaymentMethodDetailType detailType = PaymentMethodDetailType.None)
+        PaymentMethodDetailType detailType = PaymentMethodDetailType.None
+    )
     {
-        var pm = Create(tenantId, code, name, requiresReference, isCreditAllowed, sortOrder, createdBy, detailType);
+        var pm = Create(
+            tenantId,
+            code,
+            name,
+            requiresReference,
+            isCreditAllowed,
+            sortOrder,
+            createdBy,
+            detailType
+        );
         pm.MarkAsSystemSeeded();
         return pm;
     }
@@ -82,7 +100,8 @@ public sealed class PaymentMethod : MasterEntity, ITenantScopedEntity
         bool isCreditAllowed,
         int sortOrder,
         Guid updatedBy,
-        PaymentMethodDetailType detailType)
+        PaymentMethodDetailType detailType
+    )
     {
         if (string.IsNullOrWhiteSpace(name))
             throw new ArgumentException("El nombre es obligatorio.", nameof(name));

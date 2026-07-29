@@ -16,8 +16,11 @@ public sealed class CreateStockTransferCommandHandler
     private readonly ICurrentUser _user;
 
     public CreateStockTransferCommandHandler(
-        IStockTransferRepository repo, IInterBranchAccessGuard interBranchGuard,
-        ICurrentTenant tenant, ICurrentUser user)
+        IStockTransferRepository repo,
+        IInterBranchAccessGuard interBranchGuard,
+        ICurrentTenant tenant,
+        ICurrentUser user
+    )
     {
         _repo = repo;
         _interBranchGuard = interBranchGuard;
@@ -26,16 +29,23 @@ public sealed class CreateStockTransferCommandHandler
     }
 
     public async Task<Result<StockTransferDto>> Handle(
-        CreateStockTransferCommand request, CancellationToken ct)
+        CreateStockTransferCommand request,
+        CancellationToken ct
+    )
     {
         if (request.SourceWarehouseId == request.TargetWarehouseId)
-            return Result<StockTransferDto>.Failure("Bodega origen y destino no pueden ser la misma.");
+            return Result<StockTransferDto>.Failure(
+                "Bodega origen y destino no pueden ser la misma."
+            );
 
         if (request.Lines.Count == 0)
             return Result<StockTransferDto>.Failure("Debe incluir al menos una línea.");
 
         var access = await _interBranchGuard.RequireInterBranchAccessAsync(
-            request.SourceWarehouseId, request.TargetWarehouseId, ct);
+            request.SourceWarehouseId,
+            request.TargetWarehouseId,
+            ct
+        );
         if (!access.IsSuccess)
             return Result<StockTransferDto>.Failure(access.Error!);
 
@@ -44,16 +54,27 @@ public sealed class CreateStockTransferCommandHandler
         var uid = _user.UserId;
 
         var transfer = StockTransfer.Create(
-            _tenant.TenantId, seq, ctx.OperationBranchId,
-            request.SourceWarehouseId, request.TargetWarehouseId,
-            request.Reason, request.Notes,
-            uid, ctx.CompanyId);
+            _tenant.TenantId,
+            seq,
+            ctx.OperationBranchId,
+            request.SourceWarehouseId,
+            request.TargetWarehouseId,
+            request.Reason,
+            request.Notes,
+            uid,
+            ctx.CompanyId
+        );
 
         foreach (var line in request.Lines)
         {
             var tl = StockTransferLine.Create(
-                _tenant.TenantId, transfer.Id,
-                line.ProductId, line.Quantity, line.Description, uid);
+                _tenant.TenantId,
+                transfer.Id,
+                line.ProductId,
+                line.Quantity,
+                line.Description,
+                uid
+            );
             transfer.AddLine(tl);
         }
 
@@ -63,11 +84,23 @@ public sealed class CreateStockTransferCommandHandler
         return Result<StockTransferDto>.Success(ToDto(transfer));
     }
 
-    internal static StockTransferDto ToDto(StockTransfer t) => new(
-        t.Id, t.TransferNumber,
-        t.SourceWarehouseId, t.TargetWarehouseId,
-        t.TransferDate, t.Status,
-        t.Reason, t.Notes, t.ConfirmedAt,
-        t.Lines.Select(l => new StockTransferLineDto(
-            l.Id, l.ProductId, l.Quantity, l.Description)).ToList());
+    internal static StockTransferDto ToDto(StockTransfer t) =>
+        new(
+            t.Id,
+            t.TransferNumber,
+            t.SourceWarehouseId,
+            t.TargetWarehouseId,
+            t.TransferDate,
+            t.Status,
+            t.Reason,
+            t.Notes,
+            t.ConfirmedAt,
+            t.Lines.Select(l => new StockTransferLineDto(
+                    l.Id,
+                    l.ProductId,
+                    l.Quantity,
+                    l.Description
+                ))
+                .ToList()
+        );
 }

@@ -23,7 +23,8 @@ public static class PricingCalculation
         decimal basePrice,
         PricingRule? itemRule,
         PriceList priceList,
-        IPricingAdjustmentStrategyResolver strategies)
+        IPricingAdjustmentStrategyResolver strategies
+    )
     {
         decimal unitPrice;
         string? ruleApplied;
@@ -31,11 +32,15 @@ public static class PricingCalculation
         switch (ClassifySource(itemRule, priceList))
         {
             case PriceSource.Exception:
-                unitPrice = strategies.Resolve(itemRule!.RuleType).Apply(basePrice, itemRule.RuleValue);
+                unitPrice = strategies
+                    .Resolve(itemRule!.RuleType)
+                    .Apply(basePrice, itemRule.RuleValue);
                 ruleApplied = $"{itemRule.RuleType}:{itemRule.RuleValue:0.######} (ítem)";
                 break;
             case PriceSource.GeneralRule:
-                unitPrice = strategies.Resolve(priceList.RuleType!.Value).Apply(basePrice, priceList.RuleValue!.Value);
+                unitPrice = strategies
+                    .Resolve(priceList.RuleType!.Value)
+                    .Apply(basePrice, priceList.RuleValue!.Value);
                 ruleApplied = $"{priceList.RuleType}:{priceList.RuleValue:0.######} (lista)";
                 break;
             default:
@@ -45,7 +50,8 @@ public static class PricingCalculation
         }
 
         unitPrice = Math.Round(unitPrice, 6, MidpointRounding.AwayFromZero);
-        if (unitPrice < 0) unitPrice = 0;
+        if (unitPrice < 0)
+            unitPrice = 0;
 
         return (unitPrice, ruleApplied);
     }
@@ -59,20 +65,27 @@ public static class PricingCalculation
         ClassifySource(itemRule, priceList) switch
         {
             PriceSource.Exception => new PricingRuleSummaryDto(
-                PriceSource.Exception, itemRule!.RuleType.ToString(), itemRule.RuleValue,
-                $"{DescribeRule(itemRule.RuleType, itemRule.RuleValue)} (excepción)"),
+                PriceSource.Exception,
+                itemRule!.RuleType.ToString(),
+                itemRule.RuleValue,
+                $"{DescribeRule(itemRule.RuleType, itemRule.RuleValue)} (excepción)"
+            ),
             PriceSource.GeneralRule => new PricingRuleSummaryDto(
-                PriceSource.GeneralRule, priceList.RuleType!.Value.ToString(), priceList.RuleValue,
-                $"{DescribeRule(priceList.RuleType.Value, priceList.RuleValue!.Value)} (regla general)"),
+                PriceSource.GeneralRule,
+                priceList.RuleType!.Value.ToString(),
+                priceList.RuleValue,
+                $"{DescribeRule(priceList.RuleType.Value, priceList.RuleValue!.Value)} (regla general)"
+            ),
             _ => new PricingRuleSummaryDto(PriceSource.BasePrice, null, null, "Precio base"),
         };
 
-    private static string DescribeRule(PricingRuleType type, decimal value) => type switch
-    {
-        PricingRuleType.PercentDiscount => $"Descuento {value:0.##}%",
-        PricingRuleType.PercentMarkup => $"Recargo {value:0.##}%",
-        PricingRuleType.FixedPrice => $"Precio fijo {value:0.##}",
-        PricingRuleType.FixedAdjustment => $"Ajuste {(value >= 0 ? "+" : "")}{value:0.##}",
-        _ => type.ToString(),
-    };
+    private static string DescribeRule(PricingRuleType type, decimal value) =>
+        type switch
+        {
+            PricingRuleType.PercentDiscount => $"Descuento {value:0.##}%",
+            PricingRuleType.PercentMarkup => $"Recargo {value:0.##}%",
+            PricingRuleType.FixedPrice => $"Precio fijo {value:0.##}",
+            PricingRuleType.FixedAdjustment => $"Ajuste {(value >= 0 ? "+" : "")}{value:0.##}",
+            _ => type.ToString(),
+        };
 }

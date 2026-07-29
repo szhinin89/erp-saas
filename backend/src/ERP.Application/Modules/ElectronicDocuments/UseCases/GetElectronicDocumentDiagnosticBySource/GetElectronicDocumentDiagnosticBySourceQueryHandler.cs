@@ -9,7 +9,10 @@ using MediatR;
 namespace ERP.Application.Modules.ElectronicDocuments.UseCases.GetElectronicDocumentDiagnosticBySource;
 
 public sealed class GetElectronicDocumentDiagnosticBySourceQueryHandler
-    : IRequestHandler<GetElectronicDocumentDiagnosticBySourceQuery, Result<ElectronicDocumentDiagnosticDto>>
+    : IRequestHandler<
+        GetElectronicDocumentDiagnosticBySourceQuery,
+        Result<ElectronicDocumentDiagnosticDto>
+    >
 {
     private const int TimelineTake = 20;
 
@@ -24,7 +27,8 @@ public sealed class GetElectronicDocumentDiagnosticBySourceQueryHandler
         IAuditReader<ElectronicDocumentAudit> auditReader,
         IAuditReader<ElectronicDocumentSriMessage> sriMessageReader,
         ICurrentTenant currentTenant,
-        ICurrentCompany currentCompany)
+        ICurrentCompany currentCompany
+    )
     {
         _repository = repository;
         _auditReader = auditReader;
@@ -34,23 +38,40 @@ public sealed class GetElectronicDocumentDiagnosticBySourceQueryHandler
     }
 
     public async Task<Result<ElectronicDocumentDiagnosticDto>> Handle(
-        GetElectronicDocumentDiagnosticBySourceQuery query, CancellationToken cancellationToken)
+        GetElectronicDocumentDiagnosticBySourceQuery query,
+        CancellationToken cancellationToken
+    )
     {
         var document = await _repository.GetBySourceAsync(
-            _currentTenant.TenantId, query.SourceModule, query.SourceEntityId, cancellationToken);
+            _currentTenant.TenantId,
+            query.SourceModule,
+            query.SourceEntityId,
+            cancellationToken
+        );
         if (document is null)
             return Result<ElectronicDocumentDiagnosticDto>.NotFound(
-                "El documento de origen no tiene un documento electrónico registrado.");
+                "El documento de origen no tiene un documento electrónico registrado."
+            );
 
         if (_currentCompany.HasCompanyContext && document.CompanyId != _currentCompany.CompanyId)
             return Result<ElectronicDocumentDiagnosticDto>.NotFound(
-                "El documento de origen no tiene un documento electrónico registrado.");
+                "El documento de origen no tiene un documento electrónico registrado."
+            );
 
         var auditRecords = await ElectronicDocumentTimelineBuilder.FetchRecordsAsync(
-            _auditReader, _currentTenant.TenantId, document.Id, TimelineTake, cancellationToken);
+            _auditReader,
+            _currentTenant.TenantId,
+            document.Id,
+            TimelineTake,
+            cancellationToken
+        );
 
         var diagnostic = await ElectronicDocumentDiagnosticAssembler.BuildAsync(
-            document, auditRecords, _sriMessageReader, cancellationToken);
+            document,
+            auditRecords,
+            _sriMessageReader,
+            cancellationToken
+        );
 
         return Result<ElectronicDocumentDiagnosticDto>.Success(diagnostic);
     }

@@ -16,7 +16,8 @@ public record BranchListItemDto(
     string? Email,
     string? ManagerName,
     bool IsActive,
-    bool IsMainBranch);
+    bool IsMainBranch
+);
 
 /// <summary>Detalle completo de una sucursal: Identidad, Dirección, Contacto, Responsable y Operación.</summary>
 public record BranchDetailDto(
@@ -48,4 +49,5 @@ public record BranchDetailDto(
     DateTime CreatedAt,
     DateTime? UpdatedAt,
     Guid CreatedBy,
-    Guid? UpdatedBy);
+    Guid? UpdatedBy
+);

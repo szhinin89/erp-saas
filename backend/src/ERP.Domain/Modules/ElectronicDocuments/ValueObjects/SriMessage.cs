@@ -11,4 +11,9 @@ namespace ERP.Domain.Modules.ElectronicDocuments.ValueObjects;
 /// <see cref="Events.ElectronicDocumentRejectedEvent"/> lo transportan directamente — Domain
 /// nunca depende de Application.
 /// </summary>
-public sealed record SriMessage(string? Code, string MessageType, string Message, string? AdditionalInfo);
+public sealed record SriMessage(
+    string? Code,
+    string MessageType,
+    string Message,
+    string? AdditionalInfo
+);

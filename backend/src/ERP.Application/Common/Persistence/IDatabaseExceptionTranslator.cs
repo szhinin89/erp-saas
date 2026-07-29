@@ -11,4 +11,5 @@ public sealed record DatabaseUniqueViolationInfo(
     string SqlState,
     string? ConstraintName,
     string? TableName,
-    string? Detail);
+    string? Detail
+);

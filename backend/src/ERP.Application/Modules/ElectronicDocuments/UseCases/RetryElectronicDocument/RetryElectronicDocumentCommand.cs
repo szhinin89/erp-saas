@@ -8,6 +8,6 @@ namespace ERP.Application.Modules.ElectronicDocuments.UseCases.RetryElectronicDo
 /// Reintenta manualmente un documento electrónico varado en Signed/Received, o lo reactiva
 /// desde DeadLetter antes de reintentarlo. Delega en <see cref="Services.IElectronicDocumentIssuer.RetryAsync"/>.
 /// </summary>
-public sealed record RetryElectronicDocumentCommand(
-    Guid ElectronicDocumentId
-) : IRequest<Result<ElectronicDocumentDetailDto>>, ICompanyScopedRequest;
+public sealed record RetryElectronicDocumentCommand(Guid ElectronicDocumentId)
+    : IRequest<Result<ElectronicDocumentDetailDto>>,
+        ICompanyScopedRequest;

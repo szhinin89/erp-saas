@@ -19,7 +19,8 @@ public sealed class InspectSriCertificateQueryHandler
         ISriSettingsRepository repo,
         ICurrentCompany currentCompany,
         ISriCertificateInspector certInspector,
-        IFileStorage fileStorage)
+        IFileStorage fileStorage
+    )
     {
         _repo = repo;
         _currentCompany = currentCompany;
@@ -28,20 +29,30 @@ public sealed class InspectSriCertificateQueryHandler
     }
 
     public async Task<Result<SriCertificateInfoDto>> Handle(
-        InspectSriCertificateQuery request, CancellationToken cancellationToken)
+        InspectSriCertificateQuery request,
+        CancellationToken cancellationToken
+    )
     {
-        var settings = await _repo.GetByCompanyIdAsync(_currentCompany.CompanyId, cancellationToken);
+        var settings = await _repo.GetByCompanyIdAsync(
+            _currentCompany.CompanyId,
+            cancellationToken
+        );
         if (settings is null || string.IsNullOrWhiteSpace(settings.CertP12Path))
         {
             return Result<SriCertificateInfoDto>.NotFound(
-                "No hay ningún certificado cargado todavía para esta empresa.");
+                "No hay ningún certificado cargado todavía para esta empresa."
+            );
         }
 
-        await using var stream = await _fileStorage.GetAsync(settings.CertP12Path, cancellationToken);
+        await using var stream = await _fileStorage.GetAsync(
+            settings.CertP12Path,
+            cancellationToken
+        );
         if (stream is null)
         {
             return Result<SriCertificateInfoDto>.NotFound(
-                "El certificado configurado no es accesible en el almacenamiento.");
+                "El certificado configurado no es accesible en el almacenamiento."
+            );
         }
 
         using var buffer = new MemoryStream();
@@ -52,8 +63,16 @@ public sealed class InspectSriCertificateQueryHandler
             ? (int)Math.Ceiling((result.NotAfterUtc.Value - DateTime.UtcNow).TotalDays)
             : null;
 
-        return Result<SriCertificateInfoDto>.Success(new SriCertificateInfoDto(
-            result.PasswordCorrect, result.Loaded, result.NotAfterUtc, daysRemaining,
-            result.Subject, result.Issuer, result.ErrorMessage));
+        return Result<SriCertificateInfoDto>.Success(
+            new SriCertificateInfoDto(
+                result.PasswordCorrect,
+                result.Loaded,
+                result.NotAfterUtc,
+                daysRemaining,
+                result.Subject,
+                result.Issuer,
+                result.ErrorMessage
+            )
+        );
     }
 }

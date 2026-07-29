@@ -26,8 +26,11 @@ public sealed class SalesBranchScopeTests
         public Mock<ICurrentBranch> Branch { get; } = new();
     }
 
-    private static RequestHandlerDelegate<Result<string>> NextReturning(Result<string> value, Action? onCalled = null)
-        => _ =>
+    private static RequestHandlerDelegate<Result<string>> NextReturning(
+        Result<string> value,
+        Action? onCalled = null
+    ) =>
+        _ =>
         {
             onCalled?.Invoke();
             return Task.FromResult(value);
@@ -58,12 +61,19 @@ public sealed class SalesBranchScopeTests
         var behavior = BuildBehaviorFor(f, request);
         var nextCalled = false;
 
-        var act = async () => await InvokeAsync(
-            behavior, request, NextReturning(Result<string>.Success("no-debe-llegar"), () => nextCalled = true));
+        var act = async () =>
+            await InvokeAsync(
+                behavior,
+                request,
+                NextReturning(Result<string>.Success("no-debe-llegar"), () => nextCalled = true)
+            );
 
         await act.Should().ThrowAsync<BranchScopeException>();
         nextCalled.Should().BeFalse();
-        f.Guard.Verify(g => g.RequireBranchAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()), Times.Never);
+        f.Guard.Verify(
+            g => g.RequireBranchAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()),
+            Times.Never
+        );
     }
 
     [Theory]
@@ -75,18 +85,35 @@ public sealed class SalesBranchScopeTests
         f.Branch.Setup(b => b.HasBranchContext).Returns(true);
         f.Branch.Setup(b => b.BranchId).Returns(branchId);
         f.Guard.Setup(g => g.RequireBranchAsync(branchId, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Result<BranchAccessContext>.Success(
-                new BranchAccessContext(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), branchId, "Matriz", true)));
+            .ReturnsAsync(
+                Result<BranchAccessContext>.Success(
+                    new BranchAccessContext(
+                        Guid.NewGuid(),
+                        Guid.NewGuid(),
+                        Guid.NewGuid(),
+                        branchId,
+                        "Matriz",
+                        true
+                    )
+                )
+            );
 
         var behavior = BuildBehaviorFor(f, request);
         var expected = Result<string>.Success("ok");
         var nextCalled = false;
 
-        var result = await InvokeAsync(behavior, request, NextReturning(expected, () => nextCalled = true));
+        var result = await InvokeAsync(
+            behavior,
+            request,
+            NextReturning(expected, () => nextCalled = true)
+        );
 
         result.Should().Be(expected);
         nextCalled.Should().BeTrue();
-        f.Guard.Verify(g => g.RequireBranchAsync(branchId, It.IsAny<CancellationToken>()), Times.Once);
+        f.Guard.Verify(
+            g => g.RequireBranchAsync(branchId, It.IsAny<CancellationToken>()),
+            Times.Once
+        );
     }
 
     // MediatR pipeline behaviors son genéricos por tipo concreto de request — se resuelve
@@ -95,15 +122,22 @@ public sealed class SalesBranchScopeTests
     private static object BuildBehaviorFor(Fixture f, object request)
     {
         var requestType = request.GetType();
-        var behaviorType = typeof(BranchScopeBehavior<,>).MakeGenericType(requestType, typeof(Result<string>));
+        var behaviorType = typeof(BranchScopeBehavior<,>).MakeGenericType(
+            requestType,
+            typeof(Result<string>)
+        );
         return Activator.CreateInstance(behaviorType, f.Guard.Object, f.Branch.Object)!;
     }
 
     private static async Task<Result<string>> InvokeAsync(
-        object behavior, object request, RequestHandlerDelegate<Result<string>> next)
+        object behavior,
+        object request,
+        RequestHandlerDelegate<Result<string>> next
+    )
     {
         var method = behavior.GetType().GetMethod("Handle")!;
-        var task = (Task<Result<string>>)method.Invoke(behavior, [request, next, CancellationToken.None])!;
+        var task =
+            (Task<Result<string>>)method.Invoke(behavior, [request, next, CancellationToken.None])!;
         return await task;
     }
 }

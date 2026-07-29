@@ -8,4 +8,5 @@ public sealed record RideGenerationResultDto(
     RideOutcome Outcome,
     string? StoragePath,
     RidePdfMetadataDto? Metadata,
-    string? ReasonCode);
+    string? ReasonCode
+);

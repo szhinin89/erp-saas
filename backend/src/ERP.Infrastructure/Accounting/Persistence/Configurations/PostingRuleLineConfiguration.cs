@@ -21,13 +21,17 @@ public sealed class PostingRuleLineConfiguration : IEntityTypeConfiguration<Post
         builder.Property(x => x.AccountId).HasColumnName("account_id").IsRequired();
 
         builder.Property(x => x.Nature).HasColumnName("nature").HasConversion<int>().IsRequired();
-        builder.Property(x => x.AmountKind).HasColumnName("amount_kind").HasConversion<int>().IsRequired();
+        builder
+            .Property(x => x.AmountKind)
+            .HasColumnName("amount_kind")
+            .HasConversion<int>()
+            .IsRequired();
         builder.Property(x => x.SortOrder).HasColumnName("sort_order").IsRequired();
 
-        builder.HasIndex(x => x.PostingRuleId)
+        builder
+            .HasIndex(x => x.PostingRuleId)
             .HasDatabaseName("ix_posting_rule_lines_posting_rule");
 
-        builder.HasIndex(x => x.TenantId)
-            .HasDatabaseName("ix_posting_rule_lines_tenant");
+        builder.HasIndex(x => x.TenantId).HasDatabaseName("ix_posting_rule_lines_tenant");
     }
 }

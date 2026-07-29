@@ -13,7 +13,8 @@ public sealed record AdminNavGroupRowDto(
     IReadOnlyList<string>? Roles,
     bool RequirePlatformPanel,
     bool IsActive,
-    IReadOnlyList<AdminNavItemRowDto> RootItems);
+    IReadOnlyList<AdminNavItemRowDto> RootItems
+);
 
 public sealed record AdminNavItemRowDto(
     Guid Id,
@@ -26,7 +27,8 @@ public sealed record AdminNavItemRowDto(
     string? PermissionKey,
     IReadOnlyList<string>? PermissionKeysAny,
     bool IsActive,
-    IReadOnlyList<AdminNavItemRowDto> Children);
+    IReadOnlyList<AdminNavItemRowDto> Children
+);
 
 /// <summary>
 /// Un nivel de hermanos: mismo grupo y mismo padre (null = raíz del grupo).
@@ -35,7 +37,8 @@ public sealed record AdminNavItemRowDto(
 public sealed record NavItemSiblingOrderDto(
     Guid GroupId,
     Guid? ParentItemId,
-    IReadOnlyList<Guid> OrderedItemIds);
+    IReadOnlyList<Guid> OrderedItemIds
+);
 
 /// <summary>Alta de ítem de menú bajo un grupo (raíz o bajo un padre del mismo grupo).</summary>
 public sealed record CreateNavItemRequest(
@@ -44,11 +47,13 @@ public sealed record CreateNavItemRequest(
     string RoutePath,
     string DisplayLabel,
     string? ModuleKey,
-    string? PermissionKey);
+    string? PermissionKey
+);
 
 /// <summary>Actualización de un ítem existente (texto, ruta, permisos).</summary>
 public sealed record UpdateNavItemRequest(
     string DisplayLabel,
     string RoutePath,
     string? ModuleKey,
-    string? PermissionKey);
+    string? PermissionKey
+);

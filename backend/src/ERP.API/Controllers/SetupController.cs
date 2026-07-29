@@ -32,7 +32,8 @@ public sealed class SetupController : ControllerBase
     [ProducesResponseType(StatusCodes.Status409Conflict)]
     public async Task<IActionResult> CreateInitialAdmin(
         [FromBody] CreateInitialAdminCommand command,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken
+    )
     {
         var result = await _mediator.Send(command, cancellationToken);
         if (!result.IsSuccess)

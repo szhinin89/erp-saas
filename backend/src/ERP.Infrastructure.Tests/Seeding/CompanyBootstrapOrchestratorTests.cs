@@ -21,7 +21,9 @@ public sealed class CompanyBootstrapOrchestratorTests
     {
         var step = new Mock<ICompanyBootstrapStep>();
         step.Setup(s => s.Order).Returns(order);
-        step.Setup(s => s.ExecuteAsync(It.IsAny<CompanyBootstrapContext>(), It.IsAny<CancellationToken>()))
+        step.Setup(s =>
+                s.ExecuteAsync(It.IsAny<CompanyBootstrapContext>(), It.IsAny<CancellationToken>())
+            )
             .Returns(Task.CompletedTask)
             .Callback(() => executionLog.Add(order));
         return step;
@@ -39,33 +41,55 @@ public sealed class CompanyBootstrapOrchestratorTests
 
         var orchestrator = new CompanyBootstrapOrchestrator(
             new[] { stepC.Object, stepA.Object, stepB.Object },
-            NullLogger<CompanyBootstrapOrchestrator>.Instance);
+            NullLogger<CompanyBootstrapOrchestrator>.Instance
+        );
 
-        await orchestrator.BootstrapCompanyAsync(TenantId, CompanyId, ActorId, CancellationToken.None);
+        await orchestrator.BootstrapCompanyAsync(
+            TenantId,
+            CompanyId,
+            ActorId,
+            CancellationToken.None
+        );
 
-        executionLog.Should().Equal(new List<int> { 10, 20, 30 },
-            "el orden de ejecución debe ser explícito por Order, no el de registro en DI");
+        executionLog
+            .Should()
+            .Equal(
+                new List<int> { 10, 20, 30 },
+                "el orden de ejecución debe ser explícito por Order, no el de registro en DI"
+            );
     }
 
     [Fact]
     public async Task Ejecuta_todos_los_steps_registrados_exactamente_una_vez_con_el_contexto_correcto()
     {
-        var steps = Enumerable.Range(1, 5)
-            .Select(i => MakeStep(i * 10, new List<int>()))
-            .ToList();
+        var steps = Enumerable.Range(1, 5).Select(i => MakeStep(i * 10, new List<int>())).ToList();
 
         var orchestrator = new CompanyBootstrapOrchestrator(
             steps.Select(s => s.Object),
-            NullLogger<CompanyBootstrapOrchestrator>.Instance);
+            NullLogger<CompanyBootstrapOrchestrator>.Instance
+        );
 
-        await orchestrator.BootstrapCompanyAsync(TenantId, CompanyId, ActorId, CancellationToken.None);
+        await orchestrator.BootstrapCompanyAsync(
+            TenantId,
+            CompanyId,
+            ActorId,
+            CancellationToken.None
+        );
 
         foreach (var step in steps)
         {
-            step.Verify(s => s.ExecuteAsync(
-                It.Is<CompanyBootstrapContext>(c =>
-                    c.TenantId == TenantId && c.CompanyId == CompanyId && c.ActorId == ActorId),
-                It.IsAny<CancellationToken>()), Times.Once);
+            step.Verify(
+                s =>
+                    s.ExecuteAsync(
+                        It.Is<CompanyBootstrapContext>(c =>
+                            c.TenantId == TenantId
+                            && c.CompanyId == CompanyId
+                            && c.ActorId == ActorId
+                        ),
+                        It.IsAny<CancellationToken>()
+                    ),
+                Times.Once
+            );
         }
     }
 
@@ -74,9 +98,16 @@ public sealed class CompanyBootstrapOrchestratorTests
     {
         var orchestrator = new CompanyBootstrapOrchestrator(
             Array.Empty<ICompanyBootstrapStep>(),
-            NullLogger<CompanyBootstrapOrchestrator>.Instance);
+            NullLogger<CompanyBootstrapOrchestrator>.Instance
+        );
 
-        var act = async () => await orchestrator.BootstrapCompanyAsync(TenantId, CompanyId, ActorId, CancellationToken.None);
+        var act = async () =>
+            await orchestrator.BootstrapCompanyAsync(
+                TenantId,
+                CompanyId,
+                ActorId,
+                CancellationToken.None
+            );
 
         await act.Should().NotThrowAsync();
     }
@@ -92,12 +123,29 @@ public sealed class CompanyBootstrapOrchestratorTests
 
         var orchestrator = new CompanyBootstrapOrchestrator(
             new[] { stepA.Object, stepB.Object },
-            NullLogger<CompanyBootstrapOrchestrator>.Instance);
+            NullLogger<CompanyBootstrapOrchestrator>.Instance
+        );
 
-        await orchestrator.BootstrapCompanyAsync(TenantId, CompanyId, ActorId, CancellationToken.None);
-        await orchestrator.BootstrapCompanyAsync(TenantId, CompanyId, ActorId, CancellationToken.None);
+        await orchestrator.BootstrapCompanyAsync(
+            TenantId,
+            CompanyId,
+            ActorId,
+            CancellationToken.None
+        );
+        await orchestrator.BootstrapCompanyAsync(
+            TenantId,
+            CompanyId,
+            ActorId,
+            CancellationToken.None
+        );
 
-        stepA.Verify(s => s.ExecuteAsync(It.IsAny<CompanyBootstrapContext>(), It.IsAny<CancellationToken>()), Times.Exactly(2));
-        stepB.Verify(s => s.ExecuteAsync(It.IsAny<CompanyBootstrapContext>(), It.IsAny<CancellationToken>()), Times.Exactly(2));
+        stepA.Verify(
+            s => s.ExecuteAsync(It.IsAny<CompanyBootstrapContext>(), It.IsAny<CancellationToken>()),
+            Times.Exactly(2)
+        );
+        stepB.Verify(
+            s => s.ExecuteAsync(It.IsAny<CompanyBootstrapContext>(), It.IsAny<CancellationToken>()),
+            Times.Exactly(2)
+        );
     }
 }

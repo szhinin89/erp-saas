@@ -9,6 +9,7 @@ namespace ERP.Application.Modules.Session.DTOs;
 public sealed record MyAvailableBranchesDto(
     IReadOnlyList<AvailableBranchOptionDto> Branches,
     string LoginMode,
-    Guid? DefaultBranchId);
+    Guid? DefaultBranchId
+);
 
 public sealed record AvailableBranchOptionDto(Guid Id, string Name, bool IsMainBranch);

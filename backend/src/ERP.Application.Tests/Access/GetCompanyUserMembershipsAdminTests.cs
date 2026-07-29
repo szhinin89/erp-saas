@@ -28,6 +28,7 @@ public sealed class GetCompanyUserMembershipsAdminHandlerTests
     private sealed class CurrentCompanyStub : ICurrentCompany
     {
         public CurrentCompanyStub(bool hasContext = true) => HasCompanyContext = hasContext;
+
         public Guid CompanyId => CurrentCompanyId;
         public bool IsAuthenticated => true;
         public bool HasCompanyContext { get; }
@@ -36,6 +37,7 @@ public sealed class GetCompanyUserMembershipsAdminHandlerTests
     private sealed class CurrentTenantStub : ICurrentTenant
     {
         public CurrentTenantStub(Guid tenantId) => TenantId = tenantId;
+
         public Guid TenantId { get; }
         public string? Slug => null;
     }
@@ -44,8 +46,12 @@ public sealed class GetCompanyUserMembershipsAdminHandlerTests
     {
         public Mock<IAccessRepository> AccessRepo { get; } = new();
 
-        public GetCompanyUserMembershipsAdminHandler BuildHandler(bool hasCompanyContext = true) => new(
-            AccessRepo.Object, new CurrentCompanyStub(hasCompanyContext), new CurrentTenantStub(TenantId));
+        public GetCompanyUserMembershipsAdminHandler BuildHandler(bool hasCompanyContext = true) =>
+            new(
+                AccessRepo.Object,
+                new CurrentCompanyStub(hasCompanyContext),
+                new CurrentTenantStub(TenantId)
+            );
     }
 
     [Fact]
@@ -53,18 +59,40 @@ public sealed class GetCompanyUserMembershipsAdminHandlerTests
     {
         var profile = NewProfile("Ventas");
         var user = NewUser("Ana", "Perez", "ana@test.com");
-        var membership = CompanyUserMembership.Create(CurrentCompanyId, user.Id, "User", profile.Id, CreatedBy);
+        var membership = CompanyUserMembership.Create(
+            CurrentCompanyId,
+            user.Id,
+            "User",
+            profile.Id,
+            CreatedBy
+        );
 
         var f = new Fixture();
-        f.AccessRepo.Setup(r => r.GetCompanyUserMembershipsByCompanyAsync(CurrentCompanyId, false, It.IsAny<CancellationToken>()))
+        f.AccessRepo.Setup(r =>
+                r.GetCompanyUserMembershipsByCompanyAsync(
+                    CurrentCompanyId,
+                    false,
+                    It.IsAny<CancellationToken>()
+                )
+            )
             .ReturnsAsync(new[] { membership });
-        f.AccessRepo.Setup(r => r.GetUsersByIdsAsync(It.Is<IReadOnlyCollection<Guid>>(ids => ids.Contains(user.Id)), It.IsAny<CancellationToken>()))
+        f.AccessRepo.Setup(r =>
+                r.GetUsersByIdsAsync(
+                    It.Is<IReadOnlyCollection<Guid>>(ids => ids.Contains(user.Id)),
+                    It.IsAny<CancellationToken>()
+                )
+            )
             .ReturnsAsync(new[] { user });
-        f.AccessRepo.Setup(r => r.GetProfilesByTenantAsync(TenantId, false, It.IsAny<CancellationToken>()))
+        f.AccessRepo.Setup(r =>
+                r.GetProfilesByTenantAsync(TenantId, false, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(new[] { profile });
 
         var handler = f.BuildHandler();
-        var result = await handler.Handle(new GetCompanyUserMembershipsAdminQuery(OnlyActive: false), CancellationToken.None);
+        var result = await handler.Handle(
+            new GetCompanyUserMembershipsAdminQuery(OnlyActive: false),
+            CancellationToken.None
+        );
 
         result.IsSuccess.Should().BeTrue();
         result.Value.Should().HaveCount(1);
@@ -83,18 +111,40 @@ public sealed class GetCompanyUserMembershipsAdminHandlerTests
     public async Task Membership_sin_perfil_asignado_devuelve_ProfileName_null()
     {
         var user = NewUser("Ana", "Perez", "ana@test.com");
-        var membership = CompanyUserMembership.Create(CurrentCompanyId, user.Id, "User", null, CreatedBy);
+        var membership = CompanyUserMembership.Create(
+            CurrentCompanyId,
+            user.Id,
+            "User",
+            null,
+            CreatedBy
+        );
 
         var f = new Fixture();
-        f.AccessRepo.Setup(r => r.GetCompanyUserMembershipsByCompanyAsync(CurrentCompanyId, false, It.IsAny<CancellationToken>()))
+        f.AccessRepo.Setup(r =>
+                r.GetCompanyUserMembershipsByCompanyAsync(
+                    CurrentCompanyId,
+                    false,
+                    It.IsAny<CancellationToken>()
+                )
+            )
             .ReturnsAsync(new[] { membership });
-        f.AccessRepo.Setup(r => r.GetUsersByIdsAsync(It.IsAny<IReadOnlyCollection<Guid>>(), It.IsAny<CancellationToken>()))
+        f.AccessRepo.Setup(r =>
+                r.GetUsersByIdsAsync(
+                    It.IsAny<IReadOnlyCollection<Guid>>(),
+                    It.IsAny<CancellationToken>()
+                )
+            )
             .ReturnsAsync(new[] { user });
-        f.AccessRepo.Setup(r => r.GetProfilesByTenantAsync(TenantId, false, It.IsAny<CancellationToken>()))
+        f.AccessRepo.Setup(r =>
+                r.GetProfilesByTenantAsync(TenantId, false, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(Array.Empty<AccessProfile>());
 
         var handler = f.BuildHandler();
-        var result = await handler.Handle(new GetCompanyUserMembershipsAdminQuery(), CancellationToken.None);
+        var result = await handler.Handle(
+            new GetCompanyUserMembershipsAdminQuery(),
+            CancellationToken.None
+        );
 
         result.IsSuccess.Should().BeTrue();
         result.Value![0].ProfileId.Should().BeNull();
@@ -105,15 +155,32 @@ public sealed class GetCompanyUserMembershipsAdminHandlerTests
     public async Task Pasa_OnlyActive_al_repositorio_tal_cual_se_recibe()
     {
         var f = new Fixture();
-        f.AccessRepo.Setup(r => r.GetCompanyUserMembershipsByCompanyAsync(CurrentCompanyId, true, It.IsAny<CancellationToken>()))
+        f.AccessRepo.Setup(r =>
+                r.GetCompanyUserMembershipsByCompanyAsync(
+                    CurrentCompanyId,
+                    true,
+                    It.IsAny<CancellationToken>()
+                )
+            )
             .ReturnsAsync(Array.Empty<CompanyUserMembership>());
 
         var handler = f.BuildHandler();
-        var result = await handler.Handle(new GetCompanyUserMembershipsAdminQuery(OnlyActive: true), CancellationToken.None);
+        var result = await handler.Handle(
+            new GetCompanyUserMembershipsAdminQuery(OnlyActive: true),
+            CancellationToken.None
+        );
 
         result.IsSuccess.Should().BeTrue();
         result.Value.Should().BeEmpty();
-        f.AccessRepo.Verify(r => r.GetCompanyUserMembershipsByCompanyAsync(CurrentCompanyId, true, It.IsAny<CancellationToken>()), Times.Once);
+        f.AccessRepo.Verify(
+            r =>
+                r.GetCompanyUserMembershipsByCompanyAsync(
+                    CurrentCompanyId,
+                    true,
+                    It.IsAny<CancellationToken>()
+                ),
+            Times.Once
+        );
     }
 
     [Fact]
@@ -122,10 +189,21 @@ public sealed class GetCompanyUserMembershipsAdminHandlerTests
         var f = new Fixture();
         var handler = f.BuildHandler(hasCompanyContext: false);
 
-        var result = await handler.Handle(new GetCompanyUserMembershipsAdminQuery(), CancellationToken.None);
+        var result = await handler.Handle(
+            new GetCompanyUserMembershipsAdminQuery(),
+            CancellationToken.None
+        );
 
         result.IsSuccess.Should().BeFalse();
         result.Code.Should().Be(ApiResponseCodes.Common.Forbidden);
-        f.AccessRepo.Verify(r => r.GetCompanyUserMembershipsByCompanyAsync(It.IsAny<Guid>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()), Times.Never);
+        f.AccessRepo.Verify(
+            r =>
+                r.GetCompanyUserMembershipsByCompanyAsync(
+                    It.IsAny<Guid>(),
+                    It.IsAny<bool>(),
+                    It.IsAny<CancellationToken>()
+                ),
+            Times.Never
+        );
     }
 }

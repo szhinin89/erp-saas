@@ -40,14 +40,19 @@ namespace ERP.Infrastructure.Persistence.Interceptors;
 public sealed class NewChildEntityTrackingInterceptor : SaveChangesInterceptor
 {
     public override InterceptionResult<int> SavingChanges(
-        DbContextEventData eventData, InterceptionResult<int> result)
+        DbContextEventData eventData,
+        InterceptionResult<int> result
+    )
     {
         Reconcile(eventData.Context);
         return base.SavingChanges(eventData, result);
     }
 
     public override ValueTask<InterceptionResult<int>> SavingChangesAsync(
-        DbContextEventData eventData, InterceptionResult<int> result, CancellationToken cancellationToken = default)
+        DbContextEventData eventData,
+        InterceptionResult<int> result,
+        CancellationToken cancellationToken = default
+    )
     {
         Reconcile(eventData.Context);
         return base.SavingChangesAsync(eventData, result, cancellationToken);
@@ -55,14 +60,17 @@ public sealed class NewChildEntityTrackingInterceptor : SaveChangesInterceptor
 
     private static void Reconcile(DbContext? context)
     {
-        if (context is not ErpDbContext db) return;
+        if (context is not ErpDbContext db)
+            return;
 
         db.ChangeTracker.DetectChanges();
 
         foreach (var entry in db.ChangeTracker.Entries())
         {
-            if (entry.State != EntityState.Modified) continue;
-            if (HasRealChange(entry)) continue;
+            if (entry.State != EntityState.Modified)
+                continue;
+            if (HasRealChange(entry))
+                continue;
 
             if (!db.WasTrackedFromQuery(entry.Entity))
             {
@@ -71,14 +79,15 @@ public sealed class NewChildEntityTrackingInterceptor : SaveChangesInterceptor
             }
 
             throw new InvalidOperationException(
-                $"[NewChildEntityTracking] '{entry.Metadata.DisplayName()}' fue cargada por una query en " +
-                "este DbContext pero quedó marcada Modified sin ninguna diferencia real de valores. Esta " +
-                "combinación es anómala bajo operación normal de EF Core y no puede resolverse " +
-                "automáticamente sin riesgo de enmascarar otro defecto. Revisar manualmente el flujo que " +
-                "produjo este estado antes de continuar.");
+                $"[NewChildEntityTracking] '{entry.Metadata.DisplayName()}' fue cargada por una query en "
+                    + "este DbContext pero quedó marcada Modified sin ninguna diferencia real de valores. Esta "
+                    + "combinación es anómala bajo operación normal de EF Core y no puede resolverse "
+                    + "automáticamente sin riesgo de enmascarar otro defecto. Revisar manualmente el flujo que "
+                    + "produjo este estado antes de continuar."
+            );
         }
     }
 
-    private static bool HasRealChange(EntityEntry entry)
-        => entry.Properties.Any(p => p.IsModified && !Equals(p.OriginalValue, p.CurrentValue));
+    private static bool HasRealChange(EntityEntry entry) =>
+        entry.Properties.Any(p => p.IsModified && !Equals(p.OriginalValue, p.CurrentValue));
 }

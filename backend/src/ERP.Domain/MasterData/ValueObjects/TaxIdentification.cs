@@ -32,7 +32,14 @@ public sealed record TaxIdentification
     public const string ConsumidorFinalNumber = "9999999999999";
 
     private static readonly HashSet<string> _validTypes =
-        [SriRuc, SriCi, SriPassport, SriConsumidorFinal, SriExterior, SriPlaca];
+    [
+        SriRuc,
+        SriCi,
+        SriPassport,
+        SriConsumidorFinal,
+        SriExterior,
+        SriPlaca,
+    ];
 
     public string Type { get; }
     public string Number { get; }
@@ -49,14 +56,20 @@ public sealed record TaxIdentification
         if (!_validTypes.Contains(t))
             throw new ArgumentException(
                 $"Tipo de identificación '{type}' no válido. Códigos SRI aceptados: {string.Join(", ", _validTypes)}.",
-                nameof(type));
+                nameof(type)
+            );
 
         var n = (number ?? string.Empty).Trim();
         if (string.IsNullOrWhiteSpace(n))
-            throw new ArgumentException("El número de identificación es obligatorio.", nameof(number));
+            throw new ArgumentException(
+                "El número de identificación es obligatorio.",
+                nameof(number)
+            );
         if (n.Length > NumberMaxLen)
             throw new ArgumentException(
-                $"El número de identificación no puede superar {NumberMaxLen} caracteres.", nameof(number));
+                $"El número de identificación no puede superar {NumberMaxLen} caracteres.",
+                nameof(number)
+            );
 
         // ── Validaciones específicas por tipo SRI ───────────────────────────
         switch (t)
@@ -64,21 +77,29 @@ public sealed record TaxIdentification
             case SriRuc:
                 if (n.Length != 13)
                     throw new ArgumentException(
-                        $"RUC ecuatoriano debe tener exactamente 13 dígitos (recibido: {n.Length}).", nameof(number));
+                        $"RUC ecuatoriano debe tener exactamente 13 dígitos (recibido: {n.Length}).",
+                        nameof(number)
+                    );
                 if (!RucValidator.EsRucValido(n))
                     throw new ArgumentException(
-                        $"RUC '{n}' inválido según el algoritmo del SRI. " +
-                        "Verifique provincia (01-24/30), tipo de contribuyente y dígito verificador.", nameof(number));
+                        $"RUC '{n}' inválido según el algoritmo del SRI. "
+                            + "Verifique provincia (01-24/30), tipo de contribuyente y dígito verificador.",
+                        nameof(number)
+                    );
                 break;
 
             case SriCi:
                 if (n.Length != 10)
                     throw new ArgumentException(
-                        $"Cédula ecuatoriana debe tener exactamente 10 dígitos (recibido: {n.Length}).", nameof(number));
+                        $"Cédula ecuatoriana debe tener exactamente 10 dígitos (recibido: {n.Length}).",
+                        nameof(number)
+                    );
                 if (!EcuadorIdValidator.EsCedulaValida(n))
                     throw new ArgumentException(
-                        $"Cédula '{n}' inválida según el algoritmo del Registro Civil. " +
-                        "Verifique provincia (01-24), 3.er dígito y dígito verificador.", nameof(number));
+                        $"Cédula '{n}' inválida según el algoritmo del Registro Civil. "
+                            + "Verifique provincia (01-24), 3.er dígito y dígito verificador.",
+                        nameof(number)
+                    );
                 break;
 
             case SriConsumidorFinal:
@@ -89,20 +110,25 @@ public sealed record TaxIdentification
             case SriPassport:
                 if (n.Length < 3 || n.Length > 20)
                     throw new ArgumentException(
-                        $"Pasaporte debe tener entre 3 y 20 caracteres (recibido: {n.Length}).", nameof(number));
+                        $"Pasaporte debe tener entre 3 y 20 caracteres (recibido: {n.Length}).",
+                        nameof(number)
+                    );
                 break;
 
             case SriExterior:
                 if (n.Length < 3 || n.Length > 20)
                     throw new ArgumentException(
                         $"Identificación del exterior debe tener entre 3 y 20 caracteres (recibido: {n.Length}).",
-                        nameof(number));
+                        nameof(number)
+                    );
                 break;
 
             case SriPlaca:
                 if (n.Length < 6 || n.Length > 10)
                     throw new ArgumentException(
-                        $"Placa debe tener entre 6 y 10 caracteres (recibido: {n.Length}).", nameof(number));
+                        $"Placa debe tener entre 6 y 10 caracteres (recibido: {n.Length}).",
+                        nameof(number)
+                    );
                 break;
         }
 

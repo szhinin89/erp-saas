@@ -16,7 +16,8 @@ public sealed class GetElectronicDocumentsDashboardQueryHandler
     public GetElectronicDocumentsDashboardQueryHandler(
         IElectronicDocumentRepository repository,
         ICurrentTenant currentTenant,
-        ICurrentCompany currentCompany)
+        ICurrentCompany currentCompany
+    )
     {
         _repository = repository;
         _currentTenant = currentTenant;
@@ -24,20 +25,46 @@ public sealed class GetElectronicDocumentsDashboardQueryHandler
     }
 
     public async Task<Result<ElectronicDocumentsDashboardDto>> Handle(
-        GetElectronicDocumentsDashboardQuery query, CancellationToken cancellationToken)
+        GetElectronicDocumentsDashboardQuery query,
+        CancellationToken cancellationToken
+    )
     {
         var companyId = _currentCompany.CompanyId;
         var tenantId = _currentTenant.TenantId;
 
-        var stateCounts = await _repository.GetStateCountsAsync(tenantId, companyId, cancellationToken);
-        var authorizedToday = await _repository.CountAuthorizedTodayAsync(tenantId, companyId, cancellationToken);
-        var errorsToday = await _repository.CountErrorsTodayAsync(tenantId, companyId, cancellationToken);
-        var averageAuthorizationMinutes = await _repository.GetAverageAuthorizationMinutesAsync(tenantId, companyId, cancellationToken);
-        var pendingRetries = await _repository.CountPendingRetriesAsync(tenantId, companyId, cancellationToken);
-        var totalToday = await _repository.CountCreatedTodayAsync(tenantId, companyId, cancellationToken);
+        var stateCounts = await _repository.GetStateCountsAsync(
+            tenantId,
+            companyId,
+            cancellationToken
+        );
+        var authorizedToday = await _repository.CountAuthorizedTodayAsync(
+            tenantId,
+            companyId,
+            cancellationToken
+        );
+        var errorsToday = await _repository.CountErrorsTodayAsync(
+            tenantId,
+            companyId,
+            cancellationToken
+        );
+        var averageAuthorizationMinutes = await _repository.GetAverageAuthorizationMinutesAsync(
+            tenantId,
+            companyId,
+            cancellationToken
+        );
+        var pendingRetries = await _repository.CountPendingRetriesAsync(
+            tenantId,
+            companyId,
+            cancellationToken
+        );
+        var totalToday = await _repository.CountCreatedTodayAsync(
+            tenantId,
+            companyId,
+            cancellationToken
+        );
 
-        int CountOf(params ElectronicDocumentState[] states)
-            => states.Sum(s => stateCounts.TryGetValue(s, out var c) ? c : 0);
+        int CountOf(params ElectronicDocumentState[] states) =>
+            states.Sum(s => stateCounts.TryGetValue(s, out var c) ? c : 0);
 
         var dto = new ElectronicDocumentsDashboardDto(
             Pending: CountOf(ElectronicDocumentState.Draft, ElectronicDocumentState.XmlGenerated),
@@ -50,7 +77,8 @@ public sealed class GetElectronicDocumentsDashboardQueryHandler
             ErrorsToday: errorsToday,
             AverageAuthorizationMinutes: averageAuthorizationMinutes,
             PendingRetries: pendingRetries,
-            TotalToday: totalToday);
+            TotalToday: totalToday
+        );
 
         return Result<ElectronicDocumentsDashboardDto>.Success(dto);
     }

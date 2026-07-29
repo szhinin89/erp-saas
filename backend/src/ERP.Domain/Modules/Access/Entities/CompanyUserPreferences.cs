@@ -13,7 +13,10 @@ namespace ERP.Domain.Access.Entities;
 /// <see cref="CompanyUserBranch"/>) requiere acceso a datos y es responsabilidad del handler de
 /// aplicación que orquesta la creación/actualización de esta entidad (fuera de alcance de Domain).
 /// </summary>
-public sealed class CompanyUserPreferences : AuditableEntity, ITenantScopedEntity, ICompanyOperationalEntity
+public sealed class CompanyUserPreferences
+    : AuditableEntity,
+        ITenantScopedEntity,
+        ICompanyOperationalEntity
 {
     public Guid CompanyId { get; private set; }
     public Guid CompanyUserMembershipId { get; private set; }
@@ -28,17 +31,26 @@ public sealed class CompanyUserPreferences : AuditableEntity, ITenantScopedEntit
         Guid companyUserMembershipId,
         CompanyUserLoginMode loginMode,
         Guid? defaultBranchId,
-        Guid createdBy)
+        Guid createdBy
+    )
     {
         if (companyId == Guid.Empty)
             throw new ArgumentException("La empresa es obligatoria.", nameof(companyId));
         if (companyUserMembershipId == Guid.Empty)
-            throw new ArgumentException("La membresía es obligatoria.", nameof(companyUserMembershipId));
+            throw new ArgumentException(
+                "La membresía es obligatoria.",
+                nameof(companyUserMembershipId)
+            );
         if (defaultBranchId == Guid.Empty)
-            throw new ArgumentException("La sucursal por defecto no puede ser un Guid vacío.", nameof(defaultBranchId));
+            throw new ArgumentException(
+                "La sucursal por defecto no puede ser un Guid vacío.",
+                nameof(defaultBranchId)
+            );
         if (loginMode == CompanyUserLoginMode.DirectToDefault && defaultBranchId is null)
             throw new ArgumentException(
-                "LoginMode.DirectToDefault requiere una sucursal por defecto.", nameof(defaultBranchId));
+                "LoginMode.DirectToDefault requiere una sucursal por defecto.",
+                nameof(defaultBranchId)
+            );
 
         var entity = new CompanyUserPreferences
         {
@@ -58,11 +70,15 @@ public sealed class CompanyUserPreferences : AuditableEntity, ITenantScopedEntit
     public void ChangeDefaultBranch(Guid? defaultBranchId, Guid updatedBy)
     {
         if (defaultBranchId == Guid.Empty)
-            throw new ArgumentException("La sucursal por defecto no puede ser un Guid vacío.", nameof(defaultBranchId));
+            throw new ArgumentException(
+                "La sucursal por defecto no puede ser un Guid vacío.",
+                nameof(defaultBranchId)
+            );
         if (LoginMode == CompanyUserLoginMode.DirectToDefault && defaultBranchId is null)
             throw new ArgumentException(
                 "No se puede quitar la sucursal por defecto mientras LoginMode sea DirectToDefault.",
-                nameof(defaultBranchId));
+                nameof(defaultBranchId)
+            );
 
         if (DefaultBranchId == defaultBranchId)
             return;
@@ -76,7 +92,9 @@ public sealed class CompanyUserPreferences : AuditableEntity, ITenantScopedEntit
     {
         if (loginMode == CompanyUserLoginMode.DirectToDefault && DefaultBranchId is null)
             throw new ArgumentException(
-                "No se puede activar DirectToDefault sin una sucursal por defecto ya asignada.", nameof(loginMode));
+                "No se puede activar DirectToDefault sin una sucursal por defecto ya asignada.",
+                nameof(loginMode)
+            );
 
         if (LoginMode == loginMode)
             return;

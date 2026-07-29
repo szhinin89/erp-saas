@@ -32,7 +32,8 @@ namespace ERP.API.Controllers;
     "/companies",
     null,
     28,
-    IsVisibleInMenu = false)]
+    IsVisibleInMenu = false
+)]
 [ApiController]
 [Route("api/v1/companies")]
 [Authorize]
@@ -45,8 +46,14 @@ public sealed class CompaniesController : ControllerBase
 
     [HttpGet]
     [Authorize(Policy = $"perm:{SettingsPermissions.CompaniesView}")]
-    [ProducesResponseType(typeof(ApiResponse<IReadOnlyList<CompanyListItemDto>>), StatusCodes.Status200OK)]
-    public async Task<IActionResult> List([FromQuery] bool activeOnly = true, CancellationToken cancellationToken = default)
+    [ProducesResponseType(
+        typeof(ApiResponse<IReadOnlyList<CompanyListItemDto>>),
+        StatusCodes.Status200OK
+    )]
+    public async Task<IActionResult> List(
+        [FromQuery] bool activeOnly = true,
+        CancellationToken cancellationToken = default
+    )
     {
         var result = await _mediator.Send(new ListCompaniesQuery(activeOnly), cancellationToken);
         return this.ToOkOrBadRequest(result, "OK", () => Array.Empty<CompanyListItemDto>());
@@ -73,7 +80,10 @@ public sealed class CompaniesController : ControllerBase
     [HttpPut("profile")]
     [Authorize(Policy = $"perm:{SettingsPermissions.CompaniesUpdate}")]
     [ProducesResponseType(typeof(ApiResponse<CompanyProfileDto>), StatusCodes.Status200OK)]
-    public async Task<IActionResult> UpdateProfile([FromBody] UpdateCompanyProfileCommand command, CancellationToken cancellationToken = default)
+    public async Task<IActionResult> UpdateProfile(
+        [FromBody] UpdateCompanyProfileCommand command,
+        CancellationToken cancellationToken = default
+    )
     {
         var result = await _mediator.Send(command, cancellationToken);
         return this.ToOkOrBadRequest(result);
@@ -83,7 +93,10 @@ public sealed class CompaniesController : ControllerBase
     [Authorize(Policy = $"perm:{SettingsPermissions.CompaniesUpdate}")]
     [Consumes("multipart/form-data")]
     [ProducesResponseType(typeof(ApiResponse<CompanyProfileDto>), StatusCodes.Status200OK)]
-    public async Task<IActionResult> UploadLogo(IFormFile? file, CancellationToken cancellationToken = default)
+    public async Task<IActionResult> UploadLogo(
+        IFormFile? file,
+        CancellationToken cancellationToken = default
+    )
     {
         if (file is null || file.Length == 0)
             return this.ApiBadRequest("Debe adjuntar un archivo de imagen.");
@@ -111,7 +124,10 @@ public sealed class CompaniesController : ControllerBase
     [HttpPut("profile/fiscal")]
     [Authorize(Policy = $"perm:{SettingsPermissions.CompaniesUpdate}")]
     [ProducesResponseType(typeof(ApiResponse<CompanyProfileDto>), StatusCodes.Status200OK)]
-    public async Task<IActionResult> UpdateFiscal([FromBody] UpdateCompanyFiscalCommand command, CancellationToken cancellationToken = default)
+    public async Task<IActionResult> UpdateFiscal(
+        [FromBody] UpdateCompanyFiscalCommand command,
+        CancellationToken cancellationToken = default
+    )
     {
         var result = await _mediator.Send(command, cancellationToken);
         return this.ToOkOrBadRequest(result);
@@ -120,7 +136,10 @@ public sealed class CompaniesController : ControllerBase
     [HttpPut("profile/operation")]
     [Authorize(Policy = $"perm:{SettingsPermissions.CompaniesUpdate}")]
     [ProducesResponseType(typeof(ApiResponse<CompanyProfileDto>), StatusCodes.Status200OK)]
-    public async Task<IActionResult> UpdateOperation([FromBody] UpdateCompanyOperationCommand command, CancellationToken cancellationToken = default)
+    public async Task<IActionResult> UpdateOperation(
+        [FromBody] UpdateCompanyOperationCommand command,
+        CancellationToken cancellationToken = default
+    )
     {
         var result = await _mediator.Send(command, cancellationToken);
         return this.ToOkOrBadRequest(result);
@@ -129,7 +148,10 @@ public sealed class CompaniesController : ControllerBase
     [HttpPut("profile/documents")]
     [Authorize(Policy = $"perm:{SettingsPermissions.CompaniesUpdate}")]
     [ProducesResponseType(typeof(ApiResponse<CompanyProfileDto>), StatusCodes.Status200OK)]
-    public async Task<IActionResult> UpdateDocuments([FromBody] UpdateCompanyDocumentsCommand command, CancellationToken cancellationToken = default)
+    public async Task<IActionResult> UpdateDocuments(
+        [FromBody] UpdateCompanyDocumentsCommand command,
+        CancellationToken cancellationToken = default
+    )
     {
         var result = await _mediator.Send(command, cancellationToken);
         return this.ToOkOrBadRequest(result);
@@ -138,7 +160,10 @@ public sealed class CompaniesController : ControllerBase
     [HttpPut("profile/branding")]
     [Authorize(Policy = $"perm:{SettingsPermissions.CompaniesUpdate}")]
     [ProducesResponseType(typeof(ApiResponse<CompanyProfileDto>), StatusCodes.Status200OK)]
-    public async Task<IActionResult> UpdateBranding([FromBody] UpdateCompanyBrandingCommand command, CancellationToken cancellationToken = default)
+    public async Task<IActionResult> UpdateBranding(
+        [FromBody] UpdateCompanyBrandingCommand command,
+        CancellationToken cancellationToken = default
+    )
     {
         var result = await _mediator.Send(command, cancellationToken);
         return this.ToOkOrBadRequest(result);
@@ -148,7 +173,10 @@ public sealed class CompaniesController : ControllerBase
     [Authorize(Policy = $"perm:{SettingsPermissions.CompaniesUpdate}")]
     [Consumes("multipart/form-data")]
     [ProducesResponseType(typeof(ApiResponse<CompanyProfileDto>), StatusCodes.Status200OK)]
-    public async Task<IActionResult> UploadLogoAlt(IFormFile? file, CancellationToken cancellationToken = default)
+    public async Task<IActionResult> UploadLogoAlt(
+        IFormFile? file,
+        CancellationToken cancellationToken = default
+    )
     {
         if (file is null || file.Length == 0)
             return this.ApiBadRequest("Debe adjuntar un archivo de imagen.");
@@ -158,12 +186,17 @@ public sealed class CompaniesController : ControllerBase
         stream.Position = 0;
 
         var content = new MediaUploadContent(stream, file.FileName, file.ContentType, file.Length);
-        var result = await _mediator.Send(new UploadCompanyLogoAltCommand(content), cancellationToken);
+        var result = await _mediator.Send(
+            new UploadCompanyLogoAltCommand(content),
+            cancellationToken
+        );
         return this.ToOkOrBadRequest(result);
     }
 
     [HttpGet("profile/logo-alt/content")]
-    public async Task<IActionResult> GetLogoAltContent(CancellationToken cancellationToken = default)
+    public async Task<IActionResult> GetLogoAltContent(
+        CancellationToken cancellationToken = default
+    )
     {
         var result = await _mediator.Send(new GetCompanyLogoAltContentQuery(), cancellationToken);
         if (!result.IsSuccess)
@@ -186,7 +219,10 @@ public sealed class CompaniesController : ControllerBase
     [HttpPost]
     [Authorize(Policy = $"perm:{SettingsPermissions.CompaniesCreate}")]
     [ProducesResponseType(typeof(ApiResponse<CompanyDetailDto>), StatusCodes.Status201Created)]
-    public async Task<IActionResult> Create([FromBody] CreateCompanyCommand command, CancellationToken cancellationToken = default)
+    public async Task<IActionResult> Create(
+        [FromBody] CreateCompanyCommand command,
+        CancellationToken cancellationToken = default
+    )
     {
         var result = await _mediator.Send(command, cancellationToken);
         return this.ToCreatedOrBadRequest(result);
@@ -195,7 +231,11 @@ public sealed class CompaniesController : ControllerBase
     [HttpPut("{id:guid}")]
     [Authorize(Policy = $"perm:{SettingsPermissions.CompaniesUpdate}")]
     [ProducesResponseType(typeof(ApiResponse<CompanyDetailDto>), StatusCodes.Status200OK)]
-    public async Task<IActionResult> Update(Guid id, [FromBody] UpdateCompanyCommand command, CancellationToken cancellationToken = default)
+    public async Task<IActionResult> Update(
+        Guid id,
+        [FromBody] UpdateCompanyCommand command,
+        CancellationToken cancellationToken = default
+    )
     {
         if (id != command.Id)
             return this.ApiBadRequest("El id de ruta no coincide con el cuerpo.");

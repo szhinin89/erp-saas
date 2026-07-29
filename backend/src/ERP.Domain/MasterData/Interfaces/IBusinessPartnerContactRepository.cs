@@ -11,21 +11,27 @@ namespace ERP.Domain.MasterData.Interfaces;
 /// </summary>
 public interface IBusinessPartnerContactRepository
 {
-    Task<BusinessPartnerContact?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default);
+    Task<BusinessPartnerContact?> GetByIdAsync(
+        Guid id,
+        CancellationToken cancellationToken = default
+    );
 
     Task<IReadOnlyList<BusinessPartnerContact>> GetByBusinessPartnerAsync(
         Guid businessPartnerId,
         bool? onlyActive = true,
-        CancellationToken cancellationToken = default);
+        CancellationToken cancellationToken = default
+    );
 
     Task<IReadOnlyList<BusinessPartnerContact>> GetByRoleAsync(
         Guid businessPartnerId,
         ContactRole role,
-        CancellationToken cancellationToken = default);
+        CancellationToken cancellationToken = default
+    );
 
     Task<BusinessPartnerContact?> GetPrimaryAsync(
         Guid businessPartnerId,
-        CancellationToken cancellationToken = default);
+        CancellationToken cancellationToken = default
+    );
 
     /// <summary>Quita IsPrimary de todos los contactos del BP (antes de asignar nuevo primario).</summary>
     Task ClearPrimaryAsync(Guid businessPartnerId, CancellationToken cancellationToken = default);

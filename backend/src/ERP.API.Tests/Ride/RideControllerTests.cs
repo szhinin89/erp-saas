@@ -31,7 +31,10 @@ public sealed class RideControllerTests
         services.AddSingleton<IWebHostEnvironment>(new StubWebHostEnvironment());
         controller.ControllerContext = new ControllerContext
         {
-            HttpContext = new DefaultHttpContext { RequestServices = services.BuildServiceProvider() },
+            HttpContext = new DefaultHttpContext
+            {
+                RequestServices = services.BuildServiceProvider(),
+            },
         };
         return controller;
     }
@@ -41,21 +44,39 @@ public sealed class RideControllerTests
         public string EnvironmentName { get; set; } = "Development";
         public string ApplicationName { get; set; } = "ERP.API.Tests";
         public string WebRootPath { get; set; } = "";
-        public Microsoft.Extensions.FileProviders.IFileProvider WebRootFileProvider { get; set; } = null!;
+        public Microsoft.Extensions.FileProviders.IFileProvider WebRootFileProvider { get; set; } =
+            null!;
         public string ContentRootPath { get; set; } = "";
-        public Microsoft.Extensions.FileProviders.IFileProvider ContentRootFileProvider { get; set; } = null!;
+        public Microsoft.Extensions.FileProviders.IFileProvider ContentRootFileProvider { get; set; } =
+            null!;
     }
 
     private static readonly RidePdfMetadataDto Metadata = new(
-        "Invoice", "unversioned", "unversioned", "unversioned", new string('a', 64), DateTime.UtcNow, WasCached: false);
+        "Invoice",
+        "unversioned",
+        "unversioned",
+        "unversioned",
+        new string('a', 64),
+        DateTime.UtcNow,
+        WasCached: false
+    );
 
     [Fact]
     public async Task GetOrGenerate_success_returns_200_with_the_outcome_from_application()
     {
-        var expected = new RideGenerationResultDto(RideOutcome.Generated, "ride/path.pdf", Metadata, null);
+        var expected = new RideGenerationResultDto(
+            RideOutcome.Generated,
+            "ride/path.pdf",
+            Metadata,
+            null
+        );
         var controller = BuildController(_ => Result<RideGenerationResultDto>.Success(expected));
 
-        var response = await controller.GetOrGenerate("Sales", Guid.NewGuid(), CancellationToken.None);
+        var response = await controller.GetOrGenerate(
+            "Sales",
+            Guid.NewGuid(),
+            CancellationToken.None
+        );
 
         var ok = response.Should().BeOfType<OkObjectResult>().Subject;
         ok.StatusCode.Should().Be(200);
@@ -67,10 +88,19 @@ public sealed class RideControllerTests
     [Fact]
     public async Task GetOrGenerate_nonexistent_document_returns_200_with_not_applicable_never_a_404()
     {
-        var expected = new RideGenerationResultDto(RideOutcome.NotApplicable, null, null, "source_not_applicable");
+        var expected = new RideGenerationResultDto(
+            RideOutcome.NotApplicable,
+            null,
+            null,
+            "source_not_applicable"
+        );
         var controller = BuildController(_ => Result<RideGenerationResultDto>.Success(expected));
 
-        var response = await controller.GetOrGenerate("Sales", Guid.NewGuid(), CancellationToken.None);
+        var response = await controller.GetOrGenerate(
+            "Sales",
+            Guid.NewGuid(),
+            CancellationToken.None
+        );
 
         var ok = response.Should().BeOfType<OkObjectResult>().Subject;
         var body = ok.Value.Should().BeOfType<ApiResponse<RideGenerationResultDto>>().Subject;
@@ -84,10 +114,19 @@ public sealed class RideControllerTests
         // Application vea nada — desde el controller, este caso llega EXACTAMENTE igual que
         // "documento inexistente": Outcome.NotApplicable. Documentado aquí explícitamente para
         // que quede probado, no asumido.
-        var expected = new RideGenerationResultDto(RideOutcome.NotApplicable, null, null, "source_not_applicable");
+        var expected = new RideGenerationResultDto(
+            RideOutcome.NotApplicable,
+            null,
+            null,
+            "source_not_applicable"
+        );
         var controller = BuildController(_ => Result<RideGenerationResultDto>.Success(expected));
 
-        var response = await controller.GetOrGenerate("Sales", Guid.NewGuid(), CancellationToken.None);
+        var response = await controller.GetOrGenerate(
+            "Sales",
+            Guid.NewGuid(),
+            CancellationToken.None
+        );
 
         var ok = response.Should().BeOfType<OkObjectResult>().Subject;
         var body = ok.Value.Should().BeOfType<ApiResponse<RideGenerationResultDto>>().Subject;
@@ -102,7 +141,8 @@ public sealed class RideControllerTests
         {
             captured = (GetOrGenerateRideQuery)req;
             return Result<RideGenerationResultDto>.Success(
-                new RideGenerationResultDto(RideOutcome.Generated, "x", Metadata, null));
+                new RideGenerationResultDto(RideOutcome.Generated, "x", Metadata, null)
+            );
         });
         var sourceEntityId = Guid.NewGuid();
 
@@ -116,10 +156,18 @@ public sealed class RideControllerTests
     [Fact]
     public async Task Regenerate_success_returns_200_with_the_outcome_from_application()
     {
-        var expected = new RideGenerationResultDto(RideOutcome.Generated, "ride/path.pdf", Metadata, null);
+        var expected = new RideGenerationResultDto(
+            RideOutcome.Generated,
+            "ride/path.pdf",
+            Metadata,
+            null
+        );
         var controller = BuildController(_ => Result<RideGenerationResultDto>.Success(expected));
 
-        var response = await controller.Regenerate(new RegenerateRideCommand("Sales", Guid.NewGuid()), CancellationToken.None);
+        var response = await controller.Regenerate(
+            new RegenerateRideCommand("Sales", Guid.NewGuid()),
+            CancellationToken.None
+        );
 
         var ok = response.Should().BeOfType<OkObjectResult>().Subject;
         var body = ok.Value.Should().BeOfType<ApiResponse<RideGenerationResultDto>>().Subject;
@@ -129,10 +177,18 @@ public sealed class RideControllerTests
     [Fact]
     public async Task Regenerate_nonexistent_document_returns_200_with_not_applicable()
     {
-        var expected = new RideGenerationResultDto(RideOutcome.NotApplicable, null, null, "source_not_applicable");
+        var expected = new RideGenerationResultDto(
+            RideOutcome.NotApplicable,
+            null,
+            null,
+            "source_not_applicable"
+        );
         var controller = BuildController(_ => Result<RideGenerationResultDto>.Success(expected));
 
-        var response = await controller.Regenerate(new RegenerateRideCommand("Sales", Guid.NewGuid()), CancellationToken.None);
+        var response = await controller.Regenerate(
+            new RegenerateRideCommand("Sales", Guid.NewGuid()),
+            CancellationToken.None
+        );
 
         var ok = response.Should().BeOfType<OkObjectResult>().Subject;
         var body = ok.Value.Should().BeOfType<ApiResponse<RideGenerationResultDto>>().Subject;
@@ -142,10 +198,18 @@ public sealed class RideControllerTests
     [Fact]
     public async Task Regenerate_other_company_document_is_indistinguishable_from_nonexistent()
     {
-        var expected = new RideGenerationResultDto(RideOutcome.NotApplicable, null, null, "source_not_applicable");
+        var expected = new RideGenerationResultDto(
+            RideOutcome.NotApplicable,
+            null,
+            null,
+            "source_not_applicable"
+        );
         var controller = BuildController(_ => Result<RideGenerationResultDto>.Success(expected));
 
-        var response = await controller.Regenerate(new RegenerateRideCommand("Sales", Guid.NewGuid()), CancellationToken.None);
+        var response = await controller.Regenerate(
+            new RegenerateRideCommand("Sales", Guid.NewGuid()),
+            CancellationToken.None
+        );
 
         var ok = response.Should().BeOfType<OkObjectResult>().Subject;
         var body = ok.Value.Should().BeOfType<ApiResponse<RideGenerationResultDto>>().Subject;
@@ -160,11 +224,15 @@ public sealed class RideControllerTests
         {
             captured = (RegenerateRideCommand)req;
             return Result<RideGenerationResultDto>.Success(
-                new RideGenerationResultDto(RideOutcome.Generated, "x", Metadata, null));
+                new RideGenerationResultDto(RideOutcome.Generated, "x", Metadata, null)
+            );
         });
         var sourceEntityId = Guid.NewGuid();
 
-        await controller.Regenerate(new RegenerateRideCommand("Sales", sourceEntityId), CancellationToken.None);
+        await controller.Regenerate(
+            new RegenerateRideCommand("Sales", sourceEntityId),
+            CancellationToken.None
+        );
 
         captured.Should().NotBeNull();
         captured!.SourceModule.Should().Be("Sales");

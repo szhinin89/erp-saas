@@ -12,8 +12,7 @@ public sealed record CategoryNodeDto(
     int SortOrder,
     bool IsActive,
     DateTime CreatedAt,
-    DateTime? UpdatedAt);
+    DateTime? UpdatedAt
+);
 
-public sealed record CategoryTreeDto(
-    IReadOnlyList<CategoryNodeDto> Nodes,
-    int MaxDepth);
+public sealed record CategoryTreeDto(IReadOnlyList<CategoryNodeDto> Nodes, int MaxDepth);

@@ -7,7 +7,13 @@ namespace ERP.Domain.Tests.Access;
 public sealed class UserSessionTests
 {
     private static UserSession CreateSession(string terminalId = "device-1") =>
-        UserSession.Create(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), terminalId);
+        UserSession.Create(
+            Guid.NewGuid(),
+            Guid.NewGuid(),
+            Guid.NewGuid(),
+            Guid.NewGuid(),
+            terminalId
+        );
 
     [Fact]
     public void Create_queda_Active_por_defecto()
@@ -33,13 +39,17 @@ public sealed class UserSessionTests
     [InlineData(false, true, false)]
     [InlineData(false, false, true)]
     public void Create_con_Guid_obligatorio_vacio_lanza_ArgumentException(
-        bool companyEmpty, bool userEmpty, bool branchEmpty)
+        bool companyEmpty,
+        bool userEmpty,
+        bool branchEmpty
+    )
     {
         var companyId = companyEmpty ? Guid.Empty : Guid.NewGuid();
         var identityUserId = userEmpty ? Guid.Empty : Guid.NewGuid();
         var branchId = branchEmpty ? Guid.Empty : Guid.NewGuid();
 
-        var act = () => UserSession.Create(Guid.NewGuid(), companyId, identityUserId, branchId, "device-1");
+        var act = () =>
+            UserSession.Create(Guid.NewGuid(), companyId, identityUserId, branchId, "device-1");
 
         act.Should().Throw<ArgumentException>();
     }
@@ -50,7 +60,14 @@ public sealed class UserSessionTests
     [InlineData("   ")]
     public void Create_con_TerminalId_vacio_lanza_ArgumentException(string? terminalId)
     {
-        var act = () => UserSession.Create(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), terminalId!);
+        var act = () =>
+            UserSession.Create(
+                Guid.NewGuid(),
+                Guid.NewGuid(),
+                Guid.NewGuid(),
+                Guid.NewGuid(),
+                terminalId!
+            );
 
         act.Should().Throw<ArgumentException>();
     }

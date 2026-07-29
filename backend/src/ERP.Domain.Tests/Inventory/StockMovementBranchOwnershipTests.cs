@@ -20,13 +20,25 @@ public sealed class StockMovementBranchOwnershipTests
 
     private static StockMovement Create(Guid branchId) =>
         StockMovement.Create(
-            TenantId, branchId, Guid.NewGuid(), Guid.NewGuid(),
-            StockMovementType.PositiveAdjust, 10m, "UNIT",
-            previousQuantity: 0, sequenceNumber: 1,
-            runningAverageCost: 5m, runningStockValue: 50m,
+            TenantId,
+            branchId,
+            Guid.NewGuid(),
+            Guid.NewGuid(),
+            StockMovementType.PositiveAdjust,
+            10m,
+            "UNIT",
+            previousQuantity: 0,
+            sequenceNumber: 1,
+            runningAverageCost: 5m,
+            runningStockValue: 50m,
             effectiveDate: DateOnly.FromDateTime(DateTime.UtcNow),
-            reference: null, sourceDocId: null, sourceDocType: null,
-            createdBy: UserId, companyId: CompanyId, unitCost: 5m);
+            reference: null,
+            sourceDocId: null,
+            sourceDocType: null,
+            createdBy: UserId,
+            companyId: CompanyId,
+            unitCost: 5m
+        );
 
     [Fact]
     public void Create_con_sucursal_valida_persiste_BranchId()
@@ -53,9 +65,11 @@ public sealed class StockMovementBranchOwnershipTests
         property.SetMethod.Should().NotBeNull();
         property.SetMethod!.IsPublic.Should().BeFalse("BranchId solo se asigna en Create");
 
-        typeof(StockMovement).GetMethods()
+        typeof(StockMovement)
+            .GetMethods()
             .Any(m => m.Name is "ChangeBranch" or "SetBranch" or "UpdateBranch")
-            .Should().BeFalse("un movimiento de Kardex ya registrado nunca cambia de sucursal");
+            .Should()
+            .BeFalse("un movimiento de Kardex ya registrado nunca cambia de sucursal");
     }
 
     [Fact]

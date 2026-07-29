@@ -8,7 +8,8 @@ using MediatR;
 
 namespace ERP.Application.Modules.Branches.UseCases.UpdateBranch;
 
-public sealed class UpdateBranchCommandHandler : IRequestHandler<UpdateBranchCommand, Result<BranchListItemDto>>
+public sealed class UpdateBranchCommandHandler
+    : IRequestHandler<UpdateBranchCommand, Result<BranchListItemDto>>
 {
     private readonly IBranchRepository _repo;
     private readonly IGeographyReadRepository _geo;
@@ -21,7 +22,8 @@ public sealed class UpdateBranchCommandHandler : IRequestHandler<UpdateBranchCom
         IGeographyReadRepository geo,
         IUserActivityRepository activity,
         ICurrentTenant tenant,
-        ICurrentUser user)
+        ICurrentUser user
+    )
     {
         _repo = repo;
         _geo = geo;
@@ -30,7 +32,10 @@ public sealed class UpdateBranchCommandHandler : IRequestHandler<UpdateBranchCom
         _user = user;
     }
 
-    public async Task<Result<BranchListItemDto>> Handle(UpdateBranchCommand command, CancellationToken cancellationToken)
+    public async Task<Result<BranchListItemDto>> Handle(
+        UpdateBranchCommand command,
+        CancellationToken cancellationToken
+    )
     {
         var tenantId = _currentTenant.TenantId;
         var userId = _user.UserId;
@@ -48,7 +53,8 @@ public sealed class UpdateBranchCommandHandler : IRequestHandler<UpdateBranchCom
             command.ProvinceId,
             command.CantonId,
             command.ParishId,
-            cancellationToken);
+            cancellationToken
+        );
         if (locErr is not null)
             return Result<BranchListItemDto>.Failure(locErr);
 
@@ -78,38 +84,46 @@ public sealed class UpdateBranchCommandHandler : IRequestHandler<UpdateBranchCom
             command.OpeningDate,
             command.InternalNotes,
             command.IsMainBranch,
-            userId);
+            userId
+        );
 
         if (command.IsActive && !entity.IsActive)
             entity.Enable(userId);
         else if (!command.IsActive && entity.IsActive)
             entity.Disable(userId);
 
-        await _activity.AddAsync(UserActivity.Create(
-            tenantId,
-            userId,
-            _user.Email,
-            _user.FullName,
-            module: "branches",
-            action: "branch.update",
-            entityType: "Branch",
-            entityId: entity.Id,
-            description: entity.Name), cancellationToken);
+        await _activity.AddAsync(
+            UserActivity.Create(
+                tenantId,
+                userId,
+                _user.Email,
+                _user.FullName,
+                module: "branches",
+                action: "branch.update",
+                entityType: "Branch",
+                entityId: entity.Id,
+                description: entity.Name
+            ),
+            cancellationToken
+        );
         await _repo.SaveChangesAsync(cancellationToken);
 
-        return Result<BranchListItemDto>.Success(new BranchListItemDto(
-            entity.Id,
-            entity.Name,
-            entity.Code,
-            entity.Address,
-            entity.CountryId,
-            entity.ProvinceId,
-            entity.CantonId,
-            entity.ParishId,
-            entity.Phone,
-            entity.Email,
-            entity.ManagerName,
-            entity.IsActive,
-            entity.IsMainBranch));
+        return Result<BranchListItemDto>.Success(
+            new BranchListItemDto(
+                entity.Id,
+                entity.Name,
+                entity.Code,
+                entity.Address,
+                entity.CountryId,
+                entity.ProvinceId,
+                entity.CantonId,
+                entity.ParishId,
+                entity.Phone,
+                entity.Email,
+                entity.ManagerName,
+                entity.IsActive,
+                entity.IsMainBranch
+            )
+        );
     }
 }

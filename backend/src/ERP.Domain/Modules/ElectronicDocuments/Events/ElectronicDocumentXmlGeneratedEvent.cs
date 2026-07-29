@@ -13,8 +13,12 @@ public sealed class ElectronicDocumentXmlGeneratedEvent : BaseDomainEvent, IAudi
     public ElectronicDocumentState ToState { get; }
 
     public ElectronicDocumentXmlGeneratedEvent(
-        Guid tenantId, Guid electronicDocumentId, ElectronicDocumentType documentType,
-        ElectronicDocumentState fromState, ElectronicDocumentState toState)
+        Guid tenantId,
+        Guid electronicDocumentId,
+        ElectronicDocumentType documentType,
+        ElectronicDocumentState fromState,
+        ElectronicDocumentState toState
+    )
     {
         TenantId = tenantId;
         ElectronicDocumentId = electronicDocumentId;

@@ -21,12 +21,19 @@ public sealed class PriceListAudit : AuditRecordBase, ICompanyOperationalEntity
     private PriceListAudit() { }
 
     public static PriceListAudit Create(
-        AuditActor actor, Guid companyId, Guid priceListId, string action,
-        PricingRuleType? oldRuleType = null, decimal? oldRuleValue = null,
-        PricingRuleType? newRuleType = null, decimal? newRuleValue = null,
-        string? reason = null)
+        AuditActor actor,
+        Guid companyId,
+        Guid priceListId,
+        string action,
+        PricingRuleType? oldRuleType = null,
+        decimal? oldRuleValue = null,
+        PricingRuleType? newRuleType = null,
+        decimal? newRuleValue = null,
+        string? reason = null
+    )
     {
-        if (companyId == Guid.Empty) throw new ArgumentException("companyId requerido.", nameof(companyId));
+        if (companyId == Guid.Empty)
+            throw new ArgumentException("companyId requerido.", nameof(companyId));
 
         var audit = new PriceListAudit
         {

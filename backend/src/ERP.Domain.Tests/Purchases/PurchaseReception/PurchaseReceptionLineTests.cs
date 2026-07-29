@@ -8,11 +8,22 @@ public sealed class PurchaseReceptionLineTests
 {
     private static PurchaseReceptionLine CreateLine() =>
         PurchaseReceptionLine.Create(
-            documentId: Guid.NewGuid(), tenantId: Guid.NewGuid(),
-            description: "COCA COLA 500 ML", quantity: 10m, unitPrice: 0.5m,
-            vatCode: "2", taxCode: "2", vatPercentage: 15m, taxValue: 0.75m,
-            discountPct: 0m, discount: 0m, lineSubtotal: 5m, totalLine: 5.75m,
-            supplierCode: "PROV-001", supplierAuxCode: "AUX-1");
+            documentId: Guid.NewGuid(),
+            tenantId: Guid.NewGuid(),
+            description: "COCA COLA 500 ML",
+            quantity: 10m,
+            unitPrice: 0.5m,
+            vatCode: "2",
+            taxCode: "2",
+            vatPercentage: 15m,
+            taxValue: 0.75m,
+            discountPct: 0m,
+            discount: 0m,
+            lineSubtotal: 5m,
+            totalLine: 5.75m,
+            supplierCode: "PROV-001",
+            supplierAuxCode: "AUX-1"
+        );
 
     [Fact]
     public void Create_defaults_to_Pending_without_an_item()
@@ -156,12 +167,23 @@ public sealed class PurchaseReceptionLineTests
     [Fact]
     public void Create_throws_when_a_resolved_status_has_no_item()
     {
-        var act = () => PurchaseReceptionLine.Create(
-            documentId: Guid.NewGuid(), tenantId: Guid.NewGuid(),
-            description: "Línea test", quantity: 1m, unitPrice: 1m,
-            vatCode: "2", taxCode: "2", vatPercentage: 15m, taxValue: 0.15m,
-            discountPct: 0m, discount: 0m, lineSubtotal: 1m, totalLine: 1.15m,
-            matchStatus: ItemMatchStatus.AutoMatched);
+        var act = () =>
+            PurchaseReceptionLine.Create(
+                documentId: Guid.NewGuid(),
+                tenantId: Guid.NewGuid(),
+                description: "Línea test",
+                quantity: 1m,
+                unitPrice: 1m,
+                vatCode: "2",
+                taxCode: "2",
+                vatPercentage: 15m,
+                taxValue: 0.15m,
+                discountPct: 0m,
+                discount: 0m,
+                lineSubtotal: 1m,
+                totalLine: 1.15m,
+                matchStatus: ItemMatchStatus.AutoMatched
+            );
 
         act.Should().Throw<ArgumentException>();
     }

@@ -13,8 +13,12 @@ public sealed class RidePdfGenerationFailedEvent : BaseDomainEvent, IAuditEvent
     public string Reason { get; }
 
     public RidePdfGenerationFailedEvent(
-        Guid tenantId, Guid ridePdfDocumentId, Guid electronicDocumentId,
-        RideDocumentType documentType, string reason)
+        Guid tenantId,
+        Guid ridePdfDocumentId,
+        Guid electronicDocumentId,
+        RideDocumentType documentType,
+        string reason
+    )
     {
         TenantId = tenantId;
         RidePdfDocumentId = ridePdfDocumentId;

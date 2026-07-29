@@ -17,9 +17,14 @@ public sealed record RideModel
     public IReadOnlyList<RideAdditionalInfo> AdditionalInfo { get; }
 
     private RideModel(
-        RideHeader header, RideParty issuer, RideParty receiver,
-        IReadOnlyList<RideLine> lines, IReadOnlyList<RideTaxSummary> taxSummary,
-        IReadOnlyList<RidePaymentInfo> payments, IReadOnlyList<RideAdditionalInfo> additionalInfo)
+        RideHeader header,
+        RideParty issuer,
+        RideParty receiver,
+        IReadOnlyList<RideLine> lines,
+        IReadOnlyList<RideTaxSummary> taxSummary,
+        IReadOnlyList<RidePaymentInfo> payments,
+        IReadOnlyList<RideAdditionalInfo> additionalInfo
+    )
     {
         Header = header;
         Issuer = issuer;
@@ -31,9 +36,14 @@ public sealed record RideModel
     }
 
     public static RideModel Create(
-        RideHeader header, RideParty issuer, RideParty receiver,
-        IReadOnlyList<RideLine> lines, IReadOnlyList<RideTaxSummary> taxSummary,
-        IReadOnlyList<RidePaymentInfo> payments, IReadOnlyList<RideAdditionalInfo> additionalInfo)
+        RideHeader header,
+        RideParty issuer,
+        RideParty receiver,
+        IReadOnlyList<RideLine> lines,
+        IReadOnlyList<RideTaxSummary> taxSummary,
+        IReadOnlyList<RidePaymentInfo> payments,
+        IReadOnlyList<RideAdditionalInfo> additionalInfo
+    )
     {
         ArgumentNullException.ThrowIfNull(header);
         ArgumentNullException.ThrowIfNull(issuer);

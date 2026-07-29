@@ -34,7 +34,8 @@ public sealed class AssignTemporaryPasswordAdminHandler
         IUnitOfWork unitOfWork,
         ICurrentUser currentUser,
         ICurrentTenant currentTenant,
-        ICurrentCompany currentCompany)
+        ICurrentCompany currentCompany
+    )
     {
         _accessRepository = accessRepository;
         _passwordHasher = passwordHasher;
@@ -45,10 +46,16 @@ public sealed class AssignTemporaryPasswordAdminHandler
         _currentCompany = currentCompany;
     }
 
-    public async Task<Result<string>> Handle(AssignTemporaryPasswordAdminCommand command, CancellationToken cancellationToken)
+    public async Task<Result<string>> Handle(
+        AssignTemporaryPasswordAdminCommand command,
+        CancellationToken cancellationToken
+    )
     {
         var username = command.Username.Trim().ToLowerInvariant();
-        var targetUser = await _accessRepository.GetUserByUsernameAsync(username, cancellationToken);
+        var targetUser = await _accessRepository.GetUserByUsernameAsync(
+            username,
+            cancellationToken
+        );
         if (targetUser is null)
             return Result<string>.NotFound("Usuario no encontrado.");
 
@@ -57,7 +64,10 @@ public sealed class AssignTemporaryPasswordAdminHandler
         // membership en esta empresa (de otro tenant, de otra empresa, o sin acceso) queda fuera
         // sin distinguir el motivo, para no filtrar información de existencia entre tenants.
         var membership = await _accessRepository.GetCompanyUserMembershipAsync(
-            _currentCompany.CompanyId, targetUser.Id, cancellationToken);
+            _currentCompany.CompanyId,
+            targetUser.Id,
+            cancellationToken
+        );
         if (membership is null || !membership.IsActive)
             return Result<string>.Forbidden("El usuario no pertenece a la empresa activa.");
 
@@ -71,8 +81,12 @@ public sealed class AssignTemporaryPasswordAdminHandler
             await _accessRepository.SaveChangesAsync(cancellationToken);
 
             await _revocationService.RevokeAllAccessAsync(
-                targetUser.Id, _currentTenant.TenantId, _currentUser.UserId,
-                "Contraseña temporal asignada por administrador", cancellationToken);
+                targetUser.Id,
+                _currentTenant.TenantId,
+                _currentUser.UserId,
+                "Contraseña temporal asignada por administrador",
+                cancellationToken
+            );
 
             await _unitOfWork.CommitAsync(cancellationToken);
         }

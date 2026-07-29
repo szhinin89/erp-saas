@@ -40,20 +40,46 @@ public sealed class AuthorizeSalesInvoiceHandlerTests
     private static SalesInvoice CreateDraftInvoice(DateOnly issueDate, decimal unitPrice = 100m)
     {
         var customer = CustomerSnapshot.Create("Cliente Test", "1710034065", "05");
-        var paymentTerm = PaymentTermSnapshot.Create(PaymentTermId, "Contado", installments: 1, daysBetween: 0);
+        var paymentTerm = PaymentTermSnapshot.Create(
+            PaymentTermId,
+            "Contado",
+            installments: 1,
+            daysBetween: 0
+        );
 
         var inv = SalesInvoice.CreateDraft(
-            TenantId, CompanyId, BranchId, CustomerId, customer,
-            invoiceNumber: "DRAFT-TEST", issueDate: issueDate, createdBy: UserId,
-            paymentTerm: paymentTerm, cashSessionId: CashSessionId, emissionPointId: null);
+            TenantId,
+            CompanyId,
+            BranchId,
+            CustomerId,
+            customer,
+            invoiceNumber: "DRAFT-TEST",
+            issueDate: issueDate,
+            createdBy: UserId,
+            paymentTerm: paymentTerm,
+            cashSessionId: CashSessionId,
+            emissionPointId: null
+        );
 
         var line = SalesInvoiceDetail.Create(
-            inv.Id, TenantId, "Producto Test", quantity: 1, unitPrice: unitPrice,
-            vatCode: "10", uomCode: "UNIT");
+            inv.Id,
+            TenantId,
+            "Producto Test",
+            quantity: 1,
+            unitPrice: unitPrice,
+            vatCode: "10",
+            uomCode: "UNIT"
+        );
         inv.ReplaceLines(new[] { line }, UserId);
 
         var payment = SalesInvoicePayment.Create(
-            inv.Id, TenantId, PaymentMethodId, "01", "Efectivo", ExpectedGrandTotal(unitPrice));
+            inv.Id,
+            TenantId,
+            PaymentMethodId,
+            "01",
+            "Efectivo",
+            ExpectedGrandTotal(unitPrice)
+        );
         inv.ReplacePayments(new[] { payment }, UserId);
 
         return inv;
@@ -68,26 +94,34 @@ public sealed class AuthorizeSalesInvoiceHandlerTests
         return Math.Round(taxable + vat, 2, MidpointRounding.AwayFromZero);
     }
 
-    private static (AuthorizeSalesInvoiceHandler handler, Mock<ICompanyClock> companyClock)
-        BuildHandler(SalesInvoice inv, DateOnly companyToday)
+    private static (
+        AuthorizeSalesInvoiceHandler handler,
+        Mock<ICompanyClock> companyClock
+    ) BuildHandler(SalesInvoice inv, DateOnly companyToday)
     {
         var repo = new Mock<ISalesInvoiceRepository>();
-        repo.Setup(r => r.GetByIdAsync(TenantId, inv.Id, It.IsAny<CancellationToken>())).ReturnsAsync(inv);
+        repo.Setup(r => r.GetByIdAsync(TenantId, inv.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(inv);
 
         var tax = new Mock<ISriTaxResolver>();
         tax.Setup(t => t.GetVatRateWithNameAsync("10", It.IsAny<CancellationToken>()))
             .ReturnsAsync(new TaxRateResult(15m, "IVA 15%"));
 
         var stockRepo = new Mock<IStockRepository>();
-        stockRepo.Setup(s => s.SaveChangesWithSequenceRetryAsync(It.IsAny<CancellationToken>()))
+        stockRepo
+            .Setup(s => s.SaveChangesWithSequenceRetryAsync(It.IsAny<CancellationToken>()))
             .ReturnsAsync(1);
 
         var edocRepo = new Mock<IElectronicDocumentRepository>();
-        edocRepo.Setup(e => e.GetBySourceAsync(TenantId, "Sales", inv.Id, It.IsAny<CancellationToken>()))
+        edocRepo
+            .Setup(e =>
+                e.GetBySourceAsync(TenantId, "Sales", inv.Id, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync((ElectronicDocument?)null);
 
         var companyClock = new Mock<ICompanyClock>();
-        companyClock.Setup(c => c.TodayAsync(CompanyId, TenantId, It.IsAny<CancellationToken>()))
+        companyClock
+            .Setup(c => c.TodayAsync(CompanyId, TenantId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(companyToday);
 
         var tenant = new Mock<ICurrentTenant>();
@@ -109,7 +143,10 @@ public sealed class AuthorizeSalesInvoiceHandlerTests
             Mock.Of<ISalesInvoiceEmissionStrategyResolver>(),
             companyClock.Object,
             Mock.Of<ILogger<AuthorizeSalesInvoiceHandler>>(),
-            tenant.Object, company.Object, user.Object);
+            tenant.Object,
+            company.Object,
+            user.Object
+        );
 
         return (handler, companyClock);
     }
@@ -121,11 +158,18 @@ public sealed class AuthorizeSalesInvoiceHandlerTests
         var inv = CreateDraftInvoice(issueDate: today.AddDays(4)); // reproduce factura 001-500-000000012
         var (handler, _) = BuildHandler(inv, today);
 
-        var result = await handler.Handle(new AuthorizeSalesInvoiceCommand(inv.Id), CancellationToken.None);
+        var result = await handler.Handle(
+            new AuthorizeSalesInvoiceCommand(inv.Id),
+            CancellationToken.None
+        );
 
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Contain("no puede ser posterior");
-        inv.Status.Should().Be(Domain.Modules.Sales.Enums.SalesInvoiceStatus.Draft, "no debe autorizarse ni consumir secuencial");
+        inv.Status.Should()
+            .Be(
+                Domain.Modules.Sales.Enums.SalesInvoiceStatus.Draft,
+                "no debe autorizarse ni consumir secuencial"
+            );
     }
 
     [Fact]
@@ -135,7 +179,10 @@ public sealed class AuthorizeSalesInvoiceHandlerTests
         var inv = CreateDraftInvoice(issueDate: today.AddDays(-91));
         var (handler, _) = BuildHandler(inv, today);
 
-        var result = await handler.Handle(new AuthorizeSalesInvoiceCommand(inv.Id), CancellationToken.None);
+        var result = await handler.Handle(
+            new AuthorizeSalesInvoiceCommand(inv.Id),
+            CancellationToken.None
+        );
 
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Contain("demasiado antigua");
@@ -148,7 +195,10 @@ public sealed class AuthorizeSalesInvoiceHandlerTests
         var inv = CreateDraftInvoice(issueDate: today.AddDays(-90));
         var (handler, _) = BuildHandler(inv, today);
 
-        var result = await handler.Handle(new AuthorizeSalesInvoiceCommand(inv.Id), CancellationToken.None);
+        var result = await handler.Handle(
+            new AuthorizeSalesInvoiceCommand(inv.Id),
+            CancellationToken.None
+        );
 
         result.IsSuccess.Should().BeTrue(result.Error);
         inv.Status.Should().Be(Domain.Modules.Sales.Enums.SalesInvoiceStatus.Authorized);
@@ -163,11 +213,17 @@ public sealed class AuthorizeSalesInvoiceHandlerTests
         var inv = CreateDraftInvoice(issueDate: today);
         var (handler, companyClock) = BuildHandler(inv, today);
 
-        var result = await handler.Handle(new AuthorizeSalesInvoiceCommand(inv.Id), CancellationToken.None);
+        var result = await handler.Handle(
+            new AuthorizeSalesInvoiceCommand(inv.Id),
+            CancellationToken.None
+        );
 
         result.IsSuccess.Should().BeTrue(result.Error);
         inv.Status.Should().Be(Domain.Modules.Sales.Enums.SalesInvoiceStatus.Authorized);
-        companyClock.Verify(c => c.TodayAsync(CompanyId, TenantId, It.IsAny<CancellationToken>()), Times.Once);
+        companyClock.Verify(
+            c => c.TodayAsync(CompanyId, TenantId, It.IsAny<CancellationToken>()),
+            Times.Once
+        );
     }
 
     [Fact]
@@ -181,17 +237,25 @@ public sealed class AuthorizeSalesInvoiceHandlerTests
         var inv = CreateDraftInvoice(issueDate: companyToday);
         var (handler, companyClock) = BuildHandler(inv, companyToday);
 
-        var result = await handler.Handle(new AuthorizeSalesInvoiceCommand(inv.Id), CancellationToken.None);
+        var result = await handler.Handle(
+            new AuthorizeSalesInvoiceCommand(inv.Id),
+            CancellationToken.None
+        );
 
         result.IsSuccess.Should().BeTrue(result.Error);
-        companyClock.Verify(c => c.TodayAsync(CompanyId, TenantId, It.IsAny<CancellationToken>()), Times.Once);
+        companyClock.Verify(
+            c => c.TodayAsync(CompanyId, TenantId, It.IsAny<CancellationToken>()),
+            Times.Once
+        );
     }
 
     [Fact]
     public async Task Authorize_no_recibe_EmissionPointId_del_cliente()
     {
-        typeof(AuthorizeSalesInvoiceCommand).GetProperty("EmissionPointId").Should().BeNull(
-            "el cliente nunca debe poder sobreescribir el punto de emisión al autorizar");
+        typeof(AuthorizeSalesInvoiceCommand)
+            .GetProperty("EmissionPointId")
+            .Should()
+            .BeNull("el cliente nunca debe poder sobreescribir el punto de emisión al autorizar");
     }
 
     [Fact]
@@ -201,7 +265,10 @@ public sealed class AuthorizeSalesInvoiceHandlerTests
         var inv = CreateDraftInvoice(issueDate: today);
         var (handler, _) = BuildHandler(inv, today);
 
-        var result = await handler.Handle(new AuthorizeSalesInvoiceCommand(inv.Id), CancellationToken.None);
+        var result = await handler.Handle(
+            new AuthorizeSalesInvoiceCommand(inv.Id),
+            CancellationToken.None
+        );
 
         result.IsSuccess.Should().BeTrue(result.Error);
         inv.CashSessionId.Should().Be(CashSessionId);

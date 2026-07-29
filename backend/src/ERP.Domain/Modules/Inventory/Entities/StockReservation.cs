@@ -30,12 +30,19 @@ public sealed class StockReservation : AuditableEntity, ITenantScopedEntity
         DateTime expiresAt,
         Guid createdBy,
         Guid? orderId = null,
-        string? notes = null)
+        string? notes = null
+    )
     {
         if (quantity <= 0)
-            throw new ArgumentException("La cantidad a reservar debe ser mayor a cero.", nameof(quantity));
+            throw new ArgumentException(
+                "La cantidad a reservar debe ser mayor a cero.",
+                nameof(quantity)
+            );
         if (expiresAt <= DateTime.UtcNow)
-            throw new ArgumentException("La fecha de expiración debe ser futura.", nameof(expiresAt));
+            throw new ArgumentException(
+                "La fecha de expiración debe ser futura.",
+                nameof(expiresAt)
+            );
 
         var r = new StockReservation
         {
@@ -56,7 +63,9 @@ public sealed class StockReservation : AuditableEntity, ITenantScopedEntity
     public void Fulfill(Guid userId)
     {
         if (Status != StatusPending)
-            throw new InvalidOperationException($"Only Pending reservations can be fulfilled (current: {Status}).");
+            throw new InvalidOperationException(
+                $"Only Pending reservations can be fulfilled (current: {Status})."
+            );
         Status = StatusFulfilled;
         SetUpdated(userId);
     }

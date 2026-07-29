@@ -1,5 +1,5 @@
-using ERP.Application.Access.Caching;
 using System.Collections.Concurrent;
+using ERP.Application.Access.Caching;
 
 namespace ERP.Infrastructure.Access.Caching;
 
@@ -9,7 +9,9 @@ public sealed class PermissionsCacheDiagnostics : IPermissionsCacheDiagnostics
     private long _misses;
     private long _sets;
     private long _errors;
-    private readonly ConcurrentDictionary<string, long> _missesByReason = new(StringComparer.Ordinal);
+    private readonly ConcurrentDictionary<string, long> _missesByReason = new(
+        StringComparer.Ordinal
+    );
 
     public void RecordHit() => Interlocked.Increment(ref _hits);
 
@@ -36,6 +38,7 @@ public sealed class PermissionsCacheDiagnostics : IPermissionsCacheDiagnostics
             Interlocked.Read(ref _sets),
             Interlocked.Read(ref _errors),
             ratio,
-            _missesByReason.ToDictionary(static kv => kv.Key, static kv => kv.Value));
+            _missesByReason.ToDictionary(static kv => kv.Key, static kv => kv.Value)
+        );
     }
 }

@@ -8,5 +8,8 @@ namespace ERP.Domain.Modules.Purchases.PurchaseReception.Interfaces;
 /// </summary>
 public interface IPurchaseReceptionParser
 {
-    Task<PurchaseReceptionParseResult> ParseAsync(Stream fileContent, CancellationToken cancellationToken = default);
+    Task<PurchaseReceptionParseResult> ParseAsync(
+        Stream fileContent,
+        CancellationToken cancellationToken = default
+    );
 }

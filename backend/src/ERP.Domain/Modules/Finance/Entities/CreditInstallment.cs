@@ -11,16 +11,33 @@ public sealed class CreditInstallment
     private CreditInstallment() { }
 
     internal static CreditInstallment Create(
-        Guid creditTermId, int number, int daysOffset, decimal percentage, int totalDays)
+        Guid creditTermId,
+        int number,
+        int daysOffset,
+        decimal percentage,
+        int totalDays
+    )
     {
         if (number < 1)
-            throw new ArgumentException("El número de cuota debe ser mayor a cero.", nameof(number));
+            throw new ArgumentException(
+                "El número de cuota debe ser mayor a cero.",
+                nameof(number)
+            );
         if (daysOffset < 0)
-            throw new ArgumentException("El offset de días no puede ser negativo.", nameof(daysOffset));
+            throw new ArgumentException(
+                "El offset de días no puede ser negativo.",
+                nameof(daysOffset)
+            );
         if (daysOffset > totalDays)
-            throw new ArgumentException($"El offset ({daysOffset}) no puede superar el plazo total ({totalDays}).", nameof(daysOffset));
+            throw new ArgumentException(
+                $"El offset ({daysOffset}) no puede superar el plazo total ({totalDays}).",
+                nameof(daysOffset)
+            );
         if (percentage <= 0 || percentage > 100)
-            throw new ArgumentException("El porcentaje debe estar entre 0 (exclusivo) y 100.", nameof(percentage));
+            throw new ArgumentException(
+                "El porcentaje debe estar entre 0 (exclusivo) y 100.",
+                nameof(percentage)
+            );
 
         return new CreditInstallment
         {

@@ -18,55 +18,80 @@ public sealed class CodesInfrastructureBoundaryTests
     [Fact]
     public void Codes_infrastructure_must_not_reference_api()
     {
-        var result = Types.InAssembly(InfrastructureAssembly)
-            .That().ResideInNamespace(CodesInfrastructureNamespace)
-            .ShouldNot().HaveDependencyOn("ERP.API")
+        var result = Types
+            .InAssembly(InfrastructureAssembly)
+            .That()
+            .ResideInNamespace(CodesInfrastructureNamespace)
+            .ShouldNot()
+            .HaveDependencyOn("ERP.API")
             .GetResult();
 
-        result.IsSuccessful.Should().BeTrue(string.Join(", ", result.FailingTypeNames ?? Array.Empty<string>()));
+        result
+            .IsSuccessful.Should()
+            .BeTrue(string.Join(", ", result.FailingTypeNames ?? Array.Empty<string>()));
     }
 
     [Fact]
     public void Codes_infrastructure_must_not_reference_ride()
     {
-        var result = Types.InAssembly(InfrastructureAssembly)
-            .That().ResideInNamespace(CodesInfrastructureNamespace)
-            .ShouldNot().HaveDependencyOn("ERP.Infrastructure.Ride")
+        var result = Types
+            .InAssembly(InfrastructureAssembly)
+            .That()
+            .ResideInNamespace(CodesInfrastructureNamespace)
+            .ShouldNot()
+            .HaveDependencyOn("ERP.Infrastructure.Ride")
             .GetResult();
 
-        result.IsSuccessful.Should().BeTrue(string.Join(", ", result.FailingTypeNames ?? Array.Empty<string>()));
+        result
+            .IsSuccessful.Should()
+            .BeTrue(string.Join(", ", result.FailingTypeNames ?? Array.Empty<string>()));
     }
 
     [Fact]
     public void Codes_infrastructure_must_not_reference_electronic_documents()
     {
-        var result = Types.InAssembly(InfrastructureAssembly)
-            .That().ResideInNamespace(CodesInfrastructureNamespace)
-            .ShouldNot().HaveDependencyOn("ERP.Infrastructure.ElectronicDocuments")
+        var result = Types
+            .InAssembly(InfrastructureAssembly)
+            .That()
+            .ResideInNamespace(CodesInfrastructureNamespace)
+            .ShouldNot()
+            .HaveDependencyOn("ERP.Infrastructure.ElectronicDocuments")
             .GetResult();
 
-        result.IsSuccessful.Should().BeTrue(string.Join(", ", result.FailingTypeNames ?? Array.Empty<string>()));
+        result
+            .IsSuccessful.Should()
+            .BeTrue(string.Join(", ", result.FailingTypeNames ?? Array.Empty<string>()));
     }
 
     [Fact]
     public void Codes_infrastructure_must_not_reference_sales()
     {
-        var result = Types.InAssembly(InfrastructureAssembly)
-            .That().ResideInNamespace(CodesInfrastructureNamespace)
-            .ShouldNot().HaveDependencyOn("ERP.Application.Modules.Sales")
+        var result = Types
+            .InAssembly(InfrastructureAssembly)
+            .That()
+            .ResideInNamespace(CodesInfrastructureNamespace)
+            .ShouldNot()
+            .HaveDependencyOn("ERP.Application.Modules.Sales")
             .GetResult();
 
-        result.IsSuccessful.Should().BeTrue(string.Join(", ", result.FailingTypeNames ?? Array.Empty<string>()));
+        result
+            .IsSuccessful.Should()
+            .BeTrue(string.Join(", ", result.FailingTypeNames ?? Array.Empty<string>()));
     }
 
     [Fact]
     public void Codes_infrastructure_must_not_reference_questpdf()
     {
-        var result = Types.InAssembly(InfrastructureAssembly)
-            .That().ResideInNamespace(CodesInfrastructureNamespace)
-            .ShouldNot().HaveDependencyOn("QuestPDF")
+        var result = Types
+            .InAssembly(InfrastructureAssembly)
+            .That()
+            .ResideInNamespace(CodesInfrastructureNamespace)
+            .ShouldNot()
+            .HaveDependencyOn("QuestPDF")
             .GetResult();
 
-        result.IsSuccessful.Should().BeTrue(string.Join(", ", result.FailingTypeNames ?? Array.Empty<string>()));
+        result
+            .IsSuccessful.Should()
+            .BeTrue(string.Join(", ", result.FailingTypeNames ?? Array.Empty<string>()));
     }
 }

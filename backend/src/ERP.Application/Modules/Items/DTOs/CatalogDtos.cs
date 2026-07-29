@@ -11,13 +11,7 @@ public record BrandDto(
     DateTime? UpdatedAt
 );
 
-public record AttributeGroupDto(
-    Guid Id,
-    string Code,
-    string Name,
-    int SortOrder,
-    bool IsActive
-);
+public record AttributeGroupDto(Guid Id, string Code, string Name, int SortOrder, bool IsActive);
 
 public record AttributeDefinitionDto(
     Guid Id,

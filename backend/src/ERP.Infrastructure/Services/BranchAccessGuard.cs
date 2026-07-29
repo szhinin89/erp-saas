@@ -17,7 +17,8 @@ public sealed class BranchAccessGuard : IBranchAccessGuard
         ICompanyAccessGuard companyAccessGuard,
         IBranchRepository branchRepository,
         ICompanyUserBranchRepository companyUserBranchRepository,
-        IAccessRepository accessRepository)
+        IAccessRepository accessRepository
+    )
     {
         _companyAccessGuard = companyAccessGuard;
         _branchRepository = branchRepository;
@@ -26,7 +27,9 @@ public sealed class BranchAccessGuard : IBranchAccessGuard
     }
 
     public async Task<Result<BranchAccessContext>> RequireBranchAsync(
-        Guid branchId, CancellationToken cancellationToken = default)
+        Guid branchId,
+        CancellationToken cancellationToken = default
+    )
     {
         var companyAccess = await _companyAccessGuard.RequireCurrentCompanyAsync(cancellationToken);
         if (!companyAccess.IsSuccess)
@@ -34,7 +37,11 @@ public sealed class BranchAccessGuard : IBranchAccessGuard
 
         var company = companyAccess.Value!;
 
-        var branch = await _branchRepository.GetByIdAsync(company.TenantId, branchId, cancellationToken);
+        var branch = await _branchRepository.GetByIdAsync(
+            company.TenantId,
+            branchId,
+            cancellationToken
+        );
         if (branch is null)
             return Result<BranchAccessContext>.Failure("Sucursal no encontrada.");
 
@@ -42,19 +49,37 @@ public sealed class BranchAccessGuard : IBranchAccessGuard
             return Result<BranchAccessContext>.Failure("La sucursal está deshabilitada.");
 
         if (branch.CompanyId != company.CompanyId)
-            return Result<BranchAccessContext>.Failure("La sucursal no pertenece a la empresa operativa actual.");
+            return Result<BranchAccessContext>.Failure(
+                "La sucursal no pertenece a la empresa operativa actual."
+            );
 
         var membership = await _accessRepository.GetCompanyUserMembershipAsync(
-            company.CompanyId, company.UserId, cancellationToken);
+            company.CompanyId,
+            company.UserId,
+            cancellationToken
+        );
         if (membership is null || !membership.IsActive)
             return Result<BranchAccessContext>.Failure("No tiene acceso a esta empresa.");
 
         var authorized = await _companyUserBranchRepository.ExistsAsync(
-            membership.Id, branchId, cancellationToken);
+            membership.Id,
+            branchId,
+            cancellationToken
+        );
         if (!authorized)
-            return Result<BranchAccessContext>.Failure("No tiene autorización para operar en esta sucursal.");
+            return Result<BranchAccessContext>.Failure(
+                "No tiene autorización para operar en esta sucursal."
+            );
 
-        return Result<BranchAccessContext>.Success(new BranchAccessContext(
-            company.UserId, company.TenantId, company.CompanyId, branch.Id, branch.Name, branch.IsMainBranch));
+        return Result<BranchAccessContext>.Success(
+            new BranchAccessContext(
+                company.UserId,
+                company.TenantId,
+                company.CompanyId,
+                branch.Id,
+                branch.Name,
+                branch.IsMainBranch
+            )
+        );
     }
 }

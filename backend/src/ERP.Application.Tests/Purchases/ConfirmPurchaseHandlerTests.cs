@@ -28,28 +28,50 @@ public sealed class ConfirmPurchaseHandlerTests
     private static PurchaseInvoice CreateDraftInvoice(int lineCount = 1, bool sameItem = false)
     {
         var inv = PurchaseInvoice.CreateDraft(
-            TenantId, CompanyId, BranchId, SupplierId,
-            "Proveedor Test", "1234567890001",
-            "01", "001-001-000000001", DateOnly.FromDateTime(DateTime.UtcNow), UserId,
-            PtId, "Contado", 1, 30,
-            globalWarehouseId: WhId);
+            TenantId,
+            CompanyId,
+            BranchId,
+            SupplierId,
+            "Proveedor Test",
+            "1234567890001",
+            "01",
+            "001-001-000000001",
+            DateOnly.FromDateTime(DateTime.UtcNow),
+            UserId,
+            PtId,
+            "Contado",
+            1,
+            30,
+            globalWarehouseId: WhId
+        );
 
         var lines = new List<PurchaseInvoiceDetail>();
         for (var i = 0; i < lineCount; i++)
         {
             var itemId = sameItem ? ItemId1 : (i == 0 ? ItemId1 : ItemId2);
-            lines.Add(PurchaseInvoiceDetail.Create(
-                inv.Id, TenantId, $"Producto {i + 1}",
-                quantity: 5, unitPrice: 10.00m, vatCode: "10", uomCode: "UNIT",
-                itemId: itemId, warehouseId: WhId));
+            lines.Add(
+                PurchaseInvoiceDetail.Create(
+                    inv.Id,
+                    TenantId,
+                    $"Producto {i + 1}",
+                    quantity: 5,
+                    unitPrice: 10.00m,
+                    vatCode: "10",
+                    uomCode: "UNIT",
+                    itemId: itemId,
+                    warehouseId: WhId
+                )
+            );
         }
         inv.ReplaceLines(lines, UserId);
         return inv;
     }
 
-    private (ConfirmPurchaseHandler handler,
-             Mock<IPurchaseInvoiceRepository> repo,
-             Mock<IStockRepository> stockRepo) BuildHandler(PurchaseInvoice inv)
+    private (
+        ConfirmPurchaseHandler handler,
+        Mock<IPurchaseInvoiceRepository> repo,
+        Mock<IStockRepository> stockRepo
+    ) BuildHandler(PurchaseInvoice inv)
     {
         var repo = new Mock<IPurchaseInvoiceRepository>();
         repo.Setup(r => r.GetByIdAsync(TenantId, inv.Id, It.IsAny<CancellationToken>()))
@@ -60,27 +82,83 @@ public sealed class ConfirmPurchaseHandlerTests
             .Returns(Task.CompletedTask);
 
         var stockRepo = new Mock<IStockRepository>();
-        stockRepo.Setup(s => s.GetStockAsync(TenantId, WhId, It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+        stockRepo
+            .Setup(s =>
+                s.GetStockAsync(TenantId, WhId, It.IsAny<Guid>(), It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync((CurrentStock?)null);
-        stockRepo.Setup(s => s.AppendMovementAsync(
-                TenantId, CompanyId, It.IsAny<Guid>(), WhId,
-                It.IsAny<StockMovementType>(), It.IsAny<decimal>(), It.IsAny<string>(),
-                It.IsAny<DateOnly>(), It.IsAny<string?>(), It.IsAny<Guid?>(), It.IsAny<string?>(),
-                UserId, It.IsAny<decimal?>(), It.IsAny<Guid?>(), It.IsAny<Guid?>(), It.IsAny<CancellationToken>()))
-            .Returns((Guid tid, Guid cid, Guid pid, Guid wid,
-                StockMovementType mt, decimal qty, string uom,
-                DateOnly eff, string? reference, Guid? srcId, string? srcType,
-                Guid actor, decimal? cost, Guid? lot, Guid? serial, CancellationToken _)
-                => Task.FromResult(StockMovement.Create(
-                    tid, BranchId, pid, wid, mt, qty, uom, previousQuantity: 0,
-                    sequenceNumber: 1, runningAverageCost: cost ?? 0m, runningStockValue: 0m,
-                    effectiveDate: eff, reference: reference, sourceDocId: srcId, sourceDocType: srcType,
-                    createdBy: actor, companyId: cid, unitCost: cost)));
-        stockRepo.Setup(s => s.SaveChangesWithSequenceRetryAsync(It.IsAny<CancellationToken>()))
+        stockRepo
+            .Setup(s =>
+                s.AppendMovementAsync(
+                    TenantId,
+                    CompanyId,
+                    It.IsAny<Guid>(),
+                    WhId,
+                    It.IsAny<StockMovementType>(),
+                    It.IsAny<decimal>(),
+                    It.IsAny<string>(),
+                    It.IsAny<DateOnly>(),
+                    It.IsAny<string?>(),
+                    It.IsAny<Guid?>(),
+                    It.IsAny<string?>(),
+                    UserId,
+                    It.IsAny<decimal?>(),
+                    It.IsAny<Guid?>(),
+                    It.IsAny<Guid?>(),
+                    It.IsAny<CancellationToken>()
+                )
+            )
+            .Returns(
+                (
+                    Guid tid,
+                    Guid cid,
+                    Guid pid,
+                    Guid wid,
+                    StockMovementType mt,
+                    decimal qty,
+                    string uom,
+                    DateOnly eff,
+                    string? reference,
+                    Guid? srcId,
+                    string? srcType,
+                    Guid actor,
+                    decimal? cost,
+                    Guid? lot,
+                    Guid? serial,
+                    CancellationToken _
+                ) =>
+                    Task.FromResult(
+                        StockMovement.Create(
+                            tid,
+                            BranchId,
+                            pid,
+                            wid,
+                            mt,
+                            qty,
+                            uom,
+                            previousQuantity: 0,
+                            sequenceNumber: 1,
+                            runningAverageCost: cost ?? 0m,
+                            runningStockValue: 0m,
+                            effectiveDate: eff,
+                            reference: reference,
+                            sourceDocId: srcId,
+                            sourceDocType: srcType,
+                            createdBy: actor,
+                            companyId: cid,
+                            unitCost: cost
+                        )
+                    )
+            );
+        stockRepo
+            .Setup(s => s.SaveChangesWithSequenceRetryAsync(It.IsAny<CancellationToken>()))
             .ReturnsAsync(1);
 
         var itemRepo = new Mock<IItemRepository>();
-        itemRepo.Setup(r => r.GetByIdLightAsync(It.IsAny<Guid>(), TenantId, It.IsAny<CancellationToken>()))
+        itemRepo
+            .Setup(r =>
+                r.GetByIdLightAsync(It.IsAny<Guid>(), TenantId, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync((ERP.Domain.Modules.Items.Entities.Item?)null);
 
         var tax = new Mock<ISriTaxResolver>();
@@ -101,9 +179,15 @@ public sealed class ConfirmPurchaseHandlerTests
         user.Setup(u => u.FullName).Returns("Test User");
 
         var handler = new ConfirmPurchaseHandler(
-            repo.Object, stockRepo.Object, itemRepo.Object,
-            tax.Object, logger.Object,
-            tenant.Object, company.Object, user.Object);
+            repo.Object,
+            stockRepo.Object,
+            itemRepo.Object,
+            tax.Object,
+            logger.Object,
+            tenant.Object,
+            company.Object,
+            user.Object
+        );
 
         return (handler, repo, stockRepo);
     }
@@ -130,20 +214,43 @@ public sealed class ConfirmPurchaseHandlerTests
 
         var schedule = new List<ConfirmScheduleInput>
         {
-            new(1, DateOnly.FromDateTime(DateTime.UtcNow.AddDays(30)), total, null)
+            new(1, DateOnly.FromDateTime(DateTime.UtcNow.AddDays(30)), total, null),
         };
-        var result = await handler.Handle(new ConfirmPurchaseCommand(inv.Id, schedule), CancellationToken.None);
+        var result = await handler.Handle(
+            new ConfirmPurchaseCommand(inv.Id, schedule),
+            CancellationToken.None
+        );
 
         result.IsSuccess.Should().BeTrue();
         result.Value.Should().NotBeNull();
         result.Value!.Status.Should().Be("Confirmed");
 
-        stockRepo.Verify(s => s.AppendMovementAsync(
-            TenantId, CompanyId, ItemId1, WhId, StockMovementType.PurchaseEntry, 5m, It.IsAny<string>(),
-            It.IsAny<DateOnly>(), It.IsAny<string?>(), inv.Id, "PurchaseInvoice",
-            UserId, It.IsAny<decimal?>(), It.IsAny<Guid?>(), It.IsAny<Guid?>(), It.IsAny<CancellationToken>()),
-            Times.Once);
-        stockRepo.Verify(s => s.SaveChangesWithSequenceRetryAsync(It.IsAny<CancellationToken>()), Times.Once);
+        stockRepo.Verify(
+            s =>
+                s.AppendMovementAsync(
+                    TenantId,
+                    CompanyId,
+                    ItemId1,
+                    WhId,
+                    StockMovementType.PurchaseEntry,
+                    5m,
+                    It.IsAny<string>(),
+                    It.IsAny<DateOnly>(),
+                    It.IsAny<string?>(),
+                    inv.Id,
+                    "PurchaseInvoice",
+                    UserId,
+                    It.IsAny<decimal?>(),
+                    It.IsAny<Guid?>(),
+                    It.IsAny<Guid?>(),
+                    It.IsAny<CancellationToken>()
+                ),
+            Times.Once
+        );
+        stockRepo.Verify(
+            s => s.SaveChangesWithSequenceRetryAsync(It.IsAny<CancellationToken>()),
+            Times.Once
+        );
     }
 
     [Fact]
@@ -155,16 +262,36 @@ public sealed class ConfirmPurchaseHandlerTests
 
         var schedule = new List<ConfirmScheduleInput>
         {
-            new(1, DateOnly.FromDateTime(DateTime.UtcNow.AddDays(30)), total, null)
+            new(1, DateOnly.FromDateTime(DateTime.UtcNow.AddDays(30)), total, null),
         };
-        var result = await handler.Handle(new ConfirmPurchaseCommand(inv.Id, schedule), CancellationToken.None);
+        var result = await handler.Handle(
+            new ConfirmPurchaseCommand(inv.Id, schedule),
+            CancellationToken.None
+        );
 
         result.IsSuccess.Should().BeTrue();
-        stockRepo.Verify(s => s.AppendMovementAsync(
-            TenantId, CompanyId, ItemId1, WhId, StockMovementType.PurchaseEntry, 5m, It.IsAny<string>(),
-            It.IsAny<DateOnly>(), It.IsAny<string?>(), inv.Id, "PurchaseInvoice",
-            UserId, It.IsAny<decimal?>(), It.IsAny<Guid?>(), It.IsAny<Guid?>(), It.IsAny<CancellationToken>()),
-            Times.Exactly(2));
+        stockRepo.Verify(
+            s =>
+                s.AppendMovementAsync(
+                    TenantId,
+                    CompanyId,
+                    ItemId1,
+                    WhId,
+                    StockMovementType.PurchaseEntry,
+                    5m,
+                    It.IsAny<string>(),
+                    It.IsAny<DateOnly>(),
+                    It.IsAny<string?>(),
+                    inv.Id,
+                    "PurchaseInvoice",
+                    UserId,
+                    It.IsAny<decimal?>(),
+                    It.IsAny<Guid?>(),
+                    It.IsAny<Guid?>(),
+                    It.IsAny<CancellationToken>()
+                ),
+            Times.Exactly(2)
+        );
     }
 
     [Fact]
@@ -176,21 +303,58 @@ public sealed class ConfirmPurchaseHandlerTests
 
         var schedule = new List<ConfirmScheduleInput>
         {
-            new(1, DateOnly.FromDateTime(DateTime.UtcNow.AddDays(30)), total, null)
+            new(1, DateOnly.FromDateTime(DateTime.UtcNow.AddDays(30)), total, null),
         };
-        var result = await handler.Handle(new ConfirmPurchaseCommand(inv.Id, schedule), CancellationToken.None);
+        var result = await handler.Handle(
+            new ConfirmPurchaseCommand(inv.Id, schedule),
+            CancellationToken.None
+        );
 
         result.IsSuccess.Should().BeTrue();
-        stockRepo.Verify(s => s.AppendMovementAsync(
-            TenantId, CompanyId, ItemId1, WhId, StockMovementType.PurchaseEntry, 5m, It.IsAny<string>(),
-            It.IsAny<DateOnly>(), It.IsAny<string?>(), inv.Id, "PurchaseInvoice",
-            UserId, It.IsAny<decimal?>(), It.IsAny<Guid?>(), It.IsAny<Guid?>(), It.IsAny<CancellationToken>()),
-            Times.Once);
-        stockRepo.Verify(s => s.AppendMovementAsync(
-            TenantId, CompanyId, ItemId2, WhId, StockMovementType.PurchaseEntry, 5m, It.IsAny<string>(),
-            It.IsAny<DateOnly>(), It.IsAny<string?>(), inv.Id, "PurchaseInvoice",
-            UserId, It.IsAny<decimal?>(), It.IsAny<Guid?>(), It.IsAny<Guid?>(), It.IsAny<CancellationToken>()),
-            Times.Once);
+        stockRepo.Verify(
+            s =>
+                s.AppendMovementAsync(
+                    TenantId,
+                    CompanyId,
+                    ItemId1,
+                    WhId,
+                    StockMovementType.PurchaseEntry,
+                    5m,
+                    It.IsAny<string>(),
+                    It.IsAny<DateOnly>(),
+                    It.IsAny<string?>(),
+                    inv.Id,
+                    "PurchaseInvoice",
+                    UserId,
+                    It.IsAny<decimal?>(),
+                    It.IsAny<Guid?>(),
+                    It.IsAny<Guid?>(),
+                    It.IsAny<CancellationToken>()
+                ),
+            Times.Once
+        );
+        stockRepo.Verify(
+            s =>
+                s.AppendMovementAsync(
+                    TenantId,
+                    CompanyId,
+                    ItemId2,
+                    WhId,
+                    StockMovementType.PurchaseEntry,
+                    5m,
+                    It.IsAny<string>(),
+                    It.IsAny<DateOnly>(),
+                    It.IsAny<string?>(),
+                    inv.Id,
+                    "PurchaseInvoice",
+                    UserId,
+                    It.IsAny<decimal?>(),
+                    It.IsAny<Guid?>(),
+                    It.IsAny<Guid?>(),
+                    It.IsAny<CancellationToken>()
+                ),
+            Times.Once
+        );
     }
 
     [Fact]
@@ -205,7 +369,8 @@ public sealed class ConfirmPurchaseHandlerTests
 
         var fakeId = Guid.NewGuid();
         var repoOverride = new Mock<IPurchaseInvoiceRepository>();
-        repoOverride.Setup(r => r.GetByIdAsync(TenantId, fakeId, It.IsAny<CancellationToken>()))
+        repoOverride
+            .Setup(r => r.GetByIdAsync(TenantId, fakeId, It.IsAny<CancellationToken>()))
             .ReturnsAsync((PurchaseInvoice?)null);
 
         var tenant = new Mock<ICurrentTenant>();
@@ -216,11 +381,15 @@ public sealed class ConfirmPurchaseHandlerTests
         user.Setup(u => u.UserId).Returns(UserId);
 
         var h = new ConfirmPurchaseHandler(
-            repoOverride.Object, new Mock<IStockRepository>().Object,
+            repoOverride.Object,
+            new Mock<IStockRepository>().Object,
             new Mock<IItemRepository>().Object,
             new Mock<ISriTaxResolver>().Object,
             new Mock<ILogger<ConfirmPurchaseHandler>>().Object,
-            tenant.Object, company.Object, user.Object);
+            tenant.Object,
+            company.Object,
+            user.Object
+        );
 
         var result = await h.Handle(new ConfirmPurchaseCommand(fakeId), CancellationToken.None);
 
@@ -237,11 +406,14 @@ public sealed class ConfirmPurchaseHandlerTests
 
         var schedule = new List<ConfirmScheduleInput>
         {
-            new(1, DateOnly.FromDateTime(DateTime.UtcNow.AddDays(30)), total, null)
+            new(1, DateOnly.FromDateTime(DateTime.UtcNow.AddDays(30)), total, null),
         };
         await handler.Handle(new ConfirmPurchaseCommand(inv.Id, schedule), CancellationToken.None);
 
-        repo.Verify(r => r.ClearScheduleTrackingAsync(inv.Id, It.IsAny<CancellationToken>()), Times.Once);
+        repo.Verify(
+            r => r.ClearScheduleTrackingAsync(inv.Id, It.IsAny<CancellationToken>()),
+            Times.Once
+        );
     }
 
     [Fact]
@@ -253,11 +425,14 @@ public sealed class ConfirmPurchaseHandlerTests
 
         var schedule = new List<ConfirmScheduleInput>
         {
-            new(1, DateOnly.FromDateTime(DateTime.UtcNow.AddDays(30)), total, null)
+            new(1, DateOnly.FromDateTime(DateTime.UtcNow.AddDays(30)), total, null),
         };
         await handler.Handle(new ConfirmPurchaseCommand(inv.Id, schedule), CancellationToken.None);
 
-        repo.Verify(r => r.TrackPayable(It.Is<PurchasePayable>(p => p.TotalAmount > 0)), Times.Once);
+        repo.Verify(
+            r => r.TrackPayable(It.Is<PurchasePayable>(p => p.TotalAmount > 0)),
+            Times.Once
+        );
     }
 
     [Fact]
@@ -266,7 +441,10 @@ public sealed class ConfirmPurchaseHandlerTests
         var inv = CreateDraftInvoice(1);
         var (handler, _, _) = BuildHandler(inv);
 
-        var result = await handler.Handle(new ConfirmPurchaseCommand(inv.Id), CancellationToken.None);
+        var result = await handler.Handle(
+            new ConfirmPurchaseCommand(inv.Id),
+            CancellationToken.None
+        );
 
         result.IsSuccess.Should().BeTrue();
         result.Value!.PaymentSchedules.Should().HaveCount(1);
@@ -278,27 +456,67 @@ public sealed class ConfirmPurchaseHandlerTests
     {
         // 1. Crear borrador con 2 líneas (1 producto repetido + 1 distinto)
         var inv = PurchaseInvoice.CreateDraft(
-            TenantId, CompanyId, BranchId, SupplierId,
-            "Corporación Logística S.A.", "1790987654001",
-            "01", "001-500-000000099", DateOnly.FromDateTime(DateTime.UtcNow), UserId,
-            PtId, "Crédito 30 días", 1, 30,
+            TenantId,
+            CompanyId,
+            BranchId,
+            SupplierId,
+            "Corporación Logística S.A.",
+            "1790987654001",
+            "01",
+            "001-500-000000099",
+            DateOnly.FromDateTime(DateTime.UtcNow),
+            UserId,
+            PtId,
+            "Crédito 30 días",
+            1,
+            30,
             globalWarehouseId: WhId,
-            taxSupportCode: "01", sriPaymentMethodCode: "20");
+            taxSupportCode: "01",
+            sriPaymentMethodCode: "20"
+        );
 
         var lines = new List<PurchaseInvoiceDetail>
         {
-            PurchaseInvoiceDetail.Create(inv.Id, TenantId, "Camisa Oxford Blue",
-                quantity: 12, unitPrice: 25.50m, vatCode: "10", uomCode: "UNIT",
-                itemId: ItemId1, warehouseId: WhId, discountPct: 5,
-                snapshotSku: "1002", snapshotItemName: "Camisa Oxford Blue"),
-            PurchaseInvoiceDetail.Create(inv.Id, TenantId, "Pantalón Gabardina Slim",
-                quantity: 5, unitPrice: 42.00m, vatCode: "10", uomCode: "UNIT",
-                itemId: ItemId2, warehouseId: WhId,
-                snapshotSku: "5042", snapshotItemName: "Pantalón Gabardina Slim"),
-            PurchaseInvoiceDetail.Create(inv.Id, TenantId, "Camisa Oxford Blue (dup)",
-                quantity: 3, unitPrice: 25.50m, vatCode: "10", uomCode: "UNIT",
-                itemId: ItemId1, warehouseId: WhId,
-                snapshotSku: "1002", snapshotItemName: "Camisa Oxford Blue"),
+            PurchaseInvoiceDetail.Create(
+                inv.Id,
+                TenantId,
+                "Camisa Oxford Blue",
+                quantity: 12,
+                unitPrice: 25.50m,
+                vatCode: "10",
+                uomCode: "UNIT",
+                itemId: ItemId1,
+                warehouseId: WhId,
+                discountPct: 5,
+                snapshotSku: "1002",
+                snapshotItemName: "Camisa Oxford Blue"
+            ),
+            PurchaseInvoiceDetail.Create(
+                inv.Id,
+                TenantId,
+                "Pantalón Gabardina Slim",
+                quantity: 5,
+                unitPrice: 42.00m,
+                vatCode: "10",
+                uomCode: "UNIT",
+                itemId: ItemId2,
+                warehouseId: WhId,
+                snapshotSku: "5042",
+                snapshotItemName: "Pantalón Gabardina Slim"
+            ),
+            PurchaseInvoiceDetail.Create(
+                inv.Id,
+                TenantId,
+                "Camisa Oxford Blue (dup)",
+                quantity: 3,
+                unitPrice: 25.50m,
+                vatCode: "10",
+                uomCode: "UNIT",
+                itemId: ItemId1,
+                warehouseId: WhId,
+                snapshotSku: "1002",
+                snapshotItemName: "Camisa Oxford Blue"
+            ),
         };
         inv.ReplaceLines(lines, UserId);
 
@@ -310,7 +528,9 @@ public sealed class ConfirmPurchaseHandlerTests
         var (handler, repo, stockRepo) = BuildHandler(inv);
 
         var result = await handler.Handle(
-            new ConfirmPurchaseCommand(inv.Id), CancellationToken.None);
+            new ConfirmPurchaseCommand(inv.Id),
+            CancellationToken.None
+        );
 
         // 3. Verificar resultado
         result.IsSuccess.Should().BeTrue($"el confirm debe ser exitoso. Error: {result.Error}");
@@ -322,37 +542,97 @@ public sealed class ConfirmPurchaseHandlerTests
         dto.PaymentSchedules[0].Amount.Should().BeGreaterThan(0);
 
         // 4. Verificar stock: 3 movimientos (3 líneas con itemId + warehouseId)
-        stockRepo.Verify(s => s.AppendMovementAsync(
-            TenantId, CompanyId, It.IsAny<Guid>(), WhId, StockMovementType.PurchaseEntry,
-            It.IsAny<decimal>(), It.IsAny<string>(), It.IsAny<DateOnly>(), It.IsAny<string?>(),
-            inv.Id, "PurchaseInvoice", UserId, It.IsAny<decimal?>(), It.IsAny<Guid?>(), It.IsAny<Guid?>(),
-            It.IsAny<CancellationToken>()), Times.Exactly(3));
+        stockRepo.Verify(
+            s =>
+                s.AppendMovementAsync(
+                    TenantId,
+                    CompanyId,
+                    It.IsAny<Guid>(),
+                    WhId,
+                    StockMovementType.PurchaseEntry,
+                    It.IsAny<decimal>(),
+                    It.IsAny<string>(),
+                    It.IsAny<DateOnly>(),
+                    It.IsAny<string?>(),
+                    inv.Id,
+                    "PurchaseInvoice",
+                    UserId,
+                    It.IsAny<decimal?>(),
+                    It.IsAny<Guid?>(),
+                    It.IsAny<Guid?>(),
+                    It.IsAny<CancellationToken>()
+                ),
+            Times.Exactly(3)
+        );
 
         // ItemId1 aparece 2 veces (línea 1 + línea 3)
-        stockRepo.Verify(s => s.AppendMovementAsync(
-            TenantId, CompanyId, ItemId1, WhId, StockMovementType.PurchaseEntry,
-            It.IsAny<decimal>(), It.IsAny<string>(), It.IsAny<DateOnly>(), It.IsAny<string?>(),
-            inv.Id, "PurchaseInvoice", UserId, It.IsAny<decimal?>(), It.IsAny<Guid?>(), It.IsAny<Guid?>(),
-            It.IsAny<CancellationToken>()), Times.Exactly(2));
+        stockRepo.Verify(
+            s =>
+                s.AppendMovementAsync(
+                    TenantId,
+                    CompanyId,
+                    ItemId1,
+                    WhId,
+                    StockMovementType.PurchaseEntry,
+                    It.IsAny<decimal>(),
+                    It.IsAny<string>(),
+                    It.IsAny<DateOnly>(),
+                    It.IsAny<string?>(),
+                    inv.Id,
+                    "PurchaseInvoice",
+                    UserId,
+                    It.IsAny<decimal?>(),
+                    It.IsAny<Guid?>(),
+                    It.IsAny<Guid?>(),
+                    It.IsAny<CancellationToken>()
+                ),
+            Times.Exactly(2)
+        );
 
         // ItemId2 aparece 1 vez
-        stockRepo.Verify(s => s.AppendMovementAsync(
-            TenantId, CompanyId, ItemId2, WhId, StockMovementType.PurchaseEntry, 5m,
-            It.IsAny<string>(), It.IsAny<DateOnly>(), It.IsAny<string?>(),
-            inv.Id, "PurchaseInvoice", UserId, It.IsAny<decimal?>(), It.IsAny<Guid?>(), It.IsAny<Guid?>(),
-            It.IsAny<CancellationToken>()), Times.Once);
+        stockRepo.Verify(
+            s =>
+                s.AppendMovementAsync(
+                    TenantId,
+                    CompanyId,
+                    ItemId2,
+                    WhId,
+                    StockMovementType.PurchaseEntry,
+                    5m,
+                    It.IsAny<string>(),
+                    It.IsAny<DateOnly>(),
+                    It.IsAny<string?>(),
+                    inv.Id,
+                    "PurchaseInvoice",
+                    UserId,
+                    It.IsAny<decimal?>(),
+                    It.IsAny<Guid?>(),
+                    It.IsAny<Guid?>(),
+                    It.IsAny<CancellationToken>()
+                ),
+            Times.Once
+        );
 
         // 5. Payable creado
-        repo.Verify(r => r.TrackPayable(It.Is<PurchasePayable>(p => p.TotalAmount > 0)), Times.Once);
+        repo.Verify(
+            r => r.TrackPayable(It.Is<PurchasePayable>(p => p.TotalAmount > 0)),
+            Times.Once
+        );
 
         // 6. Communication creada
         repo.Verify(r => r.TrackCommunication(It.IsAny<PurchaseCommunication>()), Times.Once);
 
         // 7. Schedule tracking limpiado
-        repo.Verify(r => r.ClearScheduleTrackingAsync(inv.Id, It.IsAny<CancellationToken>()), Times.Once);
+        repo.Verify(
+            r => r.ClearScheduleTrackingAsync(inv.Id, It.IsAny<CancellationToken>()),
+            Times.Once
+        );
 
         // 8. SaveChanges ejecutado (vía IStockRepository, con retry de secuencia del Kardex)
-        stockRepo.Verify(s => s.SaveChangesWithSequenceRetryAsync(It.IsAny<CancellationToken>()), Times.Once);
+        stockRepo.Verify(
+            s => s.SaveChangesWithSequenceRetryAsync(It.IsAny<CancellationToken>()),
+            Times.Once
+        );
 
         // 9. Todas las líneas congeladas
         inv.Lines.Should().OnlyContain(l => l.IsFrozen);

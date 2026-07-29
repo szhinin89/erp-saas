@@ -20,8 +20,7 @@ public sealed record GetItemsQuery(
     int PageSize = 20
 ) : IRequest<Result<GetItemsResponse>>, ICompanyScopedRequest;
 
-public sealed class GetItemsQueryHandler
-    : IRequestHandler<GetItemsQuery, Result<GetItemsResponse>>
+public sealed class GetItemsQueryHandler : IRequestHandler<GetItemsQuery, Result<GetItemsResponse>>
 {
     private readonly IItemRepository _repository;
     private readonly ICurrentTenant _currentTenant;
@@ -32,7 +31,8 @@ public sealed class GetItemsQueryHandler
         IItemRepository repository,
         ICurrentTenant tenant,
         ISriCatalogResolver sri,
-        IItemTypeRepository itemTypeRepo)
+        IItemTypeRepository itemTypeRepo
+    )
     {
         _repository = repository;
         _currentTenant = tenant;
@@ -40,26 +40,50 @@ public sealed class GetItemsQueryHandler
         _itemTypeRepo = itemTypeRepo;
     }
 
-    public async Task<Result<GetItemsResponse>> Handle(GetItemsQuery query, CancellationToken cancellationToken)
+    public async Task<Result<GetItemsResponse>> Handle(
+        GetItemsQuery query,
+        CancellationToken cancellationToken
+    )
     {
         var filter = new ItemReportFilter(
-            query.Search, query.Sku, query.IsActive, query.IsForSale,
-            query.IsFavorite, query.IsEcommerce, query.ItemTypeId,
-            query.CategoryNodeId, query.BrandId, query.Barcode);
+            query.Search,
+            query.Sku,
+            query.IsActive,
+            query.IsForSale,
+            query.IsFavorite,
+            query.IsEcommerce,
+            query.ItemTypeId,
+            query.CategoryNodeId,
+            query.BrandId,
+            query.Barcode
+        );
 
         var (items, total) = await _repository.GetPageAsync(
-            _currentTenant.TenantId, filter,
-            query.PageNumber, query.PageSize, cancellationToken);
+            _currentTenant.TenantId,
+            filter,
+            query.PageNumber,
+            query.PageSize,
+            cancellationToken
+        );
 
         var uomMap = await _sri.ResolveUomsAsync(
-            items.Select(i => i.DefaultUomCode), cancellationToken);
+            items.Select(i => i.DefaultUomCode),
+            cancellationToken
+        );
 
-        var itemTypes = await _itemTypeRepo.ListAsync(_currentTenant.TenantId, onlyActive: false, cancellationToken);
+        var itemTypes = await _itemTypeRepo.ListAsync(
+            _currentTenant.TenantId,
+            onlyActive: false,
+            cancellationToken
+        );
         var itemTypeNames = itemTypes.ToDictionary(t => t.Id, t => t.Name);
 
         var response = new GetItemsResponse(
             items.Select(i => ItemMappingService.ToDto(i, uomMap, itemTypeNames)).ToList(),
-            total, query.PageNumber, query.PageSize);
+            total,
+            query.PageNumber,
+            query.PageSize
+        );
 
         return Result<GetItemsResponse>.Success(response);
     }

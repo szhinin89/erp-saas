@@ -26,27 +26,48 @@ public sealed partial class SalesBootstrapStep : ICompanyBootstrapStep
     private const string DefaultPaymentTermName = "Contado";
     private const string ConsumidorFinalName = "Consumidor Final";
 
-    private static readonly (string Code, string Name, bool RequiresRef, bool CreditAllowed, int Sort, PaymentMethodDetailType DetailType)[] DefaultPaymentMethods =
+    private static readonly (
+        string Code,
+        string Name,
+        bool RequiresRef,
+        bool CreditAllowed,
+        int Sort,
+        PaymentMethodDetailType DetailType
+    )[] DefaultPaymentMethods =
     [
-        ("EFECTIVO",      "Efectivo",              false, false, 1, PaymentMethodDetailType.None),
-        ("TARJETA",       "Tarjeta de Crédito",    true,  false, 2, PaymentMethodDetailType.Card),
-        ("TRANSFERENCIA", "Transferencia Bancaria", true,  false, 3, PaymentMethodDetailType.Transfer),
-        ("CHEQUE",        "Cheque",                 true,  false, 4, PaymentMethodDetailType.Check),
-        ("CREDITO",       "Crédito",                false, true,  5, PaymentMethodDetailType.None),
+        ("EFECTIVO", "Efectivo", false, false, 1, PaymentMethodDetailType.None),
+        ("TARJETA", "Tarjeta de Crédito", true, false, 2, PaymentMethodDetailType.Card),
+        (
+            "TRANSFERENCIA",
+            "Transferencia Bancaria",
+            true,
+            false,
+            3,
+            PaymentMethodDetailType.Transfer
+        ),
+        ("CHEQUE", "Cheque", true, false, 4, PaymentMethodDetailType.Check),
+        ("CREDITO", "Crédito", false, true, 5, PaymentMethodDetailType.None),
     ];
 
     private readonly ErpDbContext _db;
     private readonly IDatabaseExceptionTranslator _dbEx;
     private readonly ILogger<SalesBootstrapStep> _logger;
 
-    public SalesBootstrapStep(ErpDbContext db, IDatabaseExceptionTranslator dbEx, ILogger<SalesBootstrapStep> logger)
+    public SalesBootstrapStep(
+        ErpDbContext db,
+        IDatabaseExceptionTranslator dbEx,
+        ILogger<SalesBootstrapStep> logger
+    )
     {
         _db = db;
         _dbEx = dbEx;
         _logger = logger;
     }
 
-    public async Task ExecuteAsync(CompanyBootstrapContext context, CancellationToken cancellationToken = default)
+    public async Task ExecuteAsync(
+        CompanyBootstrapContext context,
+        CancellationToken cancellationToken = default
+    )
     {
         var (tenantId, companyId, actorId) = context;
 
@@ -56,9 +77,14 @@ public sealed partial class SalesBootstrapStep : ICompanyBootstrapStep
         await SeedDefaultPaymentTermAsync(tenantId, actorId, cancellationToken);
     }
 
-    private async Task SeedDefaultPaymentMethodsAsync(Guid tenantId, Guid actorId, CancellationToken ct)
+    private async Task SeedDefaultPaymentMethodsAsync(
+        Guid tenantId,
+        Guid actorId,
+        CancellationToken ct
+    )
     {
-        var existingCodes = await _db.PaymentMethods.IgnoreQueryFilters()
+        var existingCodes = await _db
+            .PaymentMethods.IgnoreQueryFilters()
             .Where(pm => pm.TenantId == tenantId)
             .Select(pm => pm.Code)
             .ToListAsync(ct);
@@ -66,7 +92,9 @@ public sealed partial class SalesBootstrapStep : ICompanyBootstrapStep
         var existingSet = new HashSet<string>(existingCodes, StringComparer.OrdinalIgnoreCase);
         var added = 0;
 
-        foreach (var (code, name, requiresRef, creditAllowed, sort, detailType) in DefaultPaymentMethods)
+        foreach (
+            var (code, name, requiresRef, creditAllowed, sort, detailType) in DefaultPaymentMethods
+        )
         {
             if (existingSet.Contains(code))
             {
@@ -74,7 +102,16 @@ public sealed partial class SalesBootstrapStep : ICompanyBootstrapStep
                 continue;
             }
 
-            var pm = PaymentMethod.CreateSystemSeeded(tenantId, code, name, requiresRef, creditAllowed, sort, actorId, detailType);
+            var pm = PaymentMethod.CreateSystemSeeded(
+                tenantId,
+                code,
+                name,
+                requiresRef,
+                creditAllowed,
+                sort,
+                actorId,
+                detailType
+            );
             _db.PaymentMethods.Add(pm);
             added++;
         }
@@ -88,10 +125,15 @@ public sealed partial class SalesBootstrapStep : ICompanyBootstrapStep
 
     private async Task SeedConsumidorFinalAsync(Guid tenantId, Guid actorId, CancellationToken ct)
     {
-        var exists = await _db.BusinessPartners.IgnoreQueryFilters()
-            .AnyAsync(bp => bp.TenantId == tenantId
-                         && bp.Identification.Type == TaxIdentification.SriConsumidorFinal
-                         && bp.Identification.Number == TaxIdentification.ConsumidorFinalNumber, ct);
+        var exists = await _db
+            .BusinessPartners.IgnoreQueryFilters()
+            .AnyAsync(
+                bp =>
+                    bp.TenantId == tenantId
+                    && bp.Identification.Type == TaxIdentification.SriConsumidorFinal
+                    && bp.Identification.Number == TaxIdentification.ConsumidorFinalNumber,
+                ct
+            );
 
         if (exists)
         {
@@ -99,7 +141,8 @@ public sealed partial class SalesBootstrapStep : ICompanyBootstrapStep
             return;
         }
 
-        var companyCountryCode = await _db.Companies.IgnoreQueryFilters()
+        var companyCountryCode = await _db
+            .Companies.IgnoreQueryFilters()
             .Where(c => c.TenantId == tenantId)
             .Select(c => c.CountryCode)
             .FirstOrDefaultAsync(ct);
@@ -110,7 +153,8 @@ public sealed partial class SalesBootstrapStep : ICompanyBootstrapStep
         // asume ni se trunca el código a mano; si no hay match, queda null (BusinessPartner lo acepta).
         var iso2CountryCode = string.IsNullOrWhiteSpace(companyCountryCode)
             ? null
-            : await _db.SriCountries.AsNoTracking()
+            : await _db
+                .SriCountries.AsNoTracking()
                 .Where(c => c.Code == companyCountryCode)
                 .Select(c => c.Iso2)
                 .FirstOrDefaultAsync(ct);
@@ -122,7 +166,8 @@ public sealed partial class SalesBootstrapStep : ICompanyBootstrapStep
             personType: PersonType.Natural,
             legalName: ConsumidorFinalName,
             createdBy: actorId,
-            countryCode: iso2CountryCode);
+            countryCode: iso2CountryCode
+        );
 
         _db.BusinessPartners.Add(bp);
         try
@@ -143,7 +188,8 @@ public sealed partial class SalesBootstrapStep : ICompanyBootstrapStep
             tenantId: tenantId,
             businessPartnerId: bp.Id,
             roleType: RoleType.Customer,
-            assignedBy: actorId);
+            assignedBy: actorId
+        );
 
         _db.BusinessPartnerRoles.Add(role);
         await _db.SaveChangesAsync(ct);
@@ -151,12 +197,22 @@ public sealed partial class SalesBootstrapStep : ICompanyBootstrapStep
         LogConsumidorFinalSeeded(tenantId, bp.Id);
     }
 
-    private async Task SeedDefaultPriceListAsync(Guid tenantId, Guid companyId, Guid actorId, CancellationToken ct)
+    private async Task SeedDefaultPriceListAsync(
+        Guid tenantId,
+        Guid companyId,
+        Guid actorId,
+        CancellationToken ct
+    )
     {
-        var exists = await _db.PriceLists.IgnoreQueryFilters()
-            .AnyAsync(pl => pl.TenantId == tenantId
-                         && pl.CompanyId == companyId
-                         && pl.Code == DefaultPriceListCode, ct);
+        var exists = await _db
+            .PriceLists.IgnoreQueryFilters()
+            .AnyAsync(
+                pl =>
+                    pl.TenantId == tenantId
+                    && pl.CompanyId == companyId
+                    && pl.Code == DefaultPriceListCode,
+                ct
+            );
 
         if (exists)
         {
@@ -164,7 +220,8 @@ public sealed partial class SalesBootstrapStep : ICompanyBootstrapStep
             return;
         }
 
-        var currencyCode = await _db.Companies.IgnoreQueryFilters()
+        var currencyCode = await _db
+            .Companies.IgnoreQueryFilters()
             .Where(c => c.Id == companyId)
             .Select(c => c.CurrencyCode)
             .FirstAsync(ct);
@@ -176,7 +233,8 @@ public sealed partial class SalesBootstrapStep : ICompanyBootstrapStep
             name: DefaultPriceListName,
             currencyCode: currencyCode,
             isDefault: true,
-            createdBy: actorId);
+            createdBy: actorId
+        );
 
         _db.PriceLists.Add(priceList);
         await _db.SaveChangesAsync(ct);
@@ -184,9 +242,14 @@ public sealed partial class SalesBootstrapStep : ICompanyBootstrapStep
         LogPriceListSeeded(DefaultPriceListCode, companyId, priceList.Id);
     }
 
-    private async Task SeedDefaultPaymentTermAsync(Guid tenantId, Guid actorId, CancellationToken ct)
+    private async Task SeedDefaultPaymentTermAsync(
+        Guid tenantId,
+        Guid actorId,
+        CancellationToken ct
+    )
     {
-        var exists = await _db.PaymentTerms.IgnoreQueryFilters()
+        var exists = await _db
+            .PaymentTerms.IgnoreQueryFilters()
             .AnyAsync(pt => pt.TenantId == tenantId && pt.Code == DefaultPaymentTermCode, ct);
 
         if (exists)
@@ -201,7 +264,8 @@ public sealed partial class SalesBootstrapStep : ICompanyBootstrapStep
             name: DefaultPaymentTermName,
             installments: 1,
             daysBetweenInstallments: 0,
-            createdBy: actorId);
+            createdBy: actorId
+        );
 
         _db.PaymentTerms.Add(paymentTerm);
         await _db.SaveChangesAsync(ct);
@@ -209,30 +273,57 @@ public sealed partial class SalesBootstrapStep : ICompanyBootstrapStep
         LogPaymentTermSeeded(DefaultPaymentTermCode, tenantId, paymentTerm.Id);
     }
 
-    [LoggerMessage(Level = LogLevel.Debug, Message = "PaymentMethod {Code} already exists for tenant {TenantId}. Skipping.")]
+    [LoggerMessage(
+        Level = LogLevel.Debug,
+        Message = "PaymentMethod {Code} already exists for tenant {TenantId}. Skipping."
+    )]
     private partial void LogPaymentMethodSkipped(string code, Guid tenantId);
 
-    [LoggerMessage(Level = LogLevel.Information, Message = "{Count} default payment method(s) seeded for tenant {TenantId}.")]
+    [LoggerMessage(
+        Level = LogLevel.Information,
+        Message = "{Count} default payment method(s) seeded for tenant {TenantId}."
+    )]
     private partial void LogPaymentMethodsSeeded(int count, Guid tenantId);
 
-    [LoggerMessage(Level = LogLevel.Debug, Message = "Consumidor Final already exists for tenant {TenantId}. Skipping.")]
+    [LoggerMessage(
+        Level = LogLevel.Debug,
+        Message = "Consumidor Final already exists for tenant {TenantId}. Skipping."
+    )]
     private partial void LogConsumidorFinalSkipped(Guid tenantId);
 
-    [LoggerMessage(Level = LogLevel.Information, Message = "Consumidor Final seeded for tenant {TenantId} (id={BusinessPartnerId}).")]
+    [LoggerMessage(
+        Level = LogLevel.Information,
+        Message = "Consumidor Final seeded for tenant {TenantId} (id={BusinessPartnerId})."
+    )]
     private partial void LogConsumidorFinalSeeded(Guid tenantId, Guid businessPartnerId);
 
-    [LoggerMessage(Level = LogLevel.Warning, Message = "Consumidor Final unique violation for tenant {TenantId} — already seeded by a concurrent bootstrap run.")]
+    [LoggerMessage(
+        Level = LogLevel.Warning,
+        Message = "Consumidor Final unique violation for tenant {TenantId} — already seeded by a concurrent bootstrap run."
+    )]
     private partial void LogConsumidorFinalRaceDetected(Guid tenantId);
 
-    [LoggerMessage(Level = LogLevel.Debug, Message = "PriceList {Code} already exists for company {CompanyId}. Skipping.")]
+    [LoggerMessage(
+        Level = LogLevel.Debug,
+        Message = "PriceList {Code} already exists for company {CompanyId}. Skipping."
+    )]
     private partial void LogPriceListSkipped(string code, Guid companyId);
 
-    [LoggerMessage(Level = LogLevel.Information, Message = "PriceList {Code} seeded for company {CompanyId} (id={PriceListId}).")]
+    [LoggerMessage(
+        Level = LogLevel.Information,
+        Message = "PriceList {Code} seeded for company {CompanyId} (id={PriceListId})."
+    )]
     private partial void LogPriceListSeeded(string code, Guid companyId, Guid priceListId);
 
-    [LoggerMessage(Level = LogLevel.Debug, Message = "PaymentTerm {Code} already exists for tenant {TenantId}. Skipping.")]
+    [LoggerMessage(
+        Level = LogLevel.Debug,
+        Message = "PaymentTerm {Code} already exists for tenant {TenantId}. Skipping."
+    )]
     private partial void LogPaymentTermSkipped(string code, Guid tenantId);
 
-    [LoggerMessage(Level = LogLevel.Information, Message = "PaymentTerm {Code} seeded for tenant {TenantId} (id={PaymentTermId}).")]
+    [LoggerMessage(
+        Level = LogLevel.Information,
+        Message = "PaymentTerm {Code} seeded for tenant {TenantId} (id={PaymentTermId})."
+    )]
     private partial void LogPaymentTermSeeded(string code, Guid tenantId, Guid paymentTermId);
 }

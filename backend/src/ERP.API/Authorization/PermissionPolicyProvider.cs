@@ -11,7 +11,8 @@ public sealed class PermissionPolicyProvider : DefaultAuthorizationPolicyProvide
 {
     public const string Prefix = "perm:";
 
-    public PermissionPolicyProvider(IOptions<AuthorizationOptions> options) : base(options) { }
+    public PermissionPolicyProvider(IOptions<AuthorizationOptions> options)
+        : base(options) { }
 
     public override Task<AuthorizationPolicy?> GetPolicyAsync(string policyName)
     {
@@ -33,4 +34,3 @@ public sealed class PermissionPolicyProvider : DefaultAuthorizationPolicyProvide
         return base.GetPolicyAsync(policyName);
     }
 }
-

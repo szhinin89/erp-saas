@@ -20,34 +20,49 @@ public sealed class RideApplicationBoundaryTests
     [Fact]
     public void Ride_application_must_not_reference_infrastructure()
     {
-        var result = Types.InAssembly(ApplicationAssembly)
-            .That().ResideInNamespace(RideApplicationNamespace)
-            .ShouldNot().HaveDependencyOn("ERP.Infrastructure")
+        var result = Types
+            .InAssembly(ApplicationAssembly)
+            .That()
+            .ResideInNamespace(RideApplicationNamespace)
+            .ShouldNot()
+            .HaveDependencyOn("ERP.Infrastructure")
             .GetResult();
 
-        result.IsSuccessful.Should().BeTrue(string.Join(", ", result.FailingTypeNames ?? Array.Empty<string>()));
+        result
+            .IsSuccessful.Should()
+            .BeTrue(string.Join(", ", result.FailingTypeNames ?? Array.Empty<string>()));
     }
 
     [Fact]
     public void Ride_application_must_not_reference_api()
     {
-        var result = Types.InAssembly(ApplicationAssembly)
-            .That().ResideInNamespace(RideApplicationNamespace)
-            .ShouldNot().HaveDependencyOn("ERP.API")
+        var result = Types
+            .InAssembly(ApplicationAssembly)
+            .That()
+            .ResideInNamespace(RideApplicationNamespace)
+            .ShouldNot()
+            .HaveDependencyOn("ERP.API")
             .GetResult();
 
-        result.IsSuccessful.Should().BeTrue(string.Join(", ", result.FailingTypeNames ?? Array.Empty<string>()));
+        result
+            .IsSuccessful.Should()
+            .BeTrue(string.Join(", ", result.FailingTypeNames ?? Array.Empty<string>()));
     }
 
     [Fact]
     public void Ride_application_must_not_reference_questpdf()
     {
-        var result = Types.InAssembly(ApplicationAssembly)
-            .That().ResideInNamespace(RideApplicationNamespace)
-            .ShouldNot().HaveDependencyOn("QuestPDF")
+        var result = Types
+            .InAssembly(ApplicationAssembly)
+            .That()
+            .ResideInNamespace(RideApplicationNamespace)
+            .ShouldNot()
+            .HaveDependencyOn("QuestPDF")
             .GetResult();
 
-        result.IsSuccessful.Should().BeTrue(string.Join(", ", result.FailingTypeNames ?? Array.Empty<string>()));
+        result
+            .IsSuccessful.Should()
+            .BeTrue(string.Join(", ", result.FailingTypeNames ?? Array.Empty<string>()));
     }
 
     /// <summary>
@@ -62,34 +77,50 @@ public sealed class RideApplicationBoundaryTests
     [Fact]
     public void Ride_application_must_not_reference_system_xml_outside_the_parsers_folder()
     {
-        var result = Types.InAssembly(ApplicationAssembly)
-            .That().ResideInNamespace(RideApplicationNamespace)
-            .And().DoNotResideInNamespace("ERP.Application.Modules.Ride.Parsers")
-            .ShouldNot().HaveDependencyOn("System.Xml")
+        var result = Types
+            .InAssembly(ApplicationAssembly)
+            .That()
+            .ResideInNamespace(RideApplicationNamespace)
+            .And()
+            .DoNotResideInNamespace("ERP.Application.Modules.Ride.Parsers")
+            .ShouldNot()
+            .HaveDependencyOn("System.Xml")
             .GetResult();
 
-        result.IsSuccessful.Should().BeTrue(string.Join(", ", result.FailingTypeNames ?? Array.Empty<string>()));
+        result
+            .IsSuccessful.Should()
+            .BeTrue(string.Join(", ", result.FailingTypeNames ?? Array.Empty<string>()));
     }
 
     [Fact]
     public void Ride_application_must_not_reference_sales()
     {
-        var result = Types.InAssembly(ApplicationAssembly)
-            .That().ResideInNamespace(RideApplicationNamespace)
-            .ShouldNot().HaveDependencyOn("ERP.Application.Modules.Sales")
+        var result = Types
+            .InAssembly(ApplicationAssembly)
+            .That()
+            .ResideInNamespace(RideApplicationNamespace)
+            .ShouldNot()
+            .HaveDependencyOn("ERP.Application.Modules.Sales")
             .GetResult();
 
-        result.IsSuccessful.Should().BeTrue(string.Join(", ", result.FailingTypeNames ?? Array.Empty<string>()));
+        result
+            .IsSuccessful.Should()
+            .BeTrue(string.Join(", ", result.FailingTypeNames ?? Array.Empty<string>()));
     }
 
     [Fact]
     public void Ride_application_must_not_reference_electronic_documents()
     {
-        var result = Types.InAssembly(ApplicationAssembly)
-            .That().ResideInNamespace(RideApplicationNamespace)
-            .ShouldNot().HaveDependencyOn("ERP.Application.Modules.ElectronicDocuments")
+        var result = Types
+            .InAssembly(ApplicationAssembly)
+            .That()
+            .ResideInNamespace(RideApplicationNamespace)
+            .ShouldNot()
+            .HaveDependencyOn("ERP.Application.Modules.ElectronicDocuments")
             .GetResult();
 
-        result.IsSuccessful.Should().BeTrue(string.Join(", ", result.FailingTypeNames ?? Array.Empty<string>()));
+        result
+            .IsSuccessful.Should()
+            .BeTrue(string.Join(", ", result.FailingTypeNames ?? Array.Empty<string>()));
     }
 }

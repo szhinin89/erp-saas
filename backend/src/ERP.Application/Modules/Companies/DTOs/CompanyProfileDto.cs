@@ -57,9 +57,14 @@ public sealed record CompanyProfileDto(
     DateTime CreatedAt,
     DateTime UpdatedAt,
     Guid? CreatedBy,
-    Guid? UpdatedBy)
+    Guid? UpdatedBy
+)
 {
-    public static CompanyProfileDto FromEntity(Domain.Modules.Company.Entities.Company c, MediaFile? logo = null, MediaFile? alternateLogo = null) =>
+    public static CompanyProfileDto FromEntity(
+        Domain.Modules.Company.Entities.Company c,
+        MediaFile? logo = null,
+        MediaFile? alternateLogo = null
+    ) =>
         new(
             c.Id,
             c.TaxIdentificationNumber,
@@ -95,5 +100,6 @@ public sealed record CompanyProfileDto(
             c.CreatedAt,
             c.UpdatedAt,
             c.CreatedBy,
-            c.UpdatedBy);
+            c.UpdatedBy
+        );
 }

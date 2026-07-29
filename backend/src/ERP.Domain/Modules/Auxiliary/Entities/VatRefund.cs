@@ -12,6 +12,7 @@ public class VatRefund
     public Guid SourceDocumentId { get; set; }
     public decimal RefundAmount { get; set; }
     public DateOnly? AppliedDate { get; set; }
+
     /// <summary>Estado: pending | applied | rejected.</summary>
     public string Status { get; set; } = "pending";
     public string? SriReference { get; set; }

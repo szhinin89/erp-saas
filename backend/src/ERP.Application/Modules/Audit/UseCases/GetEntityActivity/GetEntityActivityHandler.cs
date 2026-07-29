@@ -5,7 +5,8 @@ using MediatR;
 
 namespace ERP.Application.Audit.UseCases.GetEntityActivity;
 
-public class GetEntityActivityHandler : IRequestHandler<GetEntityActivityQuery, Result<IReadOnlyList<UserActivityDto>>>
+public class GetEntityActivityHandler
+    : IRequestHandler<GetEntityActivityQuery, Result<IReadOnlyList<UserActivityDto>>>
 {
     private readonly IUserActivityRepository _repo;
     private readonly ICurrentTenant _currentTenant;
@@ -14,14 +15,18 @@ public class GetEntityActivityHandler : IRequestHandler<GetEntityActivityQuery, 
     public GetEntityActivityHandler(
         IUserActivityRepository repo,
         ICurrentTenant currentTenant,
-        ICurrentUser currentUser)
+        ICurrentUser currentUser
+    )
     {
         _repo = repo;
         _currentTenant = currentTenant;
         _currentUser = currentUser;
     }
 
-    public async Task<Result<IReadOnlyList<UserActivityDto>>> Handle(GetEntityActivityQuery query, CancellationToken cancellationToken)
+    public async Task<Result<IReadOnlyList<UserActivityDto>>> Handle(
+        GetEntityActivityQuery query,
+        CancellationToken cancellationToken
+    )
     {
         if (!_currentUser.IsAuthenticated || _currentUser.UserId == Guid.Empty)
             return Result<IReadOnlyList<UserActivityDto>>.Failure("No autenticado.");
@@ -32,17 +37,20 @@ public class GetEntityActivityHandler : IRequestHandler<GetEntityActivityQuery, 
         if (string.IsNullOrWhiteSpace(query.EntityType))
             return Result<IReadOnlyList<UserActivityDto>>.Failure("EntityType requerido.");
 
-        var take = query.Take < 1 ? 10 : query.Take > 50 ? 50 : query.Take;
+        var take =
+            query.Take < 1 ? 10
+            : query.Take > 50 ? 50
+            : query.Take;
 
         var list = await _repo.GetByEntityAsync(
             _currentTenant.TenantId,
             query.EntityType.Trim(),
             query.EntityId,
             take,
-            cancellationToken);
+            cancellationToken
+        );
 
-        var dto = list
-            .Select(x => new UserActivityDto(
+        var dto = list.Select(x => new UserActivityDto(
                 x.Id,
                 x.Module,
                 x.Action,
@@ -51,7 +59,8 @@ public class GetEntityActivityHandler : IRequestHandler<GetEntityActivityQuery, 
                 x.Description,
                 x.CreatedAt,
                 x.UserEmail,
-                x.UserFullName))
+                x.UserFullName
+            ))
             .ToList();
 
         return Result<IReadOnlyList<UserActivityDto>>.Success(dto);

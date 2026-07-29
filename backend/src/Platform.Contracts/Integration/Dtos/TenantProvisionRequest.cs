@@ -6,4 +6,5 @@ namespace Platform.Contracts.Integration.Dtos;
 public sealed record TenantProvisionRequest(
     string Name,
     string Slug,
-    string? PreferredLanguage = "es");
+    string? PreferredLanguage = "es"
+);

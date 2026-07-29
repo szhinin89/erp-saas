@@ -37,10 +37,15 @@ public sealed class AccessSessionController : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<bool>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status422UnprocessableEntity)]
-    public async Task<IActionResult> ChangeMyPassword([FromBody] ChangeMyPasswordRequest request, CancellationToken cancellationToken)
+    public async Task<IActionResult> ChangeMyPassword(
+        [FromBody] ChangeMyPasswordRequest request,
+        CancellationToken cancellationToken
+    )
     {
         var result = await _mediator.Send(
-            new ChangeMyPasswordCommand(request.CurrentPassword, request.NewPassword), cancellationToken);
+            new ChangeMyPasswordCommand(request.CurrentPassword, request.NewPassword),
+            cancellationToken
+        );
         return this.ToOkOrBadRequest(result);
     }
 }

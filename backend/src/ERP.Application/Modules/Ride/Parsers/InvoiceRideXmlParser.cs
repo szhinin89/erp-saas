@@ -1,8 +1,8 @@
+using System.Globalization;
+using System.Xml.Linq;
 using ERP.Application.Common;
 using ERP.Domain.Modules.Ride.Enums;
 using ERP.Domain.Modules.Ride.ValueObjects;
-using System.Globalization;
-using System.Xml.Linq;
 
 namespace ERP.Application.Modules.Ride.Parsers;
 
@@ -29,7 +29,8 @@ public sealed class InvoiceRideXmlParser : IRideXmlParser
     {
         try
         {
-            var factura = XDocument.Parse(authorizedXml).Root
+            var factura =
+                XDocument.Parse(authorizedXml).Root
                 ?? throw new FormatException("El XML no tiene un elemento raíz.");
 
             var infoTributaria = RequireElement(factura, "infoTributaria");
@@ -54,7 +55,8 @@ public sealed class InvoiceRideXmlParser : IRideXmlParser
                 subtotalWithoutTax: ParseDecimal(RequireText(infoFactura, "totalSinImpuestos")),
                 totalDiscount: ParseDecimal(RequireText(infoFactura, "totalDescuento")),
                 tip: ParseDecimal(RequireText(infoFactura, "propina")),
-                grandTotal: ParseDecimal(RequireText(infoFactura, "importeTotal")));
+                grandTotal: ParseDecimal(RequireText(infoFactura, "importeTotal"))
+            );
 
             var issuer = RideParty.Create(
                 identificationType: null,
@@ -64,37 +66,61 @@ public sealed class InvoiceRideXmlParser : IRideXmlParser
                 address: OptionalText(infoTributaria, "dirMatriz"),
                 isAccountingRequired: RequireText(infoFactura, "obligadoContabilidad")
                     .Equals("SI", StringComparison.OrdinalIgnoreCase),
-                taxRegime: OptionalText(infoTributaria, "contribuyenteRimpe"));
+                taxRegime: OptionalText(infoTributaria, "contribuyenteRimpe")
+            );
 
             var receiver = RideParty.Create(
                 identificationType: RequireText(infoFactura, "tipoIdentificacionComprador"),
                 identificationNumber: RequireText(infoFactura, "identificacionComprador"),
                 legalName: RequireText(infoFactura, "razonSocialComprador"),
-                address: OptionalText(infoFactura, "direccionComprador"));
+                address: OptionalText(infoFactura, "direccionComprador")
+            );
 
             var lines = detalles.Elements("detalle").Select(ParseLine).ToList();
 
-            var taxSummary = infoFactura.Element("totalConImpuestos")?.Elements("totalImpuesto")
-                .Select(ParseDocumentTax).ToList() ?? [];
+            var taxSummary =
+                infoFactura
+                    .Element("totalConImpuestos")
+                    ?.Elements("totalImpuesto")
+                    .Select(ParseDocumentTax)
+                    .ToList()
+                ?? [];
 
-            var payments = infoFactura.Element("pagos")?.Elements("pago").Select(ParsePayment).ToList() ?? [];
+            var payments =
+                infoFactura.Element("pagos")?.Elements("pago").Select(ParsePayment).ToList() ?? [];
 
-            var additionalInfo = factura.Element("infoAdicional")?.Elements("campoAdicional")
-                .Select(ParseAdditionalField).ToList() ?? [];
+            var additionalInfo =
+                factura
+                    .Element("infoAdicional")
+                    ?.Elements("campoAdicional")
+                    .Select(ParseAdditionalField)
+                    .ToList()
+                ?? [];
 
-            var model = RideModel.Create(header, issuer, receiver, lines, taxSummary, payments, additionalInfo);
+            var model = RideModel.Create(
+                header,
+                issuer,
+                receiver,
+                lines,
+                taxSummary,
+                payments,
+                additionalInfo
+            );
             return Result<RideModel>.Success(model);
         }
-        catch (Exception ex) when (ex is FormatException or ArgumentException or InvalidOperationException)
+        catch (Exception ex)
+            when (ex is FormatException or ArgumentException or InvalidOperationException)
         {
             return Result<RideModel>.ValidationFailure(
-                $"El XML autorizado de factura no se pudo interpretar: {ex.Message}");
+                $"El XML autorizado de factura no se pudo interpretar: {ex.Message}"
+            );
         }
     }
 
     private static RideLine ParseLine(XElement detalle)
     {
-        var taxes = detalle.Element("impuestos")?.Elements("impuesto").Select(ParseLineTax).ToList()
+        var taxes =
+            detalle.Element("impuestos")?.Elements("impuesto").Select(ParseLineTax).ToList()
             ?? throw new FormatException("Una línea de detalle no tiene impuestos.");
 
         return RideLine.Create(
@@ -104,21 +130,26 @@ public sealed class InvoiceRideXmlParser : IRideXmlParser
             unitPrice: ParseDecimal(RequireText(detalle, "precioUnitario")),
             discount: ParseDecimal(RequireText(detalle, "descuento")),
             subtotal: ParseDecimal(RequireText(detalle, "precioTotalSinImpuesto")),
-            taxes: taxes);
+            taxes: taxes
+        );
     }
 
-    private static RideTaxSummary ParseLineTax(XElement impuesto) => RideTaxSummary.Create(
-        taxCode: RequireText(impuesto, "codigo"),
-        taxPercentageCode: RequireText(impuesto, "codigoPorcentaje"),
-        taxableBase: ParseDecimal(RequireText(impuesto, "baseImponible")),
-        taxAmount: ParseDecimal(RequireText(impuesto, "valor")),
-        rate: ParseDecimal(RequireText(impuesto, "tarifa")));
+    private static RideTaxSummary ParseLineTax(XElement impuesto) =>
+        RideTaxSummary.Create(
+            taxCode: RequireText(impuesto, "codigo"),
+            taxPercentageCode: RequireText(impuesto, "codigoPorcentaje"),
+            taxableBase: ParseDecimal(RequireText(impuesto, "baseImponible")),
+            taxAmount: ParseDecimal(RequireText(impuesto, "valor")),
+            rate: ParseDecimal(RequireText(impuesto, "tarifa"))
+        );
 
-    private static RideTaxSummary ParseDocumentTax(XElement totalImpuesto) => RideTaxSummary.Create(
-        taxCode: RequireText(totalImpuesto, "codigo"),
-        taxPercentageCode: RequireText(totalImpuesto, "codigoPorcentaje"),
-        taxableBase: ParseDecimal(RequireText(totalImpuesto, "baseImponible")),
-        taxAmount: ParseDecimal(RequireText(totalImpuesto, "valor")));
+    private static RideTaxSummary ParseDocumentTax(XElement totalImpuesto) =>
+        RideTaxSummary.Create(
+            taxCode: RequireText(totalImpuesto, "codigo"),
+            taxPercentageCode: RequireText(totalImpuesto, "codigoPorcentaje"),
+            taxableBase: ParseDecimal(RequireText(totalImpuesto, "baseImponible")),
+            taxAmount: ParseDecimal(RequireText(totalImpuesto, "valor"))
+        );
 
     private static RidePaymentInfo ParsePayment(XElement pago)
     {
@@ -127,16 +158,20 @@ public sealed class InvoiceRideXmlParser : IRideXmlParser
             paymentMethodCode: RequireText(pago, "formaPago"),
             amount: ParseDecimal(RequireText(pago, "total")),
             term: termText is null ? null : int.Parse(termText, CultureInfo.InvariantCulture),
-            timeUnit: OptionalText(pago, "unidadTiempo"));
+            timeUnit: OptionalText(pago, "unidadTiempo")
+        );
     }
 
-    private static RideAdditionalInfo ParseAdditionalField(XElement campoAdicional) => RideAdditionalInfo.Create(
-        name: campoAdicional.Attribute("nombre")?.Value
-            ?? throw new FormatException("Un campo adicional no tiene el atributo 'nombre'."),
-        value: campoAdicional.Value);
+    private static RideAdditionalInfo ParseAdditionalField(XElement campoAdicional) =>
+        RideAdditionalInfo.Create(
+            name: campoAdicional.Attribute("nombre")?.Value
+                ?? throw new FormatException("Un campo adicional no tiene el atributo 'nombre'."),
+            value: campoAdicional.Value
+        );
 
     private static XElement RequireElement(XElement parent, string name) =>
-        parent.Element(name) ?? throw new FormatException($"Falta el elemento obligatorio '{name}'.");
+        parent.Element(name)
+        ?? throw new FormatException($"Falta el elemento obligatorio '{name}'.");
 
     private static string RequireText(XElement parent, string name) =>
         parent.Element(name)?.Value is { Length: > 0 } value

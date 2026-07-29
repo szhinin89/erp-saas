@@ -14,10 +14,34 @@ public sealed class RideDocumentService : IRideDocumentService
     public RideDocumentService(RidePipeline pipeline) => _pipeline = pipeline;
 
     public Task<Result<RideGenerationResultDto>> GetOrGenerateAsync(
-        Guid tenantId, Guid companyId, string sourceModule, Guid sourceEntityId, CancellationToken ct = default)
-        => _pipeline.ExecuteAsync(tenantId, companyId, sourceModule, sourceEntityId, forceRegenerate: false, ct);
+        Guid tenantId,
+        Guid companyId,
+        string sourceModule,
+        Guid sourceEntityId,
+        CancellationToken ct = default
+    ) =>
+        _pipeline.ExecuteAsync(
+            tenantId,
+            companyId,
+            sourceModule,
+            sourceEntityId,
+            forceRegenerate: false,
+            ct
+        );
 
     public Task<Result<RideGenerationResultDto>> RegenerateAsync(
-        Guid tenantId, Guid companyId, string sourceModule, Guid sourceEntityId, CancellationToken ct = default)
-        => _pipeline.ExecuteAsync(tenantId, companyId, sourceModule, sourceEntityId, forceRegenerate: true, ct);
+        Guid tenantId,
+        Guid companyId,
+        string sourceModule,
+        Guid sourceEntityId,
+        CancellationToken ct = default
+    ) =>
+        _pipeline.ExecuteAsync(
+            tenantId,
+            companyId,
+            sourceModule,
+            sourceEntityId,
+            forceRegenerate: true,
+            ct
+        );
 }

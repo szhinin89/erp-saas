@@ -14,19 +14,27 @@ public sealed class GetElectronicDocumentQueryHandler
 
     public GetElectronicDocumentQueryHandler(
         IElectronicDocumentRepository repository,
-        ICurrentTenant currentTenant)
+        ICurrentTenant currentTenant
+    )
     {
         _repository = repository;
         _currentTenant = currentTenant;
     }
 
     public async Task<Result<ElectronicDocumentDto?>> Handle(
-        GetElectronicDocumentQuery query, CancellationToken cancellationToken)
+        GetElectronicDocumentQuery query,
+        CancellationToken cancellationToken
+    )
     {
         var document = await _repository.GetBySourceAsync(
-            _currentTenant.TenantId, query.SourceModule, query.SourceEntityId, cancellationToken);
+            _currentTenant.TenantId,
+            query.SourceModule,
+            query.SourceEntityId,
+            cancellationToken
+        );
 
         return Result<ElectronicDocumentDto?>.Success(
-            document is null ? null : ElectronicDocumentMapper.ToDto(document));
+            document is null ? null : ElectronicDocumentMapper.ToDto(document)
+        );
     }
 }

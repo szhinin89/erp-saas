@@ -8,4 +8,5 @@ public sealed record WebhookEnvelope<TPayload>(
     WebhookEventType EventType,
     DateTime OccurredOn,
     Guid TenantId,
-    TPayload Payload);
+    TPayload Payload
+);

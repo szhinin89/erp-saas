@@ -5,4 +5,5 @@ using MediatR;
 namespace ERP.Application.Modules.Inventory.Stock.UseCases.GetStock;
 
 public sealed record GetStockQuery(Guid? ItemId, Guid? WarehouseId)
-    : IRequest<Result<IReadOnlyList<CurrentStockDto>>>, IBranchScopedRequest;
+    : IRequest<Result<IReadOnlyList<CurrentStockDto>>>,
+        IBranchScopedRequest;

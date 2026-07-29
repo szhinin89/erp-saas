@@ -22,8 +22,16 @@ public sealed class CloseAccountingPeriodHandlerTests
 
     private static readonly JournalEntryClosureReadiness Ready = new(false, false, false);
 
-    private static AccountingPeriod OpenPeriod() => AccountingPeriod.Create(
-        TenantId, CompanyId, 2026, 7, new DateOnly(2026, 7, 1), new DateOnly(2026, 7, 31), CreatedBy);
+    private static AccountingPeriod OpenPeriod() =>
+        AccountingPeriod.Create(
+            TenantId,
+            CompanyId,
+            2026,
+            7,
+            new DateOnly(2026, 7, 1),
+            new DateOnly(2026, 7, 31),
+            CreatedBy
+        );
 
     private sealed class Mocks
     {
@@ -40,8 +48,8 @@ public sealed class CloseAccountingPeriodHandlerTests
             User.Setup(u => u.UserId).Returns(CreatedBy);
         }
 
-        public CloseAccountingPeriodHandler BuildHandler() => new(
-            Periods.Object, JournalEntries.Object, Tenant.Object, Company.Object, User.Object);
+        public CloseAccountingPeriodHandler BuildHandler() =>
+            new(Periods.Object, JournalEntries.Object, Tenant.Object, Company.Object, User.Object);
     }
 
     [Fact]
@@ -49,12 +57,22 @@ public sealed class CloseAccountingPeriodHandlerTests
     {
         var period = OpenPeriod();
         var m = new Mocks();
-        m.Periods.Setup(r => r.GetByIdAsync(TenantId, CompanyId, period.Id, It.IsAny<CancellationToken>()))
+        m.Periods.Setup(r =>
+                r.GetByIdAsync(TenantId, CompanyId, period.Id, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(period);
-        m.JournalEntries.Setup(r => r.GetClosureReadinessAsync(TenantId, CompanyId, period.Id, It.IsAny<CancellationToken>()))
+        m.JournalEntries.Setup(r =>
+                r.GetClosureReadinessAsync(
+                    TenantId,
+                    CompanyId,
+                    period.Id,
+                    It.IsAny<CancellationToken>()
+                )
+            )
             .ReturnsAsync(Ready);
 
-        var result = await m.BuildHandler().Handle(new CloseAccountingPeriodCommand(period.Id), CancellationToken.None);
+        var result = await m.BuildHandler()
+            .Handle(new CloseAccountingPeriodCommand(period.Id), CancellationToken.None);
 
         result.IsSuccess.Should().BeTrue();
         result.Value!.Status.Should().Be(PeriodStatus.Closed.ToString());
@@ -67,12 +85,22 @@ public sealed class CloseAccountingPeriodHandlerTests
     {
         var period = OpenPeriod();
         var m = new Mocks();
-        m.Periods.Setup(r => r.GetByIdAsync(TenantId, CompanyId, period.Id, It.IsAny<CancellationToken>()))
+        m.Periods.Setup(r =>
+                r.GetByIdAsync(TenantId, CompanyId, period.Id, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(period);
-        m.JournalEntries.Setup(r => r.GetClosureReadinessAsync(TenantId, CompanyId, period.Id, It.IsAny<CancellationToken>()))
+        m.JournalEntries.Setup(r =>
+                r.GetClosureReadinessAsync(
+                    TenantId,
+                    CompanyId,
+                    period.Id,
+                    It.IsAny<CancellationToken>()
+                )
+            )
             .ReturnsAsync(Ready with { HasDraftOrNonFinalEntries = true });
 
-        var result = await m.BuildHandler().Handle(new CloseAccountingPeriodCommand(period.Id), CancellationToken.None);
+        var result = await m.BuildHandler()
+            .Handle(new CloseAccountingPeriodCommand(period.Id), CancellationToken.None);
 
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Contain("sin publicar");
@@ -85,12 +113,22 @@ public sealed class CloseAccountingPeriodHandlerTests
     {
         var period = OpenPeriod();
         var m = new Mocks();
-        m.Periods.Setup(r => r.GetByIdAsync(TenantId, CompanyId, period.Id, It.IsAny<CancellationToken>()))
+        m.Periods.Setup(r =>
+                r.GetByIdAsync(TenantId, CompanyId, period.Id, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(period);
-        m.JournalEntries.Setup(r => r.GetClosureReadinessAsync(TenantId, CompanyId, period.Id, It.IsAny<CancellationToken>()))
+        m.JournalEntries.Setup(r =>
+                r.GetClosureReadinessAsync(
+                    TenantId,
+                    CompanyId,
+                    period.Id,
+                    It.IsAny<CancellationToken>()
+                )
+            )
             .ReturnsAsync(Ready with { HasEntriesWithoutEntryNumber = true });
 
-        var result = await m.BuildHandler().Handle(new CloseAccountingPeriodCommand(period.Id), CancellationToken.None);
+        var result = await m.BuildHandler()
+            .Handle(new CloseAccountingPeriodCommand(period.Id), CancellationToken.None);
 
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Contain("número de asiento");
@@ -102,12 +140,22 @@ public sealed class CloseAccountingPeriodHandlerTests
     {
         var period = OpenPeriod();
         var m = new Mocks();
-        m.Periods.Setup(r => r.GetByIdAsync(TenantId, CompanyId, period.Id, It.IsAny<CancellationToken>()))
+        m.Periods.Setup(r =>
+                r.GetByIdAsync(TenantId, CompanyId, period.Id, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(period);
-        m.JournalEntries.Setup(r => r.GetClosureReadinessAsync(TenantId, CompanyId, period.Id, It.IsAny<CancellationToken>()))
+        m.JournalEntries.Setup(r =>
+                r.GetClosureReadinessAsync(
+                    TenantId,
+                    CompanyId,
+                    period.Id,
+                    It.IsAny<CancellationToken>()
+                )
+            )
             .ReturnsAsync(Ready with { HasIncompleteReversals = true });
 
-        var result = await m.BuildHandler().Handle(new CloseAccountingPeriodCommand(period.Id), CancellationToken.None);
+        var result = await m.BuildHandler()
+            .Handle(new CloseAccountingPeriodCommand(period.Id), CancellationToken.None);
 
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Contain("reversos contables incompletos");
@@ -118,15 +166,25 @@ public sealed class CloseAccountingPeriodHandlerTests
     public async Task Periodo_inexistente_retorna_NotFound()
     {
         var m = new Mocks();
-        m.Periods.Setup(r => r.GetByIdAsync(TenantId, CompanyId, It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+        m.Periods.Setup(r =>
+                r.GetByIdAsync(TenantId, CompanyId, It.IsAny<Guid>(), It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync((AccountingPeriod?)null);
 
-        var result = await m.BuildHandler().Handle(new CloseAccountingPeriodCommand(Guid.NewGuid()), CancellationToken.None);
+        var result = await m.BuildHandler()
+            .Handle(new CloseAccountingPeriodCommand(Guid.NewGuid()), CancellationToken.None);
 
         result.IsSuccess.Should().BeFalse();
         result.Code.Should().Be(ApiResponseCodes.Common.NotFound);
         m.JournalEntries.Verify(
-            r => r.GetClosureReadinessAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()),
-            Times.Never);
+            r =>
+                r.GetClosureReadinessAsync(
+                    It.IsAny<Guid>(),
+                    It.IsAny<Guid>(),
+                    It.IsAny<Guid>(),
+                    It.IsAny<CancellationToken>()
+                ),
+            Times.Never
+        );
     }
 }

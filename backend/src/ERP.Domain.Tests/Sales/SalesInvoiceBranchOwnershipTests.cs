@@ -23,9 +23,17 @@ public sealed class SalesInvoiceBranchOwnershipTests
 
     private static SalesInvoice CreateDraft(Guid branchId) =>
         SalesInvoice.CreateDraft(
-            TenantId, CompanyId, branchId, Guid.NewGuid(), Customer(),
-            "DRAFT-TEST", DateOnly.FromDateTime(DateTime.UtcNow), UserId, PaymentTerm(),
-            cashSessionId: Guid.NewGuid());
+            TenantId,
+            CompanyId,
+            branchId,
+            Guid.NewGuid(),
+            Customer(),
+            "DRAFT-TEST",
+            DateOnly.FromDateTime(DateTime.UtcNow),
+            UserId,
+            PaymentTerm(),
+            cashSessionId: Guid.NewGuid()
+        );
 
     [Fact]
     public void CreateDraft_con_sucursal_valida_persiste_BranchId()
@@ -52,18 +60,29 @@ public sealed class SalesInvoiceBranchOwnershipTests
         property.SetMethod.Should().NotBeNull();
         property.SetMethod!.IsPublic.Should().BeFalse("BranchId solo se asigna en CreateDraft");
 
-        typeof(SalesInvoice).GetMethods()
+        typeof(SalesInvoice)
+            .GetMethods()
             .Any(m => m.Name is "ChangeBranch" or "SetBranch" or "UpdateBranch")
-            .Should().BeFalse("no debe existir ningún método para mutar la sucursal tras la creación");
+            .Should()
+            .BeFalse("no debe existir ningún método para mutar la sucursal tras la creación");
     }
 
     [Fact]
     public void CreateDraft_con_CashSessionId_vacio_lanza_ArgumentException()
     {
-        var act = () => SalesInvoice.CreateDraft(
-            TenantId, CompanyId, Guid.NewGuid(), Guid.NewGuid(), Customer(),
-            "DRAFT-TEST", DateOnly.FromDateTime(DateTime.UtcNow), UserId, PaymentTerm(),
-            cashSessionId: Guid.Empty);
+        var act = () =>
+            SalesInvoice.CreateDraft(
+                TenantId,
+                CompanyId,
+                Guid.NewGuid(),
+                Guid.NewGuid(),
+                Customer(),
+                "DRAFT-TEST",
+                DateOnly.FromDateTime(DateTime.UtcNow),
+                UserId,
+                PaymentTerm(),
+                cashSessionId: Guid.Empty
+            );
 
         act.Should().Throw<ArgumentException>().WithParameterName("cashSessionId");
     }
@@ -73,11 +92,15 @@ public sealed class SalesInvoiceBranchOwnershipTests
     {
         var property = typeof(SalesInvoice).GetProperty(nameof(SalesInvoice.CashSessionId))!;
         property.SetMethod.Should().NotBeNull();
-        property.SetMethod!.IsPublic.Should().BeFalse("CashSessionId solo se asigna en CreateDraft");
+        property
+            .SetMethod!.IsPublic.Should()
+            .BeFalse("CashSessionId solo se asigna en CreateDraft");
 
-        typeof(SalesInvoice).GetMethods()
+        typeof(SalesInvoice)
+            .GetMethods()
             .Any(m => m.Name is "ChangeCashSession" or "SetCashSession" or "UpdateCashSession")
-            .Should().BeFalse("no debe existir ningún método para mutar la caja tras la creación");
+            .Should()
+            .BeFalse("no debe existir ningún método para mutar la caja tras la creación");
     }
 
     [Fact]
@@ -96,7 +119,12 @@ public sealed class SalesInvoiceBranchOwnershipTests
         // Cambiar de contexto (branchB) después de creada invA nunca la afecta — no hay
         // ninguna operación en el ciclo de vida del documento que lea el contexto de sesión
         // activo para recalcular BranchId.
-        invA.UpdateDraft(Guid.NewGuid(), Customer(), DateOnly.FromDateTime(DateTime.UtcNow), UserId);
+        invA.UpdateDraft(
+            Guid.NewGuid(),
+            Customer(),
+            DateOnly.FromDateTime(DateTime.UtcNow),
+            UserId
+        );
         invA.BranchId.Should().Be(branchA);
     }
 }

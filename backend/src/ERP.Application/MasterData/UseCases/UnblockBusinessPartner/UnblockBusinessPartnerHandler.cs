@@ -11,17 +11,32 @@ public sealed class UnblockBusinessPartnerHandler
     private readonly IOperationalContext _ctx;
 
     public UnblockBusinessPartnerHandler(
-        ICompanyBpTradingSettingsRepository settingsRepo, IOperationalContext ctx)
-        => (_settingsRepo, _ctx) = (settingsRepo, ctx);
+        ICompanyBpTradingSettingsRepository settingsRepo,
+        IOperationalContext ctx
+    ) => (_settingsRepo, _ctx) = (settingsRepo, ctx);
 
-    public async Task<Result<bool>> Handle(UnblockBusinessPartnerCommand cmd, CancellationToken cancellationToken)
+    public async Task<Result<bool>> Handle(
+        UnblockBusinessPartnerCommand cmd,
+        CancellationToken cancellationToken
+    )
     {
-        var settings = await _settingsRepo.GetByBusinessPartnerAsync(cmd.BusinessPartnerId, cancellationToken);
+        var settings = await _settingsRepo.GetByBusinessPartnerAsync(
+            cmd.BusinessPartnerId,
+            cancellationToken
+        );
         if (settings is null)
-            return Result<bool>.NotFound("No existe configuración comercial para este BP en la empresa activa.");
+            return Result<bool>.NotFound(
+                "No existe configuración comercial para este BP en la empresa activa."
+            );
 
-        try { settings.Unblock(_ctx.UserId); }
-        catch (InvalidOperationException ex) { return Result<bool>.ValidationFailure(ex.Message); }
+        try
+        {
+            settings.Unblock(_ctx.UserId);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return Result<bool>.ValidationFailure(ex.Message);
+        }
 
         await _settingsRepo.SaveChangesAsync(cancellationToken);
         return Result<bool>.Success(true);

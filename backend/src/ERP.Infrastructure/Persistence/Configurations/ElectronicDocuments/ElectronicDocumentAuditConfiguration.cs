@@ -5,7 +5,8 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace ERP.Infrastructure.Persistence.Configurations.ElectronicDocuments;
 
-public sealed class ElectronicDocumentAuditConfiguration : IEntityTypeConfiguration<ElectronicDocumentAudit>
+public sealed class ElectronicDocumentAuditConfiguration
+    : IEntityTypeConfiguration<ElectronicDocumentAudit>
 {
     public void Configure(EntityTypeBuilder<ElectronicDocumentAudit> builder)
     {
@@ -24,11 +25,25 @@ public sealed class ElectronicDocumentAuditConfiguration : IEntityTypeConfigurat
         builder.Property(x => x.Reason).Metadata.SetMaxLength(null);
 
         builder.Property(x => x.CompanyId).HasColumnName("company_id").IsRequired();
-        builder.Property(x => x.DocumentType).HasColumnName("document_type").HasConversion<int>().IsRequired();
+        builder
+            .Property(x => x.DocumentType)
+            .HasColumnName("document_type")
+            .HasConversion<int>()
+            .IsRequired();
         builder.Property(x => x.FromState).HasColumnName("from_state").HasConversion<int?>();
-        builder.Property(x => x.ToState).HasColumnName("to_state").HasConversion<int>().IsRequired();
+        builder
+            .Property(x => x.ToState)
+            .HasColumnName("to_state")
+            .HasConversion<int>()
+            .IsRequired();
 
-        builder.HasIndex(x => new { x.TenantId, x.CompanyId, x.OccurredAtUtc })
+        builder
+            .HasIndex(x => new
+            {
+                x.TenantId,
+                x.CompanyId,
+                x.OccurredAtUtc,
+            })
             .HasDatabaseName("ix_electronic_document_audit_company_occurred_at");
     }
 }

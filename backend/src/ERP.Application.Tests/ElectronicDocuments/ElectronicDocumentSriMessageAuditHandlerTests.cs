@@ -26,8 +26,20 @@ public sealed class ElectronicDocumentSriMessageAuditHandlerTests
         var mock = new Mock<IAuditContext>();
         mock.SetupGet(c => c.TenantId).Returns(TenantId);
         mock.SetupGet(c => c.CompanyId).Returns(CompanyId);
-        mock.SetupGet(c => c.Actor).Returns(new AuditActor(
-            TenantId, Guid.NewGuid(), "tester", null, null, null, null, null, AuditSource.UserAction));
+        mock.SetupGet(c => c.Actor)
+            .Returns(
+                new AuditActor(
+                    TenantId,
+                    Guid.NewGuid(),
+                    "tester",
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    AuditSource.UserAction
+                )
+            );
         return mock;
     }
 
@@ -43,20 +55,45 @@ public sealed class ElectronicDocumentSriMessageAuditHandlerTests
             new SriMessage("70", "ADVERTENCIA", "CLAVE ACCESO EN PROCESAMIENTO", null),
         };
         var evt = new ElectronicDocumentRejectedEvent(
-            TenantId, DocumentId, ElectronicDocumentType.Invoice,
-            ElectronicDocumentState.Sent, ElectronicDocumentState.Rejected,
-            "[39] FIRMA INVALIDA: La firma es inválida.", messages);
+            TenantId,
+            DocumentId,
+            ElectronicDocumentType.Invoice,
+            ElectronicDocumentState.Sent,
+            ElectronicDocumentState.Rejected,
+            "[39] FIRMA INVALIDA: La firma es inválida.",
+            messages
+        );
 
         await handler.Handle(evt, CancellationToken.None);
 
-        audit.Verify(a => a.RecordAsync(
-            It.Is<ElectronicDocumentSriMessage>(m => m.Code == "39" && m.MessageType == "ERROR" && m.Message == "FIRMA INVALIDA"),
-            It.IsAny<CancellationToken>()), Times.Once);
-        audit.Verify(a => a.RecordAsync(
-            It.Is<ElectronicDocumentSriMessage>(m => m.Code == "70" && m.MessageType == "ADVERTENCIA"),
-            It.IsAny<CancellationToken>()), Times.Once);
-        audit.Verify(a => a.RecordAsync(
-            It.IsAny<ElectronicDocumentSriMessage>(), It.IsAny<CancellationToken>()), Times.Exactly(2));
+        audit.Verify(
+            a =>
+                a.RecordAsync(
+                    It.Is<ElectronicDocumentSriMessage>(m =>
+                        m.Code == "39" && m.MessageType == "ERROR" && m.Message == "FIRMA INVALIDA"
+                    ),
+                    It.IsAny<CancellationToken>()
+                ),
+            Times.Once
+        );
+        audit.Verify(
+            a =>
+                a.RecordAsync(
+                    It.Is<ElectronicDocumentSriMessage>(m =>
+                        m.Code == "70" && m.MessageType == "ADVERTENCIA"
+                    ),
+                    It.IsAny<CancellationToken>()
+                ),
+            Times.Once
+        );
+        audit.Verify(
+            a =>
+                a.RecordAsync(
+                    It.IsAny<ElectronicDocumentSriMessage>(),
+                    It.IsAny<CancellationToken>()
+                ),
+            Times.Exactly(2)
+        );
     }
 
     [Fact]
@@ -66,13 +103,24 @@ public sealed class ElectronicDocumentSriMessageAuditHandlerTests
         var handler = new ElectronicDocumentSriMessageAuditHandler(audit.Object, Context().Object);
 
         var evt = new ElectronicDocumentRejectedEvent(
-            TenantId, DocumentId, ElectronicDocumentType.Invoice,
-            ElectronicDocumentState.Sent, ElectronicDocumentState.Rejected,
-            "El SRI devolvió el comprobante con estado 'ERROR_SOAP_FAULT'.", sriMessages: null);
+            TenantId,
+            DocumentId,
+            ElectronicDocumentType.Invoice,
+            ElectronicDocumentState.Sent,
+            ElectronicDocumentState.Rejected,
+            "El SRI devolvió el comprobante con estado 'ERROR_SOAP_FAULT'.",
+            sriMessages: null
+        );
 
         await handler.Handle(evt, CancellationToken.None);
 
-        audit.Verify(a => a.RecordAsync(
-            It.IsAny<ElectronicDocumentSriMessage>(), It.IsAny<CancellationToken>()), Times.Never);
+        audit.Verify(
+            a =>
+                a.RecordAsync(
+                    It.IsAny<ElectronicDocumentSriMessage>(),
+                    It.IsAny<CancellationToken>()
+                ),
+            Times.Never
+        );
     }
 }

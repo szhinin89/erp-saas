@@ -1,3 +1,6 @@
+using System.Collections.Concurrent;
+using System.Security.Cryptography;
+using System.Text;
 using ERP.Application.Common.Config;
 using ERP.Application.Common.Interfaces;
 using ERP.Application.Common.Security;
@@ -5,9 +8,6 @@ using ERP.Domain.Auth.Entities;
 using ERP.Domain.Auth.Interfaces;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using System.Collections.Concurrent;
-using System.Security.Cryptography;
-using System.Text;
 
 namespace ERP.Infrastructure.Services;
 
@@ -26,7 +26,8 @@ public sealed partial class RefreshTokenService : IRefreshTokenService
         RefreshTokenRateLimiter rateLimiter,
         IOptions<AuthOptions> authOptions,
         ISecurityMetrics metrics,
-        ILogger<RefreshTokenService> logger)
+        ILogger<RefreshTokenService> logger
+    )
     {
         _repo = repo;
         _rateLimiter = rateLimiter;
@@ -36,7 +37,12 @@ public sealed partial class RefreshTokenService : IRefreshTokenService
     }
 
     public async Task<(string RawToken, DateTime Expiry)> CreateAsync(
-        Guid userId, Guid tenantId, Guid? companyId, string userType, CancellationToken cancellationToken = default)
+        Guid userId,
+        Guid tenantId,
+        Guid? companyId,
+        string userType,
+        CancellationToken cancellationToken = default
+    )
     {
         var rawToken = GenerateRaw();
         var tokenHash = Hash(rawToken);
@@ -51,7 +57,12 @@ public sealed partial class RefreshTokenService : IRefreshTokenService
     }
 
     public async Task<(RefreshToken Entity, string RawToken)> CreateWithoutSaveAsync(
-        Guid userId, Guid tenantId, Guid? companyId, string userType, CancellationToken cancellationToken = default)
+        Guid userId,
+        Guid tenantId,
+        Guid? companyId,
+        string userType,
+        CancellationToken cancellationToken = default
+    )
     {
         var rawToken = GenerateRaw();
         var tokenHash = Hash(rawToken);
@@ -65,7 +76,9 @@ public sealed partial class RefreshTokenService : IRefreshTokenService
     }
 
     public async Task<RefreshTokenValidationResult> ValidateAndRotateAsync(
-        string rawToken, CancellationToken cancellationToken = default)
+        string rawToken,
+        CancellationToken cancellationToken = default
+    )
     {
         var tokenHash = Hash(rawToken);
         var gate = RotationGates.GetOrAdd(tokenHash, _ => new SemaphoreSlim(1, 1));
@@ -81,12 +94,21 @@ public sealed partial class RefreshTokenService : IRefreshTokenService
     }
 
     private async Task<RefreshTokenValidationResult> ValidateAndRotateCoreAsync(
-        string rawToken, string tokenHash, CancellationToken cancellationToken)
+        string rawToken,
+        string tokenHash,
+        CancellationToken cancellationToken
+    )
     {
         var stored = await _repo.GetByHashAsync(tokenHash, cancellationToken);
         if (stored is null)
         {
-            LogAudit(RefreshTokenAuditEvents.RefreshRotationFailed, null, null, null, "Token no encontrado");
+            LogAudit(
+                RefreshTokenAuditEvents.RefreshRotationFailed,
+                null,
+                null,
+                null,
+                "Token no encontrado"
+            );
             _metrics.RecordJwtRefreshRevoked(RefreshTags(null, null, "invalid_token"));
             return RefreshTokenValidationResult.Fail("Refresh token no válido.");
         }
@@ -97,11 +119,15 @@ public sealed partial class RefreshTokenService : IRefreshTokenService
         if (!stored.IsActive)
         {
             LogAudit(RefreshTokenAuditEvents.RefreshRotationFailed, stored, null, null, "Expirado");
-            return RefreshTokenValidationResult.Fail("Refresh token expirado. Inicia sesión nuevamente.");
+            return RefreshTokenValidationResult.Fail(
+                "Refresh token expirado. Inicia sesión nuevamente."
+            );
         }
 
         if (!await CheckRateLimitsAsync(stored, cancellationToken))
-            return RefreshTokenValidationResult.RateLimited("Demasiados intentos de renovación. Espera un momento.");
+            return RefreshTokenValidationResult.RateLimited(
+                "Demasiados intentos de renovación. Espera un momento."
+            );
 
         var newRaw = GenerateRaw();
         var newHash = Hash(newRaw);
@@ -113,9 +139,14 @@ public sealed partial class RefreshTokenService : IRefreshTokenService
             newHash,
             familyId: stored.FamilyId,
             parentTokenId: stored.Id,
-            rotationDepth: stored.RotationDepth + 1);
+            rotationDepth: stored.RotationDepth + 1
+        );
 
-        var (rotated, previous) = await _repo.TryRotateAsync(tokenHash, successor, cancellationToken);
+        var (rotated, previous) = await _repo.TryRotateAsync(
+            tokenHash,
+            successor,
+            cancellationToken
+        );
 
         if (!rotated)
         {
@@ -123,8 +154,16 @@ public sealed partial class RefreshTokenService : IRefreshTokenService
             if (again is not null && again.IsRevoked)
                 return await HandleRevokedReuseAsync(again, cancellationToken);
 
-            LogAudit(RefreshTokenAuditEvents.RefreshRotationFailed, stored, null, null, "Rotación concurrente");
-            return RefreshTokenValidationResult.Fail("Refresh token ya utilizado. Inicia sesión nuevamente.");
+            LogAudit(
+                RefreshTokenAuditEvents.RefreshRotationFailed,
+                stored,
+                null,
+                null,
+                "Rotación concurrente"
+            );
+            return RefreshTokenValidationResult.Fail(
+                "Refresh token ya utilizado. Inicia sesión nuevamente."
+            );
         }
 
         LogAudit(
@@ -132,14 +171,23 @@ public sealed partial class RefreshTokenService : IRefreshTokenService
             previous ?? stored,
             successor.Id,
             successor.TokenHash,
-            null);
+            null
+        );
 
         return RefreshTokenValidationResult.Ok(
-            stored.UserId, stored.TenantId, stored.CompanyId, stored.UserType, newRaw, successor.ExpiresAt);
+            stored.UserId,
+            stored.TenantId,
+            stored.CompanyId,
+            stored.UserType,
+            newRaw,
+            successor.ExpiresAt
+        );
     }
 
     private async Task<RefreshTokenValidationResult> HandleRevokedReuseAsync(
-        RefreshToken stored, CancellationToken cancellationToken)
+        RefreshToken stored,
+        CancellationToken cancellationToken
+    )
     {
         if (IsBenignRotationReuse(stored))
         {
@@ -148,8 +196,11 @@ public sealed partial class RefreshTokenService : IRefreshTokenService
                 stored,
                 null,
                 null,
-                "Reuso inmediato post-rotación");
-            return RefreshTokenValidationResult.Fail("Refresh token ya utilizado. Inicia sesión nuevamente.");
+                "Reuso inmediato post-rotación"
+            );
+            return RefreshTokenValidationResult.Fail(
+                "Refresh token ya utilizado. Inicia sesión nuevamente."
+            );
         }
 
         LogAudit(
@@ -157,11 +208,18 @@ public sealed partial class RefreshTokenService : IRefreshTokenService
             stored,
             null,
             null,
-            "Reuso tardío — posible robo");
+            "Reuso tardío — posible robo"
+        );
 
-        var revokedCount = await _repo.RevokeFamilyAsync(stored.FamilyId, "Reutilización detectada", cancellationToken);
+        var revokedCount = await _repo.RevokeFamilyAsync(
+            stored.FamilyId,
+            "Reutilización detectada",
+            cancellationToken
+        );
 
-        _metrics.RecordJwtRefreshRevoked(RefreshTags(stored.TenantId, stored.CompanyId, "token_reuse_family_revoked"));
+        _metrics.RecordJwtRefreshRevoked(
+            RefreshTags(stored.TenantId, stored.CompanyId, "token_reuse_family_revoked")
+        );
 
         LogFamilyRevoked(
             RefreshTokenAuditEvents.RefreshFamilyRevoked,
@@ -169,13 +227,20 @@ public sealed partial class RefreshTokenService : IRefreshTokenService
             stored.TenantId,
             stored.FamilyId,
             stored.Id,
-            revokedCount);
+            revokedCount
+        );
 
-        return RefreshTokenValidationResult.Fail("Refresh token revocado. Inicia sesión nuevamente.");
+        return RefreshTokenValidationResult.Fail(
+            "Refresh token revocado. Inicia sesión nuevamente."
+        );
     }
 
     public async Task RevokeAllForUserAsync(
-        Guid userId, Guid tenantId, string reason, CancellationToken cancellationToken = default)
+        Guid userId,
+        Guid tenantId,
+        string reason,
+        CancellationToken cancellationToken = default
+    )
     {
         var tokens = await _repo.GetActiveByUserAsync(userId, tenantId, cancellationToken);
         foreach (var t in tokens)
@@ -187,45 +252,65 @@ public sealed partial class RefreshTokenService : IRefreshTokenService
         LogTokensRevoked(tokens.Count, userId, reason);
     }
 
-    public async Task RevokeFamilyAsync(Guid familyId, string reason, CancellationToken cancellationToken = default)
+    public async Task RevokeFamilyAsync(
+        Guid familyId,
+        string reason,
+        CancellationToken cancellationToken = default
+    )
     {
         var count = await _repo.RevokeFamilyAsync(familyId, reason, cancellationToken);
         LogFamilyRevokedByFamily(familyId, count, reason);
     }
 
-    public async Task<Guid?> RevokeAsync(string rawToken, string reason, CancellationToken cancellationToken = default)
+    public async Task<Guid?> RevokeAsync(
+        string rawToken,
+        string reason,
+        CancellationToken cancellationToken = default
+    )
     {
         var tokenHash = Hash(rawToken);
         var stored = await _repo.GetByHashAsync(tokenHash, cancellationToken);
 
-        if (stored is null) return null;
+        if (stored is null)
+            return null;
 
         if (!stored.IsRevoked)
         {
             stored.Revoke(reason);
             await _repo.SaveChangesAsync(cancellationToken);
 
-            _metrics.RecordJwtRefreshRevoked(RefreshTags(stored.TenantId, stored.CompanyId, "explicit_revoke"));
+            _metrics.RecordJwtRefreshRevoked(
+                RefreshTags(stored.TenantId, stored.CompanyId, "explicit_revoke")
+            );
         }
 
         return stored.Id;
     }
 
-    private static SecurityMetricTags RefreshTags(Guid? tenantId, Guid? companyId, string requestType)
-        => new(
+    private static SecurityMetricTags RefreshTags(
+        Guid? tenantId,
+        Guid? companyId,
+        string requestType
+    ) =>
+        new(
             TenantId: tenantId,
             CompanyId: companyId,
             Endpoint: "/api/v1/auth/refresh",
-            RequestType: requestType);
+            RequestType: requestType
+        );
 
-    private async Task<bool> CheckRateLimitsAsync(RefreshToken stored, CancellationToken cancellationToken)
+    private async Task<bool> CheckRateLimitsAsync(
+        RefreshToken stored,
+        CancellationToken cancellationToken
+    )
     {
         var window = TimeSpan.FromMinutes(1);
         var userOk = await _rateLimiter.TryAcquireAsync(
             $"user:{stored.UserId}",
             _authOptions.RefreshRateLimitPerUserPerMinute,
             window,
-            cancellationToken);
+            cancellationToken
+        );
         if (!userOk)
         {
             LogAudit(RefreshTokenAuditEvents.RefreshRateLimited, stored, null, null, "user");
@@ -236,7 +321,8 @@ public sealed partial class RefreshTokenService : IRefreshTokenService
             $"family:{stored.FamilyId}",
             _authOptions.RefreshRateLimitPerFamilyPerMinute,
             window,
-            cancellationToken);
+            cancellationToken
+        );
         if (!familyOk)
         {
             LogAudit(RefreshTokenAuditEvents.RefreshRateLimited, stored, null, null, "family");
@@ -246,18 +332,19 @@ public sealed partial class RefreshTokenService : IRefreshTokenService
         return true;
     }
 
-    private bool IsBenignRotationReuse(RefreshToken stored)
-        => stored.ReasonRevoked == "Rotación"
-           && stored.RevokedAt.HasValue
-           && (DateTime.UtcNow - stored.RevokedAt.Value).TotalSeconds
-              < _authOptions.RefreshRotationGraceSeconds;
+    private bool IsBenignRotationReuse(RefreshToken stored) =>
+        stored.ReasonRevoked == "Rotación"
+        && stored.RevokedAt.HasValue
+        && (DateTime.UtcNow - stored.RevokedAt.Value).TotalSeconds
+            < _authOptions.RefreshRotationGraceSeconds;
 
     private void LogAudit(
         string eventName,
         RefreshToken? token,
         Guid? successorId,
         string? successorHash,
-        string? detail)
+        string? detail
+    )
     {
         LogAuditEvent(
             eventName,
@@ -268,7 +355,8 @@ public sealed partial class RefreshTokenService : IRefreshTokenService
             successorId,
             successorHash,
             token?.RotationDepth,
-            detail);
+            detail
+        );
     }
 
     private static string GenerateRaw()
@@ -285,25 +373,47 @@ public sealed partial class RefreshTokenService : IRefreshTokenService
         return Convert.ToBase64String(hashBytes);
     }
 
-    [LoggerMessage(Level = LogLevel.Debug,
-        Message = "RefreshToken creado userId={UserId} familyId={FamilyId} userType={UserType} expiry={Expiry}")]
-    private partial void LogRefreshTokenCreated(Guid userId, Guid familyId, string userType, DateTime expiry);
+    [LoggerMessage(
+        Level = LogLevel.Debug,
+        Message = "RefreshToken creado userId={UserId} familyId={FamilyId} userType={UserType} expiry={Expiry}"
+    )]
+    private partial void LogRefreshTokenCreated(
+        Guid userId,
+        Guid familyId,
+        string userType,
+        DateTime expiry
+    );
 
-    [LoggerMessage(Level = LogLevel.Warning,
-        Message = "{Event} userId={UserId} tenantId={TenantId} familyId={FamilyId} tokenId={TokenId} revokedCount={RevokedCount}")]
-    private partial void LogFamilyRevoked(string @event, Guid userId, Guid tenantId, Guid familyId, Guid tokenId, int revokedCount);
+    [LoggerMessage(
+        Level = LogLevel.Warning,
+        Message = "{Event} userId={UserId} tenantId={TenantId} familyId={FamilyId} tokenId={TokenId} revokedCount={RevokedCount}"
+    )]
+    private partial void LogFamilyRevoked(
+        string @event,
+        Guid userId,
+        Guid tenantId,
+        Guid familyId,
+        Guid tokenId,
+        int revokedCount
+    );
 
-    [LoggerMessage(Level = LogLevel.Information,
-        Message = "Revocados {Count} refresh tokens userId={UserId} reason={Reason}")]
+    [LoggerMessage(
+        Level = LogLevel.Information,
+        Message = "Revocados {Count} refresh tokens userId={UserId} reason={Reason}"
+    )]
     private partial void LogTokensRevoked(int count, Guid userId, string reason);
 
-    [LoggerMessage(Level = LogLevel.Information,
-        Message = "Familia revocada familyId={FamilyId} count={Count} reason={Reason}")]
+    [LoggerMessage(
+        Level = LogLevel.Information,
+        Message = "Familia revocada familyId={FamilyId} count={Count} reason={Reason}"
+    )]
     private partial void LogFamilyRevokedByFamily(Guid familyId, int count, string reason);
 
-    [LoggerMessage(Level = LogLevel.Information,
-        Message = "{Event} userId={UserId} tenantId={TenantId} familyId={FamilyId} tokenId={TokenId} " +
-                  "successorId={SuccessorId} successorHash={SuccessorHash} depth={Depth} detail={Detail}")]
+    [LoggerMessage(
+        Level = LogLevel.Information,
+        Message = "{Event} userId={UserId} tenantId={TenantId} familyId={FamilyId} tokenId={TokenId} "
+            + "successorId={SuccessorId} successorHash={SuccessorHash} depth={Depth} detail={Detail}"
+    )]
     private partial void LogAuditEvent(
         string @event,
         Guid? userId,
@@ -313,5 +423,6 @@ public sealed partial class RefreshTokenService : IRefreshTokenService
         Guid? successorId,
         string? successorHash,
         int? depth,
-        string? detail);
+        string? detail
+    );
 }

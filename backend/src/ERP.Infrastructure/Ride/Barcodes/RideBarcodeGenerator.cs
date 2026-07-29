@@ -22,7 +22,12 @@ public sealed class RideBarcodeGenerator : IRideBarcodeGenerator
 
     public byte[] Generate(RideAccessKey accessKey)
     {
-        var request = new BarcodeGenerationRequest(accessKey.Value, BarcodeSymbology.Code128, width: 600, height: 100);
+        var request = new BarcodeGenerationRequest(
+            accessKey.Value,
+            BarcodeSymbology.Code128,
+            width: 600,
+            height: 100
+        );
         return _barcodeGenerator.Generate(request).PngBytes;
     }
 }

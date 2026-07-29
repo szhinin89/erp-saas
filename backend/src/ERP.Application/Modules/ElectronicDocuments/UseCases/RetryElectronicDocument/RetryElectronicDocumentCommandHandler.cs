@@ -45,7 +45,8 @@ public sealed class RetryElectronicDocumentCommandHandler
         IAuditReader<ElectronicDocumentSriMessage> sriMessageReader,
         ICurrentTenant currentTenant,
         ICurrentCompany currentCompany,
-        ICurrentUser currentUser)
+        ICurrentUser currentUser
+    )
     {
         _issuer = issuer;
         _repository = repository;
@@ -59,24 +60,44 @@ public sealed class RetryElectronicDocumentCommandHandler
     }
 
     public async Task<Result<ElectronicDocumentDetailDto>> Handle(
-        RetryElectronicDocumentCommand command, CancellationToken cancellationToken)
+        RetryElectronicDocumentCommand command,
+        CancellationToken cancellationToken
+    )
     {
-        var document = await _repository.GetByIdAsync(_currentTenant.TenantId, command.ElectronicDocumentId, cancellationToken);
+        var document = await _repository.GetByIdAsync(
+            _currentTenant.TenantId,
+            command.ElectronicDocumentId,
+            cancellationToken
+        );
         if (document is null)
-            return Result<ElectronicDocumentDetailDto>.NotFound("El documento electrónico no existe.");
+            return Result<ElectronicDocumentDetailDto>.NotFound(
+                "El documento electrónico no existe."
+            );
 
         if (_currentCompany.HasCompanyContext && document.CompanyId != _currentCompany.CompanyId)
-            return Result<ElectronicDocumentDetailDto>.NotFound("El documento electrónico no existe.");
+            return Result<ElectronicDocumentDetailDto>.NotFound(
+                "El documento electrónico no existe."
+            );
 
         var retryResult = await _issuer.RetryAsync(
-            _currentTenant.TenantId, command.ElectronicDocumentId, _currentUser.UserId, cancellationToken);
+            _currentTenant.TenantId,
+            command.ElectronicDocumentId,
+            _currentUser.UserId,
+            cancellationToken
+        );
         if (!retryResult.IsSuccess)
-            return Result<ElectronicDocumentDetailDto>.Failure(retryResult.Error!, retryResult.Code);
+            return Result<ElectronicDocumentDetailDto>.Failure(
+                retryResult.Error!,
+                retryResult.Code
+            );
 
         // El mismo DbContext scoped resuelve `document` a la instancia trackeada que el issuer
         // acaba de mutar (identity map de EF Core) — no hace falta releer de la base de datos.
         var company = await _companyRepository.GetByIdForTenantAsync(
-            document.CompanyId, _currentTenant.TenantId, cancellationToken);
+            document.CompanyId,
+            _currentTenant.TenantId,
+            cancellationToken
+        );
 
         string? documentNumber = null;
         string? counterpartyName = null;
@@ -84,7 +105,10 @@ public sealed class RetryElectronicDocumentCommandHandler
         if (summaryProvider is not null)
         {
             var summaries = await summaryProvider.GetSummariesAsync(
-                _currentTenant.TenantId, new[] { document.SourceEntityId }, cancellationToken);
+                _currentTenant.TenantId,
+                new[] { document.SourceEntityId },
+                cancellationToken
+            );
             if (summaries.TryGetValue(document.SourceEntityId, out var summary))
             {
                 documentNumber = summary.DocumentNumber;
@@ -93,11 +117,20 @@ public sealed class RetryElectronicDocumentCommandHandler
         }
 
         var auditRecords = await ElectronicDocumentTimelineBuilder.FetchRecordsAsync(
-            _auditReader, _currentTenant.TenantId, document.Id, TimelineTake, cancellationToken);
+            _auditReader,
+            _currentTenant.TenantId,
+            document.Id,
+            TimelineTake,
+            cancellationToken
+        );
         var lastReason = auditRecords.FirstOrDefault()?.Reason;
 
         var diagnostic = await ElectronicDocumentDiagnosticAssembler.BuildAsync(
-            document, auditRecords, _sriMessageReader, cancellationToken);
+            document,
+            auditRecords,
+            _sriMessageReader,
+            cancellationToken
+        );
 
         var dto = new ElectronicDocumentDetailDto(
             document.Id,
@@ -112,7 +145,8 @@ public sealed class RetryElectronicDocumentCommandHandler
             document.CreatedAt,
             document.UpdatedAt,
             lastReason,
-            diagnostic);
+            diagnostic
+        );
 
         return Result<ElectronicDocumentDetailDto>.Success(dto);
     }

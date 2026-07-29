@@ -9,7 +9,6 @@ namespace ERP.Application.Modules.Ride.UseCases.RegenerateRide;
 /// Misma identidad que <c>GetOrGenerateRideQuery</c> — <c>(SourceModule, SourceEntityId)</c>.
 /// Contrato congelado: cualquier cambio de firma requiere una nueva ADR.
 /// </summary>
-public sealed record RegenerateRideCommand(
-    string SourceModule,
-    Guid SourceEntityId
-) : IRequest<Result<RideGenerationResultDto>>, ICompanyScopedRequest;
+public sealed record RegenerateRideCommand(string SourceModule, Guid SourceEntityId)
+    : IRequest<Result<RideGenerationResultDto>>,
+        ICompanyScopedRequest;

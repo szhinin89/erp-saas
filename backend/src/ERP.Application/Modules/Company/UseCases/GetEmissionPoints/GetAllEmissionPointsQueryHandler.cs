@@ -16,7 +16,8 @@ public sealed class GetAllEmissionPointsQueryHandler
     public GetAllEmissionPointsQueryHandler(
         IEmissionPointRepository repo,
         ICurrentTenant currentTenant,
-        ICurrentCompany company)
+        ICurrentCompany company
+    )
     {
         _repo = repo;
         _currentTenant = currentTenant;
@@ -24,29 +25,34 @@ public sealed class GetAllEmissionPointsQueryHandler
     }
 
     public async Task<Result<IReadOnlyList<EmissionPointListItemDto>>> Handle(
-        GetAllEmissionPointsQuery request, CancellationToken cancellationToken)
+        GetAllEmissionPointsQuery request,
+        CancellationToken cancellationToken
+    )
     {
         var items = await _repo.GetAllByCompanyAsync(
             _currentTenant.TenantId,
             _company.CompanyId,
             request.ActiveFilter,
             request.Search,
-            cancellationToken);
+            cancellationToken
+        );
 
         var dtos = items.Select(ToDto).ToList();
         return Result<IReadOnlyList<EmissionPointListItemDto>>.Success(dtos);
     }
 
-    private static EmissionPointListItemDto ToDto(EmissionPoint ep) => new(
-        ep.Id,
-        ep.EstablishmentId,
-        ep.Establishment.Code,
-        ep.Establishment.Name,
-        ep.Establishment.Branch?.Name,
-        ep.Code,
-        ep.Name,
-        ep.EmissionType,
-        ep.IsDefault,
-        ep.IsActive,
-        ep.CreatedAt);
+    private static EmissionPointListItemDto ToDto(EmissionPoint ep) =>
+        new(
+            ep.Id,
+            ep.EstablishmentId,
+            ep.Establishment.Code,
+            ep.Establishment.Name,
+            ep.Establishment.Branch?.Name,
+            ep.Code,
+            ep.Name,
+            ep.EmissionType,
+            ep.IsDefault,
+            ep.IsActive,
+            ep.CreatedAt
+        );
 }

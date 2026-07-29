@@ -16,8 +16,11 @@ public sealed class GetSalesItemPricingQueryHandler
     private readonly ICurrentTenant _tenant;
 
     public GetSalesItemPricingQueryHandler(
-        IItemRepository itemRepo, IPricingResolver pricingResolver,
-        ISriTaxResolver taxResolver, ICurrentTenant tenant)
+        IItemRepository itemRepo,
+        IPricingResolver pricingResolver,
+        ISriTaxResolver taxResolver,
+        ICurrentTenant tenant
+    )
     {
         _itemRepo = itemRepo;
         _pricingResolver = pricingResolver;
@@ -26,7 +29,9 @@ public sealed class GetSalesItemPricingQueryHandler
     }
 
     public async Task<Result<SalesItemPricingDto>> Handle(
-        GetSalesItemPricingQuery request, CancellationToken ct)
+        GetSalesItemPricingQuery request,
+        CancellationToken ct
+    )
     {
         var item = await _itemRepo.GetByIdLightAsync(request.ItemId, _tenant.TenantId, ct);
         if (item is null)
@@ -34,7 +39,8 @@ public sealed class GetSalesItemPricingQueryHandler
 
         if (!item.IsActive || !item.SaleConfig.IsForSale)
             return Result<SalesItemPricingDto>.ValidationFailure(
-                $"El producto '{item.Code.Description}' está inactivo o no está habilitado para venta.");
+                $"El producto '{item.Code.Description}' está inactivo o no está habilitado para venta."
+            );
 
         var pricingResult = await _pricingResolver.ResolveAsync(request.ItemId, ct: ct);
         if (!pricingResult.IsSuccess)
@@ -56,10 +62,17 @@ public sealed class GetSalesItemPricingQueryHandler
             iceName = iceResult?.Name;
         }
 
-        return Result<SalesItemPricingDto>.Success(new SalesItemPricingDto(
-            item.Id, pricingResult.Value!.UnitPrice,
-            vatCode, vatName, iceCode, iceName,
-            item.SaleConfig.MaxDiscountPercent,
-            pricingResult.Value!.PriceListCode));
+        return Result<SalesItemPricingDto>.Success(
+            new SalesItemPricingDto(
+                item.Id,
+                pricingResult.Value!.UnitPrice,
+                vatCode,
+                vatName,
+                iceCode,
+                iceName,
+                item.SaleConfig.MaxDiscountPercent,
+                pricingResult.Value!.PriceListCode
+            )
+        );
     }
 }

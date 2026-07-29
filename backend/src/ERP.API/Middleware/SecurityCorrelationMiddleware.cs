@@ -14,7 +14,8 @@ public sealed class SecurityCorrelationMiddleware
 
     public SecurityCorrelationMiddleware(
         RequestDelegate next,
-        ILogger<SecurityCorrelationMiddleware> logger)
+        ILogger<SecurityCorrelationMiddleware> logger
+    )
     {
         _next = next;
         _logger = logger;
@@ -26,18 +27,23 @@ public sealed class SecurityCorrelationMiddleware
 
         var tenantId = user.FindFirst("tenant_id")?.Value ?? "none";
         var companyId = context.Request.Headers["X-Company-Id"].FirstOrDefault() ?? "none";
-        var userId = user.FindFirst(ClaimTypes.NameIdentifier)?.Value
-                     ?? user.FindFirst("sub")?.Value
-                     ?? "none";
+        var userId =
+            user.FindFirst(ClaimTypes.NameIdentifier)?.Value
+            ?? user.FindFirst("sub")?.Value
+            ?? "none";
         var requestId = RequestCorrelationMiddleware.Resolve(context);
 
-        using (_logger.BeginScope(new Dictionary<string, object>
-        {
-            ["TenantId"] = tenantId,
-            ["CompanyId"] = companyId,
-            ["UserId"] = userId,
-            ["RequestId"] = requestId,
-        }))
+        using (
+            _logger.BeginScope(
+                new Dictionary<string, object>
+                {
+                    ["TenantId"] = tenantId,
+                    ["CompanyId"] = companyId,
+                    ["UserId"] = userId,
+                    ["RequestId"] = requestId,
+                }
+            )
+        )
         {
             await _next(context);
         }
@@ -51,6 +57,6 @@ public static class SecurityCorrelationMiddlewareExtensions
     /// Registra SecurityCorrelationMiddleware en el pipeline.
     /// Debe llamarse DESPUÉS de app.UseAuthentication() para que los claims JWT estén disponibles.
     /// </summary>
-    public static IApplicationBuilder UseSecurityCorrelation(this IApplicationBuilder app)
-        => app.UseMiddleware<SecurityCorrelationMiddleware>();
+    public static IApplicationBuilder UseSecurityCorrelation(this IApplicationBuilder app) =>
+        app.UseMiddleware<SecurityCorrelationMiddleware>();
 }

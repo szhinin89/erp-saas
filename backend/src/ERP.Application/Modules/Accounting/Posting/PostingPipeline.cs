@@ -40,7 +40,8 @@ internal sealed class PostingPipeline
         JournalFactory journalFactory,
         JournalValidator journalValidator,
         IJournalEntryRepository journalEntryRepository,
-        IJournalEntrySequenceRepository journalEntrySequenceRepository)
+        IJournalEntrySequenceRepository journalEntrySequenceRepository
+    )
     {
         _idempotencyGuard = idempotencyGuard;
         _ruleResolver = ruleResolver;
@@ -52,11 +53,16 @@ internal sealed class PostingPipeline
         _journalEntrySequenceRepository = journalEntrySequenceRepository;
     }
 
-    public async Task<Result<PostingOutcomeDto>> ExecuteAsync(PostingFact fact, CancellationToken ct)
+    public async Task<Result<PostingOutcomeDto>> ExecuteAsync(
+        PostingFact fact,
+        CancellationToken ct
+    )
     {
         var existing = await _idempotencyGuard.FindExistingAsync(fact, ct);
         if (existing is not null)
-            return Result<PostingOutcomeDto>.Success(new PostingOutcomeDto(existing.Id, PostingOutcomeStatus.AlreadyProcessed));
+            return Result<PostingOutcomeDto>.Success(
+                new PostingOutcomeDto(existing.Id, PostingOutcomeStatus.AlreadyProcessed)
+            );
 
         var ruleResult = await _ruleResolver.ResolveAsync(fact, ct);
         if (!ruleResult.IsSuccess)
@@ -64,11 +70,17 @@ internal sealed class PostingPipeline
 
         var periodResult = await _periodResolver.ResolveAsync(fact, ct);
         if (!periodResult.IsSuccess)
-            return Result<PostingOutcomeDto>.ValidationFailure(periodResult.Error!, periodResult.Code);
+            return Result<PostingOutcomeDto>.ValidationFailure(
+                periodResult.Error!,
+                periodResult.Code
+            );
 
         var guardResult = _periodGuard.Ensure(periodResult.Value!);
         if (!guardResult.IsSuccess)
-            return Result<PostingOutcomeDto>.ValidationFailure(guardResult.Error!, guardResult.Code);
+            return Result<PostingOutcomeDto>.ValidationFailure(
+                guardResult.Error!,
+                guardResult.Code
+            );
 
         // Fase 3.5.5: JournalFactory ahora recibe también la PostingRule ya resuelta (2 líneas
         // arriba) para leer PostingRule.Lines y construir JournalEntryLine reales — el orden de
@@ -77,18 +89,27 @@ internal sealed class PostingPipeline
 
         var validationResult = _journalValidator.Validate(entry);
         if (!validationResult.IsSuccess)
-            return Result<PostingOutcomeDto>.ValidationFailure(validationResult.Error!, validationResult.Code);
+            return Result<PostingOutcomeDto>.ValidationFailure(
+                validationResult.Error!,
+                validationResult.Code
+            );
 
         // Fase 5.3 (ADR-026 §7): la reserva del número corre bajo el advisory lock de
         // ReserveNextNumberAsync sobre la misma transacción ambiente — se asigna aquí, recién
         // validado el asiento, y queda en staging junto con el JournalEntry (ninguno de los dos
         // se persiste hasta el SaveChangesAsync externo).
         var entryNumber = await _journalEntrySequenceRepository.ReserveNextNumberAsync(
-            fact.TenantId, fact.CompanyId, entry.FiscalYear, ct);
+            fact.TenantId,
+            fact.CompanyId,
+            entry.FiscalYear,
+            ct
+        );
 
         entry.Post(SystemActor, entryNumber);
 
         await _journalEntryRepository.AddAsync(entry, ct);
-        return Result<PostingOutcomeDto>.Success(new PostingOutcomeDto(entry.Id, PostingOutcomeStatus.Created));
+        return Result<PostingOutcomeDto>.Success(
+            new PostingOutcomeDto(entry.Id, PostingOutcomeStatus.Created)
+        );
     }
 }

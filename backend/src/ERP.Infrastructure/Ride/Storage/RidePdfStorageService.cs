@@ -14,7 +14,10 @@ public sealed class RidePdfStorageService : IRidePdfStorageService
     private readonly IFileStorage _fileStorage;
     private readonly IRidePdfStorageNamingStrategy _namingStrategy;
 
-    public RidePdfStorageService(IFileStorage fileStorage, IRidePdfStorageNamingStrategy namingStrategy)
+    public RidePdfStorageService(
+        IFileStorage fileStorage,
+        IRidePdfStorageNamingStrategy namingStrategy
+    )
     {
         _fileStorage = fileStorage;
         _namingStrategy = namingStrategy;
@@ -26,9 +29,15 @@ public sealed class RidePdfStorageService : IRidePdfStorageService
         Guid electronicDocumentId,
         string templateVersion,
         byte[] pdf,
-        CancellationToken ct = default)
+        CancellationToken ct = default
+    )
     {
-        var relativePath = _namingStrategy.BuildRelativePath(tenantId, documentType, electronicDocumentId, templateVersion);
+        var relativePath = _namingStrategy.BuildRelativePath(
+            tenantId,
+            documentType,
+            electronicDocumentId,
+            templateVersion
+        );
 
         try
         {

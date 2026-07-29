@@ -18,5 +18,5 @@ public sealed record CreateBusinessPartnerCommand(
     PersonType PersonType,
     string LegalName,
     string? TradeName = null,
-    string? CountryCode = null)
-    : IRequest<Result<BusinessPartnerSummaryDto>>, ITenantScopedRequest;
+    string? CountryCode = null
+) : IRequest<Result<BusinessPartnerSummaryDto>>, ITenantScopedRequest;

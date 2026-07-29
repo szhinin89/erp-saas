@@ -20,7 +20,8 @@ public sealed class UpsertCompanyInvoiceOrgSettingsCommandHandler
         IOrgSettingsRepository repo,
         ICurrentTenant currentTenant,
         ICurrentCompany currentCompany,
-        ICurrentUser currentUser)
+        ICurrentUser currentUser
+    )
     {
         _repo = repo;
         _currentTenant = currentTenant;
@@ -29,39 +30,75 @@ public sealed class UpsertCompanyInvoiceOrgSettingsCommandHandler
     }
 
     public async Task<Result<CompanyInvoiceOrgSettingsDto>> Handle(
-        UpsertCompanyInvoiceOrgSettingsCommand command, CancellationToken cancellationToken)
+        UpsertCompanyInvoiceOrgSettingsCommand command,
+        CancellationToken cancellationToken
+    )
     {
         var tenantId = _currentTenant.TenantId;
         var companyId = _currentCompany.CompanyId;
         var userId = _currentUser.UserId;
 
-        await UpsertAsync(tenantId, companyId, OrgSettingKeys.Invoice.DefaultDocTypeCode,
-            command.DefaultDocTypeCode, SettingDataType.String, userId, cancellationToken);
+        await UpsertAsync(
+            tenantId,
+            companyId,
+            OrgSettingKeys.Invoice.DefaultDocTypeCode,
+            command.DefaultDocTypeCode,
+            SettingDataType.String,
+            userId,
+            cancellationToken
+        );
 
-        await UpsertAsync(tenantId, companyId, OrgSettingKeys.Invoice.DefaultPaymentMethodCode,
-            command.DefaultSriPaymentMethodCode, SettingDataType.String, userId, cancellationToken);
+        await UpsertAsync(
+            tenantId,
+            companyId,
+            OrgSettingKeys.Invoice.DefaultPaymentMethodCode,
+            command.DefaultSriPaymentMethodCode,
+            SettingDataType.String,
+            userId,
+            cancellationToken
+        );
 
-        await UpsertAsync(tenantId, companyId, OrgSettingKeys.Invoice.DefaultPaymentTermId,
-            command.DefaultPaymentTermId?.ToString(), SettingDataType.Guid, userId, cancellationToken);
+        await UpsertAsync(
+            tenantId,
+            companyId,
+            OrgSettingKeys.Invoice.DefaultPaymentTermId,
+            command.DefaultPaymentTermId?.ToString(),
+            SettingDataType.Guid,
+            userId,
+            cancellationToken
+        );
 
         await _repo.SaveChangesAsync(cancellationToken);
 
-        return Result<CompanyInvoiceOrgSettingsDto>.Success(new CompanyInvoiceOrgSettingsDto(
-            command.DefaultDocTypeCode,
-            command.DefaultSriPaymentMethodCode,
-            command.DefaultPaymentTermId
-        ));
+        return Result<CompanyInvoiceOrgSettingsDto>.Success(
+            new CompanyInvoiceOrgSettingsDto(
+                command.DefaultDocTypeCode,
+                command.DefaultSriPaymentMethodCode,
+                command.DefaultPaymentTermId
+            )
+        );
     }
 
     private async Task UpsertAsync(
-        Guid tenantId, Guid companyId,
-        string key, string? value, SettingDataType dataType,
-        Guid userId, CancellationToken ct)
+        Guid tenantId,
+        Guid companyId,
+        string key,
+        string? value,
+        SettingDataType dataType,
+        Guid userId,
+        CancellationToken ct
+    )
     {
         var setting = OrgSetting.Create(
-            tenantId, companyId,
-            OrgScope.Company, companyId,
-            key, value, dataType, userId);
+            tenantId,
+            companyId,
+            OrgScope.Company,
+            companyId,
+            key,
+            value,
+            dataType,
+            userId
+        );
 
         await _repo.UpsertAsync(setting, ct);
     }

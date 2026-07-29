@@ -19,13 +19,15 @@ public sealed class GetSessionStatisticsHandlerTests
         tenant.Setup(t => t.TenantId).Returns(TenantId);
 
         repo.Setup(r => r.GetStatusCountsAsync(TenantId, null, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new Dictionary<UserSessionStatus, int>
-            {
-                [UserSessionStatus.Active] = 5,
-                [UserSessionStatus.ClosedManually] = 3,
-                [UserSessionStatus.ClosedByNewLogin] = 2,
-                [UserSessionStatus.Expired] = 1,
-            });
+            .ReturnsAsync(
+                new Dictionary<UserSessionStatus, int>
+                {
+                    [UserSessionStatus.Active] = 5,
+                    [UserSessionStatus.ClosedManually] = 3,
+                    [UserSessionStatus.ClosedByNewLogin] = 2,
+                    [UserSessionStatus.Expired] = 1,
+                }
+            );
 
         var handler = new GetSessionStatisticsHandler(repo.Object, tenant.Object);
         var result = await handler.Handle(new GetSessionStatisticsQuery(), CancellationToken.None);

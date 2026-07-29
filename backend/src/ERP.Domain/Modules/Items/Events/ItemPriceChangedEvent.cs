@@ -10,7 +10,12 @@ public sealed class ItemPriceChangedEvent : BaseDomainEvent, IAuditEvent
     public decimal? OldBaseSalePrice { get; }
     public decimal? NewBaseSalePrice { get; }
 
-    public ItemPriceChangedEvent(Guid itemId, Guid tenantId, decimal? oldBaseSalePrice, decimal? newBaseSalePrice)
+    public ItemPriceChangedEvent(
+        Guid itemId,
+        Guid tenantId,
+        decimal? oldBaseSalePrice,
+        decimal? newBaseSalePrice
+    )
     {
         ItemId = itemId;
         TenantId = tenantId;

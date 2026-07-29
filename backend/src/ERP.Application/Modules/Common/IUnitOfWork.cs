@@ -1,4 +1,4 @@
-﻿namespace ERP.Application.Common;
+namespace ERP.Application.Common;
 
 public interface IUnitOfWork
 {
@@ -20,5 +20,8 @@ public interface IUnitOfWork
     /// relanzarla — no puede quedar ningún dato parcial persistido. Preferir este método sobre
     /// Begin/Commit/Rollback manual para cualquier caso de uso que deba ser todo-o-nada.
     /// </summary>
-    Task ExecuteInTransactionAsync(Func<CancellationToken, Task> operation, CancellationToken cancellationToken = default);
+    Task ExecuteInTransactionAsync(
+        Func<CancellationToken, Task> operation,
+        CancellationToken cancellationToken = default
+    );
 }

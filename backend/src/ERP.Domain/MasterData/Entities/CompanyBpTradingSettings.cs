@@ -14,7 +14,10 @@ namespace ERP.Domain.MasterData.Entities;
 ///
 /// Única entrada por (tenant_id, company_id, business_partner_id). Upsert semántico.
 /// </summary>
-public sealed class CompanyBpTradingSettings : AuditableEntity, ITenantScopedEntity, ICompanyScopedEntity
+public sealed class CompanyBpTradingSettings
+    : AuditableEntity,
+        ITenantScopedEntity,
+        ICompanyScopedEntity
 {
     public const int BlockedReasonMaxLen = 500;
     public const int CurrencyCodeLen = 3;
@@ -41,14 +44,18 @@ public sealed class CompanyBpTradingSettings : AuditableEntity, ITenantScopedEnt
         decimal creditLimit,
         int paymentDays,
         Guid createdBy,
-        string creditCurrencyCode = "USD")
+        string creditCurrencyCode = "USD"
+    )
     {
         if (tenantId == Guid.Empty)
             throw new ArgumentException("tenantId es obligatorio.", nameof(tenantId));
         if (companyId == Guid.Empty)
             throw new ArgumentException("CompanyId es obligatorio.", nameof(companyId));
         if (businessPartnerId == Guid.Empty)
-            throw new ArgumentException("BusinessPartnerId es obligatorio.", nameof(businessPartnerId));
+            throw new ArgumentException(
+                "BusinessPartnerId es obligatorio.",
+                nameof(businessPartnerId)
+            );
 
         var settings = new CompanyBpTradingSettings
         {
@@ -66,7 +73,12 @@ public sealed class CompanyBpTradingSettings : AuditableEntity, ITenantScopedEnt
     /// <summary>
     /// Actualiza las condiciones comerciales. Usado en el flujo Upsert del handler.
     /// </summary>
-    public void Update(decimal creditLimit, int paymentDays, Guid updatedBy, string creditCurrencyCode = "USD")
+    public void Update(
+        decimal creditLimit,
+        int paymentDays,
+        Guid updatedBy,
+        string creditCurrencyCode = "USD"
+    )
     {
         ApplyTradingTerms(creditLimit, paymentDays, creditCurrencyCode);
         SetUpdated(updatedBy);
@@ -80,13 +92,18 @@ public sealed class CompanyBpTradingSettings : AuditableEntity, ITenantScopedEnt
     public void Block(string reason, Guid blockedBy)
     {
         if (IsBlocked)
-            throw new InvalidOperationException("El BusinessPartner ya está bloqueado en esta empresa.");
+            throw new InvalidOperationException(
+                "El BusinessPartner ya está bloqueado en esta empresa."
+            );
 
         var r = reason?.Trim();
         if (string.IsNullOrEmpty(r))
             throw new ArgumentException("El motivo de bloqueo es obligatorio.", nameof(reason));
         if (r.Length > BlockedReasonMaxLen)
-            throw new ArgumentException($"El motivo de bloqueo no puede superar {BlockedReasonMaxLen} caracteres.", nameof(reason));
+            throw new ArgumentException(
+                $"El motivo de bloqueo no puede superar {BlockedReasonMaxLen} caracteres.",
+                nameof(reason)
+            );
         if (blockedBy == Guid.Empty)
             throw new ArgumentException("BlockedBy es obligatorio.", nameof(blockedBy));
 
@@ -100,7 +117,9 @@ public sealed class CompanyBpTradingSettings : AuditableEntity, ITenantScopedEnt
     public void Unblock(Guid unblockedBy)
     {
         if (!IsBlocked)
-            throw new InvalidOperationException("El BusinessPartner no está bloqueado en esta empresa.");
+            throw new InvalidOperationException(
+                "El BusinessPartner no está bloqueado en esta empresa."
+            );
         if (unblockedBy == Guid.Empty)
             throw new ArgumentException("UnblockedBy es obligatorio.", nameof(unblockedBy));
 
@@ -116,7 +135,10 @@ public sealed class CompanyBpTradingSettings : AuditableEntity, ITenantScopedEnt
         if (installments < 1)
             throw new ArgumentException("Las cuotas deben ser al menos 1.", nameof(installments));
         if (daysBetween < 0)
-            throw new ArgumentException("Los días entre cuotas no pueden ser negativos.", nameof(daysBetween));
+            throw new ArgumentException(
+                "Los días entre cuotas no pueden ser negativos.",
+                nameof(daysBetween)
+            );
 
         PaymentTermId = paymentTermId;
         Installments = installments;
@@ -127,13 +149,22 @@ public sealed class CompanyBpTradingSettings : AuditableEntity, ITenantScopedEnt
     private void ApplyTradingTerms(decimal creditLimit, int paymentDays, string currencyCode)
     {
         if (creditLimit < 0)
-            throw new ArgumentException("El límite de crédito no puede ser negativo.", nameof(creditLimit));
+            throw new ArgumentException(
+                "El límite de crédito no puede ser negativo.",
+                nameof(creditLimit)
+            );
         if (paymentDays < 0)
-            throw new ArgumentException("El plazo de pago no puede ser negativo.", nameof(paymentDays));
+            throw new ArgumentException(
+                "El plazo de pago no puede ser negativo.",
+                nameof(paymentDays)
+            );
 
         var code = (currencyCode ?? "USD").Trim().ToUpperInvariant();
         if (code.Length != CurrencyCodeLen)
-            throw new ArgumentException($"CreditCurrencyCode debe ser un código ISO 4217 de {CurrencyCodeLen} letras.", nameof(currencyCode));
+            throw new ArgumentException(
+                $"CreditCurrencyCode debe ser un código ISO 4217 de {CurrencyCodeLen} letras.",
+                nameof(currencyCode)
+            );
 
         CreditLimit = creditLimit;
         PaymentDays = paymentDays;

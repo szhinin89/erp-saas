@@ -24,26 +24,30 @@ namespace ERP.Infrastructure.Migrations
                 table: "purchase_reception_lines",
                 type: "integer",
                 nullable: false,
-                defaultValue: 0);
+                defaultValue: 0
+            );
 
             migrationBuilder.AddColumn<DateTime>(
                 name: "matched_at",
                 table: "purchase_reception_lines",
                 type: "timestamp with time zone",
-                nullable: true);
+                nullable: true
+            );
 
             migrationBuilder.AddColumn<Guid>(
                 name: "matched_by",
                 table: "purchase_reception_lines",
                 type: "uuid",
-                nullable: true);
+                nullable: true
+            );
 
             migrationBuilder.AddColumn<string>(
                 name: "supplier_aux_code",
                 table: "purchase_reception_lines",
                 type: "character varying(50)",
                 maxLength: 50,
-                nullable: true);
+                nullable: true
+            );
 
             migrationBuilder.AddForeignKey(
                 name: "FK_purchase_reception_lines_items_item_id",
@@ -51,14 +55,17 @@ namespace ERP.Infrastructure.Migrations
                 column: "item_id",
                 principalTable: "items",
                 principalColumn: "id",
-                onDelete: ReferentialAction.Restrict);
+                onDelete: ReferentialAction.Restrict
+            );
 
             // Índices GIN trigram para el motor de Item Matching (similitud de descripción/nombre
             // corto del ítem contra la descripción de la línea de recepción, EF.Functions.TrigramsSimilarity).
             migrationBuilder.Sql(
-                "CREATE INDEX ix_items_short_name_trgm ON items USING gin (short_name gin_trgm_ops);");
+                "CREATE INDEX ix_items_short_name_trgm ON items USING gin (short_name gin_trgm_ops);"
+            );
             migrationBuilder.Sql(
-                "CREATE INDEX ix_items_description_trgm ON items USING gin (description gin_trgm_ops);");
+                "CREATE INDEX ix_items_description_trgm ON items USING gin (description gin_trgm_ops);"
+            );
         }
 
         /// <inheritdoc />
@@ -69,19 +76,17 @@ namespace ERP.Infrastructure.Migrations
 
             migrationBuilder.DropForeignKey(
                 name: "FK_purchase_reception_lines_items_item_id",
-                table: "purchase_reception_lines");
+                table: "purchase_reception_lines"
+            );
 
-            migrationBuilder.DropColumn(
-                name: "matched_at",
-                table: "purchase_reception_lines");
+            migrationBuilder.DropColumn(name: "matched_at", table: "purchase_reception_lines");
 
-            migrationBuilder.DropColumn(
-                name: "matched_by",
-                table: "purchase_reception_lines");
+            migrationBuilder.DropColumn(name: "matched_by", table: "purchase_reception_lines");
 
             migrationBuilder.DropColumn(
                 name: "supplier_aux_code",
-                table: "purchase_reception_lines");
+                table: "purchase_reception_lines"
+            );
 
             migrationBuilder.DropColumn(name: "match_status", table: "purchase_reception_lines");
             migrationBuilder.AddColumn<string>(
@@ -89,7 +94,8 @@ namespace ERP.Infrastructure.Migrations
                 table: "purchase_reception_lines",
                 type: "character varying(30)",
                 maxLength: 30,
-                nullable: true);
+                nullable: true
+            );
         }
     }
 }

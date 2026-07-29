@@ -11,5 +11,5 @@ public sealed record CreateStockAdjustmentCommand(
     string ProductName,
     decimal AdjustmentQty,
     string Reason,
-    string? Notes)
-    : IRequest<Result<StockAdjustmentDto>>, IBranchScopedRequest;
+    string? Notes
+) : IRequest<Result<StockAdjustmentDto>>, IBranchScopedRequest;

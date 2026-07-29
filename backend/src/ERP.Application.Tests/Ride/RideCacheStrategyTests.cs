@@ -22,21 +22,53 @@ public sealed class RideCacheStrategyTests
     private static RidePdfDocument GeneratedDocument(RideContentHash? hash = null) =>
         Generated(hash ?? Hash, "t1", "b1", "r1", "s1");
 
-    private static RidePdfDocument Generated(RideContentHash hash, string tv, string bv, string rv, string sv)
+    private static RidePdfDocument Generated(
+        RideContentHash hash,
+        string tv,
+        string bv,
+        string rv,
+        string sv
+    )
     {
         var document = RidePdfDocument.Create(
-            TenantId, Guid.NewGuid(), ElectronicDocumentId, RideDocumentType.Invoice, hash,
-            "Invoice", tv, bv, rv, sv, UserId);
+            TenantId,
+            Guid.NewGuid(),
+            ElectronicDocumentId,
+            RideDocumentType.Invoice,
+            hash,
+            "Invoice",
+            tv,
+            bv,
+            rv,
+            sv,
+            UserId
+        );
         document.MarkGenerated("ride/path.pdf", DateTime.UtcNow, UserId);
         return document;
     }
 
     private static Mock<IRidePdfDocumentRepository> RepositoryMatchingOnly(
-        RideContentHash hash, string tv, string bv, string rv, string sv, RidePdfDocument document)
+        RideContentHash hash,
+        string tv,
+        string bv,
+        string rv,
+        string sv,
+        RidePdfDocument document
+    )
     {
         var repo = new Mock<IRidePdfDocumentRepository>();
-        repo.Setup(r => r.GetByFingerprintAsync(
-                TenantId, ElectronicDocumentId, hash, tv, bv, rv, sv, It.IsAny<CancellationToken>()))
+        repo.Setup(r =>
+                r.GetByFingerprintAsync(
+                    TenantId,
+                    ElectronicDocumentId,
+                    hash,
+                    tv,
+                    bv,
+                    rv,
+                    sv,
+                    It.IsAny<CancellationToken>()
+                )
+            )
             .ReturnsAsync(document);
         return repo;
     }
@@ -47,7 +79,16 @@ public sealed class RideCacheStrategyTests
         var repo = RepositoryMatchingOnly(Hash, "t1", "b1", "r1", "s1", GeneratedDocument());
         var strategy = new RideCacheStrategy(repo.Object);
 
-        var result = await strategy.TryGetCachedAsync(TenantId, ElectronicDocumentId, Hash, "Invoice", "t1", "b1", "r1", "s1");
+        var result = await strategy.TryGetCachedAsync(
+            TenantId,
+            ElectronicDocumentId,
+            Hash,
+            "Invoice",
+            "t1",
+            "b1",
+            "r1",
+            "s1"
+        );
 
         result.IsSuccess.Should().BeTrue();
         result.Value.Should().NotBeNull();
@@ -61,7 +102,16 @@ public sealed class RideCacheStrategyTests
         var strategy = new RideCacheStrategy(repo.Object);
         var differentHash = RideContentHash.Create(new string('b', 64));
 
-        var result = await strategy.TryGetCachedAsync(TenantId, ElectronicDocumentId, differentHash, "Invoice", "t1", "b1", "r1", "s1");
+        var result = await strategy.TryGetCachedAsync(
+            TenantId,
+            ElectronicDocumentId,
+            differentHash,
+            "Invoice",
+            "t1",
+            "b1",
+            "r1",
+            "s1"
+        );
 
         result.IsSuccess.Should().BeTrue();
         result.Value.Should().BeNull();
@@ -73,7 +123,16 @@ public sealed class RideCacheStrategyTests
         var repo = RepositoryMatchingOnly(Hash, "t1", "b1", "r1", "s1", GeneratedDocument());
         var strategy = new RideCacheStrategy(repo.Object);
 
-        var result = await strategy.TryGetCachedAsync(TenantId, ElectronicDocumentId, Hash, "Invoice", "t2", "b1", "r1", "s1");
+        var result = await strategy.TryGetCachedAsync(
+            TenantId,
+            ElectronicDocumentId,
+            Hash,
+            "Invoice",
+            "t2",
+            "b1",
+            "r1",
+            "s1"
+        );
 
         result.Value.Should().BeNull();
     }
@@ -84,7 +143,16 @@ public sealed class RideCacheStrategyTests
         var repo = RepositoryMatchingOnly(Hash, "t1", "b1", "r1", "s1", GeneratedDocument());
         var strategy = new RideCacheStrategy(repo.Object);
 
-        var result = await strategy.TryGetCachedAsync(TenantId, ElectronicDocumentId, Hash, "Invoice", "t1", "b2", "r1", "s1");
+        var result = await strategy.TryGetCachedAsync(
+            TenantId,
+            ElectronicDocumentId,
+            Hash,
+            "Invoice",
+            "t1",
+            "b2",
+            "r1",
+            "s1"
+        );
 
         result.Value.Should().BeNull();
     }
@@ -95,7 +163,16 @@ public sealed class RideCacheStrategyTests
         var repo = RepositoryMatchingOnly(Hash, "t1", "b1", "r1", "s1", GeneratedDocument());
         var strategy = new RideCacheStrategy(repo.Object);
 
-        var result = await strategy.TryGetCachedAsync(TenantId, ElectronicDocumentId, Hash, "Invoice", "t1", "b1", "r2", "s1");
+        var result = await strategy.TryGetCachedAsync(
+            TenantId,
+            ElectronicDocumentId,
+            Hash,
+            "Invoice",
+            "t1",
+            "b1",
+            "r2",
+            "s1"
+        );
 
         result.Value.Should().BeNull();
     }
@@ -106,7 +183,16 @@ public sealed class RideCacheStrategyTests
         var repo = RepositoryMatchingOnly(Hash, "t1", "b1", "r1", "s1", GeneratedDocument());
         var strategy = new RideCacheStrategy(repo.Object);
 
-        var result = await strategy.TryGetCachedAsync(TenantId, ElectronicDocumentId, Hash, "Invoice", "t1", "b1", "r1", "s2");
+        var result = await strategy.TryGetCachedAsync(
+            TenantId,
+            ElectronicDocumentId,
+            Hash,
+            "Invoice",
+            "t1",
+            "b1",
+            "r1",
+            "s2"
+        );
 
         result.Value.Should().BeNull();
     }
@@ -115,12 +201,31 @@ public sealed class RideCacheStrategyTests
     public async Task A_matching_row_that_is_not_yet_generated_is_never_served_as_cached()
     {
         var pending = RidePdfDocument.Create(
-            TenantId, Guid.NewGuid(), ElectronicDocumentId, RideDocumentType.Invoice, Hash,
-            "Invoice", "t1", "b1", "r1", "s1", UserId);
+            TenantId,
+            Guid.NewGuid(),
+            ElectronicDocumentId,
+            RideDocumentType.Invoice,
+            Hash,
+            "Invoice",
+            "t1",
+            "b1",
+            "r1",
+            "s1",
+            UserId
+        );
         var repo = RepositoryMatchingOnly(Hash, "t1", "b1", "r1", "s1", pending);
         var strategy = new RideCacheStrategy(repo.Object);
 
-        var result = await strategy.TryGetCachedAsync(TenantId, ElectronicDocumentId, Hash, "Invoice", "t1", "b1", "r1", "s1");
+        var result = await strategy.TryGetCachedAsync(
+            TenantId,
+            ElectronicDocumentId,
+            Hash,
+            "Invoice",
+            "t1",
+            "b1",
+            "r1",
+            "s1"
+        );
 
         result.IsSuccess.Should().BeTrue();
         result.Value.Should().BeNull();

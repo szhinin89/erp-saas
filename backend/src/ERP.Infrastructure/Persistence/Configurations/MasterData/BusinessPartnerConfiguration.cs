@@ -37,53 +37,62 @@ public sealed class BusinessPartnerConfiguration : IEntityTypeConfiguration<Busi
         // -- AlternateKey compuesto: permite que roles/locations/contacts referencien
         //    (business_partner_id, subscriber_id) ? (id, subscriber_id).
         //    Garantiza a nivel BD que no puede existir una FK cross-tenant. ADR-BP-13.
-        builder.HasAlternateKey(x => new { x.Id, x.TenantId })
-               .HasName("uq_mbp_id_subscriber");
+        builder.HasAlternateKey(x => new { x.Id, x.TenantId }).HasName("uq_mbp_id_subscriber");
 
         // -- TaxIdentification VO (owned, columnas aplanadas) -----------------
-        builder.OwnsOne(x => x.Identification, id =>
-        {
-            id.Property(v => v.Type)
-              .HasColumnName("identification_type")
-              .HasMaxLength(TaxIdentification.TypeMaxLen)
-              .IsRequired();
-            id.Property(v => v.Number)
-              .HasColumnName("identification_number")
-              .HasMaxLength(TaxIdentification.NumberMaxLen)
-              .IsRequired();
-        });
+        builder.OwnsOne(
+            x => x.Identification,
+            id =>
+            {
+                id.Property(v => v.Type)
+                    .HasColumnName("identification_type")
+                    .HasMaxLength(TaxIdentification.TypeMaxLen)
+                    .IsRequired();
+                id.Property(v => v.Number)
+                    .HasColumnName("identification_number")
+                    .HasMaxLength(TaxIdentification.NumberMaxLen)
+                    .IsRequired();
+            }
+        );
 
         // -- PersonName VO (owned, columnas aplanadas) ------------------------
-        builder.OwnsOne(x => x.Name, pn =>
-        {
-            pn.Property(v => v.LegalName)
-              .HasColumnName("legal_name")
-              .HasMaxLength(PersonName.LegalNameMaxLen)
-              .IsRequired();
-            pn.Property(v => v.TradeName)
-              .HasColumnName("trade_name")
-              .HasMaxLength(PersonName.TradeNameMaxLen);
-        });
+        builder.OwnsOne(
+            x => x.Name,
+            pn =>
+            {
+                pn.Property(v => v.LegalName)
+                    .HasColumnName("legal_name")
+                    .HasMaxLength(PersonName.LegalNameMaxLen)
+                    .IsRequired();
+                pn.Property(v => v.TradeName)
+                    .HasColumnName("trade_name")
+                    .HasMaxLength(PersonName.TradeNameMaxLen);
+            }
+        );
 
-        builder.Property(x => x.PersonType)
-               .HasColumnName("person_type")
-               .HasConversion<short>()
-               .IsRequired();
+        builder
+            .Property(x => x.PersonType)
+            .HasColumnName("person_type")
+            .HasConversion<short>()
+            .IsRequired();
 
-        builder.Property(x => x.CountryCode)
-               .HasColumnName("country_code")
-               .HasMaxLength(BusinessPartner.CountryCodeLen)
-               .IsFixedLength();
+        builder
+            .Property(x => x.CountryCode)
+            .HasColumnName("country_code")
+            .HasMaxLength(BusinessPartner.CountryCodeLen)
+            .IsFixedLength();
 
-        builder.Property(x => x.IsActive)
-               .HasColumnName("is_active")
-               .IsRequired()
-               .HasDefaultValue(true);
+        builder
+            .Property(x => x.IsActive)
+            .HasColumnName("is_active")
+            .IsRequired()
+            .HasDefaultValue(true);
 
-        builder.Property(x => x.IsSystemSeeded)
-               .HasColumnName("is_system_seeded")
-               .IsRequired()
-               .HasDefaultValue(false);
+        builder
+            .Property(x => x.IsSystemSeeded)
+            .HasColumnName("is_system_seeded")
+            .IsRequired()
+            .HasDefaultValue(false);
 
         // -- Audit ------------------------------------------------------------
         builder.Property(x => x.CreatedAt).HasColumnName("created_at").IsRequired();
@@ -92,11 +101,11 @@ public sealed class BusinessPartnerConfiguration : IEntityTypeConfiguration<Busi
         builder.Property(x => x.UpdatedBy).HasColumnName("updated_by");
 
         // -- �ndices -----------------------------------------------------------
-        builder.HasIndex(x => x.TenantId)
-               .HasDatabaseName("ix_mbp_subscriber");
+        builder.HasIndex(x => x.TenantId).HasDatabaseName("ix_mbp_subscriber");
 
-        builder.HasIndex(x => new { x.TenantId, x.IsActive })
-               .HasDatabaseName("ix_mbp_subscriber_active");
+        builder
+            .HasIndex(x => new { x.TenantId, x.IsActive })
+            .HasDatabaseName("ix_mbp_subscriber_active");
 
         // Indice unico incondicional (sin WHERE is_active) - ver ADR-BP-03 (Fase 3).
         // Creado via SQL raw en la migracion: EF Core no puede expresar un indice

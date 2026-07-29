@@ -38,9 +38,10 @@ public sealed class BusinessPartnerRoleRepository : IBusinessPartnerRoleReposito
     /// Devuelve entidad tracked con sus configs (OwnsOne).
     /// Usar en command handlers que modifican el rol.
     /// </summary>
-    public Task<BusinessPartnerRole?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
-        => _db.BusinessPartnerRoles
-              .FirstOrDefaultAsync(r => r.Id == id, cancellationToken);
+    public Task<BusinessPartnerRole?> GetByIdAsync(
+        Guid id,
+        CancellationToken cancellationToken = default
+    ) => _db.BusinessPartnerRoles.FirstOrDefaultAsync(r => r.Id == id, cancellationToken);
 
     /// <summary>
     /// Busca un rol por tipo para el BP dado, activo O revocado.
@@ -50,28 +51,28 @@ public sealed class BusinessPartnerRoleRepository : IBusinessPartnerRoleReposito
     public Task<BusinessPartnerRole?> GetByTypeAsync(
         Guid businessPartnerId,
         RoleType roleType,
-        CancellationToken cancellationToken = default)
-        => _db.BusinessPartnerRoles
-              .FirstOrDefaultAsync(r =>
-                  r.BusinessPartnerId == businessPartnerId &&
-                  r.RoleType == roleType, cancellationToken);
+        CancellationToken cancellationToken = default
+    ) =>
+        _db.BusinessPartnerRoles.FirstOrDefaultAsync(
+            r => r.BusinessPartnerId == businessPartnerId && r.RoleType == roleType,
+            cancellationToken
+        );
 
     /// <summary>Todos los roles de un BP (activos + revocados según filtro).</summary>
     public async Task<IReadOnlyList<BusinessPartnerRole>> GetByBusinessPartnerAsync(
         Guid businessPartnerId,
         bool? onlyActive = true,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default
+    )
     {
-        var q = _db.BusinessPartnerRoles
-                   .AsNoTracking()
-                   .Where(r => r.BusinessPartnerId == businessPartnerId);
+        var q = _db
+            .BusinessPartnerRoles.AsNoTracking()
+            .Where(r => r.BusinessPartnerId == businessPartnerId);
 
         if (onlyActive.HasValue)
             q = q.Where(r => r.IsActive == onlyActive.Value);
 
-        return await q
-            .OrderBy(r => r.RoleType)
-            .ToListAsync(cancellationToken);
+        return await q.OrderBy(r => r.RoleType).ToListAsync(cancellationToken);
     }
 
     /// <summary>
@@ -81,20 +82,22 @@ public sealed class BusinessPartnerRoleRepository : IBusinessPartnerRoleReposito
     public Task<bool> HasActiveRoleAsync(
         Guid businessPartnerId,
         RoleType roleType,
-        CancellationToken cancellationToken = default)
-        => _db.BusinessPartnerRoles
-              .AnyAsync(r =>
-                  r.BusinessPartnerId == businessPartnerId &&
-                  r.RoleType == roleType &&
-                  r.IsActive, cancellationToken);
+        CancellationToken cancellationToken = default
+    ) =>
+        _db.BusinessPartnerRoles.AnyAsync(
+            r => r.BusinessPartnerId == businessPartnerId && r.RoleType == roleType && r.IsActive,
+            cancellationToken
+        );
 
-    public async Task AddAsync(BusinessPartnerRole role, CancellationToken cancellationToken = default)
-        => await _db.BusinessPartnerRoles.AddAsync(role, cancellationToken);
+    public async Task AddAsync(
+        BusinessPartnerRole role,
+        CancellationToken cancellationToken = default
+    ) => await _db.BusinessPartnerRoles.AddAsync(role, cancellationToken);
 
     /// <summary>
     /// SaveChanges despacha todos los domain events del rol via Outbox.
     /// Los eventos BusinessPartnerRoleAssignedEvent, RevokedEvent, etc. se publican aquí.
     /// </summary>
-    public Task SaveChangesAsync(CancellationToken cancellationToken = default)
-        => _db.SaveChangesAsync(cancellationToken);
+    public Task SaveChangesAsync(CancellationToken cancellationToken = default) =>
+        _db.SaveChangesAsync(cancellationToken);
 }

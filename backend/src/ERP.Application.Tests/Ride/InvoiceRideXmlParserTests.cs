@@ -16,12 +16,13 @@ public sealed class InvoiceRideXmlParserTests
 {
     private sealed class FakeTaxCategoryCodeResolver : ISriTaxCategoryCodeResolver
     {
-        public string? Resolve(string taxCode) => taxCode switch
-        {
-            "VAT" => "2",
-            "ICE" => "3",
-            _ => null,
-        };
+        public string? Resolve(string taxCode) =>
+            taxCode switch
+            {
+                "VAT" => "2",
+                "ICE" => "3",
+                _ => null,
+            };
     }
 
     private static string BuildAuthorizedXml(ElectronicDocumentData data)
@@ -37,23 +38,47 @@ public sealed class InvoiceRideXmlParserTests
     {
         var data = new ElectronicDocumentData(
             Emission: new ElectronicDocumentEmissionContext(
-                Environment: "1", EmissionType: "1", DocTypeCode: "01",
-                Establishment: "001", EstablishmentAddress: "Av. Amazonas y Naciones Unidas",
-                EmissionPoint: "001", Sequential: "000000123", IssueDate: new DateTime(2026, 7, 8)),
+                Environment: "1",
+                EmissionType: "1",
+                DocTypeCode: "01",
+                Establishment: "001",
+                EstablishmentAddress: "Av. Amazonas y Naciones Unidas",
+                EmissionPoint: "001",
+                Sequential: "000000123",
+                IssueDate: new DateTime(2026, 7, 8)
+            ),
             Issuer: new ElectronicDocumentIssuerData(
-                TaxId: "1790012345001", LegalName: "ACME CIA LTDA", TradeName: "ACME",
-                MatrixAddress: "Av. Amazonas y Naciones Unidas", TaxRegime: null, IsAccountingRequired: true),
+                TaxId: "1790012345001",
+                LegalName: "ACME CIA LTDA",
+                TradeName: "ACME",
+                MatrixAddress: "Av. Amazonas y Naciones Unidas",
+                TaxRegime: null,
+                IsAccountingRequired: true
+            ),
             Counterparty: new ElectronicDocumentCounterpartyData(
-                IdentificationType: "05", IdentificationNumber: "1710034065",
-                LegalName: "Juan Pérez", Address: "Calle Falsa 123", Email: "juan@example.com"),
-            Details: [new ElectronicDocumentDetailLine(
-                Code: "SKU-001", Description: "Producto de prueba", Quantity: 2m, UnitPrice: 10m,
-                Discount: 0m, Subtotal: 20m,
-                Taxes: [new ElectronicDocumentDetailTax("VAT", "2", 20m, 15m, 3m)])],
+                IdentificationType: "05",
+                IdentificationNumber: "1710034065",
+                LegalName: "Juan Pérez",
+                Address: "Calle Falsa 123",
+                Email: "juan@example.com"
+            ),
+            Details:
+            [
+                new ElectronicDocumentDetailLine(
+                    Code: "SKU-001",
+                    Description: "Producto de prueba",
+                    Quantity: 2m,
+                    UnitPrice: 10m,
+                    Discount: 0m,
+                    Subtotal: 20m,
+                    Taxes: [new ElectronicDocumentDetailTax("VAT", "2", 20m, 15m, 3m)]
+                ),
+            ],
             TaxSummary: [new ElectronicDocumentTaxSummary("VAT", "2", 20m, 3m)],
             Totals: new ElectronicDocumentTotals(20m, 0m, 3m, 23m, "USD"),
             Payments: [new ElectronicDocumentPayment("01", 23m, null, null)],
-            AdditionalInfo: []);
+            AdditionalInfo: []
+        );
 
         var xml = BuildAuthorizedXml(data);
         var parser = new InvoiceRideXmlParser();
@@ -127,27 +152,53 @@ public sealed class InvoiceRideXmlParserTests
     {
         var data = new ElectronicDocumentData(
             Emission: new ElectronicDocumentEmissionContext(
-                Environment: "2", EmissionType: "1", DocTypeCode: "01",
-                Establishment: "001", EstablishmentAddress: "Av. 6 de Diciembre",
-                EmissionPoint: "002", Sequential: "000000456", IssueDate: new DateTime(2026, 7, 10)),
+                Environment: "2",
+                EmissionType: "1",
+                DocTypeCode: "01",
+                Establishment: "001",
+                EstablishmentAddress: "Av. 6 de Diciembre",
+                EmissionPoint: "002",
+                Sequential: "000000456",
+                IssueDate: new DateTime(2026, 7, 10)
+            ),
             Issuer: new ElectronicDocumentIssuerData(
-                TaxId: "1790012345001", LegalName: "ACME CIA LTDA", TradeName: null,
-                MatrixAddress: "Av. Amazonas y Naciones Unidas", TaxRegime: "CONTRIBUYENTE RÉGIMEN RIMPE",
-                IsAccountingRequired: false),
+                TaxId: "1790012345001",
+                LegalName: "ACME CIA LTDA",
+                TradeName: null,
+                MatrixAddress: "Av. Amazonas y Naciones Unidas",
+                TaxRegime: "CONTRIBUYENTE RÉGIMEN RIMPE",
+                IsAccountingRequired: false
+            ),
             Counterparty: new ElectronicDocumentCounterpartyData(
-                IdentificationType: "04", IdentificationNumber: "1790012345001",
-                LegalName: "Cliente Corporativo S.A.", Address: null, Email: null),
+                IdentificationType: "04",
+                IdentificationNumber: "1790012345001",
+                LegalName: "Cliente Corporativo S.A.",
+                Address: null,
+                Email: null
+            ),
             Details:
             [
                 new ElectronicDocumentDetailLine(
-                    "SKU-001", "Producto sin ICE", 2m, 10m, 0m, 20m,
-                    [new ElectronicDocumentDetailTax("VAT", "2", 20m, 15m, 3m)]),
+                    "SKU-001",
+                    "Producto sin ICE",
+                    2m,
+                    10m,
+                    0m,
+                    20m,
+                    [new ElectronicDocumentDetailTax("VAT", "2", 20m, 15m, 3m)]
+                ),
                 new ElectronicDocumentDetailLine(
-                    "SKU-002", "Producto con ICE", 1m, 50m, 0m, 50m,
+                    "SKU-002",
+                    "Producto con ICE",
+                    1m,
+                    50m,
+                    0m,
+                    50m,
                     [
                         new ElectronicDocumentDetailTax("VAT", "2", 50m, 15m, 7.5m),
                         new ElectronicDocumentDetailTax("ICE", "3010", 50m, 10m, 5m),
-                    ]),
+                    ]
+                ),
             ],
             TaxSummary:
             [
@@ -156,7 +207,8 @@ public sealed class InvoiceRideXmlParserTests
             ],
             Totals: new ElectronicDocumentTotals(70m, 0m, 15.5m, 85.5m, "USD"),
             Payments: [new ElectronicDocumentPayment("01", 85.5m, null, null)],
-            AdditionalInfo: []);
+            AdditionalInfo: []
+        );
 
         var xml = BuildAuthorizedXml(data);
         var parser = new InvoiceRideXmlParser();
@@ -170,11 +222,18 @@ public sealed class InvoiceRideXmlParserTests
         model.Lines[0].Taxes.Should().ContainSingle(t => t.TaxCode == "2");
         model.Lines[1].Taxes.Should().HaveCount(2);
         model.Lines[1].Taxes.Should().Contain(t => t.TaxCode == "2" && t.TaxAmount == 7.5m);
-        model.Lines[1].Taxes.Should().Contain(t => t.TaxCode == "3" && t.TaxAmount == 5m && t.TaxPercentageCode == "3010");
+        model
+            .Lines[1]
+            .Taxes.Should()
+            .Contain(t => t.TaxCode == "3" && t.TaxAmount == 5m && t.TaxPercentageCode == "3010");
 
         model.TaxSummary.Should().HaveCount(2);
-        model.TaxSummary.Should().Contain(t => t.TaxCode == "2" && t.TaxableBase == 70m && t.TaxAmount == 10.5m);
-        model.TaxSummary.Should().Contain(t => t.TaxCode == "3" && t.TaxableBase == 50m && t.TaxAmount == 5m);
+        model
+            .TaxSummary.Should()
+            .Contain(t => t.TaxCode == "2" && t.TaxableBase == 70m && t.TaxAmount == 10.5m);
+        model
+            .TaxSummary.Should()
+            .Contain(t => t.TaxCode == "3" && t.TaxableBase == 50m && t.TaxAmount == 5m);
 
         model.Header.GrandTotal.Should().Be(85.5m);
         model.Issuer.TaxRegime.Should().Be("CONTRIBUYENTE RÉGIMEN RIMPE");
@@ -188,18 +247,42 @@ public sealed class InvoiceRideXmlParserTests
     {
         var data = new ElectronicDocumentData(
             Emission: new ElectronicDocumentEmissionContext(
-                Environment: "1", EmissionType: "1", DocTypeCode: "01",
-                Establishment: "001", EstablishmentAddress: "Av. Amazonas y Naciones Unidas",
-                EmissionPoint: "001", Sequential: "000000789", IssueDate: new DateTime(2026, 7, 11)),
+                Environment: "1",
+                EmissionType: "1",
+                DocTypeCode: "01",
+                Establishment: "001",
+                EstablishmentAddress: "Av. Amazonas y Naciones Unidas",
+                EmissionPoint: "001",
+                Sequential: "000000789",
+                IssueDate: new DateTime(2026, 7, 11)
+            ),
             Issuer: new ElectronicDocumentIssuerData(
-                TaxId: "1790012345001", LegalName: "ACME CIA LTDA", TradeName: "ACME",
-                MatrixAddress: "Av. Amazonas y Naciones Unidas", TaxRegime: null, IsAccountingRequired: true),
+                TaxId: "1790012345001",
+                LegalName: "ACME CIA LTDA",
+                TradeName: "ACME",
+                MatrixAddress: "Av. Amazonas y Naciones Unidas",
+                TaxRegime: null,
+                IsAccountingRequired: true
+            ),
             Counterparty: new ElectronicDocumentCounterpartyData(
-                IdentificationType: "05", IdentificationNumber: "1710034065",
-                LegalName: "Juan Pérez", Address: "Calle Falsa 123", Email: "juan@example.com"),
-            Details: [new ElectronicDocumentDetailLine(
-                "SKU-001", "Producto de prueba", 10m, 10m, 0m, 100m,
-                [new ElectronicDocumentDetailTax("VAT", "2", 100m, 15m, 15m)])],
+                IdentificationType: "05",
+                IdentificationNumber: "1710034065",
+                LegalName: "Juan Pérez",
+                Address: "Calle Falsa 123",
+                Email: "juan@example.com"
+            ),
+            Details:
+            [
+                new ElectronicDocumentDetailLine(
+                    "SKU-001",
+                    "Producto de prueba",
+                    10m,
+                    10m,
+                    0m,
+                    100m,
+                    [new ElectronicDocumentDetailTax("VAT", "2", 100m, 15m, 15m)]
+                ),
+            ],
             TaxSummary: [new ElectronicDocumentTaxSummary("VAT", "2", 100m, 15m)],
             Totals: new ElectronicDocumentTotals(100m, 0m, 15m, 115m, "USD"),
             Payments:
@@ -211,7 +294,8 @@ public sealed class InvoiceRideXmlParserTests
             [
                 new ElectronicDocumentAdditionalField("Email", "cliente@example.com"),
                 new ElectronicDocumentAdditionalField("Telefono", "0999999999"),
-            ]);
+            ]
+        );
 
         var xml = BuildAuthorizedXml(data);
         var parser = new InvoiceRideXmlParser();
@@ -222,12 +306,23 @@ public sealed class InvoiceRideXmlParserTests
         var model = result.Value!;
 
         model.AdditionalInfo.Should().HaveCount(2);
-        model.AdditionalInfo.Should().Contain(f => f.Name == "Email" && f.Value == "cliente@example.com");
+        model
+            .AdditionalInfo.Should()
+            .Contain(f => f.Name == "Email" && f.Value == "cliente@example.com");
         model.AdditionalInfo.Should().Contain(f => f.Name == "Telefono" && f.Value == "0999999999");
 
         model.Payments.Should().HaveCount(2);
-        model.Payments.Should().Contain(p => p.PaymentMethodCode == "01" && p.Amount == 50m && p.Term == null);
-        model.Payments.Should().Contain(p => p.PaymentMethodCode == "16" && p.Amount == 65m && p.Term == 30 && p.TimeUnit == "dias");
+        model
+            .Payments.Should()
+            .Contain(p => p.PaymentMethodCode == "01" && p.Amount == 50m && p.Term == null);
+        model
+            .Payments.Should()
+            .Contain(p =>
+                p.PaymentMethodCode == "16"
+                && p.Amount == 65m
+                && p.Term == 30
+                && p.TimeUnit == "dias"
+            );
 
         model.Header.SubtotalWithoutTax.Should().Be(100m);
         model.Header.GrandTotal.Should().Be(115m);

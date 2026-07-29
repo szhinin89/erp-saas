@@ -11,7 +11,8 @@ public static partial class UniqueViolationLogger
         DatabaseUniqueViolationInfo violation,
         Guid tenantId,
         Guid companyId,
-        string? correlationId = null)
+        string? correlationId = null
+    )
     {
         LogUniqueViolationCore(
             logger,
@@ -21,12 +22,15 @@ public static partial class UniqueViolationLogger
             violation.ConstraintName ?? "",
             violation.TableName ?? "",
             violation.SqlState,
-            correlationId ?? "none");
+            correlationId ?? "none"
+        );
     }
 
-    [LoggerMessage(Level = LogLevel.Warning,
-        Message = "Unique violation in {HandlerName} tenantId={TenantId} companyId={CompanyId} " +
-                  "constraint={ConstraintName} table={TableName} sqlState={SqlState} correlationId={CorrelationId}")]
+    [LoggerMessage(
+        Level = LogLevel.Warning,
+        Message = "Unique violation in {HandlerName} tenantId={TenantId} companyId={CompanyId} "
+            + "constraint={ConstraintName} table={TableName} sqlState={SqlState} correlationId={CorrelationId}"
+    )]
     private static partial void LogUniqueViolationCore(
         ILogger logger,
         string handlerName,
@@ -35,5 +39,6 @@ public static partial class UniqueViolationLogger
         string constraintName,
         string tableName,
         string sqlState,
-        string correlationId);
+        string correlationId
+    );
 }

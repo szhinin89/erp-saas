@@ -32,7 +32,10 @@ public sealed class AdminUserSessionControllerTests
         services.AddSingleton<IWebHostEnvironment>(new StubWebHostEnvironment());
         controller.ControllerContext = new ControllerContext
         {
-            HttpContext = new DefaultHttpContext { RequestServices = services.BuildServiceProvider() },
+            HttpContext = new DefaultHttpContext
+            {
+                RequestServices = services.BuildServiceProvider(),
+            },
         };
         return controller;
     }
@@ -42,9 +45,11 @@ public sealed class AdminUserSessionControllerTests
         public string EnvironmentName { get; set; } = "Development";
         public string ApplicationName { get; set; } = "ERP.API.Tests";
         public string WebRootPath { get; set; } = "";
-        public Microsoft.Extensions.FileProviders.IFileProvider WebRootFileProvider { get; set; } = null!;
+        public Microsoft.Extensions.FileProviders.IFileProvider WebRootFileProvider { get; set; } =
+            null!;
         public string ContentRootPath { get; set; } = "";
-        public Microsoft.Extensions.FileProviders.IFileProvider ContentRootFileProvider { get; set; } = null!;
+        public Microsoft.Extensions.FileProviders.IFileProvider ContentRootFileProvider { get; set; } =
+            null!;
     }
 
     // ── Autorización declarativa ─────────────────────────────────────────────
@@ -63,7 +68,9 @@ public sealed class AdminUserSessionControllerTests
     [Fact]
     public void El_endpoint_de_cierre_exige_un_permiso_mas_restrictivo_que_el_resto_del_controller()
     {
-        var closeMethod = typeof(AdminUserSessionController).GetMethod(nameof(AdminUserSessionController.Close))!;
+        var closeMethod = typeof(AdminUserSessionController).GetMethod(
+            nameof(AdminUserSessionController.Close)
+        )!;
         var attr = closeMethod
             .GetCustomAttributes(typeof(AuthorizeAttribute), inherit: false)
             .Cast<AuthorizeAttribute>()
@@ -83,14 +90,26 @@ public sealed class AdminUserSessionControllerTests
         {
             sentRequest = req;
             return Result<PagedResult<UserSessionAdminDto>>.Success(
-                new PagedResult<UserSessionAdminDto>(Array.Empty<UserSessionAdminDto>(), 1, 25, 0));
+                new PagedResult<UserSessionAdminDto>(Array.Empty<UserSessionAdminDto>(), 1, 25, 0)
+            );
         });
 
         var identityUserId = Guid.NewGuid();
-        var response = await controller.GetPaged(identityUserId, null, "Active", null, null, 1, 25, CancellationToken.None);
+        var response = await controller.GetPaged(
+            identityUserId,
+            null,
+            "Active",
+            null,
+            null,
+            1,
+            25,
+            CancellationToken.None
+        );
 
         response.Should().BeOfType<OkObjectResult>();
-        sentRequest.Should().Be(new GetUserSessionsPagedQuery(identityUserId, null, "Active", null, null, 1, 25));
+        sentRequest
+            .Should()
+            .Be(new GetUserSessionsPagedQuery(identityUserId, null, "Active", null, null, 1, 25));
     }
 
     // ── GET /api/v1/admin/access/sessions/statistics ────────────────────────

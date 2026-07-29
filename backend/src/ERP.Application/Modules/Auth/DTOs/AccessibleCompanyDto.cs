@@ -1,4 +1,4 @@
-﻿namespace ERP.Application.Auth.DTOs;
+namespace ERP.Application.Auth.DTOs;
 
 public sealed record AccessibleCompanyDto(
     Guid CompanyId,
@@ -6,4 +6,5 @@ public sealed record AccessibleCompanyDto(
     string LegalName,
     string DisplayName,
     string Ruc,
-    string Role);
+    string Role
+);

@@ -14,4 +14,5 @@ namespace ERP.Application.Access.UseCases.CloseUserSessionAdmin;
 /// validación manual adicional.
 /// </summary>
 public sealed record CloseUserSessionAdminCommand(Guid SessionId)
-    : IRequest<Result<string>>, ICompanyScopedRequest;
+    : IRequest<Result<string>>,
+        ICompanyScopedRequest;

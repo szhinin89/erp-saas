@@ -6,4 +6,5 @@ namespace ERP.Application.Modules.ElectronicDocuments.UseCases.GetElectronicDocu
 
 /// <summary>Indicadores del Monitor de Documentos Electrónicos — todos calculados en vivo, nunca hardcodeados.</summary>
 public sealed record GetElectronicDocumentsDashboardQuery
-    : IRequest<Result<ElectronicDocumentsDashboardDto>>, ICompanyScopedRequest;
+    : IRequest<Result<ElectronicDocumentsDashboardDto>>,
+        ICompanyScopedRequest;

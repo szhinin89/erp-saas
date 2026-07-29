@@ -4,4 +4,5 @@ using MediatR;
 
 namespace ERP.Application.Modules.ElectronicInvoicing.UseCases.GetElectronicInvoicingStatus;
 
-public sealed record GetElectronicInvoicingStatusQuery : IRequest<Result<ElectronicInvoicingStatusDto>>;
+public sealed record GetElectronicInvoicingStatusQuery
+    : IRequest<Result<ElectronicInvoicingStatusDto>>;

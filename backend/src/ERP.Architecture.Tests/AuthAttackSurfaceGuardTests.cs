@@ -29,12 +29,17 @@ public sealed class AuthAttackSurfaceGuardTests
             "DirectPasswordResetCommand",
         };
 
-        var violations = forbidden.Where(marker => text.Contains(marker, StringComparison.Ordinal)).ToList();
-        violations.Should().BeEmpty(
-            "5A/5B: registro anónimo multiempresa y reset directo de contraseña sin verificación " +
-            "quedaron eliminados permanentemente — el alta del primer usuario vive únicamente en " +
-            "SetupController (token de instalación de un solo uso) y el reset de contraseña solo " +
-            "vía ForgotPassword+ResetPasswordWithToken (token por email).");
+        var violations = forbidden
+            .Where(marker => text.Contains(marker, StringComparison.Ordinal))
+            .ToList();
+        violations
+            .Should()
+            .BeEmpty(
+                "5A/5B: registro anónimo multiempresa y reset directo de contraseña sin verificación "
+                    + "quedaron eliminados permanentemente — el alta del primer usuario vive únicamente en "
+                    + "SetupController (token de instalación de un solo uso) y el reset de contraseña solo "
+                    + "vía ForgotPassword+ResetPasswordWithToken (token por email)."
+            );
     }
 
     [Fact]
@@ -54,12 +59,17 @@ public sealed class AuthAttackSurfaceGuardTests
             "DirectPasswordResetCommandValidator.cs",
         };
 
-        var found = Directory.EnumerateFiles(applicationDir, "*.cs", SearchOption.AllDirectories)
+        var found = Directory
+            .EnumerateFiles(applicationDir, "*.cs", SearchOption.AllDirectories)
             .Select(f => Path.GetFileName(f))
             .Where(name => forbiddenFileNames.Contains(name, StringComparer.Ordinal))
             .ToList();
 
-        found.Should().BeEmpty("estos casos de uso fueron eliminados en la Fase S1 (hallazgos 5A/5B), no deben recrearse");
+        found
+            .Should()
+            .BeEmpty(
+                "estos casos de uso fueron eliminados en la Fase S1 (hallazgos 5A/5B), no deben recrearse"
+            );
     }
 
     private static string ResolveBackendSrcRoot()

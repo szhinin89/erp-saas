@@ -31,31 +31,38 @@ public sealed class BusinessPartnerRepository : IBusinessPartnerRepository
     public BusinessPartnerRepository(ErpDbContext db) => _db = db;
 
     /// <summary>Devuelve entidad tracked — usar en command handlers (necesita tracking para writes).</summary>
-    public Task<BusinessPartner?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
-        => _db.BusinessPartners
-              .FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
+    public Task<BusinessPartner?> GetByIdAsync(
+        Guid id,
+        CancellationToken cancellationToken = default
+    ) => _db.BusinessPartners.FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
 
     public Task<BusinessPartner?> GetByIdentificationAsync(
         string identificationType,
         string identificationNumber,
-        CancellationToken cancellationToken = default)
-        => _db.BusinessPartners
-              .AsNoTracking()
-              .FirstOrDefaultAsync(x =>
-                  x.Identification.Type == identificationType &&
-                  x.Identification.Number == identificationNumber, cancellationToken);
+        CancellationToken cancellationToken = default
+    ) =>
+        _db
+            .BusinessPartners.AsNoTracking()
+            .FirstOrDefaultAsync(
+                x =>
+                    x.Identification.Type == identificationType
+                    && x.Identification.Number == identificationNumber,
+                cancellationToken
+            );
 
     public Task<bool> ExistsByIdentificationAsync(
         string identificationType,
         string identificationNumber,
         Guid? excludeId = null,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default
+    )
     {
-        var query = _db.BusinessPartners
-            .AsNoTracking()
+        var query = _db
+            .BusinessPartners.AsNoTracking()
             .Where(x =>
-                x.Identification.Type == identificationType &&
-                x.Identification.Number == identificationNumber);
+                x.Identification.Type == identificationType
+                && x.Identification.Number == identificationNumber
+            );
 
         if (excludeId.HasValue)
             query = query.Where(x => x.Id != excludeId.Value);
@@ -73,7 +80,8 @@ public sealed class BusinessPartnerRepository : IBusinessPartnerRepository
         RoleType[]? roles = null,
         int skip = 0,
         int take = 50,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default
+    )
     {
         return await BuildQuery(query, isActive, roles)
             .OrderBy(x => x.Name.LegalName)
@@ -86,32 +94,35 @@ public sealed class BusinessPartnerRepository : IBusinessPartnerRepository
         string? query = null,
         bool? isActive = true,
         RoleType[]? roles = null,
-        CancellationToken cancellationToken = default)
-        => BuildQuery(query, isActive, roles).CountAsync(cancellationToken);
+        CancellationToken cancellationToken = default
+    ) => BuildQuery(query, isActive, roles).CountAsync(cancellationToken);
 
     public async Task<IReadOnlyDictionary<Guid, string>> GetNamesByIdsAsync(
         IEnumerable<Guid> ids,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default
+    )
     {
         var idList = ids.Distinct().ToList();
         if (idList.Count == 0)
             return new Dictionary<Guid, string>();
 
-        return await _db.BusinessPartners
-            .AsNoTracking()
+        return await _db
+            .BusinessPartners.AsNoTracking()
             .Where(x => idList.Contains(x.Id))
             .ToDictionaryAsync(x => x.Id, x => x.Name.LegalName, cancellationToken);
     }
 
-    public async Task AddAsync(BusinessPartner businessPartner, CancellationToken cancellationToken = default)
-        => await _db.BusinessPartners.AddAsync(businessPartner, cancellationToken);
+    public async Task AddAsync(
+        BusinessPartner businessPartner,
+        CancellationToken cancellationToken = default
+    ) => await _db.BusinessPartners.AddAsync(businessPartner, cancellationToken);
 
     /// <summary>
     /// Compromete todos los cambios tracked en el DbContext compartido.
     /// Los domain events del aggregate son publicados via Outbox por ErpDbContext.SaveChangesAsync.
     /// </summary>
-    public Task SaveChangesAsync(CancellationToken cancellationToken = default)
-        => _db.SaveChangesAsync(cancellationToken);
+    public Task SaveChangesAsync(CancellationToken cancellationToken = default) =>
+        _db.SaveChangesAsync(cancellationToken);
 
     // ── Query builder ─────────────────────────────────────────────────────────
 
@@ -126,18 +137,20 @@ public sealed class BusinessPartnerRepository : IBusinessPartnerRepository
         // El global query filter de BusinessPartnerRoles agrega tenant_id automáticamente.
         // Genera: WHERE EXISTS (SELECT 1 FROM master_bp_roles r WHERE r.bp_id = bp.id AND r.role_type IN (...) AND r.is_active)
         if (roles is { Length: > 0 })
-            q = q.Where(x => _db.BusinessPartnerRoles
-                                 .Any(r => r.BusinessPartnerId == x.Id
-                                        && roles.Contains(r.RoleType)
-                                        && r.IsActive));
+            q = q.Where(x =>
+                _db.BusinessPartnerRoles.Any(r =>
+                    r.BusinessPartnerId == x.Id && roles.Contains(r.RoleType) && r.IsActive
+                )
+            );
 
         if (!string.IsNullOrWhiteSpace(query))
         {
             var pattern = $"%{query.Trim()}%";
             q = q.Where(x =>
-                EF.Functions.ILike(x.Name.LegalName, pattern) ||
-                (x.Name.TradeName != null && EF.Functions.ILike(x.Name.TradeName, pattern)) ||
-                EF.Functions.ILike(x.Identification.Number, pattern));
+                EF.Functions.ILike(x.Name.LegalName, pattern)
+                || (x.Name.TradeName != null && EF.Functions.ILike(x.Name.TradeName, pattern))
+                || EF.Functions.ILike(x.Identification.Number, pattern)
+            );
         }
 
         return q;

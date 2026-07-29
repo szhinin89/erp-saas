@@ -16,7 +16,8 @@ public sealed class GetEstablishmentsQueryHandler
     public GetEstablishmentsQueryHandler(
         IEstablishmentRepository repo,
         ICurrentTenant currentTenant,
-        ICurrentCompany company)
+        ICurrentCompany company
+    )
     {
         _repo = repo;
         _currentTenant = currentTenant;
@@ -24,7 +25,9 @@ public sealed class GetEstablishmentsQueryHandler
     }
 
     public async Task<Result<IReadOnlyList<EstablishmentListItemDto>>> Handle(
-        GetEstablishmentsQuery request, CancellationToken cancellationToken)
+        GetEstablishmentsQuery request,
+        CancellationToken cancellationToken
+    )
     {
         var items = await _repo.GetFilteredAsync(
             _currentTenant.TenantId,
@@ -32,22 +35,25 @@ public sealed class GetEstablishmentsQueryHandler
             request.BranchId,
             request.IsActive,
             request.Search,
-            cancellationToken);
+            cancellationToken
+        );
 
         var dtos = items.Select(ToListItemDto).ToList();
         return Result<IReadOnlyList<EstablishmentListItemDto>>.Success(dtos);
     }
 
-    internal static EstablishmentListItemDto ToListItemDto(Establishment e) => new(
-        e.Id,
-        e.Code,
-        e.Name,
-        e.Address,
-        e.Phone,
-        e.BranchId,
-        e.Branch?.Name,
-        e.EmissionPoints.Count(ep => ep.IsActive),
-        e.IsMain,
-        e.IsActive,
-        e.CreatedAt);
+    internal static EstablishmentListItemDto ToListItemDto(Establishment e) =>
+        new(
+            e.Id,
+            e.Code,
+            e.Name,
+            e.Address,
+            e.Phone,
+            e.BranchId,
+            e.Branch?.Name,
+            e.EmissionPoints.Count(ep => ep.IsActive),
+            e.IsMain,
+            e.IsActive,
+            e.CreatedAt
+        );
 }

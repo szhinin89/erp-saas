@@ -5,7 +5,8 @@ using MediatR;
 
 namespace ERP.Application.Security.UseCases.UpsertSecurityAdminScopes;
 
-public class UpsertSecurityAdminScopesHandler : IRequestHandler<UpsertSecurityAdminScopesCommand, Result<bool>>
+public class UpsertSecurityAdminScopesHandler
+    : IRequestHandler<UpsertSecurityAdminScopesCommand, Result<bool>>
 {
     private static readonly int[] AllScopes =
     [
@@ -22,14 +23,18 @@ public class UpsertSecurityAdminScopesHandler : IRequestHandler<UpsertSecurityAd
     public UpsertSecurityAdminScopesHandler(
         ICurrentTenant currentTenant,
         ICurrentUser currentUser,
-        ISecurityRepository repository)
+        ISecurityRepository repository
+    )
     {
         _currentTenant = currentTenant;
         _currentUser = currentUser;
         _repository = repository;
     }
 
-    public async Task<Result<bool>> Handle(UpsertSecurityAdminScopesCommand command, CancellationToken cancellationToken)
+    public async Task<Result<bool>> Handle(
+        UpsertSecurityAdminScopesCommand command,
+        CancellationToken cancellationToken
+    )
     {
         if (!(_currentTenant.TenantId != Guid.Empty) || _currentTenant.TenantId == Guid.Empty)
             return Result<bool>.Failure("Tenant inválido.");
@@ -50,7 +55,13 @@ public class UpsertSecurityAdminScopesHandler : IRequestHandler<UpsertSecurityAd
         foreach (var scope in AllScopes)
         {
             var shouldAllow = allowed.Contains(scope);
-            var existing = await _repository.GetAdminScopeAsync(_currentTenant.TenantId, subjectType, subjectKey, scope, cancellationToken);
+            var existing = await _repository.GetAdminScopeAsync(
+                _currentTenant.TenantId,
+                subjectType,
+                subjectKey,
+                scope,
+                cancellationToken
+            );
             if (existing is null)
             {
                 var created = SecurityAdminScopeAssignment.Create(
@@ -59,7 +70,8 @@ public class UpsertSecurityAdminScopesHandler : IRequestHandler<UpsertSecurityAd
                     subjectKey,
                     scope,
                     shouldAllow,
-                    createdBy: _currentUser.UserId);
+                    createdBy: _currentUser.UserId
+                );
                 await _repository.AddAsync(created, cancellationToken);
             }
             else
@@ -72,4 +84,3 @@ public class UpsertSecurityAdminScopesHandler : IRequestHandler<UpsertSecurityAd
         return Result<bool>.Success(true);
     }
 }
-

@@ -13,5 +13,7 @@ namespace ERP.Application.Modules.ElectronicDocuments.UseCases.GetElectronicDocu
 /// origen todavía no tiene un documento electrónico registrado (p.ej. factura aún no emitida
 /// electrónicamente) — el frontend lo trata como estado vacío, no como error.
 /// </summary>
-public sealed record GetElectronicDocumentDiagnosticBySourceQuery(string SourceModule, Guid SourceEntityId)
-    : IRequest<Result<ElectronicDocumentDiagnosticDto>>, ICompanyScopedRequest;
+public sealed record GetElectronicDocumentDiagnosticBySourceQuery(
+    string SourceModule,
+    Guid SourceEntityId
+) : IRequest<Result<ElectronicDocumentDiagnosticDto>>, ICompanyScopedRequest;

@@ -10,7 +10,15 @@ public sealed class JournalEntryLineTests
     private static readonly Guid AccountId = Guid.NewGuid();
 
     private static JournalEntryLine CreateLine(decimal debit, decimal credit) =>
-        JournalEntryLine.Create(JournalEntryId, TenantId, AccountId, "Línea test", debit, credit, sortOrder: 0);
+        JournalEntryLine.Create(
+            JournalEntryId,
+            TenantId,
+            AccountId,
+            "Línea test",
+            debit,
+            credit,
+            sortOrder: 0
+        );
 
     [Fact]
     public void Create_con_Debit_valido_asigna_Debit_y_dejaCredit_en_cero()
@@ -35,7 +43,8 @@ public sealed class JournalEntryLineTests
     {
         var act = () => CreateLine(100m, 50m);
 
-        act.Should().Throw<InvalidOperationException>()
+        act.Should()
+            .Throw<InvalidOperationException>()
             .WithMessage("*Débito y Crédito simultáneamente*");
     }
 
@@ -44,14 +53,14 @@ public sealed class JournalEntryLineTests
     {
         var act = () => CreateLine(0m, 0m);
 
-        act.Should().Throw<InvalidOperationException>()
-            .WithMessage("*Débito o en Crédito*");
+        act.Should().Throw<InvalidOperationException>().WithMessage("*Débito o en Crédito*");
     }
 
     [Fact]
     public void Create_con_AccountId_vacio_lanza_excepcion()
     {
-        var act = () => JournalEntryLine.Create(JournalEntryId, TenantId, Guid.Empty, null, 100m, 0m, 0);
+        var act = () =>
+            JournalEntryLine.Create(JournalEntryId, TenantId, Guid.Empty, null, 100m, 0m, 0);
 
         act.Should().Throw<ArgumentException>();
     }

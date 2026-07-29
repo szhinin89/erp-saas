@@ -15,7 +15,8 @@ public sealed class GetEstablishmentLookupsQueryHandler
     public GetEstablishmentLookupsQueryHandler(
         IEstablishmentRepository repo,
         ICurrentTenant currentTenant,
-        ICurrentCompany company)
+        ICurrentCompany company
+    )
     {
         _repo = repo;
         _currentTenant = currentTenant;
@@ -23,16 +24,17 @@ public sealed class GetEstablishmentLookupsQueryHandler
     }
 
     public async Task<Result<IReadOnlyList<EstablishmentLookupDto>>> Handle(
-        GetEstablishmentLookupsQuery request, CancellationToken cancellationToken)
+        GetEstablishmentLookupsQuery request,
+        CancellationToken cancellationToken
+    )
     {
         var items = await _repo.GetActiveByCompanyAsync(
             _currentTenant.TenantId,
             _company.CompanyId,
-            cancellationToken);
+            cancellationToken
+        );
 
-        var dtos = items
-            .Select(e => new EstablishmentLookupDto(e.Id, e.Code, e.Name))
-            .ToList();
+        var dtos = items.Select(e => new EstablishmentLookupDto(e.Id, e.Code, e.Name)).ToList();
 
         return Result<IReadOnlyList<EstablishmentLookupDto>>.Success(dtos);
     }

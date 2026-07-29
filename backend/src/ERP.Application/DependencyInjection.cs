@@ -1,3 +1,4 @@
+using System.Reflection;
 using ERP.Application.Access;
 using ERP.Application.Access.Authorization;
 using ERP.Application.Access.Caching;
@@ -5,7 +6,6 @@ using ERP.Application.Behaviors;
 using FluentValidation;
 using MediatR;
 using Microsoft.Extensions.DependencyInjection;
-using System.Reflection;
 
 namespace ERP.Application;
 
@@ -27,10 +27,12 @@ public static class DependencyInjection
 
         var handlerTypes = assembly
             .GetTypes()
-            .Where(t => t.IsClass
-                     && !t.IsAbstract
-                     && t.Name.EndsWith("Handler", StringComparison.Ordinal)
-                     && t.Namespace?.Contains("UseCases") == true);
+            .Where(t =>
+                t.IsClass
+                && !t.IsAbstract
+                && t.Name.EndsWith("Handler", StringComparison.Ordinal)
+                && t.Namespace?.Contains("UseCases") == true
+            );
 
         foreach (var handlerType in handlerTypes)
             services.AddScoped(handlerType);

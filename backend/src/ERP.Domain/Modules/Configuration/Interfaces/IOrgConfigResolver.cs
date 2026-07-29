@@ -11,11 +11,21 @@ namespace ERP.Domain.Configuration.Interfaces;
 public interface IOrgConfigResolver
 {
     /// <summary>Retorna el valor raw (string) o null si no está configurado.</summary>
-    Task<string?> GetValueAsync(OrgScope scope, Guid scopeId, string key, CancellationToken ct = default);
+    Task<string?> GetValueAsync(
+        OrgScope scope,
+        Guid scopeId,
+        string key,
+        CancellationToken ct = default
+    );
 
     /// <summary>
     /// Retorna el valor convertido al tipo T, o default(T) si no está configurado.
     /// Tipos soportados: string, Guid, int, decimal, bool.
     /// </summary>
-    Task<T?> GetValueAsync<T>(OrgScope scope, Guid scopeId, string key, CancellationToken ct = default);
+    Task<T?> GetValueAsync<T>(
+        OrgScope scope,
+        Guid scopeId,
+        string key,
+        CancellationToken ct = default
+    );
 }

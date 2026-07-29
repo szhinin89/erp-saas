@@ -42,11 +42,35 @@ public sealed class UpsertCompanyUserMembershipHandlerTests
     private static Company NewCompany(Guid tenantId) =>
         Company.CreateManaged(tenantId, "1790012345001", "Test S.A.", createdBy: CreatedBy);
 
-    private static Branch NewBranch(Guid tenantId, Guid companyId) => Branch.Create(
-        tenantId, "Matriz", "Av. Principal 123", "001",
-        null, null, null, null, null, null, null, null, null, null, null,
-        null, null, null, null, null, null, null, null, true, CreatedBy,
-        companyId: companyId);
+    private static Branch NewBranch(Guid tenantId, Guid companyId) =>
+        Branch.Create(
+            tenantId,
+            "Matriz",
+            "Av. Principal 123",
+            "001",
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            true,
+            CreatedBy,
+            companyId: companyId
+        );
 
     private sealed class Fixture
     {
@@ -65,32 +89,66 @@ public sealed class UpsertCompanyUserMembershipHandlerTests
             CurrentUser.SetupGet(x => x.UserId).Returns(CreatedBy);
         }
 
-        public UpsertCompanyUserMembershipHandler BuildHandler() => new(
-            AccessRepo.Object, CurrentUser.Object, TenantRepo.Object, CompanyProvisioning.Object,
-            PermissionsCache.Object, NavigationBuilder.Object, BranchRepo.Object,
-            CompanyUserBranchRepo.Object, Mediator.Object);
+        public UpsertCompanyUserMembershipHandler BuildHandler() =>
+            new(
+                AccessRepo.Object,
+                CurrentUser.Object,
+                TenantRepo.Object,
+                CompanyProvisioning.Object,
+                PermissionsCache.Object,
+                NavigationBuilder.Object,
+                BranchRepo.Object,
+                CompanyUserBranchRepo.Object,
+                Mediator.Object
+            );
     }
 
-    private static Fixture BuildBaseFixture(IdentityUser user, Tenant tenant, Company company, CompanyUserMembership? existingMembership)
+    private static Fixture BuildBaseFixture(
+        IdentityUser user,
+        Tenant tenant,
+        Company company,
+        CompanyUserMembership? existingMembership
+    )
     {
         var f = new Fixture();
-        f.TenantRepo.Setup(r => r.GetByIdAsync(tenant.Id, It.IsAny<CancellationToken>())).ReturnsAsync(tenant);
-        f.CompanyProvisioning.Setup(s => s.EnsureDefaultCompanyAsync(tenant, It.IsAny<CancellationToken>())).ReturnsAsync(company);
-        f.AccessRepo.Setup(r => r.GetUserByUsernameAsync(Username, It.IsAny<CancellationToken>())).ReturnsAsync(user);
-        f.AccessRepo.Setup(r => r.GetCompanyUserMembershipAsync(company.Id, user.Id, It.IsAny<CancellationToken>()))
+        f.TenantRepo.Setup(r => r.GetByIdAsync(tenant.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(tenant);
+        f.CompanyProvisioning.Setup(s =>
+                s.EnsureDefaultCompanyAsync(tenant, It.IsAny<CancellationToken>())
+            )
+            .ReturnsAsync(company);
+        f.AccessRepo.Setup(r => r.GetUserByUsernameAsync(Username, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(user);
+        f.AccessRepo.Setup(r =>
+                r.GetCompanyUserMembershipAsync(company.Id, user.Id, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(existingMembership);
         return f;
     }
 
     private static void SetupNoExistingPreferences(Fixture f)
     {
-        f.Mediator.Setup(m => m.Send(It.IsAny<GetCompanyUserPreferencesQuery>(), It.IsAny<CancellationToken>()))
+        f.Mediator.Setup(m =>
+                m.Send(It.IsAny<GetCompanyUserPreferencesQuery>(), It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(Result<CompanyUserPreferencesDto?>.Success(null));
     }
 
     private static CompanyUserPreferencesDto Preferences(
-        Guid membershipId, Guid companyId, Guid tenantId, CompanyUserLoginMode loginMode, Guid? defaultBranchId) =>
-        new(Guid.NewGuid(), tenantId, companyId, membershipId, defaultBranchId, loginMode.ToString());
+        Guid membershipId,
+        Guid companyId,
+        Guid tenantId,
+        CompanyUserLoginMode loginMode,
+        Guid? defaultBranchId
+    ) =>
+        new(
+            Guid.NewGuid(),
+            tenantId,
+            companyId,
+            membershipId,
+            defaultBranchId,
+            loginMode.ToString()
+        );
 
     [Fact]
     public async Task Membresia_nueva_sin_preferencias_informadas_crea_preferencias_AskBranch_por_defecto()
@@ -102,23 +160,49 @@ public sealed class UpsertCompanyUserMembershipHandlerTests
         SetupNoExistingPreferences(f);
 
         CreateCompanyUserPreferencesCommand? sentCreate = null;
-        f.Mediator.Setup(m => m.Send(It.IsAny<CreateCompanyUserPreferencesCommand>(), It.IsAny<CancellationToken>()))
-            .Callback<IRequest<Result<CompanyUserPreferencesDto>>, CancellationToken>((cmd, _) => sentCreate = (CreateCompanyUserPreferencesCommand)cmd)
-            .ReturnsAsync((IRequest<Result<CompanyUserPreferencesDto>> cmd, CancellationToken _) =>
-            {
-                var c = (CreateCompanyUserPreferencesCommand)cmd;
-                return Result<CompanyUserPreferencesDto>.Success(
-                    Preferences(c.CompanyUserMembershipId, company.Id, tenant.Id, CompanyUserLoginMode.AskBranch, null));
-            });
+        f.Mediator.Setup(m =>
+                m.Send(
+                    It.IsAny<CreateCompanyUserPreferencesCommand>(),
+                    It.IsAny<CancellationToken>()
+                )
+            )
+            .Callback<IRequest<Result<CompanyUserPreferencesDto>>, CancellationToken>(
+                (cmd, _) => sentCreate = (CreateCompanyUserPreferencesCommand)cmd
+            )
+            .ReturnsAsync(
+                (IRequest<Result<CompanyUserPreferencesDto>> cmd, CancellationToken _) =>
+                {
+                    var c = (CreateCompanyUserPreferencesCommand)cmd;
+                    return Result<CompanyUserPreferencesDto>.Success(
+                        Preferences(
+                            c.CompanyUserMembershipId,
+                            company.Id,
+                            tenant.Id,
+                            CompanyUserLoginMode.AskBranch,
+                            null
+                        )
+                    );
+                }
+            );
 
         var handler = f.BuildHandler();
-        var result = await handler.Handle(new UpsertCompanyUserMembershipCommand(tenant.Id, Username, "User"), CancellationToken.None);
+        var result = await handler.Handle(
+            new UpsertCompanyUserMembershipCommand(tenant.Id, Username, "User"),
+            CancellationToken.None
+        );
 
         result.IsSuccess.Should().BeTrue();
         sentCreate.Should().NotBeNull();
         sentCreate!.LoginMode.Should().Be(nameof(CompanyUserLoginMode.AskBranch));
         sentCreate.DefaultBranchId.Should().BeNull();
-        f.Mediator.Verify(m => m.Send(It.IsAny<UpdateCompanyUserPreferencesCommand>(), It.IsAny<CancellationToken>()), Times.Never);
+        f.Mediator.Verify(
+            m =>
+                m.Send(
+                    It.IsAny<UpdateCompanyUserPreferencesCommand>(),
+                    It.IsAny<CancellationToken>()
+                ),
+            Times.Never
+        );
     }
 
     [Fact]
@@ -130,33 +214,66 @@ public sealed class UpsertCompanyUserMembershipHandlerTests
         var branch = NewBranch(tenant.Id, company.Id);
         var f = BuildBaseFixture(user, tenant, company, existingMembership: null);
         SetupNoExistingPreferences(f);
-        f.BranchRepo.Setup(r => r.GetByIdAsync(tenant.Id, branch.Id, It.IsAny<CancellationToken>())).ReturnsAsync(branch);
-        f.CompanyUserBranchRepo.Setup(r => r.ExistsAsync(It.IsAny<Guid>(), branch.Id, It.IsAny<CancellationToken>())).ReturnsAsync(false);
+        f.BranchRepo.Setup(r => r.GetByIdAsync(tenant.Id, branch.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(branch);
+        f.CompanyUserBranchRepo.Setup(r =>
+                r.ExistsAsync(It.IsAny<Guid>(), branch.Id, It.IsAny<CancellationToken>())
+            )
+            .ReturnsAsync(false);
 
         CreateCompanyUserPreferencesCommand? sentCreate = null;
-        f.Mediator.Setup(m => m.Send(It.IsAny<CreateCompanyUserPreferencesCommand>(), It.IsAny<CancellationToken>()))
-            .Callback<IRequest<Result<CompanyUserPreferencesDto>>, CancellationToken>((cmd, _) => sentCreate = (CreateCompanyUserPreferencesCommand)cmd)
-            .ReturnsAsync((IRequest<Result<CompanyUserPreferencesDto>> cmd, CancellationToken _) =>
-            {
-                var c = (CreateCompanyUserPreferencesCommand)cmd;
-                return Result<CompanyUserPreferencesDto>.Success(
-                    Preferences(c.CompanyUserMembershipId, company.Id, tenant.Id, CompanyUserLoginMode.DirectToDefault, c.DefaultBranchId));
-            });
+        f.Mediator.Setup(m =>
+                m.Send(
+                    It.IsAny<CreateCompanyUserPreferencesCommand>(),
+                    It.IsAny<CancellationToken>()
+                )
+            )
+            .Callback<IRequest<Result<CompanyUserPreferencesDto>>, CancellationToken>(
+                (cmd, _) => sentCreate = (CreateCompanyUserPreferencesCommand)cmd
+            )
+            .ReturnsAsync(
+                (IRequest<Result<CompanyUserPreferencesDto>> cmd, CancellationToken _) =>
+                {
+                    var c = (CreateCompanyUserPreferencesCommand)cmd;
+                    return Result<CompanyUserPreferencesDto>.Success(
+                        Preferences(
+                            c.CompanyUserMembershipId,
+                            company.Id,
+                            tenant.Id,
+                            CompanyUserLoginMode.DirectToDefault,
+                            c.DefaultBranchId
+                        )
+                    );
+                }
+            );
 
         var handler = f.BuildHandler();
         var command = new UpsertCompanyUserMembershipCommand(
-            tenant.Id, Username, "User",
+            tenant.Id,
+            Username,
+            "User",
             AuthorizedBranchIds: new[] { branch.Id },
             DefaultBranchId: branch.Id,
-            LoginMode: nameof(CompanyUserLoginMode.DirectToDefault));
+            LoginMode: nameof(CompanyUserLoginMode.DirectToDefault)
+        );
 
         var result = await handler.Handle(command, CancellationToken.None);
 
         result.IsSuccess.Should().BeTrue();
-        f.CompanyUserBranchRepo.Verify(r => r.AddAsync(
-            It.Is<CompanyUserBranch>(b => b.BranchId == branch.Id && b.CreatedBy == CreatedBy),
-            It.IsAny<CancellationToken>()), Times.Once);
-        f.CompanyUserBranchRepo.Verify(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
+        f.CompanyUserBranchRepo.Verify(
+            r =>
+                r.AddAsync(
+                    It.Is<CompanyUserBranch>(b =>
+                        b.BranchId == branch.Id && b.CreatedBy == CreatedBy
+                    ),
+                    It.IsAny<CancellationToken>()
+                ),
+            Times.Once
+        );
+        f.CompanyUserBranchRepo.Verify(
+            r => r.SaveChangesAsync(It.IsAny<CancellationToken>()),
+            Times.Once
+        );
         sentCreate!.DefaultBranchId.Should().Be(branch.Id);
         sentCreate.LoginMode.Should().Be(nameof(CompanyUserLoginMode.DirectToDefault));
     }
@@ -169,18 +286,31 @@ public sealed class UpsertCompanyUserMembershipHandlerTests
         var company = NewCompany(tenant.Id);
         var missingBranchId = Guid.NewGuid();
         var f = BuildBaseFixture(user, tenant, company, existingMembership: null);
-        f.BranchRepo.Setup(r => r.GetByIdAsync(tenant.Id, missingBranchId, It.IsAny<CancellationToken>())).ReturnsAsync((Branch?)null);
+        f.BranchRepo.Setup(r =>
+                r.GetByIdAsync(tenant.Id, missingBranchId, It.IsAny<CancellationToken>())
+            )
+            .ReturnsAsync((Branch?)null);
 
         var handler = f.BuildHandler();
         var command = new UpsertCompanyUserMembershipCommand(
-            tenant.Id, Username, "User", AuthorizedBranchIds: new[] { missingBranchId });
+            tenant.Id,
+            Username,
+            "User",
+            AuthorizedBranchIds: new[] { missingBranchId }
+        );
 
         var result = await handler.Handle(command, CancellationToken.None);
 
         result.IsSuccess.Should().BeFalse();
         result.Code.Should().Be(ApiResponseCodes.Common.NotFound);
-        f.CompanyUserBranchRepo.Verify(r => r.AddAsync(It.IsAny<CompanyUserBranch>(), It.IsAny<CancellationToken>()), Times.Never);
-        f.Mediator.Verify(m => m.Send(It.IsAny<GetCompanyUserPreferencesQuery>(), It.IsAny<CancellationToken>()), Times.Never);
+        f.CompanyUserBranchRepo.Verify(
+            r => r.AddAsync(It.IsAny<CompanyUserBranch>(), It.IsAny<CancellationToken>()),
+            Times.Never
+        );
+        f.Mediator.Verify(
+            m => m.Send(It.IsAny<GetCompanyUserPreferencesQuery>(), It.IsAny<CancellationToken>()),
+            Times.Never
+        );
     }
 
     [Fact]
@@ -192,20 +322,45 @@ public sealed class UpsertCompanyUserMembershipHandlerTests
         var branch = NewBranch(tenant.Id, company.Id);
         var f = BuildBaseFixture(user, tenant, company, existingMembership: null);
         SetupNoExistingPreferences(f);
-        f.BranchRepo.Setup(r => r.GetByIdAsync(tenant.Id, branch.Id, It.IsAny<CancellationToken>())).ReturnsAsync(branch);
-        f.CompanyUserBranchRepo.Setup(r => r.ExistsAsync(It.IsAny<Guid>(), branch.Id, It.IsAny<CancellationToken>())).ReturnsAsync(true);
-        f.Mediator.Setup(m => m.Send(It.IsAny<CreateCompanyUserPreferencesCommand>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Result<CompanyUserPreferencesDto>.Success(
-                Preferences(Guid.NewGuid(), company.Id, tenant.Id, CompanyUserLoginMode.AskBranch, null)));
+        f.BranchRepo.Setup(r => r.GetByIdAsync(tenant.Id, branch.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(branch);
+        f.CompanyUserBranchRepo.Setup(r =>
+                r.ExistsAsync(It.IsAny<Guid>(), branch.Id, It.IsAny<CancellationToken>())
+            )
+            .ReturnsAsync(true);
+        f.Mediator.Setup(m =>
+                m.Send(
+                    It.IsAny<CreateCompanyUserPreferencesCommand>(),
+                    It.IsAny<CancellationToken>()
+                )
+            )
+            .ReturnsAsync(
+                Result<CompanyUserPreferencesDto>.Success(
+                    Preferences(
+                        Guid.NewGuid(),
+                        company.Id,
+                        tenant.Id,
+                        CompanyUserLoginMode.AskBranch,
+                        null
+                    )
+                )
+            );
 
         var handler = f.BuildHandler();
         var command = new UpsertCompanyUserMembershipCommand(
-            tenant.Id, Username, "User", AuthorizedBranchIds: new[] { branch.Id });
+            tenant.Id,
+            Username,
+            "User",
+            AuthorizedBranchIds: new[] { branch.Id }
+        );
 
         var result = await handler.Handle(command, CancellationToken.None);
 
         result.IsSuccess.Should().BeTrue();
-        f.CompanyUserBranchRepo.Verify(r => r.AddAsync(It.IsAny<CompanyUserBranch>(), It.IsAny<CancellationToken>()), Times.Never);
+        f.CompanyUserBranchRepo.Verify(
+            r => r.AddAsync(It.IsAny<CompanyUserBranch>(), It.IsAny<CancellationToken>()),
+            Times.Never
+        );
     }
 
     [Fact]
@@ -217,14 +372,26 @@ public sealed class UpsertCompanyUserMembershipHandlerTests
         var branch = NewBranch(tenant.Id, company.Id);
         var f = BuildBaseFixture(user, tenant, company, existingMembership: null);
         SetupNoExistingPreferences(f);
-        f.Mediator.Setup(m => m.Send(It.IsAny<CreateCompanyUserPreferencesCommand>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Result<CompanyUserPreferencesDto>.ValidationFailure(
-                "La sucursal por defecto debe estar previamente autorizada para este usuario (CompanyUserBranch)."));
+        f.Mediator.Setup(m =>
+                m.Send(
+                    It.IsAny<CreateCompanyUserPreferencesCommand>(),
+                    It.IsAny<CancellationToken>()
+                )
+            )
+            .ReturnsAsync(
+                Result<CompanyUserPreferencesDto>.ValidationFailure(
+                    "La sucursal por defecto debe estar previamente autorizada para este usuario (CompanyUserBranch)."
+                )
+            );
 
         var handler = f.BuildHandler();
         var command = new UpsertCompanyUserMembershipCommand(
-            tenant.Id, Username, "User",
-            DefaultBranchId: branch.Id, LoginMode: nameof(CompanyUserLoginMode.DirectToDefault));
+            tenant.Id,
+            Username,
+            "User",
+            DefaultBranchId: branch.Id,
+            LoginMode: nameof(CompanyUserLoginMode.DirectToDefault)
+        );
 
         var result = await handler.Handle(command, CancellationToken.None);
 
@@ -240,16 +407,44 @@ public sealed class UpsertCompanyUserMembershipHandlerTests
         var company = NewCompany(tenant.Id);
         var membership = CompanyUserMembership.Create(company.Id, user.Id, "User", null, CreatedBy);
         var f = BuildBaseFixture(user, tenant, company, existingMembership: membership);
-        f.Mediator.Setup(m => m.Send(It.IsAny<GetCompanyUserPreferencesQuery>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Result<CompanyUserPreferencesDto?>.Success(
-                Preferences(membership.Id, company.Id, tenant.Id, CompanyUserLoginMode.DirectToDefault, Guid.NewGuid())));
+        f.Mediator.Setup(m =>
+                m.Send(It.IsAny<GetCompanyUserPreferencesQuery>(), It.IsAny<CancellationToken>())
+            )
+            .ReturnsAsync(
+                Result<CompanyUserPreferencesDto?>.Success(
+                    Preferences(
+                        membership.Id,
+                        company.Id,
+                        tenant.Id,
+                        CompanyUserLoginMode.DirectToDefault,
+                        Guid.NewGuid()
+                    )
+                )
+            );
 
         var handler = f.BuildHandler();
-        var result = await handler.Handle(new UpsertCompanyUserMembershipCommand(tenant.Id, Username, "Admin"), CancellationToken.None);
+        var result = await handler.Handle(
+            new UpsertCompanyUserMembershipCommand(tenant.Id, Username, "Admin"),
+            CancellationToken.None
+        );
 
         result.IsSuccess.Should().BeTrue();
-        f.Mediator.Verify(m => m.Send(It.IsAny<UpdateCompanyUserPreferencesCommand>(), It.IsAny<CancellationToken>()), Times.Never);
-        f.Mediator.Verify(m => m.Send(It.IsAny<CreateCompanyUserPreferencesCommand>(), It.IsAny<CancellationToken>()), Times.Never);
+        f.Mediator.Verify(
+            m =>
+                m.Send(
+                    It.IsAny<UpdateCompanyUserPreferencesCommand>(),
+                    It.IsAny<CancellationToken>()
+                ),
+            Times.Never
+        );
+        f.Mediator.Verify(
+            m =>
+                m.Send(
+                    It.IsAny<CreateCompanyUserPreferencesCommand>(),
+                    It.IsAny<CancellationToken>()
+                ),
+            Times.Never
+        );
     }
 
     [Fact]
@@ -261,19 +456,50 @@ public sealed class UpsertCompanyUserMembershipHandlerTests
         var membership = CompanyUserMembership.Create(company.Id, user.Id, "User", null, CreatedBy);
         var previousBranchId = Guid.NewGuid();
         var f = BuildBaseFixture(user, tenant, company, existingMembership: membership);
-        f.Mediator.Setup(m => m.Send(It.IsAny<GetCompanyUserPreferencesQuery>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Result<CompanyUserPreferencesDto?>.Success(
-                Preferences(membership.Id, company.Id, tenant.Id, CompanyUserLoginMode.AskBranch, previousBranchId)));
+        f.Mediator.Setup(m =>
+                m.Send(It.IsAny<GetCompanyUserPreferencesQuery>(), It.IsAny<CancellationToken>())
+            )
+            .ReturnsAsync(
+                Result<CompanyUserPreferencesDto?>.Success(
+                    Preferences(
+                        membership.Id,
+                        company.Id,
+                        tenant.Id,
+                        CompanyUserLoginMode.AskBranch,
+                        previousBranchId
+                    )
+                )
+            );
 
         UpdateCompanyUserPreferencesCommand? sentUpdate = null;
-        f.Mediator.Setup(m => m.Send(It.IsAny<UpdateCompanyUserPreferencesCommand>(), It.IsAny<CancellationToken>()))
-            .Callback<IRequest<Result<CompanyUserPreferencesDto>>, CancellationToken>((cmd, _) => sentUpdate = (UpdateCompanyUserPreferencesCommand)cmd)
-            .ReturnsAsync(Result<CompanyUserPreferencesDto>.Success(
-                Preferences(membership.Id, company.Id, tenant.Id, CompanyUserLoginMode.DirectToDefault, previousBranchId)));
+        f.Mediator.Setup(m =>
+                m.Send(
+                    It.IsAny<UpdateCompanyUserPreferencesCommand>(),
+                    It.IsAny<CancellationToken>()
+                )
+            )
+            .Callback<IRequest<Result<CompanyUserPreferencesDto>>, CancellationToken>(
+                (cmd, _) => sentUpdate = (UpdateCompanyUserPreferencesCommand)cmd
+            )
+            .ReturnsAsync(
+                Result<CompanyUserPreferencesDto>.Success(
+                    Preferences(
+                        membership.Id,
+                        company.Id,
+                        tenant.Id,
+                        CompanyUserLoginMode.DirectToDefault,
+                        previousBranchId
+                    )
+                )
+            );
 
         var handler = f.BuildHandler();
         var command = new UpsertCompanyUserMembershipCommand(
-            tenant.Id, Username, "Admin", LoginMode: nameof(CompanyUserLoginMode.DirectToDefault));
+            tenant.Id,
+            Username,
+            "Admin",
+            LoginMode: nameof(CompanyUserLoginMode.DirectToDefault)
+        );
 
         var result = await handler.Handle(command, CancellationToken.None);
 
@@ -291,20 +517,38 @@ public sealed class UpsertCompanyUserMembershipHandlerTests
         var user = NewUser();
         var tenant = NewTenant();
         var company = NewCompany(tenant.Id);
-        var membership = CompanyUserMembership.Create(company.Id, user.Id, SecurityRoles.Admin, null, CreatedBy);
+        var membership = CompanyUserMembership.Create(
+            company.Id,
+            user.Id,
+            SecurityRoles.Admin,
+            null,
+            CreatedBy
+        );
         var f = BuildBaseFixture(user, tenant, company, existingMembership: membership);
-        f.AccessRepo.Setup(r => r.GetCompanyUserMembershipsByCompanyAsync(company.Id, true, It.IsAny<CancellationToken>()))
+        f.AccessRepo.Setup(r =>
+                r.GetCompanyUserMembershipsByCompanyAsync(
+                    company.Id,
+                    true,
+                    It.IsAny<CancellationToken>()
+                )
+            )
             .ReturnsAsync(new[] { membership });
 
         var handler = f.BuildHandler();
-        var result = await handler.Handle(new UpsertCompanyUserMembershipCommand(tenant.Id, Username, "User"), CancellationToken.None);
+        var result = await handler.Handle(
+            new UpsertCompanyUserMembershipCommand(tenant.Id, Username, "User"),
+            CancellationToken.None
+        );
 
         result.IsSuccess.Should().BeFalse();
         result.Code.Should().Be(ApiResponseCodes.Common.ValidationError);
         result.Error.Should().Be("La empresa debe conservar al menos un administrador activo.");
         membership.Role.Should().Be(SecurityRoles.Admin);
         f.AccessRepo.Verify(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
-        f.Mediator.Verify(m => m.Send(It.IsAny<GetCompanyUserPreferencesQuery>(), It.IsAny<CancellationToken>()), Times.Never);
+        f.Mediator.Verify(
+            m => m.Send(It.IsAny<GetCompanyUserPreferencesQuery>(), It.IsAny<CancellationToken>()),
+            Times.Never
+        );
     }
 
     [Fact]
@@ -313,17 +557,49 @@ public sealed class UpsertCompanyUserMembershipHandlerTests
         var user = NewUser();
         var tenant = NewTenant();
         var company = NewCompany(tenant.Id);
-        var membership = CompanyUserMembership.Create(company.Id, user.Id, SecurityRoles.Admin, null, CreatedBy);
-        var otherAdmin = CompanyUserMembership.Create(company.Id, Guid.NewGuid(), SecurityRoles.Admin, null, CreatedBy);
+        var membership = CompanyUserMembership.Create(
+            company.Id,
+            user.Id,
+            SecurityRoles.Admin,
+            null,
+            CreatedBy
+        );
+        var otherAdmin = CompanyUserMembership.Create(
+            company.Id,
+            Guid.NewGuid(),
+            SecurityRoles.Admin,
+            null,
+            CreatedBy
+        );
         var f = BuildBaseFixture(user, tenant, company, existingMembership: membership);
-        f.AccessRepo.Setup(r => r.GetCompanyUserMembershipsByCompanyAsync(company.Id, true, It.IsAny<CancellationToken>()))
+        f.AccessRepo.Setup(r =>
+                r.GetCompanyUserMembershipsByCompanyAsync(
+                    company.Id,
+                    true,
+                    It.IsAny<CancellationToken>()
+                )
+            )
             .ReturnsAsync(new[] { membership, otherAdmin });
-        f.Mediator.Setup(m => m.Send(It.IsAny<GetCompanyUserPreferencesQuery>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Result<CompanyUserPreferencesDto?>.Success(
-                Preferences(membership.Id, company.Id, tenant.Id, CompanyUserLoginMode.AskBranch, null)));
+        f.Mediator.Setup(m =>
+                m.Send(It.IsAny<GetCompanyUserPreferencesQuery>(), It.IsAny<CancellationToken>())
+            )
+            .ReturnsAsync(
+                Result<CompanyUserPreferencesDto?>.Success(
+                    Preferences(
+                        membership.Id,
+                        company.Id,
+                        tenant.Id,
+                        CompanyUserLoginMode.AskBranch,
+                        null
+                    )
+                )
+            );
 
         var handler = f.BuildHandler();
-        var result = await handler.Handle(new UpsertCompanyUserMembershipCommand(tenant.Id, Username, "User"), CancellationToken.None);
+        var result = await handler.Handle(
+            new UpsertCompanyUserMembershipCommand(tenant.Id, Username, "User"),
+            CancellationToken.None
+        );
 
         result.IsSuccess.Should().BeTrue();
         membership.Role.Should().Be("User");

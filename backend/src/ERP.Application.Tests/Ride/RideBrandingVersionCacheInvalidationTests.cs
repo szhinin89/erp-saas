@@ -44,28 +44,74 @@ public sealed class RideBrandingVersionCacheInvalidationTests
     [Fact]
     public async Task Cache_strategy_treats_an_updated_branding_version_as_a_miss()
     {
-        var oldBranding = RideBranding.Create("logo.png", "#112233", "#445566", "Gracias por su compra");
-        var newBranding = RideBranding.Create("logo.png", "#000000", "#445566", "Gracias por su compra");
+        var oldBranding = RideBranding.Create(
+            "logo.png",
+            "#112233",
+            "#445566",
+            "Gracias por su compra"
+        );
+        var newBranding = RideBranding.Create(
+            "logo.png",
+            "#000000",
+            "#445566",
+            "Gracias por su compra"
+        );
         var oldVersion = RideBrandingVersion.Compute(oldBranding);
         var newVersion = RideBrandingVersion.Compute(newBranding);
         oldVersion.Should().NotBe(newVersion);
 
         var generatedWithOldBranding = RidePdfDocument.Create(
-            TenantId, Guid.NewGuid(), ElectronicDocumentId, RideDocumentType.Invoice, Hash,
-            "Invoice", "1.0.0", oldVersion, "1.0.0", "1.0.0", UserId);
+            TenantId,
+            Guid.NewGuid(),
+            ElectronicDocumentId,
+            RideDocumentType.Invoice,
+            Hash,
+            "Invoice",
+            "1.0.0",
+            oldVersion,
+            "1.0.0",
+            "1.0.0",
+            UserId
+        );
         generatedWithOldBranding.MarkGenerated("ride/path.pdf", DateTime.UtcNow, UserId);
 
         var repository = new Mock<IRidePdfDocumentRepository>();
         repository
-            .Setup(r => r.GetByFingerprintAsync(
-                TenantId, ElectronicDocumentId, Hash, "1.0.0", oldVersion, "1.0.0", "1.0.0", It.IsAny<CancellationToken>()))
+            .Setup(r =>
+                r.GetByFingerprintAsync(
+                    TenantId,
+                    ElectronicDocumentId,
+                    Hash,
+                    "1.0.0",
+                    oldVersion,
+                    "1.0.0",
+                    "1.0.0",
+                    It.IsAny<CancellationToken>()
+                )
+            )
             .ReturnsAsync(generatedWithOldBranding);
         var strategy = new RideCacheStrategy(repository.Object);
 
         var hitWithOldVersion = await strategy.TryGetCachedAsync(
-            TenantId, ElectronicDocumentId, Hash, "Invoice", "1.0.0", oldVersion, "1.0.0", "1.0.0");
+            TenantId,
+            ElectronicDocumentId,
+            Hash,
+            "Invoice",
+            "1.0.0",
+            oldVersion,
+            "1.0.0",
+            "1.0.0"
+        );
         var missWithNewVersion = await strategy.TryGetCachedAsync(
-            TenantId, ElectronicDocumentId, Hash, "Invoice", "1.0.0", newVersion, "1.0.0", "1.0.0");
+            TenantId,
+            ElectronicDocumentId,
+            Hash,
+            "Invoice",
+            "1.0.0",
+            newVersion,
+            "1.0.0",
+            "1.0.0"
+        );
 
         hitWithOldVersion.Value.Should().NotBeNull();
         missWithNewVersion.Value.Should().BeNull();

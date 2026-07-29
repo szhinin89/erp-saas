@@ -28,9 +28,11 @@ namespace ERP.Domain.Modules.Accounting.ValueObjects;
 public sealed record JournalEntryClosureReadiness(
     bool HasDraftOrNonFinalEntries,
     bool HasEntriesWithoutEntryNumber,
-    bool HasIncompleteReversals)
+    bool HasIncompleteReversals
+)
 {
-    public bool IsReady => !HasDraftOrNonFinalEntries && !HasEntriesWithoutEntryNumber && !HasIncompleteReversals;
+    public bool IsReady =>
+        !HasDraftOrNonFinalEntries && !HasEntriesWithoutEntryNumber && !HasIncompleteReversals;
 
     /// <summary>Motivos de bloqueo en español, listos para componer el mensaje de la excepción de dominio.</summary>
     public IEnumerable<string> BuildBlockingReasons()

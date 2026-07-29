@@ -14,45 +14,102 @@ public static class MessageCatalog
     private static readonly Dictionary<string, CatalogMessage> Entries = new()
     {
         [ApiResponseCodes.Common.Ok] = new(
-            ApiSeverity.Success, "Operación realizada correctamente.", "Request completed successfully."),
+            ApiSeverity.Success,
+            "Operación realizada correctamente.",
+            "Request completed successfully."
+        ),
         [ApiResponseCodes.Common.Created] = new(
-            ApiSeverity.Success, "Recurso creado correctamente.", "Resource created successfully."),
+            ApiSeverity.Success,
+            "Recurso creado correctamente.",
+            "Resource created successfully."
+        ),
         [ApiResponseCodes.Common.ValidationError] = new(
-            ApiSeverity.Error, "Datos inválidos. Revisa el formulario.", "Validation failed."),
+            ApiSeverity.Error,
+            "Datos inválidos. Revisa el formulario.",
+            "Validation failed."
+        ),
         [ApiResponseCodes.Common.NotFound] = new(
-            ApiSeverity.Error, "El recurso solicitado no existe.", "Entity not found."),
+            ApiSeverity.Error,
+            "El recurso solicitado no existe.",
+            "Entity not found."
+        ),
         [ApiResponseCodes.Common.Conflict] = new(
-            ApiSeverity.Error, "La operación no se puede completar por un conflicto con el estado actual.", "Conflict with current state."),
+            ApiSeverity.Error,
+            "La operación no se puede completar por un conflicto con el estado actual.",
+            "Conflict with current state."
+        ),
         [ApiResponseCodes.Common.UniqueViolation] = new(
-            ApiSeverity.Error, "Ya existe un registro con esos datos.", "Unique constraint violation."),
+            ApiSeverity.Error,
+            "Ya existe un registro con esos datos.",
+            "Unique constraint violation."
+        ),
         [ApiResponseCodes.Common.Forbidden] = new(
-            ApiSeverity.Error, "No tiene permisos para realizar esta acción.", "Forbidden."),
+            ApiSeverity.Error,
+            "No tiene permisos para realizar esta acción.",
+            "Forbidden."
+        ),
         [ApiResponseCodes.Common.Unauthorized] = new(
-            ApiSeverity.Error, "No autorizado.", "Unauthorized."),
+            ApiSeverity.Error,
+            "No autorizado.",
+            "Unauthorized."
+        ),
         [ApiResponseCodes.Common.DomainRuleViolation] = new(
-            ApiSeverity.Error, "No se puede completar la operación.", "Domain rule violation."),
+            ApiSeverity.Error,
+            "No se puede completar la operación.",
+            "Domain rule violation."
+        ),
         [ApiResponseCodes.Common.ConcurrencyConflict] = new(
-            ApiSeverity.Error, "El recurso fue modificado por otro proceso. Reintente la operación.", "Optimistic concurrency violation."),
+            ApiSeverity.Error,
+            "El recurso fue modificado por otro proceso. Reintente la operación.",
+            "Optimistic concurrency violation."
+        ),
         [ApiResponseCodes.Common.DatabaseUnavailable] = new(
-            ApiSeverity.Error, "Error temporal de base de datos. Reintente en unos segundos.", "Database update exception."),
+            ApiSeverity.Error,
+            "Error temporal de base de datos. Reintente en unos segundos.",
+            "Database update exception."
+        ),
         [ApiResponseCodes.Common.SriCommunicationError] = new(
-            ApiSeverity.Error, "Error de comunicación con el SRI. La operación quedó pendiente para reintentar.", "SRI communication exception."),
+            ApiSeverity.Error,
+            "Error de comunicación con el SRI. La operación quedó pendiente para reintentar.",
+            "SRI communication exception."
+        ),
         [ApiResponseCodes.Common.CompanyScopeForbidden] = new(
-            ApiSeverity.Error, "Acceso denegado por contexto de empresa.", "Company scope exception."),
+            ApiSeverity.Error,
+            "Acceso denegado por contexto de empresa.",
+            "Company scope exception."
+        ),
         [ApiResponseCodes.Common.BranchScopeForbidden] = new(
-            ApiSeverity.Error, "Acceso denegado por contexto de sucursal.", "Branch scope exception."),
+            ApiSeverity.Error,
+            "Acceso denegado por contexto de sucursal.",
+            "Branch scope exception."
+        ),
         [ApiResponseCodes.Common.CompanyRucAlreadyExists] = new(
-            ApiSeverity.Error, "El RUC ya está registrado en el sistema.", "Unique RUC violation."),
+            ApiSeverity.Error,
+            "El RUC ya está registrado en el sistema.",
+            "Unique RUC violation."
+        ),
         [ApiResponseCodes.Common.BadRequest] = new(
-            ApiSeverity.Error, "Solicitud inválida.", "Bad request."),
+            ApiSeverity.Error,
+            "Solicitud inválida.",
+            "Bad request."
+        ),
         [ApiResponseCodes.Common.InternalError] = new(
-            ApiSeverity.Error, "Error interno del servidor.", "Unhandled exception."),
+            ApiSeverity.Error,
+            "Error interno del servidor.",
+            "Unhandled exception."
+        ),
         [ApiResponseCodes.Common.RateLimited] = new(
-            ApiSeverity.Error, "Demasiados intentos. Intente más tarde.", "Rate limit exceeded."),
+            ApiSeverity.Error,
+            "Demasiados intentos. Intente más tarde.",
+            "Rate limit exceeded."
+        ),
     };
 
-    private static readonly CatalogMessage Fallback =
-        new(ApiSeverity.Error, "Ocurrió un error inesperado.", "Unmapped response code.");
+    private static readonly CatalogMessage Fallback = new(
+        ApiSeverity.Error,
+        "Ocurrió un error inesperado.",
+        "Unmapped response code."
+    );
 
     /// <summary>Resuelve la severidad y mensajes para un <c>code</c>. Devuelve un fallback genérico si no está catalogado.</summary>
     public static CatalogMessage Resolve(string code) => Entries.GetValueOrDefault(code, Fallback);

@@ -1,4 +1,4 @@
-﻿namespace ERP.Domain.Common;
+namespace ERP.Domain.Common;
 
 /// <summary>
 /// Convenience base class for new domain events.

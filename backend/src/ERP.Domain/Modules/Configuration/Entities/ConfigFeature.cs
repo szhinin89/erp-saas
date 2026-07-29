@@ -17,7 +17,14 @@ public sealed class ConfigFeature : AuditableEntity
 
     private ConfigFeature() { }
 
-    public static ConfigFeature Create(Guid tenantId, string feature, string key, string value, string dataType, Guid userId)
+    public static ConfigFeature Create(
+        Guid tenantId,
+        string feature,
+        string key,
+        string value,
+        string dataType,
+        Guid userId
+    )
     {
         var row = new ConfigFeature
         {
@@ -45,10 +52,8 @@ public sealed class ConfigFeature : AuditableEntity
     private static string NormalizeKey(string key) =>
         (key ?? string.Empty).Trim().ToLowerInvariant();
 
-    private static string NormalizeValue(string value) =>
-        (value ?? string.Empty).Trim();
+    private static string NormalizeValue(string value) => (value ?? string.Empty).Trim();
 
     private static string NormalizeDataType(string dataType) =>
         (dataType ?? "string").Trim().ToLowerInvariant();
 }
-

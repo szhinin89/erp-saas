@@ -10,8 +10,9 @@ internal static class WarehouseTestHelpers
         string name,
         string code,
         Guid createdBy,
-        Guid companyId)
-        => Warehouse.Create(
+        Guid companyId
+    ) =>
+        Warehouse.Create(
             tenantId,
             branchId,
             name,
@@ -26,5 +27,6 @@ internal static class WarehouseTestHelpers
             capacity: null,
             dailyDispatchGoal: null,
             createdBy: createdBy,
-            companyId: companyId);
+            companyId: companyId
+        );
 }

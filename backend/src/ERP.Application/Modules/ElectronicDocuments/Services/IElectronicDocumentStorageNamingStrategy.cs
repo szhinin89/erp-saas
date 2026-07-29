@@ -11,5 +11,9 @@ namespace ERP.Application.Modules.ElectronicDocuments.Services;
 public interface IElectronicDocumentStorageNamingStrategy
 {
     string BuildRelativePath(
-        Guid tenantId, ElectronicDocumentType documentType, Guid electronicDocumentId, ElectronicDocumentXmlVariant variant);
+        Guid tenantId,
+        ElectronicDocumentType documentType,
+        Guid electronicDocumentId,
+        ElectronicDocumentXmlVariant variant
+    );
 }

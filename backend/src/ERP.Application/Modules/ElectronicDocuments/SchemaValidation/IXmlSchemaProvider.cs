@@ -1,5 +1,5 @@
-using ERP.Domain.Modules.ElectronicDocuments.Enums;
 using System.Xml.Schema;
+using ERP.Domain.Modules.ElectronicDocuments.Enums;
 
 namespace ERP.Application.Modules.ElectronicDocuments.SchemaValidation;
 
@@ -18,5 +18,8 @@ namespace ERP.Application.Modules.ElectronicDocuments.SchemaValidation;
 public interface IXmlSchemaProvider
 {
     Task<XmlSchemaSet?> GetSchemaSetAsync(
-        ElectronicDocumentType documentType, string schemaVersion, CancellationToken ct = default);
+        ElectronicDocumentType documentType,
+        string schemaVersion,
+        CancellationToken ct = default
+    );
 }

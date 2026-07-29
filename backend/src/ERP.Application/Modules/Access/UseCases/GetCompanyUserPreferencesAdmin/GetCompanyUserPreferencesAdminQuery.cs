@@ -18,6 +18,6 @@ namespace ERP.Application.Access.UseCases.GetCompanyUserPreferencesAdmin;
 /// marker fuerza CompanyScopeBehavior → ICompanyAccessGuard.RequireCurrentCompanyAsync antes del
 /// handler, cerrando esa vía — mismo mecanismo que UpsertCompanyUserMembershipAdminCommand.
 /// </summary>
-public sealed record GetCompanyUserPreferencesAdminQuery(
-    Guid CompanyUserId
-) : IRequest<Result<CompanyUserPreferencesAdminDto?>>, IRequiresCompanyContext;
+public sealed record GetCompanyUserPreferencesAdminQuery(Guid CompanyUserId)
+    : IRequest<Result<CompanyUserPreferencesAdminDto?>>,
+        IRequiresCompanyContext;

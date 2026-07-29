@@ -5,7 +5,8 @@ using MediatR;
 
 namespace ERP.Application.Modules.Companies.UseCases.GetCompanyLogoContent;
 
-public sealed class GetCompanyLogoContentHandler : IRequestHandler<GetCompanyLogoContentQuery, Result<CompanyLogoContent>>
+public sealed class GetCompanyLogoContentHandler
+    : IRequestHandler<GetCompanyLogoContentQuery, Result<CompanyLogoContent>>
 {
     private const string LogoRole = "logo";
 
@@ -18,14 +19,23 @@ public sealed class GetCompanyLogoContentHandler : IRequestHandler<GetCompanyLog
         _media = media;
     }
 
-    public async Task<Result<CompanyLogoContent>> Handle(GetCompanyLogoContentQuery request, CancellationToken cancellationToken)
+    public async Task<Result<CompanyLogoContent>> Handle(
+        GetCompanyLogoContentQuery request,
+        CancellationToken cancellationToken
+    )
     {
         var access = await _accessGuard.RequireCurrentCompanyAsync(cancellationToken);
         if (!access.IsSuccess)
             return Result<CompanyLogoContent>.Failure(access.Error!);
 
         var logo = await _media.GetActivePrimaryAsync(
-            access.Value!.TenantId, access.Value!.CompanyId, MediaOwnerType.Company, access.Value!.CompanyId, LogoRole, cancellationToken);
+            access.Value!.TenantId,
+            access.Value!.CompanyId,
+            MediaOwnerType.Company,
+            access.Value!.CompanyId,
+            LogoRole,
+            cancellationToken
+        );
 
         if (logo is null)
             return Result<CompanyLogoContent>.NotFound("La empresa no tiene un logo configurado.");
@@ -34,6 +44,8 @@ public sealed class GetCompanyLogoContentHandler : IRequestHandler<GetCompanyLog
         if (stream is null)
             return Result<CompanyLogoContent>.NotFound("El archivo del logo no está disponible.");
 
-        return Result<CompanyLogoContent>.Success(new CompanyLogoContent(stream, logo.ContentType, logo.FileName));
+        return Result<CompanyLogoContent>.Success(
+            new CompanyLogoContent(stream, logo.ContentType, logo.FileName)
+        );
     }
 }

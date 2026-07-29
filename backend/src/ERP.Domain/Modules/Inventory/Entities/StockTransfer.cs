@@ -40,7 +40,8 @@ public sealed class StockTransfer : AuditableEntity, ITenantScopedEntity, ICompa
         string? reason,
         string? notes,
         Guid createdBy,
-        Guid companyId = default)
+        Guid companyId = default
+    )
     {
         var t = new StockTransfer
         {
@@ -70,7 +71,9 @@ public sealed class StockTransfer : AuditableEntity, ITenantScopedEntity, ICompa
     public void Confirm(Guid userId)
     {
         if (Status != "Draft")
-            throw new InvalidOperationException($"Only Draft transfers can be confirmed (current: {Status}).");
+            throw new InvalidOperationException(
+                $"Only Draft transfers can be confirmed (current: {Status})."
+            );
         Status = "Confirmed";
         ConfirmedAt = DateTime.UtcNow;
         ConfirmedBy = userId;
@@ -80,7 +83,9 @@ public sealed class StockTransfer : AuditableEntity, ITenantScopedEntity, ICompa
     public void Cancel(Guid userId)
     {
         if (Status != "Draft")
-            throw new InvalidOperationException($"Only Draft transfers can be cancelled (current: {Status}).");
+            throw new InvalidOperationException(
+                $"Only Draft transfers can be cancelled (current: {Status})."
+            );
         Status = "Cancelled";
         SetUpdated(userId);
     }

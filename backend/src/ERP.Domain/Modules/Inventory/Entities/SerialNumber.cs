@@ -36,7 +36,8 @@ public sealed class SerialNumber : AuditableEntity, ITenantScopedEntity, ICompan
         Guid? variantId = null,
         Guid? lotId = null,
         string? notes = null,
-        Guid? receiptLineId = null)
+        Guid? receiptLineId = null
+    )
     {
         if (string.IsNullOrWhiteSpace(serial))
             throw new ArgumentException("El número de serie es obligatorio.", nameof(serial));
@@ -62,7 +63,9 @@ public sealed class SerialNumber : AuditableEntity, ITenantScopedEntity, ICompan
     public void Sell(string documentRef, Guid updatedBy)
     {
         if (Status != SerialStatus.InStock)
-            throw new InvalidOperationException($"El serial '{Serial}' no está disponible (estado: {Status}).");
+            throw new InvalidOperationException(
+                $"El serial '{Serial}' no está disponible (estado: {Status})."
+            );
 
         Status = SerialStatus.Sold;
         SoldAt = DateTime.UtcNow;
@@ -73,7 +76,9 @@ public sealed class SerialNumber : AuditableEntity, ITenantScopedEntity, ICompan
     public void Return(Guid updatedBy)
     {
         if (Status != SerialStatus.Sold)
-            throw new InvalidOperationException($"El serial '{Serial}' no puede devolverse (estado: {Status}).");
+            throw new InvalidOperationException(
+                $"El serial '{Serial}' no puede devolverse (estado: {Status})."
+            );
 
         Status = SerialStatus.Returned;
         SoldAt = null;
@@ -83,7 +88,9 @@ public sealed class SerialNumber : AuditableEntity, ITenantScopedEntity, ICompan
     public void ReInstock(Guid updatedBy)
     {
         if (Status != SerialStatus.Returned)
-            throw new InvalidOperationException($"Solo los seriales devueltos pueden re-ingresarse (estado: {Status}).");
+            throw new InvalidOperationException(
+                $"Solo los seriales devueltos pueden re-ingresarse (estado: {Status})."
+            );
 
         Status = SerialStatus.InStock;
         SetUpdated(updatedBy);
@@ -92,7 +99,9 @@ public sealed class SerialNumber : AuditableEntity, ITenantScopedEntity, ICompan
     public void MarkDefective(Guid updatedBy)
     {
         if (Status is not (SerialStatus.InStock or SerialStatus.Returned))
-            throw new InvalidOperationException($"No se puede marcar como defectuoso desde el estado {Status}.");
+            throw new InvalidOperationException(
+                $"No se puede marcar como defectuoso desde el estado {Status}."
+            );
 
         Status = SerialStatus.Defective;
         SetUpdated(updatedBy);
@@ -101,7 +110,9 @@ public sealed class SerialNumber : AuditableEntity, ITenantScopedEntity, ICompan
     public void MarkLost(Guid updatedBy)
     {
         if (Status != SerialStatus.InStock)
-            throw new InvalidOperationException($"Solo los seriales en stock pueden marcarse como perdidos (estado: {Status}).");
+            throw new InvalidOperationException(
+                $"Solo los seriales en stock pueden marcarse como perdidos (estado: {Status})."
+            );
 
         Status = SerialStatus.Lost;
         SetUpdated(updatedBy);
@@ -110,7 +121,9 @@ public sealed class SerialNumber : AuditableEntity, ITenantScopedEntity, ICompan
     public void Dispose(Guid updatedBy)
     {
         if (Status != SerialStatus.Defective)
-            throw new InvalidOperationException($"Solo los seriales defectuosos pueden darse de baja (estado: {Status}).");
+            throw new InvalidOperationException(
+                $"Solo los seriales defectuosos pueden darse de baja (estado: {Status})."
+            );
 
         Status = SerialStatus.Disposed;
         SetUpdated(updatedBy);

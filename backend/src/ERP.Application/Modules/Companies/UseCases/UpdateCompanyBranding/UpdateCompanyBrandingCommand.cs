@@ -4,4 +4,5 @@ using MediatR;
 
 namespace ERP.Application.Modules.Companies.UseCases.UpdateCompanyBranding;
 
-public sealed record UpdateCompanyBrandingCommand(string? BrandingConfiguration) : IRequest<Result<CompanyProfileDto>>;
+public sealed record UpdateCompanyBrandingCommand(string? BrandingConfiguration)
+    : IRequest<Result<CompanyProfileDto>>;

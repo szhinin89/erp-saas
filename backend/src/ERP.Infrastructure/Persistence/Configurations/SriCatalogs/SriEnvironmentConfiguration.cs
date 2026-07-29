@@ -17,8 +17,18 @@ public class SriEnvironmentConfiguration : IEntityTypeConfiguration<SriEnvironme
         // Códigos oficiales SRI (Ficha Técnica, Tabla 4 "Ambiente"): 1=Pruebas, 2=Producción —
         // verificado contra la ficha técnica publicada por el SRI. No invertir.
         builder.HasData(
-            new SriEnvironment { Code = 1, Name = "Pruebas", Abbrev = "TEST" },
-            new SriEnvironment { Code = 2, Name = "Producción", Abbrev = "PROD" }
+            new SriEnvironment
+            {
+                Code = 1,
+                Name = "Pruebas",
+                Abbrev = "TEST",
+            },
+            new SriEnvironment
+            {
+                Code = 2,
+                Name = "Producción",
+                Abbrev = "PROD",
+            }
         );
     }
 }

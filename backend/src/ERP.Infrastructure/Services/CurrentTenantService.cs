@@ -16,8 +16,7 @@ public class CurrentTenantService : ICurrentTenant
     {
         get
         {
-            var claim = _httpContextAccessor.HttpContext?
-                .User.FindFirst("tenant_id")?.Value;
+            var claim = _httpContextAccessor.HttpContext?.User.FindFirst("tenant_id")?.Value;
 
             if (Guid.TryParse(claim, out var id))
                 return id;
@@ -30,8 +29,7 @@ public class CurrentTenantService : ICurrentTenant
     {
         get
         {
-            var claim = _httpContextAccessor.HttpContext?
-                .User.FindFirst("tenant_slug")?.Value;
+            var claim = _httpContextAccessor.HttpContext?.User.FindFirst("tenant_slug")?.Value;
             return string.IsNullOrWhiteSpace(claim) ? null : claim;
         }
     }

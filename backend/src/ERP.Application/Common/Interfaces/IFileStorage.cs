@@ -1,4 +1,4 @@
-﻿namespace ERP.Application.Common.Interfaces;
+namespace ERP.Application.Common.Interfaces;
 
 /// <summary>
 /// Almacenamiento de archivos binarios (local o nube).
@@ -10,7 +10,11 @@ public interface IFileStorage
     /// <summary>
     /// Persiste el contenido y retorna la ruta relativa del archivo guardado.
     /// </summary>
-    Task<string> SaveAsync(string relativePath, Stream content, CancellationToken cancellationToken = default);
+    Task<string> SaveAsync(
+        string relativePath,
+        Stream content,
+        CancellationToken cancellationToken = default
+    );
 
     /// <summary>Abre el archivo almacenado. Retorna null si no existe.</summary>
     Task<Stream?> GetAsync(string storedPath, CancellationToken cancellationToken = default);

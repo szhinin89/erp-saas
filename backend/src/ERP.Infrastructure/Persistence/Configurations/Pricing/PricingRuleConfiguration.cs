@@ -17,10 +17,16 @@ public sealed class PricingRuleConfiguration : IEntityTypeConfiguration<PricingR
 
         builder.Property(x => x.PriceListId).HasColumnName("price_list_id").IsRequired();
         builder.Property(x => x.ItemId).HasColumnName("item_id").IsRequired();
-        builder.Property(x => x.RuleType).HasColumnName("rule_type")
-            .HasConversion<int>().IsRequired();
-        builder.Property(x => x.RuleValue).HasColumnName("rule_value")
-            .HasColumnType("numeric(18,6)").IsRequired();
+        builder
+            .Property(x => x.RuleType)
+            .HasColumnName("rule_type")
+            .HasConversion<int>()
+            .IsRequired();
+        builder
+            .Property(x => x.RuleValue)
+            .HasColumnName("rule_value")
+            .HasColumnType("numeric(18,6)")
+            .IsRequired();
         builder.Property(x => x.IsActive).HasColumnName("is_active").IsRequired();
 
         builder.Property(x => x.CreatedAt).HasColumnName("created_at");
@@ -28,15 +34,16 @@ public sealed class PricingRuleConfiguration : IEntityTypeConfiguration<PricingR
         builder.Property(x => x.CreatedBy).HasColumnName("created_by");
         builder.Property(x => x.UpdatedBy).HasColumnName("updated_by");
 
-        builder.HasOne<PriceList>()
+        builder
+            .HasOne<PriceList>()
             .WithMany()
             .HasForeignKey(x => x.PriceListId)
             .OnDelete(DeleteBehavior.Restrict);
 
-        builder.HasIndex(x => x.ItemId)
-            .HasDatabaseName("ix_pricing_rules_item");
+        builder.HasIndex(x => x.ItemId).HasDatabaseName("ix_pricing_rules_item");
 
-        builder.HasIndex(x => new { x.PriceListId, x.ItemId })
+        builder
+            .HasIndex(x => new { x.PriceListId, x.ItemId })
             .IsUnique()
             .HasDatabaseName("uq_pricing_rules_list_item");
     }

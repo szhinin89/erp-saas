@@ -7,7 +7,8 @@ using MediatR;
 
 namespace ERP.Application.Modules.Companies.UseCases.UploadCompanyLogoAlt;
 
-public sealed class UploadCompanyLogoAltHandler : IRequestHandler<UploadCompanyLogoAltCommand, Result<CompanyProfileDto>>
+public sealed class UploadCompanyLogoAltHandler
+    : IRequestHandler<UploadCompanyLogoAltCommand, Result<CompanyProfileDto>>
 {
     private const string LogoRole = "logo";
     private const string AlternateLogoRole = "logo-alt";
@@ -21,7 +22,8 @@ public sealed class UploadCompanyLogoAltHandler : IRequestHandler<UploadCompanyL
         ICompanyAccessGuard accessGuard,
         ICompanyRepository companies,
         IMediaService media,
-        ICurrentUser currentUser)
+        ICurrentUser currentUser
+    )
     {
         _accessGuard = accessGuard;
         _companies = companies;
@@ -29,7 +31,10 @@ public sealed class UploadCompanyLogoAltHandler : IRequestHandler<UploadCompanyL
         _currentUser = currentUser;
     }
 
-    public async Task<Result<CompanyProfileDto>> Handle(UploadCompanyLogoAltCommand request, CancellationToken cancellationToken)
+    public async Task<Result<CompanyProfileDto>> Handle(
+        UploadCompanyLogoAltCommand request,
+        CancellationToken cancellationToken
+    )
     {
         var access = await _accessGuard.RequireCurrentCompanyAsync(cancellationToken);
         if (!access.IsSuccess)
@@ -49,15 +54,25 @@ public sealed class UploadCompanyLogoAltHandler : IRequestHandler<UploadCompanyL
                 MediaType: MediaType.Image,
                 Visibility: MediaVisibility.TenantOnly,
                 Content: request.File,
-                UserId: _currentUser.UserId),
-            cancellationToken);
+                UserId: _currentUser.UserId
+            ),
+            cancellationToken
+        );
 
         if (!uploadResult.IsSuccess)
             return Result<CompanyProfileDto>.Failure(uploadResult.Error!, uploadResult.Code);
 
         var logo = await _media.GetActivePrimaryAsync(
-            access.Value!.TenantId, access.Value!.CompanyId, MediaOwnerType.Company, access.Value!.CompanyId, LogoRole, cancellationToken);
+            access.Value!.TenantId,
+            access.Value!.CompanyId,
+            MediaOwnerType.Company,
+            access.Value!.CompanyId,
+            LogoRole,
+            cancellationToken
+        );
 
-        return Result<CompanyProfileDto>.Success(CompanyProfileDto.FromEntity(company, logo, uploadResult.Value!));
+        return Result<CompanyProfileDto>.Success(
+            CompanyProfileDto.FromEntity(company, logo, uploadResult.Value!)
+        );
     }
 }

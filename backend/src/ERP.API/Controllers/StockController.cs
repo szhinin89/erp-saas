@@ -31,10 +31,15 @@ public sealed class StockController : ControllerBase
     /// <summary>Consulta stock actual por item y/o bodega.</summary>
     [HttpGet]
     [Authorize(Policy = $"perm:{InventoryPermissions.StockView}")]
-    [ProducesResponseType(typeof(Contracts.ApiResponse<IReadOnlyList<CurrentStockDto>>), StatusCodes.Status200OK)]
+    [ProducesResponseType(
+        typeof(Contracts.ApiResponse<IReadOnlyList<CurrentStockDto>>),
+        StatusCodes.Status200OK
+    )]
     public async Task<IActionResult> GetStock(
-        [FromQuery] Guid? itemId, [FromQuery] Guid? warehouseId,
-        CancellationToken ct = default)
+        [FromQuery] Guid? itemId,
+        [FromQuery] Guid? warehouseId,
+        CancellationToken ct = default
+    )
     {
         var result = await _mediator.Send(new GetStockQuery(itemId, warehouseId), ct);
         return this.ToOkOrBadRequest(result, "OK", () => Array.Empty<CurrentStockDto>());
@@ -43,21 +48,32 @@ public sealed class StockController : ControllerBase
     /// <summary>Consulta movimientos de stock por item y bodega.</summary>
     [HttpGet("movements")]
     [Authorize(Policy = $"perm:{InventoryPermissions.StockView}")]
-    [ProducesResponseType(typeof(Contracts.ApiResponse<IReadOnlyList<StockMovementDto>>), StatusCodes.Status200OK)]
+    [ProducesResponseType(
+        typeof(Contracts.ApiResponse<IReadOnlyList<StockMovementDto>>),
+        StatusCodes.Status200OK
+    )]
     public async Task<IActionResult> GetMovements(
-        [FromQuery] Guid itemId, [FromQuery] Guid warehouseId,
-        [FromQuery] DateTime? from, [FromQuery] DateTime? to,
-        CancellationToken ct = default)
+        [FromQuery] Guid itemId,
+        [FromQuery] Guid warehouseId,
+        [FromQuery] DateTime? from,
+        [FromQuery] DateTime? to,
+        CancellationToken ct = default
+    )
     {
         var result = await _mediator.Send(
-            new GetStockMovementsQuery(itemId, warehouseId, from, to), ct);
+            new GetStockMovementsQuery(itemId, warehouseId, from, to),
+            ct
+        );
         return this.ToOkOrBadRequest(result, "OK", () => Array.Empty<StockMovementDto>());
     }
 
     /// <summary>Stock agregado de un item a través de todas las bodegas.</summary>
     [HttpGet("aggregated/{itemId:guid}")]
     [Authorize(Policy = $"perm:{InventoryPermissions.StockView}")]
-    [ProducesResponseType(typeof(Contracts.ApiResponse<AggregatedStockDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(
+        typeof(Contracts.ApiResponse<AggregatedStockDto>),
+        StatusCodes.Status200OK
+    )]
     public async Task<IActionResult> GetAggregated(Guid itemId, CancellationToken ct = default)
     {
         var result = await _mediator.Send(new GetAggregatedStockQuery(itemId), ct);
@@ -67,19 +83,34 @@ public sealed class StockController : ControllerBase
     /// <summary>Disponibilidad de un item por bodega (para selectores de bodega en documentos de venta).</summary>
     [HttpGet("items/{itemId:guid}/warehouse-availability")]
     [Authorize(Policy = $"perm:{InventoryPermissions.StockView}")]
-    [ProducesResponseType(typeof(Contracts.ApiResponse<IReadOnlyList<ItemWarehouseAvailabilityDto>>), StatusCodes.Status200OK)]
-    public async Task<IActionResult> GetWarehouseAvailability(Guid itemId, CancellationToken ct = default)
+    [ProducesResponseType(
+        typeof(Contracts.ApiResponse<IReadOnlyList<ItemWarehouseAvailabilityDto>>),
+        StatusCodes.Status200OK
+    )]
+    public async Task<IActionResult> GetWarehouseAvailability(
+        Guid itemId,
+        CancellationToken ct = default
+    )
     {
         var result = await _mediator.Send(new GetItemWarehouseAvailabilityQuery(itemId), ct);
-        return this.ToOkOrBadRequest(result, "OK", () => Array.Empty<ItemWarehouseAvailabilityDto>());
+        return this.ToOkOrBadRequest(
+            result,
+            "OK",
+            () => Array.Empty<ItemWarehouseAvailabilityDto>()
+        );
     }
 
     /// <summary>Crea un ajuste de inventario en estado Draft.</summary>
     [HttpPost("adjustments")]
     [Authorize(Policy = $"perm:{InventoryPermissions.StockManage}")]
-    [ProducesResponseType(typeof(Contracts.ApiResponse<StockAdjustmentDto>), StatusCodes.Status201Created)]
+    [ProducesResponseType(
+        typeof(Contracts.ApiResponse<StockAdjustmentDto>),
+        StatusCodes.Status201Created
+    )]
     public async Task<IActionResult> CreateAdjustment(
-        [FromBody] CreateStockAdjustmentCommand command, CancellationToken ct = default)
+        [FromBody] CreateStockAdjustmentCommand command,
+        CancellationToken ct = default
+    )
     {
         var result = await _mediator.Send(command, ct);
         return this.ToCreatedOrBadRequest(result);
@@ -97,9 +128,14 @@ public sealed class StockController : ControllerBase
     /// <summary>Crea una transferencia entre bodegas en estado Draft.</summary>
     [HttpPost("transfers")]
     [Authorize(Policy = $"perm:{InventoryPermissions.StockManage}")]
-    [ProducesResponseType(typeof(Contracts.ApiResponse<StockTransferDto>), StatusCodes.Status201Created)]
+    [ProducesResponseType(
+        typeof(Contracts.ApiResponse<StockTransferDto>),
+        StatusCodes.Status201Created
+    )]
     public async Task<IActionResult> CreateTransfer(
-        [FromBody] CreateStockTransferCommand command, CancellationToken ct = default)
+        [FromBody] CreateStockTransferCommand command,
+        CancellationToken ct = default
+    )
     {
         var result = await _mediator.Send(command, ct);
         return this.ToCreatedOrBadRequest(result);

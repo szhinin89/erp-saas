@@ -3,18 +3,19 @@ using FluentValidation;
 
 namespace ERP.Application.Modules.Company.UseCases.CreateEmissionPoint;
 
-public sealed class CreateEmissionPointCommandValidator : AbstractValidator<CreateEmissionPointCommand>
+public sealed class CreateEmissionPointCommandValidator
+    : AbstractValidator<CreateEmissionPointCommand>
 {
     public CreateEmissionPointCommandValidator()
     {
         RuleFor(x => x.EstablishmentId).NotEmpty();
         RuleFor(x => x.Code)
-            .NotEmpty().WithMessage("El código de punto de emisión es obligatorio.")
-            .Matches(@"^\d{1,3}$").WithMessage("El código debe ser numérico (1-3 dígitos).")
+            .NotEmpty()
+            .WithMessage("El código de punto de emisión es obligatorio.")
+            .Matches(@"^\d{1,3}$")
+            .WithMessage("El código debe ser numérico (1-3 dígitos).")
             .MaximumLength(EmissionPoint.CodeMaxLen);
-        RuleFor(x => x.Name)
-            .MaximumLength(EmissionPoint.NameMaxLen).When(x => x.Name != null);
-        RuleFor(x => x.EmissionType)
-            .IsInEnum().WithMessage("El tipo de emisión es obligatorio.");
+        RuleFor(x => x.Name).MaximumLength(EmissionPoint.NameMaxLen).When(x => x.Name != null);
+        RuleFor(x => x.EmissionType).IsInEnum().WithMessage("El tipo de emisión es obligatorio.");
     }
 }

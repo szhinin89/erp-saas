@@ -8,10 +8,7 @@ public sealed class HttpSessionContext : ISessionContext
     private readonly ICurrentCompany _company;
     private readonly ICurrentUser _user;
 
-    public HttpSessionContext(
-        ICurrentTenant tenant,
-        ICurrentCompany company,
-        ICurrentUser user)
+    public HttpSessionContext(ICurrentTenant tenant, ICurrentCompany company, ICurrentUser user)
     {
         _tenant = tenant;
         _company = company;

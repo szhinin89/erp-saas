@@ -21,16 +21,22 @@ internal static class CompanyUserPreferencesDefaultBranchValidation
         Guid companyUserMembershipId,
         Guid? defaultBranchId,
         CompanyUserLoginMode loginMode,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken
+    )
     {
         if (loginMode == CompanyUserLoginMode.DirectToDefault && defaultBranchId is null)
             return Result<CompanyUserPreferencesDto>.ValidationFailure(
-                "El modo DirectToDefault requiere una sucursal por defecto.");
+                "El modo DirectToDefault requiere una sucursal por defecto."
+            );
 
         if (defaultBranchId is null)
             return null;
 
-        var branch = await branchRepository.GetByIdAsync(tenantId, defaultBranchId.Value, cancellationToken);
+        var branch = await branchRepository.GetByIdAsync(
+            tenantId,
+            defaultBranchId.Value,
+            cancellationToken
+        );
         if (branch is null)
             return Result<CompanyUserPreferencesDto>.NotFound("La sucursal no existe.");
 
@@ -42,14 +48,19 @@ internal static class CompanyUserPreferencesDefaultBranchValidation
         // (sucursal no utilizable), nunca un dato inexistente.
         if (!branch.IsActive)
             return Result<CompanyUserPreferencesDto>.ValidationFailure(
-                "La sucursal por defecto está inactiva y no puede usarse como sucursal por defecto.");
+                "La sucursal por defecto está inactiva y no puede usarse como sucursal por defecto."
+            );
 
         var authorized = await companyUserBranchRepository.ExistsAsync(
-            companyUserMembershipId, defaultBranchId.Value, cancellationToken);
+            companyUserMembershipId,
+            defaultBranchId.Value,
+            cancellationToken
+        );
         if (!authorized)
             return Result<CompanyUserPreferencesDto>.ValidationFailure(
-                "La sucursal por defecto debe estar previamente autorizada para este usuario " +
-                "(CompanyUserBranch). CompanyUserPreferences nunca concede permisos de sucursal.");
+                "La sucursal por defecto debe estar previamente autorizada para este usuario "
+                    + "(CompanyUserBranch). CompanyUserPreferences nunca concede permisos de sucursal."
+            );
 
         return null;
     }

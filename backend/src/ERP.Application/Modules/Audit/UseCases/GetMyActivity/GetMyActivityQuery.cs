@@ -4,4 +4,5 @@ using MediatR;
 
 namespace ERP.Application.Audit.UseCases.GetMyActivity;
 
-public record GetMyActivityQuery(string? Module, int Page, int PageSize) : IRequest<Result<IReadOnlyList<UserActivityDto>>>;
+public record GetMyActivityQuery(string? Module, int Page, int PageSize)
+    : IRequest<Result<IReadOnlyList<UserActivityDto>>>;

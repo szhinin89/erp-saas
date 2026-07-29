@@ -19,21 +19,37 @@ public sealed class GetWarehousesQueryHandler
     }
 
     public async Task<Result<IReadOnlyList<WarehouseListItemDto>>> Handle(
-        GetWarehousesQuery request, CancellationToken cancellationToken)
+        GetWarehousesQuery request,
+        CancellationToken cancellationToken
+    )
     {
         var items = await _repo.GetAsync(
             _currentTenant.TenantId,
             request.ActiveFilter,
             request.Search,
             request.BranchId,
-            cancellationToken);
+            cancellationToken
+        );
 
         var dtos = items.Select(ToDto).ToList();
         return Result<IReadOnlyList<WarehouseListItemDto>>.Success(dtos);
     }
 
-    internal static WarehouseListItemDto ToDto(Warehouse w) => new(
-        w.Id, w.BranchId, w.Name, w.Code, w.StorageType,
-        w.Address, w.Phone, w.Email, w.Manager,
-        w.Latitude, w.Longitude, w.Capacity, w.DailyDispatchGoal, w.IsActive);
+    internal static WarehouseListItemDto ToDto(Warehouse w) =>
+        new(
+            w.Id,
+            w.BranchId,
+            w.Name,
+            w.Code,
+            w.StorageType,
+            w.Address,
+            w.Phone,
+            w.Email,
+            w.Manager,
+            w.Latitude,
+            w.Longitude,
+            w.Capacity,
+            w.DailyDispatchGoal,
+            w.IsActive
+        );
 }

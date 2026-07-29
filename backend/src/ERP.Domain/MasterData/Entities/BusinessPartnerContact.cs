@@ -57,12 +57,16 @@ public sealed class BusinessPartnerContact : AuditableEntity, ITenantScopedEntit
         string? email = null,
         string? notes = null,
         bool isPrimary = false,
-        string? otherDescription = null)
+        string? otherDescription = null
+    )
     {
         if (tenantId == Guid.Empty)
             throw new ArgumentException("tenantId es obligatorio.", nameof(tenantId));
         if (businessPartnerId == Guid.Empty)
-            throw new ArgumentException("BusinessPartnerId es obligatorio.", nameof(businessPartnerId));
+            throw new ArgumentException(
+                "BusinessPartnerId es obligatorio.",
+                nameof(businessPartnerId)
+            );
 
         var contact = new BusinessPartnerContact
         {
@@ -81,14 +85,16 @@ public sealed class BusinessPartnerContact : AuditableEntity, ITenantScopedEntit
             IsActive = true,
         };
         contact.SetCreated(createdBy);
-        contact.RaiseDomainEvent(new BusinessPartnerContactCreatedEvent
-        {
-            TenantId = tenantId,
-            ContactId = contact.Id,
-            BusinessPartnerId = businessPartnerId,
-            ContactRole = role,
-            CreatedBy = createdBy,
-        });
+        contact.RaiseDomainEvent(
+            new BusinessPartnerContactCreatedEvent
+            {
+                TenantId = tenantId,
+                ContactId = contact.Id,
+                BusinessPartnerId = businessPartnerId,
+                ContactRole = role,
+                CreatedBy = createdBy,
+            }
+        );
         return contact;
     }
 
@@ -103,7 +109,8 @@ public sealed class BusinessPartnerContact : AuditableEntity, ITenantScopedEntit
         string? mobile = null,
         string? email = null,
         string? notes = null,
-        string? otherDescription = null)
+        string? otherDescription = null
+    )
     {
         if (!IsActive)
             throw new InvalidOperationException("No se puede actualizar un contacto inactivo.");
@@ -117,12 +124,14 @@ public sealed class BusinessPartnerContact : AuditableEntity, ITenantScopedEntit
         Contact = ContactInfo.Create(phone, mobile, email);
         Notes = NormalizeOptional(notes, NotesMaxLen, nameof(notes));
         SetUpdated(updatedBy);
-        RaiseDomainEvent(new BusinessPartnerContactUpdatedEvent
-        {
-            TenantId = TenantId,
-            ContactId = Id,
-            UpdatedBy = updatedBy,
-        });
+        RaiseDomainEvent(
+            new BusinessPartnerContactUpdatedEvent
+            {
+                TenantId = TenantId,
+                ContactId = Id,
+                UpdatedBy = updatedBy,
+            }
+        );
     }
 
     /// <summary>
@@ -132,17 +141,21 @@ public sealed class BusinessPartnerContact : AuditableEntity, ITenantScopedEntit
     public void SetPrimary(Guid updatedBy)
     {
         if (!IsActive)
-            throw new InvalidOperationException("No se puede marcar como principal un contacto inactivo.");
+            throw new InvalidOperationException(
+                "No se puede marcar como principal un contacto inactivo."
+            );
 
         IsPrimary = true;
         SetUpdated(updatedBy);
-        RaiseDomainEvent(new BusinessPartnerPrimaryContactChangedEvent
-        {
-            TenantId = TenantId,
-            NewPrimaryContactId = Id,
-            BusinessPartnerId = BusinessPartnerId,
-            ChangedBy = updatedBy,
-        });
+        RaiseDomainEvent(
+            new BusinessPartnerPrimaryContactChangedEvent
+            {
+                TenantId = TenantId,
+                NewPrimaryContactId = Id,
+                BusinessPartnerId = BusinessPartnerId,
+                ChangedBy = updatedBy,
+            }
+        );
     }
 
     internal void ClearPrimary(Guid updatedBy)
@@ -157,13 +170,15 @@ public sealed class BusinessPartnerContact : AuditableEntity, ITenantScopedEntit
             throw new InvalidOperationException("El contacto ya está inactivo.");
         IsActive = false;
         SetUpdated(updatedBy);
-        RaiseDomainEvent(new BusinessPartnerContactDeactivatedEvent
-        {
-            TenantId = TenantId,
-            ContactId = Id,
-            BusinessPartnerId = BusinessPartnerId,
-            DeactivatedBy = updatedBy,
-        });
+        RaiseDomainEvent(
+            new BusinessPartnerContactDeactivatedEvent
+            {
+                TenantId = TenantId,
+                ContactId = Id,
+                BusinessPartnerId = BusinessPartnerId,
+                DeactivatedBy = updatedBy,
+            }
+        );
     }
 
     public void Activate(Guid updatedBy)
@@ -180,31 +195,43 @@ public sealed class BusinessPartnerContact : AuditableEntity, ITenantScopedEntit
         if (string.IsNullOrEmpty(v))
             throw new ArgumentException($"{paramName} es obligatorio.", paramName);
         if (v.Length > maxLen)
-            throw new ArgumentException($"{paramName} no puede superar {maxLen} caracteres.", paramName);
+            throw new ArgumentException(
+                $"{paramName} no puede superar {maxLen} caracteres.",
+                paramName
+            );
         return v;
     }
 
     private static string? NormalizeOptional(string? value, int maxLen, string paramName)
     {
         var v = value?.Trim();
-        if (string.IsNullOrEmpty(v)) return null;
+        if (string.IsNullOrEmpty(v))
+            return null;
         if (v.Length > maxLen)
-            throw new ArgumentException($"{paramName} no puede superar {maxLen} caracteres.", paramName);
+            throw new ArgumentException(
+                $"{paramName} no puede superar {maxLen} caracteres.",
+                paramName
+            );
         return v;
     }
 
     private static string? ValidateOtherDescription(ContactRole role, string? description)
     {
         var d = description?.Trim();
-        if (d is { Length: 0 }) d = null;
+        if (d is { Length: 0 })
+            d = null;
 
         if (role == ContactRole.Other && string.IsNullOrEmpty(d))
             throw new ArgumentException(
-                "OtherDescription es obligatorio cuando ContactRole = Other.", nameof(description));
+                "OtherDescription es obligatorio cuando ContactRole = Other.",
+                nameof(description)
+            );
 
         if (d?.Length > OtherDescriptionMaxLen)
             throw new ArgumentException(
-                $"OtherDescription no puede superar {OtherDescriptionMaxLen} caracteres.", nameof(description));
+                $"OtherDescription no puede superar {OtherDescriptionMaxLen} caracteres.",
+                nameof(description)
+            );
 
         return role == ContactRole.Other ? d : null;
     }

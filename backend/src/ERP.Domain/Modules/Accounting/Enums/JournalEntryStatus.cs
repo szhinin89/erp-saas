@@ -4,5 +4,5 @@ public enum JournalEntryStatus
 {
     Draft,
     Posted,
-    Reversed
+    Reversed,
 }

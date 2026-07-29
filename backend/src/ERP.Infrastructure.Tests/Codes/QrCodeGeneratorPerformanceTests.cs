@@ -1,8 +1,8 @@
+using System.Diagnostics;
 using ERP.Application.Codes;
 using ERP.Infrastructure.Codes;
 using FluentAssertions;
 using Microsoft.Extensions.Logging.Abstractions;
-using System.Diagnostics;
 using Xunit.Abstractions;
 
 namespace ERP.Infrastructure.Tests.Codes;
@@ -51,9 +51,10 @@ public sealed class QrCodeGeneratorPerformanceTests
         var averageBytes = totalBytes / measuredIterations;
 
         _output.WriteLine(
-            $"QR Generate — {measuredIterations} iteraciones tras {warmupIterations} de warm-up: " +
-            $"promedio={averageMs:F3}ms, mínimo={minMs:F3}ms, máximo={maxMs:F3}ms, p95={p95Ms:F3}ms, " +
-            $"tamaño promedio={averageBytes} bytes.");
+            $"QR Generate — {measuredIterations} iteraciones tras {warmupIterations} de warm-up: "
+                + $"promedio={averageMs:F3}ms, mínimo={minMs:F3}ms, máximo={maxMs:F3}ms, p95={p95Ms:F3}ms, "
+                + $"tamaño promedio={averageBytes} bytes."
+        );
 
         averageMs.Should().BeGreaterThan(0);
         averageBytes.Should().BeGreaterThan(0);

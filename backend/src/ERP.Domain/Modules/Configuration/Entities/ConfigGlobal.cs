@@ -15,7 +15,13 @@ public sealed class ConfigGlobal : AuditableEntity
 
     private ConfigGlobal() { }
 
-    public static ConfigGlobal Create(Guid tenantId, string key, string value, string dataType, Guid userId)
+    public static ConfigGlobal Create(
+        Guid tenantId,
+        string key,
+        string value,
+        string dataType,
+        Guid userId
+    )
     {
         var row = new ConfigGlobal
         {
@@ -39,10 +45,8 @@ public sealed class ConfigGlobal : AuditableEntity
     private static string NormalizeKey(string key) =>
         (key ?? string.Empty).Trim().ToLowerInvariant();
 
-    private static string NormalizeValue(string value) =>
-        (value ?? string.Empty).Trim();
+    private static string NormalizeValue(string value) => (value ?? string.Empty).Trim();
 
     private static string NormalizeDataType(string dataType) =>
         (dataType ?? "string").Trim().ToLowerInvariant();
 }
-

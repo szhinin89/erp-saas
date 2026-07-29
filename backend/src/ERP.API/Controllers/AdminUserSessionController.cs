@@ -20,7 +20,14 @@ namespace ERP.API.Controllers;
 /// establecida por ActivityController/AccessSessionController/AccessProfilesController
 /// (áreas administrativas bajo api/v1/admin/*, con su propio permiso IAM).
 /// </summary>
-[AppFeature("Sesiones (Admin)", $"perm:{AccessPermissions.SessionsView}", "🖥️", "/admin/access/sessions", null, 211)]
+[AppFeature(
+    "Sesiones (Admin)",
+    $"perm:{AccessPermissions.SessionsView}",
+    "🖥️",
+    "/admin/access/sessions",
+    null,
+    211
+)]
 [ApiController]
 [Route("api/v1/admin/access/sessions")]
 [Authorize(Policy = $"perm:{AccessPermissions.SessionsView}")]
@@ -32,7 +39,10 @@ public sealed class AdminUserSessionController : ControllerBase
     public AdminUserSessionController(IMediator mediator) => _mediator = mediator;
 
     [HttpGet]
-    [ProducesResponseType(typeof(ApiResponse<PagedResult<UserSessionAdminDto>>), StatusCodes.Status200OK)]
+    [ProducesResponseType(
+        typeof(ApiResponse<PagedResult<UserSessionAdminDto>>),
+        StatusCodes.Status200OK
+    )]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status422UnprocessableEntity)]
     public async Task<IActionResult> GetPaged(
         [FromQuery] Guid? identityUserId,
@@ -42,10 +52,18 @@ public sealed class AdminUserSessionController : ControllerBase
         [FromQuery] DateTime? toUtc,
         [FromQuery] int pageNumber = 1,
         [FromQuery] int pageSize = 25,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default
+    )
     {
         var query = new GetUserSessionsPagedQuery(
-            identityUserId, companyId, status, fromUtc, toUtc, pageNumber, pageSize);
+            identityUserId,
+            companyId,
+            status,
+            fromUtc,
+            toUtc,
+            pageNumber,
+            pageSize
+        );
 
         var result = await _mediator.Send(query, cancellationToken);
         return this.ToOkOrBadRequest(result);
@@ -54,9 +72,14 @@ public sealed class AdminUserSessionController : ControllerBase
     [HttpGet("statistics")]
     [ProducesResponseType(typeof(ApiResponse<SessionStatisticsDto>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetStatistics(
-        [FromQuery] Guid? companyId, CancellationToken cancellationToken)
+        [FromQuery] Guid? companyId,
+        CancellationToken cancellationToken
+    )
     {
-        var result = await _mediator.Send(new GetSessionStatisticsQuery(companyId), cancellationToken);
+        var result = await _mediator.Send(
+            new GetSessionStatisticsQuery(companyId),
+            cancellationToken
+        );
         return this.ToOkOrBadRequest(result);
     }
 

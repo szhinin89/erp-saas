@@ -109,18 +109,28 @@ public sealed class SalesInvoice : AuditableEntity, ITenantScopedEntity, ICompan
         string? notes = null,
         string currencyCode = "USD",
         decimal exchangeRate = 1m,
-        string? sriPaymentMethodCode = null)
+        string? sriPaymentMethodCode = null
+    )
     {
         if (branchId == Guid.Empty)
             throw new ArgumentException("La sucursal es obligatoria.", nameof(branchId));
         if (customerId == Guid.Empty)
             throw new ArgumentException("El cliente es obligatorio.", nameof(customerId));
         if (string.IsNullOrWhiteSpace(invoiceNumber))
-            throw new ArgumentException("El número de factura es obligatorio.", nameof(invoiceNumber));
+            throw new ArgumentException(
+                "El número de factura es obligatorio.",
+                nameof(invoiceNumber)
+            );
         if (string.IsNullOrWhiteSpace(docTypeCode))
-            throw new ArgumentException("El tipo de comprobante es obligatorio.", nameof(docTypeCode));
+            throw new ArgumentException(
+                "El tipo de comprobante es obligatorio.",
+                nameof(docTypeCode)
+            );
         if (exchangeRate <= 0)
-            throw new ArgumentException("El tipo de cambio debe ser mayor a cero.", nameof(exchangeRate));
+            throw new ArgumentException(
+                "El tipo de cambio debe ser mayor a cero.",
+                nameof(exchangeRate)
+            );
         if (cashSessionId == Guid.Empty)
             throw new ArgumentException("La caja abierta es obligatoria.", nameof(cashSessionId));
 
@@ -159,13 +169,17 @@ public sealed class SalesInvoice : AuditableEntity, ITenantScopedEntity, ICompan
         DateOnly? dueDate = null,
         string? notes = null,
         string currencyCode = "USD",
-        decimal exchangeRate = 1m)
+        decimal exchangeRate = 1m
+    )
     {
         EnsureDraft();
         if (customerId == Guid.Empty)
             throw new ArgumentException("El cliente es obligatorio.", nameof(customerId));
         if (exchangeRate <= 0)
-            throw new ArgumentException("El tipo de cambio debe ser mayor a cero.", nameof(exchangeRate));
+            throw new ArgumentException(
+                "El tipo de cambio debe ser mayor a cero.",
+                nameof(exchangeRate)
+            );
 
         CustomerId = customerId;
         Customer = customer;
@@ -224,18 +238,23 @@ public sealed class SalesInvoice : AuditableEntity, ITenantScopedEntity, ICompan
         EnsureDraft();
         if (_lines.Count == 0)
             throw new InvalidOperationException(
-                "No puedes emitir esta factura porque no tiene productos ni servicios agregados. Agrega al menos una línea antes de emitir.");
+                "No puedes emitir esta factura porque no tiene productos ni servicios agregados. Agrega al menos una línea antes de emitir."
+            );
         if (_payments.Count == 0)
             throw new InvalidOperationException(
-                "No puedes emitir esta factura porque todavía no has registrado una forma de pago. Ve a la sección 'Formas de pago' y agrega al menos un método (efectivo, tarjeta, transferencia o crédito) antes de emitir.");
+                "No puedes emitir esta factura porque todavía no has registrado una forma de pago. Ve a la sección 'Formas de pago' y agrega al menos un método (efectivo, tarjeta, transferencia o crédito) antes de emitir."
+            );
 
         foreach (var line in _lines)
         {
             if (line.Quantity <= 0)
-                throw new InvalidOperationException($"Línea '{line.Description}': cantidad debe ser mayor a cero.");
+                throw new InvalidOperationException(
+                    $"Línea '{line.Description}': cantidad debe ser mayor a cero."
+                );
             if (string.IsNullOrWhiteSpace(line.VatCode))
                 throw new InvalidOperationException(
-                    $"El producto '{line.Description}' no tiene un código de IVA configurado. Ve al maestro de productos y asigna una tarifa de IVA antes de venderlo.");
+                    $"El producto '{line.Description}' no tiene un código de IVA configurado. Ve al maestro de productos y asigna una tarifa de IVA antes de venderlo."
+                );
         }
 
         foreach (var line in _lines)
@@ -248,21 +267,35 @@ public sealed class SalesInvoice : AuditableEntity, ITenantScopedEntity, ICompan
 
         if (AuthorizedGrandTotal <= 0)
             throw new InvalidOperationException(
-                "No puedes emitir esta factura porque su total es $0 o negativo. Revisa las cantidades, precios y descuentos de las líneas antes de emitir.");
+                "No puedes emitir esta factura porque su total es $0 o negativo. Revisa las cantidades, precios y descuentos de las líneas antes de emitir."
+            );
 
         var paymentSum = _payments.Sum(p => p.Amount);
         if (Math.Abs(paymentSum - AuthorizedGrandTotal.Value) > 0.01m)
             throw new InvalidOperationException(
-                $"El total de los pagos ingresados (${paymentSum:F2}) no coincide con el total de la factura (${AuthorizedGrandTotal.Value:F2}). " +
-                "Ajusta los montos en 'Formas de pago' hasta que coincidan con el total, o agrega el valor faltante.");
+                $"El total de los pagos ingresados (${paymentSum:F2}) no coincide con el total de la factura (${AuthorizedGrandTotal.Value:F2}). "
+                    + "Ajusta los montos en 'Formas de pago' hasta que coincidan con el total, o agrega el valor faltante."
+            );
 
         Status = SalesInvoiceStatus.Authorized;
         SetUpdated(updatedBy);
 
-        RaiseDomainEvent(new SalesInvoiceAuthorizedEvent(
-            Id, InvoiceNumber, AuthorizedGrandTotal!.Value, updatedBy, CashSessionId,
-            TenantId, CompanyId, IssueDate,
-            Subtotal, TotalVat, TotalIce, TotalDiscount));
+        RaiseDomainEvent(
+            new SalesInvoiceAuthorizedEvent(
+                Id,
+                InvoiceNumber,
+                AuthorizedGrandTotal!.Value,
+                updatedBy,
+                CashSessionId,
+                TenantId,
+                CompanyId,
+                IssueDate,
+                Subtotal,
+                TotalVat,
+                TotalIce,
+                TotalDiscount
+            )
+        );
     }
 
     public const string PendingNumberPlaceholder = "PENDING";
@@ -271,13 +304,19 @@ public sealed class SalesInvoice : AuditableEntity, ITenantScopedEntity, ICompan
     // ── Set InvoiceNumber (one-time assignment — irreversible) ──────
     public void SetInvoiceNumber(string invoiceNumber)
     {
-        if (!string.IsNullOrWhiteSpace(InvoiceNumber)
+        if (
+            !string.IsNullOrWhiteSpace(InvoiceNumber)
             && InvoiceNumber != PendingNumberPlaceholder
-            && !InvoiceNumber.StartsWith(DraftNumberPrefix, StringComparison.Ordinal))
+            && !InvoiceNumber.StartsWith(DraftNumberPrefix, StringComparison.Ordinal)
+        )
             throw new InvalidOperationException(
-                "El número de factura ya fue asignado y no puede modificarse.");
+                "El número de factura ya fue asignado y no puede modificarse."
+            );
         if (string.IsNullOrWhiteSpace(invoiceNumber))
-            throw new ArgumentException("El número de factura es obligatorio.", nameof(invoiceNumber));
+            throw new ArgumentException(
+                "El número de factura es obligatorio.",
+                nameof(invoiceNumber)
+            );
         InvoiceNumber = invoiceNumber.Trim();
     }
 
@@ -301,7 +340,8 @@ public sealed class SalesInvoice : AuditableEntity, ITenantScopedEntity, ICompan
     {
         if (Status != SalesInvoiceStatus.Draft)
             throw new InvalidOperationException(
-                "Esta factura ya no está en borrador (fue autorizada o anulada), por lo que no se puede modificar. " +
-                "Si necesitas corregir algo, contacta a administración o registra una factura nueva.");
+                "Esta factura ya no está en borrador (fue autorizada o anulada), por lo que no se puede modificar. "
+                    + "Si necesitas corregir algo, contacta a administración o registra una factura nueva."
+            );
     }
 }

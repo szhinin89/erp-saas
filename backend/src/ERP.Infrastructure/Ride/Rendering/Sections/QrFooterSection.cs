@@ -12,19 +12,28 @@ namespace ERP.Infrastructure.Ride.Rendering.Sections;
 /// </summary>
 public static class QrFooterSection
 {
-    public static void Compose(IContainer container, InvoiceRideDocumentLayout layout, byte[] qrImageBytes)
+    public static void Compose(
+        IContainer container,
+        InvoiceRideDocumentLayout layout,
+        byte[] qrImageBytes
+    )
     {
-        container.RideBox().Padding(6).Row(row =>
-        {
-            row.ConstantItem(80).Height(80).Image(qrImageBytes).FitArea();
-
-            row.RelativeItem().PaddingLeft(8).Column(column =>
+        container
+            .RideBox()
+            .Padding(6)
+            .Row(row =>
             {
-                column.Item().Text("Clave de Acceso:").Bold().FontSize(8);
-                column.Item().Text(layout.QrPlaceholder).FontSize(7);
-                if (layout.Branding.FooterText is { } footerText)
-                    column.Item().PaddingTop(4).Text(footerText).FontSize(8);
+                row.ConstantItem(80).Height(80).Image(qrImageBytes).FitArea();
+
+                row.RelativeItem()
+                    .PaddingLeft(8)
+                    .Column(column =>
+                    {
+                        column.Item().Text("Clave de Acceso:").Bold().FontSize(8);
+                        column.Item().Text(layout.QrPlaceholder).FontSize(7);
+                        if (layout.Branding.FooterText is { } footerText)
+                            column.Item().PaddingTop(4).Text(footerText).FontSize(8);
+                    });
             });
-        });
     }
 }

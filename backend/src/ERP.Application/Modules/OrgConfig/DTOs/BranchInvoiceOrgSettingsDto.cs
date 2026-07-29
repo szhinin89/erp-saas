@@ -5,6 +5,4 @@ namespace ERP.Application.Modules.OrgConfig.DTOs;
 /// Propietario: Sucursal. Administración: Editar Sucursal → Configuraciones.
 /// Null = sin configurar — fallback a la primera bodega activa de la empresa.
 /// </summary>
-public sealed record BranchInvoiceOrgSettingsDto(
-    Guid? DefaultWarehouseId
-);
+public sealed record BranchInvoiceOrgSettingsDto(Guid? DefaultWarehouseId);

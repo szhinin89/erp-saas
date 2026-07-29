@@ -27,8 +27,8 @@ public sealed record CreateBpContactCommand(
     string? Email = null,
     string? Notes = null,
     bool IsPrimary = false,
-    string? OtherDescription = null)
-    : IRequest<Result<BpContactDto>>, ITenantScopedRequest;
+    string? OtherDescription = null
+) : IRequest<Result<BpContactDto>>, ITenantScopedRequest;
 
 public sealed record UpdateBpContactCommand(
     Guid ContactId,
@@ -41,27 +41,30 @@ public sealed record UpdateBpContactCommand(
     string? Mobile = null,
     string? Email = null,
     string? Notes = null,
-    string? OtherDescription = null)
-    : IRequest<Result<BpContactDto>>, ITenantScopedRequest;
+    string? OtherDescription = null
+) : IRequest<Result<BpContactDto>>, ITenantScopedRequest;
 
 public sealed record SetPrimaryBpContactCommand(Guid ContactId)
-    : IRequest<Result<bool>>, ITenantScopedRequest;
+    : IRequest<Result<bool>>,
+        ITenantScopedRequest;
 
 public sealed record DeactivateBpContactCommand(Guid ContactId)
-    : IRequest<Result<bool>>, ITenantScopedRequest;
+    : IRequest<Result<bool>>,
+        ITenantScopedRequest;
 
 public sealed record ActivateBpContactCommand(Guid ContactId)
-    : IRequest<Result<bool>>, ITenantScopedRequest;
+    : IRequest<Result<bool>>,
+        ITenantScopedRequest;
 
 // ── Queries ───────────────────────────────────────────────────────────────────
 
-public sealed record GetBpContactsQuery(
-    Guid BusinessPartnerId,
-    bool? OnlyActive = true)
-    : IRequest<Result<IReadOnlyList<BpContactDto>>>, ITenantScopedRequest;
+public sealed record GetBpContactsQuery(Guid BusinessPartnerId, bool? OnlyActive = true)
+    : IRequest<Result<IReadOnlyList<BpContactDto>>>,
+        ITenantScopedRequest;
 
 public sealed record GetBpContactByIdQuery(Guid ContactId)
-    : IRequest<Result<BpContactDto>>, ITenantScopedRequest;
+    : IRequest<Result<BpContactDto>>,
+        ITenantScopedRequest;
 
 // ── Validators ────────────────────────────────────────────────────────────────
 
@@ -74,13 +77,20 @@ public sealed class CreateBpContactValidator : AbstractValidator<CreateBpContact
         RuleFor(x => x.Role).IsInEnum().WithMessage("Rol de contacto inválido.");
 
         RuleFor(x => x.OtherDescription)
-            .NotEmpty().WithMessage("OtherDescription es obligatorio cuando ContactRole = Other.")
+            .NotEmpty()
+            .WithMessage("OtherDescription es obligatorio cuando ContactRole = Other.")
             .When(x => x.Role == ContactRole.Other);
 
-        RuleFor(x => x.LastName).MaximumLength(BusinessPartnerContact.LastNameMaxLen).When(x => x.LastName is not null);
-        RuleFor(x => x.Position).MaximumLength(BusinessPartnerContact.PositionMaxLen).When(x => x.Position is not null);
+        RuleFor(x => x.LastName)
+            .MaximumLength(BusinessPartnerContact.LastNameMaxLen)
+            .When(x => x.LastName is not null);
+        RuleFor(x => x.Position)
+            .MaximumLength(BusinessPartnerContact.PositionMaxLen)
+            .When(x => x.Position is not null);
         RuleFor(x => x.Email).EmailAddress().When(x => x.Email is not null);
-        RuleFor(x => x.Notes).MaximumLength(BusinessPartnerContact.NotesMaxLen).When(x => x.Notes is not null);
+        RuleFor(x => x.Notes)
+            .MaximumLength(BusinessPartnerContact.NotesMaxLen)
+            .When(x => x.Notes is not null);
     }
 }
 
@@ -104,10 +114,15 @@ public sealed class CreateBpContactHandler
     private readonly IBusinessPartnerContactRepository _contactRepo;
     private readonly IOperationalContext _ctx;
 
-    public CreateBpContactHandler(IBusinessPartnerContactRepository contactRepo, IOperationalContext ctx)
-        => (_contactRepo, _ctx) = (contactRepo, ctx);
+    public CreateBpContactHandler(
+        IBusinessPartnerContactRepository contactRepo,
+        IOperationalContext ctx
+    ) => (_contactRepo, _ctx) = (contactRepo, ctx);
 
-    public async Task<Result<BpContactDto>> Handle(CreateBpContactCommand cmd, CancellationToken cancellationToken)
+    public async Task<Result<BpContactDto>> Handle(
+        CreateBpContactCommand cmd,
+        CancellationToken cancellationToken
+    )
     {
         if (cmd.IsPrimary)
             await _contactRepo.ClearPrimaryAsync(cmd.BusinessPartnerId, cancellationToken);
@@ -116,13 +131,26 @@ public sealed class CreateBpContactHandler
         try
         {
             contact = BusinessPartnerContact.Create(
-                _ctx.TenantId, cmd.BusinessPartnerId,
-                cmd.FirstName, cmd.Role, _ctx.UserId,
-                cmd.LocationId, cmd.LastName, cmd.Position,
-                cmd.Phone, cmd.Mobile, cmd.Email, cmd.Notes,
-                cmd.IsPrimary, cmd.OtherDescription);
+                _ctx.TenantId,
+                cmd.BusinessPartnerId,
+                cmd.FirstName,
+                cmd.Role,
+                _ctx.UserId,
+                cmd.LocationId,
+                cmd.LastName,
+                cmd.Position,
+                cmd.Phone,
+                cmd.Mobile,
+                cmd.Email,
+                cmd.Notes,
+                cmd.IsPrimary,
+                cmd.OtherDescription
+            );
         }
-        catch (ArgumentException ex) { return Result<BpContactDto>.ValidationFailure(ex.Message); }
+        catch (ArgumentException ex)
+        {
+            return Result<BpContactDto>.ValidationFailure(ex.Message);
+        }
 
         await _contactRepo.AddAsync(contact, cancellationToken);
         await _contactRepo.SaveChangesAsync(cancellationToken);
@@ -136,22 +164,44 @@ public sealed class UpdateBpContactHandler
     private readonly IBusinessPartnerContactRepository _contactRepo;
     private readonly IOperationalContext _ctx;
 
-    public UpdateBpContactHandler(IBusinessPartnerContactRepository contactRepo, IOperationalContext ctx)
-        => (_contactRepo, _ctx) = (contactRepo, ctx);
+    public UpdateBpContactHandler(
+        IBusinessPartnerContactRepository contactRepo,
+        IOperationalContext ctx
+    ) => (_contactRepo, _ctx) = (contactRepo, ctx);
 
-    public async Task<Result<BpContactDto>> Handle(UpdateBpContactCommand cmd, CancellationToken cancellationToken)
+    public async Task<Result<BpContactDto>> Handle(
+        UpdateBpContactCommand cmd,
+        CancellationToken cancellationToken
+    )
     {
         var contact = await _contactRepo.GetByIdAsync(cmd.ContactId, cancellationToken);
-        if (contact is null) return Result<BpContactDto>.NotFound("Contacto no encontrado.");
+        if (contact is null)
+            return Result<BpContactDto>.NotFound("Contacto no encontrado.");
 
         try
         {
-            contact.Update(cmd.FirstName, cmd.Role, _ctx.UserId,
-                cmd.LocationId, cmd.LastName, cmd.Position,
-                cmd.Phone, cmd.Mobile, cmd.Email, cmd.Notes, cmd.OtherDescription);
+            contact.Update(
+                cmd.FirstName,
+                cmd.Role,
+                _ctx.UserId,
+                cmd.LocationId,
+                cmd.LastName,
+                cmd.Position,
+                cmd.Phone,
+                cmd.Mobile,
+                cmd.Email,
+                cmd.Notes,
+                cmd.OtherDescription
+            );
         }
-        catch (ArgumentException ex) { return Result<BpContactDto>.ValidationFailure(ex.Message); }
-        catch (InvalidOperationException ex) { return Result<BpContactDto>.ValidationFailure(ex.Message); }
+        catch (ArgumentException ex)
+        {
+            return Result<BpContactDto>.ValidationFailure(ex.Message);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return Result<BpContactDto>.ValidationFailure(ex.Message);
+        }
 
         await _contactRepo.SaveChangesAsync(cancellationToken);
         return Result<BpContactDto>.Success(BpContactDto.From(contact));
@@ -164,18 +214,30 @@ public sealed class SetPrimaryBpContactHandler
     private readonly IBusinessPartnerContactRepository _contactRepo;
     private readonly IOperationalContext _ctx;
 
-    public SetPrimaryBpContactHandler(IBusinessPartnerContactRepository contactRepo, IOperationalContext ctx)
-        => (_contactRepo, _ctx) = (contactRepo, ctx);
+    public SetPrimaryBpContactHandler(
+        IBusinessPartnerContactRepository contactRepo,
+        IOperationalContext ctx
+    ) => (_contactRepo, _ctx) = (contactRepo, ctx);
 
-    public async Task<Result<bool>> Handle(SetPrimaryBpContactCommand cmd, CancellationToken cancellationToken)
+    public async Task<Result<bool>> Handle(
+        SetPrimaryBpContactCommand cmd,
+        CancellationToken cancellationToken
+    )
     {
         var contact = await _contactRepo.GetByIdAsync(cmd.ContactId, cancellationToken);
-        if (contact is null) return Result<bool>.NotFound("Contacto no encontrado.");
+        if (contact is null)
+            return Result<bool>.NotFound("Contacto no encontrado.");
 
         await _contactRepo.ClearPrimaryAsync(contact.BusinessPartnerId, cancellationToken);
 
-        try { contact.SetPrimary(_ctx.UserId); }
-        catch (InvalidOperationException ex) { return Result<bool>.ValidationFailure(ex.Message); }
+        try
+        {
+            contact.SetPrimary(_ctx.UserId);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return Result<bool>.ValidationFailure(ex.Message);
+        }
 
         await _contactRepo.SaveChangesAsync(cancellationToken);
         return Result<bool>.Success(true);
@@ -188,16 +250,28 @@ public sealed class DeactivateBpContactHandler
     private readonly IBusinessPartnerContactRepository _contactRepo;
     private readonly IOperationalContext _ctx;
 
-    public DeactivateBpContactHandler(IBusinessPartnerContactRepository contactRepo, IOperationalContext ctx)
-        => (_contactRepo, _ctx) = (contactRepo, ctx);
+    public DeactivateBpContactHandler(
+        IBusinessPartnerContactRepository contactRepo,
+        IOperationalContext ctx
+    ) => (_contactRepo, _ctx) = (contactRepo, ctx);
 
-    public async Task<Result<bool>> Handle(DeactivateBpContactCommand cmd, CancellationToken cancellationToken)
+    public async Task<Result<bool>> Handle(
+        DeactivateBpContactCommand cmd,
+        CancellationToken cancellationToken
+    )
     {
         var contact = await _contactRepo.GetByIdAsync(cmd.ContactId, cancellationToken);
-        if (contact is null) return Result<bool>.NotFound("Contacto no encontrado.");
+        if (contact is null)
+            return Result<bool>.NotFound("Contacto no encontrado.");
 
-        try { contact.Deactivate(_ctx.UserId); }
-        catch (InvalidOperationException ex) { return Result<bool>.ValidationFailure(ex.Message); }
+        try
+        {
+            contact.Deactivate(_ctx.UserId);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return Result<bool>.ValidationFailure(ex.Message);
+        }
 
         await _contactRepo.SaveChangesAsync(cancellationToken);
         return Result<bool>.Success(true);
@@ -210,16 +284,28 @@ public sealed class ActivateBpContactHandler
     private readonly IBusinessPartnerContactRepository _contactRepo;
     private readonly IOperationalContext _ctx;
 
-    public ActivateBpContactHandler(IBusinessPartnerContactRepository contactRepo, IOperationalContext ctx)
-        => (_contactRepo, _ctx) = (contactRepo, ctx);
+    public ActivateBpContactHandler(
+        IBusinessPartnerContactRepository contactRepo,
+        IOperationalContext ctx
+    ) => (_contactRepo, _ctx) = (contactRepo, ctx);
 
-    public async Task<Result<bool>> Handle(ActivateBpContactCommand cmd, CancellationToken cancellationToken)
+    public async Task<Result<bool>> Handle(
+        ActivateBpContactCommand cmd,
+        CancellationToken cancellationToken
+    )
     {
         var contact = await _contactRepo.GetByIdAsync(cmd.ContactId, cancellationToken);
-        if (contact is null) return Result<bool>.NotFound("Contacto no encontrado.");
+        if (contact is null)
+            return Result<bool>.NotFound("Contacto no encontrado.");
 
-        try { contact.Activate(_ctx.UserId); }
-        catch (InvalidOperationException ex) { return Result<bool>.ValidationFailure(ex.Message); }
+        try
+        {
+            contact.Activate(_ctx.UserId);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return Result<bool>.ValidationFailure(ex.Message);
+        }
 
         await _contactRepo.SaveChangesAsync(cancellationToken);
         return Result<bool>.Success(true);
@@ -231,13 +317,22 @@ public sealed class GetBpContactsHandler
 {
     private readonly IBusinessPartnerContactRepository _contactRepo;
 
-    public GetBpContactsHandler(IBusinessPartnerContactRepository contactRepo) => _contactRepo = contactRepo;
+    public GetBpContactsHandler(IBusinessPartnerContactRepository contactRepo) =>
+        _contactRepo = contactRepo;
 
-    public async Task<Result<IReadOnlyList<BpContactDto>>> Handle(GetBpContactsQuery q, CancellationToken cancellationToken)
+    public async Task<Result<IReadOnlyList<BpContactDto>>> Handle(
+        GetBpContactsQuery q,
+        CancellationToken cancellationToken
+    )
     {
-        var contacts = await _contactRepo.GetByBusinessPartnerAsync(q.BusinessPartnerId, q.OnlyActive, cancellationToken);
+        var contacts = await _contactRepo.GetByBusinessPartnerAsync(
+            q.BusinessPartnerId,
+            q.OnlyActive,
+            cancellationToken
+        );
         return Result<IReadOnlyList<BpContactDto>>.Success(
-            (IReadOnlyList<BpContactDto>)contacts.Select(BpContactDto.From).ToList());
+            (IReadOnlyList<BpContactDto>)contacts.Select(BpContactDto.From).ToList()
+        );
     }
 }
 
@@ -246,9 +341,13 @@ public sealed class GetBpContactByIdHandler
 {
     private readonly IBusinessPartnerContactRepository _contactRepo;
 
-    public GetBpContactByIdHandler(IBusinessPartnerContactRepository contactRepo) => _contactRepo = contactRepo;
+    public GetBpContactByIdHandler(IBusinessPartnerContactRepository contactRepo) =>
+        _contactRepo = contactRepo;
 
-    public async Task<Result<BpContactDto>> Handle(GetBpContactByIdQuery q, CancellationToken cancellationToken)
+    public async Task<Result<BpContactDto>> Handle(
+        GetBpContactByIdQuery q,
+        CancellationToken cancellationToken
+    )
     {
         var contact = await _contactRepo.GetByIdAsync(q.ContactId, cancellationToken);
         return contact is null

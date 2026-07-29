@@ -1,7 +1,7 @@
+using System.Collections.Concurrent;
 using ERP.Domain.Auth.Entities;
 using ERP.Domain.Auth.Interfaces;
 using Microsoft.EntityFrameworkCore;
-using System.Collections.Concurrent;
 
 namespace ERP.Infrastructure.Persistence.Repositories;
 
@@ -13,27 +13,37 @@ public sealed class RefreshTokenRepository : IRefreshTokenRepository
 
     public RefreshTokenRepository(ErpDbContext context) => _context = context;
 
-    public Task AddAsync(RefreshToken token, CancellationToken cancellationToken = default)
-        => _context.RefreshTokens.AddAsync(token, cancellationToken).AsTask();
+    public Task AddAsync(RefreshToken token, CancellationToken cancellationToken = default) =>
+        _context.RefreshTokens.AddAsync(token, cancellationToken).AsTask();
 
-    public Task<RefreshToken?> GetByHashAsync(string tokenHash, CancellationToken cancellationToken = default)
-        => _context.RefreshTokens
-            .FirstOrDefaultAsync(t => t.TokenHash == tokenHash, cancellationToken);
+    public Task<RefreshToken?> GetByHashAsync(
+        string tokenHash,
+        CancellationToken cancellationToken = default
+    ) =>
+        _context.RefreshTokens.FirstOrDefaultAsync(
+            t => t.TokenHash == tokenHash,
+            cancellationToken
+        );
 
     public async Task<IReadOnlyList<RefreshToken>> GetActiveByUserAsync(
-        Guid userId, Guid tenantId, CancellationToken cancellationToken = default)
+        Guid userId,
+        Guid tenantId,
+        CancellationToken cancellationToken = default
+    )
     {
         var now = DateTime.UtcNow;
-        return await _context.RefreshTokens
-            .Where(t => t.UserId == userId
-                     && t.TenantId == tenantId
-                     && !t.IsRevoked
-                     && t.ExpiresAt > now)
+        return await _context
+            .RefreshTokens.Where(t =>
+                t.UserId == userId && t.TenantId == tenantId && !t.IsRevoked && t.ExpiresAt > now
+            )
             .ToListAsync(cancellationToken);
     }
 
     public async Task<(bool Success, RefreshToken? Previous)> TryRotateAsync(
-        string tokenHash, RefreshToken successor, CancellationToken cancellationToken = default)
+        string tokenHash,
+        RefreshToken successor,
+        CancellationToken cancellationToken = default
+    )
     {
         var providerName = _context.Database.ProviderName ?? string.Empty;
         if (!providerName.Contains("Npgsql", StringComparison.OrdinalIgnoreCase))
@@ -54,14 +64,19 @@ public sealed class RefreshTokenRepository : IRefreshTokenRepository
     }
 
     private async Task<(bool Success, RefreshToken? Previous)> RotateInTransactionAsync(
-        string tokenHash, RefreshToken successor, CancellationToken cancellationToken)
+        string tokenHash,
+        RefreshToken successor,
+        CancellationToken cancellationToken
+    )
     {
         await using var tx = await _context.Database.BeginTransactionAsync(cancellationToken);
         try
         {
             var now = DateTime.UtcNow;
-            var stored = await _context.RefreshTokens
-                .FirstOrDefaultAsync(t => t.TokenHash == tokenHash, cancellationToken);
+            var stored = await _context.RefreshTokens.FirstOrDefaultAsync(
+                t => t.TokenHash == tokenHash,
+                cancellationToken
+            );
 
             if (stored is null || stored.IsRevoked || stored.ExpiresAt <= now)
             {
@@ -82,11 +97,15 @@ public sealed class RefreshTokenRepository : IRefreshTokenRepository
         }
     }
 
-    public async Task<int> RevokeFamilyAsync(Guid familyId, string reason, CancellationToken cancellationToken = default)
+    public async Task<int> RevokeFamilyAsync(
+        Guid familyId,
+        string reason,
+        CancellationToken cancellationToken = default
+    )
     {
         var now = DateTime.UtcNow;
-        var tokens = await _context.RefreshTokens
-            .Where(t => t.FamilyId == familyId && !t.IsRevoked && t.ExpiresAt > now)
+        var tokens = await _context
+            .RefreshTokens.Where(t => t.FamilyId == familyId && !t.IsRevoked && t.ExpiresAt > now)
             .ToListAsync(cancellationToken);
 
         foreach (var token in tokens)
@@ -98,6 +117,6 @@ public sealed class RefreshTokenRepository : IRefreshTokenRepository
         return tokens.Count;
     }
 
-    public Task SaveChangesAsync(CancellationToken cancellationToken = default)
-        => _context.SaveChangesAsync(cancellationToken);
+    public Task SaveChangesAsync(CancellationToken cancellationToken = default) =>
+        _context.SaveChangesAsync(cancellationToken);
 }

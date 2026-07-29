@@ -8,7 +8,8 @@ public sealed record SriCertificateInspectionResult(
     DateTime? NotAfterUtc,
     string? Subject,
     string? Issuer,
-    string? ErrorMessage);
+    string? ErrorMessage
+);
 
 /// <summary>
 /// Inspecciona un certificado P12/PKCS#12 (existencia, contraseña, vigencia, subject) para

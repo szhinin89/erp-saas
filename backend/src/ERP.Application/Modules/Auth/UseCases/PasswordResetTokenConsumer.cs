@@ -21,14 +21,19 @@ internal static class PasswordResetTokenConsumer
         IPasswordResetTokenRepository tokenRepository,
         string rawToken,
         string expectedUserKind,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken
+    )
     {
         var hash = PasswordResetTokenCrypto.Hash(rawToken.Trim());
         return GetIfValidAsync(tokenRepository, hash, expectedUserKind, cancellationToken);
     }
 
     private static async Task<PasswordResetToken?> GetIfValidAsync(
-        IPasswordResetTokenRepository tokenRepository, string hash, string expectedUserKind, CancellationToken cancellationToken)
+        IPasswordResetTokenRepository tokenRepository,
+        string hash,
+        string expectedUserKind,
+        CancellationToken cancellationToken
+    )
     {
         var stored = await tokenRepository.GetByTokenHashAsync(hash, cancellationToken);
         if (stored is null || !stored.IsValid || stored.UserKind != expectedUserKind)
@@ -51,7 +56,8 @@ internal static class PasswordResetTokenConsumer
         PasswordResetToken stored,
         string newPassword,
         string revokeReason,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken
+    )
     {
         var identity = await accessRepository.GetUserByIdAsync(stored.UserId, cancellationToken);
         if (identity is null)
@@ -63,7 +69,12 @@ internal static class PasswordResetTokenConsumer
         await accessRepository.SaveChangesAsync(cancellationToken);
 
         var revokeTenantId = stored.TenantId ?? Guid.Empty;
-        await refreshTokenService.RevokeAllForUserAsync(identity.Id, revokeTenantId, revokeReason, cancellationToken);
+        await refreshTokenService.RevokeAllForUserAsync(
+            identity.Id,
+            revokeTenantId,
+            revokeReason,
+            cancellationToken
+        );
 
         stored.MarkUsed();
         await tokenRepository.SaveChangesAsync(cancellationToken);

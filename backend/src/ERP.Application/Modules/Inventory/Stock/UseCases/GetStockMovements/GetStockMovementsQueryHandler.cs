@@ -20,30 +20,56 @@ public sealed class GetStockMovementsQueryHandler
     }
 
     public async Task<Result<IReadOnlyList<StockMovementDto>>> Handle(
-        GetStockMovementsQuery request, CancellationToken ct)
+        GetStockMovementsQuery request,
+        CancellationToken ct
+    )
     {
         var movements = await _repo.GetMovementsAsync(
-            _tenant.TenantId, request.ItemId, request.WarehouseId,
-            request.From, request.To, ct);
+            _tenant.TenantId,
+            request.ItemId,
+            request.WarehouseId,
+            request.From,
+            request.To,
+            ct
+        );
 
         var dtos = movements.Select(ToDto).ToList();
         return Result<IReadOnlyList<StockMovementDto>>.Success(dtos);
     }
 
-    internal static StockMovementDto ToDto(StockMovement m) => new(
-        m.Id, m.ProductId, m.WarehouseId,
-        (int)m.MovementType, m.MovementType.ToString(),
-        m.Quantity, m.UomCode, m.PreviousQuantity, m.ResultQuantity, m.SequenceNumber,
-        m.UnitCost, m.TotalCost, m.RunningAverageCost, m.RunningStockValue, m.EffectiveDate,
-        m.Reference, m.SourceDocId, m.SourceDocType,
-        m.CreatedBy, m.CreatedAt);
+    internal static StockMovementDto ToDto(StockMovement m) =>
+        new(
+            m.Id,
+            m.ProductId,
+            m.WarehouseId,
+            (int)m.MovementType,
+            m.MovementType.ToString(),
+            m.Quantity,
+            m.UomCode,
+            m.PreviousQuantity,
+            m.ResultQuantity,
+            m.SequenceNumber,
+            m.UnitCost,
+            m.TotalCost,
+            m.RunningAverageCost,
+            m.RunningStockValue,
+            m.EffectiveDate,
+            m.Reference,
+            m.SourceDocId,
+            m.SourceDocType,
+            m.CreatedBy,
+            m.CreatedAt
+        );
 
     /// <summary>
     /// Resuelve en un solo lote los nombres de los usuarios autores de una lista de movimientos,
     /// evitando N+1 al componer el reporte de Kardex (por producto o por documento).
     /// </summary>
     internal static async Task<IReadOnlyDictionary<Guid, string>> ResolveActorNamesAsync(
-        IAccessRepository accessRepo, IEnumerable<StockMovement> movements, CancellationToken ct)
+        IAccessRepository accessRepo,
+        IEnumerable<StockMovement> movements,
+        CancellationToken ct
+    )
     {
         var userIds = movements.Select(m => m.CreatedBy).Distinct().ToList();
         var users = await accessRepo.GetUsersByIdsAsync(userIds, ct);

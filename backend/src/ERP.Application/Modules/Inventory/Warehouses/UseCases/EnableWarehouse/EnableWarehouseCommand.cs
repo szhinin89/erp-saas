@@ -5,4 +5,5 @@ using MediatR;
 namespace ERP.Application.Modules.Inventory.Warehouses.UseCases.EnableWarehouse;
 
 public sealed record EnableWarehouseCommand(Guid Id)
-    : IRequest<Result<WarehouseListItemDto>>, ICompanyScopedRequest;
+    : IRequest<Result<WarehouseListItemDto>>,
+        ICompanyScopedRequest;

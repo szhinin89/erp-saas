@@ -12,7 +12,8 @@ namespace ERP.Application.Modules.ElectronicDocuments.EventHandlers;
 /// trae mensajes estructurados (rechazo sin respuesta SRI real de por medio), no escribe nada —
 /// <c>ElectronicDocument.LastError</c> sigue siendo la única fuente de verdad en ese caso.
 /// </summary>
-public sealed class ElectronicDocumentSriMessageAuditHandler : INotificationHandler<ElectronicDocumentRejectedEvent>
+public sealed class ElectronicDocumentSriMessageAuditHandler
+    : INotificationHandler<ElectronicDocumentRejectedEvent>
 {
     private readonly IAuditService _audit;
     private readonly IAuditContext _context;
@@ -31,8 +32,14 @@ public sealed class ElectronicDocumentSriMessageAuditHandler : INotificationHand
         foreach (var message in e.SriMessages)
         {
             await _audit.RecordAsync(
-                ElectronicDocumentSriMessage.Create(_context.Actor, _context.CompanyId, e.ElectronicDocumentId, message),
-                ct);
+                ElectronicDocumentSriMessage.Create(
+                    _context.Actor,
+                    _context.CompanyId,
+                    e.ElectronicDocumentId,
+                    message
+                ),
+                ct
+            );
         }
     }
 }

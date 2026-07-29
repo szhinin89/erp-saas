@@ -1,4 +1,4 @@
-﻿namespace ERP.Domain.Common;
+namespace ERP.Domain.Common;
 
 /// <summary>
 /// Clase base para documentos transaccionales.
@@ -39,7 +39,8 @@ public abstract class DocumentEntity : AuditableEntity
     {
         if (Status != DocumentStatus.Draft)
             throw new InvalidOperationException(
-                $"Solo se puede confirmar un documento en borrador. Estado actual: {Status}");
+                $"Solo se puede confirmar un documento en borrador. Estado actual: {Status}"
+            );
 
         Status = DocumentStatus.Posted;
         PostedAt = DateTime.UtcNow;

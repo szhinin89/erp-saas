@@ -19,25 +19,41 @@ public sealed class SriReceptionXmlProviderTests
     private const string AccessKey = "0107202601179135268800120150270001617400016174011";
 
     private static SriSettings BuildSettings() =>
-        SriSettings.Create(TenantId, CompanyId, environment: 1, emissionType: 1,
-            wsdlUrl: "https://celcer.sri.gob.ec/fake?wsdl", createdBy: Guid.NewGuid());
+        SriSettings.Create(
+            TenantId,
+            CompanyId,
+            environment: 1,
+            emissionType: 1,
+            wsdlUrl: "https://celcer.sri.gob.ec/fake?wsdl",
+            createdBy: Guid.NewGuid()
+        );
 
     [Fact]
     public async Task GetAuthorizedXmlAsync_delegates_to_the_existing_authorization_client_with_the_company_wsdl()
     {
         var settingsRepo = new Mock<ISriSettingsRepository>();
-        settingsRepo.Setup(r => r.GetByCompanyIdAsync(CompanyId, It.IsAny<CancellationToken>()))
+        settingsRepo
+            .Setup(r => r.GetByCompanyIdAsync(CompanyId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(BuildSettings());
 
         var authClient = new Mock<ISriAuthorizationClient>();
-        authClient.Setup(c => c.CheckAsync(AccessKey, "https://celcer.sri.gob.ec/fake?wsdl", It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new SriAuthorizationResult
-            {
-                Status = "AUTORIZADO",
-                AuthorizationNumber = AccessKey,
-                AuthorizationDate = new DateTime(2026, 7, 1, 21, 7, 0, DateTimeKind.Utc),
-                DocumentXml = "<factura>...</factura>",
-            });
+        authClient
+            .Setup(c =>
+                c.CheckAsync(
+                    AccessKey,
+                    "https://celcer.sri.gob.ec/fake?wsdl",
+                    It.IsAny<CancellationToken>()
+                )
+            )
+            .ReturnsAsync(
+                new SriAuthorizationResult
+                {
+                    Status = "AUTORIZADO",
+                    AuthorizationNumber = AccessKey,
+                    AuthorizationDate = new DateTime(2026, 7, 1, 21, 7, 0, DateTimeKind.Utc),
+                    DocumentXml = "<factura>...</factura>",
+                }
+            );
 
         var provider = new SriReceptionXmlProvider(authClient.Object, settingsRepo.Object);
         var result = await provider.GetAuthorizedXmlAsync(TenantId, CompanyId, AccessKey);
@@ -45,14 +61,23 @@ public sealed class SriReceptionXmlProviderTests
         result.Authorized.Should().BeTrue();
         result.XmlContent.Should().Be("<factura>...</factura>");
         result.AuthorizationNumber.Should().Be(AccessKey);
-        authClient.Verify(c => c.CheckAsync(AccessKey, "https://celcer.sri.gob.ec/fake?wsdl", It.IsAny<CancellationToken>()), Times.Once);
+        authClient.Verify(
+            c =>
+                c.CheckAsync(
+                    AccessKey,
+                    "https://celcer.sri.gob.ec/fake?wsdl",
+                    It.IsAny<CancellationToken>()
+                ),
+            Times.Once
+        );
     }
 
     [Fact]
     public async Task GetAuthorizedXmlAsync_returns_an_error_result_when_company_has_no_sri_settings()
     {
         var settingsRepo = new Mock<ISriSettingsRepository>();
-        settingsRepo.Setup(r => r.GetByCompanyIdAsync(CompanyId, It.IsAny<CancellationToken>()))
+        settingsRepo
+            .Setup(r => r.GetByCompanyIdAsync(CompanyId, It.IsAny<CancellationToken>()))
             .ReturnsAsync((SriSettings?)null);
         var authClient = new Mock<ISriAuthorizationClient>();
 
@@ -61,20 +86,31 @@ public sealed class SriReceptionXmlProviderTests
 
         result.Authorized.Should().BeFalse();
         result.ErrorMessage.Should().NotBeNullOrEmpty();
-        authClient.Verify(c => c.CheckAsync(
-            It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
+        authClient.Verify(
+            c =>
+                c.CheckAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()),
+            Times.Never
+        );
     }
 
     [Fact]
     public async Task GetAuthorizedXmlAsync_propagates_sri_transport_failures_without_throwing()
     {
         var settingsRepo = new Mock<ISriSettingsRepository>();
-        settingsRepo.Setup(r => r.GetByCompanyIdAsync(CompanyId, It.IsAny<CancellationToken>()))
+        settingsRepo
+            .Setup(r => r.GetByCompanyIdAsync(CompanyId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(BuildSettings());
 
         var authClient = new Mock<ISriAuthorizationClient>();
-        authClient.Setup(c => c.CheckAsync(AccessKey, It.IsAny<string>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new SriAuthorizationResult { Status = "ERROR_CONEXION", ErrorMessage = "Timeout de red." });
+        authClient
+            .Setup(c => c.CheckAsync(AccessKey, It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(
+                new SriAuthorizationResult
+                {
+                    Status = "ERROR_CONEXION",
+                    ErrorMessage = "Timeout de red.",
+                }
+            );
 
         var provider = new SriReceptionXmlProvider(authClient.Object, settingsRepo.Object);
         var result = await provider.GetAuthorizedXmlAsync(TenantId, CompanyId, AccessKey);

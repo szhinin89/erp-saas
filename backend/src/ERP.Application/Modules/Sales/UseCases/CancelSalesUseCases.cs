@@ -8,7 +8,8 @@ using MediatR;
 namespace ERP.Application.Modules.Sales.UseCases;
 
 public sealed record CancelSalesInvoiceCommand(Guid InvoiceId, string Reason)
-    : IRequest<Result<SalesInvoiceDto>>, IBranchScopedRequest;
+    : IRequest<Result<SalesInvoiceDto>>,
+        IBranchScopedRequest;
 
 public sealed class CancelSalesInvoiceHandler
     : IRequestHandler<CancelSalesInvoiceCommand, Result<SalesInvoiceDto>>
@@ -22,29 +23,53 @@ public sealed class CancelSalesInvoiceHandler
     private readonly ICurrentUser _u;
 
     public CancelSalesInvoiceHandler(
-        ISalesInvoiceRepository repo, ISalesReceivableRepository rxRepo, IStockRepository stockRepo,
+        ISalesInvoiceRepository repo,
+        ISalesReceivableRepository rxRepo,
+        IStockRepository stockRepo,
         ERP.Domain.Modules.ElectronicDocuments.Interfaces.IElectronicDocumentRepository edocRepo,
-        ICurrentTenant t, ICurrentCompany c, ICurrentUser u)
-    { _repo = repo; _rxRepo = rxRepo; _stockRepo = stockRepo; _edocRepo = edocRepo; _t = t; _c = c; _u = u; }
+        ICurrentTenant t,
+        ICurrentCompany c,
+        ICurrentUser u
+    )
+    {
+        _repo = repo;
+        _rxRepo = rxRepo;
+        _stockRepo = stockRepo;
+        _edocRepo = edocRepo;
+        _t = t;
+        _c = c;
+        _u = u;
+    }
 
-    public async Task<Result<SalesInvoiceDto>> Handle(CancelSalesInvoiceCommand cmd, CancellationToken ct)
+    public async Task<Result<SalesInvoiceDto>> Handle(
+        CancelSalesInvoiceCommand cmd,
+        CancellationToken ct
+    )
     {
         var inv = await _repo.GetByIdAsync(_t.TenantId, cmd.InvoiceId, ct);
-        if (inv is null) return Result<SalesInvoiceDto>.NotFound("Factura no encontrada.");
+        if (inv is null)
+            return Result<SalesInvoiceDto>.NotFound("Factura no encontrada.");
 
         // ── Cancelar CxC asociada si existe ────────────────────────
         var receivable = await _rxRepo.GetByInvoiceIdAsync(_t.TenantId, inv.Id, ct);
         if (receivable is not null)
         {
-            try { receivable.Cancel(_u.UserId); }
+            try
+            {
+                receivable.Cancel(_u.UserId);
+            }
             catch (InvalidOperationException ex)
             {
                 return Result<SalesInvoiceDto>.ValidationFailure(
-                    $"No se puede anular: {ex.Message}");
+                    $"No se puede anular: {ex.Message}"
+                );
             }
         }
 
-        try { inv.Cancel(cmd.Reason, _u.UserId); }
+        try
+        {
+            inv.Cancel(cmd.Reason, _u.UserId);
+        }
         catch (InvalidOperationException ex)
         {
             return Result<SalesInvoiceDto>.ValidationFailure(ex.Message);
@@ -54,13 +79,24 @@ public sealed class CancelSalesInvoiceHandler
         // WarehouseId solo está poblado en líneas que sí generaron egreso al autorizar.
         foreach (var line in inv.Lines)
         {
-            if (line.ItemId is null || line.WarehouseId is null) continue;
+            if (line.ItemId is null || line.WarehouseId is null)
+                continue;
 
             await _stockRepo.AppendMovementAsync(
-                _t.TenantId, _c.CompanyId, line.ItemId.Value, line.WarehouseId.Value,
-                StockMovementType.SaleReturn, line.Quantity, line.UomCode,
-                DateOnly.FromDateTime(DateTime.UtcNow), $"ANULACIÓN: {inv.InvoiceNumber}", inv.Id, "SalesInvoice",
-                _u.UserId, cancellationToken: ct);
+                _t.TenantId,
+                _c.CompanyId,
+                line.ItemId.Value,
+                line.WarehouseId.Value,
+                StockMovementType.SaleReturn,
+                line.Quantity,
+                line.UomCode,
+                DateOnly.FromDateTime(DateTime.UtcNow),
+                $"ANULACIÓN: {inv.InvoiceNumber}",
+                inv.Id,
+                "SalesInvoice",
+                _u.UserId,
+                cancellationToken: ct
+            );
         }
 
         await _stockRepo.SaveChangesWithSequenceRetryAsync(ct);

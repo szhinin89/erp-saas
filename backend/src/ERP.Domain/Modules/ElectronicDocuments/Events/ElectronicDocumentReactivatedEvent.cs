@@ -13,8 +13,12 @@ public sealed class ElectronicDocumentReactivatedEvent : BaseDomainEvent, IAudit
     public ElectronicDocumentState ToState { get; }
 
     public ElectronicDocumentReactivatedEvent(
-        Guid tenantId, Guid electronicDocumentId, ElectronicDocumentType documentType,
-        ElectronicDocumentState fromState, ElectronicDocumentState toState)
+        Guid tenantId,
+        Guid electronicDocumentId,
+        ElectronicDocumentType documentType,
+        ElectronicDocumentState fromState,
+        ElectronicDocumentState toState
+    )
     {
         TenantId = tenantId;
         ElectronicDocumentId = electronicDocumentId;

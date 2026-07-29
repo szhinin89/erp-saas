@@ -1,6 +1,6 @@
+using System.Text.RegularExpressions;
 using ERP.Application.Modules.Inventory.ItemMatching.DTOs;
 using ERP.Domain.Modules.Items.Interfaces;
-using System.Text.RegularExpressions;
 
 namespace ERP.Application.Modules.Inventory.ItemMatching.Services;
 
@@ -13,9 +13,16 @@ public interface IItemMatchFinder
     /// Items — solo propone/resuelve <c>ItemId</c>.
     /// </summary>
     Task<IReadOnlyList<ItemMatchCandidateDto>> FindCandidatesAsync(
-        Guid tenantId, Guid? supplierId, string? supplierCode, string? supplierAuxCode,
-        string description, int maxResults, CancellationToken cancellationToken = default);
+        Guid tenantId,
+        Guid? supplierId,
+        string? supplierCode,
+        string? supplierAuxCode,
+        string description,
+        int maxResults,
+        CancellationToken cancellationToken = default
+    );
 }
+
 /// Política de Item Matching
 ///
 /// AutoMatch:
@@ -47,13 +54,14 @@ public sealed class ItemMatchFinder : IItemMatchFinder
     public ItemMatchFinder(IItemRepository itemRepo) => _itemRepo = itemRepo;
 
     public async Task<IReadOnlyList<ItemMatchCandidateDto>> FindCandidatesAsync(
-    Guid tenantId,
-    Guid? supplierId,
-    string? supplierCode,
-    string? supplierAuxCode,
-    string description,
-    int maxResults,
-    CancellationToken cancellationToken = default)
+        Guid tenantId,
+        Guid? supplierId,
+        string? supplierCode,
+        string? supplierAuxCode,
+        string description,
+        int maxResults,
+        CancellationToken cancellationToken = default
+    )
     {
         var candidates = new Dictionary<Guid, ItemMatchCandidateDto>();
         // 1. Código de proveedor exacto.
@@ -63,7 +71,8 @@ public sealed class ItemMatchFinder : IItemMatchFinder
                 sId1,
                 supplierCode,
                 tenantId,
-                cancellationToken);
+                cancellationToken
+            );
 
             if (itemId is { } id1)
             {
@@ -73,7 +82,8 @@ public sealed class ItemMatchFinder : IItemMatchFinder
                     100m,
                     ReasonSupplierCodeExact,
                     tenantId,
-                    cancellationToken);
+                    cancellationToken
+                );
             }
         }
         // 2. Código auxiliar exacto.
@@ -83,7 +93,8 @@ public sealed class ItemMatchFinder : IItemMatchFinder
                 sId2,
                 supplierAuxCode,
                 tenantId,
-                cancellationToken);
+                cancellationToken
+            );
 
             if (itemId is { } id2 && !candidates.ContainsKey(id2))
             {
@@ -93,7 +104,8 @@ public sealed class ItemMatchFinder : IItemMatchFinder
                     95m,
                     ReasonSupplierAuxCodeExact,
                     tenantId,
-                    cancellationToken);
+                    cancellationToken
+                );
             }
         }
         /*
@@ -105,17 +117,12 @@ public sealed class ItemMatchFinder : IItemMatchFinder
            Nunca usar descripción para reemplazar un código desconocido.
         */
         var hasSupplierCode =
-            !string.IsNullOrWhiteSpace(supplierCode) ||
-            !string.IsNullOrWhiteSpace(supplierAuxCode);
+            !string.IsNullOrWhiteSpace(supplierCode) || !string.IsNullOrWhiteSpace(supplierAuxCode);
 
         if (hasSupplierCode)
         {
-            return candidates.Values
-                .OrderByDescending(c => c.MatchScore)
-                .Take(maxResults)
-                .ToList();
+            return candidates.Values.OrderByDescending(c => c.MatchScore).Take(maxResults).ToList();
         }
-
 
         // 3. Solo sin código proveedor:
         // búsqueda por descripción como ayuda manual.
@@ -126,21 +133,20 @@ public sealed class ItemMatchFinder : IItemMatchFinder
             tenantId,
             maxResults,
             MinSimilarityScore,
-            cancellationToken);
+            cancellationToken
+        );
         foreach (var match in similar)
         {
             if (candidates.ContainsKey(match.ItemId))
                 continue;
 
             var isNormalizedEqual =
-                Normalize(match.ShortName) == normalizedTarget ||
-                Normalize(match.Description) == normalizedTarget;
+                Normalize(match.ShortName) == normalizedTarget
+                || Normalize(match.Description) == normalizedTarget;
 
             var score = Math.Round((decimal)match.Score * 100, 2);
 
-
-            if (!isNormalizedEqual &&
-                !HasEnoughWordsMatch(description, match.ShortName))
+            if (!isNormalizedEqual && !HasEnoughWordsMatch(description, match.ShortName))
             {
                 continue;
             }
@@ -155,31 +161,42 @@ public sealed class ItemMatchFinder : IItemMatchFinder
                     match.ShortName,
                     match.Description,
                     95m,
-                    ReasonDescriptionNormalized)
-
+                    ReasonDescriptionNormalized
+                )
                 : new ItemMatchCandidateDto(
                     match.ItemId,
                     match.Sku,
                     match.ShortName,
                     match.Description,
                     score,
-                    ReasonDescriptionSimilarity);
+                    ReasonDescriptionSimilarity
+                );
         }
 
-        return candidates.Values
-            .OrderByDescending(c => c.MatchScore)
-            .Take(maxResults)
-            .ToList();
+        return candidates.Values.OrderByDescending(c => c.MatchScore).Take(maxResults).ToList();
     }
+
     private async Task AddExactAsync(
-        Dictionary<Guid, ItemMatchCandidateDto> candidates, Guid itemId, decimal score, string reason,
-        Guid tenantId, CancellationToken cancellationToken)
+        Dictionary<Guid, ItemMatchCandidateDto> candidates,
+        Guid itemId,
+        decimal score,
+        string reason,
+        Guid tenantId,
+        CancellationToken cancellationToken
+    )
     {
         var item = await _itemRepo.GetByIdLightAsync(itemId, tenantId, cancellationToken);
         if (item is null)
             return;
 
-        candidates[itemId] = new ItemMatchCandidateDto(item.Id, item.Code.SKU, item.Code.ShortName, item.Code.Description, score, reason);
+        candidates[itemId] = new ItemMatchCandidateDto(
+            item.Id,
+            item.Code.SKU,
+            item.Code.ShortName,
+            item.Code.Description,
+            score,
+            reason
+        );
     }
 
     private static string Normalize(string text)
@@ -188,6 +205,7 @@ public sealed class ItemMatchFinder : IItemMatchFinder
         var noSpecial = NonAlphanumeric.Replace(lower, " ");
         return MultipleSpaces.Replace(noSpecial, " ").Trim();
     }
+
     private static bool HasEnoughWordsMatch(string source, string target)
     {
         var sourceWords = Normalize(source)

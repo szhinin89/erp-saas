@@ -10,5 +10,9 @@ namespace ERP.Domain.Modules.Purchases.PurchaseReception.Interfaces;
 public interface ISriReceptionXmlProvider
 {
     Task<SriReceptionXmlQueryResult> GetAuthorizedXmlAsync(
-        Guid tenantId, Guid companyId, string accessKey, CancellationToken cancellationToken = default);
+        Guid tenantId,
+        Guid companyId,
+        string accessKey,
+        CancellationToken cancellationToken = default
+    );
 }

@@ -5,4 +5,5 @@ using MediatR;
 namespace ERP.Application.MasterData.UseCases.GetCompanyBpTradingSettings;
 
 public sealed record GetCompanyBpTradingSettingsQuery(Guid BusinessPartnerId)
-    : IRequest<Result<CompanyBpTradingSettingsDto>>, ICompanyScopedRequest;
+    : IRequest<Result<CompanyBpTradingSettingsDto>>,
+        ICompanyScopedRequest;

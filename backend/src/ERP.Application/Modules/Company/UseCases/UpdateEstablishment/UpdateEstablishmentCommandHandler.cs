@@ -14,16 +14,26 @@ public sealed class UpdateEstablishmentCommandHandler
     private readonly ICurrentUser _user;
 
     public UpdateEstablishmentCommandHandler(
-        IEstablishmentRepository repo, ICurrentTenant tenant, ICurrentUser user)
+        IEstablishmentRepository repo,
+        ICurrentTenant tenant,
+        ICurrentUser user
+    )
     {
         _repo = repo;
         _currentTenant = tenant;
         _user = user;
     }
 
-    public async Task<Result<EstablishmentDto>> Handle(UpdateEstablishmentCommand command, CancellationToken cancellationToken)
+    public async Task<Result<EstablishmentDto>> Handle(
+        UpdateEstablishmentCommand command,
+        CancellationToken cancellationToken
+    )
     {
-        var entity = await _repo.GetByIdAsync(_currentTenant.TenantId, command.Id, cancellationToken);
+        var entity = await _repo.GetByIdAsync(
+            _currentTenant.TenantId,
+            command.Id,
+            cancellationToken
+        );
         if (entity is null)
             return Result<EstablishmentDto>.Failure("Establecimiento no encontrado.");
 
@@ -31,6 +41,8 @@ public sealed class UpdateEstablishmentCommandHandler
         entity.SetMain(command.IsMain, _user.UserId);
         await _repo.SaveChangesAsync(cancellationToken);
 
-        return Result<EstablishmentDto>.Success(GetEstablishmentsByBranchQueryHandler.ToDto(entity));
+        return Result<EstablishmentDto>.Success(
+            GetEstablishmentsByBranchQueryHandler.ToDto(entity)
+        );
     }
 }

@@ -5,11 +5,22 @@ namespace ERP.Domain.Modules.Accounting.Interfaces;
 
 public interface IJournalEntryRepository
 {
-    Task<JournalEntry?> GetByIdAsync(Guid tenantId, Guid companyId, Guid id, CancellationToken ct = default);
+    Task<JournalEntry?> GetByIdAsync(
+        Guid tenantId,
+        Guid companyId,
+        Guid id,
+        CancellationToken ct = default
+    );
 
     /// <summary>Búsqueda por la clave de idempotencia del Posting Engine — ver uq_journal_entries_company_source_event_fact.</summary>
     Task<JournalEntry?> FindByKeyAsync(
-        Guid tenantId, Guid companyId, string sourceModule, string factType, Guid sourceEventId, CancellationToken ct = default);
+        Guid tenantId,
+        Guid companyId,
+        string sourceModule,
+        string factType,
+        Guid sourceEventId,
+        CancellationToken ct = default
+    );
 
     /// <summary>
     /// Protege la clave natural de idempotencia del Posting Engine (CompanyId, SourceModule,
@@ -19,7 +30,12 @@ public interface IJournalEntryRepository
     /// hacer COMMIT o ROLLBACK de esa transacción.
     /// </summary>
     Task AcquireIdempotencyLockAsync(
-        Guid companyId, string sourceModule, Guid sourceEventId, string factType, CancellationToken ct = default);
+        Guid companyId,
+        string sourceModule,
+        Guid sourceEventId,
+        string factType,
+        CancellationToken ct = default
+    );
 
     Task AddAsync(JournalEntry entry, CancellationToken ct = default);
     Task SaveChangesAsync(CancellationToken ct = default);
@@ -30,5 +46,9 @@ public interface IJournalEntryRepository
     /// <c>JournalEntry</c> del período completo.
     /// </summary>
     Task<JournalEntryClosureReadiness> GetClosureReadinessAsync(
-        Guid tenantId, Guid companyId, Guid accountingPeriodId, CancellationToken ct = default);
+        Guid tenantId,
+        Guid companyId,
+        Guid accountingPeriodId,
+        CancellationToken ct = default
+    );
 }

@@ -34,7 +34,8 @@ public sealed class UserSession : AuditableEntity, ITenantScopedEntity, ICompany
         Guid identityUserId,
         Guid branchId,
         string terminalId,
-        Guid? refreshTokenId = null)
+        Guid? refreshTokenId = null
+    )
     {
         if (companyId == Guid.Empty)
             throw new ArgumentException("La empresa es obligatoria.", nameof(companyId));
@@ -45,7 +46,10 @@ public sealed class UserSession : AuditableEntity, ITenantScopedEntity, ICompany
         if (string.IsNullOrWhiteSpace(terminalId))
             throw new ArgumentException("El terminal es obligatorio.", nameof(terminalId));
         if (terminalId.Length > TerminalIdMaxLen)
-            throw new ArgumentException($"El terminal no puede superar {TerminalIdMaxLen} caracteres.", nameof(terminalId));
+            throw new ArgumentException(
+                $"El terminal no puede superar {TerminalIdMaxLen} caracteres.",
+                nameof(terminalId)
+            );
 
         var session = new UserSession
         {
@@ -73,7 +77,11 @@ public sealed class UserSession : AuditableEntity, ITenantScopedEntity, ICompany
     /// <summary>Cierre automático al detectar un nuevo login del mismo usuario en la misma empresa. Idempotente.</summary>
     public void CloseByNewLogin(Guid closedBy)
     {
-        Close(UserSessionStatus.ClosedByNewLogin, "Cerrada automáticamente por un nuevo inicio de sesión.", closedBy);
+        Close(
+            UserSessionStatus.ClosedByNewLogin,
+            "Cerrada automáticamente por un nuevo inicio de sesión.",
+            closedBy
+        );
     }
 
     /// <summary>

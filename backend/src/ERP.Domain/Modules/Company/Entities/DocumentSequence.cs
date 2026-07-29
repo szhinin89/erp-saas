@@ -1,5 +1,5 @@
-using ERP.Domain.Common;
 using System.Globalization;
+using ERP.Domain.Common;
 
 namespace ERP.Domain.Modules.Company.Entities;
 
@@ -12,8 +12,10 @@ public sealed class DocumentSequence : BaseEntity, ITenantScopedEntity, ICompany
 {
     public Guid CompanyId { get; private set; }
     public Guid EmissionPointId { get; private set; }
+
     /// <summary>Código de tipo documental SRI: "01" Factura, "04" NC, "05" ND, "07" Retención.</summary>
     public string DocTypeCode { get; private set; } = null!;
+
     /// <summary>Próximo número a emitir. Empieza en 1 para que el primer documento sea "000000001".</summary>
     public int CurrentSeq { get; private set; }
     public DateTime CreatedAt { get; private set; }
@@ -25,10 +27,14 @@ public sealed class DocumentSequence : BaseEntity, ITenantScopedEntity, ICompany
         Guid tenantId,
         Guid companyId,
         Guid emissionPointId,
-        string docTypeCode)
+        string docTypeCode
+    )
     {
         if (string.IsNullOrWhiteSpace(docTypeCode))
-            throw new ArgumentException("El código de tipo documental es obligatorio.", nameof(docTypeCode));
+            throw new ArgumentException(
+                "El código de tipo documental es obligatorio.",
+                nameof(docTypeCode)
+            );
 
         var now = DateTime.UtcNow;
         return new DocumentSequence
@@ -38,7 +44,7 @@ public sealed class DocumentSequence : BaseEntity, ITenantScopedEntity, ICompany
             CompanyId = companyId,
             EmissionPointId = emissionPointId,
             DocTypeCode = docTypeCode.Trim(),
-            CurrentSeq = 1,   // primer documento → "000000001" (SRI válido)
+            CurrentSeq = 1, // primer documento → "000000001" (SRI válido)
             CreatedAt = now,
             UpdatedAt = now,
         };
@@ -55,7 +61,8 @@ public sealed class DocumentSequence : BaseEntity, ITenantScopedEntity, ICompany
         // la BD ya debería haberlo rechazado vía chk_doc_seq_positive.
         if (CurrentSeq < 1)
             throw new InvalidOperationException(
-                $"Invariante violada: CurrentSeq debe ser ≥ 1 pero es {CurrentSeq}.");
+                $"Invariante violada: CurrentSeq debe ser ≥ 1 pero es {CurrentSeq}."
+            );
 
         var formatted = CurrentSeq.ToString("D9", CultureInfo.InvariantCulture);
         CurrentSeq++;

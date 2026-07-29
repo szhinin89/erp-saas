@@ -6,12 +6,18 @@ namespace ERP.Domain.Modules.Inventory.Interfaces;
 public interface IStockRepository
 {
     Task<CurrentStock?> GetStockAsync(
-        Guid tenantId, Guid warehouseId, Guid productId,
-        CancellationToken cancellationToken = default);
+        Guid tenantId,
+        Guid warehouseId,
+        Guid productId,
+        CancellationToken cancellationToken = default
+    );
 
     Task<IReadOnlyList<CurrentStock>> GetStockByWarehouseAsync(
-        Guid tenantId, Guid warehouseId, Guid? productId,
-        CancellationToken cancellationToken = default);
+        Guid tenantId,
+        Guid warehouseId,
+        Guid? productId,
+        CancellationToken cancellationToken = default
+    );
 
     Task AddCurrentStockAsync(CurrentStock entity, CancellationToken cancellationToken = default);
 
@@ -24,11 +30,23 @@ public interface IStockRepository
     /// No llama a SaveChanges — eso ocurre una única vez vía <see cref="SaveChangesWithSequenceRetryAsync"/>.
     /// </summary>
     Task<StockMovement> AppendMovementAsync(
-        Guid tenantId, Guid companyId, Guid productId, Guid warehouseId,
-        StockMovementType movementType, decimal quantity, string uomCode,
-        DateOnly effectiveDate, string? reference, Guid? sourceDocId, string? sourceDocType,
-        Guid actorId, decimal? unitCost = null, Guid? lotId = null, Guid? serialId = null,
-        CancellationToken cancellationToken = default);
+        Guid tenantId,
+        Guid companyId,
+        Guid productId,
+        Guid warehouseId,
+        StockMovementType movementType,
+        decimal quantity,
+        string uomCode,
+        DateOnly effectiveDate,
+        string? reference,
+        Guid? sourceDocId,
+        string? sourceDocType,
+        Guid actorId,
+        decimal? unitCost = null,
+        Guid? lotId = null,
+        Guid? serialId = null,
+        CancellationToken cancellationToken = default
+    );
 
     /// <summary>
     /// Persiste la unidad de trabajo completa (incluye cualquier otra entidad ya trackeada por
@@ -45,7 +63,8 @@ public interface IStockRepository
         Guid warehouseId,
         DateTime? fromUtc,
         DateTime? toUtc,
-        CancellationToken cancellationToken = default);
+        CancellationToken cancellationToken = default
+    );
 
     /// <summary>
     /// Kardex de un producto. Si <paramref name="warehouseId"/> es null, retorna el
@@ -58,10 +77,14 @@ public interface IStockRepository
         Guid? warehouseId,
         DateTime? fromUtc,
         DateTime? toUtc,
-        CancellationToken cancellationToken = default);
+        CancellationToken cancellationToken = default
+    );
 
     Task<StockMovement?> GetMovementByIdAsync(
-        Guid tenantId, Guid movementId, CancellationToken cancellationToken = default);
+        Guid tenantId,
+        Guid movementId,
+        CancellationToken cancellationToken = default
+    );
 
     /// <summary>
     /// Búsqueda exacta por documento origen (SourceDocId + SourceDocType). El número de
@@ -69,28 +92,48 @@ public interface IStockRepository
     /// este método nunca matchea por texto libre.
     /// </summary>
     Task<IReadOnlyList<StockMovement>> GetMovementsByDocumentAsync(
-        Guid tenantId, Guid sourceDocId, string sourceDocType,
-        CancellationToken cancellationToken = default);
+        Guid tenantId,
+        Guid sourceDocId,
+        string sourceDocType,
+        CancellationToken cancellationToken = default
+    );
 
     /// <summary>Vecino anterior en la secuencia del Kardex para la misma clave Company/Product/Warehouse.</summary>
     Task<StockMovement?> GetPreviousMovementAsync(
-        Guid tenantId, Guid companyId, Guid productId, Guid warehouseId, long sequenceNumber,
-        CancellationToken cancellationToken = default);
+        Guid tenantId,
+        Guid companyId,
+        Guid productId,
+        Guid warehouseId,
+        long sequenceNumber,
+        CancellationToken cancellationToken = default
+    );
 
     /// <summary>Vecino siguiente en la secuencia del Kardex para la misma clave Company/Product/Warehouse.</summary>
     Task<StockMovement?> GetNextMovementAsync(
-        Guid tenantId, Guid companyId, Guid productId, Guid warehouseId, long sequenceNumber,
-        CancellationToken cancellationToken = default);
+        Guid tenantId,
+        Guid companyId,
+        Guid productId,
+        Guid warehouseId,
+        long sequenceNumber,
+        CancellationToken cancellationToken = default
+    );
 
     Task<(decimal TotalQuantity, decimal TotalStockValue)> GetAggregatedStockAsync(
-        Guid tenantId, Guid productId,
-        CancellationToken cancellationToken = default);
+        Guid tenantId,
+        Guid productId,
+        CancellationToken cancellationToken = default
+    );
 
     Task<IReadOnlyList<CurrentStock>> GetStockByProductAsync(
-        Guid tenantId, Guid productId,
-        CancellationToken cancellationToken = default);
+        Guid tenantId,
+        Guid productId,
+        CancellationToken cancellationToken = default
+    );
 
     Task<decimal?> GetLastPurchaseCostAsync(
-        Guid tenantId, Guid productId, Guid warehouseId,
-        CancellationToken cancellationToken = default);
+        Guid tenantId,
+        Guid productId,
+        Guid warehouseId,
+        CancellationToken cancellationToken = default
+    );
 }

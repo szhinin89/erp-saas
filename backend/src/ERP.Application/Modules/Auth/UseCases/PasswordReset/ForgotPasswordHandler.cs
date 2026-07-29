@@ -14,7 +14,8 @@ namespace ERP.Application.Auth.UseCases.PasswordReset;
 public sealed class ForgotPasswordHandler : IRequestHandler<ForgotPasswordCommand, Result<bool>>
 {
     public const string NoAccountMessage = "No existe una cuenta con ese correo.";
-    public const string MultipleAccountsMessage = "Hay múltiples cuentas con ese correo. Contacte a soporte.";
+    public const string MultipleAccountsMessage =
+        "Hay múltiples cuentas con ese correo. Contacte a soporte.";
 
     private readonly IAccessRepository _accessRepository;
     private readonly ITenantRepository _tenantRepository;
@@ -31,7 +32,8 @@ public sealed class ForgotPasswordHandler : IRequestHandler<ForgotPasswordComman
         IPasswordResetTokenRepository tokenRepository,
         IPasswordResetLinkSender linkSender,
         IOptions<PasswordResetOptions> options,
-        IValidator<ForgotPasswordCommand> validator)
+        IValidator<ForgotPasswordCommand> validator
+    )
     {
         _accessRepository = accessRepository;
         _tenantRepository = TenantRepository;
@@ -42,7 +44,10 @@ public sealed class ForgotPasswordHandler : IRequestHandler<ForgotPasswordComman
         _validator = validator;
     }
 
-    public async Task<Result<bool>> Handle(ForgotPasswordCommand command, CancellationToken cancellationToken)
+    public async Task<Result<bool>> Handle(
+        ForgotPasswordCommand command,
+        CancellationToken cancellationToken
+    )
     {
         var vr = await _validator.ValidateAsync(command, cancellationToken);
         if (!vr.IsValid)
@@ -53,7 +58,10 @@ public sealed class ForgotPasswordHandler : IRequestHandler<ForgotPasswordComman
         if (identity is null || !identity.IsActive)
             return Result<bool>.Failure(NoAccountMessage);
 
-        var memberships = await _accessRepository.GetActiveCompanyUserMembershipsForUserSystemAsync(identity.Id, cancellationToken);
+        var memberships = await _accessRepository.GetActiveCompanyUserMembershipsForUserSystemAsync(
+            identity.Id,
+            cancellationToken
+        );
         if (memberships.Count == 0)
             return Result<bool>.Failure(NoAccountMessage);
 
@@ -65,7 +73,10 @@ public sealed class ForgotPasswordHandler : IRequestHandler<ForgotPasswordComman
                 return Result<bool>.Failure(MultipleAccountsMessage);
         }
 
-        var companyList = await _companyRepository.GetByIdsAsync(new[] { memberships[0].CompanyId }, cancellationToken);
+        var companyList = await _companyRepository.GetByIdsAsync(
+            new[] { memberships[0].CompanyId },
+            cancellationToken
+        );
         var company = companyList.Count > 0 ? companyList[0] : null;
         var tenantId = company?.TenantId ?? Guid.Empty;
         var tenant = await _tenantRepository.GetByIdAsync(tenantId, cancellationToken);
@@ -73,16 +84,33 @@ public sealed class ForgotPasswordHandler : IRequestHandler<ForgotPasswordComman
             return Result<bool>.Failure(NoAccountMessage);
 
         // identity fue resuelto vía GetUserByEmailAsync — Email no puede ser null en este punto.
-        await IssueTokenAndSendAsync(identity.Id, tenant.Id, PasswordResetToken.KindIdentity, identity.Email!.Value, cancellationToken);
+        await IssueTokenAndSendAsync(
+            identity.Id,
+            tenant.Id,
+            PasswordResetToken.KindIdentity,
+            identity.Email!.Value,
+            cancellationToken
+        );
         return Result<bool>.Success(true);
     }
 
     private async Task IssueTokenAndSendAsync(
-        Guid userId, Guid? tenantId, string userKind, string email, CancellationToken cancellationToken)
+        Guid userId,
+        Guid? tenantId,
+        string userKind,
+        string email,
+        CancellationToken cancellationToken
+    )
     {
         var (raw, _) = await PasswordResetTokenIssuer.IssueAsync(
-            _tokenRepository, _options, userId, userKind, tenantId,
-            overrideLifetimeMinutes: null, cancellationToken);
+            _tokenRepository,
+            _options,
+            userId,
+            userKind,
+            tenantId,
+            overrideLifetimeMinutes: null,
+            cancellationToken
+        );
 
         var link = BuildResetLink(_options.Value.PublicBaseUrl, raw, tenantId);
         await _linkSender.SendPasswordResetLinkAsync(email, link, cancellationToken);
@@ -91,7 +119,8 @@ public sealed class ForgotPasswordHandler : IRequestHandler<ForgotPasswordComman
     private static string BuildResetLink(string publicBaseUrl, string rawToken, Guid? tenantId)
     {
         var baseUrl = (publicBaseUrl ?? string.Empty).Trim().TrimEnd('/');
-        if (string.IsNullOrEmpty(baseUrl)) baseUrl = "http://localhost:5173";
+        if (string.IsNullOrEmpty(baseUrl))
+            baseUrl = "http://localhost:5173";
 
         var tokenEnc = Uri.EscapeDataString(rawToken);
         var qs = $"token={tokenEnc}";

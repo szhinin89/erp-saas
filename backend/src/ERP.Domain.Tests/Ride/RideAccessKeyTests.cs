@@ -23,8 +23,7 @@ public sealed class RideAccessKeyTests
     {
         var act = () => RideAccessKey.Create(value!);
 
-        act.Should().Throw<ArgumentException>()
-            .WithMessage("*obligatoria*");
+        act.Should().Throw<ArgumentException>().WithMessage("*obligatoria*");
     }
 
     [Fact]
@@ -32,8 +31,7 @@ public sealed class RideAccessKeyTests
     {
         var act = () => RideAccessKey.Create(new string('7', 48));
 
-        act.Should().Throw<ArgumentException>()
-            .WithMessage("*exactamente 49 dígitos*");
+        act.Should().Throw<ArgumentException>().WithMessage("*exactamente 49 dígitos*");
     }
 
     [Fact]
@@ -41,8 +39,7 @@ public sealed class RideAccessKeyTests
     {
         var act = () => RideAccessKey.Create(new string('7', 50));
 
-        act.Should().Throw<ArgumentException>()
-            .WithMessage("*exactamente 49 dígitos*");
+        act.Should().Throw<ArgumentException>().WithMessage("*exactamente 49 dígitos*");
     }
 
     [Fact]
@@ -50,7 +47,6 @@ public sealed class RideAccessKeyTests
     {
         var act = () => RideAccessKey.Create('A' + new string('7', 48));
 
-        act.Should().Throw<ArgumentException>()
-            .WithMessage("*dígitos numéricos*");
+        act.Should().Throw<ArgumentException>().WithMessage("*dígitos numéricos*");
     }
 }

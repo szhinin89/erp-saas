@@ -11,27 +11,36 @@ namespace ERP.Domain.MasterData.Interfaces;
 /// </summary>
 public interface IBusinessPartnerLocationRepository
 {
-    Task<BusinessPartnerLocation?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default);
+    Task<BusinessPartnerLocation?> GetByIdAsync(
+        Guid id,
+        CancellationToken cancellationToken = default
+    );
 
     Task<IReadOnlyList<BusinessPartnerLocation>> GetByBusinessPartnerAsync(
         Guid businessPartnerId,
         bool? onlyActive = true,
-        CancellationToken cancellationToken = default);
+        CancellationToken cancellationToken = default
+    );
 
     Task<IReadOnlyList<BusinessPartnerLocation>> GetByPurposeAsync(
         Guid businessPartnerId,
         LocationPurpose purpose,
-        CancellationToken cancellationToken = default);
+        CancellationToken cancellationToken = default
+    );
 
     Task<BusinessPartnerLocation?> GetPrimaryAsync(
         Guid businessPartnerId,
-        CancellationToken cancellationToken = default);
+        CancellationToken cancellationToken = default
+    );
 
     /// <summary>
     /// Verifica si algún contacto activo referencia esta ubicación.
     /// Usado en el handler de Deactivate para enforcement del Problema 7 (Fase 4).
     /// </summary>
-    Task<bool> HasActiveContactsAsync(Guid locationId, CancellationToken cancellationToken = default);
+    Task<bool> HasActiveContactsAsync(
+        Guid locationId,
+        CancellationToken cancellationToken = default
+    );
 
     /// <summary>Quita IsPrimary de todas las ubicaciones del BP (antes de asignar nueva primaria).</summary>
     Task ClearPrimaryAsync(Guid businessPartnerId, CancellationToken cancellationToken = default);

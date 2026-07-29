@@ -33,41 +33,67 @@ public sealed class AssignBusinessPartnerRoleHandler
         IBusinessPartnerRoleRepository roleRepo,
         IIdentificationUsageValidator usageValidator,
         IOperationalContext ctx,
-        IDatabaseExceptionTranslator dbEx)
-        => (_bpRepo, _roleRepo, _usageValidator, _ctx, _dbEx) = (bpRepo, roleRepo, usageValidator, ctx, dbEx);
+        IDatabaseExceptionTranslator dbEx
+    ) =>
+        (_bpRepo, _roleRepo, _usageValidator, _ctx, _dbEx) = (
+            bpRepo,
+            roleRepo,
+            usageValidator,
+            ctx,
+            dbEx
+        );
 
     public async Task<Result<BusinessPartnerRoleDto>> Handle(
-        AssignBusinessPartnerRoleCommand cmd, CancellationToken cancellationToken)
+        AssignBusinessPartnerRoleCommand cmd,
+        CancellationToken cancellationToken
+    )
     {
         var bp = await _bpRepo.GetByIdAsync(cmd.BusinessPartnerId, cancellationToken);
         if (bp is null)
             return Result<BusinessPartnerRoleDto>.NotFound("BusinessPartner no encontrado.");
         if (!bp.IsActive)
             return Result<BusinessPartnerRoleDto>.ValidationFailure(
-                "No se puede asignar un rol a un BusinessPartner inactivo.");
+                "No se puede asignar un rol a un BusinessPartner inactivo."
+            );
 
         var usageType = MapRoleToUsage(cmd.RoleType);
         if (usageType.HasValue)
         {
-            var allowed = await _usageValidator.IsAllowedAsync(bp.Identification.Type, usageType.Value, cancellationToken);
+            var allowed = await _usageValidator.IsAllowedAsync(
+                bp.Identification.Type,
+                usageType.Value,
+                cancellationToken
+            );
             if (!allowed)
                 return Result<BusinessPartnerRoleDto>.ValidationFailure(
-                    $"El tipo de identificación '{bp.Identification.Type}' no está permitido para el rol {cmd.RoleType}.");
+                    $"El tipo de identificación '{bp.Identification.Type}' no está permitido para el rol {cmd.RoleType}."
+                );
         }
 
-        var existing = await _roleRepo.GetByTypeAsync(cmd.BusinessPartnerId, cmd.RoleType, cancellationToken);
+        var existing = await _roleRepo.GetByTypeAsync(
+            cmd.BusinessPartnerId,
+            cmd.RoleType,
+            cancellationToken
+        );
 
         BusinessPartnerRole role;
         bool isNew = false;
 
         if (existing is not null && existing.IsActive)
             return Result<BusinessPartnerRoleDto>.ValidationFailure(
-                $"El rol {cmd.RoleType} ya está activo para este BusinessPartner.");
+                $"El rol {cmd.RoleType} ya está activo para este BusinessPartner."
+            );
 
         if (existing is not null)
         {
-            try { existing.Reactivate(_ctx.UserId); }
-            catch (ArgumentException ex) { return Result<BusinessPartnerRoleDto>.ValidationFailure(ex.Message); }
+            try
+            {
+                existing.Reactivate(_ctx.UserId);
+            }
+            catch (ArgumentException ex)
+            {
+                return Result<BusinessPartnerRoleDto>.ValidationFailure(ex.Message);
+            }
             role = existing;
         }
         else
@@ -82,9 +108,13 @@ public sealed class AssignBusinessPartnerRoleHandler
                     cmd.SupplierConfig,
                     cmd.CarrierConfig,
                     cmd.CustomerConfig,
-                    cmd.ClassificationConfig);
+                    cmd.ClassificationConfig
+                );
             }
-            catch (ArgumentException ex) { return Result<BusinessPartnerRoleDto>.ValidationFailure(ex.Message); }
+            catch (ArgumentException ex)
+            {
+                return Result<BusinessPartnerRoleDto>.ValidationFailure(ex.Message);
+            }
             await _roleRepo.AddAsync(role, cancellationToken);
             isNew = true;
         }
@@ -99,16 +129,18 @@ public sealed class AssignBusinessPartnerRoleHandler
         catch (Exception ex) when (_dbEx.TryGetUniqueViolation(ex, out _))
         {
             return Result<BusinessPartnerRoleDto>.Conflict(
-                $"El rol {cmd.RoleType} ya existe para este BusinessPartner (race condition).");
+                $"El rol {cmd.RoleType} ya existe para este BusinessPartner (race condition)."
+            );
         }
     }
 
-    private static IdentificationUsageType? MapRoleToUsage(RoleType role) => role switch
-    {
-        RoleType.Customer => IdentificationUsageType.Customer,
-        RoleType.Supplier => IdentificationUsageType.Supplier,
-        RoleType.Employee => IdentificationUsageType.Employee,
-        RoleType.Carrier => IdentificationUsageType.Carrier,
-        _ => null,
-    };
+    private static IdentificationUsageType? MapRoleToUsage(RoleType role) =>
+        role switch
+        {
+            RoleType.Customer => IdentificationUsageType.Customer,
+            RoleType.Supplier => IdentificationUsageType.Supplier,
+            RoleType.Employee => IdentificationUsageType.Employee,
+            RoleType.Carrier => IdentificationUsageType.Carrier,
+            _ => null,
+        };
 }

@@ -24,7 +24,9 @@ namespace ERP.Application.Tests.Behaviors;
 /// </summary>
 public sealed class CompanyScopeBehaviorTests
 {
-    private sealed record FakeCompanyScopedRequest : IRequest<Result<string>>, IRequiresCompanyContext;
+    private sealed record FakeCompanyScopedRequest
+        : IRequest<Result<string>>,
+            IRequiresCompanyContext;
 
     private sealed class Fixture
     {
@@ -35,16 +37,20 @@ public sealed class CompanyScopeBehaviorTests
         {
             // Tenant activo por defecto en todos los escenarios — lo que se prueba aquí es
             // específicamente la validación de empresa (RequireCurrentCompanyAsync), no la de tenant.
-            Guard.Setup(g => g.RequireActiveTenantAsync(It.IsAny<CancellationToken>()))
+            Guard
+                .Setup(g => g.RequireActiveTenantAsync(It.IsAny<CancellationToken>()))
                 .ReturnsAsync(Result<Guid>.Success(Guid.NewGuid()));
         }
 
-        public CompanyScopeBehavior<FakeCompanyScopedRequest, Result<string>> BuildBehavior()
-            => new(Guard.Object, Company.Object);
+        public CompanyScopeBehavior<FakeCompanyScopedRequest, Result<string>> BuildBehavior() =>
+            new(Guard.Object, Company.Object);
     }
 
-    private static RequestHandlerDelegate<Result<string>> NextReturning(Result<string> value, Action? onCalled = null)
-        => _ =>
+    private static RequestHandlerDelegate<Result<string>> NextReturning(
+        Result<string> value,
+        Action? onCalled = null
+    ) =>
+        _ =>
         {
             onCalled?.Invoke();
             return Task.FromResult(value);
@@ -55,19 +61,35 @@ public sealed class CompanyScopeBehaviorTests
     {
         var f = new Fixture();
         f.Guard.Setup(g => g.RequireCurrentCompanyAsync(It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Result<CompanyAccessContext>.Success(
-                new CompanyAccessContext(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), "Admin", true, true)));
+            .ReturnsAsync(
+                Result<CompanyAccessContext>.Success(
+                    new CompanyAccessContext(
+                        Guid.NewGuid(),
+                        Guid.NewGuid(),
+                        Guid.NewGuid(),
+                        "Admin",
+                        true,
+                        true
+                    )
+                )
+            );
 
         var behavior = f.BuildBehavior();
         var expected = Result<string>.Success("ok");
         var nextCalled = false;
 
         var result = await behavior.Handle(
-            new FakeCompanyScopedRequest(), NextReturning(expected, () => nextCalled = true), CancellationToken.None);
+            new FakeCompanyScopedRequest(),
+            NextReturning(expected, () => nextCalled = true),
+            CancellationToken.None
+        );
 
         result.Should().Be(expected);
         nextCalled.Should().BeTrue();
-        f.Guard.Verify(g => g.RequireCurrentCompanyAsync(It.IsAny<CancellationToken>()), Times.Once);
+        f.Guard.Verify(
+            g => g.RequireCurrentCompanyAsync(It.IsAny<CancellationToken>()),
+            Times.Once
+        );
     }
 
     [Fact]
@@ -80,11 +102,19 @@ public sealed class CompanyScopeBehaviorTests
         var behavior = f.BuildBehavior();
         var nextCalled = false;
 
-        var act = async () => await behavior.Handle(
-            new FakeCompanyScopedRequest(), NextReturning(Result<string>.Success("no-debe-llegar"), () => nextCalled = true), CancellationToken.None);
+        var act = async () =>
+            await behavior.Handle(
+                new FakeCompanyScopedRequest(),
+                NextReturning(Result<string>.Success("no-debe-llegar"), () => nextCalled = true),
+                CancellationToken.None
+            );
 
         await act.Should().ThrowAsync<CompanyScopeException>();
-        nextCalled.Should().BeFalse("el handler nunca debe ejecutarse si la empresa del header no tiene membership real");
+        nextCalled
+            .Should()
+            .BeFalse(
+                "el handler nunca debe ejecutarse si la empresa del header no tiene membership real"
+            );
     }
 
     [Fact]
@@ -94,13 +124,21 @@ public sealed class CompanyScopeBehaviorTests
         // Mismo mensaje que CompanyAccessGuard.RequireMembershipAsync devuelve cuando
         // company.TenantId != tenantId del JWT — la empresa existe, pero no es del tenant del caller.
         f.Guard.Setup(g => g.RequireCurrentCompanyAsync(It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Result<CompanyAccessContext>.Failure("Empresa no encontrada o no pertenece al tenant activo."));
+            .ReturnsAsync(
+                Result<CompanyAccessContext>.Failure(
+                    "Empresa no encontrada o no pertenece al tenant activo."
+                )
+            );
 
         var behavior = f.BuildBehavior();
         var nextCalled = false;
 
-        var act = async () => await behavior.Handle(
-            new FakeCompanyScopedRequest(), NextReturning(Result<string>.Success("no-debe-llegar"), () => nextCalled = true), CancellationToken.None);
+        var act = async () =>
+            await behavior.Handle(
+                new FakeCompanyScopedRequest(),
+                NextReturning(Result<string>.Success("no-debe-llegar"), () => nextCalled = true),
+                CancellationToken.None
+            );
 
         await act.Should().ThrowAsync<CompanyScopeException>();
         nextCalled.Should().BeFalse();
@@ -111,11 +149,17 @@ public sealed class CompanyScopeBehaviorTests
     {
         var f = new Fixture();
         f.Guard.Setup(g => g.RequireCurrentCompanyAsync(It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Result<CompanyAccessContext>.Failure("No hay empresa operativa seleccionada."));
+            .ReturnsAsync(
+                Result<CompanyAccessContext>.Failure("No hay empresa operativa seleccionada.")
+            );
 
         var behavior = f.BuildBehavior();
-        var act = async () => await behavior.Handle(
-            new FakeCompanyScopedRequest(), NextReturning(Result<string>.Success("no-debe-llegar")), CancellationToken.None);
+        var act = async () =>
+            await behavior.Handle(
+                new FakeCompanyScopedRequest(),
+                NextReturning(Result<string>.Success("no-debe-llegar")),
+                CancellationToken.None
+            );
 
         await act.Should().ThrowAsync<CompanyScopeException>();
     }
@@ -128,10 +172,17 @@ public sealed class CompanyScopeBehaviorTests
             .ReturnsAsync(Result<Guid>.Failure("Tenant no válido o inactivo."));
 
         var behavior = f.BuildBehavior();
-        var act = async () => await behavior.Handle(
-            new FakeCompanyScopedRequest(), NextReturning(Result<string>.Success("no-debe-llegar")), CancellationToken.None);
+        var act = async () =>
+            await behavior.Handle(
+                new FakeCompanyScopedRequest(),
+                NextReturning(Result<string>.Success("no-debe-llegar")),
+                CancellationToken.None
+            );
 
         await act.Should().ThrowAsync<CompanyScopeException>();
-        f.Guard.Verify(g => g.RequireCurrentCompanyAsync(It.IsAny<CancellationToken>()), Times.Never);
+        f.Guard.Verify(
+            g => g.RequireCurrentCompanyAsync(It.IsAny<CancellationToken>()),
+            Times.Never
+        );
     }
 }

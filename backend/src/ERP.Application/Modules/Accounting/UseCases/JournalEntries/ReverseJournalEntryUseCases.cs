@@ -17,15 +17,16 @@ namespace ERP.Application.Modules.Accounting.UseCases.JournalEntries;
 /// ya existente y usa <see cref="JournalEntry.Reverse"/> para construir el asiento inverso.
 /// </summary>
 public sealed record ReverseJournalEntryCommand(Guid JournalEntryId, string Reason)
-    : IRequest<Result<JournalEntryDto>>, ICompanyScopedRequest;
+    : IRequest<Result<JournalEntryDto>>,
+        ICompanyScopedRequest;
 
-public sealed class ReverseJournalEntryCommandValidator : AbstractValidator<ReverseJournalEntryCommand>
+public sealed class ReverseJournalEntryCommandValidator
+    : AbstractValidator<ReverseJournalEntryCommand>
 {
     public ReverseJournalEntryCommandValidator()
     {
         RuleFor(x => x.JournalEntryId).NotEmpty();
-        RuleFor(x => x.Reason).NotEmpty()
-            .WithMessage("El motivo del reverso es obligatorio.");
+        RuleFor(x => x.Reason).NotEmpty().WithMessage("El motivo del reverso es obligatorio.");
     }
 }
 
@@ -45,36 +46,63 @@ public sealed class ReverseJournalEntryCommandHandler
         IJournalEntryRepository journalEntryRepository,
         IAccountingPeriodRepository accountingPeriodRepository,
         IJournalEntrySequenceRepository journalEntrySequenceRepository,
-        ICurrentTenant t, ICurrentCompany c, ICurrentUser u)
+        ICurrentTenant t,
+        ICurrentCompany c,
+        ICurrentUser u
+    )
     {
         _journalEntryRepository = journalEntryRepository;
         _accountingPeriodRepository = accountingPeriodRepository;
         _journalEntrySequenceRepository = journalEntrySequenceRepository;
-        _t = t; _c = c; _u = u;
+        _t = t;
+        _c = c;
+        _u = u;
     }
 
-    public async Task<Result<JournalEntryDto>> Handle(ReverseJournalEntryCommand cmd, CancellationToken ct)
+    public async Task<Result<JournalEntryDto>> Handle(
+        ReverseJournalEntryCommand cmd,
+        CancellationToken ct
+    )
     {
         var tenantId = _t.TenantId;
         var companyId = _c.CompanyId;
 
-        var original = await _journalEntryRepository.GetByIdAsync(tenantId, companyId, cmd.JournalEntryId, ct);
+        var original = await _journalEntryRepository.GetByIdAsync(
+            tenantId,
+            companyId,
+            cmd.JournalEntryId,
+            ct
+        );
         if (original is null)
             return Result<JournalEntryDto>.NotFound("Asiento contable no encontrado.");
 
         // Mismo criterio que PostingPeriodGuard usa para Post() (ADR-026 §6.1): un asiento no
         // puede reversarse si su período ya no admite contabilización (Closed o Locked). No se
         // duplica la regla — se reutiliza el mismo guard interno del Posting Engine.
-        var period = await _accountingPeriodRepository.GetByIdAsync(tenantId, companyId, original.AccountingPeriodId, ct);
+        var period = await _accountingPeriodRepository.GetByIdAsync(
+            tenantId,
+            companyId,
+            original.AccountingPeriodId,
+            ct
+        );
         if (period is null)
-            return Result<JournalEntryDto>.ValidationFailure("El período contable del asiento original no existe.");
+            return Result<JournalEntryDto>.ValidationFailure(
+                "El período contable del asiento original no existe."
+            );
 
         var periodGuardResult = new PostingPeriodGuard().Ensure(period);
         if (!periodGuardResult.IsSuccess)
-            return Result<JournalEntryDto>.ValidationFailure(periodGuardResult.Error!, periodGuardResult.Code);
+            return Result<JournalEntryDto>.ValidationFailure(
+                periodGuardResult.Error!,
+                periodGuardResult.Code
+            );
 
         var entryNumber = await _journalEntrySequenceRepository.ReserveNextNumberAsync(
-            tenantId, companyId, original.FiscalYear, ct);
+            tenantId,
+            companyId,
+            original.FiscalYear,
+            ct
+        );
 
         JournalEntry reversal;
         try
@@ -101,9 +129,22 @@ public sealed class ReverseJournalEntryCommandHandler
 
 file static class Map
 {
-    public static JournalEntryDto ToDto(JournalEntry e) => new(
-        e.Id, e.EntryDate, e.AccountingPeriodId, e.FiscalYear,
-        e.SourceModule, e.SourceEventType, e.SourceEventId, e.Description,
-        e.Status.ToString(), e.EntryNumber, e.PostedAtUtc,
-        e.OriginalJournalEntryId, e.ReverseJournalEntryId, e.ReversedAtUtc, e.ReverseReason);
+    public static JournalEntryDto ToDto(JournalEntry e) =>
+        new(
+            e.Id,
+            e.EntryDate,
+            e.AccountingPeriodId,
+            e.FiscalYear,
+            e.SourceModule,
+            e.SourceEventType,
+            e.SourceEventId,
+            e.Description,
+            e.Status.ToString(),
+            e.EntryNumber,
+            e.PostedAtUtc,
+            e.OriginalJournalEntryId,
+            e.ReverseJournalEntryId,
+            e.ReversedAtUtc,
+            e.ReverseReason
+        );
 }

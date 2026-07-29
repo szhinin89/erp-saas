@@ -31,9 +31,19 @@ public sealed record SupplierRoleConfig
     /// 17=Dinero electrónico, 18=Tarjeta prepago, 19=Tarjeta crédito,
     /// 20=Otros con sistema financiero, 21=Endoso de títulos.
     /// </summary>
-    public static readonly IReadOnlySet<string> ValidPaymentMethodCodes =
-        new HashSet<string>(StringComparer.OrdinalIgnoreCase)
-        { "01", "15", "16", "17", "18", "19", "20", "21" };
+    public static readonly IReadOnlySet<string> ValidPaymentMethodCodes = new HashSet<string>(
+        StringComparer.OrdinalIgnoreCase
+    )
+    {
+        "01",
+        "15",
+        "16",
+        "17",
+        "18",
+        "19",
+        "20",
+        "21",
+    };
 
     public string? DefaultTaxSupportCode { get; }
     public string? DefaultRetentionVatCode { get; }
@@ -80,7 +90,8 @@ public sealed record SupplierRoleConfig
         string? refundProviderTypeCode,
         bool isRetentionExempt,
         bool isRequiredToKeepAccounting,
-        Guid paymentTermId)
+        Guid paymentTermId
+    )
     {
         DefaultTaxSupportCode = defaultTaxSupportCode;
         DefaultRetentionVatCode = defaultRetentionVatCode;
@@ -102,20 +113,25 @@ public sealed record SupplierRoleConfig
         string? defaultPaymentMethodCode = null,
         string? refundProviderTypeCode = null,
         bool isRetentionExempt = false,
-        bool isRequiredToKeepAccounting = false)
+        bool isRequiredToKeepAccounting = false
+    )
     {
         if (paymentTermId == Guid.Empty)
             throw new ArgumentException(
                 "El proveedor debe tener una condición de pago obligatoria.",
-                nameof(paymentTermId));
+                nameof(paymentTermId)
+            );
 
         var paymentMethodCode = defaultPaymentMethodCode?.Trim();
-        if (!string.IsNullOrEmpty(paymentMethodCode)
-            && !ValidPaymentMethodCodes.Contains(paymentMethodCode))
+        if (
+            !string.IsNullOrEmpty(paymentMethodCode)
+            && !ValidPaymentMethodCodes.Contains(paymentMethodCode)
+        )
             throw new ArgumentException(
-                $"DefaultPaymentMethodCode '{paymentMethodCode}' no es un código SRI válido. " +
-                $"Valores permitidos: {string.Join(", ", ValidPaymentMethodCodes)}.",
-                nameof(defaultPaymentMethodCode));
+                $"DefaultPaymentMethodCode '{paymentMethodCode}' no es un código SRI válido. "
+                    + $"Valores permitidos: {string.Join(", ", ValidPaymentMethodCodes)}.",
+                nameof(defaultPaymentMethodCode)
+            );
 
         return new SupplierRoleConfig(
             NormalizeSriCode(defaultTaxSupportCode, nameof(defaultTaxSupportCode)),
@@ -126,24 +142,33 @@ public sealed record SupplierRoleConfig
             NormalizeSriCode(refundProviderTypeCode, nameof(refundProviderTypeCode)),
             isRetentionExempt,
             isRequiredToKeepAccounting,
-            paymentTermId);
+            paymentTermId
+        );
     }
 
     private static string? NormalizeSriCode(string? code, string paramName)
     {
         var c = code?.Trim();
-        if (string.IsNullOrEmpty(c)) return null;
+        if (string.IsNullOrEmpty(c))
+            return null;
         if (c.Length > SriCodeMaxLen)
-            throw new ArgumentException($"{paramName} no puede superar {SriCodeMaxLen} caracteres.", paramName);
+            throw new ArgumentException(
+                $"{paramName} no puede superar {SriCodeMaxLen} caracteres.",
+                paramName
+            );
         return c;
     }
 
     private static string? NormalizeText(string? value, int maxLen, string paramName)
     {
         var v = value?.Trim();
-        if (string.IsNullOrEmpty(v)) return null;
+        if (string.IsNullOrEmpty(v))
+            return null;
         if (v.Length > maxLen)
-            throw new ArgumentException($"{paramName} no puede superar {maxLen} caracteres.", paramName);
+            throw new ArgumentException(
+                $"{paramName} no puede superar {maxLen} caracteres.",
+                paramName
+            );
         return v;
     }
 }

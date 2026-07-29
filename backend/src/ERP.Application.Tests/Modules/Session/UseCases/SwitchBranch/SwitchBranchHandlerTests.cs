@@ -27,11 +27,24 @@ public sealed class SwitchBranchHandlerTests
         var f = new Fixture();
         var branchId = Guid.NewGuid();
         f.Guard.Setup(g => g.RequireBranchAsync(branchId, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Result<BranchAccessContext>.Success(
-                new BranchAccessContext(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), branchId, "Matriz", true)));
+            .ReturnsAsync(
+                Result<BranchAccessContext>.Success(
+                    new BranchAccessContext(
+                        Guid.NewGuid(),
+                        Guid.NewGuid(),
+                        Guid.NewGuid(),
+                        branchId,
+                        "Matriz",
+                        true
+                    )
+                )
+            );
 
         var handler = f.BuildHandler();
-        var result = await handler.Handle(new SwitchBranchCommand(branchId), CancellationToken.None);
+        var result = await handler.Handle(
+            new SwitchBranchCommand(branchId),
+            CancellationToken.None
+        );
 
         result.IsSuccess.Should().BeTrue();
         result.Value!.Id.Should().Be(branchId);
@@ -48,7 +61,10 @@ public sealed class SwitchBranchHandlerTests
             .ReturnsAsync(Result<BranchAccessContext>.Failure("Sucursal no encontrada."));
 
         var handler = f.BuildHandler();
-        var result = await handler.Handle(new SwitchBranchCommand(branchId), CancellationToken.None);
+        var result = await handler.Handle(
+            new SwitchBranchCommand(branchId),
+            CancellationToken.None
+        );
 
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Be("Sucursal no encontrada.");
@@ -63,7 +79,10 @@ public sealed class SwitchBranchHandlerTests
             .ReturnsAsync(Result<BranchAccessContext>.Failure("La sucursal está deshabilitada."));
 
         var handler = f.BuildHandler();
-        var result = await handler.Handle(new SwitchBranchCommand(branchId), CancellationToken.None);
+        var result = await handler.Handle(
+            new SwitchBranchCommand(branchId),
+            CancellationToken.None
+        );
 
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Be("La sucursal está deshabilitada.");
@@ -75,10 +94,17 @@ public sealed class SwitchBranchHandlerTests
         var f = new Fixture();
         var branchId = Guid.NewGuid();
         f.Guard.Setup(g => g.RequireBranchAsync(branchId, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Result<BranchAccessContext>.Failure("No tiene autorización para operar en esta sucursal."));
+            .ReturnsAsync(
+                Result<BranchAccessContext>.Failure(
+                    "No tiene autorización para operar en esta sucursal."
+                )
+            );
 
         var handler = f.BuildHandler();
-        var result = await handler.Handle(new SwitchBranchCommand(branchId), CancellationToken.None);
+        var result = await handler.Handle(
+            new SwitchBranchCommand(branchId),
+            CancellationToken.None
+        );
 
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Be("No tiene autorización para operar en esta sucursal.");
@@ -90,13 +116,29 @@ public sealed class SwitchBranchHandlerTests
         var f = new Fixture();
         var branchId = Guid.NewGuid();
         f.Guard.Setup(g => g.RequireBranchAsync(branchId, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Result<BranchAccessContext>.Success(
-                new BranchAccessContext(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), branchId, "Sucursal Norte", false)));
+            .ReturnsAsync(
+                Result<BranchAccessContext>.Success(
+                    new BranchAccessContext(
+                        Guid.NewGuid(),
+                        Guid.NewGuid(),
+                        Guid.NewGuid(),
+                        branchId,
+                        "Sucursal Norte",
+                        false
+                    )
+                )
+            );
 
         var handler = f.BuildHandler();
-        var result = await handler.Handle(new SwitchBranchCommand(branchId), CancellationToken.None);
+        var result = await handler.Handle(
+            new SwitchBranchCommand(branchId),
+            CancellationToken.None
+        );
 
         result.IsSuccess.Should().BeTrue();
-        f.Guard.Verify(g => g.RequireBranchAsync(branchId, It.IsAny<CancellationToken>()), Times.Once);
+        f.Guard.Verify(
+            g => g.RequireBranchAsync(branchId, It.IsAny<CancellationToken>()),
+            Times.Once
+        );
     }
 }

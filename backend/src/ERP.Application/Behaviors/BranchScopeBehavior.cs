@@ -15,21 +15,24 @@ namespace ERP.Application.Behaviors;
 /// hereda de ICompanyScopedRequest, así que CompanyScopeBehavior ya valida empresa operativa
 /// antes de que este behavior se ejecute.
 /// </summary>
-public sealed class BranchScopeBehavior<TRequest, TResponse> : IPipelineBehavior<TRequest, TResponse>
+public sealed class BranchScopeBehavior<TRequest, TResponse>
+    : IPipelineBehavior<TRequest, TResponse>
     where TRequest : notnull
 {
     private readonly IBranchAccessGuard _accessGuard;
     private readonly ICurrentBranch _branch;
 
-    public BranchScopeBehavior(
-        IBranchAccessGuard accessGuard,
-        ICurrentBranch branch)
+    public BranchScopeBehavior(IBranchAccessGuard accessGuard, ICurrentBranch branch)
     {
         _accessGuard = accessGuard;
         _branch = branch;
     }
 
-    public async Task<TResponse> Handle(TRequest request, RequestHandlerDelegate<TResponse> next, CancellationToken cancellationToken)
+    public async Task<TResponse> Handle(
+        TRequest request,
+        RequestHandlerDelegate<TResponse> next,
+        CancellationToken cancellationToken
+    )
     {
         if (request is not IBranchScopedRequest)
             return await next(cancellationToken);

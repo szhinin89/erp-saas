@@ -8,7 +8,8 @@ using MediatR;
 
 namespace ERP.Application.Modules.Inventory.ItemMatching.UseCases.FindItemMatches;
 
-public sealed class FindItemMatchesHandler : IRequestHandler<FindItemMatchesQuery, Result<IReadOnlyList<PurchaseReceptionLineMatchDto>>>
+public sealed class FindItemMatchesHandler
+    : IRequestHandler<FindItemMatchesQuery, Result<IReadOnlyList<PurchaseReceptionLineMatchDto>>>
 {
     private const int MaxSuggestionsPerLine = 5;
 
@@ -16,7 +17,11 @@ public sealed class FindItemMatchesHandler : IRequestHandler<FindItemMatchesQuer
     private readonly IItemMatchFinder _matchFinder;
     private readonly ICurrentTenant _tenant;
 
-    public FindItemMatchesHandler(IPurchaseReceptionDocumentRepository documentRepo, IItemMatchFinder matchFinder, ICurrentTenant tenant)
+    public FindItemMatchesHandler(
+        IPurchaseReceptionDocumentRepository documentRepo,
+        IItemMatchFinder matchFinder,
+        ICurrentTenant tenant
+    )
     {
         _documentRepo = documentRepo;
         _matchFinder = matchFinder;
@@ -24,11 +29,19 @@ public sealed class FindItemMatchesHandler : IRequestHandler<FindItemMatchesQuer
     }
 
     public async Task<Result<IReadOnlyList<PurchaseReceptionLineMatchDto>>> Handle(
-        FindItemMatchesQuery request, CancellationToken cancellationToken)
+        FindItemMatchesQuery request,
+        CancellationToken cancellationToken
+    )
     {
-        var document = await _documentRepo.GetByIdAsync(_tenant.TenantId, request.PurchaseReceptionDocumentId, cancellationToken);
+        var document = await _documentRepo.GetByIdAsync(
+            _tenant.TenantId,
+            request.PurchaseReceptionDocumentId,
+            cancellationToken
+        );
         if (document is null)
-            return Result<IReadOnlyList<PurchaseReceptionLineMatchDto>>.NotFound("El documento de recepción no existe.");
+            return Result<IReadOnlyList<PurchaseReceptionLineMatchDto>>.NotFound(
+                "El documento de recepción no existe."
+            );
 
         var dtos = new List<PurchaseReceptionLineMatchDto>();
 
@@ -41,8 +54,14 @@ public sealed class FindItemMatchesHandler : IRequestHandler<FindItemMatchesQuer
             }
 
             var suggestions = await _matchFinder.FindCandidatesAsync(
-                _tenant.TenantId, document.SupplierId, line.SupplierCode, line.SupplierAuxCode,
-                line.Description, MaxSuggestionsPerLine, cancellationToken);
+                _tenant.TenantId,
+                document.SupplierId,
+                line.SupplierCode,
+                line.SupplierAuxCode,
+                line.Description,
+                MaxSuggestionsPerLine,
+                cancellationToken
+            );
 
             dtos.Add(ItemMatchingMapper.ToDto(line, document.SupplierId, suggestions));
         }

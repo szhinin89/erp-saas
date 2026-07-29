@@ -4,13 +4,18 @@ namespace ERP.Application.Modules.ElectronicDocuments.Services;
 
 public sealed class ElectronicDocumentDataProviderResolver : IElectronicDocumentDataProviderResolver
 {
-    private readonly IReadOnlyDictionary<ElectronicDocumentType, IElectronicDocumentDataProvider> _providers;
+    private readonly IReadOnlyDictionary<
+        ElectronicDocumentType,
+        IElectronicDocumentDataProvider
+    > _providers;
 
-    public ElectronicDocumentDataProviderResolver(IEnumerable<IElectronicDocumentDataProvider> providers)
+    public ElectronicDocumentDataProviderResolver(
+        IEnumerable<IElectronicDocumentDataProvider> providers
+    )
     {
         _providers = providers.ToDictionary(p => p.DocumentType);
     }
 
-    public IElectronicDocumentDataProvider? Resolve(ElectronicDocumentType documentType)
-        => _providers.TryGetValue(documentType, out var provider) ? provider : null;
+    public IElectronicDocumentDataProvider? Resolve(ElectronicDocumentType documentType) =>
+        _providers.TryGetValue(documentType, out var provider) ? provider : null;
 }

@@ -8,7 +8,9 @@ namespace ERP.Application.Navigation;
 /// </summary>
 public interface INavigationBuilder
 {
-    Task<IReadOnlyList<NavMenuGroupDto>> BuildMenuAsync(CancellationToken cancellationToken = default);
+    Task<IReadOnlyList<NavMenuGroupDto>> BuildMenuAsync(
+        CancellationToken cancellationToken = default
+    );
 
     /// <summary>
     /// Invalida la entrada de cache del menú para un usuario en una empresa específica.

@@ -22,14 +22,21 @@ public sealed class CashClosingCount : IMustHaveTenant
         Guid tenantId,
         decimal denominationValue,
         string denominationLabel,
-        int quantity)
+        int quantity
+    )
     {
         if (cashSessionId == Guid.Empty)
             throw new ArgumentException("La sesión de caja es obligatoria.", nameof(cashSessionId));
         if (denominationValue <= 0)
-            throw new ArgumentException("El valor de la denominación debe ser mayor a cero.", nameof(denominationValue));
+            throw new ArgumentException(
+                "El valor de la denominación debe ser mayor a cero.",
+                nameof(denominationValue)
+            );
         if (string.IsNullOrWhiteSpace(denominationLabel))
-            throw new ArgumentException("La etiqueta de denominación es obligatoria.", nameof(denominationLabel));
+            throw new ArgumentException(
+                "La etiqueta de denominación es obligatoria.",
+                nameof(denominationLabel)
+            );
         if (quantity < 0)
             throw new ArgumentException("La cantidad no puede ser negativa.", nameof(quantity));
 

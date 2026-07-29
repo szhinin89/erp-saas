@@ -17,6 +17,7 @@ public sealed class Establishment : MasterEntity, ITenantScopedEntity, ICompanyS
 
     /// <summary>Sucursal operativa con la que se agrupa este establecimiento. Opcional � el SRI no requiere sucursal para registrar un establecimiento.</summary>
     public Guid? BranchId { get; private set; }
+
     /// <summary>Denormalizado desde Branch.CompanyId; requerido por filtro global ICompanyScopedEntity.</summary>
     public Guid CompanyId { get; private set; }
     public string Code { get; private set; } = null!;
@@ -41,10 +42,14 @@ public sealed class Establishment : MasterEntity, ITenantScopedEntity, ICompanyS
         string address,
         string? phone,
         bool isMain,
-        Guid createdBy)
+        Guid createdBy
+    )
     {
         if (string.IsNullOrWhiteSpace(code))
-            throw new ArgumentException("El código de establecimiento es obligatorio.", nameof(code));
+            throw new ArgumentException(
+                "El código de establecimiento es obligatorio.",
+                nameof(code)
+            );
 
         var e = new Establishment
         {
@@ -77,9 +82,20 @@ public sealed class Establishment : MasterEntity, ITenantScopedEntity, ICompanyS
         string address,
         string? phone,
         bool isMain,
-        Guid createdBy)
+        Guid createdBy
+    )
     {
-        var e = Create(tenantId, branchId, companyId, code, name, address, phone, isMain, createdBy);
+        var e = Create(
+            tenantId,
+            branchId,
+            companyId,
+            code,
+            name,
+            address,
+            phone,
+            isMain,
+            createdBy
+        );
         e.MarkAsSystemSeeded();
         return e;
     }

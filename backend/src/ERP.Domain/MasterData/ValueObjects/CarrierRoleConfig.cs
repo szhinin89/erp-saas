@@ -23,15 +23,23 @@ public sealed record CarrierRoleConfig
 
     public static CarrierRoleConfig Create(
         string? transportAuthorizationNumber = null,
-        decimal? vehicleCapacityTons = null)
+        decimal? vehicleCapacityTons = null
+    )
     {
         var auth = transportAuthorizationNumber?.Trim();
-        if (auth is { Length: 0 }) auth = null;
+        if (auth is { Length: 0 })
+            auth = null;
         if (auth?.Length > AuthNumberMaxLen)
-            throw new ArgumentException($"El número de autorización no puede superar {AuthNumberMaxLen} caracteres.", nameof(transportAuthorizationNumber));
+            throw new ArgumentException(
+                $"El número de autorización no puede superar {AuthNumberMaxLen} caracteres.",
+                nameof(transportAuthorizationNumber)
+            );
 
         if (vehicleCapacityTons is <= 0)
-            throw new ArgumentException("La capacidad del vehículo debe ser mayor a cero.", nameof(vehicleCapacityTons));
+            throw new ArgumentException(
+                "La capacidad del vehículo debe ser mayor a cero.",
+                nameof(vehicleCapacityTons)
+            );
 
         return new CarrierRoleConfig(auth, vehicleCapacityTons);
     }

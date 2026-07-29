@@ -11,17 +11,25 @@ public sealed class LotRepository : ILotRepository
 
     public LotRepository(ErpDbContext db) => _db = db;
 
-    public Task<Lot?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
-        => _db.Lots.FirstOrDefaultAsync(l => l.Id == id, cancellationToken);
+    public Task<Lot?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default) =>
+        _db.Lots.FirstOrDefaultAsync(l => l.Id == id, cancellationToken);
 
-    public Task<Lot?> GetByLotNumberAsync(Guid itemId, string lotNumber, CancellationToken cancellationToken = default)
-        => _db.Lots.FirstOrDefaultAsync(l => l.ItemId == itemId && l.LotNumber == lotNumber, cancellationToken);
+    public Task<Lot?> GetByLotNumberAsync(
+        Guid itemId,
+        string lotNumber,
+        CancellationToken cancellationToken = default
+    ) =>
+        _db.Lots.FirstOrDefaultAsync(
+            l => l.ItemId == itemId && l.LotNumber == lotNumber,
+            cancellationToken
+        );
 
     public async Task<IReadOnlyList<Lot>> GetByItemAsync(
         Guid itemId,
         Guid? warehouseId = null,
         LotStatus? status = null,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default
+    )
     {
         var query = _db.Lots.Where(l => l.ItemId == itemId);
         if (warehouseId.HasValue)
@@ -31,14 +39,24 @@ public sealed class LotRepository : ILotRepository
         return await query.OrderBy(l => l.LotNumber).ToListAsync(cancellationToken);
     }
 
-    public async Task<IReadOnlyList<Lot>> GetExpiringBeforeAsync(DateOnly expirationDate, CancellationToken cancellationToken = default)
-        => await _db.Lots
-            .Where(l => l.Status == LotStatus.Active && l.ExpirationDate.HasValue && l.ExpirationDate < expirationDate)
+    public async Task<IReadOnlyList<Lot>> GetExpiringBeforeAsync(
+        DateOnly expirationDate,
+        CancellationToken cancellationToken = default
+    ) =>
+        await _db
+            .Lots.Where(l =>
+                l.Status == LotStatus.Active
+                && l.ExpirationDate.HasValue
+                && l.ExpirationDate < expirationDate
+            )
             .OrderBy(l => l.ExpirationDate)
             .ToListAsync(cancellationToken);
 
-    public Task<bool> ExistsAsync(Guid itemId, string lotNumber, CancellationToken cancellationToken = default)
-        => _db.Lots.AnyAsync(l => l.ItemId == itemId && l.LotNumber == lotNumber, cancellationToken);
+    public Task<bool> ExistsAsync(
+        Guid itemId,
+        string lotNumber,
+        CancellationToken cancellationToken = default
+    ) => _db.Lots.AnyAsync(l => l.ItemId == itemId && l.LotNumber == lotNumber, cancellationToken);
 
     public Task AddAsync(Lot lot, CancellationToken cancellationToken = default)
     {
@@ -46,6 +64,6 @@ public sealed class LotRepository : ILotRepository
         return Task.CompletedTask;
     }
 
-    public Task SaveChangesAsync(CancellationToken cancellationToken = default)
-        => _db.SaveChangesAsync(cancellationToken);
+    public Task SaveChangesAsync(CancellationToken cancellationToken = default) =>
+        _db.SaveChangesAsync(cancellationToken);
 }

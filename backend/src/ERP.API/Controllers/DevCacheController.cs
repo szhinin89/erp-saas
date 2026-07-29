@@ -28,7 +28,8 @@ public sealed class DevCacheController : ControllerBase
         IDistributedCache cache,
         ICacheProviderStatus providerStatus,
         ICacheDiagnosticsMetrics metrics,
-        IPermissionsCacheDiagnostics permissionsMetrics)
+        IPermissionsCacheDiagnostics permissionsMetrics
+    )
     {
         _environment = environment;
         _configuration = configuration;
@@ -81,7 +82,8 @@ public sealed class DevCacheController : ControllerBase
                 {
                     AbsoluteExpirationRelativeToNow = TimeSpan.FromSeconds(15),
                 },
-                cancellationToken);
+                cancellationToken
+            );
             var read = await _cache.GetStringAsync(probeKey, cancellationToken);
             sw.Stop();
             writeReadLatencyMs = sw.ElapsedMilliseconds;
@@ -93,17 +95,19 @@ public sealed class DevCacheController : ControllerBase
             writeReadOk = false;
         }
 
-        return this.ApiOk(new
-        {
-            redisConfigured,
-            redisConnected = redisConfigured && redisConnected,
-            fallbackActive = _providerStatus.FallbackActive,
-            provider = _providerStatus.ProviderName,
-            writeReadOk,
-            latencyMs = writeReadLatencyMs,
-            redisPingMs,
-            instanceName = _configuration["Redis:InstanceName"] ?? "ERP_",
-        });
+        return this.ApiOk(
+            new
+            {
+                redisConfigured,
+                redisConnected = redisConfigured && redisConnected,
+                fallbackActive = _providerStatus.FallbackActive,
+                provider = _providerStatus.ProviderName,
+                writeReadOk,
+                latencyMs = writeReadLatencyMs,
+                redisPingMs,
+                instanceName = _configuration["Redis:InstanceName"] ?? "ERP_",
+            }
+        );
     }
 
     /// <summary>Métricas in-process de cache (hits, misses, hit ratio).</summary>
@@ -117,30 +121,31 @@ public sealed class DevCacheController : ControllerBase
 
         var snapshot = _metrics.GetSnapshot();
         var permissions = _permissionsMetrics.GetSnapshot();
-        return this.ApiOk(new
-        {
-            cache_hit_total = snapshot.Hits,
-            cache_miss_total = snapshot.Misses,
-            cache_set_total = snapshot.Sets,
-            hitRatio = snapshot.HitRatio,
-            hitsByCategory = snapshot.HitsByCategory,
-            missesByCategory = snapshot.MissesByCategory,
-            permissions = new
+        return this.ApiOk(
+            new
             {
-                cache_hit_total = permissions.CacheHitTotal,
-                cache_miss_total = permissions.CacheMissTotal,
-                cache_set_total = permissions.CacheSetTotal,
-                cache_error_total = permissions.CacheErrorTotal,
-                hitRatio = permissions.HitRatio,
-                miss_reason = permissions.MissesByReason,
-            },
-            provider = _providerStatus.ProviderName,
-            fallbackActive = _providerStatus.FallbackActive,
-            redisConfigured = _providerStatus.RedisConfigured,
-        });
+                cache_hit_total = snapshot.Hits,
+                cache_miss_total = snapshot.Misses,
+                cache_set_total = snapshot.Sets,
+                hitRatio = snapshot.HitRatio,
+                hitsByCategory = snapshot.HitsByCategory,
+                missesByCategory = snapshot.MissesByCategory,
+                permissions = new
+                {
+                    cache_hit_total = permissions.CacheHitTotal,
+                    cache_miss_total = permissions.CacheMissTotal,
+                    cache_set_total = permissions.CacheSetTotal,
+                    cache_error_total = permissions.CacheErrorTotal,
+                    hitRatio = permissions.HitRatio,
+                    miss_reason = permissions.MissesByReason,
+                },
+                provider = _providerStatus.ProviderName,
+                fallbackActive = _providerStatus.FallbackActive,
+                redisConfigured = _providerStatus.RedisConfigured,
+            }
+        );
     }
 
-    private string? ResolveRedisConnectionString()
-        => _configuration["Redis:ConnectionString"]
-           ?? _configuration.GetConnectionString("Redis");
+    private string? ResolveRedisConnectionString() =>
+        _configuration["Redis:ConnectionString"] ?? _configuration.GetConnectionString("Redis");
 }

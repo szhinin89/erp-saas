@@ -1,6 +1,6 @@
+using System.Text.Json;
 using ERP.Application.Access.Caching;
 using Microsoft.Extensions.Caching.Distributed;
-using System.Text.Json;
 
 namespace ERP.Infrastructure.Access.Caching;
 
@@ -25,7 +25,8 @@ public sealed class DistributedPermissionsCacheService : IPermissionsCacheBacken
         Guid tenantId,
         Guid companyId,
         Guid userId,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default
+    )
     {
         var bytes = await _cache.GetAsync(DataKey(companyId, userId), cancellationToken);
         if (bytes is null || bytes.Length == 0)
@@ -35,7 +36,10 @@ public sealed class DistributedPermissionsCacheService : IPermissionsCacheBacken
         if (envelope?.Keys is null)
             return new PermissionsCacheReadResult(null, PermissionsCacheMissReason.NotFound);
 
-        var companyVersion = await ReadVersionAsync(CompanyVersionKey(companyId), cancellationToken);
+        var companyVersion = await ReadVersionAsync(
+            CompanyVersionKey(companyId),
+            cancellationToken
+        );
         var tenantVersion = await ReadVersionAsync(TenantVersionKey(tenantId), cancellationToken);
 
         if (envelope.CompanyVersion != companyVersion || envelope.TenantVersion != tenantVersion)
@@ -50,15 +54,16 @@ public sealed class DistributedPermissionsCacheService : IPermissionsCacheBacken
         Guid userId,
         IReadOnlyList<string> keys,
         TimeSpan? ttl = null,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default
+    )
     {
-        var companyVersion = await ReadVersionAsync(CompanyVersionKey(companyId), cancellationToken);
+        var companyVersion = await ReadVersionAsync(
+            CompanyVersionKey(companyId),
+            cancellationToken
+        );
         var tenantVersion = await ReadVersionAsync(TenantVersionKey(tenantId), cancellationToken);
 
-        var envelope = new PermissionCacheEnvelope(
-            companyVersion,
-            tenantVersion,
-            keys.ToList());
+        var envelope = new PermissionCacheEnvelope(companyVersion, tenantVersion, keys.ToList());
 
         var bytes = JsonSerializer.SerializeToUtf8Bytes(envelope, JsonOptions);
         await _cache.SetAsync(
@@ -68,25 +73,41 @@ public sealed class DistributedPermissionsCacheService : IPermissionsCacheBacken
             {
                 AbsoluteExpirationRelativeToNow = ttl ?? TimeSpan.FromSeconds(DefaultTtlSeconds),
             },
-            cancellationToken);
+            cancellationToken
+        );
     }
 
-    public Task InvalidateUserAsync(Guid companyId, Guid userId, CancellationToken cancellationToken = default)
-        => _cache.RemoveAsync(DataKey(companyId, userId), cancellationToken);
+    public Task InvalidateUserAsync(
+        Guid companyId,
+        Guid userId,
+        CancellationToken cancellationToken = default
+    ) => _cache.RemoveAsync(DataKey(companyId, userId), cancellationToken);
 
-    public Task BumpCompanyVersionAsync(Guid companyId, CancellationToken cancellationToken = default)
-        => BumpVersionAsync(CompanyVersionKey(companyId), cancellationToken);
+    public Task BumpCompanyVersionAsync(
+        Guid companyId,
+        CancellationToken cancellationToken = default
+    ) => BumpVersionAsync(CompanyVersionKey(companyId), cancellationToken);
 
-    public Task BumpTenantVersionAsync(Guid tenantId, CancellationToken cancellationToken = default)
-        => BumpVersionAsync(TenantVersionKey(tenantId), cancellationToken);
+    public Task BumpTenantVersionAsync(
+        Guid tenantId,
+        CancellationToken cancellationToken = default
+    ) => BumpVersionAsync(TenantVersionKey(tenantId), cancellationToken);
 
     private async Task BumpVersionAsync(string versionKey, CancellationToken cancellationToken)
     {
         var next = await ReadVersionAsync(versionKey, cancellationToken) + 1;
-        await _cache.SetAsync(versionKey, BitConverter.GetBytes(next), VersionEntryOptions, cancellationToken);
+        await _cache.SetAsync(
+            versionKey,
+            BitConverter.GetBytes(next),
+            VersionEntryOptions,
+            cancellationToken
+        );
     }
 
-    private async Task<long> ReadVersionAsync(string versionKey, CancellationToken cancellationToken)
+    private async Task<long> ReadVersionAsync(
+        string versionKey,
+        CancellationToken cancellationToken
+    )
     {
         var bytes = await _cache.GetAsync(versionKey, cancellationToken);
         if (bytes is null || bytes.Length < sizeof(long))
@@ -95,17 +116,17 @@ public sealed class DistributedPermissionsCacheService : IPermissionsCacheBacken
         return BitConverter.ToInt64(bytes, 0);
     }
 
-    private static string DataKey(Guid companyId, Guid userId)
-        => $"permissions:{companyId:N}:{userId:N}";
+    private static string DataKey(Guid companyId, Guid userId) =>
+        $"permissions:{companyId:N}:{userId:N}";
 
-    private static string CompanyVersionKey(Guid companyId)
-        => $"permissions:version:{companyId:N}";
+    private static string CompanyVersionKey(Guid companyId) => $"permissions:version:{companyId:N}";
 
-    private static string TenantVersionKey(Guid tenantId)
-        => $"permissions:version:tenant:{tenantId:N}";
+    private static string TenantVersionKey(Guid tenantId) =>
+        $"permissions:version:tenant:{tenantId:N}";
 
     private sealed record PermissionCacheEnvelope(
         long CompanyVersion,
         long TenantVersion,
-        List<string> Keys);
+        List<string> Keys
+    );
 }

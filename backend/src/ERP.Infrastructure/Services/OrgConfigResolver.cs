@@ -1,7 +1,7 @@
+using System.Globalization;
 using ERP.Application.Common;
 using ERP.Domain.Configuration.Enums;
 using ERP.Domain.Configuration.Interfaces;
-using System.Globalization;
 
 namespace ERP.Infrastructure.Services;
 
@@ -19,7 +19,8 @@ public sealed class OrgConfigResolver : IOrgConfigResolver
     public OrgConfigResolver(
         IOrgSettingsRepository repo,
         ICurrentTenant currentTenant,
-        ICurrentCompany currentCompany)
+        ICurrentCompany currentCompany
+    )
     {
         _repo = repo;
         _currentTenant = currentTenant;
@@ -27,18 +28,30 @@ public sealed class OrgConfigResolver : IOrgConfigResolver
     }
 
     public async Task<string?> GetValueAsync(
-        OrgScope scope, Guid scopeId, string key, CancellationToken ct = default)
+        OrgScope scope,
+        Guid scopeId,
+        string key,
+        CancellationToken ct = default
+    )
     {
         var setting = await _repo.GetAsync(
             _currentTenant.TenantId,
             _currentCompany.CompanyId,
-            scope, scopeId, key, ct);
+            scope,
+            scopeId,
+            key,
+            ct
+        );
 
         return setting?.Value;
     }
 
     public async Task<T?> GetValueAsync<T>(
-        OrgScope scope, Guid scopeId, string key, CancellationToken ct = default)
+        OrgScope scope,
+        Guid scopeId,
+        string key,
+        CancellationToken ct = default
+    )
     {
         var raw = await GetValueAsync(scope, scopeId, key, ct);
         if (raw is null)
@@ -60,15 +73,24 @@ public sealed class OrgConfigResolver : IOrgConfigResolver
 
         if (underlying == typeof(int))
             return int.TryParse(raw, NumberStyles.Integer, CultureInfo.InvariantCulture, out var i)
-                ? (T)(object)i : default;
+                ? (T)(object)i
+                : default;
 
         if (underlying == typeof(decimal))
-            return decimal.TryParse(raw, NumberStyles.Number, CultureInfo.InvariantCulture, out var d)
-                ? (T)(object)d : default;
+            return decimal.TryParse(
+                raw,
+                NumberStyles.Number,
+                CultureInfo.InvariantCulture,
+                out var d
+            )
+                ? (T)(object)d
+                : default;
 
         if (underlying == typeof(bool))
             return bool.TryParse(raw, out var b) ? (T)(object)b : default;
 
-        throw new NotSupportedException($"OrgConfigResolver: tipo '{underlying.Name}' no está soportado.");
+        throw new NotSupportedException(
+            $"OrgConfigResolver: tipo '{underlying.Name}' no está soportado."
+        );
     }
 }

@@ -11,8 +11,8 @@ public record SubstituteInput(Guid SubstituteItemId, int Priority = 1, string? N
 
 public sealed record ReplaceItemSubstitutesCommand(
     Guid Id,
-    IReadOnlyList<SubstituteInput> Substitutes)
-    : IRequest<Result<ItemDetailDto>>, ICompanyScopedRequest;
+    IReadOnlyList<SubstituteInput> Substitutes
+) : IRequest<Result<ItemDetailDto>>, ICompanyScopedRequest;
 
 public sealed class ReplaceItemSubstitutesCommandValidator
     : AbstractValidator<ReplaceItemSubstitutesCommand>
@@ -20,12 +20,14 @@ public sealed class ReplaceItemSubstitutesCommandValidator
     public ReplaceItemSubstitutesCommandValidator()
     {
         RuleFor(x => x.Id).NotEmpty();
-        RuleForEach(x => x.Substitutes).ChildRules(s =>
-        {
-            s.RuleFor(x => x.SubstituteItemId).NotEmpty()
-                .WithMessage("El ítem sustituto es obligatorio.");
-            s.RuleFor(x => x.Priority).GreaterThan(0);
-        });
+        RuleForEach(x => x.Substitutes)
+            .ChildRules(s =>
+            {
+                s.RuleFor(x => x.SubstituteItemId)
+                    .NotEmpty()
+                    .WithMessage("El ítem sustituto es obligatorio.");
+                s.RuleFor(x => x.Priority).GreaterThan(0);
+            });
     }
 }
 
@@ -39,20 +41,49 @@ public sealed class ReplaceItemSubstitutesCommandHandler
     private readonly IItemTypeRepository _itemTypeRepo;
 
     public ReplaceItemSubstitutesCommandHandler(
-        IItemRepository repository, ICurrentTenant tenant, ICurrentUser user, ISriCatalogResolver sri,
-        IItemTypeRepository itemTypeRepo)
-    { _repository = repository; _currentTenant = tenant; _user = user; _sri = sri; _itemTypeRepo = itemTypeRepo; }
-
-    public async Task<Result<ItemDetailDto>> Handle(ReplaceItemSubstitutesCommand cmd, CancellationToken cancellationToken)
+        IItemRepository repository,
+        ICurrentTenant tenant,
+        ICurrentUser user,
+        ISriCatalogResolver sri,
+        IItemTypeRepository itemTypeRepo
+    )
     {
-        var item = await _repository.GetByIdLightAsync(cmd.Id, _currentTenant.TenantId, cancellationToken);
-        if (item is null) return Result<ItemDetailDto>.NotFound("Ítem no encontrado.");
+        _repository = repository;
+        _currentTenant = tenant;
+        _user = user;
+        _sri = sri;
+        _itemTypeRepo = itemTypeRepo;
+    }
+
+    public async Task<Result<ItemDetailDto>> Handle(
+        ReplaceItemSubstitutesCommand cmd,
+        CancellationToken cancellationToken
+    )
+    {
+        var item = await _repository.GetByIdLightAsync(
+            cmd.Id,
+            _currentTenant.TenantId,
+            cancellationToken
+        );
+        if (item is null)
+            return Result<ItemDetailDto>.NotFound("Ítem no encontrado.");
 
         if (cmd.Substitutes.Any(s => s.SubstituteItemId == cmd.Id))
-            return Result<ItemDetailDto>.ValidationFailure("Un ítem no puede ser sustituto de sí mismo.");
+            return Result<ItemDetailDto>.ValidationFailure(
+                "Un ítem no puede ser sustituto de sí mismo."
+            );
 
-        var newSubstitutes = cmd.Substitutes
-            .Select(s => ItemSubstitute.Create(cmd.Id, item.TenantId, s.SubstituteItemId, s.Priority, s.Note, _user.UserId))
+        var newSubstitutes = cmd
+            .Substitutes.Select(s =>
+                ItemSubstitute.Create(
+                    cmd.Id,
+                    item.TenantId,
+                    s.SubstituteItemId,
+                    s.Priority,
+                    s.Note,
+                    _user.UserId
+                )
+            )
             .ToList();
 
         await _repository.ReplaceSubstitutesAsync(cmd.Id, newSubstitutes, cancellationToken);
@@ -61,6 +92,13 @@ public sealed class ReplaceItemSubstitutesCommandHandler
 
         var updated = await _repository.GetByIdAsync(cmd.Id, item.TenantId, cancellationToken);
         return Result<ItemDetailDto>.Success(
-            await ItemMappingService.ToDetailDtoAsync(updated!, _sri, _itemTypeRepo, _currentTenant.TenantId, cancellationToken));
+            await ItemMappingService.ToDetailDtoAsync(
+                updated!,
+                _sri,
+                _itemTypeRepo,
+                _currentTenant.TenantId,
+                cancellationToken
+            )
+        );
     }
 }

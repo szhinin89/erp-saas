@@ -1,4 +1,4 @@
-﻿namespace ERP.Domain.Access.Entities;
+namespace ERP.Domain.Access.Entities;
 
 /// <summary>
 /// Acceso de un <see cref="IdentityUser"/> a una empresa operativa (<c>company</c>).
@@ -24,7 +24,8 @@ public sealed class CompanyUserMembership
         Guid identityUserId,
         string role,
         Guid? profileId,
-        Guid createdBy)
+        Guid createdBy
+    )
     {
         var now = DateTime.UtcNow;
         return new CompanyUserMembership

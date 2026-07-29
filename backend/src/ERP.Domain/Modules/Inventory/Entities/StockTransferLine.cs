@@ -19,7 +19,8 @@ public sealed class StockTransferLine : AuditableEntity, ITenantScopedEntity
         Guid productId,
         decimal quantity,
         string description,
-        Guid createdBy)
+        Guid createdBy
+    )
     {
         if (quantity <= 0)
             throw new ArgumentException("Quantity must be greater than zero.", nameof(quantity));

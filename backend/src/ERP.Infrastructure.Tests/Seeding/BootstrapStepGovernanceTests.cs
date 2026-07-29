@@ -1,8 +1,8 @@
+using System.Reflection;
+using System.Text.RegularExpressions;
 using ERP.Application.Common.Interfaces;
 using ERP.Infrastructure.Seeding.Global;
 using FluentAssertions;
-using System.Reflection;
-using System.Text.RegularExpressions;
 
 namespace ERP.Infrastructure.Tests.Seeding;
 
@@ -17,15 +17,21 @@ public sealed class BootstrapStepGovernanceTests
     [Fact]
     public void Company_bootstrap_step_orders_are_unique()
     {
-        ConstantValues(typeof(CompanyBootstrapStepOrder)).Should().OnlyHaveUniqueItems(
-            "dos steps con el mismo Order producen un orden de ejecución ambiguo");
+        ConstantValues(typeof(CompanyBootstrapStepOrder))
+            .Should()
+            .OnlyHaveUniqueItems(
+                "dos steps con el mismo Order producen un orden de ejecución ambiguo"
+            );
     }
 
     [Fact]
     public void Global_bootstrap_step_orders_are_unique()
     {
-        ConstantValues(typeof(GlobalBootstrapStepOrder)).Should().OnlyHaveUniqueItems(
-            "dos steps con el mismo Order producen un orden de ejecución ambiguo");
+        ConstantValues(typeof(GlobalBootstrapStepOrder))
+            .Should()
+            .OnlyHaveUniqueItems(
+                "dos steps con el mismo Order producen un orden de ejecución ambiguo"
+            );
     }
 
     [Fact]
@@ -34,9 +40,13 @@ public sealed class BootstrapStepGovernanceTests
         var implementors = DiscoverImplementors(typeof(ICompanyBootstrapStep));
         var registered = RegisteredTypeNames("ICompanyBootstrapStep");
 
-        registered.Should().BeEquivalentTo(implementors,
-            "todo ICompanyBootstrapStep debe registrarse en DependencyInjection.cs, y todo lo " +
-            "registrado ahí debe seguir existiendo como clase — evita steps huérfanos u olvidados");
+        registered
+            .Should()
+            .BeEquivalentTo(
+                implementors,
+                "todo ICompanyBootstrapStep debe registrarse en DependencyInjection.cs, y todo lo "
+                    + "registrado ahí debe seguir existiendo como clase — evita steps huérfanos u olvidados"
+            );
     }
 
     [Fact]
@@ -45,9 +55,13 @@ public sealed class BootstrapStepGovernanceTests
         var implementors = DiscoverImplementors(typeof(IGlobalBootstrapStep));
         var registered = RegisteredTypeNames("IGlobalBootstrapStep");
 
-        registered.Should().BeEquivalentTo(implementors,
-            "todo IGlobalBootstrapStep debe registrarse en DependencyInjection.cs, y todo lo " +
-            "registrado ahí debe seguir existiendo como clase — evita steps huérfanos u olvidados");
+        registered
+            .Should()
+            .BeEquivalentTo(
+                implementors,
+                "todo IGlobalBootstrapStep debe registrarse en DependencyInjection.cs, y todo lo "
+                    + "registrado ahí debe seguir existiendo como clase — evita steps huérfanos u olvidados"
+            );
     }
 
     [Fact]
@@ -65,14 +79,19 @@ public sealed class BootstrapStepGovernanceTests
             foreach (var param in ctor.GetParameters())
             {
                 if (allStepTypes.Contains(param.ParameterType))
-                    violations.Add($"{stepType.Name} depende directamente de {param.ParameterType.Name}");
+                    violations.Add(
+                        $"{stepType.Name} depende directamente de {param.ParameterType.Name}"
+                    );
             }
         }
 
-        violations.Should().BeEmpty(
-            "un step nunca debe conocer ni depender de otro step — la comunicación entre steps " +
-            "ocurre exclusivamente vía estado ya persistido en base de datos, consultado por " +
-            "quien lo necesite, nunca por referencia directa");
+        violations
+            .Should()
+            .BeEmpty(
+                "un step nunca debe conocer ni depender de otro step — la comunicación entre steps "
+                    + "ocurre exclusivamente vía estado ya persistido en base de datos, consultado por "
+                    + "quien lo necesite, nunca por referencia directa"
+            );
     }
 
     private static List<int> ConstantValues(Type constantsClass) =>
@@ -90,19 +109,25 @@ public sealed class BootstrapStepGovernanceTests
         DiscoverImplementorTypes(stepInterface).Select(t => t.Name).ToHashSet();
 
     private static IEnumerable<Type> DiscoverImplementorTypes(Type stepInterface) =>
-        InfrastructureAssembly.GetTypes()
-            .Where(t => stepInterface.IsAssignableFrom(t) && t is { IsAbstract: false, IsInterface: false });
+        InfrastructureAssembly
+            .GetTypes()
+            .Where(t =>
+                stepInterface.IsAssignableFrom(t) && t is { IsAbstract: false, IsInterface: false }
+            );
 
     private static HashSet<string> RegisteredTypeNames(string interfaceSimpleName)
     {
-        var diFile = Path.Combine(ResolveBackendRoot(), "src", "ERP.Infrastructure", "DependencyInjection.cs");
+        var diFile = Path.Combine(
+            ResolveBackendRoot(),
+            "src",
+            "ERP.Infrastructure",
+            "DependencyInjection.cs"
+        );
         var text = File.ReadAllText(diFile);
 
         // Captura la última clase calificada antes de '>' en: AddScoped<...InterfaceSimpleName, [ns.]ClassName>
         var pattern = $@"{interfaceSimpleName}\s*,\s*(?:[\w.]+\.)?(\w+)\s*>";
-        return Regex.Matches(text, pattern)
-            .Select(m => m.Groups[1].Value)
-            .ToHashSet();
+        return Regex.Matches(text, pattern).Select(m => m.Groups[1].Value).ToHashSet();
     }
 
     private static string ResolveBackendRoot()
@@ -110,8 +135,10 @@ public sealed class BootstrapStepGovernanceTests
         var dir = new DirectoryInfo(AppContext.BaseDirectory);
         while (dir is not null)
         {
-            if (File.Exists(Path.Combine(dir.FullName, "ERP.sln")) ||
-                Directory.Exists(Path.Combine(dir.FullName, "src", "ERP.API")))
+            if (
+                File.Exists(Path.Combine(dir.FullName, "ERP.sln"))
+                || Directory.Exists(Path.Combine(dir.FullName, "src", "ERP.API"))
+            )
                 return dir.FullName;
 
             dir = dir.Parent;

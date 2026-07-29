@@ -20,18 +20,33 @@ public sealed class CashSessionBalanceTests
 
     private static CashSession OpenWith(decimal openingAmount) =>
         CashSession.Open(
-            TenantId, CompanyId, BranchId, UserId,
-            Guid.NewGuid(), "CAJA-01", "Caja Principal",
-            Guid.NewGuid(), "001",
-            openingAmount, UserId);
+            TenantId,
+            CompanyId,
+            BranchId,
+            UserId,
+            Guid.NewGuid(),
+            "CAJA-01",
+            "Caja Principal",
+            Guid.NewGuid(),
+            "001",
+            openingAmount,
+            UserId
+        );
 
     [Fact]
     public void Apertura_100_venta_115_saldo_esperado_215()
     {
         var session = OpenWith(100m);
 
-        session.RecordMovement(CashMovementType.SaleIncome, 115m, "Venta 001-001-000000001", UserId,
-            CashReferenceType.SalesInvoice, Guid.NewGuid(), "001-001-000000001");
+        session.RecordMovement(
+            CashMovementType.SaleIncome,
+            115m,
+            "Venta 001-001-000000001",
+            UserId,
+            CashReferenceType.SalesInvoice,
+            Guid.NewGuid(),
+            "001-001-000000001"
+        );
 
         session.CurrentBalance.Should().Be(215m);
     }
@@ -41,7 +56,12 @@ public sealed class CashSessionBalanceTests
     {
         var session = OpenWith(100m);
 
-        session.TotalIncome.Should().Be(0m, "el movimiento Opening no debe clasificarse como ingreso — OpeningAmount ya se suma aparte");
+        session
+            .TotalIncome.Should()
+            .Be(
+                0m,
+                "el movimiento Opening no debe clasificarse como ingreso — OpeningAmount ya se suma aparte"
+            );
     }
 
     [Fact]
@@ -78,13 +98,21 @@ public sealed class CashSessionBalanceTests
     public void Close_calcula_ExpectedAmount_consistente_con_CurrentBalance_apertura_100_venta_115()
     {
         var session = OpenWith(100m);
-        session.RecordMovement(CashMovementType.SaleIncome, 115m, "Venta 001-001-000000001", UserId);
+        session.RecordMovement(
+            CashMovementType.SaleIncome,
+            115m,
+            "Venta 001-001-000000001",
+            UserId
+        );
 
-        session.Close(UserId, new List<CashClosingCount>
-        {
-            CashClosingCount.Create(session.Id, TenantId, 20m, "Billetes de $20", 10),
-            CashClosingCount.Create(session.Id, TenantId, 1m, "Billetes de $1", 15),
-        });
+        session.Close(
+            UserId,
+            new List<CashClosingCount>
+            {
+                CashClosingCount.Create(session.Id, TenantId, 20m, "Billetes de $20", 10),
+                CashClosingCount.Create(session.Id, TenantId, 1m, "Billetes de $1", 15),
+            }
+        );
 
         session.ExpectedAmount.Should().Be(215m);
         session.CountedAmount.Should().Be(215m);

@@ -13,9 +13,13 @@ namespace ERP.Application.Auth;
 /// </summary>
 public static class PasswordComplexityRules
 {
-    public static IRuleBuilderOptions<T, string> ApplyPasswordComplexity<T>(this IRuleBuilder<T, string> rule) =>
-        rule
-            .MinimumLength(8).WithMessage("La contraseña debe tener al menos 8 caracteres.")
-            .Matches("[A-Z]").WithMessage("La contraseña debe tener al menos una mayúscula.")
-            .Matches("[0-9]").WithMessage("La contraseña debe tener al menos un número.");
+    public static IRuleBuilderOptions<T, string> ApplyPasswordComplexity<T>(
+        this IRuleBuilder<T, string> rule
+    ) =>
+        rule.MinimumLength(8)
+            .WithMessage("La contraseña debe tener al menos 8 caracteres.")
+            .Matches("[A-Z]")
+            .WithMessage("La contraseña debe tener al menos una mayúscula.")
+            .Matches("[0-9]")
+            .WithMessage("La contraseña debe tener al menos un número.");
 }

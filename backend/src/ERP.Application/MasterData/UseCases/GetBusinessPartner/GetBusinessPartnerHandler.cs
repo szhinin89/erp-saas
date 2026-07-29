@@ -13,20 +13,27 @@ public sealed class GetBusinessPartnerHandler
 
     public GetBusinessPartnerHandler(
         IBusinessPartnerRepository bpRepo,
-        IBusinessPartnerRoleRepository roleRepo)
-        => (_bpRepo, _roleRepo) = (bpRepo, roleRepo);
+        IBusinessPartnerRoleRepository roleRepo
+    ) => (_bpRepo, _roleRepo) = (bpRepo, roleRepo);
 
     public async Task<Result<BusinessPartnerDetailDto>> Handle(
-        GetBusinessPartnerQuery q, CancellationToken cancellationToken)
+        GetBusinessPartnerQuery q,
+        CancellationToken cancellationToken
+    )
     {
         var bp = await _bpRepo.GetByIdAsync(q.Id, cancellationToken);
         if (bp is null)
             return Result<BusinessPartnerDetailDto>.NotFound("BusinessPartner no encontrado.");
 
-        var roles = await _roleRepo.GetByBusinessPartnerAsync(q.Id, onlyActive: null, cancellationToken);
+        var roles = await _roleRepo.GetByBusinessPartnerAsync(
+            q.Id,
+            onlyActive: null,
+            cancellationToken
+        );
         var roleDtos = roles.Select(BusinessPartnerRoleDto.From).ToList();
 
         return Result<BusinessPartnerDetailDto>.Success(
-            BusinessPartnerDetailDto.From(bp, roleDtos));
+            BusinessPartnerDetailDto.From(bp, roleDtos)
+        );
     }
 }

@@ -1,4 +1,4 @@
-﻿namespace ERP.Application.Access.Caching;
+namespace ERP.Application.Access.Caching;
 
 /// <summary>
 /// Única fuente de verdad para permisos runtime (post-filtro plan) de usuarios con perfil.
@@ -12,5 +12,6 @@ public interface IEffectivePermissionKeysProvider
         Guid companyId,
         Guid userId,
         Guid profileId,
-        CancellationToken cancellationToken = default);
+        CancellationToken cancellationToken = default
+    );
 }

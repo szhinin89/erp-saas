@@ -19,10 +19,14 @@ public sealed class ItemSaleConfig
         bool isAvailableOnPOS = false,
         bool isAvailableOnMobile = false,
         bool isEcommerceActive = false,
-        bool isFavorite = false)
+        bool isFavorite = false
+    )
     {
         if (maxDiscountPercent is < 0 or > 100)
-            throw new ArgumentException("El descuento máximo debe estar entre 0 y 100.", nameof(maxDiscountPercent));
+            throw new ArgumentException(
+                "El descuento máximo debe estar entre 0 y 100.",
+                nameof(maxDiscountPercent)
+            );
 
         return new ItemSaleConfig
         {

@@ -23,7 +23,8 @@ public sealed class UploadSriCertificateCommandHandler
         ICurrentUser currentUser,
         ISecretProtector secretProtector,
         ISriCertificateInspector certInspector,
-        IFileStorage fileStorage)
+        IFileStorage fileStorage
+    )
     {
         _repo = repo;
         _currentCompany = currentCompany;
@@ -34,7 +35,9 @@ public sealed class UploadSriCertificateCommandHandler
     }
 
     public async Task<Result<SriCertificateUploadResultDto>> Handle(
-        UploadSriCertificateCommand request, CancellationToken cancellationToken)
+        UploadSriCertificateCommand request,
+        CancellationToken cancellationToken
+    )
     {
         var companyId = _currentCompany.CompanyId;
 
@@ -42,7 +45,8 @@ public sealed class UploadSriCertificateCommandHandler
         if (settings is null)
         {
             return Result<SriCertificateUploadResultDto>.ValidationFailure(
-                "Debe guardar el ambiente y la URL del webservice SRI antes de cargar el certificado.");
+                "Debe guardar el ambiente y la URL del webservice SRI antes de cargar el certificado."
+            );
         }
 
         using var buffer = new MemoryStream();
@@ -55,7 +59,8 @@ public sealed class UploadSriCertificateCommandHandler
         if (bytes.Length < 4 || bytes[0] != 0x30)
         {
             return Result<SriCertificateUploadResultDto>.ValidationFailure(
-                "El archivo no tiene una estructura PKCS#12 (.p12/.pfx) válida.");
+                "El archivo no tiene una estructura PKCS#12 (.p12/.pfx) válida."
+            );
         }
 
         var storedPath = $"certificates/{companyId:N}/certificate.p12";
@@ -63,7 +68,13 @@ public sealed class UploadSriCertificateCommandHandler
         await _fileStorage.SaveAsync(storedPath, buffer, cancellationToken);
 
         var uploadedAtUtc = DateTime.UtcNow;
-        settings.AttachCertificate(storedPath, request.File.FileName, request.File.SizeBytes, uploadedAtUtc, _currentUser.UserId);
+        settings.AttachCertificate(
+            storedPath,
+            request.File.FileName,
+            request.File.SizeBytes,
+            uploadedAtUtc,
+            _currentUser.UserId
+        );
         await _repo.UpdateAsync(settings, cancellationToken);
         await _repo.SaveChangesAsync(cancellationToken);
 
@@ -76,11 +87,23 @@ public sealed class UploadSriCertificateCommandHandler
                 ? (int)Math.Ceiling((result.NotAfterUtc.Value - DateTime.UtcNow).TotalDays)
                 : null;
             inspection = new SriCertificateInfoDto(
-                result.PasswordCorrect, result.Loaded, result.NotAfterUtc, daysRemaining,
-                result.Subject, result.Issuer, result.ErrorMessage);
+                result.PasswordCorrect,
+                result.Loaded,
+                result.NotAfterUtc,
+                daysRemaining,
+                result.Subject,
+                result.Issuer,
+                result.ErrorMessage
+            );
         }
 
-        return Result<SriCertificateUploadResultDto>.Success(new SriCertificateUploadResultDto(
-            request.File.FileName, request.File.SizeBytes, uploadedAtUtc, inspection));
+        return Result<SriCertificateUploadResultDto>.Success(
+            new SriCertificateUploadResultDto(
+                request.File.FileName,
+                request.File.SizeBytes,
+                uploadedAtUtc,
+                inspection
+            )
+        );
     }
 }

@@ -7,11 +7,13 @@ namespace ERP.Application.Access.UseCases.UpdateCompanyUserPreferencesAdmin;
 /// UpdateCompanyUserPreferencesCommandValidator (Fase C) cuando este comando delega en él —
 /// duplicar esa regla aquí violaría la restricción de no reimplementar validaciones existentes.
 /// </summary>
-public sealed class UpdateCompanyUserPreferencesAdminCommandValidator : AbstractValidator<UpdateCompanyUserPreferencesAdminCommand>
+public sealed class UpdateCompanyUserPreferencesAdminCommandValidator
+    : AbstractValidator<UpdateCompanyUserPreferencesAdminCommand>
 {
     public UpdateCompanyUserPreferencesAdminCommandValidator()
     {
-        RuleFor(x => x.CompanyUserId).NotEmpty()
+        RuleFor(x => x.CompanyUserId)
+            .NotEmpty()
             .WithMessage("El usuario de empresa es obligatorio.");
     }
 }

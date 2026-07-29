@@ -21,10 +21,19 @@ public sealed class PurchaseLinePvpAudit : AuditRecordBase, ICompanyOperationalE
     private PurchaseLinePvpAudit() { }
 
     public static PurchaseLinePvpAudit Create(
-        AuditActor actor, Guid companyId, Guid purchaseInvoiceId, string invoiceNumber,
-        Guid itemId, decimal oldPvp, decimal newPvp, string action, string? reason = null)
+        AuditActor actor,
+        Guid companyId,
+        Guid purchaseInvoiceId,
+        string invoiceNumber,
+        Guid itemId,
+        decimal oldPvp,
+        decimal newPvp,
+        string action,
+        string? reason = null
+    )
     {
-        if (companyId == Guid.Empty) throw new ArgumentException("companyId requerido.", nameof(companyId));
+        if (companyId == Guid.Empty)
+            throw new ArgumentException("companyId requerido.", nameof(companyId));
 
         var audit = new PurchaseLinePvpAudit
         {

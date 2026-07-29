@@ -41,13 +41,23 @@ public sealed class AuthController : ControllerBase
 
     [HttpPost("login")]
     [ProducesResponseType(typeof(ApiResponse<AuthResponseDto?>), StatusCodes.Status200OK)]
-    public async Task<IActionResult> Login([FromBody] LoginCommand command, CancellationToken cancellationToken)
+    public async Task<IActionResult> Login(
+        [FromBody] LoginCommand command,
+        CancellationToken cancellationToken
+    )
     {
         var result = await _mediator.Send(command, cancellationToken);
         if (result.IsSuccess)
         {
-            if (result.Value?.RefreshToken is not null && result.Value.RefreshTokenExpiry is not null)
-                AuthRefreshCookieHelper.SetRefreshCookie(HttpContext, result.Value.RefreshToken, result.Value.RefreshTokenExpiry.Value);
+            if (
+                result.Value?.RefreshToken is not null
+                && result.Value.RefreshTokenExpiry is not null
+            )
+                AuthRefreshCookieHelper.SetRefreshCookie(
+                    HttpContext,
+                    result.Value.RefreshToken,
+                    result.Value.RefreshTokenExpiry.Value
+                );
 
             return this.ApiOk(result.Value);
         }
@@ -63,13 +73,23 @@ public sealed class AuthController : ControllerBase
     [HttpPost("complete-password-reset")]
     [AllowAnonymous]
     [ProducesResponseType(typeof(ApiResponse<AuthResponseDto?>), StatusCodes.Status200OK)]
-    public async Task<IActionResult> CompletePasswordReset([FromBody] CompletePasswordResetCommand command, CancellationToken cancellationToken)
+    public async Task<IActionResult> CompletePasswordReset(
+        [FromBody] CompletePasswordResetCommand command,
+        CancellationToken cancellationToken
+    )
     {
         var result = await _mediator.Send(command, cancellationToken);
         if (result.IsSuccess)
         {
-            if (result.Value?.RefreshToken is not null && result.Value.RefreshTokenExpiry is not null)
-                AuthRefreshCookieHelper.SetRefreshCookie(HttpContext, result.Value.RefreshToken, result.Value.RefreshTokenExpiry.Value);
+            if (
+                result.Value?.RefreshToken is not null
+                && result.Value.RefreshTokenExpiry is not null
+            )
+                AuthRefreshCookieHelper.SetRefreshCookie(
+                    HttpContext,
+                    result.Value.RefreshToken,
+                    result.Value.RefreshTokenExpiry.Value
+                );
 
             return this.ApiOk(result.Value);
         }
@@ -81,7 +101,10 @@ public sealed class AuthController : ControllerBase
     [AllowAnonymous]
     [EnableRateLimiting("auth-refresh-ip")]
     [ProducesResponseType(typeof(ApiResponse<AuthResponseDto>), StatusCodes.Status200OK)]
-    public async Task<IActionResult> Refresh([FromBody] RefreshRequest? request, CancellationToken cancellationToken)
+    public async Task<IActionResult> Refresh(
+        [FromBody] RefreshRequest? request,
+        CancellationToken cancellationToken
+    )
     {
         var rawToken = AuthRefreshCookieHelper.ResolveRefreshToken(Request, request?.RefreshToken);
         if (string.IsNullOrWhiteSpace(rawToken))
@@ -90,8 +113,15 @@ public sealed class AuthController : ControllerBase
         var result = await _mediator.Send(new RefreshTokenCommand(rawToken), cancellationToken);
         if (result.IsSuccess)
         {
-            if (result.Value?.RefreshToken is not null && result.Value.RefreshTokenExpiry is not null)
-                AuthRefreshCookieHelper.SetRefreshCookie(HttpContext, result.Value.RefreshToken, result.Value.RefreshTokenExpiry.Value);
+            if (
+                result.Value?.RefreshToken is not null
+                && result.Value.RefreshTokenExpiry is not null
+            )
+                AuthRefreshCookieHelper.SetRefreshCookie(
+                    HttpContext,
+                    result.Value.RefreshToken,
+                    result.Value.RefreshTokenExpiry.Value
+                );
 
             return this.ApiOk(result.Value);
         }
@@ -105,10 +135,16 @@ public sealed class AuthController : ControllerBase
     [HttpPost("logout")]
     [AllowAnonymous]
     [ProducesResponseType(typeof(ApiResponse<string>), StatusCodes.Status200OK)]
-    public async Task<IActionResult> Logout([FromBody] LogoutRequest? request, CancellationToken cancellationToken)
+    public async Task<IActionResult> Logout(
+        [FromBody] LogoutRequest? request,
+        CancellationToken cancellationToken
+    )
     {
         var rawToken = AuthRefreshCookieHelper.ResolveRefreshToken(Request, request?.RefreshToken);
-        var result = await _mediator.Send(new LogoutCommand(rawToken ?? string.Empty, request?.AllDevices ?? false), cancellationToken);
+        var result = await _mediator.Send(
+            new LogoutCommand(rawToken ?? string.Empty, request?.AllDevices ?? false),
+            cancellationToken
+        );
 
         AuthRefreshCookieHelper.ClearRefreshCookie(HttpContext);
         return this.ToOkOrBadRequest(result);
@@ -117,7 +153,10 @@ public sealed class AuthController : ControllerBase
     [HttpPost("forgot-password")]
     [AllowAnonymous]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
-    public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordCommand command, CancellationToken cancellationToken)
+    public async Task<IActionResult> ForgotPassword(
+        [FromBody] ForgotPasswordCommand command,
+        CancellationToken cancellationToken
+    )
     {
         var result = await _mediator.Send(command, cancellationToken);
         return this.ToOkOrBadRequest(result);
@@ -126,7 +165,10 @@ public sealed class AuthController : ControllerBase
     [HttpPost("reset-password")]
     [AllowAnonymous]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
-    public async Task<IActionResult> ResetPasswordWithToken([FromBody] ResetPasswordWithTokenCommand command, CancellationToken cancellationToken)
+    public async Task<IActionResult> ResetPasswordWithToken(
+        [FromBody] ResetPasswordWithTokenCommand command,
+        CancellationToken cancellationToken
+    )
     {
         var result = await _mediator.Send(command, cancellationToken);
         return this.ToOkOrBadRequest(result);
@@ -134,7 +176,10 @@ public sealed class AuthController : ControllerBase
 
     [HttpGet("my-companies")]
     [Authorize]
-    [ProducesResponseType(typeof(ApiResponse<IReadOnlyList<AccessibleCompanyDto>>), StatusCodes.Status200OK)]
+    [ProducesResponseType(
+        typeof(ApiResponse<IReadOnlyList<AccessibleCompanyDto>>),
+        StatusCodes.Status200OK
+    )]
     public async Task<IActionResult> ListMyCompanies(CancellationToken cancellationToken)
     {
         var result = await _mediator.Send(new ListMyCompaniesQuery(), cancellationToken);
@@ -144,13 +189,26 @@ public sealed class AuthController : ControllerBase
     [HttpPost("switch-company")]
     [Authorize]
     [ProducesResponseType(typeof(ApiResponse<AuthResponseDto?>), StatusCodes.Status200OK)]
-    public async Task<IActionResult> SwitchCompany([FromBody] SwitchCompanyRequest request, CancellationToken cancellationToken)
+    public async Task<IActionResult> SwitchCompany(
+        [FromBody] SwitchCompanyRequest request,
+        CancellationToken cancellationToken
+    )
     {
-        var result = await _mediator.Send(new SwitchCompanyCommand(request.CompanyId), cancellationToken);
+        var result = await _mediator.Send(
+            new SwitchCompanyCommand(request.CompanyId),
+            cancellationToken
+        );
         if (result.IsSuccess)
         {
-            if (result.Value?.RefreshToken is not null && result.Value.RefreshTokenExpiry is not null)
-                AuthRefreshCookieHelper.SetRefreshCookie(HttpContext, result.Value.RefreshToken, result.Value.RefreshTokenExpiry.Value);
+            if (
+                result.Value?.RefreshToken is not null
+                && result.Value.RefreshTokenExpiry is not null
+            )
+                AuthRefreshCookieHelper.SetRefreshCookie(
+                    HttpContext,
+                    result.Value.RefreshToken,
+                    result.Value.RefreshTokenExpiry.Value
+                );
 
             return this.ApiOk(result.Value);
         }
@@ -158,6 +216,6 @@ public sealed class AuthController : ControllerBase
         return this.ToOkOrBadRequest(result);
     }
 
-    private IActionResult MapAuthFailure(string? error)
-        => this.ApiUnauthorized(error ?? "Unauthorized");
+    private IActionResult MapAuthFailure(string? error) =>
+        this.ApiUnauthorized(error ?? "Unauthorized");
 }

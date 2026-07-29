@@ -35,13 +35,20 @@ public sealed class BusinessPartnerLocationsController : ControllerBase
     /// <summary>Lista las ubicaciones del BP. Por defecto solo activas.</summary>
     [HttpGet]
     [Authorize(Policy = $"perm:{MasterDataPermissions.BusinessPartnersView}")]
-    [ProducesResponseType(typeof(ApiResponse<IReadOnlyList<BpLocationDto>>), StatusCodes.Status200OK)]
+    [ProducesResponseType(
+        typeof(ApiResponse<IReadOnlyList<BpLocationDto>>),
+        StatusCodes.Status200OK
+    )]
     public async Task<IActionResult> GetLocations(
         [FromRoute] Guid bpId,
         [FromQuery] bool? onlyActive = true,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default
+    )
     {
-        var result = await _mediator.Send(new GetBpLocationsQuery(bpId, onlyActive), cancellationToken);
+        var result = await _mediator.Send(
+            new GetBpLocationsQuery(bpId, onlyActive),
+            cancellationToken
+        );
         return this.ToOkOrBadRequest(result);
     }
 
@@ -53,10 +60,14 @@ public sealed class BusinessPartnerLocationsController : ControllerBase
     public async Task<IActionResult> GetLocation(
         [FromRoute] Guid bpId,
         [FromRoute] Guid locationId,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default
+    )
     {
         _ = bpId;
-        var result = await _mediator.Send(new GetBpLocationByIdQuery(locationId), cancellationToken);
+        var result = await _mediator.Send(
+            new GetBpLocationByIdQuery(locationId),
+            cancellationToken
+        );
         return this.ToOkOrBadRequest(result);
     }
 
@@ -73,17 +84,26 @@ public sealed class BusinessPartnerLocationsController : ControllerBase
     public async Task<IActionResult> CreateLocation(
         [FromRoute] Guid bpId,
         [FromBody] CreateLocationRequest body,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default
+    )
     {
         var cmd = new CreateBpLocationCommand(
-            bpId, body.Name, body.Type, body.Purpose, body.AddressLine,
-            body.ProvinceCode, body.CantonCode, body.ParishCode,
-            body.Phone, body.Email, body.IsPrimary, body.OtherDescription);
+            bpId,
+            body.Name,
+            body.Type,
+            body.Purpose,
+            body.AddressLine,
+            body.ProvinceCode,
+            body.CantonCode,
+            body.ParishCode,
+            body.Phone,
+            body.Email,
+            body.IsPrimary,
+            body.OtherDescription
+        );
 
         var result = await _mediator.Send(cmd, cancellationToken);
-        return result.IsSuccess
-            ? this.ApiCreated(result.Value!)
-            : this.ToOkOrBadRequest(result);
+        return result.IsSuccess ? this.ApiCreated(result.Value!) : this.ToOkOrBadRequest(result);
     }
 
     /// <summary>Actualiza los datos de la ubicación. No cambia IsPrimary — usar set-primary.</summary>
@@ -96,13 +116,23 @@ public sealed class BusinessPartnerLocationsController : ControllerBase
         [FromRoute] Guid bpId,
         [FromRoute] Guid locationId,
         [FromBody] UpdateLocationRequest body,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default
+    )
     {
         _ = bpId;
         var cmd = new UpdateBpLocationCommand(
-            locationId, body.Name, body.Type, body.Purpose, body.AddressLine,
-            body.ProvinceCode, body.CantonCode, body.ParishCode,
-            body.Phone, body.Email, body.OtherDescription);
+            locationId,
+            body.Name,
+            body.Type,
+            body.Purpose,
+            body.AddressLine,
+            body.ProvinceCode,
+            body.CantonCode,
+            body.ParishCode,
+            body.Phone,
+            body.Email,
+            body.OtherDescription
+        );
 
         var result = await _mediator.Send(cmd, cancellationToken);
         return this.ToOkOrBadRequest(result);
@@ -119,10 +149,14 @@ public sealed class BusinessPartnerLocationsController : ControllerBase
     public async Task<IActionResult> SetPrimary(
         [FromRoute] Guid bpId,
         [FromRoute] Guid locationId,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default
+    )
     {
         _ = bpId;
-        var result = await _mediator.Send(new SetPrimaryBpLocationCommand(locationId), cancellationToken);
+        var result = await _mediator.Send(
+            new SetPrimaryBpLocationCommand(locationId),
+            cancellationToken
+        );
         return this.ToOkOrBadRequest(result);
     }
 
@@ -133,10 +167,14 @@ public sealed class BusinessPartnerLocationsController : ControllerBase
     public async Task<IActionResult> Activate(
         [FromRoute] Guid bpId,
         [FromRoute] Guid locationId,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default
+    )
     {
         _ = bpId;
-        var result = await _mediator.Send(new ActivateBpLocationCommand(locationId), cancellationToken);
+        var result = await _mediator.Send(
+            new ActivateBpLocationCommand(locationId),
+            cancellationToken
+        );
         return this.ToOkOrBadRequest(result);
     }
 
@@ -151,10 +189,14 @@ public sealed class BusinessPartnerLocationsController : ControllerBase
     public async Task<IActionResult> Deactivate(
         [FromRoute] Guid bpId,
         [FromRoute] Guid locationId,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default
+    )
     {
         _ = bpId;
-        var result = await _mediator.Send(new DeactivateBpLocationCommand(locationId), cancellationToken);
+        var result = await _mediator.Send(
+            new DeactivateBpLocationCommand(locationId),
+            cancellationToken
+        );
         return this.ToOkOrBadRequest(result);
     }
 }

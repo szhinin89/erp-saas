@@ -11,7 +11,8 @@ public sealed class OperationalContextService : IOperationalContext
     public OperationalContextService(
         ICurrentTenant tenant,
         ICurrentCompany company,
-        ICurrentUser user)
+        ICurrentUser user
+    )
     {
         _tenant = tenant;
         _company = company;

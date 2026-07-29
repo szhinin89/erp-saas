@@ -17,7 +17,8 @@ public sealed class ElectronicDocumentCreatedEvent : BaseDomainEvent, IAuditEven
         Guid electronicDocumentId,
         ElectronicDocumentType documentType,
         string sourceModule,
-        Guid sourceEntityId)
+        Guid sourceEntityId
+    )
     {
         TenantId = tenantId;
         ElectronicDocumentId = electronicDocumentId;

@@ -14,7 +14,13 @@ public sealed class PostingRuleLineTests
     public void Create_con_datos_validos_asigna_todos_los_campos()
     {
         var line = PostingRuleLine.Create(
-            PostingRuleId, TenantId, AccountId, AccountNature.Debit, PostingAmountKind.Subtotal, sortOrder: 0);
+            PostingRuleId,
+            TenantId,
+            AccountId,
+            AccountNature.Debit,
+            PostingAmountKind.Subtotal,
+            sortOrder: 0
+        );
 
         line.PostingRuleId.Should().Be(PostingRuleId);
         line.TenantId.Should().Be(TenantId);
@@ -29,7 +35,14 @@ public sealed class PostingRuleLineTests
     [InlineData(AccountNature.Credit)]
     public void Create_persiste_la_naturaleza_indicada(AccountNature nature)
     {
-        var line = PostingRuleLine.Create(PostingRuleId, TenantId, AccountId, nature, PostingAmountKind.TaxVat, 0);
+        var line = PostingRuleLine.Create(
+            PostingRuleId,
+            TenantId,
+            AccountId,
+            nature,
+            PostingAmountKind.TaxVat,
+            0
+        );
 
         line.Nature.Should().Be(nature);
     }
@@ -43,7 +56,14 @@ public sealed class PostingRuleLineTests
     [InlineData(PostingAmountKind.GrandTotal)]
     public void Create_persiste_el_AmountKind_indicado(PostingAmountKind kind)
     {
-        var line = PostingRuleLine.Create(PostingRuleId, TenantId, AccountId, AccountNature.Debit, kind, 0);
+        var line = PostingRuleLine.Create(
+            PostingRuleId,
+            TenantId,
+            AccountId,
+            AccountNature.Debit,
+            kind,
+            0
+        );
 
         line.AmountKind.Should().Be(kind);
     }
@@ -51,8 +71,15 @@ public sealed class PostingRuleLineTests
     [Fact]
     public void Create_con_AccountId_vacio_lanza_excepcion()
     {
-        var act = () => PostingRuleLine.Create(
-            PostingRuleId, TenantId, Guid.Empty, AccountNature.Debit, PostingAmountKind.Subtotal, 0);
+        var act = () =>
+            PostingRuleLine.Create(
+                PostingRuleId,
+                TenantId,
+                Guid.Empty,
+                AccountNature.Debit,
+                PostingAmountKind.Subtotal,
+                0
+            );
 
         act.Should().Throw<ArgumentException>();
     }

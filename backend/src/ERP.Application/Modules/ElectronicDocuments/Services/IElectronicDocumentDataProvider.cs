@@ -13,7 +13,8 @@ namespace ERP.Application.Modules.ElectronicDocuments.Services;
 public sealed record ElectronicDocumentSourceReference(
     Guid TenantId,
     Guid CompanyId,
-    Guid SourceEntityId);
+    Guid SourceEntityId
+);
 
 /// <summary>
 /// Contrato que cada módulo de negocio (Sales, Purchases, Inventory, ...) implementa para
@@ -39,5 +40,7 @@ public interface IElectronicDocumentDataProvider
     /// impuestos, detalles, formas de pago, ...) antes de construir el modelo.
     /// </summary>
     Task<Result<ElectronicDocumentData>> GetDataAsync(
-        ElectronicDocumentSourceReference reference, CancellationToken ct = default);
+        ElectronicDocumentSourceReference reference,
+        CancellationToken ct = default
+    );
 }

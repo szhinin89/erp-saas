@@ -60,11 +60,13 @@ public sealed partial class NavigationSyncService
 
             if (dbById.TryGetValue(m.GroupId, out var existing))
             {
-                if (existing.Icon != m.Icon ||
-                    existing.LabelKey != labelKey ||
-                    existing.SortOrder != m.SortOrder ||
-                    existing.ModuleKey != m.Code ||
-                    !existing.IsActive)
+                if (
+                    existing.Icon != m.Icon
+                    || existing.LabelKey != labelKey
+                    || existing.SortOrder != m.SortOrder
+                    || existing.ModuleKey != m.Code
+                    || !existing.IsActive
+                )
                 {
                     existing.SyncFrom(m.Icon, labelKey, m.SortOrder, m.Code);
                     changes++;
@@ -73,8 +75,15 @@ public sealed partial class NavigationSyncService
             else
             {
                 var group = UiNavGroup.Create(
-                    m.GroupId, m.Code, m.Icon, labelKey, m.SortOrder,
-                    m.Code, rolesCsv: null, requirePlatformPanel: false);
+                    m.GroupId,
+                    m.Code,
+                    m.Icon,
+                    labelKey,
+                    m.SortOrder,
+                    m.Code,
+                    rolesCsv: null,
+                    requirePlatformPanel: false
+                );
                 _db.UiNavGroups.Add(group);
                 changes++;
             }
@@ -106,29 +115,46 @@ public sealed partial class NavigationSyncService
 
             if (dbById.TryGetValue(n.Id, out var existing))
             {
-                if (existing.GroupId != n.GroupId ||
-                    existing.RoutePath != n.RoutePath ||
-                    existing.LabelKey != n.LabelKey ||
-                    existing.SortOrder != n.SortOrder ||
-                    existing.ModuleKey != n.GroupCode ||
-                    existing.PermissionKey != n.PermissionKey ||
-                    existing.PermissionKeysAnyJson != n.PermissionKeysAnyJson ||
-                    existing.ParentItemId != n.ParentItemId ||
-                    !existing.IsActive)
+                if (
+                    existing.GroupId != n.GroupId
+                    || existing.RoutePath != n.RoutePath
+                    || existing.LabelKey != n.LabelKey
+                    || existing.SortOrder != n.SortOrder
+                    || existing.ModuleKey != n.GroupCode
+                    || existing.PermissionKey != n.PermissionKey
+                    || existing.PermissionKeysAnyJson != n.PermissionKeysAnyJson
+                    || existing.ParentItemId != n.ParentItemId
+                    || !existing.IsActive
+                )
                 {
                     existing.SyncFrom(
-                        n.GroupId, n.RoutePath, n.LabelKey, n.SortOrder,
-                        n.GroupCode, n.PermissionKey, n.PermissionKeysAnyJson,
-                        n.ParentItemId);
+                        n.GroupId,
+                        n.RoutePath,
+                        n.LabelKey,
+                        n.SortOrder,
+                        n.GroupCode,
+                        n.PermissionKey,
+                        n.PermissionKeysAnyJson,
+                        n.ParentItemId
+                    );
                     changes++;
                 }
             }
             else
             {
                 var item = UiNavItem.Create(
-                    n.Id, n.GroupId, n.RoutePath, n.LabelKey, n.SortOrder,
-                    n.GroupCode, n.PermissionKey, n.PermissionKeysAnyJson,
-                    rolesCsv: null, isActive: true, parentItemId: n.ParentItemId);
+                    n.Id,
+                    n.GroupId,
+                    n.RoutePath,
+                    n.LabelKey,
+                    n.SortOrder,
+                    n.GroupCode,
+                    n.PermissionKey,
+                    n.PermissionKeysAnyJson,
+                    rolesCsv: null,
+                    isActive: true,
+                    parentItemId: n.ParentItemId
+                );
                 _db.UiNavItems.Add(item);
                 changes++;
             }
@@ -146,11 +172,12 @@ public sealed partial class NavigationSyncService
         return changes;
     }
 
-    [LoggerMessage(Level = LogLevel.Information,
-        Message = "Navigation sync completed: {GroupChanges} group(s), {ItemChanges} item(s) updated.")]
+    [LoggerMessage(
+        Level = LogLevel.Information,
+        Message = "Navigation sync completed: {GroupChanges} group(s), {ItemChanges} item(s) updated."
+    )]
     private partial void LogSyncCompleted(int groupChanges, int itemChanges);
 
-    [LoggerMessage(Level = LogLevel.Debug,
-        Message = "Navigation sync: no changes detected.")]
+    [LoggerMessage(Level = LogLevel.Debug, Message = "Navigation sync: no changes detected.")]
     private partial void LogSyncNoChanges();
 }

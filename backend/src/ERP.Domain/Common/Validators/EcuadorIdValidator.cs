@@ -1,4 +1,4 @@
-﻿using System.Globalization;
+using System.Globalization;
 
 namespace ERP.Domain.Common.Validators;
 
@@ -20,19 +20,24 @@ public static class EcuadorIdValidator
     /// </summary>
     public static bool EsCedulaValida(string cedula)
     {
-        if (string.IsNullOrWhiteSpace(cedula)) return false;
+        if (string.IsNullOrWhiteSpace(cedula))
+            return false;
 
         cedula = cedula.Trim();
-        if (cedula.Length != 10) return false;
-        if (!cedula.All(char.IsDigit)) return false;
+        if (cedula.Length != 10)
+            return false;
+        if (!cedula.All(char.IsDigit))
+            return false;
 
         // Provincia: 01-24 (no 30, exclusivo de RUC)
         int provincia = int.Parse(cedula[..2], CultureInfo.InvariantCulture);
-        if (provincia < 1 || provincia > 24) return false;
+        if (provincia < 1 || provincia > 24)
+            return false;
 
         // 3.er dígito: 0-5 (natural) o 6 (pública) — nunca 7,8,9 en CI
         int tercerDigito = cedula[2] - '0';
-        if (tercerDigito > 6) return false;
+        if (tercerDigito > 6)
+            return false;
 
         // Módulo 10
         int suma = 0;

@@ -30,7 +30,6 @@ using ERP.Infrastructure.Persistence.Outbox;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 
-
 namespace ERP.Infrastructure.Persistence;
 
 public class ErpDbContext : DbContext
@@ -46,13 +45,17 @@ public class ErpDbContext : DbContext
     // (no suficiente por sí sola) para tratarla como recién creada. Ver
     // AI-RULES — invariante "no Attach/Update de entidades detached con ID real"
     // (gate: NewChildEntityTrackingArchitectureTests).
-    private readonly HashSet<object> _queryTrackedEntities = new(ReferenceEqualityComparer.Instance);
+    private readonly HashSet<object> _queryTrackedEntities = new(
+        ReferenceEqualityComparer.Instance
+    );
 
     public ErpDbContext(
         DbContextOptions<ErpDbContext> options,
         ICurrentTenant currentTenant,
         IPublisher publisher,
-        ICurrentCompany currentCompany) : base(options)
+        ICurrentCompany currentCompany
+    )
+        : base(options)
     {
         _currentTenant = currentTenant;
         _currentCompany = currentCompany;
@@ -71,18 +74,21 @@ public class ErpDbContext : DbContext
     internal Guid FilterCompanyId => _currentCompany.CompanyId;
     internal bool FilterHasCompanyContext => _currentCompany.HasCompanyContext;
 
-    public override int SaveChanges(bool acceptAllChangesOnSuccess)
-        => SaveChangesAsync(acceptAllChangesOnSuccess, CancellationToken.None)
-            .GetAwaiter().GetResult();
+    public override int SaveChanges(bool acceptAllChangesOnSuccess) =>
+        SaveChangesAsync(acceptAllChangesOnSuccess, CancellationToken.None)
+            .GetAwaiter()
+            .GetResult();
 
-    public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
-        => SaveChangesAsync(true, cancellationToken);
+    public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default) =>
+        SaveChangesAsync(true, cancellationToken);
 
     public override async Task<int> SaveChangesAsync(
         bool acceptAllChangesOnSuccess,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default
+    )
     {
-        var entitiesWithEvents = ChangeTracker.Entries<IHasDomainEvents>()
+        var entitiesWithEvents = ChangeTracker
+            .Entries<IHasDomainEvents>()
             .Where(e => e.Entity.DomainEvents.Count > 0)
             .Select(e => e.Entity)
             .ToList();
@@ -103,9 +109,7 @@ public class ErpDbContext : DbContext
         // ambiente (p. ej. IUnitOfWork del caller), la reutilizamos y dejamos
         // el commit/rollback en manos del dueño de esa transacción.
         var ownsTransaction = Database.CurrentTransaction is null;
-        var tx = ownsTransaction
-            ? await Database.BeginTransactionAsync(cancellationToken)
-            : null;
+        var tx = ownsTransaction ? await Database.BeginTransactionAsync(cancellationToken) : null;
 
         // La corrección de entidades hijas mal clasificadas (Modified en lugar de
         // Added tras ser descubiertas por fixup de navegación) vive en
@@ -154,8 +158,10 @@ public class ErpDbContext : DbContext
 
     // ── Access / RBAC ─────────────────────────────────────────────────────
     public DbSet<AccessProfile> AccessProfiles => Set<AccessProfile>();
-    public DbSet<AccessProfilePermission> AccessProfilePermissions => Set<AccessProfilePermission>();
-    public DbSet<SecurityAdminScopeAssignment> SecurityAdminScopeAssignments => Set<SecurityAdminScopeAssignment>();
+    public DbSet<AccessProfilePermission> AccessProfilePermissions =>
+        Set<AccessProfilePermission>();
+    public DbSet<SecurityAdminScopeAssignment> SecurityAdminScopeAssignments =>
+        Set<SecurityAdminScopeAssignment>();
 
     // ── Tenants ───────────────────────────────────────────────────────────
     public DbSet<Tenant> Tenants => Set<Tenant>();
@@ -175,8 +181,10 @@ public class ErpDbContext : DbContext
     // ── MasterData BC ─────────────────────────────────────────────────────
     public DbSet<BusinessPartner> BusinessPartners => Set<BusinessPartner>();
     public DbSet<BusinessPartnerRole> BusinessPartnerRoles => Set<BusinessPartnerRole>();
-    public DbSet<CompanyBpTradingSettings> CompanyBpTradingSettings => Set<CompanyBpTradingSettings>();
-    public DbSet<BusinessPartnerLocation> BusinessPartnerLocations => Set<BusinessPartnerLocation>();
+    public DbSet<CompanyBpTradingSettings> CompanyBpTradingSettings =>
+        Set<CompanyBpTradingSettings>();
+    public DbSet<BusinessPartnerLocation> BusinessPartnerLocations =>
+        Set<BusinessPartnerLocation>();
     public DbSet<BusinessPartnerContact> BusinessPartnerContacts => Set<BusinessPartnerContact>();
     public DbSet<PaymentTerm> PaymentTerms => Set<PaymentTerm>();
     public DbSet<PersonTypeCatalog> PersonTypeCatalogs => Set<PersonTypeCatalog>();
@@ -231,7 +239,8 @@ public class ErpDbContext : DbContext
     public DbSet<AttributeDefinition> AttributeDefinitions => Set<AttributeDefinition>();
     public DbSet<ItemTypeDefinition> ItemTypes => Set<ItemTypeDefinition>();
     public DbSet<BarcodeTypeDefinition> BarcodeTypes => Set<BarcodeTypeDefinition>();
-    public DbSet<ItemMarginStatusDefinition> ItemMarginStatuses => Set<ItemMarginStatusDefinition>();
+    public DbSet<ItemMarginStatusDefinition> ItemMarginStatuses =>
+        Set<ItemMarginStatusDefinition>();
     public DbSet<ItemAudit> ItemAudits => Set<ItemAudit>();
 
     // ── Pricing BC ────────────────────────────────────────────────────────
@@ -253,8 +262,10 @@ public class ErpDbContext : DbContext
 
     // ── ElectronicDocuments BC (núcleo — sin SOAP/SRI, ver Fases 1-7) ──────
     public DbSet<ElectronicDocument> ElectronicDocuments => Set<ElectronicDocument>();
-    public DbSet<ElectronicDocumentAudit> ElectronicDocumentAudits => Set<ElectronicDocumentAudit>();
-    public DbSet<ElectronicDocumentSriMessage> ElectronicDocumentSriMessages => Set<ElectronicDocumentSriMessage>();
+    public DbSet<ElectronicDocumentAudit> ElectronicDocumentAudits =>
+        Set<ElectronicDocumentAudit>();
+    public DbSet<ElectronicDocumentSriMessage> ElectronicDocumentSriMessages =>
+        Set<ElectronicDocumentSriMessage>();
 
     // ── Ride BC (walking skeleton — ver Fase 4 del plan de implementación, ADR-025) ────────
     public DbSet<RidePdfDocument> RidePdfDocuments => Set<RidePdfDocument>();
@@ -262,16 +273,20 @@ public class ErpDbContext : DbContext
     // ── Purchases BC ───────────────────────────────────────────────────────
     public DbSet<PurchaseInvoice> PurchaseInvoices => Set<PurchaseInvoice>();
     public DbSet<PurchaseInvoiceDetail> PurchaseInvoiceDetails => Set<PurchaseInvoiceDetail>();
-    public DbSet<PurchasePaymentSchedule> PurchasePaymentSchedules => Set<PurchasePaymentSchedule>();
+    public DbSet<PurchasePaymentSchedule> PurchasePaymentSchedules =>
+        Set<PurchasePaymentSchedule>();
     public DbSet<PurchasePayable> PurchasePayables => Set<PurchasePayable>();
-    public DbSet<PurchasePayableInstallment> PurchasePayableInstallments => Set<PurchasePayableInstallment>();
+    public DbSet<PurchasePayableInstallment> PurchasePayableInstallments =>
+        Set<PurchasePayableInstallment>();
     public DbSet<PurchaseCommunication> PurchaseCommunications => Set<PurchaseCommunication>();
     public DbSet<PurchaseInvoiceAudit> PurchaseInvoiceAudits => Set<PurchaseInvoiceAudit>();
     public DbSet<PurchaseLinePvpAudit> PurchaseLinePvpAudits => Set<PurchaseLinePvpAudit>();
     public DbSet<IssuedWithholdingAudit> IssuedWithholdingAudits => Set<IssuedWithholdingAudit>();
     public DbSet<IssuedWithholding> IssuedWithholdings => Set<IssuedWithholding>();
-    public DbSet<IssuedWithholdingDetail> IssuedWithholdingDetails => Set<IssuedWithholdingDetail>();
-    public DbSet<PurchaseReceptionDocument> PurchaseReceptionDocuments => Set<PurchaseReceptionDocument>();
+    public DbSet<IssuedWithholdingDetail> IssuedWithholdingDetails =>
+        Set<IssuedWithholdingDetail>();
+    public DbSet<PurchaseReceptionDocument> PurchaseReceptionDocuments =>
+        Set<PurchaseReceptionDocument>();
     public DbSet<PurchaseReceptionLine> PurchaseReceptionLines => Set<PurchaseReceptionLine>();
 
     // ── Sales BC ──────────────────────────────────────────────────────────
@@ -280,7 +295,8 @@ public class ErpDbContext : DbContext
     public DbSet<SalesInvoicePayment> SalesInvoicePayments => Set<SalesInvoicePayment>();
     public DbSet<PaymentMethod> PaymentMethods => Set<PaymentMethod>();
     public DbSet<SalesReceivable> SalesReceivables => Set<SalesReceivable>();
-    public DbSet<SalesReceivableInstallment> SalesReceivableInstallments => Set<SalesReceivableInstallment>();
+    public DbSet<SalesReceivableInstallment> SalesReceivableInstallments =>
+        Set<SalesReceivableInstallment>();
 
     // ── Finance BC ─────────────────────────────────────────────────────────
     public DbSet<CreditTerm> CreditTerms => Set<CreditTerm>();

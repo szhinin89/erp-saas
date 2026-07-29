@@ -5,4 +5,5 @@ using MediatR;
 namespace ERP.Application.Modules.Inventory.Stock.UseCases.GetItemWarehouseAvailability;
 
 public sealed record GetItemWarehouseAvailabilityQuery(Guid ItemId)
-    : IRequest<Result<IReadOnlyList<ItemWarehouseAvailabilityDto>>>, IBranchScopedRequest;
+    : IRequest<Result<IReadOnlyList<ItemWarehouseAvailabilityDto>>>,
+        IBranchScopedRequest;

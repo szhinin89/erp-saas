@@ -18,12 +18,18 @@ public sealed record PurchaseReceptionDetailProcessingResult(
     IReadOnlyList<PurchaseReceptionLine> Lines,
     PurchaseReceptionProcessingOutcome Processing,
     string? DocTypeCode,
-    string? SriPaymentMethodCode);
+    string? SriPaymentMethodCode
+);
 
 public interface IPurchaseReceptionDetailProcessor
 {
     Task<PurchaseReceptionDetailProcessingResult> ProcessAsync(
-        Guid documentId, Guid tenantId, Guid? supplierId, string xmlContent, CancellationToken ct);
+        Guid documentId,
+        Guid tenantId,
+        Guid? supplierId,
+        string xmlContent,
+        CancellationToken ct
+    );
 }
 
 /// <summary>
@@ -41,8 +47,11 @@ public sealed class PurchaseReceptionDetailProcessor : IPurchaseReceptionDetailP
     private readonly ILogger<PurchaseReceptionDetailProcessor> _logger;
 
     public PurchaseReceptionDetailProcessor(
-        IPurchaseXmlDraftParser parser, IItemRepository itemRepo, IItemMatchFinder matchFinder,
-        ILogger<PurchaseReceptionDetailProcessor> logger)
+        IPurchaseXmlDraftParser parser,
+        IItemRepository itemRepo,
+        IItemMatchFinder matchFinder,
+        ILogger<PurchaseReceptionDetailProcessor> logger
+    )
     {
         _parser = parser;
         _itemRepo = itemRepo;
@@ -51,7 +60,12 @@ public sealed class PurchaseReceptionDetailProcessor : IPurchaseReceptionDetailP
     }
 
     public async Task<PurchaseReceptionDetailProcessingResult> ProcessAsync(
-        Guid documentId, Guid tenantId, Guid? supplierId, string xmlContent, CancellationToken ct)
+        Guid documentId,
+        Guid tenantId,
+        Guid? supplierId,
+        string xmlContent,
+        CancellationToken ct
+    )
     {
         var lines = new List<PurchaseReceptionLine>();
         var noteMessages = new List<string>();
@@ -65,7 +79,8 @@ public sealed class PurchaseReceptionDetailProcessor : IPurchaseReceptionDetailP
             foreach (var lineError in parseResult.Value.LineErrors)
             {
                 noteMessages.Add(
-                    $"Línea {lineError.LineIndex} ({lineError.SupplierCode ?? lineError.Description ?? "sin identificar"}): {lineError.Reason} — línea omitida.");
+                    $"Línea {lineError.LineIndex} ({lineError.SupplierCode ?? lineError.Description ?? "sin identificar"}): {lineError.Reason} — línea omitida."
+                );
             }
 
             foreach (var parsedLine in parseResult.Value.Lines)
@@ -76,7 +91,12 @@ public sealed class PurchaseReceptionDetailProcessor : IPurchaseReceptionDetailP
                 // Resolución automática — solo por código de proveedor exacto (sin intervención del usuario).
                 if (supplierId is { } sid && !string.IsNullOrWhiteSpace(parsedLine.SupplierCode))
                 {
-                    itemId = await _itemRepo.FindItemIdBySupplierCodeAsync(sid, parsedLine.SupplierCode, tenantId, ct);
+                    itemId = await _itemRepo.FindItemIdBySupplierCodeAsync(
+                        sid,
+                        parsedLine.SupplierCode,
+                        tenantId,
+                        ct
+                    );
                     if (itemId is not null)
                         matchStatus = ItemMatchStatus.AutoMatched;
                 }
@@ -84,11 +104,26 @@ public sealed class PurchaseReceptionDetailProcessor : IPurchaseReceptionDetailP
                 try
                 {
                     var line = PurchaseReceptionLine.Create(
-                        documentId, tenantId, parsedLine.Description, parsedLine.Quantity, parsedLine.UnitPrice,
-                        parsedLine.VatCode, parsedLine.TaxCode, parsedLine.VatPercentage, parsedLine.TaxValue,
-                        parsedLine.DiscountPct, parsedLine.Discount, parsedLine.LineSubtotal, parsedLine.TotalLine,
-                        parsedLine.IceCode, parsedLine.IceValue,
-                        parsedLine.SupplierCode, parsedLine.SupplierAuxCode, itemId, matchStatus);
+                        documentId,
+                        tenantId,
+                        parsedLine.Description,
+                        parsedLine.Quantity,
+                        parsedLine.UnitPrice,
+                        parsedLine.VatCode,
+                        parsedLine.TaxCode,
+                        parsedLine.VatPercentage,
+                        parsedLine.TaxValue,
+                        parsedLine.DiscountPct,
+                        parsedLine.Discount,
+                        parsedLine.LineSubtotal,
+                        parsedLine.TotalLine,
+                        parsedLine.IceCode,
+                        parsedLine.IceValue,
+                        parsedLine.SupplierCode,
+                        parsedLine.SupplierAuxCode,
+                        itemId,
+                        matchStatus
+                    );
 
                     // Si no hubo código exacto pero el motor de matching ya encuentra candidatos por
                     // descripción/similitud, la línea queda marcada como "requiere revisión" en vez de
@@ -96,8 +131,14 @@ public sealed class PurchaseReceptionDetailProcessor : IPurchaseReceptionDetailP
                     if (matchStatus == ItemMatchStatus.Pending)
                     {
                         var suggestions = await _matchFinder.FindCandidatesAsync(
-                            tenantId, supplierId, parsedLine.SupplierCode, parsedLine.SupplierAuxCode,
-                            parsedLine.Description, maxResults: 1, ct);
+                            tenantId,
+                            supplierId,
+                            parsedLine.SupplierCode,
+                            parsedLine.SupplierAuxCode,
+                            parsedLine.Description,
+                            maxResults: 1,
+                            ct
+                        );
                         if (suggestions.Count > 0)
                             line.MarkNeedsReview();
                     }
@@ -109,11 +150,15 @@ public sealed class PurchaseReceptionDetailProcessor : IPurchaseReceptionDetailP
                     // Una línea individual inválida (p. ej. cantidad cero por un detalle informativo del
                     // comprobante) no debe bloquear la verificación de todo el documento — se omite y se
                     // registra tanto en el log como en ProcessingNotes (soporte técnico y usuario).
-                    _logger.LogWarning(ex,
+                    _logger.LogWarning(
+                        ex,
                         "Línea de detalle omitida al procesar el documento de recepción {DocumentId}: {Reason}",
-                        documentId, ex.Message);
+                        documentId,
+                        ex.Message
+                    );
                     noteMessages.Add(
-                        $"Línea con proveedor {parsedLine.SupplierCode ?? "sin código"} ({parsedLine.Description}): {ex.Message} — línea omitida.");
+                        $"Línea con proveedor {parsedLine.SupplierCode ?? "sin código"} ({parsedLine.Description}): {ex.Message} — línea omitida."
+                    );
                 }
             }
         }
@@ -121,23 +166,31 @@ public sealed class PurchaseReceptionDetailProcessor : IPurchaseReceptionDetailP
         {
             _logger.LogWarning(
                 "El XML del documento de recepción {DocumentId} no se pudo interpretar: {Reason}",
-                documentId, parseResult.Error);
-            noteMessages.Add(parseResult.Error ?? "No se pudo interpretar la cabecera del comprobante.");
+                documentId,
+                parseResult.Error
+            );
+            noteMessages.Add(
+                parseResult.Error ?? "No se pudo interpretar la cabecera del comprobante."
+            );
         }
 
-        var processingStatus = lines.Count == 0
-            ? PurchaseReceptionProcessingStatus.Failed
-            : noteMessages.Count > 0
-                ? PurchaseReceptionProcessingStatus.ProcessedWithWarnings
-                : PurchaseReceptionProcessingStatus.Processed;
+        var processingStatus =
+            lines.Count == 0 ? PurchaseReceptionProcessingStatus.Failed
+            : noteMessages.Count > 0 ? PurchaseReceptionProcessingStatus.ProcessedWithWarnings
+            : PurchaseReceptionProcessingStatus.Processed;
 
         var processing = new PurchaseReceptionProcessingOutcome(
-            processingStatus, linesDetected, lines.Count,
-            noteMessages.Count > 0 ? string.Join(" | ", noteMessages) : null);
+            processingStatus,
+            linesDetected,
+            lines.Count,
+            noteMessages.Count > 0 ? string.Join(" | ", noteMessages) : null
+        );
 
         return new PurchaseReceptionDetailProcessingResult(
-            lines, processing,
+            lines,
+            processing,
             parseResult.IsSuccess ? parseResult.Value!.DocTypeCode : null,
-            parseResult.IsSuccess ? parseResult.Value!.SriPaymentMethodCode : null);
+            parseResult.IsSuccess ? parseResult.Value!.SriPaymentMethodCode : null
+        );
     }
 }

@@ -23,8 +23,12 @@ public sealed class HttpAuditContext : IAuditContext
     private readonly ILogger<HttpAuditContext> _logger;
 
     public HttpAuditContext(
-        ICurrentTenant tenant, ICurrentCompany company, ICurrentUser user,
-        IHttpContextAccessor httpContextAccessor, ILogger<HttpAuditContext> logger)
+        ICurrentTenant tenant,
+        ICurrentCompany company,
+        ICurrentUser user,
+        IHttpContextAccessor httpContextAccessor,
+        ILogger<HttpAuditContext> logger
+    )
     {
         _tenant = tenant;
         _company = company;
@@ -42,9 +46,11 @@ public sealed class HttpAuditContext : IAuditContext
         {
             var httpContext = _httpContextAccessor.HttpContext;
             var requestId = httpContext?.TraceIdentifier;
-            var correlationId = httpContext?.Items.TryGetValue("CorrelationId", out var value) == true && value is string id
-                ? id
-                : requestId;
+            var correlationId =
+                httpContext?.Items.TryGetValue("CorrelationId", out var value) == true
+                && value is string id
+                    ? id
+                    : requestId;
 
             // Sin HttpContext (job Hangfire/background) no hay usuario real que resolver — el
             // actor es el sistema, nunca "Unknown" (que implicaría un usuario autenticado cuyo
@@ -60,7 +66,8 @@ public sealed class HttpAuditContext : IAuditContext
                     RoleName: null,
                     CorrelationId: correlationId,
                     RequestId: requestId,
-                    Source: AuditSource.System);
+                    Source: AuditSource.System
+                );
             }
 
             // Snapshot al momento del evento: FullName/Email vienen de claims embebidas en el
@@ -71,7 +78,8 @@ public sealed class HttpAuditContext : IAuditContext
             {
                 _logger.LogWarning(
                     "No se pudo resolver el nombre visible del usuario {UserId} para auditoría; se usa 'Unknown'.",
-                    _user.UserId);
+                    _user.UserId
+                );
                 userName = "Unknown";
             }
 
@@ -84,7 +92,8 @@ public sealed class HttpAuditContext : IAuditContext
                 RoleName: _user.Role,
                 CorrelationId: correlationId,
                 RequestId: requestId,
-                Source: AuditSource.UserAction);
+                Source: AuditSource.UserAction
+            );
         }
     }
 }

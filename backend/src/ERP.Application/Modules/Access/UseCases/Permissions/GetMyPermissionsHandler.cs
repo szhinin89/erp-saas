@@ -6,7 +6,8 @@ using MediatR;
 
 namespace ERP.Application.Access.UseCases.Permissions;
 
-public class GetMyPermissionsHandler : IRequestHandler<GetMyPermissionsQuery, Result<MyPermissionsDto>>
+public class GetMyPermissionsHandler
+    : IRequestHandler<GetMyPermissionsQuery, Result<MyPermissionsDto>>
 {
     private static readonly string[] AdminPermissions = ["*"];
     private readonly ICurrentUser _currentUser;
@@ -18,7 +19,8 @@ public class GetMyPermissionsHandler : IRequestHandler<GetMyPermissionsQuery, Re
         ICurrentUser currentUser,
         ICurrentTenant currentTenant,
         IEffectivePermissionKeysProvider permissionKeys,
-        ICompanyContextProvider companyContext)
+        ICompanyContextProvider companyContext
+    )
     {
         _currentUser = currentUser;
         _currentTenant = currentTenant;
@@ -26,10 +28,14 @@ public class GetMyPermissionsHandler : IRequestHandler<GetMyPermissionsQuery, Re
         _companyContext = companyContext;
     }
 
-    public Task<Result<MyPermissionsDto>> HandleAsync(CancellationToken cancellationToken = default)
-        => Handle(new GetMyPermissionsQuery(), cancellationToken);
+    public Task<Result<MyPermissionsDto>> HandleAsync(
+        CancellationToken cancellationToken = default
+    ) => Handle(new GetMyPermissionsQuery(), cancellationToken);
 
-    public async Task<Result<MyPermissionsDto>> Handle(GetMyPermissionsQuery request, CancellationToken cancellationToken)
+    public async Task<Result<MyPermissionsDto>> Handle(
+        GetMyPermissionsQuery request,
+        CancellationToken cancellationToken
+    )
     {
         if (!_currentUser.IsAuthenticated || _currentTenant.TenantId == Guid.Empty)
             return Result<MyPermissionsDto>.Failure("No autenticado.");
@@ -38,7 +44,9 @@ public class GetMyPermissionsHandler : IRequestHandler<GetMyPermissionsQuery, Re
         if (string.Equals(role, SecurityRoles.Admin, StringComparison.OrdinalIgnoreCase))
             return Result<MyPermissionsDto>.Success(new MyPermissionsDto(AdminPermissions));
 
-        var context = await _companyContext.ResolveOperationalForCurrentUserAsync(cancellationToken);
+        var context = await _companyContext.ResolveOperationalForCurrentUserAsync(
+            cancellationToken
+        );
         if (context is null || context.CompanyId == Guid.Empty)
             return Result<MyPermissionsDto>.Success(new MyPermissionsDto([]));
 
@@ -50,7 +58,8 @@ public class GetMyPermissionsHandler : IRequestHandler<GetMyPermissionsQuery, Re
             context.CompanyId,
             _currentUser.UserId,
             context.ProfileId.Value,
-            cancellationToken);
+            cancellationToken
+        );
 
         return Result<MyPermissionsDto>.Success(new MyPermissionsDto(allowed));
     }

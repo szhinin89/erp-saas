@@ -24,12 +24,15 @@ public sealed class BranchScopeBehaviorTests
         public Mock<IBranchAccessGuard> Guard { get; } = new();
         public Mock<ICurrentBranch> Branch { get; } = new();
 
-        public BranchScopeBehavior<TRequest, Result<string>> BuildBehavior<TRequest>() where TRequest : notnull
-            => new(Guard.Object, Branch.Object);
+        public BranchScopeBehavior<TRequest, Result<string>> BuildBehavior<TRequest>()
+            where TRequest : notnull => new(Guard.Object, Branch.Object);
     }
 
-    private static RequestHandlerDelegate<Result<string>> NextReturning(Result<string> value, Action? onCalled = null)
-        => _ =>
+    private static RequestHandlerDelegate<Result<string>> NextReturning(
+        Result<string> value,
+        Action? onCalled = null
+    ) =>
+        _ =>
         {
             onCalled?.Invoke();
             return Task.FromResult(value);
@@ -43,19 +46,35 @@ public sealed class BranchScopeBehaviorTests
         f.Branch.Setup(b => b.HasBranchContext).Returns(true);
         f.Branch.Setup(b => b.BranchId).Returns(branchId);
         f.Guard.Setup(g => g.RequireBranchAsync(branchId, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Result<BranchAccessContext>.Success(
-                new BranchAccessContext(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), branchId, "Matriz", false)));
+            .ReturnsAsync(
+                Result<BranchAccessContext>.Success(
+                    new BranchAccessContext(
+                        Guid.NewGuid(),
+                        Guid.NewGuid(),
+                        Guid.NewGuid(),
+                        branchId,
+                        "Matriz",
+                        false
+                    )
+                )
+            );
 
         var behavior = f.BuildBehavior<FakeBranchScopedRequest>();
         var expected = Result<string>.Success("ok");
         var nextCalled = false;
 
         var result = await behavior.Handle(
-            new FakeBranchScopedRequest(), NextReturning(expected, () => nextCalled = true), CancellationToken.None);
+            new FakeBranchScopedRequest(),
+            NextReturning(expected, () => nextCalled = true),
+            CancellationToken.None
+        );
 
         result.Should().Be(expected);
         nextCalled.Should().BeTrue();
-        f.Guard.Verify(g => g.RequireBranchAsync(branchId, It.IsAny<CancellationToken>()), Times.Once);
+        f.Guard.Verify(
+            g => g.RequireBranchAsync(branchId, It.IsAny<CancellationToken>()),
+            Times.Once
+        );
     }
 
     [Fact]
@@ -67,12 +86,23 @@ public sealed class BranchScopeBehaviorTests
         var behavior = f.BuildBehavior<FakeBranchScopedRequest>();
         var nextCalled = false;
 
-        var act = async () => await behavior.Handle(
-            new FakeBranchScopedRequest(), NextReturning(Result<string>.Success("no-debe-llegar"), () => nextCalled = true), CancellationToken.None);
+        var act = async () =>
+            await behavior.Handle(
+                new FakeBranchScopedRequest(),
+                NextReturning(Result<string>.Success("no-debe-llegar"), () => nextCalled = true),
+                CancellationToken.None
+            );
 
         await act.Should().ThrowAsync<BranchScopeException>();
-        nextCalled.Should().BeFalse("el handler nunca debe ejecutarse sin contexto de sucursal (header X-Branch-Id ausente)");
-        f.Guard.Verify(g => g.RequireBranchAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()), Times.Never);
+        nextCalled
+            .Should()
+            .BeFalse(
+                "el handler nunca debe ejecutarse sin contexto de sucursal (header X-Branch-Id ausente)"
+            );
+        f.Guard.Verify(
+            g => g.RequireBranchAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()),
+            Times.Never
+        );
     }
 
     [Fact]
@@ -83,13 +113,21 @@ public sealed class BranchScopeBehaviorTests
         f.Branch.Setup(b => b.HasBranchContext).Returns(true);
         f.Branch.Setup(b => b.BranchId).Returns(branchId);
         f.Guard.Setup(g => g.RequireBranchAsync(branchId, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Result<BranchAccessContext>.Failure("No tiene autorización para operar en esta sucursal."));
+            .ReturnsAsync(
+                Result<BranchAccessContext>.Failure(
+                    "No tiene autorización para operar en esta sucursal."
+                )
+            );
 
         var behavior = f.BuildBehavior<FakeBranchScopedRequest>();
         var nextCalled = false;
 
-        var act = async () => await behavior.Handle(
-            new FakeBranchScopedRequest(), NextReturning(Result<string>.Success("no-debe-llegar"), () => nextCalled = true), CancellationToken.None);
+        var act = async () =>
+            await behavior.Handle(
+                new FakeBranchScopedRequest(),
+                NextReturning(Result<string>.Success("no-debe-llegar"), () => nextCalled = true),
+                CancellationToken.None
+            );
 
         await act.Should().ThrowAsync<BranchScopeException>();
         nextCalled.Should().BeFalse();
@@ -104,11 +142,17 @@ public sealed class BranchScopeBehaviorTests
         var nextCalled = false;
 
         var result = await behavior.Handle(
-            new FakeCompanyOnlyRequest(), NextReturning(expected, () => nextCalled = true), CancellationToken.None);
+            new FakeCompanyOnlyRequest(),
+            NextReturning(expected, () => nextCalled = true),
+            CancellationToken.None
+        );
 
         result.Should().Be(expected);
         nextCalled.Should().BeTrue();
-        f.Guard.Verify(g => g.RequireBranchAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()), Times.Never,
-            "una request que no es IBranchScopedRequest jamás debe disparar IBranchAccessGuard");
+        f.Guard.Verify(
+            g => g.RequireBranchAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()),
+            Times.Never,
+            "una request que no es IBranchScopedRequest jamás debe disparar IBranchAccessGuard"
+        );
     }
 }

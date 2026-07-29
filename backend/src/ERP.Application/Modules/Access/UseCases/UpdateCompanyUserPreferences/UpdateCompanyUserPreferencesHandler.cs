@@ -19,7 +19,8 @@ public sealed class UpdateCompanyUserPreferencesHandler
         ICompanyUserPreferencesRepository preferencesRepository,
         IBranchRepository branchRepository,
         ICompanyUserBranchRepository companyUserBranchRepository,
-        ICurrentUser currentUser)
+        ICurrentUser currentUser
+    )
     {
         _preferencesRepository = preferencesRepository;
         _branchRepository = branchRepository;
@@ -28,19 +29,30 @@ public sealed class UpdateCompanyUserPreferencesHandler
     }
 
     public async Task<Result<CompanyUserPreferencesDto>> Handle(
-        UpdateCompanyUserPreferencesCommand command, CancellationToken cancellationToken)
+        UpdateCompanyUserPreferencesCommand command,
+        CancellationToken cancellationToken
+    )
     {
         var existing = await _preferencesRepository.GetByMembershipAsync(
-            command.CompanyUserMembershipId, cancellationToken);
+            command.CompanyUserMembershipId,
+            cancellationToken
+        );
         if (existing is null)
             return Result<CompanyUserPreferencesDto>.NotFound(
-                "No existen preferencias para esta membresía. Créelas primero con CreateCompanyUserPreferences.");
+                "No existen preferencias para esta membresía. Créelas primero con CreateCompanyUserPreferences."
+            );
 
         var loginMode = Enum.Parse<CompanyUserLoginMode>(command.LoginMode);
 
         var branchValidation = await CompanyUserPreferencesDefaultBranchValidation.ValidateAsync(
-            _branchRepository, _companyUserBranchRepository,
-            existing.TenantId, existing.CompanyUserMembershipId, command.DefaultBranchId, loginMode, cancellationToken);
+            _branchRepository,
+            _companyUserBranchRepository,
+            existing.TenantId,
+            existing.CompanyUserMembershipId,
+            command.DefaultBranchId,
+            loginMode,
+            cancellationToken
+        );
         if (branchValidation is not null)
             return branchValidation;
 
@@ -62,6 +74,8 @@ public sealed class UpdateCompanyUserPreferencesHandler
 
         await _preferencesRepository.SaveChangesAsync(cancellationToken);
 
-        return Result<CompanyUserPreferencesDto>.Success(CompanyUserPreferencesMapper.ToDto(existing));
+        return Result<CompanyUserPreferencesDto>.Success(
+            CompanyUserPreferencesMapper.ToDto(existing)
+        );
     }
 }

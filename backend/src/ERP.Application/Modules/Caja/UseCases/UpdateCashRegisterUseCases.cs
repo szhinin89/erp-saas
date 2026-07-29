@@ -24,8 +24,8 @@ public sealed record UpdateCashRegisterCommand(
     string? Notes,
     Guid? EmissionPointId,
     Guid? DefaultWarehouseId = null,
-    Guid? DefaultCustomerId = null)
-    : IRequest<Result<CashRegisterDto>>, ICompanyScopedRequest;
+    Guid? DefaultCustomerId = null
+) : IRequest<Result<CashRegisterDto>>, ICompanyScopedRequest;
 
 // ── Validator ──────────────────────────────────────────────────────────
 
@@ -34,16 +34,22 @@ public sealed class UpdateCashRegisterValidator : AbstractValidator<UpdateCashRe
     public UpdateCashRegisterValidator()
     {
         RuleFor(x => x.Id).NotEmpty();
-        RuleFor(x => x.Name).NotEmpty().MaximumLength(CashRegister.NameMaxLen)
-            .WithMessage($"El nombre de la caja es obligatorio y no puede exceder {CashRegister.NameMaxLen} caracteres.");
-        RuleFor(x => x.Notes).MaximumLength(CashRegister.NotesMaxLen)
+        RuleFor(x => x.Name)
+            .NotEmpty()
+            .MaximumLength(CashRegister.NameMaxLen)
+            .WithMessage(
+                $"El nombre de la caja es obligatorio y no puede exceder {CashRegister.NameMaxLen} caracteres."
+            );
+        RuleFor(x => x.Notes)
+            .MaximumLength(CashRegister.NotesMaxLen)
             .WithMessage($"Las notas no pueden exceder {CashRegister.NotesMaxLen} caracteres.");
     }
 }
 
 // ── Handler ────────────────────────────────────────────────────────────
 
-public sealed class UpdateCashRegisterHandler : IRequestHandler<UpdateCashRegisterCommand, Result<CashRegisterDto>>
+public sealed class UpdateCashRegisterHandler
+    : IRequestHandler<UpdateCashRegisterCommand, Result<CashRegisterDto>>
 {
     private readonly ICashRegisterRepository _repo;
     private readonly IEmissionPointRepository _emissionPointRepo;
@@ -54,19 +60,28 @@ public sealed class UpdateCashRegisterHandler : IRequestHandler<UpdateCashRegist
     private readonly ICurrentUser _u;
 
     public UpdateCashRegisterHandler(
-        ICashRegisterRepository repo, IEmissionPointRepository emissionPointRepo,
-        IWarehouseRepository warehouseRepo, IBusinessPartnerRepository customerRepo,
-        ICashRegisterUsageGuard usageGuard, ICurrentTenant t, ICurrentUser u)
+        ICashRegisterRepository repo,
+        IEmissionPointRepository emissionPointRepo,
+        IWarehouseRepository warehouseRepo,
+        IBusinessPartnerRepository customerRepo,
+        ICashRegisterUsageGuard usageGuard,
+        ICurrentTenant t,
+        ICurrentUser u
+    )
     {
         _repo = repo;
         _emissionPointRepo = emissionPointRepo;
         _warehouseRepo = warehouseRepo;
         _customerRepo = customerRepo;
         _usageGuard = usageGuard;
-        _t = t; _u = u;
+        _t = t;
+        _u = u;
     }
 
-    public async Task<Result<CashRegisterDto>> Handle(UpdateCashRegisterCommand cmd, CancellationToken ct)
+    public async Task<Result<CashRegisterDto>> Handle(
+        UpdateCashRegisterCommand cmd,
+        CancellationToken ct
+    )
     {
         var tid = _t.TenantId;
         var entity = await _repo.GetByIdAsync(tid, cmd.Id, ct);
@@ -82,33 +97,50 @@ public sealed class UpdateCashRegisterHandler : IRequestHandler<UpdateCashRegist
         if (hasHistory && changesEmissionPoint)
         {
             return Result<CashRegisterDto>.ValidationFailure(
-                "Esta caja ya tiene historial operativo (aperturas, movimientos o cierres) y su punto de emisión no puede reasignarse. " +
-                "Desactive esta caja y cree una nueva para operar con otro punto de emisión.");
+                "Esta caja ya tiene historial operativo (aperturas, movimientos o cierres) y su punto de emisión no puede reasignarse. "
+                    + "Desactive esta caja y cree una nueva para operar con otro punto de emisión."
+            );
         }
 
         if (changesEmissionPoint && cmd.EmissionPointId.HasValue)
         {
-            var emissionPoint = await _emissionPointRepo.GetByIdAsync(cmd.EmissionPointId.Value, tid, ct);
+            var emissionPoint = await _emissionPointRepo.GetByIdAsync(
+                cmd.EmissionPointId.Value,
+                tid,
+                ct
+            );
             if (emissionPoint is null)
                 return Result<CashRegisterDto>.ValidationFailure("El punto de emisión no existe.");
             if (emissionPoint.Establishment.BranchId != entity.BranchId)
-                return Result<CashRegisterDto>.ValidationFailure("El punto de emisión no pertenece a la sucursal de la caja.");
+                return Result<CashRegisterDto>.ValidationFailure(
+                    "El punto de emisión no pertenece a la sucursal de la caja."
+                );
         }
 
         if (cmd.DefaultWarehouseId != entity.DefaultWarehouseId && cmd.DefaultWarehouseId.HasValue)
         {
-            var warehouse = await _warehouseRepo.GetByIdAsync(tid, cmd.DefaultWarehouseId.Value, ct);
+            var warehouse = await _warehouseRepo.GetByIdAsync(
+                tid,
+                cmd.DefaultWarehouseId.Value,
+                ct
+            );
             if (warehouse is null)
-                return Result<CashRegisterDto>.ValidationFailure("La bodega por defecto no existe.");
+                return Result<CashRegisterDto>.ValidationFailure(
+                    "La bodega por defecto no existe."
+                );
             if (warehouse.BranchId != entity.BranchId)
-                return Result<CashRegisterDto>.ValidationFailure("La bodega por defecto no pertenece a la sucursal de la caja.");
+                return Result<CashRegisterDto>.ValidationFailure(
+                    "La bodega por defecto no pertenece a la sucursal de la caja."
+                );
         }
 
         if (cmd.DefaultCustomerId != entity.DefaultCustomerId && cmd.DefaultCustomerId.HasValue)
         {
             var customer = await _customerRepo.GetByIdAsync(cmd.DefaultCustomerId.Value, ct);
             if (customer is null)
-                return Result<CashRegisterDto>.ValidationFailure("El cliente por defecto no existe.");
+                return Result<CashRegisterDto>.ValidationFailure(
+                    "El cliente por defecto no existe."
+                );
         }
 
         entity.Update(cmd.Name.Trim(), cmd.Notes, _u.UserId);

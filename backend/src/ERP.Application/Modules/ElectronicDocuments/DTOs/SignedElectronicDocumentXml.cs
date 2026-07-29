@@ -13,4 +13,5 @@ public sealed record SignedElectronicDocumentXml(
     string Version,
     ElectronicDocumentType DocumentType,
     string AccessKey,
-    DateTime SignedAtUtc);
+    DateTime SignedAtUtc
+);

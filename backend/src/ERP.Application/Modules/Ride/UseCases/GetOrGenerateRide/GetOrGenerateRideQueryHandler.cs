@@ -14,14 +14,25 @@ public sealed class GetOrGenerateRideQueryHandler
     private readonly ICurrentCompany _currentCompany;
 
     public GetOrGenerateRideQueryHandler(
-        IRideDocumentService rideDocumentService, ICurrentTenant currentTenant, ICurrentCompany currentCompany)
+        IRideDocumentService rideDocumentService,
+        ICurrentTenant currentTenant,
+        ICurrentCompany currentCompany
+    )
     {
         _rideDocumentService = rideDocumentService;
         _currentTenant = currentTenant;
         _currentCompany = currentCompany;
     }
 
-    public Task<Result<RideGenerationResultDto>> Handle(GetOrGenerateRideQuery request, CancellationToken cancellationToken)
-        => _rideDocumentService.GetOrGenerateAsync(
-            _currentTenant.TenantId, _currentCompany.CompanyId, request.SourceModule, request.SourceEntityId, cancellationToken);
+    public Task<Result<RideGenerationResultDto>> Handle(
+        GetOrGenerateRideQuery request,
+        CancellationToken cancellationToken
+    ) =>
+        _rideDocumentService.GetOrGenerateAsync(
+            _currentTenant.TenantId,
+            _currentCompany.CompanyId,
+            request.SourceModule,
+            request.SourceEntityId,
+            cancellationToken
+        );
 }

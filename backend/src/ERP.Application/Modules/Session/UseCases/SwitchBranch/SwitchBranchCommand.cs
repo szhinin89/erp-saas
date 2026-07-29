@@ -14,4 +14,5 @@ namespace ERP.Application.Modules.Session.UseCases.SwitchBranch;
 /// + membership válido) en vez de duplicar esa validación aquí.
 /// </summary>
 public sealed record SwitchBranchCommand(Guid BranchId)
-    : IRequest<Result<SessionBranchDto>>, ICompanyScopedRequest;
+    : IRequest<Result<SessionBranchDto>>,
+        ICompanyScopedRequest;

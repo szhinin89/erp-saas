@@ -24,12 +24,30 @@ public class UserActivityConfiguration : IEntityTypeConfiguration<UserActivity>
         builder.Property(x => x.Description).HasColumnName("description").HasMaxLength(800);
         builder.Property(x => x.CreatedAt).HasColumnName("created_at").IsRequired();
 
-        builder.HasIndex(x => new { x.TenantId, x.UserId, x.CreatedAt })
+        builder
+            .HasIndex(x => new
+            {
+                x.TenantId,
+                x.UserId,
+                x.CreatedAt,
+            })
             .HasDatabaseName("ix_user_activity_subscriber_user_created_at");
-        builder.HasIndex(x => new { x.TenantId, x.Module, x.CreatedAt })
+        builder
+            .HasIndex(x => new
+            {
+                x.TenantId,
+                x.Module,
+                x.CreatedAt,
+            })
             .HasDatabaseName("ix_user_activity_subscriber_module_created_at");
-        builder.HasIndex(x => new { x.TenantId, x.EntityType, x.EntityId, x.CreatedAt })
+        builder
+            .HasIndex(x => new
+            {
+                x.TenantId,
+                x.EntityType,
+                x.EntityId,
+                x.CreatedAt,
+            })
             .HasDatabaseName("ix_user_activity_subscriber_entity_created_at");
     }
 }
-

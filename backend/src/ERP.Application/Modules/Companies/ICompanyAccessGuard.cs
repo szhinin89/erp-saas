@@ -8,7 +8,8 @@ public sealed record CompanyAccessContext(
     Guid CompanyId,
     string Role,
     bool TenantIsActive,
-    bool CompanyIsActive);
+    bool CompanyIsActive
+);
 
 /// <summary>
 /// Central membership + tenant scope validation. Handlers must not duplicate these checks.
@@ -20,7 +21,10 @@ public interface ICompanyAccessGuard
     Task<Result<CompanyAccessContext>> RequireMembershipAsync(
         Guid companyId,
         bool requireActiveCompany = true,
-        CancellationToken cancellationToken = default);
+        CancellationToken cancellationToken = default
+    );
 
-    Task<Result<CompanyAccessContext>> RequireCurrentCompanyAsync(CancellationToken cancellationToken = default);
+    Task<Result<CompanyAccessContext>> RequireCurrentCompanyAsync(
+        CancellationToken cancellationToken = default
+    );
 }

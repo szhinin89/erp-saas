@@ -31,8 +31,7 @@ public sealed class RideContentHashTests
     {
         var act = () => RideContentHash.Create(value!);
 
-        act.Should().Throw<ArgumentException>()
-            .WithMessage("*obligatorio*");
+        act.Should().Throw<ArgumentException>().WithMessage("*obligatorio*");
     }
 
     [Fact]
@@ -40,8 +39,7 @@ public sealed class RideContentHashTests
     {
         var act = () => RideContentHash.Create(new string('a', 63));
 
-        act.Should().Throw<ArgumentException>()
-            .WithMessage("*64 caracteres hexadecimales*");
+        act.Should().Throw<ArgumentException>().WithMessage("*64 caracteres hexadecimales*");
     }
 
     [Fact]
@@ -49,8 +47,7 @@ public sealed class RideContentHashTests
     {
         var act = () => RideContentHash.Create(new string('a', 65));
 
-        act.Should().Throw<ArgumentException>()
-            .WithMessage("*64 caracteres hexadecimales*");
+        act.Should().Throw<ArgumentException>().WithMessage("*64 caracteres hexadecimales*");
     }
 
     [Fact]
@@ -58,7 +55,6 @@ public sealed class RideContentHashTests
     {
         var act = () => RideContentHash.Create('g' + new string('a', 63));
 
-        act.Should().Throw<ArgumentException>()
-            .WithMessage("*64 caracteres hexadecimales*");
+        act.Should().Throw<ArgumentException>().WithMessage("*64 caracteres hexadecimales*");
     }
 }

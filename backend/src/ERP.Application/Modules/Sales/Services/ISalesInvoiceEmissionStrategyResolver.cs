@@ -15,12 +15,14 @@ public sealed class SalesInvoiceEmissionStrategyResolver : ISalesInvoiceEmission
 {
     private readonly IReadOnlyDictionary<EmissionType, ISalesInvoiceEmissionStrategy> _strategies;
 
-    public SalesInvoiceEmissionStrategyResolver(IEnumerable<ISalesInvoiceEmissionStrategy> strategies)
-        => _strategies = strategies.ToDictionary(s => s.SupportedType);
+    public SalesInvoiceEmissionStrategyResolver(
+        IEnumerable<ISalesInvoiceEmissionStrategy> strategies
+    ) => _strategies = strategies.ToDictionary(s => s.SupportedType);
 
-    public ISalesInvoiceEmissionStrategy Resolve(EmissionType emissionType)
-        => _strategies.TryGetValue(emissionType, out var strategy)
+    public ISalesInvoiceEmissionStrategy Resolve(EmissionType emissionType) =>
+        _strategies.TryGetValue(emissionType, out var strategy)
             ? strategy
             : throw new InvalidOperationException(
-                $"No hay estrategia de emisión de Ventas registrada para el tipo '{emissionType}'.");
+                $"No hay estrategia de emisión de Ventas registrada para el tipo '{emissionType}'."
+            );
 }

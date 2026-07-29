@@ -6,4 +6,5 @@ namespace ERP.Application.Modules.ElectronicDocuments.UseCases.GetElectronicDocu
 
 /// <summary>Detalle completo de un documento electrónico para el panel del Monitor (Fase 8) — solo lectura.</summary>
 public sealed record GetElectronicDocumentDetailQuery(Guid Id)
-    : IRequest<Result<ElectronicDocumentDetailDto>>, ICompanyScopedRequest;
+    : IRequest<Result<ElectronicDocumentDetailDto>>,
+        ICompanyScopedRequest;

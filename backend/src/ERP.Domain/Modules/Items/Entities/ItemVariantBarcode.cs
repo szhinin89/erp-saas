@@ -14,17 +14,27 @@ public sealed class ItemVariantBarcode : AuditableEntity
     private ItemVariantBarcode() { }
 
     public static ItemVariantBarcode Create(
-        Guid itemId, Guid tenantId,
-        string code, string barcodeType, Guid createdBy,
+        Guid itemId,
+        Guid tenantId,
+        string code,
+        string barcodeType,
+        Guid createdBy,
         Guid? variantId = null,
-        bool isPrimary = false)
+        bool isPrimary = false
+    )
     {
         if (string.IsNullOrWhiteSpace(code))
             throw new ArgumentException("El código de barras es obligatorio.", nameof(code));
         if (code.Length > 100)
-            throw new ArgumentException("El código de barras no puede superar 100 caracteres.", nameof(code));
+            throw new ArgumentException(
+                "El código de barras no puede superar 100 caracteres.",
+                nameof(code)
+            );
         if (string.IsNullOrWhiteSpace(barcodeType))
-            throw new ArgumentException("El tipo de código de barras es obligatorio.", nameof(barcodeType));
+            throw new ArgumentException(
+                "El tipo de código de barras es obligatorio.",
+                nameof(barcodeType)
+            );
 
         var entity = new ItemVariantBarcode
         {
@@ -48,6 +58,8 @@ public sealed class ItemVariantBarcode : AuditableEntity
     }
 
     public void Enable() => IsActive = true;
+
     public void MarkAsPrimary() => IsPrimary = true;
+
     public void UnmarkAsPrimary() => IsPrimary = false;
 }

@@ -15,4 +15,5 @@ public sealed record UpdateCompanyCommand(
     string CurrencyCode,
     string? BrandingJson,
     bool IsActive,
-    string? TaxId = null) : IRequest<Result<CompanyDetailDto>>;
+    string? TaxId = null
+) : IRequest<Result<CompanyDetailDto>>;

@@ -15,10 +15,18 @@ public sealed class CashSessionBranchOwnershipTests
 
     private static CashSession Open(Guid branchId) =>
         CashSession.Open(
-            TenantId, CompanyId, branchId, UserId,
-            Guid.NewGuid(), "CAJA-01", "Caja Principal",
-            Guid.NewGuid(), "001",
-            50m, UserId);
+            TenantId,
+            CompanyId,
+            branchId,
+            UserId,
+            Guid.NewGuid(),
+            "CAJA-01",
+            "Caja Principal",
+            Guid.NewGuid(),
+            "001",
+            50m,
+            UserId
+        );
 
     [Fact]
     public void Open_con_sucursal_valida_persiste_BranchId()
@@ -45,9 +53,11 @@ public sealed class CashSessionBranchOwnershipTests
         property.SetMethod.Should().NotBeNull();
         property.SetMethod!.IsPublic.Should().BeFalse("BranchId solo se asigna en Open");
 
-        typeof(CashSession).GetMethods()
+        typeof(CashSession)
+            .GetMethods()
             .Any(m => m.Name is "ChangeBranch" or "SetBranch" or "UpdateBranch")
-            .Should().BeFalse("no debe existir ningún método para mutar la sucursal tras la apertura");
+            .Should()
+            .BeFalse("no debe existir ningún método para mutar la sucursal tras la apertura");
     }
 
     [Fact]

@@ -1,8 +1,8 @@
+using System.Diagnostics;
+using System.Text;
 using ERP.Application.Modules.Ride.Rendering;
 using ERP.Infrastructure.Ride.Rendering;
 using FluentAssertions;
-using System.Diagnostics;
-using System.Text;
 using Xunit.Abstractions;
 
 namespace ERP.Infrastructure.Tests.Ride;
@@ -16,14 +16,21 @@ public sealed class QuestPdfRideRendererTests
     private sealed class FakeUnsupportedLayout : IRideDocumentLayout;
 
     private static QuestPdfRideRenderer CreateRenderer() =>
-        new(RideQrCodeGeneratorTestFactory.Create(), RideBarcodeGeneratorTestFactory.Create(), new NoOpFileStorage());
+        new(
+            RideQrCodeGeneratorTestFactory.Create(),
+            RideBarcodeGeneratorTestFactory.Create(),
+            new NoOpFileStorage()
+        );
 
     [Fact]
     public async Task Case1_minimal_layout_produces_a_valid_pdf_with_the_expected_header()
     {
         var renderer = CreateRenderer();
 
-        var bytes = await renderer.RenderAsync(RideRenderingFixtures.Minimal(), CancellationToken.None);
+        var bytes = await renderer.RenderAsync(
+            RideRenderingFixtures.Minimal(),
+            CancellationToken.None
+        );
 
         bytes.Should().NotBeEmpty();
         Encoding.ASCII.GetString(bytes, 0, 5).Should().Be("%PDF-");
@@ -46,7 +53,10 @@ public sealed class QuestPdfRideRendererTests
     {
         var renderer = CreateRenderer();
 
-        var bytes = await renderer.RenderAsync(RideRenderingFixtures.ManyLines(8), CancellationToken.None);
+        var bytes = await renderer.RenderAsync(
+            RideRenderingFixtures.ManyLines(8),
+            CancellationToken.None
+        );
 
         bytes.Should().NotBeEmpty();
         Encoding.ASCII.GetString(bytes, 0, 5).Should().Be("%PDF-");
@@ -64,13 +74,21 @@ public sealed class QuestPdfRideRendererTests
     {
         var renderer = CreateRenderer();
 
-        var bytes = await renderer.RenderAsync(RideRenderingFixtures.ManyLines(60), CancellationToken.None);
+        var bytes = await renderer.RenderAsync(
+            RideRenderingFixtures.ManyLines(60),
+            CancellationToken.None
+        );
 
         bytes.Should().NotBeEmpty();
         Encoding.ASCII.GetString(bytes, 0, 5).Should().Be("%PDF-");
         var text = Encoding.Latin1.GetString(bytes);
-        System.Text.RegularExpressions.Regex.Count(text, @"/Type\s*/Page[^s]").Should().BeGreaterThan(1,
-            "60 líneas de detalle con el nuevo diseño en tabla con bordes deben forzar más de una página");
+        System
+            .Text.RegularExpressions.Regex.Count(text, @"/Type\s*/Page[^s]")
+            .Should()
+            .BeGreaterThan(
+                1,
+                "60 líneas de detalle con el nuevo diseño en tabla con bordes deben forzar más de una página"
+            );
     }
 
     [Fact]
@@ -122,9 +140,10 @@ public sealed class QuestPdfRideRendererTests
         var averageBytes = totalBytes / measuredIterations;
 
         _output.WriteLine(
-            $"Render — {measuredIterations} iteraciones tras {warmupIterations} de warm-up: " +
-            $"promedio={averageMs:F2}ms, mínimo={minMs:F2}ms, máximo={maxMs:F2}ms, p95={p95Ms:F2}ms, " +
-            $"tamaño promedio={averageBytes} bytes.");
+            $"Render — {measuredIterations} iteraciones tras {warmupIterations} de warm-up: "
+                + $"promedio={averageMs:F2}ms, mínimo={minMs:F2}ms, máximo={maxMs:F2}ms, p95={p95Ms:F2}ms, "
+                + $"tamaño promedio={averageBytes} bytes."
+        );
 
         averageMs.Should().BeGreaterThan(0);
         averageBytes.Should().BeGreaterThan(0);

@@ -15,5 +15,5 @@ public sealed record SearchBusinessPartnersQuery(
     bool? IsActive = true,
     RoleType[]? Roles = null,
     int Skip = 0,
-    int Take = 50)
-    : IRequest<Result<PagedResult<BusinessPartnerSummaryDto>>>, ITenantScopedRequest;
+    int Take = 50
+) : IRequest<Result<PagedResult<BusinessPartnerSummaryDto>>>, ITenantScopedRequest;

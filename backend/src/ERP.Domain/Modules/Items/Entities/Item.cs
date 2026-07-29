@@ -67,14 +67,21 @@ public sealed class Item : MasterEntity, ITenantScopedEntity
         Guid? categoryNodeId = null,
         Guid? brandId = null,
         string? observations = null,
-        decimal? baseSalePrice = null)
+        decimal? baseSalePrice = null
+    )
     {
         if (string.IsNullOrWhiteSpace(defaultUomCode))
-            throw new ArgumentException("La unidad de medida base es obligatoria.", nameof(defaultUomCode));
+            throw new ArgumentException(
+                "La unidad de medida base es obligatoria.",
+                nameof(defaultUomCode)
+            );
         if (itemTypeId == Guid.Empty)
             throw new ArgumentException("El tipo de ítem es obligatorio.", nameof(itemTypeId));
         if (baseSalePrice.HasValue && baseSalePrice.Value < 0)
-            throw new ArgumentException("El precio base no puede ser negativo.", nameof(baseSalePrice));
+            throw new ArgumentException(
+                "El precio base no puede ser negativo.",
+                nameof(baseSalePrice)
+            );
 
         var code = ItemCode.Create(sku, shortName, description);
 
@@ -107,7 +114,11 @@ public sealed class Item : MasterEntity, ITenantScopedEntity
     /// sola acción de "Guardar" (ver <see cref="ItemUpdatedEvent"/>).
     /// </summary>
     public void UpdateIdentity(
-        string shortName, string description, string? observations, Guid updatedBy)
+        string shortName,
+        string description,
+        string? observations,
+        Guid updatedBy
+    )
     {
         Code = ItemCode.Create(Code.SKU, shortName, description);
         Observations = observations?.Trim();
@@ -137,7 +148,10 @@ public sealed class Item : MasterEntity, ITenantScopedEntity
     public void UpdateDefaultUom(string uomCode, Guid updatedBy)
     {
         if (string.IsNullOrWhiteSpace(uomCode))
-            throw new ArgumentException("La unidad de medida no puede estar vacía.", nameof(uomCode));
+            throw new ArgumentException(
+                "La unidad de medida no puede estar vacía.",
+                nameof(uomCode)
+            );
         DefaultUomCode = uomCode.Trim().ToUpperInvariant();
         SetUpdated(updatedBy);
     }
@@ -163,7 +177,10 @@ public sealed class Item : MasterEntity, ITenantScopedEntity
     public void UpdateBaseSalePrice(decimal? baseSalePrice, Guid updatedBy)
     {
         if (baseSalePrice.HasValue && baseSalePrice.Value < 0)
-            throw new ArgumentException("El precio base no puede ser negativo.", nameof(baseSalePrice));
+            throw new ArgumentException(
+                "El precio base no puede ser negativo.",
+                nameof(baseSalePrice)
+            );
 
         var oldPrice = BaseSalePrice;
         if (oldPrice == baseSalePrice)
@@ -180,12 +197,16 @@ public sealed class Item : MasterEntity, ITenantScopedEntity
         IReadOnlyList<(Guid AttributeDefinitionId, string Value)> axisAttributes,
         string? skuOverride,
         int sortOrder,
-        Guid updatedBy)
+        Guid updatedBy
+    )
     {
-        var variantSku = skuOverride?.Trim()
-            ?? (axisAttributes.Count > 0
-                ? $"{Code.SKU}-{string.Join("-", axisAttributes.Select(a => a.Value.ToUpperInvariant()))}"
-                : Code.SKU);
+        var variantSku =
+            skuOverride?.Trim()
+            ?? (
+                axisAttributes.Count > 0
+                    ? $"{Code.SKU}-{string.Join("-", axisAttributes.Select(a => a.Value.ToUpperInvariant()))}"
+                    : Code.SKU
+            );
 
         if (_variants.Any(v => v.IsActive && v.SKU == variantSku))
             throw new InvalidOperationException($"Ya existe una variante con SKU '{variantSku}'.");
@@ -197,17 +218,27 @@ public sealed class Item : MasterEntity, ITenantScopedEntity
             .ToList();
 
         var duplicate = _variants.Any(v =>
-            v.IsActive &&
-            v.Attributes
-                .OrderBy(a => a.AttributeDefinitionId)
+            v.IsActive
+            && v.Attributes.OrderBy(a => a.AttributeDefinitionId)
                 .Select(a => $"{a.AttributeDefinitionId}:{a.Value.ToUpperInvariant()}")
-                .SequenceEqual(newCombo));
+                .SequenceEqual(newCombo)
+        );
 
         if (duplicate)
-            throw new InvalidOperationException("Ya existe una variante con la misma combinación de atributos.");
+            throw new InvalidOperationException(
+                "Ya existe una variante con la misma combinación de atributos."
+            );
 
         var isDefault = !_variants.Any(v => v.IsActive);
-        var variant = ItemVariant.Create(Id, TenantId, variantSku, axisAttributes, isDefault, sortOrder, updatedBy);
+        var variant = ItemVariant.Create(
+            Id,
+            TenantId,
+            variantSku,
+            axisAttributes,
+            isDefault,
+            sortOrder,
+            updatedBy
+        );
         _variants.Add(variant);
         SetUpdated(updatedBy);
         RaiseDomainEvent(new ItemVariantAddedEvent(Id, variant.Id, variant.SKU, TenantId));
@@ -216,7 +247,8 @@ public sealed class Item : MasterEntity, ITenantScopedEntity
 
     public void DisableVariant(Guid variantId, Guid updatedBy)
     {
-        var variant = _variants.FirstOrDefault(v => v.Id == variantId)
+        var variant =
+            _variants.FirstOrDefault(v => v.Id == variantId)
             ?? throw new InvalidOperationException("Variante no encontrada.");
 
         variant.Disable(updatedBy);
@@ -226,7 +258,8 @@ public sealed class Item : MasterEntity, ITenantScopedEntity
 
     public void EnableVariant(Guid variantId, Guid updatedBy)
     {
-        var variant = _variants.FirstOrDefault(v => v.Id == variantId)
+        var variant =
+            _variants.FirstOrDefault(v => v.Id == variantId)
             ?? throw new InvalidOperationException("Variante no encontrada.");
 
         variant.Enable(updatedBy);
@@ -236,8 +269,15 @@ public sealed class Item : MasterEntity, ITenantScopedEntity
     // ── Imágenes ──────────────────────────────────────────────────────────
 
     public void ReplaceImages(
-        IEnumerable<(Guid StorageObjectId, string? AltText, bool IsMain, bool IsEcommerce, int SortOrder)> images,
-        Guid updatedBy)
+        IEnumerable<(
+            Guid StorageObjectId,
+            string? AltText,
+            bool IsMain,
+            bool IsEcommerce,
+            int SortOrder
+        )> images,
+        Guid updatedBy
+    )
     {
         var list = images.ToList();
         if (list.Count(i => i.IsMain) > 1)
@@ -245,7 +285,18 @@ public sealed class Item : MasterEntity, ITenantScopedEntity
 
         _images.Clear();
         foreach (var i in list.OrderBy(x => x.SortOrder))
-            _images.Add(ItemImage.Create(Id, TenantId, i.StorageObjectId, i.AltText, i.IsMain, i.IsEcommerce, i.SortOrder, updatedBy));
+            _images.Add(
+                ItemImage.Create(
+                    Id,
+                    TenantId,
+                    i.StorageObjectId,
+                    i.AltText,
+                    i.IsMain,
+                    i.IsEcommerce,
+                    i.SortOrder,
+                    updatedBy
+                )
+            );
 
         SetUpdated(updatedBy);
     }
@@ -254,11 +305,21 @@ public sealed class Item : MasterEntity, ITenantScopedEntity
 
     public void ReplaceUnitConversions(
         IEnumerable<(string FromUomCode, string ToUomCode, decimal Factor)> conversions,
-        Guid updatedBy)
+        Guid updatedBy
+    )
     {
         _unitConversions.Clear();
         foreach (var c in conversions)
-            _unitConversions.Add(ItemUnitConversion.Create(Id, TenantId, c.FromUomCode, c.ToUomCode, c.Factor, updatedBy));
+            _unitConversions.Add(
+                ItemUnitConversion.Create(
+                    Id,
+                    TenantId,
+                    c.FromUomCode,
+                    c.ToUomCode,
+                    c.Factor,
+                    updatedBy
+                )
+            );
         SetUpdated(updatedBy);
     }
 
@@ -266,39 +327,85 @@ public sealed class Item : MasterEntity, ITenantScopedEntity
 
     public void ReplaceSubstitutes(
         IEnumerable<(Guid SubstituteItemId, int Priority, string? Note)> substitutes,
-        Guid updatedBy)
+        Guid updatedBy
+    )
     {
         _substitutes.Clear();
         foreach (var s in substitutes)
-            _substitutes.Add(ItemSubstitute.Create(Id, TenantId, s.SubstituteItemId, s.Priority, s.Note, updatedBy));
+            _substitutes.Add(
+                ItemSubstitute.Create(
+                    Id,
+                    TenantId,
+                    s.SubstituteItemId,
+                    s.Priority,
+                    s.Note,
+                    updatedBy
+                )
+            );
         SetUpdated(updatedBy);
     }
 
     // ── Niveles de empaque ────────────────────────────────────────────────
 
     public void ReplacePackagingLevels(
-        IEnumerable<(string Name, int Level, decimal BaseQuantity, string UomCode, string? Barcode, decimal? Weight,
-            bool IsBaseUnit, bool IsPurchaseDefault, bool IsSaleDefault)> levels,
-        Guid updatedBy)
+        IEnumerable<(
+            string Name,
+            int Level,
+            decimal BaseQuantity,
+            string UomCode,
+            string? Barcode,
+            decimal? Weight,
+            bool IsBaseUnit,
+            bool IsPurchaseDefault,
+            bool IsSaleDefault
+        )> levels,
+        Guid updatedBy
+    )
     {
         var list = levels.ToList();
         if (list.Count(l => l.IsBaseUnit) != 1)
-            throw new InvalidOperationException("Debe existir exactamente un nivel base (IsBaseUnit=true).");
+            throw new InvalidOperationException(
+                "Debe existir exactamente un nivel base (IsBaseUnit=true)."
+            );
 
         _packagingLevels.Clear();
         foreach (var l in list.OrderBy(x => x.Level))
-            _packagingLevels.Add(ItemPackagingLevel.Create(
-                Id, TenantId,
-                l.Name, l.Level, l.BaseQuantity, l.UomCode,
-                l.Barcode, l.Weight, l.IsBaseUnit, l.IsPurchaseDefault, l.IsSaleDefault, updatedBy));
+            _packagingLevels.Add(
+                ItemPackagingLevel.Create(
+                    Id,
+                    TenantId,
+                    l.Name,
+                    l.Level,
+                    l.BaseQuantity,
+                    l.UomCode,
+                    l.Barcode,
+                    l.Weight,
+                    l.IsBaseUnit,
+                    l.IsPurchaseDefault,
+                    l.IsSaleDefault,
+                    updatedBy
+                )
+            );
         SetUpdated(updatedBy);
     }
 
     // ── Códigos de proveedor ──────────────────────────────────────────────
 
-    public ItemSupplierCode AddSupplierCode(string code, bool isPrimary, Guid supplierId, Guid updatedBy)
+    public ItemSupplierCode AddSupplierCode(
+        string code,
+        bool isPrimary,
+        Guid supplierId,
+        Guid updatedBy
+    )
     {
-        var supplierCode = ItemSupplierCode.Create(Id, TenantId, supplierId, code, updatedBy, isPrimary);
+        var supplierCode = ItemSupplierCode.Create(
+            Id,
+            TenantId,
+            supplierId,
+            code,
+            updatedBy,
+            isPrimary
+        );
         _supplierCodes.Add(supplierCode);
         SetUpdated(updatedBy);
         return supplierCode;
@@ -313,7 +420,8 @@ public sealed class Item : MasterEntity, ITenantScopedEntity
     public void DisableSupplierCode(Guid supplierId, string code, Guid updatedBy)
     {
         var supplierCode = _supplierCodes.FirstOrDefault(sc =>
-            sc.SupplierId == supplierId && sc.Code == code.Trim() && sc.IsActive && !sc.IsPrimary);
+            sc.SupplierId == supplierId && sc.Code == code.Trim() && sc.IsActive && !sc.IsPrimary
+        );
         if (supplierCode is null)
             return;
 

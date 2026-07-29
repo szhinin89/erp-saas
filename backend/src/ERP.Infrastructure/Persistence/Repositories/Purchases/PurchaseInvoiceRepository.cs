@@ -17,24 +17,44 @@ public sealed class PurchaseInvoiceRepository : IPurchaseInvoiceRepository
         _company = company;
     }
 
-    private IQueryable<PurchaseInvoice> Scoped(Guid tenantId)
-        => _db.PurchaseInvoices.ForOperationalScope(tenantId, _company);
+    private IQueryable<PurchaseInvoice> Scoped(Guid tenantId) =>
+        _db.PurchaseInvoices.ForOperationalScope(tenantId, _company);
 
-    public Task<PurchaseInvoice?> GetByIdAsync(Guid tenantId, Guid id, CancellationToken ct = default)
-        => Scoped(tenantId)
+    public Task<PurchaseInvoice?> GetByIdAsync(
+        Guid tenantId,
+        Guid id,
+        CancellationToken ct = default
+    ) =>
+        Scoped(tenantId)
             .Include(x => x.Lines.OrderBy(l => l.SortOrder))
             .Include(x => x.PaymentSchedules.OrderBy(s => s.InstallmentNumber))
             .FirstOrDefaultAsync(x => x.Id == id, ct);
 
-    public Task<PurchaseInvoice?> GetByAccessKeyAsync(Guid tenantId, string accessKey, CancellationToken ct = default)
-        => Scoped(tenantId).FirstOrDefaultAsync(x => x.AccessKey == accessKey, ct);
+    public Task<PurchaseInvoice?> GetByAccessKeyAsync(
+        Guid tenantId,
+        string accessKey,
+        CancellationToken ct = default
+    ) => Scoped(tenantId).FirstOrDefaultAsync(x => x.AccessKey == accessKey, ct);
 
-    public async Task<(IReadOnlyList<PurchaseInvoice> Items, IReadOnlyDictionary<Guid, int> LineCounts, int Total)> GetPagedAsync(
-        Guid tenantId, string? search, string? status, int page, int pageSize, CancellationToken ct = default)
+    public async Task<(
+        IReadOnlyList<PurchaseInvoice> Items,
+        IReadOnlyDictionary<Guid, int> LineCounts,
+        int Total
+    )> GetPagedAsync(
+        Guid tenantId,
+        string? search,
+        string? status,
+        int page,
+        int pageSize,
+        CancellationToken ct = default
+    )
     {
         var q = Scoped(tenantId);
 
-        if (!string.IsNullOrWhiteSpace(status) && Enum.TryParse<PurchaseStatus>(status.Trim(), true, out var ps))
+        if (
+            !string.IsNullOrWhiteSpace(status)
+            && Enum.TryParse<PurchaseStatus>(status.Trim(), true, out var ps)
+        )
             q = q.Where(x => x.Status == ps);
 
         if (!string.IsNullOrWhiteSpace(search))
@@ -44,8 +64,10 @@ public sealed class PurchaseInvoiceRepository : IPurchaseInvoiceRepository
         }
 
         var total = await q.CountAsync(ct);
-        var items = await q.OrderByDescending(x => x.IssueDate).ThenByDescending(x => x.CreatedAt)
-            .Skip((page - 1) * pageSize).Take(pageSize)
+        var items = await q.OrderByDescending(x => x.IssueDate)
+            .ThenByDescending(x => x.CreatedAt)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
             .ToListAsync(ct);
 
         var ids = items.Select(i => i.Id).ToList();
@@ -58,13 +80,19 @@ public sealed class PurchaseInvoiceRepository : IPurchaseInvoiceRepository
         return (items, lineCounts, total);
     }
 
-    public Task AddAsync(PurchaseInvoice invoice, CancellationToken ct = default)
-        => _db.PurchaseInvoices.AddAsync(invoice, ct).AsTask();
+    public Task AddAsync(PurchaseInvoice invoice, CancellationToken ct = default) =>
+        _db.PurchaseInvoices.AddAsync(invoice, ct).AsTask();
 
-    public async Task RemoveLinesByInvoiceAsync(Guid invoiceId, IEnumerable<PurchaseInvoiceDetail> newLines, CancellationToken ct = default)
+    public async Task RemoveLinesByInvoiceAsync(
+        Guid invoiceId,
+        IEnumerable<PurchaseInvoiceDetail> newLines,
+        CancellationToken ct = default
+    )
     {
         await _db.Database.ExecuteSqlInterpolatedAsync(
-            $"DELETE FROM purchase_invoice_details WHERE invoice_id = {invoiceId}", ct);
+            $"DELETE FROM purchase_invoice_details WHERE invoice_id = {invoiceId}",
+            ct
+        );
 
         foreach (var entry in _db.ChangeTracker.Entries<PurchaseInvoiceDetail>().ToList())
             entry.State = EntityState.Detached;
@@ -76,7 +104,9 @@ public sealed class PurchaseInvoiceRepository : IPurchaseInvoiceRepository
     public async Task ClearScheduleTrackingAsync(Guid invoiceId, CancellationToken ct = default)
     {
         await _db.Database.ExecuteSqlInterpolatedAsync(
-            $"DELETE FROM purchase_payment_schedules WHERE purchase_invoice_id = {invoiceId}", ct);
+            $"DELETE FROM purchase_payment_schedules WHERE purchase_invoice_id = {invoiceId}",
+            ct
+        );
 
         foreach (var entry in _db.ChangeTracker.Entries<PurchasePaymentSchedule>().ToList())
             entry.State = EntityState.Detached;
@@ -91,30 +121,43 @@ public sealed class PurchaseInvoiceRepository : IPurchaseInvoiceRepository
             _db.Set<PurchasePaymentSchedule>().Add(schedule);
     }
 
-    public Task<PurchasePayable?> GetPayableByPurchaseIdAsync(Guid tenantId, Guid purchaseId, CancellationToken ct = default)
-        => _db.PurchasePayables
-            .Include(p => p.Installments)
+    public Task<PurchasePayable?> GetPayableByPurchaseIdAsync(
+        Guid tenantId,
+        Guid purchaseId,
+        CancellationToken ct = default
+    ) =>
+        _db
+            .PurchasePayables.Include(p => p.Installments)
             .FirstOrDefaultAsync(p => p.TenantId == tenantId && p.PurchaseId == purchaseId, ct);
 
-    public Task<IssuedWithholding?> GetWithholdingByIdAsync(Guid tenantId, Guid id, CancellationToken ct = default)
-        => _db.IssuedWithholdings
-            .Include(w => w.Details)
+    public Task<IssuedWithholding?> GetWithholdingByIdAsync(
+        Guid tenantId,
+        Guid id,
+        CancellationToken ct = default
+    ) =>
+        _db
+            .IssuedWithholdings.Include(w => w.Details)
             .FirstOrDefaultAsync(w => w.TenantId == tenantId && w.Id == id, ct);
 
-    public Task<IssuedWithholding?> GetWithholdingByPurchaseIdAsync(Guid tenantId, Guid purchaseId, CancellationToken ct = default)
-        => _db.IssuedWithholdings
-            .Include(w => w.Details)
-            .FirstOrDefaultAsync(w => w.TenantId == tenantId && w.PurchaseInvoiceId == purchaseId, ct);
+    public Task<IssuedWithholding?> GetWithholdingByPurchaseIdAsync(
+        Guid tenantId,
+        Guid purchaseId,
+        CancellationToken ct = default
+    ) =>
+        _db
+            .IssuedWithholdings.Include(w => w.Details)
+            .FirstOrDefaultAsync(
+                w => w.TenantId == tenantId && w.PurchaseInvoiceId == purchaseId,
+                ct
+            );
 
-    public void TrackPayable(PurchasePayable payable)
-        => _db.PurchasePayables.Add(payable);
+    public void TrackPayable(PurchasePayable payable) => _db.PurchasePayables.Add(payable);
 
-    public void TrackCommunication(PurchaseCommunication communication)
-        => _db.PurchaseCommunications.Add(communication);
+    public void TrackCommunication(PurchaseCommunication communication) =>
+        _db.PurchaseCommunications.Add(communication);
 
-    public void TrackWithholding(IssuedWithholding withholding)
-        => _db.IssuedWithholdings.Add(withholding);
+    public void TrackWithholding(IssuedWithholding withholding) =>
+        _db.IssuedWithholdings.Add(withholding);
 
-    public Task SaveChangesAsync(CancellationToken ct = default)
-        => _db.SaveChangesAsync(ct);
+    public Task SaveChangesAsync(CancellationToken ct = default) => _db.SaveChangesAsync(ct);
 }
