@@ -1,11 +1,18 @@
-import { useEffect, useState } from 'react';
-import { useWatch, type Control, type FieldErrors, type UseFormGetValues, type UseFormRegister, type UseFormSetValue } from 'react-hook-form';
-import { ZHField } from '../../../../components/zh/ZHForm';
-import { ZHPageNotice } from '../../../../components/zh/ZHPageNotice';
-import { useI18n } from '../../../../i18n/i18n';
-import { COMPANY_USER_LOGIN_MODES } from '../../api/companyUserPreferencesService';
-import { type BranchListItemDto } from '../../../branches/api/branchService';
-import { type UserConfigFormValues } from '../../../../schemas/access/userConfigSchema';
+import { useEffect, useState } from "react";
+import {
+  useWatch,
+  type Control,
+  type FieldErrors,
+  type UseFormGetValues,
+  type UseFormRegister,
+  type UseFormSetValue,
+} from "react-hook-form";
+import { ZHField } from "../../../../components/zh/ZHForm";
+import { ZHPageNotice } from "../../../../components/zh/ZHPageNotice";
+import { useI18n } from "../../../../i18n/i18n";
+import { COMPANY_USER_LOGIN_MODES } from "../../api/companyUserPreferencesService";
+import { type BranchListItemDto } from "../../../branches/api/branchService";
+import { type UserConfigFormValues } from "../../../../schemas/access/userConfigSchema";
 
 interface Props {
   control: Control<UserConfigFormValues>;
@@ -33,32 +40,53 @@ interface Props {
  * también de `defaultBranchId`/`loginMode`, el propio `setValue` que hace el efecto dispararía
  * una segunda pasada que borraría el aviso recién mostrado.
  */
-export function UserPreferencesSection({ control, register, setValue, getValues, errors, branchesCatalog, canManage, disabled, blockError }: Props) {
+export function UserPreferencesSection({
+  control,
+  register,
+  setValue,
+  getValues,
+  errors,
+  branchesCatalog,
+  canManage,
+  disabled,
+  blockError,
+}: Props) {
   const { t } = useI18n();
 
-  const authorizedBranchIds = useWatch({ control, name: 'authorizedBranchIds' });
-  const loginMode = useWatch({ control, name: 'loginMode' });
+  const authorizedBranchIds = useWatch({
+    control,
+    name: "authorizedBranchIds",
+  });
+  const loginMode = useWatch({ control, name: "loginMode" });
 
-  const authorizedOptions = branchesCatalog.filter((b) => authorizedBranchIds.includes(b.id));
+  const authorizedOptions = branchesCatalog.filter((b) =>
+    authorizedBranchIds.includes(b.id),
+  );
   const hasNoAuthorizedBranches = authorizedBranchIds.length === 0;
 
-  const [defaultBranchAutoCleared, setDefaultBranchAutoCleared] = useState(false);
+  const [defaultBranchAutoCleared, setDefaultBranchAutoCleared] =
+    useState(false);
 
   useEffect(() => {
-    const currentDefaultBranchId = getValues('defaultBranchId');
-    const currentLoginMode = getValues('loginMode');
+    const currentDefaultBranchId = getValues("defaultBranchId");
+    const currentLoginMode = getValues("loginMode");
 
     if (hasNoAuthorizedBranches) {
-      if (currentLoginMode !== 'AskBranch') setValue('loginMode', 'AskBranch', { shouldDirty: true });
-      if (currentDefaultBranchId) setValue('defaultBranchId', '', { shouldDirty: true });
+      if (currentLoginMode !== "AskBranch")
+        setValue("loginMode", "AskBranch", { shouldDirty: true });
+      if (currentDefaultBranchId)
+        setValue("defaultBranchId", "", { shouldDirty: true });
       setDefaultBranchAutoCleared(false);
       return;
     }
 
-    if (currentDefaultBranchId && !authorizedBranchIds.includes(currentDefaultBranchId)) {
+    if (
+      currentDefaultBranchId &&
+      !authorizedBranchIds.includes(currentDefaultBranchId)
+    ) {
       // La sucursal por defecto ya no está autorizada (se acaba de revocar, o el dato cargado ya
       // venía inconsistente) — se limpia y se avisa en ambos casos, nunca se deja llegar al submit.
-      setValue('defaultBranchId', '', { shouldDirty: true });
+      setValue("defaultBranchId", "", { shouldDirty: true });
       setDefaultBranchAutoCleared(true);
       return;
     }
@@ -66,21 +94,34 @@ export function UserPreferencesSection({ control, register, setValue, getValues,
     setDefaultBranchAutoCleared(false);
 
     if (authorizedBranchIds.length === 1 && !currentDefaultBranchId) {
-      setValue('defaultBranchId', authorizedBranchIds[0], { shouldDirty: true });
+      setValue("defaultBranchId", authorizedBranchIds[0], {
+        shouldDirty: true,
+      });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [hasNoAuthorizedBranches, authorizedBranchIds.join(','), getValues, setValue]);
+  }, [
+    hasNoAuthorizedBranches,
+    authorizedBranchIds.join(","),
+    getValues,
+    setValue,
+  ]);
 
   return (
     <div>
-      {blockError ? <ZHPageNotice variant="error" message={t('common.errorPrefix')} detail={blockError} /> : null}
+      {blockError ? (
+        <ZHPageNotice
+          variant="error"
+          message={t("common.errorPrefix")}
+          detail={blockError}
+        />
+      ) : null}
 
       {defaultBranchAutoCleared ? (
         <ZHPageNotice
           variant="warning"
           message={t(
-            'users.config.preferences.defaultBranchAutoCleared',
-            'Se quitó la sucursal por defecto porque ya no está autorizada. Selecciona una nueva si el modo de ingreso directo sigue activo.',
+            "users.config.preferences.defaultBranchAutoCleared",
+            "Se quitó la sucursal por defecto porque ya no está autorizada. Selecciona una nueva si el modo de ingreso directo sigue activo.",
           )}
         />
       ) : null}
@@ -89,33 +130,66 @@ export function UserPreferencesSection({ control, register, setValue, getValues,
         <ZHPageNotice
           variant="info"
           message={t(
-            'users.config.preferences.noBranchesAuthorized',
+            "users.config.preferences.noBranchesAuthorized",
             'Este usuario no tiene sucursales autorizadas todavía. Autorice al menos una en "Acceso a sucursales" para configurar el ingreso directo.',
           )}
         />
       ) : null}
 
-      <ZHField label={t('security.preferences.loginMode', 'Modo de ingreso')} error={errors.loginMode?.message}>
-        <select disabled={disabled || !canManage || hasNoAuthorizedBranches} {...register('loginMode')}>
+      <ZHField
+        label={t("security.preferences.loginMode", "Modo de ingreso")}
+        error={errors.loginMode?.message}
+      >
+        <select
+          disabled={disabled || !canManage || hasNoAuthorizedBranches}
+          {...register("loginMode")}
+        >
           {COMPANY_USER_LOGIN_MODES.map((mode) => (
-            <option key={mode} value={mode} disabled={mode === 'DirectToDefault' && hasNoAuthorizedBranches}>
-              {mode === 'AskBranch'
-                ? t('security.preferences.loginMode.askBranch', 'Preguntar sucursal al iniciar sesión')
-                : t('security.preferences.loginMode.directToDefault', 'Ingresar directamente a la sucursal por defecto')}
+            <option
+              key={mode}
+              value={mode}
+              disabled={mode === "DirectToDefault" && hasNoAuthorizedBranches}
+            >
+              {mode === "AskBranch"
+                ? t(
+                    "security.preferences.loginMode.askBranch",
+                    "Preguntar sucursal al iniciar sesión",
+                  )
+                : t(
+                    "security.preferences.loginMode.directToDefault",
+                    "Ingresar directamente a la sucursal por defecto",
+                  )}
             </option>
           ))}
         </select>
       </ZHField>
 
       <ZHField
-        label={t('security.preferences.defaultBranch', 'Sucursal por defecto')}
+        label={t("security.preferences.defaultBranch", "Sucursal por defecto")}
         error={errors.defaultBranchId?.message}
-        hint={loginMode === 'AskBranch' ? t('security.preferences.defaultBranch.optional', 'Opcional en este modo.') : null}
+        hint={
+          loginMode === "AskBranch"
+            ? t(
+                "security.preferences.defaultBranch.optional",
+                "Opcional en este modo.",
+              )
+            : null
+        }
       >
-        <select disabled={disabled || !canManage || hasNoAuthorizedBranches} {...register('defaultBranchId')}>
-          <option value="">{t('security.preferences.defaultBranch.none', 'Sin sucursal por defecto')}</option>
+        <select
+          disabled={disabled || !canManage || hasNoAuthorizedBranches}
+          {...register("defaultBranchId")}
+        >
+          <option value="">
+            {t(
+              "security.preferences.defaultBranch.none",
+              "Sin sucursal por defecto",
+            )}
+          </option>
           {authorizedOptions.map((b) => (
-            <option key={b.id} value={b.id}>{b.name}</option>
+            <option key={b.id} value={b.id}>
+              {b.name}
+            </option>
           ))}
         </select>
       </ZHField>

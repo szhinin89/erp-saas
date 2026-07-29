@@ -1,23 +1,28 @@
-import { useState } from 'react';
-import { Controller } from 'react-hook-form';
-import { ZHPageNotice } from '../../../components/zh/ZHPageNotice';
-import { ZHField, ZHToggle, ZHGrid, ZHBtn } from '../../../components/zh/ZHForm';
-import type { EstablishmentsPageContext } from '../hooks/useEstablishmentsPage';
+import { useState } from "react";
+import { Controller } from "react-hook-form";
+import { ZHPageNotice } from "../../../components/zh/ZHPageNotice";
+import {
+  ZHField,
+  ZHToggle,
+  ZHGrid,
+  ZHBtn,
+} from "../../../components/zh/ZHForm";
+import type { EstablishmentsPageContext } from "../hooks/useEstablishmentsPage";
 
 type Props = Pick<
   EstablishmentsPageContext,
-  | 'editingId'
-  | 'editingCode'
-  | 'editingName'
-  | 'saving'
-  | 'saveError'
-  | 'branches'
-  | 'loadingBranches'
-  | 'register'
-  | 'control'
-  | 'errors'
-  | 'closePanel'
-  | 'save'
+  | "editingId"
+  | "editingCode"
+  | "editingName"
+  | "saving"
+  | "saveError"
+  | "branches"
+  | "loadingBranches"
+  | "register"
+  | "control"
+  | "errors"
+  | "closePanel"
+  | "save"
 >;
 
 export function EstablishmentsFormPanel({
@@ -35,18 +40,20 @@ export function EstablishmentsFormPanel({
   save,
 }: Props) {
   const isEdit = Boolean(editingId);
-  const [activeTab] = useState<'general'>('general');
+  const [activeTab] = useState<"general">("general");
 
   return (
     <div>
       {/* Panel header */}
       <div className="cfg-panel-hd">
         <span className="material-symbols-outlined cfg-panel-hd__icon">
-          {isEdit ? 'edit' : 'add_circle'}
+          {isEdit ? "edit" : "add_circle"}
         </span>
         <div>
           <p className="cfg-panel-hd__title">
-            {isEdit ? (editingName ?? 'Editar Establecimiento') : 'Nuevo Establecimiento SRI'}
+            {isEdit
+              ? (editingName ?? "Editar Establecimiento")
+              : "Nuevo Establecimiento SRI"}
           </p>
           {isEdit && editingCode && (
             <p className="cfg-panel-hd__sub">Código SRI: {editingCode}</p>
@@ -58,7 +65,7 @@ export function EstablishmentsFormPanel({
       <div className="prd-tabs cfg-panel-tabs">
         <button
           type="button"
-          className={`prd-tab-btn ${activeTab === 'general' ? 'prd-tab-btn--active' : ''}`}
+          className={`prd-tab-btn ${activeTab === "general" ? "prd-tab-btn--active" : ""}`}
         >
           General
         </button>
@@ -72,25 +79,36 @@ export function EstablishmentsFormPanel({
       )}
 
       {/* Form */}
-      <form onSubmit={(e) => { e.preventDefault(); void save(); }} noValidate>
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          void save();
+        }}
+        noValidate
+      >
         <div className="cfg-panel-body">
-
           {/* Datos SRI */}
           <div className="pg-section">
             <div className="pg-section-header">
               <div className="pg-section-header-left">
-                <span className="material-symbols-outlined pg-section-icon">info</span>
+                <span className="material-symbols-outlined pg-section-icon">
+                  info
+                </span>
                 <span className="pg-section-label">Datos SRI</span>
               </div>
             </div>
             <div className="pg-section-body">
               <ZHGrid cols={2}>
-                <ZHField label="Código SRI" required fieldError={errors.code?.message}>
+                <ZHField
+                  label="Código SRI"
+                  required
+                  fieldError={errors.code?.message}
+                >
                   {isEdit ? (
                     <input
                       className="zh-input mono ep-code-readonly"
                       readOnly
-                      value={editingCode ?? '—'}
+                      value={editingCode ?? "—"}
                     />
                   ) : (
                     <input
@@ -98,12 +116,15 @@ export function EstablishmentsFormPanel({
                       placeholder="001"
                       maxLength={3}
                       disabled={saving}
-                      {...register('code')}
+                      {...register("code")}
                     />
                   )}
                 </ZHField>
 
-                <ZHField label="Sucursal (opcional)" fieldError={errors.branchId?.message}>
+                <ZHField
+                  label="Sucursal (opcional)"
+                  fieldError={errors.branchId?.message}
+                >
                   <Controller
                     name="branchId"
                     control={control}
@@ -111,14 +132,16 @@ export function EstablishmentsFormPanel({
                       <select
                         className="zh-input"
                         disabled={saving || loadingBranches}
-                        value={field.value ?? ''}
+                        value={field.value ?? ""}
                         onChange={(e) => field.onChange(e.target.value || null)}
                       >
                         <option value="">
-                          {loadingBranches ? 'Cargando…' : '— Sin sucursal —'}
+                          {loadingBranches ? "Cargando…" : "— Sin sucursal —"}
                         </option>
                         {branches.map((b) => (
-                          <option key={b.id} value={b.id}>{b.name}</option>
+                          <option key={b.id} value={b.id}>
+                            {b.name}
+                          </option>
                         ))}
                       </select>
                     )}
@@ -126,23 +149,31 @@ export function EstablishmentsFormPanel({
                 </ZHField>
               </ZHGrid>
 
-              <ZHField label="Nombre del establecimiento" required fieldError={errors.name?.message}>
+              <ZHField
+                label="Nombre del establecimiento"
+                required
+                fieldError={errors.name?.message}
+              >
                 <input
                   className="zh-input"
                   placeholder="Ej: Casa Matriz"
                   maxLength={200}
                   disabled={saving}
-                  {...register('name')}
+                  {...register("name")}
                 />
               </ZHField>
 
-              <ZHField label="Dirección fiscal" required fieldError={errors.address?.message}>
+              <ZHField
+                label="Dirección fiscal"
+                required
+                fieldError={errors.address?.message}
+              >
                 <input
                   className="zh-input"
                   placeholder="Ej: Av. Amazonas N12-34 y Colón"
                   maxLength={500}
                   disabled={saving}
-                  {...register('address')}
+                  {...register("address")}
                 />
               </ZHField>
 
@@ -152,7 +183,7 @@ export function EstablishmentsFormPanel({
                   placeholder="Ej: 02-2234567"
                   maxLength={40}
                   disabled={saving}
-                  {...register('phone')}
+                  {...register("phone")}
                 />
               </ZHField>
             </div>
@@ -162,7 +193,9 @@ export function EstablishmentsFormPanel({
           <div className="pg-section">
             <div className="pg-section-header">
               <div className="pg-section-header-left">
-                <span className="material-symbols-outlined pg-section-icon">star</span>
+                <span className="material-symbols-outlined pg-section-icon">
+                  star
+                </span>
                 <span className="pg-section-label">Configuración</span>
               </div>
             </div>
@@ -182,17 +215,25 @@ export function EstablishmentsFormPanel({
               />
             </div>
           </div>
-
         </div>
 
         {/* Actions bar */}
         <div className="pg-actions-bar">
           <div className="pg-actions-buttons">
-            <ZHBtn variant="ghost" type="button" onClick={closePanel} disabled={saving}>
+            <ZHBtn
+              variant="ghost"
+              type="button"
+              onClick={closePanel}
+              disabled={saving}
+            >
               Cancelar
             </ZHBtn>
             <ZHBtn variant="primary" type="submit" disabled={saving}>
-              {saving ? 'Guardando…' : isEdit ? 'Guardar cambios' : 'Crear establecimiento'}
+              {saving
+                ? "Guardando…"
+                : isEdit
+                  ? "Guardar cambios"
+                  : "Crear establecimiento"}
             </ZHBtn>
           </div>
         </div>

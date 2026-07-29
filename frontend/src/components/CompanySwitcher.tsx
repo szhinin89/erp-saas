@@ -1,16 +1,16 @@
-import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import './CompanySwitcher.css';
-import { authService } from '../modules/auth/api/authService';
-import { companyManagementService } from '../modules/company-management/api/companyManagementService';
-import { bumpCompanyOperationalSession } from '../lib/session/companySession';
-import { loadDecimalConfig } from '../lib/config/decimal.config';
-import { logDevSessionContext } from '../lib/session/devSessionLog';
-import { useAuthStore } from '../store/authStore';
-import { useSessionStore } from '../store/sessionStore';
-import { useElectronicInvoicingStatusStore } from '../store/electronicInvoicingStatusStore';
-import type { AccessibleCompany } from '../types/access';
-import type { AuthResponse } from '../types/auth';
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import "./CompanySwitcher.css";
+import { authService } from "../modules/auth/api/authService";
+import { companyManagementService } from "../modules/company-management/api/companyManagementService";
+import { bumpCompanyOperationalSession } from "../lib/session/companySession";
+import { loadDecimalConfig } from "../lib/config/decimal.config";
+import { logDevSessionContext } from "../lib/session/devSessionLog";
+import { useAuthStore } from "../store/authStore";
+import { useSessionStore } from "../store/sessionStore";
+import { useElectronicInvoicingStatusStore } from "../store/electronicInvoicingStatusStore";
+import type { AccessibleCompany } from "../types/access";
+import type { AuthResponse } from "../types/auth";
 
 export function CompanySwitcher() {
   const navigate = useNavigate();
@@ -30,7 +30,9 @@ export function CompanySwitcher() {
         if (!cancelled) setCompanies([]);
       }
     })();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [user?.tenantId, user?.role]);
 
   if (!user?.tenantId || companies.length <= 1) {
@@ -40,7 +42,7 @@ export function CompanySwitcher() {
   const currentLabel =
     companies.find((c) => c.companyId === user.companyId)?.displayName ??
     user.companyId?.slice(0, 8) ??
-    '—';
+    "—";
 
   const onChange = async (companyId: string) => {
     if (!companyId || companyId === user.companyId) return;
@@ -61,12 +63,12 @@ export function CompanySwitcher() {
       };
       login(auth);
       bumpCompanyOperationalSession();
-      logDevSessionContext('switch-company');
+      logDevSessionContext("switch-company");
       void companyManagementService.getCurrent();
       void useSessionStore.getState().refresh();
       void loadDecimalConfig();
       void useElectronicInvoicingStatusStore.getState().refresh();
-      navigate('/dashboard', { replace: true });
+      navigate("/dashboard", { replace: true });
     } finally {
       setSwitching(false);
     }
@@ -77,7 +79,7 @@ export function CompanySwitcher() {
       <span className="company-switcher-label">Empresa</span>
       <select
         className="company-switcher-select"
-        value={user.companyId ?? ''}
+        value={user.companyId ?? ""}
         disabled={switching}
         onChange={(e) => void onChange(e.target.value)}
         aria-label="Cambiar empresa operativa"

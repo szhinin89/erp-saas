@@ -1,24 +1,24 @@
-import { EmptyState, LoadingState } from '../../../components/PageShell';
-import { ZHBtn } from '../../../components/zh/ZHForm';
-import { Badge } from '../../../components/PageShell';
-import { useI18n } from '../../../i18n/i18n';
-import { formatDate } from '../../../lib/formatters/dateFormatters';
-import type { CashRegistersPageContext } from '../hooks/useCashRegistersPage';
+import { EmptyState, LoadingState } from "../../../components/PageShell";
+import { ZHBtn } from "../../../components/zh/ZHForm";
+import { Badge } from "../../../components/PageShell";
+import { useI18n } from "../../../i18n/i18n";
+import { formatDate } from "../../../lib/formatters/dateFormatters";
+import type { CashRegistersPageContext } from "../hooks/useCashRegistersPage";
 
 type Props = Pick<
   CashRegistersPageContext,
-  | 'loading'
-  | 'items'
-  | 'totals'
-  | 'search'
-  | 'setSearch'
-  | 'filtered'
-  | 'canManage'
-  | 'selectedId'
-  | 'openEdit'
-  | 'toggleDisable'
-  | 'openCreate'
-  | 'fetchList'
+  | "loading"
+  | "items"
+  | "totals"
+  | "search"
+  | "setSearch"
+  | "filtered"
+  | "canManage"
+  | "selectedId"
+  | "openEdit"
+  | "toggleDisable"
+  | "openCreate"
+  | "fetchList"
 >;
 
 export function CashRegistersListSection({
@@ -74,7 +74,9 @@ export function CashRegistersListSection({
       <div className="pg-section">
         <div className="pg-section-header">
           <div className="pg-section-header-left">
-            <span className="material-symbols-outlined pg-section-icon">point_of_sale</span>
+            <span className="material-symbols-outlined pg-section-icon">
+              point_of_sale
+            </span>
             <span className="pg-section-label">Cajas Registradas</span>
           </div>
           <div className="br-actions-tight">
@@ -86,7 +88,7 @@ export function CashRegistersListSection({
               onClick={() => void fetchList()}
             >
               <span className="material-symbols-outlined">refresh</span>
-              {t('common.refresh')}
+              {t("common.refresh")}
             </ZHBtn>
             {canManage && (
               <ZHBtn
@@ -116,15 +118,19 @@ export function CashRegistersListSection({
             </div>
           </div>
           <div className="pg-table-controls-right">
-            <span>Mostrando {filtered.length} de {items.length}</span>
+            <span>
+              Mostrando {filtered.length} de {items.length}
+            </span>
           </div>
         </div>
 
         {loading ? (
-          <div className="pg-pad-40"><LoadingState /></div>
+          <div className="pg-pad-40">
+            <LoadingState />
+          </div>
         ) : items.length === 0 ? (
           <div className="pg-pad-40">
-            <EmptyState message={t('common.noData')} />
+            <EmptyState message={t("common.noData")} />
           </div>
         ) : filtered.length === 0 ? (
           <div className="pg-pad-40">
@@ -148,25 +154,40 @@ export function CashRegistersListSection({
                 {filtered.map((row) => (
                   <tr
                     key={row.id}
-                    className={[
-                      row.isActive ? undefined : 'pg-row-inactive',
-                      row.id === selectedId ? 'cfg-row--selected' : undefined,
-                    ].filter(Boolean).join(' ') || undefined}
+                    className={
+                      [
+                        row.isActive ? undefined : "pg-row-inactive",
+                        row.id === selectedId ? "cfg-row--selected" : undefined,
+                      ]
+                        .filter(Boolean)
+                        .join(" ") || undefined
+                    }
                   >
                     <td>
-                      <Badge label={row.code} variant="gray" size="md" className="mono" />
+                      <Badge
+                        label={row.code}
+                        variant="gray"
+                        size="md"
+                        className="mono"
+                      />
                     </td>
                     <td>
                       <div className="br-list-name">{row.name}</div>
                       {row.hasHistory && (
                         <div className="br-list-sub">
-                          <Badge label="Con historial" variant="blue" size="md" />
+                          <Badge
+                            label="Con historial"
+                            variant="blue"
+                            size="md"
+                          />
                         </div>
                       )}
                     </td>
                     <td>
                       <div className="br-list-name">{row.branchName}</div>
-                      {row.branchCode && <div className="br-list-sub mono">{row.branchCode}</div>}
+                      {row.branchCode && (
+                        <div className="br-list-sub mono">{row.branchCode}</div>
+                      )}
                     </td>
                     <td>
                       {row.emissionPointCode ? (
@@ -174,19 +195,31 @@ export function CashRegistersListSection({
                           <div className="br-list-name mono">
                             {row.establishmentCode}-{row.emissionPointCode}
                           </div>
-                          <div className="br-list-sub">{row.emissionPointName ?? '—'}</div>
+                          <div className="br-list-sub">
+                            {row.emissionPointName ?? "—"}
+                          </div>
                         </>
                       ) : (
                         <span className="subtle">Sin configurar</span>
                       )}
                     </td>
                     <td>
-                      <span className={row.isActive ? 'zh-status zh-status--active' : 'zh-status zh-status--inactive'}>
-                        {row.isActive ? t('common.active') : t('common.inactive')}
+                      <span
+                        className={
+                          row.isActive
+                            ? "zh-status zh-status--active"
+                            : "zh-status zh-status--inactive"
+                        }
+                      >
+                        {row.isActive
+                          ? t("common.active")
+                          : t("common.inactive")}
                       </span>
                     </td>
                     <td>
-                      <span className="br-list-contact">{formatDate(row.createdAt)}</span>
+                      <span className="br-list-contact">
+                        {formatDate(row.createdAt)}
+                      </span>
                     </td>
                     {canManage ? (
                       <td className="pg-td-right">
@@ -199,18 +232,20 @@ export function CashRegistersListSection({
                               title="Editar"
                               onClick={() => void openEdit(row)}
                             >
-                              <span className="material-symbols-outlined">edit</span>
+                              <span className="material-symbols-outlined">
+                                edit
+                              </span>
                             </ZHBtn>
                           )}
                           <ZHBtn
                             type="button"
                             variant="ghost"
                             size="sm"
-                            title={row.isActive ? 'Desactivar' : 'Activar'}
+                            title={row.isActive ? "Desactivar" : "Activar"}
                             onClick={() => void toggleDisable(row)}
                           >
                             <span className="material-symbols-outlined">
-                              {row.isActive ? 'block' : 'check_circle'}
+                              {row.isActive ? "block" : "check_circle"}
                             </span>
                           </ZHBtn>
                         </div>
@@ -226,7 +261,9 @@ export function CashRegistersListSection({
         <div className="pg-table-footer">
           <p className="subtle br-list-footer-note">{filtered.length} cajas</p>
           {items.length > 0 && (
-            <p className="pg-table-timestamp">Última carga: {new Date().toTimeString().slice(0, 8)}</p>
+            <p className="pg-table-timestamp">
+              Última carga: {new Date().toTimeString().slice(0, 8)}
+            </p>
           )}
         </div>
       </div>

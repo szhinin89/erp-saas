@@ -1,6 +1,11 @@
-import { navItemStorageKey, navSubtreeMatchesPath, type NavItem, type TranslateFn } from '../../../../nav/navConfig';
-import { LauncherMenuItem } from './LauncherMenuItem';
-import { useLauncherExpansion } from './useLauncherExpansion';
+import {
+  navItemStorageKey,
+  navSubtreeMatchesPath,
+  type NavItem,
+  type TranslateFn,
+} from "../../../../nav/navConfig";
+import { LauncherMenuItem } from "./LauncherMenuItem";
+import { useLauncherExpansion } from "./useLauncherExpansion";
 
 type LauncherCategoryGroupProps = {
   item: NavItem;
@@ -19,10 +24,19 @@ type LauncherCategoryGroupProps = {
  * a su vez sub-categorías, otra Categoría anidada (profundidad creciente).
  */
 export function LauncherCategoryGroup({
-  item, depth, currentPath, onNavigate, isFavorite, toggleFavorite, t, forceExpanded,
+  item,
+  depth,
+  currentPath,
+  onNavigate,
+  isFavorite,
+  toggleFavorite,
+  t,
+  forceExpanded,
 }: LauncherCategoryGroupProps) {
   const storageKey = `category:${navItemStorageKey(item)}`;
-  const autoExpand = navSubtreeMatchesPath(item, currentPath) ? [storageKey] : [];
+  const autoExpand = navSubtreeMatchesPath(item, currentPath)
+    ? [storageKey]
+    : [];
   const { isExpanded, toggle } = useLauncherExpansion(autoExpand);
   const open = isExpanded(storageKey) || forceExpanded;
   const contentId = `zh-launcher-category-${storageKey}`;
@@ -37,7 +51,12 @@ export function LauncherCategoryGroup({
         onClick={() => toggle(storageKey)}
       >
         <span className="zh-launcher__categoryLabel">{item.label}</span>
-        <span className="material-symbols-outlined zh-launcher__categoryCaret" aria-hidden="true">chevron_right</span>
+        <span
+          className="material-symbols-outlined zh-launcher__categoryCaret"
+          aria-hidden="true"
+        >
+          chevron_right
+        </span>
       </button>
       {open ? (
         <div id={contentId} className="zh-launcher__categoryBody">

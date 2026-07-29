@@ -1,6 +1,6 @@
-import { useI18n } from '../i18n/i18n';
-import { ZHScreenHeading } from './zh/ZHLayout';
-import { ZHCard as Card } from './zh/ZHCard';
+import { useI18n } from "../i18n/i18n";
+import { ZHScreenHeading } from "./zh/ZHLayout";
+import { ZHCard as Card } from "./zh/ZHCard";
 
 interface Props {
   title: string;
@@ -12,19 +12,38 @@ interface Props {
 }
 
 /** Contenedor de página con encabezado compacto unificado (ZHScreenHeading). */
-export function PageShell({ title, kicker, subtitle, action, children }: Props) {
+export function PageShell({
+  title,
+  kicker,
+  subtitle,
+  action,
+  children,
+}: Props) {
   return (
     <div className="page-shell page-shell--compactHeading">
       <div className="page-shell-heading">
-        <ZHScreenHeading kicker={kicker} title={title} subtitle={subtitle} right={action} />
+        <ZHScreenHeading
+          kicker={kicker}
+          title={title}
+          subtitle={subtitle}
+          right={action}
+        />
       </div>
       {children}
     </div>
   );
 }
 
-export function TableCard({ children, className }: { children: React.ReactNode; className?: string }) {
-  const tableCardClassName = className ? `table-card ${className}` : 'table-card';
+export function TableCard({
+  children,
+  className,
+}: {
+  children: React.ReactNode;
+  className?: string;
+}) {
+  const tableCardClassName = className
+    ? `table-card ${className}`
+    : "table-card";
   return (
     <Card className={tableCardClassName} bodyClassName="table-card-body">
       {children}
@@ -38,20 +57,24 @@ export function EmptyState({ message }: { message: string }) {
 
 export function ErrorState({ message }: { message: string }) {
   const { t } = useI18n();
-  return <div className="error-state">{t('common.errorPrefix')} {message}</div>;
+  return (
+    <div className="error-state">
+      {t("common.errorPrefix")} {message}
+    </div>
+  );
 }
 
 export function LoadingState() {
   const { t } = useI18n();
-  return <div className="loading-state">{t('common.loading')}</div>;
+  return <div className="loading-state">{t("common.loading")}</div>;
 }
 
 export function NoAccessPage({ title }: { title: string }) {
   const { t } = useI18n();
   return (
-    <PageShell title={title} subtitle={t('common.noAccess')}>
+    <PageShell title={title} subtitle={t("common.noAccess")}>
       <Card>
-        <EmptyState message={t('common.noAccess')} />
+        <EmptyState message={t("common.noAccess")} />
       </Card>
     </PageShell>
   );
@@ -61,28 +84,28 @@ export function PageToolbar(props: { children: React.ReactNode }) {
   return <div className="zh-page-toolbar">{props.children}</div>;
 }
 
-export type BadgeVariant = 'green' | 'gray' | 'red' | 'blue' | 'orange';
+export type BadgeVariant = "green" | "gray" | "red" | "blue" | "orange";
 
 export function Badge(
   props: React.HTMLAttributes<HTMLSpanElement> & {
     label: React.ReactNode;
     variant: BadgeVariant;
     /** `md` aplica `.badge--md` (radius menos redondeado); por defecto usa el radius pill. */
-    size?: 'md';
+    size?: "md";
     /** Aplica `.badge--upper` (mayúsculas + letter-spacing). */
     upper?: boolean;
-  }
+  },
 ) {
   const { label, variant, size, upper, className, ...rest } = props;
   const cls = [
-    'badge',
+    "badge",
     `badge--${variant}`,
-    size ? `badge--${size}` : '',
-    upper ? 'badge--upper' : '',
+    size ? `badge--${size}` : "",
+    upper ? "badge--upper" : "",
     className,
   ]
     .filter(Boolean)
-    .join(' ');
+    .join(" ");
   return (
     <span {...rest} className={cls}>
       {label}

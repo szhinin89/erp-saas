@@ -1,45 +1,45 @@
-import { useState } from 'react';
-import { useI18n } from '../../../../i18n/i18n';
-import { NoAccessPage } from '../../../../components/PageShell';
-import { ErpPageTemplate } from '../../../../templates/ErpPageTemplate';
-import { ZHBtn } from '../../../../components/zh/ZHForm';
-import { ZHPageNotice } from '../../../../components/zh/ZHPageNotice';
-import { ConfigTabsLayout } from '../../../../components/shared/ConfigTabsLayout';
-import { message } from '../../../../lib/messages';
+import { useState } from "react";
+import { useI18n } from "../../../../i18n/i18n";
+import { NoAccessPage } from "../../../../components/PageShell";
+import { ErpPageTemplate } from "../../../../templates/ErpPageTemplate";
+import { ZHBtn } from "../../../../components/zh/ZHForm";
+import { ZHPageNotice } from "../../../../components/zh/ZHPageNotice";
+import { ConfigTabsLayout } from "../../../../components/shared/ConfigTabsLayout";
+import { message } from "../../../../lib/messages";
 
-import { useWarehousesPage } from './useWarehousesPage';
-import { WarehouseListadoTab } from '../components/WarehouseListTab';
-import { WarehouseFormTab } from '../components/WarehouseFormTab';
+import { useWarehousesPage } from "./useWarehousesPage";
+import { WarehouseListadoTab } from "../components/WarehouseListTab";
+import { WarehouseFormTab } from "../components/WarehouseFormTab";
 
-import '../../../../styles/shared/items-catalog.css';
-import './BodegasPage.css';
+import "../../../../styles/shared/items-catalog.css";
+import "./BodegasPage.css";
 
 export function BodegasPage() {
   const { t } = useI18n();
   const page = useWarehousesPage();
-  const [activeTab, setActiveTab] = useState<'list' | 'editor'>('list');
+  const [activeTab, setActiveTab] = useState<"list" | "editor">("list");
 
   if (!page.canView) {
-    return <NoAccessPage title={t('warehouses.title', 'Gestión de Bodegas')} />;
+    return <NoAccessPage title={t("warehouses.title", "Gestión de Bodegas")} />;
   }
 
   const handleOpenCreate = () => {
     page.openCreate();
-    setActiveTab('editor');
+    setActiveTab("editor");
   };
 
   const handleOpenEdit = async (id: string) => {
     await page.openEdit(id);
-    setActiveTab('editor');
+    setActiveTab("editor");
   };
 
   const handleCancel = () => {
     page.closePanel();
-    setActiveTab('list');
+    setActiveTab("list");
   };
 
-  const editorLabel = page.editingId ? 'Editar Bodega' : 'Nueva Bodega';
-  const editorIcon  = page.editingId ? 'edit' : 'add_box';
+  const editorLabel = page.editingId ? "Editar Bodega" : "Nueva Bodega";
+  const editorIcon = page.editingId ? "edit" : "add_box";
 
   const listContent = (
     <>
@@ -90,13 +90,15 @@ export function BodegasPage() {
         canUpdate={page.canUpdate}
         canDelete={page.canDelete}
         branchName={page.branchName}
-        onEdit={async (row) => { await handleOpenEdit(row.id); }}
+        onEdit={async (row) => {
+          await handleOpenEdit(row.id);
+        }}
         onToggle={async (row) => {
           await page.toggleStatus(row);
           message.info(
             row.isActive
-              ? t('warehouses.toggle.success.disabled', 'Bodega desactivada.')
-              : t('warehouses.toggle.success.activated', 'Bodega activada.')
+              ? t("warehouses.toggle.success.disabled", "Bodega desactivada.")
+              : t("warehouses.toggle.success.activated", "Bodega activada."),
           );
         }}
       />
@@ -105,19 +107,28 @@ export function BodegasPage() {
 
   return (
     <ErpPageTemplate
-      kicker={t('warehouses.kicker', 'Inventario')}
-      title={t('warehouses.title', 'Gestión de Bodegas')}
+      kicker={t("warehouses.kicker", "Inventario")}
+      title={t("warehouses.title", "Gestión de Bodegas")}
       action={
         page.canCreate ? (
-          <ZHBtn variant="primary" size="md" type="button" onClick={handleOpenCreate}>
+          <ZHBtn
+            variant="primary"
+            size="md"
+            type="button"
+            onClick={handleOpenCreate}
+          >
             <span className="material-symbols-outlined">add</span>
-            {t('warehouses.new', 'Nueva Bodega')}
+            {t("warehouses.new", "Nueva Bodega")}
           </ZHBtn>
         ) : null
       }
     >
       {page.error && (
-        <ZHPageNotice variant="error" message={t('common.errorPrefix', 'Error:')} detail={page.error} />
+        <ZHPageNotice
+          variant="error"
+          message={t("common.errorPrefix", "Error:")}
+          detail={page.error}
+        />
       )}
 
       <ConfigTabsLayout
@@ -142,10 +153,15 @@ export function BodegasPage() {
             />
           ) : (
             <div className="cfg-tabs-empty">
-              <span className="material-symbols-outlined cfg-empty-panel__icon">warehouse</span>
-              <p className="cfg-empty-panel__title">Seleccione o cree una bodega</p>
+              <span className="material-symbols-outlined cfg-empty-panel__icon">
+                warehouse
+              </span>
+              <p className="cfg-empty-panel__title">
+                Seleccione o cree una bodega
+              </p>
               <p className="cfg-empty-panel__sub">
-                Use el botón <strong>Nueva Bodega</strong> en la cabecera o seleccione una desde la lista para editar.
+                Use el botón <strong>Nueva Bodega</strong> en la cabecera o
+                seleccione una desde la lista para editar.
               </p>
             </div>
           )

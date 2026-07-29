@@ -239,7 +239,7 @@ public sealed class CashRegisterDefaultsFlowFixture : IAsyncLifetime
             TenantId,
             "05",
             "1710034065",
-            PersonType.Natural,
+            1,
             "Cliente A",
             _adminId
         );
@@ -247,7 +247,7 @@ public sealed class CashRegisterDefaultsFlowFixture : IAsyncLifetime
             TenantId,
             "05",
             "1710034073",
-            PersonType.Natural,
+            1,
             "Cliente B",
             _adminId
         );

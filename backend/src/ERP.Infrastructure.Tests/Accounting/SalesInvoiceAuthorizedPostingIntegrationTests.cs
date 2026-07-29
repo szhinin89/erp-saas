@@ -107,7 +107,7 @@ public sealed class SalesInvoiceAuthorizedPostingIntegrationTests : IAsyncLifeti
             tenant.Id,
             "05",
             "1710034065",
-            PersonType.Natural,
+            1,
             "Cliente Test",
             _createdBy
         );

@@ -1,9 +1,9 @@
-import { RuntimeModeBadge } from '../../RuntimeModeBadge';
+import { RuntimeModeBadge } from "../../RuntimeModeBadge";
 
 function initials(name: string) {
   const parts = name.trim().split(/\s+/).slice(0, 2);
-  const init = parts.map((p) => p[0]?.toUpperCase() ?? '').join('');
-  return init || 'ZH';
+  const init = parts.map((p) => p[0]?.toUpperCase() ?? "").join("");
+  return init || "ZH";
 }
 
 /** Identidad de empresa activa: logo/iniciales, nombre, rol y contexto de sesión (Company/SuperAdmin). */

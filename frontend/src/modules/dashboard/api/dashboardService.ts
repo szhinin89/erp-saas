@@ -1,4 +1,4 @@
-import { apiGet } from '../../lib/apiEnvelope';
+import { apiGet } from "../../lib/apiEnvelope";
 
 export interface DashboardKpisDto {
   salesMtd: number;
@@ -25,6 +25,6 @@ export interface DashboardKpisDto {
 
 export const dashboardService = {
   getKpis: () => {
-    return apiGet<DashboardKpisDto>('/api/v1/dashboard/kpis');
+    return apiGet<DashboardKpisDto>("/api/v1/dashboard/kpis");
   },
 };

@@ -32,7 +32,7 @@ public sealed class UpdateBusinessPartnerHandler
         {
             bp.UpdateProfile(
                 cmd.LegalName,
-                cmd.PersonType,
+                cmd.LegalEntityTypeCode,
                 _ctx.UserId,
                 cmd.TradeName,
                 cmd.CountryCode
@@ -146,7 +146,6 @@ public sealed class UpdateBusinessPartnerIdentificationHandler
             );
         }
     }
-
     private static IdentificationUsageType? MapRoleToUsage(RoleType role) =>
         role switch
         {

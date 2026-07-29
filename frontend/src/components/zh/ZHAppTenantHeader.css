@@ -8,7 +8,7 @@
 .zh-tenant-header.zh-app-tenantHeader {
   background: var(--color-primary);
   border: none;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.10);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 0;
   margin: 0;
   position: sticky;
@@ -56,7 +56,7 @@
   justify-content: center;
   overflow: hidden;
   border: 1.5px solid rgba(255, 255, 255, 0.25);
-  background: rgba(255, 255, 255, 0.10);
+  background: rgba(255, 255, 255, 0.1);
 }
 .zh-app-header__initials {
   font-size: 13px;
@@ -95,7 +95,7 @@
 .zh-app-header__context .badge--blue {
   background: rgba(255, 255, 255, 0.15);
   color: var(--color-on-primary);
-  border: 0.5px solid rgba(255, 255, 255, 0.20);
+  border: 0.5px solid rgba(255, 255, 255, 0.2);
 }
 
 .zh-app-tenantRightExtra .company-switcher {
@@ -105,7 +105,7 @@
   color: rgba(255, 255, 255, 0.65);
 }
 .zh-app-tenantRightExtra .company-switcher-select {
-  background: rgba(255, 255, 255, 0.10);
+  background: rgba(255, 255, 255, 0.1);
   color: var(--color-on-primary);
   border: 1px solid rgba(255, 255, 255, 0.25);
   border-radius: var(--radius-sm);
@@ -141,14 +141,14 @@
   padding: 0 var(--space-3);
   border-radius: var(--radius-md);
   border: none;
-  background: rgba(255, 255, 255, 0.10);
+  background: rgba(255, 255, 255, 0.1);
   color: var(--color-on-primary);
   cursor: pointer;
   transition: background var(--transition);
 }
 .zh-app-header__launcherTrigger:hover,
 .zh-app-header__launcherTrigger.is-open {
-  background: rgba(255, 255, 255, 0.20);
+  background: rgba(255, 255, 255, 0.2);
 }
 .zh-app-header__launcherTrigger:disabled {
   opacity: 0.5;
@@ -222,7 +222,9 @@
   border-radius: var(--radius-sm);
   color: var(--color-text-secondary);
   cursor: pointer;
-  transition: background var(--transition), color var(--transition);
+  transition:
+    background var(--transition),
+    color var(--transition);
 }
 .zh-app-header__launcherClose:hover {
   background: var(--color-surface-container-low);
@@ -263,7 +265,9 @@
   background: none;
   color: rgba(255, 255, 255, 0.85);
   cursor: pointer;
-  transition: background var(--transition), color var(--transition);
+  transition:
+    background var(--transition),
+    color var(--transition);
 }
 .zh-app-header__actionBtn:hover:not(:disabled) {
   background: rgba(255, 255, 255, 0.12);
@@ -277,9 +281,13 @@
   opacity: 0.35;
   cursor: default;
 }
-.zh-app-header__actionBtn .material-symbols-outlined { font-size: 20px; }
+.zh-app-header__actionBtn .material-symbols-outlined {
+  font-size: 20px;
+}
 
-.zh-app-header__actionBtn { position: relative; }
+.zh-app-header__actionBtn {
+  position: relative;
+}
 .zh-app-header__actionDot {
   position: absolute;
   top: 6px;
@@ -298,10 +306,17 @@
   flex-shrink: 0;
 }
 
-.zh-app-tenantRightExtra { display: flex; align-items: center; gap: var(--space-2); }
+.zh-app-tenantRightExtra {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
 
 /* ── 6. Avatar + user menu ───────────────────────────────── */
-.zh-app-userMenu { display: flex; align-items: center; }
+.zh-app-userMenu {
+  display: flex;
+  align-items: center;
+}
 
 .zh-app-tenantAvatarBtn {
   background: none;
@@ -386,7 +401,9 @@
   text-align: left;
   transition: background var(--transition);
 }
-.zh-app-userMenuItem:hover { background: var(--color-surface-container-low); }
+.zh-app-userMenuItem:hover {
+  background: var(--color-surface-container-low);
+}
 
 /* ── 7. Language switcher ────────────────────────────────── */
 .lang-switcher__trigger {
@@ -397,15 +414,20 @@
   padding: 0 var(--space-3);
   border-radius: var(--radius-pill);
   border: none;
-  background: rgba(255, 255, 255, 0.10);
+  background: rgba(255, 255, 255, 0.1);
   color: var(--color-on-primary);
   font-family: var(--font-family);
   font-size: var(--text-label-md-size);
   cursor: pointer;
   transition: background var(--transition);
 }
-.lang-switcher__trigger:hover { background: rgba(255, 255, 255, 0.20); }
-.lang-switcher__chevron { font-size: 10px; opacity: 0.8; }
+.lang-switcher__trigger:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+.lang-switcher__chevron {
+  font-size: 10px;
+  opacity: 0.8;
+}
 
 .lang-switcher__popover {
   position: fixed;
@@ -432,8 +454,10 @@
   color: var(--color-text-primary);
   transition: background var(--transition);
 }
-.lang-switcher__option:hover { background: var(--color-surface-container-low); }
-.lang-switcher__option[aria-selected='true'] {
+.lang-switcher__option:hover {
+  background: var(--color-surface-container-low);
+}
+.lang-switcher__option[aria-selected="true"] {
   color: var(--color-primary);
   font-weight: 600;
 }
@@ -459,12 +483,28 @@
     flex-wrap: wrap;
     padding: 10px 14px;
   }
-  .zh-app-header__left { order: 0; flex-basis: 100%; min-width: 0; }
-  .zh-app-header__center { display: none; }
-  .zh-app-header__actions { order: 1; margin-left: 0; }
-  .zh-app-header__launcherLabel { display: none; }
-  .zh-app-header__launcherTrigger { width: 36px; padding: 0; }
-  .zh-app-tenantRightExtra .company-switcher-label { display: none; }
+  .zh-app-header__left {
+    order: 0;
+    flex-basis: 100%;
+    min-width: 0;
+  }
+  .zh-app-header__center {
+    display: none;
+  }
+  .zh-app-header__actions {
+    order: 1;
+    margin-left: 0;
+  }
+  .zh-app-header__launcherLabel {
+    display: none;
+  }
+  .zh-app-header__launcherTrigger {
+    width: 36px;
+    padding: 0;
+  }
+  .zh-app-tenantRightExtra .company-switcher-label {
+    display: none;
+  }
 
   /* App Launcher → full-screen overlay on mobile */
   .zh-app-header__launcherPanel {

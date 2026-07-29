@@ -1,1 +1,1 @@
-export { usePermissionsUi } from './usePermissionsUi';
+export { usePermissionsUi } from "./usePermissionsUi";

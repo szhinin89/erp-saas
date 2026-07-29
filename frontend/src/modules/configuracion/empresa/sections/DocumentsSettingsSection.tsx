@@ -1,26 +1,26 @@
-import { useEffect, useState } from 'react';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { LoadingState, NoAccessPage } from '../../../../components/PageShell';
-import { ZHPageNotice } from '../../../../components/zh/ZHPageNotice';
-import { ZHBtn, ZHField, ZHGrid } from '../../../../components/zh/ZHForm';
-import { useI18n } from '../../../../i18n/i18n';
-import { useAsync } from '../../../../hooks/useAsync';
-import { companyProfileService } from '../api/companyProfileService';
-import { applyServerErrors } from '../../../lib/validationErrors';
-import { formatApiRequestError } from '../../../lib/apiError';
-import { usePermissionsUi } from '../../../../access/usePermissionsUi';
+import { useEffect, useState } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { LoadingState, NoAccessPage } from "../../../../components/PageShell";
+import { ZHPageNotice } from "../../../../components/zh/ZHPageNotice";
+import { ZHBtn, ZHField, ZHGrid } from "../../../../components/zh/ZHForm";
+import { useI18n } from "../../../../i18n/i18n";
+import { useAsync } from "../../../../hooks/useAsync";
+import { companyProfileService } from "../api/companyProfileService";
+import { applyServerErrors } from "../../../lib/validationErrors";
+import { formatApiRequestError } from "../../../lib/apiError";
+import { usePermissionsUi } from "../../../../access/usePermissionsUi";
 import {
   companyDocumentsSchema,
   defaultCompanyDocumentsValues,
   type CompanyDocumentsValues,
-} from '../schemas/companyDocumentsSchema';
+} from "../schemas/companyDocumentsSchema";
 
 export function DocumentsSettingsSection() {
   const { canShow } = usePermissionsUi();
   const { t } = useI18n();
-  const canView = canShow('configuracion.empresa.view');
-  const canEdit = canShow('configuracion.empresa.edit');
+  const canView = canShow("configuracion.empresa.view");
+  const canEdit = canShow("configuracion.empresa.edit");
 
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
@@ -28,7 +28,13 @@ export function DocumentsSettingsSection() {
 
   const profileState = useAsync(() => companyProfileService.getProfile());
 
-  const { register, handleSubmit, reset, setError: setFieldError, formState: { errors, isDirty } } = useForm<CompanyDocumentsValues>({
+  const {
+    register,
+    handleSubmit,
+    reset,
+    setError: setFieldError,
+    formState: { errors, isDirty },
+  } = useForm<CompanyDocumentsValues>({
     resolver: zodResolver(companyDocumentsSchema),
     defaultValues: defaultCompanyDocumentsValues,
   });
@@ -36,7 +42,7 @@ export function DocumentsSettingsSection() {
   useEffect(() => {
     const profile = profileState.data;
     if (!profile) return;
-    reset({ extraLegend: profile.extraLegend ?? '' });
+    reset({ extraLegend: profile.extraLegend ?? "" });
   }, [profileState.data, reset]);
 
   const onSubmit = handleSubmit(async (values) => {
@@ -45,12 +51,22 @@ export function DocumentsSettingsSection() {
     setSaved(false);
     setSaving(true);
     try {
-      await companyProfileService.updateDocuments({ extraLegend: values.extraLegend || null });
+      await companyProfileService.updateDocuments({
+        extraLegend: values.extraLegend || null,
+      });
       setSaved(true);
       profileState.refetch();
     } catch (err) {
-      const applied = applyServerErrors(err, setFieldError, (msg) => setSaveError(msg));
-      if (!applied) setSaveError(formatApiRequestError(err, { offline: t('common.apiUnreachable'), generic: t('common.errorGeneric') }));
+      const applied = applyServerErrors(err, setFieldError, (msg) =>
+        setSaveError(msg),
+      );
+      if (!applied)
+        setSaveError(
+          formatApiRequestError(err, {
+            offline: t("common.apiUnreachable"),
+            generic: t("common.errorGeneric"),
+          }),
+        );
     } finally {
       setSaving(false);
     }
@@ -61,40 +77,58 @@ export function DocumentsSettingsSection() {
     setSaved(false);
     const profile = profileState.data;
     if (profile) {
-      reset({ extraLegend: profile.extraLegend ?? '' });
+      reset({ extraLegend: profile.extraLegend ?? "" });
     }
   };
 
-  if (!canView) return <NoAccessPage title={t('settings.company.title')} />;
+  if (!canView) return <NoAccessPage title={t("settings.company.title")} />;
   if (profileState.loading) return <LoadingState />;
 
   return (
     <>
       {profileState.error && (
-        <ZHPageNotice variant="error" message={t('common.errorPrefix')} detail={profileState.error} />
+        <ZHPageNotice
+          variant="error"
+          message={t("common.errorPrefix")}
+          detail={profileState.error}
+        />
       )}
       {saveError && (
-        <ZHPageNotice variant="error" message={t('common.errorPrefix')} detail={saveError} />
+        <ZHPageNotice
+          variant="error"
+          message={t("common.errorPrefix")}
+          detail={saveError}
+        />
       )}
-      {saved && <ZHPageNotice variant="success" message={t('settings.company.saved')} />}
+      {saved && (
+        <ZHPageNotice variant="success" message={t("settings.company.saved")} />
+      )}
 
       <form onSubmit={onSubmit}>
         <div className="pg-section">
           <div className="pg-section-header">
             <div className="pg-section-header-left">
-              <span className="material-symbols-outlined pg-section-icon">description</span>
-              <p className="pg-section-label">{t('settings.company.documents.title')}</p>
+              <span className="material-symbols-outlined pg-section-icon">
+                description
+              </span>
+              <p className="pg-section-label">
+                {t("settings.company.documents.title")}
+              </p>
             </div>
           </div>
           <div className="pg-section-body">
             <ZHGrid cols={1}>
-              <ZHField label={t('settings.company.documents.extraLegend')} hint={t('settings.company.documents.extraLegendHint')} error={errors.extraLegend?.message}>
+              <ZHField
+                label={t("settings.company.documents.extraLegend")}
+                hint={t("settings.company.documents.extraLegendHint")}
+                error={errors.extraLegend?.message}
+              >
                 <textarea
                   className="zh-input"
                   rows={4}
                   maxLength={500}
                   disabled={saving || !canEdit}
-                  {...register('extraLegend')}
+                  {...register("extraLegend")}
                 />
               </ZHField>
             </ZHGrid>
@@ -103,12 +137,23 @@ export function DocumentsSettingsSection() {
 
         <div className="pg-actions-bar">
           <div className="pg-actions-buttons">
-            <ZHBtn variant="ghost" size="md" type="button" disabled={saving || !isDirty} onClick={handleDiscard}>
+            <ZHBtn
+              variant="ghost"
+              size="md"
+              type="button"
+              disabled={saving || !isDirty}
+              onClick={handleDiscard}
+            >
               Descartar Cambios
             </ZHBtn>
-            <ZHBtn variant="primary" size="md" type="submit" disabled={saving || !canEdit || !isDirty}>
+            <ZHBtn
+              variant="primary"
+              size="md"
+              type="submit"
+              disabled={saving || !canEdit || !isDirty}
+            >
               <span className="material-symbols-outlined">save</span>
-              {saving ? t('common.saving') : 'Guardar Configuración'}
+              {saving ? t("common.saving") : "Guardar Configuración"}
             </ZHBtn>
           </div>
         </div>

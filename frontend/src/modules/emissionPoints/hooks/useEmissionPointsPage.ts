@@ -1,48 +1,51 @@
-import { useCallback, useEffect, useState } from 'react';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
+import { useCallback, useEffect, useState } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import {
   emissionPointsService,
   type EmissionPointListItemDto,
   type EstablishmentLookupDto,
-} from '../api/emissionPointsService';
+} from "../api/emissionPointsService";
 import {
   emissionPointsPageSchema,
   emptyEmissionPointsPageForm,
   type EmissionPointsPageFormValues,
-} from '../schemas/emissionPointsPageSchema';
-import { usePermissionsUi } from '../../../access/usePermissionsUi';
-import { applyServerErrors } from '../../lib/validationErrors';
-import { message } from '../../../lib/messages';
+} from "../schemas/emissionPointsPageSchema";
+import { usePermissionsUi } from "../../../access/usePermissionsUi";
+import { applyServerErrors } from "../../lib/validationErrors";
+import { message } from "../../../lib/messages";
 
-type CatalogActiveStatus = 'all' | 'active' | 'inactive';
+type CatalogActiveStatus = "all" | "active" | "inactive";
 
 export function useEmissionPointsPage() {
   const { canShow } = usePermissionsUi();
-  const canView   = canShow('settings.emission-points.view');
-  const canCreate = canShow('settings.emission-points.create');
-  const canUpdate = canShow('settings.emission-points.update');
-  const canDelete = canShow('settings.emission-points.delete');
+  const canView = canShow("settings.emission-points.view");
+  const canCreate = canShow("settings.emission-points.create");
+  const canUpdate = canShow("settings.emission-points.update");
+  const canDelete = canShow("settings.emission-points.delete");
 
   // ── Datos del listado ────────────────────────────────────────────────────
-  const [items, setItems]     = useState<EmissionPointListItemDto[]>([]);
+  const [items, setItems] = useState<EmissionPointListItemDto[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError]     = useState('');
-  const [search, setSearch]   = useState('');
-  const [activeStatus, setActiveStatus] = useState<CatalogActiveStatus>('active');
+  const [error, setError] = useState("");
+  const [search, setSearch] = useState("");
+  const [activeStatus, setActiveStatus] =
+    useState<CatalogActiveStatus>("active");
 
   // ── Establecimientos para el selector ────────────────────────────────────
-  const [establishments, setEstablishments]           = useState<EstablishmentLookupDto[]>([]);
+  const [establishments, setEstablishments] = useState<
+    EstablishmentLookupDto[]
+  >([]);
   const [loadingEstablishments, setLoadingEstablishments] = useState(false);
 
   // ── Panel ────────────────────────────────────────────────────────────────
-  const [panelOpen, setPanelOpen]       = useState(false);
-  const [editingId, setEditingId]       = useState<string | null>(null);
-  const [editingCode, setEditingCode]   = useState<string | null>(null);
-  const [editingName, setEditingName]   = useState<string | null>(null);
-  const [selectedId, setSelectedId]     = useState<string | null>(null);
-  const [saving, setSaving]             = useState(false);
-  const [saveError, setSaveError]       = useState('');
+  const [panelOpen, setPanelOpen] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editingCode, setEditingCode] = useState<string | null>(null);
+  const [editingName, setEditingName] = useState<string | null>(null);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState("");
 
   const {
     register,
@@ -58,12 +61,14 @@ export function useEmissionPointsPage() {
 
   // ── Carga de datos ────────────────────────────────────────────────────────
   const fetchList = useCallback(async () => {
-    setError('');
+    setError("");
     setLoading(true);
     try {
-      setItems(await emissionPointsService.list(activeStatus, search || undefined));
+      setItems(
+        await emissionPointsService.list(activeStatus, search || undefined),
+      );
     } catch {
-      setError('Error al cargar los puntos de emisión.');
+      setError("Error al cargar los puntos de emisión.");
     } finally {
       setLoading(false);
     }
@@ -80,23 +85,26 @@ export function useEmissionPointsPage() {
     }
   }, []);
 
-  useEffect(() => { void fetchList(); }, [fetchList]);
+  useEffect(() => {
+    void fetchList();
+  }, [fetchList]);
 
   // ── Totales calculados ────────────────────────────────────────────────────
   const totals = {
-    total:      items.length,
-    active:     items.filter((i) => i.isActive).length,
-    inactive:   items.filter((i) => !i.isActive).length,
-    electronic: items.filter((i) => i.emissionType === 'Electronic').length,
-    physical:   items.filter((i) => i.emissionType === 'Physical').length,
+    total: items.length,
+    active: items.filter((i) => i.isActive).length,
+    inactive: items.filter((i) => !i.isActive).length,
+    electronic: items.filter((i) => i.emissionType === "Electronic").length,
+    physical: items.filter((i) => i.emissionType === "Physical").length,
   };
 
   // ── Filtrado local ────────────────────────────────────────────────────────
   const filtered = search.trim()
-    ? items.filter((i) =>
-        i.code.toLowerCase().includes(search.toLowerCase()) ||
-        (i.name?.toLowerCase().includes(search.toLowerCase()) ?? false) ||
-        i.establishmentName.toLowerCase().includes(search.toLowerCase()),
+    ? items.filter(
+        (i) =>
+          i.code.toLowerCase().includes(search.toLowerCase()) ||
+          (i.name?.toLowerCase().includes(search.toLowerCase()) ?? false) ||
+          i.establishmentName.toLowerCase().includes(search.toLowerCase()),
       )
     : items;
 
@@ -106,7 +114,7 @@ export function useEmissionPointsPage() {
     setEditingCode(null);
     setEditingName(null);
     setSelectedId(null);
-    setSaveError('');
+    setSaveError("");
     reset(emptyEmissionPointsPageForm());
     await loadEstablishments();
     setPanelOpen(true);
@@ -118,13 +126,13 @@ export function useEmissionPointsPage() {
     setEditingCode(item.code);
     setEditingName(item.name ?? item.code);
     setSelectedId(item.id);
-    setSaveError('');
+    setSaveError("");
     reset({
       establishmentId: item.establishmentId,
-      code:            item.code,
-      name:            item.name ?? '',
-      emissionType:    item.emissionType,
-      isDefault:       item.isDefault,
+      code: item.code,
+      name: item.name ?? "",
+      emissionType: item.emissionType,
+      isDefault: item.isDefault,
     });
     await loadEstablishments();
     setPanelOpen(true);
@@ -136,30 +144,30 @@ export function useEmissionPointsPage() {
     setEditingCode(null);
     setEditingName(null);
     setSelectedId(null);
-    setSaveError('');
+    setSaveError("");
   };
 
   // ── Guardar ───────────────────────────────────────────────────────────────
   const save = handleSubmit(async (form) => {
-    setSaveError('');
+    setSaveError("");
     setSaving(true);
     try {
       if (editingId) {
         await emissionPointsService.update(editingId, {
-          id:           editingId,
-          name:         form.name || null,
+          id: editingId,
+          name: form.name || null,
           emissionType: form.emissionType,
-          isDefault:    form.isDefault,
+          isDefault: form.isDefault,
         });
         await fetchList();
-        message.success('Punto de emisión actualizado correctamente.');
+        message.success("Punto de emisión actualizado correctamente.");
       } else {
         const created = await emissionPointsService.create({
           establishmentId: form.establishmentId,
-          code:            form.code.trim(),
-          name:            form.name || null,
-          emissionType:    form.emissionType,
-          isDefault:       form.isDefault,
+          code: form.code.trim(),
+          name: form.name || null,
+          emissionType: form.emissionType,
+          isDefault: form.isDefault,
         });
         await fetchList();
         setEditingId(created.id);
@@ -168,16 +176,18 @@ export function useEmissionPointsPage() {
         setSelectedId(created.id);
         reset({
           establishmentId: created.establishmentId,
-          code:            created.code,
-          name:            created.name ?? '',
-          emissionType:    created.emissionType,
-          isDefault:       created.isDefault,
+          code: created.code,
+          name: created.name ?? "",
+          emissionType: created.emissionType,
+          isDefault: created.isDefault,
         });
-        message.success('Punto de emisión creado correctamente.');
+        message.success("Punto de emisión creado correctamente.");
       }
     } catch (err: unknown) {
-      const applied = applyServerErrors(err, setFieldError, (msg) => setSaveError(msg));
-      if (!applied) setSaveError('Error al guardar el punto de emisión.');
+      const applied = applyServerErrors(err, setFieldError, (msg) =>
+        setSaveError(msg),
+      );
+      if (!applied) setSaveError("Error al guardar el punto de emisión.");
     } finally {
       setSaving(false);
     }
@@ -185,7 +195,7 @@ export function useEmissionPointsPage() {
 
   // ── Toggle activo/inactivo ────────────────────────────────────────────────
   const toggleDisable = async (item: EmissionPointListItemDto) => {
-    setError('');
+    setError("");
     try {
       if (item.isActive) {
         if (!canDelete) return;
@@ -196,7 +206,7 @@ export function useEmissionPointsPage() {
       }
       await fetchList();
     } catch {
-      setError('Error al cambiar el estado del punto de emisión.');
+      setError("Error al cambiar el estado del punto de emisión.");
     }
   };
 
@@ -241,4 +251,6 @@ export function useEmissionPointsPage() {
   };
 }
 
-export type EmissionPointsPageContext = ReturnType<typeof useEmissionPointsPage>;
+export type EmissionPointsPageContext = ReturnType<
+  typeof useEmissionPointsPage
+>;

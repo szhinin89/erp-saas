@@ -102,7 +102,7 @@ public sealed class CollectionPostingIntegrationTests : IAsyncLifetime
             tenant.Id,
             "05",
             "1710034065",
-            PersonType.Natural,
+            1,
             "Cliente Test",
             _createdBy
         );

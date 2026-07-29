@@ -1,1 +1,1 @@
-export { CompanyManagementListPage as CompanyManagementHubPage } from './CompanyManagementListPage';
+export { CompanyManagementListPage as CompanyManagementHubPage } from "./CompanyManagementListPage";

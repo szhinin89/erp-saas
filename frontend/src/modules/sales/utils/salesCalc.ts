@@ -1,5 +1,5 @@
-import type { SalesLineInput } from '../api/salesService';
-import { getDecimalConfig } from '../../../lib/config/decimal.config';
+import type { SalesLineInput } from "../api/salesService";
+import { getDecimalConfig } from "../../../lib/config/decimal.config";
 
 export function lineGross(l: SalesLineInput): number {
   return l.quantity * l.unitPrice;
@@ -20,11 +20,11 @@ export function calcLineTax(
 ): { vat: number; ice: number } {
   const net = lineNet(l);
   const iceRate = (l.iceCode ? iceRates?.[l.iceCode] : undefined) ?? 0;
-  const ice = iceRate > 0 ? net * iceRate / 100 : 0;
+  const ice = iceRate > 0 ? (net * iceRate) / 100 : 0;
   // La base imponible del IVA incluye el ICE cuando aplica (normativa SRI Ecuador)
   const taxableBase = net + ice;
   const vatRate = vatRates?.[l.vatCode] ?? 0;
-  return { vat: taxableBase * vatRate / 100, ice };
+  return { vat: (taxableBase * vatRate) / 100, ice };
 }
 
 export type TaxBreakdownEntry = {
@@ -49,11 +49,11 @@ export function calcSummary(
   for (const l of lines) {
     const net = lineNet(l);
     const iceRate = (l.iceCode ? iceRates?.[l.iceCode] : undefined) ?? 0;
-    const ice = iceRate > 0 ? net * iceRate / 100 : 0;
+    const ice = iceRate > 0 ? (net * iceRate) / 100 : 0;
     totalIce += ice;
     const taxableBase = net + ice;
     const vatRate = vatRates?.[l.vatCode] ?? 0;
-    const tax = taxableBase * vatRate / 100;
+    const tax = (taxableBase * vatRate) / 100;
     const entry = byRate.get(vatRate) ?? { base: 0, tax: 0 };
     entry.base += taxableBase;
     entry.tax += tax;
@@ -69,7 +69,7 @@ export function calcSummary(
   const taxBreakdown: TaxBreakdownEntry[] = Array.from(byRate.entries())
     .sort((a, b) => a[0] - b[0])
     .map(([rate, v]) => ({
-      label: rate === 0 ? 'IVA 0%' : `IVA ${rate}%`,
+      label: rate === 0 ? "IVA 0%" : `IVA ${rate}%`,
       rate,
       base: roundTotal(v.base),
       tax: roundTotal(v.tax),
@@ -83,6 +83,9 @@ export function calcSummary(
     subtotal: roundTotal(subtotal),
     discount: roundTotal(discount),
     netSubtotal: roundTotal(netSubtotal),
-    vat, ice, total, taxBreakdown,
+    vat,
+    ice,
+    total,
+    taxBreakdown,
   };
 }

@@ -1,6 +1,6 @@
-import { apiGet } from '../../lib/apiEnvelope';
+import { apiGet } from "../../lib/apiEnvelope";
 
-const BASE = '/api/v1/sales';
+const BASE = "/api/v1/sales";
 
 export interface InvoiceItemSearchResultDto {
   id: string;

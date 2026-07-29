@@ -14,7 +14,9 @@ export function ZHScreenHeading(props: {
           <span className="zh-screen-heading-chip" aria-hidden="true" />
           <div className="zh-screen-heading-copy">
             <h1 className="zh-screen-heading-title">{title}</h1>
-            {subtitle ? <p className="zh-screen-heading-sub">{subtitle}</p> : null}
+            {subtitle ? (
+              <p className="zh-screen-heading-sub">{subtitle}</p>
+            ) : null}
           </div>
         </div>
         {right ? <div className="zh-screen-heading-right">{right}</div> : null}

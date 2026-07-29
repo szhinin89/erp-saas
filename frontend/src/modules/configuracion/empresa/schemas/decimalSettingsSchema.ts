@@ -1,10 +1,10 @@
-import { z } from 'zod';
+import { z } from "zod";
 
 const decimalField = z.coerce
   .number()
-  .int('Debe ser un número entero.')
-  .min(0, 'Mínimo 0 decimales.')
-  .max(6, 'Máximo 6 decimales.');
+  .int("Debe ser un número entero.")
+  .min(0, "Mínimo 0 decimales.")
+  .max(6, "Máximo 6 decimales.");
 
 export const decimalSettingsSchema = z.object({
   salesUnitPrice: decimalField,

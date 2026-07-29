@@ -1,17 +1,17 @@
 import {
   resetRefreshSessionFlight,
   broadcastAuthLogout,
-} from '../../lib/session/authRefreshManager';
-import { useAccessStore } from '../../store/accessStore';
-import { useAuthStore } from '../../store/authStore';
-import { clearAccessToken } from './authTokenMemory';
+} from "../../lib/session/authRefreshManager";
+import { useAccessStore } from "../../store/accessStore";
+import { useAuthStore } from "../../store/authStore";
+import { clearAccessToken } from "./authTokenMemory";
 import {
   ACCESS_BOOTSTRAP_STORAGE_KEY,
   AUTH_PROFILE_STORAGE_KEY,
   AUTH_STORAGE_KEY,
   PERMISSIONS_STORAGE_KEY,
   SAAS_SESSION_STORAGE_PREFIX,
-} from './sessionStorageKeys';
+} from "./sessionStorageKeys";
 
 export type FullLogoutOptions = {
   resetStores?: boolean;

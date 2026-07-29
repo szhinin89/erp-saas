@@ -27,7 +27,9 @@ public sealed class UpdateBusinessPartnerCommandValidator
             )
             .When(x => x.TradeName is not null);
 
-        RuleFor(x => x.PersonType).IsInEnum().WithMessage("Tipo de persona inválido.");
+        RuleFor(x => x.LegalEntityTypeCode)
+           .GreaterThan(0)
+           .WithMessage("Tipo de entidad legal obligatorio.");
 
         RuleFor(x => x.CountryCode)
             .Length(2)

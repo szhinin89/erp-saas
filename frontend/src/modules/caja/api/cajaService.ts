@@ -1,7 +1,7 @@
-import { apiGet, apiPatch, apiPost, apiPut } from '../../lib/apiEnvelope';
+import { apiGet, apiPatch, apiPost, apiPut } from "../../lib/apiEnvelope";
 
-const BASE = '/api/v1/cash-sessions';
-const REGISTERS_BASE = '/api/v1/cash-registers';
+const BASE = "/api/v1/cash-sessions";
+const REGISTERS_BASE = "/api/v1/cash-registers";
 
 // ── DTOs ─────────────────────────────────────────────────────────────────
 
@@ -121,7 +121,7 @@ export interface EmissionPointLookupForBranchDto {
   establishmentCode: string;
 }
 
-export type CashRegisterActiveStatus = 'all' | 'active' | 'inactive';
+export type CashRegisterActiveStatus = "all" | "active" | "inactive";
 
 export interface CreateCashRegisterPayload {
   branchId: string;
@@ -178,25 +178,33 @@ export const cajaService = {
   /** Solo devuelve cajas de la sucursal activa — el servidor resuelve BranchId desde ICurrentBranch. */
   getCashRegisters: (activeOnly?: boolean) => {
     const params = new URLSearchParams();
-    if (activeOnly !== undefined) params.set('activeOnly', String(activeOnly));
+    if (activeOnly !== undefined) params.set("activeOnly", String(activeOnly));
     const qs = params.toString();
-    return apiGet<CashRegisterDto[]>(`${REGISTERS_BASE}${qs ? `?${qs}` : ''}`);
+    return apiGet<CashRegisterDto[]>(`${REGISTERS_BASE}${qs ? `?${qs}` : ""}`);
   },
 
   getCashRegister: (id: string) =>
     apiGet<CashRegisterDto>(`${REGISTERS_BASE}/${id}`),
 
   /** Administración de Cajas: listado empresa-completa (todas las sucursales). */
-  listAllCashRegisters: (activeStatus: CashRegisterActiveStatus = 'all', search?: string) => {
+  listAllCashRegisters: (
+    activeStatus: CashRegisterActiveStatus = "all",
+    search?: string,
+  ) => {
     const params = new URLSearchParams();
-    if (activeStatus !== 'all') params.set('activeOnly', String(activeStatus === 'active'));
-    if (search?.trim()) params.set('search', search.trim());
+    if (activeStatus !== "all")
+      params.set("activeOnly", String(activeStatus === "active"));
+    if (search?.trim()) params.set("search", search.trim());
     const qs = params.toString();
-    return apiGet<CashRegisterDto[]>(`${REGISTERS_BASE}/all${qs ? `?${qs}` : ''}`);
+    return apiGet<CashRegisterDto[]>(
+      `${REGISTERS_BASE}/all${qs ? `?${qs}` : ""}`,
+    );
   },
 
   emissionPointLookupsByBranch: (branchId: string) =>
-    apiGet<EmissionPointLookupForBranchDto[]>(`${REGISTERS_BASE}/emission-point-lookups?branchId=${branchId}`),
+    apiGet<EmissionPointLookupForBranchDto[]>(
+      `${REGISTERS_BASE}/emission-point-lookups?branchId=${branchId}`,
+    ),
 
   createCashRegister: (payload: CreateCashRegisterPayload) =>
     apiPost<CashRegisterDto>(REGISTERS_BASE, payload),
@@ -212,17 +220,15 @@ export const cajaService = {
 
   list: (status?: string, page = 1, pageSize = 25) => {
     const params = new URLSearchParams();
-    if (status?.trim()) params.set('status', status.trim());
-    params.set('pageNumber', String(page));
-    params.set('pageSize', String(pageSize));
+    if (status?.trim()) params.set("status", status.trim());
+    params.set("pageNumber", String(page));
+    params.set("pageSize", String(pageSize));
     return apiGet<CashSessionListResponse>(`${BASE}?${params}`);
   },
 
-  getById: (id: string) =>
-    apiGet<CashSessionDto>(`${BASE}/${id}`),
+  getById: (id: string) => apiGet<CashSessionDto>(`${BASE}/${id}`),
 
-  getMy: () =>
-    apiGet<CashSessionDto | null>(`${BASE}/my`),
+  getMy: () => apiGet<CashSessionDto | null>(`${BASE}/my`),
 
   open: (p: OpenCashSessionPayload) =>
     apiPost<CashSessionDto>(`${BASE}/open`, p),

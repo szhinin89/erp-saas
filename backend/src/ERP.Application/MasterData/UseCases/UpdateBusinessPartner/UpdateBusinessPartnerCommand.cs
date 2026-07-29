@@ -1,6 +1,5 @@
 using ERP.Application.Common;
 using ERP.Application.MasterData.DTOs;
-using ERP.Domain.MasterData.Enums;
 using MediatR;
 
 namespace ERP.Application.MasterData.UseCases.UpdateBusinessPartner;
@@ -12,7 +11,7 @@ namespace ERP.Application.MasterData.UseCases.UpdateBusinessPartner;
 public sealed record UpdateBusinessPartnerCommand(
     Guid Id,
     string LegalName,
-    PersonType PersonType,
+    int LegalEntityTypeCode,
     string? TradeName = null,
     string? CountryCode = null
 ) : IRequest<Result<BusinessPartnerSummaryDto>>, ITenantScopedRequest;

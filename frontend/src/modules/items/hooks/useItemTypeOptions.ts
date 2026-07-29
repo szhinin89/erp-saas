@@ -1,5 +1,5 @@
-import { useAsync } from '../../../hooks/useAsync';
-import { itemTypeService, type ItemTypeDto } from '../api/itemTypeService';
+import { useAsync } from "../../../hooks/useAsync";
+import { itemTypeService, type ItemTypeDto } from "../api/itemTypeService";
 
 /**
  * Única fuente de verdad para consumir el catálogo de tipos de ítem activos.
@@ -11,9 +11,13 @@ let cachedPromise: Promise<ItemTypeDto[]> | null = null;
 
 function fetchItemTypeOptions(): Promise<ItemTypeDto[]> {
   if (!cachedPromise) {
-    cachedPromise = itemTypeService.list(true)
-      .then(list => list.slice().sort((a, b) => a.sortOrder - b.sortOrder))
-      .catch(err => { cachedPromise = null; throw err; });
+    cachedPromise = itemTypeService
+      .list(true)
+      .then((list) => list.slice().sort((a, b) => a.sortOrder - b.sortOrder))
+      .catch((err) => {
+        cachedPromise = null;
+        throw err;
+      });
   }
   return cachedPromise;
 }
@@ -24,5 +28,7 @@ export function invalidateItemTypeOptionsCache(): void {
 }
 
 export function useItemTypeOptions() {
-  return useAsync(() => fetchItemTypeOptions().catch(() => [] as ItemTypeDto[]));
+  return useAsync(() =>
+    fetchItemTypeOptions().catch(() => [] as ItemTypeDto[]),
+  );
 }

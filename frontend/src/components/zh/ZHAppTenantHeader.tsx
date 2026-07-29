@@ -1,15 +1,15 @@
-import type { ReactNode } from 'react';
-import { useAuthStore } from '../../store/authStore';
-import { useSessionStore } from '../../store/sessionStore';
-import { useI18n } from '../../i18n/i18n';
-import { useAuthenticatedImage } from '../../hooks/useAuthenticatedImage';
-import type { MainMenuGroup } from '../useAppLayoutNavigation';
-import type { NavItem } from '../../nav/navConfig';
-import { ZHHeaderCompanyIdentity } from './header/ZHHeaderCompanyIdentity';
-import { ZHAppLauncher } from './header/ZHAppLauncher';
-import { ZHHeaderActionButton } from './header/ZHHeaderActionButton';
-import { ZHHeaderUserMenu } from './header/ZHHeaderUserMenu';
-import './ZHAppTenantHeader.css';
+import type { ReactNode } from "react";
+import { useAuthStore } from "../../store/authStore";
+import { useSessionStore } from "../../store/sessionStore";
+import { useI18n } from "../../i18n/i18n";
+import { useAuthenticatedImage } from "../../hooks/useAuthenticatedImage";
+import type { MainMenuGroup } from "../useAppLayoutNavigation";
+import type { NavItem } from "../../nav/navConfig";
+import { ZHHeaderCompanyIdentity } from "./header/ZHHeaderCompanyIdentity";
+import { ZHAppLauncher } from "./header/ZHAppLauncher";
+import { ZHHeaderActionButton } from "./header/ZHHeaderActionButton";
+import { ZHHeaderUserMenu } from "./header/ZHHeaderUserMenu";
+import "./ZHAppTenantHeader.css";
 
 export type ZHAppTenantHeaderNavigation = {
   mainMenuGroups: MainMenuGroup[];
@@ -32,7 +32,7 @@ export function ZHAppTenantHeader(props: {
 
   if (!user) return null;
 
-  const tenantName = tenant?.displayName || t('app.tenant.defaultName');
+  const tenantName = tenant?.displayName || t("app.tenant.defaultName");
 
   return (
     <div className="zh-tenant-header zh-app-tenantHeader">
@@ -51,7 +51,7 @@ export function ZHAppTenantHeader(props: {
           ) : null}
 
           <ZHHeaderCompanyIdentity
-            name={tenantName || user.fullName || 'ZH'}
+            name={tenantName || user.fullName || "ZH"}
             role={user.role}
             logoSrc={logoSrc}
           />
@@ -60,9 +60,21 @@ export function ZHAppTenantHeader(props: {
         {/* Espacio reservado para futuras capacidades (breadcrumbs, buscador global, contexto del módulo). */}
         <div className="zh-app-header__center" aria-hidden="true" />
 
-        <div className="zh-app-header__actions" aria-label={t('app.header.actions')}>
-          <ZHHeaderActionButton icon="search" label={t('app.header.search.comingSoon')} comingSoon />
-          <ZHHeaderActionButton icon="notifications" label={t('app.header.notifications.comingSoon')} comingSoon dot />
+        <div
+          className="zh-app-header__actions"
+          aria-label={t("app.header.actions")}
+        >
+          <ZHHeaderActionButton
+            icon="search"
+            label={t("app.header.search.comingSoon")}
+            comingSoon
+          />
+          <ZHHeaderActionButton
+            icon="notifications"
+            label={t("app.header.notifications.comingSoon")}
+            comingSoon
+            dot
+          />
           {rightExtra ? (
             <>
               <span className="zh-app-header__divider" aria-hidden="true" />

@@ -1,87 +1,92 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { useI18n } from '../../../i18n/i18n';
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useI18n } from "../../../i18n/i18n";
 import {
   branchService,
   type BranchListItemDto,
   type BranchDetailDto,
   type GeographyItemDto,
-} from '../api/branchService';
-import { branchFormSchema, type BranchFormValues } from '../schemas/branchSchema';
-import { usePermissionsUi } from '../../../access/usePermissionsUi';
-import { applyServerErrors } from '../../lib/validationErrors';
-import { message } from '../../../lib/messages';
+} from "../api/branchService";
+import {
+  branchFormSchema,
+  type BranchFormValues,
+} from "../schemas/branchSchema";
+import { usePermissionsUi } from "../../../access/usePermissionsUi";
+import { applyServerErrors } from "../../lib/validationErrors";
+import { message } from "../../../lib/messages";
 
 export function emptyBranchForm(): BranchFormValues {
   return {
-    name: '',
-    description: '',
+    name: "",
+    description: "",
     isMainBranch: false,
-    address: '',
-    countryId: '',
-    provinceId: '',
-    cantonId: '',
-    parishId: '',
-    reference: '',
-    postalCode: '',
-    latitude: '',
-    longitude: '',
-    phone: '',
-    secondaryPhone: '',
-    email: '',
-    website: '',
-    managerName: '',
-    managerPosition: '',
-    managerEmail: '',
-    managerPhone: '',
+    address: "",
+    countryId: "",
+    provinceId: "",
+    cantonId: "",
+    parishId: "",
+    reference: "",
+    postalCode: "",
+    latitude: "",
+    longitude: "",
+    phone: "",
+    secondaryPhone: "",
+    email: "",
+    website: "",
+    managerName: "",
+    managerPosition: "",
+    managerEmail: "",
+    managerPhone: "",
     isActive: true,
-    openingDate: '',
-    internalNotes: '',
+    openingDate: "",
+    internalNotes: "",
   };
 }
 
-export function branchFormFromDto(d: BranchListItemDto | BranchDetailDto): BranchFormValues {
+export function branchFormFromDto(
+  d: BranchListItemDto | BranchDetailDto,
+): BranchFormValues {
   const detail = d as Partial<BranchDetailDto>;
   return {
     name: d.name,
-    description: detail.description ?? '',
+    description: detail.description ?? "",
     isMainBranch: d.isMainBranch,
     address: d.address,
-    countryId: d.countryId ?? '',
-    provinceId: d.provinceId ?? '',
-    cantonId: d.cantonId ?? '',
-    parishId: d.parishId ?? '',
-    reference: detail.reference ?? '',
-    postalCode: detail.postalCode ?? '',
-    latitude: detail.latitude ?? '',
-    longitude: detail.longitude ?? '',
-    phone: d.phone ?? '',
-    secondaryPhone: detail.secondaryPhone ?? '',
-    email: d.email ?? '',
-    website: detail.website ?? '',
-    managerName: d.managerName ?? '',
-    managerPosition: detail.managerPosition ?? '',
-    managerEmail: detail.managerEmail ?? '',
-    managerPhone: detail.managerPhone ?? '',
+    countryId: d.countryId ?? "",
+    provinceId: d.provinceId ?? "",
+    cantonId: d.cantonId ?? "",
+    parishId: d.parishId ?? "",
+    reference: detail.reference ?? "",
+    postalCode: detail.postalCode ?? "",
+    latitude: detail.latitude ?? "",
+    longitude: detail.longitude ?? "",
+    phone: d.phone ?? "",
+    secondaryPhone: detail.secondaryPhone ?? "",
+    email: d.email ?? "",
+    website: detail.website ?? "",
+    managerName: d.managerName ?? "",
+    managerPosition: detail.managerPosition ?? "",
+    managerEmail: detail.managerEmail ?? "",
+    managerPhone: detail.managerPhone ?? "",
     isActive: d.isActive,
-    openingDate: detail.openingDate ?? '',
-    internalNotes: detail.internalNotes ?? '',
+    openingDate: detail.openingDate ?? "",
+    internalNotes: detail.internalNotes ?? "",
   };
 }
 
 export function useBranchesPage() {
   const { t } = useI18n();
   const { canShow } = usePermissionsUi();
-  const canView = canShow('settings.branches.view');
-  const canCreate = canShow('settings.branches.create');
-  const canUpdate = canShow('settings.branches.update');
-  const canDelete = canShow('settings.branches.delete');
+  const canView = canShow("settings.branches.view");
+  const canCreate = canShow("settings.branches.create");
+  const canUpdate = canShow("settings.branches.update");
+  const canDelete = canShow("settings.branches.delete");
 
   const [items, setItems] = useState<BranchListItemDto[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-  const [search, setSearch] = useState('');
+  const [error, setError] = useState("");
+  const [search, setSearch] = useState("");
 
   const [panelOpen, setPanelOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -89,7 +94,7 @@ export function useBranchesPage() {
   const [editName, setEditName] = useState<string | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
-  const [saveError, setSaveError] = useState('');
+  const [saveError, setSaveError] = useState("");
 
   const [countries, setCountries] = useState<GeographyItemDto[]>([]);
   const [provinces, setProvinces] = useState<GeographyItemDto[]>([]);
@@ -115,12 +120,12 @@ export function useBranchesPage() {
   const formWatch = watch();
 
   const fetchList = useCallback(async () => {
-    setError('');
+    setError("");
     setLoading(true);
     try {
-      setItems(await branchService.list('all'));
+      setItems(await branchService.list("all"));
     } catch {
-      setError(t('branches.error.load'));
+      setError(t("branches.error.load"));
     } finally {
       setLoading(false);
     }
@@ -131,37 +136,61 @@ export function useBranchesPage() {
   }, [fetchList]);
 
   useEffect(() => {
-    branchService.countries().then(setCountries).catch(() => setCountries([]));
+    branchService
+      .countries()
+      .then(setCountries)
+      .catch(() => setCountries([]));
   }, []);
 
   const loadProvinces = useCallback(async (countryId: string) => {
-    if (!countryId) { setProvinces([]); return; }
+    if (!countryId) {
+      setProvinces([]);
+      return;
+    }
     setLoadingProvinces(true);
-    try { setProvinces(await branchService.provinces(countryId)); }
-    catch { setProvinces([]); }
-    finally { setLoadingProvinces(false); }
+    try {
+      setProvinces(await branchService.provinces(countryId));
+    } catch {
+      setProvinces([]);
+    } finally {
+      setLoadingProvinces(false);
+    }
   }, []);
 
   const loadCantons = useCallback(async (provinceId: string) => {
-    if (!provinceId) { setCantons([]); return; }
+    if (!provinceId) {
+      setCantons([]);
+      return;
+    }
     setLoadingCantons(true);
-    try { setCantons(await branchService.cantons(provinceId)); }
-    catch { setCantons([]); }
-    finally { setLoadingCantons(false); }
+    try {
+      setCantons(await branchService.cantons(provinceId));
+    } catch {
+      setCantons([]);
+    } finally {
+      setLoadingCantons(false);
+    }
   }, []);
 
   const loadParishes = useCallback(async (cantonId: string) => {
-    if (!cantonId) { setParishes([]); return; }
+    if (!cantonId) {
+      setParishes([]);
+      return;
+    }
     setLoadingParishes(true);
-    try { setParishes(await branchService.parishes(cantonId)); }
-    catch { setParishes([]); }
-    finally { setLoadingParishes(false); }
+    try {
+      setParishes(await branchService.parishes(cantonId));
+    } catch {
+      setParishes([]);
+    } finally {
+      setLoadingParishes(false);
+    }
   }, []);
 
   const onCountryChange = async (countryId: string) => {
-    setValue('provinceId', '');
-    setValue('cantonId', '');
-    setValue('parishId', '');
+    setValue("provinceId", "");
+    setValue("cantonId", "");
+    setValue("parishId", "");
     setProvinces([]);
     setCantons([]);
     setParishes([]);
@@ -169,15 +198,15 @@ export function useBranchesPage() {
   };
 
   const onProvinceChange = async (provinceId: string) => {
-    setValue('cantonId', '');
-    setValue('parishId', '');
+    setValue("cantonId", "");
+    setValue("parishId", "");
     setCantons([]);
     setParishes([]);
     await loadCantons(provinceId);
   };
 
   const onCantonChange = async (cantonId: string) => {
-    setValue('parishId', '');
+    setValue("parishId", "");
     setParishes([]);
     await loadParishes(cantonId);
   };
@@ -198,9 +227,9 @@ export function useBranchesPage() {
     return items.filter(
       (x) =>
         x.name.toLowerCase().includes(q) ||
-        (x.code ?? '').toLowerCase().includes(q) ||
-        (x.managerName ?? '').toLowerCase().includes(q) ||
-        (x.address ?? '').toLowerCase().includes(q),
+        (x.code ?? "").toLowerCase().includes(q) ||
+        (x.managerName ?? "").toLowerCase().includes(q) ||
+        (x.address ?? "").toLowerCase().includes(q),
     );
   }, [items, search]);
 
@@ -209,8 +238,8 @@ export function useBranchesPage() {
     setEditCode(null);
     setEditName(null);
     setSelectedId(null);
-    setSaveError('');
-    const defaultCountry = countries.find((c) => c.id === 'EC') ? 'EC' : '';
+    setSaveError("");
+    const defaultCountry = countries.find((c) => c.id === "EC") ? "EC" : "";
     reset({ ...emptyBranchForm(), countryId: defaultCountry });
     setProvinces([]);
     setCantons([]);
@@ -220,7 +249,7 @@ export function useBranchesPage() {
   };
 
   const openEdit = async (id: string) => {
-    setSaveError('');
+    setSaveError("");
     try {
       const d = await branchService.getById(id);
       setEditingId(id);
@@ -231,12 +260,12 @@ export function useBranchesPage() {
       setProvinces([]);
       setCantons([]);
       setParishes([]);
-      await loadProvinces(d.countryId ?? '');
-      await loadCantons(d.provinceId ?? '');
-      await loadParishes(d.cantonId ?? '');
+      await loadProvinces(d.countryId ?? "");
+      await loadCantons(d.provinceId ?? "");
+      await loadParishes(d.cantonId ?? "");
       setPanelOpen(true);
     } catch {
-      setError(t('branches.error.loadOne'));
+      setError(t("branches.error.loadOne"));
     }
   };
 
@@ -246,11 +275,11 @@ export function useBranchesPage() {
     setEditCode(null);
     setEditName(null);
     setSelectedId(null);
-    setSaveError('');
+    setSaveError("");
   };
 
   const save = handleSubmit(async (form) => {
-    setSaveError('');
+    setSaveError("");
     setSaving(true);
     try {
       const payload = {
@@ -279,10 +308,13 @@ export function useBranchesPage() {
         isMainBranch: form.isMainBranch,
       };
       if (editingId) {
-        const updated = await branchService.update(editingId, { id: editingId, ...payload });
+        const updated = await branchService.update(editingId, {
+          id: editingId,
+          ...payload,
+        });
         await fetchList();
         setEditName(updated.name);
-        message.success('Sucursal actualizada correctamente.');
+        message.success("Sucursal actualizada correctamente.");
       } else {
         const created = await branchService.create(payload);
         await fetchList();
@@ -290,18 +322,20 @@ export function useBranchesPage() {
         setEditCode(created.code);
         setEditName(created.name);
         setSelectedId(created.id);
-        message.success('Sucursal creada correctamente.');
+        message.success("Sucursal creada correctamente.");
       }
     } catch (err: unknown) {
-      const applied = applyServerErrors(err, setFieldError, (msg) => setSaveError(msg));
-      if (!applied) setSaveError(t('branches.error.save'));
+      const applied = applyServerErrors(err, setFieldError, (msg) =>
+        setSaveError(msg),
+      );
+      if (!applied) setSaveError(t("branches.error.save"));
     } finally {
       setSaving(false);
     }
   });
 
   const toggleDisable = async (row: BranchListItemDto) => {
-    setError('');
+    setError("");
     try {
       if (row.isActive) {
         if (!canDelete) return;
@@ -312,7 +346,7 @@ export function useBranchesPage() {
       }
       await fetchList();
     } catch {
-      setError(t('branches.error.toggle'));
+      setError(t("branches.error.toggle"));
     }
   };
 

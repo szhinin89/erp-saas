@@ -1,9 +1,9 @@
-import type { ReactNode } from 'react';
-import { useLocation } from 'react-router-dom';
-import { useI18n } from '../i18n/i18n';
-import { NoAccessPage } from './PageShell';
-import type { MainMenuGroup } from './useAppLayoutNavigation';
-import type { NavItem } from '../nav/navConfig';
+import type { ReactNode } from "react";
+import { useLocation } from "react-router-dom";
+import { useI18n } from "../i18n/i18n";
+import { NoAccessPage } from "./PageShell";
+import type { MainMenuGroup } from "./useAppLayoutNavigation";
+import type { NavItem } from "../nav/navConfig";
 
 /**
  * Rutas de redirección legacy (<Navigate replace>) cuyo primer segmento no coincide
@@ -12,17 +12,17 @@ import type { NavItem } from '../nav/navConfig';
  * que sí se valida contra mainMenuGroups.
  */
 const LEGACY_REDIRECT_PREFIXES = new Set([
-  '/inventario',
-  '/logistica',
-  '/configuracion',
-  '/actividad',
-  '/security',
+  "/inventario",
+  "/logistica",
+  "/configuracion",
+  "/actividad",
+  "/security",
 ]);
 
 function firstSegment(path: string): string {
-  const clean = path.split('?')[0].split('#')[0];
-  const segment = clean.split('/').filter(Boolean)[0];
-  return segment ? `/${segment}` : '/';
+  const clean = path.split("?")[0].split("#")[0];
+  const segment = clean.split("/").filter(Boolean)[0];
+  return segment ? `/${segment}` : "/";
 }
 
 function collectAllowedPrefixes(items: NavItem[], acc: Set<string>): void {
@@ -33,10 +33,13 @@ function collectAllowedPrefixes(items: NavItem[], acc: Set<string>): void {
 }
 
 /** True si `pathname` cae dentro del árbol de navegación permitido por el backend. */
-export function isRouteAllowed(pathname: string, mainMenuGroups: MainMenuGroup[]): boolean {
+export function isRouteAllowed(
+  pathname: string,
+  mainMenuGroups: MainMenuGroup[],
+): boolean {
   const segment = firstSegment(pathname);
 
-  if (segment === '/') return true;
+  if (segment === "/") return true;
   if (LEGACY_REDIRECT_PREFIXES.has(segment)) return true;
 
   const allowed = new Set<string>();
@@ -63,8 +66,11 @@ export function RouteAccessGuard({
   const location = useLocation();
   const { t } = useI18n();
 
-  if (sessionMenuResolved && !isRouteAllowed(location.pathname, mainMenuGroups)) {
-    return <NoAccessPage title={t('app.accessDenied.title')} />;
+  if (
+    sessionMenuResolved &&
+    !isRouteAllowed(location.pathname, mainMenuGroups)
+  ) {
+    return <NoAccessPage title={t("app.accessDenied.title")} />;
   }
 
   return <>{children}</>;

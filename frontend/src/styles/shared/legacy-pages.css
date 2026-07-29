@@ -2,7 +2,8 @@
    Preferir tokens/clases ZH en código nuevo. No agregar clases nuevas aquí.
 
    Auditoría Fase 3B: de 68 clases definidas originalmente, 57 no tenían
-   ninguna referencia en frontend/src/**/*.tsx y fueron eliminadas. Las 11
+   ninguna referencia en frontend/src/**/
+*.tsx y fueron eliminadas. Las 11
    restantes siguen en uso real y se mantienen aquí como núcleo compartido
    (multi-módulo) o pendientes de mover a su módulo específico:
 
@@ -17,8 +18,12 @@
      (access/ProfilesPage.css), .pg-icon-primary (inventory/warehouses/BodegasPage.css),
      .pg-text-muted-sm (settings/geography — sin CSS propio hoy). */
 
-.pg-th-right { text-align: right; }
-.pg-td-right { text-align: right; }
+.pg-th-right {
+  text-align: right;
+}
+.pg-td-right {
+  text-align: right;
+}
 
 .pg-row-inactive {
   opacity: 0.65;

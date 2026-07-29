@@ -1,6 +1,6 @@
-import { useAuthStore } from '../../store/authStore';
-import { clearAccessToken, getAccessToken } from './authTokenMemory';
-import { refreshSessionToken } from './refreshSessionToken';
+import { useAuthStore } from "../../store/authStore";
+import { clearAccessToken, getAccessToken } from "./authTokenMemory";
+import { refreshSessionToken } from "./refreshSessionToken";
 
 /**
  * Tras recargar la pestaña: perfil en sessionStorage; access token solo en memoria.

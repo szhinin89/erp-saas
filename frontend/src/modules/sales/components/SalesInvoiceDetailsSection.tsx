@@ -1,18 +1,18 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
-import type { ReactNode } from 'react';
-import type { SalesInvoiceDetailDto } from '../api/salesService';
-import type { SalesLineFormValues } from '../schemas/salesInvoiceSchema';
-import { invoiceItemSearchService } from '../api/invoiceItemSearchService';
-import type { InvoiceItemSearchResultDto } from '../api/invoiceItemSearchService';
-import type { WarehouseDto } from '../../inventory/warehouses/api/warehouseService';
-import { ZhDecimalInput } from '../../../components/zh/inputs/ZhDecimalInput';
-import { ZhWarehouseSelector } from '../../../components/zh/inputs/ZhWarehouseSelector';
-import type { ItemWarehouseAvailabilityDto } from '../../inventory/stock/api/stockService';
-import { Badge } from '../../../components/PageShell';
-import { getDecimalConfig } from '../../../lib/config/decimal.config';
-import { formatMoney } from '../../../lib/sanitizers';
-import { lineNet, calcLineTax } from '../utils/salesCalc';
-import '../styles/sales-product-card.css';
+import { useCallback, useEffect, useRef, useState } from "react";
+import type { ReactNode } from "react";
+import type { SalesInvoiceDetailDto } from "../api/salesService";
+import type { SalesLineFormValues } from "../schemas/salesInvoiceSchema";
+import { invoiceItemSearchService } from "../api/invoiceItemSearchService";
+import type { InvoiceItemSearchResultDto } from "../api/invoiceItemSearchService";
+import type { WarehouseDto } from "../../inventory/warehouses/api/warehouseService";
+import { ZhDecimalInput } from "../../../components/zh/inputs/ZhDecimalInput";
+import { ZhWarehouseSelector } from "../../../components/zh/inputs/ZhWarehouseSelector";
+import type { ItemWarehouseAvailabilityDto } from "../../inventory/stock/api/stockService";
+import { Badge } from "../../../components/PageShell";
+import { getDecimalConfig } from "../../../lib/config/decimal.config";
+import { formatMoney } from "../../../lib/sanitizers";
+import { lineNet, calcLineTax } from "../utils/salesCalc";
+import "../styles/sales-product-card.css";
 
 // ── Resaltado de coincidencias ────────────────────────────────────────────────
 function highlightMatch(text: string, query: string): ReactNode {
@@ -23,7 +23,9 @@ function highlightMatch(text: string, query: string): ReactNode {
   return (
     <>
       {text.slice(0, idx)}
-      <mark className="sf-search-highlight">{text.slice(idx, idx + q.length)}</mark>
+      <mark className="sf-search-highlight">
+        {text.slice(idx, idx + q.length)}
+      </mark>
       {text.slice(idx + q.length)}
     </>
   );
@@ -39,7 +41,11 @@ interface SalesInvoiceDetailsSectionProps {
   onRemoveLine: (key: number) => void;
   onUpdateLine: (key: number, field: string, value: unknown) => void;
   onAddItemLine: (item: InvoiceItemSearchResultDto) => Promise<void>;
-  onUpdateLineWarehouse: (key: number, warehouseId: string, option?: ItemWarehouseAvailabilityDto) => void;
+  onUpdateLineWarehouse: (
+    key: number,
+    warehouseId: string,
+    option?: ItemWarehouseAvailabilityDto,
+  ) => void;
   warehouses: WarehouseDto[];
   selectedWarehouseId: string;
   onWarehouseChange: (id: string) => void;
@@ -49,11 +55,21 @@ interface SalesInvoiceDetailsSectionProps {
 }
 
 export function SalesInvoiceDetailsSection({
-  lines, backendLines, readOnly, disabled,
-  onRemoveLine, onUpdateLine, onAddItemLine, onUpdateLineWarehouse,
-  warehouses, selectedWarehouseId, onWarehouseChange, vatRates, focusSignal,
+  lines,
+  backendLines,
+  readOnly,
+  disabled,
+  onRemoveLine,
+  onUpdateLine,
+  onAddItemLine,
+  onUpdateLineWarehouse,
+  warehouses,
+  selectedWarehouseId,
+  onWarehouseChange,
+  vatRates,
+  focusSignal,
 }: SalesInvoiceDetailsSectionProps) {
-  const [query, setQuery] = useState('');
+  const [query, setQuery] = useState("");
   const [results, setResults] = useState<InvoiceItemSearchResultDto[]>([]);
   const [open, setOpen] = useState(false);
   const [focusIdx, setFocusIdx] = useState(-1);
@@ -75,23 +91,28 @@ export function SalesInvoiceDetailsSection({
   // Atajo global F2: reenfoca el buscador de productos desde cualquier parte de la página.
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
-      if (e.key === 'F2' && !disabled) {
+      if (e.key === "F2" && !disabled) {
         e.preventDefault();
         searchInputRef.current?.focus();
       }
     };
-    document.addEventListener('keydown', handler);
-    return () => document.removeEventListener('keydown', handler);
+    document.addEventListener("keydown", handler);
+    return () => document.removeEventListener("keydown", handler);
   }, [disabled]);
 
   // Mantiene visible el resultado resaltado al navegar la lista con teclado.
   useEffect(() => {
-    if (focusIdx >= 0) resultRefs.current[focusIdx]?.scrollIntoView({ block: 'nearest' });
+    if (focusIdx >= 0)
+      resultRefs.current[focusIdx]?.scrollIntoView({ block: "nearest" });
   }, [focusIdx]);
 
   useEffect(() => {
     clearTimeout(debounceRef.current);
-    if (!open || query.length < 2) { setResults([]); setLoading(false); return; }
+    if (!open || query.length < 2) {
+      setResults([]);
+      setLoading(false);
+      return;
+    }
     setLoading(true);
     debounceRef.current = setTimeout(async () => {
       const version = ++searchVersionRef.current;
@@ -116,40 +137,53 @@ export function SalesInvoiceDetailsSection({
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {
-      if (searchRef.current && !searchRef.current.contains(e.target as Node)) setOpen(false);
+      if (searchRef.current && !searchRef.current.contains(e.target as Node))
+        setOpen(false);
     };
-    document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
   }, []);
 
-  const selectItem = useCallback(async (item: InvoiceItemSearchResultDto) => {
-    setOpen(false);
-    setQuery('');
-    setResults([]);
-    setSelecting(true);
-    try {
-      await onAddItemLine(item);
-    } finally {
-      setSelecting(false);
-    }
-  }, [onAddItemLine]);
+  const selectItem = useCallback(
+    async (item: InvoiceItemSearchResultDto) => {
+      setOpen(false);
+      setQuery("");
+      setResults([]);
+      setSelecting(true);
+      try {
+        await onAddItemLine(item);
+      } finally {
+        setSelecting(false);
+      }
+    },
+    [onAddItemLine],
+  );
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (!open || results.length === 0) return;
-    if (e.key === 'ArrowDown') { e.preventDefault(); setFocusIdx(i => Math.min(i + 1, results.length - 1)); }
-    if (e.key === 'ArrowUp') { e.preventDefault(); setFocusIdx(i => Math.max(i - 1, 0)); }
-    if (e.key === 'Enter' && focusIdx >= 0) { e.preventDefault(); void selectItem(results[focusIdx]); }
-    if (e.key === 'Escape') setOpen(false);
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      setFocusIdx((i) => Math.min(i + 1, results.length - 1));
+    }
+    if (e.key === "ArrowUp") {
+      e.preventDefault();
+      setFocusIdx((i) => Math.max(i - 1, 0));
+    }
+    if (e.key === "Enter" && focusIdx >= 0) {
+      e.preventDefault();
+      void selectItem(results[focusIdx]);
+    }
+    if (e.key === "Escape") setOpen(false);
   };
 
   const dc = getDecimalConfig();
 
   const vatLabel = (code: string) => {
-    if (!code) return 'Sin IVA configurado';
+    if (!code) return "Sin IVA configurado";
     const rate = vatRates?.[code];
-    if (rate !== undefined) return rate === 0 ? 'IVA 0%' : `IVA ${rate}%`;
+    if (rate !== undefined) return rate === 0 ? "IVA 0%" : `IVA ${rate}%`;
     // Catálogo aún no cargado — nunca se infiere el porcentaje desde el código.
-    return 'Cargando...';
+    return "Cargando...";
   };
 
   return (
@@ -157,17 +191,29 @@ export function SalesInvoiceDetailsSection({
       {/* Search bar */}
       <div className="sf-searchbar">
         <div className="sf-searchbar__input-wrap" ref={searchRef}>
-          <span className="material-symbols-outlined sf-searchbar__icon">barcode_scanner</span>
+          <span className="material-symbols-outlined sf-searchbar__icon">
+            barcode_scanner
+          </span>
           <input
             ref={searchInputRef}
-            className={`sf-searchbar__input${selecting ? ' sf-searchbar__input--selecting' : ''}`}
+            className={`sf-searchbar__input${selecting ? " sf-searchbar__input--selecting" : ""}`}
             type="text"
-            placeholder={selecting ? 'Cargando producto…' : 'Escribe el nombre del producto o escanea el código... (F2)'}
+            placeholder={
+              selecting
+                ? "Cargando producto…"
+                : "Escribe el nombre del producto o escanea el código... (F2)"
+            }
             value={query}
-            onChange={e => { setQuery(e.target.value); setOpen(true); }}
-            onFocus={() => { if (query.length >= 2) setOpen(true); }}
+            onChange={(e) => {
+              setQuery(e.target.value);
+              setOpen(true);
+            }}
+            onFocus={() => {
+              if (query.length >= 2) setOpen(true);
+            }}
             onKeyDown={handleKeyDown}
-            disabled={disabled || selecting} />
+            disabled={disabled || selecting}
+          />
           {open && query.length >= 2 && (
             <div className="sf-search-dropdown">
               {loading ? (
@@ -176,97 +222,147 @@ export function SalesInvoiceDetailsSection({
                   <span>Buscando…</span>
                 </div>
               ) : results.length === 0 ? (
-                <div className="pdl-search__empty">Sin resultados para &ldquo;{query}&rdquo;</div>
-              ) : results.map((item, i) => {
-                const stockVal = item.availableStock ?? 0;
-                const stockClass = !item.tracksStock ? ''
-                  : stockVal <= 0 ? 'sf-result__stock--danger'
-                  : stockVal <= 5 ? 'sf-result__stock--warning'
-                  : 'sf-result__stock--ok';
-                return (
-                  <button key={item.id} type="button"
-                    ref={el => { resultRefs.current[i] = el; }}
-                    className={`sf-result${i === focusIdx ? ' sf-result--focused' : ''}`}
-                    onClick={() => void selectItem(item)}
-                    onMouseEnter={() => setFocusIdx(i)}>
-
-                    {/* Col 1: SKU */}
-                    <div className="sf-result__sku-col">
-                      <span className="sf-result__sku">{item.sku}</span>
-                    </div>
-
-                    {/* Col 2: Producto */}
-                    <div className="sf-result__info">
-                      <div className="sf-result__name">{highlightMatch(item.description, query)}</div>
-                      <div className="sf-result__meta">
-                        {item.productFamilyName && (
-                          <span className="sf-result__family">{item.productFamilyName}</span>
-                        )}
-                        {item.productFamilyName && <span className="sf-result__meta-sep">•</span>}
-                        <span className="sf-result__uom">{item.uomAbbrev}</span>
+                <div className="pdl-search__empty">
+                  Sin resultados para &ldquo;{query}&rdquo;
+                </div>
+              ) : (
+                results.map((item, i) => {
+                  const stockVal = item.availableStock ?? 0;
+                  const stockClass = !item.tracksStock
+                    ? ""
+                    : stockVal <= 0
+                      ? "sf-result__stock--danger"
+                      : stockVal <= 5
+                        ? "sf-result__stock--warning"
+                        : "sf-result__stock--ok";
+                  return (
+                    <button
+                      key={item.id}
+                      type="button"
+                      ref={(el) => {
+                        resultRefs.current[i] = el;
+                      }}
+                      className={`sf-result${i === focusIdx ? " sf-result--focused" : ""}`}
+                      onClick={() => void selectItem(item)}
+                      onMouseEnter={() => setFocusIdx(i)}
+                    >
+                      {/* Col 1: SKU */}
+                      <div className="sf-result__sku-col">
+                        <span className="sf-result__sku">{item.sku}</span>
                       </div>
-                    </div>
 
-                    {/* Col 3: Inventario */}
-                    <div className="sf-result__col sf-result__col--inv">
-                      {item.tracksStock ? (
-                        <>
-                          {item.warehouseName && (
-                            <span className="sf-result__col-label">{item.warehouseName}</span>
+                      {/* Col 2: Producto */}
+                      <div className="sf-result__info">
+                        <div className="sf-result__name">
+                          {highlightMatch(item.description, query)}
+                        </div>
+                        <div className="sf-result__meta">
+                          {item.productFamilyName && (
+                            <span className="sf-result__family">
+                              {item.productFamilyName}
+                            </span>
                           )}
-                          <span className={`sf-result__stock ${stockClass}`}>
-                            {item.availableStock != null
-                              ? item.availableStock.toFixed(dc.quantity)
-                              : '—'}
+                          {item.productFamilyName && (
+                            <span className="sf-result__meta-sep">•</span>
+                          )}
+                          <span className="sf-result__uom">
+                            {item.uomAbbrev}
                           </span>
-                          <span className="sf-result__col-sub">disponible</span>
-                        </>
-                      ) : (
-                        <span className="sf-result__value sf-result__value--muted">No aplica</span>
-                      )}
-                    </div>
+                        </div>
+                      </div>
 
-                    {/* Col 4: Comercial */}
-                    <div className="sf-result__col sf-result__col--comm">
-                      {item.averageCost != null && item.averageCost > 0 && (
-                        <div className="sf-result__price-row">
-                          <span className="sf-result__price-lbl">Costo</span>
-                          <span className="sf-result__price-val sf-result__price-val--cost">${formatMoney(item.averageCost, dc.purchaseUnitPrice)}</span>
-                        </div>
-                      )}
-                      {item.salePriceWithoutTax != null ? (
-                        <div className="sf-result__price-row">
-                          <span className="sf-result__price-lbl">PVP</span>
-                          <span className="sf-result__price-val sf-result__price-val--pvp">${formatMoney(item.salePriceWithoutTax, dc.salesUnitPrice)}</span>
-                        </div>
-                      ) : (
-                        <span className="sf-result__value sf-result__value--muted">Sin precio</span>
-                      )}
-                      {item.finalSalePrice != null && (
-                        <div className="sf-result__price-row">
-                          <span className="sf-result__price-lbl">Final</span>
-                          <span className="sf-result__price-val sf-result__price-val--final">${formatMoney(item.finalSalePrice, dc.salesUnitPrice)}</span>
-                        </div>
-                      )}
-                    </div>
+                      {/* Col 3: Inventario */}
+                      <div className="sf-result__col sf-result__col--inv">
+                        {item.tracksStock ? (
+                          <>
+                            {item.warehouseName && (
+                              <span className="sf-result__col-label">
+                                {item.warehouseName}
+                              </span>
+                            )}
+                            <span className={`sf-result__stock ${stockClass}`}>
+                              {item.availableStock != null
+                                ? item.availableStock.toFixed(dc.quantity)
+                                : "—"}
+                            </span>
+                            <span className="sf-result__col-sub">
+                              disponible
+                            </span>
+                          </>
+                        ) : (
+                          <span className="sf-result__value sf-result__value--muted">
+                            No aplica
+                          </span>
+                        )}
+                      </div>
 
-                    {/* Col 5: Impuestos */}
-                    <div className="sf-result__col sf-result__col--tax">
-                      <span className="sf-result__tax-line">{item.vatDisplay}</span>
-                      <span className="sf-result__tax-line sf-result__tax-line--ice">{item.iceDisplay}</span>
-                    </div>
-                  </button>
-                );
-              })}
+                      {/* Col 4: Comercial */}
+                      <div className="sf-result__col sf-result__col--comm">
+                        {item.averageCost != null && item.averageCost > 0 && (
+                          <div className="sf-result__price-row">
+                            <span className="sf-result__price-lbl">Costo</span>
+                            <span className="sf-result__price-val sf-result__price-val--cost">
+                              $
+                              {formatMoney(
+                                item.averageCost,
+                                dc.purchaseUnitPrice,
+                              )}
+                            </span>
+                          </div>
+                        )}
+                        {item.salePriceWithoutTax != null ? (
+                          <div className="sf-result__price-row">
+                            <span className="sf-result__price-lbl">PVP</span>
+                            <span className="sf-result__price-val sf-result__price-val--pvp">
+                              $
+                              {formatMoney(
+                                item.salePriceWithoutTax,
+                                dc.salesUnitPrice,
+                              )}
+                            </span>
+                          </div>
+                        ) : (
+                          <span className="sf-result__value sf-result__value--muted">
+                            Sin precio
+                          </span>
+                        )}
+                        {item.finalSalePrice != null && (
+                          <div className="sf-result__price-row">
+                            <span className="sf-result__price-lbl">Final</span>
+                            <span className="sf-result__price-val sf-result__price-val--final">
+                              $
+                              {formatMoney(
+                                item.finalSalePrice,
+                                dc.salesUnitPrice,
+                              )}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Col 5: Impuestos */}
+                      <div className="sf-result__col sf-result__col--tax">
+                        <span className="sf-result__tax-line">
+                          {item.vatDisplay}
+                        </span>
+                        <span className="sf-result__tax-line sf-result__tax-line--ice">
+                          {item.iceDisplay}
+                        </span>
+                      </div>
+                    </button>
+                  );
+                })
+              )}
             </div>
           )}
         </div>
         <ZhWarehouseSelector
           value={selectedWarehouseId || null}
-          onChange={id => onWarehouseChange(id)}
+          onChange={(id) => onWarehouseChange(id)}
           fallbackWarehouses={warehouses}
           disabled={disabled || selecting}
-          placeholder="Seleccione bodega" />
+          placeholder="Seleccione bodega"
+        />
       </div>
 
       {/* Column headers */}
@@ -299,7 +395,9 @@ export function SalesInvoiceDetailsSection({
         ))}
         {lines.length === 0 && (
           <div className="sf-products-empty">
-            <span className="material-symbols-outlined sf-products-empty__icon">add_shopping_cart</span>
+            <span className="material-symbols-outlined sf-products-empty__icon">
+              add_shopping_cart
+            </span>
             <p>Busca un producto arriba para agregarlo a la factura</p>
           </div>
         )}
@@ -309,8 +407,17 @@ export function SalesInvoiceDetailsSection({
 }
 
 function SalesProductCard({
-  line, backendLine, disabled, readOnly, vatLabel, vatRates, warehouses, selectedWarehouseId,
-  onUpdate, onUpdateWarehouse, onRemove,
+  line,
+  backendLine,
+  disabled,
+  readOnly,
+  vatLabel,
+  vatRates,
+  warehouses,
+  selectedWarehouseId,
+  onUpdate,
+  onUpdateWarehouse,
+  onRemove,
 }: {
   line: LineWithKey;
   backendLine?: SalesInvoiceDetailDto;
@@ -321,15 +428,21 @@ function SalesProductCard({
   warehouses: WarehouseDto[];
   selectedWarehouseId: string;
   onUpdate: (key: number, field: string, value: unknown) => void;
-  onUpdateWarehouse: (key: number, warehouseId: string, option?: ItemWarehouseAvailabilityDto) => void;
+  onUpdateWarehouse: (
+    key: number,
+    warehouseId: string,
+    option?: ItemWarehouseAvailabilityDto,
+  ) => void;
   onRemove: (key: number) => void;
 }) {
   const dc = getDecimalConfig();
   const previewNet = lineNet(line);
   const previewTax = calcLineTax(line, vatRates);
-  const total = backendLine?.taxInclusiveTotal ?? (previewNet + previewTax.vat + previewTax.ice);
+  const total =
+    backendLine?.taxInclusiveTotal ??
+    previewNet + previewTax.vat + previewTax.ice;
 
-  const sku = line._sku ?? backendLine?.snapshotSku ?? '';
+  const sku = line._sku ?? backendLine?.snapshotSku ?? "";
   const name = line._name ?? backendLine?.snapshotItemName ?? line.description;
   const cost = line._cost;
   const pvp = line._pvp;
@@ -342,14 +455,25 @@ function SalesProductCard({
       <div className="sf-product__info">
         <div className="sf-product__info-row">
           {!readOnly && (
-            <button className="sf-product__delete-btn" onClick={() => onRemove(line._key)}
-              title="Eliminar línea" disabled={disabled}>
-              <span className="material-symbols-outlined" style={{ fontSize: 20 }}>delete</span>
+            <button
+              className="sf-product__delete-btn"
+              onClick={() => onRemove(line._key)}
+              title="Eliminar línea"
+              disabled={disabled}
+            >
+              <span
+                className="material-symbols-outlined"
+                style={{ fontSize: 20 }}
+              >
+                delete
+              </span>
             </button>
           )}
           <div className="sf-product__text">
             {sku && <div className="sf-product__code">{sku}</div>}
-            <div className="sf-product__name" title={name}>{name}</div>
+            <div className="sf-product__name" title={name}>
+              {name}
+            </div>
             <span className="sf-product__tax-tag">{vatLabel}</span>
           </div>
         </div>
@@ -360,17 +484,26 @@ function SalesProductCard({
         {cost != null && (
           <div className="sf-product__pricelist-row">
             <span className="sf-product__pricelist-label">Costo:</span>
-            <span className="sf-product__pricelist-value">${formatMoney(cost, dc.purchaseUnitPrice)}</span>
+            <span className="sf-product__pricelist-value">
+              ${formatMoney(cost, dc.purchaseUnitPrice)}
+            </span>
           </div>
         )}
         {pvp != null && (
           <div className="sf-product__pricelist-row">
-            <span className="sf-product__pricelist-label" style={{ fontWeight: 700 }}>PVP:</span>
-            <span className="sf-product__pricelist-value sf-product__pricelist-value--bold">${formatMoney(pvp, dc.salesUnitPrice)}</span>
+            <span
+              className="sf-product__pricelist-label"
+              style={{ fontWeight: 700 }}
+            >
+              PVP:
+            </span>
+            <span className="sf-product__pricelist-value sf-product__pricelist-value--bold">
+              ${formatMoney(pvp, dc.salesUnitPrice)}
+            </span>
           </div>
         )}
         {cost == null && pvp == null && (
-          <span style={{ color: '#94a3b8', fontSize: 11 }}>—</span>
+          <span style={{ color: "#94a3b8", fontSize: 11 }}>—</span>
         )}
       </div>
 
@@ -378,49 +511,85 @@ function SalesProductCard({
       <div className="sf-product__negotiated">
         <div className="sf-product__disc-block">
           <span className="sf-product__disc-label">Dto. %</span>
-          <ZhDecimalInput className="sf-product__disc-input" decimals={dc.percentage} positiveOnly
+          <ZhDecimalInput
+            className="sf-product__disc-input"
+            decimals={dc.percentage}
+            positiveOnly
             defaultValue={line.discountPct ?? 0}
-            onBlur={e => onUpdate(line._key, 'discountPct', Math.min(100, Math.max(0, Number(e.target.value) || 0)))}
-            disabled={disabled} />
+            onBlur={(e) =>
+              onUpdate(
+                line._key,
+                "discountPct",
+                Math.min(100, Math.max(0, Number(e.target.value) || 0)),
+              )
+            }
+            disabled={disabled}
+          />
         </div>
         <div className="sf-product__price-block">
           <span className="sf-product__price-label">Precio Facturado</span>
           <div className="sf-product__price-wrap">
             <span className="sf-product__price-currency">$</span>
-            <ZhDecimalInput className="sf-product__price-input" decimals={dc.salesUnitPrice} positiveOnly
+            <ZhDecimalInput
+              className="sf-product__price-input"
+              decimals={dc.salesUnitPrice}
+              positiveOnly
               defaultValue={line.unitPrice}
-              onBlur={e => onUpdate(line._key, 'unitPrice', Number(e.target.value) || 0)}
-              disabled={disabled} />
+              onBlur={(e) =>
+                onUpdate(line._key, "unitPrice", Number(e.target.value) || 0)
+              }
+              disabled={disabled}
+            />
           </div>
         </div>
       </div>
 
       {/* Col 4: Stock */}
       <div className="sf-product__stock-box">
-        <span className="material-symbols-outlined sf-product__stock-icon">assignment</span>
+        <span className="material-symbols-outlined sf-product__stock-icon">
+          assignment
+        </span>
         <div className="sf-product__stock-data">
-          <div className={`sf-product__stock-qty ${stockQty == null ? 'sf-product__stock-qty--empty' : ''}`}>
-            {stockQty != null ? stockQty : '—'}
-            {stockQty != null && <span className="sf-product__stock-uom"> UDS</span>}
+          <div
+            className={`sf-product__stock-qty ${stockQty == null ? "sf-product__stock-qty--empty" : ""}`}
+          >
+            {stockQty != null ? stockQty : "—"}
+            {stockQty != null && (
+              <span className="sf-product__stock-uom"> UDS</span>
+            )}
             {line._tracksStock && stockQty != null && (
               <Badge
-                label={stockQty <= 0 ? 'Sin stock' : stockQty <= 5 ? 'Stock bajo' : 'Disponible'}
-                variant={stockQty <= 0 ? 'red' : stockQty <= 5 ? 'orange' : 'green'}
-                size="md" />
+                label={
+                  stockQty <= 0
+                    ? "Sin stock"
+                    : stockQty <= 5
+                      ? "Stock bajo"
+                      : "Disponible"
+                }
+                variant={
+                  stockQty <= 0 ? "red" : stockQty <= 5 ? "orange" : "green"
+                }
+                size="md"
+              />
             )}
           </div>
           {line._tracksStock && !readOnly ? (
             <ZhWarehouseSelector
               value={line.warehouseId ?? null}
-              onChange={(id, option) => onUpdateWarehouse(line._key, id, option)}
+              onChange={(id, option) =>
+                onUpdateWarehouse(line._key, id, option)
+              }
               itemId={line.itemId}
               fallbackWarehouses={warehouses}
               defaultWarehouseId={selectedWarehouseId}
               disabled={disabled}
-              placeholder="Seleccione bodega" />
+              placeholder="Seleccione bodega"
+            />
           ) : line._tracksStock ? (
             <div className="sf-product__stock-wh">
-              {warehouses.find(w => w.id === line.warehouseId)?.name ?? stockWarehouse ?? '—'}
+              {warehouses.find((w) => w.id === line.warehouseId)?.name ??
+                stockWarehouse ??
+                "—"}
             </div>
           ) : null}
         </div>
@@ -428,16 +597,26 @@ function SalesProductCard({
 
       {/* Col 5: Quantity */}
       <div className="sf-product__qty">
-        <ZhDecimalInput className="sf-product__qty-input" decimals={dc.quantity} positiveOnly
+        <ZhDecimalInput
+          className="sf-product__qty-input"
+          decimals={dc.quantity}
+          positiveOnly
           defaultValue={line.quantity}
-          onBlur={e => onUpdate(line._key, 'quantity', Number(e.target.value) || 1)}
-          disabled={disabled} />
+          onBlur={(e) =>
+            onUpdate(line._key, "quantity", Number(e.target.value) || 1)
+          }
+          disabled={disabled}
+        />
       </div>
 
       {/* Col 6: Subtotal */}
       <div className="sf-product__subtotal">
-        <div className="sf-product__base">Base: ${formatMoney(previewNet, dc.totalAmount)}</div>
-        <div className="sf-product__total-amount">${formatMoney(total, dc.totalAmount)}</div>
+        <div className="sf-product__base">
+          Base: ${formatMoney(previewNet, dc.totalAmount)}
+        </div>
+        <div className="sf-product__total-amount">
+          ${formatMoney(total, dc.totalAmount)}
+        </div>
         <div className="sf-product__tax-incl">IMP. INCLUIDOS</div>
       </div>
     </div>

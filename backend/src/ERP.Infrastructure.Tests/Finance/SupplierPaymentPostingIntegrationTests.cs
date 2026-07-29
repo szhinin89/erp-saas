@@ -67,7 +67,7 @@ public sealed class SupplierPaymentPostingIntegrationTests : IAsyncLifetime
             tenant.Id,
             "05",
             "1710034065",
-            PersonType.Natural,
+            1,
             "Proveedor Test",
             _createdBy
         );

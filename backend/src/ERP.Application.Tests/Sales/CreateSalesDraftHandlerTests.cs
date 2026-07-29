@@ -55,7 +55,7 @@ public sealed class CreateSalesDraftHandlerTests
                 TenantId,
                 "05",
                 "1710034065",
-                PersonType.Natural,
+                1,
                 "Cliente Test",
                 UserId
             );

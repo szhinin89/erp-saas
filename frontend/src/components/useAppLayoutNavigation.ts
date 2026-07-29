@@ -1,9 +1,9 @@
-import { useEffect, useMemo, useState, startTransition } from 'react';
-import { useLocation } from 'react-router-dom';
-import { useAuthStore } from '../store/authStore';
-import { useI18n } from '../i18n/i18n';
+import { useEffect, useMemo, useState, startTransition } from "react";
+import { useLocation } from "react-router-dom";
+import { useAuthStore } from "../store/authStore";
+import { useI18n } from "../i18n/i18n";
 
-import { accessService } from '../modules/auth/api/accessService';
+import { accessService } from "../modules/auth/api/accessService";
 import {
   flattenAccessIntoSecurity,
   flattenSaaSIntoHome,
@@ -14,8 +14,8 @@ import {
   sortNavGroupsForMainBar,
   navSubtreeMatchesPath,
   type NavItem,
-} from '../nav/navConfig';
-import type { NavMenuGroupDto } from '../types/access';
+} from "../nav/navConfig";
+import type { NavMenuGroupDto } from "../types/access";
 
 export type MainMenuGroup = {
   id: string;
@@ -29,7 +29,9 @@ export function useAppLayoutNavigation() {
   const { user } = useAuthStore();
   const location = useLocation();
   const { t } = useI18n();
-  const [sessionMenuDto, setSessionMenuDto] = useState<NavMenuGroupDto[] | undefined>(undefined);
+  const [sessionMenuDto, setSessionMenuDto] = useState<
+    NavMenuGroupDto[] | undefined
+  >(undefined);
   const [sessionMenuResolved, setSessionMenuResolved] = useState(false);
 
   useEffect(() => {
@@ -66,9 +68,9 @@ export function useAppLayoutNavigation() {
     [sessionMenuDto],
   );
 
-  const planMenuBarLayout = useMemo((): 'horizontal' | 'vertical' => {
+  const planMenuBarLayout = useMemo((): "horizontal" | "vertical" => {
     // Without platform menu-builder, always use horizontal layout
-    return 'horizontal';
+    return "horizontal";
   }, []);
 
   const groups = useMemo(() => {
@@ -81,14 +83,24 @@ export function useAppLayoutNavigation() {
     const raw = ensureTenantHomeOverview(fromApi, t);
 
     if (restrictedPlanMenu) {
-      let piped = sortNavGroupsForMainBar(flattenAccessIntoSecurity(flattenSaaSIntoHome(raw)));
-      if (planMenuBarLayout === 'horizontal') {
+      let piped = sortNavGroupsForMainBar(
+        flattenAccessIntoSecurity(flattenSaaSIntoHome(raw)),
+      );
+      if (planMenuBarLayout === "horizontal") {
         piped = expandPlanCustomRootsToBarGroups(piped);
       }
       return piped;
     }
-    return sortNavGroupsForMainBar(flattenAccessIntoSecurity(flattenSaaSIntoHome(raw)));
-  }, [sessionMenuDto, sessionMenuResolved, t, restrictedPlanMenu, planMenuBarLayout]);
+    return sortNavGroupsForMainBar(
+      flattenAccessIntoSecurity(flattenSaaSIntoHome(raw)),
+    );
+  }, [
+    sessionMenuDto,
+    sessionMenuResolved,
+    t,
+    restrictedPlanMenu,
+    planMenuBarLayout,
+  ]);
 
   // `zh-favorites` legacy format: { to: string; label: string }[] (identidad por ruta).
   // Formato actual: string[] de NavItem.id (identidad estable, sobrevive cambios de
@@ -96,11 +108,11 @@ export function useAppLayoutNavigation() {
   // `mainMenuGroups` (ver efecto de migración más abajo).
   const [favoriteIds, setFavoriteIds] = useState<Set<string>>(() => {
     try {
-      const raw = localStorage.getItem('zh-favorites');
+      const raw = localStorage.getItem("zh-favorites");
       if (!raw) return new Set();
       const parsed = JSON.parse(raw) as unknown;
       if (!Array.isArray(parsed)) return new Set();
-      return new Set(parsed.filter((x): x is string => typeof x === 'string'));
+      return new Set(parsed.filter((x): x is string => typeof x === "string"));
     } catch {
       return new Set();
     }
@@ -108,14 +120,14 @@ export function useAppLayoutNavigation() {
 
   const [legacyFavorites] = useState<{ to: string; label: string }[]>(() => {
     try {
-      const raw = localStorage.getItem('zh-favorites');
+      const raw = localStorage.getItem("zh-favorites");
       if (!raw) return [];
       const parsed = JSON.parse(raw) as unknown;
       if (!Array.isArray(parsed)) return [];
       return parsed
-        .filter((x) => x && typeof x === 'object')
+        .filter((x) => x && typeof x === "object")
         .map((x) => x as { to?: unknown; label?: unknown })
-        .filter((x) => typeof x.to === 'string' && typeof x.label === 'string')
+        .filter((x) => typeof x.to === "string" && typeof x.label === "string")
         .map((x) => ({ to: x.to as string, label: x.label as string }));
     } catch {
       return [];
@@ -124,7 +136,7 @@ export function useAppLayoutNavigation() {
 
   useEffect(() => {
     try {
-      localStorage.setItem('zh-favorites', JSON.stringify([...favoriteIds]));
+      localStorage.setItem("zh-favorites", JSON.stringify([...favoriteIds]));
     } catch {
       // ignore
     }
@@ -197,7 +209,9 @@ export function useAppLayoutNavigation() {
   }, [legacyFavorites, sessionMenuResolved, mainMenuGroups]);
 
   const showPlanVerticalNav =
-    restrictedPlanMenu && planMenuBarLayout === 'vertical' && mainMenuGroups.length > 0;
+    restrictedPlanMenu &&
+    planMenuBarLayout === "vertical" &&
+    mainMenuGroups.length > 0;
 
   return {
     user,

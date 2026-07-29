@@ -1,5 +1,5 @@
-import { useMessageStore } from '../../lib/messages/_internal/messageStore';
-import { ZHConfirmModal, ZHPromptModal } from './ZHConfirmModal';
+import { useMessageStore } from "../../lib/messages/_internal/messageStore";
+import { ZHConfirmModal, ZHPromptModal } from "./ZHConfirmModal";
 
 export function ZHGlobalDialogs() {
   const confirm = useMessageStore((s) => s.confirm);
@@ -23,7 +23,11 @@ export function ZHGlobalDialogs() {
         <ZHPromptModal
           open={prompt.open}
           title={prompt.options.title}
-          message={typeof prompt.options.message === 'string' ? prompt.options.message : undefined}
+          message={
+            typeof prompt.options.message === "string"
+              ? prompt.options.message
+              : undefined
+          }
           label={prompt.options.label}
           placeholder={prompt.options.placeholder}
           type={prompt.options.inputType}

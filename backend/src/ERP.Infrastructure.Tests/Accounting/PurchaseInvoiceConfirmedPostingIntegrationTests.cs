@@ -99,7 +99,7 @@ public sealed class PurchaseInvoiceConfirmedPostingIntegrationTests : IAsyncLife
             tenant.Id,
             TaxIdentification.SriRuc,
             "1791352688001",
-            PersonType.Legal,
+            2,
             "Proveedor Test",
             _createdBy
         );

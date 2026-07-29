@@ -1,9 +1,6 @@
-import { useCompanyScopedAsync } from '../../../hooks/useCompanyScopedAsync';
-import { dashboardService } from '../api/dashboardService';
+import { useCompanyScopedAsync } from "../../../hooks/useCompanyScopedAsync";
+import { dashboardService } from "../api/dashboardService";
 
 export function useDashboardKpis() {
-  return useCompanyScopedAsync(
-    () => dashboardService.getKpis(),
-    true,
-  );
+  return useCompanyScopedAsync(() => dashboardService.getKpis(), true);
 }

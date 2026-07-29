@@ -19,19 +19,33 @@ type Props<TId extends string> = {
  * de configuración — este componente es para pestañas de contenido arbitrarias
  * dentro de una misma página (formularios, vistas de detalle, etc.).
  */
-export function ZHTabBar<TId extends string>({ tabs, activeTab, onChange, ariaLabel, fill = false }: Props<TId>) {
+export function ZHTabBar<TId extends string>({
+  tabs,
+  activeTab,
+  onChange,
+  ariaLabel,
+  fill = false,
+}: Props<TId>) {
   return (
-    <div className={`prd-tabs${fill ? ' prd-tabs--fill' : ''}`} role="tablist" aria-label={ariaLabel}>
-      {tabs.map(tab => (
+    <div
+      className={`prd-tabs${fill ? " prd-tabs--fill" : ""}`}
+      role="tablist"
+      aria-label={ariaLabel}
+    >
+      {tabs.map((tab) => (
         <button
           key={tab.id}
           type="button"
           role="tab"
           aria-selected={activeTab === tab.id}
-          className={`prd-tab-btn${activeTab === tab.id ? ' prd-tab-btn--active' : ''}`}
+          className={`prd-tab-btn${activeTab === tab.id ? " prd-tab-btn--active" : ""}`}
           onClick={() => onChange(tab.id)}
         >
-          {tab.icon && <span className="material-symbols-outlined prd-tab-icon">{tab.icon}</span>}
+          {tab.icon && (
+            <span className="material-symbols-outlined prd-tab-icon">
+              {tab.icon}
+            </span>
+          )}
           {tab.label}
         </button>
       ))}

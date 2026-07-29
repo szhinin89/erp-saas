@@ -1,7 +1,14 @@
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { createPortal } from 'react-dom';
-import { useI18n } from '../i18n/i18n';
-import type { Locale } from '../i18n/dictionaries';
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
+import { createPortal } from "react-dom";
+import { useI18n } from "../i18n/i18n";
+import type { Locale } from "../i18n/dictionaries";
 
 type LangOption = { value: Locale; label: string; optionTitle?: string };
 
@@ -14,20 +21,29 @@ type LangOption = { value: Locale; label: string; optionTitle?: string };
 export function LanguageSwitcher() {
   const { locale, setLocale, t } = useI18n();
   const [open, setOpen] = useState(false);
-  const [menuPos, setMenuPos] = useState<{ top: number; right: number } | null>(null);
+  const [menuPos, setMenuPos] = useState<{ top: number; right: number } | null>(
+    null,
+  );
   const triggerRef = useRef<HTMLButtonElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
 
   const options = useMemo<LangOption[]>(
     () => [
-      { value: 'es', label: t('app.langMenu.spanish') },
-      { value: 'en', label: t('app.langMenu.english') },
-      { value: 'qu', label: t('app.langMenu.kichwa'), optionTitle: t('app.language.kichwa') },
+      { value: "es", label: t("app.langMenu.spanish") },
+      { value: "en", label: t("app.langMenu.english") },
+      {
+        value: "qu",
+        label: t("app.langMenu.kichwa"),
+        optionTitle: t("app.language.kichwa"),
+      },
     ],
     [t],
   );
 
-  const currentLabel = useMemo(() => options.find((o) => o.value === locale)?.label ?? locale, [locale, options]);
+  const currentLabel = useMemo(
+    () => options.find((o) => o.value === locale)?.label ?? locale,
+    [locale, options],
+  );
 
   const updateMenuPosition = useCallback(() => {
     const el = triggerRef.current;
@@ -43,11 +59,11 @@ export function LanguageSwitcher() {
     if (!open) return;
     updateMenuPosition();
     const onReposition = () => updateMenuPosition();
-    window.addEventListener('resize', onReposition);
-    window.addEventListener('scroll', onReposition, true);
+    window.addEventListener("resize", onReposition);
+    window.addEventListener("scroll", onReposition, true);
     return () => {
-      window.removeEventListener('resize', onReposition);
-      window.removeEventListener('scroll', onReposition, true);
+      window.removeEventListener("resize", onReposition);
+      window.removeEventListener("scroll", onReposition, true);
     };
   }, [open, updateMenuPosition]);
 
@@ -61,22 +77,30 @@ export function LanguageSwitcher() {
       setOpen(false);
     };
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setOpen(false);
+      if (e.key === "Escape") setOpen(false);
     };
-    window.addEventListener('pointerdown', onDown as unknown as EventListener, true);
-    window.addEventListener('keydown', onKey);
+    window.addEventListener(
+      "pointerdown",
+      onDown as unknown as EventListener,
+      true,
+    );
+    window.addEventListener("keydown", onKey);
     return () => {
-      window.removeEventListener('pointerdown', onDown as unknown as EventListener, true);
-      window.removeEventListener('keydown', onKey);
+      window.removeEventListener(
+        "pointerdown",
+        onDown as unknown as EventListener,
+        true,
+      );
+      window.removeEventListener("keydown", onKey);
     };
   }, [open]);
 
   useLayoutEffect(() => {
     const el = menuRef.current;
     if (!open || !menuPos || !el) return;
-    el.style.setProperty('position', 'fixed');
-    el.style.setProperty('top', `${menuPos.top}px`);
-    el.style.setProperty('right', `${menuPos.right}px`);
+    el.style.setProperty("position", "fixed");
+    el.style.setProperty("top", `${menuPos.top}px`);
+    el.style.setProperty("right", `${menuPos.right}px`);
   }, [open, menuPos]);
 
   const pick = (next: Locale) => {
@@ -90,10 +114,10 @@ export function LanguageSwitcher() {
         ref={triggerRef}
         type="button"
         className="lang-switcher__trigger"
-        aria-label={t('app.languageSwitcher.aria')}
+        aria-label={t("app.languageSwitcher.aria")}
         aria-haspopup="listbox"
         aria-expanded={open}
-        title={locale === 'qu' ? t('app.language.kichwa') : undefined}
+        title={locale === "qu" ? t("app.language.kichwa") : undefined}
         onClick={() => {
           setOpen((s) => !s);
         }}
@@ -109,7 +133,7 @@ export function LanguageSwitcher() {
               ref={menuRef}
               className="lang-switcher__popover"
               role="listbox"
-              aria-label={t('app.languageSwitcher.aria')}
+              aria-label={t("app.languageSwitcher.aria")}
             >
               {options.map((o) => (
                 <button

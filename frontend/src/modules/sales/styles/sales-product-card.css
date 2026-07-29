@@ -16,9 +16,15 @@
   letter-spacing: 0.08em;
   border-bottom: 1px solid var(--color-border);
 }
-.sf-columns span { text-align: center; }
-.sf-columns span:first-child { text-align: left; }
-.sf-columns span:last-child { text-align: right; }
+.sf-columns span {
+  text-align: center;
+}
+.sf-columns span:first-child {
+  text-align: left;
+}
+.sf-columns span:last-child {
+  text-align: right;
+}
 
 /* ── Products Container ───────────────────────────────────────── */
 .sf-products {
@@ -41,11 +47,11 @@
   border-left: 5px solid var(--color-primary-dim);
   border-radius: 14px;
   padding: 18px 20px;
-  box-shadow: 0 1px 4px rgba(0,0,0,.04);
-  transition: box-shadow .15s;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
+  transition: box-shadow 0.15s;
 }
 .sf-product:hover {
-  box-shadow: 0 3px 12px rgba(0,0,0,.07);
+  box-shadow: 0 3px 12px rgba(0, 0, 0, 0.07);
 }
 
 /* ── Col 1: Product Info ──────────────────────────────────────── */
@@ -71,7 +77,9 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: color .15s, background .15s;
+  transition:
+    color 0.15s,
+    background 0.15s;
   flex-shrink: 0;
   margin-top: 2px;
 }
@@ -80,7 +88,7 @@
   background: var(--color-error-container);
 }
 .sf-product__delete-btn:disabled {
-  opacity: .3;
+  opacity: 0.3;
   cursor: not-allowed;
 }
 .sf-product__text {
@@ -91,7 +99,7 @@
   font-size: 13px;
   font-weight: 800;
   color: var(--color-primary);
-  font-family: 'SF Mono', 'Cascadia Code', monospace;
+  font-family: "SF Mono", "Cascadia Code", monospace;
   letter-spacing: 0.02em;
 }
 .sf-product__name {
@@ -139,7 +147,7 @@
   font-size: 13px;
   font-weight: 700;
   color: var(--color-text-primary);
-  font-family: 'SF Mono', 'Cascadia Code', monospace;
+  font-family: "SF Mono", "Cascadia Code", monospace;
 }
 .sf-product__pricelist-value--bold {
   font-weight: 800;
@@ -177,15 +185,15 @@
   text-align: center;
   border: 1.5px solid var(--color-outline-variant);
   border-radius: 8px;
-  font-family: 'SF Mono', 'Cascadia Code', monospace;
+  font-family: "SF Mono", "Cascadia Code", monospace;
   background: var(--color-surface);
   color: var(--color-text-primary);
-  transition: border-color .15s;
+  transition: border-color 0.15s;
 }
 .sf-product__disc-input:focus {
   border-color: var(--color-primary);
   outline: none;
-  box-shadow: 0 0 0 3px rgba(58,95,132,.1);
+  box-shadow: 0 0 0 3px rgba(58, 95, 132, 0.1);
 }
 
 /* Price block */
@@ -209,12 +217,12 @@
   border-radius: 8px;
   background: var(--color-background);
   overflow: hidden;
-  transition: border-color .15s;
+  transition: border-color 0.15s;
 }
 .sf-product__price-wrap:focus-within {
   border-color: var(--color-primary);
   background: var(--color-surface);
-  box-shadow: 0 0 0 3px rgba(58,95,132,.1);
+  box-shadow: 0 0 0 3px rgba(58, 95, 132, 0.1);
 }
 .sf-product__price-currency {
   padding: 8px 0 8px 10px;
@@ -231,7 +239,7 @@
   text-align: right;
   border: none;
   background: transparent;
-  font-family: 'SF Mono', 'Cascadia Code', monospace;
+  font-family: "SF Mono", "Cascadia Code", monospace;
   color: var(--color-text-primary);
   outline: none;
 }
@@ -293,15 +301,15 @@
   text-align: center;
   border: 1.5px solid var(--color-outline-variant);
   border-radius: 10px;
-  font-family: 'SF Mono', 'Cascadia Code', monospace;
+  font-family: "SF Mono", "Cascadia Code", monospace;
   color: var(--color-text-primary);
   background: var(--color-surface);
-  transition: border-color .15s;
+  transition: border-color 0.15s;
 }
 .sf-product__qty-input:focus {
   border-color: var(--color-primary);
   outline: none;
-  box-shadow: 0 0 0 3px rgba(58,95,132,.1);
+  box-shadow: 0 0 0 3px rgba(58, 95, 132, 0.1);
 }
 
 /* ── Col 6: Subtotal ──────────────────────────────────────────── */
@@ -312,14 +320,14 @@
 .sf-product__base {
   font-size: 11px;
   color: var(--color-text-secondary);
-  font-family: 'SF Mono', 'Cascadia Code', monospace;
+  font-family: "SF Mono", "Cascadia Code", monospace;
   margin-bottom: 2px;
 }
 .sf-product__total-amount {
   font-size: 20px;
   font-weight: 800;
   color: var(--color-text-primary);
-  font-family: 'SF Mono', 'Cascadia Code', monospace;
+  font-family: "SF Mono", "Cascadia Code", monospace;
   letter-spacing: -0.5px;
   line-height: 1.1;
 }
@@ -350,12 +358,16 @@
 
 /* ── Responsive ───────────────────────────────────────────────── */
 @media (max-width: 1100px) {
-  .sf-columns { display: none; }
+  .sf-columns {
+    display: none;
+  }
   .sf-product {
     grid-template-columns: 1fr 1fr;
     gap: 12px;
   }
 }
 @media (max-width: 768px) {
-  .sf-product { grid-template-columns: 1fr; }
+  .sf-product {
+    grid-template-columns: 1fr;
+  }
 }

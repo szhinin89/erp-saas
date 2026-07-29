@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-import { api } from '../modules/lib/api';
+import { useEffect, useState } from "react";
+import { api } from "../modules/lib/api";
 
 /**
  * Descarga `url` con el cliente autenticado (Bearer token) y expone un object URL
@@ -7,7 +7,9 @@ import { api } from '../modules/lib/api';
  * `/api/v1/companies/profile/logo/content` requieren Authorization header,
  * que un `<img>` no puede enviar directamente.
  */
-export function useAuthenticatedImage(url: string | null | undefined): string | null {
+export function useAuthenticatedImage(
+  url: string | null | undefined,
+): string | null {
   const [objectUrl, setObjectUrl] = useState<string | null>(null);
 
   useEffect(() => {
@@ -19,7 +21,8 @@ export function useAuthenticatedImage(url: string | null | undefined): string | 
     let cancelled = false;
     let created: string | null = null;
 
-    api.get<Blob>(url, { responseType: 'blob' })
+    api
+      .get<Blob>(url, { responseType: "blob" })
       .then(({ data }) => {
         if (cancelled) return;
         created = URL.createObjectURL(data);

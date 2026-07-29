@@ -1,4 +1,4 @@
-import { apiGet, apiPatch, apiPost, apiPut } from '../../lib/apiEnvelope';
+import { apiGet, apiPatch, apiPost, apiPut } from "../../lib/apiEnvelope";
 
 export type BranchListItemDto = {
   id: string;
@@ -76,7 +76,7 @@ export type BranchPayload = {
 
 export type GeographyItemDto = { id: string; name: string };
 
-export type CatalogActiveStatus = 'all' | 'active' | 'inactive';
+export type CatalogActiveStatus = "all" | "active" | "inactive";
 
 type GeoRow = {
   id?: string;
@@ -91,12 +91,12 @@ type GeoRow = {
 
 function rowToGeo(row: unknown): GeographyItemDto | null {
   if (Array.isArray(row) && row.length >= 2) {
-    return { id: String(row[0] ?? ''), name: String(row[1] ?? '') };
+    return { id: String(row[0] ?? ""), name: String(row[1] ?? "") };
   }
-  if (row && typeof row === 'object') {
+  if (row && typeof row === "object") {
     const o = row as GeoRow;
-    const id = String(o.id ?? o.Id ?? o.item1 ?? o.Item1 ?? '');
-    const name = String(o.name ?? o.Name ?? o.item2 ?? o.Item2 ?? '');
+    const id = String(o.id ?? o.Id ?? o.item1 ?? o.Item1 ?? "");
+    const name = String(o.name ?? o.Name ?? o.item2 ?? o.Item2 ?? "");
     if (id.length > 0) return { id, name };
   }
   return null;
@@ -114,8 +114,8 @@ export function normalizeGeographyList(data: unknown): GeographyItemDto[] {
 
 function listQuery(activeStatus: CatalogActiveStatus, search?: string) {
   const q = new URLSearchParams();
-  q.set('activeStatus', activeStatus);
-  if (search?.trim()) q.set('search', search.trim());
+  q.set("activeStatus", activeStatus);
+  if (search?.trim()) q.set("search", search.trim());
   return `?${q.toString()}`;
 }
 
@@ -124,28 +124,40 @@ function getGeography(url: string) {
 }
 
 export const branchService = {
-  list: (activeStatus: CatalogActiveStatus = 'all', search?: string) =>
-    apiGet<BranchListItemDto[]>(`/api/v1/settings/branches${listQuery(activeStatus, search)}`),
+  list: (activeStatus: CatalogActiveStatus = "all", search?: string) =>
+    apiGet<BranchListItemDto[]>(
+      `/api/v1/settings/branches${listQuery(activeStatus, search)}`,
+    ),
 
-  getById: (id: string) => apiGet<BranchDetailDto>(`/api/v1/settings/branches/${id}`),
+  getById: (id: string) =>
+    apiGet<BranchDetailDto>(`/api/v1/settings/branches/${id}`),
 
-  create: (body: BranchPayload) => apiPost<BranchListItemDto>('/api/v1/settings/branches', body),
+  create: (body: BranchPayload) =>
+    apiPost<BranchListItemDto>("/api/v1/settings/branches", body),
 
   update: (id: string, body: BranchPayload & { id: string }) =>
     apiPut<BranchListItemDto>(`/api/v1/settings/branches/${id}`, body),
 
-  disable: (id: string) => apiPatch<BranchListItemDto>(`/api/v1/settings/branches/${id}/disable`),
+  disable: (id: string) =>
+    apiPatch<BranchListItemDto>(`/api/v1/settings/branches/${id}/disable`),
 
-  enable: (id: string) => apiPatch<BranchListItemDto>(`/api/v1/settings/branches/${id}/enable`),
+  enable: (id: string) =>
+    apiPatch<BranchListItemDto>(`/api/v1/settings/branches/${id}/enable`),
 
-  countries: () => getGeography('/api/v1/settings/geography/countries'),
+  countries: () => getGeography("/api/v1/settings/geography/countries"),
 
   provinces: (countryId: string) =>
-    getGeography(`/api/v1/settings/geography/provinces?countryId=${encodeURIComponent(countryId)}`),
+    getGeography(
+      `/api/v1/settings/geography/provinces?countryId=${encodeURIComponent(countryId)}`,
+    ),
 
   cantons: (provinceId: string) =>
-    getGeography(`/api/v1/settings/geography/cantons?provinceId=${encodeURIComponent(provinceId)}`),
+    getGeography(
+      `/api/v1/settings/geography/cantons?provinceId=${encodeURIComponent(provinceId)}`,
+    ),
 
   parishes: (cantonId: string) =>
-    getGeography(`/api/v1/settings/geography/parishes?cantonId=${encodeURIComponent(cantonId)}`),
+    getGeography(
+      `/api/v1/settings/geography/parishes?cantonId=${encodeURIComponent(cantonId)}`,
+    ),
 };

@@ -1,9 +1,13 @@
-import { useState } from 'react';
-import { useAsync } from '../../../hooks/useAsync';
-import { formatApiRequestError } from '../../lib/apiError';
-import { itemService, type CreateItemRequest, type UpdateItemRequest } from '../api/itemService';
-import type { GetItemsParams } from '../api/itemService';
-import type { ItemDto } from '../../../types/items';
+import { useState } from "react";
+import { useAsync } from "../../../hooks/useAsync";
+import { formatApiRequestError } from "../../lib/apiError";
+import {
+  itemService,
+  type CreateItemRequest,
+  type UpdateItemRequest,
+} from "../api/itemService";
+import type { GetItemsParams } from "../api/itemService";
+import type { ItemDto } from "../../../types/items";
 
 export function useItems(params: GetItemsParams = {}) {
   const itemsState = useAsync(() => itemService.getAll(params));
@@ -11,7 +15,7 @@ export function useItems(params: GetItemsParams = {}) {
   const [creating, setCreating] = useState(false);
   const [updating, setUpdating] = useState(false);
   const [toggleError, setToggleError] = useState<string | null>(null);
-  const [toggling, setToggling]       = useState(false);
+  const [toggling, setToggling] = useState(false);
 
   const createItem = async (payload: CreateItemRequest): Promise<ItemDto> => {
     setCreating(true);
@@ -35,7 +39,10 @@ export function useItems(params: GetItemsParams = {}) {
     }
   };
 
-  const toggleStatus = async (id: string, enable: boolean): Promise<boolean> => {
+  const toggleStatus = async (
+    id: string,
+    enable: boolean,
+  ): Promise<boolean> => {
     setToggleError(null);
     setToggling(true);
     try {
@@ -44,7 +51,11 @@ export function useItems(params: GetItemsParams = {}) {
       itemsState.refetch();
       return true;
     } catch (err) {
-      setToggleError(formatApiRequestError(err, { generic: 'Error al actualizar el estado del ítem.' }));
+      setToggleError(
+        formatApiRequestError(err, {
+          generic: "Error al actualizar el estado del ítem.",
+        }),
+      );
       return false;
     } finally {
       setToggling(false);
@@ -52,14 +63,18 @@ export function useItems(params: GetItemsParams = {}) {
   };
 
   return {
-    itemsPage:    itemsState.data,
-    items:        itemsState.data?.items ?? [],
-    totalCount:   itemsState.data?.totalCount ?? 0,
-    loading:      itemsState.loading,
-    error:        itemsState.error,
-    refetch:      itemsState.refetch,
-    creating, createItem,
-    updating, updateItem,
-    toggling, toggleError, toggleStatus,
+    itemsPage: itemsState.data,
+    items: itemsState.data?.items ?? [],
+    totalCount: itemsState.data?.totalCount ?? 0,
+    loading: itemsState.loading,
+    error: itemsState.error,
+    refetch: itemsState.refetch,
+    creating,
+    createItem,
+    updating,
+    updateItem,
+    toggling,
+    toggleError,
+    toggleStatus,
   };
 }

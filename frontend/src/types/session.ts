@@ -1,4 +1,4 @@
-import type { CompanyLogo } from './companyProfile';
+import type { CompanyLogo } from "./companyProfile";
 
 export interface SessionContextDto {
   identity: {
@@ -35,6 +35,6 @@ export interface SessionBranchDto {
  */
 export interface MyAvailableBranchesDto {
   branches: SessionBranchDto[];
-  loginMode: 'AskBranch' | 'DirectToDefault';
+  loginMode: "AskBranch" | "DirectToDefault";
   defaultBranchId: string | null;
 }

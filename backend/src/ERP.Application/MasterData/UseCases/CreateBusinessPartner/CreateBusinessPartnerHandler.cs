@@ -68,7 +68,7 @@ public sealed class CreateBusinessPartnerHandler
                 _ctx.TenantId,
                 cmd.IdentificationType,
                 cmd.IdentificationNumber,
-                cmd.PersonType,
+                cmd.LegalEntityTypeCode,
                 cmd.LegalName,
                 _ctx.UserId,
                 cmd.TradeName,

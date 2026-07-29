@@ -1,9 +1,9 @@
 /** Rutas de auth que no deben disparar el interceptor de refresh (evita loops). */
 export const PUBLIC_AUTH_PATHS = [
-  '/api/v1/auth/login',
-  '/api/v1/auth/forgot-password',
-  '/api/v1/auth/reset-password',
-  '/api/v1/auth/refresh',
+  "/api/v1/auth/login",
+  "/api/v1/auth/forgot-password",
+  "/api/v1/auth/reset-password",
+  "/api/v1/auth/refresh",
 ] as const;
 
 export function isPublicAuthPath(url: string): boolean {

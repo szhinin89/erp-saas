@@ -1,5 +1,5 @@
 /** 'create' cuando la línea aún no tiene Item; 'update' cuando ya hay uno vinculado (se resuelve por la presencia de `itemId` en `ItemEditorModalProps`, nunca se declara por separado para que no pueda contradecirse). */
-export type ItemEditorMode = 'create' | 'update';
+export type ItemEditorMode = "create" | "update";
 
 /**
  * Datos de precarga opcionales — el componente no sabe de dónde vienen (Compras, Inventario,
@@ -17,7 +17,7 @@ export interface CreateItemInitialData {
   supplierId?: string;
   /** Código SRI de unidad de medida por defecto (p. ej. "UNIT") — el sistema no usa un Id, usa código. */
   defaultUomCode?: string;
-  source?: 'PurchaseReception' | 'Manual';
+  source?: "PurchaseReception" | "Manual";
   /**
    * Contexto de costo de la línea de compra de origen — habilita, de forma opcional y modular,
    * la sección "Información de Compra" + el simulador de precio de venta / margen, en ambos

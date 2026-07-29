@@ -1,4 +1,4 @@
-import { ZHFormAlert, type ZHFormAlertType } from './ZHForm';
+import { ZHFormAlert, type ZHFormAlertType } from "./ZHForm";
 
 export type ZHPageNoticeVariant = ZHFormAlertType;
 
@@ -30,17 +30,32 @@ export type ZHPageNoticeProps = {
 export function ZHPageNotice(props: ZHPageNoticeProps) {
   const { variant, message, detail, icon, className } = props;
   const msg = message.trim();
-  const det = (detail ?? '').trim();
+  const det = (detail ?? "").trim();
   if (!msg && !det) return null;
 
   const primary = msg || det;
   const secondary = msg && det ? det : undefined;
-  const live: 'polite' | 'assertive' = variant === 'success' || variant === 'info' || variant === 'neutral' ? 'polite' : 'assertive';
-  const role = variant === 'error' || variant === 'warning' || variant === 'attention' ? 'alert' : 'status';
+  const live: "polite" | "assertive" =
+    variant === "success" || variant === "info" || variant === "neutral"
+      ? "polite"
+      : "assertive";
+  const role =
+    variant === "error" || variant === "warning" || variant === "attention"
+      ? "alert"
+      : "status";
 
   return (
-    <div className={['zh-page-notice', className].filter(Boolean).join(' ')} role={role} aria-live={live}>
-      <ZHFormAlert type={variant} message={primary} detail={secondary} icon={icon} />
+    <div
+      className={["zh-page-notice", className].filter(Boolean).join(" ")}
+      role={role}
+      aria-live={live}
+    >
+      <ZHFormAlert
+        type={variant}
+        message={primary}
+        detail={secondary}
+        icon={icon}
+      />
     </div>
   );
 }

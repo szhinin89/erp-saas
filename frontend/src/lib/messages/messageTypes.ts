@@ -1,6 +1,6 @@
-import type { ReactNode } from 'react';
+import type { ReactNode } from "react";
 
-export type MessageType = 'success' | 'error' | 'warning' | 'info';
+export type MessageType = "success" | "error" | "warning" | "info";
 
 export interface MessageItem {
   id: string;
@@ -15,13 +15,13 @@ export interface ConfirmOptions {
   message: string | ReactNode;
   confirmLabel?: string;
   cancelLabel?: string;
-  variant?: 'danger' | 'warning' | 'default';
+  variant?: "danger" | "warning" | "default";
 }
 
 export interface PromptOptions extends ConfirmOptions {
   label: string;
   placeholder?: string;
-  inputType?: 'text' | 'number' | 'date' | 'datetime-local';
+  inputType?: "text" | "number" | "date" | "datetime-local";
   defaultValue?: string;
   required?: boolean;
 }

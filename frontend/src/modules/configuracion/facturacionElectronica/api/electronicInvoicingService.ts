@@ -1,4 +1,4 @@
-import { apiGet, apiPost, apiPut } from '../../../lib/apiEnvelope';
+import { apiGet, apiPost, apiPut } from "../../../lib/apiEnvelope";
 
 export type SriConfigurationDto = {
   companyId: string;
@@ -54,23 +54,23 @@ export type SriCertificateUploadResultDto = {
  * `electronicInvoicingStatusRegistry.ts`). Los campos restantes son detalle/diagnóstico.
  */
 export type ElectronicInvoicingStatus =
-  | 'Ready'
-  | 'Testing'
-  | 'Incomplete'
-  | 'NotConfigured'
-  | 'CertificateExpired'
-  | 'CertificateExpiring'
-  | 'SriUnavailable'
-  | 'Disabled'
-  | 'Error';
+  | "Ready"
+  | "Testing"
+  | "Incomplete"
+  | "NotConfigured"
+  | "CertificateExpired"
+  | "CertificateExpiring"
+  | "SriUnavailable"
+  | "Disabled"
+  | "Error";
 
-export type SriAvailability = 'Unknown' | 'Available' | 'Unavailable';
+export type SriAvailability = "Unknown" | "Available" | "Unavailable";
 
 /** Estado liviano para UI transversal (banner de ambiente) — sin datos sensibles. */
 export type ElectronicInvoicingStatusDto = {
   status: ElectronicInvoicingStatus;
   configured: boolean;
-  environment: 'Production' | 'Test' | null;
+  environment: "Production" | "Test" | null;
   environmentName: string | null;
   emissionType: string | null;
   certificateInstalled: boolean;
@@ -83,23 +83,30 @@ export type ElectronicInvoicingStatusDto = {
 
 export const electronicInvoicingService = {
   getSriConfiguration: () =>
-    apiGet<SriConfigurationDto | null>('/api/v1/electronic-invoicing/sri-configuration'),
+    apiGet<SriConfigurationDto | null>(
+      "/api/v1/electronic-invoicing/sri-configuration",
+    ),
 
   upsertSriConfiguration: (body: UpsertSriConfigurationRequest) =>
-    apiPut<SriConfigurationDto>('/api/v1/electronic-invoicing/sri-configuration', body),
+    apiPut<SriConfigurationDto>(
+      "/api/v1/electronic-invoicing/sri-configuration",
+      body,
+    ),
 
   /** Solo diagnostica (certificado, contraseña, vigencia, conectividad SRI) — nunca guarda cambios. */
   validateSriConfiguration: () =>
-    apiGet<SriConfigurationValidationDto>('/api/v1/electronic-invoicing/sri-configuration/validate'),
+    apiGet<SriConfigurationValidationDto>(
+      "/api/v1/electronic-invoicing/sri-configuration/validate",
+    ),
 
   uploadCertificate: (file: File, onProgress?: (percent: number) => void) => {
     const formData = new FormData();
-    formData.append('file', file);
+    formData.append("file", file);
     return apiPost<SriCertificateUploadResultDto>(
-      '/api/v1/electronic-invoicing/sri-configuration/certificate',
+      "/api/v1/electronic-invoicing/sri-configuration/certificate",
       formData,
       {
-        headers: { 'Content-Type': 'multipart/form-data' },
+        headers: { "Content-Type": "multipart/form-data" },
         onUploadProgress: (event) => {
           if (!onProgress || !event.total) return;
           onProgress(Math.round((event.loaded / event.total) * 100));
@@ -110,9 +117,12 @@ export const electronicInvoicingService = {
 
   /** Prueba una contraseña contra el certificado ya subido sin persistirla. */
   inspectCertificate: (password: string) =>
-    apiPost<SriCertificateInfoDto>('/api/v1/electronic-invoicing/sri-configuration/certificate/inspect', { password }),
+    apiPost<SriCertificateInfoDto>(
+      "/api/v1/electronic-invoicing/sri-configuration/certificate/inspect",
+      { password },
+    ),
 
   /** Estado liviano para UI transversal (banner de ambiente) — cualquier usuario autenticado. */
   getStatus: () =>
-    apiGet<ElectronicInvoicingStatusDto>('/api/v1/electronic-invoicing/status'),
+    apiGet<ElectronicInvoicingStatusDto>("/api/v1/electronic-invoicing/status"),
 };

@@ -1,4 +1,4 @@
-import { apiGet } from '../../../lib/apiEnvelope';
+import { apiGet } from "../../../lib/apiEnvelope";
 
 export type CurrentStockDto = {
   id: string;
@@ -51,20 +51,25 @@ export type ItemWarehouseAvailabilityDto = {
   canSell: boolean;
 };
 
-const BASE = '/api/v1/inventory/stock';
+const BASE = "/api/v1/inventory/stock";
 
 export const stockService = {
   getStock: (itemId?: string, warehouseId?: string) => {
     const params = new URLSearchParams();
-    if (itemId) params.set('itemId', itemId);
-    if (warehouseId) params.set('warehouseId', warehouseId);
+    if (itemId) params.set("itemId", itemId);
+    if (warehouseId) params.set("warehouseId", warehouseId);
     return apiGet<CurrentStockDto[]>(`${BASE}?${params}`);
   },
 
-  getMovements: (itemId: string, warehouseId: string, from?: string, to?: string) => {
+  getMovements: (
+    itemId: string,
+    warehouseId: string,
+    from?: string,
+    to?: string,
+  ) => {
     const params = new URLSearchParams({ itemId, warehouseId });
-    if (from) params.set('from', from);
-    if (to) params.set('to', to);
+    if (from) params.set("from", from);
+    if (to) params.set("to", to);
     return apiGet<StockMovementDto[]>(`${BASE}/movements?${params}`);
   },
 
@@ -72,5 +77,7 @@ export const stockService = {
     apiGet<AggregatedStockDto>(`${BASE}/aggregated/${itemId}`),
 
   getWarehouseAvailability: (itemId: string) =>
-    apiGet<ItemWarehouseAvailabilityDto[]>(`${BASE}/items/${itemId}/warehouse-availability`),
+    apiGet<ItemWarehouseAvailabilityDto[]>(
+      `${BASE}/items/${itemId}/warehouse-availability`,
+    ),
 };

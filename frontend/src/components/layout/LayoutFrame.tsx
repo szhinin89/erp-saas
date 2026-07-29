@@ -1,7 +1,7 @@
-import type { ReactNode } from 'react';
-import './LayoutFrame.css';
+import type { ReactNode } from "react";
+import "./LayoutFrame.css";
 
-export type LayoutFrameVariant = 'tenant' | 'platform';
+export type LayoutFrameVariant = "tenant" | "platform";
 
 export type LayoutFrameProps = {
   children: ReactNode;
@@ -24,20 +24,22 @@ export function LayoutFrame({
   children,
   banner,
   topUtilities,
-  variant = 'tenant',
+  variant = "tenant",
   className,
 }: LayoutFrameProps) {
   const rootClass = [
-    'shell-content-frame',
+    "shell-content-frame",
     `shell-content-frame--${variant}`,
     className,
   ]
     .filter(Boolean)
-    .join(' ');
+    .join(" ");
 
   return (
     <main className={rootClass}>
-      {banner ? <div className="shell-content-frame__banner">{banner}</div> : null}
+      {banner ? (
+        <div className="shell-content-frame__banner">{banner}</div>
+      ) : null}
       {topUtilities ? (
         <div className="shell-content-frame__utilities">{topUtilities}</div>
       ) : null}

@@ -1,11 +1,11 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { useAuthStore } from '../store/authStore';
-import { useActiveBranchStore } from '../store/activeBranchStore';
-import { sessionService } from '../modules/session/api/sessionService';
-import { formatApiRequestError } from '../modules/lib/apiError';
-import type { SessionBranchDto } from '../types/session';
+import { useCallback, useEffect, useRef, useState } from "react";
+import { useAuthStore } from "../store/authStore";
+import { useActiveBranchStore } from "../store/activeBranchStore";
+import { sessionService } from "../modules/session/api/sessionService";
+import { formatApiRequestError } from "../modules/lib/apiError";
+import type { SessionBranchDto } from "../types/session";
 
-type BranchGateStatus = 'ready' | 'checking' | 'selecting';
+type BranchGateStatus = "ready" | "checking" | "selecting";
 
 /**
  * Orquesta la selección de sucursal post-login: si el bootstrap (GET /session/context) ya
@@ -21,25 +21,30 @@ export function useBranchGate() {
   const branch = useActiveBranchStore((s) => s.branch);
   const setBranch = useActiveBranchStore((s) => s.setBranch);
 
-  const [status, setStatus] = useState<BranchGateStatus>('ready');
+  const [status, setStatus] = useState<BranchGateStatus>("ready");
   const [options, setOptions] = useState<SessionBranchDto[]>([]);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
   const [switching, setSwitching] = useState(false);
   const checkedForCompanyRef = useRef<string | null>(null);
 
   const loadOptions = useCallback(async () => {
-    setStatus('checking');
-    setError('');
+    setStatus("checking");
+    setError("");
     try {
       const available = await sessionService.getAvailableBranches();
 
-      if (available.loginMode === 'DirectToDefault' && available.defaultBranchId) {
-        const match = available.branches.find((b) => b.id === available.defaultBranchId);
+      if (
+        available.loginMode === "DirectToDefault" &&
+        available.defaultBranchId
+      ) {
+        const match = available.branches.find(
+          (b) => b.id === available.defaultBranchId,
+        );
         if (match) {
           try {
             const switched = await sessionService.switchBranch(match.id);
             setBranch(switched);
-            setStatus('ready');
+            setStatus("ready");
             return;
           } catch {
             // El default ya no está autorizado (revocado después de configurar la preferencia)
@@ -49,18 +54,22 @@ export function useBranchGate() {
       }
 
       setOptions(available.branches);
-      setStatus('selecting');
+      setStatus("selecting");
     } catch (err) {
-      setError(formatApiRequestError(err, { generic: 'No se pudieron cargar las sucursales disponibles.' }));
+      setError(
+        formatApiRequestError(err, {
+          generic: "No se pudieron cargar las sucursales disponibles.",
+        }),
+      );
       setOptions([]);
-      setStatus('selecting');
+      setStatus("selecting");
     }
   }, [setBranch]);
 
   useEffect(() => {
     if (!companyId || branch) {
       checkedForCompanyRef.current = null;
-      setStatus('ready');
+      setStatus("ready");
       return;
     }
     if (checkedForCompanyRef.current === companyId) return;
@@ -68,25 +77,32 @@ export function useBranchGate() {
     void loadOptions();
   }, [companyId, branch, loadOptions]);
 
-  const selectBranch = useCallback(async (branchId: string) => {
-    setSwitching(true);
-    setError('');
-    try {
-      const switched = await sessionService.switchBranch(branchId);
-      setBranch(switched);
-      setStatus('ready');
-    } catch (err) {
-      setError(formatApiRequestError(err, { generic: 'No se pudo cambiar de sucursal.' }));
-    } finally {
-      setSwitching(false);
-    }
-  }, [setBranch]);
+  const selectBranch = useCallback(
+    async (branchId: string) => {
+      setSwitching(true);
+      setError("");
+      try {
+        const switched = await sessionService.switchBranch(branchId);
+        setBranch(switched);
+        setStatus("ready");
+      } catch (err) {
+        setError(
+          formatApiRequestError(err, {
+            generic: "No se pudo cambiar de sucursal.",
+          }),
+        );
+      } finally {
+        setSwitching(false);
+      }
+    },
+    [setBranch],
+  );
 
-  const gateOpen = !!companyId && status !== 'ready';
+  const gateOpen = !!companyId && status !== "ready";
 
   return {
     gateOpen,
-    loading: status === 'checking',
+    loading: status === "checking",
     options,
     error,
     switching,

@@ -48,7 +48,7 @@ public interface ISriCatalogLookupRepository
         CancellationToken cancellationToken = default
     );
 
-    Task<IReadOnlyList<PersonTypeCatalog>> GetPersonTypesAsync(
+    Task<IReadOnlyList<LegalEntityTypeCatalog>> GetLegalEntityTypesAsync(
         CancellationToken cancellationToken = default
     );
 

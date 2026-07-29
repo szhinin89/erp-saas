@@ -1,28 +1,35 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { cajaService } from '../api/cajaService';
-import type { CashSessionDto, CashSessionListItemDto, CashRegisterDto } from '../api/cajaService';
+import { useState, useEffect, useCallback, useMemo } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { cajaService } from "../api/cajaService";
+import type {
+  CashSessionDto,
+  CashSessionListItemDto,
+  CashRegisterDto,
+} from "../api/cajaService";
 import {
-  openCashSessionSchema, emptyOpenForm,
-  recordMovementSchema, emptyMovementForm,
-  closeCashSessionSchema, defaultClosingCounts,
+  openCashSessionSchema,
+  emptyOpenForm,
+  recordMovementSchema,
+  emptyMovementForm,
+  closeCashSessionSchema,
+  defaultClosingCounts,
   type OpenCashSessionFormValues,
   type RecordMovementFormValues,
   type CloseCashSessionFormValues,
-} from '../schemas/cajaSchema';
-import { useActiveBranchStore } from '../../../store/activeBranchStore';
-import { applyServerErrors } from '../../lib/validationErrors';
+} from "../schemas/cajaSchema";
+import { useActiveBranchStore } from "../../../store/activeBranchStore";
+import { applyServerErrors } from "../../lib/validationErrors";
 
-type Tab = 'listado' | 'abrir' | 'detalle' | 'cerrar';
+type Tab = "listado" | "abrir" | "detalle" | "cerrar";
 
 export function useCajaPage() {
   // ── Page state ─────────────────────────────────────────────────────
-  const [tab, setTab] = useState<Tab>('listado');
+  const [tab, setTab] = useState<Tab>("listado");
   const [listItems, setListItems] = useState<CashSessionListItemDto[]>([]);
   const [listLoading, setListLoading] = useState(false);
-  const [statusFilter, setStatusFilter] = useState('');
-  const [saveError, setSaveError] = useState('');
+  const [statusFilter, setStatusFilter] = useState("");
+  const [saveError, setSaveError] = useState("");
   const [saving, setSaving] = useState(false);
 
   // ── Current session ────────────────────────────────────────────────
@@ -31,38 +38,43 @@ export function useCajaPage() {
 
   // ── Reference data ─────────────────────────────────────────────────
   const [cashRegisters, setCashRegisters] = useState<CashRegisterDto[]>([]);
-  const branchName = useActiveBranchStore(s => s.branch)?.name ?? null;
+  const branchName = useActiveBranchStore((s) => s.branch)?.name ?? null;
 
   // ── Forms ──────────────────────────────────────────────────────────
   const openForm = useForm<OpenCashSessionFormValues>({
     resolver: zodResolver(openCashSessionSchema),
     defaultValues: emptyOpenForm(),
-    mode: 'onBlur',
+    mode: "onBlur",
   });
 
   const movementForm = useForm<RecordMovementFormValues>({
     resolver: zodResolver(recordMovementSchema),
     defaultValues: emptyMovementForm(),
-    mode: 'onBlur',
+    mode: "onBlur",
   });
 
   const closeForm = useForm<CloseCashSessionFormValues>({
     resolver: zodResolver(closeCashSessionSchema),
-    defaultValues: { closingCounts: defaultClosingCounts(), closeNotes: '' },
-    mode: 'onBlur',
+    defaultValues: { closingCounts: defaultClosingCounts(), closeNotes: "" },
+    mode: "onBlur",
   });
 
   // ── Caja seleccionada en el formulario de apertura — misma fuente de datos
   // que llena el <select>, sin requests adicionales (Sucursal/Establecimiento/Punto de emisión).
-  const selectedRegisterId = openForm.watch('cashRegisterId');
-  const selectedRegister = cashRegisters.find(r => r.id === selectedRegisterId) ?? null;
+  const selectedRegisterId = openForm.watch("cashRegisterId");
+  const selectedRegister =
+    cashRegisters.find((r) => r.id === selectedRegisterId) ?? null;
 
   // ── Init ───────────────────────────────────────────────────────────
   useEffect(() => {
-    cajaService.getCashRegisters(true).then(registers => {
-      setCashRegisters(registers);
-      if (registers.length > 0) openForm.setValue('cashRegisterId', registers[0].id);
-    }).catch(() => {});
+    cajaService
+      .getCashRegisters(true)
+      .then((registers) => {
+        setCashRegisters(registers);
+        if (registers.length > 0)
+          openForm.setValue("cashRegisterId", registers[0].id);
+      })
+      .catch(() => {});
     fetchMySession();
     fetchList();
   }, []);
@@ -73,18 +85,24 @@ export function useCajaPage() {
     try {
       const r = await cajaService.list(statusFilter || undefined);
       setListItems(r.items);
-    } catch { /* silent */ }
+    } catch {
+      /* silent */
+    }
     setListLoading(false);
   }, [statusFilter]);
 
-  useEffect(() => { fetchList(); }, [statusFilter]);
+  useEffect(() => {
+    fetchList();
+  }, [statusFilter]);
 
   // ── Fetch my session ───────────────────────────────────────────────
   const fetchMySession = useCallback(async () => {
     try {
       const s = await cajaService.getMy();
       setMySession(s);
-    } catch { setMySession(null); }
+    } catch {
+      setMySession(null);
+    }
   }, []);
 
   // ── Load detail ────────────────────────────────────────────────────
@@ -92,13 +110,15 @@ export function useCajaPage() {
     try {
       const s = await cajaService.getById(id);
       setViewing(s);
-      setTab('detalle');
-    } catch { setSaveError('No se pudo cargar la sesión.'); }
+      setTab("detalle");
+    } catch {
+      setSaveError("No se pudo cargar la sesión.");
+    }
   }, []);
 
   // ── Open session ───────────────────────────────────────────────────
   const handleOpen = openForm.handleSubmit(async (data) => {
-    setSaveError('');
+    setSaveError("");
     setSaving(true);
     try {
       const session = await cajaService.open({
@@ -109,11 +129,13 @@ export function useCajaPage() {
       setMySession(session);
       setViewing(session);
       openForm.reset(emptyOpenForm());
-      setTab('detalle');
+      setTab("detalle");
       fetchList();
     } catch (err: unknown) {
-      const applied = applyServerErrors(err, openForm.setError, (msg) => setSaveError(msg));
-      if (!applied) setSaveError('Error al abrir la caja.');
+      const applied = applyServerErrors(err, openForm.setError, (msg) =>
+        setSaveError(msg),
+      );
+      if (!applied) setSaveError("Error al abrir la caja.");
     }
     setSaving(false);
   });
@@ -121,7 +143,7 @@ export function useCajaPage() {
   // ── Record movement ────────────────────────────────────────────────
   const handleRecordMovement = movementForm.handleSubmit(async (data) => {
     if (!viewing) return;
-    setSaveError('');
+    setSaveError("");
     setSaving(true);
     try {
       await cajaService.recordMovement(viewing.id, {
@@ -133,31 +155,37 @@ export function useCajaPage() {
       await loadDetail(viewing.id);
       fetchMySession();
     } catch (err: unknown) {
-      const applied = applyServerErrors(err, movementForm.setError, (msg) => setSaveError(msg));
-      if (!applied) setSaveError('Error al registrar el movimiento.');
+      const applied = applyServerErrors(err, movementForm.setError, (msg) =>
+        setSaveError(msg),
+      );
+      if (!applied) setSaveError("Error al registrar el movimiento.");
     }
     setSaving(false);
   });
 
   // ── Close session ──────────────────────────────────────────────────
   const startClose = useCallback(() => {
-    closeForm.reset({ closingCounts: defaultClosingCounts(), closeNotes: '' });
-    setTab('cerrar');
+    closeForm.reset({ closingCounts: defaultClosingCounts(), closeNotes: "" });
+    setTab("cerrar");
   }, []);
 
-  const closingCountsWatch = closeForm.watch('closingCounts');
+  const closingCountsWatch = closeForm.watch("closingCounts");
   const countedTotal = useMemo(
-    () => (closingCountsWatch ?? []).reduce((sum, c) => sum + (c.denominationValue * c.quantity), 0),
+    () =>
+      (closingCountsWatch ?? []).reduce(
+        (sum, c) => sum + c.denominationValue * c.quantity,
+        0,
+      ),
     [closingCountsWatch],
   );
 
   const handleClose = closeForm.handleSubmit(async (data) => {
     if (!viewing) return;
-    setSaveError('');
+    setSaveError("");
     setSaving(true);
     try {
       const session = await cajaService.close(viewing.id, {
-        closingCounts: data.closingCounts.map(c => ({
+        closingCounts: data.closingCounts.map((c) => ({
           denominationValue: c.denominationValue,
           denominationLabel: c.denominationLabel,
           quantity: c.quantity,
@@ -166,31 +194,49 @@ export function useCajaPage() {
       });
       setViewing(session);
       setMySession(null);
-      setTab('detalle');
+      setTab("detalle");
       fetchList();
     } catch (err: unknown) {
-      const applied = applyServerErrors(err, closeForm.setError, (msg) => setSaveError(msg));
-      if (!applied) setSaveError('Error al cerrar la caja.');
+      const applied = applyServerErrors(err, closeForm.setError, (msg) =>
+        setSaveError(msg),
+      );
+      if (!applied) setSaveError("Error al cerrar la caja.");
     }
     setSaving(false);
   });
 
   // ── Movement type labels ───────────────────────────────────────────
   const movementTypes = [
-    { value: 'ManualIncome', label: 'Ingreso manual' },
-    { value: 'ManualExpense', label: 'Egreso manual' },
-    { value: 'Withdrawal', label: 'Retiro' },
+    { value: "ManualIncome", label: "Ingreso manual" },
+    { value: "ManualExpense", label: "Egreso manual" },
+    { value: "Withdrawal", label: "Retiro" },
   ];
 
   return {
-    tab, setTab,
-    listItems, listLoading, statusFilter, setStatusFilter,
-    saveError, setSaveError, saving,
-    mySession, viewing,
-    cashRegisters, branchName, selectedRegister,
-    openForm, handleOpen,
-    movementForm, handleRecordMovement, movementTypes,
-    closeForm, handleClose, startClose, countedTotal,
-    loadDetail, fetchList,
+    tab,
+    setTab,
+    listItems,
+    listLoading,
+    statusFilter,
+    setStatusFilter,
+    saveError,
+    setSaveError,
+    saving,
+    mySession,
+    viewing,
+    cashRegisters,
+    branchName,
+    selectedRegister,
+    openForm,
+    handleOpen,
+    movementForm,
+    handleRecordMovement,
+    movementTypes,
+    closeForm,
+    handleClose,
+    startClose,
+    countedTotal,
+    loadDetail,
+    fetchList,
   };
 }

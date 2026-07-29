@@ -1,4 +1,4 @@
-import { useAsync } from './useAsync';
+import { useAsync } from "./useAsync";
 
 /**
  * Alias explícito de `useAsync` — refetch automático al cambiar `companySessionVersion`.

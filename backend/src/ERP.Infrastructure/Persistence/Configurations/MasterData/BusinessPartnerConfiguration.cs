@@ -10,7 +10,7 @@ namespace ERP.Infrastructure.Persistence.Configurations.MasterData;
 ///
 /// CAMBIOS respecto al modelo anterior:
 ///   - Eliminado: email, phone, legal_representative_name, navigations CustomerProfile/SupplierProfile
-///   - Agregado: person_type, PersonName OwnsOne (legal_name + trade_name), CountryCode char(2)
+///   - Agregado: legal_entity_type_code, PersonName OwnsOne (legal_name + trade_name), CountryCode char(2)
 ///   - AlternateKey(Id, tenantId): permite FK compuesto desde roles/locations/contacts.
 ///     Garantiza cross-tenant safety a nivel BD. Ver ADR-BP-13 (Fase 4).
 ///
@@ -71,10 +71,15 @@ public sealed class BusinessPartnerConfiguration : IEntityTypeConfiguration<Busi
         );
 
         builder
-            .Property(x => x.PersonType)
-            .HasColumnName("person_type")
-            .HasConversion<short>()
+            .Property(x => x.LegalEntityTypeCode)
+            .HasColumnName("legal_entity_type_code")
             .IsRequired();
+        builder
+            .HasOne<LegalEntityTypeCatalog>()
+            .WithMany()
+            .HasForeignKey(x => x.LegalEntityTypeCode)
+            .HasPrincipalKey(x => x.Code)
+            .OnDelete(DeleteBehavior.Restrict);
 
         builder
             .Property(x => x.CountryCode)

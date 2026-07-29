@@ -1,5 +1,5 @@
-import { type ReactNode } from 'react';
-import { useFeatureFlag } from './useFeatureFlag';
+import { type ReactNode } from "react";
+import { useFeatureFlag } from "./useFeatureFlag";
 
 type FeatureGateProps = {
   feature: string;
@@ -15,4 +15,3 @@ export function FeatureGate(props: FeatureGateProps) {
   if (!enabled) return <>{fallback}</>;
   return <>{children}</>;
 }
-

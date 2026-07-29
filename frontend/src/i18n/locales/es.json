@@ -1090,10 +1090,7 @@
   "profiles.perms.error.load": "No se pudo cargar permisos del perfil.",
   "profiles.perms.error.save": "No se pudo guardar permisos del perfil.",
   "profiles.perms.access.profiles.view": "Perfiles de acceso",
-  
-  
-  
-  
+
   "profiles.perms.masterdata.businesspartners.view": "Ver Clientes / Proveedores",
   "profiles.perms.masterdata.businesspartners.create": "Crear Clientes / Proveedores",
   "profiles.perms.masterdata.businesspartners.update": "Editar Clientes / Proveedores",

@@ -1,14 +1,23 @@
-import type { MainMenuGroup } from '../../../useAppLayoutNavigation';
-import type { NavItem, TranslateFn } from '../../../../nav/navConfig';
-import { LauncherCategoryGroup } from './LauncherCategoryGroup';
-import { LauncherMenuItem } from './LauncherMenuItem';
-import { useLauncherExpansion } from './useLauncherExpansion';
+import type { MainMenuGroup } from "../../../useAppLayoutNavigation";
+import type { NavItem, TranslateFn } from "../../../../nav/navConfig";
+import { LauncherCategoryGroup } from "./LauncherCategoryGroup";
+import { LauncherMenuItem } from "./LauncherMenuItem";
+import { useLauncherExpansion } from "./useLauncherExpansion";
 
 function ModuleIcon({ icon }: { icon: string }) {
   const isMaterialSymbol = /^[a-z][a-z0-9_]*$/.test(icon);
-  return isMaterialSymbol
-    ? <span className="material-symbols-outlined zh-launcher__moduleIcon" aria-hidden="true">{icon}</span>
-    : <span className="zh-launcher__moduleIcon" aria-hidden="true">{icon}</span>;
+  return isMaterialSymbol ? (
+    <span
+      className="material-symbols-outlined zh-launcher__moduleIcon"
+      aria-hidden="true"
+    >
+      {icon}
+    </span>
+  ) : (
+    <span className="zh-launcher__moduleIcon" aria-hidden="true">
+      {icon}
+    </span>
+  );
 }
 
 type LauncherModuleGroupProps = {
@@ -26,11 +35,22 @@ type LauncherModuleGroupProps = {
  * negrita, separador). Si el módulo tiene un solo ítem sin sub-categorías (p. ej.
  * "Inicio"), se renderiza como enlace directo sin acordeón.
  */
-export function LauncherModuleGroup({ group, currentPath, onNavigate, isFavorite, toggleFavorite, t, forceExpanded }: LauncherModuleGroupProps) {
+export function LauncherModuleGroup({
+  group,
+  currentPath,
+  onNavigate,
+  isFavorite,
+  toggleFavorite,
+  t,
+  forceExpanded,
+}: LauncherModuleGroupProps) {
   const storageKey = `module:${group.id}`;
-  const { isExpanded, toggle } = useLauncherExpansion(group.isActive ? [storageKey] : []);
+  const { isExpanded, toggle } = useLauncherExpansion(
+    group.isActive ? [storageKey] : [],
+  );
 
-  const isSingleLink = group.items.length === 1 && !group.items[0].children?.length;
+  const isSingleLink =
+    group.items.length === 1 && !group.items[0].children?.length;
 
   if (isSingleLink) {
     return (
@@ -55,14 +75,19 @@ export function LauncherModuleGroup({ group, currentPath, onNavigate, isFavorite
     <div className="zh-launcher__module">
       <button
         type="button"
-        className={`zh-launcher__moduleToggle${group.isActive ? ' is-active' : ''}`}
+        className={`zh-launcher__moduleToggle${group.isActive ? " is-active" : ""}`}
         aria-expanded={open}
         aria-controls={contentId}
         onClick={() => toggle(storageKey)}
       >
         {group.icon ? <ModuleIcon icon={group.icon} /> : null}
         <span className="zh-launcher__moduleLabel">{group.label}</span>
-        <span className="material-symbols-outlined zh-launcher__moduleCaret" aria-hidden="true">chevron_right</span>
+        <span
+          className="material-symbols-outlined zh-launcher__moduleCaret"
+          aria-hidden="true"
+        >
+          chevron_right
+        </span>
       </button>
       {open ? (
         <div id={contentId} className="zh-launcher__moduleBody">

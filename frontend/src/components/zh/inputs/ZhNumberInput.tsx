@@ -1,9 +1,9 @@
-import React from 'react';
-import { allowsIntegerKey } from '../../../lib/validators/numericValidators';
-import { sanitizeInteger } from '../../../lib/sanitizers';
-import { setProgrammaticInputValue } from '../../../lib/inputUtils';
+import React from "react";
+import { allowsIntegerKey } from "../../../lib/validators/numericValidators";
+import { sanitizeInteger } from "../../../lib/sanitizers";
+import { setProgrammaticInputValue } from "../../../lib/inputUtils";
 
-type Props = Omit<React.InputHTMLAttributes<HTMLInputElement>, 'type'> & {
+type Props = Omit<React.InputHTMLAttributes<HTMLInputElement>, "type"> & {
   positiveOnly?: boolean;
 };
 
@@ -27,9 +27,9 @@ export const ZhNumberInput = React.forwardRef<HTMLInputElement, Props>(
 
     const handlePaste = (e: React.ClipboardEvent<HTMLInputElement>) => {
       e.preventDefault();
-      const raw = e.clipboardData.getData('text');
+      const raw = e.clipboardData.getData("text");
       const clean = sanitizeInteger(raw, positiveOnly);
-      if (clean !== '') setProgrammaticInputValue(e.currentTarget, clean);
+      if (clean !== "") setProgrammaticInputValue(e.currentTarget, clean);
       onPaste?.(e);
     };
 
@@ -39,7 +39,9 @@ export const ZhNumberInput = React.forwardRef<HTMLInputElement, Props>(
         ref={ref}
         type="text"
         inputMode="numeric"
-        className={className ? `zh-numeric-input ${className}` : 'zh-numeric-input'}
+        className={
+          className ? `zh-numeric-input ${className}` : "zh-numeric-input"
+        }
         onKeyDown={handleKeyDown}
         onPaste={handlePaste}
       />
@@ -47,4 +49,4 @@ export const ZhNumberInput = React.forwardRef<HTMLInputElement, Props>(
   },
 );
 
-ZhNumberInput.displayName = 'ZhNumberInput';
+ZhNumberInput.displayName = "ZhNumberInput";

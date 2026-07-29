@@ -1,9 +1,17 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useReducer, useRef } from 'react';
-import { useAuthStore } from '../../store/authStore';
-import { isAdminRole } from '../../access/permissionUi';
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useReducer,
+  useRef,
+} from "react";
+import { useAuthStore } from "../../store/authStore";
+import { isAdminRole } from "../../access/permissionUi";
 
-import { getAccessToken } from '../../lib/session/authTokenMemory';
-import { configService } from './configService';
+import { getAccessToken } from "../../lib/session/authTokenMemory";
+import { configService } from "./configService";
 import type {
   ConfigDeleteInput,
   ConfigEntry,
@@ -11,7 +19,7 @@ import type {
   ConfigResolvedValue,
   ConfigScope,
   ConfigUpsertInput,
-} from './types';
+} from "./types";
 
 type ConfigState = {
   tenantId: string | null;
@@ -24,16 +32,22 @@ type ConfigState = {
 };
 
 type ConfigAction =
-  | { type: 'load_start'; tenantId: string }
-  | { type: 'load_success'; tenantId: string; entries: ConfigEntry[] }
-  | { type: 'load_error'; tenantId: string; error: string }
-  | { type: 'upsert_entry'; entry: ConfigEntry }
-  | { type: 'delete_entry'; scope: ConfigScope; key: string; module?: string | null; feature?: string | null }
-  | { type: 'clear' };
+  | { type: "load_start"; tenantId: string }
+  | { type: "load_success"; tenantId: string; entries: ConfigEntry[] }
+  | { type: "load_error"; tenantId: string; error: string }
+  | { type: "upsert_entry"; entry: ConfigEntry }
+  | {
+      type: "delete_entry";
+      scope: ConfigScope;
+      key: string;
+      module?: string | null;
+      feature?: string | null;
+    }
+  | { type: "clear" };
 
 const initialState: ConfigState = {
   tenantId: null,
-  status: 'idle',
+  status: "idle",
   error: null,
   entries: [],
   globalMap: {},
@@ -42,7 +56,7 @@ const initialState: ConfigState = {
 };
 
 function normalizeKey(value: string | null | undefined): string {
-  return (value ?? '').trim().toLowerCase();
+  return (value ?? "").trim().toLowerCase();
 }
 
 function moduleKey(module: string | null | undefined, key: string): string {
@@ -65,15 +79,17 @@ function indexEntries(entries: ConfigEntry[]) {
       module: entry.module ? normalizeKey(entry.module) : null,
       feature: entry.feature ? normalizeKey(entry.feature) : null,
     };
-    if (normalizedEntry.scope === 'global') {
+    if (normalizedEntry.scope === "global") {
       globalMap[normalizedEntry.key] = normalizedEntry;
       continue;
     }
-    if (normalizedEntry.scope === 'module') {
-      moduleMap[moduleKey(normalizedEntry.module, normalizedEntry.key)] = normalizedEntry;
+    if (normalizedEntry.scope === "module") {
+      moduleMap[moduleKey(normalizedEntry.module, normalizedEntry.key)] =
+        normalizedEntry;
       continue;
     }
-    featureMap[featureKey(normalizedEntry.feature, normalizedEntry.key)] = normalizedEntry;
+    featureMap[featureKey(normalizedEntry.feature, normalizedEntry.key)] =
+      normalizedEntry;
   }
 
   return { globalMap, moduleMap, featureMap };
@@ -81,27 +97,41 @@ function indexEntries(entries: ConfigEntry[]) {
 
 function configReducer(state: ConfigState, action: ConfigAction): ConfigState {
   switch (action.type) {
-    case 'load_start':
-      return { ...state, tenantId: action.tenantId, status: 'loading', error: null };
-    case 'load_success': {
+    case "load_start":
+      return {
+        ...state,
+        tenantId: action.tenantId,
+        status: "loading",
+        error: null,
+      };
+    case "load_success": {
       const entries = action.entries;
       const indexed = indexEntries(entries);
       return {
         tenantId: action.tenantId,
-        status: 'ready',
+        status: "ready",
         error: null,
         entries,
         ...indexed,
       };
     }
-    case 'load_error':
-      return { ...state, tenantId: action.tenantId, status: 'error', error: action.error };
-    case 'upsert_entry': {
+    case "load_error":
+      return {
+        ...state,
+        tenantId: action.tenantId,
+        status: "error",
+        error: action.error,
+      };
+    case "upsert_entry": {
       const nextEntries = [...state.entries];
       const keyNorm = normalizeKey(action.entry.key);
       const scope = action.entry.scope;
-      const moduleNorm = action.entry.module ? normalizeKey(action.entry.module) : null;
-      const featureNorm = action.entry.feature ? normalizeKey(action.entry.feature) : null;
+      const moduleNorm = action.entry.module
+        ? normalizeKey(action.entry.module)
+        : null;
+      const featureNorm = action.entry.feature
+        ? normalizeKey(action.entry.feature)
+        : null;
       const idx = nextEntries.findIndex(
         (x) =>
           x.scope === scope &&
@@ -120,21 +150,26 @@ function configReducer(state: ConfigState, action: ConfigAction): ConfigState {
       const indexed = indexEntries(nextEntries);
       return { ...state, entries: nextEntries, ...indexed };
     }
-    case 'delete_entry': {
+    case "delete_entry": {
       const keyNorm = normalizeKey(action.key);
       const moduleNorm = normalizeKey(action.module);
       const featureNorm = normalizeKey(action.feature);
       const nextEntries = state.entries.filter((x) => {
         if (x.scope !== action.scope) return true;
         if (normalizeKey(x.key) !== keyNorm) return true;
-        if (action.scope === 'module' && normalizeKey(x.module) !== moduleNorm) return true;
-        if (action.scope === 'feature' && normalizeKey(x.feature) !== featureNorm) return true;
+        if (action.scope === "module" && normalizeKey(x.module) !== moduleNorm)
+          return true;
+        if (
+          action.scope === "feature" &&
+          normalizeKey(x.feature) !== featureNorm
+        )
+          return true;
         return false;
       });
       const indexed = indexEntries(nextEntries);
       return { ...state, entries: nextEntries, ...indexed };
     }
-    case 'clear':
+    case "clear":
       return initialState;
     default:
       return state;
@@ -143,16 +178,22 @@ function configReducer(state: ConfigState, action: ConfigAction): ConfigState {
 
 function parseByDataType(rawValue: string, dataType: string): unknown {
   const dt = normalizeKey(dataType);
-  if (dt === 'boolean' || dt === 'bool') {
-    if (normalizeKey(rawValue) === 'true') return true;
-    if (normalizeKey(rawValue) === 'false') return false;
+  if (dt === "boolean" || dt === "bool") {
+    if (normalizeKey(rawValue) === "true") return true;
+    if (normalizeKey(rawValue) === "false") return false;
     return rawValue;
   }
-  if (dt === 'number' || dt === 'int' || dt === 'long' || dt === 'decimal' || dt === 'double') {
+  if (
+    dt === "number" ||
+    dt === "int" ||
+    dt === "long" ||
+    dt === "decimal" ||
+    dt === "double"
+  ) {
     const n = Number(rawValue);
     return Number.isFinite(n) ? n : rawValue;
   }
-  if (dt === 'json') {
+  if (dt === "json") {
     try {
       return JSON.parse(rawValue);
     } catch {
@@ -168,8 +209,17 @@ type ConfigContextValue = {
   tenantId: string | null;
   entries: ConfigEntry[];
   refresh: () => Promise<void>;
-  getResolved: <T = unknown>(key: string, module?: string | null, feature?: string | null) => ConfigResolvedValue<T> | null;
-  getValue: <T = unknown>(key: string, module?: string | null, feature?: string | null, defaultValue?: T) => T;
+  getResolved: <T = unknown>(
+    key: string,
+    module?: string | null,
+    feature?: string | null,
+  ) => ConfigResolvedValue<T> | null;
+  getValue: <T = unknown>(
+    key: string,
+    module?: string | null,
+    feature?: string | null,
+    defaultValue?: T,
+  ) => T;
   upsertConfig: (input: ConfigUpsertInput) => Promise<ConfigEntry>;
   deleteConfig: (input: ConfigDeleteInput) => Promise<void>;
 };
@@ -183,17 +233,18 @@ export function ConfigProvider({ children }: { children: React.ReactNode }) {
   const [state, dispatch] = useReducer(configReducer, initialState);
   const inFlightRef = useRef<Promise<void> | null>(null);
 
-  const tenantId = (user?.tenantId ?? '').trim();
+  const tenantId = (user?.tenantId ?? "").trim();
   const canReadSessionConfig = isAdminRole(user?.role) && !!tenantId;
   const shouldLoad = canReadSessionConfig;
   /** Tras F5 el perfil hidrata antes que el access token (cookie refresh en SessionBootstrap). */
-  const sessionReady = hasHydrated && (!isAuthenticated || getAccessToken() !== null);
+  const sessionReady =
+    hasHydrated && (!isAuthenticated || getAccessToken() !== null);
 
   const loadTenantConfig = useCallback(async () => {
     if (!sessionReady) return;
 
     if (!shouldLoad) {
-      dispatch({ type: 'clear' });
+      dispatch({ type: "clear" });
       return;
     }
 
@@ -203,13 +254,16 @@ export function ConfigProvider({ children }: { children: React.ReactNode }) {
     }
 
     const task = (async () => {
-      dispatch({ type: 'load_start', tenantId });
+      dispatch({ type: "load_start", tenantId });
       try {
         const entries = await configService.loadTenantConfig(tenantId);
-        dispatch({ type: 'load_success', tenantId, entries });
+        dispatch({ type: "load_success", tenantId, entries });
       } catch (error) {
-        const message = error instanceof Error ? error.message : 'No se pudo cargar configuración del tenant.';
-        dispatch({ type: 'load_error', tenantId, error: message });
+        const message =
+          error instanceof Error
+            ? error.message
+            : "No se pudo cargar configuración del tenant.";
+        dispatch({ type: "load_error", tenantId, error: message });
       }
     })();
 
@@ -226,7 +280,11 @@ export function ConfigProvider({ children }: { children: React.ReactNode }) {
   }, [loadTenantConfig]);
 
   const getResolved = useCallback(
-    <T = unknown>(key: string, module?: string | null, feature?: string | null): ConfigResolvedValue<T> | null => {
+    <T = unknown,>(
+      key: string,
+      module?: string | null,
+      feature?: string | null,
+    ): ConfigResolvedValue<T> | null => {
       const normalizedKey = normalizeKey(key);
       if (!normalizedKey) return null;
 
@@ -235,8 +293,11 @@ export function ConfigProvider({ children }: { children: React.ReactNode }) {
         : undefined;
       if (featureEntry) {
         return {
-          value: parseByDataType(featureEntry.value, featureEntry.dataType) as T,
-          scope: 'feature',
+          value: parseByDataType(
+            featureEntry.value,
+            featureEntry.dataType,
+          ) as T,
+          scope: "feature",
           dataType: featureEntry.dataType,
         };
       }
@@ -247,7 +308,7 @@ export function ConfigProvider({ children }: { children: React.ReactNode }) {
       if (moduleEntry) {
         return {
           value: parseByDataType(moduleEntry.value, moduleEntry.dataType) as T,
-          scope: 'module',
+          scope: "module",
           dataType: moduleEntry.dataType,
         };
       }
@@ -256,7 +317,7 @@ export function ConfigProvider({ children }: { children: React.ReactNode }) {
       if (globalEntry) {
         return {
           value: parseByDataType(globalEntry.value, globalEntry.dataType) as T,
-          scope: 'global',
+          scope: "global",
           dataType: globalEntry.dataType,
         };
       }
@@ -267,7 +328,12 @@ export function ConfigProvider({ children }: { children: React.ReactNode }) {
   );
 
   const getValue = useCallback(
-    <T = unknown>(key: string, module?: string | null, feature?: string | null, defaultValue?: T): T => {
+    <T = unknown,>(
+      key: string,
+      module?: string | null,
+      feature?: string | null,
+      defaultValue?: T,
+    ): T => {
       const resolved = getResolved<T>(key, module, feature);
       if (!resolved) return defaultValue as T;
       return resolved.value;
@@ -277,9 +343,10 @@ export function ConfigProvider({ children }: { children: React.ReactNode }) {
 
   const upsertConfig = useCallback(
     async (input: ConfigUpsertInput) => {
-      if (!shouldLoad) throw new Error('No hay tenant activo para guardar configuración.');
+      if (!shouldLoad)
+        throw new Error("No hay tenant activo para guardar configuración.");
       const entry = await configService.upsertConfig(tenantId, input);
-      dispatch({ type: 'upsert_entry', entry });
+      dispatch({ type: "upsert_entry", entry });
       return entry;
     },
     [shouldLoad, tenantId],
@@ -287,10 +354,11 @@ export function ConfigProvider({ children }: { children: React.ReactNode }) {
 
   const deleteConfig = useCallback(
     async (input: ConfigDeleteInput) => {
-      if (!shouldLoad) throw new Error('No hay tenant activo para eliminar configuración.');
+      if (!shouldLoad)
+        throw new Error("No hay tenant activo para eliminar configuración.");
       await configService.deleteConfig(tenantId, input);
       dispatch({
-        type: 'delete_entry',
+        type: "delete_entry",
         scope: input.scope,
         key: input.key,
         module: input.module,
@@ -312,15 +380,24 @@ export function ConfigProvider({ children }: { children: React.ReactNode }) {
       upsertConfig,
       deleteConfig,
     }),
-    [state, loadTenantConfig, getResolved, getValue, upsertConfig, deleteConfig],
+    [
+      state,
+      loadTenantConfig,
+      getResolved,
+      getValue,
+      upsertConfig,
+      deleteConfig,
+    ],
   );
 
-  return <ConfigContext.Provider value={value}>{children}</ConfigContext.Provider>;
+  return (
+    <ConfigContext.Provider value={value}>{children}</ConfigContext.Provider>
+  );
 }
 
 export function useConfig(): ConfigContextValue {
   const ctx = useContext(ConfigContext);
-  if (!ctx) throw new Error('useConfig debe usarse dentro de <ConfigProvider>.');
+  if (!ctx)
+    throw new Error("useConfig debe usarse dentro de <ConfigProvider>.");
   return ctx;
 }
-

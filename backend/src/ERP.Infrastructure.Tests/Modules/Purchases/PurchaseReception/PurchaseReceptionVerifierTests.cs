@@ -97,7 +97,7 @@ public sealed class PurchaseReceptionVerifierTests
             TenantId,
             TaxIdentification.SriRuc,
             "1791352688001",
-            PersonType.Legal,
+            2,
             "QUALA ECUADOR S A",
             UserId
         );
@@ -142,7 +142,7 @@ public sealed class PurchaseReceptionVerifierTests
             TenantId,
             TaxIdentification.SriRuc,
             "1791352688001",
-            PersonType.Legal,
+            2,
             "QUALA ECUADOR S A",
             UserId
         );

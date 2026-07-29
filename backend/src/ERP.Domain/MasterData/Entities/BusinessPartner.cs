@@ -1,5 +1,4 @@
 using ERP.Domain.Common;
-using ERP.Domain.MasterData.Enums;
 using ERP.Domain.MasterData.Events;
 using ERP.Domain.MasterData.ValueObjects;
 
@@ -10,7 +9,7 @@ namespace ERP.Domain.MasterData.Entities;
 ///
 /// SCOPE: ITenantScopedEntity — compartido entre todas las Companies del tenant.
 ///
-/// CONTIENE: TaxIdentification, PersonName, PersonType, CountryCode, IsActive.
+/// CONTIENE: TaxIdentification, PersonName, LegalEntityTypeCode, CountryCode, IsActive.
 /// NO CONTIENE: Email, Phone, LegalRepresentativeName (→ BusinessPartnerContact),
 ///              roles (→ BusinessPartnerRole AR independiente),
 ///              condiciones comerciales (→ CompanyBpTradingSettings).
@@ -23,7 +22,7 @@ public sealed class BusinessPartner : AuditableEntity, ITenantScopedEntity, ISys
 
     public TaxIdentification Identification { get; private set; } = null!;
     public PersonName Name { get; private set; } = null!;
-    public PersonType PersonType { get; private set; }
+    public int LegalEntityTypeCode { get; private set; }
     public string? CountryCode { get; private set; }
     public bool IsActive { get; private set; } = true;
 
@@ -40,7 +39,7 @@ public sealed class BusinessPartner : AuditableEntity, ITenantScopedEntity, ISys
         Guid tenantId,
         string identificationType,
         string identificationNumber,
-        PersonType personType,
+        int legalEntityTypeCode,
         string legalName,
         Guid createdBy,
         string? tradeName = null,
@@ -58,7 +57,7 @@ public sealed class BusinessPartner : AuditableEntity, ITenantScopedEntity, ISys
             TenantId = tenantId,
             Identification = TaxIdentification.Create(identificationType, identificationNumber),
             Name = PersonName.Create(legalName, tradeName),
-            PersonType = personType,
+            LegalEntityTypeCode = legalEntityTypeCode,
             CountryCode = NormalizeCountryCode(countryCode),
             IsActive = true,
         };
@@ -88,7 +87,7 @@ public sealed class BusinessPartner : AuditableEntity, ITenantScopedEntity, ISys
         Guid tenantId,
         string identificationType,
         string identificationNumber,
-        PersonType personType,
+        int legalEntityTypeCode,
         string legalName,
         Guid createdBy,
         string? tradeName = null,
@@ -99,7 +98,7 @@ public sealed class BusinessPartner : AuditableEntity, ITenantScopedEntity, ISys
             tenantId,
             identificationType,
             identificationNumber,
-            personType,
+            legalEntityTypeCode,
             legalName,
             createdBy,
             tradeName,
@@ -110,12 +109,12 @@ public sealed class BusinessPartner : AuditableEntity, ITenantScopedEntity, ISys
     }
 
     /// <summary>
-    /// Actualiza nombre legal/comercial, tipo de persona y país.
+    /// Actualiza nombre legal/comercial, naturaleza jurídica y país.
     /// No modifica la identificación fiscal — use UpdateIdentification() para eso.
     /// </summary>
     public void UpdateProfile(
         string legalName,
-        PersonType personType,
+        int legalEntityTypeCode,
         Guid updatedBy,
         string? tradeName = null,
         string? countryCode = null
@@ -127,7 +126,7 @@ public sealed class BusinessPartner : AuditableEntity, ITenantScopedEntity, ISys
             );
 
         Name = PersonName.Create(legalName, tradeName);
-        PersonType = personType;
+        LegalEntityTypeCode = legalEntityTypeCode;
         CountryCode = NormalizeCountryCode(countryCode);
         SetUpdated(updatedBy);
         RaiseDomainEvent(

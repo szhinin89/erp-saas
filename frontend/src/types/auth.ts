@@ -4,10 +4,11 @@
  */
 export const CompanyOperationalStatus = {
   PendingSetup: 1,
-  Operational:  2,
-  Suspended:    3,
+  Operational: 2,
+  Suspended: 3,
 } as const;
-export type CompanyOperationalStatus = typeof CompanyOperationalStatus[keyof typeof CompanyOperationalStatus];
+export type CompanyOperationalStatus =
+  (typeof CompanyOperationalStatus)[keyof typeof CompanyOperationalStatus];
 
 export interface LoginRequest {
   username: string;

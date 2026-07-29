@@ -1,27 +1,27 @@
-import { EmptyState, LoadingState } from '../../../components/PageShell';
-import { ZHBtn } from '../../../components/zh/ZHForm';
-import { Badge } from '../../../components/PageShell';
-import { useI18n } from '../../../i18n/i18n';
-import { formatDate } from '../../../lib/formatters/dateFormatters';
-import { EMISSION_TYPE_ELECTRONIC } from '../api/emissionPointsService';
-import type { EmissionPointsPageContext } from '../hooks/useEmissionPointsPage';
+import { EmptyState, LoadingState } from "../../../components/PageShell";
+import { ZHBtn } from "../../../components/zh/ZHForm";
+import { Badge } from "../../../components/PageShell";
+import { useI18n } from "../../../i18n/i18n";
+import { formatDate } from "../../../lib/formatters/dateFormatters";
+import { EMISSION_TYPE_ELECTRONIC } from "../api/emissionPointsService";
+import type { EmissionPointsPageContext } from "../hooks/useEmissionPointsPage";
 
 type Props = Pick<
   EmissionPointsPageContext,
-  | 'loading'
-  | 'items'
-  | 'totals'
-  | 'search'
-  | 'setSearch'
-  | 'filtered'
-  | 'canUpdate'
-  | 'canDelete'
-  | 'canCreate'
-  | 'selectedId'
-  | 'openEdit'
-  | 'toggleDisable'
-  | 'openCreate'
-  | 'fetchList'
+  | "loading"
+  | "items"
+  | "totals"
+  | "search"
+  | "setSearch"
+  | "filtered"
+  | "canUpdate"
+  | "canDelete"
+  | "canCreate"
+  | "selectedId"
+  | "openEdit"
+  | "toggleDisable"
+  | "openCreate"
+  | "fetchList"
 >;
 
 export function EmissionPointsListSection({
@@ -88,8 +88,12 @@ export function EmissionPointsListSection({
       <div className="pg-section">
         <div className="pg-section-header">
           <div className="pg-section-header-left">
-            <span className="material-symbols-outlined pg-section-icon">point_of_sale</span>
-            <span className="pg-section-label">Puntos de Emisión Registrados</span>
+            <span className="material-symbols-outlined pg-section-icon">
+              point_of_sale
+            </span>
+            <span className="pg-section-label">
+              Puntos de Emisión Registrados
+            </span>
           </div>
           <div className="br-actions-tight">
             <ZHBtn
@@ -100,7 +104,7 @@ export function EmissionPointsListSection({
               onClick={() => void fetchList()}
             >
               <span className="material-symbols-outlined">refresh</span>
-              {t('common.refresh')}
+              {t("common.refresh")}
             </ZHBtn>
             {canCreate && (
               <ZHBtn
@@ -130,15 +134,19 @@ export function EmissionPointsListSection({
             </div>
           </div>
           <div className="pg-table-controls-right">
-            <span>Mostrando {filtered.length} de {items.length}</span>
+            <span>
+              Mostrando {filtered.length} de {items.length}
+            </span>
           </div>
         </div>
 
         {loading ? (
-          <div className="pg-pad-40"><LoadingState /></div>
+          <div className="pg-pad-40">
+            <LoadingState />
+          </div>
         ) : items.length === 0 ? (
           <div className="pg-pad-40">
-            <EmptyState message={t('common.noData')} />
+            <EmptyState message={t("common.noData")} />
           </div>
         ) : filtered.length === 0 ? (
           <div className="pg-pad-40">
@@ -155,23 +163,36 @@ export function EmissionPointsListSection({
                   <th>Tipo de emisión</th>
                   <th>Estado</th>
                   <th>Fecha</th>
-                  {canUpdate || canDelete ? <th className="pg-th-right">Acciones</th> : null}
+                  {canUpdate || canDelete ? (
+                    <th className="pg-th-right">Acciones</th>
+                  ) : null}
                 </tr>
               </thead>
               <tbody>
                 {filtered.map((row) => (
                   <tr
                     key={row.id}
-                    className={[
-                      row.isActive ? undefined : 'pg-row-inactive',
-                      row.id === selectedId ? 'cfg-row--selected' : undefined,
-                    ].filter(Boolean).join(' ') || undefined}
+                    className={
+                      [
+                        row.isActive ? undefined : "pg-row-inactive",
+                        row.id === selectedId ? "cfg-row--selected" : undefined,
+                      ]
+                        .filter(Boolean)
+                        .join(" ") || undefined
+                    }
                   >
                     <td>
-                      <Badge label={row.code} variant="gray" size="md" className="mono" />
+                      <Badge
+                        label={row.code}
+                        variant="gray"
+                        size="md"
+                        className="mono"
+                      />
                     </td>
                     <td>
-                      <div className="br-list-name">{row.name ?? <span className="subtle">—</span>}</div>
+                      <div className="br-list-name">
+                        {row.name ?? <span className="subtle">—</span>}
+                      </div>
                       {row.isDefault && (
                         <div className="br-list-sub">
                           <Badge label="Por defecto" variant="blue" size="md" />
@@ -179,23 +200,45 @@ export function EmissionPointsListSection({
                       )}
                     </td>
                     <td>
-                      <div className="br-list-name">{row.establishmentName}</div>
-                      <div className="br-list-sub mono">{row.establishmentCode}</div>
+                      <div className="br-list-name">
+                        {row.establishmentName}
+                      </div>
+                      <div className="br-list-sub mono">
+                        {row.establishmentCode}
+                      </div>
                     </td>
                     <td>
                       <Badge
-                        variant={row.emissionType === EMISSION_TYPE_ELECTRONIC ? 'blue' : 'gray'}
+                        variant={
+                          row.emissionType === EMISSION_TYPE_ELECTRONIC
+                            ? "blue"
+                            : "gray"
+                        }
                         size="md"
-                        label={row.emissionType === EMISSION_TYPE_ELECTRONIC ? 'Electrónico' : 'Físico'}
+                        label={
+                          row.emissionType === EMISSION_TYPE_ELECTRONIC
+                            ? "Electrónico"
+                            : "Físico"
+                        }
                       />
                     </td>
                     <td>
-                      <span className={row.isActive ? 'zh-status zh-status--active' : 'zh-status zh-status--inactive'}>
-                        {row.isActive ? t('common.active') : t('common.inactive')}
+                      <span
+                        className={
+                          row.isActive
+                            ? "zh-status zh-status--active"
+                            : "zh-status zh-status--inactive"
+                        }
+                      >
+                        {row.isActive
+                          ? t("common.active")
+                          : t("common.inactive")}
                       </span>
                     </td>
                     <td>
-                      <span className="br-list-contact">{formatDate(row.createdAt)}</span>
+                      <span className="br-list-contact">
+                        {formatDate(row.createdAt)}
+                      </span>
                     </td>
                     {canUpdate || canDelete ? (
                       <td className="pg-td-right">
@@ -208,7 +251,9 @@ export function EmissionPointsListSection({
                               title="Editar"
                               onClick={() => void openEdit(row)}
                             >
-                              <span className="material-symbols-outlined">edit</span>
+                              <span className="material-symbols-outlined">
+                                edit
+                              </span>
                             </ZHBtn>
                           )}
                           {(row.isActive ? canDelete : canUpdate) && (
@@ -216,11 +261,11 @@ export function EmissionPointsListSection({
                               type="button"
                               variant="ghost"
                               size="sm"
-                              title={row.isActive ? 'Desactivar' : 'Activar'}
+                              title={row.isActive ? "Desactivar" : "Activar"}
                               onClick={() => void toggleDisable(row)}
                             >
                               <span className="material-symbols-outlined">
-                                {row.isActive ? 'block' : 'check_circle'}
+                                {row.isActive ? "block" : "check_circle"}
                               </span>
                             </ZHBtn>
                           )}
@@ -235,9 +280,13 @@ export function EmissionPointsListSection({
         )}
 
         <div className="pg-table-footer">
-          <p className="subtle br-list-footer-note">{filtered.length} puntos de emisión</p>
+          <p className="subtle br-list-footer-note">
+            {filtered.length} puntos de emisión
+          </p>
           {items.length > 0 && (
-            <p className="pg-table-timestamp">Última carga: {new Date().toTimeString().slice(0, 8)}</p>
+            <p className="pg-table-timestamp">
+              Última carga: {new Date().toTimeString().slice(0, 8)}
+            </p>
           )}
         </div>
       </div>

@@ -7,7 +7,7 @@ export interface CompanyLogo {
 export interface CompanyProfile {
   id: string;
   taxIdentificationNumber: string;
-  taxIdentificationStatus: 'Pending' | 'Verified' | 'Invalid';
+  taxIdentificationStatus: "Pending" | "Verified" | "Invalid";
   isTemporaryTaxIdentification: boolean;
   legalName: string;
   tradeName: string | null;

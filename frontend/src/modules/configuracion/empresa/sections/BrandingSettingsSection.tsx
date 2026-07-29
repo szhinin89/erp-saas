@@ -1,22 +1,22 @@
-import { useEffect, useRef, useState } from 'react';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { LoadingState, NoAccessPage } from '../../../../components/PageShell';
-import { ZHPageNotice } from '../../../../components/zh/ZHPageNotice';
-import { ZHBtn, ZHField, ZHGrid } from '../../../../components/zh/ZHForm';
-import { useI18n } from '../../../../i18n/i18n';
-import { useAsync } from '../../../../hooks/useAsync';
-import { companyProfileService } from '../api/companyProfileService';
-import { applyServerErrors } from '../../../lib/validationErrors';
-import { formatApiRequestError } from '../../../lib/apiError';
-import { usePermissionsUi } from '../../../../access/usePermissionsUi';
+import { useEffect, useRef, useState } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { LoadingState, NoAccessPage } from "../../../../components/PageShell";
+import { ZHPageNotice } from "../../../../components/zh/ZHPageNotice";
+import { ZHBtn, ZHField, ZHGrid } from "../../../../components/zh/ZHForm";
+import { useI18n } from "../../../../i18n/i18n";
+import { useAsync } from "../../../../hooks/useAsync";
+import { companyProfileService } from "../api/companyProfileService";
+import { applyServerErrors } from "../../../lib/validationErrors";
+import { formatApiRequestError } from "../../../lib/apiError";
+import { usePermissionsUi } from "../../../../access/usePermissionsUi";
 import {
   companyBrandingSchema,
   defaultCompanyBrandingValues,
   type CompanyBrandingValues,
-} from '../schemas/companyBrandingSchema';
+} from "../schemas/companyBrandingSchema";
 
-const ALLOWED_LOGO_TYPES = ['image/png', 'image/jpeg', 'image/webp'];
+const ALLOWED_LOGO_TYPES = ["image/png", "image/jpeg", "image/webp"];
 const MAX_LOGO_SIZE_BYTES = 5 * 1024 * 1024;
 
 function parseBrandingConfiguration(raw: string | null): CompanyBrandingValues {
@@ -24,9 +24,9 @@ function parseBrandingConfiguration(raw: string | null): CompanyBrandingValues {
   try {
     const parsed = JSON.parse(raw) as Partial<CompanyBrandingValues>;
     return {
-      primaryColor: parsed.primaryColor ?? '',
-      secondaryColor: parsed.secondaryColor ?? '',
-      slogan: parsed.slogan ?? '',
+      primaryColor: parsed.primaryColor ?? "",
+      secondaryColor: parsed.secondaryColor ?? "",
+      slogan: parsed.slogan ?? "",
     };
   } catch {
     return { ...defaultCompanyBrandingValues };
@@ -36,8 +36,8 @@ function parseBrandingConfiguration(raw: string | null): CompanyBrandingValues {
 export function BrandingSettingsSection() {
   const { canShow } = usePermissionsUi();
   const { t } = useI18n();
-  const canView = canShow('configuracion.empresa.view');
-  const canEdit = canShow('configuracion.empresa.edit');
+  const canView = canShow("configuracion.empresa.view");
+  const canEdit = canShow("configuracion.empresa.edit");
 
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [logoPreviewUrl, setLogoPreviewUrl] = useState<string | null>(null);
@@ -49,8 +49,12 @@ export function BrandingSettingsSection() {
   const logoFileInputRef = useRef<HTMLInputElement>(null);
 
   const [altLogoFile, setAltLogoFile] = useState<File | null>(null);
-  const [altLogoPreviewUrl, setAltLogoPreviewUrl] = useState<string | null>(null);
-  const [currentAltLogoUrl, setCurrentAltLogoUrl] = useState<string | null>(null);
+  const [altLogoPreviewUrl, setAltLogoPreviewUrl] = useState<string | null>(
+    null,
+  );
+  const [currentAltLogoUrl, setCurrentAltLogoUrl] = useState<string | null>(
+    null,
+  );
   const [altLogoUploading, setAltLogoUploading] = useState(false);
   const [altLogoUploadProgress, setAltLogoUploadProgress] = useState(0);
   const [altLogoError, setAltLogoError] = useState<string | null>(null);
@@ -63,7 +67,13 @@ export function BrandingSettingsSection() {
 
   const profileState = useAsync(() => companyProfileService.getProfile());
 
-  const { register, handleSubmit, reset, setError: setFieldError, formState: { errors, isDirty } } = useForm<CompanyBrandingValues>({
+  const {
+    register,
+    handleSubmit,
+    reset,
+    setError: setFieldError,
+    formState: { errors, isDirty },
+  } = useForm<CompanyBrandingValues>({
     resolver: zodResolver(companyBrandingSchema),
     defaultValues: defaultCompanyBrandingValues,
   });
@@ -78,13 +88,16 @@ export function BrandingSettingsSection() {
     let objectUrl: string | null = null;
     let cancelled = false;
 
-    companyProfileService.getLogoBlob().then((blob) => {
-      if (cancelled || !blob) return;
-      objectUrl = URL.createObjectURL(blob);
-      setCurrentLogoUrl(objectUrl);
-    }).catch(() => {
-      if (!cancelled) setCurrentLogoUrl(null);
-    });
+    companyProfileService
+      .getLogoBlob()
+      .then((blob) => {
+        if (cancelled || !blob) return;
+        objectUrl = URL.createObjectURL(blob);
+        setCurrentLogoUrl(objectUrl);
+      })
+      .catch(() => {
+        if (!cancelled) setCurrentLogoUrl(null);
+      });
 
     return () => {
       cancelled = true;
@@ -102,19 +115,25 @@ export function BrandingSettingsSection() {
     let objectUrl: string | null = null;
     let cancelled = false;
 
-    companyProfileService.getLogoAltBlob().then((blob) => {
-      if (cancelled || !blob) return;
-      objectUrl = URL.createObjectURL(blob);
-      setCurrentAltLogoUrl(objectUrl);
-    }).catch(() => {
-      if (!cancelled) setCurrentAltLogoUrl(null);
-    });
+    companyProfileService
+      .getLogoAltBlob()
+      .then((blob) => {
+        if (cancelled || !blob) return;
+        objectUrl = URL.createObjectURL(blob);
+        setCurrentAltLogoUrl(objectUrl);
+      })
+      .catch(() => {
+        if (!cancelled) setCurrentAltLogoUrl(null);
+      });
 
     return () => {
       cancelled = true;
       if (objectUrl) URL.revokeObjectURL(objectUrl);
     };
-  }, [profileState.data?.alternateLogo?.id, profileState.data?.alternateLogo?.lastUpdatedAt]);
+  }, [
+    profileState.data?.alternateLogo?.id,
+    profileState.data?.alternateLogo?.lastUpdatedAt,
+  ]);
 
   useEffect(() => {
     return () => {
@@ -148,18 +167,18 @@ export function BrandingSettingsSection() {
     }
 
     if (!ALLOWED_LOGO_TYPES.includes(file.type)) {
-      setLogoError('Formato no soportado. Use PNG, JPG o WEBP.');
+      setLogoError("Formato no soportado. Use PNG, JPG o WEBP.");
       setLogoFile(null);
       setLogoPreviewUrl(null);
-      if (logoFileInputRef.current) logoFileInputRef.current.value = '';
+      if (logoFileInputRef.current) logoFileInputRef.current.value = "";
       return;
     }
 
     if (file.size > MAX_LOGO_SIZE_BYTES) {
-      setLogoError('El archivo supera el tamaño máximo de 5 MB.');
+      setLogoError("El archivo supera el tamaño máximo de 5 MB.");
       setLogoFile(null);
       setLogoPreviewUrl(null);
-      if (logoFileInputRef.current) logoFileInputRef.current.value = '';
+      if (logoFileInputRef.current) logoFileInputRef.current.value = "";
       return;
     }
 
@@ -179,16 +198,23 @@ export function BrandingSettingsSection() {
       if (logoPreviewUrl) URL.revokeObjectURL(logoPreviewUrl);
       setLogoFile(null);
       setLogoPreviewUrl(null);
-      if (logoFileInputRef.current) logoFileInputRef.current.value = '';
+      if (logoFileInputRef.current) logoFileInputRef.current.value = "";
       profileState.refetch();
     } catch (err) {
-      setLogoError(formatApiRequestError(err, { offline: t('common.apiUnreachable'), generic: t('common.errorGeneric') }));
+      setLogoError(
+        formatApiRequestError(err, {
+          offline: t("common.apiUnreachable"),
+          generic: t("common.errorGeneric"),
+        }),
+      );
     } finally {
       setLogoUploading(false);
     }
   };
 
-  const handleAltLogoFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleAltLogoFileChange = (
+    event: React.ChangeEvent<HTMLInputElement>,
+  ) => {
     const file = event.target.files?.[0] ?? null;
     setAltLogoError(null);
     setAltLogoSaved(false);
@@ -202,18 +228,18 @@ export function BrandingSettingsSection() {
     }
 
     if (!ALLOWED_LOGO_TYPES.includes(file.type)) {
-      setAltLogoError('Formato no soportado. Use PNG, JPG o WEBP.');
+      setAltLogoError("Formato no soportado. Use PNG, JPG o WEBP.");
       setAltLogoFile(null);
       setAltLogoPreviewUrl(null);
-      if (altLogoFileInputRef.current) altLogoFileInputRef.current.value = '';
+      if (altLogoFileInputRef.current) altLogoFileInputRef.current.value = "";
       return;
     }
 
     if (file.size > MAX_LOGO_SIZE_BYTES) {
-      setAltLogoError('El archivo supera el tamaño máximo de 5 MB.');
+      setAltLogoError("El archivo supera el tamaño máximo de 5 MB.");
       setAltLogoFile(null);
       setAltLogoPreviewUrl(null);
-      if (altLogoFileInputRef.current) altLogoFileInputRef.current.value = '';
+      if (altLogoFileInputRef.current) altLogoFileInputRef.current.value = "";
       return;
     }
 
@@ -228,15 +254,23 @@ export function BrandingSettingsSection() {
     setAltLogoError(null);
     setAltLogoSaved(false);
     try {
-      await companyProfileService.uploadLogoAlt(altLogoFile, setAltLogoUploadProgress);
+      await companyProfileService.uploadLogoAlt(
+        altLogoFile,
+        setAltLogoUploadProgress,
+      );
       setAltLogoSaved(true);
       if (altLogoPreviewUrl) URL.revokeObjectURL(altLogoPreviewUrl);
       setAltLogoFile(null);
       setAltLogoPreviewUrl(null);
-      if (altLogoFileInputRef.current) altLogoFileInputRef.current.value = '';
+      if (altLogoFileInputRef.current) altLogoFileInputRef.current.value = "";
       profileState.refetch();
     } catch (err) {
-      setAltLogoError(formatApiRequestError(err, { offline: t('common.apiUnreachable'), generic: t('common.errorGeneric') }));
+      setAltLogoError(
+        formatApiRequestError(err, {
+          offline: t("common.apiUnreachable"),
+          generic: t("common.errorGeneric"),
+        }),
+      );
     } finally {
       setAltLogoUploading(false);
     }
@@ -256,8 +290,16 @@ export function BrandingSettingsSection() {
       setIdentitySaved(true);
       profileState.refetch();
     } catch (err) {
-      const applied = applyServerErrors(err, setFieldError, (msg) => setIdentityError(msg));
-      if (!applied) setIdentityError(formatApiRequestError(err, { offline: t('common.apiUnreachable'), generic: t('common.errorGeneric') }));
+      const applied = applyServerErrors(err, setFieldError, (msg) =>
+        setIdentityError(msg),
+      );
+      if (!applied)
+        setIdentityError(
+          formatApiRequestError(err, {
+            offline: t("common.apiUnreachable"),
+            generic: t("common.errorGeneric"),
+          }),
+        );
     } finally {
       setIdentitySaving(false);
     }
@@ -272,53 +314,92 @@ export function BrandingSettingsSection() {
     }
   };
 
-  if (!canView) return <NoAccessPage title={t('settings.company.title')} />;
+  if (!canView) return <NoAccessPage title={t("settings.company.title")} />;
   if (profileState.loading) return <LoadingState />;
 
   return (
     <>
       {profileState.error && (
-        <ZHPageNotice variant="error" message={t('common.errorPrefix')} detail={profileState.error} />
+        <ZHPageNotice
+          variant="error"
+          message={t("common.errorPrefix")}
+          detail={profileState.error}
+        />
       )}
       {logoError && (
-        <ZHPageNotice variant="error" message={t('common.errorPrefix')} detail={logoError} />
+        <ZHPageNotice
+          variant="error"
+          message={t("common.errorPrefix")}
+          detail={logoError}
+        />
       )}
-      {logoSaved && <ZHPageNotice variant="success" message={t('settings.company.logo.uploaded')} />}
+      {logoSaved && (
+        <ZHPageNotice
+          variant="success"
+          message={t("settings.company.logo.uploaded")}
+        />
+      )}
       {altLogoError && (
-        <ZHPageNotice variant="error" message={t('common.errorPrefix')} detail={altLogoError} />
+        <ZHPageNotice
+          variant="error"
+          message={t("common.errorPrefix")}
+          detail={altLogoError}
+        />
       )}
-      {altLogoSaved && <ZHPageNotice variant="success" message={t('settings.company.branding.alternateLogo.uploaded')} />}
+      {altLogoSaved && (
+        <ZHPageNotice
+          variant="success"
+          message={t("settings.company.branding.alternateLogo.uploaded")}
+        />
+      )}
       {identityError && (
-        <ZHPageNotice variant="error" message={t('common.errorPrefix')} detail={identityError} />
+        <ZHPageNotice
+          variant="error"
+          message={t("common.errorPrefix")}
+          detail={identityError}
+        />
       )}
-      {identitySaved && <ZHPageNotice variant="success" message={t('settings.company.saved')} />}
+      {identitySaved && (
+        <ZHPageNotice variant="success" message={t("settings.company.saved")} />
+      )}
 
       <div className="pg-section">
         <div className="pg-section-header">
           <div className="pg-section-header-left">
-            <span className="material-symbols-outlined pg-section-icon">photo_camera</span>
-            <p className="pg-section-label">{t('settings.company.logo.title')}</p>
+            <span className="material-symbols-outlined pg-section-icon">
+              photo_camera
+            </span>
+            <p className="pg-section-label">
+              {t("settings.company.logo.title")}
+            </p>
           </div>
         </div>
         <div className="pg-section-body">
           <ZHGrid cols={2}>
-            <ZHField label={t('settings.company.logo.preview')}>
+            <ZHField label={t("settings.company.logo.preview")}>
               {(logoPreviewUrl ?? currentLogoUrl) ? (
                 <img
                   src={logoPreviewUrl ?? currentLogoUrl ?? undefined}
-                  alt={t('settings.company.logo.title')}
-                  style={{ maxHeight: 96, maxWidth: '100%', objectFit: 'contain', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-sm)', padding: 'var(--space-2)' }}
+                  alt={t("settings.company.logo.title")}
+                  style={{
+                    maxHeight: 96,
+                    maxWidth: "100%",
+                    objectFit: "contain",
+                    border: "1px solid var(--color-border)",
+                    borderRadius: "var(--radius-sm)",
+                    padding: "var(--space-2)",
+                  }}
                 />
               ) : (
                 <p className="zh-text-muted zh-text-xs">
-                  {t('settings.company.logo.noLogo')}
+                  {t("settings.company.logo.noLogo")}
                 </p>
               )}
             </ZHField>
 
             <ZHField
-              label={t('settings.company.logo.selectFile')}
-              hint={`${t('settings.company.logo.formats')} · ${t('settings.company.logo.maxSize')}`}
+              label={t("settings.company.logo.selectFile")}
+              hint={`${t("settings.company.logo.formats")} · ${t("settings.company.logo.maxSize")}`}
             >
               <input
                 ref={logoFileInputRef}
@@ -334,8 +415,23 @@ export function BrandingSettingsSection() {
                 </p>
               )}
               {logoUploading && (
-                <div style={{ marginTop: 'var(--space-2)', height: 6, borderRadius: 'var(--radius-sm)', background: 'var(--color-border)', overflow: 'hidden' }}>
-                  <div style={{ width: `${logoUploadProgress}%`, height: '100%', background: 'var(--color-primary)', transition: 'width 0.2s ease' }} />
+                <div
+                  style={{
+                    marginTop: "var(--space-2)",
+                    height: 6,
+                    borderRadius: "var(--radius-sm)",
+                    background: "var(--color-border)",
+                    overflow: "hidden",
+                  }}
+                >
+                  <div
+                    style={{
+                      width: `${logoUploadProgress}%`,
+                      height: "100%",
+                      background: "var(--color-primary)",
+                      transition: "width 0.2s ease",
+                    }}
+                  />
                 </div>
               )}
               <div className="zh-mt-8">
@@ -347,7 +443,9 @@ export function BrandingSettingsSection() {
                   onClick={handleLogoUpload}
                 >
                   <span className="material-symbols-outlined">upload</span>
-                  {logoUploading ? t('settings.company.logo.uploading') : t('settings.company.logo.upload')}
+                  {logoUploading
+                    ? t("settings.company.logo.uploading")
+                    : t("settings.company.logo.upload")}
                 </ZHBtn>
               </div>
             </ZHField>
@@ -358,29 +456,40 @@ export function BrandingSettingsSection() {
       <div className="pg-section">
         <div className="pg-section-header">
           <div className="pg-section-header-left">
-            <span className="material-symbols-outlined pg-section-icon">image</span>
-            <p className="pg-section-label">{t('settings.company.branding.alternateLogo.title')}</p>
+            <span className="material-symbols-outlined pg-section-icon">
+              image
+            </span>
+            <p className="pg-section-label">
+              {t("settings.company.branding.alternateLogo.title")}
+            </p>
           </div>
         </div>
         <div className="pg-section-body">
           <ZHGrid cols={2}>
-            <ZHField label={t('settings.company.logo.preview')}>
+            <ZHField label={t("settings.company.logo.preview")}>
               {(altLogoPreviewUrl ?? currentAltLogoUrl) ? (
                 <img
                   src={altLogoPreviewUrl ?? currentAltLogoUrl ?? undefined}
-                  alt={t('settings.company.branding.alternateLogo.title')}
-                  style={{ maxHeight: 96, maxWidth: '100%', objectFit: 'contain', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-sm)', padding: 'var(--space-2)' }}
+                  alt={t("settings.company.branding.alternateLogo.title")}
+                  style={{
+                    maxHeight: 96,
+                    maxWidth: "100%",
+                    objectFit: "contain",
+                    border: "1px solid var(--color-border)",
+                    borderRadius: "var(--radius-sm)",
+                    padding: "var(--space-2)",
+                  }}
                 />
               ) : (
                 <p className="zh-text-muted zh-text-xs">
-                  {t('settings.company.branding.alternateLogo.noLogo')}
+                  {t("settings.company.branding.alternateLogo.noLogo")}
                 </p>
               )}
             </ZHField>
 
             <ZHField
-              label={t('settings.company.logo.selectFile')}
-              hint={`${t('settings.company.logo.formats')} · ${t('settings.company.logo.maxSize')}`}
+              label={t("settings.company.logo.selectFile")}
+              hint={`${t("settings.company.logo.formats")} · ${t("settings.company.logo.maxSize")}`}
             >
               <input
                 ref={altLogoFileInputRef}
@@ -396,8 +505,23 @@ export function BrandingSettingsSection() {
                 </p>
               )}
               {altLogoUploading && (
-                <div style={{ marginTop: 'var(--space-2)', height: 6, borderRadius: 'var(--radius-sm)', background: 'var(--color-border)', overflow: 'hidden' }}>
-                  <div style={{ width: `${altLogoUploadProgress}%`, height: '100%', background: 'var(--color-primary)', transition: 'width 0.2s ease' }} />
+                <div
+                  style={{
+                    marginTop: "var(--space-2)",
+                    height: 6,
+                    borderRadius: "var(--radius-sm)",
+                    background: "var(--color-border)",
+                    overflow: "hidden",
+                  }}
+                >
+                  <div
+                    style={{
+                      width: `${altLogoUploadProgress}%`,
+                      height: "100%",
+                      background: "var(--color-primary)",
+                      transition: "width 0.2s ease",
+                    }}
+                  />
                 </div>
               )}
               <div className="zh-mt-8">
@@ -409,7 +533,9 @@ export function BrandingSettingsSection() {
                   onClick={handleAltLogoUpload}
                 >
                   <span className="material-symbols-outlined">upload</span>
-                  {altLogoUploading ? t('settings.company.logo.uploading') : t('settings.company.logo.upload')}
+                  {altLogoUploading
+                    ? t("settings.company.logo.uploading")
+                    : t("settings.company.logo.upload")}
                 </ZHBtn>
               </div>
             </ZHField>
@@ -421,52 +547,71 @@ export function BrandingSettingsSection() {
         <div className="pg-section">
           <div className="pg-section-header">
             <div className="pg-section-header-left">
-              <span className="material-symbols-outlined pg-section-icon">palette</span>
-              <p className="pg-section-label">{t('settings.company.branding.identity.title')}</p>
+              <span className="material-symbols-outlined pg-section-icon">
+                palette
+              </span>
+              <p className="pg-section-label">
+                {t("settings.company.branding.identity.title")}
+              </p>
             </div>
           </div>
           <div className="pg-section-body">
             <ZHGrid cols={2}>
-              <ZHField label={t('settings.company.branding.identity.primaryColor')} error={errors.primaryColor?.message}>
-                <div className="zh-flex-end zh-gap-8" style={{ justifyContent: 'flex-start' }}>
+              <ZHField
+                label={t("settings.company.branding.identity.primaryColor")}
+                error={errors.primaryColor?.message}
+              >
+                <div
+                  className="zh-flex-end zh-gap-8"
+                  style={{ justifyContent: "flex-start" }}
+                >
                   <input
                     type="color"
                     className="zh-color-swatch"
                     disabled={identitySaving || !canEdit}
-                    {...register('primaryColor')}
+                    {...register("primaryColor")}
                   />
                   <input
                     className="zh-input"
                     placeholder="#1A73E8"
                     disabled={identitySaving || !canEdit}
-                    {...register('primaryColor')}
+                    {...register("primaryColor")}
                   />
                 </div>
               </ZHField>
 
-              <ZHField label={t('settings.company.branding.identity.secondaryColor')} error={errors.secondaryColor?.message}>
-                <div className="zh-flex-end zh-gap-8" style={{ justifyContent: 'flex-start' }}>
+              <ZHField
+                label={t("settings.company.branding.identity.secondaryColor")}
+                error={errors.secondaryColor?.message}
+              >
+                <div
+                  className="zh-flex-end zh-gap-8"
+                  style={{ justifyContent: "flex-start" }}
+                >
                   <input
                     type="color"
                     className="zh-color-swatch"
                     disabled={identitySaving || !canEdit}
-                    {...register('secondaryColor')}
+                    {...register("secondaryColor")}
                   />
                   <input
                     className="zh-input"
                     placeholder="#34A853"
                     disabled={identitySaving || !canEdit}
-                    {...register('secondaryColor')}
+                    {...register("secondaryColor")}
                   />
                 </div>
               </ZHField>
 
-              <ZHField label={t('settings.company.branding.identity.slogan')} error={errors.slogan?.message}>
+              <ZHField
+                label={t("settings.company.branding.identity.slogan")}
+                error={errors.slogan?.message}
+              >
                 <input
                   className="zh-input"
-                  placeholder={t('settings.company.branding.identity.slogan')}
+                  placeholder={t("settings.company.branding.identity.slogan")}
                   disabled={identitySaving || !canEdit}
-                  {...register('slogan')}
+                  {...register("slogan")}
                 />
               </ZHField>
             </ZHGrid>
@@ -475,12 +620,23 @@ export function BrandingSettingsSection() {
 
         <div className="pg-actions-bar">
           <div className="pg-actions-buttons">
-            <ZHBtn variant="ghost" size="md" type="button" disabled={identitySaving || !isDirty} onClick={handleIdentityDiscard}>
+            <ZHBtn
+              variant="ghost"
+              size="md"
+              type="button"
+              disabled={identitySaving || !isDirty}
+              onClick={handleIdentityDiscard}
+            >
               Descartar Cambios
             </ZHBtn>
-            <ZHBtn variant="primary" size="md" type="submit" disabled={identitySaving || !canEdit || !isDirty}>
+            <ZHBtn
+              variant="primary"
+              size="md"
+              type="submit"
+              disabled={identitySaving || !canEdit || !isDirty}
+            >
               <span className="material-symbols-outlined">save</span>
-              {identitySaving ? t('common.saving') : 'Guardar Configuración'}
+              {identitySaving ? t("common.saving") : "Guardar Configuración"}
             </ZHBtn>
           </div>
         </div>

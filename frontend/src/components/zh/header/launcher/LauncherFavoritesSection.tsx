@@ -1,13 +1,13 @@
-import { useEffect, useState } from 'react';
-import type { NavItem, TranslateFn } from '../../../../nav/navConfig';
-import { LauncherMenuItem } from './LauncherMenuItem';
+import { useEffect, useState } from "react";
+import type { NavItem, TranslateFn } from "../../../../nav/navConfig";
+import { LauncherMenuItem } from "./LauncherMenuItem";
 
 const MAX_VISIBLE = 6;
-const EXPANDED_STORAGE_KEY = 'zh.ui.launcher.favorites.expanded';
+const EXPANDED_STORAGE_KEY = "zh.ui.launcher.favorites.expanded";
 
 function loadInitialExpanded(): boolean {
   try {
-    return localStorage.getItem(EXPANDED_STORAGE_KEY) === 'true';
+    return localStorage.getItem(EXPANDED_STORAGE_KEY) === "true";
   } catch {
     return false; // Primera carga: colapsado
   }
@@ -26,13 +26,20 @@ type LauncherFavoritesSectionProps = {
  * Nivel 0 — Favoritos: colapsable (persistido en localStorage), counter visible en header.
  * Primera carga: colapsado. Cargas siguientes: restaura última preferencia.
  */
-export function LauncherFavoritesSection({ favorites, currentPath, onNavigate, isFavorite, toggleFavorite, t }: LauncherFavoritesSectionProps) {
+export function LauncherFavoritesSection({
+  favorites,
+  currentPath,
+  onNavigate,
+  isFavorite,
+  toggleFavorite,
+  t,
+}: LauncherFavoritesSectionProps) {
   const [isExpanded, setIsExpanded] = useState(loadInitialExpanded);
   const [showAll, setShowAll] = useState(false);
 
   useEffect(() => {
     try {
-      localStorage.setItem(EXPANDED_STORAGE_KEY, isExpanded ? 'true' : 'false');
+      localStorage.setItem(EXPANDED_STORAGE_KEY, isExpanded ? "true" : "false");
     } catch {
       // ignore
     }
@@ -50,17 +57,37 @@ export function LauncherFavoritesSection({ favorites, currentPath, onNavigate, i
         aria-expanded={isExpanded}
         onClick={() => setIsExpanded((v) => !v)}
       >
-        <span className="material-symbols-outlined zh-launcher__favoritesIcon" aria-hidden="true">star</span>
-        <span className="zh-launcher__favoritesTitle">{t('app.header.appLauncher.myShortcuts')}</span>
-        {count > 0 ? <span className="zh-launcher__favoritesCount">{count}</span> : null}
-        <span className="material-symbols-outlined zh-launcher__favoritesCaret" aria-hidden="true">expand_more</span>
+        <span
+          className="material-symbols-outlined zh-launcher__favoritesIcon"
+          aria-hidden="true"
+        >
+          star
+        </span>
+        <span className="zh-launcher__favoritesTitle">
+          {t("app.header.appLauncher.myShortcuts")}
+        </span>
+        {count > 0 ? (
+          <span className="zh-launcher__favoritesCount">{count}</span>
+        ) : null}
+        <span
+          className="material-symbols-outlined zh-launcher__favoritesCaret"
+          aria-hidden="true"
+        >
+          expand_more
+        </span>
       </button>
 
-      <div className={`zh-launcher__favoritesContent${isExpanded ? ' is-expanded' : ''}`}>
+      <div
+        className={`zh-launcher__favoritesContent${isExpanded ? " is-expanded" : ""}`}
+      >
         {favorites.length === 0 ? (
           <div className="zh-launcher__favoritesEmpty">
-            <p className="zh-launcher__favoritesEmptyTitle">{t('app.favorites.empty')}</p>
-            <p className="zh-launcher__favoritesEmptyHint">{t('app.favorites.emptyHint')}</p>
+            <p className="zh-launcher__favoritesEmptyTitle">
+              {t("app.favorites.empty")}
+            </p>
+            <p className="zh-launcher__favoritesEmptyHint">
+              {t("app.favorites.emptyHint")}
+            </p>
           </div>
         ) : (
           <>
@@ -79,8 +106,14 @@ export function LauncherFavoritesSection({ favorites, currentPath, onNavigate, i
               ))}
             </div>
             {hasOverflow ? (
-              <button type="button" className="zh-launcher__favoritesToggle" onClick={() => setShowAll((v) => !v)}>
-                {showAll ? t('app.header.appLauncher.showLess') : t('app.header.appLauncher.manageFavorites')}
+              <button
+                type="button"
+                className="zh-launcher__favoritesToggle"
+                onClick={() => setShowAll((v) => !v)}
+              >
+                {showAll
+                  ? t("app.header.appLauncher.showLess")
+                  : t("app.header.appLauncher.manageFavorites")}
               </button>
             ) : null}
           </>

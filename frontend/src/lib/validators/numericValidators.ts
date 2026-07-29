@@ -1,9 +1,16 @@
-import { z } from 'zod';
+import { z } from "zod";
 
 const NAV_KEYS = new Set([
-  'Backspace', 'Delete', 'Tab', 'Enter',
-  'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown',
-  'Home', 'End',
+  "Backspace",
+  "Delete",
+  "Tab",
+  "Enter",
+  "ArrowLeft",
+  "ArrowRight",
+  "ArrowUp",
+  "ArrowDown",
+  "Home",
+  "End",
 ]);
 
 /**
@@ -17,9 +24,9 @@ export function allowsIntegerKey(
   const { key, ctrlKey, metaKey } = e;
   if (ctrlKey || metaKey) return true;
   if (NAV_KEYS.has(key)) return true;
-  if (!positiveOnly && key === '-') {
+  if (!positiveOnly && key === "-") {
     const input = e.currentTarget;
-    return input.selectionStart === 0 && !input.value.includes('-');
+    return input.selectionStart === 0 && !input.value.includes("-");
   }
   return /^\d$/.test(key);
 }
@@ -36,17 +43,17 @@ export function allowsDecimalKey(
   const { key, ctrlKey, metaKey } = e;
   if (ctrlKey || metaKey) return true;
   if (NAV_KEYS.has(key)) return true;
-  if (!positiveOnly && key === '-') {
+  if (!positiveOnly && key === "-") {
     const input = e.currentTarget;
-    return input.selectionStart === 0 && !input.value.includes('-');
+    return input.selectionStart === 0 && !input.value.includes("-");
   }
-  if ((key === '.' || key === ',') && decimals > 0) {
-    return !e.currentTarget.value.includes('.');
+  if ((key === "." || key === ",") && decimals > 0) {
+    return !e.currentTarget.value.includes(".");
   }
   if (/^\d$/.test(key)) {
     if (decimals === 0) return true;
     const input = e.currentTarget;
-    const dotIndex = input.value.indexOf('.');
+    const dotIndex = input.value.indexOf(".");
     if (dotIndex === -1) return true;
     const cursorPos = input.selectionStart ?? 0;
     const selEnd = input.selectionEnd ?? 0;
@@ -60,22 +67,24 @@ export function allowsDecimalKey(
 // ── Zod schemas ────────────────────────────────────────────────────────────────
 
 /** Entero. Encadenar con .min()/.max() según necesidad. */
-export const zInteger = z.coerce.number().int('Debe ser un número entero.');
+export const zInteger = z.coerce.number().int("Debe ser un número entero.");
 
 /** Entero ≥ 0. */
 export const zPositiveInteger = z.coerce
   .number()
-  .int('Debe ser un número entero.')
-  .min(0, 'Debe ser mayor o igual a 0.');
+  .int("Debe ser un número entero.")
+  .min(0, "Debe ser mayor o igual a 0.");
 
 /** Decimal. Encadenar con .min()/.max() según necesidad. */
 export const zDecimal = z.coerce.number();
 
 /** Moneda (≥ 0). Precisión decimal configurable en el componente. */
-export const zCurrency = z.coerce.number().min(0, 'El valor no puede ser negativo.');
+export const zCurrency = z.coerce
+  .number()
+  .min(0, "El valor no puede ser negativo.");
 
 /** Porcentaje 0-100. */
 export const zPercentage = z.coerce
   .number()
-  .min(0, 'Mínimo 0%.')
-  .max(100, 'Máximo 100%.');
+  .min(0, "Mínimo 0%.")
+  .max(100, "Máximo 100%.");

@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import type { ReactNode } from "react";
 
 interface ZHCardProps {
   title?: ReactNode;
@@ -9,7 +9,13 @@ interface ZHCardProps {
 }
 
 /** Contenedor card estándar (tokens `zh-ui.css` — `.card`). */
-export function ZHCard({ title, actions, className = '', bodyClassName = '', children }: ZHCardProps) {
+export function ZHCard({
+  title,
+  actions,
+  className = "",
+  bodyClassName = "",
+  children,
+}: ZHCardProps) {
   const cardClassName = `card ${className}`.trim();
   const cardBodyClassName = `card-body ${bodyClassName}`.trim();
   return (

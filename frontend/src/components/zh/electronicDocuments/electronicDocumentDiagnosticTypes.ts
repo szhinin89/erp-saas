@@ -1,4 +1,4 @@
-export type ElectronicDocumentXmlVariant = 'Draft' | 'Signed' | 'Authorized';
+export type ElectronicDocumentXmlVariant = "Draft" | "Signed" | "Authorized";
 
 /** Un evento del timeline — reconstruido desde auditoría real, nunca inventado. */
 export type ElectronicDocumentTimelineEventDto = {

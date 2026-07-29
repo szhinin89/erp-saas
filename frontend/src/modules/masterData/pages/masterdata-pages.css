@@ -152,12 +152,16 @@
   color: var(--color-text-secondary);
   border-bottom: 2px solid transparent;
   margin-bottom: -2px;
-  transition: color 0.15s, border-color 0.15s;
+  transition:
+    color 0.15s,
+    border-color 0.15s;
   display: flex;
   align-items: center;
   gap: 6px;
 }
-.md-detail-tab:hover { color: var(--color-text-primary); }
+.md-detail-tab:hover {
+  color: var(--color-text-primary);
+}
 .md-detail-tab--active {
   color: var(--color-primary);
   border-bottom-color: var(--color-primary);
@@ -220,7 +224,9 @@
   border-radius: 10px;
   padding: var(--space-3);
 }
-.md-role-card--inactive { opacity: 0.55; }
+.md-role-card--inactive {
+  opacity: 0.55;
+}
 .md-role-card__header {
   display: flex;
   align-items: center;
@@ -239,7 +245,11 @@
   font-size: var(--text-help-size);
   color: var(--color-text-secondary);
 }
-.md-role-card__config--crm { border-top: 1px solid var(--color-surface-container); padding-top: var(--space-2); margin-top: 6px; }
+.md-role-card__config--crm {
+  border-top: 1px solid var(--color-surface-container);
+  padding-top: var(--space-2);
+  margin-top: 6px;
+}
 
 /* ── Location card ───────────────────────────────────────── */
 .md-locations-grid {
@@ -253,18 +263,43 @@
   border-radius: 10px;
   padding: var(--space-3);
 }
-.md-location-card--inactive { opacity: 0.55; }
+.md-location-card--inactive {
+  opacity: 0.55;
+}
 .md-location-card__header {
   display: flex;
   align-items: center;
   gap: var(--space-2);
   margin-bottom: 6px;
 }
-.md-location-card__name { font-weight: 600; flex: 1; }
-.md-location-card__address { font-size: var(--text-body-md-size); color: var(--color-text-primary); margin: 4px 0; }
-.md-location-card__geo { font-size: var(--text-help-size); color: var(--color-text-secondary); margin: 2px 0; font-family: monospace; }
-.md-location-card__purposes { display: flex; gap: 6px; flex-wrap: wrap; margin: 6px 0; }
-.md-location-card__contact { font-size: var(--text-help-size); color: var(--color-text-secondary); display: flex; gap: var(--space-3); margin-top: 4px; }
+.md-location-card__name {
+  font-weight: 600;
+  flex: 1;
+}
+.md-location-card__address {
+  font-size: var(--text-body-md-size);
+  color: var(--color-text-primary);
+  margin: 4px 0;
+}
+.md-location-card__geo {
+  font-size: var(--text-help-size);
+  color: var(--color-text-secondary);
+  margin: 2px 0;
+  font-family: monospace;
+}
+.md-location-card__purposes {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin: 6px 0;
+}
+.md-location-card__contact {
+  font-size: var(--text-help-size);
+  color: var(--color-text-secondary);
+  display: flex;
+  gap: var(--space-3);
+  margin-top: 4px;
+}
 .md-location-card__actions {
   display: flex;
   gap: 4px;
@@ -285,16 +320,32 @@
   border-radius: 10px;
   padding: var(--space-3);
 }
-.md-contact-card--inactive { opacity: 0.55; }
+.md-contact-card--inactive {
+  opacity: 0.55;
+}
 .md-contact-card__header {
   display: flex;
   align-items: center;
   gap: var(--space-2);
   margin-bottom: 4px;
 }
-.md-contact-card__name { font-weight: 600; flex: 1; }
-.md-contact-card__position { font-size: var(--text-help-size); color: var(--color-text-secondary); margin: 2px 0; }
-.md-contact-card__info { font-size: var(--text-help-size); color: var(--color-text-secondary); display: flex; gap: var(--space-3); flex-wrap: wrap; margin-top: 4px; }
+.md-contact-card__name {
+  font-weight: 600;
+  flex: 1;
+}
+.md-contact-card__position {
+  font-size: var(--text-help-size);
+  color: var(--color-text-secondary);
+  margin: 2px 0;
+}
+.md-contact-card__info {
+  font-size: var(--text-help-size);
+  color: var(--color-text-secondary);
+  display: flex;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+  margin-top: 4px;
+}
 .md-contact-card__actions {
   display: flex;
   gap: 4px;
@@ -326,8 +377,16 @@
 .prd-resumen .prd-kpi-grid {
   grid-template-columns: repeat(4, 1fr);
 }
-@media (max-width: 1024px) { .prd-resumen .prd-kpi-grid { grid-template-columns: 1fr 1fr; } }
-@media (max-width: 580px)  { .prd-resumen .prd-kpi-grid { grid-template-columns: 1fr; } }
+@media (max-width: 1024px) {
+  .prd-resumen .prd-kpi-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+@media (max-width: 580px) {
+  .prd-resumen .prd-kpi-grid {
+    grid-template-columns: 1fr;
+  }
+}
 
 /* ── Resumen tab: sección inferior (actividad + acciones rápidas) ── */
 .prd-resumen__bottom {
@@ -336,7 +395,11 @@
   gap: var(--space-4);
   align-items: start;
 }
-@media (max-width: 900px) { .prd-resumen__bottom { grid-template-columns: 1fr; } }
+@media (max-width: 900px) {
+  .prd-resumen__bottom {
+    grid-template-columns: 1fr;
+  }
+}
 
 .prd-activity-card,
 .prd-quick-card {
@@ -389,9 +452,16 @@
   text-align: left;
   transition: background 0.12s;
 }
-.prd-quick-btn:last-child { border-bottom: none; }
-.prd-quick-btn:hover { background: var(--color-surface-container-low); }
-.prd-quick-btn .material-symbols-outlined { font-size: 18px; color: var(--color-primary); }
+.prd-quick-btn:last-child {
+  border-bottom: none;
+}
+.prd-quick-btn:hover {
+  background: var(--color-surface-container-low);
+}
+.prd-quick-btn .material-symbols-outlined {
+  font-size: 18px;
+  color: var(--color-primary);
+}
 
 /* ── BP "Buscar o Crear" search flow ─────────────────────── */
 .md-search-hint {

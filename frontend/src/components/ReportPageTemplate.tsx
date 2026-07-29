@@ -28,17 +28,19 @@
  *   </ReportPage>
  */
 
-import type { ReactNode } from 'react';
-import { ZHBtn } from './zh/ZHForm';
-import { Badge, type BadgeVariant } from './PageShell';
-import './ReportPageTemplate.css';
+import type { ReactNode } from "react";
+import { ZHBtn } from "./zh/ZHForm";
+import { Badge, type BadgeVariant } from "./PageShell";
+import "./ReportPageTemplate.css";
 
 /* ── Types ─────────────────────────────────────────────────── */
 
-export type RptKpiTone = 'primary' | 'secondary' | 'tertiary' | 'success' | 'warning' | 'error';
-export type RptBadgeTone = 'success' | 'warning' | 'error' | 'neutral';
-export type RptPeriod = 'day' | 'week' | 'month';
-export type RptStatusTone = 'success' | 'info' | 'warning' | 'error' | 'neutral';
+export type RptKpiTone =
+  "primary" | "secondary" | "tertiary" | "success" | "warning" | "error";
+export type RptBadgeTone = "success" | "warning" | "error" | "neutral";
+export type RptPeriod = "day" | "week" | "month";
+export type RptStatusTone =
+  "success" | "info" | "warning" | "error" | "neutral";
 
 /* ── ReportPage ─────────────────────────────────────────────── */
 
@@ -64,7 +66,10 @@ export function ReportPage({
               {breadcrumb.map((item, i) => (
                 <span key={i} className="pg-breadcrumb-item">
                   {i > 0 && (
-                    <span className="material-symbols-outlined pg-breadcrumb-sep" aria-hidden>
+                    <span
+                      className="material-symbols-outlined pg-breadcrumb-sep"
+                      aria-hidden
+                    >
                       chevron_right
                     </span>
                   )}
@@ -88,9 +93,9 @@ export function ReportPage({
 
 export function ReportKpiCard({
   icon,
-  tone = 'primary',
+  tone = "primary",
   badge,
-  badgeTone = 'neutral',
+  badgeTone = "neutral",
   label,
   value,
   unit,
@@ -112,7 +117,9 @@ export function ReportKpiCard({
           <span className="material-symbols-outlined">{icon}</span>
         </div>
         {badge && (
-          <span className={`pg-kpi-badge pg-kpi-badge--${badgeTone}`}>{badge}</span>
+          <span className={`pg-kpi-badge pg-kpi-badge--${badgeTone}`}>
+            {badge}
+          </span>
         )}
       </div>
       <div className="pg-kpi-bottom">
@@ -132,8 +139,8 @@ export function ReportKpiCard({
 export function ReportFiltersBar({
   onClear,
   onApply,
-  clearLabel = 'Limpiar',
-  applyLabel = 'Aplicar Filtros',
+  clearLabel = "Limpiar",
+  applyLabel = "Aplicar Filtros",
   children,
 }: {
   onClear?: () => void;
@@ -173,7 +180,9 @@ export function ReportFilterField({
       <label className="rpt-filter-label">{label}</label>
       {icon ? (
         <div className="rpt-filter-icon-wrap">
-          <span className="material-symbols-outlined rpt-filter-icon">{icon}</span>
+          <span className="material-symbols-outlined rpt-filter-icon">
+            {icon}
+          </span>
           {children}
         </div>
       ) : (
@@ -189,7 +198,7 @@ export function ReportChartPanel({
   title,
   period,
   onPeriod,
-  periodLabels = { day: 'Día', week: 'Semana', month: 'Mes' },
+  periodLabels = { day: "Día", week: "Semana", month: "Mes" },
   children,
 }: {
   title: string;
@@ -198,18 +207,22 @@ export function ReportChartPanel({
   periodLabels?: { day: string; week: string; month: string };
   children?: ReactNode;
 }) {
-  const periods: RptPeriod[] = ['day', 'week', 'month'];
+  const periods: RptPeriod[] = ["day", "week", "month"];
   return (
     <div className="pg-section rpt-chart-panel">
       <div className="pg-section-header">
         <h3 className="pg-section-label">{title}</h3>
         {period !== undefined && onPeriod && (
-          <div className="rpt-period-toggle" role="group" aria-label="Período del gráfico">
+          <div
+            className="rpt-period-toggle"
+            role="group"
+            aria-label="Período del gráfico"
+          >
             {periods.map((p) => (
               <button
                 key={p}
                 type="button"
-                className={`rpt-period-btn${period === p ? ' is-active' : ''}`}
+                className={`rpt-period-btn${period === p ? " is-active" : ""}`}
                 onClick={() => onPeriod(p)}
               >
                 {periodLabels[p]}
@@ -242,7 +255,11 @@ export function ReportChartTooltip({
   rows,
 }: {
   date: string;
-  rows: { label: string; value: string; tone?: 'success' | 'error' | 'default' }[];
+  rows: {
+    label: string;
+    value: string;
+    tone?: "success" | "error" | "default";
+  }[];
 }) {
   return (
     <div className="rpt-chart-tooltip" role="tooltip">
@@ -250,7 +267,11 @@ export function ReportChartTooltip({
       {rows.map((r, i) => (
         <p key={i} className="rpt-chart-tooltip-row">
           <span>{r.label}</span>
-          <span className={r.tone ? `rpt-chart-tooltip-val--${r.tone}` : undefined}>{r.value}</span>
+          <span
+            className={r.tone ? `rpt-chart-tooltip-val--${r.tone}` : undefined}
+          >
+            {r.value}
+          </span>
         </p>
       ))}
     </div>
@@ -260,7 +281,7 @@ export function ReportChartTooltip({
 /* ── ReportTablePanel ───────────────────────────────────────── */
 
 export function ReportTablePanel({
-  searchPlaceholder = 'Buscar…',
+  searchPlaceholder = "Buscar…",
   searchValue,
   onSearch,
   total,
@@ -296,12 +317,18 @@ export function ReportTablePanel({
               className="zh-input"
               type="search"
               placeholder={searchPlaceholder}
-              value={searchValue ?? ''}
+              value={searchValue ?? ""}
               onChange={(e) => onSearch?.(e.target.value)}
               aria-label={searchPlaceholder}
             />
           </div>
-          <ZHBtn type="button" variant="ghost" size="md" className="rpt-filter-btn" aria-label="Filtros">
+          <ZHBtn
+            type="button"
+            variant="ghost"
+            size="md"
+            className="rpt-filter-btn"
+            aria-label="Filtros"
+          >
             <span className="material-symbols-outlined">filter_list</span>
             <span className="rpt-filter-btn-label">Filtros</span>
           </ZHBtn>
@@ -354,29 +381,47 @@ export function ReportTable({ children }: { children: ReactNode }) {
 }
 
 export function ReportTableHead({ children }: { children: ReactNode }) {
-  return <thead><tr>{children}</tr></thead>;
+  return (
+    <thead>
+      <tr>{children}</tr>
+    </thead>
+  );
 }
 
 export function ReportTh({
   children,
-  align = 'left',
+  align = "left",
 }: {
   children?: ReactNode;
-  align?: 'left' | 'right' | 'center';
+  align?: "left" | "right" | "center";
 }) {
-  return <th className={align !== 'left' ? `rpt-th--${align}` : undefined}>{children}</th>;
+  return (
+    <th className={align !== "left" ? `rpt-th--${align}` : undefined}>
+      {children}
+    </th>
+  );
 }
 
 export function ReportTd({
   children,
-  align = 'left',
+  align = "left",
   className,
 }: {
   children?: ReactNode;
-  align?: 'left' | 'right' | 'center';
+  align?: "left" | "right" | "center";
   className?: string;
 }) {
-  return <td className={[align !== 'left' ? `rpt-td--${align}` : '', className].filter(Boolean).join(' ') || undefined}>{children}</td>;
+  return (
+    <td
+      className={
+        [align !== "left" ? `rpt-td--${align}` : "", className]
+          .filter(Boolean)
+          .join(" ") || undefined
+      }
+    >
+      {children}
+    </td>
+  );
 }
 
 /* ── ReportClientAvatar ─────────────────────────────────────── */
@@ -388,10 +433,17 @@ export function ReportClientAvatar({
   name: string;
   initials?: string;
 }) {
-  const auto = (name ?? '').trim().split(/\s+/).slice(0, 2).map((w) => w[0]?.toUpperCase() ?? '').join('');
+  const auto = (name ?? "")
+    .trim()
+    .split(/\s+/)
+    .slice(0, 2)
+    .map((w) => w[0]?.toUpperCase() ?? "")
+    .join("");
   return (
     <div className="rpt-client-row">
-      <div className="zh-avatar zh-avatar--square" aria-hidden>{initials ?? auto}</div>
+      <div className="zh-avatar zh-avatar--square" aria-hidden>
+        {initials ?? auto}
+      </div>
       <span className="rpt-client-name">{name}</span>
     </div>
   );
@@ -413,8 +465,11 @@ export function ReportStatusBadge({
   tone: RptStatusTone;
 }) {
   const variantMap: Record<RptStatusTone, BadgeVariant> = {
-    success: 'green', info: 'blue', warning: 'orange',
-    error: 'red', neutral: 'gray',
+    success: "green",
+    info: "blue",
+    warning: "orange",
+    error: "red",
+    neutral: "gray",
   };
   return <Badge label={label} variant={variantMap[tone]} size="md" />;
 }
@@ -423,7 +478,12 @@ export function ReportStatusBadge({
 
 export function ReportRowActions({ onClick }: { onClick?: () => void }) {
   return (
-    <button type="button" className="rpt-row-actions-btn" onClick={onClick} aria-label="Más acciones">
+    <button
+      type="button"
+      className="rpt-row-actions-btn"
+      onClick={onClick}
+      aria-label="Más acciones"
+    >
       <span className="material-symbols-outlined">more_vert</span>
     </button>
   );

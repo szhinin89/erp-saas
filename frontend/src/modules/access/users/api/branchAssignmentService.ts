@@ -1,4 +1,4 @@
-import { apiGet, apiPut } from '../../../lib/apiEnvelope';
+import { apiGet, apiPut } from "../../../lib/apiEnvelope";
 
 /** Proyección de GET .../memberships/{membershipId}/branches (Fase I-B). */
 export type CompanyUserBranchOptionDto = {
@@ -20,10 +20,18 @@ export type CompanyUserBranchesAdminDto = {
  */
 export const branchAssignmentService = {
   getMembershipBranches: (membershipId: string) =>
-    apiGet<CompanyUserBranchesAdminDto>(`/api/v1/admin/iam/memberships/${membershipId}/branches`),
+    apiGet<CompanyUserBranchesAdminDto>(
+      `/api/v1/admin/iam/memberships/${membershipId}/branches`,
+    ),
 
-  updateMembershipBranches: (membershipId: string, authorizedBranchIds: string[]) =>
-    apiPut<CompanyUserBranchesAdminDto>(`/api/v1/admin/iam/memberships/${membershipId}/branches`, {
-      authorizedBranchIds,
-    }),
+  updateMembershipBranches: (
+    membershipId: string,
+    authorizedBranchIds: string[],
+  ) =>
+    apiPut<CompanyUserBranchesAdminDto>(
+      `/api/v1/admin/iam/memberships/${membershipId}/branches`,
+      {
+        authorizedBranchIds,
+      },
+    ),
 };

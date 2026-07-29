@@ -1,9 +1,9 @@
-import { apiGet, apiPatch, apiPost, apiPut } from '../../lib/apiEnvelope';
+import { apiGet, apiPatch, apiPost, apiPut } from "../../lib/apiEnvelope";
 
 // ── Enums ──────────────────────────────────────────────────────────────────
-export type EmissionType = 'Electronic' | 'Physical';
-export const EMISSION_TYPE_ELECTRONIC: EmissionType = 'Electronic';
-export const EMISSION_TYPE_PHYSICAL: EmissionType = 'Physical';
+export type EmissionType = "Electronic" | "Physical";
+export const EMISSION_TYPE_ELECTRONIC: EmissionType = "Electronic";
+export const EMISSION_TYPE_PHYSICAL: EmissionType = "Physical";
 
 // ── DTOs ──────────────────────────────────────────────────────────────────
 /** Item para el listado principal de la pantalla independiente. */
@@ -59,18 +59,21 @@ export type UpdateEmissionPointPayload = {
 };
 
 // ── Service ───────────────────────────────────────────────────────────────
-const BASE = '/api/v1/settings/emission-points';
+const BASE = "/api/v1/settings/emission-points";
 
 export const emissionPointsService = {
   /** Lista todos los puntos de emisión de la empresa activa con filtros opcionales. */
-  list: (activeStatus: 'all' | 'active' | 'inactive' = 'active', search?: string) =>
+  list: (
+    activeStatus: "all" | "active" | "inactive" = "active",
+    search?: string,
+  ) =>
     apiGet<EmissionPointListItemDto[]>(
-      `${BASE}?activeStatus=${activeStatus}${search ? `&search=${encodeURIComponent(search)}` : ''}`,
+      `${BASE}?activeStatus=${activeStatus}${search ? `&search=${encodeURIComponent(search)}` : ""}`,
     ),
 
   /** Establecimientos activos para poblar el selector del formulario. */
   establishmentLookups: () =>
-    apiGet<EstablishmentLookupDto[]>('/api/v1/settings/establishments/lookups'),
+    apiGet<EstablishmentLookupDto[]>("/api/v1/settings/establishments/lookups"),
 
   create: (body: CreateEmissionPointPayload) =>
     apiPost<EmissionPointDto>(BASE, body),
@@ -78,9 +81,7 @@ export const emissionPointsService = {
   update: (id: string, body: UpdateEmissionPointPayload) =>
     apiPut<EmissionPointDto>(`${BASE}/${id}`, body),
 
-  disable: (id: string) =>
-    apiPatch<boolean>(`${BASE}/${id}/disable`),
+  disable: (id: string) => apiPatch<boolean>(`${BASE}/${id}/disable`),
 
-  enable: (id: string) =>
-    apiPatch<boolean>(`${BASE}/${id}/enable`),
+  enable: (id: string) => apiPatch<boolean>(`${BASE}/${id}/enable`),
 };

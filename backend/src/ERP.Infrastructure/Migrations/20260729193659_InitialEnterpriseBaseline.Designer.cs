@@ -12,8 +12,8 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace ERP.Infrastructure.Migrations
 {
     [DbContext(typeof(ErpDbContext))]
-    [Migration("20260725165737_AddJournalEntryLineAndPostingRuleLine")]
-    partial class AddJournalEntryLineAndPostingRuleLine
+    [Migration("20260729193659_InitialEnterpriseBaseline")]
+    partial class InitialEnterpriseBaseline
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -1309,9 +1309,9 @@ namespace ERP.Infrastructure.Migrations
                         .HasDefaultValue(false)
                         .HasColumnName("is_system_seeded");
 
-                    b.Property<short>("PersonType")
-                        .HasColumnType("smallint")
-                        .HasColumnName("person_type");
+                    b.Property<int>("LegalEntityTypeCode")
+                        .HasColumnType("integer")
+                        .HasColumnName("legal_entity_type_code");
 
                     b.Property<Guid>("TenantId")
                         .HasColumnType("uuid")
@@ -1329,6 +1329,8 @@ namespace ERP.Infrastructure.Migrations
 
                     b.HasAlternateKey("Id", "TenantId")
                         .HasName("uq_mbp_id_subscriber");
+
+                    b.HasIndex("LegalEntityTypeCode");
 
                     b.HasIndex("TenantId")
                         .HasDatabaseName("ix_mbp_subscriber");
@@ -1719,6 +1721,61 @@ namespace ERP.Infrastructure.Migrations
                     b.ToTable("master_company_bp_trading_settings", (string)null);
                 });
 
+            modelBuilder.Entity("ERP.Domain.MasterData.Entities.LegalEntityTypeCatalog", b =>
+                {
+                    b.Property<int>("Code")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasColumnName("code");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Code"));
+
+                    b.Property<bool>("IsActive")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(true)
+                        .HasColumnName("is_active");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(60)
+                        .HasColumnType("character varying(60)")
+                        .HasColumnName("name");
+
+                    b.Property<string>("SriTaxCategory")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)")
+                        .HasColumnName("sri_tax_category");
+
+                    b.HasKey("Code");
+
+                    b.ToTable("legal_entity_type", "global");
+
+                    b.HasData(
+                        new
+                        {
+                            Code = 1,
+                            IsActive = true,
+                            Name = "Persona Natural",
+                            SriTaxCategory = "NATURAL"
+                        },
+                        new
+                        {
+                            Code = 2,
+                            IsActive = true,
+                            Name = "Sociedad Privada",
+                            SriTaxCategory = "PRIVATE"
+                        },
+                        new
+                        {
+                            Code = 3,
+                            IsActive = true,
+                            Name = "Institución Pública",
+                            SriTaxCategory = "PUBLIC"
+                        });
+                });
+
             modelBuilder.Entity("ERP.Domain.MasterData.Entities.PaymentTerm", b =>
                 {
                     b.Property<Guid>("Id")
@@ -1786,48 +1843,6 @@ namespace ERP.Infrastructure.Migrations
                         .HasDatabaseName("uq_payment_terms_tenant_code");
 
                     b.ToTable("master_payment_terms", (string)null);
-                });
-
-            modelBuilder.Entity("ERP.Domain.MasterData.Entities.PersonTypeCatalog", b =>
-                {
-                    b.Property<short>("Code")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("smallint")
-                        .HasColumnName("code");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<short>("Code"));
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasMaxLength(60)
-                        .HasColumnType("character varying(60)")
-                        .HasColumnName("name");
-
-                    b.HasKey("Code");
-
-                    b.ToTable("person_type", "global");
-
-                    b.HasData(
-                        new
-                        {
-                            Code = (short)1,
-                            Name = "Natural (persona física)"
-                        },
-                        new
-                        {
-                            Code = (short)2,
-                            Name = "Jurídica (empresa/sociedad)"
-                        },
-                        new
-                        {
-                            Code = (short)3,
-                            Name = "Gubernamental"
-                        },
-                        new
-                        {
-                            Code = (short)4,
-                            Name = "Organización / ONG"
-                        });
                 });
 
             modelBuilder.Entity("ERP.Domain.Modules.Accounting.Entities.Account", b =>
@@ -2006,6 +2021,35 @@ namespace ERP.Infrastructure.Migrations
                         .HasColumnType("date")
                         .HasColumnName("entry_date");
 
+                    b.Property<int?>("EntryNumber")
+                        .HasColumnType("integer")
+                        .HasColumnName("entry_number");
+
+                    b.Property<int>("FiscalYear")
+                        .HasColumnType("integer")
+                        .HasColumnName("fiscal_year");
+
+                    b.Property<Guid?>("OriginalJournalEntryId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("original_journal_entry_id");
+
+                    b.Property<DateTime?>("PostedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("posted_at_utc");
+
+                    b.Property<Guid?>("ReverseJournalEntryId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("reverse_journal_entry_id");
+
+                    b.Property<string>("ReverseReason")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("reverse_reason");
+
+                    b.Property<DateTime?>("ReversedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("reversed_at_utc");
+
                     b.Property<Guid>("SourceEventId")
                         .HasColumnType("uuid")
                         .HasColumnName("source_event_id");
@@ -2041,6 +2085,16 @@ namespace ERP.Infrastructure.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("AccountingPeriodId");
+
+                    b.HasIndex("OriginalJournalEntryId")
+                        .IsUnique()
+                        .HasDatabaseName("uq_journal_entries_original_journal_entry_id");
+
+                    b.HasIndex("ReverseJournalEntryId");
+
+                    b.HasIndex("CompanyId", "FiscalYear", "EntryNumber")
+                        .IsUnique()
+                        .HasDatabaseName("uq_journal_entries_company_fiscal_year_entry_number");
 
                     b.HasIndex("CompanyId", "SourceModule", "SourceEventId", "SourceEventType")
                         .IsUnique()
@@ -2096,6 +2150,49 @@ namespace ERP.Infrastructure.Migrations
                         .HasDatabaseName("ix_journal_entry_lines_tenant");
 
                     b.ToTable("journal_entry_lines", (string)null);
+                });
+
+            modelBuilder.Entity("ERP.Domain.Modules.Accounting.Entities.JournalEntrySequence", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid>("CompanyId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("company_id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<int>("FiscalYear")
+                        .HasColumnType("integer")
+                        .HasColumnName("fiscal_year");
+
+                    b.Property<int>("LastNumber")
+                        .HasColumnType("integer")
+                        .HasColumnName("last_number");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("tenant_id");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TenantId", "CompanyId", "FiscalYear")
+                        .IsUnique()
+                        .HasDatabaseName("uq_journal_entry_sequences_company_fiscal_year");
+
+                    b.ToTable("journal_entry_sequences", null, t =>
+                        {
+                            t.HasCheckConstraint("chk_journal_entry_seq_non_negative", "last_number >= 0");
+                        });
                 });
 
             modelBuilder.Entity("ERP.Domain.Modules.Accounting.Entities.PostingRule", b =>
@@ -3454,6 +3551,154 @@ namespace ERP.Infrastructure.Migrations
                         .HasDatabaseName("uq_credit_terms_tenant_company_code");
 
                     b.ToTable("credit_terms", (string)null);
+                });
+
+            modelBuilder.Entity("ERP.Domain.Modules.Finance.Entities.Payment", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<decimal>("Amount")
+                        .HasColumnType("numeric(18,2)")
+                        .HasColumnName("amount");
+
+                    b.Property<DateTime?>("AppliedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("applied_at_utc");
+
+                    b.Property<Guid>("CompanyId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("company_id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<int>("Direction")
+                        .HasColumnType("integer")
+                        .HasColumnName("direction");
+
+                    b.Property<Guid>("PartnerId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("partner_id");
+
+                    b.Property<DateOnly>("PaymentDate")
+                        .HasColumnType("date")
+                        .HasColumnName("payment_date");
+
+                    b.Property<Guid?>("PaymentMethodId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("payment_method_id");
+
+                    b.Property<string>("Reference")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("reference");
+
+                    b.Property<string>("ReverseReason")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("reverse_reason");
+
+                    b.Property<DateTime?>("ReversedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("reversed_at_utc");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("integer")
+                        .HasColumnName("status");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("tenant_id");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid?>("UpdatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("PartnerId");
+
+                    b.HasIndex("PaymentMethodId");
+
+                    b.HasIndex("TenantId", "CompanyId")
+                        .HasDatabaseName("ix_payments_tenant_company");
+
+                    b.HasIndex("TenantId", "PartnerId")
+                        .HasDatabaseName("ix_payments_tenant_partner");
+
+                    b.HasIndex("TenantId", "CompanyId", "Status")
+                        .HasDatabaseName("ix_payments_tenant_company_status");
+
+                    b.ToTable("payments", null, t =>
+                        {
+                            t.HasCheckConstraint("chk_payments_amount_positive", "amount > 0");
+                        });
+                });
+
+            modelBuilder.Entity("ERP.Domain.Modules.Finance.Entities.PaymentApplicationLine", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<decimal>("AppliedAmount")
+                        .HasColumnType("numeric(18,2)")
+                        .HasColumnName("applied_amount");
+
+                    b.Property<Guid?>("InstallmentId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("installment_id");
+
+                    b.Property<Guid?>("PayableId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("payable_id");
+
+                    b.Property<Guid>("PaymentId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("payment_id");
+
+                    b.Property<Guid?>("ReceivableId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("receivable_id");
+
+                    b.Property<short>("SortOrder")
+                        .HasColumnType("smallint")
+                        .HasColumnName("sort_order");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("tenant_id");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("PayableId")
+                        .HasDatabaseName("ix_payment_application_lines_payable");
+
+                    b.HasIndex("PaymentId")
+                        .HasDatabaseName("ix_payment_application_lines_payment");
+
+                    b.HasIndex("ReceivableId")
+                        .HasDatabaseName("ix_payment_application_lines_receivable");
+
+                    b.ToTable("payment_application_lines", null, t =>
+                        {
+                            t.HasCheckConstraint("chk_payment_application_line_applied_amount_positive", "applied_amount > 0");
+
+                            t.HasCheckConstraint("chk_payment_application_line_document_xor", "(receivable_id IS NOT NULL AND payable_id IS NULL) OR (receivable_id IS NULL AND payable_id IS NOT NULL)");
+                        });
                 });
 
             modelBuilder.Entity("ERP.Domain.Modules.Inventory.Entities.CurrentStock", b =>
@@ -6922,6 +7167,10 @@ namespace ERP.Infrastructure.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("purchase_order_detail_id");
 
+                    b.Property<Guid?>("PurchaseReceptionLineId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("purchase_reception_line_id");
+
                     b.Property<decimal>("Quantity")
                         .HasColumnType("numeric(18,4)")
                         .HasColumnName("quantity");
@@ -7018,6 +7267,10 @@ namespace ERP.Infrastructure.Migrations
                     b.HasIndex("PurchaseOrderDetailId")
                         .HasDatabaseName("ix_purchase_invoice_details_po_detail")
                         .HasFilter("purchase_order_detail_id IS NOT NULL");
+
+                    b.HasIndex("PurchaseReceptionLineId")
+                        .HasDatabaseName("ix_purchase_invoice_details_reception_line")
+                        .HasFilter("purchase_reception_line_id IS NOT NULL");
 
                     b.HasIndex("TenantId")
                         .HasDatabaseName("ix_purchase_invoice_details_tenant");
@@ -7336,6 +7589,11 @@ namespace ERP.Infrastructure.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("created_by");
 
+                    b.Property<string>("DocTypeCode")
+                        .HasMaxLength(10)
+                        .HasColumnType("character varying(10)")
+                        .HasColumnName("doc_type_code");
+
                     b.Property<string>("InvoiceNumber")
                         .IsRequired()
                         .HasMaxLength(30)
@@ -7346,6 +7604,23 @@ namespace ERP.Infrastructure.Migrations
                         .HasColumnType("date")
                         .HasColumnName("issue_date");
 
+                    b.Property<int>("LinesDetectedCount")
+                        .HasColumnType("integer")
+                        .HasColumnName("lines_detected_count");
+
+                    b.Property<int>("LinesProcessedCount")
+                        .HasColumnType("integer")
+                        .HasColumnName("lines_processed_count");
+
+                    b.Property<string>("ProcessingNotes")
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)")
+                        .HasColumnName("processing_notes");
+
+                    b.Property<int>("ProcessingStatus")
+                        .HasColumnType("integer")
+                        .HasColumnName("processing_status");
+
                     b.Property<Guid?>("PurchaseId")
                         .HasColumnType("uuid")
                         .HasColumnName("purchase_id");
@@ -7353,6 +7628,11 @@ namespace ERP.Infrastructure.Migrations
                     b.Property<int>("SourceDocType")
                         .HasColumnType("integer")
                         .HasColumnName("source_doc_type");
+
+                    b.Property<string>("SriPaymentMethodCode")
+                        .HasMaxLength(10)
+                        .HasColumnType("character varying(10)")
+                        .HasColumnName("sri_payment_method_code");
 
                     b.Property<int>("Status")
                         .HasColumnType("integer")
@@ -7429,6 +7709,9 @@ namespace ERP.Infrastructure.Migrations
                     b.HasIndex("TenantId", "CompanyId")
                         .HasDatabaseName("ix_purchase_reception_documents_tenant_company");
 
+                    b.HasIndex("TenantId", "ProcessingStatus")
+                        .HasDatabaseName("ix_purchase_reception_documents_tenant_processing_status");
+
                     b.HasIndex("TenantId", "Status")
                         .HasDatabaseName("ix_purchase_reception_documents_tenant_status");
 
@@ -7448,14 +7731,42 @@ namespace ERP.Infrastructure.Migrations
                         .HasColumnType("character varying(300)")
                         .HasColumnName("description");
 
+                    b.Property<decimal>("Discount")
+                        .HasColumnType("numeric(18,2)")
+                        .HasColumnName("discount");
+
+                    b.Property<decimal>("DiscountPct")
+                        .HasColumnType("numeric(5,2)")
+                        .HasColumnName("discount_pct");
+
+                    b.Property<string>("IceCode")
+                        .HasMaxLength(10)
+                        .HasColumnType("character varying(10)")
+                        .HasColumnName("ice_code");
+
+                    b.Property<decimal>("IceValue")
+                        .HasColumnType("numeric(18,2)")
+                        .HasColumnName("ice_value");
+
                     b.Property<Guid?>("ItemId")
                         .HasColumnType("uuid")
                         .HasColumnName("item_id");
 
-                    b.Property<string>("MatchStatus")
-                        .HasMaxLength(30)
-                        .HasColumnType("character varying(30)")
+                    b.Property<decimal>("LineSubtotal")
+                        .HasColumnType("numeric(18,2)")
+                        .HasColumnName("line_subtotal");
+
+                    b.Property<int>("MatchStatus")
+                        .HasColumnType("integer")
                         .HasColumnName("match_status");
+
+                    b.Property<DateTime?>("MatchedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("matched_at");
+
+                    b.Property<Guid?>("MatchedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("matched_by");
 
                     b.Property<Guid>("PurchaseReceptionDocumentId")
                         .HasColumnType("uuid")
@@ -7465,18 +7776,47 @@ namespace ERP.Infrastructure.Migrations
                         .HasColumnType("numeric(18,4)")
                         .HasColumnName("quantity");
 
+                    b.Property<string>("SupplierAuxCode")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("supplier_aux_code");
+
                     b.Property<string>("SupplierCode")
                         .HasMaxLength(50)
                         .HasColumnType("character varying(50)")
                         .HasColumnName("supplier_code");
 
+                    b.Property<string>("TaxCode")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("character varying(10)")
+                        .HasColumnName("tax_code");
+
+                    b.Property<decimal>("TaxValue")
+                        .HasColumnType("numeric(18,2)")
+                        .HasColumnName("tax_value");
+
                     b.Property<Guid>("TenantId")
                         .HasColumnType("uuid")
                         .HasColumnName("tenant_id");
 
+                    b.Property<decimal>("TotalLine")
+                        .HasColumnType("numeric(18,2)")
+                        .HasColumnName("total_line");
+
                     b.Property<decimal>("UnitPrice")
                         .HasColumnType("numeric(18,6)")
                         .HasColumnName("unit_price");
+
+                    b.Property<string>("VatCode")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("character varying(10)")
+                        .HasColumnName("vat_code");
+
+                    b.Property<decimal>("VatPercentage")
+                        .HasColumnType("numeric(5,2)")
+                        .HasColumnName("vat_percentage");
 
                     b.HasKey("Id");
 
@@ -10573,6 +10913,12 @@ namespace ERP.Infrastructure.Migrations
 
             modelBuilder.Entity("ERP.Domain.MasterData.Entities.BusinessPartner", b =>
                 {
+                    b.HasOne("ERP.Domain.MasterData.Entities.LegalEntityTypeCatalog", null)
+                        .WithMany()
+                        .HasForeignKey("LegalEntityTypeCode")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
                     b.OwnsOne("ERP.Domain.MasterData.ValueObjects.PersonName", "Name", b1 =>
                         {
                             b1.Property<Guid>("BusinessPartnerId")
@@ -10970,6 +11316,16 @@ namespace ERP.Infrastructure.Migrations
                         .HasForeignKey("AccountingPeriodId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
+
+                    b.HasOne("ERP.Domain.Modules.Accounting.Entities.JournalEntry", null)
+                        .WithMany()
+                        .HasForeignKey("OriginalJournalEntryId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("ERP.Domain.Modules.Accounting.Entities.JournalEntry", null)
+                        .WithMany()
+                        .HasForeignKey("ReverseJournalEntryId")
+                        .OnDelete(DeleteBehavior.Restrict);
                 });
 
             modelBuilder.Entity("ERP.Domain.Modules.Accounting.Entities.JournalEntryLine", b =>
@@ -11174,6 +11530,39 @@ namespace ERP.Infrastructure.Migrations
                         .HasForeignKey("CreditTermId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+                });
+
+            modelBuilder.Entity("ERP.Domain.Modules.Finance.Entities.Payment", b =>
+                {
+                    b.HasOne("ERP.Domain.MasterData.Entities.BusinessPartner", null)
+                        .WithMany()
+                        .HasForeignKey("PartnerId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("ERP.Domain.Modules.Sales.Entities.PaymentMethod", null)
+                        .WithMany()
+                        .HasForeignKey("PaymentMethodId")
+                        .OnDelete(DeleteBehavior.Restrict);
+                });
+
+            modelBuilder.Entity("ERP.Domain.Modules.Finance.Entities.PaymentApplicationLine", b =>
+                {
+                    b.HasOne("ERP.Domain.Modules.Purchases.Entities.PurchasePayable", null)
+                        .WithMany()
+                        .HasForeignKey("PayableId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("ERP.Domain.Modules.Finance.Entities.Payment", null)
+                        .WithMany("Lines")
+                        .HasForeignKey("PaymentId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("ERP.Domain.Modules.Sales.Entities.SalesReceivable", null)
+                        .WithMany()
+                        .HasForeignKey("ReceivableId")
+                        .OnDelete(DeleteBehavior.Restrict);
                 });
 
             modelBuilder.Entity("ERP.Domain.Modules.Inventory.Entities.StockAdjustmentLine", b =>
@@ -11662,6 +12051,11 @@ namespace ERP.Infrastructure.Migrations
 
             modelBuilder.Entity("ERP.Domain.Modules.Purchases.PurchaseReception.Entities.PurchaseReceptionLine", b =>
                 {
+                    b.HasOne("ERP.Domain.Modules.Items.Entities.Item", null)
+                        .WithMany()
+                        .HasForeignKey("ItemId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
                     b.HasOne("ERP.Domain.Modules.Purchases.PurchaseReception.Entities.PurchaseReceptionDocument", null)
                         .WithMany("Lines")
                         .HasForeignKey("PurchaseReceptionDocumentId")
@@ -12002,6 +12396,11 @@ namespace ERP.Infrastructure.Migrations
             modelBuilder.Entity("ERP.Domain.Modules.Finance.Entities.CreditTerm", b =>
                 {
                     b.Navigation("Installments");
+                });
+
+            modelBuilder.Entity("ERP.Domain.Modules.Finance.Entities.Payment", b =>
+                {
+                    b.Navigation("Lines");
                 });
 
             modelBuilder.Entity("ERP.Domain.Modules.Inventory.Entities.StockAdjustment", b =>

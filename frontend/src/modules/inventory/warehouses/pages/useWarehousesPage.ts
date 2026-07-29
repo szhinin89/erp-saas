@@ -1,29 +1,32 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { useI18n } from '../../../../i18n/i18n';
-import { branchService, type BranchListItemDto } from '../../../branches/api/branchService';
-import { warehouseService, type WarehouseDto } from '../api/warehouseService';
-import { applyServerErrors } from '../../../lib/validationErrors';
-import { usePermissionsUi } from '../../../../access/usePermissionsUi';
-import { message } from '../../../../lib/messages';
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useI18n } from "../../../../i18n/i18n";
+import {
+  branchService,
+  type BranchListItemDto,
+} from "../../../branches/api/branchService";
+import { warehouseService, type WarehouseDto } from "../api/warehouseService";
+import { applyServerErrors } from "../../../lib/validationErrors";
+import { usePermissionsUi } from "../../../../access/usePermissionsUi";
+import { message } from "../../../../lib/messages";
 import {
   warehouseSchema,
   defaultWarehouseValues,
   type WarehouseFormValues,
-} from '../../../../schemas/inventory/warehouseSchema';
+} from "../../../../schemas/inventory/warehouseSchema";
 
 export function fromWarehouseDto(d: WarehouseDto): WarehouseFormValues {
   return {
     branchId: d.branchId,
     name: d.name,
-    storageType: d.storageType ?? '',
-    address: d.address ?? '',
-    phone: d.phone ?? '',
-    email: d.email ?? '',
-    manager: d.manager ?? '',
-    latitude: d.latitude ?? '',
-    longitude: d.longitude ?? '',
+    storageType: d.storageType ?? "",
+    address: d.address ?? "",
+    phone: d.phone ?? "",
+    email: d.email ?? "",
+    manager: d.manager ?? "",
+    latitude: d.latitude ?? "",
+    longitude: d.longitude ?? "",
     capacity: d.capacity ?? null,
     dailyDispatchGoal: d.dailyDispatchGoal ?? null,
   };
@@ -33,38 +36,42 @@ export function useWarehousesPage() {
   const { t } = useI18n();
   const { canShow } = usePermissionsUi();
 
-  const canView = canShow('inventory.warehouses.view');
-  const canCreate = canShow('inventory.warehouses.create');
-  const canUpdate = canShow('inventory.warehouses.update');
-  const canDelete = canShow('inventory.warehouses.delete');
+  const canView = canShow("inventory.warehouses.view");
+  const canCreate = canShow("inventory.warehouses.create");
+  const canUpdate = canShow("inventory.warehouses.update");
+  const canDelete = canShow("inventory.warehouses.delete");
 
   const [items, setItems] = useState<WarehouseDto[]>([]);
   const [branches, setBranches] = useState<BranchListItemDto[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-  const [search, setSearch] = useState('');
+  const [error, setError] = useState("");
+  const [search, setSearch] = useState("");
 
   const [panelOpen, setPanelOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editCode, setEditCode] = useState<string | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
-  const [saveError, setSaveError] = useState('');
+  const [saveError, setSaveError] = useState("");
 
   const form = useForm<WarehouseFormValues>({
     resolver: zodResolver(warehouseSchema),
     defaultValues: defaultWarehouseValues,
   });
 
-  const { handleSubmit, reset, formState: { errors } } = form;
+  const {
+    handleSubmit,
+    reset,
+    formState: { errors },
+  } = form;
 
   const fetchList = useCallback(async () => {
-    setError('');
+    setError("");
     setLoading(true);
     try {
-      setItems((await warehouseService.list('all')) ?? []);
+      setItems((await warehouseService.list("all")) ?? []);
     } catch {
-      setError(t('common.errorPrefix'));
+      setError(t("common.errorPrefix"));
     } finally {
       setLoading(false);
     }
@@ -75,7 +82,10 @@ export function useWarehousesPage() {
   }, [fetchList]);
 
   useEffect(() => {
-    branchService.list('active').then(setBranches).catch(() => setBranches([]));
+    branchService
+      .list("active")
+      .then(setBranches)
+      .catch(() => setBranches([]));
   }, []);
 
   const totals = useMemo(
@@ -94,25 +104,26 @@ export function useWarehousesPage() {
     return items.filter(
       (x) =>
         x.name.toLowerCase().includes(q) ||
-        (x.code ?? '').toLowerCase().includes(q) ||
-        (x.manager ?? '').toLowerCase().includes(q) ||
-        (x.address ?? '').toLowerCase().includes(q),
+        (x.code ?? "").toLowerCase().includes(q) ||
+        (x.manager ?? "").toLowerCase().includes(q) ||
+        (x.address ?? "").toLowerCase().includes(q),
     );
   }, [items, search]);
 
-  const branchName = (id: string) => branches.find((b) => b.id === id)?.name ?? id;
+  const branchName = (id: string) =>
+    branches.find((b) => b.id === id)?.name ?? id;
 
   const openCreate = () => {
     setEditingId(null);
     setEditCode(null);
     setSelectedId(null);
-    setSaveError('');
+    setSaveError("");
     reset(defaultWarehouseValues);
     setPanelOpen(true);
   };
 
   const openEdit = async (id: string) => {
-    setSaveError('');
+    setSaveError("");
     try {
       const d = await warehouseService.getById(id);
       if (!d) return;
@@ -122,7 +133,7 @@ export function useWarehousesPage() {
       reset(fromWarehouseDto(d));
       setPanelOpen(true);
     } catch {
-      setError(t('common.errorPrefix'));
+      setError(t("common.errorPrefix"));
     }
   };
 
@@ -131,11 +142,11 @@ export function useWarehousesPage() {
     setEditingId(null);
     setEditCode(null);
     setSelectedId(null);
-    setSaveError('');
+    setSaveError("");
   };
 
   const save = handleSubmit(async (formValues) => {
-    setSaveError('');
+    setSaveError("");
     setSaving(true);
     try {
       const payload = {
@@ -154,7 +165,9 @@ export function useWarehousesPage() {
       if (editingId) {
         await warehouseService.update(editingId, { id: editingId, ...payload });
         await fetchList();
-        message.success(t('warehouses.updated.success', 'Bodega actualizada correctamente.'));
+        message.success(
+          t("warehouses.updated.success", "Bodega actualizada correctamente."),
+        );
       } else {
         const created = await warehouseService.create(payload);
         await fetchList();
@@ -162,18 +175,22 @@ export function useWarehousesPage() {
         setEditCode(created.code);
         setSelectedId(created.id);
         reset(fromWarehouseDto(created));
-        message.success(t('warehouses.created.success', 'Bodega creada correctamente.'));
+        message.success(
+          t("warehouses.created.success", "Bodega creada correctamente."),
+        );
       }
     } catch (err: unknown) {
-      const applied = applyServerErrors(err, form.setError, (msg) => setSaveError(msg));
-      if (!applied) setSaveError(t('common.errorPrefix'));
+      const applied = applyServerErrors(err, form.setError, (msg) =>
+        setSaveError(msg),
+      );
+      if (!applied) setSaveError(t("common.errorPrefix"));
     } finally {
       setSaving(false);
     }
   });
 
   const toggleStatus = async (row: WarehouseDto) => {
-    setError('');
+    setError("");
     try {
       if (row.isActive) {
         if (!canDelete) return;
@@ -184,7 +201,7 @@ export function useWarehousesPage() {
       }
       await fetchList();
     } catch {
-      setError(t('common.errorPrefix'));
+      setError(t("common.errorPrefix"));
     }
   };
 

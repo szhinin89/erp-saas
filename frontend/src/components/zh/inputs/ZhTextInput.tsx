@@ -1,18 +1,18 @@
-import React from 'react';
+import React from "react";
 import {
   allowsLettersKey,
   allowsAlphanumericKey,
-} from '../../../lib/validators/textValidators';
+} from "../../../lib/validators/textValidators";
 import {
   sanitizeLetters,
   sanitizeAlphanumeric,
   uppercase,
-} from '../../../lib/sanitizers';
-import { setProgrammaticInputValue } from '../../../lib/inputUtils';
+} from "../../../lib/sanitizers";
+import { setProgrammaticInputValue } from "../../../lib/inputUtils";
 
-export type ZhTextMode = 'text' | 'letters' | 'alphanumeric' | 'uppercase';
+export type ZhTextMode = "text" | "letters" | "alphanumeric" | "uppercase";
 
-type Props = Omit<React.InputHTMLAttributes<HTMLInputElement>, 'type'> & {
+type Props = Omit<React.InputHTMLAttributes<HTMLInputElement>, "type"> & {
   mode?: ZhTextMode;
 };
 
@@ -29,26 +29,29 @@ type Props = Omit<React.InputHTMLAttributes<HTMLInputElement>, 'type'> & {
  * <ZhTextInput {...register('sku')} mode="uppercase" />
  */
 export const ZhTextInput = React.forwardRef<HTMLInputElement, Props>(
-  ({ mode = 'text', onKeyDown, onPaste, ...props }, ref) => {
+  ({ mode = "text", onKeyDown, onPaste, ...props }, ref) => {
     const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-      if (mode === 'letters' && !allowsLettersKey(e)) e.preventDefault();
-      if ((mode === 'alphanumeric' || mode === 'uppercase') && !allowsAlphanumericKey(e))
+      if (mode === "letters" && !allowsLettersKey(e)) e.preventDefault();
+      if (
+        (mode === "alphanumeric" || mode === "uppercase") &&
+        !allowsAlphanumericKey(e)
+      )
         e.preventDefault();
       onKeyDown?.(e);
     };
 
     const handlePaste = (e: React.ClipboardEvent<HTMLInputElement>) => {
-      if (mode === 'text') {
+      if (mode === "text") {
         onPaste?.(e);
         return;
       }
       e.preventDefault();
-      const raw = e.clipboardData.getData('text');
+      const raw = e.clipboardData.getData("text");
       let clean = raw;
-      if (mode === 'letters') clean = sanitizeLetters(raw);
-      if (mode === 'alphanumeric') clean = sanitizeAlphanumeric(raw);
-      if (mode === 'uppercase') clean = uppercase(sanitizeAlphanumeric(raw));
-      if (clean !== '') setProgrammaticInputValue(e.currentTarget, clean);
+      if (mode === "letters") clean = sanitizeLetters(raw);
+      if (mode === "alphanumeric") clean = sanitizeAlphanumeric(raw);
+      if (mode === "uppercase") clean = uppercase(sanitizeAlphanumeric(raw));
+      if (clean !== "") setProgrammaticInputValue(e.currentTarget, clean);
       onPaste?.(e);
     };
 
@@ -64,4 +67,4 @@ export const ZhTextInput = React.forwardRef<HTMLInputElement, Props>(
   },
 );
 
-ZhTextInput.displayName = 'ZhTextInput';
+ZhTextInput.displayName = "ZhTextInput";

@@ -1,26 +1,27 @@
-import axios, { type AxiosError } from 'axios';
-import { useAuthStore } from '../../store/authStore';
-import { getAccessToken, setAccessToken } from './authTokenMemory';
-import { readEnvelopePayload } from '../../modules/lib/apiEnvelope';
-import { logDevSessionContext } from './devSessionLog';
-import { normalizeAuthResponse } from '../../modules/auth/normalizeAuthResponse';
-import type { ApiResponse } from '../../types/api';
+import axios, { type AxiosError } from "axios";
+import { useAuthStore } from "../../store/authStore";
+import { getAccessToken, setAccessToken } from "./authTokenMemory";
+import { readEnvelopePayload } from "../../modules/lib/apiEnvelope";
+import { logDevSessionContext } from "./devSessionLog";
+import { normalizeAuthResponse } from "../../modules/auth/normalizeAuthResponse";
+import type { ApiResponse } from "../../types/api";
 
-const viteApiBase = (import.meta.env.VITE_API_URL as string | undefined)?.trim() ?? '';
+const viteApiBase =
+  (import.meta.env.VITE_API_URL as string | undefined)?.trim() ?? "";
 
-export const AUTH_REFRESH_LOCK = 'erp-refresh';
-export const AUTH_BROADCAST_CHANNEL = 'erp.auth';
+export const AUTH_REFRESH_LOCK = "erp-refresh";
+export const AUTH_BROADCAST_CHANNEL = "erp.auth";
 
 export type AuthBroadcastEvent =
-  | { type: 'refresh_started'; tabId: string }
-  | { type: 'refresh_success'; tabId: string; accessToken: string }
-  | { type: 'refresh_failed'; tabId: string; retryable?: boolean }
-  | { type: 'logout' };
+  | { type: "refresh_started"; tabId: string }
+  | { type: "refresh_success"; tabId: string; accessToken: string }
+  | { type: "refresh_failed"; tabId: string; retryable?: boolean }
+  | { type: "logout" };
 
 type RefreshPayload = ApiResponse<Record<string, unknown>>;
 
 const TAB_ID =
-  typeof crypto !== 'undefined' && 'randomUUID' in crypto
+  typeof crypto !== "undefined" && "randomUUID" in crypto
     ? crypto.randomUUID()
     : `tab-${Date.now()}`;
 
@@ -37,7 +38,7 @@ let remoteRefreshWaiters: Array<{
 let remoteRefreshPending = false;
 
 function getChannel(): BroadcastChannel | null {
-  if (typeof BroadcastChannel === 'undefined') return null;
+  if (typeof BroadcastChannel === "undefined") return null;
   if (!channel) {
     channel = new BroadcastChannel(AUTH_BROADCAST_CHANNEL);
     channel.onmessage = (ev: MessageEvent<AuthBroadcastEvent>) => {
@@ -56,12 +57,12 @@ function broadcast(event: AuthBroadcastEvent): void {
 }
 
 function handleBroadcast(event: AuthBroadcastEvent): void {
-  if (event.type === 'refresh_started' && event.tabId !== TAB_ID) {
+  if (event.type === "refresh_started" && event.tabId !== TAB_ID) {
     remoteRefreshPending = true;
     return;
   }
 
-  if (event.type === 'refresh_success' && event.tabId !== TAB_ID) {
+  if (event.type === "refresh_success" && event.tabId !== TAB_ID) {
     remoteRefreshPending = false;
     setAccessToken(event.accessToken);
     useAuthStore.getState().updateTokens(event.accessToken, null);
@@ -70,23 +71,28 @@ function handleBroadcast(event: AuthBroadcastEvent): void {
     return;
   }
 
-  if (event.type === 'refresh_failed' && event.tabId !== TAB_ID) {
+  if (event.type === "refresh_failed" && event.tabId !== TAB_ID) {
     remoteRefreshPending = false;
     if (!event.retryable) {
       const waiters = remoteRefreshWaiters.splice(0);
-      const err = new Error('Refresh remoto falló');
+      const err = new Error("Refresh remoto falló");
       waiters.forEach((w) => w.reject(err));
     }
     return;
   }
 
-  if (event.type === 'logout') {
+  if (event.type === "logout") {
     remoteRefreshPending = false;
-    remoteRefreshWaiters.splice(0).forEach((w) => w.reject(new Error('logout')));
-    import('./fullLogout').then(({ fullLogout }) => {
+    remoteRefreshWaiters
+      .splice(0)
+      .forEach((w) => w.reject(new Error("logout")));
+    import("./fullLogout").then(({ fullLogout }) => {
       fullLogout({ resetStores: true, broadcast: false });
-      if (typeof window !== 'undefined' && !window.location.pathname.startsWith('/login')) {
-        window.location.href = '/login';
+      if (
+        typeof window !== "undefined" &&
+        !window.location.pathname.startsWith("/login")
+      ) {
+        window.location.href = "/login";
       }
     });
   }
@@ -101,7 +107,7 @@ function waitForRemoteRefresh(timeoutMs = LOCK_TIMEOUT_MS): Promise<string> {
       remoteRefreshWaiters = remoteRefreshWaiters.filter(
         (w) => w.resolve !== wrappedResolve,
       );
-      reject(new Error('Timeout esperando refresh de otra pestaña'));
+      reject(new Error("Timeout esperando refresh de otra pestaña"));
     }, timeoutMs);
 
     const wrappedResolve = (token: string) => {
@@ -113,7 +119,10 @@ function waitForRemoteRefresh(timeoutMs = LOCK_TIMEOUT_MS): Promise<string> {
       reject(err);
     };
 
-    remoteRefreshWaiters.push({ resolve: wrappedResolve, reject: wrappedReject });
+    remoteRefreshWaiters.push({
+      resolve: wrappedResolve,
+      reject: wrappedReject,
+    });
   });
 }
 
@@ -124,8 +133,16 @@ function sleep(ms: number): Promise<void> {
 function isRetryableRefreshError(err: unknown): boolean {
   const ax = err as AxiosError<{ message?: string; Message?: string }>;
   if (ax.response?.status !== 401) return false;
-  const msg = (ax.response.data?.message ?? ax.response.data?.Message ?? '').toLowerCase();
-  return msg.includes('ya utilizado') || msg.includes('rotado') || msg.includes('utilizado');
+  const msg = (
+    ax.response.data?.message ??
+    ax.response.data?.Message ??
+    ""
+  ).toLowerCase();
+  return (
+    msg.includes("ya utilizado") ||
+    msg.includes("rotado") ||
+    msg.includes("utilizado")
+  );
 }
 
 async function postRefresh(): Promise<string> {
@@ -134,24 +151,30 @@ async function postRefresh(): Promise<string> {
     {},
     { withCredentials: true },
   );
-  const session = normalizeAuthResponse(readEnvelopePayload<Record<string, unknown> | null>(res.data));
+  const session = normalizeAuthResponse(
+    readEnvelopePayload<Record<string, unknown> | null>(res.data),
+  );
   if (!session.token) {
-    throw new Error('La renovación de sesión no devolvió token.');
+    throw new Error("La renovación de sesión no devolvió token.");
   }
   setAccessToken(session.token);
   useAuthStore.getState().login(session);
-  logDevSessionContext('refresh');
+  logDevSessionContext("refresh");
   return session.token;
 }
 
-async function executeRefreshOnce(allowBootstrapRetry: boolean): Promise<string> {
+async function executeRefreshOnce(
+  allowBootstrapRetry: boolean,
+): Promise<string> {
   try {
     return await postRefresh();
   } catch (err) {
     if (allowBootstrapRetry && isRetryableRefreshError(err)) {
       const delay =
         BOOTSTRAP_RETRY_MIN_MS +
-        Math.floor(Math.random() * (BOOTSTRAP_RETRY_MAX_MS - BOOTSTRAP_RETRY_MIN_MS));
+        Math.floor(
+          Math.random() * (BOOTSTRAP_RETRY_MAX_MS - BOOTSTRAP_RETRY_MIN_MS),
+        );
       await sleep(delay);
       return postRefresh();
     }
@@ -160,7 +183,7 @@ async function executeRefreshOnce(allowBootstrapRetry: boolean): Promise<string>
 }
 
 async function withRefreshLock<T>(fn: () => Promise<T>): Promise<T> {
-  if (typeof navigator !== 'undefined' && navigator.locks?.request) {
+  if (typeof navigator !== "undefined" && navigator.locks?.request) {
     const ac = new AbortController();
     const timer = window.setTimeout(() => ac.abort(), LOCK_TIMEOUT_MS);
     try {
@@ -181,7 +204,9 @@ async function withRefreshLock<T>(fn: () => Promise<T>): Promise<T> {
   return fn();
 }
 
-async function runRefresh(options: { bootstrapRetry?: boolean } = {}): Promise<string> {
+async function runRefresh(
+  options: { bootstrapRetry?: boolean } = {},
+): Promise<string> {
   const existing = getAccessToken();
   if (existing) return existing;
 
@@ -193,17 +218,17 @@ async function runRefresh(options: { bootstrapRetry?: boolean } = {}): Promise<s
     }
   }
 
-  broadcast({ type: 'refresh_started', tabId: TAB_ID });
+  broadcast({ type: "refresh_started", tabId: TAB_ID });
 
   try {
     const access = await withRefreshLock(() =>
       executeRefreshOnce(options.bootstrapRetry ?? false),
     );
-    broadcast({ type: 'refresh_success', tabId: TAB_ID, accessToken: access });
+    broadcast({ type: "refresh_success", tabId: TAB_ID, accessToken: access });
     return access;
   } catch (err) {
     broadcast({
-      type: 'refresh_failed',
+      type: "refresh_failed",
       tabId: TAB_ID,
       retryable: isRetryableRefreshError(err),
     });
@@ -219,7 +244,9 @@ export type RefreshSessionOptions = {
 /**
  * Gestor único de refresh: Web Locks + BroadcastChannel + single-flight por pestaña.
  */
-export function refreshSessionToken(options: RefreshSessionOptions = {}): Promise<string> {
+export function refreshSessionToken(
+  options: RefreshSessionOptions = {},
+): Promise<string> {
   const existing = getAccessToken();
   if (existing) return Promise.resolve(existing);
 
@@ -235,13 +262,13 @@ export function refreshSessionToken(options: RefreshSessionOptions = {}): Promis
 export function resetRefreshSessionFlight(): void {
   inFlightRefresh = null;
   remoteRefreshPending = false;
-  remoteRefreshWaiters.splice(0).forEach((w) =>
-    w.reject(new Error('Refresh cancelado')),
-  );
+  remoteRefreshWaiters
+    .splice(0)
+    .forEach((w) => w.reject(new Error("Refresh cancelado")));
 }
 
 export function broadcastAuthLogout(): void {
-  broadcast({ type: 'logout' });
+  broadcast({ type: "logout" });
 }
 
 export function closeAuthBroadcastChannel(): void {

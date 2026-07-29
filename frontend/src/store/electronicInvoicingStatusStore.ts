@@ -1,5 +1,8 @@
-import { create } from 'zustand';
-import { electronicInvoicingService, type ElectronicInvoicingStatusDto } from '../modules/configuracion/facturacionElectronica/api/electronicInvoicingService';
+import { create } from "zustand";
+import {
+  electronicInvoicingService,
+  type ElectronicInvoicingStatusDto,
+} from "../modules/configuracion/facturacionElectronica/api/electronicInvoicingService";
 
 interface ElectronicInvoicingStatusState {
   status: ElectronicInvoicingStatusDto | null;
@@ -17,26 +20,27 @@ let inFlight: Promise<void> | null = null;
  * Se refresca en los mismos dos eventos que la sesión: bootstrap de app y switch-company
  * (ver `SessionBootstrap.tsx` / `CompanySwitcher.tsx`) — nunca por cada cambio de pantalla.
  */
-export const useElectronicInvoicingStatusStore = create<ElectronicInvoicingStatusState>()((set) => ({
-  status:    null,
-  isLoaded:  false,
-  isLoading: false,
+export const useElectronicInvoicingStatusStore =
+  create<ElectronicInvoicingStatusState>()((set) => ({
+    status: null,
+    isLoaded: false,
+    isLoading: false,
 
-  refresh: async () => {
-    if (inFlight) return inFlight;
-    set({ isLoading: true });
-    inFlight = (async () => {
-      try {
-        const status = await electronicInvoicingService.getStatus();
-        set({ status, isLoaded: true, isLoading: false });
-      } catch {
-        set({ isLoading: false });
-      } finally {
-        inFlight = null;
-      }
-    })();
-    return inFlight;
-  },
+    refresh: async () => {
+      if (inFlight) return inFlight;
+      set({ isLoading: true });
+      inFlight = (async () => {
+        try {
+          const status = await electronicInvoicingService.getStatus();
+          set({ status, isLoaded: true, isLoading: false });
+        } catch {
+          set({ isLoading: false });
+        } finally {
+          inFlight = null;
+        }
+      })();
+      return inFlight;
+    },
 
-  clear: () => set({ status: null, isLoaded: false, isLoading: false }),
-}));
+    clear: () => set({ status: null, isLoaded: false, isLoading: false }),
+  }));

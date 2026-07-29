@@ -366,7 +366,7 @@ function Invoke-DotnetRestore {
 
     Write-Step "Restaurando dependencias .NET"
 
-    dotnet restore $ApiProject
+    dotnet restore "$BackendPath\src\ERP.slnx"
 
     if ($LASTEXITCODE -ne 0) {
         throw "Falló dotnet restore"
@@ -411,43 +411,27 @@ function Ensure-FrontendDependencies {
 
 function Remove-MigrationFiles {
 
-    Write-Step "Eliminando archivos de migraciones EF Core"
+    Write-Step "Eliminando carpeta de migraciones EF Core"
 
     $migrationsPath = Join-Path `
         $BackendPath `
         "src/ERP.Infrastructure/Migrations"
 
     if (-not (Test-Path $migrationsPath)) {
-        Write-Ok "No existe la carpeta de migraciones — se omite"
+        Write-Ok "No existe la carpeta de migraciones"
         return
     }
 
-    $files = @(Get-ChildItem `
+    Remove-Item `
         -Path $migrationsPath `
-        -File `
-        -ErrorAction SilentlyContinue)
+        -Recurse `
+        -Force
 
-    if ($files.Count -eq 0) {
-        Write-Ok "No hay archivos de migración que eliminar"
-        return
-    }
+    New-Item `
+        -ItemType Directory `
+        -Path $migrationsPath | Out-Null
 
-    foreach ($file in $files) {
-
-        try {
-            Remove-Item `
-                -Path $file.FullName `
-                -Force `
-                -ErrorAction Stop
-
-            Write-Ok "Eliminado: $($file.Name)"
-        }
-        catch {
-            Write-Warn "No se pudo eliminar: $($file.Name)"
-        }
-    }
-
-    Write-Ok "Migraciones eliminadas ($($files.Count) archivos)"
+    Write-Ok "Carpeta de migraciones reiniciada"
 }
 
 
@@ -484,9 +468,10 @@ function Invoke-DatabaseUpdate {
 
     try {
 
-        dotnet ef database update `
-            --project $InfrastructureProject `
-            --startup-project $ApiProject
+       dotnet ef database update `
+        --project $InfrastructureProject `
+        --startup-project $ApiProject `
+        --context ErpDbContext
 
         if ($LASTEXITCODE -ne 0) {
             throw "Falló EF Database Update"
@@ -1055,6 +1040,9 @@ function Invoke-FullReset {
     }
 
     Stop-DevelopmentServices
+
+    # Limpia bin/obj antes de regenerar EF
+    Invoke-Clean
     Invoke-DotnetRestore
     Invoke-DatabaseDrop
     Remove-MigrationFiles
@@ -1062,7 +1050,6 @@ function Invoke-FullReset {
     Invoke-DatabaseUpdate
     Invoke-BackendBuild
     Start-Backend
-
     if (Wait-ApiReady) {
 
         Confirm-SystemInitialized | Out-Null

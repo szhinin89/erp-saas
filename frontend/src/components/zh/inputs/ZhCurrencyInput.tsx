@@ -1,11 +1,11 @@
-import React from 'react';
-import { allowsDecimalKey } from '../../../lib/validators/numericValidators';
-import { sanitizeDecimal } from '../../../lib/sanitizers';
-import { setProgrammaticInputValue } from '../../../lib/inputUtils';
-import { getDecimalConfig } from '../../../lib/config/decimal.config';
-import './ZhInputs.css';
+import React from "react";
+import { allowsDecimalKey } from "../../../lib/validators/numericValidators";
+import { sanitizeDecimal } from "../../../lib/sanitizers";
+import { setProgrammaticInputValue } from "../../../lib/inputUtils";
+import { getDecimalConfig } from "../../../lib/config/decimal.config";
+import "./ZhInputs.css";
 
-type Props = Omit<React.InputHTMLAttributes<HTMLInputElement>, 'type'> & {
+type Props = Omit<React.InputHTMLAttributes<HTMLInputElement>, "type"> & {
   decimals?: number;
   currency?: string;
 };
@@ -19,7 +19,18 @@ type Props = Omit<React.InputHTMLAttributes<HTMLInputElement>, 'type'> & {
  * <ZhCurrencyInput {...register('cost')} decimals={decimalConfig.purchases} currency="USD" />
  */
 export const ZhCurrencyInput = React.forwardRef<HTMLInputElement, Props>(
-  ({ decimals = getDecimalConfig().salesUnitPrice, currency = 'USD', onKeyDown, onPaste, disabled, className, ...props }, ref) => {
+  (
+    {
+      decimals = getDecimalConfig().salesUnitPrice,
+      currency = "USD",
+      onKeyDown,
+      onPaste,
+      disabled,
+      className,
+      ...props
+    },
+    ref,
+  ) => {
     const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
       if (!allowsDecimalKey(e, decimals, true)) e.preventDefault();
       onKeyDown?.(e);
@@ -27,22 +38,28 @@ export const ZhCurrencyInput = React.forwardRef<HTMLInputElement, Props>(
 
     const handlePaste = (e: React.ClipboardEvent<HTMLInputElement>) => {
       e.preventDefault();
-      const raw = e.clipboardData.getData('text');
+      const raw = e.clipboardData.getData("text");
       const clean = sanitizeDecimal(raw, decimals, true);
-      if (clean !== '') setProgrammaticInputValue(e.currentTarget, clean);
+      if (clean !== "") setProgrammaticInputValue(e.currentTarget, clean);
       onPaste?.(e);
     };
 
     return (
-      <div className={`zh-prefixed-input${disabled ? ' zh-prefixed-input--disabled' : ''}`}>
-        <span className="zh-input-prefix" aria-hidden="true">{currency}</span>
+      <div
+        className={`zh-prefixed-input${disabled ? " zh-prefixed-input--disabled" : ""}`}
+      >
+        <span className="zh-input-prefix" aria-hidden="true">
+          {currency}
+        </span>
         <input
           {...props}
           ref={ref}
           type="text"
           inputMode="decimal"
           disabled={disabled}
-          className={className ? `zh-numeric-input ${className}` : 'zh-numeric-input'}
+          className={
+            className ? `zh-numeric-input ${className}` : "zh-numeric-input"
+          }
           onKeyDown={handleKeyDown}
           onPaste={handlePaste}
         />
@@ -51,4 +68,4 @@ export const ZhCurrencyInput = React.forwardRef<HTMLInputElement, Props>(
   },
 );
 
-ZhCurrencyInput.displayName = 'ZhCurrencyInput';
+ZhCurrencyInput.displayName = "ZhCurrencyInput";

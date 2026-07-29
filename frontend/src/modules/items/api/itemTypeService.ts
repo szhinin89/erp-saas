@@ -1,4 +1,4 @@
-import { apiGet, apiPost, apiPut } from '../../lib/apiEnvelope';
+import { apiGet, apiPost, apiPut } from "../../lib/apiEnvelope";
 
 export type ItemTypeDto = {
   id: string;
@@ -20,21 +20,18 @@ export type UpdateItemTypePayload = {
   sortOrder: number;
 };
 
-const BASE = '/api/v1/item-types';
+const BASE = "/api/v1/item-types";
 
 export const itemTypeService = {
   list: (onlyActive = false) =>
     apiGet<ItemTypeDto[]>(`${BASE}?onlyActive=${onlyActive}`),
 
-  getById: (id: string) =>
-    apiGet<ItemTypeDto>(`${BASE}/${id}`),
+  getById: (id: string) => apiGet<ItemTypeDto>(`${BASE}/${id}`),
 
-  create: (body: CreateItemTypePayload) =>
-    apiPost<ItemTypeDto>(BASE, body),
+  create: (body: CreateItemTypePayload) => apiPost<ItemTypeDto>(BASE, body),
 
   update: (id: string, body: UpdateItemTypePayload) =>
     apiPut<ItemTypeDto>(`${BASE}/${id}`, body),
 
-  toggle: (id: string) =>
-    apiPost<ItemTypeDto>(`${BASE}/${id}/toggle`, {}),
+  toggle: (id: string) => apiPost<ItemTypeDto>(`${BASE}/${id}/toggle`, {}),
 };

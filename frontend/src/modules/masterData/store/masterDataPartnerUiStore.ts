@@ -1,15 +1,10 @@
-import { create } from 'zustand';
-import type { BusinessPartnerSummaryDto } from '../types/businessPartner.types';
+import { create } from "zustand";
+import type { BusinessPartnerSummaryDto } from "../types/businessPartner.types";
 
-export type PartnerTabId = 'resumen' | 'listado' | 'nuevo';
+export type PartnerTabId = "resumen" | "listado" | "nuevo";
 
 export type PartnerActivityAction =
-  | 'created'
-  | 'updated'
-  | 'assigned'
-  | 'revoked'
-  | 'disabled'
-  | 'enabled';
+  "created" | "updated" | "assigned" | "revoked" | "disabled" | "enabled";
 
 export interface PartnerActivityItem {
   id: string;
@@ -32,13 +27,14 @@ export interface PartnerUiState {
 
 function createPartnerUiStore() {
   return create<PartnerUiState>((set) => ({
-    activeTab:      'resumen',
+    activeTab: "resumen",
     editingPartner: null,
     recentActivity: [],
 
-    setActiveTab:  (tab)     => set({ activeTab: tab }),
-    startEdit:     (partner) => set({ editingPartner: partner, activeTab: 'nuevo' }),
-    cancelEdit:    ()        => set({ editingPartner: null, activeTab: 'listado' }),
+    setActiveTab: (tab) => set({ activeTab: tab }),
+    startEdit: (partner) =>
+      set({ editingPartner: partner, activeTab: "nuevo" }),
+    cancelEdit: () => set({ editingPartner: null, activeTab: "listado" }),
 
     addActivity: (partnerName, action) =>
       set((s) => ({
@@ -48,7 +44,8 @@ function createPartnerUiStore() {
         ],
       })),
 
-    reset: () => set({ activeTab: 'resumen', editingPartner: null, recentActivity: [] }),
+    reset: () =>
+      set({ activeTab: "resumen", editingPartner: null, recentActivity: [] }),
   }));
 }
 

@@ -1,6 +1,6 @@
-import { useEffect, useRef, useState } from 'react';
-import { createPortal } from 'react-dom';
-import type { TranslateFn } from '../../../nav/navConfig';
+import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
+import type { TranslateFn } from "../../../nav/navConfig";
 
 /** Avatar + menú de sesión del usuario autenticado (popover con nombre, username/email y logout). El rol ya se muestra en el badge del header — no se repite aquí. */
 export function ZHHeaderUserMenu(props: {
@@ -14,7 +14,9 @@ export function ZHHeaderUserMenu(props: {
   const [open, setOpen] = useState(false);
   const anchorRef = useRef<HTMLButtonElement | null>(null);
   const popoverRef = useRef<HTMLDivElement | null>(null);
-  const [menuPos, setMenuPos] = useState<{ top: number; right: number } | null>(null);
+  const [menuPos, setMenuPos] = useState<{ top: number; right: number } | null>(
+    null,
+  );
 
   useEffect(() => {
     if (!open) return;
@@ -36,13 +38,21 @@ export function ZHHeaderUserMenu(props: {
       setOpen(false);
     };
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setOpen(false);
+      if (e.key === "Escape") setOpen(false);
     };
-    window.addEventListener('pointerdown', onDown as unknown as EventListener, true);
-    window.addEventListener('keydown', onKey);
+    window.addEventListener(
+      "pointerdown",
+      onDown as unknown as EventListener,
+      true,
+    );
+    window.addEventListener("keydown", onKey);
     return () => {
-      window.removeEventListener('pointerdown', onDown as unknown as EventListener, true);
-      window.removeEventListener('keydown', onKey);
+      window.removeEventListener(
+        "pointerdown",
+        onDown as unknown as EventListener,
+        true,
+      );
+      window.removeEventListener("keydown", onKey);
     };
   }, [open]);
 
@@ -51,14 +61,14 @@ export function ZHHeaderUserMenu(props: {
       <button
         type="button"
         className="zh-app-tenantAvatarBtn"
-        aria-label={t('app.header.userMenu')}
+        aria-label={t("app.header.userMenu")}
         aria-haspopup="menu"
         aria-expanded={open}
         onClick={() => setOpen((s) => !s)}
         ref={anchorRef}
       >
         <span className="zh-app-tenantAvatar" aria-hidden="true">
-          {(fullName?.[0] ?? username?.[0] ?? 'U').toUpperCase()}
+          {(fullName?.[0] ?? username?.[0] ?? "U").toUpperCase()}
         </span>
         <span className="zh-app-tenantAvatarStatus" aria-hidden="true" />
       </button>
@@ -67,12 +77,18 @@ export function ZHHeaderUserMenu(props: {
             <div
               className="zh-app-userMenuPopover"
               role="menu"
-              aria-label={t('app.header.sessionMenu')}
-              style={{ position: 'fixed', top: menuPos.top, right: menuPos.right }}
+              aria-label={t("app.header.sessionMenu")}
+              style={{
+                position: "fixed",
+                top: menuPos.top,
+                right: menuPos.right,
+              }}
               ref={popoverRef}
             >
               <div className="zh-app-userMenuHeader">
-                <div className="zh-app-userMenuName">{fullName ?? username}</div>
+                <div className="zh-app-userMenuName">
+                  {fullName ?? username}
+                </div>
                 <div className="zh-app-userMenuEmail">{email ?? username}</div>
               </div>
               <button
@@ -84,7 +100,7 @@ export function ZHHeaderUserMenu(props: {
                   onLogout?.();
                 }}
               >
-                {t('app.logout')}
+                {t("app.logout")}
               </button>
             </div>,
             document.body,

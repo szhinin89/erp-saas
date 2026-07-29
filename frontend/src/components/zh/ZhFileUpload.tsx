@@ -1,5 +1,5 @@
-import { useRef, useState } from 'react';
-import './zh-file-upload.css';
+import { useRef, useState } from "react";
+import "./zh-file-upload.css";
 
 export type ZhFileUploadCurrentFile = {
   name: string;
@@ -32,8 +32,17 @@ export function ZhFileUpload(props: {
   noFileLabel: string;
 }) {
   const {
-    accept, onFileSelected, disabled, uploading, progress = 0, error,
-    currentFile, selectLabel, dropLabel, uploadingLabel, noFileLabel,
+    accept,
+    onFileSelected,
+    disabled,
+    uploading,
+    progress = 0,
+    error,
+    currentFile,
+    selectLabel,
+    dropLabel,
+    uploadingLabel,
+    noFileLabel,
   } = props;
 
   const inputRef = useRef<HTMLInputElement>(null);
@@ -42,15 +51,18 @@ export function ZhFileUpload(props: {
   const pick = (file: File | undefined) => {
     if (!file) return;
     onFileSelected(file);
-    if (inputRef.current) inputRef.current.value = '';
+    if (inputRef.current) inputRef.current.value = "";
   };
 
   return (
     <div className="zh-upload">
       <div
-        className={`zh-upload-drop ${dragOver ? 'zh-upload-drop--active' : ''} ${disabled ? 'zh-upload-drop--disabled' : ''}`}
+        className={`zh-upload-drop ${dragOver ? "zh-upload-drop--active" : ""} ${disabled ? "zh-upload-drop--disabled" : ""}`}
         onClick={() => !disabled && !uploading && inputRef.current?.click()}
-        onDragOver={(e) => { e.preventDefault(); if (!disabled) setDragOver(true); }}
+        onDragOver={(e) => {
+          e.preventDefault();
+          if (!disabled) setDragOver(true);
+        }}
         onDragLeave={() => setDragOver(false)}
         onDrop={(e) => {
           e.preventDefault();
@@ -58,7 +70,9 @@ export function ZhFileUpload(props: {
           if (!disabled && !uploading) pick(e.dataTransfer.files?.[0]);
         }}
       >
-        <span className="material-symbols-outlined zh-upload-icon">upload_file</span>
+        <span className="material-symbols-outlined zh-upload-icon">
+          upload_file
+        </span>
         <p className="zh-upload-select">{selectLabel}</p>
         <p className="zh-upload-hint">{dropLabel}</p>
         <input
@@ -74,7 +88,10 @@ export function ZhFileUpload(props: {
       {uploading && (
         <div className="zh-upload-progress-wrap">
           <div className="zh-upload-progress-bar">
-            <div className="zh-upload-progress-fill" style={{ width: `${progress}%` }} />
+            <div
+              className="zh-upload-progress-fill"
+              style={{ width: `${progress}%` }}
+            />
           </div>
           {uploadingLabel && <p className="zh-upload-hint">{uploadingLabel}</p>}
         </div>
@@ -84,7 +101,9 @@ export function ZhFileUpload(props: {
 
       {!uploading && currentFile && (
         <div className="zh-upload-current">
-          <span className="material-symbols-outlined zh-upload-current-icon">description</span>
+          <span className="material-symbols-outlined zh-upload-current-icon">
+            description
+          </span>
           <div>
             <p className="zh-upload-current-name">{currentFile.name}</p>
             <p className="zh-upload-current-meta">

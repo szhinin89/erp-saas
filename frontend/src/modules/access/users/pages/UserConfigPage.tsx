@@ -1,59 +1,83 @@
-import { useEffect, useState } from 'react';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { useNavigate, useParams, useSearchParams, useLocation, Link } from 'react-router-dom';
-import { ErpPageTemplate } from '../../../../templates/ErpPageTemplate';
-import { NoAccessPage, LoadingState } from '../../../../components/PageShell';
-import { ZHPageNotice } from '../../../../components/zh/ZHPageNotice';
-import { ZHFormActions } from '../../../../components/zh/ZHForm';
-import { useI18n } from '../../../../i18n/i18n';
-import { useAuthStore } from '../../../../store/authStore';
-import { usePermissionsUi } from '../../../../access/usePermissionsUi';
-import { message } from '../../../../lib/messages';
-import { formatApiRequestError } from '../../../lib/apiError';
-import { applyServerErrors } from '../../../lib/validationErrors';
-import { membershipService, MEMBERSHIP_ROLES, type CompanyUserMembershipAdminDto, type MembershipRole } from '../api/membershipService';
-import { branchAssignmentService } from '../api/branchAssignmentService';
-import { companyUserPreferencesService } from '../../api/companyUserPreferencesService';
-import { profileService, type Profile } from '../../api/profileService';
-import { branchService, type BranchListItemDto } from '../../../branches/api/branchService';
-import { userConfigTabs, type UserConfigTabId } from '../config/userConfigTabs';
-import { userConfigSchema, type UserConfigFormValues } from '../../../../schemas/access/userConfigSchema';
-import '../../../../styles/shared/items-catalog.css';
-import '../pages/UsersPage.css';
+import { useEffect, useState } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import {
+  useNavigate,
+  useParams,
+  useSearchParams,
+  useLocation,
+  Link,
+} from "react-router-dom";
+import { ErpPageTemplate } from "../../../../templates/ErpPageTemplate";
+import { NoAccessPage, LoadingState } from "../../../../components/PageShell";
+import { ZHPageNotice } from "../../../../components/zh/ZHPageNotice";
+import { ZHFormActions } from "../../../../components/zh/ZHForm";
+import { useI18n } from "../../../../i18n/i18n";
+import { useAuthStore } from "../../../../store/authStore";
+import { usePermissionsUi } from "../../../../access/usePermissionsUi";
+import { message } from "../../../../lib/messages";
+import { formatApiRequestError } from "../../../lib/apiError";
+import { applyServerErrors } from "../../../lib/validationErrors";
+import {
+  membershipService,
+  MEMBERSHIP_ROLES,
+  type CompanyUserMembershipAdminDto,
+  type MembershipRole,
+} from "../api/membershipService";
+import { branchAssignmentService } from "../api/branchAssignmentService";
+import { companyUserPreferencesService } from "../../api/companyUserPreferencesService";
+import { profileService, type Profile } from "../../api/profileService";
+import {
+  branchService,
+  type BranchListItemDto,
+} from "../../../branches/api/branchService";
+import { userConfigTabs, type UserConfigTabId } from "../config/userConfigTabs";
+import {
+  userConfigSchema,
+  type UserConfigFormValues,
+} from "../../../../schemas/access/userConfigSchema";
+import "../../../../styles/shared/items-catalog.css";
+import "../pages/UsersPage.css";
 
-const PERMISSION = 'access.company_user_memberships.view';
-const CREATE_USER_PERMISSION = 'access.identity_users.create';
+const PERMISSION = "access.company_user_memberships.view";
+const CREATE_USER_PERMISSION = "access.identity_users.create";
 
 const VALID_TAB_IDS = userConfigTabs.map((tab) => tab.id);
-const DEFAULT_TAB: UserConfigTabId = 'general';
+const DEFAULT_TAB: UserConfigTabId = "general";
 
 const EMPTY_FORM_VALUES: UserConfigFormValues = {
-  stage: 'pending',
-  username: '',
-  firstName: '',
-  lastName: '',
-  email: '',
-  password: '',
-  role: 'User',
+  stage: "pending",
+  username: "",
+  firstName: "",
+  lastName: "",
+  email: "",
+  password: "",
+  role: "User",
   profileId: null,
   authorizedBranchIds: [],
-  loginMode: 'AskBranch',
+  loginMode: "AskBranch",
   defaultBranchId: null,
 };
 
 function parseTab(raw: string | null): UserConfigTabId {
-  if (raw && (VALID_TAB_IDS as string[]).includes(raw)) return raw as UserConfigTabId;
+  if (raw && (VALID_TAB_IDS as string[]).includes(raw))
+    return raw as UserConfigTabId;
   return DEFAULT_TAB;
 }
 
 /** Backend persiste Role como string libre (SecurityRoles) — defensivo ante valores inesperados. */
 function asMembershipRole(role: string): MembershipRole {
-  return (MEMBERSHIP_ROLES as readonly string[]).includes(role) ? (role as MembershipRole) : 'User';
+  return (MEMBERSHIP_ROLES as readonly string[]).includes(role)
+    ? (role as MembershipRole)
+    : "User";
 }
 
 type BlockErrors = { general: string; branches: string; preferences: string };
-const NO_BLOCK_ERRORS: BlockErrors = { general: '', branches: '', preferences: '' };
+const NO_BLOCK_ERRORS: BlockErrors = {
+  general: "",
+  branches: "",
+  preferences: "",
+};
 
 /**
  * Pantalla única de configuración de usuario (Fase 1 + pulido UX Fase 2). Un único formulario
@@ -72,14 +96,18 @@ export function UserConfigPage() {
   const canManage = canShow(PERMISSION);
   const canCreateUser = canShow(CREATE_USER_PERMISSION);
 
-  const mode: 'new' | 'edit' = userId ? 'edit' : 'new';
-  const returnTo = (location.state as { from?: string } | undefined)?.from ?? '/access/users';
+  const mode: "new" | "edit" = userId ? "edit" : "new";
+  const returnTo =
+    (location.state as { from?: string } | undefined)?.from ?? "/access/users";
 
-  const [membership, setMembership] = useState<CompanyUserMembershipAdminDto | null>(null);
-  const [loading, setLoading] = useState(mode === 'edit');
-  const [loadError, setLoadError] = useState('');
+  const [membership, setMembership] =
+    useState<CompanyUserMembershipAdminDto | null>(null);
+  const [loading, setLoading] = useState(mode === "edit");
+  const [loadError, setLoadError] = useState("");
   const [profiles, setProfiles] = useState<Profile[]>([]);
-  const [branchesCatalog, setBranchesCatalog] = useState<BranchListItemDto[]>([]);
+  const [branchesCatalog, setBranchesCatalog] = useState<BranchListItemDto[]>(
+    [],
+  );
   const [saving, setSaving] = useState(false);
   const [blockErrors, setBlockErrors] = useState<BlockErrors>(NO_BLOCK_ERRORS);
 
@@ -97,16 +125,16 @@ export function UserConfigPage() {
     resolver: zodResolver(userConfigSchema),
     defaultValues: EMPTY_FORM_VALUES,
   });
-  const stage = watch('stage');
+  const stage = watch("stage");
 
-  const activeTabId = parseTab(searchParams.get('tab'));
+  const activeTabId = parseTab(searchParams.get("tab"));
   const setTab = (id: UserConfigTabId) => setSearchParams({ tab: id });
 
   useEffect(() => {
     let cancelled = false;
 
-    if (mode === 'new') {
-      Promise.all([profileService.list(true), branchService.list('active')])
+    if (mode === "new") {
+      Promise.all([profileService.list(true), branchService.list("active")])
         .then(([profilesList, branchesList]) => {
           if (cancelled) return;
           setProfiles(profilesList);
@@ -125,11 +153,11 @@ export function UserConfigPage() {
 
     if (!userId) return;
     setLoading(true);
-    setLoadError('');
+    setLoadError("");
     Promise.all([
       membershipService.list(false),
       profileService.list(true),
-      branchService.list('active'),
+      branchService.list("active"),
       branchAssignmentService.getMembershipBranches(userId),
       companyUserPreferencesService.get(userId),
     ])
@@ -137,7 +165,9 @@ export function UserConfigPage() {
         if (cancelled) return;
         const found = rows.find((r) => r.companyUserId === userId);
         if (!found) {
-          setLoadError(t('users.config.notFound', 'No se encontró el usuario solicitado.'));
+          setLoadError(
+            t("users.config.notFound", "No se encontró el usuario solicitado."),
+          );
           return;
         }
         setMembership(found);
@@ -145,18 +175,27 @@ export function UserConfigPage() {
         setBranchesCatalog(branchesList);
         reset({
           ...EMPTY_FORM_VALUES,
-          stage: 'edit',
+          stage: "edit",
           username: found.username,
           role: asMembershipRole(found.role),
           profileId: found.profileId,
-          authorizedBranchIds: branchAuth.branches.filter((b) => b.authorized).map((b) => b.branchId),
-          loginMode: prefs?.loginMode ?? 'AskBranch',
+          authorizedBranchIds: branchAuth.branches
+            .filter((b) => b.authorized)
+            .map((b) => b.branchId),
+          loginMode: prefs?.loginMode ?? "AskBranch",
           defaultBranchId: prefs?.defaultBranchId ?? null,
         });
       })
       .catch((err) => {
         if (!cancelled) {
-          setLoadError(formatApiRequestError(err, { generic: t('users.error.load', 'No se pudo cargar la lista de usuarios.') }));
+          setLoadError(
+            formatApiRequestError(err, {
+              generic: t(
+                "users.error.load",
+                "No se pudo cargar la lista de usuarios.",
+              ),
+            }),
+          );
         }
       })
       .finally(() => {
@@ -177,11 +216,11 @@ export function UserConfigPage() {
     }
     void (async () => {
       const confirmed = await message.confirm({
-        title: t('users.config.confirmDiscardTitle', '¿Descartar cambios?'),
-        message: t('common.unsavedChanges', 'Tienes cambios sin guardar.'),
-        variant: 'warning',
-        confirmLabel: t('common.discard', 'Descartar'),
-        cancelLabel: t('common.cancel'),
+        title: t("users.config.confirmDiscardTitle", "¿Descartar cambios?"),
+        message: t("common.unsavedChanges", "Tienes cambios sin guardar."),
+        variant: "warning",
+        confirmLabel: t("common.discard", "Descartar"),
+        cancelLabel: t("common.cancel"),
       });
       if (confirmed) navigate(returnTo);
     })();
@@ -192,7 +231,7 @@ export function UserConfigPage() {
     setBlockErrors(NO_BLOCK_ERRORS);
 
     try {
-      if (values.stage === 'create') {
+      if (values.stage === "create") {
         await membershipService.createSystemUser({
           username: values.username,
           firstName: values.firstName,
@@ -210,11 +249,18 @@ export function UserConfigPage() {
         });
       }
     } catch (err) {
-      const applied = applyServerErrors(err, setError, (msg) => setBlockErrors((prev) => ({ ...prev, general: msg })));
+      const applied = applyServerErrors(err, setError, (msg) =>
+        setBlockErrors((prev) => ({ ...prev, general: msg })),
+      );
       if (!applied) {
         setBlockErrors((prev) => ({
           ...prev,
-          general: formatApiRequestError(err, { generic: t('users.membership.error', 'No se pudo guardar el usuario.') }),
+          general: formatApiRequestError(err, {
+            generic: t(
+              "users.membership.error",
+              "No se pudo guardar el usuario.",
+            ),
+          }),
         }));
       }
       setSaving(false);
@@ -235,12 +281,20 @@ export function UserConfigPage() {
     let hadBlockError = false;
     if (resolvedCompanyUserId) {
       try {
-        await branchAssignmentService.updateMembershipBranches(resolvedCompanyUserId, values.authorizedBranchIds);
+        await branchAssignmentService.updateMembershipBranches(
+          resolvedCompanyUserId,
+          values.authorizedBranchIds,
+        );
       } catch (err) {
         hadBlockError = true;
         setBlockErrors((prev) => ({
           ...prev,
-          branches: formatApiRequestError(err, { generic: t('users.branches.error.save', 'No se pudieron guardar las sucursales.') }),
+          branches: formatApiRequestError(err, {
+            generic: t(
+              "users.branches.error.save",
+              "No se pudieron guardar las sucursales.",
+            ),
+          }),
         }));
       }
       try {
@@ -252,7 +306,12 @@ export function UserConfigPage() {
         hadBlockError = true;
         setBlockErrors((prev) => ({
           ...prev,
-          preferences: formatApiRequestError(err, { generic: t('security.preferences.error.save', 'No se pudieron guardar las preferencias.') }),
+          preferences: formatApiRequestError(err, {
+            generic: t(
+              "security.preferences.error.save",
+              "No se pudieron guardar las preferencias.",
+            ),
+          }),
         }));
       }
     }
@@ -260,24 +319,41 @@ export function UserConfigPage() {
     setSaving(false);
 
     if (hadBlockError) {
-      message.error(t('users.config.partialSaveError', 'El usuario se guardó, pero algunas secciones no se pudieron actualizar. Revísalas antes de continuar.'));
-      if (mode === 'new' && resolvedCompanyUserId) {
-        navigate(`/access/users/${resolvedCompanyUserId}`, { replace: true, state: { from: returnTo } });
+      message.error(
+        t(
+          "users.config.partialSaveError",
+          "El usuario se guardó, pero algunas secciones no se pudieron actualizar. Revísalas antes de continuar.",
+        ),
+      );
+      if (mode === "new" && resolvedCompanyUserId) {
+        navigate(`/access/users/${resolvedCompanyUserId}`, {
+          replace: true,
+          state: { from: returnTo },
+        });
       }
       return;
     }
 
-    message.success(t('users.config.saveSuccess', 'Usuario configurado correctamente.'));
+    message.success(
+      t("users.config.saveSuccess", "Usuario configurado correctamente."),
+    );
     navigate(returnTo);
   });
 
   if (!user || (!isAdminRole && !canManage)) {
-    return <NoAccessPage title={t('users.config.title', 'Configuración de usuario')} />;
+    return (
+      <NoAccessPage
+        title={t("users.config.title", "Configuración de usuario")}
+      />
+    );
   }
 
   if (loading) {
     return (
-      <ErpPageTemplate kicker={t('app.nav.group.configuracion')} title={t('common.loading')}>
+      <ErpPageTemplate
+        kicker={t("app.nav.group.configuracion")}
+        title={t("common.loading")}
+      >
         <LoadingState />
       </ErpPageTemplate>
     );
@@ -285,17 +361,27 @@ export function UserConfigPage() {
 
   if (loadError) {
     return (
-      <ErpPageTemplate kicker={t('app.nav.group.configuracion')} title={t('users.config.title', 'Configuración de usuario')}>
-        <ZHPageNotice variant="error" message={t('common.errorPrefix')} detail={loadError} />
+      <ErpPageTemplate
+        kicker={t("app.nav.group.configuracion")}
+        title={t("users.config.title", "Configuración de usuario")}
+      >
+        <ZHPageNotice
+          variant="error"
+          message={t("common.errorPrefix")}
+          detail={loadError}
+        />
         <Link to="/access/users" className="zh-btn zh-btn--ghost">
-          ← {t('users.config.backToList', 'Volver a Usuarios')}
+          ← {t("users.config.backToList", "Volver a Usuarios")}
         </Link>
       </ErpPageTemplate>
     );
   }
 
-  const visibleTabs = userConfigTabs.filter((tab) => !tab.requiresExistingUser || membership);
-  const activeTab = visibleTabs.find((tab) => tab.id === activeTabId) ?? visibleTabs[0];
+  const visibleTabs = userConfigTabs.filter(
+    (tab) => !tab.requiresExistingUser || membership,
+  );
+  const activeTab =
+    visibleTabs.find((tab) => tab.id === activeTabId) ?? visibleTabs[0];
 
   const context = {
     mode,
@@ -313,15 +399,27 @@ export function UserConfigPage() {
     blockErrors,
   };
 
-  const saveDisabled = saving || !canManage || (mode === 'new' && stage === 'pending');
+  const saveDisabled =
+    saving || !canManage || (mode === "new" && stage === "pending");
 
   return (
     <ErpPageTemplate
-      kicker={t('app.nav.group.configuracion')}
-      title={mode === 'new' ? t('users.addUser.title', 'Agregar usuario') : (membership?.fullName ?? t('users.config.title', 'Configuración de usuario'))}
-      subtitle={mode === 'edit' ? membership?.username : undefined}
+      kicker={t("app.nav.group.configuracion")}
+      title={
+        mode === "new"
+          ? t("users.addUser.title", "Agregar usuario")
+          : (membership?.fullName ??
+            t("users.config.title", "Configuración de usuario"))
+      }
+      subtitle={mode === "edit" ? membership?.username : undefined}
     >
-      <form onSubmit={(e) => { e.preventDefault(); void onSubmit(); }} noValidate>
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          void onSubmit();
+        }}
+        noValidate
+      >
         <div className="prd-tabs" role="tablist">
           {visibleTabs.map((tab) => (
             <button
@@ -331,7 +429,7 @@ export function UserConfigPage() {
               role="tab"
               aria-selected={activeTab.id === tab.id}
               aria-controls={`user-config-panel-${tab.id}`}
-              className={`prd-tab-btn ${activeTab.id === tab.id ? 'prd-tab-btn--active' : ''}`}
+              className={`prd-tab-btn ${activeTab.id === tab.id ? "prd-tab-btn--active" : ""}`}
               onClick={() => setTab(tab.id)}
             >
               {t(tab.labelKey)}
@@ -354,7 +452,12 @@ export function UserConfigPage() {
             hideDraft
             saveButtonType="submit"
             disableSave={saveDisabled}
-            labels={{ cancel: t('common.cancel'), save: saving ? t('common.saving') : t('users.config.save', 'Guardar configuración') }}
+            labels={{
+              cancel: t("common.cancel"),
+              save: saving
+                ? t("common.saving")
+                : t("users.config.save", "Guardar configuración"),
+            }}
           />
         ) : null}
       </form>

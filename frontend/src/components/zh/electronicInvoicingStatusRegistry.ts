@@ -1,5 +1,5 @@
-import type { ZHFormAlertType } from './ZHForm';
-import type { ElectronicInvoicingStatus } from '../../modules/configuracion/facturacionElectronica/api/electronicInvoicingService';
+import type { ZHFormAlertType } from "./ZHForm";
+import type { ElectronicInvoicingStatus } from "../../modules/configuracion/facturacionElectronica/api/electronicInvoicingService";
 
 export type ElectronicInvoicingStatusVisual = {
   variant: ZHFormAlertType;
@@ -19,59 +19,63 @@ export type ElectronicInvoicingStatusVisual = {
  * Extensibilidad: un estado nuevo del backend se incorpora agregando una entrada aquí — ninguna
  * pantalla consumidora (Ventas, Notas de Crédito, Retenciones, Guías, etc.) requiere cambios.
  */
-export const ELECTRONIC_INVOICING_STATUS_REGISTRY: Record<ElectronicInvoicingStatus, ElectronicInvoicingStatusVisual> = {
+export const ELECTRONIC_INVOICING_STATUS_REGISTRY: Record<
+  ElectronicInvoicingStatus,
+  ElectronicInvoicingStatusVisual
+> = {
   Ready: {
-    variant: 'success',
-    icon: 'verified',
-    messageKey: 'common.electronicEnvironmentBanner.ready.message',
-    detailKey: 'common.electronicEnvironmentBanner.ready.detail',
+    variant: "success",
+    icon: "verified",
+    messageKey: "common.electronicEnvironmentBanner.ready.message",
+    detailKey: "common.electronicEnvironmentBanner.ready.detail",
   },
   Testing: {
-    variant: 'warning',
-    icon: 'science',
-    messageKey: 'common.electronicEnvironmentBanner.testing.message',
-    detailKey: 'common.electronicEnvironmentBanner.testing.detail',
+    variant: "warning",
+    icon: "science",
+    messageKey: "common.electronicEnvironmentBanner.testing.message",
+    detailKey: "common.electronicEnvironmentBanner.testing.detail",
   },
   Incomplete: {
-    variant: 'attention',
-    icon: 'error',
-    messageKey: 'common.electronicEnvironmentBanner.incomplete.message',
-    detailKey: 'common.electronicEnvironmentBanner.incomplete.detail',
+    variant: "attention",
+    icon: "error",
+    messageKey: "common.electronicEnvironmentBanner.incomplete.message",
+    detailKey: "common.electronicEnvironmentBanner.incomplete.detail",
   },
   NotConfigured: {
-    variant: 'error',
-    icon: 'cancel',
-    messageKey: 'common.electronicEnvironmentBanner.notConfigured.message',
-    detailKey: 'common.electronicEnvironmentBanner.notConfigured.detail',
+    variant: "error",
+    icon: "cancel",
+    messageKey: "common.electronicEnvironmentBanner.notConfigured.message",
+    detailKey: "common.electronicEnvironmentBanner.notConfigured.detail",
   },
   CertificateExpired: {
-    variant: 'error',
-    icon: 'event_busy',
-    messageKey: 'common.electronicEnvironmentBanner.certificateExpired.message',
-    detailKey: 'common.electronicEnvironmentBanner.certificateExpired.detail',
+    variant: "error",
+    icon: "event_busy",
+    messageKey: "common.electronicEnvironmentBanner.certificateExpired.message",
+    detailKey: "common.electronicEnvironmentBanner.certificateExpired.detail",
   },
   CertificateExpiring: {
-    variant: 'warning',
-    icon: 'hourglass_top',
-    messageKey: 'common.electronicEnvironmentBanner.certificateExpiring.message',
-    detailKey: 'common.electronicEnvironmentBanner.certificateExpiring.detail',
+    variant: "warning",
+    icon: "hourglass_top",
+    messageKey:
+      "common.electronicEnvironmentBanner.certificateExpiring.message",
+    detailKey: "common.electronicEnvironmentBanner.certificateExpiring.detail",
   },
   SriUnavailable: {
-    variant: 'attention',
-    icon: 'cloud_off',
-    messageKey: 'common.electronicEnvironmentBanner.sriUnavailable.message',
-    detailKey: 'common.electronicEnvironmentBanner.sriUnavailable.detail',
+    variant: "attention",
+    icon: "cloud_off",
+    messageKey: "common.electronicEnvironmentBanner.sriUnavailable.message",
+    detailKey: "common.electronicEnvironmentBanner.sriUnavailable.detail",
   },
   Disabled: {
-    variant: 'neutral',
-    icon: 'block',
-    messageKey: 'common.electronicEnvironmentBanner.disabled.message',
-    detailKey: 'common.electronicEnvironmentBanner.disabled.detail',
+    variant: "neutral",
+    icon: "block",
+    messageKey: "common.electronicEnvironmentBanner.disabled.message",
+    detailKey: "common.electronicEnvironmentBanner.disabled.detail",
   },
   Error: {
-    variant: 'error',
-    icon: 'help',
-    messageKey: 'common.electronicEnvironmentBanner.error.message',
-    detailKey: 'common.electronicEnvironmentBanner.error.detail',
+    variant: "error",
+    icon: "help",
+    messageKey: "common.electronicEnvironmentBanner.error.message",
+    detailKey: "common.electronicEnvironmentBanner.error.detail",
   },
 };

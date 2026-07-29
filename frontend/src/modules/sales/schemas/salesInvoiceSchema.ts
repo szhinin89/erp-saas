@@ -1,16 +1,25 @@
-import { z } from 'zod';
-import { todayIso } from '../../../lib/formatters/dateFormatters';
+import { z } from "zod";
+import { todayIso } from "../../../lib/formatters/dateFormatters";
 
 // ── Line sub-schema ────────────────────────────────────────────────────
 export const salesLineSchema = z.object({
   _key: z.number(),
   itemId: z.string().nullable().optional(),
   warehouseId: z.string().nullable().optional(),
-  description: z.string().min(1, 'La descripción es obligatoria.').max(300),
-  quantity: z.coerce.number().positive('La cantidad debe ser mayor a 0.'),
-  unitPrice: z.coerce.number().min(0, 'El precio no puede ser negativo.'),
-  vatCode: z.string().min(1, 'El producto no tiene código IVA de venta configurado. Verifique el maestro de productos.'),
-  discountPct: z.coerce.number().min(0).max(100, 'El descuento no puede superar 100%.').default(0),
+  description: z.string().min(1, "La descripción es obligatoria.").max(300),
+  quantity: z.coerce.number().positive("La cantidad debe ser mayor a 0."),
+  unitPrice: z.coerce.number().min(0, "El precio no puede ser negativo."),
+  vatCode: z
+    .string()
+    .min(
+      1,
+      "El producto no tiene código IVA de venta configurado. Verifique el maestro de productos.",
+    ),
+  discountPct: z.coerce
+    .number()
+    .min(0)
+    .max(100, "El descuento no puede superar 100%.")
+    .default(0),
   iceCode: z.string().nullable().optional(),
   notes: z.string().nullable().optional(),
   _sku: z.string().optional(),
@@ -49,8 +58,8 @@ const chequeDetailSchema = z.object({
 // ── Payment sub-schema ─────────────────────────────────────────────────
 export const salesPaymentSchema = z.object({
   _key: z.number(),
-  paymentMethodId: z.string().min(1, 'Seleccione un método de pago.'),
-  amount: z.coerce.number().min(0, 'El monto no puede ser negativo.'),
+  paymentMethodId: z.string().min(1, "Seleccione un método de pago."),
+  amount: z.coerce.number().min(0, "El monto no puede ser negativo."),
   reference: z.string().nullable().optional(),
   cardDetail: cardDetailSchema.nullable().optional(),
   transferDetail: transferDetailSchema.nullable().optional(),
@@ -60,40 +69,43 @@ export const salesPaymentSchema = z.object({
 export type SalesPaymentFormValues = z.infer<typeof salesPaymentSchema>;
 
 // ── Main invoice form schema ───────────────────────────────────────────
-export const salesInvoiceSchema = z.object({
-  customerId: z.string().min(1, 'Seleccione un cliente.'),
-  issueDate: z.string().min(1, 'La fecha de emisión es obligatoria.'),
-  dueDate: z.string().optional().default(''),
-  notes: z.string().optional().default(''),
-  paymentTermId: z.string().optional().default(''),
-  docTypeCode: z.string().default(''),
-  sriPaymentMethodCode: z.string().default(''),
-  lines: z.array(salesLineSchema).min(1, 'Agregue al menos una línea.'),
-  payments: z.array(salesPaymentSchema).default([]),
-}).superRefine((data, ctx) => {
-  data.lines.forEach((line, idx) => {
-    if (line._tracksStock && !line.warehouseId) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        path: ['lines', idx, 'warehouseId'],
-        message: 'La bodega es obligatoria para productos que controlan inventario.',
-      });
-    }
+export const salesInvoiceSchema = z
+  .object({
+    customerId: z.string().min(1, "Seleccione un cliente."),
+    issueDate: z.string().min(1, "La fecha de emisión es obligatoria."),
+    dueDate: z.string().optional().default(""),
+    notes: z.string().optional().default(""),
+    paymentTermId: z.string().optional().default(""),
+    docTypeCode: z.string().default(""),
+    sriPaymentMethodCode: z.string().default(""),
+    lines: z.array(salesLineSchema).min(1, "Agregue al menos una línea."),
+    payments: z.array(salesPaymentSchema).default([]),
+  })
+  .superRefine((data, ctx) => {
+    data.lines.forEach((line, idx) => {
+      if (line._tracksStock && !line.warehouseId) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["lines", idx, "warehouseId"],
+          message:
+            "La bodega es obligatoria para productos que controlan inventario.",
+        });
+      }
+    });
   });
-});
 
 export type SalesInvoiceFormValues = z.infer<typeof salesInvoiceSchema>;
 
 // ── Defaults ───────────────────────────────────────────────────────────
 export function emptySalesInvoiceForm(): SalesInvoiceFormValues {
   return {
-    customerId: '',
+    customerId: "",
     issueDate: todayIso(),
-    dueDate: '',
-    notes: '',
-    paymentTermId: '',
-    docTypeCode: '',
-    sriPaymentMethodCode: '',
+    dueDate: "",
+    notes: "",
+    paymentTermId: "",
+    docTypeCode: "",
+    sriPaymentMethodCode: "",
     lines: [],
     payments: [],
   };

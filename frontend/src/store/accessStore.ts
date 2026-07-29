@@ -1,8 +1,8 @@
-import { create } from 'zustand';
-import { createJSONStorage, persist } from 'zustand/middleware';
-import { ACCESS_BOOTSTRAP_STORAGE_KEY } from '../lib/session/sessionStorageKeys';
-import { zustandSessionStorage } from '../lib/session/zustandSessionStorage';
-import type { AccessibleTenant, BootstrapLoginResponse } from '../types/access';
+import { create } from "zustand";
+import { createJSONStorage, persist } from "zustand/middleware";
+import { ACCESS_BOOTSTRAP_STORAGE_KEY } from "../lib/session/sessionStorageKeys";
+import { zustandSessionStorage } from "../lib/session/zustandSessionStorage";
+import type { AccessibleTenant, BootstrapLoginResponse } from "../types/access";
 
 interface AccessState {
   bootstrapToken: string | null;
@@ -21,7 +21,11 @@ export const useAccessStore = create<AccessState>()(
       setBootstrap: (r) =>
         set({
           bootstrapToken: r.bootstrapToken,
-          bootstrapUser: { userId: r.userId, fullName: r.fullName, email: r.email },
+          bootstrapUser: {
+            userId: r.userId,
+            fullName: r.fullName,
+            email: r.email,
+          },
           tenants: r.tenants ?? [],
         }),
       clearBootstrap: () =>

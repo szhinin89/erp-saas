@@ -4,7 +4,9 @@
  * Todas las fechas ISO del backend son UTC — se formatean directamente sin conversión TZ.
  */
 
-function pad(n: number): string { return n < 10 ? `0${n}` : String(n); }
+function pad(n: number): string {
+  return n < 10 ? `0${n}` : String(n);
+}
 
 function parseIso(iso: string | null | undefined): Date | null {
   if (!iso) return null;
@@ -13,23 +15,23 @@ function parseIso(iso: string | null | undefined): Date | null {
 }
 
 export function formatDate(iso: string | null | undefined): string {
-  if (!iso) return '—';
+  if (!iso) return "—";
   const m = iso.match(/^(\d{4})-(\d{2})-(\d{2})/);
   if (m) return `${m[3]}/${m[2]}/${m[1]}`;
   const d = parseIso(iso);
-  if (!d) return '—';
+  if (!d) return "—";
   return `${pad(d.getUTCDate())}/${pad(d.getUTCMonth() + 1)}/${d.getUTCFullYear()}`;
 }
 
 export function formatDateTime(iso: string | null | undefined): string {
   const d = parseIso(iso);
-  if (!d) return '—';
+  if (!d) return "—";
   return `${pad(d.getUTCDate())}/${pad(d.getUTCMonth() + 1)}/${d.getUTCFullYear()} ${pad(d.getUTCHours())}:${pad(d.getUTCMinutes())}`;
 }
 
 export function formatDateTimeSeconds(iso: string | null | undefined): string {
   const d = parseIso(iso);
-  if (!d) return '—';
+  if (!d) return "—";
   return `${pad(d.getUTCDate())}/${pad(d.getUTCMonth() + 1)}/${d.getUTCFullYear()} ${pad(d.getUTCHours())}:${pad(d.getUTCMinutes())}:${pad(d.getUTCSeconds())}`;
 }
 
@@ -50,5 +52,8 @@ export function todayIso(): string {
 }
 
 export function isValidIsoDate(value: string): boolean {
-  return /^\d{4}-\d{2}-\d{2}$/.test(value) && !isNaN(new Date(value + 'T00:00:00Z').getTime());
+  return (
+    /^\d{4}-\d{2}-\d{2}$/.test(value) &&
+    !isNaN(new Date(value + "T00:00:00Z").getTime())
+  );
 }

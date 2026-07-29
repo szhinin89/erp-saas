@@ -1,37 +1,45 @@
-import { useEffect, useRef, useState } from 'react';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { useAsync } from '../../../../hooks/useAsync';
-import { useI18n } from '../../../../i18n/i18n';
+import { useEffect, useRef, useState } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useAsync } from "../../../../hooks/useAsync";
+import { useI18n } from "../../../../i18n/i18n";
 import {
   electronicInvoicingService,
   type SriCertificateInfoDto,
   type SriConfigurationValidationDto,
-} from '../api/electronicInvoicingService';
-import { applyServerErrors } from '../../../lib/validationErrors';
-import { formatApiRequestError } from '../../../lib/apiError';
-import { usePermissionsUi } from '../../../../access/usePermissionsUi';
-import { useElectronicInvoicingStatusStore } from '../../../../store/electronicInvoicingStatusStore';
+} from "../api/electronicInvoicingService";
+import { applyServerErrors } from "../../../lib/validationErrors";
+import { formatApiRequestError } from "../../../lib/apiError";
+import { usePermissionsUi } from "../../../../access/usePermissionsUi";
+import { useElectronicInvoicingStatusStore } from "../../../../store/electronicInvoicingStatusStore";
 import {
   sriConfigSchema,
   SRI_WSDL_DEFAULTS,
   type SriConfigValues,
-} from '../schemas/sriConfigurationSchema';
+} from "../schemas/sriConfigurationSchema";
 
-const ALLOWED_CERT_EXTENSIONS = ['.p12', '.pfx'];
+const ALLOWED_CERT_EXTENSIONS = [".p12", ".pfx"];
 const MAX_CERT_SIZE_BYTES = 5 * 1024 * 1024;
 const CERT_PASSWORD_INSPECT_DEBOUNCE_MS = 500;
 
 export function useSriConfigPage() {
   const { t } = useI18n();
   const { canShow } = usePermissionsUi();
-  const canView = canShow('electronic-invoicing.view');
-  const canEdit = canShow('electronic-invoicing.configure');
+  const canView = canShow("electronic-invoicing.view");
+  const canEdit = canShow("electronic-invoicing.configure");
 
   // Códigos oficiales SRI (Ficha Técnica, Tabla 4 "Ambiente"): 1=Pruebas, 2=Producción.
   const sriEnvOptions = [
-    { value: 1 as const, label: t('settings.electronicInvoicing.sri.envTestLabel'), description: t('settings.electronicInvoicing.sri.envTestDesc') },
-    { value: 2 as const, label: t('settings.electronicInvoicing.sri.envProdLabel'), description: t('settings.electronicInvoicing.sri.envProdDesc') },
+    {
+      value: 1 as const,
+      label: t("settings.electronicInvoicing.sri.envTestLabel"),
+      description: t("settings.electronicInvoicing.sri.envTestDesc"),
+    },
+    {
+      value: 2 as const,
+      label: t("settings.electronicInvoicing.sri.envProdLabel"),
+      description: t("settings.electronicInvoicing.sri.envProdDesc"),
+    },
   ];
 
   const [saving, setSaving] = useState(false);
@@ -40,36 +48,48 @@ export function useSriConfigPage() {
   const [showPass, setShowPass] = useState(false);
 
   const [validating, setValidating] = useState(false);
-  const [validationResult, setValidationResult] = useState<SriConfigurationValidationDto | null>(null);
+  const [validationResult, setValidationResult] =
+    useState<SriConfigurationValidationDto | null>(null);
   const [validationError, setValidationError] = useState<string | null>(null);
 
   const [certUploading, setCertUploading] = useState(false);
   const [certUploadProgress, setCertUploadProgress] = useState(0);
   const [certUploadError, setCertUploadError] = useState<string | null>(null);
-  const [certInspection, setCertInspection] = useState<SriCertificateInfoDto | null>(null);
+  const [certInspection, setCertInspection] =
+    useState<SriCertificateInfoDto | null>(null);
   const [certInspecting, setCertInspecting] = useState(false);
   const certInspectTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const sriState = useAsync(() => electronicInvoicingService.getSriConfiguration(), canView);
+  const sriState = useAsync(
+    () => electronicInvoicingService.getSriConfiguration(),
+    canView,
+  );
 
   const form = useForm<SriConfigValues>({
     resolver: zodResolver(sriConfigSchema),
     defaultValues: {
-      certPassword: '',
-      environment:  1,
-      wsdlUrl:      SRI_WSDL_DEFAULTS.pruebas,
+      certPassword: "",
+      environment: 1,
+      wsdlUrl: SRI_WSDL_DEFAULTS.pruebas,
     },
   });
 
-  const { handleSubmit, reset, watch, setValue, getValues, formState: { errors, isDirty } } = form;
-  const envValue = watch('environment');
-  const certPasswordValue = watch('certPassword');
+  const {
+    handleSubmit,
+    reset,
+    watch,
+    setValue,
+    getValues,
+    formState: { errors, isDirty },
+  } = form;
+  const envValue = watch("environment");
+  const certPasswordValue = watch("certPassword");
 
   const resetFromData = (d: NonNullable<typeof sriState.data>) => {
     reset({
-      certPassword: '',
-      environment:  d.environment === 2 ? 2 : 1,
-      wsdlUrl:      d.wsdlUrl ?? SRI_WSDL_DEFAULTS.pruebas,
+      certPassword: "",
+      environment: d.environment === 2 ? 2 : 1,
+      wsdlUrl: d.wsdlUrl ?? SRI_WSDL_DEFAULTS.pruebas,
     });
   };
 
@@ -82,12 +102,18 @@ export function useSriConfigPage() {
   }, [sriState.data]);
 
   useEffect(() => {
-    const currentUrl = getValues('wsdlUrl');
+    const currentUrl = getValues("wsdlUrl");
     const isDefault = Object.values(SRI_WSDL_DEFAULTS).includes(currentUrl);
     if (isDefault || !currentUrl) {
-      setValue('wsdlUrl', envValue === 2 ? SRI_WSDL_DEFAULTS.produccion : SRI_WSDL_DEFAULTS.pruebas, {
-        shouldDirty: true,
-      });
+      setValue(
+        "wsdlUrl",
+        envValue === 2
+          ? SRI_WSDL_DEFAULTS.produccion
+          : SRI_WSDL_DEFAULTS.pruebas,
+        {
+          shouldDirty: true,
+        },
+      );
     }
   }, [envValue, getValues, setValue]);
 
@@ -101,7 +127,10 @@ export function useSriConfigPage() {
     certInspectTimer.current = setTimeout(async () => {
       setCertInspecting(true);
       try {
-        const result = await electronicInvoicingService.inspectCertificate(certPasswordValue);
+        const result =
+          await electronicInvoicingService.inspectCertificate(
+            certPasswordValue,
+          );
         setCertInspection(result);
       } catch {
         setCertInspection(null);
@@ -118,28 +147,35 @@ export function useSriConfigPage() {
     setCertUploadError(null);
     setCertInspection(null);
 
-    const extension = file.name.slice(file.name.lastIndexOf('.')).toLowerCase();
+    const extension = file.name.slice(file.name.lastIndexOf(".")).toLowerCase();
     if (!ALLOWED_CERT_EXTENSIONS.includes(extension)) {
-      setCertUploadError(t('settings.electronicInvoicing.sri.certInvalidExtension'));
+      setCertUploadError(
+        t("settings.electronicInvoicing.sri.certInvalidExtension"),
+      );
       return;
     }
     if (file.size > MAX_CERT_SIZE_BYTES) {
-      setCertUploadError(t('settings.electronicInvoicing.sri.certTooLarge'));
+      setCertUploadError(t("settings.electronicInvoicing.sri.certTooLarge"));
       return;
     }
 
     setCertUploading(true);
     setCertUploadProgress(0);
     try {
-      const result = await electronicInvoicingService.uploadCertificate(file, setCertUploadProgress);
+      const result = await electronicInvoicingService.uploadCertificate(
+        file,
+        setCertUploadProgress,
+      );
       if (result.inspection) setCertInspection(result.inspection);
       sriState.refetch();
       void useElectronicInvoicingStatusStore.getState().refresh();
     } catch (err) {
-      setCertUploadError(formatApiRequestError(err, {
-        offline: t('settings.electronicInvoicing.sri.offlineError'),
-        generic: t('settings.electronicInvoicing.sri.certUploadGenericError'),
-      }));
+      setCertUploadError(
+        formatApiRequestError(err, {
+          offline: t("settings.electronicInvoicing.sri.offlineError"),
+          generic: t("settings.electronicInvoicing.sri.certUploadGenericError"),
+        }),
+      );
     } finally {
       setCertUploading(false);
     }
@@ -152,21 +188,25 @@ export function useSriConfigPage() {
     setSaving(true);
     try {
       await electronicInvoicingService.upsertSriConfiguration({
-        certPassword: values.certPassword ?? '',
-        environment:  values.environment,
+        certPassword: values.certPassword ?? "",
+        environment: values.environment,
         emissionType: 1,
-        wsdlUrl:      values.wsdlUrl,
+        wsdlUrl: values.wsdlUrl,
       });
       setSaved(true);
       sriState.refetch();
       void useElectronicInvoicingStatusStore.getState().refresh();
     } catch (err) {
-      const applied = applyServerErrors(err, form.setError, (msg) => setSaveError(msg));
+      const applied = applyServerErrors(err, form.setError, (msg) =>
+        setSaveError(msg),
+      );
       if (!applied) {
-        setSaveError(formatApiRequestError(err, {
-          offline: t('settings.electronicInvoicing.sri.offlineError'),
-          generic: t('settings.electronicInvoicing.sri.genericSaveError'),
-        }));
+        setSaveError(
+          formatApiRequestError(err, {
+            offline: t("settings.electronicInvoicing.sri.offlineError"),
+            generic: t("settings.electronicInvoicing.sri.genericSaveError"),
+          }),
+        );
       }
     } finally {
       setSaving(false);
@@ -185,13 +225,16 @@ export function useSriConfigPage() {
     setValidationResult(null);
     setValidating(true);
     try {
-      const result = await electronicInvoicingService.validateSriConfiguration();
+      const result =
+        await electronicInvoicingService.validateSriConfiguration();
       setValidationResult(result);
     } catch (err) {
-      setValidationError(formatApiRequestError(err, {
-        offline: t('settings.electronicInvoicing.sri.offlineError'),
-        generic: t('settings.electronicInvoicing.sri.validateGenericError'),
-      }));
+      setValidationError(
+        formatApiRequestError(err, {
+          offline: t("settings.electronicInvoicing.sri.offlineError"),
+          generic: t("settings.electronicInvoicing.sri.validateGenericError"),
+        }),
+      );
     } finally {
       setValidating(false);
     }

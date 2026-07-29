@@ -1,6 +1,6 @@
-import { apiGet, apiPatch, apiPost, apiPut } from '../../../lib/apiEnvelope';
+import { apiGet, apiPatch, apiPost, apiPut } from "../../../lib/apiEnvelope";
 
-export type CatalogActiveStatus = 'all' | 'active' | 'inactive';
+export type CatalogActiveStatus = "all" | "active" | "inactive";
 
 export type WarehouseDto = {
   id: string;
@@ -40,26 +40,40 @@ export type WarehousePayload = {
   dailyDispatchGoal?: number | null;
 };
 
-function listQuery(activeStatus: CatalogActiveStatus, search?: string, branchId?: string) {
+function listQuery(
+  activeStatus: CatalogActiveStatus,
+  search?: string,
+  branchId?: string,
+) {
   const q = new URLSearchParams();
-  q.set('activeStatus', activeStatus);
-  if (search?.trim()) q.set('search', search.trim());
-  if (branchId?.trim()) q.set('sucursalId', branchId.trim());
+  q.set("activeStatus", activeStatus);
+  if (search?.trim()) q.set("search", search.trim());
+  if (branchId?.trim()) q.set("sucursalId", branchId.trim());
   return `?${q.toString()}`;
 }
 
 export const warehouseService = {
-  list: (activeStatus: CatalogActiveStatus = 'all', search?: string, branchId?: string) =>
-    apiGet<WarehouseDto[]>(`/api/v1/inventory/warehouses${listQuery(activeStatus, search, branchId)}`),
+  list: (
+    activeStatus: CatalogActiveStatus = "all",
+    search?: string,
+    branchId?: string,
+  ) =>
+    apiGet<WarehouseDto[]>(
+      `/api/v1/inventory/warehouses${listQuery(activeStatus, search, branchId)}`,
+    ),
 
-  getById: (id: string) => apiGet<WarehouseDetailDto>(`/api/v1/inventory/warehouses/${id}`),
+  getById: (id: string) =>
+    apiGet<WarehouseDetailDto>(`/api/v1/inventory/warehouses/${id}`),
 
-  create: (body: WarehousePayload) => apiPost<WarehouseDto>('/api/v1/inventory/warehouses', body),
+  create: (body: WarehousePayload) =>
+    apiPost<WarehouseDto>("/api/v1/inventory/warehouses", body),
 
   update: (id: string, body: WarehousePayload & { id: string }) =>
     apiPut<WarehouseDto>(`/api/v1/inventory/warehouses/${id}`, body),
 
-  disable: (id: string) => apiPatch<WarehouseDto>(`/api/v1/inventory/warehouses/${id}/disable`),
+  disable: (id: string) =>
+    apiPatch<WarehouseDto>(`/api/v1/inventory/warehouses/${id}/disable`),
 
-  enable: (id: string) => apiPatch<WarehouseDto>(`/api/v1/inventory/warehouses/${id}/enable`),
+  enable: (id: string) =>
+    apiPatch<WarehouseDto>(`/api/v1/inventory/warehouses/${id}/enable`),
 };

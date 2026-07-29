@@ -103,13 +103,13 @@ public sealed class CatalogController : ControllerBase
             "OK"
         );
 
-    [HttpGet("person-types")]
+    [HttpGet("legal-entity-types")]
     [Authorize]
-    public async Task<IActionResult> GetPersonTypes(CancellationToken cancellationToken) =>
-        this.ToOkOrBadRequest(
-            await _mediator.Send(new GetCatalogPersonTypesQuery(), cancellationToken),
-            "OK"
-        );
+    public async Task<IActionResult> GetLegalEntityTypes(CancellationToken cancellationToken) =>
+    this.ToOkOrBadRequest(
+        await _mediator.Send(new GetCatalogLegalEntityTypesQuery(), cancellationToken),
+        "OK"
+    );
 
     [HttpGet("barcode-types")]
     [Authorize]

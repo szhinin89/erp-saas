@@ -50,7 +50,9 @@ public sealed class CreateBusinessPartnerValidator : AbstractValidator<CreateBus
             )
             .When(x => x.TradeName is not null);
 
-        RuleFor(x => x.PersonType).IsInEnum().WithMessage("Tipo de persona inválido.");
+        RuleFor(x => x.LegalEntityTypeCode)
+        .GreaterThan(0)
+        .WithMessage("El tipo de entidad legal es obligatorio.");
 
         RuleFor(x => x.CountryCode)
             .Length(2)

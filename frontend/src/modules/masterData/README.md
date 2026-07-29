@@ -34,19 +34,19 @@ Sin vínculo: fila visible, **no seleccionable**, warning en UI y log `[erp.mast
 
 ## Endpoints
 
-| Servicio | Ruta |
-|----------|------|
+| Servicio                 | Ruta                            |
+| ------------------------ | ------------------------------- |
 | `businessPartnerService` | `/api/master/business-partners` |
-| Legacy clientes | `/api/sales/customers` |
-| Legacy proveedores | `/api/purchases/suppliers` |
+| Legacy clientes          | `/api/sales/customers`          |
+| Legacy proveedores       | `/api/purchases/suppliers`      |
 
 ## Rutas UI
 
-| Ruta | Página |
-|------|--------|
+| Ruta                    | Página                    |
+| ----------------------- | ------------------------- |
 | `/masterdata/customers` | `MasterDataCustomersPage` |
 | `/masterdata/suppliers` | `MasterDataSuppliersPage` |
-| `/sales/customers` | Legacy |
+| `/sales/customers`      | Legacy                    |
 
 ## Rollback
 

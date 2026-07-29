@@ -1,5 +1,5 @@
-export type ConfigScope = 'global' | 'module' | 'feature';
-export type ConfigDataType = 'string' | 'number' | 'boolean' | 'json';
+export type ConfigScope = "global" | "module" | "feature";
+export type ConfigDataType = "string" | "number" | "boolean" | "json";
 
 export type ConfigEntry = {
   id: string;
@@ -36,5 +36,4 @@ export type ConfigResolvedValue<T = unknown> = {
   dataType: string;
 };
 
-export type ConfigLoadStatus = 'idle' | 'loading' | 'ready' | 'error';
-
+export type ConfigLoadStatus = "idle" | "loading" | "ready" | "error";

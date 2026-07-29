@@ -1,35 +1,41 @@
 // @vitest-environment jsdom
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { render, screen, waitFor, fireEvent, cleanup } from '@testing-library/react';
-import { I18nProvider } from '../../../i18n/i18n';
-import { useAuthStore } from '../../../store/authStore';
-import { SecuritySettingsPage } from './SecuritySettingsPage';
-import { companyUserPreferencesService } from '../../access/api/companyUserPreferencesService';
-import { branchService } from '../../branches/api/branchService';
-import { usePermissionsUi } from '../../../access/usePermissionsUi';
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import {
+  render,
+  screen,
+  waitFor,
+  fireEvent,
+  cleanup,
+} from "@testing-library/react";
+import { I18nProvider } from "../../../i18n/i18n";
+import { useAuthStore } from "../../../store/authStore";
+import { SecuritySettingsPage } from "./SecuritySettingsPage";
+import { companyUserPreferencesService } from "../../access/api/companyUserPreferencesService";
+import { branchService } from "../../branches/api/branchService";
+import { usePermissionsUi } from "../../../access/usePermissionsUi";
 
-vi.mock('../api/securityService', () => ({
+vi.mock("../api/securityService", () => ({
   securityService: {
     getAdminMatrix: vi.fn().mockResolvedValue({ users: [], assignments: [] }),
     upsertAdminScopes: vi.fn(),
   },
 }));
 
-vi.mock('../../access/api/companyUserPreferencesService', () => ({
-  COMPANY_USER_LOGIN_MODES: ['AskBranch', 'DirectToDefault'],
+vi.mock("../../access/api/companyUserPreferencesService", () => ({
+  COMPANY_USER_LOGIN_MODES: ["AskBranch", "DirectToDefault"],
   companyUserPreferencesService: {
     get: vi.fn(),
     update: vi.fn(),
   },
 }));
 
-vi.mock('../../branches/api/branchService', () => ({
+vi.mock("../../branches/api/branchService", () => ({
   branchService: {
     list: vi.fn().mockResolvedValue([]),
   },
 }));
 
-vi.mock('../../../access/usePermissionsUi', () => ({
+vi.mock("../../../access/usePermissionsUi", () => ({
   usePermissionsUi: vi.fn(),
 }));
 
@@ -55,30 +61,39 @@ function renderPage() {
 
 function setUserRole(role: string | null) {
   useAuthStore.setState({
-    user: role === null ? null : {
-      userId: 'user-1',
-      fullName: 'Test User',
-      username: 'test.user',
-      email: 'test@example.com',
-      role,
-      tenantId: 'tenant-1',
-    },
+    user:
+      role === null
+        ? null
+        : {
+            userId: "user-1",
+            fullName: "Test User",
+            username: "test.user",
+            email: "test@example.com",
+            role,
+            tenantId: "tenant-1",
+          },
     isAuthenticated: role !== null,
     hasHydrated: true,
   });
 }
 
-describe('SecuritySettingsPage — access gate', () => {
+describe("SecuritySettingsPage — access gate", () => {
   afterEach(() => {
-    useAuthStore.setState({ user: null, isAuthenticated: false, hasHydrated: false, token: null, companySessionVersion: 0 });
+    useAuthStore.setState({
+      user: null,
+      isAuthenticated: false,
+      hasHydrated: false,
+      token: null,
+      companySessionVersion: 0,
+    });
   });
 
   const EMPTY_USERS_MESSAGE =
-    'No hay usuarios en la matriz de delegación. Si acaba de crear la empresa, cree al menos un usuario administrador.';
-  const NO_ACCESS_MESSAGE = 'No tienes acceso a esta pantalla.';
+    "No hay usuarios en la matriz de delegación. Si acaba de crear la empresa, cree al menos un usuario administrador.";
+  const NO_ACCESS_MESSAGE = "No tienes acceso a esta pantalla.";
 
-  it('Admin role renders the page content (not NoAccessPage)', async () => {
-    setUserRole('Admin');
+  it("Admin role renders the page content (not NoAccessPage)", async () => {
+    setUserRole("Admin");
     renderPage();
 
     await waitFor(() => {
@@ -87,15 +102,15 @@ describe('SecuritySettingsPage — access gate', () => {
     expect(screen.queryByText(NO_ACCESS_MESSAGE)).toBeNull();
   });
 
-  it('non-admin role renders NoAccessPage', () => {
-    setUserRole('User');
+  it("non-admin role renders NoAccessPage", () => {
+    setUserRole("User");
     renderPage();
 
     expect(screen.getAllByText(NO_ACCESS_MESSAGE).length).toBeGreaterThan(0);
     expect(screen.queryByText(EMPTY_USERS_MESSAGE)).toBeNull();
   });
 
-  it('no session (deny by default) renders NoAccessPage', () => {
+  it("no session (deny by default) renders NoAccessPage", () => {
     setUserRole(null);
     renderPage();
 
@@ -103,17 +118,17 @@ describe('SecuritySettingsPage — access gate', () => {
   });
 });
 
-describe('SecuritySettingsPage — preferences (Fase G)', () => {
-  const membershipId = 'membership-1';
+describe("SecuritySettingsPage — preferences (Fase G)", () => {
+  const membershipId = "membership-1";
   const matrixWithOneUser = {
     users: [
       {
-        id: 'identity-1',
+        id: "identity-1",
         companyUserMembershipId: membershipId,
-        fullName: 'Ana Perez',
-        username: 'ana',
-        email: 'ana@test.com',
-        role: 'User',
+        fullName: "Ana Perez",
+        username: "ana",
+        email: "ana@test.com",
+        role: "User",
         isActive: true,
       },
     ],
@@ -121,120 +136,179 @@ describe('SecuritySettingsPage — preferences (Fase G)', () => {
   };
 
   async function openPreferencesModalFor(fullName: string) {
-    await waitFor(() => expect(screen.getByText(fullName, { selector: '.userName' })).toBeTruthy());
-    fireEvent.click(screen.getByRole('button', { name: 'Preferencias' }));
-    await waitFor(() => expect(screen.getByRole('dialog')).toBeTruthy());
+    await waitFor(() =>
+      expect(
+        screen.getByText(fullName, { selector: ".userName" }),
+      ).toBeTruthy(),
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Preferencias" }));
+    await waitFor(() => expect(screen.getByRole("dialog")).toBeTruthy());
   }
 
   beforeEach(async () => {
-    setUserRole('Admin');
-    const { securityService } = await import('../api/securityService');
-    vi.mocked(securityService.getAdminMatrix).mockResolvedValue(matrixWithOneUser);
+    setUserRole("Admin");
+    const { securityService } = await import("../api/securityService");
+    vi.mocked(securityService.getAdminMatrix).mockResolvedValue(
+      matrixWithOneUser,
+    );
     vi.mocked(companyUserPreferencesService.get).mockReset();
     vi.mocked(companyUserPreferencesService.update).mockReset();
     vi.mocked(branchService.list).mockResolvedValue([
       {
-        id: 'branch-1', name: 'Matriz', code: '001', address: '', countryId: null,
-        provinceId: null, cantonId: null, parishId: null, phone: null, email: null,
-        managerName: null, isActive: true, isMainBranch: true,
+        id: "branch-1",
+        name: "Matriz",
+        code: "001",
+        address: "",
+        countryId: null,
+        provinceId: null,
+        cantonId: null,
+        parishId: null,
+        phone: null,
+        email: null,
+        managerName: null,
+        isActive: true,
+        isMainBranch: true,
       },
       {
-        id: 'branch-2', name: 'Sucursal Norte', code: '002', address: '', countryId: null,
-        provinceId: null, cantonId: null, parishId: null, phone: null, email: null,
-        managerName: null, isActive: true, isMainBranch: false,
+        id: "branch-2",
+        name: "Sucursal Norte",
+        code: "002",
+        address: "",
+        countryId: null,
+        provinceId: null,
+        cantonId: null,
+        parishId: null,
+        phone: null,
+        email: null,
+        managerName: null,
+        isActive: true,
+        isMainBranch: false,
       },
     ]);
   });
 
   afterEach(() => {
-    useAuthStore.setState({ user: null, isAuthenticated: false, hasHydrated: false, token: null, companySessionVersion: 0 });
+    useAuthStore.setState({
+      user: null,
+      isAuthenticated: false,
+      hasHydrated: false,
+      token: null,
+      companySessionVersion: 0,
+    });
   });
 
-  it('carga las preferencias existentes al abrir el modal usando el companyUserMembershipId', async () => {
+  it("carga las preferencias existentes al abrir el modal usando el companyUserMembershipId", async () => {
     vi.mocked(companyUserPreferencesService.get).mockResolvedValue({
       companyUserId: membershipId,
-      defaultBranchId: 'branch-2',
-      loginMode: 'DirectToDefault',
+      defaultBranchId: "branch-2",
+      loginMode: "DirectToDefault",
     });
 
     renderPage();
-    await openPreferencesModalFor('Ana Perez');
+    await openPreferencesModalFor("Ana Perez");
 
-    expect(companyUserPreferencesService.get).toHaveBeenCalledWith(membershipId);
+    expect(companyUserPreferencesService.get).toHaveBeenCalledWith(
+      membershipId,
+    );
   });
 
-  it('muestra los valores existentes en el formulario', async () => {
+  it("muestra los valores existentes en el formulario", async () => {
     vi.mocked(companyUserPreferencesService.get).mockResolvedValue({
       companyUserId: membershipId,
-      defaultBranchId: 'branch-2',
-      loginMode: 'DirectToDefault',
+      defaultBranchId: "branch-2",
+      loginMode: "DirectToDefault",
     });
 
     renderPage();
-    await openPreferencesModalFor('Ana Perez');
+    await openPreferencesModalFor("Ana Perez");
 
     await waitFor(() => {
-      const loginModeSelect = screen.getByLabelText('Modo de ingreso') as HTMLSelectElement;
-      expect(loginModeSelect.value).toBe('DirectToDefault');
-      const branchSelect = screen.getByLabelText('Sucursal por defecto') as HTMLSelectElement;
-      expect(branchSelect.value).toBe('branch-2');
+      const loginModeSelect = screen.getByLabelText(
+        "Modo de ingreso",
+      ) as HTMLSelectElement;
+      expect(loginModeSelect.value).toBe("DirectToDefault");
+      const branchSelect = screen.getByLabelText(
+        "Sucursal por defecto",
+      ) as HTMLSelectElement;
+      expect(branchSelect.value).toBe("branch-2");
     });
   });
 
-  it('el update envía companyUserId por la ruta (no en el body) y solo los campos editables', async () => {
+  it("el update envía companyUserId por la ruta (no en el body) y solo los campos editables", async () => {
     vi.mocked(companyUserPreferencesService.get).mockResolvedValue({
       companyUserId: membershipId,
       defaultBranchId: null,
-      loginMode: 'AskBranch',
+      loginMode: "AskBranch",
     });
     vi.mocked(companyUserPreferencesService.update).mockResolvedValue({
       companyUserId: membershipId,
-      defaultBranchId: 'branch-1',
-      loginMode: 'DirectToDefault',
+      defaultBranchId: "branch-1",
+      loginMode: "DirectToDefault",
     });
 
     renderPage();
-    await openPreferencesModalFor('Ana Perez');
+    await openPreferencesModalFor("Ana Perez");
 
-    fireEvent.change(screen.getByLabelText('Modo de ingreso'), { target: { value: 'DirectToDefault' } });
-    fireEvent.change(screen.getByLabelText('Sucursal por defecto'), { target: { value: 'branch-1' } });
-    fireEvent.click(screen.getByRole('button', { name: 'Guardar' }));
+    fireEvent.change(screen.getByLabelText("Modo de ingreso"), {
+      target: { value: "DirectToDefault" },
+    });
+    fireEvent.change(screen.getByLabelText("Sucursal por defecto"), {
+      target: { value: "branch-1" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Guardar" }));
 
     await waitFor(() => {
-      expect(companyUserPreferencesService.update).toHaveBeenCalledWith(membershipId, {
-        loginMode: 'DirectToDefault',
-        defaultBranchId: 'branch-1',
-      });
+      expect(companyUserPreferencesService.update).toHaveBeenCalledWith(
+        membershipId,
+        {
+          loginMode: "DirectToDefault",
+          defaultBranchId: "branch-1",
+        },
+      );
     });
   });
 
-  it('un error 422 del backend muestra el mensaje usando la infraestructura existente', async () => {
+  it("un error 422 del backend muestra el mensaje usando la infraestructura existente", async () => {
     vi.mocked(companyUserPreferencesService.get).mockResolvedValue({
       companyUserId: membershipId,
       defaultBranchId: null,
-      loginMode: 'AskBranch',
+      loginMode: "AskBranch",
     });
     vi.mocked(companyUserPreferencesService.update).mockRejectedValue({
       isAxiosError: true,
       response: {
         status: 422,
-        data: { data: { errors: ['La sucursal por defecto debe estar previamente autorizada para este usuario.'] } },
+        data: {
+          data: {
+            errors: [
+              "La sucursal por defecto debe estar previamente autorizada para este usuario.",
+            ],
+          },
+        },
       },
     });
 
     renderPage();
-    await openPreferencesModalFor('Ana Perez');
+    await openPreferencesModalFor("Ana Perez");
 
-    fireEvent.change(screen.getByLabelText('Modo de ingreso'), { target: { value: 'DirectToDefault' } });
-    fireEvent.change(screen.getByLabelText('Sucursal por defecto'), { target: { value: 'branch-1' } });
-    fireEvent.click(screen.getByRole('button', { name: 'Guardar' }));
+    fireEvent.change(screen.getByLabelText("Modo de ingreso"), {
+      target: { value: "DirectToDefault" },
+    });
+    fireEvent.change(screen.getByLabelText("Sucursal por defecto"), {
+      target: { value: "branch-1" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Guardar" }));
 
     await waitFor(() => {
-      expect(screen.getByText('La sucursal por defecto debe estar previamente autorizada para este usuario.')).toBeTruthy();
+      expect(
+        screen.getByText(
+          "La sucursal por defecto debe estar previamente autorizada para este usuario.",
+        ),
+      ).toBeTruthy();
     });
   });
 
-  it('usuario sin permiso access.company_user_memberships.view no ve la acción de preferencias', async () => {
+  it("usuario sin permiso access.company_user_memberships.view no ve la acción de preferencias", async () => {
     vi.mocked(usePermissionsUi).mockReturnValue({
       canShow: () => false,
       has: () => false,
@@ -243,7 +317,11 @@ describe('SecuritySettingsPage — preferences (Fase G)', () => {
 
     renderPage();
 
-    await waitFor(() => expect(screen.getByText('Ana Perez', { selector: '.userName' })).toBeTruthy());
-    expect(screen.queryByRole('button', { name: 'Preferencias' })).toBeNull();
+    await waitFor(() =>
+      expect(
+        screen.getByText("Ana Perez", { selector: ".userName" }),
+      ).toBeTruthy(),
+    );
+    expect(screen.queryByRole("button", { name: "Preferencias" })).toBeNull();
   });
 });

@@ -1,6 +1,6 @@
-import { apiGet } from '../../lib/apiEnvelope';
+import { apiGet } from "../../lib/apiEnvelope";
 
-const BASE = '/api/v1/sales';
+const BASE = "/api/v1/sales";
 
 export interface SalesItemPricingDto {
   itemId: string;
@@ -14,5 +14,6 @@ export interface SalesItemPricingDto {
 }
 
 export const salesItemPricingService = {
-  get: (itemId: string) => apiGet<SalesItemPricingDto>(`${BASE}/items/${itemId}/pricing`),
+  get: (itemId: string) =>
+    apiGet<SalesItemPricingDto>(`${BASE}/items/${itemId}/pricing`),
 };

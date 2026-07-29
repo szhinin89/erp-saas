@@ -1,16 +1,28 @@
-import { useCallback, useEffect, useState } from 'react';
-import { useForm, Controller } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { ZHField, ZHToggle, ZHGrid, ZHBtn } from '../../../components/zh/ZHForm';
-import { ZHPageNotice } from '../../../components/zh/ZHPageNotice';
-import { ZhPhoneInput, ZhDateInput } from '../../../components/zh/inputs';
-import { LoadingState } from '../../../components/PageShell';
-import { branchService, type BranchDetailDto, type GeographyItemDto } from '../api/branchService';
-import { branchFormSchema, type BranchFormValues } from '../schemas/branchSchema';
-import { branchFormFromDto } from '../hooks/useBranchesPage';
-import { applyServerErrors } from '../../lib/validationErrors';
-import { message } from '../../../lib/messages';
-import { usePermissionsUi } from '../../../access/usePermissionsUi';
+import { useCallback, useEffect, useState } from "react";
+import { useForm, Controller } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import {
+  ZHField,
+  ZHToggle,
+  ZHGrid,
+  ZHBtn,
+} from "../../../components/zh/ZHForm";
+import { ZHPageNotice } from "../../../components/zh/ZHPageNotice";
+import { ZhPhoneInput, ZhDateInput } from "../../../components/zh/inputs";
+import { LoadingState } from "../../../components/PageShell";
+import {
+  branchService,
+  type BranchDetailDto,
+  type GeographyItemDto,
+} from "../api/branchService";
+import {
+  branchFormSchema,
+  type BranchFormValues,
+} from "../schemas/branchSchema";
+import { branchFormFromDto } from "../hooks/useBranchesPage";
+import { applyServerErrors } from "../../lib/validationErrors";
+import { message } from "../../../lib/messages";
+import { usePermissionsUi } from "../../../access/usePermissionsUi";
 
 interface Props {
   branchId: string;
@@ -18,12 +30,16 @@ interface Props {
   onSaved: (updated: BranchDetailDto) => void;
 }
 
-export function BranchGeneralSection({ branchId, initialData, onSaved }: Props) {
+export function BranchGeneralSection({
+  branchId,
+  initialData,
+  onSaved,
+}: Props) {
   const { canShow } = usePermissionsUi();
-  const canUpdate = canShow('settings.branches.update');
+  const canUpdate = canShow("settings.branches.update");
 
   const [saving, setSaving] = useState(false);
-  const [saveError, setSaveError] = useState('');
+  const [saveError, setSaveError] = useState("");
 
   const [countries, setCountries] = useState<GeographyItemDto[]>([]);
   const [provinces, setProvinces] = useState<GeographyItemDto[]>([]);
@@ -50,27 +66,48 @@ export function BranchGeneralSection({ branchId, initialData, onSaved }: Props) 
   const formWatch = watch();
 
   const loadProvinces = useCallback(async (countryId: string) => {
-    if (!countryId) { setProvinces([]); return; }
+    if (!countryId) {
+      setProvinces([]);
+      return;
+    }
     setLoadingProvinces(true);
-    try { setProvinces(await branchService.provinces(countryId)); }
-    catch { setProvinces([]); }
-    finally { setLoadingProvinces(false); }
+    try {
+      setProvinces(await branchService.provinces(countryId));
+    } catch {
+      setProvinces([]);
+    } finally {
+      setLoadingProvinces(false);
+    }
   }, []);
 
   const loadCantons = useCallback(async (provinceId: string) => {
-    if (!provinceId) { setCantons([]); return; }
+    if (!provinceId) {
+      setCantons([]);
+      return;
+    }
     setLoadingCantons(true);
-    try { setCantons(await branchService.cantons(provinceId)); }
-    catch { setCantons([]); }
-    finally { setLoadingCantons(false); }
+    try {
+      setCantons(await branchService.cantons(provinceId));
+    } catch {
+      setCantons([]);
+    } finally {
+      setLoadingCantons(false);
+    }
   }, []);
 
   const loadParishes = useCallback(async (cantonId: string) => {
-    if (!cantonId) { setParishes([]); return; }
+    if (!cantonId) {
+      setParishes([]);
+      return;
+    }
     setLoadingParishes(true);
-    try { setParishes(await branchService.parishes(cantonId)); }
-    catch { setParishes([]); }
-    finally { setLoadingParishes(false); }
+    try {
+      setParishes(await branchService.parishes(cantonId));
+    } catch {
+      setParishes([]);
+    } finally {
+      setLoadingParishes(false);
+    }
   }, []);
 
   useEffect(() => {
@@ -85,9 +122,9 @@ export function BranchGeneralSection({ branchId, initialData, onSaved }: Props) 
   }, [initialData, loadProvinces, loadCantons, loadParishes]);
 
   const onCountryChange = async (countryId: string) => {
-    setValue('provinceId', '');
-    setValue('cantonId', '');
-    setValue('parishId', '');
+    setValue("provinceId", "");
+    setValue("cantonId", "");
+    setValue("parishId", "");
     setProvinces([]);
     setCantons([]);
     setParishes([]);
@@ -95,26 +132,26 @@ export function BranchGeneralSection({ branchId, initialData, onSaved }: Props) 
   };
 
   const onProvinceChange = async (provinceId: string) => {
-    setValue('cantonId', '');
-    setValue('parishId', '');
+    setValue("cantonId", "");
+    setValue("parishId", "");
     setCantons([]);
     setParishes([]);
     await loadCantons(provinceId);
   };
 
   const onCantonChange = async (cantonId: string) => {
-    setValue('parishId', '');
+    setValue("parishId", "");
     setParishes([]);
     await loadParishes(cantonId);
   };
 
   const discard = () => {
     reset(branchFormFromDto(initialData));
-    setSaveError('');
+    setSaveError("");
   };
 
   const onSubmit = handleSubmit(async (form) => {
-    setSaveError('');
+    setSaveError("");
     setSaving(true);
     try {
       const payload = {
@@ -146,22 +183,33 @@ export function BranchGeneralSection({ branchId, initialData, onSaved }: Props) 
       const updated = await branchService.getById(branchId);
       reset(branchFormFromDto(updated));
       onSaved(updated);
-      message.success('Sucursal actualizada correctamente.');
+      message.success("Sucursal actualizada correctamente.");
     } catch (err: unknown) {
-      const applied = applyServerErrors(err, setFieldError, (msg) => setSaveError(msg));
-      if (!applied) setSaveError('Error al guardar la sucursal.');
+      const applied = applyServerErrors(err, setFieldError, (msg) =>
+        setSaveError(msg),
+      );
+      if (!applied) setSaveError("Error al guardar la sucursal.");
     } finally {
       setSaving(false);
     }
   });
 
   if (!geoReady) {
-    return <div className="pg-pad-40"><LoadingState /></div>;
+    return (
+      <div className="pg-pad-40">
+        <LoadingState />
+      </div>
+    );
   }
 
   return (
-    <form onSubmit={(e) => { e.preventDefault(); void onSubmit(); }} noValidate>
-
+    <form
+      onSubmit={(e) => {
+        e.preventDefault();
+        void onSubmit();
+      }}
+      noValidate
+    >
       {saveError && (
         <ZHPageNotice variant="error" message="Error" detail={saveError} />
       )}
@@ -170,29 +218,39 @@ export function BranchGeneralSection({ branchId, initialData, onSaved }: Props) 
       <div className="pg-section">
         <div className="pg-section-header">
           <div className="pg-section-header-left">
-            <span className="material-symbols-outlined pg-section-icon">info</span>
+            <span className="material-symbols-outlined pg-section-icon">
+              info
+            </span>
             <span className="pg-section-label">Identificación</span>
           </div>
         </div>
         <div className="pg-section-body">
           <ZHGrid cols={2}>
-            <ZHField label="Nombre de la Sucursal" required error={errors.name?.message}>
+            <ZHField
+              label="Nombre de la Sucursal"
+              required
+              error={errors.name?.message}
+            >
               <input
                 className="zh-input"
                 placeholder="Ej: Sucursal Norte Central"
                 disabled={saving || !canUpdate}
-                {...register('name')}
+                {...register("name")}
               />
             </ZHField>
             <ZHField label="Código">
-              <input className="zh-input mono br-code-readonly" readOnly value={initialData.code ?? '—'} />
+              <input
+                className="zh-input mono br-code-readonly"
+                readOnly
+                value={initialData.code ?? "—"}
+              />
             </ZHField>
             <ZHField label="Descripción" error={errors.description?.message}>
               <input
                 className="zh-input"
                 placeholder="Descripción breve"
                 disabled={saving || !canUpdate}
-                {...register('description')}
+                {...register("description")}
               />
             </ZHField>
           </ZHGrid>
@@ -216,7 +274,9 @@ export function BranchGeneralSection({ branchId, initialData, onSaved }: Props) 
       <div className="pg-section">
         <div className="pg-section-header">
           <div className="pg-section-header-left">
-            <span className="material-symbols-outlined pg-section-icon">location_on</span>
+            <span className="material-symbols-outlined pg-section-icon">
+              location_on
+            </span>
             <span className="pg-section-label">Dirección</span>
           </div>
         </div>
@@ -226,53 +286,83 @@ export function BranchGeneralSection({ branchId, initialData, onSaved }: Props) 
               <select
                 className="zh-input"
                 disabled={saving || !canUpdate || countries.length === 0}
-                {...register('countryId', {
-                  onChange: async (e) => { await onCountryChange(e.target.value); },
+                {...register("countryId", {
+                  onChange: async (e) => {
+                    await onCountryChange(e.target.value);
+                  },
                 })}
               >
                 <option value="">— seleccionar —</option>
                 {countries.map((c) => (
-                  <option key={c.id} value={c.id}>{c.name}</option>
+                  <option key={c.id} value={c.id}>
+                    {c.name}
+                  </option>
                 ))}
               </select>
             </ZHField>
-            <ZHField label={loadingProvinces ? 'Provincia (cargando…)' : 'Provincia'}>
+            <ZHField
+              label={loadingProvinces ? "Provincia (cargando…)" : "Provincia"}
+            >
               <select
                 className="zh-input"
-                disabled={saving || !canUpdate || !formWatch.countryId || loadingProvinces}
-                {...register('provinceId', {
-                  onChange: async (e) => { await onProvinceChange(e.target.value); },
+                disabled={
+                  saving ||
+                  !canUpdate ||
+                  !formWatch.countryId ||
+                  loadingProvinces
+                }
+                {...register("provinceId", {
+                  onChange: async (e) => {
+                    await onProvinceChange(e.target.value);
+                  },
                 })}
               >
                 <option value="">— seleccionar —</option>
                 {provinces.map((c) => (
-                  <option key={c.id} value={c.id}>{c.name}</option>
+                  <option key={c.id} value={c.id}>
+                    {c.name}
+                  </option>
                 ))}
               </select>
             </ZHField>
-            <ZHField label={loadingCantons ? 'Cantón (cargando…)' : 'Cantón'}>
+            <ZHField label={loadingCantons ? "Cantón (cargando…)" : "Cantón"}>
               <select
                 className="zh-input"
-                disabled={saving || !canUpdate || !formWatch.provinceId || loadingCantons}
-                {...register('cantonId', {
-                  onChange: async (e) => { await onCantonChange(e.target.value); },
+                disabled={
+                  saving ||
+                  !canUpdate ||
+                  !formWatch.provinceId ||
+                  loadingCantons
+                }
+                {...register("cantonId", {
+                  onChange: async (e) => {
+                    await onCantonChange(e.target.value);
+                  },
                 })}
               >
                 <option value="">— seleccionar —</option>
                 {cantons.map((c) => (
-                  <option key={c.id} value={c.id}>{c.name}</option>
+                  <option key={c.id} value={c.id}>
+                    {c.name}
+                  </option>
                 ))}
               </select>
             </ZHField>
-            <ZHField label={loadingParishes ? 'Parroquia (cargando…)' : 'Parroquia'}>
+            <ZHField
+              label={loadingParishes ? "Parroquia (cargando…)" : "Parroquia"}
+            >
               <select
                 className="zh-input"
-                disabled={saving || !canUpdate || !formWatch.cantonId || loadingParishes}
-                {...register('parishId')}
+                disabled={
+                  saving || !canUpdate || !formWatch.cantonId || loadingParishes
+                }
+                {...register("parishId")}
               >
                 <option value="">— seleccionar —</option>
                 {parishes.map((c) => (
-                  <option key={c.id} value={c.id}>{c.name}</option>
+                  <option key={c.id} value={c.id}>
+                    {c.name}
+                  </option>
                 ))}
               </select>
             </ZHField>
@@ -282,21 +372,37 @@ export function BranchGeneralSection({ branchId, initialData, onSaved }: Props) 
               className="zh-input"
               placeholder="Calle, número, colonia..."
               disabled={saving || !canUpdate}
-              {...register('address')}
+              {...register("address")}
             />
           </ZHField>
           <ZHGrid cols={2}>
             <ZHField label="Referencia">
-              <input className="zh-input" disabled={saving || !canUpdate} {...register('reference')} />
+              <input
+                className="zh-input"
+                disabled={saving || !canUpdate}
+                {...register("reference")}
+              />
             </ZHField>
             <ZHField label="Código postal" error={errors.postalCode?.message}>
-              <input className="zh-input" disabled={saving || !canUpdate} {...register('postalCode')} />
+              <input
+                className="zh-input"
+                disabled={saving || !canUpdate}
+                {...register("postalCode")}
+              />
             </ZHField>
             <ZHField label="Latitud" error={errors.latitude?.message}>
-              <input className="zh-input mono" disabled={saving || !canUpdate} {...register('latitude')} />
+              <input
+                className="zh-input mono"
+                disabled={saving || !canUpdate}
+                {...register("latitude")}
+              />
             </ZHField>
             <ZHField label="Longitud" error={errors.longitude?.message}>
-              <input className="zh-input mono" disabled={saving || !canUpdate} {...register('longitude')} />
+              <input
+                className="zh-input mono"
+                disabled={saving || !canUpdate}
+                {...register("longitude")}
+              />
             </ZHField>
           </ZHGrid>
         </div>
@@ -306,7 +412,9 @@ export function BranchGeneralSection({ branchId, initialData, onSaved }: Props) 
       <div className="pg-section">
         <div className="pg-section-header">
           <div className="pg-section-header-left">
-            <span className="material-symbols-outlined pg-section-icon">contact_phone</span>
+            <span className="material-symbols-outlined pg-section-icon">
+              contact_phone
+            </span>
             <span className="pg-section-label">Contacto</span>
           </div>
         </div>
@@ -316,21 +424,37 @@ export function BranchGeneralSection({ branchId, initialData, onSaved }: Props) 
               <Controller
                 name="phone"
                 control={control}
-                render={({ field }) => <ZhPhoneInput {...field} disabled={saving || !canUpdate} />}
+                render={({ field }) => (
+                  <ZhPhoneInput {...field} disabled={saving || !canUpdate} />
+                )}
               />
             </ZHField>
-            <ZHField label="Teléfono secundario" error={errors.secondaryPhone?.message}>
+            <ZHField
+              label="Teléfono secundario"
+              error={errors.secondaryPhone?.message}
+            >
               <Controller
                 name="secondaryPhone"
                 control={control}
-                render={({ field }) => <ZhPhoneInput {...field} disabled={saving || !canUpdate} />}
+                render={({ field }) => (
+                  <ZhPhoneInput {...field} disabled={saving || !canUpdate} />
+                )}
               />
             </ZHField>
             <ZHField label="Correo Electrónico" error={errors.email?.message}>
-              <input className="zh-input" type="email" disabled={saving || !canUpdate} {...register('email')} />
+              <input
+                className="zh-input"
+                type="email"
+                disabled={saving || !canUpdate}
+                {...register("email")}
+              />
             </ZHField>
             <ZHField label="Sitio web" error={errors.website?.message}>
-              <input className="zh-input" disabled={saving || !canUpdate} {...register('website')} />
+              <input
+                className="zh-input"
+                disabled={saving || !canUpdate}
+                {...register("website")}
+              />
             </ZHField>
           </ZHGrid>
         </div>
@@ -340,26 +464,46 @@ export function BranchGeneralSection({ branchId, initialData, onSaved }: Props) 
       <div className="pg-section">
         <div className="pg-section-header">
           <div className="pg-section-header-left">
-            <span className="material-symbols-outlined pg-section-icon">badge</span>
+            <span className="material-symbols-outlined pg-section-icon">
+              badge
+            </span>
             <span className="pg-section-label">Responsable</span>
           </div>
         </div>
         <div className="pg-section-body">
           <ZHGrid cols={2}>
-            <ZHField label="Nombre completo" error={errors.managerName?.message}>
-              <input className="zh-input" disabled={saving || !canUpdate} {...register('managerName')} />
+            <ZHField
+              label="Nombre completo"
+              error={errors.managerName?.message}
+            >
+              <input
+                className="zh-input"
+                disabled={saving || !canUpdate}
+                {...register("managerName")}
+              />
             </ZHField>
             <ZHField label="Cargo" error={errors.managerPosition?.message}>
-              <input className="zh-input" disabled={saving || !canUpdate} {...register('managerPosition')} />
+              <input
+                className="zh-input"
+                disabled={saving || !canUpdate}
+                {...register("managerPosition")}
+              />
             </ZHField>
             <ZHField label="Correo" error={errors.managerEmail?.message}>
-              <input className="zh-input" type="email" disabled={saving || !canUpdate} {...register('managerEmail')} />
+              <input
+                className="zh-input"
+                type="email"
+                disabled={saving || !canUpdate}
+                {...register("managerEmail")}
+              />
             </ZHField>
             <ZHField label="Teléfono" error={errors.managerPhone?.message}>
               <Controller
                 name="managerPhone"
                 control={control}
-                render={({ field }) => <ZhPhoneInput {...field} disabled={saving || !canUpdate} />}
+                render={({ field }) => (
+                  <ZhPhoneInput {...field} disabled={saving || !canUpdate} />
+                )}
               />
             </ZHField>
           </ZHGrid>
@@ -370,7 +514,9 @@ export function BranchGeneralSection({ branchId, initialData, onSaved }: Props) 
       <div className="pg-section">
         <div className="pg-section-header">
           <div className="pg-section-header-left">
-            <span className="material-symbols-outlined pg-section-icon">settings_input_component</span>
+            <span className="material-symbols-outlined pg-section-icon">
+              settings_input_component
+            </span>
             <span className="pg-section-label">Operación</span>
           </div>
         </div>
@@ -389,8 +535,14 @@ export function BranchGeneralSection({ branchId, initialData, onSaved }: Props) 
             )}
           />
           <ZHGrid cols={2}>
-            <ZHField label="Fecha de apertura" error={errors.openingDate?.message}>
-              <ZhDateInput disabled={saving || !canUpdate} {...register('openingDate')} />
+            <ZHField
+              label="Fecha de apertura"
+              error={errors.openingDate?.message}
+            >
+              <ZhDateInput
+                disabled={saving || !canUpdate}
+                {...register("openingDate")}
+              />
             </ZHField>
           </ZHGrid>
           <ZHField label="Notas internas" error={errors.internalNotes?.message}>
@@ -399,7 +551,7 @@ export function BranchGeneralSection({ branchId, initialData, onSaved }: Props) 
               rows={3}
               maxLength={1000}
               disabled={saving || !canUpdate}
-              {...register('internalNotes')}
+              {...register("internalNotes")}
             />
           </ZHField>
         </div>
@@ -408,11 +560,16 @@ export function BranchGeneralSection({ branchId, initialData, onSaved }: Props) 
       {canUpdate && (
         <div className="pg-actions-bar">
           <div className="pg-actions-buttons">
-            <ZHBtn variant="ghost" type="button" onClick={discard} disabled={saving || !isDirty}>
+            <ZHBtn
+              variant="ghost"
+              type="button"
+              onClick={discard}
+              disabled={saving || !isDirty}
+            >
               Descartar cambios
             </ZHBtn>
             <ZHBtn variant="primary" type="submit" disabled={saving}>
-              {saving ? 'Guardando…' : 'Guardar cambios'}
+              {saving ? "Guardando…" : "Guardar cambios"}
             </ZHBtn>
           </div>
         </div>

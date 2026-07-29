@@ -3,7 +3,8 @@
    Extraído de erp-form-core.css: estas clases (.pdl-topbar/__header/
    __tag/__stock/__cost/__margin/__add/__empty/__costs-*, .pf-plazos-
    resumen-grid, .pf-totals*, .pf-footer, .pf-retention*) solo se usan
-   en PurchasesPage.tsx — verificado por grep en frontend/src/**/*.tsx.
+   en PurchasesPage.tsx — verificado por grep en frontend/src/**/
+*.tsx.
    Las familias .pdl-line/.pdl-ctx/.pdl-search siguen en erp-form-core.css
    porque también las consume Kardex/Sales.
    ============================================================ */
@@ -60,7 +61,7 @@
   font-size: 13px;
   font-weight: 600;
   color: var(--color-text-primary);
-  font-family: 'SF Mono', 'Cascadia Code', monospace;
+  font-family: "SF Mono", "Cascadia Code", monospace;
 }
 .pf-totals__divider {
   height: 1px;
@@ -84,7 +85,7 @@
   font-size: 22px;
   font-weight: 800;
   color: var(--color-primary);
-  font-family: 'SF Mono', 'Cascadia Code', monospace;
+  font-family: "SF Mono", "Cascadia Code", monospace;
   letter-spacing: -0.02em;
 }
 
@@ -110,8 +111,8 @@
 }
 .pf-retention__skip {
   padding: var(--space-3) var(--space-4);
-  background: rgba(186,117,23,.06);
-  border: 1px solid rgba(186,117,23,.2);
+  background: rgba(186, 117, 23, 0.06);
+  border: 1px solid rgba(186, 117, 23, 0.2);
   border-radius: var(--radius-md);
   font-size: 13px;
   color: var(--color-warning);
@@ -142,7 +143,9 @@
   margin-top: var(--space-4);
 }
 @media (max-width: 640px) {
-  .pf-retention__issued-totals { grid-template-columns: 1fr; }
+  .pf-retention__issued-totals {
+    grid-template-columns: 1fr;
+  }
 }
 
 /* ── Top Bar: Title (específico, distinto de .pdl-search__* que sí es compartido) ── */
@@ -180,10 +183,12 @@
   font-size: var(--text-body-md-size);
   font-weight: 600;
   cursor: pointer;
-  transition: background .15s;
+  transition: background 0.15s;
   white-space: nowrap;
 }
-.pdl-costs-toggle:hover { opacity: .9; }
+.pdl-costs-toggle:hover {
+  opacity: 0.9;
+}
 .pdl-costs-dropdown {
   position: absolute;
   top: calc(100% + 6px);
@@ -227,8 +232,12 @@
 .pdl-header__col--qty,
 .pdl-header__col--finance,
 .pdl-header__col--tax,
-.pdl-header__col--total { text-align: right; }
-.pdl-header__col--actions { text-align: center; }
+.pdl-header__col--total {
+  text-align: right;
+}
+.pdl-header__col--actions {
+  text-align: center;
+}
 
 .pdl-tag {
   display: inline-block;
@@ -238,10 +247,10 @@
   border-radius: var(--radius-sm);
   background: var(--color-primary-fixed);
   color: var(--color-primary);
-  font-family: 'SF Mono', 'Cascadia Code', monospace;
+  font-family: "SF Mono", "Cascadia Code", monospace;
 }
 .pdl-tag--accent {
-  background: rgba(186,117,23,.1);
+  background: rgba(186, 117, 23, 0.1);
   color: var(--color-warning);
 }
 
@@ -265,15 +274,23 @@
   font-weight: 800;
   text-transform: uppercase;
 }
-.pdl-stock-label--ok { color: var(--color-primary); }
-.pdl-stock-label--ok::before { content: '● '; }
-.pdl-stock-label--danger { color: var(--color-error); }
-.pdl-stock-label--danger::before { content: '● '; }
+.pdl-stock-label--ok {
+  color: var(--color-primary);
+}
+.pdl-stock-label--ok::before {
+  content: "● ";
+}
+.pdl-stock-label--danger {
+  color: var(--color-error);
+}
+.pdl-stock-label--danger::before {
+  content: "● ";
+}
 .pdl-stock-val {
   font-size: 13px;
   font-weight: 700;
   color: var(--color-text-primary);
-  font-family: 'SF Mono', 'Cascadia Code', monospace;
+  font-family: "SF Mono", "Cascadia Code", monospace;
 }
 .pdl-ctx-col__costs > div {
   display: flex;
@@ -291,7 +308,7 @@
   font-size: 12px;
   font-weight: 700;
   color: var(--color-text-primary);
-  font-family: 'SF Mono', 'Cascadia Code', monospace;
+  font-family: "SF Mono", "Cascadia Code", monospace;
 }
 .pdl-cost-alert {
   margin-top: 6px;
@@ -306,7 +323,8 @@
   align-items: center;
   gap: 4px;
 }
-.pdl-ctx-col__margin { }
+.pdl-ctx-col__margin {
+}
 .pdl-margin-row {
   display: flex;
   justify-content: space-between;
@@ -323,9 +341,11 @@
   font-size: 14px;
   font-weight: 800;
   color: var(--color-success);
-  font-family: 'SF Mono', 'Cascadia Code', monospace;
+  font-family: "SF Mono", "Cascadia Code", monospace;
 }
-.pdl-margin-pct--neg { color: var(--color-error); }
+.pdl-margin-pct--neg {
+  color: var(--color-error);
+}
 .pdl-margin-bar {
   height: 4px;
   background: var(--color-surface-container-high);
@@ -388,8 +408,12 @@
 
 /* ── Responsive (solo selectores exclusivos de Compras) ── */
 @media (max-width: 1100px) {
-  .pdl-header { display: none; }
+  .pdl-header {
+    display: none;
+  }
 }
 @media (max-width: 640px) {
-  .pdl-costs-dropdown { min-width: 240px; }
+  .pdl-costs-dropdown {
+    min-width: 240px;
+  }
 }

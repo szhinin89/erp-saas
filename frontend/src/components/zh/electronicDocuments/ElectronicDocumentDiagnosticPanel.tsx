@@ -1,12 +1,15 @@
-import type { ReactNode } from 'react';
-import { ZHCard } from '../ZHCard';
-import { useI18n } from '../../../i18n/i18n';
-import { ElectronicDocumentStatusBadge } from './ElectronicDocumentStatusBadge';
-import { ElectronicDocumentSriMessages } from './ElectronicDocumentSriMessages';
-import { ElectronicDocumentTimeline } from './ElectronicDocumentTimeline';
-import { ElectronicDocumentTechnicalInfo } from './ElectronicDocumentTechnicalInfo';
-import { ElectronicDocumentXmlActions } from './ElectronicDocumentXmlActions';
-import type { ElectronicDocumentDiagnosticDto, ElectronicDocumentXmlVariant } from './electronicDocumentDiagnosticTypes';
+import type { ReactNode } from "react";
+import { ZHCard } from "../ZHCard";
+import { useI18n } from "../../../i18n/i18n";
+import { ElectronicDocumentStatusBadge } from "./ElectronicDocumentStatusBadge";
+import { ElectronicDocumentSriMessages } from "./ElectronicDocumentSriMessages";
+import { ElectronicDocumentTimeline } from "./ElectronicDocumentTimeline";
+import { ElectronicDocumentTechnicalInfo } from "./ElectronicDocumentTechnicalInfo";
+import { ElectronicDocumentXmlActions } from "./ElectronicDocumentXmlActions";
+import type {
+  ElectronicDocumentDiagnosticDto,
+  ElectronicDocumentXmlVariant,
+} from "./electronicDocumentDiagnosticTypes";
 
 type Props = {
   diagnostic: ElectronicDocumentDiagnosticDto;
@@ -30,24 +33,33 @@ type Props = {
  * del módulo que lo usa — ni Ventas, ni Monitor, ni Retenciones.
  */
 export function ElectronicDocumentDiagnosticPanel({
-  diagnostic, xmlContent, xmlVariant, xmlLoading, xmlError, downloadFileBaseName, onViewXml, statusExtra,
+  diagnostic,
+  xmlContent,
+  xmlVariant,
+  xmlLoading,
+  xmlError,
+  downloadFileBaseName,
+  onViewXml,
+  statusExtra,
 }: Props) {
   const { t } = useI18n();
 
   return (
     <>
-      <ZHCard title={t('electronicDocuments.monitor.detail.state')}>
+      <ZHCard title={t("electronicDocuments.monitor.detail.state")}>
         <div className="edm-state-badge-label">
-          <ElectronicDocumentStatusBadge currentState={diagnostic.currentState} />
+          <ElectronicDocumentStatusBadge
+            currentState={diagnostic.currentState}
+          />
           {statusExtra}
         </div>
       </ZHCard>
 
-      <ZHCard title={t('electronicDocuments.diagnostic.messagesSection')}>
+      <ZHCard title={t("electronicDocuments.diagnostic.messagesSection")}>
         <ElectronicDocumentSriMessages messages={diagnostic.messages} />
       </ZHCard>
 
-      <ZHCard title={t('electronicDocuments.monitor.detail.xmlSection')}>
+      <ZHCard title={t("electronicDocuments.monitor.detail.xmlSection")}>
         <ElectronicDocumentXmlActions
           xmlDraftAvailable={diagnostic.xmlDraftAvailable}
           xmlSignedAvailable={diagnostic.xmlSignedAvailable}
@@ -61,12 +73,14 @@ export function ElectronicDocumentDiagnosticPanel({
         />
       </ZHCard>
 
-      <ZHCard title={t('electronicDocuments.monitor.detail.timeline')}>
+      <ZHCard title={t("electronicDocuments.monitor.detail.timeline")}>
         <ElectronicDocumentTimeline timeline={diagnostic.timeline} />
       </ZHCard>
 
       <ZHCard>
-        <ElectronicDocumentTechnicalInfo technicalInfo={diagnostic.technicalInfo} />
+        <ElectronicDocumentTechnicalInfo
+          technicalInfo={diagnostic.technicalInfo}
+        />
       </ZHCard>
     </>
   );

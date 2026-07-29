@@ -1,8 +1,9 @@
-import { apiGet } from '../../../lib/apiEnvelope';
-import type { StockMovementDto } from './stockService';
+import { apiGet } from "../../../lib/apiEnvelope";
+import type { StockMovementDto } from "./stockService";
 
 /** Coincide 1:1 con StockMovement.SourceDocType en el backend — nunca inventar valores nuevos aquí. */
-export type KardexSourceDocType = 'PurchaseInvoice' | 'SalesInvoice' | 'StockAdjustment' | 'StockTransfer';
+export type KardexSourceDocType =
+  "PurchaseInvoice" | "SalesInvoice" | "StockAdjustment" | "StockTransfer";
 
 export type KardexSourceDocumentDto = {
   docType: string;
@@ -54,22 +55,27 @@ export type KardexMovementDetailDto = {
   relations: KardexMovementRelationsDto;
 };
 
-const BASE = '/api/v1/inventory/kardex';
+const BASE = "/api/v1/inventory/kardex";
 
 export const kardexService = {
-  getByProduct(productId: string, params?: { warehouseId?: string; from?: string; to?: string }) {
+  getByProduct(
+    productId: string,
+    params?: { warehouseId?: string; from?: string; to?: string },
+  ) {
     const qs = new URLSearchParams();
-    if (params?.warehouseId) qs.set('warehouseId', params.warehouseId);
-    if (params?.from) qs.set('from', params.from);
-    if (params?.to) qs.set('to', params.to);
-    const suffix = qs.toString() ? `?${qs.toString()}` : '';
+    if (params?.warehouseId) qs.set("warehouseId", params.warehouseId);
+    if (params?.from) qs.set("from", params.from);
+    if (params?.to) qs.set("to", params.to);
+    const suffix = qs.toString() ? `?${qs.toString()}` : "";
     return apiGet<StockMovementDto[]>(`${BASE}/${productId}${suffix}`);
   },
 
   /** Búsqueda exacta por documento origen ya resuelto (Id + Tipo) — nunca por texto libre. */
   getByDocument(sourceDocId: string, sourceDocType: KardexSourceDocType) {
     const qs = new URLSearchParams({ sourceDocType });
-    return apiGet<StockMovementDto[]>(`${BASE}/by-document/${sourceDocId}?${qs.toString()}`);
+    return apiGet<StockMovementDto[]>(
+      `${BASE}/by-document/${sourceDocId}?${qs.toString()}`,
+    );
   },
 
   getMovementDetail(movementId: string) {

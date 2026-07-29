@@ -27,7 +27,9 @@
   border-radius: var(--radius-md);
   cursor: pointer;
   background: transparent;
-  transition: border-color 0.15s, background 0.15s;
+  transition:
+    border-color 0.15s,
+    background 0.15s;
 }
 
 .sri-env-option--selected {
@@ -39,7 +41,7 @@
   cursor: default;
 }
 
-.sri-env-option input[type='radio'] {
+.sri-env-option input[type="radio"] {
   margin-top: 2px;
 }
 

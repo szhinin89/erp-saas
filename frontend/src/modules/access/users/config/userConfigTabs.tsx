@@ -1,18 +1,25 @@
-import type { ReactNode } from 'react';
-import type { Control, FieldErrors, UseFormGetValues, UseFormRegister, UseFormSetValue } from 'react-hook-form';
-import { UserGeneralSection } from '../sections/UserGeneralSection';
-import { UserBranchesSection } from '../sections/UserBranchesSection';
-import { UserPreferencesSection } from '../sections/UserPreferencesSection';
-import { UserSecuritySection } from '../sections/UserSecuritySection';
-import { type CompanyUserMembershipAdminDto } from '../api/membershipService';
-import { type Profile } from '../../api/profileService';
-import { type BranchListItemDto } from '../../../branches/api/branchService';
-import { type UserConfigFormValues } from '../../../../schemas/access/userConfigSchema';
+import type { ReactNode } from "react";
+import type {
+  Control,
+  FieldErrors,
+  UseFormGetValues,
+  UseFormRegister,
+  UseFormSetValue,
+} from "react-hook-form";
+import { UserGeneralSection } from "../sections/UserGeneralSection";
+import { UserBranchesSection } from "../sections/UserBranchesSection";
+import { UserPreferencesSection } from "../sections/UserPreferencesSection";
+import { UserSecuritySection } from "../sections/UserSecuritySection";
+import { type CompanyUserMembershipAdminDto } from "../api/membershipService";
+import { type Profile } from "../../api/profileService";
+import { type BranchListItemDto } from "../../../branches/api/branchService";
+import { type UserConfigFormValues } from "../../../../schemas/access/userConfigSchema";
 
-export type UserConfigTabId = 'general' | 'branches' | 'preferences' | 'security';
+export type UserConfigTabId =
+  "general" | "branches" | "preferences" | "security";
 
 export type UserConfigContext = {
-  mode: 'new' | 'edit';
+  mode: "new" | "edit";
   membership: CompanyUserMembershipAdminDto | null;
   profiles: Profile[];
   branchesCatalog: BranchListItemDto[];
@@ -45,8 +52,8 @@ export type UserConfigTab = {
  */
 export const userConfigTabs: UserConfigTab[] = [
   {
-    id: 'general',
-    labelKey: 'users.config.tabs.general',
+    id: "general",
+    labelKey: "users.config.tabs.general",
     requiresExistingUser: false,
     render: (ctx) => (
       <UserGeneralSection
@@ -63,8 +70,8 @@ export const userConfigTabs: UserConfigTab[] = [
     ),
   },
   {
-    id: 'branches',
-    labelKey: 'users.config.tabs.branches',
+    id: "branches",
+    labelKey: "users.config.tabs.branches",
     requiresExistingUser: false,
     render: (ctx) => (
       <UserBranchesSection
@@ -77,8 +84,8 @@ export const userConfigTabs: UserConfigTab[] = [
     ),
   },
   {
-    id: 'preferences',
-    labelKey: 'users.config.tabs.preferences',
+    id: "preferences",
+    labelKey: "users.config.tabs.preferences",
     requiresExistingUser: false,
     render: (ctx) => (
       <UserPreferencesSection
@@ -95,9 +102,12 @@ export const userConfigTabs: UserConfigTab[] = [
     ),
   },
   {
-    id: 'security',
-    labelKey: 'users.config.tabs.security',
+    id: "security",
+    labelKey: "users.config.tabs.security",
     requiresExistingUser: true,
-    render: (ctx) => (ctx.membership ? <UserSecuritySection membership={ctx.membership} /> : null),
+    render: (ctx) =>
+      ctx.membership ? (
+        <UserSecuritySection membership={ctx.membership} />
+      ) : null,
   },
 ];

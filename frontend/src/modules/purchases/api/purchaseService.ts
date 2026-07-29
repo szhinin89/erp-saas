@@ -1,6 +1,6 @@
-import { apiGet, apiPost, apiPut } from '../../lib/apiEnvelope';
+import { apiGet, apiPost, apiPut } from "../../lib/apiEnvelope";
 
-const BASE = '/api/v1/purchases';
+const BASE = "/api/v1/purchases";
 
 // ── DTOs ─────────────────────────────────────────────────────────────────
 
@@ -171,7 +171,9 @@ export interface ConfirmScheduleInput {
 
 // ── Service ──────────────────────────────────────────────────────────────
 
-export interface ApplyDiscountPayload { discountPct: number; }
+export interface ApplyDiscountPayload {
+  discountPct: number;
+}
 
 export interface PurchaseItemContextDto {
   itemId: string;
@@ -200,35 +202,52 @@ export interface PurchaseItemContextDto {
 export const purchaseService = {
   list: (search?: string, status?: string, page = 1, pageSize = 25) => {
     const params = new URLSearchParams();
-    if (search?.trim()) params.set('search', search.trim());
-    if (status?.trim()) params.set('status', status.trim());
-    params.set('pageNumber', String(page));
-    params.set('pageSize', String(pageSize));
+    if (search?.trim()) params.set("search", search.trim());
+    if (status?.trim()) params.set("status", status.trim());
+    params.set("pageNumber", String(page));
+    params.set("pageSize", String(pageSize));
     return apiGet<PurchaseListResponse>(`${BASE}?${params}`);
   },
   getById: (id: string) => apiGet<PurchaseInvoiceDto>(`${BASE}/${id}`),
   create: (p: CreatePurchasePayload) => apiPost<PurchaseInvoiceDto>(BASE, p),
-  update: (id: string, p: UpdatePurchasePayload) => apiPut<PurchaseInvoiceDto>(`${BASE}/${id}`, p),
-  applyDiscount: (id: string, discountPct: number) => apiPost<PurchaseInvoiceDto>(`${BASE}/${id}/apply-discount`, { discountPct }),
-  allocateFreight: (id: string) => apiPost<PurchaseInvoiceDto>(`${BASE}/${id}/allocate-freight`, {}),
-  recalculate: (id: string) => apiPost<PurchaseInvoiceDto>(`${BASE}/${id}/recalculate`, {}),
+  update: (id: string, p: UpdatePurchasePayload) =>
+    apiPut<PurchaseInvoiceDto>(`${BASE}/${id}`, p),
+  applyDiscount: (id: string, discountPct: number) =>
+    apiPost<PurchaseInvoiceDto>(`${BASE}/${id}/apply-discount`, {
+      discountPct,
+    }),
+  allocateFreight: (id: string) =>
+    apiPost<PurchaseInvoiceDto>(`${BASE}/${id}/allocate-freight`, {}),
+  recalculate: (id: string) =>
+    apiPost<PurchaseInvoiceDto>(`${BASE}/${id}/recalculate`, {}),
   confirm: (id: string, schedule?: ConfirmScheduleInput[]) =>
-    apiPost<PurchaseInvoiceDto>(`${BASE}/${id}/confirm`, { schedule: schedule ?? null }),
-  cancel: (id: string, reason: string) => apiPost<PurchaseInvoiceDto>(`${BASE}/${id}/cancel`, { reason }),
+    apiPost<PurchaseInvoiceDto>(`${BASE}/${id}/confirm`, {
+      schedule: schedule ?? null,
+    }),
+  cancel: (id: string, reason: string) =>
+    apiPost<PurchaseInvoiceDto>(`${BASE}/${id}/cancel`, { reason }),
 
-  retentionPreview: (id: string) => apiGet<RetentionPreviewDto>(`${BASE}/${id}/retention-preview`),
-  getWithholding: (id: string) => apiGet<IssuedWithholdingDto | null>(`${BASE}/${id}/withholding`),
+  retentionPreview: (id: string) =>
+    apiGet<RetentionPreviewDto>(`${BASE}/${id}/retention-preview`),
+  getWithholding: (id: string) =>
+    apiGet<IssuedWithholdingDto | null>(`${BASE}/${id}/withholding`),
   issueWithholding: (id: string, emissionPointId: string, issueDate: string) =>
-    apiPost<IssuedWithholdingDto>(`${BASE}/${id}/withholding`, { emissionPointId, issueDate }),
-  getWithholdingById: (whId: string) => apiGet<IssuedWithholdingDto>(`${BASE}/withholdings/${whId}`),
+    apiPost<IssuedWithholdingDto>(`${BASE}/${id}/withholding`, {
+      emissionPointId,
+      issueDate,
+    }),
+  getWithholdingById: (whId: string) =>
+    apiGet<IssuedWithholdingDto>(`${BASE}/withholdings/${whId}`),
   cancelWithholding: (whId: string, reason: string) =>
-    apiPost<IssuedWithholdingDto>(`${BASE}/withholdings/${whId}/cancel`, { reason }),
+    apiPost<IssuedWithholdingDto>(`${BASE}/withholdings/${whId}/cancel`, {
+      reason,
+    }),
 
   // supplierId opcional: si se indica, el backend resuelve el código de proveedor
   // específico (ItemSupplierCode), única fuente de códigos de compra.
   getItemContext: (itemId: string, warehouseId: string, supplierId?: string) =>
     apiGet<PurchaseItemContextDto>(
-      `${BASE}/items/context?itemId=${itemId}&warehouseId=${warehouseId}${supplierId ? `&supplierId=${supplierId}` : ''}`
+      `${BASE}/items/context?itemId=${itemId}&warehouseId=${warehouseId}${supplierId ? `&supplierId=${supplierId}` : ""}`,
     ),
 };
 

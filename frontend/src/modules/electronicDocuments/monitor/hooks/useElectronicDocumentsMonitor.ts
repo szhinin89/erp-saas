@@ -1,46 +1,52 @@
-import { useCallback, useEffect, useState } from 'react';
-import { usePermissionsUi } from '../../../../access/usePermissionsUi';
-import { formatApiError } from '../../../lib/formatApiError';
-import { todayIso } from '../../../../lib/formatters/dateFormatters';
+import { useCallback, useEffect, useState } from "react";
+import { usePermissionsUi } from "../../../../access/usePermissionsUi";
+import { formatApiError } from "../../../lib/formatApiError";
+import { todayIso } from "../../../../lib/formatters/dateFormatters";
 import {
   electronicDocumentsMonitorService,
   type ElectronicDocumentDetailDto,
   type ElectronicDocumentsDashboardDto,
   type ElectronicDocumentsListResponse,
   type ElectronicDocumentXmlVariant,
-} from '../api/electronicDocumentsMonitorService';
+} from "../api/electronicDocumentsMonitorService";
 
 const PAGE_SIZE = 25;
 
 export function useElectronicDocumentsMonitor() {
   const { canShow } = usePermissionsUi();
-  const canView = canShow('electronic-documents.view');
-  const canViewDetail = canShow('electronic-documents.detail');
-  const canRetry = canShow('electronic-documents.retry');
+  const canView = canShow("electronic-documents.view");
+  const canViewDetail = canShow("electronic-documents.detail");
+  const canRetry = canShow("electronic-documents.retry");
 
-  const [dateFrom, setDateFrom] = useState('');
-  const [dateTo, setDateTo] = useState('');
-  const [state, setState] = useState('');
-  const [documentType, setDocumentType] = useState('');
-  const [environment, setEnvironment] = useState('');
-  const [search, setSearch] = useState('');
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
+  const [state, setState] = useState("");
+  const [documentType, setDocumentType] = useState("");
+  const [environment, setEnvironment] = useState("");
+  const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
 
-  const [list, setList] = useState<ElectronicDocumentsListResponse | null>(null);
+  const [list, setList] = useState<ElectronicDocumentsListResponse | null>(
+    null,
+  );
   const [listLoading, setListLoading] = useState(true);
   const [listError, setListError] = useState<string | null>(null);
 
-  const [dashboard, setDashboard] = useState<ElectronicDocumentsDashboardDto | null>(null);
+  const [dashboard, setDashboard] =
+    useState<ElectronicDocumentsDashboardDto | null>(null);
   const [dashboardLoading, setDashboardLoading] = useState(true);
   const [dashboardError, setDashboardError] = useState<string | null>(null);
 
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [detail, setDetail] = useState<ElectronicDocumentDetailDto | null>(null);
+  const [detail, setDetail] = useState<ElectronicDocumentDetailDto | null>(
+    null,
+  );
   const [detailLoading, setDetailLoading] = useState(false);
   const [detailError, setDetailError] = useState<string | null>(null);
 
   const [xmlContent, setXmlContent] = useState<string | null>(null);
-  const [xmlVariant, setXmlVariant] = useState<ElectronicDocumentXmlVariant | null>(null);
+  const [xmlVariant, setXmlVariant] =
+    useState<ElectronicDocumentXmlVariant | null>(null);
   const [xmlLoading, setXmlLoading] = useState(false);
   const [xmlError, setXmlError] = useState<string | null>(null);
 
@@ -96,24 +102,27 @@ export function useElectronicDocumentsMonitor() {
     void loadDashboard();
   }, [loadList, loadDashboard]);
 
-  const openDetail = useCallback(async (id: string) => {
-    setSelectedId(id);
-    setDetail(null);
-    setDetailError(null);
-    setXmlContent(null);
-    setXmlVariant(null);
-    setXmlError(null);
-    if (!canViewDetail) return;
-    setDetailLoading(true);
-    try {
-      const data = await electronicDocumentsMonitorService.getDetail(id);
-      setDetail(data);
-    } catch (e) {
-      setDetailError(formatApiError(e));
-    } finally {
-      setDetailLoading(false);
-    }
-  }, [canViewDetail]);
+  const openDetail = useCallback(
+    async (id: string) => {
+      setSelectedId(id);
+      setDetail(null);
+      setDetailError(null);
+      setXmlContent(null);
+      setXmlVariant(null);
+      setXmlError(null);
+      if (!canViewDetail) return;
+      setDetailLoading(true);
+      try {
+        const data = await electronicDocumentsMonitorService.getDetail(id);
+        setDetail(data);
+      } catch (e) {
+        setDetailError(formatApiError(e));
+      } finally {
+        setDetailLoading(false);
+      }
+    },
+    [canViewDetail],
+  );
 
   const closeDetail = useCallback(() => {
     setSelectedId(null);
@@ -124,28 +133,36 @@ export function useElectronicDocumentsMonitor() {
     setXmlError(null);
   }, []);
 
-  const viewXml = useCallback(async (variant: ElectronicDocumentXmlVariant) => {
-    if (!detail) return;
-    setXmlLoading(true);
-    setXmlError(null);
-    setXmlContent(null);
-    setXmlVariant(variant);
-    try {
-      const xml = await electronicDocumentsMonitorService.getXml(
-        detail.sourceModule, detail.sourceEntityId, variant);
-      setXmlContent(xml);
-    } catch (e) {
-      setXmlError(formatApiError(e));
-    } finally {
-      setXmlLoading(false);
-    }
-  }, [detail]);
+  const viewXml = useCallback(
+    async (variant: ElectronicDocumentXmlVariant) => {
+      if (!detail) return;
+      setXmlLoading(true);
+      setXmlError(null);
+      setXmlContent(null);
+      setXmlVariant(variant);
+      try {
+        const xml = await electronicDocumentsMonitorService.getXml(
+          detail.sourceModule,
+          detail.sourceEntityId,
+          variant,
+        );
+        setXmlContent(xml);
+      } catch (e) {
+        setXmlError(formatApiError(e));
+      } finally {
+        setXmlLoading(false);
+      }
+    },
+    [detail],
+  );
 
   const retryNow = useCallback(async () => {
     if (!detail) return;
     setRetryLoading(true);
     try {
-      const updated = await electronicDocumentsMonitorService.retryNow(detail.id);
+      const updated = await electronicDocumentsMonitorService.retryNow(
+        detail.id,
+      );
       setDetail(updated);
       void loadList();
       void loadDashboard();
@@ -155,18 +172,18 @@ export function useElectronicDocumentsMonitor() {
   }, [detail, loadList, loadDashboard]);
 
   const resetFiltersAndReload = useCallback(() => {
-    setDateFrom('');
-    setDateTo('');
-    setState('');
-    setDocumentType('');
-    setEnvironment('');
-    setSearch('');
+    setDateFrom("");
+    setDateTo("");
+    setState("");
+    setDocumentType("");
+    setEnvironment("");
+    setSearch("");
     setPage(1);
   }, []);
 
   /** Usado por las tarjetas KPI: aplica (o quita, si ya estaba activo) un filtro de estado y vuelve a la página 1. */
   const toggleStateFilter = useCallback((value: string) => {
-    setState((current) => (current === value ? '' : value));
+    setState((current) => (current === value ? "" : value));
     setPage(1);
   }, []);
 
@@ -175,8 +192,8 @@ export function useElectronicDocumentsMonitor() {
   /** Usado por la tarjeta "Total emitidos hoy": aplica (o quita) el rango de fecha de hoy. */
   const toggleTodayFilter = useCallback(() => {
     const today = todayIso();
-    setDateFrom((current) => (current === today ? '' : today));
-    setDateTo((current) => (current === today ? '' : today));
+    setDateFrom((current) => (current === today ? "" : today));
+    setDateTo((current) => (current === today ? "" : today));
     setPage(1);
   }, []);
 
@@ -185,16 +202,32 @@ export function useElectronicDocumentsMonitor() {
     canViewDetail,
     canRetry,
     filters: { dateFrom, dateTo, state, documentType, environment, search },
-    setDateFrom, setDateTo, setState, setDocumentType, setEnvironment, setSearch,
+    setDateFrom,
+    setDateTo,
+    setState,
+    setDocumentType,
+    setEnvironment,
+    setSearch,
     toggleStateFilter,
     isTodayFilterActive,
     toggleTodayFilter,
-    page, setPage,
+    page,
+    setPage,
     pageSize: PAGE_SIZE,
-    list, listLoading, listError,
-    dashboard, dashboardLoading, dashboardError,
-    selectedId, detail, detailLoading, detailError,
-    xmlContent, xmlVariant, xmlLoading, xmlError,
+    list,
+    listLoading,
+    listError,
+    dashboard,
+    dashboardLoading,
+    dashboardError,
+    selectedId,
+    detail,
+    detailLoading,
+    detailError,
+    xmlContent,
+    xmlVariant,
+    xmlLoading,
+    xmlError,
     retryLoading,
     refresh,
     openDetail,

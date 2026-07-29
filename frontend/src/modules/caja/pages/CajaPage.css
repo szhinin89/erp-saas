@@ -1,6 +1,8 @@
 /* CajaPage — Gestión de efectivo (prefijo cj-) */
 
-.cj-content { padding: 0 var(--space-4) var(--space-4); }
+.cj-content {
+  padding: 0 var(--space-4) var(--space-4);
+}
 
 /* ── Toolbar ── */
 .cj-toolbar {
@@ -9,8 +11,12 @@
   margin-bottom: var(--space-4);
   align-items: center;
 }
-.cj-toolbar-spacer { flex: 1; }
-.cj-filter-select { max-width: 160px; }
+.cj-toolbar-spacer {
+  flex: 1;
+}
+.cj-filter-select {
+  max-width: 160px;
+}
 
 /* ── Detail header ── */
 .cj-detail-header {
@@ -19,8 +25,12 @@
   gap: var(--space-3);
   margin-bottom: var(--space-4);
 }
-.cj-detail-header h3 { margin: 0; }
-.cj-detail-header-spacer { flex: 1; }
+.cj-detail-header h3 {
+  margin: 0;
+}
+.cj-detail-header-spacer {
+  flex: 1;
+}
 
 /* ── Summary cards grid ── */
 .cj-summary-grid {
@@ -54,25 +64,46 @@
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
 }
-.cj-movement-form-wrap h4 { margin: 0 0 var(--space-3); }
+.cj-movement-form-wrap h4 {
+  margin: 0 0 var(--space-3);
+}
 .cj-movement-form {
   display: flex;
   gap: var(--space-3);
   flex-wrap: wrap;
   align-items: flex-end;
 }
-.cj-movement-field--type { min-width: 160px; }
-.cj-movement-field--amount { min-width: 120px; }
-.cj-movement-field--desc { flex: 1; min-width: 200px; }
+.cj-movement-field--type {
+  min-width: 160px;
+}
+.cj-movement-field--amount {
+  min-width: 120px;
+}
+.cj-movement-field--desc {
+  flex: 1;
+  min-width: 200px;
+}
 
 /* ── Section headings ── */
-.cj-section-title { margin: 0 0 var(--space-2); }
-.cj-section-title--spaced { margin-top: var(--space-5); }
+.cj-section-title {
+  margin: 0 0 var(--space-2);
+}
+.cj-section-title--spaced {
+  margin-top: var(--space-5);
+}
 
 /* ── Arqueo table ── */
-.cj-arqueo-table { max-width: 400px; }
-.cj-arqueo-input { width: 80px; text-align: center; }
-.cj-arqueo-total { text-align: right; font-weight: 700; }
+.cj-arqueo-table {
+  max-width: 400px;
+}
+.cj-arqueo-input {
+  width: 80px;
+  text-align: center;
+}
+.cj-arqueo-total {
+  text-align: right;
+  font-weight: 700;
+}
 
 /* ── Close summary ── */
 .cj-close-summary {
@@ -80,15 +111,29 @@
   gap: var(--space-6);
   margin-bottom: var(--space-4);
 }
-.cj-close-diff--mismatch { color: var(--color-error); }
-.cj-close-diff--ok { color: var(--color-success); }
+.cj-close-diff--mismatch {
+  color: var(--color-error);
+}
+.cj-close-diff--ok {
+  color: var(--color-success);
+}
 
 /* ── Close notes ── */
-.cj-close-notes { color: var(--color-text-secondary); margin-top: var(--space-2); }
+.cj-close-notes {
+  color: var(--color-text-secondary);
+  margin-top: var(--space-2);
+}
 
 /* ── Form section constrained ── */
-.cj-form-narrow { max-width: 500px; }
-.cj-close-narrow { max-width: 600px; }
+.cj-form-narrow {
+  max-width: 500px;
+}
+.cj-close-narrow {
+  max-width: 600px;
+}
 
 /* ── Actions row ── */
-.cj-actions { display: flex; gap: var(--space-2); }
+.cj-actions {
+  display: flex;
+  gap: var(--space-2);
+}

@@ -1,13 +1,20 @@
-import { create } from 'zustand';
-import { createJSONStorage, persist } from 'zustand/middleware';
-import { logDevSessionContext } from '../lib/session/devSessionLog';
-import { AUTH_PROFILE_STORAGE_KEY } from '../lib/session/sessionStorageKeys';
-import { clearAccessToken, getAccessToken, setAccessToken } from '../lib/session/authTokenMemory';
-import type { AuthResponse } from '../types/auth';
-import { zustandSessionStorage } from '../lib/session/zustandSessionStorage';
+import { create } from "zustand";
+import { createJSONStorage, persist } from "zustand/middleware";
+import { logDevSessionContext } from "../lib/session/devSessionLog";
+import { AUTH_PROFILE_STORAGE_KEY } from "../lib/session/sessionStorageKeys";
+import {
+  clearAccessToken,
+  getAccessToken,
+  setAccessToken,
+} from "../lib/session/authTokenMemory";
+import type { AuthResponse } from "../types/auth";
+import { zustandSessionStorage } from "../lib/session/zustandSessionStorage";
 
 interface AuthState {
-  user: Omit<AuthResponse, 'token' | 'refreshToken' | 'refreshTokenExpiry'> | null;
+  user: Omit<
+    AuthResponse,
+    "token" | "refreshToken" | "refreshTokenExpiry"
+  > | null;
   /** Espejo en memoria; no se persiste. */
   token: string | null;
   isAuthenticated: boolean;
@@ -27,10 +34,10 @@ interface AuthState {
 export const useAuthStore = create<AuthState>()(
   persist(
     (set, get) => ({
-      user:            null,
-      token:           null,
+      user: null,
+      token: null,
       isAuthenticated: false,
-      hasHydrated:     false,
+      hasHydrated: false,
       companySessionVersion: 0,
 
       login: (response: AuthResponse) => {
@@ -47,7 +54,7 @@ export const useAuthStore = create<AuthState>()(
               ? state.companySessionVersion + 1
               : state.companySessionVersion,
         }));
-        logDevSessionContext('login');
+        logDevSessionContext("login");
       },
 
       updateTokens: (accessToken) => {
@@ -56,12 +63,19 @@ export const useAuthStore = create<AuthState>()(
       },
 
       incrementCompanySession: () => {
-        set((state) => ({ companySessionVersion: state.companySessionVersion + 1 }));
+        set((state) => ({
+          companySessionVersion: state.companySessionVersion + 1,
+        }));
       },
 
       logout: () => {
         clearAccessToken();
-        set({ user: null, token: null, isAuthenticated: false, companySessionVersion: 0 });
+        set({
+          user: null,
+          token: null,
+          isAuthenticated: false,
+          companySessionVersion: 0,
+        });
       },
     }),
     {

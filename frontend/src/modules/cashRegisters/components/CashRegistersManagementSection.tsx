@@ -1,36 +1,36 @@
-import { useState } from 'react';
-import { NoAccessPage } from '../../../components/PageShell';
-import { ZHPageNotice } from '../../../components/zh/ZHPageNotice';
-import { ConfigTabsLayout } from '../../../components/shared/ConfigTabsLayout';
-import { useCashRegistersPage } from '../hooks/useCashRegistersPage';
-import { CashRegistersListSection } from './CashRegistersListSection';
-import { CashRegistersFormPanel } from './CashRegistersFormPanel';
-import type { CashRegisterDto } from '../../caja/api/cajaService';
-import '../../../styles/shared/items-catalog.css';
+import { useState } from "react";
+import { NoAccessPage } from "../../../components/PageShell";
+import { ZHPageNotice } from "../../../components/zh/ZHPageNotice";
+import { ConfigTabsLayout } from "../../../components/shared/ConfigTabsLayout";
+import { useCashRegistersPage } from "../hooks/useCashRegistersPage";
+import { CashRegistersListSection } from "./CashRegistersListSection";
+import { CashRegistersFormPanel } from "./CashRegistersFormPanel";
+import type { CashRegisterDto } from "../../caja/api/cajaService";
+import "../../../styles/shared/items-catalog.css";
 
 export function CashRegistersManagementSection() {
   const ctx = useCashRegistersPage();
-  const [activeTab, setActiveTab] = useState<'list' | 'editor'>('list');
+  const [activeTab, setActiveTab] = useState<"list" | "editor">("list");
 
   const handleOpenCreate = async () => {
     await ctx.openCreate();
-    setActiveTab('editor');
+    setActiveTab("editor");
   };
 
   const handleOpenEdit = async (item: CashRegisterDto) => {
     await ctx.openEdit(item);
-    setActiveTab('editor');
+    setActiveTab("editor");
   };
 
   const handleCancel = () => {
     ctx.closePanel();
-    setActiveTab('list');
+    setActiveTab("list");
   };
 
   if (!ctx.canView) return <NoAccessPage title="Administración de Cajas" />;
 
-  const editorLabel = ctx.editingId ? 'Editar' : 'Nueva Caja';
-  const editorIcon = ctx.editingId ? 'edit' : 'add_box';
+  const editorLabel = ctx.editingId ? "Editar" : "Nueva Caja";
+  const editorIcon = ctx.editingId ? "edit" : "add_box";
 
   return (
     <ConfigTabsLayout
@@ -39,9 +39,9 @@ export function CashRegistersManagementSection() {
       editorLabel={editorLabel}
       editorIcon={editorIcon}
       error={
-        ctx.error
-          ? <ZHPageNotice variant="error" message="Error:" detail={ctx.error} />
-          : undefined
+        ctx.error ? (
+          <ZHPageNotice variant="error" message="Error:" detail={ctx.error} />
+        ) : undefined
       }
       listContent={
         <CashRegistersListSection
@@ -85,10 +85,13 @@ export function CashRegistersManagementSection() {
           />
         ) : (
           <div className="cfg-tabs-empty">
-            <span className="material-symbols-outlined cfg-empty-panel__icon">point_of_sale</span>
+            <span className="material-symbols-outlined cfg-empty-panel__icon">
+              point_of_sale
+            </span>
             <p className="cfg-empty-panel__title">Seleccione o cree una caja</p>
             <p className="cfg-empty-panel__sub">
-              Use el botón <strong>Nueva Caja</strong> en la pestaña Lista, o seleccione una para editar.
+              Use el botón <strong>Nueva Caja</strong> en la pestaña Lista, o
+              seleccione una para editar.
             </p>
           </div>
         )

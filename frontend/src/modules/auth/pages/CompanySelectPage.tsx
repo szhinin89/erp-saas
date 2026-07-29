@@ -1,17 +1,17 @@
-import { useEffect, useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { authService } from '../api/authService';
-import { bumpCompanyOperationalSession } from '../../../lib/session/companySession';
-import { logDevSessionContext } from '../../../lib/session/devSessionLog';
-import { useAuthStore } from '../../../store/authStore';
-import type { AuthResponse } from '../../../types/auth';
-import type { AccessibleCompany } from '../../../types/access';
-import { useI18n } from '../../../i18n/i18n';
-import { ZHPageNotice } from '../../../components/zh/ZHPageNotice';
-import { ZHBtn } from '../../../components/zh/ZHForm';
-import './CompanySelectPage.css';
+import { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { authService } from "../api/authService";
+import { bumpCompanyOperationalSession } from "../../../lib/session/companySession";
+import { logDevSessionContext } from "../../../lib/session/devSessionLog";
+import { useAuthStore } from "../../../store/authStore";
+import type { AuthResponse } from "../../../types/auth";
+import type { AccessibleCompany } from "../../../types/access";
+import { useI18n } from "../../../i18n/i18n";
+import { ZHPageNotice } from "../../../components/zh/ZHPageNotice";
+import { ZHBtn } from "../../../components/zh/ZHForm";
+import "./CompanySelectPage.css";
 
-const AVATAR_VARIANTS = ['primary', 'secondary', 'tertiary'] as const;
+const AVATAR_VARIANTS = ["primary", "secondary", "tertiary"] as const;
 
 export function CompanySelectPage() {
   const navigate = useNavigate();
@@ -20,38 +20,42 @@ export function CompanySelectPage() {
   const user = useAuthStore((s) => s.user);
 
   const [companies, setCompanies] = useState<AccessibleCompany[]>([]);
-  const [q, setQ] = useState('');
+  const [q, setQ] = useState("");
   const [loading, setLoading] = useState(false);
   const [loadingList, setLoadingList] = useState(true);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
 
   useEffect(() => {
     let cancelled = false;
     (async () => {
       setLoadingList(true);
-      setError('');
+      setError("");
       try {
         const list = await authService.listMyCompanies();
         if (!cancelled) setCompanies(list);
       } catch {
-        if (!cancelled) setError('No se pudieron cargar las empresas.');
+        if (!cancelled) setError("No se pudieron cargar las empresas.");
       } finally {
         if (!cancelled) setLoadingList(false);
       }
     })();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const filtered = useMemo(() => {
     const query = q.trim().toLowerCase();
     if (!query) return companies;
     return companies.filter((x) =>
-      `${x.displayName} ${x.legalName} ${x.ruc} ${x.companyId}`.toLowerCase().includes(query)
+      `${x.displayName} ${x.legalName} ${x.ruc} ${x.companyId}`
+        .toLowerCase()
+        .includes(query),
     );
   }, [q, companies]);
 
   const choose = async (companyId: string) => {
-    setError('');
+    setError("");
     setLoading(true);
     try {
       const session = await authService.switchCompany(companyId);
@@ -69,15 +73,17 @@ export function CompanySelectPage() {
       };
       login(auth);
       bumpCompanyOperationalSession();
-      logDevSessionContext('switch-company');
-      navigate('/dashboard', { replace: true });
+      logDevSessionContext("switch-company");
+      navigate("/dashboard", { replace: true });
     } catch (err: unknown) {
-      const ax = err as { response?: { status?: number; data?: { message?: string } } };
+      const ax = err as {
+        response?: { status?: number; data?: { message?: string } };
+      };
       if (ax?.response?.status === 401) {
-        navigate('/login', { replace: true });
+        navigate("/login", { replace: true });
         return;
       }
-      setError(ax?.response?.data?.message ?? 'No se pudo cambiar de empresa.');
+      setError(ax?.response?.data?.message ?? "No se pudo cambiar de empresa.");
     } finally {
       setLoading(false);
     }
@@ -90,7 +96,7 @@ export function CompanySelectPage() {
           <div className="ts-card">
             <div className="ts-card-body">
               <p>Inicie sesión y seleccione un suscriptor primero.</p>
-              <ZHBtn variant="primary" onClick={() => navigate('/login')}>
+              <ZHBtn variant="primary" onClick={() => navigate("/login")}>
                 Ir al login
               </ZHBtn>
             </div>
@@ -120,7 +126,8 @@ export function CompanySelectPage() {
             <div className="ts-card-head">
               <h2 className="ts-title">Empresa operativa</h2>
               <span className="ts-count">
-                {companies.length} {companies.length === 1 ? 'empresa' : 'empresas'}
+                {companies.length}{" "}
+                {companies.length === 1 ? "empresa" : "empresas"}
               </span>
             </div>
 
@@ -133,7 +140,11 @@ export function CompanySelectPage() {
             />
 
             {error && (
-              <ZHPageNotice variant="error" message={t('common.errorPrefix')} detail={error} />
+              <ZHPageNotice
+                variant="error"
+                message={t("common.errorPrefix")}
+                detail={error}
+              />
             )}
 
             {loadingList ? (
@@ -141,7 +152,11 @@ export function CompanySelectPage() {
             ) : (
               <div className="ts-list" role="list">
                 {filtered.map((x, i) => (
-                  <div key={x.companyId} className="zh-entity-item" role="listitem">
+                  <div
+                    key={x.companyId}
+                    className="zh-entity-item"
+                    role="listitem"
+                  >
                     <div
                       className={`zh-avatar zh-avatar--${AVATAR_VARIANTS[i % AVATAR_VARIANTS.length]}`}
                       aria-hidden="true"
@@ -149,7 +164,9 @@ export function CompanySelectPage() {
                       {x.displayName.charAt(0).toUpperCase()}
                     </div>
                     <div className="zh-entity-item-info">
-                      <span className="zh-entity-item-name">{x.displayName}</span>
+                      <span className="zh-entity-item-name">
+                        {x.displayName}
+                      </span>
                       <span className="zh-entity-item-sub mono">{x.ruc}</span>
                     </div>
                     <div className="zh-entity-item-right">

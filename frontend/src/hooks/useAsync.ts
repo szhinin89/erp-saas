@@ -1,6 +1,6 @@
-import { useState, useEffect, useCallback } from 'react';
-import { useAuthStore } from '../store/authStore';
-import { formatApiError } from '../modules/lib/formatApiError';
+import { useState, useEffect, useCallback } from "react";
+import { useAuthStore } from "../store/authStore";
+import { formatApiError } from "../modules/lib/formatApiError";
 
 interface AsyncState<T> {
   data: T | null;
@@ -20,10 +20,10 @@ export function useAsync<T>(
   extraDeps: readonly unknown[] = [],
 ): AsyncState<T> {
   const companySessionVersion = useAuthStore((s) => s.companySessionVersion);
-  const [data, setData]       = useState<T | null>(null);
+  const [data, setData] = useState<T | null>(null);
   const [loading, setLoading] = useState(enabled);
-  const [error, setError]     = useState<string | null>(null);
-  const [tick, setTick]       = useState(0);
+  const [error, setError] = useState<string | null>(null);
+  const [tick, setTick] = useState(0);
 
   const refetch = useCallback(() => setTick((t) => t + 1), []);
 
@@ -49,7 +49,12 @@ export function useAsync<T>(
     });
 
     fn()
-      .then((result) => { if (!cancelled) { setData(result); setLoading(false); } })
+      .then((result) => {
+        if (!cancelled) {
+          setData(result);
+          setLoading(false);
+        }
+      })
       .catch((err) => {
         if (!cancelled) {
           setError(formatApiError(err));
@@ -57,8 +62,10 @@ export function useAsync<T>(
         }
       });
 
-    return () => { cancelled = true; };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tick, enabled, companySessionVersion, ...extraDeps]);
 
   return { data, loading, error, refetch };

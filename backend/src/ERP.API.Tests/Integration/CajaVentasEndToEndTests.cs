@@ -251,7 +251,7 @@ public sealed class CajaVentasFlowFixture : IAsyncLifetime
             TenantId,
             "05",
             "1710034065",
-            PersonType.Natural,
+            1,
             "Cliente E2E",
             _adminId
         );

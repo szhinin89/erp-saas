@@ -29,7 +29,9 @@
   color: var(--color-on-primary);
   flex-shrink: 0;
 }
-.lp-brand-icon .material-symbols-outlined { font-size: 22px; }
+.lp-brand-icon .material-symbols-outlined {
+  font-size: 22px;
+}
 
 .lp-brand-name {
   font-size: var(--text-headline-lg-size);
@@ -95,17 +97,26 @@
   background: transparent;
   cursor: pointer;
   font-family: var(--font-family);
-  transition: background var(--transition), border-color var(--transition);
+  transition:
+    background var(--transition),
+    border-color var(--transition);
 }
-.lp-role:hover { background: var(--color-surface-container-high); }
+.lp-role:hover {
+  background: var(--color-surface-container-high);
+}
 .lp-role--active {
   background: var(--color-surface);
   border-color: var(--color-border);
   box-shadow: var(--shadow-xs);
 }
 
-.lp-role-icon { font-size: 20px; color: var(--color-text-secondary); }
-.lp-role--active .lp-role-icon { color: var(--color-primary); }
+.lp-role-icon {
+  font-size: 20px;
+  color: var(--color-text-secondary);
+}
+.lp-role--active .lp-role-icon {
+  color: var(--color-primary);
+}
 
 .lp-role-label {
   font-size: 10px;
@@ -113,7 +124,9 @@
   letter-spacing: var(--text-label-sm-spacing);
   color: var(--color-text-secondary);
 }
-.lp-role--active .lp-role-label { color: var(--color-primary); }
+.lp-role--active .lp-role-label {
+  color: var(--color-primary);
+}
 
 /* ── Auth error inline ───────────────────────────────────────── */
 .lp-error {
@@ -127,7 +140,10 @@
   color: var(--color-error);
   font-size: var(--text-body-md-size);
 }
-.lp-error .material-symbols-outlined { font-size: 18px; flex-shrink: 0; }
+.lp-error .material-symbols-outlined {
+  font-size: 18px;
+  flex-shrink: 0;
+}
 
 /* ── Form ────────────────────────────────────────────────────── */
 .lp-form {
@@ -157,7 +173,9 @@
   text-decoration: none;
   transition: text-decoration var(--transition);
 }
-.lp-forgot:hover { text-decoration: underline; }
+.lp-forgot:hover {
+  text-decoration: underline;
+}
 
 /* Password visibility toggle (absolute inside zh-auth-input-wrap) */
 .lp-password-toggle {
@@ -175,11 +193,17 @@
   line-height: 1;
   transition: color var(--transition);
 }
-.lp-password-toggle:hover { color: var(--color-primary); }
-.lp-password-toggle .material-symbols-outlined { font-size: 18px; }
+.lp-password-toggle:hover {
+  color: var(--color-primary);
+}
+.lp-password-toggle .material-symbols-outlined {
+  font-size: 18px;
+}
 
 /* Extra right padding on password input to clear toggle button */
-.lp-input-password { padding-right: 40px; }
+.lp-input-password {
+  padding-right: 40px;
+}
 
 /* Remember me */
 .lp-remember {
@@ -213,12 +237,23 @@
   border: none;
   border-radius: var(--radius-md);
   cursor: pointer;
-  transition: background var(--transition), transform 0.08s ease;
+  transition:
+    background var(--transition),
+    transform 0.08s ease;
 }
-.lp-submit:hover:not(:disabled) { background: var(--color-primary); }
-.lp-submit:active:not(:disabled) { transform: scale(0.98); }
-.lp-submit:disabled { opacity: 0.65; cursor: not-allowed; }
-.lp-submit .material-symbols-outlined { font-size: 18px; }
+.lp-submit:hover:not(:disabled) {
+  background: var(--color-primary);
+}
+.lp-submit:active:not(:disabled) {
+  transform: scale(0.98);
+}
+.lp-submit:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+.lp-submit .material-symbols-outlined {
+  font-size: 18px;
+}
 
 /* ── Card footer ─────────────────────────────────────────────── */
 .lp-card-footer {
@@ -230,9 +265,15 @@
   align-items: center;
 }
 
-.lp-footer-copy { font-size: var(--text-body-md-size); color: var(--color-text-secondary); }
+.lp-footer-copy {
+  font-size: var(--text-body-md-size);
+  color: var(--color-text-secondary);
+}
 
-.lp-footer-links { display: flex; gap: var(--space-4); }
+.lp-footer-links {
+  display: flex;
+  gap: var(--space-4);
+}
 
 .lp-footer-link {
   font-size: var(--text-label-sm-size);
@@ -241,7 +282,10 @@
   text-decoration: none;
   transition: color var(--transition);
 }
-.lp-footer-link:hover { color: var(--color-text-primary); text-decoration: none; }
+.lp-footer-link:hover {
+  color: var(--color-text-primary);
+  text-decoration: none;
+}
 
 /* ── Security badges ─────────────────────────────────────────── */
 .lp-security {
@@ -250,17 +294,24 @@
   gap: var(--space-4);
   opacity: 0.4;
   filter: grayscale(1);
-  transition: opacity var(--transition-slow), filter var(--transition-slow);
+  transition:
+    opacity var(--transition-slow),
+    filter var(--transition-slow);
   color: var(--color-text-primary);
 }
-.lp-security:hover { opacity: 1; filter: grayscale(0); }
+.lp-security:hover {
+  opacity: 1;
+  filter: grayscale(0);
+}
 
 .lp-security-badge {
   display: flex;
   align-items: center;
   gap: 4px;
 }
-.lp-security-badge .material-symbols-outlined { font-size: 14px; }
+.lp-security-badge .material-symbols-outlined {
+  font-size: 14px;
+}
 
 .lp-security-text {
   font-size: 10px;
@@ -295,12 +346,20 @@
 }
 
 @keyframes lp-spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 /* ── Responsive ─────────────────────────────────────────────── */
 @media (max-width: 480px) {
-  .lp-card-body   { padding: var(--space-6); }
-  .lp-card-footer { padding: var(--space-4) var(--space-6); }
-  .lp-brand-name  { font-size: 22px; }
+  .lp-card-body {
+    padding: var(--space-6);
+  }
+  .lp-card-footer {
+    padding: var(--space-4) var(--space-6);
+  }
+  .lp-brand-name {
+    font-size: 22px;
+  }
 }

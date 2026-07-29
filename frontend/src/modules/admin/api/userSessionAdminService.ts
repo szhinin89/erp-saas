@@ -1,5 +1,5 @@
-import { api } from '../../lib/api';
-import type { ApiResponse, PagedResponse } from '../../../types/api';
+import { api } from "../../lib/api";
+import type { ApiResponse, PagedResponse } from "../../../types/api";
 
 /**
  * Fase 11 — consume exclusivamente los endpoints ya existentes de Fase 10
@@ -12,7 +12,7 @@ export type UserSessionAdminDto = {
   companyId: string;
   branchId: string;
   terminalId: string;
-  status: 'Active' | 'ClosedManually' | 'ClosedByNewLogin' | 'Expired';
+  status: "Active" | "ClosedManually" | "ClosedByNewLogin" | "Expired";
   createdAt: string;
   updatedAt: string | null;
 };
@@ -35,13 +35,15 @@ export type GetUserSessionsPagedParams = {
   pageSize?: number;
 };
 
-function buildQuery(params: Record<string, string | number | undefined>): string {
+function buildQuery(
+  params: Record<string, string | number | undefined>,
+): string {
   const q = new URLSearchParams();
   for (const [key, value] of Object.entries(params)) {
-    if (value !== undefined && value !== '') q.set(key, String(value));
+    if (value !== undefined && value !== "") q.set(key, String(value));
   }
   const qs = q.toString();
-  return qs ? `?${qs}` : '';
+  return qs ? `?${qs}` : "";
 }
 
 export const userSessionAdminService = {
@@ -61,6 +63,8 @@ export const userSessionAdminService = {
 
   close: (sessionId: string) =>
     api
-      .post<ApiResponse<string>>(`/api/v1/admin/access/sessions/${sessionId}/close`)
+      .post<ApiResponse<string>>(
+        `/api/v1/admin/access/sessions/${sessionId}/close`,
+      )
       .then((r) => r.data.data),
 };

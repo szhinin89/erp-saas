@@ -1,5 +1,5 @@
-import { lazy, Suspense, type ComponentType } from 'react';
-import { LoadingState } from '../components/PageShell';
+import { lazy, Suspense, type ComponentType } from "react";
+import { LoadingState } from "../components/PageShell";
 
 /**
  * Code-splitting por ruta: import dinámico de un export nombrado de página.

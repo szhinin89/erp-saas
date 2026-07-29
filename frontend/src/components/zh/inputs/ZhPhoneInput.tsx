@@ -1,9 +1,9 @@
-import React, { useId } from 'react';
-import { allowsPhoneDigitKey } from '../../../lib/validators/textValidators';
-import { sanitizePhoneLocal } from '../../../lib/sanitizers';
-import { setProgrammaticInputValue } from '../../../lib/inputUtils';
-import { phoneConfig } from '../../../lib/config/phone.config';
-import './ZhInputs.css';
+import React, { useId } from "react";
+import { allowsPhoneDigitKey } from "../../../lib/validators/textValidators";
+import { sanitizePhoneLocal } from "../../../lib/sanitizers";
+import { setProgrammaticInputValue } from "../../../lib/inputUtils";
+import { phoneConfig } from "../../../lib/config/phone.config";
+import "./ZhInputs.css";
 
 type Props = {
   value?: string;
@@ -29,19 +29,32 @@ type Props = {
  *   render={({ field }) => <ZhPhoneInput {...field} />}
  * />
  */
-export function ZhPhoneInput({ value, onChange, onBlur, disabled, id, name, placeholder }: Props) {
+export function ZhPhoneInput({
+  value,
+  onChange,
+  onBlur,
+  disabled,
+  id,
+  name,
+  placeholder,
+}: Props) {
   const generatedId = useId();
   const inputId = id ?? generatedId;
   const prefix = phoneConfig.defaultCountryCode;
 
   const localValue = React.useMemo(() => {
-    if (!value) return '';
-    const clean = value.replace(/\s/g, '');
-    return clean.startsWith(prefix) ? clean.slice(prefix.length) : clean.replace(/[^\d]/g, '');
+    if (!value) return "";
+    const clean = value.replace(/\s/g, "");
+    return clean.startsWith(prefix)
+      ? clean.slice(prefix.length)
+      : clean.replace(/[^\d]/g, "");
   }, [value, prefix]);
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.currentTarget.value.length >= phoneConfig.localLength && !allowsPhoneDigitKey(e)) {
+    if (
+      e.currentTarget.value.length >= phoneConfig.localLength &&
+      !allowsPhoneDigitKey(e)
+    ) {
       // still allow nav keys (handled inside allowsPhoneDigitKey)
     }
     if (!allowsPhoneDigitKey(e)) e.preventDefault();
@@ -49,23 +62,27 @@ export function ZhPhoneInput({ value, onChange, onBlur, disabled, id, name, plac
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const local = sanitizePhoneLocal(e.target.value, phoneConfig.localLength);
-    const full = local.length > 0 ? `${prefix}${local}` : '';
+    const full = local.length > 0 ? `${prefix}${local}` : "";
     onChange?.(full);
   };
 
   const handlePaste = (e: React.ClipboardEvent<HTMLInputElement>) => {
     e.preventDefault();
-    const raw = e.clipboardData.getData('text');
-    const strippedPrefix = raw.replace(prefix, '');
+    const raw = e.clipboardData.getData("text");
+    const strippedPrefix = raw.replace(prefix, "");
     const local = sanitizePhoneLocal(strippedPrefix, phoneConfig.localLength);
-    const full = local.length > 0 ? `${prefix}${local}` : '';
+    const full = local.length > 0 ? `${prefix}${local}` : "";
     setProgrammaticInputValue(e.currentTarget, local);
     onChange?.(full);
   };
 
   return (
-    <div className={`zh-prefixed-input${disabled ? ' zh-prefixed-input--disabled' : ''}`}>
-      <span className="zh-input-prefix" aria-hidden="true">{prefix}</span>
+    <div
+      className={`zh-prefixed-input${disabled ? " zh-prefixed-input--disabled" : ""}`}
+    >
+      <span className="zh-input-prefix" aria-hidden="true">
+        {prefix}
+      </span>
       <input
         id={inputId}
         name={name}

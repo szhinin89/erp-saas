@@ -1,25 +1,25 @@
-import { EmptyState, LoadingState, Badge } from '../../../components/PageShell';
-import { ZHBtn } from '../../../components/zh/ZHForm';
-import type { EstablishmentsPageContext } from '../hooks/useEstablishmentsPage';
+import { EmptyState, LoadingState, Badge } from "../../../components/PageShell";
+import { ZHBtn } from "../../../components/zh/ZHForm";
+import type { EstablishmentsPageContext } from "../hooks/useEstablishmentsPage";
 
 type Props = Pick<
   EstablishmentsPageContext,
-  | 'loading'
-  | 'items'
-  | 'totals'
-  | 'search'
-  | 'setSearch'
-  | 'filtered'
-  | 'canUpdate'
-  | 'canDisable'
-  | 'canCreate'
-  | 'selectedId'
-  | 'openEdit'
-  | 'toggleDisable'
-  | 'openCreate'
-  | 'fetchList'
-  | 'activeStatus'
-  | 'setActiveStatus'
+  | "loading"
+  | "items"
+  | "totals"
+  | "search"
+  | "setSearch"
+  | "filtered"
+  | "canUpdate"
+  | "canDisable"
+  | "canCreate"
+  | "selectedId"
+  | "openEdit"
+  | "toggleDisable"
+  | "openCreate"
+  | "fetchList"
+  | "activeStatus"
+  | "setActiveStatus"
 >;
 
 export function EstablishmentsListSection({
@@ -86,7 +86,9 @@ export function EstablishmentsListSection({
       <div className="pg-section">
         <div className="pg-section-header">
           <div className="pg-section-header-left">
-            <span className="material-symbols-outlined pg-section-icon">receipt_long</span>
+            <span className="material-symbols-outlined pg-section-icon">
+              receipt_long
+            </span>
             <span className="pg-section-label">Establecimientos SRI</span>
           </div>
           <div className="br-actions-tight">
@@ -129,7 +131,9 @@ export function EstablishmentsListSection({
             <select
               className="zh-input"
               value={activeStatus}
-              onChange={(e) => setActiveStatus(e.target.value as 'all' | 'active' | 'inactive')}
+              onChange={(e) =>
+                setActiveStatus(e.target.value as "all" | "active" | "inactive")
+              }
               disabled={loading}
             >
               <option value="active">Solo activos</option>
@@ -138,12 +142,16 @@ export function EstablishmentsListSection({
             </select>
           </div>
           <div className="pg-table-controls-right">
-            <span>Mostrando {filtered.length} de {items.length}</span>
+            <span>
+              Mostrando {filtered.length} de {items.length}
+            </span>
           </div>
         </div>
 
         {loading ? (
-          <div className="pg-pad-40"><LoadingState /></div>
+          <div className="pg-pad-40">
+            <LoadingState />
+          </div>
         ) : items.length === 0 ? (
           <div className="pg-pad-40">
             <EmptyState message="No hay establecimientos registrados." />
@@ -163,43 +171,72 @@ export function EstablishmentsListSection({
                   <th>Sucursal</th>
                   <th>P. Emisión</th>
                   <th>Estado</th>
-                  {(canUpdate || canDisable) && <th className="pg-th-right">Acciones</th>}
+                  {(canUpdate || canDisable) && (
+                    <th className="pg-th-right">Acciones</th>
+                  )}
                 </tr>
               </thead>
               <tbody>
                 {filtered.map((row) => (
                   <tr
                     key={row.id}
-                    className={[
-                      row.isActive ? undefined : 'pg-row-inactive',
-                      row.id === selectedId ? 'cfg-row--selected' : undefined,
-                    ].filter(Boolean).join(' ') || undefined}
+                    className={
+                      [
+                        row.isActive ? undefined : "pg-row-inactive",
+                        row.id === selectedId ? "cfg-row--selected" : undefined,
+                      ]
+                        .filter(Boolean)
+                        .join(" ") || undefined
+                    }
                   >
                     <td>
-                      <Badge label={row.code} variant="gray" size="md" className="mono" />
+                      <Badge
+                        label={row.code}
+                        variant="gray"
+                        size="md"
+                        className="mono"
+                      />
                       {row.isMain && (
-                        <Badge label="Principal" variant="blue" size="md" style={{ marginLeft: 'var(--space-1)' }} />
+                        <Badge
+                          label="Principal"
+                          variant="blue"
+                          size="md"
+                          style={{ marginLeft: "var(--space-1)" }}
+                        />
                       )}
                     </td>
                     <td>
                       <div className="br-list-name">{row.name}</div>
-                      {row.phone && <div className="br-list-sub">{row.phone}</div>}
+                      {row.phone && (
+                        <div className="br-list-sub">{row.phone}</div>
+                      )}
                     </td>
                     <td>
                       <div className="br-list-contact">{row.address}</div>
                     </td>
                     <td>
-                      {row.branchName
-                        ? <div className="br-list-name">{row.branchName}</div>
-                        : <span className="subtle">—</span>
-                      }
+                      {row.branchName ? (
+                        <div className="br-list-name">{row.branchName}</div>
+                      ) : (
+                        <span className="subtle">—</span>
+                      )}
                     </td>
                     <td>
-                      <Badge label={row.emissionPointCount} variant="gray" size="md" />
+                      <Badge
+                        label={row.emissionPointCount}
+                        variant="gray"
+                        size="md"
+                      />
                     </td>
                     <td>
-                      <span className={row.isActive ? 'zh-status zh-status--active' : 'zh-status zh-status--inactive'}>
-                        {row.isActive ? 'Activo' : 'Inactivo'}
+                      <span
+                        className={
+                          row.isActive
+                            ? "zh-status zh-status--active"
+                            : "zh-status zh-status--inactive"
+                        }
+                      >
+                        {row.isActive ? "Activo" : "Inactivo"}
                       </span>
                     </td>
                     {(canUpdate || canDisable) && (
@@ -213,7 +250,9 @@ export function EstablishmentsListSection({
                               title="Editar"
                               onClick={() => void openEdit(row)}
                             >
-                              <span className="material-symbols-outlined">edit</span>
+                              <span className="material-symbols-outlined">
+                                edit
+                              </span>
                             </ZHBtn>
                           )}
                           {(row.isActive ? canDisable : canUpdate) && (
@@ -221,11 +260,11 @@ export function EstablishmentsListSection({
                               type="button"
                               variant="ghost"
                               size="sm"
-                              title={row.isActive ? 'Desactivar' : 'Activar'}
+                              title={row.isActive ? "Desactivar" : "Activar"}
                               onClick={() => void toggleDisable(row)}
                             >
                               <span className="material-symbols-outlined">
-                                {row.isActive ? 'block' : 'check_circle'}
+                                {row.isActive ? "block" : "check_circle"}
                               </span>
                             </ZHBtn>
                           )}
@@ -240,7 +279,9 @@ export function EstablishmentsListSection({
         )}
 
         <div className="pg-table-footer">
-          <p className="subtle br-list-footer-note">{filtered.length} establecimientos</p>
+          <p className="subtle br-list-footer-note">
+            {filtered.length} establecimientos
+          </p>
         </div>
       </div>
     </>

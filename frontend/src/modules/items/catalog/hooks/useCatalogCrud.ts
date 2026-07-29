@@ -1,15 +1,25 @@
-import { useCallback, useEffect, useState } from 'react';
-import { useForm, type DefaultValues, type FieldValues, type Path } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import type { ZodType, ZodTypeDef } from 'zod';
-import { usePermissionsUi } from '../../../../access/usePermissionsUi';
-import { applyServerErrors } from '../../../lib/validationErrors';
+import { useCallback, useEffect, useState } from "react";
+import {
+  useForm,
+  type DefaultValues,
+  type FieldValues,
+  type Path,
+} from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import type { ZodType, ZodTypeDef } from "zod";
+import { usePermissionsUi } from "../../../../access/usePermissionsUi";
+import { applyServerErrors } from "../../../lib/validationErrors";
 
-interface CatalogCrudService<TDto, TCreate, TUpdate, TListArgs extends unknown[] = []> {
-  list:    (...args: TListArgs) => Promise<TDto[]>;
-  create:  (payload: TCreate) => Promise<TDto>;
-  update:  (id: string, payload: TUpdate) => Promise<TDto>;
-  enable:  (id: string) => Promise<boolean>;
+interface CatalogCrudService<
+  TDto,
+  TCreate,
+  TUpdate,
+  TListArgs extends unknown[] = [],
+> {
+  list: (...args: TListArgs) => Promise<TDto[]>;
+  create: (payload: TCreate) => Promise<TDto>;
+  update: (id: string, payload: TUpdate) => Promise<TDto>;
+  enable: (id: string) => Promise<boolean>;
   disable: (id: string) => Promise<boolean>;
 }
 
@@ -43,67 +53,99 @@ export function useCatalogCrud<
   TUpdate = unknown,
   TListArgs extends unknown[] = [],
   TSchemaInput extends FieldValues = TForm,
->(opts: CatalogCrudOptions<TDto, TForm, TCreate, TUpdate, TListArgs, TSchemaInput>) {
-  const { service, schema, emptyForm, toCreatePayload, toUpdatePayload, toFormValues, getId, permissionPrefix, listArgs } = opts;
+>(
+  opts: CatalogCrudOptions<
+    TDto,
+    TForm,
+    TCreate,
+    TUpdate,
+    TListArgs,
+    TSchemaInput
+  >,
+) {
+  const {
+    service,
+    schema,
+    emptyForm,
+    toCreatePayload,
+    toUpdatePayload,
+    toFormValues,
+    getId,
+    permissionPrefix,
+    listArgs,
+  } = opts;
 
   const { canShow } = usePermissionsUi();
-  const canView   = canShow(`${permissionPrefix}.view`) || canShow(permissionPrefix);
-  const canCreate = canShow(`${permissionPrefix}.create`) || canShow(permissionPrefix);
-  const canUpdate = canShow(`${permissionPrefix}.update`) || canShow(permissionPrefix);
-  const canDelete = canShow(`${permissionPrefix}.delete`) || canShow(permissionPrefix);
+  const canView =
+    canShow(`${permissionPrefix}.view`) || canShow(permissionPrefix);
+  const canCreate =
+    canShow(`${permissionPrefix}.create`) || canShow(permissionPrefix);
+  const canUpdate =
+    canShow(`${permissionPrefix}.update`) || canShow(permissionPrefix);
+  const canDelete =
+    canShow(`${permissionPrefix}.delete`) || canShow(permissionPrefix);
 
-  const [items, setItems]     = useState<TDto[]>([]);
+  const [items, setItems] = useState<TDto[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError]     = useState('');
-  const [search, setSearch]   = useState('');
+  const [error, setError] = useState("");
+  const [search, setSearch] = useState("");
 
-  const [modalOpen, setModalOpen]   = useState(false);
-  const [editingId, setEditingId]   = useState<string | null>(null);
-  const [saving, setSaving]         = useState(false);
-  const [saveError, setSaveError]   = useState('');
+  const [modalOpen, setModalOpen] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState("");
 
   const form = useForm<TForm>({
     resolver: zodResolver(schema),
     defaultValues: emptyForm() as DefaultValues<TForm>,
   });
 
-  const { register, control, handleSubmit, reset, setError: setFieldError, formState: { errors } } = form;
+  const {
+    register,
+    control,
+    handleSubmit,
+    reset,
+    setError: setFieldError,
+    formState: { errors },
+  } = form;
 
   const fetchList = useCallback(async () => {
-    setError('');
+    setError("");
     setLoading(true);
     try {
       const args = listArgs ? listArgs() : ([] as unknown as TListArgs);
       setItems(await service.list(...args));
     } catch {
-      setError('Error al cargar los datos.');
+      setError("Error al cargar los datos.");
     } finally {
       setLoading(false);
     }
   }, [service, listArgs]);
 
-  useEffect(() => { void fetchList(); }, [fetchList]);
+  useEffect(() => {
+    void fetchList();
+  }, [fetchList]);
 
   const filtered = search.trim()
     ? items.filter((i) => i.name.toLowerCase().includes(search.toLowerCase()))
     : items;
 
   const totals = {
-    total:    items.length,
-    active:   items.filter((i) => i.isActive).length,
+    total: items.length,
+    active: items.filter((i) => i.isActive).length,
     inactive: items.filter((i) => !i.isActive).length,
   };
 
   const openCreateModal = () => {
     setEditingId(null);
-    setSaveError('');
+    setSaveError("");
     reset(emptyForm() as DefaultValues<TForm>);
     setModalOpen(true);
   };
 
   const openEditModal = (item: TDto) => {
     setEditingId(getId(item));
-    setSaveError('');
+    setSaveError("");
     reset(toFormValues(item) as DefaultValues<TForm>);
     setModalOpen(true);
   };
@@ -111,11 +153,11 @@ export function useCatalogCrud<
   const closeModal = () => {
     setModalOpen(false);
     setEditingId(null);
-    setSaveError('');
+    setSaveError("");
   };
 
   const save = handleSubmit(async (formValues) => {
-    setSaveError('');
+    setSaveError("");
     setSaving(true);
     try {
       if (editingId) {
@@ -131,14 +173,14 @@ export function useCatalogCrud<
         (field, errObj) => setFieldError(field as Path<TForm>, errObj),
         (msg) => setSaveError(msg),
       );
-      if (!applied) setSaveError('Error al guardar.');
+      if (!applied) setSaveError("Error al guardar.");
     } finally {
       setSaving(false);
     }
   });
 
   const toggleDisable = async (item: TDto) => {
-    setError('');
+    setError("");
     try {
       const id = getId(item);
       if (item.isActive) {
@@ -148,20 +190,42 @@ export function useCatalogCrud<
       }
       await fetchList();
     } catch {
-      setError('Error al cambiar el estado.');
+      setError("Error al cambiar el estado.");
     }
   };
 
   return {
-    canView, canCreate, canUpdate, canDelete,
-    items, filtered, loading, error, search, setSearch, totals, fetchList,
-    modalOpen, editingId, saving, saveError,
-    register, control, errors,
-    openCreateModal, openEditModal, closeModal, save, toggleDisable,
+    canView,
+    canCreate,
+    canUpdate,
+    canDelete,
+    items,
+    filtered,
+    loading,
+    error,
+    search,
+    setSearch,
+    totals,
+    fetchList,
+    modalOpen,
+    editingId,
+    saving,
+    saveError,
+    register,
+    control,
+    errors,
+    openCreateModal,
+    openEditModal,
+    closeModal,
+    save,
+    toggleDisable,
   };
 }
 
 export type CatalogCrudContext<
-  TDto extends { isActive: boolean; name: string } = { isActive: boolean; name: string },
+  TDto extends { isActive: boolean; name: string } = {
+    isActive: boolean;
+    name: string;
+  },
   TForm extends FieldValues = FieldValues,
 > = ReturnType<typeof useCatalogCrud<TDto, TForm>>;

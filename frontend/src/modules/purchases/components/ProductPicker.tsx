@@ -1,8 +1,8 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
-import { itemService } from '../../items/api/itemService';
-import { getDecimalConfig } from '../../../lib/config/decimal.config';
-import { formatMoney } from '../../../lib/sanitizers';
-import type { ItemDto } from '../../../types/items';
+import { useState, useEffect, useRef, useCallback } from "react";
+import { itemService } from "../../items/api/itemService";
+import { getDecimalConfig } from "../../../lib/config/decimal.config";
+import { formatMoney } from "../../../lib/sanitizers";
+import type { ItemDto } from "../../../types/items";
 
 export type ProductProfile = {
   id: string;
@@ -28,7 +28,7 @@ type Props = {
 const profileCache = new Map<string, ProductProfile>();
 
 export function ProductPicker({ onSelect, disabled, vatRates }: Props) {
-  const [query, setQuery] = useState('');
+  const [query, setQuery] = useState("");
   const [results, setResults] = useState<ItemDto[]>([]);
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -38,13 +38,22 @@ export function ProductPicker({ onSelect, disabled, vatRates }: Props) {
   const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined);
 
   const search = useCallback(async (q: string) => {
-    if (q.trim().length < 2) { setResults([]); return; }
+    if (q.trim().length < 2) {
+      setResults([]);
+      return;
+    }
     setLoading(true);
     try {
-      const res = await itemService.getAll({ search: q.trim(), isActive: true, pageSize: 12 });
+      const res = await itemService.getAll({
+        search: q.trim(),
+        isActive: true,
+        pageSize: 12,
+      });
       setResults(res.items);
       setFocusIdx(-1);
-    } catch { setResults([]); }
+    } catch {
+      setResults([]);
+    }
     setLoading(false);
   }, []);
 
@@ -57,19 +66,23 @@ export function ProductPicker({ onSelect, disabled, vatRates }: Props) {
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {
-      if (wrapRef.current && !wrapRef.current.contains(e.target as Node)) setOpen(false);
+      if (wrapRef.current && !wrapRef.current.contains(e.target as Node))
+        setOpen(false);
     };
-    document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
   }, []);
 
   const handleSelect = async (item: ItemDto) => {
     setOpen(false);
-    setQuery('');
+    setQuery("");
     setResults([]);
 
     const cached = profileCache.get(item.id);
-    if (cached) { onSelect(cached); return; }
+    if (cached) {
+      onSelect(cached);
+      return;
+    }
 
     try {
       const detail = await itemService.getById(item.id);
@@ -77,8 +90,10 @@ export function ProductPicker({ onSelect, disabled, vatRates }: Props) {
       const vatCode = detail.taxConfig.purchaseVatCode;
       const vatPct = vatCode ? vatRates?.[vatCode] : undefined;
       const profile: ProductProfile = {
-        id: detail.id, sku: detail.sku,
-        name: detail.shortName, description: detail.description,
+        id: detail.id,
+        sku: detail.sku,
+        name: detail.shortName,
+        description: detail.description,
         purchaseVatCode: vatCode,
         appliesExciseTax: detail.taxConfig.exciseTaxCode != null,
         exciseTaxCode: detail.taxConfig.exciseTaxCode,
@@ -90,50 +105,90 @@ export function ProductPicker({ onSelect, disabled, vatRates }: Props) {
       onSelect(profile);
     } catch {
       onSelect({
-        id: item.id, sku: item.sku, name: item.shortName, description: item.description,
-        purchaseVatCode: null, appliesExciseTax: false, exciseTaxCode: null,
-        minStockQty: null, currentPvp: 0,
+        id: item.id,
+        sku: item.sku,
+        name: item.shortName,
+        description: item.description,
+        purchaseVatCode: null,
+        appliesExciseTax: false,
+        exciseTaxCode: null,
+        minStockQty: null,
+        currentPvp: 0,
       });
     }
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (!open || results.length === 0) return;
-    if (e.key === 'ArrowDown') { e.preventDefault(); setFocusIdx(i => Math.min(i + 1, results.length - 1)); }
-    if (e.key === 'ArrowUp') { e.preventDefault(); setFocusIdx(i => Math.max(i - 1, 0)); }
-    if (e.key === 'Enter' && focusIdx >= 0) { e.preventDefault(); void handleSelect(results[focusIdx]); }
-    if (e.key === 'Escape') setOpen(false);
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      setFocusIdx((i) => Math.min(i + 1, results.length - 1));
+    }
+    if (e.key === "ArrowUp") {
+      e.preventDefault();
+      setFocusIdx((i) => Math.max(i - 1, 0));
+    }
+    if (e.key === "Enter" && focusIdx >= 0) {
+      e.preventDefault();
+      void handleSelect(results[focusIdx]);
+    }
+    if (e.key === "Escape") setOpen(false);
   };
 
   return (
-    <div ref={wrapRef} style={{ position: 'relative' }}>
-      <input ref={inputRef} value={query}
+    <div ref={wrapRef} style={{ position: "relative" }}>
+      <input
+        ref={inputRef}
+        value={query}
         className="pf-table-input"
-        onChange={e => { setQuery(e.target.value); setOpen(true); }}
-        onFocus={() => { if (query.length >= 2) setOpen(true); }}
+        onChange={(e) => {
+          setQuery(e.target.value);
+          setOpen(true);
+        }}
+        onFocus={() => {
+          if (query.length >= 2) setOpen(true);
+        }}
         onKeyDown={handleKeyDown}
         placeholder="Buscar por SKU, nombre..."
-        disabled={disabled} />
+        disabled={disabled}
+      />
 
       {open && query.length >= 2 && (
         <div className="pf-picker-dropdown">
           {loading && (
-            <div style={{ padding: 'var(--space-4)', textAlign: 'center', color: 'var(--color-text-secondary)', fontSize: 12 }}>
+            <div
+              style={{
+                padding: "var(--space-4)",
+                textAlign: "center",
+                color: "var(--color-text-secondary)",
+                fontSize: 12,
+              }}
+            >
               Buscando...
             </div>
           )}
           {!loading && results.length === 0 && (
-            <div style={{ padding: 16, textAlign: 'center', color: 'var(--color-text-secondary)', fontSize: 13 }}>
+            <div
+              style={{
+                padding: 16,
+                textAlign: "center",
+                color: "var(--color-text-secondary)",
+                fontSize: 13,
+              }}
+            >
               Sin resultados para &ldquo;{query}&rdquo;
             </div>
           )}
           {results.map((item, i) => {
             const cached = profileCache.get(item.id);
             return (
-              <button key={item.id} type="button"
-                className={`pf-picker-item ${i === focusIdx ? 'pf-picker-item--focused' : ''}`}
+              <button
+                key={item.id}
+                type="button"
+                className={`pf-picker-item ${i === focusIdx ? "pf-picker-item--focused" : ""}`}
                 onClick={() => void handleSelect(item)}
-                onMouseEnter={() => setFocusIdx(i)}>
+                onMouseEnter={() => setFocusIdx(i)}
+              >
                 <div className="pf-picker-item__main">
                   <div className="pf-picker-item__name">
                     <span className="pf-picker-item__sku">{item.sku}</span>
@@ -144,9 +199,17 @@ export function ProductPicker({ onSelect, disabled, vatRates }: Props) {
                 {cached && (
                   <div className="pf-picker-item__meta">
                     <span className="pf-picker-item__meta-label">PVP:</span>
-                    <span className="pf-picker-item__meta-value">${formatMoney(cached.currentPvp, getDecimalConfig().salesUnitPrice)}</span>
+                    <span className="pf-picker-item__meta-value">
+                      $
+                      {formatMoney(
+                        cached.currentPvp,
+                        getDecimalConfig().salesUnitPrice,
+                      )}
+                    </span>
                     <span className="pf-picker-item__meta-label">IVA:</span>
-                    <span className="pf-picker-item__meta-value">{cached.vatRate ?? (cached.purchaseVatCode ?? '...')}</span>
+                    <span className="pf-picker-item__meta-value">
+                      {cached.vatRate ?? cached.purchaseVatCode ?? "..."}
+                    </span>
                   </div>
                 )}
               </button>

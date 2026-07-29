@@ -18,7 +18,7 @@
   cursor: pointer;
 }
 
-.zh-radio-option input[type='radio'] {
+.zh-radio-option input[type="radio"] {
   accent-color: var(--color-primary);
   width: 16px;
   height: 16px;

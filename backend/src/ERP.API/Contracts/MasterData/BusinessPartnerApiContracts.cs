@@ -11,8 +11,11 @@ public sealed class CreateBusinessPartnerRequest
     public string IdentificationType { get; set; } = "";
     public string IdentificationNumber { get; set; } = "";
 
-    /// <summary>1=Natural, 2=Legal, 3=Government, 4=Organization</summary>
-    public PersonType PersonType { get; set; } = PersonType.Natural;
+    /// <summary>
+    /// Código de naturaleza jurídica.
+    /// 1=Persona Natural, 2=Sociedad Privada, 3=Institución Pública.
+    /// </summary>
+    public int LegalEntityTypeCode { get; set; } = 1;
     public string LegalName { get; set; } = "";
     public string? TradeName { get; set; }
 
@@ -24,7 +27,11 @@ public sealed class CreateBusinessPartnerRequest
 public sealed class UpdateBusinessPartnerRequest
 {
     public string LegalName { get; set; } = "";
-    public PersonType PersonType { get; set; } = PersonType.Natural;
+    /// <summary>
+    /// Código de naturaleza jurídica.
+    /// 1=Persona Natural, 2=Sociedad Privada, 3=Institución Pública.
+    /// </summary>
+    public int LegalEntityTypeCode { get; set; } = 1;
     public string? TradeName { get; set; }
     public string? CountryCode { get; set; }
 }

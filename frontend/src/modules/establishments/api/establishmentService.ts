@@ -1,4 +1,4 @@
-import { apiGet, apiPatch, apiPost, apiPut } from '../../lib/apiEnvelope';
+import { apiGet, apiPatch, apiPost, apiPut } from "../../lib/apiEnvelope";
 
 // ── DTOs ──────────────────────────────────────────────────────────────────
 
@@ -57,18 +57,21 @@ export type UpdateEstablishmentPayload = {
 
 // ── Service ───────────────────────────────────────────────────────────────
 
-const BASE = '/api/v1/settings/establishments';
+const BASE = "/api/v1/settings/establishments";
 
 export const establishmentService = {
-  list: (activeStatus: 'all' | 'active' | 'inactive' = 'active', branchId?: string, search?: string) => {
+  list: (
+    activeStatus: "all" | "active" | "inactive" = "active",
+    branchId?: string,
+    search?: string,
+  ) => {
     const params = new URLSearchParams({ activeStatus });
-    if (branchId) params.set('branchId', branchId);
-    if (search)   params.set('search', search);
+    if (branchId) params.set("branchId", branchId);
+    if (search) params.set("search", search);
     return apiGet<EstablishmentListItemDto[]>(`${BASE}?${params.toString()}`);
   },
 
-  lookups: () =>
-    apiGet<EstablishmentLookupDto[]>(`${BASE}/lookups`),
+  lookups: () => apiGet<EstablishmentLookupDto[]>(`${BASE}/lookups`),
 
   create: (body: CreateEstablishmentPayload) =>
     apiPost<EstablishmentDto>(BASE, body),
@@ -76,9 +79,7 @@ export const establishmentService = {
   update: (id: string, body: UpdateEstablishmentPayload) =>
     apiPut<EstablishmentDto>(`${BASE}/${id}`, body),
 
-  disable: (id: string) =>
-    apiPatch<boolean>(`${BASE}/${id}/disable`),
+  disable: (id: string) => apiPatch<boolean>(`${BASE}/${id}/disable`),
 
-  enable: (id: string) =>
-    apiPatch<boolean>(`${BASE}/${id}/enable`),
+  enable: (id: string) => apiPatch<boolean>(`${BASE}/${id}/enable`),
 };

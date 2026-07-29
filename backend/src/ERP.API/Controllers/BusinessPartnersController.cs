@@ -105,7 +105,7 @@ public sealed class BusinessPartnersController : ControllerBase
         var cmd = new CreateBusinessPartnerCommand(
             body.IdentificationType,
             body.IdentificationNumber,
-            body.PersonType,
+            body.LegalEntityTypeCode,
             body.LegalName,
             body.TradeName,
             body.CountryCode
@@ -132,7 +132,7 @@ public sealed class BusinessPartnersController : ControllerBase
         var cmd = new UpdateBusinessPartnerCommand(
             id,
             body.LegalName,
-            body.PersonType,
+            body.LegalEntityTypeCode,
             body.TradeName,
             body.CountryCode
         );

@@ -1,6 +1,6 @@
-import { ErpPageTemplate } from '../../../../templates/ErpPageTemplate';
-import { useI18n } from '../../../../i18n/i18n';
-import { SriConfigurationSection } from '../sections/SriConfigurationSection';
+import { ErpPageTemplate } from "../../../../templates/ErpPageTemplate";
+import { useI18n } from "../../../../i18n/i18n";
+import { SriConfigurationSection } from "../sections/SriConfigurationSection";
 
 /**
  * Pantalla única de configuración SRI para facturación electrónica. Sin Hub, sin tabs:
@@ -13,9 +13,9 @@ export function ElectronicInvoicingPage() {
 
   return (
     <ErpPageTemplate
-      kicker={t('settings.electronicInvoicing.kicker')}
-      title={t('settings.electronicInvoicing.title')}
-      subtitle={t('settings.electronicInvoicing.subtitle')}
+      kicker={t("settings.electronicInvoicing.kicker")}
+      title={t("settings.electronicInvoicing.title")}
+      subtitle={t("settings.electronicInvoicing.subtitle")}
     >
       <SriConfigurationSection />
     </ErpPageTemplate>

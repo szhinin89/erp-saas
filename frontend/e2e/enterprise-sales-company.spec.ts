@@ -1,11 +1,11 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from "@playwright/test";
 import {
   API_BASE,
   apiReachable,
   login,
   listMyCompanies,
   switchCompany,
-} from './helpers/api';
+} from "./helpers/api";
 import {
   createInvoiceDraft,
   emitInvoice,
@@ -17,25 +17,31 @@ import {
   listProducts,
   listWarehouses,
   validateInvoice,
-} from './helpers/sales';
+} from "./helpers/sales";
 
-test.describe('Enterprise sales company scope', () => {
+test.describe("Enterprise sales company scope", () => {
   test.beforeEach(async ({ request }) => {
     const ok = await apiReachable(request);
     test.skip(!ok, `API no disponible en ${API_BASE}`);
   });
 
-  test('sale in company A is not visible from company B', async ({ request }) => {
+  test("sale in company A is not visible from company B", async ({
+    request,
+  }) => {
     test.setTimeout(90_000);
 
     const session = await login(request);
     const companies = await listMyCompanies(request, session.token);
-    test.skip(companies.length < 2, 'Se requieren al menos 2 empresas en el tenant demo');
+    test.skip(
+      companies.length < 2,
+      "Se requieren al menos 2 empresas en el tenant demo",
+    );
 
     const companyA = companies[0]!.companyId;
     const companyB = companies[1]!.companyId;
 
-    const tokenA = (await switchCompany(request, session.token, companyA)).token;
+    const tokenA = (await switchCompany(request, session.token, companyA))
+      .token;
 
     const [customers, warehouses, branches, products] = await Promise.all([
       listCustomers(request, tokenA),
@@ -58,7 +64,8 @@ test.describe('Enterprise sales company scope', () => {
       unitPrice: 10,
     });
 
-    const tokenB = (await switchCompany(request, session.token, companyB)).token;
+    const tokenB = (await switchCompany(request, session.token, companyB))
+      .token;
     const listB = await listInvoices(request, tokenB, 100);
     const idsB = listB.items.map((x) => x.id);
     expect(idsB).not.toContain(invoiceId);
@@ -67,7 +74,7 @@ test.describe('Enterprise sales company scope', () => {
     expect(detailB.ok).toBeFalsy();
   });
 
-  test('authorized sale reduces stock in company A', async ({ request }) => {
+  test("authorized sale reduces stock in company A", async ({ request }) => {
     test.setTimeout(120_000);
 
     const session = await login(request);
@@ -75,7 +82,8 @@ test.describe('Enterprise sales company scope', () => {
     expect(companies.length).toBeGreaterThan(0);
 
     const companyA = companies[0]!.companyId;
-    const tokenA = (await switchCompany(request, session.token, companyA)).token;
+    const tokenA = (await switchCompany(request, session.token, companyA))
+      .token;
 
     const [customers, warehouses, branches, products] = await Promise.all([
       listCustomers(request, tokenA),
@@ -87,7 +95,12 @@ test.describe('Enterprise sales company scope', () => {
     const productId = products[0]!.id;
     const warehouseId = warehouses[0]!.id;
 
-    const stockBefore = await getStockForSale(request, tokenA, productId, warehouseId);
+    const stockBefore = await getStockForSale(
+      request,
+      tokenA,
+      productId,
+      warehouseId,
+    );
     expect(stockBefore).toBeGreaterThan(0);
 
     const invoiceId = await createInvoiceDraft(request, tokenA, {
@@ -102,7 +115,12 @@ test.describe('Enterprise sales company scope', () => {
     await validateInvoice(request, tokenA, invoiceId);
     await emitInvoice(request, tokenA, invoiceId);
 
-    const stockAfter = await getStockForSale(request, tokenA, productId, warehouseId);
+    const stockAfter = await getStockForSale(
+      request,
+      tokenA,
+      productId,
+      warehouseId,
+    );
     expect(stockAfter).toBe(stockBefore - 1);
   });
 });

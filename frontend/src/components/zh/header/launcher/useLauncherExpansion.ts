@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState } from "react";
 
-const STORAGE_KEY = 'zh-launcher-expanded';
+const STORAGE_KEY = "zh-launcher-expanded";
 
 function loadExpandedIds(): Set<string> {
   try {
@@ -8,7 +8,7 @@ function loadExpandedIds(): Set<string> {
     if (!raw) return new Set();
     const parsed = JSON.parse(raw) as unknown;
     if (!Array.isArray(parsed)) return new Set();
-    return new Set(parsed.filter((x): x is string => typeof x === 'string'));
+    return new Set(parsed.filter((x): x is string => typeof x === "string"));
   } catch {
     return new Set();
   }
@@ -41,7 +41,7 @@ export function useLauncherExpansion(autoExpandIds: string[]) {
       return changed ? next : prev;
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [autoExpandIds.join('|')]);
+  }, [autoExpandIds.join("|")]);
 
   useEffect(() => {
     try {

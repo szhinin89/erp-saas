@@ -1,6 +1,6 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import type {
   SalesInvoiceDto,
   SalesListItemDto,
@@ -9,43 +9,60 @@ import type {
   CardDetailInput,
   TransferDetailInput,
   ChequeDetailInput,
-} from '../api/salesService';
-import { salesService } from '../api/salesService';
-import { warehouseService } from '../../inventory/warehouses/api/warehouseService';
-import type { WarehouseDto } from '../../inventory/warehouses/api/warehouseService';
-import { stockService } from '../../inventory/stock/api/stockService';
-import type { ItemWarehouseAvailabilityDto } from '../../inventory/stock/api/stockService';
-import { electronicDocumentsMonitorService } from '../../electronicDocuments/monitor/api/electronicDocumentsMonitorService';
-import type { ElectronicDocumentXmlVariant } from '../../electronicDocuments/monitor/api/electronicDocumentsMonitorService';
-import { downloadTextFile } from '../../electronicDocuments/monitor/utils/download';
-import type { InvoiceItemSearchResultDto } from '../api/invoiceItemSearchService';
-import type { CustomerPickerRow, LocationTypeValue, ContactRoleValue, PersonTypeValue } from '../../masterData/types/businessPartner.types';
-import { PersonTypeEnum, RoleTypeEnum } from '../../masterData/types/businessPartner.types';
-import { businessPartnerFacade } from '../../masterData/api/businessPartnerFacade';
-import { bpLocationService, bpContactService } from '../../masterData/api/businessPartnerService';
-import { paymentTermService } from '../../masterData/api/paymentTermService';
-import type { PaymentTermDto } from '../../masterData/api/paymentTermService';
-import { sriLookupService } from '../../items/catalog/api/catalogService';
-import { salesDefaultsService } from '../api/salesDefaultsService';
-import type { SalesInvoiceDefaultsDto } from '../api/salesDefaultsService';
-import { salesItemPricingService } from '../api/salesItemPricingService';
-import { loadDecimalConfig, getDecimalConfig } from '../../../lib/config/decimal.config';
-import { todayIso, toLocalIsoDate } from '../../../lib/formatters/dateFormatters';
-import { normalizeOptionalCode } from '../../../lib/sanitizers';
-import { calcSummary, type TaxBreakdownEntry } from '../utils/salesCalc';
-import { applyServerErrors } from '../../lib/validationErrors';
-import { cajaService } from '../../caja/api/cajaService';
-import type { CashSessionDto } from '../../caja/api/cajaService';
-import { useActiveBranchStore } from '../../../store/activeBranchStore';
-import { message } from '../../../lib/messages';
+} from "../api/salesService";
+import { salesService } from "../api/salesService";
+import { warehouseService } from "../../inventory/warehouses/api/warehouseService";
+import type { WarehouseDto } from "../../inventory/warehouses/api/warehouseService";
+import { stockService } from "../../inventory/stock/api/stockService";
+import type { ItemWarehouseAvailabilityDto } from "../../inventory/stock/api/stockService";
+import { electronicDocumentsMonitorService } from "../../electronicDocuments/monitor/api/electronicDocumentsMonitorService";
+import type { ElectronicDocumentXmlVariant } from "../../electronicDocuments/monitor/api/electronicDocumentsMonitorService";
+import { downloadTextFile } from "../../electronicDocuments/monitor/utils/download";
+import type { InvoiceItemSearchResultDto } from "../api/invoiceItemSearchService";
+import type {
+  CustomerPickerRow,
+  LocationTypeValue,
+  ContactRoleValue,
+  PersonTypeValue,
+} from "../../masterData/types/businessPartner.types";
+import {
+  PersonTypeEnum,
+  RoleTypeEnum,
+} from "../../masterData/types/businessPartner.types";
+import { businessPartnerFacade } from "../../masterData/api/businessPartnerFacade";
+import {
+  bpLocationService,
+  bpContactService,
+} from "../../masterData/api/businessPartnerService";
+import { paymentTermService } from "../../masterData/api/paymentTermService";
+import type { PaymentTermDto } from "../../masterData/api/paymentTermService";
+import { sriLookupService } from "../../items/catalog/api/catalogService";
+import { salesDefaultsService } from "../api/salesDefaultsService";
+import type { SalesInvoiceDefaultsDto } from "../api/salesDefaultsService";
+import { salesItemPricingService } from "../api/salesItemPricingService";
+import {
+  loadDecimalConfig,
+  getDecimalConfig,
+} from "../../../lib/config/decimal.config";
+import {
+  todayIso,
+  toLocalIsoDate,
+} from "../../../lib/formatters/dateFormatters";
+import { normalizeOptionalCode } from "../../../lib/sanitizers";
+import { calcSummary, type TaxBreakdownEntry } from "../utils/salesCalc";
+import { applyServerErrors } from "../../lib/validationErrors";
+import { cajaService } from "../../caja/api/cajaService";
+import type { CashSessionDto } from "../../caja/api/cajaService";
+import { useActiveBranchStore } from "../../../store/activeBranchStore";
+import { message } from "../../../lib/messages";
 import {
   salesInvoiceSchema,
   emptySalesInvoiceForm,
   type SalesInvoiceFormValues,
   type SalesLineFormValues,
   type SalesPaymentFormValues,
-} from '../schemas/salesInvoiceSchema';
-import { INVOICE_PAYMENT_TOLERANCE } from '../constants/tolerances';
+} from "../schemas/salesInvoiceSchema";
+import { INVOICE_PAYMENT_TOLERANCE } from "../constants/tolerances";
 
 // ── Helpers ────────────────────────────────────────────────────────────
 
@@ -61,14 +78,15 @@ function nullFieldsToUndefined<T extends object>(
   const out = {} as { [K in keyof T]: Exclude<T[K], null> | undefined };
   for (const key of Object.keys(obj) as (keyof T)[]) {
     const value = obj[key];
-    out[key] = (value === null ? undefined : value) as Exclude<T[typeof key], null> | undefined;
+    out[key] = (value === null ? undefined : value) as
+      Exclude<T[typeof key], null> | undefined;
   }
   return out;
 }
 
 // ── Types ──────────────────────────────────────────────────────────────
 
-export type Tab = 'listado' | 'nuevo';
+export type Tab = "listado" | "nuevo";
 
 export type CustomerProfile = {
   name: string;
@@ -93,8 +111,9 @@ export type CreditRow = { number: number; dueDate: string; amount: number };
 // validación (cliente o servidor) nunca llega aquí: vuelve a 'idle' y se
 // muestra inline en el formulario (F-V3/F-V4 — estándar de validación del
 // repo), porque ahí es donde el usuario puede corregirlo.
-export type IssuePhase = 'idle' | 'confirm' | 'processing' | 'success' | 'error';
-export type IssueErrorKind = 'internal' | 'communication';
+export type IssuePhase =
+  "idle" | "confirm" | "processing" | "success" | "error";
+export type IssueErrorKind = "internal" | "communication";
 export type IssueErrorInfo = { kind: IssueErrorKind; message: string };
 
 // Pasos 0-1 (Validando/Guardando) son awaits reales del formulario y de
@@ -103,20 +122,26 @@ export type IssueErrorInfo = { kind: IssueErrorKind; message: string };
 // progreso real intermedio que consultar, por eso se muestran escalonados
 // mientras se espera esa respuesta única (ver simulateRemainingSteps).
 export const ISSUE_STEPS = [
-  'Validando',
-  'Guardando',
-  'Generando XML',
-  'Firmando',
-  'Enviando al SRI',
-  'Consultando autorización',
+  "Validando",
+  "Guardando",
+  "Generando XML",
+  "Firmando",
+  "Enviando al SRI",
+  "Consultando autorización",
 ] as const;
 
 /** Mensaje seguro para el usuario — nunca reenvía `e.message` (stack/técnico), solo texto de negocio ya sanitizado por el backend (B-V5) o un fallback en español. */
 function extractSafeMessage(e: unknown, fallback: string): string {
-  const err = e as { response?: { data?: { message?: { user?: string }; data?: { errors?: string[] } } } };
-  return err?.response?.data?.message?.user
-    ?? err?.response?.data?.data?.errors?.[0]
-    ?? fallback;
+  const err = e as {
+    response?: {
+      data?: { message?: { user?: string }; data?: { errors?: string[] } };
+    };
+  };
+  return (
+    err?.response?.data?.message?.user ??
+    err?.response?.data?.data?.errors?.[0] ??
+    fallback
+  );
 }
 
 function issueErrorStatus(e: unknown): number | undefined {
@@ -124,9 +149,13 @@ function issueErrorStatus(e: unknown): number | undefined {
 }
 
 /** Avanza el índice de paso mostrado mientras se espera la respuesta de /authorize; se detiene en el último paso si la respuesta tarda más que la animación. */
-function simulateRemainingSteps(setIndex: (updater: (i: number) => number) => void, toIndex: number, stepMs = 750) {
+function simulateRemainingSteps(
+  setIndex: (updater: (i: number) => number) => void,
+  toIndex: number,
+  stepMs = 750,
+) {
   const id = setInterval(() => {
-    setIndex(i => Math.min(i + 1, toIndex));
+    setIndex((i) => Math.min(i + 1, toIndex));
   }, stepMs);
   return { stop: () => clearInterval(id) };
 }
@@ -135,32 +164,45 @@ function simulateRemainingSteps(setIndex: (updater: (i: number) => number) => vo
 
 export function useSalesPage() {
   // ── Page state ─────────────────────────────────────────────────────
-  const [tab, setTab] = useState<Tab>('nuevo');
+  const [tab, setTab] = useState<Tab>("nuevo");
   const [listItems, setListItems] = useState<SalesListItemDto[]>([]);
   const [listLoading, setListLoading] = useState(false);
-  const [listSearch, setListSearch] = useState('');
+  const [listSearch, setListSearch] = useState("");
 
   const [saving, setSaving] = useState(false);
-  const [saveError, setSaveError] = useState('');
+  const [saveError, setSaveError] = useState("");
   const [editing, setEditing] = useState<SalesInvoiceDto | null>(null);
   // undefined = todavía cargando; null = confirmado que no hay caja abierta.
-  const [myCashSession, setMyCashSession] = useState<CashSessionDto | null | undefined>(undefined);
-  const hasCashSession = myCashSession === undefined ? null : myCashSession !== null;
-  const branchName = useActiveBranchStore(s => s.branch)?.name ?? null;
+  const [myCashSession, setMyCashSession] = useState<
+    CashSessionDto | null | undefined
+  >(undefined);
+  const hasCashSession =
+    myCashSession === undefined ? null : myCashSession !== null;
+  const branchName = useActiveBranchStore((s) => s.branch)?.name ?? null;
 
   // ── Customer state ─────────────────────────────────────────────────
-  const [customerProfile, setCustomerProfile] = useState<CustomerProfile | null>(null);
+  const [customerProfile, setCustomerProfile] =
+    useState<CustomerProfile | null>(null);
 
   // ── Reference data ─────────────────────────────────────────────────
-  const [paymentTermsList, setPaymentTermsList] = useState<PaymentTermDto[]>([]);
+  const [paymentTermsList, setPaymentTermsList] = useState<PaymentTermDto[]>(
+    [],
+  );
   const [paymentMethods, setPaymentMethods] = useState<PaymentMethodDto[]>([]);
   const [warehouses, setWarehouses] = useState<WarehouseDto[]>([]);
-  const [selectedWarehouseId, setSelectedWarehouseId] = useState('');
+  const [selectedWarehouseId, setSelectedWarehouseId] = useState("");
   const [vatRatesMap, setVatRatesMap] = useState<Record<string, number>>({});
-  const [sriDocTypes, setSriDocTypes] = useState<{ code: string; name: string }[]>([]);
-  const [sriPaymentMethods, setSriPaymentMethods] = useState<{ code: string; name: string }[]>([]);
-  const [sriIdTypes, setSriIdTypes] = useState<{ code: string; name: string }[]>([]);
-  const [tenantDefaults, setTenantDefaults] = useState<SalesInvoiceDefaultsDto | null>(null);
+  const [sriDocTypes, setSriDocTypes] = useState<
+    { code: string; name: string }[]
+  >([]);
+  const [sriPaymentMethods, setSriPaymentMethods] = useState<
+    { code: string; name: string }[]
+  >([]);
+  const [sriIdTypes, setSriIdTypes] = useState<
+    { code: string; name: string }[]
+  >([]);
+  const [tenantDefaults, setTenantDefaults] =
+    useState<SalesInvoiceDefaultsDto | null>(null);
   const [iceRatesMap, setIceRatesMap] = useState<Record<string, number>>({});
 
   // ── Modal state ────────────────────────────────────────────────────
@@ -170,7 +212,7 @@ export function useSalesPage() {
   const [modalCredit, setModalCredit] = useState(false);
 
   // ── Issue flow state (Nueva Venta → Emitir Factura) ────────────────
-  const [issuePhase, setIssuePhase] = useState<IssuePhase>('idle');
+  const [issuePhase, setIssuePhase] = useState<IssuePhase>("idle");
   const [issueStepIndex, setIssueStepIndex] = useState(0);
   const [issueResult, setIssueResult] = useState<SalesInvoiceDto | null>(null);
   const [issueError, setIssueError] = useState<IssueErrorInfo | null>(null);
@@ -178,21 +220,28 @@ export function useSalesPage() {
   const [productSearchFocusKey, setProductSearchFocusKey] = useState(0);
 
   // ── Quick customer modal state ─────────────────────────────────────
-  const [newCustId, setNewCustId] = useState('');
-  const [newCustName, setNewCustName] = useState('');
-  const [newCustIdType, setNewCustIdType] = useState('05');
-  const [newCustAddress, setNewCustAddress] = useState('');
-  const [newCustEmail, setNewCustEmail] = useState('');
-  const [newCustPhone, setNewCustPhone] = useState('');
+  const [newCustId, setNewCustId] = useState("");
+  const [newCustName, setNewCustName] = useState("");
+  const [newCustIdType, setNewCustIdType] = useState("05");
+  const [newCustAddress, setNewCustAddress] = useState("");
+  const [newCustEmail, setNewCustEmail] = useState("");
+  const [newCustPhone, setNewCustPhone] = useState("");
   const [newCustIsEdit, setNewCustIsEdit] = useState(false);
   const [newCustSaving, setNewCustSaving] = useState(false);
-  const [newCustError, setNewCustError] = useState('');
+  const [newCustError, setNewCustError] = useState("");
 
   // ── Payment detail modal state ─────────────────────────────────────
-  type DetailRow = { _k: number; amount: number; card?: CardDetailInput; transfer?: TransferDetailInput; cheque?: ChequeDetailInput };
-  const [detailMethodId, setDetailMethodId] = useState('');
-  const [detailMethodType, setDetailMethodType] = useState<PaymentMethodDetailType>('None');
-  const [detailMethodName, setDetailMethodName] = useState('');
+  type DetailRow = {
+    _k: number;
+    amount: number;
+    card?: CardDetailInput;
+    transfer?: TransferDetailInput;
+    cheque?: ChequeDetailInput;
+  };
+  const [detailMethodId, setDetailMethodId] = useState("");
+  const [detailMethodType, setDetailMethodType] =
+    useState<PaymentMethodDetailType>("None");
+  const [detailMethodName, setDetailMethodName] = useState("");
   const [detailRows, setDetailRows] = useState<DetailRow[]>([]);
   const [detailKey, setDetailKey] = useState(1);
 
@@ -208,7 +257,7 @@ export function useSalesPage() {
   const form = useForm<SalesInvoiceFormValues>({
     resolver: zodResolver(salesInvoiceSchema),
     defaultValues: emptySalesInvoiceForm(),
-    mode: 'onBlur',
+    mode: "onBlur",
   });
 
   const {
@@ -224,15 +273,18 @@ export function useSalesPage() {
   } = form;
 
   const formWatch = watch();
-  const lines = watch('lines');
-  const payments = watch('payments');
+  const lines = watch("lines");
+  const payments = watch("payments");
 
   // ── Derived state ──────────────────────────────────────────────────
-  const isDraft = !editing || editing.status === 'Draft';
+  const isDraft = !editing || editing.status === "Draft";
   const readOnly = !isDraft;
   const fieldDisabled = saving || readOnly;
 
-  const summary = useMemo(() => calcSummary(lines, vatRatesMap, iceRatesMap), [lines, vatRatesMap, iceRatesMap]);
+  const summary = useMemo(
+    () => calcSummary(lines, vatRatesMap, iceRatesMap),
+    [lines, vatRatesMap, iceRatesMap],
+  );
 
   // Única fuente de verdad de "¿se puede emitir?" — la usan tanto el botón
   // "Emitir Factura" como el atajo F8, para no duplicar la validación. También expuesta
@@ -240,12 +292,20 @@ export function useSalesPage() {
   const hasCustomer = !!formWatch.customerId?.trim();
   const hasLines = lines.length > 0;
   const paidTotal = payments.reduce((s, p) => s + (Number(p.amount) || 0), 0);
-  const paymentOk = summary.total > 0 && paidTotal > 0 &&
+  const paymentOk =
+    summary.total > 0 &&
+    paidTotal > 0 &&
     Math.abs(summary.total - paidTotal) < INVOICE_PAYMENT_TOLERANCE;
-  const canEmit = !fieldDisabled && hasCustomer && hasLines && hasCashSession === true && paymentOk;
+  const canEmit =
+    !fieldDisabled &&
+    hasCustomer &&
+    hasLines &&
+    hasCashSession === true &&
+    paymentOk;
 
   const grandTotal = editing && readOnly ? editing.grandTotal : summary.total;
-  const totalDiscount = editing && readOnly ? editing.totalDiscount : summary.discount;
+  const totalDiscount =
+    editing && readOnly ? editing.totalDiscount : summary.discount;
 
   const taxBreakdown: TaxBreakdownEntry[] = useMemo(() => {
     if (editing && readOnly && editing.lines.length > 0) {
@@ -259,8 +319,10 @@ export function useSalesPage() {
       return Array.from(byRate.entries())
         .sort((a, b) => a[0] - b[0])
         .map(([rate, v]) => ({
-          label: rate === 0 ? 'IVA 0%' : `IVA ${rate}%`,
-          rate, base: v.base, tax: v.tax,
+          label: rate === 0 ? "IVA 0%" : `IVA ${rate}%`,
+          rate,
+          base: v.base,
+          tax: v.tax,
         }));
     }
     return summary.taxBreakdown;
@@ -271,10 +333,11 @@ export function useSalesPage() {
   // myCashSession.emissionType (disponible desde que carga la pantalla, sin esperar a que exista
   // un borrador). Se usa editing.emissionType únicamente como respaldo al ver/editar una factura
   // ya creada fuera de una sesión de caja activa (ej. sin sesión abierta en este navegador).
-  const isElectronic = (myCashSession?.emissionType ?? editing?.emissionType) === 'Electronic';
+  const isElectronic =
+    (myCashSession?.emissionType ?? editing?.emissionType) === "Electronic";
 
   const selectedPt = useMemo(
-    () => paymentTermsList.find(p => p.id === formWatch.paymentTermId),
+    () => paymentTermsList.find((p) => p.id === formWatch.paymentTermId),
     [paymentTermsList, formWatch.paymentTermId],
   );
 
@@ -285,56 +348,99 @@ export function useSalesPage() {
       // 1. Datos independientes en paralelo
       const [defaults, , , , , , whs, , mySession] = await Promise.allSettled([
         salesDefaultsService.get(),
-        paymentTermService.list().then(setPaymentTermsList).catch(() => {}),
-        salesService.listPaymentMethods(true).then(setPaymentMethods).catch(() => {}),
+        paymentTermService
+          .list()
+          .then(setPaymentTermsList)
+          .catch(() => {}),
+        salesService
+          .listPaymentMethods(true)
+          .then(setPaymentMethods)
+          .catch(() => {}),
         loadDecimalConfig(),
-        sriLookupService.paymentMethods().then(pms => setSriPaymentMethods(pms.map(p => ({ code: p.code, name: p.name })))).catch(() => {}),
-        sriLookupService.docTypes().then(dts => setSriDocTypes(dts.map(d => ({ code: d.code, name: d.name })))).catch(() => {}),
-        warehouseService.list('active'),
-        sriLookupService.vatRates().then(rates => {
-          const map: Record<string, number> = {};
-          for (const r of rates) map[r.code] = r.percentage;
-          setVatRatesMap(map);
-        }).catch(() => {}),
-        cajaService.getMy().then(s => { setMyCashSession(s); return s; }).catch(() => { setMyCashSession(null); return null; }),
-        sriLookupService.iceRates().then(rates => {
-          const map: Record<string, number> = {};
-          for (const r of rates) map[r.code] = r.percentage;
-          setIceRatesMap(map);
-        }).catch(() => {}),
-        sriLookupService.idTypes('Customer').then(types => setSriIdTypes(types.map(t => ({ code: t.code, name: t.name })))).catch(() => {}),
+        sriLookupService
+          .paymentMethods()
+          .then((pms) =>
+            setSriPaymentMethods(
+              pms.map((p) => ({ code: p.code, name: p.name })),
+            ),
+          )
+          .catch(() => {}),
+        sriLookupService
+          .docTypes()
+          .then((dts) =>
+            setSriDocTypes(dts.map((d) => ({ code: d.code, name: d.name }))),
+          )
+          .catch(() => {}),
+        warehouseService.list("active"),
+        sriLookupService
+          .vatRates()
+          .then((rates) => {
+            const map: Record<string, number> = {};
+            for (const r of rates) map[r.code] = r.percentage;
+            setVatRatesMap(map);
+          })
+          .catch(() => {}),
+        cajaService
+          .getMy()
+          .then((s) => {
+            setMyCashSession(s);
+            return s;
+          })
+          .catch(() => {
+            setMyCashSession(null);
+            return null;
+          }),
+        sriLookupService
+          .iceRates()
+          .then((rates) => {
+            const map: Record<string, number> = {};
+            for (const r of rates) map[r.code] = r.percentage;
+            setIceRatesMap(map);
+          })
+          .catch(() => {}),
+        sriLookupService
+          .idTypes("Customer")
+          .then((types) =>
+            setSriIdTypes(types.map((t) => ({ code: t.code, name: t.name }))),
+          )
+          .catch(() => {}),
       ]);
 
       // 2. Bodegas
-      const whsData = whs.status === 'fulfilled' ? whs.value : [];
+      const whsData = whs.status === "fulfilled" ? whs.value : [];
       setWarehouses(whsData);
 
       // 3. Aplicar defaults del tenant al formulario inicial
-      const d = defaults.status === 'fulfilled' ? defaults.value : null;
+      const d = defaults.status === "fulfilled" ? defaults.value : null;
       setTenantDefaults(d);
 
       const effectiveDocTypeCode =
-        d?.defaultDocTypeCode ?? d?.fallbackDocTypeCode ?? '';
+        d?.defaultDocTypeCode ?? d?.fallbackDocTypeCode ?? "";
       const effectiveSriPaymentMethodCode =
-        d?.defaultSriPaymentMethodCode ?? d?.fallbackSriPaymentMethodCode ?? '';
+        d?.defaultSriPaymentMethodCode ?? d?.fallbackSriPaymentMethodCode ?? "";
 
       // Bodega: Caja (CashRegister.DefaultWarehouseId, la más específica) → tenant config → primera activa disponible
-      const sessionData = mySession.status === 'fulfilled' ? mySession.value : null;
+      const sessionData =
+        mySession.status === "fulfilled" ? mySession.value : null;
       const effectiveWhId =
-        sessionData?.defaultWarehouseId
-        ?? d?.defaultWarehouseId
-        ?? whsData[0]?.id
-        ?? '';
+        sessionData?.defaultWarehouseId ??
+        d?.defaultWarehouseId ??
+        whsData[0]?.id ??
+        "";
 
-      setValue('docTypeCode', effectiveDocTypeCode);
-      setValue('sriPaymentMethodCode', effectiveSriPaymentMethodCode);
+      setValue("docTypeCode", effectiveDocTypeCode);
+      setValue("sriPaymentMethodCode", effectiveSriPaymentMethodCode);
       if (effectiveWhId) setSelectedWarehouseId(effectiveWhId);
 
       // Cliente por defecto de la Caja — mismo loadCustomerProfile ya usado al elegir
       // cliente manualmente (handleCustomerChange), sin lógica paralela.
       if (sessionData?.defaultCustomerId) {
-        setValue('customerId', sessionData.defaultCustomerId, { shouldDirty: true });
-        const profile = await loadCustomerProfile(sessionData.defaultCustomerId);
+        setValue("customerId", sessionData.defaultCustomerId, {
+          shouldDirty: true,
+        });
+        const profile = await loadCustomerProfile(
+          sessionData.defaultCustomerId,
+        );
         setCustomerProfile(profile);
       }
     })();
@@ -347,164 +453,275 @@ export function useSalesPage() {
     try {
       const r = await salesService.list(listSearch || undefined);
       setListItems(r.items);
-    } catch { /* silent */ }
+    } catch {
+      /* silent */
+    }
     setListLoading(false);
   }, [listSearch]);
 
-  useEffect(() => { fetchList(); }, [fetchList]);
+  useEffect(() => {
+    fetchList();
+  }, [fetchList]);
 
   // ── Customer profile loader ────────────────────────────────────────
-  const loadCustomerProfile = useCallback(async (bpId: string): Promise<CustomerProfile | null> => {
-    try {
-      const [bp, locations, contacts, trading] = await Promise.all([
-        businessPartnerFacade.getBusinessPartner(bpId),
-        bpLocationService.list(bpId, true).catch(() => []),
-        bpContactService.list(bpId, true).catch(() => []),
-        businessPartnerFacade.getTradingSettings(bpId),
-      ]);
+  const loadCustomerProfile = useCallback(
+    async (bpId: string): Promise<CustomerProfile | null> => {
+      try {
+        const [bp, locations, contacts, trading] = await Promise.all([
+          businessPartnerFacade.getBusinessPartner(bpId),
+          bpLocationService.list(bpId, true).catch(() => []),
+          bpContactService.list(bpId, true).catch(() => []),
+          businessPartnerFacade.getTradingSettings(bpId),
+        ]);
 
-      const { installments, daysBetweenInstallments: daysBetween, paymentDays, paymentTermId: ptId } = trading;
+        const {
+          installments,
+          daysBetweenInstallments: daysBetween,
+          paymentDays,
+          paymentTermId: ptId,
+        } = trading;
 
-      if (ptId && paymentTermsList.some(p => p.id === ptId)) {
-        // 1. Condición de pago del cliente (máxima prioridad)
-        setValue('paymentTermId', ptId, { shouldDirty: true });
-      } else if (paymentDays > 0 && paymentTermsList.length > 0) {
-        // 2. Buscar por días de crédito del cliente
-        const match = paymentTermsList.find(p => p.isActive && p.totalDays === paymentDays);
-        if (match) setValue('paymentTermId', match.id, { shouldDirty: true });
-      } else {
-        // 3. Default de empresa (único punto de fallback para condición de pago)
-        const companyDefault = tenantDefaults?.defaultPaymentTermId;
-        if (companyDefault && paymentTermsList.some(p => p.id === companyDefault && p.isActive)) {
-          setValue('paymentTermId', companyDefault, { shouldDirty: true });
+        if (ptId && paymentTermsList.some((p) => p.id === ptId)) {
+          // 1. Condición de pago del cliente (máxima prioridad)
+          setValue("paymentTermId", ptId, { shouldDirty: true });
+        } else if (paymentDays > 0 && paymentTermsList.length > 0) {
+          // 2. Buscar por días de crédito del cliente
+          const match = paymentTermsList.find(
+            (p) => p.isActive && p.totalDays === paymentDays,
+          );
+          if (match) setValue("paymentTermId", match.id, { shouldDirty: true });
+        } else {
+          // 3. Default de empresa (único punto de fallback para condición de pago)
+          const companyDefault = tenantDefaults?.defaultPaymentTermId;
+          if (
+            companyDefault &&
+            paymentTermsList.some((p) => p.id === companyDefault && p.isActive)
+          ) {
+            setValue("paymentTermId", companyDefault, { shouldDirty: true });
+          }
         }
-      }
 
-      return {
-        name: bp.tradeName || bp.legalName,
-        taxId: bp.identificationNumber,
-        identificationType: bp.identificationType,
-        personType: PersonTypeEnum[bp.personType as keyof typeof PersonTypeEnum] ?? PersonTypeEnum.Legal,
-        email: contacts[0]?.email ?? locations[0]?.email ?? null,
-        phone: contacts[0]?.phone ?? locations[0]?.phone ?? null,
-        address: locations[0]?.addressLine ?? null,
-        paymentDays, installments, daysBetweenInstallments: daysBetween,
-        paymentTermId: ptId,
-      };
-    } catch { return null; }
-  }, [paymentTermsList, setValue, tenantDefaults]);
+        return {
+          name: bp.tradeName || bp.legalName,
+          taxId: bp.identificationNumber,
+          identificationType: bp.identificationType,
+          personType:
+            PersonTypeEnum[bp.personType as keyof typeof PersonTypeEnum] ??
+            PersonTypeEnum.Legal,
+          email: contacts[0]?.email ?? locations[0]?.email ?? null,
+          phone: contacts[0]?.phone ?? locations[0]?.phone ?? null,
+          address: locations[0]?.addressLine ?? null,
+          paymentDays,
+          installments,
+          daysBetweenInstallments: daysBetween,
+          paymentTermId: ptId,
+        };
+      } catch {
+        return null;
+      }
+    },
+    [paymentTermsList, setValue, tenantDefaults],
+  );
 
   // ── Line operations ────────────────────────────────────────────────
-  const addLineWithItem = useCallback(async (item: InvoiceItemSearchResultDto) => {
-    const selectedWh = warehouses.find(w => w.id === selectedWarehouseId);
+  const addLineWithItem = useCallback(
+    async (item: InvoiceItemSearchResultDto) => {
+      const selectedWh = warehouses.find((w) => w.id === selectedWarehouseId);
 
-    // Kardex: la bodega de despacho es obligatoria por línea para ítems que
-    // controlan inventario — se toma la bodega activa del buscador al momento
-    // de agregar el ítem (una misma factura puede combinar líneas de bodegas distintas).
-    if (item.tracksStock && !selectedWarehouseId) {
-      message.error('Seleccione una bodega antes de agregar este producto.');
-      return;
-    }
+      // Kardex: la bodega de despacho es obligatoria por línea para ítems que
+      // controlan inventario — se toma la bodega activa del buscador al momento
+      // de agregar el ítem (una misma factura puede combinar líneas de bodegas distintas).
+      if (item.tracksStock && !selectedWarehouseId) {
+        message.error("Seleccione una bodega antes de agregar este producto.");
+        return;
+      }
 
-    // Precio dinámico: SSOT es el Pricing Engine v2 (PricingResolver), resuelto
-    // puntualmente al seleccionar el ítem — no se usa el precio base del buscador.
-    let pricing;
-    try {
-      pricing = await salesItemPricingService.get(item.id);
-    } catch (err: unknown) {
-      const apiErr = err as { response?: { data?: { message?: { user?: string } } } };
-      message.error(apiErr.response?.data?.message?.user ?? 'No se pudo obtener el precio del producto.');
-      return;
-    }
+      // Precio dinámico: SSOT es el Pricing Engine v2 (PricingResolver), resuelto
+      // puntualmente al seleccionar el ítem — no se usa el precio base del buscador.
+      let pricing;
+      try {
+        pricing = await salesItemPricingService.get(item.id);
+      } catch (err: unknown) {
+        const apiErr = err as {
+          response?: { data?: { message?: { user?: string } } };
+        };
+        message.error(
+          apiErr.response?.data?.message?.user ??
+            "No se pudo obtener el precio del producto.",
+        );
+        return;
+      }
 
-    const pvp = pricing.unitPrice ?? undefined;
-    const cost = item.averageCost != null && item.averageCost > 0 ? item.averageCost : undefined;
-    const stockQty = item.availableStock ?? undefined;
+      const pvp = pricing.unitPrice ?? undefined;
+      const cost =
+        item.averageCost != null && item.averageCost > 0
+          ? item.averageCost
+          : undefined;
+      const stockQty = item.availableStock ?? undefined;
 
-    const newLine: SalesLineFormValues = {
-      _key: lineKey,
-      itemId: item.id,
-      warehouseId: item.tracksStock ? selectedWarehouseId : null,
-      description: `${item.sku} — ${item.description}`,
-      quantity: 1,
-      unitPrice: pvp ?? 0,
-      vatCode: pricing.vatCode ?? '',
-      discountPct: 0,
-      iceCode: normalizeOptionalCode(pricing.iceCode) ?? undefined,
-      _sku: item.sku,
-      _name: item.description,
-      _pvp: pvp,
-      _cost: cost,
-      _stockQty: stockQty,
-      _stockWarehouse: selectedWh?.name,
-      _tracksStock: item.tracksStock,
-    };
+      const newLine: SalesLineFormValues = {
+        _key: lineKey,
+        itemId: item.id,
+        warehouseId: item.tracksStock ? selectedWarehouseId : null,
+        description: `${item.sku} — ${item.description}`,
+        quantity: 1,
+        unitPrice: pvp ?? 0,
+        vatCode: pricing.vatCode ?? "",
+        discountPct: 0,
+        iceCode: normalizeOptionalCode(pricing.iceCode) ?? undefined,
+        _sku: item.sku,
+        _name: item.description,
+        _pvp: pvp,
+        _cost: cost,
+        _stockQty: stockQty,
+        _stockWarehouse: selectedWh?.name,
+        _tracksStock: item.tracksStock,
+      };
 
-    const currentLines = getValues('lines');
-    setValue('lines', [...currentLines, newLine], { shouldValidate: true, shouldDirty: true });
-    setLineKey(k => k + 1);
-    setProductSearchFocusKey(k => k + 1); // reenfoca "buscar producto" tras agregar línea — flujo continuo POS
-  }, [lineKey, selectedWarehouseId, warehouses, getValues, setValue]);
+      const currentLines = getValues("lines");
+      setValue("lines", [...currentLines, newLine], {
+        shouldValidate: true,
+        shouldDirty: true,
+      });
+      setLineKey((k) => k + 1);
+      setProductSearchFocusKey((k) => k + 1); // reenfoca "buscar producto" tras agregar línea — flujo continuo POS
+    },
+    [lineKey, selectedWarehouseId, warehouses, getValues, setValue],
+  );
 
-  const removeLine = useCallback((key: number) => {
-    const currentLines = getValues('lines');
-    setValue('lines', currentLines.filter(l => l._key !== key), { shouldValidate: true, shouldDirty: true });
-  }, [getValues, setValue]);
+  const removeLine = useCallback(
+    (key: number) => {
+      const currentLines = getValues("lines");
+      setValue(
+        "lines",
+        currentLines.filter((l) => l._key !== key),
+        { shouldValidate: true, shouldDirty: true },
+      );
+    },
+    [getValues, setValue],
+  );
 
-  const updateLine = useCallback((key: number, field: string, value: unknown) => {
-    const currentLines = getValues('lines');
-    setValue('lines', currentLines.map(l => l._key === key ? { ...l, [field]: value } : l), { shouldDirty: true });
-  }, [getValues, setValue]);
+  const updateLine = useCallback(
+    (key: number, field: string, value: unknown) => {
+      const currentLines = getValues("lines");
+      setValue(
+        "lines",
+        currentLines.map((l) =>
+          l._key === key ? { ...l, [field]: value } : l,
+        ),
+        { shouldDirty: true },
+      );
+    },
+    [getValues, setValue],
+  );
 
   // Bodega de una sola línea: el selector inteligente ya trae la disponibilidad
   // (misma respuesta que pobló su lista) — se aplica en un solo setValue, sin
   // una segunda consulta de stock.
-  const onUpdateLineWarehouse = useCallback((key: number, warehouseId: string, option?: ItemWarehouseAvailabilityDto) => {
-    const currentLines = getValues('lines');
-    setValue('lines', currentLines.map(l => l._key === key
-      ? { ...l, warehouseId, ...(option ? { _stockQty: option.available, _stockWarehouse: option.warehouseName } : {}) }
-      : l), { shouldDirty: true });
-  }, [getValues, setValue]);
+  const onUpdateLineWarehouse = useCallback(
+    (
+      key: number,
+      warehouseId: string,
+      option?: ItemWarehouseAvailabilityDto,
+    ) => {
+      const currentLines = getValues("lines");
+      setValue(
+        "lines",
+        currentLines.map((l) =>
+          l._key === key
+            ? {
+                ...l,
+                warehouseId,
+                ...(option
+                  ? {
+                      _stockQty: option.available,
+                      _stockWarehouse: option.warehouseName,
+                    }
+                  : {}),
+              }
+            : l,
+        ),
+        { shouldDirty: true },
+      );
+    },
+    [getValues, setValue],
+  );
 
   // Bodega de encabezado: default para líneas nuevas + cascada a líneas existentes
   // que controlan inventario (una línea de servicio nunca adquiere bodega), recargando
   // el stock de cada línea afectada con el mismo servicio que usa el selector por línea.
-  const handleWarehouseChange = useCallback((id: string) => {
-    setSelectedWarehouseId(id);
-    const currentLines = getValues('lines');
-    setValue('lines', currentLines.map(l => l._tracksStock ? { ...l, warehouseId: id } : l), { shouldValidate: true, shouldDirty: true });
+  const handleWarehouseChange = useCallback(
+    (id: string) => {
+      setSelectedWarehouseId(id);
+      const currentLines = getValues("lines");
+      setValue(
+        "lines",
+        currentLines.map((l) =>
+          l._tracksStock ? { ...l, warehouseId: id } : l,
+        ),
+        { shouldValidate: true, shouldDirty: true },
+      );
 
-    const affected = currentLines.filter(l => l._tracksStock && l.itemId);
-    void Promise.all(affected.map(async l => {
-      try {
-        const options = await stockService.getWarehouseAvailability(l.itemId!);
-        const match = options.find(o => o.warehouseId === id);
-        if (!match) return;
-        const latest = getValues('lines');
-        setValue('lines', latest.map(x => x._key === l._key
-          ? { ...x, _stockQty: match.available, _stockWarehouse: match.warehouseName }
-          : x), { shouldDirty: true });
-      } catch { /* conserva el valor anterior si falla la consulta */ }
-    }));
-  }, [getValues, setValue]);
+      const affected = currentLines.filter((l) => l._tracksStock && l.itemId);
+      void Promise.all(
+        affected.map(async (l) => {
+          try {
+            const options = await stockService.getWarehouseAvailability(
+              l.itemId!,
+            );
+            const match = options.find((o) => o.warehouseId === id);
+            if (!match) return;
+            const latest = getValues("lines");
+            setValue(
+              "lines",
+              latest.map((x) =>
+                x._key === l._key
+                  ? {
+                      ...x,
+                      _stockQty: match.available,
+                      _stockWarehouse: match.warehouseName,
+                    }
+                  : x,
+              ),
+              { shouldDirty: true },
+            );
+          } catch {
+            /* conserva el valor anterior si falla la consulta */
+          }
+        }),
+      );
+    },
+    [getValues, setValue],
+  );
 
   // ── Payment operations ─────────────────────────────────────────────
-  const setInvoicePayments = useCallback((
-    updater: SalesPaymentFormValues[] | ((prev: SalesPaymentFormValues[]) => SalesPaymentFormValues[]),
-  ) => {
-    const current = getValues('payments');
-    const next = typeof updater === 'function' ? updater(current) : updater;
-    setValue('payments', next, { shouldDirty: true });
-  }, [getValues, setValue]);
+  const setInvoicePayments = useCallback(
+    (
+      updater:
+        | SalesPaymentFormValues[]
+        | ((prev: SalesPaymentFormValues[]) => SalesPaymentFormValues[]),
+    ) => {
+      const current = getValues("payments");
+      const next = typeof updater === "function" ? updater(current) : updater;
+      setValue("payments", next, { shouldDirty: true });
+    },
+    [getValues, setValue],
+  );
 
   // ── Form reset ─────────────────────────────────────────────────────
   const resetForm = useCallback(() => {
     const base = emptySalesInvoiceForm();
     reset({
       ...base,
-      docTypeCode:          tenantDefaults?.defaultDocTypeCode ?? tenantDefaults?.fallbackDocTypeCode ?? '',
-      sriPaymentMethodCode: tenantDefaults?.defaultSriPaymentMethodCode ?? tenantDefaults?.fallbackSriPaymentMethodCode ?? '',
-      paymentTermId:        tenantDefaults?.defaultPaymentTermId ?? '',
+      docTypeCode:
+        tenantDefaults?.defaultDocTypeCode ??
+        tenantDefaults?.fallbackDocTypeCode ??
+        "",
+      sriPaymentMethodCode:
+        tenantDefaults?.defaultSriPaymentMethodCode ??
+        tenantDefaults?.fallbackSriPaymentMethodCode ??
+        "",
+      paymentTermId: tenantDefaults?.defaultPaymentTermId ?? "",
     });
     // Restaurar bodega por defecto del tenant
     if (tenantDefaults?.defaultWarehouseId) {
@@ -512,23 +729,24 @@ export function useSalesPage() {
     }
     setCustomerProfile(null);
     setEditing(null);
-    setSaveError('');
+    setSaveError("");
     setLineKey(1);
     setPayKey(1);
-    setProductSearchFocusKey(k => k + 1); // reenfoca "buscar producto" — UX retail
+    setProductSearchFocusKey((k) => k + 1); // reenfoca "buscar producto" — UX retail
   }, [reset, tenantDefaults]);
 
   // "Limpiar Todo": solo pide confirmación si hay algo que perder (cliente y/o líneas
   // cargadas) — evita fricción cuando el formulario ya está vacío.
   const clearForm = useCallback(async () => {
-    const hasData = getValues('customerId') || getValues('lines').length > 0;
+    const hasData = getValues("customerId") || getValues("lines").length > 0;
     if (hasData) {
       const confirmed = await message.confirm({
-        title: 'Limpiar factura',
-        message: 'Se perderán el cliente y los productos ya agregados. ¿Deseas continuar?',
-        variant: 'danger',
-        confirmLabel: 'Limpiar',
-        cancelLabel: 'Cancelar',
+        title: "Limpiar factura",
+        message:
+          "Se perderán el cliente y los productos ya agregados. ¿Deseas continuar?",
+        variant: "danger",
+        confirmLabel: "Limpiar",
+        cancelLabel: "Cancelar",
       });
       if (!confirmed) return;
     }
@@ -536,117 +754,151 @@ export function useSalesPage() {
   }, [getValues, resetForm]);
 
   // ── Customer change handler ────────────────────────────────────────
-  const handleCustomerChange = useCallback(async (c: CustomerPickerRow | null) => {
-    setValue('customerId', c?.id ?? '', { shouldValidate: true, shouldDirty: true });
-    if (c) {
-      const profile = await loadCustomerProfile(c.id);
-      setCustomerProfile(profile);
-      setProductSearchFocusKey(k => k + 1); // reenfoca "buscar producto" tras seleccionar cliente — flujo continuo POS
-    } else {
-      setCustomerProfile(null);
-    }
-  }, [setValue, loadCustomerProfile]);
+  const handleCustomerChange = useCallback(
+    async (c: CustomerPickerRow | null) => {
+      setValue("customerId", c?.id ?? "", {
+        shouldValidate: true,
+        shouldDirty: true,
+      });
+      if (c) {
+        const profile = await loadCustomerProfile(c.id);
+        setCustomerProfile(profile);
+        setProductSearchFocusKey((k) => k + 1); // reenfoca "buscar producto" tras seleccionar cliente — flujo continuo POS
+      } else {
+        setCustomerProfile(null);
+      }
+    },
+    [setValue, loadCustomerProfile],
+  );
 
   // ── Load for edit ──────────────────────────────────────────────────
-  const loadForEdit = useCallback(async (id: string) => {
-    try {
-      const inv = await salesService.getById(id);
-      setEditing(inv);
-      // personType no viaja en el snapshot de la factura — se resuelve desde el BP actual
-      // (igual que loadCustomerProfile) solo para completar el tipo; el resto de este perfil
-      // sigue siendo el snapshot histórico de la factura, no el estado actual del BP.
-      const bp = await businessPartnerFacade.getBusinessPartner(inv.customerId).catch(() => null);
-      setCustomerProfile({
-        name: inv.customerName, taxId: inv.customerTaxId,
-        identificationType: inv.customerIdentificationType,
-        personType: PersonTypeEnum[bp?.personType as keyof typeof PersonTypeEnum] ?? PersonTypeEnum.Legal,
-        email: inv.customerEmail, address: inv.customerAddress,
-        phone: null, paymentDays: 0, installments: 0, daysBetweenInstallments: 0, paymentTermId: null,
-      });
+  const loadForEdit = useCallback(
+    async (id: string) => {
+      try {
+        const inv = await salesService.getById(id);
+        setEditing(inv);
+        // personType no viaja en el snapshot de la factura — se resuelve desde el BP actual
+        // (igual que loadCustomerProfile) solo para completar el tipo; el resto de este perfil
+        // sigue siendo el snapshot histórico de la factura, no el estado actual del BP.
+        const bp = await businessPartnerFacade
+          .getBusinessPartner(inv.customerId)
+          .catch(() => null);
+        setCustomerProfile({
+          name: inv.customerName,
+          taxId: inv.customerTaxId,
+          identificationType: inv.customerIdentificationType,
+          personType:
+            PersonTypeEnum[bp?.personType as keyof typeof PersonTypeEnum] ??
+            PersonTypeEnum.Legal,
+          email: inv.customerEmail,
+          address: inv.customerAddress,
+          phone: null,
+          paymentDays: 0,
+          installments: 0,
+          daysBetweenInstallments: 0,
+          paymentTermId: null,
+        });
 
-      const mappedLines: SalesLineFormValues[] = inv.lines.map((l, i) => ({
-        _key: i + 1,
-        itemId: l.itemId,
-        warehouseId: l.warehouseId,
-        description: l.description,
-        quantity: l.quantity,
-        unitPrice: l.unitPrice,
-        vatCode: l.vatCode,
-        discountPct: l.discountPct,
-        iceCode: l.iceCode,
-        notes: l.notes,
-        _sku: l.snapshotSku ?? undefined,
-        _name: l.snapshotItemName ?? undefined,
-        // El backend solo persiste warehouseId para ítems que controlan stock
-        // (SalesLineBuilder) — su presencia es una señal segura de _tracksStock.
-        _tracksStock: l.warehouseId != null,
-      }));
+        const mappedLines: SalesLineFormValues[] = inv.lines.map((l, i) => ({
+          _key: i + 1,
+          itemId: l.itemId,
+          warehouseId: l.warehouseId,
+          description: l.description,
+          quantity: l.quantity,
+          unitPrice: l.unitPrice,
+          vatCode: l.vatCode,
+          discountPct: l.discountPct,
+          iceCode: l.iceCode,
+          notes: l.notes,
+          _sku: l.snapshotSku ?? undefined,
+          _name: l.snapshotItemName ?? undefined,
+          // El backend solo persiste warehouseId para ítems que controlan stock
+          // (SalesLineBuilder) — su presencia es una señal segura de _tracksStock.
+          _tracksStock: l.warehouseId != null,
+        }));
 
-      const mappedPayments: SalesPaymentFormValues[] = (inv.payments ?? []).map((p, i) => ({
-        _key: i + 1,
-        paymentMethodId: p.paymentMethodId,
-        amount: p.amount,
-        reference: p.reference,
-        cardDetail: p.cardDetail ? nullFieldsToUndefined(p.cardDetail) : undefined,
-        transferDetail: p.transferDetail ? nullFieldsToUndefined(p.transferDetail) : undefined,
-        chequeDetail: p.chequeDetail ? nullFieldsToUndefined(p.chequeDetail) : undefined,
-      }));
+        const mappedPayments: SalesPaymentFormValues[] = (
+          inv.payments ?? []
+        ).map((p, i) => ({
+          _key: i + 1,
+          paymentMethodId: p.paymentMethodId,
+          amount: p.amount,
+          reference: p.reference,
+          cardDetail: p.cardDetail
+            ? nullFieldsToUndefined(p.cardDetail)
+            : undefined,
+          transferDetail: p.transferDetail
+            ? nullFieldsToUndefined(p.transferDetail)
+            : undefined,
+          chequeDetail: p.chequeDetail
+            ? nullFieldsToUndefined(p.chequeDetail)
+            : undefined,
+        }));
 
-      reset({
-        customerId: inv.customerId,
-        issueDate: inv.issueDate,
-        dueDate: inv.dueDate ?? '',
-        notes: inv.notes ?? '',
-        paymentTermId: inv.paymentTermId ?? '',
-        docTypeCode: inv.docTypeCode ?? tenantDefaults?.fallbackDocTypeCode ?? '',
-        sriPaymentMethodCode: inv.sriPaymentMethodCode ?? tenantDefaults?.fallbackSriPaymentMethodCode ?? '',
-        lines: mappedLines,
-        payments: mappedPayments,
-      });
+        reset({
+          customerId: inv.customerId,
+          issueDate: inv.issueDate,
+          dueDate: inv.dueDate ?? "",
+          notes: inv.notes ?? "",
+          paymentTermId: inv.paymentTermId ?? "",
+          docTypeCode:
+            inv.docTypeCode ?? tenantDefaults?.fallbackDocTypeCode ?? "",
+          sriPaymentMethodCode:
+            inv.sriPaymentMethodCode ??
+            tenantDefaults?.fallbackSriPaymentMethodCode ??
+            "",
+          lines: mappedLines,
+          payments: mappedPayments,
+        });
 
-      setLineKey(inv.lines.length + 1);
-      setPayKey((inv.payments?.length ?? 0) + 1);
-      setTab('nuevo');
-    } catch {
-      setSaveError('Error al cargar la factura.');
-    }
-  }, [reset, tenantDefaults]);
+        setLineKey(inv.lines.length + 1);
+        setPayKey((inv.payments?.length ?? 0) + 1);
+        setTab("nuevo");
+      } catch {
+        setSaveError("Error al cargar la factura.");
+      }
+    },
+    [reset, tenantDefaults],
+  );
 
   // ── Draft persistence (compartido por Guardar y por el auto-guardado previo a Emitir) ──
-  const persistDraft = useCallback(async (data: SalesInvoiceFormValues): Promise<SalesInvoiceDto> => {
-    const payload = {
-      customerId: data.customerId,
-      issueDate: data.issueDate || todayIso(),
-      lines: data.lines.map(l => ({
-        itemId: l.itemId,
-        warehouseId: l.warehouseId,
-        description: l.description,
-        quantity: l.quantity,
-        unitPrice: l.unitPrice,
-        vatCode: l.vatCode,
-        discountPct: l.discountPct ?? 0,
-        iceCode: l.iceCode,
-        notes: l.notes,
-      })),
-      dueDate: data.dueDate || null,
-      notes: data.notes || null,
-      paymentTermId: data.paymentTermId || null,
-      docTypeCode: data.docTypeCode || null,
-      sriPaymentMethodCode: data.sriPaymentMethodCode || null,
-      payments: data.payments.map(p => ({
-        paymentMethodId: p.paymentMethodId,
-        amount: p.amount,
-        reference: p.reference,
-        cardDetail: p.cardDetail ?? undefined,
-        transferDetail: p.transferDetail ?? undefined,
-        chequeDetail: p.chequeDetail ?? undefined,
-      })),
-    };
+  const persistDraft = useCallback(
+    async (data: SalesInvoiceFormValues): Promise<SalesInvoiceDto> => {
+      const payload = {
+        customerId: data.customerId,
+        issueDate: data.issueDate || todayIso(),
+        lines: data.lines.map((l) => ({
+          itemId: l.itemId,
+          warehouseId: l.warehouseId,
+          description: l.description,
+          quantity: l.quantity,
+          unitPrice: l.unitPrice,
+          vatCode: l.vatCode,
+          discountPct: l.discountPct ?? 0,
+          iceCode: l.iceCode,
+          notes: l.notes,
+        })),
+        dueDate: data.dueDate || null,
+        notes: data.notes || null,
+        paymentTermId: data.paymentTermId || null,
+        docTypeCode: data.docTypeCode || null,
+        sriPaymentMethodCode: data.sriPaymentMethodCode || null,
+        payments: data.payments.map((p) => ({
+          paymentMethodId: p.paymentMethodId,
+          amount: p.amount,
+          reference: p.reference,
+          cardDetail: p.cardDetail ?? undefined,
+          transferDetail: p.transferDetail ?? undefined,
+          chequeDetail: p.chequeDetail ?? undefined,
+        })),
+      };
 
-    return editing
-      ? salesService.update(editing.id, { ...payload, id: editing.id })
-      : salesService.create(payload);
-  }, [editing]);
+      return editing
+        ? salesService.update(editing.id, { ...payload, id: editing.id })
+        : salesService.create(payload);
+    },
+    [editing],
+  );
 
   // ── Issue flow (Nueva Venta → Emitir Factura → Confirmación → Emisión →
   // Pantalla de éxito) ─────────────────────────────────────────────────
@@ -660,20 +912,20 @@ export function useSalesPage() {
   // por eso, si no existe un Draft aún o hay cambios sin guardar, se
   // persiste automáticamente antes de emitir.
   const openIssueFlow = useCallback(() => {
-    if (!canEmit || issuePhase !== 'idle') return;
+    if (!canEmit || issuePhase !== "idle") return;
     setIssueError(null);
-    setIssuePhase('confirm');
+    setIssuePhase("confirm");
   }, [canEmit, issuePhase]);
 
   const closeIssueFlow = useCallback(() => {
-    if (issuePhase === 'processing') return; // no se puede cerrar mientras se emite
-    setIssuePhase('idle');
+    if (issuePhase === "processing") return; // no se puede cerrar mientras se emite
+    setIssuePhase("idle");
     setIssueError(null);
   }, [issuePhase]);
 
   const confirmIssue = useCallback(async () => {
-    if (issuePhase === 'processing') return; // reentrancia: doble clic en el modal
-    setIssuePhase('processing');
+    if (issuePhase === "processing") return; // reentrancia: doble clic en el modal
+    setIssuePhase("processing");
     setIssueStepIndex(0); // Validando
     setSaving(true);
     try {
@@ -687,17 +939,26 @@ export function useSalesPage() {
           // que se muestre, no en un modal genérico.
           const validationErrors = form.formState.errors;
           const msgs: string[] = [];
-          if (validationErrors.customerId) msgs.push('Seleccione un cliente');
-          if (validationErrors.lines) msgs.push('Agregue al menos un producto');
-          if (validationErrors.issueDate) msgs.push('Fecha de emisión requerida');
-          const fieldErrors = validationErrors.lines as unknown as { message?: string }[] | undefined;
+          if (validationErrors.customerId) msgs.push("Seleccione un cliente");
+          if (validationErrors.lines) msgs.push("Agregue al menos un producto");
+          if (validationErrors.issueDate)
+            msgs.push("Fecha de emisión requerida");
+          const fieldErrors = validationErrors.lines as unknown as
+            { message?: string }[] | undefined;
           if (Array.isArray(fieldErrors)) {
             for (const le of fieldErrors) {
-              if (le?.message) { msgs.push(le.message); break; }
+              if (le?.message) {
+                msgs.push(le.message);
+                break;
+              }
             }
           }
-          setSaveError(msgs.length > 0 ? msgs.join('. ') + '.' : 'Revise los campos del formulario antes de emitir.');
-          setIssuePhase('idle');
+          setSaveError(
+            msgs.length > 0
+              ? msgs.join(". ") + "."
+              : "Revise los campos del formulario antes de emitir.",
+          );
+          setIssuePhase("idle");
           return;
         }
 
@@ -706,9 +967,17 @@ export function useSalesPage() {
         try {
           saved = await persistDraft(getValues());
         } catch (err: unknown) {
-          const applied = applyServerErrors(err, setFieldError, (msg) => setSaveError(msg));
-          if (!applied) setSaveError(extractSafeMessage(err, 'No se pudieron guardar los cambios pendientes.'));
-          setIssuePhase('idle');
+          const applied = applyServerErrors(err, setFieldError, (msg) =>
+            setSaveError(msg),
+          );
+          if (!applied)
+            setSaveError(
+              extractSafeMessage(
+                err,
+                "No se pudieron guardar los cambios pendientes.",
+              ),
+            );
+          setIssuePhase("idle");
           return; // guardado falló — se cancela la emisión, el usuario corrige en el formulario
         }
 
@@ -720,7 +989,10 @@ export function useSalesPage() {
       // Generando XML / Firmando / Enviando al SRI / Consultando autorización
       // ocurren dentro de un único request atómico — se muestran escalonados
       // mientras se espera esa respuesta (ver comentario de ISSUE_STEPS).
-      const stepTimer = simulateRemainingSteps(setIssueStepIndex, ISSUE_STEPS.length - 1);
+      const stepTimer = simulateRemainingSteps(
+        setIssueStepIndex,
+        ISSUE_STEPS.length - 1,
+      );
       let authorized: SalesInvoiceDto;
       try {
         // invoiceId siempre queda definido en este punto: o ya existía
@@ -733,8 +1005,13 @@ export function useSalesPage() {
           // Error de validación de negocio (stock insuficiente, punto de
           // emisión inválido, etc.) — mismo tratamiento que arriba: se
           // resuelve en el formulario, no en el modal de emisión.
-          setSaveError(extractSafeMessage(err, 'Revise los datos de la factura antes de emitir.'));
-          setIssuePhase('idle');
+          setSaveError(
+            extractSafeMessage(
+              err,
+              "Revise los datos de la factura antes de emitir.",
+            ),
+          );
+          setIssuePhase("idle");
           return;
         }
         // Error interno o de comunicación con el SRI: el draft ya existe y
@@ -742,10 +1019,14 @@ export function useSalesPage() {
         // del secuencial y la autorización comparten una única transacción
         // atómica en AuthorizeSalesInvoiceHandler). Reintentar es seguro.
         setIssueError({
-          kind: issueErrorStatus(err) === undefined ? 'communication' : 'internal',
-          message: extractSafeMessage(err, 'Ocurrió un error al emitir la factura. Intente nuevamente o contacte a soporte.'),
+          kind:
+            issueErrorStatus(err) === undefined ? "communication" : "internal",
+          message: extractSafeMessage(
+            err,
+            "Ocurrió un error al emitir la factura. Intente nuevamente o contacte a soporte.",
+          ),
         });
-        setIssuePhase('error');
+        setIssuePhase("error");
         return;
       } finally {
         stepTimer.stop();
@@ -753,12 +1034,23 @@ export function useSalesPage() {
 
       setIssueStepIndex(ISSUE_STEPS.length - 1);
       setIssueResult(authorized);
-      setIssuePhase('success');
+      setIssuePhase("success");
       fetchList(); // refresca el listado en segundo plano — sin recargar la página
     } finally {
       setSaving(false);
     }
-  }, [issuePhase, editing, isDirty, trigger, form, getValues, persistDraft, setFieldError, reset, fetchList]);
+  }, [
+    issuePhase,
+    editing,
+    isDirty,
+    trigger,
+    form,
+    getValues,
+    persistDraft,
+    setFieldError,
+    reset,
+    fetchList,
+  ]);
 
   const retryIssue = useCallback(() => {
     setIssueError(null);
@@ -767,7 +1059,7 @@ export function useSalesPage() {
 
   const startNewSale = useCallback(() => {
     resetForm();
-    setIssuePhase('idle');
+    setIssuePhase("idle");
     setIssueResult(null);
     setIssueError(null);
     setIssueStepIndex(0);
@@ -777,11 +1069,16 @@ export function useSalesPage() {
     if (!issueResult || xmlDownloading) return; // evita descargas simultáneas — igual que RIDE/PDF con ridePending
     setXmlDownloading(true);
     try {
-      const variant: ElectronicDocumentXmlVariant = issueResult.electronicStatus === 'Authorized' ? 'Authorized' : 'Signed';
-      const xml = await electronicDocumentsMonitorService.getXml('Sales', issueResult.id, variant);
+      const variant: ElectronicDocumentXmlVariant =
+        issueResult.electronicStatus === "Authorized" ? "Authorized" : "Signed";
+      const xml = await electronicDocumentsMonitorService.getXml(
+        "Sales",
+        issueResult.id,
+        variant,
+      );
       downloadTextFile(xml, `Factura-${issueResult.invoiceNumber}.xml`);
     } catch (e) {
-      message.error(extractSafeMessage(e, 'No se pudo descargar el XML.'));
+      message.error(extractSafeMessage(e, "No se pudo descargar el XML."));
     }
     setXmlDownloading(false);
   }, [issueResult, xmlDownloading]);
@@ -789,13 +1086,13 @@ export function useSalesPage() {
   // F8: mismo disparador que el botón "Emitir Factura" — única fuente de verdad (canEmit).
   useEffect(() => {
     function onKeyDown(e: KeyboardEvent) {
-      if (e.key !== 'F8') return;
-      if (tab !== 'nuevo' || issuePhase !== 'idle' || !canEmit) return;
+      if (e.key !== "F8") return;
+      if (tab !== "nuevo" || issuePhase !== "idle" || !canEmit) return;
       e.preventDefault();
       openIssueFlow();
     }
-    window.addEventListener('keydown', onKeyDown);
-    return () => window.removeEventListener('keydown', onKeyDown);
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
   }, [tab, issuePhase, canEmit, openIssueFlow]);
 
   // ── Generar documento electrónico (backfill) ───────────────────────
@@ -806,72 +1103,99 @@ export function useSalesPage() {
     if (!editing) return;
     setSaving(true);
     try {
-      const result = await electronicDocumentsMonitorService.register('Invoice', 'Sales', editing.id);
-      if (result.currentState === 'Authorized') {
-        message.success(`Documento electrónico autorizado por el SRI. Clave de acceso: ${result.accessKey}.`);
-      } else if (result.currentState === 'Failed') {
-        message.warning('No se pudo generar el documento electrónico. Revise el Monitor de Documentos Electrónicos para ver el motivo.');
+      const result = await electronicDocumentsMonitorService.register(
+        "Invoice",
+        "Sales",
+        editing.id,
+      );
+      if (result.currentState === "Authorized") {
+        message.success(
+          `Documento electrónico autorizado por el SRI. Clave de acceso: ${result.accessKey}.`,
+        );
+      } else if (result.currentState === "Failed") {
+        message.warning(
+          "No se pudo generar el documento electrónico. Revise el Monitor de Documentos Electrónicos para ver el motivo.",
+        );
       } else {
-        message.warning(`Documento electrónico registrado en estado "${result.currentState}". Revise el Monitor de Documentos Electrónicos.`);
+        message.warning(
+          `Documento electrónico registrado en estado "${result.currentState}". Revise el Monitor de Documentos Electrónicos.`,
+        );
       }
       const refreshed = await salesService.getById(editing.id);
       setEditing(refreshed);
     } catch (e: unknown) {
-      setSaveError(extractSafeMessage(e, 'No se pudo generar el documento electrónico.'));
+      setSaveError(
+        extractSafeMessage(e, "No se pudo generar el documento electrónico."),
+      );
     }
     setSaving(false);
   }, [editing]);
 
   // ── Cancel ─────────────────────────────────────────────────────────
-  const handleCancel = useCallback(async (reason: string) => {
-    setModalCancelReason(false);
-    if (!editing) return;
-    setSaving(true);
-    try {
-      await salesService.cancel(editing.id, reason);
-      message.success('Factura anulada correctamente.');
-      resetForm();
-      setTab('listado');
-      fetchList();
-    } catch (e: unknown) {
-      setSaveError(extractSafeMessage(e, 'Error al anular.'));
-    }
-    setSaving(false);
-  }, [editing, resetForm, fetchList]);
+  const handleCancel = useCallback(
+    async (reason: string) => {
+      setModalCancelReason(false);
+      if (!editing) return;
+      setSaving(true);
+      try {
+        await salesService.cancel(editing.id, reason);
+        message.success("Factura anulada correctamente.");
+        resetForm();
+        setTab("listado");
+        fetchList();
+      } catch (e: unknown) {
+        setSaveError(extractSafeMessage(e, "Error al anular."));
+      }
+      setSaving(false);
+    },
+    [editing, resetForm, fetchList],
+  );
 
   // ── Credit simulation ──────────────────────────────────────────────
-  const simulateCreditInstallments = useCallback((amount: number): CreditRow[] => {
-    if (amount <= 0) return [];
-    const count = selectedPt?.installments ?? customerProfile?.installments ?? 1;
-    const interval = selectedPt?.daysBetweenInstallments ?? customerProfile?.daysBetweenInstallments ?? 30;
-    const factor = 10 ** getDecimalConfig().totalAmount;
-    const base = Math.round((amount / count) * factor) / factor;
-    const rows: CreditRow[] = [];
-    let accumulated = 0;
-    const today = new Date();
-    for (let i = 1; i <= count; i++) {
-      const due = new Date(today);
-      due.setDate(due.getDate() + interval * i);
-      const isLast = i === count;
-      const amt = isLast ? Math.round((amount - accumulated) * factor) / factor : base;
-      rows.push({ number: i, dueDate: toLocalIsoDate(due), amount: amt });
-      accumulated += amt;
-    }
-    return rows;
-  }, [selectedPt, customerProfile]);
+  const simulateCreditInstallments = useCallback(
+    (amount: number): CreditRow[] => {
+      if (amount <= 0) return [];
+      const count =
+        selectedPt?.installments ?? customerProfile?.installments ?? 1;
+      const interval =
+        selectedPt?.daysBetweenInstallments ??
+        customerProfile?.daysBetweenInstallments ??
+        30;
+      const factor = 10 ** getDecimalConfig().totalAmount;
+      const base = Math.round((amount / count) * factor) / factor;
+      const rows: CreditRow[] = [];
+      let accumulated = 0;
+      const today = new Date();
+      for (let i = 1; i <= count; i++) {
+        const due = new Date(today);
+        due.setDate(due.getDate() + interval * i);
+        const isLast = i === count;
+        const amt = isLast
+          ? Math.round((amount - accumulated) * factor) / factor
+          : base;
+        rows.push({ number: i, dueDate: toLocalIsoDate(due), amount: amt });
+        accumulated += amt;
+      }
+      return rows;
+    },
+    [selectedPt, customerProfile],
+  );
 
   // ── Quick customer create/edit ─────────────────────────────────────
-  const openNewCustomerModal = useCallback((text: string) => {
-    setNewCustName(text);
-    setNewCustId('');
-    setNewCustIdType(sriIdTypes[0]?.code ?? '05');
-    setNewCustAddress('');
-    setNewCustEmail('');
-    setNewCustPhone('');
-    setNewCustError('');
-    setNewCustIsEdit(false);
-    setModalNewCustomer(true);
-  }, [sriIdTypes]);
+  const openNewCustomerModal = useCallback(
+    (text: string) => {
+      setNewCustName(text);
+      setNewCustId("");
+      setNewCustIdType(sriIdTypes[0]?.code ?? "05");
+      setNewCustAddress("");
+      setNewCustEmail("");
+      setNewCustPhone("");
+      setNewCustError("");
+      setNewCustIsEdit(false);
+      setModalNewCustomer(true);
+    },
+    [sriIdTypes],
+  );
 
   const openEditCustomerModal = useCallback(() => {
     if (!customerProfile) return;
@@ -879,29 +1203,48 @@ export function useSalesPage() {
     setNewCustName(customerProfile.name);
     setNewCustId(customerProfile.taxId);
     setNewCustIdType(customerProfile.identificationType);
-    setNewCustAddress(customerProfile.address ?? '');
-    setNewCustEmail(customerProfile.email ?? '');
-    setNewCustPhone(customerProfile.phone ?? '');
-    setNewCustError('');
+    setNewCustAddress(customerProfile.address ?? "");
+    setNewCustEmail(customerProfile.email ?? "");
+    setNewCustPhone(customerProfile.phone ?? "");
+    setNewCustError("");
     setModalNewCustomer(true);
   }, [customerProfile]);
 
   const handleSaveQuickCustomer = useCallback(async () => {
     setNewCustSaving(true);
-    setNewCustError('');
+    setNewCustError("");
     try {
-      let bpId = getValues('customerId');
+      let bpId = getValues("customerId");
       const addr = newCustAddress.trim();
       const email = newCustEmail.trim() || null;
       const phone = newCustPhone.trim() || null;
-      const locTypeMap: Record<string, LocationTypeValue> = { Matrix: 1, Branch: 2, Office: 3, Warehouse: 4, DeliveryPoint: 5, Other: 99 };
-      const roleMap: Record<string, ContactRoleValue> = { Commercial: 1, Accounting: 2, Management: 3, Reception: 4, Dispatch: 5, Billing: 6, Technical: 7, Purchasing: 8, Legal: 9, Other: 99 };
+      const locTypeMap: Record<string, LocationTypeValue> = {
+        Matrix: 1,
+        Branch: 2,
+        Office: 3,
+        Warehouse: 4,
+        DeliveryPoint: 5,
+        Other: 99,
+      };
+      const roleMap: Record<string, ContactRoleValue> = {
+        Commercial: 1,
+        Accounting: 2,
+        Management: 3,
+        Reception: 4,
+        Dispatch: 5,
+        Billing: 6,
+        Technical: 7,
+        Purchasing: 8,
+        Legal: 9,
+        Other: 99,
+      };
 
       if (newCustIsEdit) {
         await businessPartnerFacade.updateBusinessPartner(bpId, {
           legalName: newCustName.trim(),
           personType: customerProfile?.personType ?? PersonTypeEnum.Natural,
-          tradeName: null, countryCode: null,
+          tradeName: null,
+          countryCode: null,
         });
       } else {
         const bp = await businessPartnerFacade.createBusinessPartner({
@@ -911,7 +1254,9 @@ export function useSalesPage() {
           legalName: newCustName.trim(),
         });
         bpId = bp.id;
-        await businessPartnerFacade.assignRole(bp.id, { roleType: RoleTypeEnum.Customer });
+        await businessPartnerFacade.assignRole(bp.id, {
+          roleType: RoleTypeEnum.Customer,
+        });
       }
 
       const [locations, contacts] = await Promise.all([
@@ -923,16 +1268,23 @@ export function useSalesPage() {
         if (locations.length > 0) {
           const loc = locations[0];
           const purposeBits = Array.isArray(loc.purposes)
-            ? (loc.purposes.includes('Facturación') ? 1 : 0) | (loc.purposes.includes('Entrega') ? 2 : 0)
-              | (loc.purposes.includes('Fiscal') ? 4 : 0) | (loc.purposes.includes('Correspondencia') ? 8 : 0)
+            ? (loc.purposes.includes("Facturación") ? 1 : 0) |
+              (loc.purposes.includes("Entrega") ? 2 : 0) |
+              (loc.purposes.includes("Fiscal") ? 4 : 0) |
+              (loc.purposes.includes("Correspondencia") ? 8 : 0)
             : 5;
           await businessPartnerFacade.updateLocation(bpId, loc.id, {
-            name: loc.name, type: locTypeMap[loc.locationType] ?? 1,
-            purpose: purposeBits, addressLine: addr,
+            name: loc.name,
+            type: locTypeMap[loc.locationType] ?? 1,
+            purpose: purposeBits,
+            addressLine: addr,
           });
         } else {
           await businessPartnerFacade.createLocation(bpId, {
-            name: 'Principal', type: 1, purpose: 5, addressLine: addr,
+            name: "Principal",
+            type: 1,
+            purpose: 5,
+            addressLine: addr,
           });
         }
       }
@@ -941,91 +1293,194 @@ export function useSalesPage() {
         if (contacts.length > 0) {
           const ct = contacts[0];
           await businessPartnerFacade.updateContact(bpId, ct.id, {
-            firstName: ct.firstName, role: roleMap[ct.contactRole] ?? 1,
-            phone, email,
+            firstName: ct.firstName,
+            role: roleMap[ct.contactRole] ?? 1,
+            phone,
+            email,
           });
         } else {
           await businessPartnerFacade.createContact(bpId, {
-            firstName: newCustName.trim().split(' ')[0],
-            role: 1, phone, email, isPrimary: true,
+            firstName: newCustName.trim().split(" ")[0],
+            role: 1,
+            phone,
+            email,
+            isPrimary: true,
           });
         }
       }
 
-      setValue('customerId', bpId, { shouldValidate: true, shouldDirty: true });
+      setValue("customerId", bpId, { shouldValidate: true, shouldDirty: true });
       const profile = await loadCustomerProfile(bpId);
       setCustomerProfile(profile);
       setModalNewCustomer(false);
     } catch (e: any) {
       setNewCustError(
-        e?.response?.data?.message?.user
-        ?? e?.response?.data?.data?.errors?.[Object.keys(e?.response?.data?.data?.errors ?? {})[0]]?.[0]
-        ?? e?.message
-        ?? 'Error al guardar.',
+        e?.response?.data?.message?.user ??
+          e?.response?.data?.data?.errors?.[
+            Object.keys(e?.response?.data?.data?.errors ?? {})[0]
+          ]?.[0] ??
+          e?.message ??
+          "Error al guardar.",
       );
     }
     setNewCustSaving(false);
-  }, [newCustIsEdit, newCustName, newCustId, newCustIdType, newCustAddress, newCustEmail, newCustPhone, customerProfile, getValues, setValue, loadCustomerProfile]);
+  }, [
+    newCustIsEdit,
+    newCustName,
+    newCustId,
+    newCustIdType,
+    newCustAddress,
+    newCustEmail,
+    newCustPhone,
+    customerProfile,
+    getValues,
+    setValue,
+    loadCustomerProfile,
+  ]);
 
   // ── Return ─────────────────────────────────────────────────────────
   return {
     // Page
-    tab, setTab, listItems, listLoading, listSearch, setListSearch,
-    saving, saveError, setSaveError, editing,
+    tab,
+    setTab,
+    listItems,
+    listLoading,
+    listSearch,
+    setListSearch,
+    saving,
+    saveError,
+    setSaveError,
+    editing,
 
     // Form (RHF)
-    form, register, control, errors, formWatch, setValue, getValues, reset,
+    form,
+    register,
+    control,
+    errors,
+    formWatch,
+    setValue,
+    getValues,
+    reset,
 
     // Lines
-    lines, addLineWithItem, removeLine, updateLine, lineKey, handleWarehouseChange, onUpdateLineWarehouse,
+    lines,
+    addLineWithItem,
+    removeLine,
+    updateLine,
+    lineKey,
+    handleWarehouseChange,
+    onUpdateLineWarehouse,
 
     // Payments
-    payments, setInvoicePayments, payKey, setPayKey,
+    payments,
+    setInvoicePayments,
+    payKey,
+    setPayKey,
     paymentMethods,
 
     // Customer
-    customerProfile, setCustomerProfile,
+    customerProfile,
+    setCustomerProfile,
     handleCustomerChange,
 
     // Reference data
-    paymentTermsList, warehouses, selectedWarehouseId, setSelectedWarehouseId,
-    vatRatesMap, iceRatesMap, sriDocTypes, sriPaymentMethods, sriIdTypes,
+    paymentTermsList,
+    warehouses,
+    selectedWarehouseId,
+    setSelectedWarehouseId,
+    vatRatesMap,
+    iceRatesMap,
+    sriDocTypes,
+    sriPaymentMethods,
+    sriIdTypes,
 
     // Cash session (contexto operativo POS — ICurrentCashSession vía GET /cash-sessions/my)
-    hasCashSession, myCashSession, branchName,
+    hasCashSession,
+    myCashSession,
+    branchName,
 
     // Derived
-    isDraft, readOnly, fieldDisabled, canEmit, paymentOk, summary, grandTotal, totalDiscount,
-    taxBreakdown, isElectronic, selectedPt,
+    isDraft,
+    readOnly,
+    fieldDisabled,
+    canEmit,
+    paymentOk,
+    summary,
+    grandTotal,
+    totalDiscount,
+    taxBreakdown,
+    isElectronic,
+    selectedPt,
 
     // Actions
-    fetchList, resetForm, clearForm, loadForEdit, handleCancel,
+    fetchList,
+    resetForm,
+    clearForm,
+    loadForEdit,
+    handleCancel,
     handleGenerateElectronicDocument,
 
     // Issue flow (Nueva Venta → Emitir Factura → Confirmación → Emisión → Éxito)
-    issuePhase, issueStepIndex, issueResult, issueError, xmlDownloading, productSearchFocusKey,
-    openIssueFlow, closeIssueFlow, confirmIssue, retryIssue, startNewSale, handleDownloadXml,
+    issuePhase,
+    issueStepIndex,
+    issueResult,
+    issueError,
+    xmlDownloading,
+    productSearchFocusKey,
+    openIssueFlow,
+    closeIssueFlow,
+    confirmIssue,
+    retryIssue,
+    startNewSale,
+    handleDownloadXml,
 
     // Modals
-    modalCancelReason, setModalCancelReason,
-    modalNewCustomer, setModalNewCustomer,
-    modalDetail, setModalDetail,
-    modalCredit, setModalCredit,
+    modalCancelReason,
+    setModalCancelReason,
+    modalNewCustomer,
+    setModalNewCustomer,
+    modalDetail,
+    setModalDetail,
+    modalCredit,
+    setModalCredit,
 
     // Quick customer
-    newCustId, setNewCustId, newCustName, setNewCustName,
-    newCustIdType, setNewCustIdType, newCustAddress, setNewCustAddress,
-    newCustEmail, setNewCustEmail, newCustPhone, setNewCustPhone,
-    newCustIsEdit, newCustSaving, newCustError,
-    openNewCustomerModal, openEditCustomerModal, handleSaveQuickCustomer,
+    newCustId,
+    setNewCustId,
+    newCustName,
+    setNewCustName,
+    newCustIdType,
+    setNewCustIdType,
+    newCustAddress,
+    setNewCustAddress,
+    newCustEmail,
+    setNewCustEmail,
+    newCustPhone,
+    setNewCustPhone,
+    newCustIsEdit,
+    newCustSaving,
+    newCustError,
+    openNewCustomerModal,
+    openEditCustomerModal,
+    handleSaveQuickCustomer,
 
     // Payment detail modal
-    detailMethodId, setDetailMethodId, detailMethodType, setDetailMethodType,
-    detailMethodName, setDetailMethodName, detailRows, setDetailRows,
-    detailKey, setDetailKey,
+    detailMethodId,
+    setDetailMethodId,
+    detailMethodType,
+    setDetailMethodType,
+    detailMethodName,
+    setDetailMethodName,
+    detailRows,
+    setDetailRows,
+    detailKey,
+    setDetailKey,
 
     // Credit modal
-    creditAmount, setCreditAmount, creditRows, setCreditRows,
+    creditAmount,
+    setCreditAmount,
+    creditRows,
+    setCreditRows,
     simulateCreditInstallments,
   };
 }

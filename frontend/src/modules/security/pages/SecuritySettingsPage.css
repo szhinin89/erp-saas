@@ -1,5 +1,7 @@
 /* SecuritySettingsPage — tabla de permisos por usuario */
-.security-scroll { overflow-x: auto; }
+.security-scroll {
+  overflow-x: auto;
+}
 
 .security-table {
   border-collapse: collapse;
@@ -29,7 +31,9 @@
   min-width: 160px;
   z-index: 1;
 }
-.security-table th.sticky-col { background: var(--color-surface-primary-tint); }
+.security-table th.sticky-col {
+  background: var(--color-surface-primary-tint);
+}
 
 .userCell {
   display: flex;

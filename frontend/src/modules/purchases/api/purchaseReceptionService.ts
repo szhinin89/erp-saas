@@ -1,15 +1,17 @@
-import { apiGet, apiPost } from '../../lib/apiEnvelope';
+import { apiGet, apiPost } from "../../lib/apiEnvelope";
 
-const BASE = '/api/v1/purchases/reception';
+const BASE = "/api/v1/purchases/reception";
 
-export type ItemMatchStatus = 'PENDING' | 'NEEDS_REVIEW' | 'AUTO_MATCHED' | 'MANUALLY_MATCHED';
+export type ItemMatchStatus =
+  "PENDING" | "NEEDS_REVIEW" | "AUTO_MATCHED" | "MANUALLY_MATCHED";
 
 /**
  * Eje independiente del estado fiscal (`documentStatus`): mide si pudimos interpretar el
  * CONTENIDO del XML ya autorizado. Un documento `VERIFIED` puede tener `processingStatus` `FAILED`
  * — el comprobante es fiscalmente válido aunque su detalle no se haya podido interpretar.
  */
-export type ProcessingStatus = 'PENDING' | 'PROCESSED' | 'PROCESSED_WITH_WARNINGS' | 'FAILED';
+export type ProcessingStatus =
+  "PENDING" | "PROCESSED" | "PROCESSED_WITH_WARNINGS" | "FAILED";
 
 export interface ItemMatchCandidate {
   itemId: string;
@@ -55,11 +57,11 @@ export interface PurchaseReceptionItem {
   total: number;
   supplierExists: boolean;
   purchaseExists: boolean;
-  status: 'IMPORTED' | 'PENDING' | 'NEW_SUPPLIER';
+  status: "IMPORTED" | "PENDING" | "NEW_SUPPLIER";
   /** Id del PurchaseReceptionDocument persistido (Fase 2) — ya no es solo una vista en memoria. */
   documentId: string;
   /** Estado de ciclo de vida del documento persistido, no confundir con `status` (verificación proveedor/compra). */
-  documentStatus: 'IMPORTED' | 'VERIFIED' | 'PROCESSED' | 'CANCELLED';
+  documentStatus: "IMPORTED" | "VERIFIED" | "PROCESSED" | "CANCELLED";
   /** Estado de interpretación del detalle XML — independiente de `documentStatus`. */
   processingStatus: ProcessingStatus;
   /** Resumen legible de advertencias/errores de procesamiento — null si no hay ninguna. */
@@ -75,7 +77,7 @@ export interface PurchaseReceptionImportResult {
 
 export interface DownloadXmlResult {
   documentId: string;
-  status: PurchaseReceptionItem['documentStatus'];
+  status: PurchaseReceptionItem["documentStatus"];
   xmlDownloaded: boolean;
   authorizationNumber: string | null;
   authorizationDate: string | null;
@@ -133,12 +135,15 @@ export interface PurchaseDraftDto {
 }
 
 export const purchaseReceptionService = {
-  importTxt(file: File, onProgress?: (percent: number) => void): Promise<PurchaseReceptionImportResult> {
+  importTxt(
+    file: File,
+    onProgress?: (percent: number) => void,
+  ): Promise<PurchaseReceptionImportResult> {
     const formData = new FormData();
-    formData.append('file', file);
+    formData.append("file", file);
 
     return apiPost<PurchaseReceptionImportResult>(`${BASE}/import`, formData, {
-      headers: { 'Content-Type': 'multipart/form-data' },
+      headers: { "Content-Type": "multipart/form-data" },
       onUploadProgress: (event) => {
         if (!onProgress || !event.total) return;
         onProgress(Math.round((event.loaded / event.total) * 100));
@@ -163,15 +168,29 @@ export const purchaseReceptionService = {
     return apiGet<PurchaseReceptionLineMatch>(`${BASE}/lines/${lineId}`);
   },
 
-  matchItem(lineId: string, itemId: string): Promise<PurchaseReceptionLineMatch> {
-    return apiPost<PurchaseReceptionLineMatch>(`${BASE}/lines/${lineId}/match-item`, { itemId });
+  matchItem(
+    lineId: string,
+    itemId: string,
+  ): Promise<PurchaseReceptionLineMatch> {
+    return apiPost<PurchaseReceptionLineMatch>(
+      `${BASE}/lines/${lineId}/match-item`,
+      { itemId },
+    );
   },
 
   unmatchItem(lineId: string): Promise<PurchaseReceptionLineMatch> {
-    return apiPost<PurchaseReceptionLineMatch>(`${BASE}/lines/${lineId}/unmatch-item`, {});
+    return apiPost<PurchaseReceptionLineMatch>(
+      `${BASE}/lines/${lineId}/unmatch-item`,
+      {},
+    );
   },
 
-  bulkMatch(matches: BulkMatchEntry[]): Promise<{ results: BulkMatchResultEntry[] }> {
-    return apiPost<{ results: BulkMatchResultEntry[] }>(`${BASE}/matching/bulk`, matches);
+  bulkMatch(
+    matches: BulkMatchEntry[],
+  ): Promise<{ results: BulkMatchResultEntry[] }> {
+    return apiPost<{ results: BulkMatchResultEntry[] }>(
+      `${BASE}/matching/bulk`,
+      matches,
+    );
   },
 };

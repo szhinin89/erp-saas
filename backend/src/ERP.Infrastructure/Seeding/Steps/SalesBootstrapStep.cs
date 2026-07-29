@@ -163,7 +163,7 @@ public sealed partial class SalesBootstrapStep : ICompanyBootstrapStep
             tenantId: tenantId,
             identificationType: TaxIdentification.SriConsumidorFinal,
             identificationNumber: TaxIdentification.ConsumidorFinalNumber,
-            personType: PersonType.Natural,
+            legalEntityTypeCode: 1,
             legalName: ConsumidorFinalName,
             createdBy: actorId,
             countryCode: iso2CountryCode

@@ -1,5 +1,5 @@
-import type { FieldValues, Path, UseFormSetError } from 'react-hook-form';
-import { parseValidationErrors } from './apiError';
+import type { FieldValues, Path, UseFormSetError } from "react-hook-form";
+import { parseValidationErrors } from "./apiError";
 
 /**
  * Aplica errores 422 del servidor a campos de un formulario React Hook Form.
@@ -17,13 +17,13 @@ export function applyServerErrors<T extends FieldValues>(
 
   let applied = false;
   for (const [field, messages] of Object.entries(fieldErrors)) {
-    if (field === '_' || !messages.length) continue;
-    setError(field as Path<T>, { type: 'server', message: messages[0] });
+    if (field === "_" || !messages.length) continue;
+    setError(field as Path<T>, { type: "server", message: messages[0] });
     applied = true;
   }
 
-  if (!applied && fieldErrors['_']?.length && fallback) {
-    fallback(fieldErrors['_'][0]);
+  if (!applied && fieldErrors["_"]?.length && fallback) {
+    fallback(fieldErrors["_"][0]);
     // Fallback handled the error — signal success so the caller doesn't override it.
     return true;
   }

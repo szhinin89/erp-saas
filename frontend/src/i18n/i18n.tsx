@@ -2,8 +2,20 @@
 /**
  * i18n: es / en / **qu** donde **qu** = Kichwa de Cañar (Ecuador); ver `dictionaries.ts`.
  */
-import React, { createContext, useCallback, useContext, useMemo, useState } from 'react';
-import { dictionaries, defaultLocale, safeGetStoredLocale, storageKey, type Locale } from './dictionaries';
+import React, {
+  createContext,
+  useCallback,
+  useContext,
+  useMemo,
+  useState,
+} from "react";
+import {
+  dictionaries,
+  defaultLocale,
+  safeGetStoredLocale,
+  storageKey,
+  type Locale,
+} from "./dictionaries";
 
 type TParams = Record<string, string | number>;
 
@@ -18,7 +30,9 @@ type I18nContextValue = {
 const I18nContext = createContext<I18nContextValue | null>(null);
 
 export function I18nProvider({ children }: { children: React.ReactNode }) {
-  const [locale, setLocaleState] = useState<Locale>(() => safeGetStoredLocale());
+  const [locale, setLocaleState] = useState<Locale>(() =>
+    safeGetStoredLocale(),
+  );
 
   const setLocale = useCallback((next: Locale) => {
     setLocaleState(next);
@@ -28,8 +42,11 @@ export function I18nProvider({ children }: { children: React.ReactNode }) {
   const t = useCallback<TFunction>(
     (key, fallbackOrParams) => {
       const dict = dictionaries[locale] ?? dictionaries[defaultLocale];
-      let text = dict[key] ?? (typeof fallbackOrParams === 'string' ? fallbackOrParams : undefined) ?? key;
-      if (fallbackOrParams && typeof fallbackOrParams === 'object') {
+      let text =
+        dict[key] ??
+        (typeof fallbackOrParams === "string" ? fallbackOrParams : undefined) ??
+        key;
+      if (fallbackOrParams && typeof fallbackOrParams === "object") {
         for (const [param, value] of Object.entries(fallbackOrParams)) {
           text = text.replaceAll(`{{${param}}}`, String(value));
         }
@@ -39,14 +56,16 @@ export function I18nProvider({ children }: { children: React.ReactNode }) {
     [locale],
   );
 
-  const value = useMemo<I18nContextValue>(() => ({ locale, setLocale, t }), [locale, setLocale, t]);
+  const value = useMemo<I18nContextValue>(
+    () => ({ locale, setLocale, t }),
+    [locale, setLocale, t],
+  );
 
   return <I18nContext.Provider value={value}>{children}</I18nContext.Provider>;
 }
 
 export function useI18n() {
   const ctx = useContext(I18nContext);
-  if (!ctx) throw new Error('useI18n must be used within I18nProvider');
+  if (!ctx) throw new Error("useI18n must be used within I18nProvider");
   return ctx;
 }
-

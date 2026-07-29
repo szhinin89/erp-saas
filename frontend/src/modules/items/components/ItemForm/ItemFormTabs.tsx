@@ -1,46 +1,70 @@
-import { useState, useEffect } from 'react';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { useForm, FormProvider, type Resolver } from 'react-hook-form';
-import { applyServerErrors } from '../../../lib/validationErrors';
-import { formatApiRequestError } from '../../../lib/apiError';
-import { ZHBtn } from '../../../../components/zh/ZHForm';
-import { ZHPageNotice } from '../../../../components/zh/ZHPageNotice';
-import { ZHTabBar } from '../../../../components/zh/ZHTabBar';
-import { LoadingState } from '../../../../components/PageShell';
-import { useI18n } from '../../../../i18n/i18n';
-import { useAsync } from '../../../../hooks/useAsync';
-import { apiGet } from '../../../lib/apiEnvelope';
-import { useItemTypeOptions } from '../../hooks/useItemTypeOptions';
-import { useItemDetailPage } from '../../detail/hooks/useItemDetail';
-import { VariantsSection } from '../../detail/components/VariantsSection';
-import { ImagesSection, SubstitutesSection, PackagingLevelsSection } from '../../detail/components/CollectionSection';
-import { ProfitabilitySection } from '../../detail/components/ProfitabilitySection';
+import { useState, useEffect } from "react";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm, FormProvider, type Resolver } from "react-hook-form";
+import { applyServerErrors } from "../../../lib/validationErrors";
+import { formatApiRequestError } from "../../../lib/apiError";
+import { ZHBtn } from "../../../../components/zh/ZHForm";
+import { ZHPageNotice } from "../../../../components/zh/ZHPageNotice";
+import { ZHTabBar } from "../../../../components/zh/ZHTabBar";
+import { LoadingState } from "../../../../components/PageShell";
+import { useI18n } from "../../../../i18n/i18n";
+import { useAsync } from "../../../../hooks/useAsync";
+import { apiGet } from "../../../lib/apiEnvelope";
+import { useItemTypeOptions } from "../../hooks/useItemTypeOptions";
+import { useItemDetailPage } from "../../detail/hooks/useItemDetail";
+import { VariantsSection } from "../../detail/components/VariantsSection";
+import {
+  ImagesSection,
+  SubstitutesSection,
+  PackagingLevelsSection,
+} from "../../detail/components/CollectionSection";
+import { ProfitabilitySection } from "../../detail/components/ProfitabilitySection";
 import {
   createItemSchema,
   updateItemSchema,
   defaultCreateItemValues,
   type CreateItemFormValues,
-} from '../../schemas/createItemSchema';
-import { GeneralTab } from './GeneralTab';
-import { PricingTab } from './PricingTab';
-import { TaxConfigTab } from './TaxConfigTab';
-import { SettingsTab } from './SettingsTab';
-import { InventoryTab } from './InventoryTab';
-import { BarcodeListEditor } from './BarcodeListEditor';
-import { SupplierCodesSection } from './SupplierCodesSection';
-import type { ItemDetailDto } from '../../../../types/items';
+} from "../../schemas/createItemSchema";
+import { GeneralTab } from "./GeneralTab";
+import { PricingTab } from "./PricingTab";
+import { TaxConfigTab } from "./TaxConfigTab";
+import { SettingsTab } from "./SettingsTab";
+import { InventoryTab } from "./InventoryTab";
+import { BarcodeListEditor } from "./BarcodeListEditor";
+import { SupplierCodesSection } from "./SupplierCodesSection";
+import type { ItemDetailDto } from "../../../../types/items";
 
-type TabId = 'general' | 'settings' | 'inventory' | 'variants' | 'images' | 'packaging' | 'substitutes' | 'profitability';
+type TabId =
+  | "general"
+  | "settings"
+  | "inventory"
+  | "variants"
+  | "images"
+  | "packaging"
+  | "substitutes"
+  | "profitability";
 
 const TABS: { id: TabId; labelKey: string; labelFb: string }[] = [
-  { id: 'general',       labelKey: 'items.tabs.general',       labelFb: 'Información General' },
-  { id: 'settings',      labelKey: 'items.tabs.settings',      labelFb: 'Configuración' },
-  { id: 'inventory',     labelKey: 'items.tabs.inventory',     labelFb: 'Inventario' },
-  { id: 'variants',      labelKey: 'items.tabs.variants',      labelFb: 'Variantes' },
-  { id: 'images',        labelKey: 'items.tabs.images',        labelFb: 'Imágenes' },
-  { id: 'packaging',     labelKey: 'items.tabs.packaging',     labelFb: 'Empaques' },
-  { id: 'substitutes',   labelKey: 'items.tabs.substitutes',   labelFb: 'Sustitutos' },
-  { id: 'profitability', labelKey: 'items.tabs.profitability', labelFb: 'Rentabilidad' },
+  {
+    id: "general",
+    labelKey: "items.tabs.general",
+    labelFb: "Información General",
+  },
+  { id: "settings", labelKey: "items.tabs.settings", labelFb: "Configuración" },
+  { id: "inventory", labelKey: "items.tabs.inventory", labelFb: "Inventario" },
+  { id: "variants", labelKey: "items.tabs.variants", labelFb: "Variantes" },
+  { id: "images", labelKey: "items.tabs.images", labelFb: "Imágenes" },
+  { id: "packaging", labelKey: "items.tabs.packaging", labelFb: "Empaques" },
+  {
+    id: "substitutes",
+    labelKey: "items.tabs.substitutes",
+    labelFb: "Sustitutos",
+  },
+  {
+    id: "profitability",
+    labelKey: "items.tabs.profitability",
+    labelFb: "Rentabilidad",
+  },
 ];
 
 /** Mapea el DTO ya cargado (fuente única) a los valores del formulario RHF. */
@@ -100,9 +124,15 @@ type Props = {
   onCancel?: () => void;
 };
 
-export function ItemFormTabs({ submitting, itemId, disabled = false, onSubmit, onCancel }: Props) {
+export function ItemFormTabs({
+  submitting,
+  itemId,
+  disabled = false,
+  onSubmit,
+  onCancel,
+}: Props) {
   const { t } = useI18n();
-  const [activeTab, setActiveTab] = useState<TabId>('general');
+  const [activeTab, setActiveTab] = useState<TabId>("general");
   const [formError, setFormError] = useState<string | null>(null);
   const isEditMode = !!itemId;
 
@@ -116,53 +146,81 @@ export function ItemFormTabs({ submitting, itemId, disabled = false, onSubmit, o
 
   // CONTRACT: GET /api/v1/catalog/brands — implemented in CatalogController
   const brandsState = useAsync(() =>
-    apiGet<{ id: string; name: string }[]>('/api/v1/catalog/brands').catch(() => [] as { id: string; name: string }[])
+    apiGet<{ id: string; name: string }[]>("/api/v1/catalog/brands").catch(
+      () => [] as { id: string; name: string }[],
+    ),
   );
   const brandOptions = brandsState.data ?? [];
 
   const categoriesState = useAsync(() =>
-    apiGet<{ nodes: { id: string; name: string; code: string; level: string; path: string; parentId: string | null; isActive: boolean }[] }>('/api/v1/catalog/category-nodes').catch(() => ({ nodes: [] }))
+    apiGet<{
+      nodes: {
+        id: string;
+        name: string;
+        code: string;
+        level: string;
+        path: string;
+        parentId: string | null;
+        isActive: boolean;
+      }[];
+    }>("/api/v1/catalog/category-nodes").catch(() => ({ nodes: [] })),
   );
   const allNodes = categoriesState.data?.nodes ?? [];
-  const nodesById = new Map(allNodes.map(n => [n.id, n]));
-  const parentIds = new Set(allNodes.filter(n => n.isActive).map(n => n.parentId).filter(Boolean));
+  const nodesById = new Map(allNodes.map((n) => [n.id, n]));
+  const parentIds = new Set(
+    allNodes
+      .filter((n) => n.isActive)
+      .map((n) => n.parentId)
+      .filter(Boolean),
+  );
 
   // Breadcrumb: usa `path` (ids separados por "/") para mostrar la ruta completa
   // "Línea > Categoría > Subcategoría", evitando ambigüedad entre hojas del mismo
   // nombre en ramas distintas del árbol.
   const breadcrumb = (node: { path: string; name: string }) =>
     node.path
-      .split('/')
+      .split("/")
       .filter(Boolean)
-      .map(id => nodesById.get(id)?.name)
+      .map((id) => nodesById.get(id)?.name)
       .filter(Boolean)
-      .join(' > ') || node.name;
+      .join(" > ") || node.name;
 
   const categoryOptions = allNodes
-    .filter(n => n.isActive && !parentIds.has(n.id))
-    .map(c => ({ id: c.id, name: breadcrumb(c), depth: 0 }));
+    .filter((n) => n.isActive && !parentIds.has(n.id))
+    .map((c) => ({ id: c.id, name: breadcrumb(c), depth: 0 }));
 
   const sriUomState = useAsync(() =>
-    apiGet<{ code: string; name: string; abbrev: string | null }[]>('/api/v1/catalog/sri-uom').catch(() => [])
+    apiGet<{ code: string; name: string; abbrev: string | null }[]>(
+      "/api/v1/catalog/sri-uom",
+    ).catch(() => []),
   );
   const sriUomOptions = sriUomState.data ?? [];
 
   const vatRateState = useAsync(() =>
-    apiGet<{ code: string; name: string; percentage: number }[]>('/api/v1/catalog/sri-vat-rates').catch(() => [])
+    apiGet<{ code: string; name: string; percentage: number }[]>(
+      "/api/v1/catalog/sri-vat-rates",
+    ).catch(() => []),
   );
   const vatRateOptions = vatRateState.data ?? [];
 
   const iceRateState = useAsync(() =>
-    apiGet<{ code: string; name: string; percentage: number }[]>('/api/v1/catalog/sri-ice-rates').catch(() => [])
+    apiGet<{ code: string; name: string; percentage: number }[]>(
+      "/api/v1/catalog/sri-ice-rates",
+    ).catch(() => []),
   );
   const iceRateOptions = iceRateState.data ?? [];
 
   const itemTypesState = useItemTypeOptions();
-  const itemTypeOptions = (itemTypesState.data ?? []).map(it => ({ id: it.id, name: it.name }));
+  const itemTypeOptions = (itemTypesState.data ?? []).map((it) => ({
+    id: it.id,
+    name: it.name,
+  }));
 
   // CONTRACT: GET /api/v1/catalog/barcode-types — catálogo global de solo lectura
   const barcodeTypesState = useAsync(() =>
-    apiGet<{ code: string; name: string }[]>('/api/v1/catalog/barcode-types').catch(() => [])
+    apiGet<{ code: string; name: string }[]>(
+      "/api/v1/catalog/barcode-types",
+    ).catch(() => []),
   );
   const barcodeTypeOptions = barcodeTypesState.data ?? [];
 
@@ -188,15 +246,22 @@ export function ItemFormTabs({ submitting, itemId, disabled = false, onSubmit, o
   useEffect(() => {
     if (!detail.item) return;
     const item = detail.item;
-    if (brandOptions.length > 0) form.setValue('brandId', item.brandId ?? '');
-    if (categoryOptions.length > 0) form.setValue('categoryNodeId', item.categoryNodeId ?? '');
-    if (sriUomOptions.length > 0) form.setValue('defaultUomCode', item.defaultUomCode);
-    if (itemTypeOptions.length > 0) form.setValue('itemTypeId', item.itemTypeId);
+    if (brandOptions.length > 0) form.setValue("brandId", item.brandId ?? "");
+    if (categoryOptions.length > 0)
+      form.setValue("categoryNodeId", item.categoryNodeId ?? "");
+    if (sriUomOptions.length > 0)
+      form.setValue("defaultUomCode", item.defaultUomCode);
+    if (itemTypeOptions.length > 0)
+      form.setValue("itemTypeId", item.itemTypeId);
     if (vatRateOptions.length > 0) {
-      form.setValue('taxConfig.saleVatCode', item.taxConfig.saleVatCode);
-      form.setValue('taxConfig.purchaseVatCode', item.taxConfig.purchaseVatCode);
+      form.setValue("taxConfig.saleVatCode", item.taxConfig.saleVatCode);
+      form.setValue(
+        "taxConfig.purchaseVatCode",
+        item.taxConfig.purchaseVatCode,
+      );
     }
-    if (iceRateOptions.length > 0) form.setValue('taxConfig.exciseTaxCode', item.taxConfig.exciseTaxCode);
+    if (iceRateOptions.length > 0)
+      form.setValue("taxConfig.exciseTaxCode", item.taxConfig.exciseTaxCode);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     detail.item,
@@ -213,8 +278,18 @@ export function ItemFormTabs({ submitting, itemId, disabled = false, onSubmit, o
     try {
       await onSubmit(values);
     } catch (err) {
-      const applied = applyServerErrors(err, form.setError, (msg) => setFormError(msg));
-      if (!applied) setFormError(formatApiRequestError(err, { generic: t('common.saveError', 'Error al guardar. Revisa los datos.') }));
+      const applied = applyServerErrors(err, form.setError, (msg) =>
+        setFormError(msg),
+      );
+      if (!applied)
+        setFormError(
+          formatApiRequestError(err, {
+            generic: t(
+              "common.saveError",
+              "Error al guardar. Revisa los datos.",
+            ),
+          }),
+        );
     }
   };
 
@@ -226,20 +301,25 @@ export function ItemFormTabs({ submitting, itemId, disabled = false, onSubmit, o
     const errorKeys = Object.keys(errors) as (keyof CreateItemFormValues)[];
     // maxDiscountPercent vive en 'general' (Comercial); el resto de saleConfig (canales) en 'settings'.
     const saleConfigErrorKeys = errors.saleConfig
-      ? (Object.keys(errors.saleConfig) as (keyof CreateItemFormValues['saleConfig'])[])
+      ? (Object.keys(
+          errors.saleConfig,
+        ) as (keyof CreateItemFormValues["saleConfig"])[])
       : [];
-    const maxDiscountKey: keyof CreateItemFormValues['saleConfig'] = 'maxDiscountPercent';
-    const onlyMaxDiscountError = saleConfigErrorKeys.length > 0 && saleConfigErrorKeys.every(k => k === maxDiscountKey);
+    const maxDiscountKey: keyof CreateItemFormValues["saleConfig"] =
+      "maxDiscountPercent";
+    const onlyMaxDiscountError =
+      saleConfigErrorKeys.length > 0 &&
+      saleConfigErrorKeys.every((k) => k === maxDiscountKey);
 
-    const stockConfigKey: keyof CreateItemFormValues = 'stockConfig';
-    const saleConfigKey: keyof CreateItemFormValues = 'saleConfig';
+    const stockConfigKey: keyof CreateItemFormValues = "stockConfig";
+    const saleConfigKey: keyof CreateItemFormValues = "saleConfig";
 
     if (errorKeys.includes(stockConfigKey)) {
-      setActiveTab('inventory');
+      setActiveTab("inventory");
     } else if (errorKeys.includes(saleConfigKey) && !onlyMaxDiscountError) {
-      setActiveTab('settings');
+      setActiveTab("settings");
     } else {
-      setActiveTab('general');
+      setActiveTab("general");
     }
   };
 
@@ -255,14 +335,23 @@ export function ItemFormTabs({ submitting, itemId, disabled = false, onSubmit, o
         {formError && <ZHPageNotice variant="error" message={formError} />}
 
         <ZHTabBar
-          tabs={TABS.map(tab => ({ id: tab.id, label: t(tab.labelKey, tab.labelFb) }))}
+          tabs={TABS.map((tab) => ({
+            id: tab.id,
+            label: t(tab.labelKey, tab.labelFb),
+          }))}
           activeTab={activeTab}
           onChange={setActiveTab}
           fill
         />
 
-        <form onSubmit={disabled ? (e) => e.preventDefault() : form.handleSubmit(handleSubmit, handleSubmitError)}>
-          {activeTab === 'general' && (
+        <form
+          onSubmit={
+            disabled
+              ? (e) => e.preventDefault()
+              : form.handleSubmit(handleSubmit, handleSubmitError)
+          }
+        >
+          {activeTab === "general" && (
             <>
               <GeneralTab
                 t={t}
@@ -275,7 +364,11 @@ export function ItemFormTabs({ submitting, itemId, disabled = false, onSubmit, o
               />
               {!isEditMode && (
                 <>
-                  <BarcodeListEditor t={t} disabled={fieldsDisabled} barcodeTypeOptions={barcodeTypeOptions} />
+                  <BarcodeListEditor
+                    t={t}
+                    disabled={fieldsDisabled}
+                    barcodeTypeOptions={barcodeTypeOptions}
+                  />
                   <SupplierCodesSection t={t} disabled={fieldsDisabled} />
                 </>
               )}
@@ -285,13 +378,18 @@ export function ItemFormTabs({ submitting, itemId, disabled = false, onSubmit, o
                 vatRateOptions={vatRateOptions}
                 iceRateOptions={iceRateOptions}
               />
-              <PricingTab t={t} disabled={fieldsDisabled} isEditMode={isEditMode} itemId={itemId} />
+              <PricingTab
+                t={t}
+                disabled={fieldsDisabled}
+                isEditMode={isEditMode}
+                itemId={itemId}
+              />
             </>
           )}
-          {activeTab === 'settings' && (
+          {activeTab === "settings" && (
             <SettingsTab t={t} disabled={fieldsDisabled} />
           )}
-          {activeTab === 'inventory' && (
+          {activeTab === "inventory" && (
             <InventoryTab
               t={t}
               disabled={fieldsDisabled}
@@ -300,46 +398,103 @@ export function ItemFormTabs({ submitting, itemId, disabled = false, onSubmit, o
               unitConversions={detail.item?.unitConversions}
             />
           )}
-          {activeTab === 'variants' && (
-            isEditMode && itemId && detail.item
-              ? <VariantsSection itemId={itemId} variants={detail.item.variants} disabled={fieldsDisabled} onToggle={detail.toggleVariant} onRefresh={detail.refetch} />
-              : <AfterCreateNotice message={t('items.variants.availableAfterCreate', 'Guarda el ítem primero para agregar variantes.')} />
-          )}
-          {activeTab === 'images' && (
-            isEditMode && detail.item
-              ? <ImagesSection t={t} images={detail.item.images} disabled={fieldsDisabled} onDisable={detail.disableImage} />
-              : <AfterCreateNotice message={t('items.images.availableAfterCreate', 'Guarda el ítem primero para agregar imágenes.')} />
-          )}
-          {activeTab === 'packaging' && (
-            isEditMode && detail.item
-              ? <PackagingLevelsSection t={t} levels={detail.item.packagingLevels} />
-              : <AfterCreateNotice message={t('items.packaging.availableAfterCreate', 'Guarda el ítem primero para configurar empaques.')} />
-          )}
-          {activeTab === 'substitutes' && (
-            isEditMode && detail.item
-              ? <SubstitutesSection t={t} substitutes={detail.item.substitutes} />
-              : <AfterCreateNotice message={t('items.substitutes.availableAfterCreate', 'Guarda el ítem primero para configurar sustitutos.')} />
-          )}
-          {activeTab === 'profitability' && (
-            isEditMode && itemId
-              ? <ProfitabilitySection itemId={itemId} disabled={fieldsDisabled} />
-              : <AfterCreateNotice message={t('items.profitability.availableAfterCreate', 'Guarda el ítem primero para ver su rentabilidad.')} />
-          )}
+          {activeTab === "variants" &&
+            (isEditMode && itemId && detail.item ? (
+              <VariantsSection
+                itemId={itemId}
+                variants={detail.item.variants}
+                disabled={fieldsDisabled}
+                onToggle={detail.toggleVariant}
+                onRefresh={detail.refetch}
+              />
+            ) : (
+              <AfterCreateNotice
+                message={t(
+                  "items.variants.availableAfterCreate",
+                  "Guarda el ítem primero para agregar variantes.",
+                )}
+              />
+            ))}
+          {activeTab === "images" &&
+            (isEditMode && detail.item ? (
+              <ImagesSection
+                t={t}
+                images={detail.item.images}
+                disabled={fieldsDisabled}
+                onDisable={detail.disableImage}
+              />
+            ) : (
+              <AfterCreateNotice
+                message={t(
+                  "items.images.availableAfterCreate",
+                  "Guarda el ítem primero para agregar imágenes.",
+                )}
+              />
+            ))}
+          {activeTab === "packaging" &&
+            (isEditMode && detail.item ? (
+              <PackagingLevelsSection
+                t={t}
+                levels={detail.item.packagingLevels}
+              />
+            ) : (
+              <AfterCreateNotice
+                message={t(
+                  "items.packaging.availableAfterCreate",
+                  "Guarda el ítem primero para configurar empaques.",
+                )}
+              />
+            ))}
+          {activeTab === "substitutes" &&
+            (isEditMode && detail.item ? (
+              <SubstitutesSection t={t} substitutes={detail.item.substitutes} />
+            ) : (
+              <AfterCreateNotice
+                message={t(
+                  "items.substitutes.availableAfterCreate",
+                  "Guarda el ítem primero para configurar sustitutos.",
+                )}
+              />
+            ))}
+          {activeTab === "profitability" &&
+            (isEditMode && itemId ? (
+              <ProfitabilitySection itemId={itemId} disabled={fieldsDisabled} />
+            ) : (
+              <AfterCreateNotice
+                message={t(
+                  "items.profitability.availableAfterCreate",
+                  "Guarda el ítem primero para ver su rentabilidad.",
+                )}
+              />
+            ))}
 
           {/* Actions */}
           <div className="zh-form-actions-row zh-form-actions-row--end zh-form-actions-row--lg">
             {onCancel && (
-              <ZHBtn type="button" variant="ghost" size="md" onClick={onCancel} disabled={submitting}>
-                {disabled ? t('common.back', 'Volver') : t('common.cancel', 'Cancelar')}
+              <ZHBtn
+                type="button"
+                variant="ghost"
+                size="md"
+                onClick={onCancel}
+                disabled={submitting}
+              >
+                {disabled
+                  ? t("common.back", "Volver")
+                  : t("common.cancel", "Cancelar")}
               </ZHBtn>
             )}
             {!disabled && (
-              <ZHBtn type="submit" variant="primary" size="md" disabled={submitting}>
+              <ZHBtn
+                type="submit"
+                variant="primary"
+                size="md"
+                disabled={submitting}
+              >
                 {submitting
-                  ? t('common.saving', 'Guardando...')
+                  ? t("common.saving", "Guardando...")
                   : isEditMode
-                    ? t('items.form.update', 'Actualizar ítem')
-                    : t('items.form.create', 'Crear ítem')}
+                    ? t("items.form.update", "Actualizar ítem")
+                    : t("items.form.create", "Crear ítem")}
               </ZHBtn>
             )}
           </div>

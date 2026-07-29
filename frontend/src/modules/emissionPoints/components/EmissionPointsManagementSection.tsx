@@ -1,36 +1,36 @@
-import { useState } from 'react';
-import { NoAccessPage } from '../../../components/PageShell';
-import { ZHPageNotice } from '../../../components/zh/ZHPageNotice';
-import { ConfigTabsLayout } from '../../../components/shared/ConfigTabsLayout';
-import { useEmissionPointsPage } from '../hooks/useEmissionPointsPage';
-import { EmissionPointsListSection } from './EmissionPointsListSection';
-import { EmissionPointsFormPanel } from './EmissionPointsFormPanel';
-import type { EmissionPointListItemDto } from '../api/emissionPointsService';
-import '../../../styles/shared/items-catalog.css';
+import { useState } from "react";
+import { NoAccessPage } from "../../../components/PageShell";
+import { ZHPageNotice } from "../../../components/zh/ZHPageNotice";
+import { ConfigTabsLayout } from "../../../components/shared/ConfigTabsLayout";
+import { useEmissionPointsPage } from "../hooks/useEmissionPointsPage";
+import { EmissionPointsListSection } from "./EmissionPointsListSection";
+import { EmissionPointsFormPanel } from "./EmissionPointsFormPanel";
+import type { EmissionPointListItemDto } from "../api/emissionPointsService";
+import "../../../styles/shared/items-catalog.css";
 
 export function EmissionPointsManagementSection() {
   const ctx = useEmissionPointsPage();
-  const [activeTab, setActiveTab] = useState<'list' | 'editor'>('list');
+  const [activeTab, setActiveTab] = useState<"list" | "editor">("list");
 
   const handleOpenCreate = async () => {
     await ctx.openCreate();
-    setActiveTab('editor');
+    setActiveTab("editor");
   };
 
   const handleOpenEdit = async (item: EmissionPointListItemDto) => {
     await ctx.openEdit(item);
-    setActiveTab('editor');
+    setActiveTab("editor");
   };
 
   const handleCancel = () => {
     ctx.closePanel();
-    setActiveTab('list');
+    setActiveTab("list");
   };
 
   if (!ctx.canView) return <NoAccessPage title="Puntos de Emisión" />;
 
-  const editorLabel = ctx.editingId ? 'Editar' : 'Nuevo Punto';
-  const editorIcon  = ctx.editingId ? 'edit' : 'add_box';
+  const editorLabel = ctx.editingId ? "Editar" : "Nuevo Punto";
+  const editorIcon = ctx.editingId ? "edit" : "add_box";
 
   return (
     <ConfigTabsLayout
@@ -39,9 +39,9 @@ export function EmissionPointsManagementSection() {
       editorLabel={editorLabel}
       editorIcon={editorIcon}
       error={
-        ctx.error
-          ? <ZHPageNotice variant="error" message="Error:" detail={ctx.error} />
-          : undefined
+        ctx.error ? (
+          <ZHPageNotice variant="error" message="Error:" detail={ctx.error} />
+        ) : undefined
       }
       listContent={
         <EmissionPointsListSection
@@ -79,10 +79,15 @@ export function EmissionPointsManagementSection() {
           />
         ) : (
           <div className="cfg-tabs-empty">
-            <span className="material-symbols-outlined cfg-empty-panel__icon">point_of_sale</span>
-            <p className="cfg-empty-panel__title">Seleccione o cree un punto de emisión</p>
+            <span className="material-symbols-outlined cfg-empty-panel__icon">
+              point_of_sale
+            </span>
+            <p className="cfg-empty-panel__title">
+              Seleccione o cree un punto de emisión
+            </p>
             <p className="cfg-empty-panel__sub">
-              Use el botón <strong>Nuevo Punto</strong> en la pestaña Lista, o seleccione uno para editar.
+              Use el botón <strong>Nuevo Punto</strong> en la pestaña Lista, o
+              seleccione uno para editar.
             </p>
           </div>
         )

@@ -1,42 +1,51 @@
-import { useCallback, useEffect, useState } from 'react';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
+import { useCallback, useEffect, useState } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import {
   cajaService,
   type CashRegisterDto,
   type CashRegisterActiveStatus,
   type EmissionPointLookupForBranchDto,
-} from '../../caja/api/cajaService';
-import { branchService, type BranchListItemDto } from '../../branches/api/branchService';
-import { warehouseService, type WarehouseDto } from '../../inventory/warehouses/api/warehouseService';
+} from "../../caja/api/cajaService";
+import {
+  branchService,
+  type BranchListItemDto,
+} from "../../branches/api/branchService";
+import {
+  warehouseService,
+  type WarehouseDto,
+} from "../../inventory/warehouses/api/warehouseService";
 import {
   cashRegistersPageSchema,
   emptyCashRegistersPageForm,
   type CashRegistersPageFormValues,
-} from '../schemas/cashRegistersPageSchema';
-import { usePermissionsUi } from '../../../access/usePermissionsUi';
-import { applyServerErrors } from '../../lib/validationErrors';
-import { formatApiRequestError } from '../../lib/apiError';
-import { message } from '../../../lib/messages';
+} from "../schemas/cashRegistersPageSchema";
+import { usePermissionsUi } from "../../../access/usePermissionsUi";
+import { applyServerErrors } from "../../lib/validationErrors";
+import { formatApiRequestError } from "../../lib/apiError";
+import { message } from "../../../lib/messages";
 
 export function useCashRegistersPage() {
   const { canShow } = usePermissionsUi();
-  const canView = canShow('caja.view');
-  const canManage = canShow('caja.manage');
+  const canView = canShow("caja.view");
+  const canManage = canShow("caja.manage");
 
   // ── Datos del listado ────────────────────────────────────────────────────
   const [items, setItems] = useState<CashRegisterDto[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-  const [search, setSearch] = useState('');
-  const [activeStatus, setActiveStatus] = useState<CashRegisterActiveStatus>('active');
+  const [error, setError] = useState("");
+  const [search, setSearch] = useState("");
+  const [activeStatus, setActiveStatus] =
+    useState<CashRegisterActiveStatus>("active");
 
   // ── Sucursales para el selector ───────────────────────────────────────────
   const [branches, setBranches] = useState<BranchListItemDto[]>([]);
   const [loadingBranches, setLoadingBranches] = useState(false);
 
   // ── Puntos de emisión de la sucursal elegida (cascada) ───────────────────
-  const [emissionPoints, setEmissionPoints] = useState<EmissionPointLookupForBranchDto[]>([]);
+  const [emissionPoints, setEmissionPoints] = useState<
+    EmissionPointLookupForBranchDto[]
+  >([]);
   const [loadingEmissionPoints, setLoadingEmissionPoints] = useState(false);
 
   // ── Bodegas de la sucursal elegida (cascada) — para "Bodega por defecto" ──
@@ -53,7 +62,7 @@ export function useCashRegistersPage() {
   const [editingHasHistory, setEditingHasHistory] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
-  const [saveError, setSaveError] = useState('');
+  const [saveError, setSaveError] = useState("");
 
   const {
     register,
@@ -69,16 +78,21 @@ export function useCashRegistersPage() {
     defaultValues: emptyCashRegistersPageForm(),
   });
 
-  const watchedBranchId = watch('branchId');
+  const watchedBranchId = watch("branchId");
 
   // ── Carga de datos ────────────────────────────────────────────────────────
   const fetchList = useCallback(async () => {
-    setError('');
+    setError("");
     setLoading(true);
     try {
-      setItems(await cajaService.listAllCashRegisters(activeStatus, search || undefined));
+      setItems(
+        await cajaService.listAllCashRegisters(
+          activeStatus,
+          search || undefined,
+        ),
+      );
     } catch {
-      setError('Error al cargar las cajas.');
+      setError("Error al cargar las cajas.");
     } finally {
       setLoading(false);
     }
@@ -87,7 +101,7 @@ export function useCashRegistersPage() {
   const loadBranches = useCallback(async () => {
     setLoadingBranches(true);
     try {
-      setBranches(await branchService.list('active'));
+      setBranches(await branchService.list("active"));
     } catch {
       // selector mostrará vacío
     } finally {
@@ -102,7 +116,9 @@ export function useCashRegistersPage() {
     }
     setLoadingEmissionPoints(true);
     try {
-      setEmissionPoints(await cajaService.emissionPointLookupsByBranch(branchId));
+      setEmissionPoints(
+        await cajaService.emissionPointLookupsByBranch(branchId),
+      );
     } catch {
       setEmissionPoints([]);
     } finally {
@@ -117,7 +133,7 @@ export function useCashRegistersPage() {
     }
     setLoadingWarehouses(true);
     try {
-      setWarehouses(await warehouseService.list('active', undefined, branchId));
+      setWarehouses(await warehouseService.list("active", undefined, branchId));
     } catch {
       setWarehouses([]);
     } finally {
@@ -125,7 +141,9 @@ export function useCashRegistersPage() {
     }
   }, []);
 
-  useEffect(() => { void fetchList(); }, [fetchList]);
+  useEffect(() => {
+    void fetchList();
+  }, [fetchList]);
 
   // Recarga la cascada de Puntos de Emisión/Bodegas cada vez que cambia la Sucursal elegida en el form.
   useEffect(() => {
@@ -144,17 +162,19 @@ export function useCashRegistersPage() {
 
   // ── Filtrado local ────────────────────────────────────────────────────────
   const filtered = search.trim()
-    ? items.filter((i) =>
-        i.code.toLowerCase().includes(search.toLowerCase()) ||
-        i.name.toLowerCase().includes(search.toLowerCase()) ||
-        i.branchName.toLowerCase().includes(search.toLowerCase()),
+    ? items.filter(
+        (i) =>
+          i.code.toLowerCase().includes(search.toLowerCase()) ||
+          i.name.toLowerCase().includes(search.toLowerCase()) ||
+          i.branchName.toLowerCase().includes(search.toLowerCase()),
       )
     : items;
 
   // Establecimiento derivado del Punto de Emisión elegido — solo informativo, nunca seleccionable.
-  const selectedEmissionPointId = watch('emissionPointId');
+  const selectedEmissionPointId = watch("emissionPointId");
   const derivedEstablishmentCode =
-    emissionPoints.find((ep) => ep.id === selectedEmissionPointId)?.establishmentCode ?? null;
+    emissionPoints.find((ep) => ep.id === selectedEmissionPointId)
+      ?.establishmentCode ?? null;
 
   // ── Panel — abrir para crear ──────────────────────────────────────────────
   const openCreate = async () => {
@@ -163,7 +183,7 @@ export function useCashRegistersPage() {
     setEditingName(null);
     setEditingHasHistory(false);
     setSelectedId(null);
-    setSaveError('');
+    setSaveError("");
     setEmissionPoints([]);
     setWarehouses([]);
     reset(emptyCashRegistersPageForm());
@@ -178,15 +198,15 @@ export function useCashRegistersPage() {
     setEditingName(item.name);
     setEditingHasHistory(item.hasHistory);
     setSelectedId(item.id);
-    setSaveError('');
+    setSaveError("");
     reset({
       branchId: item.branchId,
       code: item.code,
       name: item.name,
-      emissionPointId: item.emissionPointId ?? '',
-      notes: item.notes ?? '',
-      defaultWarehouseId: item.defaultWarehouseId ?? '',
-      defaultCustomerId: item.defaultCustomerId ?? '',
+      emissionPointId: item.emissionPointId ?? "",
+      notes: item.notes ?? "",
+      defaultWarehouseId: item.defaultWarehouseId ?? "",
+      defaultCustomerId: item.defaultCustomerId ?? "",
     });
     await loadBranches();
     await loadEmissionPoints(item.branchId);
@@ -201,12 +221,12 @@ export function useCashRegistersPage() {
     setEditingName(null);
     setEditingHasHistory(false);
     setSelectedId(null);
-    setSaveError('');
+    setSaveError("");
   };
 
   // ── Guardar ───────────────────────────────────────────────────────────────
   const save = handleSubmit(async (form) => {
-    setSaveError('');
+    setSaveError("");
     setSaving(true);
     try {
       if (editingId) {
@@ -219,7 +239,7 @@ export function useCashRegistersPage() {
           defaultCustomerId: form.defaultCustomerId || null,
         });
         await fetchList();
-        message.success('Caja actualizada correctamente.');
+        message.success("Caja actualizada correctamente.");
       } else {
         const created = await cajaService.createCashRegister({
           branchId: form.branchId,
@@ -239,16 +259,18 @@ export function useCashRegistersPage() {
           branchId: created.branchId,
           code: created.code,
           name: created.name,
-          emissionPointId: created.emissionPointId ?? '',
-          notes: created.notes ?? '',
-          defaultWarehouseId: created.defaultWarehouseId ?? '',
-          defaultCustomerId: created.defaultCustomerId ?? '',
+          emissionPointId: created.emissionPointId ?? "",
+          notes: created.notes ?? "",
+          defaultWarehouseId: created.defaultWarehouseId ?? "",
+          defaultCustomerId: created.defaultCustomerId ?? "",
         });
-        message.success('Caja creada correctamente.');
+        message.success("Caja creada correctamente.");
       }
     } catch (err: unknown) {
-      const applied = applyServerErrors(err, setFieldError, (msg) => setSaveError(msg));
-      if (!applied) setSaveError('Error al guardar la caja.');
+      const applied = applyServerErrors(err, setFieldError, (msg) =>
+        setSaveError(msg),
+      );
+      if (!applied) setSaveError("Error al guardar la caja.");
     } finally {
       setSaving(false);
     }
@@ -256,7 +278,7 @@ export function useCashRegistersPage() {
 
   // ── Toggle activo/inactivo ────────────────────────────────────────────────
   const toggleDisable = async (item: CashRegisterDto) => {
-    setError('');
+    setError("");
     if (!canManage) return;
     try {
       if (item.isActive) {
@@ -268,7 +290,11 @@ export function useCashRegistersPage() {
     } catch (err: unknown) {
       // El backend expone el motivo exacto (ej. "tiene una sesión de caja abierta") — se
       // muestra tal cual, sin genericizarlo, para que el usuario sepa qué corregir.
-      setError(formatApiRequestError(err, { generic: 'Error al cambiar el estado de la caja.' }));
+      setError(
+        formatApiRequestError(err, {
+          generic: "Error al cambiar el estado de la caja.",
+        }),
+      );
     }
   };
 

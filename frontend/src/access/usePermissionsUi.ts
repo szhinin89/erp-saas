@@ -1,6 +1,6 @@
-import { useAuthStore } from '../store/authStore';
-import { useSessionStore } from '../store/sessionStore';
-import { isAdminRole } from './permissionUi';
+import { useAuthStore } from "../store/authStore";
+import { useSessionStore } from "../store/sessionStore";
+import { isAdminRole } from "./permissionUi";
 
 /**
  * Permission check for UI rendering (button/section visibility).
@@ -20,7 +20,7 @@ export function usePermissionsUi() {
   const canShow = (permissionKey: string): boolean => {
     if (admin) return true;
     if (!isLoaded || permissions.length === 0) return true;
-    if (permissions.includes('*')) return true;
+    if (permissions.includes("*")) return true;
     return permissions.includes(permissionKey);
   };
 

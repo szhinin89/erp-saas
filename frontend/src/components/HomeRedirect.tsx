@@ -1,5 +1,5 @@
-import { Navigate } from 'react-router-dom';
-import { useAuthStore } from '../store/authStore';
+import { Navigate } from "react-router-dom";
+import { useAuthStore } from "../store/authStore";
 
 export function HomeRedirect() {
   const user = useAuthStore((s) => s.user);

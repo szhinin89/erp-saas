@@ -14,16 +14,16 @@ modules/{domain}/
 
 ## Dominios consolidados (audit 2026-05-21)
 
-| Dominio | API | Pages | Notas |
-|---------|-----|-------|-------|
-| `catalog` | `api/catalogService.ts` | `pages/*` (marcas, unidades, estructura) | |
-| `inventario/warehouses` | `api/warehouseService.ts` | `pages/BodegasPage.tsx` | |
-| `auth` | `api/authService.ts`, `accessService.ts` | login, select-company | |
-| `branches` | `api/branchService.ts` | — | sección `components/BranchesManagementSection.tsx` (tab "Sucursales" en `CompanySettingsHubPage`) |
-| `accounting` | `api/accountingService.ts`, `accountingConfigService.ts` | `pages/AccountingPage.tsx` | |
-| `dashboard` | — | `pages/DashboardPage.tsx` | |
-| `products` | ✅ | ✅ | referencia |
-| `customers` | ✅ | ✅ | referencia |
+| Dominio                 | API                                                      | Pages                                    | Notas                                                                                             |
+| ----------------------- | -------------------------------------------------------- | ---------------------------------------- | ------------------------------------------------------------------------------------------------- |
+| `catalog`               | `api/catalogService.ts`                                  | `pages/*` (marcas, unidades, estructura) |                                                                                                   |
+| `inventario/warehouses` | `api/warehouseService.ts`                                | `pages/BodegasPage.tsx`                  |                                                                                                   |
+| `auth`                  | `api/authService.ts`, `accessService.ts`                 | login, select-company                    |                                                                                                   |
+| `branches`              | `api/branchService.ts`                                   | —                                        | sección `components/BranchesManagementSection.tsx` (tab "Sucursales" en `CompanySettingsHubPage`) |
+| `accounting`            | `api/accountingService.ts`, `accountingConfigService.ts` | `pages/AccountingPage.tsx`               |                                                                                                   |
+| `dashboard`             | —                                                        | `pages/DashboardPage.tsx`                |                                                                                                   |
+| `products`              | ✅                                                       | ✅                                       | referencia                                                                                        |
+| `customers`             | ✅                                                       | ✅                                       | referencia                                                                                        |
 
 ## Utilidades compartidas
 

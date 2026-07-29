@@ -1,39 +1,41 @@
-import { useCallback, useEffect, useState } from 'react';
-import { ErpPageTemplate } from '../../../templates/ErpPageTemplate';
-import { ZHBtn } from '../../../components/zh/ZHForm';
+import { useCallback, useEffect, useState } from "react";
+import { ErpPageTemplate } from "../../../templates/ErpPageTemplate";
+import { ZHBtn } from "../../../components/zh/ZHForm";
 import type {
   PaymentMethodDto,
   PaymentMethodDetailType,
   CreatePaymentMethodPayload,
   UpdatePaymentMethodPayload,
-} from '../api/paymentMethodService';
-import { paymentMethodService } from '../api/paymentMethodService';
-import '../../../styles/shared/items-catalog.css';
+} from "../api/paymentMethodService";
+import { paymentMethodService } from "../api/paymentMethodService";
+import "../../../styles/shared/items-catalog.css";
 
-type Tab = 'listado' | 'nuevo';
+type Tab = "listado" | "nuevo";
 
-const DETAIL_TYPE_OPTIONS: { value: PaymentMethodDetailType; label: string }[] = [
-  { value: 'None', label: 'Ninguno (sin detalle adicional)' },
-  { value: 'Card', label: 'Tarjeta' },
-  { value: 'Transfer', label: 'Transferencia' },
-  { value: 'Check', label: 'Cheque' },
-];
+const DETAIL_TYPE_OPTIONS: { value: PaymentMethodDetailType; label: string }[] =
+  [
+    { value: "None", label: "Ninguno (sin detalle adicional)" },
+    { value: "Card", label: "Tarjeta" },
+    { value: "Transfer", label: "Transferencia" },
+    { value: "Check", label: "Cheque" },
+  ];
 
 export function PaymentMethodsPage() {
-  const [tab, setTab] = useState<Tab>('listado');
+  const [tab, setTab] = useState<Tab>("listado");
   const [items, setItems] = useState<PaymentMethodDto[]>([]);
   const [loading, setLoading] = useState(false);
-  const [search, setSearch] = useState('');
+  const [search, setSearch] = useState("");
   const [editing, setEditing] = useState<PaymentMethodDto | null>(null);
   const [saving, setSaving] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
 
-  const [fCode, setFCode] = useState('');
-  const [fName, setFName] = useState('');
+  const [fCode, setFCode] = useState("");
+  const [fName, setFName] = useState("");
   const [fRequiresRef, setFRequiresRef] = useState(false);
   const [fIsCredit, setFIsCredit] = useState(false);
   const [fSortOrder, setFSortOrder] = useState(0);
-  const [fDetailType, setFDetailType] = useState<PaymentMethodDetailType>('None');
+  const [fDetailType, setFDetailType] =
+    useState<PaymentMethodDetailType>("None");
 
   const fetchItems = useCallback(async () => {
     setLoading(true);
@@ -58,14 +60,14 @@ export function PaymentMethodsPage() {
   }, [fetchItems]);
 
   const resetForm = () => {
-    setFCode('');
-    setFName('');
+    setFCode("");
+    setFName("");
     setFRequiresRef(false);
     setFIsCredit(false);
     setFSortOrder(0);
-    setFDetailType('None');
+    setFDetailType("None");
     setEditing(null);
-    setError('');
+    setError("");
   };
 
   const startEdit = (pm: PaymentMethodDto) => {
@@ -75,11 +77,11 @@ export function PaymentMethodsPage() {
     setFIsCredit(pm.isCreditAllowed);
     setFSortOrder(pm.sortOrder);
     setFDetailType(pm.detailType);
-    setTab('nuevo');
+    setTab("nuevo");
   };
 
   const handleSave = async () => {
-    setError('');
+    setError("");
     setSaving(true);
     try {
       if (editing) {
@@ -104,14 +106,14 @@ export function PaymentMethodsPage() {
         await paymentMethodService.create(p);
       }
       resetForm();
-      setTab('listado');
+      setTab("listado");
       fetchItems();
     } catch (e: any) {
       const msg =
         e?.response?.data?.message?.user ??
         e?.response?.data?.data?.errors?.[0] ??
         e?.message ??
-        'Error al guardar.';
+        "Error al guardar.";
       setError(msg);
     }
     setSaving(false);
@@ -127,11 +129,11 @@ export function PaymentMethodsPage() {
   };
 
   const tabs = [
-    { id: 'listado' as Tab, label: 'Listado', icon: 'view_list' },
+    { id: "listado" as Tab, label: "Listado", icon: "view_list" },
     {
-      id: 'nuevo' as Tab,
-      label: editing ? 'Editar' : 'Nuevo Método',
-      icon: editing ? 'edit' : 'add_box',
+      id: "nuevo" as Tab,
+      label: editing ? "Editar" : "Nuevo Método",
+      icon: editing ? "edit" : "add_box",
     },
   ];
 
@@ -144,9 +146,9 @@ export function PaymentMethodsPage() {
         {tabs.map((t) => (
           <button
             key={t.id}
-            className={`prd-tab-btn ${tab === t.id ? 'prd-tab-btn--active' : ''}`}
+            className={`prd-tab-btn ${tab === t.id ? "prd-tab-btn--active" : ""}`}
             onClick={() => {
-              if (t.id !== 'nuevo') resetForm();
+              if (t.id !== "nuevo") resetForm();
               setTab(t.id);
             }}
           >
@@ -158,7 +160,7 @@ export function PaymentMethodsPage() {
         ))}
       </div>
 
-      {tab === 'listado' && (
+      {tab === "listado" && (
         <div className="prd-section">
           <div className="prd-crud-toolbar">
             <input
@@ -195,22 +197,48 @@ export function PaymentMethodsPage() {
                     <td className="prd-td-code">{pm.code}</td>
                     <td>{pm.name}</td>
                     <td>
-                      <span className={`prd-status-badge ${pm.requiresReference ? 'pf-badge pf-badge--info' : 'prd-status-badge'}`}
-                        style={!pm.requiresReference ? { background: 'var(--color-surface-container-low)', color: 'var(--color-text-secondary)' } : undefined}>
-                        {pm.requiresReference ? 'Sí' : 'No'}
+                      <span
+                        className={`prd-status-badge ${pm.requiresReference ? "pf-badge pf-badge--info" : "prd-status-badge"}`}
+                        style={
+                          !pm.requiresReference
+                            ? {
+                                background:
+                                  "var(--color-surface-container-low)",
+                                color: "var(--color-text-secondary)",
+                              }
+                            : undefined
+                        }
+                      >
+                        {pm.requiresReference ? "Sí" : "No"}
                       </span>
                     </td>
                     <td>
-                      <span className={`prd-status-badge ${pm.isCreditAllowed ? 'pf-badge pf-badge--warning' : 'prd-status-badge'}`}
-                        style={!pm.isCreditAllowed ? { background: 'var(--color-surface-container-low)', color: 'var(--color-text-secondary)' } : undefined}>
-                        {pm.isCreditAllowed ? 'Sí' : 'No'}
+                      <span
+                        className={`prd-status-badge ${pm.isCreditAllowed ? "pf-badge pf-badge--warning" : "prd-status-badge"}`}
+                        style={
+                          !pm.isCreditAllowed
+                            ? {
+                                background:
+                                  "var(--color-surface-container-low)",
+                                color: "var(--color-text-secondary)",
+                              }
+                            : undefined
+                        }
+                      >
+                        {pm.isCreditAllowed ? "Sí" : "No"}
                       </span>
                     </td>
-                    <td>{DETAIL_TYPE_OPTIONS.find((o) => o.value === pm.detailType)?.label ?? pm.detailType}</td>
+                    <td>
+                      {DETAIL_TYPE_OPTIONS.find(
+                        (o) => o.value === pm.detailType,
+                      )?.label ?? pm.detailType}
+                    </td>
                     <td>{pm.sortOrder}</td>
                     <td>
-                      <span className={`prd-status-badge ${pm.isActive ? 'prd-status-badge--active' : 'prd-status-badge--inactive'}`}>
-                        {pm.isActive ? 'Activo' : 'Inactivo'}
+                      <span
+                        className={`prd-status-badge ${pm.isActive ? "prd-status-badge--active" : "prd-status-badge--inactive"}`}
+                      >
+                        {pm.isActive ? "Activo" : "Inactivo"}
                       </span>
                     </td>
                     <td className="prd-td-actions">
@@ -221,9 +249,13 @@ export function PaymentMethodsPage() {
                         onClick={() => startEdit(pm)}
                       />
                       <IconBtn
-                        icon={pm.isActive ? 'toggle_off' : 'toggle_on'}
-                        color={pm.isActive ? 'var(--color-error)' : 'var(--color-success)'}
-                        title={pm.isActive ? 'Desactivar' : 'Activar'}
+                        icon={pm.isActive ? "toggle_off" : "toggle_on"}
+                        color={
+                          pm.isActive
+                            ? "var(--color-error)"
+                            : "var(--color-success)"
+                        }
+                        title={pm.isActive ? "Desactivar" : "Activar"}
                         onClick={() => handleToggle(pm)}
                       />
                     </td>
@@ -231,9 +263,7 @@ export function PaymentMethodsPage() {
                 ))}
                 {items.length === 0 && (
                   <tr className="prd-empty-row">
-                    <td colSpan={8}>
-                      Sin métodos de pago registrados.
-                    </td>
+                    <td colSpan={8}>Sin métodos de pago registrados.</td>
                   </tr>
                 )}
               </tbody>
@@ -242,16 +272,12 @@ export function PaymentMethodsPage() {
         </div>
       )}
 
-      {tab === 'nuevo' && (
+      {tab === "nuevo" && (
         <div className="prd-section">
           <h3 className="prd-crud-title">
-            {editing ? `Editar: ${editing.code}` : 'Nuevo Método de Pago'}
+            {editing ? `Editar: ${editing.code}` : "Nuevo Método de Pago"}
           </h3>
-          {error && (
-            <div className="prd-error-banner">
-              {error}
-            </div>
-          )}
+          {error && <div className="prd-error-banner">{error}</div>}
 
           <div className="prd-crud-form-grid">
             {!editing && (
@@ -298,18 +324,30 @@ export function PaymentMethodsPage() {
               <div className="zh-field-control">
                 <select
                   value={fDetailType}
-                  onChange={(e) => setFDetailType(e.target.value as PaymentMethodDetailType)}
+                  onChange={(e) =>
+                    setFDetailType(e.target.value as PaymentMethodDetailType)
+                  }
                 >
                   {DETAIL_TYPE_OPTIONS.map((opt) => (
-                    <option key={opt.value} value={opt.value}>{opt.label}</option>
+                    <option key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </option>
                   ))}
                 </select>
               </div>
             </div>
           </div>
 
-          <div className="pf-collapsible zh-mt-16" style={{ maxWidth: 600, display: 'flex', gap: 'var(--space-6)', padding: 'var(--space-4)' }}>
-            <label className="zh-checkbox-label" style={{ cursor: 'pointer' }}>
+          <div
+            className="pf-collapsible zh-mt-16"
+            style={{
+              maxWidth: 600,
+              display: "flex",
+              gap: "var(--space-6)",
+              padding: "var(--space-4)",
+            }}
+          >
+            <label className="zh-checkbox-label" style={{ cursor: "pointer" }}>
               <input
                 type="checkbox"
                 checked={fRequiresRef}
@@ -323,7 +361,7 @@ export function PaymentMethodsPage() {
               </div>
             </label>
 
-            <label className="zh-checkbox-label" style={{ cursor: 'pointer' }}>
+            <label className="zh-checkbox-label" style={{ cursor: "pointer" }}>
               <input
                 type="checkbox"
                 checked={fIsCredit}
@@ -343,15 +381,13 @@ export function PaymentMethodsPage() {
               onClick={handleSave}
               disabled={saving || !fName.trim() || (!editing && !fCode.trim())}
             >
-              <span className="material-symbols-outlined zh-icon-lg">
-                save
-              </span>
-              {saving ? 'Guardando...' : editing ? 'Actualizar' : 'Crear'}
+              <span className="material-symbols-outlined zh-icon-lg">save</span>
+              {saving ? "Guardando..." : editing ? "Actualizar" : "Crear"}
             </ZHBtn>
             <ZHBtn
               onClick={() => {
                 resetForm();
-                setTab('listado');
+                setTab("listado");
               }}
             >
               Cancelar
@@ -381,9 +417,7 @@ function IconBtn({
       title={title}
       style={{ color }}
     >
-      <span className="material-symbols-outlined">
-        {icon}
-      </span>
+      <span className="material-symbols-outlined">{icon}</span>
     </button>
   );
 }

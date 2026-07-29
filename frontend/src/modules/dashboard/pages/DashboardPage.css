@@ -26,9 +26,15 @@
   font-weight: var(--text-label-sm-weight);
   margin-top: var(--space-1);
 }
-.dsh-kpi-trend .material-symbols-outlined { font-size: 16px; }
-.dsh-kpi-trend--success { color: var(--color-success); }
-.dsh-kpi-trend--warning { color: var(--color-warning); }
+.dsh-kpi-trend .material-symbols-outlined {
+  font-size: 16px;
+}
+.dsh-kpi-trend--success {
+  color: var(--color-success);
+}
+.dsh-kpi-trend--warning {
+  color: var(--color-warning);
+}
 
 /* Progress bar (monthly revenue %) */
 .dsh-kpi-progress {
@@ -58,10 +64,18 @@
   gap: var(--space-4);
   align-items: start;
 }
-@media (max-width: 1024px) { .dsh-body { grid-template-columns: 1fr; } }
+@media (max-width: 1024px) {
+  .dsh-body {
+    grid-template-columns: 1fr;
+  }
+}
 
 /* ── Charts column ───────────────────────────────────────── */
-.dsh-charts-col { display: flex; flex-direction: column; gap: var(--space-4); }
+.dsh-charts-col {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
 
 .dsh-chart-wrap {
   padding: var(--space-4) var(--space-2);
@@ -74,7 +88,9 @@
   color: var(--color-text-secondary);
   font-size: var(--text-label-sm-size);
 }
-.dsh-chart-placeholder--error { color: var(--color-error); }
+.dsh-chart-placeholder--error {
+  color: var(--color-error);
+}
 
 /* ── Summary rows (annual card) ──────────────────────────── */
 .dsh-summary-row {
@@ -84,7 +100,9 @@
   padding: var(--space-2) 0;
   border-bottom: 1px solid var(--color-outline-variant);
 }
-.dsh-summary-row:last-child { border-bottom: none; }
+.dsh-summary-row:last-child {
+  border-bottom: none;
+}
 .dsh-summary-label {
   font-size: var(--text-label-md-size);
   color: var(--color-text-secondary);
@@ -94,7 +112,9 @@
   font-weight: 600;
   color: var(--color-text-primary);
 }
-.dsh-summary-value--warn { color: var(--color-warning); }
+.dsh-summary-value--warn {
+  color: var(--color-warning);
+}
 
 /* ── Activity card — estructura → .card.card--xl (zh-ui.css) ─ */
 /* .dsh-activity-card eliminado; usa .card.card--xl global      */
@@ -125,9 +145,14 @@
   padding: 0;
   transition: opacity var(--transition);
 }
-.dsh-link-btn:hover { opacity: 0.75; text-decoration: underline; }
+.dsh-link-btn:hover {
+  opacity: 0.75;
+  text-decoration: underline;
+}
 
-.dsh-activity-table-wrap { overflow-x: auto; }
+.dsh-activity-table-wrap {
+  overflow-x: auto;
+}
 
 /* Table cell specifics (coloring beyond .table defaults) */
 .dsh-cell-id {
@@ -144,7 +169,11 @@
 
 /* ── Right column cards — estructura → .card.card--xl (zh-ui.css) ── */
 /* .dsh-card, .dsh-card-head eliminados; usa .card.card--xl + .card-header globals */
-.dsh-right { display: flex; flex-direction: column; gap: var(--space-4); }
+.dsh-right {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
 
 .dsh-card-body {
   padding: var(--space-4);
@@ -167,7 +196,9 @@
   text-align: left;
   transition: background var(--transition);
 }
-.dsh-quick-btn:hover { background: var(--color-surface-container); }
+.dsh-quick-btn:hover {
+  background: var(--color-surface-container);
+}
 .dsh-quick-btn:hover .dsh-quick-icon {
   background: var(--color-primary);
   color: var(--color-on-primary);
@@ -180,7 +211,9 @@
   background: var(--color-primary-fixed);
   color: var(--color-primary);
   flex-shrink: 0;
-  transition: background var(--transition), color var(--transition);
+  transition:
+    background var(--transition),
+    color var(--transition);
 }
 
 .dsh-quick-label {
@@ -197,7 +230,9 @@
 }
 
 /* ── Notifications ───────────────────────────────────────── */
-.dsh-notif-list { gap: var(--space-4); }
+.dsh-notif-list {
+  gap: var(--space-4);
+}
 
 .dsh-notif {
   display: flex;
@@ -212,9 +247,15 @@
   flex-shrink: 0;
   margin-top: 6px;
 }
-.dsh-notif-dot--error   { background: var(--color-error); }
-.dsh-notif-dot--success { background: var(--color-success); }
-.dsh-notif-dot--warning { background: var(--color-warning); }
+.dsh-notif-dot--error {
+  background: var(--color-error);
+}
+.dsh-notif-dot--success {
+  background: var(--color-success);
+}
+.dsh-notif-dot--warning {
+  background: var(--color-warning);
+}
 
 .dsh-notif-title {
   font-size: var(--text-label-md-size);
@@ -222,8 +263,16 @@
   color: var(--color-text-primary);
   margin: 0;
 }
-.dsh-notif-body  { font-size: var(--text-help-size); color: var(--color-text-secondary); margin: 2px 0 0; }
-.dsh-notif-time  { font-size: var(--text-help-size); color: var(--color-text-secondary); margin: var(--space-1) 0 0; }
+.dsh-notif-body {
+  font-size: var(--text-help-size);
+  color: var(--color-text-secondary);
+  margin: 2px 0 0;
+}
+.dsh-notif-time {
+  font-size: var(--text-help-size);
+  color: var(--color-text-secondary);
+  margin: var(--space-1) 0 0;
+}
 
 /* ── Footer ──────────────────────────────────────────────── */
 .dsh-footer {
@@ -237,7 +286,11 @@
   margin-top: var(--space-4);
 }
 
-.dsh-footer-left { display: flex; align-items: center; gap: var(--space-4); }
+.dsh-footer-left {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+}
 
 .dsh-footer-brand {
   font-size: var(--text-label-md-size);
@@ -245,9 +298,15 @@
   color: var(--color-primary);
 }
 
-.dsh-footer-copy { font-size: var(--text-help-size); color: var(--color-text-secondary); }
+.dsh-footer-copy {
+  font-size: var(--text-help-size);
+  color: var(--color-text-secondary);
+}
 
-.dsh-footer-links { display: flex; gap: var(--space-5); }
+.dsh-footer-links {
+  display: flex;
+  gap: var(--space-5);
+}
 
 .dsh-footer-links a {
   font-size: var(--text-help-size);
@@ -255,4 +314,6 @@
   text-decoration: none;
   transition: color var(--transition);
 }
-.dsh-footer-links a:hover { color: var(--color-primary); }
+.dsh-footer-links a:hover {
+  color: var(--color-primary);
+}

@@ -1,16 +1,16 @@
-import { Outlet, useNavigate } from 'react-router-dom';
-import { ZHAppTenantHeader } from './zh/ZHAppTenantHeader';
-import { ZHToast } from './zh/ZHToast';
-import { ZHGlobalDialogs } from './zh/ZHGlobalDialogs';
-import { CompanySwitcher } from './CompanySwitcher';
-import { LanguageSwitcher } from './LanguageSwitcher';
-import { fullLogout } from '../lib/session/fullLogout';
-import { LayoutFrame } from './layout/LayoutFrame';
-import { useAppLayoutNavigation } from './useAppLayoutNavigation';
-import { RouteAccessGuard } from './RouteAccessGuard';
-import { useBranchGate } from './useBranchGate';
-import { BranchSelectorModal } from './BranchSelectorModal';
-import './AppLayout.css';
+import { Outlet, useNavigate } from "react-router-dom";
+import { ZHAppTenantHeader } from "./zh/ZHAppTenantHeader";
+import { ZHToast } from "./zh/ZHToast";
+import { ZHGlobalDialogs } from "./zh/ZHGlobalDialogs";
+import { CompanySwitcher } from "./CompanySwitcher";
+import { LanguageSwitcher } from "./LanguageSwitcher";
+import { fullLogout } from "../lib/session/fullLogout";
+import { LayoutFrame } from "./layout/LayoutFrame";
+import { useAppLayoutNavigation } from "./useAppLayoutNavigation";
+import { RouteAccessGuard } from "./RouteAccessGuard";
+import { useBranchGate } from "./useBranchGate";
+import { BranchSelectorModal } from "./BranchSelectorModal";
+import "./AppLayout.css";
 
 export function AppLayout() {
   const navigate = useNavigate();
@@ -27,7 +27,7 @@ export function AppLayout() {
 
   const handleLogout = () => {
     fullLogout();
-    navigate('/login');
+    navigate("/login");
   };
 
   return (
@@ -45,7 +45,12 @@ export function AppLayout() {
             }
             navigation={
               user
-                ? { mainMenuGroups, sessionMenuResolved, isFavorite, toggleFavorite }
+                ? {
+                    mainMenuGroups,
+                    sessionMenuResolved,
+                    isFavorite,
+                    toggleFavorite,
+                  }
                 : undefined
             }
           />
@@ -59,11 +64,18 @@ export function AppLayout() {
           options={branchGate.options}
           error={branchGate.error}
           switching={branchGate.switching}
-          onSelect={(branchId) => { void branchGate.selectBranch(branchId); }}
-          onRetry={() => { void branchGate.retry(); }}
+          onSelect={(branchId) => {
+            void branchGate.selectBranch(branchId);
+          }}
+          onRetry={() => {
+            void branchGate.retry();
+          }}
         />
       ) : (
-        <RouteAccessGuard mainMenuGroups={mainMenuGroups} sessionMenuResolved={sessionMenuResolved}>
+        <RouteAccessGuard
+          mainMenuGroups={mainMenuGroups}
+          sessionMenuResolved={sessionMenuResolved}
+        >
           <Outlet />
         </RouteAccessGuard>
       )}

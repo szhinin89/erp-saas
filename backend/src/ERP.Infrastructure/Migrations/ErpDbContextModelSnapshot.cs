@@ -17,7 +17,7 @@ namespace ERP.Infrastructure.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "10.0.4")
+                .HasAnnotation("ProductVersion", "10.0.7")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
@@ -1306,9 +1306,9 @@ namespace ERP.Infrastructure.Migrations
                         .HasDefaultValue(false)
                         .HasColumnName("is_system_seeded");
 
-                    b.Property<short>("PersonType")
-                        .HasColumnType("smallint")
-                        .HasColumnName("person_type");
+                    b.Property<int>("LegalEntityTypeCode")
+                        .HasColumnType("integer")
+                        .HasColumnName("legal_entity_type_code");
 
                     b.Property<Guid>("TenantId")
                         .HasColumnType("uuid")
@@ -1326,6 +1326,8 @@ namespace ERP.Infrastructure.Migrations
 
                     b.HasAlternateKey("Id", "TenantId")
                         .HasName("uq_mbp_id_subscriber");
+
+                    b.HasIndex("LegalEntityTypeCode");
 
                     b.HasIndex("TenantId")
                         .HasDatabaseName("ix_mbp_subscriber");
@@ -1716,6 +1718,61 @@ namespace ERP.Infrastructure.Migrations
                     b.ToTable("master_company_bp_trading_settings", (string)null);
                 });
 
+            modelBuilder.Entity("ERP.Domain.MasterData.Entities.LegalEntityTypeCatalog", b =>
+                {
+                    b.Property<int>("Code")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasColumnName("code");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Code"));
+
+                    b.Property<bool>("IsActive")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(true)
+                        .HasColumnName("is_active");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(60)
+                        .HasColumnType("character varying(60)")
+                        .HasColumnName("name");
+
+                    b.Property<string>("SriTaxCategory")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)")
+                        .HasColumnName("sri_tax_category");
+
+                    b.HasKey("Code");
+
+                    b.ToTable("legal_entity_type", "global");
+
+                    b.HasData(
+                        new
+                        {
+                            Code = 1,
+                            IsActive = true,
+                            Name = "Persona Natural",
+                            SriTaxCategory = "NATURAL"
+                        },
+                        new
+                        {
+                            Code = 2,
+                            IsActive = true,
+                            Name = "Sociedad Privada",
+                            SriTaxCategory = "PRIVATE"
+                        },
+                        new
+                        {
+                            Code = 3,
+                            IsActive = true,
+                            Name = "Institución Pública",
+                            SriTaxCategory = "PUBLIC"
+                        });
+                });
+
             modelBuilder.Entity("ERP.Domain.MasterData.Entities.PaymentTerm", b =>
                 {
                     b.Property<Guid>("Id")
@@ -1783,48 +1840,6 @@ namespace ERP.Infrastructure.Migrations
                         .HasDatabaseName("uq_payment_terms_tenant_code");
 
                     b.ToTable("master_payment_terms", (string)null);
-                });
-
-            modelBuilder.Entity("ERP.Domain.MasterData.Entities.PersonTypeCatalog", b =>
-                {
-                    b.Property<short>("Code")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("smallint")
-                        .HasColumnName("code");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<short>("Code"));
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasMaxLength(60)
-                        .HasColumnType("character varying(60)")
-                        .HasColumnName("name");
-
-                    b.HasKey("Code");
-
-                    b.ToTable("person_type", "global");
-
-                    b.HasData(
-                        new
-                        {
-                            Code = (short)1,
-                            Name = "Natural (persona física)"
-                        },
-                        new
-                        {
-                            Code = (short)2,
-                            Name = "Jurídica (empresa/sociedad)"
-                        },
-                        new
-                        {
-                            Code = (short)3,
-                            Name = "Gubernamental"
-                        },
-                        new
-                        {
-                            Code = (short)4,
-                            Name = "Organización / ONG"
-                        });
                 });
 
             modelBuilder.Entity("ERP.Domain.Modules.Accounting.Entities.Account", b =>
@@ -10895,6 +10910,12 @@ namespace ERP.Infrastructure.Migrations
 
             modelBuilder.Entity("ERP.Domain.MasterData.Entities.BusinessPartner", b =>
                 {
+                    b.HasOne("ERP.Domain.MasterData.Entities.LegalEntityTypeCatalog", null)
+                        .WithMany()
+                        .HasForeignKey("LegalEntityTypeCode")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
                     b.OwnsOne("ERP.Domain.MasterData.ValueObjects.PersonName", "Name", b1 =>
                         {
                             b1.Property<Guid>("BusinessPartnerId")

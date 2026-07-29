@@ -1,13 +1,13 @@
-import type { PurchaseLineFormValues } from '../schemas/purchaseInvoiceSchema';
-import type { ItemMatchStatus } from '../api/purchaseReceptionService';
-import { getDecimalConfig } from '../../../lib/config/decimal.config';
-import { formatMoney, formatMoneyWithSymbol } from '../../../lib/sanitizers';
-import { calcMarginPercent } from '../../../lib/margin';
+import type { PurchaseLineFormValues } from "../schemas/purchaseInvoiceSchema";
+import type { ItemMatchStatus } from "../api/purchaseReceptionService";
+import { getDecimalConfig } from "../../../lib/config/decimal.config";
+import { formatMoney, formatMoneyWithSymbol } from "../../../lib/sanitizers";
+import { calcMarginPercent } from "../../../lib/margin";
 
 /** Dato desconocido — nunca se confunde con un valor real (p. ej. stock 0). */
-const UNKNOWN = '—';
+const UNKNOWN = "—";
 
-export type LineStatusTone = 'success' | 'warning' | 'danger';
+export type LineStatusTone = "success" | "warning" | "danger";
 
 /**
  * View model de presentación de una línea de compra — responde, en este orden, "qué llegó del
@@ -87,25 +87,28 @@ export function buildPurchaseLinePresentation(
   const quantity = line.quantity ?? 0;
   const unitPrice = line.unitPrice ?? 0;
 
-  const shortName = ctx?.shortName || '';
-  const displayName = shortName || line.description?.split(' — ')[1] || line.description || '';
+  const shortName = ctx?.shortName || "";
+  const displayName =
+    shortName || line.description?.split(" — ")[1] || line.description || "";
 
   const currentStock = ctx?.currentStock ?? 0;
   const averageCost = ctx?.averageCost ?? 0;
   const pvp = ctx?.pvp ?? 0;
   const marginPctValue = hasContext ? calcMarginPercent(unitPrice, pvp) : 0;
 
-  const deviationRatio = hasContext && averageCost > 0 && unitPrice > 0
-    ? Math.abs(unitPrice - averageCost) / averageCost
-    : 0;
+  const deviationRatio =
+    hasContext && averageCost > 0 && unitPrice > 0
+      ? Math.abs(unitPrice - averageCost) / averageCost
+      : 0;
   const showDeviationAlert = hasContext && deviationRatio > 0.2;
   const deviationLabel = showDeviationAlert
-    ? (unitPrice > averageCost
-      ? `Costo ${formatMoney((unitPrice - averageCost) / averageCost * 100, decimals.percentage)}% sobre el promedio`
-      : `Costo ${formatMoney((averageCost - unitPrice) / averageCost * 100, decimals.percentage)}% bajo el promedio`)
-    : '';
+    ? unitPrice > averageCost
+      ? `Costo ${formatMoney(((unitPrice - averageCost) / averageCost) * 100, decimals.percentage)}% sobre el promedio`
+      : `Costo ${formatMoney(((averageCost - unitPrice) / averageCost) * 100, decimals.percentage)}% bajo el promedio`
+    : "";
 
-  const missingRequiredData = hasItem && !isLoading && (!hasContext || !line.vatCode);
+  const missingRequiredData =
+    hasItem && !isLoading && (!hasContext || !line.vatCode);
 
   return {
     xml: {
@@ -116,15 +119,24 @@ export function buildPurchaseLinePresentation(
       description: line.description || UNKNOWN,
       quantity: formatMoney(quantity, decimals.quantity),
       unitPrice: formatMoneyWithSymbol(unitPrice, decimals.purchaseUnitPrice),
-      discount: hasOrigin ? formatMoneyWithSymbol(line.xmlDiscount ?? 0, decimals.totalAmount) : UNKNOWN,
-      vatPercentage: hasOrigin ? formatMoney(line.xmlVatPercentage ?? 0, decimals.percentage) : UNKNOWN,
-      taxValue: hasOrigin ? formatMoneyWithSymbol(line.xmlTaxValue ?? 0, decimals.totalAmount) : UNKNOWN,
-      totalLine: hasOrigin ? formatMoneyWithSymbol(line.xmlTotalLine ?? 0, decimals.totalAmount) : UNKNOWN,
+      discount: hasOrigin
+        ? formatMoneyWithSymbol(line.xmlDiscount ?? 0, decimals.totalAmount)
+        : UNKNOWN,
+      vatPercentage: hasOrigin
+        ? formatMoney(line.xmlVatPercentage ?? 0, decimals.percentage)
+        : UNKNOWN,
+      taxValue: hasOrigin
+        ? formatMoneyWithSymbol(line.xmlTaxValue ?? 0, decimals.totalAmount)
+        : UNKNOWN,
+      totalLine: hasOrigin
+        ? formatMoneyWithSymbol(line.xmlTotalLine ?? 0, decimals.totalAmount)
+        : UNKNOWN,
     },
     item: {
       hasItem,
       isLoading,
-      sku: (hasItem && (ctx?.sku || line.description?.split(' — ')[0])) || UNKNOWN,
+      sku:
+        (hasItem && (ctx?.sku || line.description?.split(" — ")[0])) || UNKNOWN,
       name: (hasItem && displayName) || UNKNOWN,
       uom: UNKNOWN,
       matchStatus: line.itemMatchStatus ?? null,
@@ -132,23 +144,46 @@ export function buildPurchaseLinePresentation(
     commercial: {
       hasContext,
       stock: {
-        current: hasContext ? formatMoney(currentStock, decimals.quantity) : UNKNOWN,
-        available: hasContext ? formatMoney(ctx!.availableStock, decimals.quantity) : UNKNOWN,
-        reserved: hasContext ? formatMoney(ctx!.reservedStock, decimals.quantity) : UNKNOWN,
-        statusLabel: hasContext ? (currentStock <= 0 ? 'Crítico' : 'OK') : UNKNOWN,
+        current: hasContext
+          ? formatMoney(currentStock, decimals.quantity)
+          : UNKNOWN,
+        available: hasContext
+          ? formatMoney(ctx!.availableStock, decimals.quantity)
+          : UNKNOWN,
+        reserved: hasContext
+          ? formatMoney(ctx!.reservedStock, decimals.quantity)
+          : UNKNOWN,
+        statusLabel: hasContext
+          ? currentStock <= 0
+            ? "Crítico"
+            : "OK"
+          : UNKNOWN,
         isCritical: hasContext && currentStock <= 0,
       },
       costs: {
-        average: hasContext ? formatMoneyWithSymbol(averageCost, decimals.purchaseUnitPrice) : UNKNOWN,
-        last: hasContext ? formatMoneyWithSymbol(ctx!.lastPurchaseCost, decimals.purchaseUnitPrice) : UNKNOWN,
+        average: hasContext
+          ? formatMoneyWithSymbol(averageCost, decimals.purchaseUnitPrice)
+          : UNKNOWN,
+        last: hasContext
+          ? formatMoneyWithSymbol(
+              ctx!.lastPurchaseCost,
+              decimals.purchaseUnitPrice,
+            )
+          : UNKNOWN,
         showDeviationAlert,
         deviationLabel,
       },
       profitability: {
-        pvp: hasContext ? formatMoneyWithSymbol(pvp, decimals.salesUnitPrice) : UNKNOWN,
-        marginPct: hasContext ? formatMoney(marginPctValue, decimals.percentage) : UNKNOWN,
+        pvp: hasContext
+          ? formatMoneyWithSymbol(pvp, decimals.salesUnitPrice)
+          : UNKNOWN,
+        marginPct: hasContext
+          ? formatMoney(marginPctValue, decimals.percentage)
+          : UNKNOWN,
         marginPctValue,
-        maxDiscountPercent: hasContext ? formatMoney(ctx!.maxDiscountPercent, decimals.percentage) : UNKNOWN,
+        maxDiscountPercent: hasContext
+          ? formatMoney(ctx!.maxDiscountPercent, decimals.percentage)
+          : UNKNOWN,
       },
     },
     status: buildLineStatus({ hasItem, isLoading, missingRequiredData }),
@@ -159,15 +194,15 @@ function buildLineStatus(input: {
   hasItem: boolean;
   isLoading: boolean;
   missingRequiredData: boolean;
-}): PurchaseLinePresentationVM['status'] {
+}): PurchaseLinePresentationVM["status"] {
   if (!input.hasItem) {
-    return { icon: '🟡', label: 'Pendiente de vincular Item', tone: 'warning' };
+    return { icon: "🟡", label: "Pendiente de vincular Item", tone: "warning" };
   }
   if (input.isLoading) {
-    return { icon: '🟡', label: 'Contexto cargando', tone: 'warning' };
+    return { icon: "🟡", label: "Contexto cargando", tone: "warning" };
   }
   if (input.missingRequiredData) {
-    return { icon: '🔴', label: 'Información incompleta', tone: 'danger' };
+    return { icon: "🔴", label: "Información incompleta", tone: "danger" };
   }
-  return { icon: '🟢', label: 'Item vinculado', tone: 'success' };
+  return { icon: "🟢", label: "Item vinculado", tone: "success" };
 }

@@ -187,7 +187,7 @@ public class ErpDbContext : DbContext
         Set<BusinessPartnerLocation>();
     public DbSet<BusinessPartnerContact> BusinessPartnerContacts => Set<BusinessPartnerContact>();
     public DbSet<PaymentTerm> PaymentTerms => Set<PaymentTerm>();
-    public DbSet<PersonTypeCatalog> PersonTypeCatalogs => Set<PersonTypeCatalog>();
+    public DbSet<LegalEntityTypeCatalog> LegalEntityTypeCatalog => Set<LegalEntityTypeCatalog>();
 
     // ── Navigation / UI ───────────────────────────────────────────────────
     public DbSet<UiNavGroup> UiNavGroups => Set<UiNavGroup>();

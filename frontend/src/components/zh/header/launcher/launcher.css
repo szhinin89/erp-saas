@@ -32,7 +32,7 @@
   font-size: 16px;
   color: var(--color-warning);
   flex-shrink: 0;
-  font-variation-settings: 'FILL' 1;
+  font-variation-settings: "FILL" 1;
 }
 .zh-launcher__favoritesTitle {
   flex: 1;
@@ -62,7 +62,8 @@
   flex-shrink: 0;
   transition: transform 200ms ease;
 }
-.zh-launcher__favoritesHeader[aria-expanded='true'] .zh-launcher__favoritesCaret {
+.zh-launcher__favoritesHeader[aria-expanded="true"]
+  .zh-launcher__favoritesCaret {
   transform: rotate(180deg);
 }
 
@@ -109,7 +110,9 @@
   color: var(--color-primary);
   transition: color var(--transition);
 }
-.zh-launcher__favoritesToggle:hover { text-decoration: underline; }
+.zh-launcher__favoritesToggle:hover {
+  text-decoration: underline;
+}
 
 /* ── Nivel 1 — Buscador global ───────────────────────────── */
 .zh-launcher__searchWrap {
@@ -121,11 +124,13 @@
   background: var(--color-surface-container-low);
   border-radius: var(--radius-md);
   border: 1px solid var(--color-border);
-  transition: border-color var(--transition), box-shadow var(--transition);
+  transition:
+    border-color var(--transition),
+    box-shadow var(--transition);
 }
 .zh-launcher__searchWrap:focus-within {
   border-color: var(--color-primary);
-  box-shadow: 0 0 0 3px rgba(58, 95, 132, 0.10);
+  box-shadow: 0 0 0 3px rgba(58, 95, 132, 0.1);
 }
 .zh-launcher__searchIcon {
   font-size: 18px;
@@ -146,7 +151,9 @@
 .zh-launcher__search::placeholder {
   color: var(--color-outline);
 }
-.zh-launcher__search::-webkit-search-cancel-button { cursor: pointer; }
+.zh-launcher__search::-webkit-search-cancel-button {
+  cursor: pointer;
+}
 
 /* ── Counter resultados de búsqueda ──────────────────────── */
 .zh-launcher__searchResultCount {
@@ -178,12 +185,20 @@
   padding: 12px var(--space-4);
   font-family: var(--font-family);
   text-align: left;
-  transition: background var(--transition), color var(--transition);
+  transition:
+    background var(--transition),
+    color var(--transition);
   min-height: 44px;
 }
-.zh-launcher__moduleToggle:hover { background: var(--color-surface-container-high); }
-.zh-launcher__moduleToggle.is-active { color: var(--color-primary); }
-.zh-launcher__moduleToggle.is-active:not(:hover) { background: var(--color-surface-container-low); }
+.zh-launcher__moduleToggle:hover {
+  background: var(--color-surface-container-high);
+}
+.zh-launcher__moduleToggle.is-active {
+  color: var(--color-primary);
+}
+.zh-launcher__moduleToggle.is-active:not(:hover) {
+  background: var(--color-surface-container-low);
+}
 
 .zh-launcher__moduleIcon {
   font-size: 20px;
@@ -204,14 +219,16 @@
   flex-shrink: 0;
   transition: transform 150ms ease;
 }
-.zh-launcher__moduleToggle[aria-expanded='true'] .zh-launcher__moduleCaret {
+.zh-launcher__moduleToggle[aria-expanded="true"] .zh-launcher__moduleCaret {
   transform: rotate(90deg);
 }
 
 .zh-launcher__moduleBody {
   padding-bottom: var(--space-2);
 }
-.zh-launcher__module--single { padding: 0; }
+.zh-launcher__module--single {
+  padding: 0;
+}
 
 /* ── Nivel 3 — Categorías funcionales ────────────────────── */
 .zh-launcher__category {
@@ -233,7 +250,9 @@
   transition: background var(--transition);
   border-top: 1px solid var(--color-border-light);
 }
-.zh-launcher__categoryToggle:hover { background: var(--color-surface-container-low); }
+.zh-launcher__categoryToggle:hover {
+  background: var(--color-surface-container-low);
+}
 
 .zh-launcher__categoryLabel {
   font-size: var(--text-label-sm-size);
@@ -249,7 +268,7 @@
   color: var(--color-outline-variant);
   transition: transform 150ms ease;
 }
-.zh-launcher__categoryToggle[aria-expanded='true'] .zh-launcher__categoryCaret {
+.zh-launcher__categoryToggle[aria-expanded="true"] .zh-launcher__categoryCaret {
   transform: rotate(90deg);
 }
 .zh-launcher__categoryBody {
@@ -262,9 +281,15 @@
   align-items: center;
 }
 /* Phase 3 + fix de --space-7 que no existe en design-tokens.css */
-.zh-launcher__item--depth-0 { padding-left: 24px; }
-.zh-launcher__item--depth-1 { padding-left: 40px; }
-.zh-launcher__item--depth-2 { padding-left: 52px; }
+.zh-launcher__item--depth-0 {
+  padding-left: 24px;
+}
+.zh-launcher__item--depth-1 {
+  padding-left: 40px;
+}
+.zh-launcher__item--depth-2 {
+  padding-left: 52px;
+}
 
 .zh-launcher__itemLink {
   flex: 1;
@@ -288,19 +313,25 @@
   border-radius: var(--radius-sm);
   /* Phase 5: inset box-shadow en lugar de border-left para no afectar box model */
   box-shadow: inset 3px 0 0 transparent;
-  transition: background var(--transition), color var(--transition), box-shadow var(--transition);
+  transition:
+    background var(--transition),
+    color var(--transition),
+    box-shadow var(--transition);
 }
 /* Phase 5: hover subtle */
 .zh-launcher__itemLink:hover {
   background: var(--color-surface-container-low);
 }
-.zh-launcher__itemLink--disabled { opacity: 0.45; cursor: default; }
+.zh-launcher__itemLink--disabled {
+  opacity: 0.45;
+  cursor: default;
+}
 
 /* Phase 3 + Phase 5: active state con contraste correcto */
 .zh-launcher__item.is-active .zh-launcher__itemLink {
   color: var(--color-primary);
   font-weight: 600;
-  background: rgba(58, 95, 132, 0.10);
+  background: rgba(58, 95, 132, 0.1);
   box-shadow: inset 3px 0 0 var(--color-primary);
 }
 
@@ -333,9 +364,12 @@
   line-height: 1;
   color: var(--color-outline);
   /* fill variation — Material Symbols Outlined */
-  font-variation-settings: 'FILL' 0;
+  font-variation-settings: "FILL" 0;
   /* Phase 7: hover + opacity en 100ms */
-  transition: color 100ms ease, opacity 100ms ease, font-variation-settings 150ms ease;
+  transition:
+    color 100ms ease,
+    opacity 100ms ease,
+    font-variation-settings 150ms ease;
   /* Phase 6: estrella visible solo en hover e is-on (accesibilidad: focus-within también) */
   opacity: 0;
 }
@@ -347,7 +381,7 @@
 .zh-launcher__fav.is-on .zh-launcher__favIcon {
   opacity: 1;
   color: var(--color-warning);
-  font-variation-settings: 'FILL' 1;
+  font-variation-settings: "FILL" 1;
 }
 .zh-launcher__fav:hover .zh-launcher__favIcon {
   color: var(--color-warning);
@@ -368,8 +402,12 @@
 
 /* ── Skeleton loading ────────────────────────────────────── */
 @keyframes zh-launcher-shimmer {
-  0%   { background-position: -200px 0; }
-  100% { background-position: calc(200px + 100%) 0; }
+  0% {
+    background-position: -200px 0;
+  }
+  100% {
+    background-position: calc(200px + 100%) 0;
+  }
 }
 .zh-launcher__skeleton {
   padding: var(--space-3) var(--space-4);
@@ -380,7 +418,8 @@
 .zh-launcher__skeletonRow {
   height: 14px;
   border-radius: var(--radius-sm);
-  background: linear-gradient(90deg,
+  background: linear-gradient(
+    90deg,
     var(--color-surface-container-low) 0%,
     var(--color-surface-container-high) 40%,
     var(--color-surface-container-low) 80%
@@ -388,5 +427,9 @@
   background-size: 200px 100%;
   animation: zh-launcher-shimmer 1.4s ease-in-out infinite;
 }
-.zh-launcher__skeletonRow:nth-child(odd) { width: 70%; }
-.zh-launcher__skeletonRow:nth-child(even) { width: 50%; }
+.zh-launcher__skeletonRow:nth-child(odd) {
+  width: 70%;
+}
+.zh-launcher__skeletonRow:nth-child(even) {
+  width: 50%;
+}

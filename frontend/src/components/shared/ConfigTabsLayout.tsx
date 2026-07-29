@@ -1,8 +1,8 @@
-import { type ReactNode } from 'react';
+import { type ReactNode } from "react";
 
 interface ConfigTabsLayoutProps {
-  activeTab: 'list' | 'editor';
-  onTabChange: (tab: 'list' | 'editor') => void;
+  activeTab: "list" | "editor";
+  onTabChange: (tab: "list" | "editor") => void;
   /** Label for the editor tab — changes dynamically: "Nueva Sucursal" / "Editar" */
   editorLabel: string;
   editorIcon?: string;
@@ -24,7 +24,7 @@ export function ConfigTabsLayout({
   activeTab,
   onTabChange,
   editorLabel,
-  editorIcon = 'edit',
+  editorIcon = "edit",
   listContent,
   editorContent,
   error,
@@ -33,33 +33,43 @@ export function ConfigTabsLayout({
     <>
       {error}
 
-      <div className="prd-tabs" role="tablist" aria-label="Secciones de configuración">
+      <div
+        className="prd-tabs"
+        role="tablist"
+        aria-label="Secciones de configuración"
+      >
         <button
           type="button"
           role="tab"
-          aria-selected={activeTab === 'list'}
-          className={`prd-tab-btn${activeTab === 'list' ? ' prd-tab-btn--active' : ''}`}
-          onClick={() => onTabChange('list')}
+          aria-selected={activeTab === "list"}
+          className={`prd-tab-btn${activeTab === "list" ? " prd-tab-btn--active" : ""}`}
+          onClick={() => onTabChange("list")}
         >
-          <span className="material-symbols-outlined prd-tab-icon">view_list</span>
+          <span className="material-symbols-outlined prd-tab-icon">
+            view_list
+          </span>
           Lista
         </button>
         <button
           type="button"
           role="tab"
-          aria-selected={activeTab === 'editor'}
-          className={`prd-tab-btn${activeTab === 'editor' ? ' prd-tab-btn--active' : ''}`}
-          onClick={() => onTabChange('editor')}
+          aria-selected={activeTab === "editor"}
+          className={`prd-tab-btn${activeTab === "editor" ? " prd-tab-btn--active" : ""}`}
+          onClick={() => onTabChange("editor")}
         >
-          <span className="material-symbols-outlined prd-tab-icon">{editorIcon}</span>
+          <span className="material-symbols-outlined prd-tab-icon">
+            {editorIcon}
+          </span>
           {editorLabel}
         </button>
       </div>
 
       <div className="cfg-tabs-content">
-        {activeTab === 'list'
-          ? listContent
-          : <div className="cfg-tabs-form-wrap">{editorContent}</div>}
+        {activeTab === "list" ? (
+          listContent
+        ) : (
+          <div className="cfg-tabs-form-wrap">{editorContent}</div>
+        )}
       </div>
     </>
   );

@@ -1,11 +1,11 @@
-import type { CreditRow } from '../hooks/useSalesPage';
-import { ZhDecimalInput } from '../../../components/zh/inputs/ZhDecimalInput';
-import { ZHModal } from '../../../components/zh/ZHModal';
-import { ZHBtn } from '../../../components/zh/ZHForm';
-import { ZHPageNotice } from '../../../components/zh/ZHPageNotice';
-import { formatMoney } from '../../../lib/sanitizers';
-import { getDecimalConfig } from '../../../lib/config/decimal.config';
-import { INSTALLMENT_ROUNDING_TOLERANCE } from '../constants/tolerances';
+import type { CreditRow } from "../hooks/useSalesPage";
+import { ZhDecimalInput } from "../../../components/zh/inputs/ZhDecimalInput";
+import { ZHModal } from "../../../components/zh/ZHModal";
+import { ZHBtn } from "../../../components/zh/ZHForm";
+import { ZHPageNotice } from "../../../components/zh/ZHPageNotice";
+import { formatMoney } from "../../../lib/sanitizers";
+import { getDecimalConfig } from "../../../lib/config/decimal.config";
+import { INSTALLMENT_ROUNDING_TOLERANCE } from "../constants/tolerances";
 
 interface Props {
   open: boolean;
@@ -21,8 +21,16 @@ interface Props {
 }
 
 export function CreditSimulatorModal({
-  open, amount, rows, paymentTermName, installments, daysBetween,
-  onRowsChange, onRecalculate, onConfirm, onCancel,
+  open,
+  amount,
+  rows,
+  paymentTermName,
+  installments,
+  daysBetween,
+  onRowsChange,
+  onRecalculate,
+  onConfirm,
+  onCancel,
 }: Props) {
   const totalAmountDecimals = getDecimalConfig().totalAmount;
   const factor = 10 ** totalAmountDecimals;
@@ -35,19 +43,31 @@ export function CreditSimulatorModal({
       onClose={onCancel}
       size="md"
       title="Simulación de Cuotas"
-      subtitle={`Monto a crédito: $${formatMoney(amount, totalAmountDecimals)}${paymentTermName && installments && daysBetween ? ` — ${paymentTermName} (${installments} cuota${installments > 1 ? 's' : ''} × ${daysBetween} días)` : ''}`}
+      subtitle={`Monto a crédito: $${formatMoney(amount, totalAmountDecimals)}${paymentTermName && installments && daysBetween ? ` — ${paymentTermName} (${installments} cuota${installments > 1 ? "s" : ""} × ${daysBetween} días)` : ""}`}
       footer={
         <>
-          <ZHBtn variant="ghost" size="md" onClick={onCancel}>Cancelar</ZHBtn>
-          <ZHBtn variant="secondary" size="md" onClick={onRecalculate}>Recalcular</ZHBtn>
-          <ZHBtn variant="primary" size="md" disabled={Math.abs(diff) > INSTALLMENT_ROUNDING_TOLERANCE} onClick={() => onConfirm(totalCuotas)}>
+          <ZHBtn variant="ghost" size="md" onClick={onCancel}>
+            Cancelar
+          </ZHBtn>
+          <ZHBtn variant="secondary" size="md" onClick={onRecalculate}>
+            Recalcular
+          </ZHBtn>
+          <ZHBtn
+            variant="primary"
+            size="md"
+            disabled={Math.abs(diff) > INSTALLMENT_ROUNDING_TOLERANCE}
+            onClick={() => onConfirm(totalCuotas)}
+          >
             Confirmar cuotas
           </ZHBtn>
         </>
       }
     >
       {diff !== 0 && (
-        <ZHPageNotice variant="warning" message={`Diferencia: $${formatMoney(Math.abs(diff), totalAmountDecimals)} — las cuotas deben sumar $${formatMoney(amount, totalAmountDecimals)}`} />
+        <ZHPageNotice
+          variant="warning"
+          message={`Diferencia: $${formatMoney(Math.abs(diff), totalAmountDecimals)} — las cuotas deben sumar $${formatMoney(amount, totalAmountDecimals)}`}
+        />
       )}
 
       <table className="pf-table">
@@ -63,21 +83,45 @@ export function CreditSimulatorModal({
             <tr key={row.number}>
               <td>{row.number}</td>
               <td>
-                <input type="date" value={row.dueDate}
-                  onChange={e => onRowsChange(rows.map((r, i) => i === idx ? { ...r, dueDate: e.target.value } : r))} />
+                <input
+                  type="date"
+                  value={row.dueDate}
+                  onChange={(e) =>
+                    onRowsChange(
+                      rows.map((r, i) =>
+                        i === idx ? { ...r, dueDate: e.target.value } : r,
+                      ),
+                    )
+                  }
+                />
               </td>
               <td className="pf-td--num">
-                <ZhDecimalInput decimals={totalAmountDecimals} positiveOnly
+                <ZhDecimalInput
+                  decimals={totalAmountDecimals}
+                  positiveOnly
                   defaultValue={formatMoney(row.amount, totalAmountDecimals)}
-                  onBlur={e => onRowsChange(rows.map((r, i) => i === idx ? { ...r, amount: Number(e.target.value) || 0 } : r))} />
+                  onBlur={(e) =>
+                    onRowsChange(
+                      rows.map((r, i) =>
+                        i === idx
+                          ? { ...r, amount: Number(e.target.value) || 0 }
+                          : r,
+                      ),
+                    )
+                  }
+                />
               </td>
             </tr>
           ))}
         </tbody>
         <tfoot>
           <tr>
-            <td colSpan={2} className="pf-td--right"><strong>Total cuotas</strong></td>
-            <td className="pf-td--num"><strong>${formatMoney(totalCuotas, totalAmountDecimals)}</strong></td>
+            <td colSpan={2} className="pf-td--right">
+              <strong>Total cuotas</strong>
+            </td>
+            <td className="pf-td--num">
+              <strong>${formatMoney(totalCuotas, totalAmountDecimals)}</strong>
+            </td>
           </tr>
         </tfoot>
       </table>

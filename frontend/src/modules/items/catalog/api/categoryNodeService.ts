@@ -1,6 +1,6 @@
-import { apiGet, apiPatch, apiPost, apiPut } from '../../../lib/apiEnvelope';
+import { apiGet, apiPatch, apiPost, apiPut } from "../../../lib/apiEnvelope";
 
-const BASE = '/api/v1/catalog/category-nodes';
+const BASE = "/api/v1/catalog/category-nodes";
 
 export interface CategoryNodeDto {
   id: string;
@@ -45,8 +45,7 @@ export const categoryNodeService = {
   getTree: (includeInactive = true) =>
     apiGet<CategoryTreeDto>(`${BASE}?includeInactive=${includeInactive}`),
 
-  getById: (id: string) =>
-    apiGet<CategoryNodeDto>(`${BASE}/${id}`),
+  getById: (id: string) => apiGet<CategoryNodeDto>(`${BASE}/${id}`),
 
   create: (payload: CreateCategoryNodePayload) =>
     apiPost<CategoryNodeDto>(BASE, payload),
@@ -54,9 +53,7 @@ export const categoryNodeService = {
   update: (id: string, payload: UpdateCategoryNodePayload) =>
     apiPut<CategoryNodeDto>(`${BASE}/${id}`, payload),
 
-  disable: (id: string) =>
-    apiPatch<boolean>(`${BASE}/${id}/disable`),
+  disable: (id: string) => apiPatch<boolean>(`${BASE}/${id}/disable`),
 
-  enable: (id: string) =>
-    apiPatch<boolean>(`${BASE}/${id}/enable`),
+  enable: (id: string) => apiPatch<boolean>(`${BASE}/${id}/enable`),
 };

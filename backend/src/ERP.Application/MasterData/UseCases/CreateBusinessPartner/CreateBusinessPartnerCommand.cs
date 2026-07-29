@@ -1,6 +1,5 @@
 using ERP.Application.Common;
 using ERP.Application.MasterData.DTOs;
-using ERP.Domain.MasterData.Enums;
 using MediatR;
 
 namespace ERP.Application.MasterData.UseCases.CreateBusinessPartner;
@@ -15,7 +14,7 @@ namespace ERP.Application.MasterData.UseCases.CreateBusinessPartner;
 public sealed record CreateBusinessPartnerCommand(
     string IdentificationType,
     string IdentificationNumber,
-    PersonType PersonType,
+    int LegalEntityTypeCode,
     string LegalName,
     string? TradeName = null,
     string? CountryCode = null

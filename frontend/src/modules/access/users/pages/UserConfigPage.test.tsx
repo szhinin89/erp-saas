@@ -1,27 +1,36 @@
 // @vitest-environment jsdom
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { render, screen, waitFor, fireEvent, cleanup } from '@testing-library/react';
-import { MemoryRouter, Routes, Route } from 'react-router-dom';
-import { I18nProvider } from '../../../../i18n/i18n';
-import { useAuthStore } from '../../../../store/authStore';
-import { UserConfigPage } from './UserConfigPage';
-import { membershipService } from '../api/membershipService';
-import { branchAssignmentService } from '../api/branchAssignmentService';
-import { companyUserPreferencesService } from '../../api/companyUserPreferencesService';
-import { profileService } from '../../api/profileService';
-import { branchService } from '../../../branches/api/branchService';
-import { usePermissionsUi } from '../../../../access/usePermissionsUi';
-import { message } from '../../../../lib/messages';
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import {
+  render,
+  screen,
+  waitFor,
+  fireEvent,
+  cleanup,
+} from "@testing-library/react";
+import { MemoryRouter, Routes, Route } from "react-router-dom";
+import { I18nProvider } from "../../../../i18n/i18n";
+import { useAuthStore } from "../../../../store/authStore";
+import { UserConfigPage } from "./UserConfigPage";
+import { membershipService } from "../api/membershipService";
+import { branchAssignmentService } from "../api/branchAssignmentService";
+import { companyUserPreferencesService } from "../../api/companyUserPreferencesService";
+import { profileService } from "../../api/profileService";
+import { branchService } from "../../../branches/api/branchService";
+import { usePermissionsUi } from "../../../../access/usePermissionsUi";
+import { message } from "../../../../lib/messages";
 
 const navigateMock = vi.fn();
 
-vi.mock('react-router-dom', async () => {
-  const actual = await vi.importActual<typeof import('react-router-dom')>('react-router-dom');
+vi.mock("react-router-dom", async () => {
+  const actual =
+    await vi.importActual<typeof import("react-router-dom")>(
+      "react-router-dom",
+    );
   return { ...actual, useNavigate: () => navigateMock };
 });
 
-vi.mock('../api/membershipService', () => ({
-  MEMBERSHIP_ROLES: ['Admin', 'User'],
+vi.mock("../api/membershipService", () => ({
+  MEMBERSHIP_ROLES: ["Admin", "User"],
   membershipService: {
     list: vi.fn(),
     upsertMembership: vi.fn(),
@@ -31,38 +40,38 @@ vi.mock('../api/membershipService', () => ({
   },
 }));
 
-vi.mock('../api/branchAssignmentService', () => ({
+vi.mock("../api/branchAssignmentService", () => ({
   branchAssignmentService: {
     getMembershipBranches: vi.fn(),
     updateMembershipBranches: vi.fn(),
   },
 }));
 
-vi.mock('../../api/companyUserPreferencesService', () => ({
-  COMPANY_USER_LOGIN_MODES: ['AskBranch', 'DirectToDefault'],
+vi.mock("../../api/companyUserPreferencesService", () => ({
+  COMPANY_USER_LOGIN_MODES: ["AskBranch", "DirectToDefault"],
   companyUserPreferencesService: {
     get: vi.fn(),
     update: vi.fn(),
   },
 }));
 
-vi.mock('../../api/profileService', () => ({
+vi.mock("../../api/profileService", () => ({
   profileService: {
     list: vi.fn(),
   },
 }));
 
-vi.mock('../../../branches/api/branchService', () => ({
+vi.mock("../../../branches/api/branchService", () => ({
   branchService: {
     list: vi.fn(),
   },
 }));
 
-vi.mock('../../../../access/usePermissionsUi', () => ({
+vi.mock("../../../../access/usePermissionsUi", () => ({
   usePermissionsUi: vi.fn(),
 }));
 
-vi.mock('../../../../lib/messages', () => ({
+vi.mock("../../../../lib/messages", () => ({
   message: {
     success: vi.fn(),
     error: vi.fn(),
@@ -71,32 +80,63 @@ vi.mock('../../../../lib/messages', () => ({
 }));
 
 const membershipRow = {
-  companyUserId: 'membership-1',
-  identityUserId: 'identity-1',
-  username: 'ana',
-  fullName: 'Ana Perez',
-  email: 'ana@test.com',
-  role: 'User',
+  companyUserId: "membership-1",
+  identityUserId: "identity-1",
+  username: "ana",
+  fullName: "Ana Perez",
+  email: "ana@test.com",
+  role: "User",
   isActive: true,
-  profileId: 'profile-1',
-  profileName: 'Ventas',
+  profileId: "profile-1",
+  profileName: "Ventas",
 };
 
 const twoBranchesCatalog = [
-  { id: 'branch-1', name: 'Matriz', code: '001', address: 'Av. Principal', countryId: null, provinceId: null, cantonId: null, parishId: null, phone: null, email: null, managerName: null, isActive: true, isMainBranch: true },
-  { id: 'branch-2', name: 'Sucursal Norte', code: '002', address: 'Av. Norte', countryId: null, provinceId: null, cantonId: null, parishId: null, phone: null, email: null, managerName: null, isActive: true, isMainBranch: false },
+  {
+    id: "branch-1",
+    name: "Matriz",
+    code: "001",
+    address: "Av. Principal",
+    countryId: null,
+    provinceId: null,
+    cantonId: null,
+    parishId: null,
+    phone: null,
+    email: null,
+    managerName: null,
+    isActive: true,
+    isMainBranch: true,
+  },
+  {
+    id: "branch-2",
+    name: "Sucursal Norte",
+    code: "002",
+    address: "Av. Norte",
+    countryId: null,
+    provinceId: null,
+    cantonId: null,
+    parishId: null,
+    phone: null,
+    email: null,
+    managerName: null,
+    isActive: true,
+    isMainBranch: false,
+  },
 ];
 
 function setUserRole(role: string | null) {
   useAuthStore.setState({
-    user: role === null ? null : {
-      userId: 'user-1',
-      fullName: 'Test User',
-      username: 'test.user',
-      email: 'test@example.com',
-      role,
-      tenantId: 'tenant-1',
-    },
+    user:
+      role === null
+        ? null
+        : {
+            userId: "user-1",
+            fullName: "Test User",
+            username: "test.user",
+            email: "test@example.com",
+            role,
+            tenantId: "tenant-1",
+          },
     isAuthenticated: role !== null,
     hasHydrated: true,
   });
@@ -121,7 +161,10 @@ function renderAt(path: string, state?: unknown) {
  * cómputo de nombre termina incluyendo el texto de las opciones. Se consulta por atributo `name`
  * del formulario en su lugar, que es estable y no depende de ese cálculo.
  */
-function selectByFieldName(container: HTMLElement, name: string): HTMLSelectElement {
+function selectByFieldName(
+  container: HTMLElement,
+  name: string,
+): HTMLSelectElement {
   const el = container.querySelector(`select[name="${name}"]`);
   if (!el) throw new Error(`select[name="${name}"] no encontrado`);
   return el as HTMLSelectElement;
@@ -136,277 +179,469 @@ beforeEach(() => {
     isAdminRole: true,
   });
   vi.mocked(membershipService.list).mockResolvedValue([membershipRow]);
-  vi.mocked(membershipService.upsertMembership).mockReset().mockResolvedValue({});
-  vi.mocked(membershipService.createSystemUser).mockReset().mockResolvedValue({ identityUserId: 'identity-2', username: 'nuevo' });
+  vi.mocked(membershipService.upsertMembership)
+    .mockReset()
+    .mockResolvedValue({});
+  vi.mocked(membershipService.createSystemUser)
+    .mockReset()
+    .mockResolvedValue({ identityUserId: "identity-2", username: "nuevo" });
   vi.mocked(membershipService.lookupUserByUsername).mockReset();
   vi.mocked(branchAssignmentService.getMembershipBranches).mockResolvedValue({
     companyUserId: membershipRow.companyUserId,
     branches: [
-      { branchId: 'branch-1', branchName: 'Matriz', authorized: true },
-      { branchId: 'branch-2', branchName: 'Sucursal Norte', authorized: false },
+      { branchId: "branch-1", branchName: "Matriz", authorized: true },
+      { branchId: "branch-2", branchName: "Sucursal Norte", authorized: false },
     ],
   });
-  vi.mocked(branchAssignmentService.updateMembershipBranches).mockReset().mockResolvedValue({ companyUserId: membershipRow.companyUserId, branches: [] });
+  vi.mocked(branchAssignmentService.updateMembershipBranches)
+    .mockReset()
+    .mockResolvedValue({
+      companyUserId: membershipRow.companyUserId,
+      branches: [],
+    });
   vi.mocked(companyUserPreferencesService.get).mockResolvedValue({
     companyUserId: membershipRow.companyUserId,
-    defaultBranchId: 'branch-1',
-    loginMode: 'AskBranch',
+    defaultBranchId: "branch-1",
+    loginMode: "AskBranch",
   });
-  vi.mocked(companyUserPreferencesService.update).mockReset().mockResolvedValue({
-    companyUserId: membershipRow.companyUserId,
-    defaultBranchId: null,
-    loginMode: 'AskBranch',
-  });
+  vi.mocked(companyUserPreferencesService.update)
+    .mockReset()
+    .mockResolvedValue({
+      companyUserId: membershipRow.companyUserId,
+      defaultBranchId: null,
+      loginMode: "AskBranch",
+    });
   vi.mocked(profileService.list).mockResolvedValue([
-    { id: 'profile-1', name: 'Ventas', description: null, isActive: true },
+    { id: "profile-1", name: "Ventas", description: null, isActive: true },
   ]);
   vi.mocked(branchService.list).mockResolvedValue(twoBranchesCatalog);
   vi.mocked(message.confirm).mockResolvedValue(true);
-  setUserRole('Admin');
+  setUserRole("Admin");
 });
 
 afterEach(() => {
   cleanup();
-  useAuthStore.setState({ user: null, isAuthenticated: false, hasHydrated: false, token: null, companySessionVersion: 0 });
+  useAuthStore.setState({
+    user: null,
+    isAuthenticated: false,
+    hasHydrated: false,
+    token: null,
+    companySessionVersion: 0,
+  });
 });
 
-describe('UserConfigPage — un solo formulario, un solo botón de guardar', () => {
+describe("UserConfigPage — un solo formulario, un solo botón de guardar", () => {
   it('en modo edición muestra las 4 secciones y un único botón "Guardar configuración"', async () => {
-    renderAt('/access/users/membership-1');
+    renderAt("/access/users/membership-1");
 
-    await waitFor(() => expect((screen.getByLabelText('Username') as HTMLInputElement).value).toBe('ana'));
+    await waitFor(() =>
+      expect(
+        (screen.getByLabelText("Username") as HTMLInputElement).value,
+      ).toBe("ana"),
+    );
 
-    expect(screen.getByRole('tab', { name: 'Información General' })).toBeTruthy();
-    expect(screen.getByRole('tab', { name: 'Acceso a sucursales' })).toBeTruthy();
-    expect(screen.getByRole('tab', { name: 'Preferencias de acceso' })).toBeTruthy();
-    expect(screen.getByRole('tab', { name: 'Seguridad' })).toBeTruthy();
-    expect(screen.getAllByRole('button', { name: 'Guardar configuración' })).toHaveLength(1);
+    expect(
+      screen.getByRole("tab", { name: "Información General" }),
+    ).toBeTruthy();
+    expect(
+      screen.getByRole("tab", { name: "Acceso a sucursales" }),
+    ).toBeTruthy();
+    expect(
+      screen.getByRole("tab", { name: "Preferencias de acceso" }),
+    ).toBeTruthy();
+    expect(screen.getByRole("tab", { name: "Seguridad" })).toBeTruthy();
+    expect(
+      screen.getAllByRole("button", { name: "Guardar configuración" }),
+    ).toHaveLength(1);
   });
 
-  it('username no es editable en modo edición', async () => {
-    renderAt('/access/users/membership-1');
-    await waitFor(() => expect((screen.getByLabelText('Username') as HTMLInputElement).disabled).toBe(true));
+  it("username no es editable en modo edición", async () => {
+    renderAt("/access/users/membership-1");
+    await waitFor(() =>
+      expect(
+        (screen.getByLabelText("Username") as HTMLInputElement).disabled,
+      ).toBe(true),
+    );
   });
 
-  it('cambiar de tab no pierde los valores ya cargados (un solo useForm, no se desmonta el estado)', async () => {
-    renderAt('/access/users/membership-1');
-    await waitFor(() => expect((screen.getByLabelText('Username') as HTMLInputElement).value).toBe('ana'));
+  it("cambiar de tab no pierde los valores ya cargados (un solo useForm, no se desmonta el estado)", async () => {
+    renderAt("/access/users/membership-1");
+    await waitFor(() =>
+      expect(
+        (screen.getByLabelText("Username") as HTMLInputElement).value,
+      ).toBe("ana"),
+    );
 
-    fireEvent.click(screen.getByRole('tab', { name: 'Acceso a sucursales' }));
-    await waitFor(() => expect(screen.getByText('Matriz')).toBeTruthy());
+    fireEvent.click(screen.getByRole("tab", { name: "Acceso a sucursales" }));
+    await waitFor(() => expect(screen.getByText("Matriz")).toBeTruthy());
     // Matriz ya viene autorizada; se marca también Sucursal Norte.
-    const toggles = screen.getAllByRole('switch');
+    const toggles = screen.getAllByRole("switch");
     fireEvent.click(toggles[1]);
 
-    fireEvent.click(screen.getByRole('tab', { name: 'Información General' }));
-    await waitFor(() => expect((screen.getByLabelText('Username') as HTMLInputElement).value).toBe('ana'));
+    fireEvent.click(screen.getByRole("tab", { name: "Información General" }));
+    await waitFor(() =>
+      expect(
+        (screen.getByLabelText("Username") as HTMLInputElement).value,
+      ).toBe("ana"),
+    );
 
-    fireEvent.click(screen.getByRole('tab', { name: 'Acceso a sucursales' }));
+    fireEvent.click(screen.getByRole("tab", { name: "Acceso a sucursales" }));
     await waitFor(() => {
-      const refreshedToggles = screen.getAllByRole('switch') as HTMLInputElement[];
-      expect(refreshedToggles.every((el) => el.getAttribute('aria-checked') === 'true')).toBe(true);
+      const refreshedToggles = screen.getAllByRole(
+        "switch",
+      ) as HTMLInputElement[];
+      expect(
+        refreshedToggles.every(
+          (el) => el.getAttribute("aria-checked") === "true",
+        ),
+      ).toBe(true);
     });
 
     // Solo un fetch de autorizaciones — no se repite el fetch al volver a visitar la tab.
-    expect(branchAssignmentService.getMembershipBranches).toHaveBeenCalledTimes(1);
+    expect(branchAssignmentService.getMembershipBranches).toHaveBeenCalledTimes(
+      1,
+    );
   });
 
-  it('guardar en modo edición llama a upsertMembership, updateMembershipBranches y preferences.update, muestra un solo toast y vuelve a la lista', async () => {
-    renderAt('/access/users/membership-1', { from: '/access/users?q=ana' });
-    await waitFor(() => expect((screen.getByLabelText('Username') as HTMLInputElement).value).toBe('ana'));
+  it("guardar en modo edición llama a upsertMembership, updateMembershipBranches y preferences.update, muestra un solo toast y vuelve a la lista", async () => {
+    renderAt("/access/users/membership-1", { from: "/access/users?q=ana" });
+    await waitFor(() =>
+      expect(
+        (screen.getByLabelText("Username") as HTMLInputElement).value,
+      ).toBe("ana"),
+    );
 
-    fireEvent.click(screen.getByRole('button', { name: 'Guardar configuración' }));
+    fireEvent.click(
+      screen.getByRole("button", { name: "Guardar configuración" }),
+    );
 
     await waitFor(() => {
-      expect(membershipService.upsertMembership).toHaveBeenCalledWith({ username: 'ana', role: 'User', profileId: 'profile-1' });
-      expect(branchAssignmentService.updateMembershipBranches).toHaveBeenCalledWith('membership-1', ['branch-1']);
-      expect(companyUserPreferencesService.update).toHaveBeenCalledWith('membership-1', { loginMode: 'AskBranch', defaultBranchId: 'branch-1' });
-      expect(message.success).toHaveBeenCalledWith('Usuario configurado correctamente.');
-      expect(navigateMock).toHaveBeenCalledWith('/access/users?q=ana');
+      expect(membershipService.upsertMembership).toHaveBeenCalledWith({
+        username: "ana",
+        role: "User",
+        profileId: "profile-1",
+      });
+      expect(
+        branchAssignmentService.updateMembershipBranches,
+      ).toHaveBeenCalledWith("membership-1", ["branch-1"]);
+      expect(companyUserPreferencesService.update).toHaveBeenCalledWith(
+        "membership-1",
+        { loginMode: "AskBranch", defaultBranchId: "branch-1" },
+      );
+      expect(message.success).toHaveBeenCalledWith(
+        "Usuario configurado correctamente.",
+      );
+      expect(navigateMock).toHaveBeenCalledWith("/access/users?q=ana");
     });
   });
 });
 
-describe('UserConfigPage — alta de usuario nuevo sin paso intermedio', () => {
+describe("UserConfigPage — alta de usuario nuevo sin paso intermedio", () => {
   it('el botón "Guardar configuración" está deshabilitado hasta resolver el username', async () => {
-    renderAt('/access/users/new');
-    await waitFor(() => expect(screen.getByLabelText('Username')).toBeTruthy());
+    renderAt("/access/users/new");
+    await waitFor(() => expect(screen.getByLabelText("Username")).toBeTruthy());
 
-    expect((screen.getByRole('button', { name: 'Guardar configuración' }) as HTMLButtonElement).disabled).toBe(true);
+    expect(
+      (
+        screen.getByRole("button", {
+          name: "Guardar configuración",
+        }) as HTMLButtonElement
+      ).disabled,
+    ).toBe(true);
   });
 
-  it('username inexistente revela los campos de alta y guardar hace un único flujo completo (crear + sucursales + preferencias)', async () => {
-    vi.mocked(membershipService.lookupUserByUsername).mockResolvedValue({ identityUserExists: false, fullName: null, membership: null });
-    vi.mocked(membershipService.list).mockResolvedValue([{ ...membershipRow, companyUserId: 'new-membership-id', username: 'nuevo' }]);
+  it("username inexistente revela los campos de alta y guardar hace un único flujo completo (crear + sucursales + preferencias)", async () => {
+    vi.mocked(membershipService.lookupUserByUsername).mockResolvedValue({
+      identityUserExists: false,
+      fullName: null,
+      membership: null,
+    });
+    vi.mocked(membershipService.list).mockResolvedValue([
+      {
+        ...membershipRow,
+        companyUserId: "new-membership-id",
+        username: "nuevo",
+      },
+    ]);
 
-    renderAt('/access/users/new');
-    await waitFor(() => expect(screen.getByLabelText('Username')).toBeTruthy());
+    renderAt("/access/users/new");
+    await waitFor(() => expect(screen.getByLabelText("Username")).toBeTruthy());
 
-    fireEvent.change(screen.getByLabelText('Username'), { target: { value: 'nuevo' } });
-    fireEvent.blur(screen.getByLabelText('Username'));
+    fireEvent.change(screen.getByLabelText("Username"), {
+      target: { value: "nuevo" },
+    });
+    fireEvent.blur(screen.getByLabelText("Username"));
 
-    await waitFor(() => expect(screen.getByLabelText('Nombre')).toBeTruthy());
-    expect((screen.getByRole('button', { name: 'Guardar configuración' }) as HTMLButtonElement).disabled).toBe(false);
+    await waitFor(() => expect(screen.getByLabelText("Nombre")).toBeTruthy());
+    expect(
+      (
+        screen.getByRole("button", {
+          name: "Guardar configuración",
+        }) as HTMLButtonElement
+      ).disabled,
+    ).toBe(false);
 
-    fireEvent.change(screen.getByLabelText('Nombre'), { target: { value: 'Nuevo' } });
-    fireEvent.change(screen.getByLabelText('Apellido'), { target: { value: 'Usuario' } });
+    fireEvent.change(screen.getByLabelText("Nombre"), {
+      target: { value: "Nuevo" },
+    });
+    fireEvent.change(screen.getByLabelText("Apellido"), {
+      target: { value: "Usuario" },
+    });
     // El campo tiene un "hint" adicional dentro del mismo <label> (RHF/ZHField), por eso el
     // match exacto de getByLabelText no aplica — se usa un prefijo con regex.
-    fireEvent.change(screen.getByLabelText(/^Contraseña inicial/), { target: { value: 'Passw0rd' } });
+    fireEvent.change(screen.getByLabelText(/^Contraseña inicial/), {
+      target: { value: "Passw0rd" },
+    });
 
-    fireEvent.click(screen.getByRole('tab', { name: 'Acceso a sucursales' }));
-    await waitFor(() => expect(screen.getByText('Matriz')).toBeTruthy());
-    fireEvent.click(screen.getAllByRole('switch')[0]);
+    fireEvent.click(screen.getByRole("tab", { name: "Acceso a sucursales" }));
+    await waitFor(() => expect(screen.getByText("Matriz")).toBeTruthy());
+    fireEvent.click(screen.getAllByRole("switch")[0]);
 
-    fireEvent.click(screen.getByRole('button', { name: 'Guardar configuración' }));
+    fireEvent.click(
+      screen.getByRole("button", { name: "Guardar configuración" }),
+    );
 
     await waitFor(() => {
       expect(membershipService.createSystemUser).toHaveBeenCalledWith(
-        expect.objectContaining({ username: 'nuevo', firstName: 'Nuevo', lastName: 'Usuario', password: 'Passw0rd' }),
+        expect.objectContaining({
+          username: "nuevo",
+          firstName: "Nuevo",
+          lastName: "Usuario",
+          password: "Passw0rd",
+        }),
       );
-      expect(branchAssignmentService.updateMembershipBranches).toHaveBeenCalledWith('new-membership-id', ['branch-1']);
+      expect(
+        branchAssignmentService.updateMembershipBranches,
+      ).toHaveBeenCalledWith("new-membership-id", ["branch-1"]);
       expect(message.success).toHaveBeenCalled();
-      expect(navigateMock).toHaveBeenCalledWith('/access/users');
+      expect(navigateMock).toHaveBeenCalledWith("/access/users");
     });
   });
 
-  it('username que ya es miembro activo muestra un mensaje claro y un link, no un formulario', async () => {
+  it("username que ya es miembro activo muestra un mensaje claro y un link, no un formulario", async () => {
     vi.mocked(membershipService.lookupUserByUsername).mockResolvedValue({
       identityUserExists: true,
-      fullName: 'Ana Perez',
-      membership: { companyUserMembershipId: 'membership-1', isActive: true, role: 'User', profileId: 'profile-1' },
+      fullName: "Ana Perez",
+      membership: {
+        companyUserMembershipId: "membership-1",
+        isActive: true,
+        role: "User",
+        profileId: "profile-1",
+      },
     });
 
-    renderAt('/access/users/new');
-    await waitFor(() => expect(screen.getByLabelText('Username')).toBeTruthy());
+    renderAt("/access/users/new");
+    await waitFor(() => expect(screen.getByLabelText("Username")).toBeTruthy());
 
-    fireEvent.change(screen.getByLabelText('Username'), { target: { value: 'ana' } });
-    fireEvent.blur(screen.getByLabelText('Username'));
+    fireEvent.change(screen.getByLabelText("Username"), {
+      target: { value: "ana" },
+    });
+    fireEvent.blur(screen.getByLabelText("Username"));
 
-    await waitFor(() => expect(screen.getByText(/ya forma parte de tu equipo/)).toBeTruthy());
-    expect(screen.getByRole('link', { name: 'Ir a la configuración de este usuario' })).toBeTruthy();
-    expect(screen.queryByLabelText('Nombre')).toBeNull();
-    expect((screen.getByRole('button', { name: 'Guardar configuración' }) as HTMLButtonElement).disabled).toBe(true);
+    await waitFor(() =>
+      expect(screen.getByText(/ya forma parte de tu equipo/)).toBeTruthy(),
+    );
+    expect(
+      screen.getByRole("link", {
+        name: "Ir a la configuración de este usuario",
+      }),
+    ).toBeTruthy();
+    expect(screen.queryByLabelText("Nombre")).toBeNull();
+    expect(
+      (
+        screen.getByRole("button", {
+          name: "Guardar configuración",
+        }) as HTMLButtonElement
+      ).disabled,
+    ).toBe(true);
   });
 });
 
-describe('UserConfigPage — reglas de negocio de sucursales/preferencias', () => {
-  it('revocar la sucursal por defecto limpia el campo y muestra la nota, sin llegar a un 422', async () => {
+describe("UserConfigPage — reglas de negocio de sucursales/preferencias", () => {
+  it("revocar la sucursal por defecto limpia el campo y muestra la nota, sin llegar a un 422", async () => {
     // Tres sucursales autorizadas (Matriz es la default) — al revocar Matriz deben quedar dos
     // autorizadas (no una sola), para aislar esta regla de la de auto-selección de "1 sola".
     vi.mocked(branchService.list).mockResolvedValue([
       ...twoBranchesCatalog,
-      { id: 'branch-3', name: 'Sucursal Sur', code: '003', address: 'Av. Sur', countryId: null, provinceId: null, cantonId: null, parishId: null, phone: null, email: null, managerName: null, isActive: true, isMainBranch: false },
+      {
+        id: "branch-3",
+        name: "Sucursal Sur",
+        code: "003",
+        address: "Av. Sur",
+        countryId: null,
+        provinceId: null,
+        cantonId: null,
+        parishId: null,
+        phone: null,
+        email: null,
+        managerName: null,
+        isActive: true,
+        isMainBranch: false,
+      },
     ]);
     vi.mocked(branchAssignmentService.getMembershipBranches).mockResolvedValue({
       companyUserId: membershipRow.companyUserId,
       branches: [
-        { branchId: 'branch-1', branchName: 'Matriz', authorized: true },
-        { branchId: 'branch-2', branchName: 'Sucursal Norte', authorized: true },
-        { branchId: 'branch-3', branchName: 'Sucursal Sur', authorized: true },
+        { branchId: "branch-1", branchName: "Matriz", authorized: true },
+        {
+          branchId: "branch-2",
+          branchName: "Sucursal Norte",
+          authorized: true,
+        },
+        { branchId: "branch-3", branchName: "Sucursal Sur", authorized: true },
       ],
     });
 
-    const { container } = renderAt('/access/users/membership-1');
-    await waitFor(() => expect((screen.getByLabelText('Username') as HTMLInputElement).value).toBe('ana'));
+    const { container } = renderAt("/access/users/membership-1");
+    await waitFor(() =>
+      expect(
+        (screen.getByLabelText("Username") as HTMLInputElement).value,
+      ).toBe("ana"),
+    );
 
-    fireEvent.click(screen.getByRole('tab', { name: 'Acceso a sucursales' }));
-    await waitFor(() => expect(screen.getByText('Matriz')).toBeTruthy());
+    fireEvent.click(screen.getByRole("tab", { name: "Acceso a sucursales" }));
+    await waitFor(() => expect(screen.getByText("Matriz")).toBeTruthy());
     // Matriz (autorizada, es la default) se desmarca; las otras dos siguen autorizadas.
-    fireEvent.click(screen.getAllByRole('switch')[0]);
+    fireEvent.click(screen.getAllByRole("switch")[0]);
 
-    fireEvent.click(screen.getByRole('tab', { name: 'Preferencias de acceso' }));
+    fireEvent.click(
+      screen.getByRole("tab", { name: "Preferencias de acceso" }),
+    );
     await waitFor(() => {
-      expect(screen.getByText(/Se quitó la sucursal por defecto porque ya no está autorizada/)).toBeTruthy();
-      expect(selectByFieldName(container, 'defaultBranchId').value).toBe('');
+      expect(
+        screen.getByText(
+          /Se quitó la sucursal por defecto porque ya no está autorizada/,
+        ),
+      ).toBeTruthy();
+      expect(selectByFieldName(container, "defaultBranchId").value).toBe("");
     });
   });
 
-  it('una sola sucursal autorizada autoselecciona la sucursal por defecto', async () => {
+  it("una sola sucursal autorizada autoselecciona la sucursal por defecto", async () => {
     vi.mocked(branchAssignmentService.getMembershipBranches).mockResolvedValue({
       companyUserId: membershipRow.companyUserId,
       branches: [
-        { branchId: 'branch-1', branchName: 'Matriz', authorized: false },
-        { branchId: 'branch-2', branchName: 'Sucursal Norte', authorized: false },
+        { branchId: "branch-1", branchName: "Matriz", authorized: false },
+        {
+          branchId: "branch-2",
+          branchName: "Sucursal Norte",
+          authorized: false,
+        },
       ],
     });
     vi.mocked(companyUserPreferencesService.get).mockResolvedValue({
       companyUserId: membershipRow.companyUserId,
       defaultBranchId: null,
-      loginMode: 'AskBranch',
+      loginMode: "AskBranch",
     });
 
-    const { container } = renderAt('/access/users/membership-1');
-    await waitFor(() => expect((screen.getByLabelText('Username') as HTMLInputElement).value).toBe('ana'));
+    const { container } = renderAt("/access/users/membership-1");
+    await waitFor(() =>
+      expect(
+        (screen.getByLabelText("Username") as HTMLInputElement).value,
+      ).toBe("ana"),
+    );
 
-    fireEvent.click(screen.getByRole('tab', { name: 'Acceso a sucursales' }));
-    await waitFor(() => expect(screen.getByText('Matriz')).toBeTruthy());
-    fireEvent.click(screen.getAllByRole('switch')[0]);
+    fireEvent.click(screen.getByRole("tab", { name: "Acceso a sucursales" }));
+    await waitFor(() => expect(screen.getByText("Matriz")).toBeTruthy());
+    fireEvent.click(screen.getAllByRole("switch")[0]);
 
-    fireEvent.click(screen.getByRole('tab', { name: 'Preferencias de acceso' }));
-    await waitFor(() => expect(selectByFieldName(container, 'defaultBranchId').value).toBe('branch-1'));
+    fireEvent.click(
+      screen.getByRole("tab", { name: "Preferencias de acceso" }),
+    );
+    await waitFor(() =>
+      expect(selectByFieldName(container, "defaultBranchId").value).toBe(
+        "branch-1",
+      ),
+    );
   });
 
-  it('cero sucursales autorizadas fuerza AskBranch, deshabilita el select y muestra el mensaje explicativo', async () => {
+  it("cero sucursales autorizadas fuerza AskBranch, deshabilita el select y muestra el mensaje explicativo", async () => {
     vi.mocked(branchAssignmentService.getMembershipBranches).mockResolvedValue({
       companyUserId: membershipRow.companyUserId,
       branches: [
-        { branchId: 'branch-1', branchName: 'Matriz', authorized: false },
-        { branchId: 'branch-2', branchName: 'Sucursal Norte', authorized: false },
+        { branchId: "branch-1", branchName: "Matriz", authorized: false },
+        {
+          branchId: "branch-2",
+          branchName: "Sucursal Norte",
+          authorized: false,
+        },
       ],
     });
     vi.mocked(companyUserPreferencesService.get).mockResolvedValue({
       companyUserId: membershipRow.companyUserId,
       defaultBranchId: null,
-      loginMode: 'AskBranch',
+      loginMode: "AskBranch",
     });
 
-    const { container } = renderAt('/access/users/membership-1');
-    await waitFor(() => expect((screen.getByLabelText('Username') as HTMLInputElement).value).toBe('ana'));
+    const { container } = renderAt("/access/users/membership-1");
+    await waitFor(() =>
+      expect(
+        (screen.getByLabelText("Username") as HTMLInputElement).value,
+      ).toBe("ana"),
+    );
 
-    fireEvent.click(screen.getByRole('tab', { name: 'Preferencias de acceso' }));
+    fireEvent.click(
+      screen.getByRole("tab", { name: "Preferencias de acceso" }),
+    );
     await waitFor(() => {
-      expect(screen.getByText(/no tiene sucursales autorizadas todavía/)).toBeTruthy();
-      expect(selectByFieldName(container, 'loginMode').disabled).toBe(true);
+      expect(
+        screen.getByText(/no tiene sucursales autorizadas todavía/),
+      ).toBeTruthy();
+      expect(selectByFieldName(container, "loginMode").disabled).toBe(true);
     });
   });
 });
 
-describe('UserConfigPage — cancelar', () => {
-  it('sin cambios, Cancelar navega directo sin preguntar', async () => {
-    renderAt('/access/users/membership-1', { from: '/access/users' });
-    await waitFor(() => expect((screen.getByLabelText('Username') as HTMLInputElement).value).toBe('ana'));
+describe("UserConfigPage — cancelar", () => {
+  it("sin cambios, Cancelar navega directo sin preguntar", async () => {
+    renderAt("/access/users/membership-1", { from: "/access/users" });
+    await waitFor(() =>
+      expect(
+        (screen.getByLabelText("Username") as HTMLInputElement).value,
+      ).toBe("ana"),
+    );
 
-    fireEvent.click(screen.getByRole('button', { name: 'Cancelar' }));
+    fireEvent.click(screen.getByRole("button", { name: "Cancelar" }));
 
     expect(message.confirm).not.toHaveBeenCalled();
-    expect(navigateMock).toHaveBeenCalledWith('/access/users');
+    expect(navigateMock).toHaveBeenCalledWith("/access/users");
   });
 
-  it('con cambios sin guardar, Cancelar pide confirmación antes de navegar', async () => {
-    const { container } = renderAt('/access/users/membership-1', { from: '/access/users' });
-    await waitFor(() => expect((screen.getByLabelText('Username') as HTMLInputElement).value).toBe('ana'));
+  it("con cambios sin guardar, Cancelar pide confirmación antes de navegar", async () => {
+    const { container } = renderAt("/access/users/membership-1", {
+      from: "/access/users",
+    });
+    await waitFor(() =>
+      expect(
+        (screen.getByLabelText("Username") as HTMLInputElement).value,
+      ).toBe("ana"),
+    );
 
-    fireEvent.change(selectByFieldName(container, 'role'), { target: { value: 'Admin' } });
-    fireEvent.click(screen.getByRole('button', { name: 'Cancelar' }));
+    fireEvent.change(selectByFieldName(container, "role"), {
+      target: { value: "Admin" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Cancelar" }));
 
     await waitFor(() => {
       expect(message.confirm).toHaveBeenCalled();
-      expect(navigateMock).toHaveBeenCalledWith('/access/users');
+      expect(navigateMock).toHaveBeenCalledWith("/access/users");
     });
   });
 });
 
-describe('UserConfigPage — permisos', () => {
-  it('sin acceso renderiza NoAccessPage', async () => {
+describe("UserConfigPage — permisos", () => {
+  it("sin acceso renderiza NoAccessPage", async () => {
     vi.mocked(usePermissionsUi).mockReturnValue({
       canShow: () => false,
       has: () => false,
       isAdminRole: false,
     });
 
-    renderAt('/access/users/new');
+    renderAt("/access/users/new");
 
-    expect(screen.getAllByText('No tienes acceso a esta pantalla.').length).toBeGreaterThan(0);
+    expect(
+      screen.getAllByText("No tienes acceso a esta pantalla.").length,
+    ).toBeGreaterThan(0);
   });
 });

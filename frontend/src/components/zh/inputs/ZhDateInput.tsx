@@ -1,6 +1,6 @@
-import React from 'react';
+import React from "react";
 
-type Props = Omit<React.InputHTMLAttributes<HTMLInputElement>, 'type'>;
+type Props = Omit<React.InputHTMLAttributes<HTMLInputElement>, "type">;
 
 /**
  * Date input normalizado. Siempre muestra DD/MM/YYYY gracias al atributo
@@ -10,7 +10,7 @@ type Props = Omit<React.InputHTMLAttributes<HTMLInputElement>, 'type'>;
  * <ZhDateInput className="zh-input" {...register('issueDate')} />
  */
 export const ZhDateInput = React.forwardRef<HTMLInputElement, Props>(
-  ({ className = 'zh-input', ...props }, ref) => (
+  ({ className = "zh-input", ...props }, ref) => (
     <input
       {...props}
       ref={ref}
@@ -21,4 +21,4 @@ export const ZhDateInput = React.forwardRef<HTMLInputElement, Props>(
   ),
 );
 
-ZhDateInput.displayName = 'ZhDateInput';
+ZhDateInput.displayName = "ZhDateInput";

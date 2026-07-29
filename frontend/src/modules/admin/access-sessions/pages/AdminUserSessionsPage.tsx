@@ -1,38 +1,43 @@
-import { useCallback, useEffect, useState } from 'react';
-import { EmptyState, ErrorState, LoadingState, NoAccessPage } from '../../../../components/PageShell';
-import { ErpPageTemplate } from '../../../../templates/ErpPageTemplate';
-import { ZHPageNotice } from '../../../../components/zh/ZHPageNotice';
-import { ZHBtn } from '../../../../components/zh/ZHForm';
-import { ZHCard } from '../../../../components/zh/ZHCard';
-import { ZHConfirmModal } from '../../../../components/zh/ZHConfirmModal';
-import { formatDateTime } from '../../../../lib/formatters/dateFormatters';
+import { useCallback, useEffect, useState } from "react";
+import {
+  EmptyState,
+  ErrorState,
+  LoadingState,
+  NoAccessPage,
+} from "../../../../components/PageShell";
+import { ErpPageTemplate } from "../../../../templates/ErpPageTemplate";
+import { ZHPageNotice } from "../../../../components/zh/ZHPageNotice";
+import { ZHBtn } from "../../../../components/zh/ZHForm";
+import { ZHCard } from "../../../../components/zh/ZHCard";
+import { ZHConfirmModal } from "../../../../components/zh/ZHConfirmModal";
+import { formatDateTime } from "../../../../lib/formatters/dateFormatters";
 import {
   userSessionAdminService,
   type SessionStatisticsDto,
   type UserSessionAdminDto,
-} from '../../api/userSessionAdminService';
-import { formatApiError } from '../../../lib/formatApiError';
-import { usePermissionsUi } from '../../../../access/usePermissionsUi';
+} from "../../api/userSessionAdminService";
+import { formatApiError } from "../../../lib/formatApiError";
+import { usePermissionsUi } from "../../../../access/usePermissionsUi";
 
-const STATUS_LABEL: Record<UserSessionAdminDto['status'], string> = {
-  Active: 'Activa',
-  ClosedManually: 'Cerrada manualmente',
-  ClosedByNewLogin: 'Cerrada por nuevo login',
-  Expired: 'Expirada',
+const STATUS_LABEL: Record<UserSessionAdminDto["status"], string> = {
+  Active: "Activa",
+  ClosedManually: "Cerrada manualmente",
+  ClosedByNewLogin: "Cerrada por nuevo login",
+  Expired: "Expirada",
 };
 
 const PAGE_SIZE = 25;
 
 export function AdminUserSessionsPage() {
   const { canShow } = usePermissionsUi();
-  const canView = canShow('access.sessions.view');
-  const canClose = canShow('access.sessions.close');
+  const canView = canShow("access.sessions.view");
+  const canClose = canShow("access.sessions.close");
 
-  const [identityUserId, setIdentityUserId] = useState('');
-  const [companyId, setCompanyId] = useState('');
-  const [status, setStatus] = useState('');
-  const [fromDate, setFromDate] = useState('');
-  const [toDate, setToDate] = useState('');
+  const [identityUserId, setIdentityUserId] = useState("");
+  const [companyId, setCompanyId] = useState("");
+  const [status, setStatus] = useState("");
+  const [fromDate, setFromDate] = useState("");
+  const [toDate, setToDate] = useState("");
   const [pageNumber, setPageNumber] = useState(1);
 
   const [rows, setRows] = useState<UserSessionAdminDto[]>([]);
@@ -89,7 +94,7 @@ export function AdminUserSessionsPage() {
     setClosingId(null);
     try {
       await userSessionAdminService.close(id);
-      setNotice('Sesión cerrada correctamente.');
+      setNotice("Sesión cerrada correctamente.");
       await load();
     } catch (e) {
       setError(formatApiError(e));
@@ -102,7 +107,12 @@ export function AdminUserSessionsPage() {
       title="Sesiones de Usuario"
       subtitle="Monitoreo y cierre administrativo de sesiones activas (UserSession)."
       action={
-        <ZHBtn variant="secondary" type="button" disabled={loading} onClick={() => void load()}>
+        <ZHBtn
+          variant="secondary"
+          type="button"
+          disabled={loading}
+          onClick={() => void load()}
+        >
           <span className="material-symbols-outlined">refresh</span>
           Actualizar
         </ZHBtn>
@@ -112,11 +122,21 @@ export function AdminUserSessionsPage() {
       {notice && <ZHPageNotice variant="success" message={notice} />}
 
       <div className="pg-section pg-stat-cards">
-        <ZHCard title="Activas"><strong>{stats?.active ?? '—'}</strong></ZHCard>
-        <ZHCard title="Cerradas manualmente"><strong>{stats?.closedManually ?? '—'}</strong></ZHCard>
-        <ZHCard title="Cerradas por nuevo login"><strong>{stats?.closedByNewLogin ?? '—'}</strong></ZHCard>
-        <ZHCard title="Expiradas"><strong>{stats?.expired ?? '—'}</strong></ZHCard>
-        <ZHCard title="Total"><strong>{stats?.total ?? '—'}</strong></ZHCard>
+        <ZHCard title="Activas">
+          <strong>{stats?.active ?? "—"}</strong>
+        </ZHCard>
+        <ZHCard title="Cerradas manualmente">
+          <strong>{stats?.closedManually ?? "—"}</strong>
+        </ZHCard>
+        <ZHCard title="Cerradas por nuevo login">
+          <strong>{stats?.closedByNewLogin ?? "—"}</strong>
+        </ZHCard>
+        <ZHCard title="Expiradas">
+          <strong>{stats?.expired ?? "—"}</strong>
+        </ZHCard>
+        <ZHCard title="Total">
+          <strong>{stats?.total ?? "—"}</strong>
+        </ZHCard>
       </div>
 
       <div className="pg-section">
@@ -136,7 +156,11 @@ export function AdminUserSessionsPage() {
               value={companyId}
               onChange={(e) => setCompanyId(e.target.value)}
             />
-            <select className="zh-input" value={status} onChange={(e) => setStatus(e.target.value)}>
+            <select
+              className="zh-input"
+              value={status}
+              onChange={(e) => setStatus(e.target.value)}
+            >
               <option value="">Todos los estados</option>
               <option value="Active">Activa</option>
               <option value="ClosedManually">Cerrada manualmente</option>
@@ -162,19 +186,31 @@ export function AdminUserSessionsPage() {
             </ZHBtn>
           </div>
           <div className="pg-table-controls-right">
-            <span>Pág. {pageNumber} de {totalPages}</span>
+            <span>
+              Pág. {pageNumber} de {totalPages}
+            </span>
           </div>
         </div>
 
         {loading ? (
-          <div className="pg-pad-40"><LoadingState /></div>
+          <div className="pg-pad-40">
+            <LoadingState />
+          </div>
         ) : error ? (
           <div className="pg-pad-40">
             <ErrorState message={error} />
-            <ZHBtn variant="secondary" type="button" onClick={() => void load()}>Reintentar</ZHBtn>
+            <ZHBtn
+              variant="secondary"
+              type="button"
+              onClick={() => void load()}
+            >
+              Reintentar
+            </ZHBtn>
           </div>
         ) : rows.length === 0 ? (
-          <div className="pg-pad-40"><EmptyState message="No se encontraron sesiones con los filtros indicados." /></div>
+          <div className="pg-pad-40">
+            <EmptyState message="No se encontraron sesiones con los filtros indicados." />
+          </div>
         ) : (
           <div className="pg-overflow-x">
             <table className="table">
@@ -193,15 +229,19 @@ export function AdminUserSessionsPage() {
               <tbody>
                 {rows.map((row) => (
                   <tr key={row.sessionId}>
-                    <td title={row.identityUserId}>{row.identityUserId.slice(0, 8)}…</td>
+                    <td title={row.identityUserId}>
+                      {row.identityUserId.slice(0, 8)}…
+                    </td>
                     <td title={row.companyId}>{row.companyId.slice(0, 8)}…</td>
                     <td title={row.branchId}>{row.branchId.slice(0, 8)}…</td>
                     <td>{row.terminalId}</td>
                     <td>{STATUS_LABEL[row.status]}</td>
                     <td>{formatDateTime(row.createdAt)}</td>
-                    <td>{row.updatedAt ? formatDateTime(row.updatedAt) : '—'}</td>
                     <td>
-                      {canClose && row.status === 'Active' && (
+                      {row.updatedAt ? formatDateTime(row.updatedAt) : "—"}
+                    </td>
+                    <td>
+                      {canClose && row.status === "Active" && (
                         <ZHBtn
                           variant="destructive"
                           size="sm"
@@ -222,14 +262,16 @@ export function AdminUserSessionsPage() {
         <div className="pg-table-footer">
           <div className="pg-pagination-controls">
             <button
-              className="pg-pagination-btn" type="button"
+              className="pg-pagination-btn"
+              type="button"
               disabled={pageNumber <= 1 || loading}
               onClick={() => setPageNumber((p) => p - 1)}
             >
               <span className="material-symbols-outlined">chevron_left</span>
             </button>
             <button
-              className="pg-pagination-btn" type="button"
+              className="pg-pagination-btn"
+              type="button"
               disabled={pageNumber >= totalPages || loading}
               onClick={() => setPageNumber((p) => p + 1)}
             >

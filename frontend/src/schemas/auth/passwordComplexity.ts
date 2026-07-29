@@ -1,4 +1,4 @@
-import { z } from 'zod';
+import { z } from "zod";
 
 /**
  * Fase H — única regla de complejidad de contraseña nueva vigente en el frontend (mínimo 8
@@ -8,6 +8,6 @@ import { z } from 'zod';
  */
 export const passwordComplexitySchema = z
   .string()
-  .min(8, 'La contraseña debe tener al menos 8 caracteres.')
-  .regex(/[A-Z]/, 'Debe incluir al menos una mayúscula.')
-  .regex(/[0-9]/, 'Debe incluir al menos un número.');
+  .min(8, "La contraseña debe tener al menos 8 caracteres.")
+  .regex(/[A-Z]/, "Debe incluir al menos una mayúscula.")
+  .regex(/[0-9]/, "Debe incluir al menos un número.");

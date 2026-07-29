@@ -1,5 +1,5 @@
-import { api } from '../../lib/api';
-import type { ApiResponse } from '../../../types/api';
+import { api } from "../../lib/api";
+import type { ApiResponse } from "../../../types/api";
 
 export type UserActivityDto = {
   id: string;
@@ -20,18 +20,26 @@ function getList<T>(url: string) {
 export const activityService = {
   my: (opts?: { module?: string; page?: number; pageSize?: number }) => {
     const q = new URLSearchParams();
-    if (opts?.module) q.set('module', opts.module);
-    if (opts?.page) q.set('page', String(opts.page));
-    if (opts?.pageSize) q.set('pageSize', String(opts.pageSize));
+    if (opts?.module) q.set("module", opts.module);
+    if (opts?.page) q.set("page", String(opts.page));
+    if (opts?.pageSize) q.set("pageSize", String(opts.pageSize));
     const qs = q.toString();
-    return getList<UserActivityDto[]>(`/api/v1/admin/activity/my${qs ? `?${qs}` : ''}`);
+    return getList<UserActivityDto[]>(
+      `/api/v1/admin/activity/my${qs ? `?${qs}` : ""}`,
+    );
   },
 
-  forEntity: (opts: { entityType: string; entityId: string; take?: number }) => {
+  forEntity: (opts: {
+    entityType: string;
+    entityId: string;
+    take?: number;
+  }) => {
     const q = new URLSearchParams();
-    q.set('entityType', opts.entityType);
-    q.set('entityId', opts.entityId);
-    if (opts.take != null) q.set('take', String(opts.take));
-    return getList<UserActivityDto[]>(`/api/v1/admin/activity/entity?${q.toString()}`);
+    q.set("entityType", opts.entityType);
+    q.set("entityId", opts.entityId);
+    if (opts.take != null) q.set("take", String(opts.take));
+    return getList<UserActivityDto[]>(
+      `/api/v1/admin/activity/entity?${q.toString()}`,
+    );
   },
 };

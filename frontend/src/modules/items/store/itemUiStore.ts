@@ -1,6 +1,6 @@
-import { create } from 'zustand';
+import { create } from "zustand";
 
-export type ItemTabId = 'resumen' | 'listado' | 'nuevo';
+export type ItemTabId = "resumen" | "listado" | "nuevo";
 
 interface ItemUiState {
   activeTab: ItemTabId;
@@ -23,16 +23,19 @@ interface ItemUiState {
 }
 
 export const useItemUiStore = create<ItemUiState>((set) => ({
-  activeTab: 'resumen',
+  activeTab: "resumen",
   setActiveTab: (tab) => set({ activeTab: tab }),
 
   editingItemId: null,
   readOnly: false,
-  startEdit: (itemId) => set({ editingItemId: itemId, readOnly: false, activeTab: 'nuevo' }),
-  startView: (itemId) => set({ editingItemId: itemId, readOnly: true, activeTab: 'nuevo' }),
-  cancelEdit: () => set({ editingItemId: null, readOnly: false, activeTab: 'listado' }),
+  startEdit: (itemId) =>
+    set({ editingItemId: itemId, readOnly: false, activeTab: "nuevo" }),
+  startView: (itemId) =>
+    set({ editingItemId: itemId, readOnly: true, activeTab: "nuevo" }),
+  cancelEdit: () =>
+    set({ editingItemId: null, readOnly: false, activeTab: "listado" }),
 
-  searchTerm: '',
+  searchTerm: "",
   filterIsActive: undefined,
   filterItemTypeId: undefined,
   setSearchTerm: (s) => set({ searchTerm: s }),

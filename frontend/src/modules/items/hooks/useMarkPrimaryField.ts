@@ -1,5 +1,5 @@
-import type { UseFormSetValue } from 'react-hook-form';
-import type { CreateItemFormValues } from '../schemas/createItemSchema';
+import type { UseFormSetValue } from "react-hook-form";
+import type { CreateItemFormValues } from "../schemas/createItemSchema";
 
 /**
  * "Marcar como principal" es la misma operación en barcodes y supplierCodes:
@@ -8,12 +8,14 @@ import type { CreateItemFormValues } from '../schemas/createItemSchema';
  */
 export function useMarkPrimaryField(
   setValue: UseFormSetValue<CreateItemFormValues>,
-  arrayName: 'barcodes' | 'supplierCodes',
+  arrayName: "barcodes" | "supplierCodes",
   fieldCount: number,
 ) {
   return (index: number) => {
     for (let i = 0; i < fieldCount; i++) {
-      setValue(`${arrayName}.${i}.isPrimary`, i === index, { shouldDirty: true });
+      setValue(`${arrayName}.${i}.isPrimary`, i === index, {
+        shouldDirty: true,
+      });
     }
   };
 }

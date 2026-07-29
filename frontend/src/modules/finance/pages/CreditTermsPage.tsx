@@ -1,135 +1,241 @@
-import { useCallback, useEffect, useState } from 'react';
-import { ErpPageTemplate } from '../../../templates/ErpPageTemplate';
-import { ZhDecimalInput } from '../../../components/zh/inputs/ZhDecimalInput';
-import { ZHBtn } from '../../../components/zh/ZHForm';
-import type { CreditTermDto, CreateCreditTermPayload, UpdateCreditTermPayload, InstallmentInput } from '../api/creditTermService';
-import { CREDIT_TERM_MODES, creditTermModeName, creditTermService } from '../api/creditTermService';
+import { useCallback, useEffect, useState } from "react";
+import { ErpPageTemplate } from "../../../templates/ErpPageTemplate";
+import { ZhDecimalInput } from "../../../components/zh/inputs/ZhDecimalInput";
+import { ZHBtn } from "../../../components/zh/ZHForm";
+import type {
+  CreditTermDto,
+  CreateCreditTermPayload,
+  UpdateCreditTermPayload,
+  InstallmentInput,
+} from "../api/creditTermService";
+import {
+  CREDIT_TERM_MODES,
+  creditTermModeName,
+  creditTermService,
+} from "../api/creditTermService";
 
-import '../../../styles/shared/items-catalog.css';
+import "../../../styles/shared/items-catalog.css";
 
-type Tab = 'resumen' | 'listado' | 'nuevo';
+type Tab = "resumen" | "listado" | "nuevo";
 
 export function CreditTermsPage() {
-  const [tab, setTab] = useState<Tab>('listado');
+  const [tab, setTab] = useState<Tab>("listado");
   const [items, setItems] = useState<CreditTermDto[]>([]);
   const [loading, setLoading] = useState(false);
-  const [search, setSearch] = useState('');
+  const [search, setSearch] = useState("");
   const [editing, setEditing] = useState<CreditTermDto | null>(null);
   const [saving, setSaving] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
 
   // ── Form state ──
-  const [fCode, setFCode] = useState('');
-  const [fName, setFName] = useState('');
+  const [fCode, setFCode] = useState("");
+  const [fName, setFName] = useState("");
   const [fMode, setFMode] = useState(1);
   const [fDays, setFDays] = useState(0);
   const [fInstallments, setFInstallments] = useState<InstallmentInput[]>([]);
 
   const fetchItems = useCallback(async () => {
     setLoading(true);
-    try { setItems(await creditTermService.list(undefined, search || undefined)); } catch { /* */ }
+    try {
+      setItems(await creditTermService.list(undefined, search || undefined));
+    } catch {
+      /* */
+    }
     setLoading(false);
   }, [search]);
 
-  useEffect(() => { fetchItems(); }, [fetchItems]);
+  useEffect(() => {
+    fetchItems();
+  }, [fetchItems]);
 
   const resetForm = () => {
-    setFCode(''); setFName(''); setFMode(1); setFDays(0);
-    setFInstallments([]); setEditing(null); setError('');
+    setFCode("");
+    setFName("");
+    setFMode(1);
+    setFDays(0);
+    setFInstallments([]);
+    setEditing(null);
+    setError("");
   };
 
   const startEdit = (ct: CreditTermDto) => {
     setEditing(ct);
     setFName(ct.name);
-    setFMode(CREDIT_TERM_MODES.find(m => m.label === ct.mode)?.value ?? (parseInt(ct.mode) || 1));
+    setFMode(
+      CREDIT_TERM_MODES.find((m) => m.label === ct.mode)?.value ??
+        (parseInt(ct.mode) || 1),
+    );
     setFDays(ct.totalDays);
-    setFInstallments(ct.installments.map(i => ({ number: i.installmentNumber, daysOffset: i.daysOffset, percentage: i.percentage })));
-    setTab('nuevo');
+    setFInstallments(
+      ct.installments.map((i) => ({
+        number: i.installmentNumber,
+        daysOffset: i.daysOffset,
+        percentage: i.percentage,
+      })),
+    );
+    setTab("nuevo");
   };
 
   const handleSave = async () => {
-    setError(''); setSaving(true);
+    setError("");
+    setSaving(true);
     try {
       const inst = fInstallments.length > 0 ? fInstallments : undefined;
       if (editing) {
-        const p: UpdateCreditTermPayload = { id: editing.id, name: fName, mode: fMode, totalDays: fDays, installments: inst };
+        const p: UpdateCreditTermPayload = {
+          id: editing.id,
+          name: fName,
+          mode: fMode,
+          totalDays: fDays,
+          installments: inst,
+        };
         await creditTermService.update(editing.id, p);
       } else {
-        const p: CreateCreditTermPayload = { code: fCode, name: fName, mode: fMode, totalDays: fDays, installments: inst };
+        const p: CreateCreditTermPayload = {
+          code: fCode,
+          name: fName,
+          mode: fMode,
+          totalDays: fDays,
+          installments: inst,
+        };
         await creditTermService.create(p);
       }
-      resetForm(); setTab('listado'); fetchItems();
+      resetForm();
+      setTab("listado");
+      fetchItems();
     } catch (e: any) {
-      const msg = e?.response?.data?.message?.user
-        ?? e?.response?.data?.data?.errors?.[0]
-        ?? e?.message ?? 'Error al guardar.';
+      const msg =
+        e?.response?.data?.message?.user ??
+        e?.response?.data?.data?.errors?.[0] ??
+        e?.message ??
+        "Error al guardar.";
       setError(msg);
     }
     setSaving(false);
   };
 
   const handleToggle = async (ct: CreditTermDto) => {
-    try { ct.isActive ? await creditTermService.disable(ct.id) : await creditTermService.enable(ct.id); fetchItems(); } catch { /* */ }
+    try {
+      ct.isActive
+        ? await creditTermService.disable(ct.id)
+        : await creditTermService.enable(ct.id);
+      fetchItems();
+    } catch {
+      /* */
+    }
   };
 
   // ── Installment helpers ──
-  const addInstallment = () => setFInstallments(prev => [...prev, { number: prev.length + 1, daysOffset: fDays, percentage: 0 }]);
-  const removeInstallment = (idx: number) => setFInstallments(prev => prev.filter((_, i) => i !== idx).map((inst, i) => ({ ...inst, number: i + 1 })));
-  const updateInstallment = (idx: number, field: keyof InstallmentInput, value: number) =>
-    setFInstallments(prev => prev.map((inst, i) => i === idx ? { ...inst, [field]: value } : inst));
+  const addInstallment = () =>
+    setFInstallments((prev) => [
+      ...prev,
+      { number: prev.length + 1, daysOffset: fDays, percentage: 0 },
+    ]);
+  const removeInstallment = (idx: number) =>
+    setFInstallments((prev) =>
+      prev
+        .filter((_, i) => i !== idx)
+        .map((inst, i) => ({ ...inst, number: i + 1 })),
+    );
+  const updateInstallment = (
+    idx: number,
+    field: keyof InstallmentInput,
+    value: number,
+  ) =>
+    setFInstallments((prev) =>
+      prev.map((inst, i) => (i === idx ? { ...inst, [field]: value } : inst)),
+    );
   const installmentSum = fInstallments.reduce((s, i) => s + i.percentage, 0);
 
   const isFinancialStrict = fMode === 2;
 
   const tabs = [
-    { id: 'resumen' as Tab, label: 'Resumen', icon: 'bar_chart_4_bars' },
-    { id: 'listado' as Tab, label: 'Listado', icon: 'view_list' },
-    { id: 'nuevo' as Tab, label: editing ? 'Editar' : 'Nueva Condición', icon: editing ? 'edit' : 'add_box' },
+    { id: "resumen" as Tab, label: "Resumen", icon: "bar_chart_4_bars" },
+    { id: "listado" as Tab, label: "Listado", icon: "view_list" },
+    {
+      id: "nuevo" as Tab,
+      label: editing ? "Editar" : "Nueva Condición",
+      icon: editing ? "edit" : "add_box",
+    },
   ];
 
   return (
-    <ErpPageTemplate title="Condiciones de Crédito" subtitle="Administra los plazos y cuotas de pago.">
+    <ErpPageTemplate
+      title="Condiciones de Crédito"
+      subtitle="Administra los plazos y cuotas de pago."
+    >
       <div className="prd-tabs">
-        {tabs.map(t => (
-          <button key={t.id} className={`prd-tab-btn ${tab === t.id ? 'prd-tab-btn--active' : ''}`}
-            onClick={() => { if (t.id !== 'nuevo') resetForm(); setTab(t.id); }}>
-            <span className="material-symbols-outlined zh-icon-lg">{t.icon}</span>
+        {tabs.map((t) => (
+          <button
+            key={t.id}
+            className={`prd-tab-btn ${tab === t.id ? "prd-tab-btn--active" : ""}`}
+            onClick={() => {
+              if (t.id !== "nuevo") resetForm();
+              setTab(t.id);
+            }}
+          >
+            <span className="material-symbols-outlined zh-icon-lg">
+              {t.icon}
+            </span>
             {t.label}
           </button>
         ))}
       </div>
 
       {/* RESUMEN */}
-      {tab === 'resumen' && (
+      {tab === "resumen" && (
         <div className="prd-section">
           <div className="prd-stat-grid">
             <StatCard label="Total condiciones" value={items.length} />
-            <StatCard label="Activas" value={items.filter(i => i.isActive).length} />
-            <StatCard label="Operativas" value={items.filter(i => i.mode === 'Operational').length} />
-            <StatCard label="Financieras" value={items.filter(i => i.mode === 'FinancialStrict').length} />
+            <StatCard
+              label="Activas"
+              value={items.filter((i) => i.isActive).length}
+            />
+            <StatCard
+              label="Operativas"
+              value={items.filter((i) => i.mode === "Operational").length}
+            />
+            <StatCard
+              label="Financieras"
+              value={items.filter((i) => i.mode === "FinancialStrict").length}
+            />
           </div>
         </div>
       )}
 
       {/* LISTADO */}
-      {tab === 'listado' && (
+      {tab === "listado" && (
         <div className="prd-section">
           <div className="prd-crud-toolbar">
-            <input type="text" placeholder="Buscar..." value={search} onChange={e => setSearch(e.target.value)} />
+            <input
+              type="text"
+              placeholder="Buscar..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
             <ZHBtn onClick={fetchItems} disabled={loading}>
-              <span className="material-symbols-outlined zh-icon-lg">refresh</span>
+              <span className="material-symbols-outlined zh-icon-lg">
+                refresh
+              </span>
             </ZHBtn>
           </div>
-          {loading ? <p>Cargando...</p> : (
+          {loading ? (
+            <p>Cargando...</p>
+          ) : (
             <table className="prd-crud-table">
               <thead>
                 <tr>
-                  <th>Código</th><th>Nombre</th><th>Modo</th>
-                  <th>Días</th><th>Cuotas</th><th>Estado</th><th>Acciones</th>
+                  <th>Código</th>
+                  <th>Nombre</th>
+                  <th>Modo</th>
+                  <th>Días</th>
+                  <th>Cuotas</th>
+                  <th>Estado</th>
+                  <th>Acciones</th>
                 </tr>
               </thead>
               <tbody>
-                {items.map(ct => (
+                {items.map((ct) => (
                   <tr key={ct.id}>
                     <td className="prd-td-code">{ct.code}</td>
                     <td>{ct.name}</td>
@@ -137,18 +243,37 @@ export function CreditTermsPage() {
                     <td>{ct.totalDays}</td>
                     <td>{ct.installments.length}</td>
                     <td>
-                      <span className={`prd-status-badge ${ct.isActive ? 'prd-status-badge--active' : 'prd-status-badge--inactive'}`}>
-                        {ct.isActive ? 'Activa' : 'Inactiva'}
+                      <span
+                        className={`prd-status-badge ${ct.isActive ? "prd-status-badge--active" : "prd-status-badge--inactive"}`}
+                      >
+                        {ct.isActive ? "Activa" : "Inactiva"}
                       </span>
                     </td>
                     <td className="prd-td-actions">
-                      <IconBtn icon="edit" color="var(--color-primary)" title="Editar" onClick={() => startEdit(ct)} />
-                      <IconBtn icon={ct.isActive ? 'toggle_off' : 'toggle_on'} color={ct.isActive ? 'var(--color-error)' : 'var(--color-success)'}
-                        title={ct.isActive ? 'Desactivar' : 'Activar'} onClick={() => handleToggle(ct)} />
+                      <IconBtn
+                        icon="edit"
+                        color="var(--color-primary)"
+                        title="Editar"
+                        onClick={() => startEdit(ct)}
+                      />
+                      <IconBtn
+                        icon={ct.isActive ? "toggle_off" : "toggle_on"}
+                        color={
+                          ct.isActive
+                            ? "var(--color-error)"
+                            : "var(--color-success)"
+                        }
+                        title={ct.isActive ? "Desactivar" : "Activar"}
+                        onClick={() => handleToggle(ct)}
+                      />
                     </td>
                   </tr>
                 ))}
-                {items.length === 0 && <tr className="prd-empty-row"><td colSpan={7}>Sin condiciones de crédito.</td></tr>}
+                {items.length === 0 && (
+                  <tr className="prd-empty-row">
+                    <td colSpan={7}>Sin condiciones de crédito.</td>
+                  </tr>
+                )}
               </tbody>
             </table>
           )}
@@ -156,29 +281,51 @@ export function CreditTermsPage() {
       )}
 
       {/* NUEVO / EDITAR */}
-      {tab === 'nuevo' && (
+      {tab === "nuevo" && (
         <div className="prd-section">
-          <h3 className="prd-crud-title">{editing ? `Editar: ${editing.code}` : 'Nueva Condición de Crédito'}</h3>
+          <h3 className="prd-crud-title">
+            {editing ? `Editar: ${editing.code}` : "Nueva Condición de Crédito"}
+          </h3>
           {error && <div className="prd-error-banner">{error}</div>}
 
           <div className="prd-crud-form-grid">
             {!editing && (
               <FormField label="Código" required>
-                <input value={fCode} onChange={e => setFCode(e.target.value.toUpperCase())} maxLength={20}
-                  placeholder="Ej: CONTADO, NET30" />
+                <input
+                  value={fCode}
+                  onChange={(e) => setFCode(e.target.value.toUpperCase())}
+                  maxLength={20}
+                  placeholder="Ej: CONTADO, NET30"
+                />
               </FormField>
             )}
             <FormField label="Nombre" required>
-              <input value={fName} onChange={e => setFName(e.target.value)} maxLength={120}
-                placeholder="Contado / Crédito 30 días" />
+              <input
+                value={fName}
+                onChange={(e) => setFName(e.target.value)}
+                maxLength={120}
+                placeholder="Contado / Crédito 30 días"
+              />
             </FormField>
             <FormField label="Modo">
-              <select value={fMode} onChange={e => setFMode(Number(e.target.value))}>
-                {CREDIT_TERM_MODES.map(m => <option key={m.value} value={m.value}>{m.label}</option>)}
+              <select
+                value={fMode}
+                onChange={(e) => setFMode(Number(e.target.value))}
+              >
+                {CREDIT_TERM_MODES.map((m) => (
+                  <option key={m.value} value={m.value}>
+                    {m.label}
+                  </option>
+                ))}
               </select>
             </FormField>
             <FormField label="Plazo total (días)">
-              <input type="number" min={0} value={fDays} onChange={e => setFDays(Number(e.target.value))} />
+              <input
+                type="number"
+                min={0}
+                value={fDays}
+                onChange={(e) => setFDays(Number(e.target.value))}
+              />
             </FormField>
           </div>
 
@@ -186,45 +333,106 @@ export function CreditTermsPage() {
           {isFinancialStrict && (
             <div className="zh-mt-16">
               <div className="zh-flex-between zh-mb-12">
-                <h4>Cuotas <span style={{ fontSize: 13, color: installmentSum === 100 ? 'var(--color-success)' : 'var(--color-error)', fontWeight: 700 }}>
-                  (Suma: {installmentSum.toFixed(2)}%)
-                </span></h4>
+                <h4>
+                  Cuotas{" "}
+                  <span
+                    style={{
+                      fontSize: 13,
+                      color:
+                        installmentSum === 100
+                          ? "var(--color-success)"
+                          : "var(--color-error)",
+                      fontWeight: 700,
+                    }}
+                  >
+                    (Suma: {installmentSum.toFixed(2)}%)
+                  </span>
+                </h4>
                 <ZHBtn onClick={addInstallment}>
-                  <span className="material-symbols-outlined zh-icon-md">add</span> Agregar cuota
+                  <span className="material-symbols-outlined zh-icon-md">
+                    add
+                  </span>{" "}
+                  Agregar cuota
                 </ZHBtn>
               </div>
               {fInstallments.map((inst, idx) => (
-                <div key={idx} className="zh-flex-end zh-gap-12 zh-mb-8" style={{ justifyContent: 'flex-start' }}>
-                  <span style={{ fontWeight: 600, minWidth: 30 }}>#{inst.number}</span>
+                <div
+                  key={idx}
+                  className="zh-flex-end zh-gap-12 zh-mb-8"
+                  style={{ justifyContent: "flex-start" }}
+                >
+                  <span style={{ fontWeight: 600, minWidth: 30 }}>
+                    #{inst.number}
+                  </span>
                   <FormField label="Días offset">
-                    <input type="number" min={0} max={fDays} value={inst.daysOffset}
-                      onChange={e => updateInstallment(idx, 'daysOffset', Number(e.target.value))}
-                      style={{ width: 100 }} />
+                    <input
+                      type="number"
+                      min={0}
+                      max={fDays}
+                      value={inst.daysOffset}
+                      onChange={(e) =>
+                        updateInstallment(
+                          idx,
+                          "daysOffset",
+                          Number(e.target.value),
+                        )
+                      }
+                      style={{ width: 100 }}
+                    />
                   </FormField>
                   <FormField label="Porcentaje (%)">
-                    <ZhDecimalInput decimals={2} positiveOnly
+                    <ZhDecimalInput
+                      decimals={2}
+                      positiveOnly
                       defaultValue={inst.percentage}
-                      onBlur={e => updateInstallment(idx, 'percentage', Number(e.target.value) || 0)}
-                      style={{ width: 120 }} />
+                      onBlur={(e) =>
+                        updateInstallment(
+                          idx,
+                          "percentage",
+                          Number(e.target.value) || 0,
+                        )
+                      }
+                      style={{ width: 120 }}
+                    />
                   </FormField>
-                  <button className="prd-icon-btn" onClick={() => removeInstallment(idx)} title="Eliminar cuota"
-                    style={{ color: 'var(--color-error)', marginTop: 20 }}>
+                  <button
+                    className="prd-icon-btn"
+                    onClick={() => removeInstallment(idx)}
+                    title="Eliminar cuota"
+                    style={{ color: "var(--color-error)", marginTop: 20 }}
+                  >
                     <span className="material-symbols-outlined">delete</span>
                   </button>
                 </div>
               ))}
               {fInstallments.length === 0 && (
-                <p className="zh-text-muted">Agrega al menos una cuota para el modo Financiero Estricto.</p>
+                <p className="zh-text-muted">
+                  Agrega al menos una cuota para el modo Financiero Estricto.
+                </p>
               )}
             </div>
           )}
 
           <div className="prd-crud-actions">
-            <ZHBtn onClick={handleSave} disabled={saving || !fName.trim() || (isFinancialStrict && installmentSum !== 100)}>
+            <ZHBtn
+              onClick={handleSave}
+              disabled={
+                saving ||
+                !fName.trim() ||
+                (isFinancialStrict && installmentSum !== 100)
+              }
+            >
               <span className="material-symbols-outlined zh-icon-lg">save</span>
-              {saving ? 'Guardando...' : editing ? 'Actualizar' : 'Crear'}
+              {saving ? "Guardando..." : editing ? "Actualizar" : "Crear"}
             </ZHBtn>
-            <ZHBtn onClick={() => { resetForm(); setTab('listado'); }}>Cancelar</ZHBtn>
+            <ZHBtn
+              onClick={() => {
+                resetForm();
+                setTab("listado");
+              }}
+            >
+              Cancelar
+            </ZHBtn>
           </div>
         </div>
       )}
@@ -234,12 +442,23 @@ export function CreditTermsPage() {
 
 // ── Helpers ──────────────────────────────────────────────────────────────
 
-function FormField({ label, required, children }: { label: string; required?: boolean; children: React.ReactNode }) {
+function FormField({
+  label,
+  required,
+  children,
+}: {
+  label: string;
+  required?: boolean;
+  children: React.ReactNode;
+}) {
   return (
     <div className="zh-field">
-      {label && <label className="zh-field-label">
-        {label}{required && <span className="zh-field-required"> *</span>}
-      </label>}
+      {label && (
+        <label className="zh-field-label">
+          {label}
+          {required && <span className="zh-field-required"> *</span>}
+        </label>
+      )}
       <div className="zh-field-control">{children}</div>
     </div>
   );
@@ -254,9 +473,24 @@ function StatCard({ label, value }: { label: string; value: string | number }) {
   );
 }
 
-function IconBtn({ icon, color, title, onClick }: { icon: string; color: string; title: string; onClick: () => void }) {
+function IconBtn({
+  icon,
+  color,
+  title,
+  onClick,
+}: {
+  icon: string;
+  color: string;
+  title: string;
+  onClick: () => void;
+}) {
   return (
-    <button className="prd-icon-btn" onClick={onClick} title={title} style={{ color }}>
+    <button
+      className="prd-icon-btn"
+      onClick={onClick}
+      title={title}
+      style={{ color }}
+    >
       <span className="material-symbols-outlined">{icon}</span>
     </button>
   );

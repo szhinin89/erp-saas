@@ -111,13 +111,13 @@ public sealed class SriCatalogLookupRepository : ISriCatalogLookupRepository
             .OrderBy(r => r.Code)
             .ToListAsync(cancellationToken);
 
-    public async Task<IReadOnlyList<PersonTypeCatalog>> GetPersonTypesAsync(
-        CancellationToken cancellationToken = default
-    ) =>
+    public async Task<IReadOnlyList<LegalEntityTypeCatalog>> GetLegalEntityTypesAsync(
+     CancellationToken cancellationToken = default
+        ) =>
         await _db
-            .PersonTypeCatalogs.AsNoTracking()
-            .OrderBy(p => p.Code)
-            .ToListAsync(cancellationToken);
+         .LegalEntityTypeCatalog.AsNoTracking()
+         .OrderBy(p => p.Code)
+         .ToListAsync(cancellationToken);
 
     public async Task<IReadOnlyList<BarcodeTypeDefinition>> GetActiveBarcodeTypesAsync(
         CancellationToken cancellationToken = default

@@ -7,4 +7,4 @@ export {
   AUTH_BROADCAST_CHANNEL,
   type AuthBroadcastEvent,
   type RefreshSessionOptions,
-} from './authRefreshManager';
+} from "./authRefreshManager";

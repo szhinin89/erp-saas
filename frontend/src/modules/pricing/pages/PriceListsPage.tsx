@@ -1,52 +1,70 @@
-import { useCallback, useEffect, useState } from 'react';
-import { ErpPageTemplate } from '../../../templates/ErpPageTemplate';
-import { ZHBtn } from '../../../components/zh/ZHForm';
-import { ZhDecimalInput } from '../../../components/zh/inputs/ZhDecimalInput';
-import { ZhCurrencyInput } from '../../../components/zh/inputs/ZhCurrencyInput';
-import { parseDecimal } from '../../../lib/sanitizers';
-import type { PriceListDto, CreatePriceListPayload, UpdatePriceListPayload } from '../api/pricingService';
-import { priceListService, RULE_TYPE_OPTIONS, formatRuleGeneral } from '../api/pricingService';
-import { PriceListExceptionsTab } from './PriceListExceptionsTab';
+import { useCallback, useEffect, useState } from "react";
+import { ErpPageTemplate } from "../../../templates/ErpPageTemplate";
+import { ZHBtn } from "../../../components/zh/ZHForm";
+import { ZhDecimalInput } from "../../../components/zh/inputs/ZhDecimalInput";
+import { ZhCurrencyInput } from "../../../components/zh/inputs/ZhCurrencyInput";
+import { parseDecimal } from "../../../lib/sanitizers";
+import type {
+  PriceListDto,
+  CreatePriceListPayload,
+  UpdatePriceListPayload,
+} from "../api/pricingService";
+import {
+  priceListService,
+  RULE_TYPE_OPTIONS,
+  formatRuleGeneral,
+} from "../api/pricingService";
+import { PriceListExceptionsTab } from "./PriceListExceptionsTab";
 
-import '../../../styles/shared/items-catalog.css';
+import "../../../styles/shared/items-catalog.css";
 
-type Tab = 'resumen' | 'listado' | 'nuevo' | 'excepciones';
+type Tab = "resumen" | "listado" | "nuevo" | "excepciones";
 
 export function PriceListsPage() {
-  const [tab, setTab] = useState<Tab>('listado');
+  const [tab, setTab] = useState<Tab>("listado");
   const [items, setItems] = useState<PriceListDto[]>([]);
   const [loading, setLoading] = useState(false);
-  const [search, setSearch] = useState('');
+  const [search, setSearch] = useState("");
   const [editing, setEditing] = useState<PriceListDto | null>(null);
   const [saving, setSaving] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
 
   // ── Form state ──
-  const [fCode, setFCode] = useState('');
-  const [fName, setFName] = useState('');
-  const [fCurrency, setFCurrency] = useState('USD');
+  const [fCode, setFCode] = useState("");
+  const [fName, setFName] = useState("");
+  const [fCurrency, setFCurrency] = useState("USD");
   const [fDefault, setFDefault] = useState(false);
-  const [fFrom, setFFrom] = useState('');
-  const [fUntil, setFUntil] = useState('');
-  const [fRuleType, setFRuleType] = useState('');
-  const [fRuleValue, setFRuleValue] = useState('');
+  const [fFrom, setFFrom] = useState("");
+  const [fUntil, setFUntil] = useState("");
+  const [fRuleType, setFRuleType] = useState("");
+  const [fRuleValue, setFRuleValue] = useState("");
 
   const fetchItems = useCallback(async () => {
     setLoading(true);
     try {
       const res = await priceListService.list(undefined, search || undefined);
       setItems(res);
-    } catch { /* ignore */ }
+    } catch {
+      /* ignore */
+    }
     setLoading(false);
   }, [search]);
 
-  useEffect(() => { fetchItems(); }, [fetchItems]);
+  useEffect(() => {
+    fetchItems();
+  }, [fetchItems]);
 
   const resetForm = () => {
-    setFCode(''); setFName(''); setFCurrency('USD');
-    setFDefault(false); setFFrom(''); setFUntil('');
-    setFRuleType(''); setFRuleValue('');
-    setEditing(null); setError('');
+    setFCode("");
+    setFName("");
+    setFCurrency("USD");
+    setFDefault(false);
+    setFFrom("");
+    setFUntil("");
+    setFRuleType("");
+    setFRuleValue("");
+    setEditing(null);
+    setError("");
   };
 
   const startEdit = (pl: PriceListDto) => {
@@ -54,15 +72,15 @@ export function PriceListsPage() {
     setFName(pl.name);
     setFCurrency(pl.currencyCode);
     setFDefault(pl.isDefault);
-    setFFrom(pl.validFrom ?? '');
-    setFUntil(pl.validUntil ?? '');
-    setFRuleType(pl.ruleType ?? '');
-    setFRuleValue(pl.ruleValue != null ? String(pl.ruleValue) : '');
-    setTab('nuevo');
+    setFFrom(pl.validFrom ?? "");
+    setFUntil(pl.validUntil ?? "");
+    setFRuleType(pl.ruleType ?? "");
+    setFRuleValue(pl.ruleValue != null ? String(pl.ruleValue) : "");
+    setTab("nuevo");
   };
 
   const handleSave = async () => {
-    setError('');
+    setError("");
 
     // Regla general: si hay tipo seleccionado, el valor es obligatorio y debe ser numérico.
     let ruleType: string | null = null;
@@ -70,7 +88,9 @@ export function PriceListsPage() {
     if (fRuleType) {
       const parsed = parseDecimal(fRuleValue);
       if (!fRuleValue.trim() || Number.isNaN(parsed)) {
-        setError('Debe ingresar un valor válido para la regla general seleccionada.');
+        setError(
+          "Debe ingresar un valor válido para la regla general seleccionada.",
+        );
         return;
       }
       ruleType = fRuleType;
@@ -81,26 +101,38 @@ export function PriceListsPage() {
     try {
       if (editing) {
         const p: UpdatePriceListPayload = {
-          id: editing.id, name: fName, currencyCode: fCurrency,
-          isDefault: fDefault, validFrom: fFrom || null, validUntil: fUntil || null,
-          ruleType, ruleValue,
+          id: editing.id,
+          name: fName,
+          currencyCode: fCurrency,
+          isDefault: fDefault,
+          validFrom: fFrom || null,
+          validUntil: fUntil || null,
+          ruleType,
+          ruleValue,
         };
         await priceListService.update(editing.id, p);
       } else {
         const p: CreatePriceListPayload = {
-          code: fCode, name: fName, currencyCode: fCurrency,
-          isDefault: fDefault, validFrom: fFrom || null, validUntil: fUntil || null,
-          ruleType, ruleValue,
+          code: fCode,
+          name: fName,
+          currencyCode: fCurrency,
+          isDefault: fDefault,
+          validFrom: fFrom || null,
+          validUntil: fUntil || null,
+          ruleType,
+          ruleValue,
         };
         await priceListService.create(p);
       }
       resetForm();
-      setTab('listado');
+      setTab("listado");
       fetchItems();
     } catch (e: any) {
-      const msg = e?.response?.data?.message?.user
-        ?? e?.response?.data?.data?.errors?.[0]
-        ?? e?.message ?? 'Error al guardar.';
+      const msg =
+        e?.response?.data?.message?.user ??
+        e?.response?.data?.data?.errors?.[0] ??
+        e?.message ??
+        "Error al guardar.";
       setError(msg);
     }
     setSaving(false);
@@ -111,57 +143,90 @@ export function PriceListsPage() {
       if (pl.isActive) await priceListService.disable(pl.id);
       else await priceListService.enable(pl.id);
       fetchItems();
-    } catch { /* ignore */ }
+    } catch {
+      /* ignore */
+    }
   };
 
   // ── Tab definitions ──
   // "Excepciones" solo tiene sentido con una lista ya cargada — administración de PricingRule
   // arranca siempre desde una PriceList concreta, nunca desde el Item (ver AI-RULES).
   const tabs: { id: Tab; label: string; icon: string }[] = [
-    { id: 'resumen', label: 'Resumen', icon: 'bar_chart_4_bars' },
-    { id: 'listado', label: 'Listado', icon: 'view_list' },
-    { id: 'nuevo', label: editing ? 'Editar Lista' : 'Nueva Lista', icon: editing ? 'edit' : 'add_box' },
-    ...(editing ? [{ id: 'excepciones' as Tab, label: 'Excepciones', icon: 'rule' }] : []),
+    { id: "resumen", label: "Resumen", icon: "bar_chart_4_bars" },
+    { id: "listado", label: "Listado", icon: "view_list" },
+    {
+      id: "nuevo",
+      label: editing ? "Editar Lista" : "Nueva Lista",
+      icon: editing ? "edit" : "add_box",
+    },
+    ...(editing
+      ? [{ id: "excepciones" as Tab, label: "Excepciones", icon: "rule" }]
+      : []),
   ];
 
-  const preservesEditing = (id: Tab) => id === 'nuevo' || id === 'excepciones';
+  const preservesEditing = (id: Tab) => id === "nuevo" || id === "excepciones";
 
   return (
-    <ErpPageTemplate title="Listas de Precios" subtitle="Administra las listas de precios de la empresa.">
+    <ErpPageTemplate
+      title="Listas de Precios"
+      subtitle="Administra las listas de precios de la empresa."
+    >
       {/* Tabs */}
       <div className="prd-tabs">
-        {tabs.map(t => (
-          <button key={t.id} className={`prd-tab-btn ${tab === t.id ? 'prd-tab-btn--active' : ''}`}
-            onClick={() => { if (!preservesEditing(t.id)) resetForm(); setTab(t.id); }}>
-            <span className="material-symbols-outlined zh-icon-lg">{t.icon}</span>
+        {tabs.map((t) => (
+          <button
+            key={t.id}
+            className={`prd-tab-btn ${tab === t.id ? "prd-tab-btn--active" : ""}`}
+            onClick={() => {
+              if (!preservesEditing(t.id)) resetForm();
+              setTab(t.id);
+            }}
+          >
+            <span className="material-symbols-outlined zh-icon-lg">
+              {t.icon}
+            </span>
             {t.label}
           </button>
         ))}
       </div>
 
       {/* RESUMEN */}
-      {tab === 'resumen' && (
+      {tab === "resumen" && (
         <div className="prd-section">
           <div className="prd-stat-grid">
             <StatCard label="Total listas" value={items.length} />
-            <StatCard label="Activas" value={items.filter(i => i.isActive).length} />
-            <StatCard label="Predeterminada" value={items.find(i => i.isDefault)?.name ?? '—'} />
+            <StatCard
+              label="Activas"
+              value={items.filter((i) => i.isActive).length}
+            />
+            <StatCard
+              label="Predeterminada"
+              value={items.find((i) => i.isDefault)?.name ?? "—"}
+            />
           </div>
         </div>
       )}
 
       {/* LISTADO */}
-      {tab === 'listado' && (
+      {tab === "listado" && (
         <div className="prd-section">
           <div className="prd-crud-toolbar">
-            <input type="text" placeholder="Buscar por código o nombre..."
-              value={search} onChange={e => setSearch(e.target.value)} />
+            <input
+              type="text"
+              placeholder="Buscar por código o nombre..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
             <ZHBtn onClick={fetchItems} disabled={loading}>
-              <span className="material-symbols-outlined zh-icon-lg">refresh</span>
+              <span className="material-symbols-outlined zh-icon-lg">
+                refresh
+              </span>
             </ZHBtn>
           </div>
 
-          {loading ? <p>Cargando...</p> : (
+          {loading ? (
+            <p>Cargando...</p>
+          ) : (
             <table className="prd-crud-table">
               <thead>
                 <tr>
@@ -175,36 +240,59 @@ export function PriceListsPage() {
                 </tr>
               </thead>
               <tbody>
-                {items.map(pl => (
+                {items.map((pl) => (
                   <tr key={pl.id}>
                     <td className="prd-td-code">{pl.code}</td>
                     <td>{pl.name}</td>
                     <td>{pl.currencyCode}</td>
-                    <td>{formatRuleGeneral(pl.ruleType, pl.ruleValue, pl.currencyCode)}</td>
-                    <td>{pl.isDefault ? '✓' : ''}</td>
                     <td>
-                      <span className={`prd-status-badge ${pl.isActive ? 'prd-status-badge--active' : 'prd-status-badge--inactive'}`}>
-                        {pl.isActive ? 'Activa' : 'Inactiva'}
+                      {formatRuleGeneral(
+                        pl.ruleType,
+                        pl.ruleValue,
+                        pl.currencyCode,
+                      )}
+                    </td>
+                    <td>{pl.isDefault ? "✓" : ""}</td>
+                    <td>
+                      <span
+                        className={`prd-status-badge ${pl.isActive ? "prd-status-badge--active" : "prd-status-badge--inactive"}`}
+                      >
+                        {pl.isActive ? "Activa" : "Inactiva"}
                       </span>
                     </td>
                     <td className="prd-td-actions">
-                      <button className="prd-icon-btn" onClick={() => startEdit(pl)} title="Editar"
-                        style={{ color: 'var(--color-primary)' }}>
+                      <button
+                        className="prd-icon-btn"
+                        onClick={() => startEdit(pl)}
+                        title="Editar"
+                        style={{ color: "var(--color-primary)" }}
+                      >
                         <span className="material-symbols-outlined">edit</span>
                       </button>
-                      <button className="prd-icon-btn" onClick={() => handleToggle(pl)} title={pl.isActive ? 'Desactivar' : 'Activar'}
-                        style={{ color: pl.isActive ? 'var(--color-error)' : 'var(--color-success)' }}>
+                      <button
+                        className="prd-icon-btn"
+                        onClick={() => handleToggle(pl)}
+                        title={pl.isActive ? "Desactivar" : "Activar"}
+                        style={{
+                          color: pl.isActive
+                            ? "var(--color-error)"
+                            : "var(--color-success)",
+                        }}
+                      >
                         <span className="material-symbols-outlined">
-                          {pl.isActive ? 'toggle_off' : 'toggle_on'}
+                          {pl.isActive ? "toggle_off" : "toggle_on"}
                         </span>
                       </button>
                     </td>
                   </tr>
                 ))}
                 {items.length === 0 && (
-                  <tr className="prd-empty-row"><td colSpan={7}>
-                    No hay listas de precios. Crea la primera en la pestaña "Nueva Lista".
-                  </td></tr>
+                  <tr className="prd-empty-row">
+                    <td colSpan={7}>
+                      No hay listas de precios. Crea la primera en la pestaña
+                      "Nueva Lista".
+                    </td>
+                  </tr>
                 )}
               </tbody>
             </table>
@@ -213,84 +301,164 @@ export function PriceListsPage() {
       )}
 
       {/* NUEVO / EDITAR */}
-      {tab === 'nuevo' && (
+      {tab === "nuevo" && (
         <div className="prd-section">
-          <h3 className="prd-crud-title">{editing ? `Editar: ${editing.code}` : 'Nueva Lista de Precios'}</h3>
+          <h3 className="prd-crud-title">
+            {editing ? `Editar: ${editing.code}` : "Nueva Lista de Precios"}
+          </h3>
           {error && <div className="prd-error-banner">{error}</div>}
 
           <div className="zh-grid zh-grid--2" style={{ maxWidth: 600 }}>
             {!editing && (
               <div className="zh-field">
-                <label className="zh-field-label">Código <span className="zh-field-required">*</span></label>
+                <label className="zh-field-label">
+                  Código <span className="zh-field-required">*</span>
+                </label>
                 <div className="zh-field-control">
-                  <input value={fCode} onChange={e => setFCode(e.target.value.toUpperCase())} maxLength={20}
-                    placeholder="Ej: DEFAULT, MAYORISTA" className="zh-input--upper" />
+                  <input
+                    value={fCode}
+                    onChange={(e) => setFCode(e.target.value.toUpperCase())}
+                    maxLength={20}
+                    placeholder="Ej: DEFAULT, MAYORISTA"
+                    className="zh-input--upper"
+                  />
                 </div>
               </div>
             )}
             <div className="zh-field">
-              <label className="zh-field-label">Nombre <span className="zh-field-required">*</span></label>
+              <label className="zh-field-label">
+                Nombre <span className="zh-field-required">*</span>
+              </label>
               <div className="zh-field-control">
-                <input value={fName} onChange={e => setFName(e.target.value)} maxLength={120} placeholder="Lista de precios general" />
+                <input
+                  value={fName}
+                  onChange={(e) => setFName(e.target.value)}
+                  maxLength={120}
+                  placeholder="Lista de precios general"
+                />
               </div>
             </div>
             <div className="zh-field">
               <label className="zh-field-label">Moneda</label>
               <div className="zh-field-control">
-                <input value={fCurrency} onChange={e => setFCurrency(e.target.value.toUpperCase())} maxLength={3} placeholder="USD" className="zh-input--upper" />
+                <input
+                  value={fCurrency}
+                  onChange={(e) => setFCurrency(e.target.value.toUpperCase())}
+                  maxLength={3}
+                  placeholder="USD"
+                  className="zh-input--upper"
+                />
               </div>
             </div>
             <div className="zh-field">
               <label className="zh-field-label">Vigencia desde</label>
-              <div className="zh-field-control"><input type="date" value={fFrom} onChange={e => setFFrom(e.target.value)} /></div>
+              <div className="zh-field-control">
+                <input
+                  type="date"
+                  value={fFrom}
+                  onChange={(e) => setFFrom(e.target.value)}
+                />
+              </div>
             </div>
             <div className="zh-field">
               <label className="zh-field-label">Vigencia hasta</label>
-              <div className="zh-field-control"><input type="date" value={fUntil} onChange={e => setFUntil(e.target.value)} /></div>
+              <div className="zh-field-control">
+                <input
+                  type="date"
+                  value={fUntil}
+                  onChange={(e) => setFUntil(e.target.value)}
+                />
+              </div>
             </div>
             <div className="zh-field">
               <label className="zh-field-label">Regla General</label>
               <div className="zh-field-control">
-                <select value={fRuleType} onChange={e => { setFRuleType(e.target.value); setFRuleValue(''); }}>
-                  {RULE_TYPE_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                <select
+                  value={fRuleType}
+                  onChange={(e) => {
+                    setFRuleType(e.target.value);
+                    setFRuleValue("");
+                  }}
+                >
+                  {RULE_TYPE_OPTIONS.map((o) => (
+                    <option key={o.value} value={o.value}>
+                      {o.label}
+                    </option>
+                  ))}
                 </select>
               </div>
             </div>
-            {fRuleType === 'PercentDiscount' && (
+            {fRuleType === "PercentDiscount" && (
               <div className="zh-field">
-                <label className="zh-field-label">Valor (%) <span className="zh-field-required">*</span></label>
+                <label className="zh-field-label">
+                  Valor (%) <span className="zh-field-required">*</span>
+                </label>
                 <div className="zh-field-control">
-                  <ZhDecimalInput value={fRuleValue} onChange={e => setFRuleValue(e.target.value)} decimals={2} positiveOnly placeholder="15" />
+                  <ZhDecimalInput
+                    value={fRuleValue}
+                    onChange={(e) => setFRuleValue(e.target.value)}
+                    decimals={2}
+                    positiveOnly
+                    placeholder="15"
+                  />
                 </div>
               </div>
             )}
-            {fRuleType === 'PercentMarkup' && (
+            {fRuleType === "PercentMarkup" && (
               <div className="zh-field">
-                <label className="zh-field-label">Valor (%) <span className="zh-field-required">*</span></label>
+                <label className="zh-field-label">
+                  Valor (%) <span className="zh-field-required">*</span>
+                </label>
                 <div className="zh-field-control">
-                  <ZhDecimalInput value={fRuleValue} onChange={e => setFRuleValue(e.target.value)} decimals={2} positiveOnly placeholder="8" />
+                  <ZhDecimalInput
+                    value={fRuleValue}
+                    onChange={(e) => setFRuleValue(e.target.value)}
+                    decimals={2}
+                    positiveOnly
+                    placeholder="8"
+                  />
                 </div>
               </div>
             )}
-            {fRuleType === 'FixedPrice' && (
+            {fRuleType === "FixedPrice" && (
               <div className="zh-field">
-                <label className="zh-field-label">Valor <span className="zh-field-required">*</span></label>
+                <label className="zh-field-label">
+                  Valor <span className="zh-field-required">*</span>
+                </label>
                 <div className="zh-field-control">
-                  <ZhCurrencyInput value={fRuleValue} onChange={e => setFRuleValue(e.target.value)} currency={fCurrency} decimals={2} placeholder="25" />
+                  <ZhCurrencyInput
+                    value={fRuleValue}
+                    onChange={(e) => setFRuleValue(e.target.value)}
+                    currency={fCurrency}
+                    decimals={2}
+                    placeholder="25"
+                  />
                 </div>
               </div>
             )}
-            {fRuleType === 'FixedAdjustment' && (
+            {fRuleType === "FixedAdjustment" && (
               <div className="zh-field">
-                <label className="zh-field-label">Valor ({fCurrency}) <span className="zh-field-required">*</span></label>
+                <label className="zh-field-label">
+                  Valor ({fCurrency}){" "}
+                  <span className="zh-field-required">*</span>
+                </label>
                 <div className="zh-field-control">
-                  <ZhDecimalInput value={fRuleValue} onChange={e => setFRuleValue(e.target.value)} decimals={2} placeholder="3" />
+                  <ZhDecimalInput
+                    value={fRuleValue}
+                    onChange={(e) => setFRuleValue(e.target.value)}
+                    decimals={2}
+                    placeholder="3"
+                  />
                 </div>
               </div>
             )}
             <div className="zh-field">
               <label className="zh-checkbox-label prd-checkbox-field">
-                <input type="checkbox" checked={fDefault} onChange={e => setFDefault(e.target.checked)} />
+                <input
+                  type="checkbox"
+                  checked={fDefault}
+                  onChange={(e) => setFDefault(e.target.checked)}
+                />
                 Lista predeterminada
               </label>
             </div>
@@ -299,15 +467,22 @@ export function PriceListsPage() {
           <div className="prd-crud-actions">
             <ZHBtn onClick={handleSave} disabled={saving || !fName.trim()}>
               <span className="material-symbols-outlined zh-icon-lg">save</span>
-              {saving ? 'Guardando...' : editing ? 'Actualizar' : 'Crear'}
+              {saving ? "Guardando..." : editing ? "Actualizar" : "Crear"}
             </ZHBtn>
-            <ZHBtn onClick={() => { resetForm(); setTab('listado'); }}>Cancelar</ZHBtn>
+            <ZHBtn
+              onClick={() => {
+                resetForm();
+                setTab("listado");
+              }}
+            >
+              Cancelar
+            </ZHBtn>
           </div>
         </div>
       )}
 
       {/* EXCEPCIONES (PricingRule) — solo con una lista cargada */}
-      {tab === 'excepciones' && editing && (
+      {tab === "excepciones" && editing && (
         <PriceListExceptionsTab priceList={editing} />
       )}
     </ErpPageTemplate>

@@ -42,7 +42,7 @@ public sealed class PostgreSqlSecurityIntegrationTests : IAsyncLifetime
             tenantId,
             "04",
             "1790016919001",
-            PersonType.Legal,
+            2,
             "Empresa A",
             userId
         );
@@ -53,7 +53,7 @@ public sealed class PostgreSqlSecurityIntegrationTests : IAsyncLifetime
             tenantId,
             "04",
             "1790016919001",
-            PersonType.Legal,
+            2,
             "Empresa B",
             userId
         );

@@ -1,11 +1,11 @@
-import type { ReactNode } from 'react';
-import { EmptyState, LoadingState } from '../PageShell';
+import type { ReactNode } from "react";
+import { EmptyState, LoadingState } from "../PageShell";
 
 export interface ZHDataTableColumn<T> {
   key: string;
   header: ReactNode;
   render: (row: T) => ReactNode;
-  align?: 'left' | 'center' | 'right';
+  align?: "left" | "center" | "right";
 }
 
 interface ZHDataTableProps<T> {
@@ -30,14 +30,36 @@ interface ZHDataTableProps<T> {
  * después sin romper la API pública.
  */
 export function ZHDataTable<T>({
-  columns, rows, rowKey, onRowClick, loading, emptyMessage,
-  page, pageSize, onPageChange, total,
+  columns,
+  rows,
+  rowKey,
+  onRowClick,
+  loading,
+  emptyMessage,
+  page,
+  pageSize,
+  onPageChange,
+  total,
 }: ZHDataTableProps<T>) {
-  if (loading) return <div className="pg-pad-40"><LoadingState /></div>;
-  if (rows.length === 0) return <div className="pg-pad-40"><EmptyState message={emptyMessage ?? 'Sin resultados.'} /></div>;
+  if (loading)
+    return (
+      <div className="pg-pad-40">
+        <LoadingState />
+      </div>
+    );
+  if (rows.length === 0)
+    return (
+      <div className="pg-pad-40">
+        <EmptyState message={emptyMessage ?? "Sin resultados."} />
+      </div>
+    );
 
-  const showPagination = page !== undefined && pageSize !== undefined && onPageChange !== undefined;
-  const hasNextPage = total !== undefined ? page! * pageSize! < total : rows.length >= (pageSize ?? 0);
+  const showPagination =
+    page !== undefined && pageSize !== undefined && onPageChange !== undefined;
+  const hasNextPage =
+    total !== undefined
+      ? page! * pageSize! < total
+      : rows.length >= (pageSize ?? 0);
 
   return (
     <>
@@ -46,16 +68,31 @@ export function ZHDataTable<T>({
           <thead>
             <tr>
               {columns.map((col) => (
-                <th key={col.key} style={col.align ? { textAlign: col.align } : undefined}>{col.header}</th>
+                <th
+                  key={col.key}
+                  style={col.align ? { textAlign: col.align } : undefined}
+                >
+                  {col.header}
+                </th>
               ))}
             </tr>
           </thead>
           <tbody>
             {rows.map((row) => (
-              <tr key={rowKey(row)} className={onRowClick ? 'zh-datatable-row--clickable' : undefined}
-                onClick={onRowClick ? () => onRowClick(row) : undefined}>
+              <tr
+                key={rowKey(row)}
+                className={
+                  onRowClick ? "zh-datatable-row--clickable" : undefined
+                }
+                onClick={onRowClick ? () => onRowClick(row) : undefined}
+              >
                 {columns.map((col) => (
-                  <td key={col.key} style={col.align ? { textAlign: col.align } : undefined}>{col.render(row)}</td>
+                  <td
+                    key={col.key}
+                    style={col.align ? { textAlign: col.align } : undefined}
+                  >
+                    {col.render(row)}
+                  </td>
                 ))}
               </tr>
             ))}
@@ -66,16 +103,34 @@ export function ZHDataTable<T>({
       {showPagination && (
         <div className="pg-table-footer">
           {total !== undefined && (
-            <span className="zh-datatable-total">{total} {total === 1 ? 'registro' : 'registros'}</span>
+            <span className="zh-datatable-total">
+              {total} {total === 1 ? "registro" : "registros"}
+            </span>
           )}
           <div className="pg-pagination-controls">
-            <button className="pg-pagination-btn" type="button" disabled={page! <= 1}
-              onClick={() => onPageChange!(page! - 1)}>
+            <button
+              className="pg-pagination-btn"
+              type="button"
+              disabled={page! <= 1}
+              onClick={() => onPageChange!(page! - 1)}
+            >
               <span className="material-symbols-outlined">chevron_left</span>
             </button>
-            <span style={{ padding: '0 10px', display: 'flex', alignItems: 'center' }}>{page}</span>
-            <button className="pg-pagination-btn" type="button" disabled={!hasNextPage}
-              onClick={() => onPageChange!(page! + 1)}>
+            <span
+              style={{
+                padding: "0 10px",
+                display: "flex",
+                alignItems: "center",
+              }}
+            >
+              {page}
+            </span>
+            <button
+              className="pg-pagination-btn"
+              type="button"
+              disabled={!hasNextPage}
+              onClick={() => onPageChange!(page! + 1)}
+            >
               <span className="material-symbols-outlined">chevron_right</span>
             </button>
           </div>

@@ -1,14 +1,14 @@
-import { apiGet } from '../../lib/apiEnvelope';
+import { apiGet } from "../../lib/apiEnvelope";
 
-const BASE = '/api/v1/sales';
+const BASE = "/api/v1/sales";
 
 export interface SalesInvoiceDefaultsDto {
-  defaultDocTypeCode:           string | null;
-  defaultSriPaymentMethodCode:  string | null;
-  defaultEmissionPointId:       string | null;
-  defaultWarehouseId:           string | null;
-  defaultPaymentTermId:         string | null;
-  fallbackDocTypeCode:          string;
+  defaultDocTypeCode: string | null;
+  defaultSriPaymentMethodCode: string | null;
+  defaultEmissionPointId: string | null;
+  defaultWarehouseId: string | null;
+  defaultPaymentTermId: string | null;
+  fallbackDocTypeCode: string;
   fallbackSriPaymentMethodCode: string;
 }
 

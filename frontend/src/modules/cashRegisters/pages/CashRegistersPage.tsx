@@ -1,5 +1,5 @@
-import { ErpPageTemplate } from '../../../templates/ErpPageTemplate';
-import { CashRegistersManagementSection } from '../components/CashRegistersManagementSection';
+import { ErpPageTemplate } from "../../../templates/ErpPageTemplate";
+import { CashRegistersManagementSection } from "../components/CashRegistersManagementSection";
 
 export function CashRegistersPage() {
   return (

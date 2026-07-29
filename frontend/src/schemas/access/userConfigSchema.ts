@@ -1,7 +1,7 @@
-import { z } from 'zod';
-import { MEMBERSHIP_ROLES } from '../../modules/access/users/api/membershipService';
-import { COMPANY_USER_LOGIN_MODES } from '../../modules/access/api/companyUserPreferencesService';
-import { passwordComplexitySchema } from '../auth/passwordComplexity';
+import { z } from "zod";
+import { MEMBERSHIP_ROLES } from "../../modules/access/users/api/membershipService";
+import { COMPANY_USER_LOGIN_MODES } from "../../modules/access/api/companyUserPreferencesService";
+import { passwordComplexitySchema } from "../auth/passwordComplexity";
 
 /**
  * Fase 2 (UAT/pulido UX) — schema único del formulario de /access/users/new y
@@ -19,16 +19,27 @@ import { passwordComplexitySchema } from '../auth/passwordComplexity';
  *   rol/perfil.
  * - 'edit': edición de una membership ya existente — mismas reglas que 'assign'.
  */
-export const userConfigStages = ['pending', 'create', 'assign', 'edit'] as const;
+export const userConfigStages = [
+  "pending",
+  "create",
+  "assign",
+  "edit",
+] as const;
 export type UserConfigStage = (typeof userConfigStages)[number];
 
 export const userConfigSchema = z
   .object({
     stage: z.enum(userConfigStages),
-    username: z.string().min(1, 'El username es obligatorio.'),
+    username: z.string().min(1, "El username es obligatorio."),
     firstName: z.string(),
     lastName: z.string(),
-    email: z.union([z.string().email('El email no tiene un formato válido.'), z.literal('')]).nullable().optional(),
+    email: z
+      .union([
+        z.string().email("El email no tiene un formato válido."),
+        z.literal(""),
+      ])
+      .nullable()
+      .optional(),
     password: z.string(),
     role: z.enum(MEMBERSHIP_ROLES),
     profileId: z.string().nullable(),
@@ -37,37 +48,58 @@ export const userConfigSchema = z
     defaultBranchId: z.string().nullable(),
   })
   .superRefine((data, ctx) => {
-    if (data.stage === 'create') {
+    if (data.stage === "create") {
       if (data.firstName.trim().length === 0) {
-        ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'El nombre es obligatorio.', path: ['firstName'] });
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "El nombre es obligatorio.",
+          path: ["firstName"],
+        });
       } else if (data.firstName.length > 50) {
-        ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Máximo 50 caracteres.', path: ['firstName'] });
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "Máximo 50 caracteres.",
+          path: ["firstName"],
+        });
       }
       if (data.lastName.trim().length === 0) {
-        ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'El apellido es obligatorio.', path: ['lastName'] });
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "El apellido es obligatorio.",
+          path: ["lastName"],
+        });
       } else if (data.lastName.length > 50) {
-        ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Máximo 50 caracteres.', path: ['lastName'] });
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "Máximo 50 caracteres.",
+          path: ["lastName"],
+        });
       }
       const passwordResult = passwordComplexitySchema.safeParse(data.password);
       if (!passwordResult.success) {
         for (const issue of passwordResult.error.issues) {
-          ctx.addIssue({ code: z.ZodIssueCode.custom, message: issue.message, path: ['password'] });
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: issue.message,
+            path: ["password"],
+          });
         }
       }
     }
 
-    if (data.loginMode === 'DirectToDefault') {
+    if (data.loginMode === "DirectToDefault") {
       if (!data.defaultBranchId) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
-          message: 'Selecciona una sucursal por defecto para el modo de ingreso directo.',
-          path: ['defaultBranchId'],
+          message:
+            "Selecciona una sucursal por defecto para el modo de ingreso directo.",
+          path: ["defaultBranchId"],
         });
       } else if (!data.authorizedBranchIds.includes(data.defaultBranchId)) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
-          message: 'La sucursal por defecto debe estar autorizada.',
-          path: ['defaultBranchId'],
+          message: "La sucursal por defecto debe estar autorizada.",
+          path: ["defaultBranchId"],
         });
       }
     }

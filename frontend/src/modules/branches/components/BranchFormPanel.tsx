@@ -1,34 +1,39 @@
-import { useState } from 'react';
-import { Controller } from 'react-hook-form';
-import { ZHPageNotice } from '../../../components/zh/ZHPageNotice';
-import { ZHField, ZHToggle, ZHGrid, ZHBtn } from '../../../components/zh/ZHForm';
-import { ZhPhoneInput, ZhDateInput } from '../../../components/zh/inputs';
-import { type BranchesPageContext } from '../hooks/useBranchesPage';
+import { useState } from "react";
+import { Controller } from "react-hook-form";
+import { ZHPageNotice } from "../../../components/zh/ZHPageNotice";
+import {
+  ZHField,
+  ZHToggle,
+  ZHGrid,
+  ZHBtn,
+} from "../../../components/zh/ZHForm";
+import { ZhPhoneInput, ZhDateInput } from "../../../components/zh/inputs";
+import { type BranchesPageContext } from "../hooks/useBranchesPage";
 
 type Props = Pick<
   BranchesPageContext,
-  | 't'
-  | 'editingId'
-  | 'editCode'
-  | 'editName'
-  | 'saving'
-  | 'saveError'
-  | 'countries'
-  | 'provinces'
-  | 'cantons'
-  | 'parishes'
-  | 'loadingProvinces'
-  | 'loadingCantons'
-  | 'loadingParishes'
-  | 'register'
-  | 'control'
-  | 'errors'
-  | 'formWatch'
-  | 'onCountryChange'
-  | 'onProvinceChange'
-  | 'onCantonChange'
-  | 'closePanel'
-  | 'save'
+  | "t"
+  | "editingId"
+  | "editCode"
+  | "editName"
+  | "saving"
+  | "saveError"
+  | "countries"
+  | "provinces"
+  | "cantons"
+  | "parishes"
+  | "loadingProvinces"
+  | "loadingCantons"
+  | "loadingParishes"
+  | "register"
+  | "control"
+  | "errors"
+  | "formWatch"
+  | "onCountryChange"
+  | "onProvinceChange"
+  | "onCantonChange"
+  | "closePanel"
+  | "save"
 >;
 
 export function BranchFormPanel({
@@ -55,18 +60,18 @@ export function BranchFormPanel({
   closePanel,
   save,
 }: Props) {
-  const [activeTab] = useState<'general'>('general');
+  const [activeTab] = useState<"general">("general");
 
   return (
     <div>
       {/* Panel header */}
       <div className="cfg-panel-hd">
         <span className="material-symbols-outlined cfg-panel-hd__icon">
-          {editingId ? 'edit' : 'add_circle'}
+          {editingId ? "edit" : "add_circle"}
         </span>
         <div>
           <p className="cfg-panel-hd__title">
-            {editingId ? (editName ?? 'Editar Sucursal') : 'Nueva Sucursal'}
+            {editingId ? (editName ?? "Editar Sucursal") : "Nueva Sucursal"}
           </p>
           {editingId && editCode && (
             <p className="cfg-panel-hd__sub">Código: {editCode}</p>
@@ -78,7 +83,7 @@ export function BranchFormPanel({
       <div className="prd-tabs cfg-panel-tabs">
         <button
           type="button"
-          className={`prd-tab-btn ${activeTab === 'general' ? 'prd-tab-btn--active' : ''}`}
+          className={`prd-tab-btn ${activeTab === "general" ? "prd-tab-btn--active" : ""}`}
         >
           General
         </button>
@@ -87,48 +92,63 @@ export function BranchFormPanel({
       {/* Error */}
       {saveError && (
         <div className="cfg-panel-error">
-          <ZHPageNotice variant="error" message={t('common.errorPrefix')} detail={saveError} />
+          <ZHPageNotice
+            variant="error"
+            message={t("common.errorPrefix")}
+            detail={saveError}
+          />
         </div>
       )}
 
       {/* Form */}
       <form
-        onSubmit={(e) => { e.preventDefault(); void save(); }}
+        onSubmit={(e) => {
+          e.preventDefault();
+          void save();
+        }}
         noValidate
       >
         <div className="cfg-panel-body">
-
           {/* Identificación */}
           <div className="pg-section">
             <div className="pg-section-header">
               <div className="pg-section-header-left">
-                <span className="material-symbols-outlined pg-section-icon">info</span>
+                <span className="material-symbols-outlined pg-section-icon">
+                  info
+                </span>
                 <span className="pg-section-label">Identificación</span>
               </div>
             </div>
             <div className="pg-section-body">
               <ZHGrid cols={2}>
-                <ZHField label="Nombre de la Sucursal" required error={errors.name?.message}>
+                <ZHField
+                  label="Nombre de la Sucursal"
+                  required
+                  error={errors.name?.message}
+                >
                   <input
                     className="zh-input"
                     placeholder="Ej: Sucursal Norte Central"
                     disabled={saving}
-                    {...register('name')}
+                    {...register("name")}
                   />
                 </ZHField>
                 <ZHField label="Código">
                   <input
                     className="zh-input mono br-code-readonly"
                     readOnly
-                    value={editingId ? (editCode ?? '—') : 'Auto-generado'}
+                    value={editingId ? (editCode ?? "—") : "Auto-generado"}
                   />
                 </ZHField>
-                <ZHField label="Descripción" error={errors.description?.message}>
+                <ZHField
+                  label="Descripción"
+                  error={errors.description?.message}
+                >
                   <input
                     className="zh-input"
                     placeholder="Descripción breve"
                     disabled={saving}
-                    {...register('description')}
+                    {...register("description")}
                   />
                 </ZHField>
               </ZHGrid>
@@ -152,7 +172,9 @@ export function BranchFormPanel({
           <div className="pg-section">
             <div className="pg-section-header">
               <div className="pg-section-header-left">
-                <span className="material-symbols-outlined pg-section-icon">location_on</span>
+                <span className="material-symbols-outlined pg-section-icon">
+                  location_on
+                </span>
                 <span className="pg-section-label">Dirección</span>
               </div>
             </div>
@@ -162,67 +184,97 @@ export function BranchFormPanel({
                   <select
                     className="zh-input"
                     disabled={saving || countries.length === 0}
-                    {...register('countryId', {
-                      onChange: async (e) => { await onCountryChange(e.target.value); },
+                    {...register("countryId", {
+                      onChange: async (e) => {
+                        await onCountryChange(e.target.value);
+                      },
                     })}
                   >
                     <option value="">— seleccionar —</option>
                     {countries.map((c) => (
-                      <option key={c.id} value={c.id}>{c.name}</option>
+                      <option key={c.id} value={c.id}>
+                        {c.name}
+                      </option>
                     ))}
                   </select>
                 </ZHField>
 
-                <ZHField label={loadingProvinces ? 'Provincia (cargando…)' : 'Provincia'}>
+                <ZHField
+                  label={
+                    loadingProvinces ? "Provincia (cargando…)" : "Provincia"
+                  }
+                >
                   <select
                     className="zh-input"
-                    disabled={saving || !formWatch.countryId || loadingProvinces}
-                    {...register('provinceId', {
-                      onChange: async (e) => { await onProvinceChange(e.target.value); },
+                    disabled={
+                      saving || !formWatch.countryId || loadingProvinces
+                    }
+                    {...register("provinceId", {
+                      onChange: async (e) => {
+                        await onProvinceChange(e.target.value);
+                      },
                     })}
                   >
                     <option value="">— seleccionar —</option>
                     {provinces.map((c) => (
-                      <option key={c.id} value={c.id}>{c.name}</option>
+                      <option key={c.id} value={c.id}>
+                        {c.name}
+                      </option>
                     ))}
                   </select>
                 </ZHField>
 
-                <ZHField label={loadingCantons ? 'Cantón (cargando…)' : 'Cantón'}>
+                <ZHField
+                  label={loadingCantons ? "Cantón (cargando…)" : "Cantón"}
+                >
                   <select
                     className="zh-input"
                     disabled={saving || !formWatch.provinceId || loadingCantons}
-                    {...register('cantonId', {
-                      onChange: async (e) => { await onCantonChange(e.target.value); },
+                    {...register("cantonId", {
+                      onChange: async (e) => {
+                        await onCantonChange(e.target.value);
+                      },
                     })}
                   >
                     <option value="">— seleccionar —</option>
                     {cantons.map((c) => (
-                      <option key={c.id} value={c.id}>{c.name}</option>
+                      <option key={c.id} value={c.id}>
+                        {c.name}
+                      </option>
                     ))}
                   </select>
                 </ZHField>
 
-                <ZHField label={loadingParishes ? 'Parroquia (cargando…)' : 'Parroquia'}>
+                <ZHField
+                  label={
+                    loadingParishes ? "Parroquia (cargando…)" : "Parroquia"
+                  }
+                >
                   <select
                     className="zh-input"
                     disabled={saving || !formWatch.cantonId || loadingParishes}
-                    {...register('parishId')}
+                    {...register("parishId")}
                   >
                     <option value="">— seleccionar —</option>
                     {parishes.map((c) => (
-                      <option key={c.id} value={c.id}>{c.name}</option>
+                      <option key={c.id} value={c.id}>
+                        {c.name}
+                      </option>
                     ))}
                   </select>
                 </ZHField>
               </ZHGrid>
 
-              <ZHField label="Dirección" required error={errors.address?.message}>
+              <ZHField
+                label="Dirección"
+                required
+                error={errors.address?.message}
+              >
                 <input
                   className="zh-input"
                   placeholder="Calle, número, colonia..."
                   disabled={saving}
-                  {...register('address')}
+                  {...register("address")}
                 />
               </ZHField>
 
@@ -232,17 +284,35 @@ export function BranchFormPanel({
                     className="zh-input"
                     placeholder="Punto de referencia"
                     disabled={saving}
-                    {...register('reference')}
+                    {...register("reference")}
                   />
                 </ZHField>
-                <ZHField label="Código postal" error={errors.postalCode?.message}>
-                  <input className="zh-input" placeholder="170150" disabled={saving} {...register('postalCode')} />
+                <ZHField
+                  label="Código postal"
+                  error={errors.postalCode?.message}
+                >
+                  <input
+                    className="zh-input"
+                    placeholder="170150"
+                    disabled={saving}
+                    {...register("postalCode")}
+                  />
                 </ZHField>
                 <ZHField label="Latitud" error={errors.latitude?.message}>
-                  <input className="zh-input mono" placeholder="-0.2295" disabled={saving} {...register('latitude')} />
+                  <input
+                    className="zh-input mono"
+                    placeholder="-0.2295"
+                    disabled={saving}
+                    {...register("latitude")}
+                  />
                 </ZHField>
                 <ZHField label="Longitud" error={errors.longitude?.message}>
-                  <input className="zh-input mono" placeholder="-78.5243" disabled={saving} {...register('longitude')} />
+                  <input
+                    className="zh-input mono"
+                    placeholder="-78.5243"
+                    disabled={saving}
+                    {...register("longitude")}
+                  />
                 </ZHField>
               </ZHGrid>
             </div>
@@ -252,33 +322,48 @@ export function BranchFormPanel({
           <div className="pg-section">
             <div className="pg-section-header">
               <div className="pg-section-header-left">
-                <span className="material-symbols-outlined pg-section-icon">contact_phone</span>
+                <span className="material-symbols-outlined pg-section-icon">
+                  contact_phone
+                </span>
                 <span className="pg-section-label">Contacto</span>
               </div>
             </div>
             <div className="pg-section-body">
               <ZHGrid cols={2}>
-                <ZHField label="Teléfono principal" error={errors.phone?.message}>
+                <ZHField
+                  label="Teléfono principal"
+                  error={errors.phone?.message}
+                >
                   <Controller
                     name="phone"
                     control={control}
-                    render={({ field }) => <ZhPhoneInput {...field} disabled={saving} />}
+                    render={({ field }) => (
+                      <ZhPhoneInput {...field} disabled={saving} />
+                    )}
                   />
                 </ZHField>
-                <ZHField label="Teléfono secundario" error={errors.secondaryPhone?.message}>
+                <ZHField
+                  label="Teléfono secundario"
+                  error={errors.secondaryPhone?.message}
+                >
                   <Controller
                     name="secondaryPhone"
                     control={control}
-                    render={({ field }) => <ZhPhoneInput {...field} disabled={saving} />}
+                    render={({ field }) => (
+                      <ZhPhoneInput {...field} disabled={saving} />
+                    )}
                   />
                 </ZHField>
-                <ZHField label="Correo Electrónico" error={errors.email?.message}>
+                <ZHField
+                  label="Correo Electrónico"
+                  error={errors.email?.message}
+                >
                   <input
                     className="zh-input"
                     type="email"
                     placeholder="sucursal@empresa.com"
                     disabled={saving}
-                    {...register('email')}
+                    {...register("email")}
                   />
                 </ZHField>
                 <ZHField label="Sitio web" error={errors.website?.message}>
@@ -286,7 +371,7 @@ export function BranchFormPanel({
                     className="zh-input"
                     placeholder="https://www.empresa.com"
                     disabled={saving}
-                    {...register('website')}
+                    {...register("website")}
                   />
                 </ZHField>
               </ZHGrid>
@@ -297,18 +382,23 @@ export function BranchFormPanel({
           <div className="pg-section">
             <div className="pg-section-header">
               <div className="pg-section-header-left">
-                <span className="material-symbols-outlined pg-section-icon">badge</span>
+                <span className="material-symbols-outlined pg-section-icon">
+                  badge
+                </span>
                 <span className="pg-section-label">Responsable</span>
               </div>
             </div>
             <div className="pg-section-body">
               <ZHGrid cols={2}>
-                <ZHField label="Nombre completo" error={errors.managerName?.message}>
+                <ZHField
+                  label="Nombre completo"
+                  error={errors.managerName?.message}
+                >
                   <input
                     className="zh-input"
                     placeholder="Nombre del responsable"
                     disabled={saving}
-                    {...register('managerName')}
+                    {...register("managerName")}
                   />
                 </ZHField>
                 <ZHField label="Cargo" error={errors.managerPosition?.message}>
@@ -316,7 +406,7 @@ export function BranchFormPanel({
                     className="zh-input"
                     placeholder="Ej: Administrador"
                     disabled={saving}
-                    {...register('managerPosition')}
+                    {...register("managerPosition")}
                   />
                 </ZHField>
                 <ZHField label="Correo" error={errors.managerEmail?.message}>
@@ -325,14 +415,16 @@ export function BranchFormPanel({
                     type="email"
                     placeholder="responsable@empresa.com"
                     disabled={saving}
-                    {...register('managerEmail')}
+                    {...register("managerEmail")}
                   />
                 </ZHField>
                 <ZHField label="Teléfono" error={errors.managerPhone?.message}>
                   <Controller
                     name="managerPhone"
                     control={control}
-                    render={({ field }) => <ZhPhoneInput {...field} disabled={saving} />}
+                    render={({ field }) => (
+                      <ZhPhoneInput {...field} disabled={saving} />
+                    )}
                   />
                 </ZHField>
               </ZHGrid>
@@ -343,7 +435,9 @@ export function BranchFormPanel({
           <div className="pg-section">
             <div className="pg-section-header">
               <div className="pg-section-header-left">
-                <span className="material-symbols-outlined pg-section-icon">settings_input_component</span>
+                <span className="material-symbols-outlined pg-section-icon">
+                  settings_input_component
+                </span>
                 <span className="pg-section-label">Operación</span>
               </div>
             </div>
@@ -362,37 +456,47 @@ export function BranchFormPanel({
                 )}
               />
               <ZHGrid cols={2}>
-                <ZHField label="Fecha de apertura" error={errors.openingDate?.message}>
-                  <ZhDateInput disabled={saving} {...register('openingDate')} />
+                <ZHField
+                  label="Fecha de apertura"
+                  error={errors.openingDate?.message}
+                >
+                  <ZhDateInput disabled={saving} {...register("openingDate")} />
                 </ZHField>
               </ZHGrid>
-              <ZHField label="Notas internas" error={errors.internalNotes?.message}>
+              <ZHField
+                label="Notas internas"
+                error={errors.internalNotes?.message}
+              >
                 <textarea
                   className="zh-input"
                   rows={3}
                   maxLength={1000}
                   placeholder="Notas visibles solo para el equipo administrativo"
                   disabled={saving}
-                  {...register('internalNotes')}
+                  {...register("internalNotes")}
                 />
               </ZHField>
             </div>
           </div>
-
         </div>
 
         {/* Actions bar */}
         <div className="pg-actions-bar">
           <div className="pg-actions-buttons">
-            <ZHBtn variant="ghost" type="button" onClick={closePanel} disabled={saving}>
+            <ZHBtn
+              variant="ghost"
+              type="button"
+              onClick={closePanel}
+              disabled={saving}
+            >
               Cancelar
             </ZHBtn>
             <ZHBtn variant="primary" type="submit" disabled={saving}>
               {saving
-                ? t('common.saving')
+                ? t("common.saving")
                 : editingId
-                  ? 'Guardar cambios'
-                  : 'Crear sucursal'}
+                  ? "Guardar cambios"
+                  : "Crear sucursal"}
             </ZHBtn>
           </div>
         </div>

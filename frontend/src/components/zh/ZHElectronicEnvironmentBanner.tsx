@@ -1,8 +1,8 @@
-import { useEffect } from 'react';
-import { ZHPageNotice } from './ZHPageNotice';
-import { ELECTRONIC_INVOICING_STATUS_REGISTRY } from './electronicInvoicingStatusRegistry';
-import { useI18n } from '../../i18n/i18n';
-import { useElectronicInvoicingStatusStore } from '../../store/electronicInvoicingStatusStore';
+import { useEffect } from "react";
+import { ZHPageNotice } from "./ZHPageNotice";
+import { ELECTRONIC_INVOICING_STATUS_REGISTRY } from "./electronicInvoicingStatusRegistry";
+import { useI18n } from "../../i18n/i18n";
+import { useElectronicInvoicingStatusStore } from "../../store/electronicInvoicingStatusStore";
 
 /**
  * Indicador transversal del estado operativo de facturación electrónica — infraestructura
@@ -29,14 +29,19 @@ export function ZHElectronicEnvironmentBanner() {
   if (!status) return null;
 
   const visual = ELECTRONIC_INVOICING_STATUS_REGISTRY[status.status];
-  const kicker = t('common.electronicEnvironmentBanner.kicker');
+  const kicker = t("common.electronicEnvironmentBanner.kicker");
   const message = t(visual.messageKey);
   const detail = t(visual.detailKey);
 
   return (
     <div className="zh-mb-8">
       <p className="zh-text-muted zh-text-xs">{kicker}</p>
-      <ZHPageNotice variant={visual.variant} icon={visual.icon} message={message} detail={detail} />
+      <ZHPageNotice
+        variant={visual.variant}
+        icon={visual.icon}
+        message={message}
+        detail={detail}
+      />
     </div>
   );
 }

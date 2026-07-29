@@ -1,6 +1,6 @@
-import { useEffect, useRef, type ReactNode } from 'react';
+import { useEffect, useRef, type ReactNode } from "react";
 
-export type ZHDrawerSize = 'sm' | 'md' | 'lg';
+export type ZHDrawerSize = "sm" | "md" | "lg";
 
 interface ZHDrawerProps {
   open: boolean;
@@ -24,12 +24,12 @@ interface ZHDrawerProps {
 export function ZHDrawer({
   open,
   onClose,
-  size = 'md',
+  size = "md",
   title,
   subtitle,
   children,
   footer,
-  closeLabel = 'Cerrar',
+  closeLabel = "Cerrar",
   ariaLabel,
 }: ZHDrawerProps) {
   const panelRef = useRef<HTMLDivElement>(null);
@@ -38,16 +38,16 @@ export function ZHDrawer({
     if (!open) return;
 
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
+      if (e.key === "Escape") onClose();
     };
-    window.addEventListener('keydown', onKey);
+    window.addEventListener("keydown", onKey);
 
     const firstFocusable = panelRef.current?.querySelector<HTMLElement>(
-      'input:not([disabled]),select:not([disabled]),textarea:not([disabled]),button:not([disabled]),[tabindex]:not([tabindex="-1"])'
+      'input:not([disabled]),select:not([disabled]),textarea:not([disabled]),button:not([disabled]),[tabindex]:not([tabindex="-1"])',
     );
     firstFocusable?.focus();
 
-    return () => window.removeEventListener('keydown', onKey);
+    return () => window.removeEventListener("keydown", onKey);
   }, [open, onClose]);
 
   if (!open) return null;
@@ -58,7 +58,9 @@ export function ZHDrawer({
       role="dialog"
       aria-modal="true"
       aria-label={ariaLabel ?? title}
-      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
     >
       <div ref={panelRef} className={`zh-drawer zh-drawer--${size}`}>
         <div className="zh-form-header">
@@ -67,21 +69,20 @@ export function ZHDrawer({
             {subtitle && <p className="zh-form-subtitle">{subtitle}</p>}
           </div>
           <div className="zh-form-header-right">
-            <button className="zh-form-header-close" onClick={onClose} type="button" aria-label={closeLabel}>
+            <button
+              className="zh-form-header-close"
+              onClick={onClose}
+              type="button"
+              aria-label={closeLabel}
+            >
               <span className="material-symbols-outlined">close</span>
             </button>
           </div>
         </div>
 
-        <div className="zh-drawer-body">
-          {children}
-        </div>
+        <div className="zh-drawer-body">{children}</div>
 
-        {footer && (
-          <div className="zh-drawer-footer">
-            {footer}
-          </div>
-        )}
+        {footer && <div className="zh-drawer-footer">{footer}</div>}
       </div>
     </div>
   );

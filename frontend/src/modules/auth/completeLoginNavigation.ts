@@ -1,5 +1,5 @@
-import type { NavigateFunction } from 'react-router-dom';
-import type { AuthResponse } from '../../types/auth';
+import type { NavigateFunction } from "react-router-dom";
+import type { AuthResponse } from "../../types/auth";
 
 /**
  * Fase H — aplica una sesión ya autenticada (authStore.login) y redirige según el estado de la
@@ -16,9 +16,9 @@ export function completeLoginNavigation(
   login(payload);
 
   if (payload.requiresCompanySelection) {
-    navigate('/select-company', { replace: true });
+    navigate("/select-company", { replace: true });
     return;
   }
 
-  navigate('/dashboard', { replace: true });
+  navigate("/dashboard", { replace: true });
 }

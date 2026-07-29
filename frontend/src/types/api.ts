@@ -1,4 +1,4 @@
-export type ApiSeverity = 'success' | 'error' | 'warning' | 'info';
+export type ApiSeverity = "success" | "error" | "warning" | "info";
 
 export interface ApiResponseMessage {
   user: string;

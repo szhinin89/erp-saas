@@ -34,7 +34,7 @@ public sealed record SriSupplierTypeDto(string Code, string Name);
 
 public sealed record SriTaxRegimeDto(string Code, string Name, string? Abbrev);
 
-public sealed record CatalogPersonTypeDto(short Code, string Name);
+public sealed record LegalEntityTypeCatalogDto(int Code, string Name);
 
 public sealed record CatalogBarcodeTypeDto(string Code, string Name);
 
@@ -82,8 +82,8 @@ public sealed record GetSriTaxRegimesQuery
     : IRequest<Result<IReadOnlyList<SriTaxRegimeDto>>>,
         IPlatformScopedRequest;
 
-public sealed record GetCatalogPersonTypesQuery
-    : IRequest<Result<IReadOnlyList<CatalogPersonTypeDto>>>,
+public sealed record GetCatalogLegalEntityTypesQuery
+    : IRequest<Result<IReadOnlyList<LegalEntityTypeCatalogDto>>>,
         IPlatformScopedRequest;
 
 public sealed record GetCatalogBarcodeTypesQuery
@@ -289,21 +289,21 @@ public sealed class GetSriTaxRegimesQueryHandler
     }
 }
 
-public sealed class GetCatalogPersonTypesQueryHandler
-    : IRequestHandler<GetCatalogPersonTypesQuery, Result<IReadOnlyList<CatalogPersonTypeDto>>>
+public sealed class GetCatalogLegalEntityTypesQueryHandler
+    : IRequestHandler<GetCatalogLegalEntityTypesQuery, Result<IReadOnlyList<LegalEntityTypeCatalogDto>>>
 {
     private readonly ISriCatalogLookupRepository _repo;
 
-    public GetCatalogPersonTypesQueryHandler(ISriCatalogLookupRepository repo) => _repo = repo;
+    public GetCatalogLegalEntityTypesQueryHandler(ISriCatalogLookupRepository repo) => _repo = repo;
 
-    public async Task<Result<IReadOnlyList<CatalogPersonTypeDto>>> Handle(
-        GetCatalogPersonTypesQuery request,
-        CancellationToken cancellationToken
+    public async Task<Result<IReadOnlyList<LegalEntityTypeCatalogDto>>> Handle(
+     GetCatalogLegalEntityTypesQuery request,
+     CancellationToken cancellationToken
     )
     {
-        var items = await _repo.GetPersonTypesAsync(cancellationToken);
-        return Result<IReadOnlyList<CatalogPersonTypeDto>>.Success(
-            items.Select(p => new CatalogPersonTypeDto(p.Code, p.Name)).ToList()
+        var items = await _repo.GetLegalEntityTypesAsync(cancellationToken);
+        return Result<IReadOnlyList<LegalEntityTypeCatalogDto>>.Success(
+            items.Select(p => new LegalEntityTypeCatalogDto(p.Code, p.Name)).ToList()
         );
     }
 }

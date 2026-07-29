@@ -1,5 +1,5 @@
-import type { ReactNode } from 'react';
-import { PageShell } from '../components/PageShell';
+import type { ReactNode } from "react";
+import { PageShell } from "../components/PageShell";
 
 /**
  * Plantilla estándar para pantallas ERP (suscriptor) dentro de AppLayout + LayoutFrame.
@@ -29,13 +29,20 @@ export function ErpPageTemplate({
   children,
 }: ErpPageTemplateProps) {
   const body = usePgPage ? (
-    <div className={['pg-page', pageClassName].filter(Boolean).join(' ')}>{children}</div>
+    <div className={["pg-page", pageClassName].filter(Boolean).join(" ")}>
+      {children}
+    </div>
   ) : (
     children
   );
 
   return (
-    <PageShell title={title} kicker={kicker} subtitle={subtitle} action={action}>
+    <PageShell
+      title={title}
+      kicker={kicker}
+      subtitle={subtitle}
+      action={action}
+    >
       {body}
     </PageShell>
   );

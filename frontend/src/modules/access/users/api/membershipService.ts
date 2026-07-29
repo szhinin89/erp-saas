@@ -1,4 +1,4 @@
-import { apiGet, apiPost } from '../../../lib/apiEnvelope';
+import { apiGet, apiPost } from "../../../lib/apiEnvelope";
 
 /** Proyección administrativa de CompanyUserMembership — GET /api/v1/admin/iam/memberships (Fase I-C). */
 export type CompanyUserMembershipAdminDto = {
@@ -18,7 +18,7 @@ export type CompanyUserMembershipAdminDto = {
  * Roles del backend (ERP.Domain.Kernel.Security.SecurityRoles) — solo dos valores existen, sin
  * catálogo dinámico detrás (mismo criterio que COMPANY_USER_LOGIN_MODES).
  */
-export const MEMBERSHIP_ROLES = ['Admin', 'User'] as const;
+export const MEMBERSHIP_ROLES = ["Admin", "User"] as const;
 export type MembershipRole = (typeof MEMBERSHIP_ROLES)[number];
 
 export type UpsertMembershipPayload = {
@@ -57,7 +57,7 @@ export type UsernameLookupDto = {
 
 export const membershipService = {
   list: (onlyActive = false) =>
-    apiGet<CompanyUserMembershipAdminDto[]>('/api/v1/admin/iam/memberships', {
+    apiGet<CompanyUserMembershipAdminDto[]>("/api/v1/admin/iam/memberships", {
       params: { onlyActive },
     }),
 
@@ -68,11 +68,11 @@ export const membershipService = {
    * comportamiento que UpsertCompanyUserMembershipHandler.Activate en el backend).
    */
   upsertMembership: (payload: UpsertMembershipPayload) =>
-    apiPost<object>('/api/v1/admin/iam/memberships', payload),
+    apiPost<object>("/api/v1/admin/iam/memberships", payload),
 
   /** Revoca (desactiva) la membership del usuario en la empresa activa. Idempotente. */
   revokeMembership: (username: string) =>
-    apiPost<object>('/api/v1/admin/iam/memberships/revoke', { username }),
+    apiPost<object>("/api/v1/admin/iam/memberships/revoke", { username }),
 
   /**
    * Único punto de creación de un IdentityUser nuevo fuera de First Run. Crea el usuario y, en el
@@ -80,7 +80,7 @@ export const membershipService = {
    * esa lógica aquí. Requiere permiso propio access.identity_users.create.
    */
   createSystemUser: (payload: CreateSystemUserPayload) =>
-    apiPost<CreateSystemUserResultDto>('/api/v1/admin/iam/users', payload),
+    apiPost<CreateSystemUserResultDto>("/api/v1/admin/iam/users", payload),
 
   /**
    * Fase F (username en Fase G) — único punto de entrada de "Agregar usuario": resuelve si el
@@ -89,7 +89,9 @@ export const membershipService = {
    * tenga que saberlo.
    */
   lookupUserByUsername: (username: string) =>
-    apiGet<UsernameLookupDto>('/api/v1/admin/iam/memberships/lookup', { params: { username } }),
+    apiGet<UsernameLookupDto>("/api/v1/admin/iam/memberships/lookup", {
+      params: { username },
+    }),
 
   /**
    * Asigna una contraseña temporal a un usuario existente de la empresa activa. El backend hace

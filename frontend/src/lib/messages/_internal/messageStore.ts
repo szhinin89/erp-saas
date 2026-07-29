@@ -1,6 +1,11 @@
-import { create } from 'zustand';
-import type { MessageItem, MessageType, ConfirmOptions, PromptOptions } from '../messageTypes';
-import { MESSAGE_CONFIG } from '../messageDefaults';
+import { create } from "zustand";
+import type {
+  MessageItem,
+  MessageType,
+  ConfirmOptions,
+  PromptOptions,
+} from "../messageTypes";
+import { MESSAGE_CONFIG } from "../messageDefaults";
 
 interface ConfirmState {
   open: boolean;
@@ -42,13 +47,15 @@ export const useMessageStore = create<MessageStoreState>((set, get) => ({
   push: (message, type, persistent = false) => {
     const { queue } = get();
 
-    if (MESSAGE_CONFIG.duplicatePolicy === 'ignore') {
+    if (MESSAGE_CONFIG.duplicatePolicy === "ignore") {
       const dup = queue.find((m) => m.message === message && m.type === type);
       if (dup) return;
     }
 
-    if (MESSAGE_CONFIG.duplicatePolicy === 'reset-timer') {
-      const dupIdx = queue.findIndex((m) => m.message === message && m.type === type);
+    if (MESSAGE_CONFIG.duplicatePolicy === "reset-timer") {
+      const dupIdx = queue.findIndex(
+        (m) => m.message === message && m.type === type,
+      );
       if (dupIdx >= 0) {
         const updated = [...queue];
         updated[dupIdx] = { ...updated[dupIdx], createdAt: Date.now() };
@@ -84,8 +91,14 @@ export const useMessageStore = create<MessageStoreState>((set, get) => ({
         confirm: {
           open: true,
           options,
-          onConfirm: () => { set({ confirm: null }); resolve(true); },
-          onCancel:  () => { set({ confirm: null }); resolve(false); },
+          onConfirm: () => {
+            set({ confirm: null });
+            resolve(true);
+          },
+          onCancel: () => {
+            set({ confirm: null });
+            resolve(false);
+          },
         },
       });
     }),
@@ -96,10 +109,15 @@ export const useMessageStore = create<MessageStoreState>((set, get) => ({
         prompt: {
           open: true,
           options,
-          onConfirm: (value) => { set({ prompt: null }); resolve(value); },
-          onCancel:  () => { set({ prompt: null }); resolve(null); },
+          onConfirm: (value) => {
+            set({ prompt: null });
+            resolve(value);
+          },
+          onCancel: () => {
+            set({ prompt: null });
+            resolve(null);
+          },
         },
       });
     }),
-
 }));

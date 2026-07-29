@@ -1,49 +1,61 @@
-import { useNavigate } from 'react-router-dom';
-import { useI18n } from '../../../i18n/i18n';
-import { useAuthStore } from '../../../store/authStore';
-import { RuntimeModeBadge } from '../../../components/RuntimeModeBadge';
-import { Badge } from '../../../components/PageShell';
-import { ZHPageNotice } from '../../../components/zh/ZHPageNotice';
-import { ErpPageTemplate } from '../../../templates/ErpPageTemplate';
-import { useDashboardKpis} from '../hooks/useDashboardData';
-import './DashboardPage.css';
+import { useNavigate } from "react-router-dom";
+import { useI18n } from "../../../i18n/i18n";
+import { useAuthStore } from "../../../store/authStore";
+import { RuntimeModeBadge } from "../../../components/RuntimeModeBadge";
+import { Badge } from "../../../components/PageShell";
+import { ZHPageNotice } from "../../../components/zh/ZHPageNotice";
+import { ErpPageTemplate } from "../../../templates/ErpPageTemplate";
+import { useDashboardKpis } from "../hooks/useDashboardData";
+import "./DashboardPage.css";
 
 function fmt(n: number | undefined, decimals = 2) {
-  if (n === undefined || n === null) return '—';
+  if (n === undefined || n === null) return "—";
   return `$${n.toFixed(decimals)}`;
 }
 
 function fmtN(n: number | undefined) {
-  if (n === undefined || n === null) return '—';
+  if (n === undefined || n === null) return "—";
   return String(n);
 }
 
 export function DashboardPage() {
   const { t, locale } = useI18n();
-  const user                   = useAuthStore((s) => s.user);
-  const companySessionVersion  = useAuthStore((s) => s.companySessionVersion);
+  const user = useAuthStore((s) => s.user);
+  const companySessionVersion = useAuthStore((s) => s.companySessionVersion);
   const navigate = useNavigate();
 
-  const kpis    = useDashboardKpis();
+  const kpis = useDashboardKpis();
 
-  const today = new Date().toLocaleDateString(locale === 'en' ? 'en-US' : 'es-ES', {
-    weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
-  });
+  const today = new Date().toLocaleDateString(
+    locale === "en" ? "en-US" : "es-ES",
+    {
+      weekday: "long",
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    },
+  );
 
   const d = kpis.data;
   const loading = kpis.loading;
-  const periodLabel = d ? `${d.month}/${d.year}` : '';
+  const periodLabel = d ? `${d.month}/${d.year}` : "";
 
   return (
     <ErpPageTemplate
       key={`dashboard-${companySessionVersion}`}
-      title={`${t('dashboard.welcome')} ${user?.fullName ?? ''}`.trim()}
+      title={`${t("dashboard.welcome")} ${user?.fullName ?? ""}`.trim()}
       subtitle={today}
-      kicker={t('dashboard.title')}
+      kicker={t("dashboard.title")}
       action={<RuntimeModeBadge />}
       pageClassName="dsh-page"
     >
-      {kpis.error && <ZHPageNotice variant="error" message="Error al cargar KPIs" detail={kpis.error} />}
+      {kpis.error && (
+        <ZHPageNotice
+          variant="error"
+          message="Error al cargar KPIs"
+          detail={kpis.error}
+        />
+      )}
 
       {/* ── KPI cards ── */}
       <div className="pg-kpis">
@@ -56,8 +68,10 @@ export function DashboardPage() {
           </div>
           <div className="pg-kpi-bottom">
             <p className="pg-kpi-label">Ventas MTD</p>
-            <p className="pg-kpi-value">{loading ? '…' : fmt(d?.salesMtd)}</p>
-            <p className="subtle">{loading ? '' : `${fmtN(d?.invoicesMtd)} facturas`}</p>
+            <p className="pg-kpi-value">{loading ? "…" : fmt(d?.salesMtd)}</p>
+            <p className="subtle">
+              {loading ? "" : `${fmtN(d?.invoicesMtd)} facturas`}
+            </p>
           </div>
         </div>
 
@@ -69,7 +83,9 @@ export function DashboardPage() {
           </div>
           <div className="pg-kpi-bottom">
             <p className="pg-kpi-label">CxC Pendiente</p>
-            <p className="pg-kpi-value">{loading ? '…' : fmt(d?.pendingArTotal)}</p>
+            <p className="pg-kpi-value">
+              {loading ? "…" : fmt(d?.pendingArTotal)}
+            </p>
             {!loading && !!d?.overdueArTotal && (
               <div className="dsh-kpi-trend dsh-kpi-trend--warning">
                 <span className="material-symbols-outlined">warning</span>
@@ -86,9 +102,13 @@ export function DashboardPage() {
             </div>
           </div>
           <div className="pg-kpi-bottom">
-            <p className="pg-kpi-label">{t('dashboard.kpis.lowStock')}</p>
-            <p className="pg-kpi-value">{loading ? '…' : fmtN(d?.lowStockSkuCount)}</p>
-            <p className="subtle">{loading ? '' : `${fmtN(d?.outOfStockSkuCount)} sin stock`}</p>
+            <p className="pg-kpi-label">{t("dashboard.kpis.lowStock")}</p>
+            <p className="pg-kpi-value">
+              {loading ? "…" : fmtN(d?.lowStockSkuCount)}
+            </p>
+            <p className="subtle">
+              {loading ? "" : `${fmtN(d?.outOfStockSkuCount)} sin stock`}
+            </p>
           </div>
         </div>
 
@@ -100,7 +120,9 @@ export function DashboardPage() {
           </div>
           <div className="pg-kpi-bottom">
             <p className="pg-kpi-label">CxP Pendiente</p>
-            <p className="pg-kpi-value">{loading ? '…' : fmt(d?.pendingApTotal)}</p>
+            <p className="pg-kpi-value">
+              {loading ? "…" : fmt(d?.pendingApTotal)}
+            </p>
             {!loading && !!d?.overdueApTotal && (
               <div className="dsh-kpi-trend dsh-kpi-trend--warning">
                 <span className="material-symbols-outlined">warning</span>
@@ -119,8 +141,7 @@ export function DashboardPage() {
             <div className="dsh-activity-head">
               <h2 className="dsh-section-title">Antigüedad CxC (AR)</h2>
             </div>
-            <div className="dsh-chart-wrap">
-            </div>
+            <div className="dsh-chart-wrap"></div>
           </div>
 
           {/* AP Aging */}
@@ -134,14 +155,26 @@ export function DashboardPage() {
         <div className="dsh-right">
           <div className="card card--xl">
             <div className="card-header">
-              <h2 className="dsh-section-title">{t('dashboard.quickAccess.title')}</h2>
+              <h2 className="dsh-section-title">
+                {t("dashboard.quickAccess.title")}
+              </h2>
             </div>
             <div className="dsh-card-body">
-              <button type="button" className="dsh-quick-btn" onClick={() => navigate('/inventory/items')}>
-                <span className="material-symbols-outlined dsh-quick-icon">inventory</span>
+              <button
+                type="button"
+                className="dsh-quick-btn"
+                onClick={() => navigate("/inventory/items")}
+              >
+                <span className="material-symbols-outlined dsh-quick-icon">
+                  inventory
+                </span>
                 <div>
-                  <p className="dsh-quick-label">{t('dashboard.quickAccess.addItem')}</p>
-                  <p className="dsh-quick-sub">{t('dashboard.quickAccess.addItem.sub')}</p>
+                  <p className="dsh-quick-label">
+                    {t("dashboard.quickAccess.addItem")}
+                  </p>
+                  <p className="dsh-quick-sub">
+                    {t("dashboard.quickAccess.addItem.sub")}
+                  </p>
                 </div>
               </button>
             </div>
@@ -156,19 +189,27 @@ export function DashboardPage() {
             <div className="dsh-card-body">
               <div className="dsh-summary-row">
                 <span className="dsh-summary-label">Ventas YTD</span>
-                <span className="dsh-summary-value">{loading ? '…' : fmt(d?.salesYtd)}</span>
+                <span className="dsh-summary-value">
+                  {loading ? "…" : fmt(d?.salesYtd)}
+                </span>
               </div>
               <div className="dsh-summary-row">
                 <span className="dsh-summary-label">Facturas MTD</span>
-                <span className="dsh-summary-value">{loading ? '…' : fmtN(d?.invoicesMtd)}</span>
+                <span className="dsh-summary-value">
+                  {loading ? "…" : fmtN(d?.invoicesMtd)}
+                </span>
               </div>
               <div className="dsh-summary-row">
                 <span className="dsh-summary-label">CxC vencida</span>
-                <span className="dsh-summary-value dsh-summary-value--warn">{loading ? '…' : fmt(d?.overdueArTotal)}</span>
+                <span className="dsh-summary-value dsh-summary-value--warn">
+                  {loading ? "…" : fmt(d?.overdueArTotal)}
+                </span>
               </div>
               <div className="dsh-summary-row">
                 <span className="dsh-summary-label">CxP vencida</span>
-                <span className="dsh-summary-value dsh-summary-value--warn">{loading ? '…' : fmt(d?.overdueApTotal)}</span>
+                <span className="dsh-summary-value dsh-summary-value--warn">
+                  {loading ? "…" : fmt(d?.overdueApTotal)}
+                </span>
               </div>
             </div>
           </div>
@@ -178,12 +219,14 @@ export function DashboardPage() {
       <footer className="dsh-footer">
         <div className="dsh-footer-left">
           <span className="dsh-footer-brand">ZH Technologies</span>
-          <span className="dsh-footer-copy">{t('dashboard.footer.rights')}</span>
+          <span className="dsh-footer-copy">
+            {t("dashboard.footer.rights")}
+          </span>
         </div>
         <nav className="dsh-footer-links">
-          <a href="#">{t('dashboard.footer.support')}</a>
-          <a href="#">{t('dashboard.footer.docs')}</a>
-          <a href="#">{t('dashboard.footer.privacy')}</a>
+          <a href="#">{t("dashboard.footer.support")}</a>
+          <a href="#">{t("dashboard.footer.docs")}</a>
+          <a href="#">{t("dashboard.footer.privacy")}</a>
         </nav>
       </footer>
     </ErpPageTemplate>

@@ -51,11 +51,17 @@
   grid-template-columns: 2fr 1fr;
 }
 @media (max-width: 1100px) {
-  .pf-header-cards-row { grid-template-columns: 1fr 1fr; }
-  .pf-header-cards-row--mid { grid-template-columns: 1fr; }
+  .pf-header-cards-row {
+    grid-template-columns: 1fr 1fr;
+  }
+  .pf-header-cards-row--mid {
+    grid-template-columns: 1fr;
+  }
 }
 @media (max-width: 640px) {
-  .pf-header-cards-row { grid-template-columns: 1fr; }
+  .pf-header-cards-row {
+    grid-template-columns: 1fr;
+  }
 }
 
 /* ── Collapsible sections ── */
@@ -132,7 +138,9 @@
   grid-template-columns: 1fr 1fr 1fr;
 }
 @media (max-width: 800px) {
-  .pf-mini-card__row--3col { grid-template-columns: 1fr; }
+  .pf-mini-card__row--3col {
+    grid-template-columns: 1fr;
+  }
 }
 .pf-mini-card__readonly {
   font-size: 13px;
@@ -154,7 +162,8 @@
 }
 
 /* ── Fields ─────────────────────────────────────────────────── */
-/* .pf-field/.pf-field__*/.pf-label ELIMINADOS (Fase 3B) — consolidados en
+/* .pf-field/.pf-field__*/
+.pf-label ELIMINADOS (Fase 3B) — consolidados en
    <ZHField density="compact"> (components/zh/ZHForm.tsx + .zh-field--compact en zh-ui.css). */
 
 /* ── Badges ─────────────────────────────────────────────────── */
@@ -169,15 +178,15 @@
   white-space: nowrap;
 }
 .pf-badge--success {
-  background: rgba(26,122,74,.1);
+  background: rgba(26, 122, 74, 0.1);
   color: var(--color-success);
 }
 .pf-badge--warning {
-  background: rgba(186,117,23,.1);
+  background: rgba(186, 117, 23, 0.1);
   color: var(--color-warning);
 }
 .pf-badge--danger {
-  background: rgba(192,57,43,.08);
+  background: rgba(192, 57, 43, 0.08);
   color: var(--color-error);
 }
 .pf-badge--info {
@@ -236,7 +245,7 @@
 .pf-table tbody td.pf-td--num {
   /* NUM-001 (AI-RULES/PR-RULES-CATALOG.md#f-05) — dato numérico, alineado a la derecha. */
   text-align: right;
-  font-family: 'SF Mono', 'Cascadia Code', monospace;
+  font-family: "SF Mono", "Cascadia Code", monospace;
   font-size: 12px;
   font-weight: 500;
 }
@@ -255,12 +264,12 @@
 .pf-table-input:focus {
   border-color: var(--color-primary);
   outline: none;
-  box-shadow: 0 0 0 2px rgba(58,95,132,.08);
+  box-shadow: 0 0 0 2px rgba(58, 95, 132, 0.08);
 }
 .pf-table-input--num {
   /* NUM-001 (AI-RULES/PR-RULES-CATALOG.md#f-05) — dato numérico, alineado a la derecha. */
   text-align: right;
-  font-family: 'SF Mono', 'Cascadia Code', monospace;
+  font-family: "SF Mono", "Cascadia Code", monospace;
   font-size: 12px;
 }
 .pf-table-input--sm {
@@ -269,7 +278,6 @@
 .pf-table-input--xs {
   width: 60px;
 }
-
 
 /* Row actions */
 .pf-row-actions {
@@ -288,7 +296,9 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: color var(--transition), background var(--transition);
+  transition:
+    color var(--transition),
+    background var(--transition);
 }
 .pf-row-action:hover {
   background: var(--color-surface-container-high);
@@ -296,7 +306,7 @@
 }
 .pf-row-action--danger:hover {
   color: var(--color-error);
-  background: rgba(192,57,43,.06);
+  background: rgba(192, 57, 43, 0.06);
 }
 
 /* Empty rows */
@@ -371,7 +381,6 @@
   font-size: 18px;
 }
 
-
 /* ── Product Picker Enhanced ────────────────────────────────── */
 .pf-picker-dropdown {
   position: absolute;
@@ -382,7 +391,9 @@
   background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18), 0 2px 8px rgba(0, 0, 0, 0.1);
+  box-shadow:
+    0 8px 24px rgba(0, 0, 0, 0.18),
+    0 2px 8px rgba(0, 0, 0, 0.1);
   max-height: 320px;
   overflow-y: auto;
   margin-top: 4px;
@@ -423,7 +434,7 @@
   font-size: 11px;
   font-weight: 600;
   color: var(--color-primary);
-  font-family: 'SF Mono', 'Cascadia Code', monospace;
+  font-family: "SF Mono", "Cascadia Code", monospace;
   background: var(--color-primary-fixed);
   padding: 1px 6px;
   border-radius: var(--radius-sm);
@@ -450,7 +461,7 @@
 .pf-picker-item__meta-value {
   font-weight: 600;
   color: var(--color-text-primary);
-  font-family: 'SF Mono', 'Cascadia Code', monospace;
+  font-family: "SF Mono", "Cascadia Code", monospace;
 }
 
 /* .pdl-container/.pdl-topbar* movidos a modules/purchases/styles/purchases-invoice.css */
@@ -480,12 +491,14 @@
   border-radius: var(--radius-lg);
   background: var(--color-surface);
   color: var(--color-text-primary);
-  transition: border-color var(--transition), box-shadow var(--transition);
+  transition:
+    border-color var(--transition),
+    box-shadow var(--transition);
 }
 .pdl-search__input:focus {
   border-color: var(--color-primary);
   outline: none;
-  box-shadow: 0 0 0 3px rgba(58,95,132,.1);
+  box-shadow: 0 0 0 3px rgba(58, 95, 132, 0.1);
 }
 .pdl-type-filter-select {
   flex-shrink: 0;
@@ -503,7 +516,7 @@
   background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
-  box-shadow: 0 8px 24px rgba(0,0,0,.15);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
   max-height: 320px;
   overflow-y: auto;
   margin-top: 4px;
@@ -528,7 +541,9 @@
   transition: background var(--transition);
   border-bottom: 1px solid var(--color-surface-container-low);
 }
-.pdl-search__result:last-child { border-bottom: none; }
+.pdl-search__result:last-child {
+  border-bottom: none;
+}
 .pdl-search__result:hover,
 .pdl-search__result--focused {
   background: var(--color-surface-container-low);
@@ -537,7 +552,7 @@
   font-size: 11px;
   font-weight: 700;
   color: var(--color-primary);
-  font-family: 'SF Mono', 'Cascadia Code', monospace;
+  font-family: "SF Mono", "Cascadia Code", monospace;
   background: var(--color-primary-fixed);
   padding: 1px 6px;
   border-radius: var(--radius-sm);
@@ -559,10 +574,12 @@
   flex-shrink: 0;
 }
 
-/* .pdl-topbar__right/.pdl-costs-*/.pdl-header* movidos a purchases-invoice.css */
+/* .pdl-topbar__right/.pdl-costs-*/
+.pdl-header* movidos a purchases-invoice.css */
 
 /* Lines wrapper */
-.pdl-lines { }
+.pdl-lines {
+}
 
 /* Line Card */
 .pdl-line {
@@ -582,7 +599,9 @@
   color: var(--color-text-secondary);
   text-align: right;
 }
-.pdl-line__product { min-width: 0; }
+.pdl-line__product {
+  min-width: 0;
+}
 .pdl-line__product-name {
   font-size: 15px;
   font-weight: 700;
@@ -593,11 +612,19 @@
   gap: var(--space-2);
 }
 .pdl-line__clear {
-  background: none; border: none; cursor: pointer; padding: 2px;
-  color: var(--color-text-secondary); border-radius: var(--radius-sm);
-  display: flex; align-items: center;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 2px;
+  color: var(--color-text-secondary);
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
 }
-.pdl-line__clear:hover { color: var(--color-error); background: rgba(192,57,43,.06); }
+.pdl-line__clear:hover {
+  color: var(--color-error);
+  background: rgba(192, 57, 43, 0.06);
+}
 .pdl-line__wh-select {
   width: 100%;
   font-size: 12px;
@@ -608,7 +635,9 @@
   color: var(--color-text-primary);
 }
 /* NUM-001 (AI-RULES/PR-RULES-CATALOG.md#f-05) — cantidad/costo/descuento son datos numéricos, alineados a la derecha. */
-.pdl-line__qty { text-align: right; }
+.pdl-line__qty {
+  text-align: right;
+}
 .pdl-input {
   font-size: 14px;
   padding: 8px 10px;
@@ -619,10 +648,24 @@
   text-align: right;
   transition: border-color var(--transition);
 }
-.pdl-input:focus { border-color: var(--color-primary); outline: none; box-shadow: 0 0 0 3px rgba(58,95,132,.1); }
-.pdl-input--qty { width: 80px; }
-.pdl-input--cost { width: 100px; text-align: right; font-family: 'SF Mono', 'Cascadia Code', monospace; }
-.pdl-input--disc { width: 64px; text-align: right; font-family: 'SF Mono', 'Cascadia Code', monospace; }
+.pdl-input:focus {
+  border-color: var(--color-primary);
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(58, 95, 132, 0.1);
+}
+.pdl-input--qty {
+  width: 80px;
+}
+.pdl-input--cost {
+  width: 100px;
+  text-align: right;
+  font-family: "SF Mono", "Cascadia Code", monospace;
+}
+.pdl-input--disc {
+  width: 64px;
+  text-align: right;
+  font-family: "SF Mono", "Cascadia Code", monospace;
+}
 .pdl-line__cost-row {
   display: flex;
   align-items: center;
@@ -635,8 +678,15 @@
   color: var(--color-text-secondary);
   white-space: nowrap;
 }
-.pdl-line__finance { display: flex; flex-direction: column; align-items: flex-end; gap: var(--space-1); }
-.pdl-line__tax { text-align: right; }
+.pdl-line__finance {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: var(--space-1);
+}
+.pdl-line__tax {
+  text-align: right;
+}
 .pdl-line__tax-head {
   font-size: 12px;
   color: var(--color-text-secondary);
@@ -646,7 +696,7 @@
   font-size: 16px;
   font-weight: 700;
   color: var(--color-text-primary);
-  font-family: 'SF Mono', 'Cascadia Code', monospace;
+  font-family: "SF Mono", "Cascadia Code", monospace;
   margin-bottom: 2px;
 }
 .pdl-line__tax-ice {
@@ -659,7 +709,7 @@
   font-size: 18px;
   font-weight: 800;
   color: var(--color-text-primary);
-  font-family: 'SF Mono', 'Cascadia Code', monospace;
+  font-family: "SF Mono", "Cascadia Code", monospace;
   letter-spacing: -0.5px;
 }
 .pdl-line__actions {
@@ -696,7 +746,9 @@
   padding: var(--space-3) var(--space-4);
   border-right: 1px solid var(--color-border);
 }
-.pdl-ctx-col:last-child { border-right: none; }
+.pdl-ctx-col:last-child {
+  border-right: none;
+}
 .pdl-ctx-col__title {
   display: flex;
   align-items: center;
@@ -729,7 +781,8 @@
   overflow: hidden;
   text-overflow: ellipsis;
 }
-/* .pdl-ctx-col__stock/.pdl-stock-*/.pdl-ctx-col__costs/.pdl-cost-*/
+/* .pdl-ctx-col__stock/.pdl-stock-*/
+.pdl-ctx-col__costs/.pdl-cost-*/
    .pdl-ctx-col__margin/.pdl-margin-*/.pdl-add*/.pdl-empty movidos a
    modules/purchases/styles/purchases-invoice.css */
 
@@ -753,7 +806,7 @@
 /* Bloque de análisis (stock/costos/rentabilidad): menor peso visual que Producto XML e Item ERP. */
 .pdl-block--muted {
   background: transparent;
-  opacity: .85;
+  opacity: 0.85;
 }
 .pdl-block--muted .pdl-cost-val,
 .pdl-block--muted .pdl-stock-val {
@@ -779,22 +832,39 @@
   font-style: italic;
   margin: 0 0 var(--space-2);
 }
-.pdl-cost-label--strong { color: var(--color-text-primary); font-weight: 700; }
-.pdl-cost-val--strong { font-size: 15px; font-weight: 800; }
+.pdl-cost-label--strong {
+  color: var(--color-text-primary);
+  font-weight: 700;
+}
+.pdl-cost-val--strong {
+  font-size: 15px;
+  font-weight: 800;
+}
 
-/* ── Responsive (.pdl-line__*/.pdl-ctx compartidos con Kardex) ── */
+/* ── Responsive (.pdl-line__*/
+.pdl-ctx compartidos con Kardex) ── */
 @media (max-width: 1100px) {
   .pdl-line__main {
     grid-template-columns: 40px 1fr;
     gap: var(--space-3);
   }
-  .pdl-line__context { grid-template-columns: repeat(2, 1fr); }
-  .pdl-blocks { grid-template-columns: 1fr 1fr; }
+  .pdl-line__context {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .pdl-blocks {
+    grid-template-columns: 1fr 1fr;
+  }
 }
 @media (max-width: 640px) {
-  .pdl-line__main { grid-template-columns: 1fr; }
-  .pdl-blocks { grid-template-columns: 1fr; }
-  .pdl-line__context { grid-template-columns: 1fr; }
+  .pdl-line__main {
+    grid-template-columns: 1fr;
+  }
+  .pdl-blocks {
+    grid-template-columns: 1fr;
+  }
+  .pdl-line__context {
+    grid-template-columns: 1fr;
+  }
 }
 .pf-row-action--active {
   color: var(--color-primary);

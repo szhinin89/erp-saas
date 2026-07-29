@@ -1,5 +1,5 @@
-import { api } from '../../lib/api';
-import type { ApiResponse } from '../../../types/api';
+import { api } from "../../lib/api";
+import type { ApiResponse } from "../../../types/api";
 
 export type SecurityUser = {
   id: string;
@@ -14,7 +14,7 @@ export type SecurityUser = {
 };
 
 export type SecurityAdminAssignment = {
-  subjectType: 'Role' | 'User';
+  subjectType: "Role" | "User";
   subjectKey: string;
   scope: number;
   isAllowed: boolean;
@@ -26,17 +26,19 @@ export type SecurityAdminMatrix = {
 };
 
 export type UpsertAdminScopesRequest = {
-  subjectType: 'Role' | 'User';
+  subjectType: "Role" | "User";
   subjectKey: string;
   allowedScopes: number[];
 };
 
 export const securityService = {
   getAdminMatrix: () =>
-    api.get<ApiResponse<SecurityAdminMatrix>>('/api/v1/security/admin-matrix')
+    api
+      .get<ApiResponse<SecurityAdminMatrix>>("/api/v1/security/admin-matrix")
       .then((r) => r.data.data),
 
   upsertAdminScopes: (req: UpsertAdminScopesRequest) =>
-    api.put<ApiResponse<object>>('/api/v1/security/admin-scopes', req)
+    api
+      .put<ApiResponse<object>>("/api/v1/security/admin-scopes", req)
       .then((r) => r.data.data),
 };

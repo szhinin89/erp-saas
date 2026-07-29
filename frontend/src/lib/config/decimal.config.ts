@@ -1,4 +1,4 @@
-import { apiGet, apiPut } from '../../modules/lib/apiEnvelope';
+import { apiGet, apiPut } from "../../modules/lib/apiEnvelope";
 
 export type DecimalConfig = {
   salesUnitPrice: number;
@@ -20,7 +20,7 @@ let _cache: DecimalConfig | null = null;
 
 export async function loadDecimalConfig(): Promise<DecimalConfig> {
   try {
-    const cfg = await apiGet<DecimalConfig>('/api/v1/config/decimals');
+    const cfg = await apiGet<DecimalConfig>("/api/v1/config/decimals");
     _cache = cfg;
     return cfg;
   } catch {
@@ -33,8 +33,10 @@ export function getDecimalConfig(): DecimalConfig {
   return _cache ?? DEFAULTS;
 }
 
-export async function saveDecimalConfig(cfg: DecimalConfig): Promise<DecimalConfig> {
-  const result = await apiPut<DecimalConfig>('/api/v1/config/decimals', cfg);
+export async function saveDecimalConfig(
+  cfg: DecimalConfig,
+): Promise<DecimalConfig> {
+  const result = await apiPut<DecimalConfig>("/api/v1/config/decimals", cfg);
   _cache = result;
   return result;
 }

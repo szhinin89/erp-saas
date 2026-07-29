@@ -1,6 +1,12 @@
-import { apiGet, apiPatch, apiPost, apiPut, apiDelete } from '../../lib/apiEnvelope';
+import {
+  apiGet,
+  apiPatch,
+  apiPost,
+  apiPut,
+  apiDelete,
+} from "../../lib/apiEnvelope";
 
-const BASE = '/api/v1/pricing';
+const BASE = "/api/v1/pricing";
 
 // ── DTOs ─────────────────────────────────────────────────────────────────
 
@@ -50,7 +56,8 @@ export interface EnablePricingRulePayload {
 }
 
 /** Espejo de PricingRuleSetStatus (backend) — nunca se infiere en el cliente. */
-export type PricingRuleSetStatus = 'Created' | 'AlreadyActive' | 'ExistsInactive';
+export type PricingRuleSetStatus =
+  "Created" | "AlreadyActive" | "ExistsInactive";
 
 /** Resultado de pricingRuleService.set — "ExistsInactive" exige confirmación explícita del
  *  usuario antes de reactivar (ver pricingRuleService.enable); nunca se reactiva sola.
@@ -72,7 +79,7 @@ export interface PriceListAssignedItemDto {
 }
 
 /** Espejo de PriceSource (backend) — de dónde proviene el precio resuelto de un ítem en una lista. */
-export type PriceSource = 'BasePrice' | 'GeneralRule' | 'Exception';
+export type PriceSource = "BasePrice" | "GeneralRule" | "Exception";
 
 /** Espejo de PricingRuleSummaryDto (backend) — nunca se recalcula en el cliente. */
 export interface PricingRuleSummaryDto {
@@ -111,14 +118,18 @@ export interface UpdatePriceListPayload {
 // (serializado como string vía JsonStringEnumConverter) — no traducir ni renombrar.
 
 export const RULE_TYPE_OPTIONS = [
-  { value: '', label: 'Ninguna' },
-  { value: 'PercentDiscount', label: 'Descuento %' },
-  { value: 'PercentMarkup', label: 'Recargo %' },
-  { value: 'FixedAdjustment', label: 'Ajuste fijo' },
-  { value: 'FixedPrice', label: 'Precio fijo' },
+  { value: "", label: "Ninguna" },
+  { value: "PercentDiscount", label: "Descuento %" },
+  { value: "PercentMarkup", label: "Recargo %" },
+  { value: "FixedAdjustment", label: "Ajuste fijo" },
+  { value: "FixedPrice", label: "Precio fijo" },
 ] as const;
 
-const CURRENCY_SYMBOLS: Record<string, string> = { USD: '$', EUR: '€', GBP: '£' };
+const CURRENCY_SYMBOLS: Record<string, string> = {
+  USD: "$",
+  EUR: "€",
+  GBP: "£",
+};
 
 function currencySymbol(code: string): string {
   return CURRENCY_SYMBOLS[code] ?? code;
@@ -126,15 +137,22 @@ function currencySymbol(code: string): string {
 
 /** Texto orientado al usuario para la columna "Regla General" del listado. */
 export function formatRuleGeneral(
-  ruleType: string | null, ruleValue: number | null, currencyCode: string,
+  ruleType: string | null,
+  ruleValue: number | null,
+  currencyCode: string,
 ): string {
-  if (!ruleType || ruleValue == null) return 'Sin regla';
+  if (!ruleType || ruleValue == null) return "Sin regla";
   switch (ruleType) {
-    case 'PercentDiscount': return `Descuento ${ruleValue}%`;
-    case 'PercentMarkup':   return `Recargo ${ruleValue}%`;
-    case 'FixedPrice':      return `Precio fijo ${currencySymbol(currencyCode)}${ruleValue}`;
-    case 'FixedAdjustment': return `Ajuste ${ruleValue >= 0 ? '+' : ''}${ruleValue}`;
-    default:                return 'Sin regla';
+    case "PercentDiscount":
+      return `Descuento ${ruleValue}%`;
+    case "PercentMarkup":
+      return `Recargo ${ruleValue}%`;
+    case "FixedPrice":
+      return `Precio fijo ${currencySymbol(currencyCode)}${ruleValue}`;
+    case "FixedAdjustment":
+      return `Ajuste ${ruleValue >= 0 ? "+" : ""}${ruleValue}`;
+    default:
+      return "Sin regla";
   }
 }
 
@@ -143,18 +161,24 @@ export function formatRuleGeneral(
 export const priceListService = {
   list: (isActive?: boolean, search?: string) => {
     const params = new URLSearchParams();
-    if (isActive !== undefined) params.set('isActive', String(isActive));
-    if (search?.trim()) params.set('search', search.trim());
+    if (isActive !== undefined) params.set("isActive", String(isActive));
+    if (search?.trim()) params.set("search", search.trim());
     const qs = params.toString();
-    return apiGet<PriceListDto[]>(`${BASE}/price-lists${qs ? `?${qs}` : ''}`);
+    return apiGet<PriceListDto[]>(`${BASE}/price-lists${qs ? `?${qs}` : ""}`);
   },
   getById: (id: string) => apiGet<PriceListDto>(`${BASE}/price-lists/${id}`),
-  create:  (p: CreatePriceListPayload) => apiPost<PriceListDto>(`${BASE}/price-lists`, p),
-  update:  (id: string, p: UpdatePriceListPayload) => apiPut<PriceListDto>(`${BASE}/price-lists/${id}`, p),
-  enable:  (id: string) => apiPatch<boolean>(`${BASE}/price-lists/${id}/enable`),
-  disable: (id: string) => apiPatch<boolean>(`${BASE}/price-lists/${id}/disable`),
+  create: (p: CreatePriceListPayload) =>
+    apiPost<PriceListDto>(`${BASE}/price-lists`, p),
+  update: (id: string, p: UpdatePriceListPayload) =>
+    apiPut<PriceListDto>(`${BASE}/price-lists/${id}`, p),
+  enable: (id: string) => apiPatch<boolean>(`${BASE}/price-lists/${id}/enable`),
+  disable: (id: string) =>
+    apiPatch<boolean>(`${BASE}/price-lists/${id}/disable`),
   /** Responsabilidad única: qué ítems pertenecen a esta lista (sin reglas ni excepciones). */
-  getAssignedItems: (id: string) => apiGet<PriceListAssignedItemDto[]>(`${BASE}/price-lists/${id}/assigned-items`),
+  getAssignedItems: (id: string) =>
+    apiGet<PriceListAssignedItemDto[]>(
+      `${BASE}/price-lists/${id}/assigned-items`,
+    ),
 };
 
 /** Administración de excepciones (PricingRule) por ítem dentro de una PriceList. */
@@ -162,17 +186,21 @@ export const pricingRuleService = {
   /** Trae las excepciones de una lista o de un ítem — exactamente uno de los dos parámetros. */
   list: (priceListId?: string, itemId?: string) => {
     const params = new URLSearchParams();
-    if (priceListId) params.set('priceListId', priceListId);
-    if (itemId) params.set('itemId', itemId);
-    return apiGet<PricingRuleDto[]>(`${BASE}/pricing-rules?${params.toString()}`);
+    if (priceListId) params.set("priceListId", priceListId);
+    if (itemId) params.set("itemId", itemId);
+    return apiGet<PricingRuleDto[]>(
+      `${BASE}/pricing-rules?${params.toString()}`,
+    );
   },
   /**
    * Crea una excepción nueva o actualiza el valor de una ya activa. Si ya existe una
    * deshabilitada con la misma clave, NO la reactiva sola — devuelve status="ExistsInactive"
    * para que la UI pida confirmación y llame a `enable`.
    */
-  set: (p: SetPricingRulePayload) => apiPost<PricingRuleSetResultDto>(`${BASE}/pricing-rules`, p),
+  set: (p: SetPricingRulePayload) =>
+    apiPost<PricingRuleSetResultDto>(`${BASE}/pricing-rules`, p),
   /** Reactivación explícita — único camino oficial para volver a activar una excepción deshabilitada. */
-  enable: (p: EnablePricingRulePayload) => apiPost<PricingRuleDto>(`${BASE}/pricing-rules/enable`, p),
+  enable: (p: EnablePricingRulePayload) =>
+    apiPost<PricingRuleDto>(`${BASE}/pricing-rules/enable`, p),
   remove: (id: string) => apiDelete<boolean>(`${BASE}/pricing-rules/${id}`),
 };

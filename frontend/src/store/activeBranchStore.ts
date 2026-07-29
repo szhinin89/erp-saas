@@ -1,10 +1,10 @@
-import { create } from 'zustand';
-import { createJSONStorage, persist } from 'zustand/middleware';
-import { ACTIVE_BRANCH_STORAGE_KEY } from '../lib/session/sessionStorageKeys';
-import { zustandSessionStorage } from '../lib/session/zustandSessionStorage';
-import type { SessionContextDto } from '../types/session';
+import { create } from "zustand";
+import { createJSONStorage, persist } from "zustand/middleware";
+import { ACTIVE_BRANCH_STORAGE_KEY } from "../lib/session/sessionStorageKeys";
+import { zustandSessionStorage } from "../lib/session/zustandSessionStorage";
+import type { SessionContextDto } from "../types/session";
 
-type ActiveBranch = SessionContextDto['branch'];
+type ActiveBranch = SessionContextDto["branch"];
 
 interface ActiveBranchState {
   branch: ActiveBranch;
