@@ -1,5 +1,5 @@
-import { CreateItemModal } from '../../../components/items/CreateItemModal/CreateItemModal';
-import type { CreateItemInitialData, ItemCreatedResult } from '../../../components/items/CreateItemModal/types';
+import { ItemEditorModal } from '../../../components/items/ItemEditorModal/ItemEditorModal';
+import type { CreateItemInitialData, ItemCreatedResult } from '../../../components/items/ItemEditorModal/types';
 import { message } from '../../../lib/messages';
 import { logApiDevError } from '../../lib/apiError';
 import { purchaseReceptionService, type PurchaseReceptionLineMatch } from '../api/purchaseReceptionService';
@@ -47,7 +47,7 @@ export function CreateItemFromReceptionLineModal({ open, line, supplierName, onC
   };
 
   return (
-    <CreateItemModal
+    <ItemEditorModal
       open={open}
       initialData={line ? {
         name: line.description,
@@ -59,7 +59,7 @@ export function CreateItemFromReceptionLineModal({ open, line, supplierName, onC
         purchaseContext,
       } : undefined}
       onClose={onClose}
-      onCreated={(item) => void handleCreated(item)}
+      onSaved={(item) => void handleCreated(item)}
     />
   );
 }

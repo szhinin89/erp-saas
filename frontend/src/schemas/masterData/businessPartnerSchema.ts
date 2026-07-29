@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { isValidCedula, isValidRuc } from '../../lib/validators/documentValidators';
+import { validateIdentification} from '../../lib/validators/documentValidators';
 import { PersonTypeEnum, type PersonTypeValue } from '../../modules/masterData/types/businessPartner.types';
 
 const SRI_RUC        = '04';
@@ -13,15 +13,20 @@ const VALID_SRI_ID_TYPES = [
   SRI_RUC, SRI_CI, SRI_PASSPORT, SRI_CONSUMIDOR, SRI_EXTERIOR, SRI_PLACA,
 ] as const;
 
-function identificationRefinement(data: { identificationType: string; identificationNumber: string }) {
-  const n = data.identificationNumber.trim();
-  if (data.identificationType === SRI_RUC) return isValidRuc(n);
-  if (data.identificationType === SRI_CI)  return isValidCedula(n);
-  return n.length > 0;
+function identificationRefinement(data: {
+  identificationType: string;
+  identificationNumber: string;
+  personType: number;
+}) {
+  return validateIdentification(
+    data.identificationType,
+    data.identificationNumber.trim(),
+    data.personType
+  );
 }
 
 const identificationErrorMap: Record<string, string> = {
-  [SRI_RUC]:        'RUC inválido (13 dígitos, módulo 10 en los primeros 10).',
+  [SRI_RUC]:        'RUC inválido según las reglas del SRI.',
   [SRI_CI]:         'Cédula inválida (10 dígitos, dígito verificador mod 10).',
   [SRI_PASSPORT]:   'El número de pasaporte es requerido.',
   [SRI_CONSUMIDOR]: 'El número de identificación es requerido.',

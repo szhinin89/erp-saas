@@ -16,10 +16,23 @@ public interface IItemMatchFinder
         Guid tenantId, Guid? supplierId, string? supplierCode, string? supplierAuxCode,
         string description, int maxResults, CancellationToken cancellationToken = default);
 }
-
+/// Política de Item Matching
+///
+/// AutoMatch:
+///   - SupplierCodeExactMatch
+///   - SupplierAuxCodeExactMatch
+///
+/// Requieren confirmación del usuario:
+///   - DescriptionNormalizedMatch
+///   - DescriptionSimilarity
+///
+/// Objetivo:
+/// Nunca vincular automáticamente un Item únicamente por similitud de texto.
+/// La similitud solo sirve para proponer candidatos.
 public sealed class ItemMatchFinder : IItemMatchFinder
 {
-    public const double MinSimilarityScore = 0.35; // valor por defecto de pg_trgm (similarity())
+    public const double MinSimilarityScore = 0.80; // valor por defecto de pg_trgm (similarity())
+    public const decimal MinSuggestionScore = 75m;
 
     public const string ReasonSupplierCodeExact = "SupplierCodeExactMatch";
     public const string ReasonSupplierAuxCodeExact = "SupplierAuxCodeExactMatch";
@@ -34,50 +47,130 @@ public sealed class ItemMatchFinder : IItemMatchFinder
     public ItemMatchFinder(IItemRepository itemRepo) => _itemRepo = itemRepo;
 
     public async Task<IReadOnlyList<ItemMatchCandidateDto>> FindCandidatesAsync(
-        Guid tenantId, Guid? supplierId, string? supplierCode, string? supplierAuxCode,
-        string description, int maxResults, CancellationToken cancellationToken = default)
+    Guid tenantId,
+    Guid? supplierId,
+    string? supplierCode,
+    string? supplierAuxCode,
+    string description,
+    int maxResults,
+    CancellationToken cancellationToken = default)
+{
+    var candidates = new Dictionary<Guid, ItemMatchCandidateDto>();
+    // 1. Código de proveedor exacto.
+    if (supplierId is { } sId1 && !string.IsNullOrWhiteSpace(supplierCode))
     {
-        var candidates = new Dictionary<Guid, ItemMatchCandidateDto>();
+        var itemId = await _itemRepo.FindItemIdBySupplierCodeAsync(
+            sId1,
+            supplierCode,
+            tenantId,
+            cancellationToken);
 
-        // 1. Código de proveedor exacto.
-        if (supplierId is { } sId1 && !string.IsNullOrWhiteSpace(supplierCode))
+        if (itemId is { } id1)
         {
-            var itemId = await _itemRepo.FindItemIdBySupplierCodeAsync(sId1, supplierCode, tenantId, cancellationToken);
-            if (itemId is { } id1)
-                await AddExactAsync(candidates, id1, 100m, ReasonSupplierCodeExact, tenantId, cancellationToken);
+            await AddExactAsync(
+                candidates,
+                id1,
+                100m,
+                ReasonSupplierCodeExact,
+                tenantId,
+                cancellationToken);
         }
+    }
+    // 2. Código auxiliar exacto.
+    if (supplierId is { } sId2 && !string.IsNullOrWhiteSpace(supplierAuxCode))
+    {
+        var itemId = await _itemRepo.FindItemIdBySupplierCodeAsync(
+            sId2,
+            supplierAuxCode,
+            tenantId,
+            cancellationToken);
 
-        // 2. Código auxiliar exacto.
-        if (supplierId is { } sId2 && !string.IsNullOrWhiteSpace(supplierAuxCode))
+        if (itemId is { } id2 && !candidates.ContainsKey(id2))
         {
-            var itemId = await _itemRepo.FindItemIdBySupplierCodeAsync(sId2, supplierAuxCode, tenantId, cancellationToken);
-            if (itemId is { } id2 && !candidates.ContainsKey(id2))
-                await AddExactAsync(candidates, id2, 95m, ReasonSupplierAuxCodeExact, tenantId, cancellationToken);
+            await AddExactAsync(
+                candidates,
+                id2,
+                95m,
+                ReasonSupplierAuxCodeExact,
+                tenantId,
+                cancellationToken);
         }
+    }
+    /*
+       REGLA IMPORTANTE:
+       En compras el código del proveedor es la identidad del producto.
+       Si existe código proveedor en el XML:
+          - encontrado -> AutoMatch
+          - no encontrado -> revisión manual
+       Nunca usar descripción para reemplazar un código desconocido.
+    */
+    var hasSupplierCode =
+        !string.IsNullOrWhiteSpace(supplierCode) ||
+        !string.IsNullOrWhiteSpace(supplierAuxCode);
 
-        // 3-4. Descripción normalizada + similitud (pg_trgm) — un único query de similitud acota
-        // el catálogo; la igualdad exacta normalizada sobre ese resultado sube el score sin
-        // necesidad de un segundo recorrido completo del catálogo.
-        var normalizedTarget = Normalize(description);
-        var similar = await _itemRepo.SearchBySimilarityAsync(description, tenantId, maxResults, MinSimilarityScore, cancellationToken);
-
-        foreach (var match in similar)
-        {
-            if (candidates.ContainsKey(match.ItemId))
-                continue;
-
-            var isNormalizedEqual = Normalize(match.ShortName) == normalizedTarget || Normalize(match.Description) == normalizedTarget;
-            candidates[match.ItemId] = isNormalizedEqual
-                ? new ItemMatchCandidateDto(match.ItemId, match.Sku, match.ShortName, match.Description, 95m, ReasonDescriptionNormalized)
-                : new ItemMatchCandidateDto(match.ItemId, match.Sku, match.ShortName, match.Description, Math.Round((decimal)match.Score * 100, 2), ReasonDescriptionSimilarity);
-        }
-
+    if (hasSupplierCode)
+    {
         return candidates.Values
             .OrderByDescending(c => c.MatchScore)
             .Take(maxResults)
             .ToList();
     }
 
+
+    // 3. Solo sin código proveedor:
+    // búsqueda por descripción como ayuda manual.
+    var normalizedTarget = Normalize(description);
+
+    var similar = await _itemRepo.SearchBySimilarityAsync(
+        description,
+        tenantId,
+        maxResults,
+        MinSimilarityScore,
+        cancellationToken);
+    foreach (var match in similar)
+    {
+        if (candidates.ContainsKey(match.ItemId))
+            continue;
+
+        var isNormalizedEqual =
+            Normalize(match.ShortName) == normalizedTarget ||
+            Normalize(match.Description) == normalizedTarget;
+
+        var score = Math.Round((decimal)match.Score * 100, 2);
+
+
+        if (!isNormalizedEqual &&
+            !HasEnoughWordsMatch(description, match.ShortName))
+        {
+            continue;
+        }
+
+        if (score < MinSuggestionScore)
+            continue;
+
+        candidates[match.ItemId] = isNormalizedEqual
+            ? new ItemMatchCandidateDto(
+                match.ItemId,
+                match.Sku,
+                match.ShortName,
+                match.Description,
+                95m,
+                ReasonDescriptionNormalized)
+
+            : new ItemMatchCandidateDto(
+                match.ItemId,
+                match.Sku,
+                match.ShortName,
+                match.Description,
+                score,
+                ReasonDescriptionSimilarity);
+    }
+
+    return candidates.Values
+        .OrderByDescending(c => c.MatchScore)
+        .Take(maxResults)
+        .ToList();
+}
     private async Task AddExactAsync(
         Dictionary<Guid, ItemMatchCandidateDto> candidates, Guid itemId, decimal score, string reason,
         Guid tenantId, CancellationToken cancellationToken)
@@ -95,4 +188,18 @@ public sealed class ItemMatchFinder : IItemMatchFinder
         var noSpecial = NonAlphanumeric.Replace(lower, " ");
         return MultipleSpaces.Replace(noSpecial, " ").Trim();
     }
+    private static bool HasEnoughWordsMatch(string source, string target)
+{
+    var sourceWords = Normalize(source)
+        .Split(' ', StringSplitOptions.RemoveEmptyEntries)
+        .ToHashSet();
+
+    var targetWords = Normalize(target)
+        .Split(' ', StringSplitOptions.RemoveEmptyEntries)
+        .ToHashSet();
+
+    var common = sourceWords.Intersect(targetWords).Count();
+
+    return common >= 2;
+}
 }

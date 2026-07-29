@@ -33,7 +33,9 @@ public sealed class ItemSupplierCode : AuditableEntity
             TenantId   = tenantId,
             ItemId     = itemId,
             SupplierId = supplierId,
-            Code       = code.Trim(),
+            // Normalize supplier codes to a canonical form to avoid case/whitespace
+            // duplicates and to match repository lookups which normalize input.
+            Code       = code.Trim().ToUpperInvariant(),
             IsPrimary  = isPrimary,
             IsActive   = true,
         };

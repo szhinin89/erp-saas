@@ -6,8 +6,8 @@ import { ZHBtn, ZHField } from '../../../components/zh/ZHForm';
 import { SupplierPicker } from '../components/SupplierPicker';
 import { ProductPicker } from '../components/ProductPicker';
 import type { ProductProfile } from '../components/ProductPicker';
-import { CreateItemModal } from '../../../components/items/CreateItemModal/CreateItemModal';
-import type { ItemCreatedResult } from '../../../components/items/CreateItemModal/types';
+import { ItemEditorModal } from '../../../components/items/ItemEditorModal/ItemEditorModal';
+import type { ItemCreatedResult } from '../../../components/items/ItemEditorModal/types';
 import { ZhDecimalInput } from '../../../components/zh/inputs/ZhDecimalInput';
 import { ZhNumberInput } from '../../../components/zh/inputs/ZhNumberInput';
 import { getDecimalConfig } from '../../../lib/config/decimal.config';
@@ -545,6 +545,7 @@ function PurchaseLineCard({ line: l, idx, ctx }: { line: any; idx: number; ctx: 
                 <ZHBtn variant="ghost" size="xs" type="button" onClick={() => viewMatchedItem(l.itemId)}>
                   Ver Item
                 </ZHBtn>
+                {!ctx.fieldDisabled && <UpdateItemAction line={l} ctx={ctx} />}
                 {!ctx.fieldDisabled && l.purchaseReceptionLineId && (
                   <ZHBtn variant="ghost" size="xs" type="button"
                     disabled={ctx.matchingKey === l._key}
@@ -698,15 +699,15 @@ function PurchaseLineCard({ line: l, idx, ctx }: { line: any; idx: number; ctx: 
 }
 
 /**
- * "Crear Item" para una línea de compra manual sin producto asignado — usa el CreateItemModal
- * genérico directamente (sin wrapper): esta línea no tiene PurchaseReceptionLineId, por lo que no
- * hay nada que vincular en el backend de Compras más allá de seleccionar el ítem en el formulario,
- * igual que hace ProductPicker.onSelect.
+ * "Crear Item" para una línea de compra manual sin producto asignado — usa el ItemEditorModal
+ * genérico directamente (sin wrapper), en modo Crear (sin `itemId`): esta línea no tiene
+ * PurchaseReceptionLineId, por lo que no hay nada que vincular en el backend de Compras más allá
+ * de seleccionar el ítem en el formulario, igual que hace ProductPicker.onSelect.
  */
 function CreateItemLineAction({ line: l, ctx, disabled }: { line: any; ctx: ReturnType<typeof usePurchasesPage>; disabled?: boolean }) {
   const [open, setOpen] = useState(false);
 
-  const handleCreated = (item: ItemCreatedResult) => {
+  const handleSaved = (item: ItemCreatedResult) => {
     setOpen(false);
     ctx.updateLine(l._key, 'itemId', item.id);
     ctx.updateLine(l._key, 'description', `${item.sku} — ${item.shortName}`);
@@ -719,7 +720,7 @@ function CreateItemLineAction({ line: l, ctx, disabled }: { line: any; ctx: Retu
       <ZHBtn variant="ghost" size="xs" type="button" disabled={disabled} onClick={() => setOpen(true)}>
         Crear Item
       </ZHBtn>
-      <CreateItemModal
+      <ItemEditorModal
         open={open}
         initialData={{
           name: l.description || undefined,
@@ -728,11 +729,48 @@ function CreateItemLineAction({ line: l, ctx, disabled }: { line: any; ctx: Retu
           supplierId: ctx.formWatch.supplierId || undefined,
           source: l.xmlSupplierCode ? 'PurchaseReception' : 'Manual',
           purchaseContext: l.unitPrice > 0
-            ? { unitCost: l.unitPrice, quantity: l.quantity, discountPct: l.discountPct ?? undefined }
+            ? { unitCost: l.unitPrice, quantity: l.quantity, discountPct: l.discountPct ?? undefined, vatCode: l.vatCode || undefined }
             : undefined,
         }}
         onClose={() => setOpen(false)}
-        onCreated={handleCreated}
+        onSaved={handleSaved}
+      />
+    </>
+  );
+}
+
+/**
+ * "Actualizar Item" — visible en cualquier línea que ya tenga Item vinculado (manual o de
+ * Recepción, da igual el origen). Reutiliza el mismo ItemEditorModal en modo Actualizar (pasando
+ * `itemId`) y, al guardar, refresca el contexto de la línea con el mismo flujo ya existente
+ * (`fetchItemContext`) — nunca un flujo paralelo de actualización visual.
+ */
+function UpdateItemAction({ line: l, ctx }: { line: PurchaseLineFormValues; ctx: ReturnType<typeof usePurchasesPage> }) {
+  const [open, setOpen] = useState(false);
+  if (!l.itemId) return null;
+
+  const handleSaved = (item: ItemCreatedResult) => {
+    setOpen(false);
+    ctx.updateLine(l._key, 'description', `${item.sku} — ${item.shortName}`);
+    const wh = l.warehouseId || ctx.formWatch.globalWarehouseId;
+    if (wh) void ctx.fetchItemContext(l._key, item.id, wh);
+  };
+
+  return (
+    <>
+      <ZHBtn variant="ghost" size="xs" type="button" onClick={() => setOpen(true)}>
+        Actualizar Item
+      </ZHBtn>
+      <ItemEditorModal
+        open={open}
+        itemId={l.itemId}
+        initialData={{
+          purchaseContext: l.unitPrice > 0
+            ? { unitCost: l.unitPrice, quantity: l.quantity, discountPct: l.discountPct ?? undefined, vatCode: l.vatCode || undefined }
+            : undefined,
+        }}
+        onClose={() => setOpen(false)}
+        onSaved={handleSaved}
       />
     </>
   );
@@ -779,7 +817,7 @@ function ReceptionCreateItemAction({ line: l, ctx, disabled }: { line: any; ctx:
         line={receptionLine}
         supplierName={ctx.supplierProfile?.name ?? ''}
         purchaseContext={l.unitPrice > 0
-          ? { unitCost: l.unitPrice, quantity: l.quantity, discountPct: l.discountPct ?? undefined }
+          ? { unitCost: l.unitPrice, quantity: l.quantity, discountPct: l.discountPct ?? undefined, vatCode: l.vatCode || undefined }
           : undefined}
         onClose={() => setOpen(false)}
         onCreated={(updatedLine, item) => {

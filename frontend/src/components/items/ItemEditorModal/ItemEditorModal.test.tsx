@@ -2,13 +2,14 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { render, screen, waitFor, fireEvent, cleanup } from '@testing-library/react';
 import { I18nProvider } from '../../../i18n/i18n';
-import { CreateItemModal } from './CreateItemModal';
+import { ItemEditorModal } from './ItemEditorModal';
 import { itemService } from '../../../modules/items/api/itemService';
 import { apiGet } from '../../../modules/lib/apiEnvelope';
 import type { CreateItemInitialData, ItemCreatedResult } from './types';
+import type { ItemDetailDto } from '../../../types/items';
 
 vi.mock('../../../modules/items/api/itemService', () => ({
-  itemService: { create: vi.fn() },
+  itemService: { create: vi.fn(), update: vi.fn(), getById: vi.fn() },
 }));
 
 vi.mock('../../../modules/items/hooks/useItemTypeOptions', () => ({
@@ -23,29 +24,45 @@ vi.mock('../../../modules/lib/apiEnvelope', () => ({
     }
     if (url.includes('sri-uom')) return Promise.resolve([{ code: 'UNIT', name: 'Unidad', abbrev: 'U' }]);
     if (url.includes('barcode-types')) return Promise.resolve([{ code: 'EAN13', name: 'EAN-13' }]);
+    if (url.includes('sri-vat-rates')) return Promise.resolve([{ code: '2', name: 'IVA 15%', percentage: 15 }]);
     return Promise.resolve([]);
   }),
 }));
 
+const existingItem: ItemDetailDto = {
+  id: 'item-1', sku: 'SKU-1', shortName: 'Aceite', description: 'Aceite girasol',
+  itemTypeId: 'type-1', itemTypeName: 'Bien', categoryNodeId: 'cat-1', brandId: 'brand-1',
+  defaultUomCode: 'UNIT', defaultUomAbbrev: 'U', isForSale: true, isFavorite: false,
+  isEcommerceActive: false, tracksStock: true, tracksLot: false, tracksSeries: false,
+  baseSalePrice: 10, isActive: true, createdAt: '2026-01-01T00:00:00Z', updatedAt: null,
+  defaultUomName: 'Unidad', observations: null,
+  taxConfig: { saleVatCode: '2', saleVatName: 'IVA 15%', purchaseVatCode: '2', purchaseVatName: 'IVA 15%', exciseTaxCode: null, exciseTaxName: null },
+  saleConfig: { isForSale: true, maxDiscountPercent: null, isAvailableOnWeb: false, isAvailableOnPOS: false, isAvailableOnMobile: false, isEcommerceActive: false, isFavorite: false },
+  stockConfig: { tracksStock: true, tracksLot: false, tracksSeries: false, allowDecimalQty: false, allowDecimalSale: false, minStockQty: null, maxStockQty: null },
+  variants: [], images: [], unitConversions: [], substitutes: [], packagingLevels: [], supplierCodes: [],
+};
+
 function renderModal(props: {
   open?: boolean;
+  itemId?: string;
   initialData?: CreateItemInitialData;
   onClose?: () => void;
-  onCreated?: (item: ItemCreatedResult) => void;
+  onSaved?: (item: ItemCreatedResult) => void;
 } = {}) {
   const onClose = props.onClose ?? vi.fn();
-  const onCreated = props.onCreated ?? vi.fn();
+  const onSaved = props.onSaved ?? vi.fn();
   const utils = render(
     <I18nProvider>
-      <CreateItemModal
+      <ItemEditorModal
         open={props.open ?? true}
+        itemId={props.itemId}
         initialData={props.initialData}
         onClose={onClose}
-        onCreated={onCreated}
+        onSaved={onSaved}
       />
     </I18nProvider>,
   );
-  return { ...utils, onClose, onCreated };
+  return { ...utils, onClose, onSaved };
 }
 
 function fieldByName(container: HTMLElement, name: string): HTMLInputElement {
@@ -78,11 +95,11 @@ afterEach(() => {
   cleanup();
 });
 
-describe('CreateItemModal — render', () => {
+describe('ItemEditorModal — modo Crear — render', () => {
   it('no renderiza el formulario cuando open=false', () => {
     renderModal({ open: false });
 
-    expect(screen.queryByText('Crear producto')).toBeNull();
+    expect(screen.queryByText('Crear nuevo Item')).toBeNull();
   });
 
   it('prellena los campos desde initialData', async () => {
@@ -98,16 +115,16 @@ describe('CreateItemModal — render', () => {
   });
 });
 
-describe('CreateItemModal — envío', () => {
-  it('éxito: llama itemService.create con el payload esperado (incluye supplierCodes) y dispara onCreated', async () => {
+describe('ItemEditorModal — modo Crear — envío', () => {
+  it('éxito: llama itemService.create con el payload esperado (incluye supplierCodes) y dispara onSaved', async () => {
     vi.mocked(itemService.create).mockResolvedValue({ id: 'item-1', sku: 'SKU-1', shortName: 'Aceite' } as never);
-    const { container, onCreated } = renderModal({
+    const { container, onSaved } = renderModal({
       initialData: { name: 'Aceite', barcode: '00125', supplierCode: '00125', supplierId: 'supplier-1' },
     });
     await waitForCatalogs();
 
     await fillRequiredFields(container);
-    fireEvent.click(screen.getByRole('button', { name: 'Crear Producto' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Crear Item' }));
 
     await waitFor(() => {
       expect(itemService.create).toHaveBeenCalledWith(expect.objectContaining({
@@ -119,7 +136,7 @@ describe('CreateItemModal — envío', () => {
         barcodes: [{ code: '00125', barcodeType: 'EAN13', isPrimary: true }],
         supplierCodes: [{ supplierId: 'supplier-1', code: '00125', isPrimary: true }],
       }));
-      expect(onCreated).toHaveBeenCalledWith({ id: 'item-1', sku: 'SKU-1', shortName: 'Aceite' });
+      expect(onSaved).toHaveBeenCalledWith({ id: 'item-1', sku: 'SKU-1', shortName: 'Aceite' });
     });
   });
 
@@ -129,15 +146,15 @@ describe('CreateItemModal — envío', () => {
       response: { status: 422, data: { data: { errors: { sku: ["Ya existe un ítem con SKU 'SKU-1'."] } } } },
     };
     vi.mocked(itemService.create).mockRejectedValue(validationError);
-    const { container, onClose, onCreated } = renderModal({ initialData: { name: 'Aceite' } });
+    const { container, onClose, onSaved } = renderModal({ initialData: { name: 'Aceite' } });
     await waitForCatalogs();
 
     await fillRequiredFields(container, { barcode: '00125' });
-    fireEvent.click(screen.getByRole('button', { name: 'Crear Producto' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Crear Item' }));
 
     await waitFor(() => expect(screen.getByText("Ya existe un ítem con SKU 'SKU-1'.")).toBeTruthy());
     expect(onClose).not.toHaveBeenCalled();
-    expect(onCreated).not.toHaveBeenCalled();
+    expect(onSaved).not.toHaveBeenCalled();
   });
 
   // Reproduce el envelope real de un Conflict con código no registrado en MessageCatalog
@@ -156,16 +173,16 @@ describe('CreateItemModal — envío', () => {
       },
     };
     vi.mocked(itemService.create).mockRejectedValue(skuDuplicateError);
-    const { container, onClose, onCreated } = renderModal({ initialData: { name: 'Aceite' } });
+    const { container, onClose, onSaved } = renderModal({ initialData: { name: 'Aceite' } });
     await waitForCatalogs();
 
     await fillRequiredFields(container, { sku: '10001204', barcode: '00125' });
-    fireEvent.click(screen.getByRole('button', { name: 'Crear Producto' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Crear Item' }));
 
     await waitFor(() => expect(screen.getByText("Ya existe un ítem con SKU '10001204'.")).toBeTruthy());
     expect(screen.queryByText('Ocurrió un error inesperado.')).toBeNull();
     expect(onClose).not.toHaveBeenCalled();
-    expect(onCreated).not.toHaveBeenCalled();
+    expect(onSaved).not.toHaveBeenCalled();
   });
 
   it('BARCODE_DUPLICATE (data.errors plano, no 422): muestra el mensaje específico del backend', async () => {
@@ -185,7 +202,7 @@ describe('CreateItemModal — envío', () => {
     await waitForCatalogs();
 
     await fillRequiredFields(container, { barcode: '00125' });
-    fireEvent.click(screen.getByRole('button', { name: 'Crear Producto' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Crear Item' }));
 
     await waitFor(() =>
       expect(screen.getByText("El código de barras '00125' ya está asignado a otro ítem.")).toBeTruthy(),
@@ -202,19 +219,18 @@ describe('CreateItemModal — envío', () => {
     await waitForCatalogs();
 
     await fillRequiredFields(container, { barcode: '00125' });
-    fireEvent.click(screen.getByRole('button', { name: 'Crear Producto' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Crear Item' }));
 
     await waitFor(() => expect(screen.getByText('No se pudo crear el ítem.')).toBeTruthy());
   });
 });
 
-describe('CreateItemModal — simulación de precio de compra (purchaseContext)', () => {
-  it('sin purchaseContext: no renderiza la sección de compra ni la de precio (compatibilidad total)', async () => {
+describe('ItemEditorModal — simulación de precio de compra (purchaseContext)', () => {
+  it('sin purchaseContext: no renderiza la sección de compra (compatibilidad total)', async () => {
     renderModal({ initialData: { name: 'Aceite' } });
     await waitForCatalogs();
 
     expect(screen.queryByText('Información de Compra')).toBeNull();
-    expect(screen.queryByText('Precio de Venta')).toBeNull();
   });
 
   it('con purchaseContext: muestra costo, cantidad, descuento y costo final ya calculado', async () => {
@@ -239,7 +255,7 @@ describe('CreateItemModal — simulación de precio de compra (purchaseContext)'
     });
     await waitForCatalogs();
 
-    expect(screen.getByDisplayValue('—')).toBeTruthy();
+    expect(screen.getAllByDisplayValue('—').length).toBeGreaterThan(0);
   });
 
   it('la simulación de margen se actualiza en vivo al escribir el precio, sin backend', async () => {
@@ -255,6 +271,15 @@ describe('CreateItemModal — simulación de precio de compra (purchaseContext)'
     expect(itemService.create).not.toHaveBeenCalled();
   });
 
+  it('IVA XML resuelve desde purchaseContext.vatCode contra el mismo catálogo del selector "IVA del Item"', async () => {
+    renderModal({
+      initialData: { name: 'Aceite', purchaseContext: { unitCost: 8.5, quantity: 10, vatCode: '2' } },
+    });
+    await waitForCatalogs();
+
+    await waitFor(() => expect(screen.getByDisplayValue('15.00%')).toBeTruthy());
+  });
+
   it('updatePrice desmarcado (default): guarda baseSalePrice=null aunque haya un precio escrito', async () => {
     vi.mocked(itemService.create).mockResolvedValue({ id: 'item-1', sku: 'SKU-1', shortName: 'Aceite', baseSalePrice: null } as never);
     const { container } = renderModal({
@@ -264,7 +289,7 @@ describe('CreateItemModal — simulación de precio de compra (purchaseContext)'
 
     fireEvent.change(fieldByName(container, 'salePrice'), { target: { value: '12' } });
     await fillRequiredFields(container, { barcode: '00125' });
-    fireEvent.click(screen.getByRole('button', { name: 'Crear Producto' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Crear Item' }));
 
     await waitFor(() => {
       expect(itemService.create).toHaveBeenCalledWith(expect.objectContaining({ baseSalePrice: null }));
@@ -273,7 +298,7 @@ describe('CreateItemModal — simulación de precio de compra (purchaseContext)'
 
   it('updatePrice marcado: guarda baseSalePrice con el precio ingresado', async () => {
     vi.mocked(itemService.create).mockResolvedValue({ id: 'item-1', sku: 'SKU-1', shortName: 'Aceite', baseSalePrice: 12 } as never);
-    const { container, onCreated } = renderModal({
+    const { container, onSaved } = renderModal({
       initialData: { name: 'Aceite', purchaseContext: { unitCost: 8.5, quantity: 10 } },
     });
     await waitForCatalogs();
@@ -281,11 +306,11 @@ describe('CreateItemModal — simulación de precio de compra (purchaseContext)'
     fireEvent.change(fieldByName(container, 'salePrice'), { target: { value: '12' } });
     fireEvent.click(fieldByName(container, 'updatePrice'));
     await fillRequiredFields(container, { barcode: '00125' });
-    fireEvent.click(screen.getByRole('button', { name: 'Crear Producto' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Crear Item' }));
 
     await waitFor(() => {
       expect(itemService.create).toHaveBeenCalledWith(expect.objectContaining({ baseSalePrice: 12 }));
-      expect(onCreated).toHaveBeenCalledWith(expect.objectContaining({ baseSalePrice: 12 }));
+      expect(onSaved).toHaveBeenCalledWith(expect.objectContaining({ baseSalePrice: 12 }));
     });
   });
 
@@ -297,9 +322,91 @@ describe('CreateItemModal — simulación de precio de compra (purchaseContext)'
 
     fireEvent.click(fieldByName(container, 'updatePrice'));
     await fillRequiredFields(container, { barcode: '00125' });
-    fireEvent.click(screen.getByRole('button', { name: 'Crear Producto' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Crear Item' }));
 
     await waitFor(() => expect(screen.getByText('Ingrese un precio de venta válido para actualizar el precio del Item.')).toBeTruthy());
     expect(itemService.create).not.toHaveBeenCalled();
+  });
+});
+
+describe('ItemEditorModal — modo Actualizar (itemId presente)', () => {
+  it('precarga sku/nombre/descripción/IVA/precio desde el Item existente', async () => {
+    vi.mocked(itemService.getById).mockResolvedValue(existingItem as never);
+    const { container } = renderModal({ itemId: 'item-1' });
+
+    await waitFor(() => expect(itemService.getById).toHaveBeenCalledWith('item-1'));
+    await waitForCatalogs();
+
+    expect(screen.getByText('Actualizar Item existente')).toBeTruthy();
+    await waitFor(() => expect(fieldByName(container, 'shortName').value).toBe('Aceite'));
+    expect(fieldByName(container, 'sku').value).toBe('SKU-1');
+    expect(fieldByName(container, 'description').value).toBe('Aceite girasol');
+  });
+
+  it('no muestra los campos de código de barras (Update no gestiona códigos de barras)', async () => {
+    vi.mocked(itemService.getById).mockResolvedValue(existingItem as never);
+    renderModal({ itemId: 'item-1' });
+
+    await waitFor(() => expect(screen.getByText('Actualizar Item existente')).toBeTruthy());
+    expect(screen.queryByText('Código de barras')).toBeNull();
+  });
+
+  it('el tipo de ítem queda deshabilitado (inmutable post-creación)', async () => {
+    vi.mocked(itemService.getById).mockResolvedValue(existingItem as never);
+    const { container } = renderModal({ itemId: 'item-1' });
+
+    await waitFor(() => expect(fieldByName(container, 'itemTypeId').disabled).toBe(true));
+  });
+
+  it('botón principal es "Actualizar Item", nunca "Crear Item"', async () => {
+    vi.mocked(itemService.getById).mockResolvedValue(existingItem as never);
+    renderModal({ itemId: 'item-1' });
+
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Actualizar Item' })).toBeTruthy());
+    expect(screen.queryByRole('button', { name: 'Crear Item' })).toBeNull();
+  });
+
+  it('éxito: llama itemService.update (nunca create) y dispara onSaved', async () => {
+    vi.mocked(itemService.getById).mockResolvedValue(existingItem as never);
+    vi.mocked(itemService.update).mockResolvedValue({ id: 'item-1', sku: 'SKU-1', shortName: 'Aceite Editado', baseSalePrice: 10 } as never);
+    const { container, onSaved } = renderModal({ itemId: 'item-1' });
+
+    await waitFor(() => expect(fieldByName(container, 'shortName').value).toBe('Aceite'));
+    fireEvent.change(fieldByName(container, 'shortName'), { target: { value: 'Aceite Editado' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Actualizar Item' }));
+
+    await waitFor(() => {
+      expect(itemService.update).toHaveBeenCalledWith(expect.objectContaining({ id: 'item-1', shortName: 'Aceite Editado' }));
+      expect(itemService.create).not.toHaveBeenCalled();
+      expect(onSaved).toHaveBeenCalledWith(expect.objectContaining({ id: 'item-1', shortName: 'Aceite Editado' }));
+    });
+  });
+
+  it('updatePrice desmarcado: reenvía el precio actual del Item (nunca null) — BaseSalePrice es obligatorio en Update', async () => {
+    vi.mocked(itemService.getById).mockResolvedValue(existingItem as never);
+    vi.mocked(itemService.update).mockResolvedValue({ id: 'item-1', sku: 'SKU-1', shortName: 'Aceite', baseSalePrice: 10 } as never);
+    renderModal({ itemId: 'item-1' });
+
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Actualizar Item' })).toBeTruthy());
+    fireEvent.click(screen.getByRole('button', { name: 'Actualizar Item' }));
+
+    await waitFor(() => {
+      expect(itemService.update).toHaveBeenCalledWith(expect.objectContaining({ baseSalePrice: 10 }));
+    });
+  });
+
+  it('updatePrice marcado: envía el nuevo precio ingresado', async () => {
+    vi.mocked(itemService.getById).mockResolvedValue(existingItem as never);
+    vi.mocked(itemService.update).mockResolvedValue({ id: 'item-1', sku: 'SKU-1', shortName: 'Aceite', baseSalePrice: 20 } as never);
+    const { container } = renderModal({ itemId: 'item-1' });
+
+    await waitFor(() => expect(fieldByName(container, 'shortName').value).toBe('Aceite'));
+    fireEvent.change(fieldByName(container, 'salePrice'), { target: { value: '20' } });
+    fireEvent.click(fieldByName(container, 'updatePrice'));
+    fireEvent.click(screen.getByRole('button', { name: 'Actualizar Item' }));
+
+    await waitFor(() => {
+      expect(itemService.update).toHaveBeenCalledWith(expect.objectContaining({ baseSalePrice: 20 }));
+    });
   });
 });

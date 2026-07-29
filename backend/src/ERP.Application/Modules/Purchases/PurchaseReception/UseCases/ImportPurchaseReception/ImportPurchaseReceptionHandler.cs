@@ -19,9 +19,13 @@ public sealed class ImportPurchaseReceptionHandler
     private readonly ICurrentUser _user;
 
     public ImportPurchaseReceptionHandler(
-        IPurchaseReceptionParser parser, IPurchaseReceptionVerifier verifier,
+        IPurchaseReceptionParser parser,
+        IPurchaseReceptionVerifier verifier,
         IPurchaseReceptionDocumentRepository documentRepo,
-        ICurrentTenant tenant, ICurrentCompany company, ICurrentBranch branch, ICurrentUser user)
+        ICurrentTenant tenant,
+        ICurrentCompany company,
+        ICurrentBranch branch,
+        ICurrentUser user)
     {
         _parser = parser;
         _verifier = verifier;
@@ -32,52 +36,109 @@ public sealed class ImportPurchaseReceptionHandler
         _user = user;
     }
 
-    public async Task<Result<PurchaseReceptionImportResultDto>> Handle(ImportPurchaseReceptionCommand request, CancellationToken cancellationToken)
+    public async Task<Result<PurchaseReceptionImportResultDto>> Handle(
+        ImportPurchaseReceptionCommand request,
+        CancellationToken cancellationToken)
     {
-        var parseResult = await _parser.ParseAsync(request.File.Content, cancellationToken);
-        var verifiedItems = await _verifier.VerifyAsync(parseResult.Records, cancellationToken);
+        var parseResult = await _parser.ParseAsync(
+            request.File.Content,
+            cancellationToken);
+
+        var verifiedItems = await _verifier.VerifyAsync(
+            parseResult.Records,
+            cancellationToken);
+
 
         var itemDtos = new List<PurchaseReceptionItemDto>(verifiedItems.Count);
-        var hasNewDocuments = false;
-        // Documentos ya agregados a este batch (AddAsync) pero aún no guardados — evita crear dos
-        // filas con la misma AccessKey cuando el propio TXT trae la misma factura repetida.
+
+        var hasChanges = false;
+
+
+        // Documentos agregados en este batch pero todavía no guardados
+        // evita duplicar por AccessKey dentro del mismo archivo.
         var pendingByAccessKey = new Dictionary<string, PurchaseReceptionDocument>();
+
 
         foreach (var item in verifiedItems)
         {
-            // Deduplicación por AccessKey: si el documento ya fue importado antes (en este batch o
-            // en uno anterior), se reutiliza — nunca se crea un segundo PurchaseReceptionDocument
-            // para el mismo comprobante.
-            if (!pendingByAccessKey.TryGetValue(item.Record.AccessKey, out var document))
-                document = await _documentRepo.GetByAccessKeyAsync(_tenant.TenantId, item.Record.AccessKey, cancellationToken);
+            PurchaseReceptionDocument? document;
+
+
+            if (!pendingByAccessKey.TryGetValue(
+                    item.Record.AccessKey,
+                    out document))
+            {
+                document = await _documentRepo.GetByAccessKeyAsync(
+                    _tenant.TenantId,
+                    item.Record.AccessKey,
+                    cancellationToken);
+            }
+
 
             if (document is null)
             {
                 document = PurchaseReceptionDocument.Create(
-                    _tenant.TenantId, _company.CompanyId, _branch.BranchId,
+                    _tenant.TenantId,
+                    _company.CompanyId,
+                    _branch.BranchId,
                     item.Record.SourceDocType,
-                    item.Record.SupplierRuc, item.Record.SupplierName, item.SupplierId,
-                    item.Record.AccessKey, item.Record.InvoiceNumber, item.Record.IssueDate, item.Record.AuthorizationDate,
-                    item.Record.Subtotal, item.Record.VatAmount, item.Record.Total,
-                    _user.UserId, item.PurchaseId);
+                    item.Record.SupplierRuc,
+                    item.Record.SupplierName,
+                    item.SupplierId,
+                    item.Record.AccessKey,
+                    item.Record.InvoiceNumber,
+                    item.Record.IssueDate,
+                    item.Record.AuthorizationDate,
+                    item.Record.Subtotal,
+                    item.Record.VatAmount,
+                    item.Record.Total,
+                    _user.UserId,
+                    item.PurchaseId);
 
-                await _documentRepo.AddAsync(document, cancellationToken);
+
+                await _documentRepo.AddAsync(
+                    document,
+                    cancellationToken);
+
+
                 pendingByAccessKey[item.Record.AccessKey] = document;
-                hasNewDocuments = true;
+
+                hasChanges = true;
+            }
+            else
+            {
+                // Documento existente creado anteriormente sin proveedor.
+                // Si ahora el proveedor ya fue resuelto, completamos SupplierId.
+                if (document.SupplierId is null &&
+                    item.SupplierId.HasValue)
+                {
+                    document.AssignSupplier(
+                        item.SupplierId.Value,
+                        _user.UserId);
+
+                    hasChanges = true;
+                }
             }
 
-            itemDtos.Add(PurchaseReceptionMapper.ToDto(item, document));
+
+            itemDtos.Add(
+                PurchaseReceptionMapper.ToDto(
+                    item,
+                    document));
         }
 
-        if (hasNewDocuments)
-            await _documentRepo.SaveChangesAsync(cancellationToken);
+
+        if (hasChanges)
+        {
+            await _documentRepo.SaveChangesAsync(
+                cancellationToken);
+        }
 
         var dto = new PurchaseReceptionImportResultDto(
             itemDtos,
             parseResult.Records.Count,
             parseResult.Errors.Count,
             parseResult.SkippedUnsupportedCount);
-
         return Result<PurchaseReceptionImportResultDto>.Success(dto);
     }
 }

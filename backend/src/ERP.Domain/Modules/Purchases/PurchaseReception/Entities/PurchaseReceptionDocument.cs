@@ -269,4 +269,21 @@ public sealed class PurchaseReceptionDocument : AuditableEntity, ITenantScopedEn
         if (overwriteHeaderWhenNull || sriPaymentMethodCode is not null)
             SriPaymentMethodCode = sriPaymentMethodCode?.Trim();
     }
+    /// <summary>
+    /// Completa el proveedor cuando el documento fue importado antes
+    /// de resolver el BusinessPartner.
+    /// </summary>
+    public void AssignSupplier(Guid supplierId, Guid updatedBy)
+    {
+        if (supplierId == Guid.Empty)
+            throw new ArgumentException(
+                "El proveedor es obligatorio.",
+                nameof(supplierId));
+
+        if (SupplierId.HasValue)
+            return;
+
+        SupplierId = supplierId;
+        SetUpdated(updatedBy);
+    }
 }
