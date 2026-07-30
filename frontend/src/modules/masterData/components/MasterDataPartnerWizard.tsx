@@ -128,8 +128,7 @@ export function MasterDataPartnerWizard({
     defaultValues: {
       identificationType: editingPartner?.identificationType ?? "04",
       identificationNumber: editingPartner?.identificationNumber ?? "",
-      legalEntityTypeCode:
-        editingPartner?.legalEntityTypeCode ?? 2,
+      legalEntityTypeCode: editingPartner?.legalEntityTypeCode ?? 2,
       legalName: editingPartner?.legalName ?? "",
       tradeName: editingPartner?.tradeName ?? "",
       countryCode: editingPartner?.countryCode ?? "EC",
@@ -206,7 +205,7 @@ export function MasterDataPartnerWizard({
 
   const buildCreateBody = (): CreateBusinessPartnerBody => {
     const v = form.getValues();
-   return {
+    return {
       identificationType: v.identificationType,
       identificationNumber: v.identificationNumber.trim(),
       legalEntityTypeCode: v.legalEntityTypeCode,

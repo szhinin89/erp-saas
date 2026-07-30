@@ -1,4 +1,4 @@
-﻿namespace ERP.Domain.MasterData.Interfaces;
+namespace ERP.Domain.MasterData.Interfaces;
 
 public interface ILegalEntityTypeRepository
 {

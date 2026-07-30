@@ -1,4 +1,4 @@
-﻿using ERP.Domain.MasterData.Interfaces;
+using ERP.Domain.MasterData.Interfaces;
 using Microsoft.EntityFrameworkCore;
 
 namespace ERP.Infrastructure.Persistence.Repositories.MasterData;

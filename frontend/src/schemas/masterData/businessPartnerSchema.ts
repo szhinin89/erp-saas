@@ -17,9 +17,9 @@ const VALID_SRI_ID_TYPES = [
 ] as const;
 
 function identificationRefinement(data: {
-  identificationType:string;
-  identificationNumber:string;
-  legalEntityTypeCode:number;
+  identificationType: string;
+  identificationNumber: string;
+  legalEntityTypeCode: number;
 }) {
   return validateIdentification(
     data.identificationType,
@@ -61,14 +61,12 @@ const businessPartnerBaseShape = {
       "Tipo de identificación no válido.",
     ),
   identificationNumber: z.string().min(1, "El número es requerido."),
-  legalEntityTypeCode: z.coerce.number({
-    required_error: "El tipo de entidad legal es obligatorio.",
-    invalid_type_error: "Tipo de entidad legal inválido.",
-  })
-  .refine(
-     (v) => v > 0,
-      "Tipo de entidad legal inválido.",
-  ),
+  legalEntityTypeCode: z.coerce
+    .number({
+      required_error: "El tipo de entidad legal es obligatorio.",
+      invalid_type_error: "Tipo de entidad legal inválido.",
+    })
+    .refine((v) => v > 0, "Tipo de entidad legal inválido."),
   legalName: z
     .string()
     .min(2, "La razón social debe tener al menos 2 caracteres.")

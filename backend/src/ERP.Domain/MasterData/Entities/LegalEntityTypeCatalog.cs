@@ -32,6 +32,6 @@ public class LegalEntityTypeCatalog
     /// PRIVATE
     /// PUBLIC
     /// </summary>
-    public string SriTaxCategory { get; set; }
+    public string? SriTaxCategory { get; set; }
     public bool IsActive { get; set; }
 }

@@ -30,8 +30,8 @@ export function MasterDataBpFormFields({
   const { options: idTypes, loading: loadingTypes } = usage
     ? filteredTypes
     : allTypes;
-  const { options: legalEntityTypes, loading: loadingLegalEntityTypes }
-    = useLegalEntityTypes();
+  const { options: legalEntityTypes, loading: loadingLegalEntityTypes } =
+    useLegalEntityTypes();
   const { options: supplierTypeOptions, loading: loadingSupplierTypes } =
     useSriSupplierTypes();
   const [paymentTerms, setPaymentTerms] = useState<PaymentTermDto[]>([]);
@@ -47,9 +47,8 @@ export function MasterDataBpFormFields({
   if (section === "review") {
     const values = watch();
     const legalEntityLabel =
-      legalEntityTypes.find(
-        (x) => x.code === values.legalEntityTypeCode,
-      )?.name ?? String(values.legalEntityTypeCode);
+      legalEntityTypes.find((x) => x.code === values.legalEntityTypeCode)
+        ?.name ?? String(values.legalEntityTypeCode);
     const supplierTypeLabel = supplierTypeOptions.find(
       (o) => o.code === values.refundProviderTypeCode,
     )?.name;
@@ -122,29 +121,27 @@ export function MasterDataBpFormFields({
       </ZHField>
 
       <ZHField
-  label="Tipo de entidad legal"
-  required
-  fieldError={errors.legalEntityTypeCode?.message}
->
-<select
-  {...register("legalEntityTypeCode", {
-      valueAsNumber:true
-  })}
-  disabled={saving || loadingLegalEntityTypes}
->
-{
-loadingLegalEntityTypes ? (
-<option value="">Cargando...</option>
-) : (
-legalEntityTypes.map(o=>(
-<option key={o.code} value={o.code}>
-{o.name}
-</option>
-))
-)
-}
-</select>
-</ZHField>
+        label="Tipo de entidad legal"
+        required
+        fieldError={errors.legalEntityTypeCode?.message}
+      >
+        <select
+          {...register("legalEntityTypeCode", {
+            valueAsNumber: true,
+          })}
+          disabled={saving || loadingLegalEntityTypes}
+        >
+          {loadingLegalEntityTypes ? (
+            <option value="">Cargando...</option>
+          ) : (
+            legalEntityTypes.map((o) => (
+              <option key={o.code} value={o.code}>
+                {o.name}
+              </option>
+            ))
+          )}
+        </select>
+      </ZHField>
 
       {usage === "supplier" && (
         <>
