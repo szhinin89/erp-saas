@@ -241,20 +241,24 @@ export type BusinessPartnerPagedResult = {
 
 // ── Request Bodies (Frontend → Backend) ──────────────────────────────────────
 
-/** POST /api/master/business-partners */
+/**
+ * POST /api/master/business-partners
+ * legalEntityTypeCode: opcional cuando la identificación permite inferirlo (RUC/CI) —
+ * el backend infiere y valida; obligatorio en el resto de los casos.
+ */
 export type CreateBusinessPartnerBody = {
   identificationType: string;
   identificationNumber: string;
-  legalEntityTypeCode: number;
+  legalEntityTypeCode?: number | null;
   legalName: string;
   tradeName?: string | null;
   countryCode?: string | null;
 };
 
-/** PUT /api/master/business-partners/{id} */
+/** PUT /api/master/business-partners/{id} — misma regla de opcionalidad que en creación. */
 export type UpdateBusinessPartnerBody = {
   legalName: string;
-  legalEntityTypeCode: number;
+  legalEntityTypeCode?: number | null;
   tradeName?: string | null;
   countryCode?: string | null;
 };

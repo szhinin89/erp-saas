@@ -12,10 +12,12 @@ public sealed class CreateBusinessPartnerRequest
     public string IdentificationNumber { get; set; } = "";
 
     /// <summary>
-    /// Código de naturaleza jurídica.
-    /// 1=Persona Natural, 2=Sociedad Privada, 3=Institución Pública.
+    /// Código de naturaleza jurídica (1=Persona Natural, 2=Sociedad Privada, 3=Institución Pública).
+    /// Opcional cuando la identificación permite inferirlo (RUC/CI) — el backend la infiere
+    /// automáticamente y rechaza el valor si contradice a la identificación. Obligatorio para
+    /// Pasaporte/ConsumidorFinal/Exterior/Placa, donde no puede inferirse.
     /// </summary>
-    public int LegalEntityTypeCode { get; set; } = 1;
+    public int? LegalEntityTypeCode { get; set; }
     public string LegalName { get; set; } = "";
     public string? TradeName { get; set; }
 
@@ -28,10 +30,11 @@ public sealed class UpdateBusinessPartnerRequest
 {
     public string LegalName { get; set; } = "";
     /// <summary>
-    /// Código de naturaleza jurídica.
-    /// 1=Persona Natural, 2=Sociedad Privada, 3=Institución Pública.
+    /// Código de naturaleza jurídica (1=Persona Natural, 2=Sociedad Privada, 3=Institución Pública).
+    /// Mismas reglas de inferencia/obligatoriedad condicional que en creación — ver
+    /// <see cref="CreateBusinessPartnerRequest.LegalEntityTypeCode"/>.
     /// </summary>
-    public int LegalEntityTypeCode { get; set; } = 1;
+    public int? LegalEntityTypeCode { get; set; }
     public string? TradeName { get; set; }
     public string? CountryCode { get; set; }
 }

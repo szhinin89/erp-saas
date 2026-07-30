@@ -172,4 +172,136 @@ public sealed class TaxIdentificationEcuadorTests
         var id = TaxIdentification.Create("06", "P12345678");
         id.ToString().Should().Be("06:P12345678");
     }
+
+    // ── TryInferLegalEntityTypeCode ─────────────────────────────────────────
+
+    [Fact]
+    public void RUC_persona_natural_infiere_codigo_1()
+    {
+        // 3.er dígito 0-5 → Persona Natural.
+        var id = TaxIdentification.Create("04", "0302126842001");
+        id.TryInferLegalEntityTypeCode().Should().Be(1);
+    }
+
+    [Fact]
+    public void RUC_institucion_publica_infiere_codigo_3()
+    {
+        // 3.er dígito 6 → Institución Pública. RUC público real (Módulo 11, 8 dígitos + verificador).
+        var id = TaxIdentification.Create("04", "1760000070001");
+        id.TryInferLegalEntityTypeCode().Should().Be(3);
+    }
+
+    [Fact]
+    public void RUC_sociedad_privada_infiere_codigo_2()
+    {
+        // 3.er dígito 9 → Sociedad Privada.
+        var id = TaxIdentification.Create("04", "1791352688001");
+        id.TryInferLegalEntityTypeCode().Should().Be(2);
+    }
+
+    [Fact]
+    public void CI_infiere_codigo_1_persona_natural()
+    {
+        var id = TaxIdentification.Create("05", "0302126842");
+        id.TryInferLegalEntityTypeCode().Should().Be(1);
+    }
+
+    [Theory]
+    [InlineData("06", "P12345678")] // Pasaporte
+    [InlineData("07", "9999999999999")] // Consumidor Final
+    [InlineData("08", "EXT1234567")] // Exterior
+    [InlineData("09", "ABC1234")] // Placa
+    public void Tipos_no_inferibles_no_producen_inferencia(string type, string number)
+    {
+        var id = TaxIdentification.Create(type, number);
+        id.TryInferLegalEntityTypeCode().Should().BeNull();
+    }
+
+    // ── ValidateLegalEntityCompatibility ────────────────────────────────────
+
+    [Fact]
+    public void RUC_incompatible_con_LegalEntityTypeCode_lanza_excepcion()
+    {
+        var id = TaxIdentification.Create("04", "0302126842001"); // Persona Natural
+        var act = () => id.ValidateLegalEntityCompatibility(2); // Sociedad Privada — incompatible
+        act.Should().Throw<ArgumentException>();
+    }
+
+    [Fact]
+    public void CI_con_LegalEntityTypeCode_distinto_de_1_lanza_excepcion()
+    {
+        var id = TaxIdentification.Create("05", "0302126842");
+        var act = () => id.ValidateLegalEntityCompatibility(2);
+        act.Should().Throw<ArgumentException>();
+    }
+
+    [Fact]
+    public void CI_con_LegalEntityTypeCode_1_es_compatible()
+    {
+        var id = TaxIdentification.Create("05", "0302126842");
+        var act = () => id.ValidateLegalEntityCompatibility(1);
+        act.Should().NotThrow();
+    }
+
+    [Fact]
+    public void Pasaporte_acepta_cualquier_LegalEntityTypeCode_sin_conflicto()
+    {
+        var id = TaxIdentification.Create("06", "P12345678");
+        var act = () => id.ValidateLegalEntityCompatibility(2);
+        act.Should().NotThrow();
+    }
+
+    // ── ResolveLegalEntityTypeCode ───────────────────────────────────────────
+
+    [Fact]
+    public void Resolve_RUC_sin_valor_explicito_usa_inferido()
+    {
+        var id = TaxIdentification.Create("04", "1791352688001"); // Sociedad Privada
+        id.ResolveLegalEntityTypeCode(null).Should().Be(2);
+    }
+
+    [Fact]
+    public void Resolve_CI_sin_valor_explicito_usa_inferido()
+    {
+        var id = TaxIdentification.Create("05", "0302126842");
+        id.ResolveLegalEntityTypeCode(null).Should().Be(1);
+    }
+
+    [Fact]
+    public void Resolve_RUC_con_valor_explicito_coincidente_lo_acepta()
+    {
+        var id = TaxIdentification.Create("04", "1791352688001");
+        id.ResolveLegalEntityTypeCode(2).Should().Be(2);
+    }
+
+    [Fact]
+    public void Resolve_RUC_con_valor_explicito_contradictorio_lanza_excepcion()
+    {
+        var id = TaxIdentification.Create("04", "1791352688001"); // Sociedad Privada
+        var act = () => id.ResolveLegalEntityTypeCode(1); // Persona Natural — contradice
+        act.Should().Throw<ArgumentException>();
+    }
+
+    [Fact]
+    public void Resolve_Pasaporte_sin_valor_explicito_lanza_excepcion()
+    {
+        var id = TaxIdentification.Create("06", "P12345678");
+        var act = () => id.ResolveLegalEntityTypeCode(null);
+        act.Should().Throw<ArgumentException>();
+    }
+
+    [Fact]
+    public void Resolve_Pasaporte_con_valor_explicito_lo_usa_directamente()
+    {
+        var id = TaxIdentification.Create("06", "P12345678");
+        id.ResolveLegalEntityTypeCode(2).Should().Be(2);
+    }
+
+    [Fact]
+    public void Resolve_ConsumidorFinal_sin_valor_explicito_lanza_excepcion()
+    {
+        var id = TaxIdentification.Create("07", "9999999999999");
+        var act = () => id.ResolveLegalEntityTypeCode(null);
+        act.Should().Throw<ArgumentException>();
+    }
 }

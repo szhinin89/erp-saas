@@ -60,18 +60,8 @@ public sealed class CreateBusinessPartnerHandler
             )
         )
             return Result<BusinessPartnerSummaryDto>.Conflict(
-                $"Ya existe un BusinessPartner con {cmd.IdentificationType} {cmd.IdentificationNumber} en este tenant.",
-                "IDENTIFICATION_DUPLICATE"
+                $"Ya existe un BusinessPartner con {cmd.IdentificationType} {cmd.IdentificationNumber} en este tenant."
             );
-        if (!await _legalEntityTypeRepo.ExistsActiveAsync(
-        cmd.LegalEntityTypeCode,
-        cancellationToken))
-        {
-            return Result<BusinessPartnerSummaryDto>.ValidationFailure(
-                $"El tipo de entidad legal {cmd.LegalEntityTypeCode} no existe o está inactivo."
-            );
-        }
-
         BusinessPartner bp;
         try
         {
@@ -89,6 +79,15 @@ public sealed class CreateBusinessPartnerHandler
         catch (ArgumentException ex)
         {
             return Result<BusinessPartnerSummaryDto>.ValidationFailure(ex.Message);
+        }
+
+        if (!await _legalEntityTypeRepo.ExistsActiveAsync(
+        bp.LegalEntityTypeCode,
+        cancellationToken))
+        {
+            return Result<BusinessPartnerSummaryDto>.ValidationFailure(
+                $"El tipo de entidad legal {bp.LegalEntityTypeCode} no existe o está inactivo."
+            );
         }
 
         await _bpRepo.AddAsync(bp, cancellationToken);
@@ -115,8 +114,7 @@ public sealed class CreateBusinessPartnerHandler
         catch (Exception ex) when (_dbEx.TryGetUniqueViolation(ex, out _))
         {
             return Result<BusinessPartnerSummaryDto>.Conflict(
-                $"Ya existe un BusinessPartner con {cmd.IdentificationType} {cmd.IdentificationNumber} en este tenant.",
-                "IDENTIFICATION_DUPLICATE"
+                $"Ya existe un BusinessPartner con {cmd.IdentificationType} {cmd.IdentificationNumber} en este tenant."
             );
         }
     }

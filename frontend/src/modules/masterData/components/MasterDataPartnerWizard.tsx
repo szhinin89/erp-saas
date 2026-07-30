@@ -128,7 +128,9 @@ export function MasterDataPartnerWizard({
     defaultValues: {
       identificationType: editingPartner?.identificationType ?? "04",
       identificationNumber: editingPartner?.identificationNumber ?? "",
-      legalEntityTypeCode: editingPartner?.legalEntityTypeCode ?? 2,
+      // Sin default: el backend infiere la naturaleza jurídica de RUC/CI; para el resto de
+      // tipos de identificación el usuario debe elegirla explícitamente (ver MasterDataBpFormFields).
+      legalEntityTypeCode: editingPartner?.legalEntityTypeCode ?? undefined,
       legalName: editingPartner?.legalName ?? "",
       tradeName: editingPartner?.tradeName ?? "",
       countryCode: editingPartner?.countryCode ?? "EC",

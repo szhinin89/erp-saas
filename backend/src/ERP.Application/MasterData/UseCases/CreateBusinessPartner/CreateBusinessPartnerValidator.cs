@@ -50,9 +50,13 @@ public sealed class CreateBusinessPartnerValidator : AbstractValidator<CreateBus
             )
             .When(x => x.TradeName is not null);
 
+        // Obligatoriedad condicional (solo si no puede inferirse de la identificación) y
+        // consistencia contra la identificación son reglas de dominio — ver
+        // TaxIdentification.ResolveLegalEntityTypeCode. FluentValidation solo valida forma.
         RuleFor(x => x.LegalEntityTypeCode)
         .GreaterThan(0)
-        .WithMessage("El tipo de entidad legal es obligatorio.");
+        .WithMessage("El tipo de entidad legal, si se proporciona, debe ser válido.")
+        .When(x => x.LegalEntityTypeCode.HasValue);
 
         RuleFor(x => x.CountryCode)
             .Length(2)

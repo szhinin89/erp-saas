@@ -27,9 +27,12 @@ public sealed class UpdateBusinessPartnerCommandValidator
             )
             .When(x => x.TradeName is not null);
 
+        // Obligatoriedad condicional y consistencia contra la identificación son reglas de
+        // dominio — ver TaxIdentification.ResolveLegalEntityTypeCode.
         RuleFor(x => x.LegalEntityTypeCode)
            .GreaterThan(0)
-           .WithMessage("Tipo de entidad legal obligatorio.");
+           .WithMessage("El tipo de entidad legal, si se proporciona, debe ser válido.")
+           .When(x => x.LegalEntityTypeCode.HasValue);
 
         RuleFor(x => x.CountryCode)
             .Length(2)

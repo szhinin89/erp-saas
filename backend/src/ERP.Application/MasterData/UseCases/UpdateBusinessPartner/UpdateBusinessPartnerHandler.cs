@@ -12,12 +12,14 @@ public sealed class UpdateBusinessPartnerHandler
     : IRequestHandler<UpdateBusinessPartnerCommand, Result<BusinessPartnerSummaryDto>>
 {
     private readonly IBusinessPartnerRepository _bpRepo;
+    private readonly ILegalEntityTypeRepository _legalEntityTypeRepo;
     private readonly IOperationalContext _ctx;
 
     public UpdateBusinessPartnerHandler(
         IBusinessPartnerRepository bpRepo,
+        ILegalEntityTypeRepository legalEntityTypeRepo,
         IOperationalContext ctx
-    ) => (_bpRepo, _ctx) = (bpRepo, ctx);
+    ) => (_bpRepo, _legalEntityTypeRepo, _ctx) = (bpRepo, legalEntityTypeRepo, ctx);
 
     public async Task<Result<BusinessPartnerSummaryDto>> Handle(
         UpdateBusinessPartnerCommand cmd,
@@ -45,6 +47,13 @@ public sealed class UpdateBusinessPartnerHandler
         catch (InvalidOperationException ex)
         {
             return Result<BusinessPartnerSummaryDto>.ValidationFailure(ex.Message);
+        }
+
+        if (!await _legalEntityTypeRepo.ExistsActiveAsync(bp.LegalEntityTypeCode, cancellationToken))
+        {
+            return Result<BusinessPartnerSummaryDto>.ValidationFailure(
+                $"El tipo de entidad legal {bp.LegalEntityTypeCode} no existe o está inactivo."
+            );
         }
 
         await _bpRepo.SaveChangesAsync(cancellationToken);
@@ -116,8 +125,7 @@ public sealed class UpdateBusinessPartnerIdentificationHandler
             )
         )
             return Result<BusinessPartnerSummaryDto>.Conflict(
-                $"Ya existe un BusinessPartner con {cmd.IdentificationType} {cmd.IdentificationNumber}.",
-                "IDENTIFICATION_DUPLICATE"
+                $"Ya existe un BusinessPartner con {cmd.IdentificationType} {cmd.IdentificationNumber}."
             );
 
         try
@@ -133,6 +141,15 @@ public sealed class UpdateBusinessPartnerIdentificationHandler
             return Result<BusinessPartnerSummaryDto>.ValidationFailure(ex.Message);
         }
 
+        // Sin ExistsActiveAsync aquí a propósito (a diferencia de Create/UpdateProfile): el
+        // LegalEntityTypeCode resultante de UpdateIdentification nunca viene de input externo —
+        // o queda sin cambios (ya validado en una operación anterior), o es recalculado por
+        // TaxIdentification.TryInferLegalEntityTypeCode(), que solo puede devolver 1, 2, 3 o
+        // null (switch cerrado sobre literales, ver TaxIdentification.cs). LegalEntityTypeCatalog
+        // no tiene ningún endpoint/handler/repositorio de escritura en todo el sistema (auditado
+        // 2026-07-30) — IsActive no puede volverse false en producción, por lo que revalidar el
+        // catálogo aquí validaría un escenario estructuralmente imposible. Si en el futuro el
+        // catálogo se vuelve mutable (ADR nueva), este invariante debe reevaluarse.
         try
         {
             await _bpRepo.SaveChangesAsync(cancellationToken);
@@ -141,8 +158,7 @@ public sealed class UpdateBusinessPartnerIdentificationHandler
         catch (Exception ex) when (_dbEx.TryGetUniqueViolation(ex, out _))
         {
             return Result<BusinessPartnerSummaryDto>.Conflict(
-                $"Ya existe un BusinessPartner con {cmd.IdentificationType} {cmd.IdentificationNumber}.",
-                "IDENTIFICATION_DUPLICATE"
+                $"Ya existe un BusinessPartner con {cmd.IdentificationType} {cmd.IdentificationNumber}."
             );
         }
     }

@@ -5,7 +5,10 @@ import { useSriIdTypes, useSriIdTypesByUsage } from "../api/useSriIdTypes";
 import { useSriSupplierTypes } from "../api/useSriSupplierTypes";
 import { paymentTermService } from "../api/paymentTermService";
 import type { PaymentTermDto } from "../api/paymentTermService";
-import type { BusinessPartnerFormValues } from "../../../schemas/masterData/businessPartnerSchema";
+import {
+  isLegalEntityTypeInferable,
+  type BusinessPartnerFormValues,
+} from "../../../schemas/masterData/businessPartnerSchema";
 import { useLegalEntityTypes } from "../api/useLegalEntityTypes";
 
 type Props = {
@@ -23,6 +26,7 @@ export function MasterDataBpFormFields({
     register,
     control,
     watch,
+    setValue,
     formState: { errors },
   } = useFormContext<BusinessPartnerFormValues>();
   const allTypes = useSriIdTypes();
@@ -35,6 +39,15 @@ export function MasterDataBpFormFields({
   const { options: supplierTypeOptions, loading: loadingSupplierTypes } =
     useSriSupplierTypes();
   const [paymentTerms, setPaymentTerms] = useState<PaymentTermDto[]>([]);
+  const watchedIdentificationType = watch("identificationType");
+
+  useEffect(() => {
+    // El backend infiere legalEntityTypeCode para RUC/CI — cualquier valor manual anterior
+    // quedaría stale y produciría un 422 por contradicción con la nueva identificación.
+    if (isLegalEntityTypeInferable(watchedIdentificationType)) {
+      setValue("legalEntityTypeCode", undefined, { shouldValidate: false });
+    }
+  }, [watchedIdentificationType, setValue]);
 
   useEffect(() => {
     if (usage === "supplier")
@@ -46,9 +59,12 @@ export function MasterDataBpFormFields({
 
   if (section === "review") {
     const values = watch();
-    const legalEntityLabel =
-      legalEntityTypes.find((x) => x.code === values.legalEntityTypeCode)
-        ?.name ?? String(values.legalEntityTypeCode);
+    const legalEntityLabel = values.legalEntityTypeCode
+      ? (legalEntityTypes.find((x) => x.code === values.legalEntityTypeCode)
+          ?.name ?? String(values.legalEntityTypeCode))
+      : isLegalEntityTypeInferable(values.identificationType)
+        ? "Se determina automáticamente"
+        : "—";
     const supplierTypeLabel = supplierTypeOptions.find(
       (o) => o.code === values.refundProviderTypeCode,
     )?.name;
@@ -122,15 +138,25 @@ export function MasterDataBpFormFields({
 
       <ZHField
         label="Tipo de entidad legal"
-        required
+        required={!isLegalEntityTypeInferable(watchedIdentificationType)}
+        hint={
+          isLegalEntityTypeInferable(watchedIdentificationType)
+            ? "Se determina automáticamente a partir de la identificación."
+            : undefined
+        }
         fieldError={errors.legalEntityTypeCode?.message}
       >
         <select
           {...register("legalEntityTypeCode", {
             valueAsNumber: true,
           })}
-          disabled={saving || loadingLegalEntityTypes}
+          disabled={
+            saving ||
+            loadingLegalEntityTypes ||
+            isLegalEntityTypeInferable(watchedIdentificationType)
+          }
         >
+          <option value="">— Seleccionar —</option>
           {loadingLegalEntityTypes ? (
             <option value="">Cargando...</option>
           ) : (

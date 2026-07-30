@@ -140,7 +140,7 @@ public sealed record TaxIdentification
         {
             SriCi => 1,
 
-            SriRuc => Number[2] - '0' switch
+            SriRuc => (Number[2] - '0') switch
             {
                 >= 0 and <= 5 => 1,
                 6 => 3,
@@ -153,42 +153,84 @@ public sealed record TaxIdentification
     }
     public void ValidateLegalEntityCompatibility(int legalEntityTypeCode)
     {
-        if (Type != SriRuc)
-            return;
-
-        var thirdDigit = Number[2] - '0';
-
-        switch (legalEntityTypeCode)
+        switch (Type)
         {
-            // Persona Natural
-            case 1:
-                if (thirdDigit < 0 || thirdDigit > 5)
-                    throw new ArgumentException(
-                        "El RUC no corresponde a una Persona Natural."
-                    );
+            case SriRuc:
+                var thirdDigit = Number[2] - '0';
+
+                switch (legalEntityTypeCode)
+                {
+                    // Persona Natural
+                    case 1:
+                        if (thirdDigit < 0 || thirdDigit > 5)
+                            throw new ArgumentException(
+                                "El RUC no corresponde a una Persona Natural."
+                            );
+                        break;
+
+                    // Sociedad Privada
+                    case 2:
+                        if (thirdDigit != 9)
+                            throw new ArgumentException(
+                                "El RUC no corresponde a una Sociedad Privada."
+                            );
+                        break;
+
+                    // Institución Pública
+                    case 3:
+                        if (thirdDigit != 6)
+                            throw new ArgumentException(
+                                "El RUC no corresponde a una Institución Pública."
+                            );
+                        break;
+
+                    default:
+                        throw new ArgumentException(
+                            $"Tipo de entidad legal {legalEntityTypeCode} no soportado."
+                        );
+                }
                 break;
 
-            // Sociedad Privada
-            case 2:
-                if (thirdDigit != 9)
+            case SriCi:
+                if (legalEntityTypeCode != 1)
                     throw new ArgumentException(
-                        "El RUC no corresponde a una Sociedad Privada."
-                    );
-                break;
-
-            // Institución Pública
-            case 3:
-                if (thirdDigit != 6)
-                    throw new ArgumentException(
-                        "El RUC no corresponde a una Institución Pública."
+                        "La cédula únicamente corresponde a Persona Natural."
                     );
                 break;
 
             default:
-                throw new ArgumentException(
-                    $"Tipo de entidad legal {legalEntityTypeCode} no soportado."
-                );
+                // Pasaporte/ConsumidorFinal/Exterior/Placa no permiten inferir naturaleza
+                // jurídica — cualquier código de entidad legal es aceptable a este nivel.
+                break;
         }
     }
+
+    /// <summary>
+    /// Punto único de integración entre identificación y naturaleza jurídica.
+    /// Si la identificación permite inferir la naturaleza jurídica (RUC/CI), la infiere y,
+    /// si el caller además proporcionó un valor explícito, exige que coincida con el inferido
+    /// (ver <see cref="ValidateLegalEntityCompatibility"/>) — nunca sobrescribe silenciosamente
+    /// una contradicción. Si no se puede inferir, el valor explícito es obligatorio.
+    /// </summary>
+    public int ResolveLegalEntityTypeCode(int? suppliedLegalEntityTypeCode)
+    {
+        var inferred = TryInferLegalEntityTypeCode();
+        if (inferred.HasValue)
+        {
+            if (suppliedLegalEntityTypeCode.HasValue)
+                ValidateLegalEntityCompatibility(suppliedLegalEntityTypeCode.Value);
+            return inferred.Value;
+        }
+
+        if (!suppliedLegalEntityTypeCode.HasValue)
+            throw new ArgumentException(
+                $"El tipo de entidad legal es obligatorio para el tipo de identificación '{Type}' "
+                    + "— no puede inferirse automáticamente.",
+                nameof(suppliedLegalEntityTypeCode)
+            );
+
+        return suppliedLegalEntityTypeCode.Value;
+    }
+
     public override string ToString() => $"{Type}:{Number}";
 }

@@ -39,7 +39,7 @@ public sealed class BusinessPartner : AuditableEntity, ITenantScopedEntity, ISys
         Guid tenantId,
         string identificationType,
         string identificationNumber,
-        int legalEntityTypeCode,
+        int? legalEntityTypeCode,
         string legalName,
         Guid createdBy,
         string? tradeName = null,
@@ -56,7 +56,7 @@ public sealed class BusinessPartner : AuditableEntity, ITenantScopedEntity, ISys
              identificationNumber
          );
 
-        identification.ValidateLegalEntityCompatibility(
+        var resolvedLegalEntityTypeCode = identification.ResolveLegalEntityTypeCode(
             legalEntityTypeCode
         );
 
@@ -66,7 +66,7 @@ public sealed class BusinessPartner : AuditableEntity, ITenantScopedEntity, ISys
             TenantId = tenantId,
             Identification = identification,
             Name = PersonName.Create(legalName, tradeName),
-            LegalEntityTypeCode = legalEntityTypeCode,
+            LegalEntityTypeCode = resolvedLegalEntityTypeCode,
             CountryCode = NormalizeCountryCode(countryCode),
             IsActive = true,
         };
@@ -120,10 +120,14 @@ public sealed class BusinessPartner : AuditableEntity, ITenantScopedEntity, ISys
     /// <summary>
     /// Actualiza nombre legal/comercial, naturaleza jurídica y país.
     /// No modifica la identificación fiscal — use UpdateIdentification() para eso.
+    ///
+    /// Naturaleza jurídica: cuando la identificación actual permite inferirla (RUC/CI), no puede
+    /// modificarse de forma independiente — un valor explícito que contradiga la inferencia es
+    /// rechazado (ver <see cref="TaxIdentification.ResolveLegalEntityTypeCode"/>).
     /// </summary>
     public void UpdateProfile(
         string legalName,
-        int legalEntityTypeCode,
+        int? legalEntityTypeCode,
         Guid updatedBy,
         string? tradeName = null,
         string? countryCode = null
@@ -135,7 +139,7 @@ public sealed class BusinessPartner : AuditableEntity, ITenantScopedEntity, ISys
             );
 
         Name = PersonName.Create(legalName, tradeName);
-        LegalEntityTypeCode = legalEntityTypeCode;
+        LegalEntityTypeCode = Identification.ResolveLegalEntityTypeCode(legalEntityTypeCode);
         CountryCode = NormalizeCountryCode(countryCode);
         SetUpdated(updatedBy);
         RaiseDomainEvent(
@@ -151,6 +155,10 @@ public sealed class BusinessPartner : AuditableEntity, ITenantScopedEntity, ISys
 
     /// <summary>
     /// Cambia la identificación fiscal. Operación de alto impacto: emite evento de auditoría.
+    /// La identificación es la fuente de verdad de la naturaleza jurídica: si la nueva
+    /// identificación permite inferirla (RUC/CI), <see cref="LegalEntityTypeCode"/> se
+    /// recalcula automáticamente para mantener la consistencia; si no permite inferirla,
+    /// se conserva el valor existente.
     /// ATENCIÓN: cuando el módulo de documentos exista, verificar que no haya documentos
     /// en estados no-finales antes de permitir este cambio. Ver ADR-BP-14.
     /// </summary>
@@ -166,6 +174,7 @@ public sealed class BusinessPartner : AuditableEntity, ITenantScopedEntity, ISys
         var oldNumber = Identification.Number;
 
         Identification = TaxIdentification.Create(type, number);
+        LegalEntityTypeCode = Identification.TryInferLegalEntityTypeCode() ?? LegalEntityTypeCode;
         SetUpdated(updatedBy);
         RaiseDomainEvent(
             new BusinessPartnerIdentificationChangedEvent
