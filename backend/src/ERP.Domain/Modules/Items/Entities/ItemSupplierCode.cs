@@ -29,20 +29,20 @@ public sealed class ItemSupplierCode : AuditableEntity
 
         var entity = new ItemSupplierCode
         {
-            Id         = Guid.NewGuid(),
-            TenantId   = tenantId,
-            ItemId     = itemId,
+            Id = Guid.NewGuid(),
+            TenantId = tenantId,
+            ItemId = itemId,
             SupplierId = supplierId,
-            Code       = code.Trim(),
-            IsPrimary  = isPrimary,
-            IsActive   = true,
+            Code = code.Trim(),
+            IsPrimary = isPrimary,
+            IsActive = true,
         };
         entity.SetCreated(createdBy);
         return entity;
     }
 
     public void Disable() => IsActive = false;
-    public void Enable()  => IsActive = true;
+    public void Enable() => IsActive = true;
     public void MarkAsPrimary() => IsPrimary = true;
     public void UnmarkAsPrimary() => IsPrimary = false;
 }

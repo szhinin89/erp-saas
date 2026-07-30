@@ -1,5 +1,5 @@
-using System.Text.Json;
 using FluentValidation;
+using System.Text.Json;
 
 namespace ERP.Application.Modules.Companies.UseCases.UpdateCompanyBranding;
 

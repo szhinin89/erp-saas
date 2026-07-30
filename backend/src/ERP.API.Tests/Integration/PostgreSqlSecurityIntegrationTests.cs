@@ -1,6 +1,5 @@
 using ERP.API.Tests.Support;
 using ERP.Domain.MasterData.Entities;
-using ERP.Domain.MasterData.Enums;
 using ERP.Infrastructure.Persistence;
 using FluentAssertions;
 using Microsoft.EntityFrameworkCore;

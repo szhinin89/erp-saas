@@ -1,6 +1,6 @@
+using ERP.Application.Common.Security;
 using System.Diagnostics;
 using System.Diagnostics.Metrics;
-using ERP.Application.Common.Security;
 
 namespace ERP.Infrastructure.Observability;
 

@@ -1,5 +1,5 @@
-using System.Data.Common;
 using ERP.Application.Common;
+using System.Data.Common;
 
 namespace ERP.Infrastructure.Persistence;
 

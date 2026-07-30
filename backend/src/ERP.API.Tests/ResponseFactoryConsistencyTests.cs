@@ -1,6 +1,3 @@
-using System.Net;
-using System.Reflection;
-using System.Text.Json;
 using ERP.API.Extensions;
 using ERP.API.Middleware;
 using ERP.Application.Common;
@@ -14,6 +11,9 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Logging.Abstractions;
+using System.Net;
+using System.Reflection;
+using System.Text.Json;
 
 namespace ERP.API.Tests;
 

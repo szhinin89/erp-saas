@@ -1,10 +1,10 @@
-using System.Xml;
-using System.Xml.Linq;
 using ERP.Application.Modules.ElectronicDocuments.DTOs;
 using ERP.Application.Modules.ElectronicDocuments.XmlBuilders;
 using ERP.Infrastructure.Services.ElectronicDocuments;
 using ERP.Infrastructure.Services.Sri;
 using FluentAssertions;
+using System.Xml;
+using System.Xml.Linq;
 
 namespace ERP.Infrastructure.Tests.Services.Sri;
 

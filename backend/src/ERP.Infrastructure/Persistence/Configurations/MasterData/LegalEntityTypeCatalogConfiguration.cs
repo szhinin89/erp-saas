@@ -7,7 +7,7 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
  * Mapea la entidad a la tabla "legal_entity_type" en el esquema "global".
  * Define las propiedades, claves y datos iniciales (HasData) para el catálogo de tipos de entidad legal.
  */
-public class LegalEntityTypeCatalogConfiguration: IEntityTypeConfiguration<LegalEntityTypeCatalog>
+public class LegalEntityTypeCatalogConfiguration : IEntityTypeConfiguration<LegalEntityTypeCatalog>
 {
     public void Configure(EntityTypeBuilder<LegalEntityTypeCatalog> builder)
     {

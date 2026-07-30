@@ -1,8 +1,8 @@
-using System.Text.Json;
 using ERP.Application.Navigation;
 using ERP.Application.Navigation.DTOs;
 using ERP.Domain.Navigation.Entities;
 using Microsoft.EntityFrameworkCore;
+using System.Text.Json;
 
 namespace ERP.Infrastructure.Persistence.Repositories;
 

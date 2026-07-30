@@ -1,7 +1,6 @@
 // CA1848/CA1873: Program.cs top-level statements cannot use [LoggerMessage] source generators
 #pragma warning disable CA1848, CA1873
 
-using System.Threading.RateLimiting;
 using ERP.API.Authorization;
 using ERP.API.Extensions;
 using ERP.API.Hangfire;
@@ -23,6 +22,7 @@ using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
 using QuestPDF.Infrastructure;
 using Serilog;
+using System.Threading.RateLimiting;
 
 // Licencia Community: libre para proyectos con ingresos anuales < 1 M USD.
 // Cambiar a LicenseType.Professional si aplica.

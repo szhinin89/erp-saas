@@ -1,4 +1,3 @@
-using System.Text.Json;
 using ERP.API.Middleware;
 using FluentAssertions;
 using FluentValidation;
@@ -7,6 +6,7 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Logging.Abstractions;
+using System.Text.Json;
 
 namespace ERP.API.Tests;
 

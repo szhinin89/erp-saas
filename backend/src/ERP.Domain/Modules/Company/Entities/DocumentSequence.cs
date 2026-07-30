@@ -1,5 +1,5 @@
-using System.Globalization;
 using ERP.Domain.Common;
+using System.Globalization;
 
 namespace ERP.Domain.Modules.Company.Entities;
 

@@ -28,6 +28,7 @@ using ERP.Infrastructure.Persistence;
 using ERP.Infrastructure.Persistence.Interceptors;
 using ERP.Infrastructure.Persistence.Outbox;
 using ERP.Infrastructure.Persistence.Repositories;
+using ERP.Infrastructure.Persistence.Repositories.MasterData;
 using ERP.Infrastructure.Security;
 using ERP.Infrastructure.Seeding;
 using ERP.Infrastructure.Seeding.InstallData;
@@ -133,6 +134,7 @@ public static class DependencyInjection
 
         // ── MasterData BC ─────────────────────────────────────────────────────
         services.AddScoped<IBusinessPartnerRepository, BusinessPartnerRepository>();
+        services.AddScoped<ILegalEntityTypeRepository, LegalEntityTypeRepository>();
         services.AddScoped<IBusinessPartnerRoleRepository, BusinessPartnerRoleRepository>();
         services.AddScoped<IBusinessPartnerLocationRepository, BusinessPartnerLocationRepository>();
         services.AddScoped<IBusinessPartnerContactRepository, BusinessPartnerContactRepository>();

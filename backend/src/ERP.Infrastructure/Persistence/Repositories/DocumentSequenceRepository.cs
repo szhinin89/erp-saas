@@ -1,7 +1,7 @@
-using System.Globalization;
 using ERP.Domain.Modules.Company.Entities;
 using ERP.Domain.Modules.Company.Interfaces;
 using Microsoft.EntityFrameworkCore;
+using System.Globalization;
 
 namespace ERP.Infrastructure.Persistence.Repositories;
 

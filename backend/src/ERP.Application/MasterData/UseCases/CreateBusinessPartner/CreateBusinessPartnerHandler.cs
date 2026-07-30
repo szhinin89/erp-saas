@@ -21,20 +21,23 @@ public sealed class CreateBusinessPartnerHandler
     : IRequestHandler<CreateBusinessPartnerCommand, Result<BusinessPartnerSummaryDto>>
 {
     private readonly IBusinessPartnerRepository _bpRepo;
+    private readonly ILegalEntityTypeRepository _legalEntityTypeRepo;
     private readonly IUserActivityRepository _activity;
     private readonly IOperationalContext _ctx;
     private readonly ICurrentUser _currentUser;
     private readonly IDatabaseExceptionTranslator _dbEx;
 
     public CreateBusinessPartnerHandler(
-        IBusinessPartnerRepository bpRepo,
-        IUserActivityRepository activity,
-        IOperationalContext ctx,
-        ICurrentUser currentUser,
-        IDatabaseExceptionTranslator dbEx
-    )
+     IBusinessPartnerRepository bpRepo,
+     ILegalEntityTypeRepository legalEntityTypeRepo,
+     IUserActivityRepository activity,
+     IOperationalContext ctx,
+     ICurrentUser currentUser,
+     IDatabaseExceptionTranslator dbEx
+ )
     {
         _bpRepo = bpRepo;
+        _legalEntityTypeRepo = legalEntityTypeRepo;
         _activity = activity;
         _ctx = ctx;
         _currentUser = currentUser;
@@ -60,6 +63,14 @@ public sealed class CreateBusinessPartnerHandler
                 $"Ya existe un BusinessPartner con {cmd.IdentificationType} {cmd.IdentificationNumber} en este tenant.",
                 "IDENTIFICATION_DUPLICATE"
             );
+        if (!await _legalEntityTypeRepo.ExistsActiveAsync(
+        cmd.LegalEntityTypeCode,
+        cancellationToken))
+        {
+            return Result<BusinessPartnerSummaryDto>.ValidationFailure(
+                $"El tipo de entidad legal {cmd.LegalEntityTypeCode} no existe o está inactivo."
+            );
+        }
 
         BusinessPartner bp;
         try

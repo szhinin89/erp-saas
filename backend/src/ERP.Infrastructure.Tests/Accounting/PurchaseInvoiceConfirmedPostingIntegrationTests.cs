@@ -4,7 +4,6 @@ using ERP.Application.Modules.Accounting.Posting;
 using ERP.Application.Modules.Accounting.Posting.Translators;
 using ERP.Domain.Branches.Entities;
 using ERP.Domain.MasterData.Entities;
-using ERP.Domain.MasterData.Enums;
 using ERP.Domain.MasterData.ValueObjects;
 using ERP.Domain.Modules.Accounting.Entities;
 using ERP.Domain.Modules.Accounting.Enums;

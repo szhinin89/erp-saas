@@ -1,5 +1,5 @@
-using System.Reflection;
 using Microsoft.OpenApi.Models;
+using System.Reflection;
 
 namespace ERP.API.Extensions;
 

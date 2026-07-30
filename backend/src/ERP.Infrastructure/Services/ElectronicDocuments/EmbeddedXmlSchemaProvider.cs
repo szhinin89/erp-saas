@@ -1,10 +1,10 @@
+using ERP.Application.Modules.ElectronicDocuments.SchemaValidation;
+using ERP.Domain.Modules.ElectronicDocuments.Enums;
+using Microsoft.Extensions.Logging;
 using System.Collections.Concurrent;
 using System.Text.Json;
 using System.Xml;
 using System.Xml.Schema;
-using ERP.Application.Modules.ElectronicDocuments.SchemaValidation;
-using ERP.Domain.Modules.ElectronicDocuments.Enums;
-using Microsoft.Extensions.Logging;
 
 namespace ERP.Infrastructure.Services.ElectronicDocuments;
 

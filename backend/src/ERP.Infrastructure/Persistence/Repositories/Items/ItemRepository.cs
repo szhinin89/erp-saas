@@ -1,4 +1,3 @@
-using ERP.Application.Common;
 using ERP.Domain.Modules.Items.Entities;
 using ERP.Domain.Modules.Items.Interfaces;
 using ERP.Domain.Modules.Items.Models;
@@ -107,32 +106,32 @@ public sealed class ItemRepository : IItemRepository
         return codes.FirstOrDefault(s => s.IsPrimary)?.Code ?? codes.FirstOrDefault()?.Code;
     }
 
-    public async Task<Guid?> FindItemIdBySupplierCodeAsync(Guid supplierId,string code,Guid tenantId,CancellationToken cancellationToken = default)
-{
-    var normalized = code.Trim().ToUpperInvariant();
-    // 1. Regla principal:
-    // Código específico del proveedor
-    var supplierItemId = await _context.Set<ItemSupplierCode>()
-        .Where(s =>
-            s.TenantId == tenantId &&
-            s.SupplierId == supplierId &&
-            s.Code == normalized &&
-            s.IsActive)
-        .Select(s => (Guid?)s.ItemId)
-        .FirstOrDefaultAsync(cancellationToken);
+    public async Task<Guid?> FindItemIdBySupplierCodeAsync(Guid supplierId, string code, Guid tenantId, CancellationToken cancellationToken = default)
+    {
+        var normalized = code.Trim().ToUpperInvariant();
+        // 1. Regla principal:
+        // Código específico del proveedor
+        var supplierItemId = await _context.Set<ItemSupplierCode>()
+            .Where(s =>
+                s.TenantId == tenantId &&
+                s.SupplierId == supplierId &&
+                s.Code == normalized &&
+                s.IsActive)
+            .Select(s => (Guid?)s.ItemId)
+            .FirstOrDefaultAsync(cancellationToken);
 
-    if (supplierItemId.HasValue)
-        return supplierItemId;
+        if (supplierItemId.HasValue)
+            return supplierItemId;
 
-    // 2. Fallback:
-    // Si el código del XML coincide con el SKU interno
-    return await Scoped(tenantId)
-        .Where(x =>
-            x.IsActive &&
-            x.Code.SKU == normalized)
-        .Select(x => (Guid?)x.Id)
-        .FirstOrDefaultAsync(cancellationToken);
-}
+        // 2. Fallback:
+        // Si el código del XML coincide con el SKU interno
+        return await Scoped(tenantId)
+            .Where(x =>
+                x.IsActive &&
+                x.Code.SKU == normalized)
+            .Select(x => (Guid?)x.Id)
+            .FirstOrDefaultAsync(cancellationToken);
+    }
 
     public async Task<IReadOnlyList<ItemSimilarityMatch>> SearchBySimilarityAsync(
         string text, Guid tenantId, int maxResults, double minScore, CancellationToken cancellationToken = default)
@@ -167,8 +166,8 @@ public sealed class ItemRepository : IItemRepository
         CancellationToken cancellationToken = default)
     {
         if (pageNumber < 1) pageNumber = 1;
-        if (pageSize < 1)   pageSize   = 20;
-        if (pageSize > 200) pageSize   = 200;
+        if (pageSize < 1) pageSize = 20;
+        if (pageSize > 200) pageSize = 200;
 
         var query = Scoped(tenantId);
 

@@ -1,6 +1,6 @@
-using System.Security.Claims;
 using ERP.Application.Access.Authorization;
 using Microsoft.AspNetCore.Authorization;
+using System.Security.Claims;
 
 namespace ERP.API.Authorization;
 

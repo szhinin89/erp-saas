@@ -134,6 +134,44 @@ public sealed record TaxIdentification
 
         return new TaxIdentification(t, n);
     }
+    public void ValidateLegalEntityCompatibility(int legalEntityTypeCode)
+    {
+        if (Type != SriRuc)
+            return;
 
+        var thirdDigit = Number[2] - '0';
+
+        switch (legalEntityTypeCode)
+        {
+            // Persona Natural
+            case 1:
+                if (thirdDigit < 0 || thirdDigit > 5)
+                    throw new ArgumentException(
+                        "El RUC no corresponde a una Persona Natural."
+                    );
+                break;
+
+            // Sociedad Privada
+            case 2:
+                if (thirdDigit != 9)
+                    throw new ArgumentException(
+                        "El RUC no corresponde a una Sociedad Privada."
+                    );
+                break;
+
+            // Institución Pública
+            case 3:
+                if (thirdDigit != 6)
+                    throw new ArgumentException(
+                        "El RUC no corresponde a una Institución Pública."
+                    );
+                break;
+
+            default:
+                throw new ArgumentException(
+                    $"Tipo de entidad legal {legalEntityTypeCode} no soportado."
+                );
+        }
+    }
     public override string ToString() => $"{Type}:{Number}";
 }

@@ -112,12 +112,14 @@ public sealed class SriCatalogLookupRepository : ISriCatalogLookupRepository
             .ToListAsync(cancellationToken);
 
     public async Task<IReadOnlyList<LegalEntityTypeCatalog>> GetLegalEntityTypesAsync(
-     CancellationToken cancellationToken = default
-        ) =>
+        CancellationToken cancellationToken = default
+    ) =>
         await _db
-         .LegalEntityTypeCatalog.AsNoTracking()
-         .OrderBy(p => p.Code)
-         .ToListAsync(cancellationToken);
+            .LegalEntityTypeCatalog
+            .AsNoTracking()
+            .Where(p => p.IsActive)
+            .OrderBy(p => p.Code)
+            .ToListAsync(cancellationToken);
 
     public async Task<IReadOnlyList<BarcodeTypeDefinition>> GetActiveBarcodeTypesAsync(
         CancellationToken cancellationToken = default
