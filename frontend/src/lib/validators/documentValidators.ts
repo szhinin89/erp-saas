@@ -24,14 +24,13 @@ export function isValidCedula(num: string): boolean {
 export function validateIdentification(
   identificationType: string,
   identificationNumber: string,
-  personType?: number,
 ): boolean {
   const value = identificationNumber.trim();
 
   switch (identificationType) {
     // RUC
     case "04":
-      return isValidRuc(value, personType);
+      return isValidRuc(value);
 
     // Cédula
     case "05":
@@ -61,7 +60,7 @@ export function validateIdentification(
 /**
  * RUC Ecuador
  */
-function isValidRuc(num: string, personType?: number): boolean {
+function isValidRuc(num: string): boolean {
   if (!/^\d{13}$/.test(num)) return false;
 
   if (!num.endsWith("001")) return false;

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+﻿import { useCallback, useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -36,13 +36,13 @@ import type {
 } from "../types/businessPartner.types";
 import "./masterdata-pages.css";
 
-// ── Zod schemas ──────────────────────────────────────────────────────────────
+// â”€â”€ Zod schemas â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 const locationSchema = z.object({
   name: z.string().min(1, "Nombre obligatorio.").max(150),
   type: z.number({ required_error: "Seleccione un tipo." }),
   purpose: z.number().min(0).default(0),
-  addressLine: z.string().min(5, "Mínimo 5 caracteres.").max(300),
+  addressLine: z.string().min(5, "MÃ­nimo 5 caracteres.").max(300),
   provinceCode: z.string().max(2).optional().or(z.literal("")),
   cantonCode: z.string().max(4).optional().or(z.literal("")),
   parishCode: z.string().max(6).optional().or(z.literal("")),
@@ -68,7 +68,7 @@ const contactSchema = z.object({
 });
 type ContactFormValues = z.infer<typeof contactSchema>;
 
-// ── Enum labels ──────────────────────────────────────────────────────────────
+// â”€â”€ Enum labels â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 const LOCATION_TYPES = [
   { value: LocationTypeEnum.Matrix, label: "Matriz" },
@@ -83,36 +83,36 @@ const CONTACT_ROLES = [
   { value: ContactRoleEnum.Commercial, label: "Comercial" },
   { value: ContactRoleEnum.Accounting, label: "Contabilidad" },
   { value: ContactRoleEnum.Management, label: "Gerencia" },
-  { value: ContactRoleEnum.Reception, label: "Recepción" },
+  { value: ContactRoleEnum.Reception, label: "RecepciÃ³n" },
   { value: ContactRoleEnum.Dispatch, label: "Despacho" },
-  { value: ContactRoleEnum.Billing, label: "Facturación" },
-  { value: ContactRoleEnum.Technical, label: "Técnico" },
+  { value: ContactRoleEnum.Billing, label: "FacturaciÃ³n" },
+  { value: ContactRoleEnum.Technical, label: "TÃ©cnico" },
   { value: ContactRoleEnum.Purchasing, label: "Compras" },
   { value: ContactRoleEnum.Legal, label: "Legal" },
   { value: ContactRoleEnum.Other, label: "Otro" },
 ];
 
 const PURPOSE_FLAGS = [
-  { flag: LocationPurposeEnum.Billing, label: "Facturación" },
+  { flag: LocationPurposeEnum.Billing, label: "FacturaciÃ³n" },
   { flag: LocationPurposeEnum.Delivery, label: "Entrega" },
   { flag: LocationPurposeEnum.Fiscal, label: "Fiscal" },
   { flag: LocationPurposeEnum.Correspondence, label: "Correspondencia" },
 ];
 
-// ── Helpers ──────────────────────────────────────────────────────────────────
+// â”€â”€ Helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 function Row({ label, value }: { label: string; value?: string | null }) {
   return (
     <div className="md-detail-row">
       <span className="md-detail-label">{label}</span>
       <span className="md-detail-value">
-        {value ?? <em className="md-detail-empty">—</em>}
+        {value ?? <em className="md-detail-empty">â€”</em>}
       </span>
     </div>
   );
 }
 
-// ── Main page ────────────────────────────────────────────────────────────────
+// â”€â”€ Main page â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 type TabId = "identity" | "roles" | "locations" | "contacts";
 type LocModal = { mode: "create" | "edit"; data?: BpLocationDto } | null;
@@ -125,6 +125,7 @@ export function MasterDataBusinessPartnerDetailPage() {
   const canUpdate = canShow("masterdata.businesspartners.update");
   const canDisable = canShow("masterdata.businesspartners.disable");
   const { options: idTypes } = useSriIdTypes();
+  const { options: legalEntityTypes } = useLegalEntityTypes();
 
   const [bp, setBp] = useState<BusinessPartnerDetailDto | null>(null);
   const [locations, setLocations] = useState<BpLocationDto[]>([]);
@@ -171,7 +172,7 @@ export function MasterDataBusinessPartnerDetailPage() {
     void reload(true);
   }, [reload]);
 
-  // ── Location form ──────────────────────────────────────────────────────────
+  // â”€â”€ Location form â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   const locForm = useForm<LocationFormValues>({
     resolver: zodResolver(locationSchema),
@@ -239,7 +240,7 @@ export function MasterDataBusinessPartnerDetailPage() {
 
   const openLocEdit = async (loc: BpLocationDto) => {
     const purposeMap: Record<string, number> = {
-      Facturación: 1,
+      FacturaciÃ³n: 1,
       Entrega: 2,
       Fiscal: 4,
       Correspondencia: 8,
@@ -296,13 +297,13 @@ export function MasterDataBusinessPartnerDetailPage() {
           locModal.data.id,
           updateBody as UpdateLocationBody,
         );
-        message.success("Ubicación actualizada correctamente.");
+        message.success("UbicaciÃ³n actualizada correctamente.");
       } else {
         await businessPartnerFacade.createLocation(
           id,
           body as CreateLocationBody,
         );
-        message.success("Ubicación creada correctamente.");
+        message.success("UbicaciÃ³n creada correctamente.");
       }
       setLocModal(null);
       await reload();
@@ -310,7 +311,7 @@ export function MasterDataBusinessPartnerDetailPage() {
       const applied = applyServerErrors(err, locForm.setError, (msg) =>
         setActionError(msg),
       );
-      if (!applied) setActionError("Error al guardar la ubicación.");
+      if (!applied) setActionError("Error al guardar la ubicaciÃ³n.");
     } finally {
       setSaving(false);
     }
@@ -325,7 +326,7 @@ export function MasterDataBusinessPartnerDetailPage() {
       else await businessPartnerFacade.activateLocation(id, loc.id);
       await reload();
     } catch {
-      setActionError("Error al cambiar estado de la ubicación.");
+      setActionError("Error al cambiar estado de la ubicaciÃ³n.");
     } finally {
       setSaving(false);
     }
@@ -344,7 +345,7 @@ export function MasterDataBusinessPartnerDetailPage() {
     }
   };
 
-  // ── Contact form ───────────────────────────────────────────────────────────
+  // â”€â”€ Contact form â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   const conForm = useForm<ContactFormValues>({
     resolver: zodResolver(contactSchema),
@@ -467,7 +468,7 @@ export function MasterDataBusinessPartnerDetailPage() {
     }
   };
 
-  // ── Role revoke ────────────────────────────────────────────────────────────
+  // â”€â”€ Role revoke â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   const revokeRole = async (role: BusinessPartnerRoleDto) => {
     if (!id) return;
@@ -482,7 +483,7 @@ export function MasterDataBusinessPartnerDetailPage() {
     }
   };
 
-  // ── Derived ────────────────────────────────────────────────────────────────
+  // â”€â”€ Derived â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   const activeRoles = bp?.roles.filter((r) => r.isActive) ?? [];
   const revokedRoles = bp?.roles.filter((r) => !r.isActive) ?? [];
@@ -503,11 +504,11 @@ export function MasterDataBusinessPartnerDetailPage() {
       subtitle={bp ? `${bp.identificationType} ${bp.identificationNumber}` : ""}
       action={
         <ZHBtn variant="ghost" onClick={() => navigate(-1)}>
-          ← Volver
+          â† Volver
         </ZHBtn>
       }
     >
-      {loading && <p>Cargando…</p>}
+      {loading && <p>Cargandoâ€¦</p>}
       {error && <ZHPageNotice variant="error" message={error} />}
       {actionError && <ZHPageNotice variant="error" message={actionError} />}
 
@@ -542,23 +543,26 @@ export function MasterDataBusinessPartnerDetailPage() {
             ))}
           </nav>
 
-          {/* ── Identity ──────────────────────────────────────────── */}
+          {/* â”€â”€ Identity â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
           {activeTab === "identity" && (
             <section className="md-detail-section">
               <Row
-                label="Tipo de identificación"
-                value={`${bp.identificationType} — ${getSriIdTypeName(bp.identificationType, idTypes)}`}
+                label="Tipo de identificaciÃ³n"
+                value={`${bp.identificationType} â€” ${getSriIdTypeName(bp.identificationType, idTypes)}`}
               />
-              <Row label="Número" value={bp.identificationNumber} />
-              <Row label="Tipo de persona" value={bp.personType} />
-              <Row label="Razón social" value={bp.legalName} />
+              <Row label="NÃºmero" value={bp.identificationNumber} />
+              <Row
+  label="Tipo de entidad legal"
+  value={legalEntityTypes.find((x) => x.code === bp.legalEntityTypeCode)?.name ?? String(bp.legalEntityTypeCode)}
+/>
+              <Row label="RazÃ³n social" value={bp.legalName} />
               <Row label="Nombre comercial" value={bp.tradeName} />
-              <Row label="País" value={bp.countryCode ?? "EC"} />
+              <Row label="PaÃ­s" value={bp.countryCode ?? "EC"} />
               <Row label="Creado" value={formatDate(bp.createdAt)} />
             </section>
           )}
 
-          {/* ── Roles ─────────────────────────────────────────────── */}
+          {/* â”€â”€ Roles â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
           {activeTab === "roles" && (
             <section className="md-detail-section">
               {bp.roles.length === 0 ? (
@@ -593,7 +597,7 @@ export function MasterDataBusinessPartnerDetailPage() {
                             <div className="md-role-card__config md-role-card__config--crm">
                               {r.customerConfig.customerCategory && (
                                 <small>
-                                  Categoría: {r.customerConfig.customerCategory}
+                                  CategorÃ­a: {r.customerConfig.customerCategory}
                                 </small>
                               )}
                               {r.customerConfig.customerSegment && (
@@ -613,7 +617,7 @@ export function MasterDataBusinessPartnerDetailPage() {
                               )}
                               {r.customerConfig.loyaltyTier && (
                                 <small>
-                                  Fidelización: {r.customerConfig.loyaltyTier}
+                                  FidelizaciÃ³n: {r.customerConfig.loyaltyTier}
                                 </small>
                               )}
                             </div>
@@ -622,24 +626,24 @@ export function MasterDataBusinessPartnerDetailPage() {
                             <div className="md-role-card__config">
                               <small>
                                 Sustento:{" "}
-                                {r.supplierConfig.defaultTaxSupportCode ?? "—"}
+                                {r.supplierConfig.defaultTaxSupportCode ?? "â€”"}
                               </small>
                               <small>
                                 Ret. IVA:{" "}
                                 {r.supplierConfig.defaultRetentionVatCode ??
-                                  "—"}
+                                  "â€”"}
                               </small>
                               <small>
                                 Ret. Renta:{" "}
                                 {r.supplierConfig.defaultRetentionIncomeCode ??
-                                  "—"}
+                                  "â€”"}
                               </small>
                             </div>
                           )}
                           {r.carrierConfig?.transportAuthorizationNumber && (
                             <div className="md-role-card__config">
                               <small>
-                                Autorización:{" "}
+                                AutorizaciÃ³n:{" "}
                                 {r.carrierConfig.transportAuthorizationNumber}
                               </small>
                             </div>
@@ -675,7 +679,7 @@ export function MasterDataBusinessPartnerDetailPage() {
             </section>
           )}
 
-          {/* ── Locations ─────────────────────────────────────────── */}
+          {/* â”€â”€ Locations â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
           {activeTab === "locations" &&
             (() => {
               const filteredLocs =
@@ -715,7 +719,7 @@ export function MasterDataBusinessPartnerDetailPage() {
                         disabled={!canUpdate}
                       >
                         <span className="material-symbols-outlined">add</span>{" "}
-                        Nueva ubicación
+                        Nueva ubicaciÃ³n
                       </ZHBtn>
                     </div>
                   </div>
@@ -757,8 +761,8 @@ export function MasterDataBusinessPartnerDetailPage() {
                           )}
                           {(l.phone || l.email) && (
                             <p className="md-location-card__contact">
-                              {l.phone && <span>📞 {l.phone}</span>}
-                              {l.email && <span>✉ {l.email}</span>}
+                              {l.phone && <span>ðŸ“ž {l.phone}</span>}
+                              {l.email && <span>âœ‰ {l.email}</span>}
                             </p>
                           )}
                           {(canUpdate || canDisable) && (
@@ -802,7 +806,7 @@ export function MasterDataBusinessPartnerDetailPage() {
               );
             })()}
 
-          {/* ── Contacts ──────────────────────────────────────────── */}
+          {/* â”€â”€ Contacts â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
           {activeTab === "contacts" && (
             <section className="md-detail-section">
               <div className="md-detail-section__header">
@@ -845,9 +849,9 @@ export function MasterDataBusinessPartnerDetailPage() {
                         </p>
                       )}
                       <div className="md-contact-card__info">
-                        {c.phone && <span>📞 {c.phone}</span>}
-                        {c.mobile && <span>📱 {c.mobile}</span>}
-                        {c.email && <span>✉ {c.email}</span>}
+                        {c.phone && <span>ðŸ“ž {c.phone}</span>}
+                        {c.mobile && <span>ðŸ“± {c.mobile}</span>}
+                        {c.email && <span>âœ‰ {c.email}</span>}
                       </div>
                       {(canUpdate || canDisable) && (
                         <div className="md-contact-card__actions">
@@ -891,16 +895,16 @@ export function MasterDataBusinessPartnerDetailPage() {
         </>
       )}
 
-      {/* ═══════════════════════════════════════════════════════════════════ */}
+      {/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */}
       {/* LOCATION MODAL                                                     */}
-      {/* ═══════════════════════════════════════════════════════════════════ */}
+      {/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */}
       <ZHModal
         open={locModal !== null}
         onClose={() => setLocModal(null)}
         title={
-          locModal?.mode === "edit" ? "Editar ubicación" : "Nueva ubicación"
+          locModal?.mode === "edit" ? "Editar ubicaciÃ³n" : "Nueva ubicaciÃ³n"
         }
-        subtitle="Configure la dirección y propósito de la ubicación."
+        subtitle="Configure la direcciÃ³n y propÃ³sito de la ubicaciÃ³n."
         footer={
           <ZHFormActions
             onCancel={() => setLocModal(null)}
@@ -913,7 +917,7 @@ export function MasterDataBusinessPartnerDetailPage() {
                 ? "Guardando..."
                 : locModal?.mode === "edit"
                   ? "Guardar cambios"
-                  : "Crear ubicación",
+                  : "Crear ubicaciÃ³n",
             }}
           />
         }
@@ -950,7 +954,7 @@ export function MasterDataBusinessPartnerDetailPage() {
             </ZHField>
           </ZHGrid>
           <ZHField
-            label="Dirección *"
+            label="DirecciÃ³n *"
             required
             error={locForm.formState.errors.addressLine?.message}
           >
@@ -976,7 +980,7 @@ export function MasterDataBusinessPartnerDetailPage() {
                   void loadCantons(e.target.value);
                 }}
               >
-                <option value="">— Seleccionar —</option>
+                <option value="">â€” Seleccionar â€”</option>
                 {geoProvinces.map((p) => (
                   <option key={p.id} value={p.id}>
                     {p.name}
@@ -985,7 +989,7 @@ export function MasterDataBusinessPartnerDetailPage() {
               </select>
             </ZHField>
             <ZHField
-              label="Cantón"
+              label="CantÃ³n"
               error={locForm.formState.errors.cantonCode?.message}
             >
               <select
@@ -997,7 +1001,7 @@ export function MasterDataBusinessPartnerDetailPage() {
                   void loadParishes(e.target.value);
                 }}
               >
-                <option value="">— Seleccionar —</option>
+                <option value="">â€” Seleccionar â€”</option>
                 {geoCantons.map((c) => (
                   <option key={c.id} value={c.id}>
                     {c.name}
@@ -1013,7 +1017,7 @@ export function MasterDataBusinessPartnerDetailPage() {
                 disabled={saving || geoParishes.length === 0}
                 {...locForm.register("parishCode")}
               >
-                <option value="">— Seleccionar —</option>
+                <option value="">â€” Seleccionar â€”</option>
                 {geoParishes.map((p) => (
                   <option key={p.id} value={p.id}>
                     {p.name}
@@ -1023,7 +1027,7 @@ export function MasterDataBusinessPartnerDetailPage() {
             </ZHField>
           </ZHGrid>
           <ZHGrid cols={2}>
-            <ZHField label="Teléfono">
+            <ZHField label="TelÃ©fono">
               <input
                 className="zh-input"
                 disabled={saving}
@@ -1038,7 +1042,7 @@ export function MasterDataBusinessPartnerDetailPage() {
               />
             </ZHField>
           </ZHGrid>
-          <ZHField label="Propósitos">
+          <ZHField label="PropÃ³sitos">
             <div style={{ display: "flex", gap: "16px", flexWrap: "wrap" }}>
               {PURPOSE_FLAGS.map((pf) => (
                 <label key={pf.flag} className="zh-checkbox-label">
@@ -1066,15 +1070,15 @@ export function MasterDataBusinessPartnerDetailPage() {
                 {...locForm.register("isPrimary")}
                 disabled={saving}
               />
-              <span>Marcar como ubicación principal</span>
+              <span>Marcar como ubicaciÃ³n principal</span>
             </label>
           )}
         </div>
       </ZHModal>
 
-      {/* ═══════════════════════════════════════════════════════════════════ */}
+      {/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */}
       {/* CONTACT MODAL                                                      */}
-      {/* ═══════════════════════════════════════════════════════════════════ */}
+      {/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */}
       <ZHModal
         open={conModal !== null}
         onClose={() => setConModal(null)}
@@ -1145,7 +1149,7 @@ export function MasterDataBusinessPartnerDetailPage() {
             </ZHField>
           </ZHGrid>
           <ZHGrid cols={3}>
-            <ZHField label="Teléfono">
+            <ZHField label="TelÃ©fono">
               <input
                 className="zh-input"
                 disabled={saving}
@@ -1167,9 +1171,9 @@ export function MasterDataBusinessPartnerDetailPage() {
               />
             </ZHField>
           </ZHGrid>
-          <ZHField label="Ubicación asociada">
+          <ZHField label="UbicaciÃ³n asociada">
             <select disabled={saving} {...conForm.register("locationId")}>
-              <option value="">— Ninguna —</option>
+              <option value="">â€” Ninguna â€”</option>
               {activeLocs.map((l) => (
                 <option key={l.id} value={l.id}>
                   {l.name} ({l.typeLabel})
@@ -1200,3 +1204,4 @@ export function MasterDataBusinessPartnerDetailPage() {
     </ErpPageTemplate>
   );
 }
+

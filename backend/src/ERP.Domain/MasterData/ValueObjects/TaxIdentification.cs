@@ -134,6 +134,23 @@ public sealed record TaxIdentification
 
         return new TaxIdentification(t, n);
     }
+    public int? TryInferLegalEntityTypeCode()
+    {
+        return Type switch
+        {
+            SriCi => 1,
+
+            SriRuc => Number[2] - '0' switch
+            {
+                >= 0 and <= 5 => 1,
+                6 => 3,
+                9 => 2,
+                _ => null
+            },
+
+            _ => null
+        };
+    }
     public void ValidateLegalEntityCompatibility(int legalEntityTypeCode)
     {
         if (Type != SriRuc)
