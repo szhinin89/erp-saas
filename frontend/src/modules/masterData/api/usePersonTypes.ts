@@ -1,4 +1,5 @@
-import { useAsync } from "../../../hooks/useAsync";
+
+/**import { useAsync } from "../../../hooks/useAsync";
 import { apiGet } from "../../lib/apiEnvelope";
 
 export type PersonTypeOption = {
@@ -21,3 +22,4 @@ export function usePersonTypes() {
   );
   return { options: state.data ?? FALLBACK, loading: state.loading };
 }
+*/

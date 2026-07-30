@@ -6,7 +6,7 @@
  *
  * V2 changes:
  *   - alreadyHasRole: simplificado — el backend devuelve 422 si el rol ya está activo.
- *   - PersonType: nuevo campo obligatorio en step 2.
+ *   - legalEntityTypeCode: nuevo campo obligatorio en step 2.
  *   - Sin email/phone/legalRepresentativeName.
  *   - onSubmitCreate: ya no incluye asCustomer/asSupplier — role se asigna por separado.
  *
@@ -31,7 +31,6 @@ import type {
   CreateBusinessPartnerBody,
   UpdateBusinessPartnerBody,
 } from "../types/businessPartner.types";
-import { PersonTypeEnum } from "../types/businessPartner.types";
 import { MasterDataBpFormFields } from "./MasterDataBpFormFields";
 import { ZHBtn } from "../../../components/zh/ZHForm";
 
@@ -129,10 +128,8 @@ export function MasterDataPartnerWizard({
     defaultValues: {
       identificationType: editingPartner?.identificationType ?? "04",
       identificationNumber: editingPartner?.identificationNumber ?? "",
-      personType:
-        PersonTypeEnum[
-          editingPartner?.personType as keyof typeof PersonTypeEnum
-        ] ?? PersonTypeEnum.Legal,
+      legalEntityTypeCode:
+        editingPartner?.legalEntityTypeCode ?? 2,
       legalName: editingPartner?.legalName ?? "",
       tradeName: editingPartner?.tradeName ?? "",
       countryCode: editingPartner?.countryCode ?? "EC",
@@ -209,10 +206,10 @@ export function MasterDataPartnerWizard({
 
   const buildCreateBody = (): CreateBusinessPartnerBody => {
     const v = form.getValues();
-    return {
+   return {
       identificationType: v.identificationType,
       identificationNumber: v.identificationNumber.trim(),
-      personType: v.personType,
+      legalEntityTypeCode: v.legalEntityTypeCode,
       legalName: v.legalName.trim(),
       tradeName: v.tradeName?.trim() || null,
       countryCode: v.countryCode?.trim() || null,
@@ -223,7 +220,7 @@ export function MasterDataPartnerWizard({
     const v = form.getValues();
     return {
       legalName: v.legalName.trim(),
-      personType: v.personType,
+      legalEntityTypeCode: v.legalEntityTypeCode,
       tradeName: v.tradeName?.trim() || null,
       countryCode: v.countryCode?.trim() || null,
     };

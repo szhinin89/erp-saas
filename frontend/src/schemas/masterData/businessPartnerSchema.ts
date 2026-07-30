@@ -1,10 +1,5 @@
 import { z } from "zod";
 import { validateIdentification } from "../../lib/validators/documentValidators";
-import {
-  PersonTypeEnum,
-  type PersonTypeValue,
-} from "../../modules/masterData/types/businessPartner.types";
-
 const SRI_RUC = "04";
 const SRI_CI = "05";
 const SRI_PASSPORT = "06";
@@ -22,14 +17,14 @@ const VALID_SRI_ID_TYPES = [
 ] as const;
 
 function identificationRefinement(data: {
-  identificationType: string;
-  identificationNumber: string;
-  personType: number;
+  identificationType:string;
+  identificationNumber:string;
+  legalEntityTypeCode:number;
 }) {
   return validateIdentification(
     data.identificationType,
     data.identificationNumber.trim(),
-    data.personType,
+    data.legalEntityTypeCode,
   );
 }
 
@@ -49,8 +44,9 @@ const identificationErrorMap: Record<string, string> = {
  *   → email y phone van en BusinessPartnerContact (POST /contacts)
  *   → representante legal va en BusinessPartnerContact con Role=Legal
  *
- * NUEVO: personType (obligatorio)
- *   → 1=Natural, 2=Legal, 3=Government, 4=Organization
+ *  NUEVO: legalEntityTypeCode (obligatorio)
+ * → catálogo global.legal_entity_type
+ * → usado para clasificación tributaria SRI
  *
  * refundProviderTypeCode / paymentTermId: solo obligatorios cuando role='supplier' — viven en
  * SupplierRoleConfig (backend), que exige PaymentTermId obligatorio por regla de dominio ya
@@ -65,16 +61,14 @@ const businessPartnerBaseShape = {
       "Tipo de identificación no válido.",
     ),
   identificationNumber: z.string().min(1, "El número es requerido."),
-  personType: z
-    .number({
-      required_error: "El tipo de persona es obligatorio.",
-      invalid_type_error: "Tipo de persona inválido.",
-    })
-    .refine(
-      (v): v is PersonTypeValue =>
-        Object.values(PersonTypeEnum).includes(v as PersonTypeValue),
-      "Tipo de persona inválido.",
-    ),
+  legalEntityTypeCode: z.coerce.number({
+    required_error: "El tipo de entidad legal es obligatorio.",
+    invalid_type_error: "Tipo de entidad legal inválido.",
+  })
+  .refine(
+     (v) => v > 0,
+      "Tipo de entidad legal inválido.",
+  ),
   legalName: z
     .string()
     .min(2, "La razón social debe tener al menos 2 caracteres.")

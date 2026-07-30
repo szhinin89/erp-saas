@@ -2,11 +2,11 @@ import { useEffect, useState } from "react";
 import { useFormContext, Controller } from "react-hook-form";
 import { ZHField, ZHGrid } from "../../../components/zh/ZHForm";
 import { useSriIdTypes, useSriIdTypesByUsage } from "../api/useSriIdTypes";
-import { usePersonTypes } from "../api/usePersonTypes";
 import { useSriSupplierTypes } from "../api/useSriSupplierTypes";
 import { paymentTermService } from "../api/paymentTermService";
 import type { PaymentTermDto } from "../api/paymentTermService";
 import type { BusinessPartnerFormValues } from "../../../schemas/masterData/businessPartnerSchema";
+import { useLegalEntityTypes } from "../api/useLegalEntityTypes";
 
 type Props = {
   saving: boolean;
@@ -30,8 +30,8 @@ export function MasterDataBpFormFields({
   const { options: idTypes, loading: loadingTypes } = usage
     ? filteredTypes
     : allTypes;
-  const { options: personTypeOptions, loading: loadingPersonTypes } =
-    usePersonTypes();
+  const { options: legalEntityTypes, loading: loadingLegalEntityTypes }
+    = useLegalEntityTypes();
   const { options: supplierTypeOptions, loading: loadingSupplierTypes } =
     useSriSupplierTypes();
   const [paymentTerms, setPaymentTerms] = useState<PaymentTermDto[]>([]);
@@ -46,9 +46,10 @@ export function MasterDataBpFormFields({
 
   if (section === "review") {
     const values = watch();
-    const personTypeLabel =
-      personTypeOptions.find((o) => o.code === values.personType)?.name ??
-      String(values.personType);
+    const legalEntityLabel =
+      legalEntityTypes.find(
+        (x) => x.code === values.legalEntityTypeCode,
+      )?.name ?? String(values.legalEntityTypeCode);
     const supplierTypeLabel = supplierTypeOptions.find(
       (o) => o.code === values.refundProviderTypeCode,
     )?.name;
@@ -61,8 +62,8 @@ export function MasterDataBpFormFields({
         <dd className="mono">{values.identificationType}</dd>
         <dt>Número</dt>
         <dd className="mono">{values.identificationNumber}</dd>
-        <dt>Tipo de persona</dt>
-        <dd>{personTypeLabel}</dd>
+        <dt>Tipo de entidad legal</dt>
+        <dd>{legalEntityLabel}</dd>
         <dt>Razón social</dt>
         <dd>{values.tradeName?.trim() || values.legalName}</dd>
         {values.tradeName?.trim() && (
@@ -121,25 +122,29 @@ export function MasterDataBpFormFields({
       </ZHField>
 
       <ZHField
-        label="Tipo de persona"
-        required
-        fieldError={errors.personType?.message}
-      >
-        <select
-          {...register("personType", { valueAsNumber: true })}
-          disabled={saving || loadingPersonTypes}
-        >
-          {loadingPersonTypes ? (
-            <option value="">Cargando…</option>
-          ) : (
-            personTypeOptions.map((o) => (
-              <option key={o.code} value={o.code}>
-                {o.name}
-              </option>
-            ))
-          )}
-        </select>
-      </ZHField>
+  label="Tipo de entidad legal"
+  required
+  fieldError={errors.legalEntityTypeCode?.message}
+>
+<select
+  {...register("legalEntityTypeCode", {
+      valueAsNumber:true
+  })}
+  disabled={saving || loadingLegalEntityTypes}
+>
+{
+loadingLegalEntityTypes ? (
+<option value="">Cargando...</option>
+) : (
+legalEntityTypes.map(o=>(
+<option key={o.code} value={o.code}>
+{o.name}
+</option>
+))
+)
+}
+</select>
+</ZHField>
 
       {usage === "supplier" && (
         <>

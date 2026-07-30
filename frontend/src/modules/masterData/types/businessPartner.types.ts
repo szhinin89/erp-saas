@@ -1,25 +1,19 @@
 /**
  * BusinessPartner V2 — Contract types
  *
- * RESPONSE fields con enum: son STRINGS (el backend llama .ToString() explícitamente).
+ * RESPONSE fields pueden usar códigos numéricos de catálogo o strings según contrato.
+REQUEST fields con enum: son NUMBERS. (el backend llama .ToString() explícitamente).
  * REQUEST fields con enum: son NUMBERS (integer value del enum de C#).
  *
  * Convención de fechas: ISO 8601 string (el frontend formatea según locale).
  *
- * Enumeraciones como const objects para usar en requests y comparaciones en lógica de UI.
+ * Enumeraciones técnicas como const objects para requests y lógica de UI.
+ *
+ * Los catálogos maestros (ej: LegalEntityType, PaymentTerms, SRI catalogs)
+ * deben cargarse desde API y no deben duplicarse aquí.
  */
 
 // ── Enumeraciones (valores numéricos para request bodies) ─────────────────────
-
-/** PersonType enum — usar en CreateBusinessPartnerBody.personType */
-export const PersonTypeEnum = {
-  Natural: 1,
-  Legal: 2,
-  Government: 3,
-  Organization: 4,
-} as const;
-export type PersonTypeValue =
-  (typeof PersonTypeEnum)[keyof typeof PersonTypeEnum];
 
 /** RoleType enum — usar en AssignRoleBody.roleType y filtros de búsqueda */
 export const RoleTypeEnum = {
@@ -88,7 +82,7 @@ export type BusinessPartnerSummaryDto = {
   identificationNumber: string;
   legalName: string;
   tradeName: string | null;
-  personType: string; // "Natural" | "Legal" | "Government" | "Organization"
+  legalEntityTypeCode: number;
   countryCode: string | null;
   isActive: boolean;
   createdAt: string; // ISO 8601
@@ -157,7 +151,7 @@ export type SupplierClassificationConfigDto = {
 /**
  * Clasificación y scoring del cliente — CRM-ready.
  * Parte de BusinessPartnerRoleDto cuando roleType === "Customer".
- * Subscriber-scoped: describe al cliente como tercero, no por empresa.
+ *  * Tenant-scoped: describe al cliente como tercero, no por empresa.
  */
 export type CustomerRoleConfigDto = {
   customerCategory?: string | null; // 'Retail' | 'Wholesale' | 'Corporate' | 'Government' | 'VIP' | 'Other'
@@ -170,7 +164,7 @@ export type CustomerRoleConfigDto = {
 };
 
 /**
- * Ubicación física del BP. Subscriber-scoped.
+ *  * Ubicación física del BP. Tenant-scoped.
  * Response: GET /api/master/business-partners/{bpId}/locations
  */
 export type BpLocationDto = {
@@ -193,7 +187,7 @@ export type BpLocationDto = {
 };
 
 /**
- * Contacto del BP. Subscriber-scoped.
+ *  * Contacto del BP. Tenant-scoped.
  * Response: GET /api/master/business-partners/{bpId}/contacts
  */
 export type BpContactDto = {
@@ -249,18 +243,18 @@ export type BusinessPartnerPagedResult = {
 
 /** POST /api/master/business-partners */
 export type CreateBusinessPartnerBody = {
-  identificationType: string; // SRI code
+  identificationType: string;
   identificationNumber: string;
-  personType: PersonTypeValue; // INTEGER: 1=Natural, 2=Legal, 3=Government, 4=Organization
+  legalEntityTypeCode: number;
   legalName: string;
   tradeName?: string | null;
-  countryCode?: string | null; // ISO alpha-2
+  countryCode?: string | null;
 };
 
 /** PUT /api/master/business-partners/{id} */
 export type UpdateBusinessPartnerBody = {
   legalName: string;
-  personType: PersonTypeValue;
+  legalEntityTypeCode: number;
   tradeName?: string | null;
   countryCode?: string | null;
 };
