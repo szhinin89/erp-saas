@@ -296,26 +296,11 @@ public sealed class PurchaseInvoiceDetail : IMustHaveTenant
 
     private void RecalcTaxes()
     {
-        var taxBase = TaxableBase;
-
-        IceAmount =
-            !string.IsNullOrWhiteSpace(IceCode) && IceRate > 0
-                ? Math.Round(
-                    taxBase * IceRate / 100m,
-                    FiscalPrecision.TaxAmount,
-                    MidpointRounding.AwayFromZero
-                )
-                : 0;
-
-        var baseIva = taxBase + IceAmount;
-        VatAmount =
-            VatRate > 0
-                ? Math.Round(
-                    baseIva * VatRate / 100m,
-                    FiscalPrecision.TaxAmount,
-                    MidpointRounding.AwayFromZero
-                )
-                : 0;
+        (IceAmount, VatAmount, _) = SriTaxCalculator.Compute(
+            TaxableBase,
+            VatRate,
+            !string.IsNullOrWhiteSpace(IceCode) ? IceRate : 0m
+        );
     }
 
     private void RecalcCosts()

@@ -1,5 +1,4 @@
 using ERP.Domain.Common;
-using ERP.Domain.Modules.Sales.Services;
 
 namespace ERP.Domain.Modules.Sales.Entities;
 
