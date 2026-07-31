@@ -79,6 +79,97 @@ public sealed class DocumentSequenceExclusivityTests
             );
     }
 
+    // ── SEQ-GATE-01: mecanismo de detección (aislado, sin tocar el árbol real) ─
+
+    /// <summary>
+    /// P1-06 (ERP_CORE_SUMAK_READINESS_AUDIT.md) — causa raíz del falso positivo: una mención
+    /// puramente textual dentro de un comentario XML doc (idéntica a la que hoy vive en
+    /// JournalEntrySequence.cs:9, referenciando DocumentSequence.CaptureAndIncrement() como
+    /// comparación de diseño) no debe disparar el gate.
+    /// </summary>
+    [Fact]
+    public void StripComments_elimina_una_mencion_textual_dentro_de_un_comentario_XML_doc()
+    {
+        const string source = """
+            namespace ERP.Domain.Modules.Accounting.Entities;
+
+            /// <summary>
+            /// A diferencia de <c>DocumentSequence.CaptureAndIncrement()</c> (que se persiste en
+            /// una transacción propia), este método hace otra cosa.
+            /// </summary>
+            public sealed class JournalEntrySequence
+            {
+                public void ReserveNextNumber() { }
+            }
+            """;
+
+        var stripped = StripComments(source);
+
+        stripped.Should().NotContain("CaptureAndIncrement(");
+    }
+
+    /// <summary>
+    /// Una invocación real (fuera de comentario) sigue siendo detectada — el mecanismo no debe
+    /// convertirse en una forma de ocultar violaciones reales.
+    /// </summary>
+    [Fact]
+    public void StripComments_preserva_una_invocacion_real_de_codigo_ejecutable()
+    {
+        const string source = """
+            namespace ERP.Application.Modules.Purchases.UseCases;
+
+            public sealed class SomeHandler
+            {
+                public void Handle(DocumentSequence sequence)
+                {
+                    // Esto SÍ es una violación real, no un comentario que la mencione.
+                    sequence.CaptureAndIncrement();
+                }
+            }
+            """;
+
+        var stripped = StripComments(source);
+
+        stripped.Should().Contain(".CaptureAndIncrement(");
+    }
+
+    /// <summary>
+    /// El comentario de línea previo (// Esto SÍ es...) no debe sobrevivir el stripping —
+    /// confirma que solo la línea de código real, no el comentario que la precede, es lo que
+    /// queda detectable.
+    /// </summary>
+    [Fact]
+    public void StripComments_elimina_comentarios_de_linea_que_preceden_codigo_real()
+    {
+        const string source = """
+            // sequence.CaptureAndIncrement(); — esto está comentado, no debe detectarse.
+            var x = 1;
+            """;
+
+        var stripped = StripComments(source);
+
+        stripped.Should().NotContain("CaptureAndIncrement(");
+    }
+
+    /// <summary>
+    /// El contenido de literales de cadena debe preservarse intacto — SEQ-GATE-03 busca SQL de
+    /// escritura que vive dentro de un string literal en el repositorio autorizado; si el
+    /// stripping también vaciara los strings, ese gate dejaría de poder detectar nada.
+    /// </summary>
+    [Fact]
+    public void StripComments_preserva_el_contenido_de_literales_de_cadena()
+    {
+        const string source = """
+            // comentario que debe desaparecer
+            var sql = "INSERT INTO document_sequence (tenant_id) VALUES (@p0)";
+            """;
+
+        var stripped = StripComments(source);
+
+        stripped.Should().NotContain("comentario que debe desaparecer");
+        stripped.Should().Contain("INSERT INTO document_sequence");
+    }
+
     // ── SEQ-GATE-02 ───────────────────────────────────────────────────────────
 
     /// <summary>
@@ -211,12 +302,140 @@ public sealed class DocumentSequenceExclusivityTests
             if (allowedPaths.Contains(relative))
                 continue;
 
-            var text = File.ReadAllText(file);
+            var text = StripComments(File.ReadAllText(file));
             if (patternArray.Any(p => text.Contains(p, StringComparison.Ordinal)))
                 violations.Add(relative);
         }
 
         return violations;
+    }
+
+    /// <summary>
+    /// Quita comentarios de línea (<c>//</c>, incluido <c>///</c> XML doc) y de bloque
+    /// (<c>/* */</c>) de código fuente C#, preservando intacto el contenido de literales de
+    /// cadena (<c>"..."</c>, incluidas interpoladas <c>$"..."</c>) y verbatim (<c>@"..."</c>)
+    /// y de literales char (<c>'...'</c>).
+    ///
+    /// Corrige el falso positivo de SEQ-GATE-01: antes, el scan de texto plano no distinguía
+    /// una mención textual dentro de un comentario/XML doc (p. ej. un <c>&lt;c&gt;</c> que solo
+    /// documenta el patrón de diseño) de una invocación real de código — cualquier archivo que
+    /// mencionara el patrón buscado en un comentario disparaba el gate igual que una violación
+    /// real. Preservar los literales de cadena es intencional: SEQ-GATE-03 busca SQL de
+    /// escritura (p. ej. <c>"INSERT INTO document_sequence ..."</c>) que vive precisamente
+    /// dentro de un string en el repositorio autorizado — stripearlos rompería ese gate.
+    /// </summary>
+    private static string StripComments(string source)
+    {
+        var sb = new System.Text.StringBuilder(source.Length);
+        var i = 0;
+        var n = source.Length;
+
+        while (i < n)
+        {
+            var c = source[i];
+
+            // Comentario de línea: // ... (incluye /// XML doc, mismo prefijo).
+            if (c == '/' && i + 1 < n && source[i + 1] == '/')
+            {
+                while (i < n && source[i] != '\n')
+                    i++;
+                continue;
+            }
+
+            // Comentario de bloque: /* ... */
+            if (c == '/' && i + 1 < n && source[i + 1] == '*')
+            {
+                i += 2;
+                while (i < n && !(i + 1 < n && source[i] == '*' && source[i + 1] == '/'))
+                {
+                    if (source[i] == '\n')
+                        sb.Append('\n');
+                    i++;
+                }
+                i = Math.Min(i + 2, n);
+                continue;
+            }
+
+            // Verbatim string: @"..." ("" es comilla escapada, sin escape con backslash).
+            if (c == '@' && i + 1 < n && source[i + 1] == '"')
+            {
+                sb.Append(c).Append('"');
+                i += 2;
+                while (i < n)
+                {
+                    if (source[i] == '"' && i + 1 < n && source[i + 1] == '"')
+                    {
+                        sb.Append("\"\"");
+                        i += 2;
+                        continue;
+                    }
+                    if (source[i] == '"')
+                    {
+                        sb.Append('"');
+                        i++;
+                        break;
+                    }
+                    sb.Append(source[i]);
+                    i++;
+                }
+                continue;
+            }
+
+            // String regular / interpolada: "..." / $"..."
+            if (c == '"')
+            {
+                sb.Append('"');
+                i++;
+                while (i < n)
+                {
+                    if (source[i] == '\\' && i + 1 < n)
+                    {
+                        sb.Append(source[i]).Append(source[i + 1]);
+                        i += 2;
+                        continue;
+                    }
+                    if (source[i] == '"')
+                    {
+                        sb.Append('"');
+                        i++;
+                        break;
+                    }
+                    sb.Append(source[i]);
+                    i++;
+                }
+                continue;
+            }
+
+            // Char literal: '...'
+            if (c == '\'')
+            {
+                sb.Append('\'');
+                i++;
+                while (i < n)
+                {
+                    if (source[i] == '\\' && i + 1 < n)
+                    {
+                        sb.Append(source[i]).Append(source[i + 1]);
+                        i += 2;
+                        continue;
+                    }
+                    if (source[i] == '\'')
+                    {
+                        sb.Append('\'');
+                        i++;
+                        break;
+                    }
+                    sb.Append(source[i]);
+                    i++;
+                }
+                continue;
+            }
+
+            sb.Append(c);
+            i++;
+        }
+
+        return sb.ToString();
     }
 
     private static string ResolveBackendRoot()
