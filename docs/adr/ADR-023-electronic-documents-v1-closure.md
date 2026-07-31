@@ -149,6 +149,10 @@ Auditoría de cierre final (previa a la declaración de CLOSED de esta ADR) enco
 
 **Corrección** (causa 2, bug demostrado con reproducción y test de regresión — sin ADR nueva, según el protocolo ya establecido en esta misma ADR): `ProcessingErrorPrefix` (constante única) reemplazada por `AlreadyExistsErrorPrefixes` (`["[70]", "[43]", "[45]"]`) en `ElectronicDocumentIssuer.cs`; los tres códigos siguen ahora el mismo camino ya probado (`MarkReceived` → consulta de autorización), nunca rechazo automático. 2 tests de regresión agregados (`ElectronicDocumentIssuerReceptionTests`, casos 43/45). Ningún contrato público, estado, guard ni pipeline se modificó — cambio confinado a la lista de prefijos reconocidos dentro de una rama ya existente.
 
+## Addendum (2026-07-31): ADR-031 — Activación de Nota de Crédito V1.1.0
+
+Primera excepción real a "Agregar builders/providers/validadores para nuevos tipos de comprobante... requiere su propia fase con roadmap explícito": `SalesReturn` (P0-01) necesitaba emitir Nota de Crédito, y esa fase con roadmap explícito ya existía (Fase 11 de `P0-01_SALES_RETURN_IMPLEMENTATION_PLAN.md`). Se agregó `CreditNoteXmlSchemaValidator` (mismo contrato `IElectronicDocumentSchemaValidator` que `InvoiceXmlSchemaValidator`) en el punto de extensión que `ElectronicDocumentSchemaValidatorResolver`/DI ya preveían sin cambios, y se activó `CreditNote.activeVersion: "1.1.0"` en `manifest.json`. Ningún contrato público, estado, guard ni pipeline listado en esta ADR se modificó. Detalle completo: [`ADR-031-credit-note-v1-activation.md`](ADR-031-credit-note-v1-activation.md).
+
 ## Cierre oficial
 
 **Estado: CLOSED.** **Versión: v1.0.** **Fecha de cierre: 2026-07-11.** **Responsable: Sebastian Zhinin (Lead/Architect del proyecto).**

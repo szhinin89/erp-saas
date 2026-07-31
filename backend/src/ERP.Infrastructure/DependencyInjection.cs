@@ -336,6 +336,10 @@ public static class DependencyInjection
             ERP.Application.Modules.ElectronicDocuments.Services.IElectronicDocumentDataProvider,
             ERP.Application.Modules.Sales.Services.SalesInvoiceElectronicDocumentDataProvider
         >();
+        services.AddScoped<
+            ERP.Application.Modules.ElectronicDocuments.Services.IElectronicDocumentDataProvider,
+            ERP.Application.Modules.Sales.Services.SalesReturnCreditNoteDataProvider
+        >();
         // Los demás módulos (Purchases, Inventory, ...) añadirán su propio
         // IElectronicDocumentDataProvider aquí cuando implementen su proveedor.
 
@@ -372,8 +376,12 @@ public static class DependencyInjection
             ERP.Application.Modules.ElectronicDocuments.XmlBuilders.IElectronicDocumentXmlBuilder,
             ERP.Application.Modules.ElectronicDocuments.XmlBuilders.InvoiceXmlBuilder
         >();
-        // Los demás tipos de comprobante (CreditNote, DebitNote, Retention, ShippingGuide, ...)
-        // añadirán su propio IElectronicDocumentXmlBuilder aquí — nunca tocar el resolver.
+        services.AddScoped<
+            ERP.Application.Modules.ElectronicDocuments.XmlBuilders.IElectronicDocumentXmlBuilder,
+            ERP.Application.Modules.ElectronicDocuments.XmlBuilders.CreditNoteXmlBuilder
+        >();
+        // Los demás tipos de comprobante (DebitNote, Retention, ShippingGuide, ...) añadirán su
+        // propio IElectronicDocumentXmlBuilder aquí — nunca tocar el resolver.
 
         // Fase 9: mapeo real VAT→"2"/ICE→"3" (constante regulatoria SRI, no catálogo de BD —
         // ver justificación en SriTaxCategoryCodeResolver). Reemplaza al placeholder que
@@ -439,6 +447,12 @@ public static class DependencyInjection
             ERP.Application.Modules.ElectronicDocuments.SchemaValidation.IElectronicDocumentSchemaValidator,
             ERP.Application.Modules.ElectronicDocuments.SchemaValidation.InvoiceXmlSchemaValidator
         >();
+        // ADR-031 (Fase 11, P0-01): CreditNote V1.1.0 activada — mismo patrón, ningún cambio al
+        // resolver ni a IXmlSchemaProvider.
+        services.AddScoped<
+            ERP.Application.Modules.ElectronicDocuments.SchemaValidation.IElectronicDocumentSchemaValidator,
+            ERP.Application.Modules.ElectronicDocuments.SchemaValidation.CreditNoteXmlSchemaValidator
+        >();
         // Los demás tipos de comprobante añadirán su propio IElectronicDocumentSchemaValidator
         // aquí — nunca tocar el resolver ni IXmlSchemaProvider.
 
@@ -481,8 +495,14 @@ public static class DependencyInjection
             ERP.Application.Modules.Ride.Parsers.IRideXmlParser,
             ERP.Application.Modules.Ride.Parsers.InvoiceRideXmlParser
         >();
-        // Los demás tipos de comprobante (CreditNote, DebitNote, Retention, ShippingGuide, ...)
-        // añadirán su propio IRideXmlParser aquí — nunca tocar el resolver.
+        // ADR-031 addendum (Fase 12, P0-01): Nota de Crédito — mismo patrón, ningún cambio al
+        // resolver.
+        services.AddScoped<
+            ERP.Application.Modules.Ride.Parsers.IRideXmlParser,
+            ERP.Application.Modules.Ride.Parsers.CreditNoteRideXmlParser
+        >();
+        // Los demás tipos de comprobante (DebitNote, Retention, ShippingGuide, ...) añadirán su
+        // propio IRideXmlParser aquí — nunca tocar el resolver.
 
         services.AddScoped<
             ERP.Application.Modules.Ride.Templates.IRideTemplateResolver,
@@ -491,6 +511,12 @@ public static class DependencyInjection
         services.AddScoped<
             ERP.Application.Modules.Ride.Templates.IRideTemplate,
             ERP.Application.Modules.Ride.Templates.DefaultInvoiceRideTemplate
+        >();
+        // ADR-031 addendum (Fase 12, P0-01): Nota de Crédito — mismo patrón, ningún cambio al
+        // resolver.
+        services.AddScoped<
+            ERP.Application.Modules.Ride.Templates.IRideTemplate,
+            ERP.Application.Modules.Ride.Templates.CreditNoteRideTemplate
         >();
         // Las demás plantillas añadirán su propia IRideTemplate aquí — nunca tocar el resolver.
 
@@ -646,6 +672,10 @@ public static class DependencyInjection
         services.AddScoped<
             ERP.Domain.Modules.Sales.Interfaces.ISalesReceivableRepository,
             ERP.Infrastructure.Persistence.Repositories.Sales.SalesReceivableRepository
+        >();
+        services.AddScoped<
+            ERP.Domain.Modules.Sales.Interfaces.ISalesReturnRepository,
+            ERP.Infrastructure.Persistence.Repositories.Sales.SalesReturnRepository
         >();
         services.AddScoped<
             ERP.Application.Modules.Sales.IInvoiceItemSearchRepository,

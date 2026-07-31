@@ -16,6 +16,13 @@ namespace ERP.Domain.Modules.Ride.ValueObjects;
 /// (<c>fechaAutorizacion</c>) que nunca se persiste dentro del XML en sí. Corrección de diseño
 /// respecto a la versión original de esta fase (Fase 2), hecha en la Fase 6 al construir el
 /// primer parser real contra el XML real — nunca inventar este dato si no está disponible.
+///
+/// <see cref="Reason"/> y <see cref="ModifiedDocument"/> (ADR-031 addendum, Fase 12 de P0-01)
+/// son <see langword="null"/> para cualquier comprobante que no modifique a otro — hoy, siempre
+/// para Factura. Solo Nota de Crédito (y en el futuro Nota de Débito) los completa. Se modelan
+/// como campos opcionales del mismo <see cref="RideHeader"/> en vez de un VO paralelo, porque
+/// <c>motivo</c>/<c>codDocModificado</c>/<c>numDocModificado</c>/<c>fechaEmisionDocSustento</c>
+/// viven en la misma sección <c>infoNotaCredito</c> que el resto de los campos ya modelados aquí.
 /// </summary>
 public sealed record RideHeader
 {
@@ -35,6 +42,8 @@ public sealed record RideHeader
     public decimal TotalDiscount { get; }
     public decimal Tip { get; }
     public decimal GrandTotal { get; }
+    public string? Reason { get; }
+    public RideModifiedDocumentReference? ModifiedDocument { get; }
 
     private RideHeader(
         string environment,
@@ -52,7 +61,9 @@ public sealed record RideHeader
         decimal subtotalWithoutTax,
         decimal totalDiscount,
         decimal tip,
-        decimal grandTotal
+        decimal grandTotal,
+        string? reason,
+        RideModifiedDocumentReference? modifiedDocument
     )
     {
         Environment = environment;
@@ -71,6 +82,8 @@ public sealed record RideHeader
         TotalDiscount = totalDiscount;
         Tip = tip;
         GrandTotal = grandTotal;
+        Reason = reason;
+        ModifiedDocument = modifiedDocument;
     }
 
     public static RideHeader Create(
@@ -89,7 +102,9 @@ public sealed record RideHeader
         decimal subtotalWithoutTax,
         decimal totalDiscount,
         decimal tip,
-        decimal grandTotal
+        decimal grandTotal,
+        string? reason = null,
+        RideModifiedDocumentReference? modifiedDocument = null
     )
     {
         if (string.IsNullOrWhiteSpace(environment))
@@ -160,7 +175,9 @@ public sealed record RideHeader
             subtotalWithoutTax,
             totalDiscount,
             tip,
-            grandTotal
+            grandTotal,
+            string.IsNullOrWhiteSpace(reason) ? null : reason.Trim(),
+            modifiedDocument
         );
     }
 }

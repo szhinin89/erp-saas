@@ -297,6 +297,11 @@ public class ErpDbContext : DbContext
     public DbSet<SalesReceivable> SalesReceivables => Set<SalesReceivable>();
     public DbSet<SalesReceivableInstallment> SalesReceivableInstallments =>
         Set<SalesReceivableInstallment>();
+    public DbSet<SalesReturn> SalesReturns => Set<SalesReturn>();
+    public DbSet<SalesReturnDetail> SalesReturnDetails => Set<SalesReturnDetail>();
+    public DbSet<SalesReturnRefundAllocation> SalesReturnRefundAllocations =>
+        Set<SalesReturnRefundAllocation>();
+    public DbSet<SalesReturnAudit> SalesReturnAudits => Set<SalesReturnAudit>();
 
     // ── Finance BC ─────────────────────────────────────────────────────────
     public DbSet<CreditTerm> CreditTerms => Set<CreditTerm>();

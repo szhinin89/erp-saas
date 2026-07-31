@@ -28,7 +28,31 @@ public sealed record ElectronicDocumentData(
     IReadOnlyList<ElectronicDocumentTaxSummary> TaxSummary,
     ElectronicDocumentTotals? Totals,
     IReadOnlyList<ElectronicDocumentPayment> Payments,
-    IReadOnlyList<ElectronicDocumentAdditionalField> AdditionalInfo
+    IReadOnlyList<ElectronicDocumentAdditionalField> AdditionalInfo,
+    /// <summary>
+    /// Motivo de la modificación (SRI "motivo") — obligatorio para Nota de Crédito/Débito,
+    /// <c>null</c> para el resto de tipos de documento (Factura, Guía de Remisión, ...). Campo
+    /// opcional añadido de forma aditiva (P0-01 Fase 8/10): no rompe ningún productor existente
+    /// (SalesInvoiceElectronicDocumentDataProvider sigue construyendo el record por nombre, sin
+    /// pasar este parámetro).
+    /// </summary>
+    string? Reason = null,
+    /// <summary>
+    /// Referencia al comprobante modificado (SRI "codDocModificado"/"numDocModificado"/
+    /// "fechaEmisionDocSustento") — obligatorio para Nota de Crédito/Débito, <c>null</c> para el
+    /// resto. Mismo criterio aditivo que <see cref="Reason"/>.
+    /// </summary>
+    ElectronicDocumentModifiedReference? ModifiedDocument = null
+);
+
+/// <summary>Comprobante que la Nota de Crédito/Débito modifica — nunca se recalcula, se copia
+/// tal cual del documento original ya autorizado.</summary>
+public sealed record ElectronicDocumentModifiedReference(
+    /// <summary>Código de tipo de comprobante SRI del documento original (p.ej. "01" = Factura).</summary>
+    string DocTypeCode,
+    /// <summary>Número del documento original, formato "EST-PTO-SECUENCIAL".</summary>
+    string Number,
+    DateTime IssueDate
 );
 
 /// <summary>Establecimiento, punto de emisión, secuencial y ambiente — contexto de emisión SRI.</summary>

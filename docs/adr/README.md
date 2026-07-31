@@ -34,6 +34,7 @@ Documentan el **por qué** de decisiones arquitectónicas. Las reglas ejecutable
 | [ADR-028](./ADR-028-purchase-reception-to-purchase-flow-freeze.md) | Recepción XML de Compras → Compra — Cierre de flujo (XML evidencia fiscal, Snapshot operativo, Item Matching único) | Frozen |
 | [ADR-029](./ADR-029-purchase-approval-workflow-future-evolution.md) | Purchase Approval Workflow — Guía de evolución futura (Direct/Approval/MultiApproval, no implementado) | Accepted — guía, no implementado |
 | [ADR-030](./ADR-030-purchase-line-warehouse-mass-apply.md) | Bodega por línea en Compras — selector general como aplicación masiva, no sincronización | Accepted |
+| [ADR-031](./ADR-031-credit-note-v1-activation.md) | Activación de Nota de Crédito V1.1.0 (extensión controlada de ADR-023) | Accepted |
 
 Seguimiento de migración de ADRs aceptados con implementación pendiente: [`docs/architecture/ARCHITECTURE-BACKLOG.md`](../architecture/ARCHITECTURE-BACKLOG.md) (iniciativas `GOV-xxx`).
 

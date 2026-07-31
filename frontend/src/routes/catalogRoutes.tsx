@@ -29,6 +29,14 @@ const CreditTermsPage = lazyNamedPage(
   () => import("../modules/finance/pages/CreditTermsPage"),
   "CreditTermsPage",
 );
+const AccountsReceivablePage = lazyNamedPage(
+  () => import("../modules/finance/pages/AccountsReceivablePage"),
+  "AccountsReceivablePage",
+);
+const AccountsPayablePage = lazyNamedPage(
+  () => import("../modules/finance/pages/AccountsPayablePage"),
+  "AccountsPayablePage",
+);
 const PaymentTermsPage = lazyNamedPage(
   () => import("../modules/masterData/pages/PaymentTermsPage"),
   "PaymentTermsPage",
@@ -48,6 +56,14 @@ const SalesPage = lazyNamedPage(
 const PaymentMethodsPage = lazyNamedPage(
   () => import("../modules/sales/pages/PaymentMethodsPage"),
   "PaymentMethodsPage",
+);
+const SalesReturnListPage = lazyNamedPage(
+  () => import("../modules/sales/pages/SalesReturnListPage"),
+  "SalesReturnListPage",
+);
+const SalesReturnFormPage = lazyNamedPage(
+  () => import("../modules/sales/pages/SalesReturnFormPage"),
+  "SalesReturnFormPage",
 );
 const CajaPage = lazyNamedPage(
   () => import("../modules/caja/pages/CajaPage"),
@@ -150,6 +166,21 @@ export const catalogRoutes = [
     path="/sales/payment-methods"
     element={<PaymentMethodsPage />}
   />,
+  <Route
+    key="sales-returns"
+    path="/sales/returns"
+    element={<SalesReturnListPage />}
+  />,
+  <Route
+    key="sales-returns-new"
+    path="/sales/returns/new"
+    element={<SalesReturnFormPage />}
+  />,
+  <Route
+    key="sales-returns-detail"
+    path="/sales/returns/:id"
+    element={<SalesReturnFormPage />}
+  />,
 
   // -- Caja (Cash Management) ---------------------------------------------
   <Route key="cash" path="/cash" element={<CajaPage />} />,
@@ -164,6 +195,16 @@ export const catalogRoutes = [
     key="finance-credit-terms"
     path="/finance/credit-terms"
     element={<CreditTermsPage />}
+  />,
+  <Route
+    key="finance-receivables"
+    path="/finance/receivables"
+    element={<AccountsReceivablePage />}
+  />,
+  <Route
+    key="finance-payables"
+    path="/finance/payables"
+    element={<AccountsPayablePage />}
   />,
 
   // -- MasterData / Payment Terms -----------------------------------------

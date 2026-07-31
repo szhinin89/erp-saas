@@ -10,7 +10,7 @@
       ]
     },
     "CreditNote": {
-      "activeVersion": null,
+      "activeVersion": "1.1.0",
       "versions": [
         { "version": "1.0.0", "xsd": "CreditNote/NotaCredito_V1.0.0.xsd", "dependencies": ["Common/xmldsig-core-schema.xsd"] },
         { "version": "1.1.0", "xsd": "CreditNote/NotaCredito_V1.1.0.xsd", "dependencies": ["Common/xmldsig-core-schema.xsd"] }

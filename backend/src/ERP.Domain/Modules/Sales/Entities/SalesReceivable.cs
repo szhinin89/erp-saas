@@ -145,4 +145,71 @@ public sealed class SalesReceivable
         PaidAmount -= amount;
         SetUpdated(updatedBy);
     }
+
+    /// <summary>
+    /// Aplica el crédito de una devolución de venta autorizada (P0-01) reduciendo el monto
+    /// original de la CxC — nunca el monto ya cobrado (<see cref="PaidAmount"/>). Invocado por el
+    /// caso de uso de Application (fase futura) que coordina un <c>SalesReturn.Authorize()</c> ya
+    /// ejecutado. Sin evento propio, mismo criterio que <see cref="RegisterCollection"/>: el hecho
+    /// de negocio "devolución autorizada" ya lo publica <c>SalesReturn.Authorize()</c> — este
+    /// método solo mantiene el saldo de la CxC consistente con lo que esa devolución acreditó.
+    /// </summary>
+    public void ApplyReturnCredit(decimal amount, Guid updatedBy)
+    {
+        if (amount <= 0)
+            throw new ArgumentException(
+                "El monto del crédito debe ser mayor a cero.",
+                nameof(amount)
+            );
+        if (Status == "cancelled")
+            throw new InvalidOperationException(
+                "No se puede aplicar un crédito de devolución sobre una cuenta por cobrar cancelada."
+            );
+        if (amount > BalanceDue)
+            throw new InvalidOperationException(
+                "El monto del crédito excede el saldo pendiente de la cuenta por cobrar."
+            );
+
+        OriginalAmount -= amount;
+        SetUpdated(updatedBy);
+    }
+
+    /// <summary>
+    /// Reconstruye las cuotas conservando siempre el número de cuotas y las fechas de vencimiento
+    /// ya generadas — solo reprorratea <see cref="BalanceDue"/> entre ellas según el peso relativo
+    /// de cada cuota existente. Mismo patrón que <c>PurchasePayable.RebuildInstallments()</c>,
+    /// adaptado porque <c>SalesReceivable</c> no recibe un cronograma externo: la distribución
+    /// previa de <see cref="Installments"/> es la fuente del peso relativo. Invocado tras
+    /// <see cref="ApplyReturnCredit"/> por el caso de uso de Application (fase futura).
+    /// </summary>
+    public void RebuildInstallments()
+    {
+        var previous = _installments.OrderBy(i => i.InstallmentNumber).ToList();
+        _installments.Clear();
+
+        var netAmount = BalanceDue;
+        var previousTotal = previous.Sum(i => i.Amount);
+        if (netAmount <= 0 || previous.Count == 0 || previousTotal <= 0)
+            return;
+
+        decimal allocated = 0;
+        for (var i = 0; i < previous.Count; i++)
+        {
+            var installment = previous[i];
+            var amount =
+                i == previous.Count - 1
+                    ? netAmount - allocated
+                    : Math.Round(netAmount * installment.Amount / previousTotal, TaxAmount);
+            _installments.Add(
+                SalesReceivableInstallment.Create(
+                    Id,
+                    TenantId,
+                    installment.InstallmentNumber,
+                    installment.DueDate,
+                    amount
+                )
+            );
+            allocated += amount;
+        }
+    }
 }

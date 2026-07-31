@@ -7,4 +7,7 @@ public enum CashMovementType
     ManualIncome = 3,
     ManualExpense = 4,
     Withdrawal = 5,
+
+    /// <summary>Reembolso en efectivo de una devolución de venta (P0-01, Fase 6).</summary>
+    SaleRefund = 6,
 }
