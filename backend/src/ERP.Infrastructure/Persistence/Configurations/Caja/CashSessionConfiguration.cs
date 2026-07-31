@@ -158,5 +158,24 @@ public sealed class CashSessionConfiguration : IEntityTypeConfiguration<CashSess
         builder
             .HasIndex(x => new { x.TenantId, x.Status })
             .HasDatabaseName("ix_cash_sessions_tenant_status");
+
+        // Invariante dura: máximo una sesión Open por caja registradora, y máximo una sesión
+        // Open por usuario — mismo patrón que ux_user_sessions_active_per_company
+        // (UserSessionConfiguration). Status.Open = 1 (ver CashSessionStatus). Sin esto, dos
+        // aperturas concurrentes (doble clic, o dos usuarios abriendo la misma caja casi
+        // simultáneamente) pueden ambas pasar la verificación previa en el handler y persistir
+        // dos sesiones Open para la misma caja/usuario — hallazgo P1-01 de la auditoría
+        // ERP_CORE_SUMAK_READINESS_AUDIT.md (2026-07-30).
+        builder
+            .HasIndex(x => new { x.TenantId, x.CashRegisterId })
+            .IsUnique()
+            .HasFilter("status = 1")
+            .HasDatabaseName("ux_cash_sessions_open_per_register");
+
+        builder
+            .HasIndex(x => new { x.TenantId, x.UserId })
+            .IsUnique()
+            .HasFilter("status = 1")
+            .HasDatabaseName("ux_cash_sessions_open_per_user");
     }
 }

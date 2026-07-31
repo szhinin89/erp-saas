@@ -40,7 +40,9 @@ public sealed class NewChildEntityTrackingInterceptorTests : IAsyncLifetime
     private Guid _branchId;
     private Guid _emissionPointId;
     private Guid _cashRegisterId;
+    private Guid _cashRegisterId2;
     private readonly Guid _userId = Guid.NewGuid();
+    private readonly Guid _userId2 = Guid.NewGuid();
 
     public async Task InitializeAsync()
     {
@@ -114,6 +116,20 @@ public sealed class NewChildEntityTrackingInterceptorTests : IAsyncLifetime
             _userId,
             emissionPoint.Id
         );
+        // Segunda caja registradora — únicamente para el escenario "dos agregados a la vez",
+        // que necesita dos CashSession Open simultáneas. Reutilizar la misma caja/usuario para
+        // ambas violaría ahora ux_cash_sessions_open_per_register/ux_cash_sessions_open_per_user
+        // (P1-01, ERP_CORE_SUMAK_READINESS_AUDIT.md) — correctamente, es el mismo invariante que
+        // esos índices existen para proteger.
+        var cashRegister2 = CashRegister.Create(
+            tenant.Id,
+            company.Id,
+            branch.Id,
+            "CAJA-02",
+            "Caja Secundaria",
+            _userId,
+            emissionPoint.Id
+        );
 
         db.Tenants.Add(tenant);
         db.Companies.Add(company);
@@ -121,6 +137,7 @@ public sealed class NewChildEntityTrackingInterceptorTests : IAsyncLifetime
         db.Establishments.Add(establishment);
         db.EmissionPoints.Add(emissionPoint);
         db.CashRegisters.Add(cashRegister);
+        db.CashRegisters.Add(cashRegister2);
         await db.SaveChangesAsync();
 
         _tenantId = tenant.Id;
@@ -128,6 +145,7 @@ public sealed class NewChildEntityTrackingInterceptorTests : IAsyncLifetime
         _branchId = branch.Id;
         _emissionPointId = emissionPoint.Id;
         _cashRegisterId = cashRegister.Id;
+        _cashRegisterId2 = cashRegister2.Id;
     }
 
     public async Task DisposeAsync() => await _postgres.DisposeAsync();
@@ -147,21 +165,24 @@ public sealed class NewChildEntityTrackingInterceptorTests : IAsyncLifetime
         );
     }
 
-    private async Task<Guid> OpenSessionAsync()
+    private async Task<Guid> OpenSessionAsync(Guid? cashRegisterId = null, Guid? userId = null)
     {
+        var registerId = cashRegisterId ?? _cashRegisterId;
+        var openedBy = userId ?? _userId;
+
         await using var db = CreateContext();
         var session = CashSession.Open(
             _tenantId,
             _companyId,
             _branchId,
-            _userId,
-            _cashRegisterId,
-            "CAJA-01",
-            "Caja Principal",
+            openedBy,
+            registerId,
+            registerId == _cashRegisterId2 ? "CAJA-02" : "CAJA-01",
+            registerId == _cashRegisterId2 ? "Caja Secundaria" : "Caja Principal",
             _emissionPointId,
             "001",
             100m,
-            _userId
+            openedBy
         );
         db.CashSessions.Add(session);
         await db.SaveChangesAsync();
@@ -221,7 +242,7 @@ public sealed class NewChildEntityTrackingInterceptorTests : IAsyncLifetime
     public async Task Two_aggregates_with_new_children_in_the_same_SaveChanges_both_succeed()
     {
         var sessionAId = await OpenSessionAsync();
-        var sessionBId = await OpenSessionAsync();
+        var sessionBId = await OpenSessionAsync(_cashRegisterId2, _userId2);
 
         await using var db = CreateContext();
         var sessions = await db

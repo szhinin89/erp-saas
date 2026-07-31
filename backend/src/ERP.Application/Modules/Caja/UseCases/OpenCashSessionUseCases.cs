@@ -1,4 +1,5 @@
 using ERP.Application.Common;
+using ERP.Application.Common.Persistence;
 using ERP.Application.Modules.Caja.DTOs;
 using ERP.Domain.Modules.Caja.Entities;
 using ERP.Domain.Modules.Caja.Interfaces;
@@ -48,6 +49,7 @@ public sealed class OpenCashSessionHandler
     private readonly ICurrentTenant _t;
     private readonly ICurrentBranch _b;
     private readonly ICurrentUser _u;
+    private readonly IDatabaseExceptionTranslator _dbEx;
 
     public OpenCashSessionHandler(
         ICashSessionRepository repo,
@@ -55,7 +57,8 @@ public sealed class OpenCashSessionHandler
         IEmissionPointRepository emissionPointRepo,
         ICurrentTenant t,
         ICurrentBranch b,
-        ICurrentUser u
+        ICurrentUser u,
+        IDatabaseExceptionTranslator dbEx
     )
     {
         _repo = repo;
@@ -64,6 +67,7 @@ public sealed class OpenCashSessionHandler
         _t = t;
         _b = b;
         _u = u;
+        _dbEx = dbEx;
     }
 
     public async Task<Result<CashSessionDto>> Handle(
@@ -126,7 +130,25 @@ public sealed class OpenCashSessionHandler
         );
 
         await _repo.AddAsync(session, ct);
-        await _repo.SaveChangesAsync(ct);
+
+        // Defensa final ante dos aperturas concurrentes para la misma caja/usuario: las
+        // verificaciones previas (GetOpenByUserAsync/GetOpenByCashRegisterAsync) no son
+        // suficientes bajo condición de carrera (dos requests pueden pasar ambas antes de que
+        // cualquiera complete el INSERT). El índice único parcial de BD
+        // (ux_cash_sessions_open_per_register / ux_cash_sessions_open_per_user,
+        // CashSessionConfiguration) decide de forma atómica cuál gana; el "perdedor" recibe un
+        // Result.Conflict controlado en vez de un 500 — mismo patrón que
+        // CreateAuthenticatedSessionHandler/CreateItemCommandHandler vía IDatabaseExceptionTranslator.
+        try
+        {
+            await _repo.SaveChangesAsync(ct);
+        }
+        catch (Exception ex) when (_dbEx.TryGetUniqueViolation(ex, out _))
+        {
+            return Result<CashSessionDto>.Conflict(
+                "Ya existe una sesión abierta para esta caja o para este usuario. Actualice e intente nuevamente."
+            );
+        }
 
         return Result<CashSessionDto>.Success(
             CajaMapper.ToDto(

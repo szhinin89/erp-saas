@@ -1,4 +1,5 @@
 using ERP.Application.Common;
+using ERP.Application.Common.Persistence;
 using ERP.Application.Modules.Caja.UseCases;
 using ERP.Domain.Modules.Caja.Entities;
 using ERP.Domain.Modules.Caja.Interfaces;
@@ -54,6 +55,7 @@ public sealed class OpenCashSessionHandlerTests
         public Mock<ICurrentTenant> Tenant { get; } = new();
         public Mock<ICurrentBranch> Branch { get; } = new();
         public Mock<ICurrentUser> User { get; } = new();
+        public Mock<IDatabaseExceptionTranslator> DbEx { get; } = new();
 
         public Fixture()
         {
@@ -69,6 +71,9 @@ public sealed class OpenCashSessionHandlerTests
                     )
                 )
                 .ReturnsAsync((CashSession?)null);
+
+            DatabaseUniqueViolationInfo? none = null;
+            DbEx.Setup(d => d.TryGetUniqueViolation(It.IsAny<Exception>(), out none)).Returns(false);
         }
 
         public OpenCashSessionHandler BuildHandler(Guid branchId)
@@ -80,7 +85,8 @@ public sealed class OpenCashSessionHandlerTests
                 EmissionPointRepo.Object,
                 Tenant.Object,
                 Branch.Object,
-                User.Object
+                User.Object,
+                DbEx.Object
             );
         }
     }
@@ -315,5 +321,78 @@ public sealed class OpenCashSessionHandlerTests
         await handler.Handle(new OpenCashSessionCommand(register.Id, 50m), CancellationToken.None);
 
         captured!.EmissionPointId.Should().Be(registerEmissionPointId);
+    }
+
+    /// <summary>
+    /// P1-01 (ERP_CORE_SUMAK_READINESS_AUDIT.md): dos aperturas concurrentes para la misma caja o
+    /// el mismo usuario pueden ambas pasar las verificaciones previas (GetOpenByUserAsync/
+    /// GetOpenByCashRegisterAsync) bajo condición de carrera. El índice único parcial de BD
+    /// (ux_cash_sessions_open_per_register / ux_cash_sessions_open_per_user,
+    /// CashSessionConfiguration) es la defensa final: el "perdedor" no debe recibir un 500 crudo,
+    /// sino un Result.Conflict — mismo patrón que CreateAuthenticatedSessionHandler.
+    /// </summary>
+    [Fact]
+    public async Task Si_SaveChangesAsync_falla_por_violacion_de_unicidad_devuelve_Conflict()
+    {
+        var f = new Fixture();
+        var branchId = Guid.NewGuid();
+        var register = CreateRegister(branchId, Guid.NewGuid());
+        var emissionPoint = CreateEmissionPoint(register.EmissionPointId!.Value);
+
+        f.CashRegisterRepo.Setup(r =>
+                r.GetByIdAsync(TenantId, register.Id, It.IsAny<CancellationToken>())
+            )
+            .ReturnsAsync(register);
+        f.EmissionPointRepo.Setup(r =>
+                r.GetByIdAsync(register.EmissionPointId!.Value, TenantId, It.IsAny<CancellationToken>())
+            )
+            .ReturnsAsync(emissionPoint);
+
+        f.Repo.Setup(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new InvalidOperationException("Violación de unicidad simulada."));
+
+        var info = new DatabaseUniqueViolationInfo(
+            "23505",
+            "ux_cash_sessions_open_per_register",
+            "cash_sessions",
+            null
+        );
+        f.DbEx.Setup(d => d.TryGetUniqueViolation(It.IsAny<Exception>(), out info)).Returns(true);
+
+        var handler = f.BuildHandler(branchId);
+        var result = await handler.Handle(
+            new OpenCashSessionCommand(register.Id, 50m),
+            CancellationToken.None
+        );
+
+        result.IsSuccess.Should().BeFalse();
+        result.Code.Should().Be(ApiResponseCodes.Common.Conflict);
+    }
+
+    [Fact]
+    public async Task Si_SaveChangesAsync_falla_por_una_causa_no_relacionada_a_unicidad_la_excepcion_se_propaga()
+    {
+        var f = new Fixture();
+        var branchId = Guid.NewGuid();
+        var register = CreateRegister(branchId, Guid.NewGuid());
+        var emissionPoint = CreateEmissionPoint(register.EmissionPointId!.Value);
+
+        f.CashRegisterRepo.Setup(r =>
+                r.GetByIdAsync(TenantId, register.Id, It.IsAny<CancellationToken>())
+            )
+            .ReturnsAsync(register);
+        f.EmissionPointRepo.Setup(r =>
+                r.GetByIdAsync(register.EmissionPointId!.Value, TenantId, It.IsAny<CancellationToken>())
+            )
+            .ReturnsAsync(emissionPoint);
+
+        f.Repo.Setup(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new InvalidOperationException("Fallo no relacionado a unicidad."));
+
+        var handler = f.BuildHandler(branchId);
+        var act = () =>
+            handler.Handle(new OpenCashSessionCommand(register.Id, 50m), CancellationToken.None);
+
+        await act.Should().ThrowAsync<InvalidOperationException>();
     }
 }
