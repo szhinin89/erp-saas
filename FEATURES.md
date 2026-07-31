@@ -14,6 +14,7 @@
 | Inventario | `/api/inventory/*` (categorías, líneas, tipos, marcas, tarifas) | Company isolation FROZEN |
 | Compras | `Modules/Purchases` | |
 | Ventas | `/api/v1/sales/*`, `/sales` | SalesInvoice + Detail; Draft→Authorize→Cancel; snapshot fiscal IVA/ICE; DocumentSequence SRI; facturación electrónica. FROZEN |
+| Devolución de Ventas (SalesReturn) + Nota de Crédito SRI | `/api/v1/sales/returns*`, `/sales/returns` | Devolución parcial/total sobre factura autorizada; Draft→Update→Cancel→Authorize; control de remanente bajo concurrencia (advisory lock); reversión de inventario; reembolso explícito Efectivo/Crédito CxC/mixto; asiento contable automático (ADR-026); Entity Audit; Nota de Crédito electrónica SRI V1.1.0 + RIDE (ADR-031). **P0-01 — COMPLETED/CLOSED (2026-07-31)**, ver `docs/STATUS.md` |
 | Configuración / SRI | `/api/settings/*`, catálogos SRI | Sucursales, geografía, parámetros |
 | Sucursales | `/api/v1/settings/branches`, `/settings/branches`, `/settings/branches/:id` | CRUD + soft-disable; organizativas, no fiscales. FROZEN |
 | Establecimientos SRI | `/api/v1/settings/establishments`, `/settings/establishments` | Código fiscal SRI (001-999) único por empresa; BranchId opcional; disable bloqueado si tiene PEs activos. FROZEN |
