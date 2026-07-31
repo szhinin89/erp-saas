@@ -32,5 +32,29 @@ public sealed class PurchasePayableRepository : IPurchasePayableRepository
             .Include(x => x.Installments.OrderBy(i => i.InstallmentNumber))
             .FirstOrDefaultAsync(x => x.Id == id, ct);
 
+    public async Task<(IReadOnlyList<PurchasePayable> Items, int Total)> GetPagedAsync(
+        Guid tenantId,
+        string? status,
+        int page,
+        int pageSize,
+        CancellationToken ct = default
+    )
+    {
+        var q = _db.PurchasePayables.ForOperationalScope(tenantId, _company);
+
+        if (!string.IsNullOrWhiteSpace(status))
+            q = q.Where(x => x.Status == status.Trim().ToLowerInvariant());
+
+        var total = await q.CountAsync(ct);
+        var items = await q.OrderByDescending(x => x.CreatedAt)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .Include(x => x.Installments.OrderBy(i => i.InstallmentNumber))
+            .AsNoTracking()
+            .ToListAsync(ct);
+
+        return (items, total);
+    }
+
     public Task SaveChangesAsync(CancellationToken ct = default) => _db.SaveChangesAsync(ct);
 }

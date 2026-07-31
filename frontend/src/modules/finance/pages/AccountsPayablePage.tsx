@@ -1,0 +1,130 @@
+import { useCallback, useEffect, useState } from "react";
+import { ErpPageTemplate } from "../../../templates/ErpPageTemplate";
+import { ZHBtn } from "../../../components/zh/ZHForm";
+import { formatDate } from "../../../lib/formatters/dateFormatters";
+import { formatMoney } from "../../../lib/sanitizers";
+import { payableService, type PurchasePayableDto } from "../api/payableService";
+import { RegisterPaymentModal } from "../components/RegisterPaymentModal";
+
+import "../../../styles/shared/items-catalog.css";
+
+/**
+ * P0-03 (ERP_CORE_SUMAK_READINESS_AUDIT.md) — pantalla mínima de Cuentas por Pagar: consulta,
+ * selección de la deuda y registro de pago contra ella (RegisterPaymentModal). Mismo patrón que
+ * AccountsReceivablePage (CxC).
+ */
+export function AccountsPayablePage() {
+  const [items, setItems] = useState<PurchasePayableDto[]>([]);
+  const [total, setTotal] = useState(0);
+  const [loading, setLoading] = useState(false);
+  const [status, setStatus] = useState("pending");
+  const [selected, setSelected] = useState<PurchasePayableDto | null>(null);
+
+  const fetchItems = useCallback(async () => {
+    setLoading(true);
+    try {
+      const res = await payableService.list(status || undefined, 1, 50);
+      setItems(res.items);
+      setTotal(res.total);
+    } catch {
+      /* la tabla queda vacía; el usuario puede reintentar con el botón Actualizar */
+    }
+    setLoading(false);
+  }, [status]);
+
+  useEffect(() => {
+    fetchItems();
+  }, [fetchItems]);
+
+  return (
+    <ErpPageTemplate
+      title="Cuentas por Pagar"
+      subtitle="Consulta las facturas de compra a crédito pendientes y registra pagos."
+    >
+      <div className="prd-section">
+        <div className="prd-crud-toolbar">
+          <select
+            className="zh-input prd-status-filter"
+            value={status}
+            onChange={(e) => setStatus(e.target.value)}
+          >
+            <option value="pending">Pendientes</option>
+            <option value="paid">Pagadas</option>
+            <option value="cancelled">Anuladas</option>
+            <option value="">Todas</option>
+          </select>
+          <ZHBtn onClick={fetchItems} disabled={loading}>
+            <span className="material-symbols-outlined zh-icon-lg">refresh</span>
+          </ZHBtn>
+        </div>
+
+        {loading ? (
+          <p>Cargando...</p>
+        ) : (
+          <table className="prd-crud-table">
+            <thead>
+              <tr>
+                <th>Proveedor</th>
+                <th>Monto total</th>
+                <th>Pagado</th>
+                <th>Retenido</th>
+                <th>Saldo pendiente</th>
+                <th>Estado</th>
+                <th>Creada</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              {items.map((p) => (
+                <tr key={p.id}>
+                  <td>{p.supplierId}</td>
+                  <td>{formatMoney(p.totalAmount)}</td>
+                  <td>{formatMoney(p.paidAmount)}</td>
+                  <td>{formatMoney(p.totalRetained)}</td>
+                  <td>
+                    <strong>{formatMoney(p.balanceDue)}</strong>
+                  </td>
+                  <td>
+                    <span
+                      className={`prd-status-badge ${p.status === "pending" ? "prd-status-badge--active" : "prd-status-badge--inactive"}`}
+                    >
+                      {p.status}
+                    </span>
+                  </td>
+                  <td>{formatDate(p.createdAt)}</td>
+                  <td className="prd-td-actions">
+                    {p.balanceDue > 0 && p.status !== "cancelled" && (
+                      <ZHBtn onClick={() => setSelected(p)}>
+                        <span className="material-symbols-outlined zh-icon-md">
+                          payments
+                        </span>
+                        Registrar pago
+                      </ZHBtn>
+                    )}
+                  </td>
+                </tr>
+              ))}
+              {items.length === 0 && (
+                <tr className="prd-empty-row">
+                  <td colSpan={8}>Sin cuentas por pagar.</td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        )}
+        {!loading && total > items.length && (
+          <p className="zh-text-muted">
+            Mostrando {items.length} de {total} — refina el filtro de estado para ver más.
+          </p>
+        )}
+      </div>
+
+      <RegisterPaymentModal
+        open={selected !== null}
+        payable={selected}
+        onClose={() => setSelected(null)}
+        onRegistered={fetchItems}
+      />
+    </ErpPageTemplate>
+  );
+}

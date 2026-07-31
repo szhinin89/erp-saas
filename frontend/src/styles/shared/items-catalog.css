@@ -1163,6 +1163,9 @@
 .prd-crud-toolbar input[type="text"] {
   flex: 1;
 }
+.prd-status-filter {
+  max-width: 200px;
+}
 
 /* ── CRUD form actions row ───────────────────────────────── */
 .prd-crud-actions {
