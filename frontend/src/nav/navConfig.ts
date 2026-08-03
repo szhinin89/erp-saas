@@ -241,6 +241,45 @@ export function ensureTenantHomeOverview(
 }
 
 /**
+ * Grupo "Reportes" sintético (frontend-only): las páginas de reporte
+ * (`/reportes/ventas`, `/reportes/stock`, `/reportes/compras`) no tienen
+ * `[AppFeature]` en el backend, así que no llegan por `sessionMenuDto`. Se
+ * inyectan aquí con el mismo patrón que `ensureTenantHomeOverview`, con ids
+ * sintéticos fijos (prefijo `synthetic-`) para no colisionar con ids reales.
+ */
+export function ensureReportsGroup(
+  groups: NavGroup[],
+  t: TranslateFn,
+): NavGroup[] {
+  if (groups.some((g) => g.id === "reports")) return groups;
+
+  const reportsGroup: NavGroup = {
+    id: "reports",
+    label: t("app.nav.group.reports"),
+    icon: "📊",
+    items: [
+      {
+        id: "synthetic-reports-sales",
+        to: "/reportes/ventas",
+        label: t("app.nav.reports.sales"),
+      },
+      {
+        id: "synthetic-reports-stock",
+        to: "/reportes/stock",
+        label: t("app.nav.reports.stock"),
+      },
+      {
+        id: "synthetic-reports-purchases",
+        to: "/reportes/compras",
+        label: t("app.nav.reports.purchases"),
+      },
+    ],
+  };
+
+  return sortNavGroupsForMainBar([...groups, reportsGroup]);
+}
+
+/**
  * Legacy: moves `saas` group items into home group, removes saas pill.
  * Shim ligado a los grupos `saas`/`home` — irrelevante para módulos nuevos.
  */

@@ -42,6 +42,14 @@ const SalesReportPage = lazyNamedPage(
   () => import("../modules/reportes/pages/SalesReportPage"),
   "SalesReportPage",
 );
+const StockReportPage = lazyNamedPage(
+  () => import("../modules/reportes/pages/StockReportPage"),
+  "StockReportPage",
+);
+const PurchasesReportPage = lazyNamedPage(
+  () => import("../modules/reportes/pages/PurchasesReportPage"),
+  "PurchasesReportPage",
+);
 const MasterDataCustomersPage = lazyNamedPage(
   () => import("../modules/masterData/pages/MasterDataCustomersPage"),
   "MasterDataCustomersPage",
@@ -149,6 +157,16 @@ export const mainRoutes = [
     key="sales-report"
     path="/reportes/ventas"
     element={<SalesReportPage />}
+  />,
+  <Route
+    key="stock-report"
+    path="/reportes/stock"
+    element={<StockReportPage />}
+  />,
+  <Route
+    key="purchases-report"
+    path="/reportes/compras"
+    element={<PurchasesReportPage />}
   />,
 
   <Route
