@@ -80,6 +80,25 @@ public sealed class PurchaseInvoiceRepository : IPurchaseInvoiceRepository
         return (items, lineCounts, total);
     }
 
+    public async Task<IReadOnlyList<PurchaseInvoice>> GetForSupplierReportAsync(
+        Guid tenantId,
+        DateOnly dateFrom,
+        DateOnly dateTo,
+        Guid? supplierId,
+        CancellationToken ct = default
+    )
+    {
+        var q = Scoped(tenantId).Where(x => x.IssueDate >= dateFrom && x.IssueDate <= dateTo);
+        if (supplierId.HasValue)
+            q = q.Where(x => x.SupplierId == supplierId.Value);
+
+        return await q.OrderBy(x => x.IssueDate)
+            .ThenBy(x => x.CreatedAt)
+            .Include(x => x.Lines)
+            .AsNoTracking()
+            .ToListAsync(ct);
+    }
+
     public Task AddAsync(PurchaseInvoice invoice, CancellationToken ct = default) =>
         _db.PurchaseInvoices.AddAsync(invoice, ct).AsTask();
 

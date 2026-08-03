@@ -3,6 +3,7 @@ using ERP.API.Extensions;
 using ERP.Application.Modules.Purchases.DTOs;
 using ERP.Application.Modules.Purchases.UseCases;
 using ERP.Application.Modules.Purchases.UseCases.GetPurchaseItemContext;
+using ERP.Application.Modules.Purchases.UseCases.GetPurchasesBySupplierReport;
 using ERP.Domain.Kernel.Permissions;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
@@ -58,6 +59,26 @@ public sealed class PurchasesController : ControllerBase
         this.ToOkOrBadRequest(
             await _mediator.Send(
                 new GetPurchaseListQuery(search, status, pageNumber, pageSize),
+                ct
+            ),
+            "OK"
+        );
+
+    /// <summary>
+    /// Reporte básico de compras por proveedor (piloto Sumak). Sin fechas, usa el día actual
+    /// (UTC). Company-scoped — ver GetPurchasesBySupplierReportQuery.
+    /// </summary>
+    [HttpGet("report")]
+    [Authorize(Policy = $"perm:{PurchasePermissions.View}")]
+    public async Task<IActionResult> GetSupplierReport(
+        [FromQuery] DateOnly? dateFrom = null,
+        [FromQuery] DateOnly? dateTo = null,
+        [FromQuery] Guid? supplierId = null,
+        CancellationToken ct = default
+    ) =>
+        this.ToOkOrBadRequest(
+            await _mediator.Send(
+                new GetPurchasesBySupplierReportQuery(dateFrom, dateTo, supplierId),
                 ct
             ),
             "OK"

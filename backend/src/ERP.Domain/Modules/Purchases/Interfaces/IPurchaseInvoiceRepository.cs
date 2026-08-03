@@ -27,6 +27,21 @@ public interface IPurchaseInvoiceRepository
         int pageSize,
         CancellationToken ct = default
     );
+    /// <summary>
+    /// Compras emitidas en el rango de fechas indicado (inclusive), opcionalmente acotadas a un
+    /// proveedor, con líneas cargadas para que los totales calculados (Subtotal/TotalVat/
+    /// TotalDiscount/GrandTotal) resuelvan correctamente incluso para compras aún no confirmadas.
+    /// Usado por el reporte básico de Compras por proveedor — no pagina, pensado para rangos
+    /// acotados.
+    /// </summary>
+    Task<IReadOnlyList<PurchaseInvoice>> GetForSupplierReportAsync(
+        Guid tenantId,
+        DateOnly dateFrom,
+        DateOnly dateTo,
+        Guid? supplierId,
+        CancellationToken ct = default
+    );
+
     Task AddAsync(PurchaseInvoice invoice, CancellationToken ct = default);
     Task RemoveLinesByInvoiceAsync(
         Guid invoiceId,

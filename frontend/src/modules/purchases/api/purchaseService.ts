@@ -122,6 +122,35 @@ export interface PurchaseListResponse {
   pageSize: number;
 }
 
+export interface PurchasesReportRowDto {
+  id: string;
+  issueDate: string;
+  supplierId: string;
+  supplierName: string;
+  supplierTaxId: string;
+  invoiceNumber: string;
+  status: string;
+  subtotal: number;
+  totalVat: number;
+  totalDiscount: number;
+  grandTotal: number;
+}
+
+export interface PurchasesReportTotalsDto {
+  count: number;
+  subtotal: number;
+  totalVat: number;
+  totalDiscount: number;
+  grandTotal: number;
+}
+
+export interface PurchasesBySupplierReportResponse {
+  items: PurchasesReportRowDto[];
+  totals: PurchasesReportTotalsDto;
+  dateFrom: string;
+  dateTo: string;
+}
+
 // ── Payloads ─────────────────────────────────────────────────────────────
 
 export interface PurchaseLineInput {
@@ -249,6 +278,17 @@ export const purchaseService = {
     apiGet<PurchaseItemContextDto>(
       `${BASE}/items/context?itemId=${itemId}&warehouseId=${warehouseId}${supplierId ? `&supplierId=${supplierId}` : ""}`,
     ),
+
+  /** Reporte básico de compras por proveedor. Sin fechas, el backend usa el día actual. */
+  supplierReport: (dateFrom?: string, dateTo?: string, supplierId?: string) => {
+    const params = new URLSearchParams();
+    if (dateFrom) params.set("dateFrom", dateFrom);
+    if (dateTo) params.set("dateTo", dateTo);
+    if (supplierId) params.set("supplierId", supplierId);
+    const qs = params.toString();
+    const url = qs ? `${BASE}/report?${qs}` : `${BASE}/report`;
+    return apiGet<PurchasesBySupplierReportResponse>(url);
+  },
 };
 
 // ── Withholding DTOs ─────────────────────────────────────────────────────
