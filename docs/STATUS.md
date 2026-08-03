@@ -4,6 +4,35 @@
 
 ---
 
+## Piloto operativo Sumak — uso supervisado (2026-08-03)
+
+**Estado: READY_FOR_PILOT / uso supervisado.** No implica producción estable ni cierre de módulo — es habilitación para operar con supervisión directa mientras se completan las limitaciones aceptadas abajo.
+
+`SUMAK_E2E_01_STATUS: PASSED`. Commits relacionados: `da1a2381` (reporte de stock actual por bodega), `cef699d6` (reporte de compras por proveedor), `c49da503` (reportes mínimos en el menú).
+
+**Capacidades validadas (E2E manual):**
+- Compra manual y creación de Item desde línea de compra
+- IVA compra/venta + precio de venta resuelto correctamente
+- Confirmación de compra
+- Stock actual y Kardex
+- Venta POS con cobro en efectivo y cálculo de vuelto
+- Factura electrónica autorizada
+- Caja actualizada tras la venta
+- Reportes de Ventas, Compras y Stock funcionando
+- Devolución de compra bloqueada correctamente por stock insuficiente
+- 0 errores HTTP 5xx y 0 errores de consola durante la prueba E2E
+
+**Limitaciones aceptadas (no bloquean el piloto, sí producción):**
+- SRI producción no validado (solo ambiente de pruebas)
+- Recepción física sin factura previa: pendiente
+- Reportes sin exportación a Excel/PDF
+- Reportes de ventas/compras alcance company-scoped (no consolidado multi-sucursal)
+- Caja consolidada diaria: pendiente
+- CxP/CxC avanzado: pendiente
+- Limpieza global de lint/architecture/e2e: fuera de este cierre
+
+---
+
 ## Estado actual (2026-06-24)
 
 **Completado**
