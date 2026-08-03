@@ -402,6 +402,19 @@ public sealed class StockRepository : IStockRepository
             .Where(s => s.TenantId == tenantId && s.ProductId == productId)
             .ToListAsync(ct);
 
+    public async Task<IReadOnlyList<CurrentStock>> GetForReportAsync(
+        Guid tenantId,
+        Guid? warehouseId,
+        CancellationToken ct = default
+    )
+    {
+        var q = _db.Set<CurrentStock>().ForOperationalScope(tenantId, _company);
+        if (warehouseId.HasValue)
+            q = q.Where(s => s.WarehouseId == warehouseId.Value);
+
+        return await q.AsNoTracking().ToListAsync(ct);
+    }
+
     public async Task<(decimal TotalQuantity, decimal TotalStockValue)> GetAggregatedStockAsync(
         Guid tenantId,
         Guid productId,

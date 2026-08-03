@@ -5,6 +5,7 @@ using ERP.Application.Modules.Inventory.Stock.UseCases.CreateStockAdjustment;
 using ERP.Application.Modules.Inventory.Stock.UseCases.CreateStockTransfer;
 using ERP.Application.Modules.Inventory.Stock.UseCases.ExecuteStockAdjustment;
 using ERP.Application.Modules.Inventory.Stock.UseCases.GetAggregatedStock;
+using ERP.Application.Modules.Inventory.Stock.UseCases.GetCurrentStockReport;
 using ERP.Application.Modules.Inventory.Stock.UseCases.GetItemWarehouseAvailability;
 using ERP.Application.Modules.Inventory.Stock.UseCases.GetStock;
 using ERP.Application.Modules.Inventory.Stock.UseCases.GetStockMovements;
@@ -43,6 +44,26 @@ public sealed class StockController : ControllerBase
     {
         var result = await _mediator.Send(new GetStockQuery(itemId, warehouseId), ct);
         return this.ToOkOrBadRequest(result, "OK", () => Array.Empty<CurrentStockDto>());
+    }
+
+    /// <summary>
+    /// Reporte básico de stock actual por bodega (piloto Sumak). Sin warehouseId, incluye
+    /// todas las bodegas de la empresa activa.
+    /// </summary>
+    [HttpGet("report")]
+    [Authorize(Policy = $"perm:{InventoryPermissions.StockView}")]
+    [ProducesResponseType(
+        typeof(Contracts.ApiResponse<IReadOnlyList<StockReportRowDto>>),
+        StatusCodes.Status200OK
+    )]
+    public async Task<IActionResult> GetReport(
+        [FromQuery] Guid? warehouseId,
+        [FromQuery] string? search,
+        CancellationToken ct = default
+    )
+    {
+        var result = await _mediator.Send(new GetCurrentStockReportQuery(warehouseId, search), ct);
+        return this.ToOkOrBadRequest(result, "OK", () => Array.Empty<StockReportRowDto>());
     }
 
     /// <summary>Consulta movimientos de stock por item y bodega.</summary>

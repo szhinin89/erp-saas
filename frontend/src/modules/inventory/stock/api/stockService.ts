@@ -51,6 +51,21 @@ export type ItemWarehouseAvailabilityDto = {
   canSell: boolean;
 };
 
+export type StockReportStatus = "SinStock" | "Bajo" | "Disponible";
+
+export type StockReportRowDto = {
+  productId: string;
+  sku: string;
+  productName: string;
+  warehouseId: string;
+  warehouseName: string;
+  quantity: number;
+  availableQuantity: number;
+  averageCost: number;
+  stockValue: number;
+  status: StockReportStatus;
+};
+
 const BASE = "/api/v1/inventory/stock";
 
 export const stockService = {
@@ -80,4 +95,14 @@ export const stockService = {
     apiGet<ItemWarehouseAvailabilityDto[]>(
       `${BASE}/items/${itemId}/warehouse-availability`,
     ),
+
+  /** Reporte básico de stock actual por bodega. */
+  getReport: (warehouseId?: string, search?: string) => {
+    const params = new URLSearchParams();
+    if (warehouseId) params.set("warehouseId", warehouseId);
+    if (search?.trim()) params.set("search", search.trim());
+    const qs = params.toString();
+    const url = qs ? `${BASE}/report?${qs}` : `${BASE}/report`;
+    return apiGet<StockReportRowDto[]>(url);
+  },
 };

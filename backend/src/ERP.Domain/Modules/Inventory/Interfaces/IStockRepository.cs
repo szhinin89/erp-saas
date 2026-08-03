@@ -142,4 +142,16 @@ public interface IStockRepository
         Guid warehouseId,
         CancellationToken cancellationToken = default
     );
+
+    /// <summary>
+    /// Todas las filas de stock actual de la empresa activa (company-scoped), opcionalmente
+    /// acotadas a una bodega. Usado por el reporte básico de Stock actual — a diferencia de
+    /// <see cref="GetStockByWarehouseAsync"/>/<see cref="GetStockByProductAsync"/>, no exige
+    /// itemId ni warehouseId.
+    /// </summary>
+    Task<IReadOnlyList<CurrentStock>> GetForReportAsync(
+        Guid tenantId,
+        Guid? warehouseId,
+        CancellationToken cancellationToken = default
+    );
 }
