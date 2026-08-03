@@ -27,6 +27,19 @@ public interface ISalesInvoiceRepository
         CancellationToken ct = default
     );
 
+    /// <summary>
+    /// Facturas emitidas en el rango de fechas indicado (inclusive), con líneas cargadas para
+    /// que los totales calculados (Subtotal/TotalVat/TotalDiscount/GrandTotal) resuelvan
+    /// correctamente incluso para facturas aún no autorizadas. Usado por el reporte básico de
+    /// Ventas del día — no pagina, pensado para rangos acotados (día/semana).
+    /// </summary>
+    Task<IReadOnlyList<SalesInvoice>> GetForDailyReportAsync(
+        Guid tenantId,
+        DateOnly dateFrom,
+        DateOnly dateTo,
+        CancellationToken ct = default
+    );
+
     Task AddAsync(SalesInvoice invoice, CancellationToken ct = default);
     Task RemoveLinesByInvoiceAsync(
         Guid invoiceId,

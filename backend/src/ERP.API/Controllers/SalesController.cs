@@ -1,6 +1,7 @@
 using ERP.API.Attributes;
 using ERP.API.Extensions;
 using ERP.Application.Modules.Sales.UseCases;
+using ERP.Application.Modules.Sales.UseCases.GetDailySalesReport;
 using ERP.Application.Modules.Sales.UseCases.GetSalesInvoiceDefaults;
 using ERP.Application.Modules.Sales.UseCases.GetSalesItemPricing;
 using ERP.Domain.Kernel.Permissions;
@@ -60,6 +61,22 @@ public sealed class SalesController : ControllerBase
                 new GetSalesInvoiceListQuery(search, status, pageNumber, pageSize),
                 ct
             ),
+            "OK"
+        );
+
+    /// <summary>
+    /// Reporte básico de ventas por rango de fechas (piloto Sumak). Sin fechas, usa el día
+    /// actual (UTC). Company-scoped — ver GetDailySalesReportQuery.
+    /// </summary>
+    [HttpGet("report")]
+    [Authorize(Policy = $"perm:{SalesPermissions.View}")]
+    public async Task<IActionResult> GetDailyReport(
+        [FromQuery] DateOnly? dateFrom = null,
+        [FromQuery] DateOnly? dateTo = null,
+        CancellationToken ct = default
+    ) =>
+        this.ToOkOrBadRequest(
+            await _mediator.Send(new GetDailySalesReportQuery(dateFrom, dateTo), ct),
             "OK"
         );
 

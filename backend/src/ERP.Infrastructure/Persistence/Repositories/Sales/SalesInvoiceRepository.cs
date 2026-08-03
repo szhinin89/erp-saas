@@ -89,6 +89,20 @@ public sealed class SalesInvoiceRepository : ISalesInvoiceRepository
         return rows.ToDictionary(x => x.Id, x => (x.InvoiceNumber, x.CustomerName));
     }
 
+    public async Task<IReadOnlyList<SalesInvoice>> GetForDailyReportAsync(
+        Guid tenantId,
+        DateOnly dateFrom,
+        DateOnly dateTo,
+        CancellationToken ct = default
+    ) =>
+        await Scoped(tenantId)
+            .Where(x => x.IssueDate >= dateFrom && x.IssueDate <= dateTo)
+            .OrderBy(x => x.IssueDate)
+            .ThenBy(x => x.CreatedAt)
+            .Include(x => x.Lines)
+            .AsNoTracking()
+            .ToListAsync(ct);
+
     public Task AddAsync(SalesInvoice invoice, CancellationToken ct = default) =>
         _db.SalesInvoices.AddAsync(invoice, ct).AsTask();
 

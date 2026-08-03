@@ -168,6 +168,35 @@ export interface SalesListResponse {
   pageSize: number;
 }
 
+export interface SalesReportRowDto {
+  id: string;
+  invoiceNumber: string;
+  issueDate: string;
+  customerId: string;
+  customerName: string;
+  subtotal: number;
+  totalVat: number;
+  totalDiscount: number;
+  grandTotal: number;
+  status: string;
+  emissionType: string;
+}
+
+export interface SalesReportTotalsDto {
+  count: number;
+  subtotal: number;
+  totalVat: number;
+  totalDiscount: number;
+  grandTotal: number;
+}
+
+export interface SalesReportResponse {
+  items: SalesReportRowDto[];
+  totals: SalesReportTotalsDto;
+  dateFrom: string;
+  dateTo: string;
+}
+
 // ── Payloads ─────────────────────────────────────────────────────────────
 
 export interface SalesLineInput {
@@ -223,4 +252,14 @@ export const salesService = {
 
   listPaymentMethods: (onlyActive = true) =>
     apiGet<PaymentMethodDto[]>(`${PM_BASE}?onlyActive=${onlyActive}`),
+
+  /** Reporte básico de ventas por rango de fechas. Sin fechas, el backend usa el día actual. */
+  dailyReport: (dateFrom?: string, dateTo?: string) => {
+    const params = new URLSearchParams();
+    if (dateFrom) params.set("dateFrom", dateFrom);
+    if (dateTo) params.set("dateTo", dateTo);
+    const qs = params.toString();
+    const url = qs ? `${BASE}/report?${qs}` : `${BASE}/report`;
+    return apiGet<SalesReportResponse>(url);
+  },
 };
