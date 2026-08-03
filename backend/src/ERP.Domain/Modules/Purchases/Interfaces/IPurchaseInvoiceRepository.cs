@@ -50,6 +50,20 @@ public interface IPurchaseInvoiceRepository
         Guid purchaseId,
         CancellationToken ct = default
     );
+
+    /// <summary>
+    /// P0-02 Fase 3 (Remediación transaccional 02) — descubrimiento mínimo, sin tracking, del
+    /// <c>PurchaseInvoiceId</c> dueño de un <c>IssuedWithholding</c>, usado únicamente para
+    /// determinar qué Lock A adquirir ANTES de la recarga autoritativa. Deliberadamente no rastrea
+    /// la entidad — así la posterior llamada a <see cref="GetWithholdingByIdAsync"/> (ya tracking)
+    /// ejecutada después del lock garantiza una lectura fresca real desde PostgreSQL, nunca la
+    /// misma instancia servida por el identity map de EF Core.
+    /// </summary>
+    Task<Guid?> GetWithholdingPurchaseInvoiceIdAsync(
+        Guid tenantId,
+        Guid withholdingId,
+        CancellationToken ct = default
+    );
     void TrackPayable(PurchasePayable payable);
     void TrackCommunication(PurchaseCommunication communication);
     void TrackWithholding(IssuedWithholding withholding);

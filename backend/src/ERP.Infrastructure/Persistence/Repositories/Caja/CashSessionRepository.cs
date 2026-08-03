@@ -51,6 +51,22 @@ public sealed class CashSessionRepository : ICashSessionRepository
                 ct
             );
 
+    public async Task<CashSession?> GetOpenByCashRegisterForShareAsync(
+        Guid tenantId,
+        Guid cashRegisterId,
+        CancellationToken ct = default
+    )
+    {
+        // "FOR SHARE" no admite ORDER BY/LIMIT en la misma sentencia bloqueada sin ambigüedad de
+        // fila — se bloquean todas las sesiones abiertas de la caja (a lo sumo una por invariante
+        // de negocio) y luego se recarga con el método ya existente.
+        await _db.Database.ExecuteSqlInterpolatedAsync(
+            $"SELECT 1 FROM cash_sessions WHERE tenant_id = {tenantId} AND cash_register_id = {cashRegisterId} AND status = {(int)CashSessionStatus.Open} FOR SHARE",
+            ct
+        );
+        return await GetOpenByCashRegisterAsync(tenantId, cashRegisterId, ct);
+    }
+
     public Task<bool> ExistsByCashRegisterAsync(
         Guid tenantId,
         Guid cashRegisterId,

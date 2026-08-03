@@ -217,6 +217,8 @@ public sealed class RegisterPaymentCommandHandler
 {
     private readonly IPaymentRepository _payments;
     private readonly IPurchasePayableRepository _payables;
+    private readonly IPurchaseReturnRepository _purchaseReturnRepo;
+    private readonly IUnitOfWork _uow;
     private readonly ICurrentTenant _t;
     private readonly ICurrentCompany _c;
     private readonly ICurrentUser _u;
@@ -224,6 +226,8 @@ public sealed class RegisterPaymentCommandHandler
     public RegisterPaymentCommandHandler(
         IPaymentRepository payments,
         IPurchasePayableRepository payables,
+        IPurchaseReturnRepository purchaseReturnRepo,
+        IUnitOfWork uow,
         ICurrentTenant t,
         ICurrentCompany c,
         ICurrentUser u
@@ -231,6 +235,8 @@ public sealed class RegisterPaymentCommandHandler
     {
         _payments = payments;
         _payables = payables;
+        _purchaseReturnRepo = purchaseReturnRepo;
+        _uow = uow;
         _t = t;
         _c = c;
         _u = u;
@@ -261,55 +267,110 @@ public sealed class RegisterPaymentCommandHandler
             return Result<PaymentDto>.ValidationFailure(ex.Message);
         }
 
-        var payablesByDocId =
-            new Dictionary<Guid, Domain.Modules.Purchases.Entities.PurchasePayable>();
-        foreach (var line in cmd.Lines)
+        // Fase 3 (P0-02, Remediación transaccional 02) — transacción explícita + Lock A por cada
+        // PurchaseInvoiceId distinto involucrado, en orden ascendente de Guid como texto (§15.4).
+        // El comando solo conoce PurchasePayable.Id por línea (no PurchaseInvoiceId): antes del
+        // lock solo se descubre el PurchaseInvoiceId dueño de cada PurchasePayable, vía una
+        // proyección SIN TRACKING (GetPurchaseInvoiceIdAsync) — nunca se rastrea la entidad en
+        // este paso, para que la recarga posterior (GetByIdAsync, después del lock) sea garantía
+        // de lectura fresca real y no la misma instancia servida por el identity map de EF Core.
+        await _uow.BeginTransactionAsync(ct);
+        try
         {
-            if (!payablesByDocId.ContainsKey(line.DocumentId))
+            var purchaseInvoiceIdByDocId = new Dictionary<Guid, Guid>();
+            foreach (var line in cmd.Lines)
             {
-                var payable = await _payables.GetByIdAsync(tenantId, line.DocumentId, ct);
-                if (payable is null)
+                if (purchaseInvoiceIdByDocId.ContainsKey(line.DocumentId))
+                    continue;
+
+                var purchaseInvoiceId = await _payables.GetPurchaseInvoiceIdAsync(
+                    tenantId,
+                    line.DocumentId,
+                    ct
+                );
+                if (purchaseInvoiceId is null)
+                {
+                    await _uow.RollbackAsync(ct);
                     return Result<PaymentDto>.NotFound(
                         $"Cuenta por pagar {line.DocumentId} no encontrada."
                     );
+                }
+                purchaseInvoiceIdByDocId[line.DocumentId] = purchaseInvoiceId.Value;
+            }
+
+            foreach (
+                var purchaseInvoiceId in purchaseInvoiceIdByDocId
+                    .Values.Distinct()
+                    .OrderBy(id => id.ToString())
+            )
+            {
+                await _purchaseReturnRepo.AcquireFinancialLockAsync(
+                    tenantId,
+                    purchaseInvoiceId,
+                    ct
+                );
+            }
+
+            // ── Recarga autoritativa — primera vez que se rastrea cada PurchasePayable,
+            // ya dentro del lock: garantizadamente fresca. ──────────────────
+            var payablesByDocId =
+                new Dictionary<Guid, Domain.Modules.Purchases.Entities.PurchasePayable>();
+            foreach (var line in cmd.Lines)
+            {
+                if (payablesByDocId.ContainsKey(line.DocumentId))
+                    continue;
+
+                var payable = await _payables.GetByIdAsync(tenantId, line.DocumentId, ct);
+                if (payable is null)
+                {
+                    await _uow.RollbackAsync(ct);
+                    return Result<PaymentDto>.NotFound(
+                        $"Cuenta por pagar {line.DocumentId} no encontrada."
+                    );
+                }
                 payablesByDocId[line.DocumentId] = payable;
             }
 
-            try
+            foreach (var line in cmd.Lines)
             {
-                payment.AddApplicationLine(line.DocumentId, line.InstallmentId, line.AppliedAmount);
+                try
+                {
+                    payment.AddApplicationLine(
+                        line.DocumentId,
+                        line.InstallmentId,
+                        line.AppliedAmount
+                    );
+                }
+                catch (ArgumentException ex)
+                {
+                    await _uow.RollbackAsync(ct);
+                    return Result<PaymentDto>.ValidationFailure(ex.Message);
+                }
             }
-            catch (ArgumentException ex)
-            {
-                return Result<PaymentDto>.ValidationFailure(ex.Message);
-            }
-        }
 
-        try
-        {
             payment.Apply(_u.UserId);
-        }
-        catch (InvalidOperationException ex)
-        {
-            return Result<PaymentDto>.ValidationFailure(ex.Message);
-        }
 
-        foreach (var line in cmd.Lines)
-        {
-            try
+            foreach (var line in cmd.Lines)
             {
                 payablesByDocId[line.DocumentId].RegisterPayment(line.AppliedAmount, _u.UserId);
             }
-            catch (InvalidOperationException ex)
-            {
-                return Result<PaymentDto>.ValidationFailure(ex.Message);
-            }
+
+            await _payments.AddAsync(payment, ct);
+            await _payments.SaveChangesAsync(ct);
+            await _uow.CommitAsync(ct);
+
+            return Result<PaymentDto>.Success(Map.ToDto(payment));
         }
-
-        await _payments.AddAsync(payment, ct);
-        await _payments.SaveChangesAsync(ct);
-
-        return Result<PaymentDto>.Success(Map.ToDto(payment));
+        catch (InvalidOperationException ex)
+        {
+            await _uow.RollbackAsync(ct);
+            return Result<PaymentDto>.ValidationFailure(ex.Message);
+        }
+        catch
+        {
+            await _uow.RollbackAsync(ct);
+            throw;
+        }
     }
 }
 
@@ -393,6 +454,8 @@ public sealed class ReversePaymentCommandHandler
 {
     private readonly IPaymentRepository _payments;
     private readonly IPurchasePayableRepository _payables;
+    private readonly IPurchaseReturnRepository _purchaseReturnRepo;
+    private readonly IUnitOfWork _uow;
     private readonly ICurrentTenant _t;
     private readonly ICurrentCompany _c;
     private readonly ICurrentUser _u;
@@ -400,6 +463,8 @@ public sealed class ReversePaymentCommandHandler
     public ReversePaymentCommandHandler(
         IPaymentRepository payments,
         IPurchasePayableRepository payables,
+        IPurchaseReturnRepository purchaseReturnRepo,
+        IUnitOfWork uow,
         ICurrentTenant t,
         ICurrentCompany c,
         ICurrentUser u
@@ -407,6 +472,8 @@ public sealed class ReversePaymentCommandHandler
     {
         _payments = payments;
         _payables = payables;
+        _purchaseReturnRepo = purchaseReturnRepo;
+        _uow = uow;
         _t = t;
         _c = c;
         _u = u;
@@ -417,6 +484,8 @@ public sealed class ReversePaymentCommandHandler
         var tenantId = _t.TenantId;
         var companyId = _c.CompanyId;
 
+        // Carga del agregado propio (por su Id, dado directamente por el comando) fuera de
+        // transacción — mismo criterio que la carga inicial en AuthorizeSalesReturnUseCases.
         var payment = await _payments.GetByIdAsync(tenantId, companyId, cmd.PaymentId, ct);
         if (payment is null)
             return Result<PaymentDto>.NotFound("Pago no encontrado.");
@@ -425,39 +494,98 @@ public sealed class ReversePaymentCommandHandler
                 "El pago indicado no es un pago a proveedor."
             );
 
+        // Fase 3 (P0-02, Remediación transaccional 02) — transacción explícita + Lock A por cada
+        // PurchaseInvoiceId distinto involucrado, en orden ascendente de Guid como texto (§15.4).
+        // payment.Lines ya contiene los PurchasePayable.Id afectados (poblados al aplicar el pago,
+        // disponibles sin consulta adicional) — antes del lock solo se descubre el
+        // PurchaseInvoiceId dueño de cada uno, vía una proyección SIN TRACKING
+        // (GetPurchaseInvoiceIdAsync); la recarga autoritativa de cada PurchasePayable ocurre
+        // recién después del lock, garantizando lectura fresca real.
+        await _uow.BeginTransactionAsync(ct);
         try
         {
+            var purchaseInvoiceIdByPayableId = new Dictionary<Guid, Guid>();
+            foreach (var line in payment.Lines)
+            {
+                var payableId = line.PayableId!.Value;
+                if (purchaseInvoiceIdByPayableId.ContainsKey(payableId))
+                    continue;
+
+                var purchaseInvoiceId = await _payables.GetPurchaseInvoiceIdAsync(
+                    tenantId,
+                    payableId,
+                    ct
+                );
+                if (purchaseInvoiceId is null)
+                {
+                    await _uow.RollbackAsync(ct);
+                    return Result<PaymentDto>.NotFound($"Cuenta por pagar {payableId} no encontrada.");
+                }
+                purchaseInvoiceIdByPayableId[payableId] = purchaseInvoiceId.Value;
+            }
+
+            foreach (
+                var purchaseInvoiceId in purchaseInvoiceIdByPayableId
+                    .Values.Distinct()
+                    .OrderBy(id => id.ToString())
+            )
+            {
+                await _purchaseReturnRepo.AcquireFinancialLockAsync(
+                    tenantId,
+                    purchaseInvoiceId,
+                    ct
+                );
+            }
+
+            // ── Recarga autoritativa — primera vez que se rastrea cada PurchasePayable,
+            // ya dentro del lock: garantizadamente fresca. ──────────────────
+            var payablesByDocId =
+                new Dictionary<Guid, Domain.Modules.Purchases.Entities.PurchasePayable>();
+            foreach (var line in payment.Lines)
+            {
+                var payableId = line.PayableId!.Value;
+                if (payablesByDocId.ContainsKey(payableId))
+                    continue;
+
+                var payable = await _payables.GetByIdAsync(tenantId, payableId, ct);
+                if (payable is null)
+                {
+                    await _uow.RollbackAsync(ct);
+                    return Result<PaymentDto>.NotFound($"Cuenta por pagar {payableId} no encontrada.");
+                }
+                payablesByDocId[payableId] = payable;
+            }
+
             payment.Reverse(_u.UserId, cmd.Reason);
+
+            foreach (var line in payment.Lines)
+            {
+                payablesByDocId[line.PayableId!.Value].ReversePayment(
+                    line.AppliedAmount,
+                    _u.UserId
+                );
+            }
+
+            await _payments.SaveChangesAsync(ct);
+            await _uow.CommitAsync(ct);
+
+            return Result<PaymentDto>.Success(Map.ToDto(payment));
         }
         catch (InvalidOperationException ex)
         {
+            await _uow.RollbackAsync(ct);
             return Result<PaymentDto>.ValidationFailure(ex.Message);
         }
         catch (ArgumentException ex)
         {
+            await _uow.RollbackAsync(ct);
             return Result<PaymentDto>.ValidationFailure(ex.Message);
         }
-
-        foreach (var line in payment.Lines)
+        catch
         {
-            var payable = await _payables.GetByIdAsync(tenantId, line.PayableId!.Value, ct);
-            if (payable is null)
-                return Result<PaymentDto>.NotFound(
-                    $"Cuenta por pagar {line.PayableId} no encontrada."
-                );
-
-            try
-            {
-                payable.ReversePayment(line.AppliedAmount, _u.UserId);
-            }
-            catch (InvalidOperationException ex)
-            {
-                return Result<PaymentDto>.ValidationFailure(ex.Message);
-            }
+            await _uow.RollbackAsync(ct);
+            throw;
         }
-
-        await _payments.SaveChangesAsync(ct);
-        return Result<PaymentDto>.Success(Map.ToDto(payment));
     }
 }
 

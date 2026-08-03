@@ -14,7 +14,24 @@ public sealed class PurchasePayable
     public decimal TotalAmount { get; private set; }
     public decimal PaidAmount { get; private set; }
     public decimal TotalRetained { get; private set; }
-    public decimal BalanceDue => TotalAmount - PaidAmount - TotalRetained;
+
+    /// <summary>
+    /// Acumulado técnico de devoluciones de compra aplicadas directamente contra esta CxP
+    /// (P0-02, diseño §7.3, §12.2) — mutado exclusivamente vía <see cref="ApplyReturnCredit"/>/
+    /// <see cref="ReverseReturnCredit"/>. Distinto de <see cref="SupplierCreditAppliedAmount"/>
+    /// (crédito de proveedor externo aplicado) para trazabilidad diferenciada.
+    /// </summary>
+    public decimal ReturnAppliedAmount { get; private set; }
+
+    /// <summary>
+    /// Acumulado técnico de <c>SupplierCredit</c> aplicado contra esta CxP (P0-02, diseño §7.3,
+    /// §12.2) — mutado exclusivamente vía <see cref="ApplySupplierCredit"/>/
+    /// <see cref="ReverseSupplierCredit"/>.
+    /// </summary>
+    public decimal SupplierCreditAppliedAmount { get; private set; }
+
+    public decimal BalanceDue =>
+        TotalAmount - PaidAmount - TotalRetained - ReturnAppliedAmount - SupplierCreditAppliedAmount;
     public string Status { get; private set; } = "pending";
 
     private readonly List<PurchasePayableInstallment> _installments = new();
@@ -113,6 +130,86 @@ public sealed class PurchasePayable
             );
 
         PaidAmount -= amount;
+        SetUpdated(updatedBy);
+    }
+
+    /// <summary>
+    /// Reconoce una devolución de compra autorizada directamente contra esta CxP (P0-02, diseño
+    /// §12.2, invocado por <c>AuthorizePurchaseReturnUseCases</c>, Fase 6). Nunca reutiliza
+    /// <see cref="RegisterPayment"/> — es un componente independiente de <see cref="BalanceDue"/>.
+    /// </summary>
+    /// <returns><c>appliedAmount</c> (lo efectivamente aplicado contra el saldo) y el excedente que Application usará para crear un <c>SupplierCredit</c>.</returns>
+    public (decimal AppliedAmount, decimal Excess) ApplyReturnCredit(
+        decimal recognizedAmount,
+        Guid updatedBy
+    )
+    {
+        if (recognizedAmount <= 0)
+            throw new ArgumentException(
+                "El monto reconocido de la devolución debe ser mayor a cero.",
+                nameof(recognizedAmount)
+            );
+        if (Status == "cancelled")
+            throw new InvalidOperationException(
+                "No se puede aplicar una devolución sobre una cuenta por pagar anulada."
+            );
+
+        var appliedAmount = Math.Min(recognizedAmount, BalanceDue);
+        ReturnAppliedAmount += appliedAmount;
+        SetUpdated(updatedBy);
+
+        return (appliedAmount, recognizedAmount - appliedAmount);
+    }
+
+    /// <summary>Reversa la devolución de compra aplicada (P0-02, diseño §12.2, invocado por <c>CancelPurchaseReturnUseCases</c>, Fase 10).</summary>
+    public void ReverseReturnCredit(decimal appliedAmount, Guid updatedBy)
+    {
+        if (appliedAmount <= 0)
+            throw new ArgumentException(
+                "El monto a reversar debe ser mayor a cero.",
+                nameof(appliedAmount)
+            );
+        if (appliedAmount > ReturnAppliedAmount)
+            throw new InvalidOperationException(
+                "El monto a reversar excede el monto de devolución aplicado registrado en la cuenta por pagar."
+            );
+
+        ReturnAppliedAmount -= appliedAmount;
+        SetUpdated(updatedBy);
+    }
+
+    /// <summary>Aplica un <c>SupplierCredit</c> externo contra esta CxP (P0-02, diseño §12.2, invocado por <c>ApplySupplierCreditUseCases</c>, Fase 7).</summary>
+    public void ApplySupplierCredit(decimal amount, Guid updatedBy)
+    {
+        if (amount <= 0)
+            throw new ArgumentException("El monto a aplicar debe ser mayor a cero.", nameof(amount));
+        if (Status == "cancelled")
+            throw new InvalidOperationException(
+                "No se puede aplicar un crédito de proveedor sobre una cuenta por pagar anulada."
+            );
+        if (amount > BalanceDue)
+            throw new InvalidOperationException(
+                "El monto del crédito de proveedor excede el saldo pendiente de la cuenta por pagar."
+            );
+
+        SupplierCreditAppliedAmount += amount;
+        SetUpdated(updatedBy);
+    }
+
+    /// <summary>Reversa la aplicación de un <c>SupplierCredit</c> externo (P0-02, diseño §12.2, invocado por <c>ReverseSupplierCreditApplicationUseCases</c>, Fase 7).</summary>
+    public void ReverseSupplierCredit(decimal amount, Guid updatedBy)
+    {
+        if (amount <= 0)
+            throw new ArgumentException(
+                "El monto a reversar debe ser mayor a cero.",
+                nameof(amount)
+            );
+        if (amount > SupplierCreditAppliedAmount)
+            throw new InvalidOperationException(
+                "El monto a reversar excede el monto de crédito de proveedor aplicado registrado en la cuenta por pagar."
+            );
+
+        SupplierCreditAppliedAmount -= amount;
         SetUpdated(updatedBy);
     }
 

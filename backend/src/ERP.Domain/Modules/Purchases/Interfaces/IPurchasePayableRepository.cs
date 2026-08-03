@@ -25,5 +25,30 @@ public interface IPurchasePayableRepository
         CancellationToken ct = default
     );
 
+    /// <summary>
+    /// P0-02 Fase 13 — filtro adicional opcional por <c>SupplierId</c>, requerido por el selector
+    /// de CxP destino de <c>ApplySupplierCreditModal</c> (diseño Fase 13, cambio exacto #2:
+    /// "filtrado server-side, nunca client-side sobre una lista completa"). Extensión aditiva —
+    /// sobrecarga nueva, no reemplaza <see cref="GetPagedAsync"/>.
+    /// </summary>
+    Task<(IReadOnlyList<PurchasePayable> Items, int Total)> GetPagedAsync(
+        Guid tenantId,
+        string? status,
+        Guid? supplierId,
+        int page,
+        int pageSize,
+        CancellationToken ct = default
+    );
+
     Task SaveChangesAsync(CancellationToken ct = default);
+
+    /// <summary>
+    /// P0-02 Fase 3 (Remediación transaccional 02) — descubrimiento mínimo, sin tracking, del
+    /// <c>PurchaseInvoice.Id</c> (<c>PurchasePayable.PurchaseId</c>) dueño de un <c>PurchasePayable</c>,
+    /// usado únicamente para determinar qué Lock A adquirir ANTES de la recarga autoritativa.
+    /// Deliberadamente no rastrea la entidad — así la posterior llamada a <see cref="GetByIdAsync"/>
+    /// (ya tracking) ejecutada después del lock garantiza una lectura fresca real desde PostgreSQL,
+    /// nunca la misma instancia servida por el identity map de EF Core.
+    /// </summary>
+    Task<Guid?> GetPurchaseInvoiceIdAsync(Guid tenantId, Guid id, CancellationToken ct = default);
 }

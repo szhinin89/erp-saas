@@ -218,6 +218,8 @@ public sealed class SupplierPaymentPostingIntegrationTests : IAsyncLifetime
         new(
             new PaymentRepository(db),
             new PurchasePayableRepository(db, new FixedCurrentCompany(companyId)),
+            new PurchaseReturnRepository(db, new FixedCurrentCompany(companyId)),
+            new UnitOfWork(db),
             new FixedCurrentTenant(tenantId),
             new FixedCurrentCompany(companyId),
             new FixedCurrentUser(userId)
@@ -232,6 +234,8 @@ public sealed class SupplierPaymentPostingIntegrationTests : IAsyncLifetime
         new(
             new PaymentRepository(db),
             new PurchasePayableRepository(db, new FixedCurrentCompany(companyId)),
+            new PurchaseReturnRepository(db, new FixedCurrentCompany(companyId)),
+            new UnitOfWork(db),
             new FixedCurrentTenant(tenantId),
             new FixedCurrentCompany(companyId),
             new FixedCurrentUser(userId)

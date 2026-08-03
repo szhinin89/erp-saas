@@ -105,29 +105,32 @@ public sealed class ConfirmPurchaseHandlerTests
                     It.IsAny<decimal?>(),
                     It.IsAny<Guid?>(),
                     It.IsAny<Guid?>(),
-                    It.IsAny<CancellationToken>()
+                    It.IsAny<CancellationToken>(),
+                    It.IsAny<Guid?>()
                 )
             )
+            // 17 parámetros excede la aridad máxima soportada por los overloads genéricos
+            // Callback<T1..T16>/Returns<T1..T16> de Moq (P0-02 Fase 6 agregó sourceDocLineId al
+            // final) — se usa la API no genérica basada en IInvocation.Arguments por índice.
             .Returns(
-                (
-                    Guid tid,
-                    Guid cid,
-                    Guid pid,
-                    Guid wid,
-                    StockMovementType mt,
-                    decimal qty,
-                    string uom,
-                    DateOnly eff,
-                    string? reference,
-                    Guid? srcId,
-                    string? srcType,
-                    Guid actor,
-                    decimal? cost,
-                    Guid? lot,
-                    Guid? serial,
-                    CancellationToken _
-                ) =>
-                    Task.FromResult(
+                (IInvocation invocation) =>
+                {
+                    var args = invocation.Arguments;
+                    var tid = (Guid)args[0]!;
+                    var cid = (Guid)args[1]!;
+                    var pid = (Guid)args[2]!;
+                    var wid = (Guid)args[3]!;
+                    var mt = (StockMovementType)args[4]!;
+                    var qty = (decimal)args[5]!;
+                    var uom = (string)args[6]!;
+                    var eff = (DateOnly)args[7]!;
+                    var reference = (string?)args[8];
+                    var srcId = (Guid?)args[9];
+                    var srcType = (string?)args[10];
+                    var actor = (Guid)args[11]!;
+                    var cost = (decimal?)args[12];
+
+                    return Task.FromResult(
                         StockMovement.Create(
                             tid,
                             BranchId,
@@ -148,7 +151,8 @@ public sealed class ConfirmPurchaseHandlerTests
                             companyId: cid,
                             unitCost: cost
                         )
-                    )
+                    );
+                }
             );
         stockRepo
             .Setup(s => s.SaveChangesWithSequenceRetryAsync(It.IsAny<CancellationToken>()))

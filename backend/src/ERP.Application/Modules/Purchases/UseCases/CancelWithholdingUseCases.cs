@@ -32,16 +32,22 @@ public sealed class CancelWithholdingHandler
     : IRequestHandler<CancelWithholdingCommand, Result<IssuedWithholdingDto>>
 {
     private readonly IPurchaseInvoiceRepository _repo;
+    private readonly IPurchaseReturnRepository _purchaseReturnRepo;
+    private readonly IUnitOfWork _uow;
     private readonly ICurrentTenant _t;
     private readonly ICurrentUser _u;
 
     public CancelWithholdingHandler(
         IPurchaseInvoiceRepository repo,
+        IPurchaseReturnRepository purchaseReturnRepo,
+        IUnitOfWork uow,
         ICurrentTenant t,
         ICurrentUser u
     )
     {
         _repo = repo;
+        _purchaseReturnRepo = purchaseReturnRepo;
+        _uow = uow;
         _t = t;
         _u = u;
     }
@@ -54,46 +60,76 @@ public sealed class CancelWithholdingHandler
         var tid = _t.TenantId;
         var uid = _u.UserId;
 
-        // ── Cargar retención ────────────────────────────────────────────
-        var wh = await _repo.GetWithholdingByIdAsync(tid, cmd.WithholdingId, ct);
-        if (wh is null)
-            return Result<IssuedWithholdingDto>.NotFound("Retención no encontrada.");
-
-        // ── Anular en dominio ───────────────────────────────────────────
+        // Fase 3 (P0-02, Remediación transaccional 02) — orden obligatorio: BeginTransaction →
+        // descubrimiento (sin tracking) del PurchaseInvoiceId dueño de la retención, únicamente
+        // para saber qué Lock A adquirir → Lock A → recarga autoritativa. El descubrimiento nunca
+        // rastrea IssuedWithholding — la recarga posterior al lock, vía GetWithholdingByIdAsync
+        // (tracking), garantiza lectura fresca real desde PostgreSQL.
+        await _uow.BeginTransactionAsync(ct);
         try
         {
-            wh.Cancel(cmd.Reason, uid);
-        }
-        catch (InvalidOperationException ex)
-        {
-            return Result<IssuedWithholdingDto>.ValidationFailure(ex.Message);
-        }
-
-        // ── Revertir impacto en cuenta por pagar ────────────────────────
-        var inv = await _repo.GetByIdAsync(tid, wh.PurchaseInvoiceId, ct);
-        if (inv is not null)
-        {
-            var payable = await _repo.GetPayableByPurchaseIdAsync(tid, inv.Id, ct);
-            if (payable is not null)
+            var purchaseInvoiceId = await _repo.GetWithholdingPurchaseInvoiceIdAsync(
+                tid,
+                cmd.WithholdingId,
+                ct
+            );
+            if (purchaseInvoiceId is null)
             {
-                payable.ReverseRetention(inv.PaymentSchedules);
+                await _uow.RollbackAsync(ct);
+                return Result<IssuedWithholdingDto>.NotFound("Retención no encontrada.");
             }
-        }
 
-        // ── Persistir (auditoría de "withholding.cancelled" vía IssuedWithholdingAuditHandler,
-        // disparada por el domain event levantado en wh.Cancel() dentro de este SaveChangesAsync) ──
-        try
-        {
+            await _purchaseReturnRepo.AcquireFinancialLockAsync(tid, purchaseInvoiceId.Value, ct);
+
+            // ── Recarga autoritativa de la retención — primera vez que se rastrea, ya bajo
+            // el lock: garantizadamente fresca. ─────────────────────────────
+            var wh = await _repo.GetWithholdingByIdAsync(tid, cmd.WithholdingId, ct);
+            if (wh is null)
+            {
+                await _uow.RollbackAsync(ct);
+                return Result<IssuedWithholdingDto>.NotFound("Retención no encontrada.");
+            }
+
+            // ── Anular en dominio (guard "Solo se pueden anular retenciones emitidas" se
+            // revalida aquí sobre la instancia recargada) ────────────────────
+            wh.Cancel(cmd.Reason, uid);
+
+            // ── Revertir impacto en cuenta por pagar (recargada bajo lock) ──
+            var inv = await _repo.GetByIdAsync(tid, wh.PurchaseInvoiceId, ct);
+            if (inv is not null)
+            {
+                var payable = await _repo.GetPayableByPurchaseIdAsync(tid, inv.Id, ct);
+                if (payable is not null)
+                {
+                    payable.ReverseRetention(inv.PaymentSchedules);
+                }
+            }
+
+            // ── Persistir (auditoría de "withholding.cancelled" vía IssuedWithholdingAuditHandler,
+            // disparada por el domain event levantado en wh.Cancel() dentro de este SaveChangesAsync) ──
             await _repo.SaveChangesAsync(ct);
+            await _uow.CommitAsync(ct);
+
+            return Result<IssuedWithholdingDto>.Success(MapWh.ToDto(wh));
         }
         catch (Exception ex) when (ex.GetType().Name == "DbUpdateConcurrencyException")
         {
+            await _uow.RollbackAsync(ct);
             return Result<IssuedWithholdingDto>.Conflict(
-                "La retención fue modificada por otro usuario. Recargue e intente nuevamente."
+                "La retención fue modificada por otro usuario. Recargue e intente nuevamente.",
+                ApiResponseCodes.Common.ConcurrencyConflict
             );
         }
-
-        return Result<IssuedWithholdingDto>.Success(MapWh.ToDto(wh));
+        catch (InvalidOperationException ex)
+        {
+            await _uow.RollbackAsync(ct);
+            return Result<IssuedWithholdingDto>.ValidationFailure(ex.Message);
+        }
+        catch
+        {
+            await _uow.RollbackAsync(ct);
+            throw;
+        }
     }
 }
 

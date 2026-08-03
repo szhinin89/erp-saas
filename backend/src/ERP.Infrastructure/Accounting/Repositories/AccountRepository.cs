@@ -25,6 +25,20 @@ public sealed class AccountRepository : IAccountRepository
         CancellationToken ct = default
     ) => Scoped(tenantId, companyId).FirstOrDefaultAsync(x => x.Id == id, ct);
 
+    public async Task<Account?> GetByIdForShareAsync(
+        Guid tenantId,
+        Guid companyId,
+        Guid id,
+        CancellationToken ct = default
+    )
+    {
+        await _context.Database.ExecuteSqlInterpolatedAsync(
+            $"SELECT 1 FROM accounts WHERE id = {id} AND tenant_id = {tenantId} AND company_id = {companyId} FOR SHARE",
+            ct
+        );
+        return await GetByIdAsync(tenantId, companyId, id, ct);
+    }
+
     public async Task<IReadOnlyList<Account>> GetByCompanyAsync(
         Guid tenantId,
         Guid companyId,

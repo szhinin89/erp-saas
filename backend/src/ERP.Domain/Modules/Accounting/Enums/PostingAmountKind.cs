@@ -15,4 +15,13 @@ public enum PostingAmountKind
     Discount,
     Retention,
     GrandTotal,
+
+    // P0-02 Fase 6 (Remediación 01) — agregados al final, sin reasignar los valores subyacentes
+    // ya existentes (persistidos como int, HasConversion<int>() en PostingRuleLineConfiguration)
+    // — aditivo puro, exigido por el asiento compuesto de §19.1bis (PurchaseReturnAuthorized).
+    AppliedToPayable,
+    SupplierCredit,
+    CostVarianceDebit,
+    CostVarianceCredit,
+    HistoricalCost,
 }

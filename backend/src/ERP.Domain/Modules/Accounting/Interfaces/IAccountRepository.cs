@@ -11,6 +11,18 @@ public interface IAccountRepository
         CancellationToken ct = default
     );
 
+    /// <summary>
+    /// P0-02 Fase 8 — bloqueo real <c>SELECT ... FOR SHARE</c> sobre la fila (§6.4quater paso 5),
+    /// adquirido dentro de la transacción ambiente ya abierta por <c>RegisterSupplierCreditRefundUseCases</c>.
+    /// Se libera automáticamente al COMMIT/ROLLBACK — nunca abre transacción propia.
+    /// </summary>
+    Task<Account?> GetByIdForShareAsync(
+        Guid tenantId,
+        Guid companyId,
+        Guid id,
+        CancellationToken ct = default
+    );
+
     Task<IReadOnlyList<Account>> GetByCompanyAsync(
         Guid tenantId,
         Guid companyId,

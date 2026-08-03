@@ -81,6 +81,15 @@ public sealed class PurchaseReceptionDocument
     public decimal VatAmount { get; private set; }
     public decimal TotalAmount { get; private set; }
 
+    /// <summary>
+    /// Moneda del comprobante (P0-02, diseño §18.1bis) — necesaria para validar la moneda de una
+    /// Nota de Crédito recibida contra la de la <c>PurchaseInvoice</c>/<c>PurchaseReturn</c> de
+    /// origen. No existía en la entidad original; se agrega con valor por defecto <c>"USD"</c>
+    /// (mismo criterio que <c>PurchaseInvoice.CurrencyCode</c>) para no romper el parser TXT
+    /// existente, que no la conoce.
+    /// </summary>
+    public string CurrencyCode { get; private set; } = "USD";
+
     public PurchaseReceptionDocumentStatus Status { get; private set; }
 
     /// <summary>Compra del ERP vinculada a este documento — null hasta que una fase futura la cree/enlace.</summary>
@@ -112,7 +121,8 @@ public sealed class PurchaseReceptionDocument
         decimal vatAmount,
         decimal totalAmount,
         Guid createdBy,
-        Guid? purchaseId = null
+        Guid? purchaseId = null,
+        string currencyCode = "USD"
     )
     {
         if (companyId == Guid.Empty)
@@ -136,6 +146,8 @@ public sealed class PurchaseReceptionDocument
                 "El número de comprobante es obligatorio.",
                 nameof(invoiceNumber)
             );
+        if (string.IsNullOrWhiteSpace(currencyCode))
+            throw new ArgumentException("La moneda es obligatoria.", nameof(currencyCode));
 
         var doc = new PurchaseReceptionDocument
         {
@@ -154,6 +166,7 @@ public sealed class PurchaseReceptionDocument
             Subtotal = subtotal,
             VatAmount = vatAmount,
             TotalAmount = totalAmount,
+            CurrencyCode = currencyCode.Trim().ToUpperInvariant(),
             Status = PurchaseReceptionDocumentStatus.Imported,
             PurchaseId = purchaseId,
         };

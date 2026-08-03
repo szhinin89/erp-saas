@@ -29,7 +29,10 @@ import {
   useViewMatchedItem,
 } from "../components/ItemMatchStatusBadge";
 import { CreateItemFromReceptionLineModal } from "../components/CreateItemFromReceptionLineModal";
-import type { PurchaseReceptionLineMatch } from "../api/purchaseReceptionService";
+import type {
+  PurchaseReceptionLineMatch,
+  ItemMatchStatus,
+} from "../api/purchaseReceptionService";
 import type { PurchaseLineFormValues } from "../schemas/purchaseInvoiceSchema";
 import {
   buildPurchaseLinePresentation,
@@ -840,6 +843,19 @@ export function PurchasesPage() {
             )}
             {ctx.editing && ctx.editing.status === "Confirmed" && (
               <button
+                className="pf-btn"
+                onClick={() =>
+                  navigate(`/purchases/returns/new?invoiceId=${ctx.editing!.id}`)
+                }
+              >
+                <span className="material-symbols-outlined pf-btn__icon">
+                  assignment_return
+                </span>
+                Devolución
+              </button>
+            )}
+            {ctx.editing && ctx.editing.status === "Confirmed" && (
+              <button
                 className="pf-btn pf-btn--danger"
                 onClick={() => ctx.setModalCancelReason(true)}
                 disabled={ctx.fieldDisabled}
@@ -1502,7 +1518,11 @@ function ReceptionCreateItemAction({
     suggestions: [],
   };
 
-  const applyLinked = (itemId: string, matchStatus: string, label: string) => {
+  const applyLinked = (
+    itemId: string,
+    matchStatus: ItemMatchStatus,
+    label: string,
+  ) => {
     const current = ctx.getValues("lines");
     ctx.setValue(
       "lines",

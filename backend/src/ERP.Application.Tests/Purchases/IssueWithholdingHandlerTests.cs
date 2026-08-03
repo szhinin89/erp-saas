@@ -108,6 +108,8 @@ public sealed class IssueWithholdingHandlerTests
             Mock.Of<IEmissionPointRepository>(),
             Mock.Of<IEstablishmentRepository>(),
             Mock.Of<IDocumentSequenceRepository>(),
+            Mock.Of<IPurchaseReturnRepository>(),
+            Mock.Of<IUnitOfWork>(),
             companyClock.Object,
             tenant.Object,
             company.Object,

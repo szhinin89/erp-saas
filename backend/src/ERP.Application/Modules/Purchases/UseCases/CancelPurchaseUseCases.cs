@@ -37,6 +37,8 @@ public sealed class CancelPurchaseHandler
 {
     private readonly IPurchaseInvoiceRepository _repo;
     private readonly IStockRepository _stockRepo;
+    private readonly IPurchaseReturnRepository _purchaseReturnRepo;
+    private readonly IUnitOfWork _uow;
     private readonly ILogger<CancelPurchaseHandler> _logger;
     private readonly ICurrentTenant _t;
     private readonly ICurrentCompany _c;
@@ -45,6 +47,8 @@ public sealed class CancelPurchaseHandler
     public CancelPurchaseHandler(
         IPurchaseInvoiceRepository repo,
         IStockRepository stockRepo,
+        IPurchaseReturnRepository purchaseReturnRepo,
+        IUnitOfWork uow,
         ILogger<CancelPurchaseHandler> logger,
         ICurrentTenant t,
         ICurrentCompany c,
@@ -53,6 +57,8 @@ public sealed class CancelPurchaseHandler
     {
         _repo = repo;
         _stockRepo = stockRepo;
+        _purchaseReturnRepo = purchaseReturnRepo;
+        _uow = uow;
         _logger = logger;
         _t = t;
         _c = c;
@@ -68,112 +74,173 @@ public sealed class CancelPurchaseHandler
         var cid = _c.CompanyId;
         var uid = _u.UserId;
 
-        // ── 1. Cargar y validar ─────────────────────────────────────────
-        var inv = await _repo.GetByIdAsync(tid, cmd.PurchaseInvoiceId, ct);
-        if (inv is null)
-            return Result<PurchaseInvoiceDto>.NotFound("Compra no encontrada.");
+        // Fase 3 (P0-02, Remediación transaccional 02) — cmd.PurchaseInvoiceId ya identifica
+        // directamente qué Lock A adquirir: no se requiere ninguna carga de descubrimiento.
+        // PurchaseInvoice se carga por primera vez YA BAJO el lock (recarga autoritativa real,
+        // nunca la misma instancia servida por el identity map de EF Core) — mismo mecanismo que
+        // IssueWithholdingHandler.
+        await _uow.BeginTransactionAsync(ct);
+        try
+        {
+            await _purchaseReturnRepo.AcquireFinancialLockAsync(tid, cmd.PurchaseInvoiceId, ct);
 
-        if (inv.Status == ERP.Domain.Modules.Purchases.Enums.PurchaseStatus.Cancelled)
-            return Result<PurchaseInvoiceDto>.ValidationFailure("Esta compra ya fue anulada.");
+            // ── 1. Cargar y validar (recarga autoritativa bajo lock) ───────
+            var inv = await _repo.GetByIdAsync(tid, cmd.PurchaseInvoiceId, ct);
+            if (inv is null)
+            {
+                await _uow.RollbackAsync(ct);
+                return Result<PurchaseInvoiceDto>.NotFound("Compra no encontrada.");
+            }
 
-        _logger.LogInformation(
-            "Cancelling purchase {InvoiceNumber} ({InvoiceId}) for tenant {TenantId}. Reason: {Reason}",
-            inv.InvoiceNumber,
-            inv.Id,
-            tid,
-            cmd.Reason
-        );
+            if (inv.Status == ERP.Domain.Modules.Purchases.Enums.PurchaseStatus.Cancelled)
+            {
+                await _uow.RollbackAsync(ct);
+                return Result<PurchaseInvoiceDto>.ValidationFailure("Esta compra ya fue anulada.");
+            }
 
-        // ── 1b. Cargar cuenta por pagar y bloquear si hay pagos ─────────
-        var payable = await _repo.GetPayableByPurchaseIdAsync(tid, inv.Id, ct);
-        if (payable is not null && payable.PaidAmount > 0)
-            return Result<PurchaseInvoiceDto>.ValidationFailure(
-                "No se puede anular una compra con pagos aplicados. Reverse los pagos primero."
+            _logger.LogInformation(
+                "Cancelling purchase {InvoiceNumber} ({InvoiceId}) for tenant {TenantId}. Reason: {Reason}",
+                inv.InvoiceNumber,
+                inv.Id,
+                tid,
+                cmd.Reason
             );
 
-        // ── 2. Anular retención (si existe) ─────────────────────────────
-        var wh = await _repo.GetWithholdingByPurchaseIdAsync(tid, inv.Id, ct);
-        if (
-            wh is not null
-            && wh.Status == ERP.Domain.Modules.Purchases.Enums.WithholdingStatus.Issued
-        )
-        {
-            wh.Cancel("Anulación automática por anulación de compra.", uid);
+            // ── 1b. Cargar cuenta por pagar (recargada bajo lock) y bloquear si hay pagos ──
+            var payable = await _repo.GetPayableByPurchaseIdAsync(tid, inv.Id, ct);
+            if (payable is not null && payable.PaidAmount > 0)
+            {
+                await _uow.RollbackAsync(ct);
+                return Result<PurchaseInvoiceDto>.ValidationFailure(
+                    "No se puede anular una compra con pagos aplicados. Reverse los pagos primero."
+                );
+            }
 
+            // ── PI-CANC-01 (§FASE 3 remediación 01, diseño §5.1 caso 1, §21): no se puede
+            // anular una factura que tiene una PurchaseReturn Authorized asociada — debe
+            // cancelarse primero la devolución por su propio flujo auditado.
+            if (
+                await _purchaseReturnRepo.ExistsAuthorizedByPurchaseInvoiceIdAsync(
+                    tid,
+                    cid,
+                    inv.Id,
+                    ct
+                )
+            )
+            {
+                await _uow.RollbackAsync(ct);
+                return Result<PurchaseInvoiceDto>.ValidationFailure(
+                    "No se puede anular una compra que tiene una devolución de compra autorizada asociada. Cancele primero la devolución."
+                );
+            }
+
+            // ── PI-CANC-02 (§FASE 3): no se puede anular con crédito de proveedor
+            // (SupplierCredit vía P0-02) ya aplicado contra esta CxP.
+            if (payable is not null && payable.SupplierCreditAppliedAmount > 0)
+            {
+                await _uow.RollbackAsync(ct);
+                return Result<PurchaseInvoiceDto>.ValidationFailure(
+                    "No se puede anular una compra con crédito de proveedor ya aplicado contra su cuenta por pagar."
+                );
+            }
+
+            // ── 2. Anular retención (si existe) ───────────────────────────
+            var wh = await _repo.GetWithholdingByPurchaseIdAsync(tid, inv.Id, ct);
+            if (
+                wh is not null
+                && wh.Status == ERP.Domain.Modules.Purchases.Enums.WithholdingStatus.Issued
+            )
+            {
+                wh.Cancel("Anulación automática por anulación de compra.", uid);
+
+                if (payable is not null)
+                    payable.ReverseRetention(inv.PaymentSchedules);
+            }
             if (payable is not null)
-                payable.ReverseRetention(inv.PaymentSchedules);
-        }
-        if (payable is not null)
-        {
+            {
+                try
+                {
+                    payable.CancelPayable();
+                }
+                catch (InvalidOperationException ex)
+                {
+                    _logger.LogWarning(
+                        "Cannot cancel payable for invoice {InvoiceId}: {Reason}",
+                        inv.Id,
+                        ex.Message
+                    );
+                    await _uow.RollbackAsync(ct);
+                    return Result<PurchaseInvoiceDto>.ValidationFailure(ex.Message);
+                }
+            }
+
+            // ── 4. Revertir stock ──────────────────────────────────────────
+            foreach (var line in inv.Lines)
+            {
+                if (line.ItemId is null)
+                    continue;
+                var warehouseId = line.WarehouseId ?? inv.GlobalWarehouseId;
+                if (warehouseId is null)
+                    continue;
+
+                await _stockRepo.AppendMovementAsync(
+                    tid,
+                    cid,
+                    line.ItemId.Value,
+                    warehouseId.Value,
+                    StockMovementType.PurchaseReturn,
+                    -line.Quantity,
+                    line.UomCode,
+                    DateOnly.FromDateTime(DateTime.UtcNow),
+                    $"ANULACIÓN: {inv.InvoiceNumber}",
+                    inv.Id,
+                    "PurchaseInvoice",
+                    uid,
+                    line.LandedUnitCost,
+                    cancellationToken: ct
+                );
+            }
+
+            // ── 5. Cambiar estado compra ───────────────────────────────────
             try
             {
-                payable.CancelPayable();
+                inv.Cancel(cmd.Reason, uid);
             }
             catch (InvalidOperationException ex)
             {
                 _logger.LogWarning(
-                    "Cannot cancel payable for invoice {InvoiceId}: {Reason}",
+                    "Cancel rejected for invoice {InvoiceId}: {Reason}",
                     inv.Id,
                     ex.Message
                 );
+                await _uow.RollbackAsync(ct);
                 return Result<PurchaseInvoiceDto>.ValidationFailure(ex.Message);
             }
-        }
 
-        // ── 4. Revertir stock ───────────────────────────────────────────
-        foreach (var line in inv.Lines)
-        {
-            if (line.ItemId is null)
-                continue;
-            var warehouseId = line.WarehouseId ?? inv.GlobalWarehouseId;
-            if (warehouseId is null)
-                continue;
+            // ── 6. Persistir (misma transacción explícita abierta arriba) ──
+            // La auditoría de "purchase.cancelled" (y la de la retención anulada en cascada,
+            // si existía) se registra automáticamente vía *AuditHandler, disparada por los
+            // domain events levantados en inv.Cancel() / wh.Cancel() dentro de este SaveChangesAsync.
+            await _stockRepo.SaveChangesWithSequenceRetryAsync(ct);
+            await _uow.CommitAsync(ct);
 
-            await _stockRepo.AppendMovementAsync(
-                tid,
-                cid,
-                line.ItemId.Value,
-                warehouseId.Value,
-                StockMovementType.PurchaseReturn,
-                -line.Quantity,
-                line.UomCode,
-                DateOnly.FromDateTime(DateTime.UtcNow),
-                $"ANULACIÓN: {inv.InvoiceNumber}",
-                inv.Id,
-                "PurchaseInvoice",
-                uid,
-                line.LandedUnitCost,
-                cancellationToken: ct
+            _logger.LogInformation(
+                "Purchase {InvoiceNumber} ({InvoiceId}) cancelled successfully",
+                inv.InvoiceNumber,
+                inv.Id
             );
-        }
 
-        // ── 5. Cambiar estado compra ────────────────────────────────────
-        try
-        {
-            inv.Cancel(cmd.Reason, uid);
+            return Result<PurchaseInvoiceDto>.Success(PurchaseMapper.ToDto(inv));
         }
         catch (InvalidOperationException ex)
         {
-            _logger.LogWarning(
-                "Cancel rejected for invoice {InvoiceId}: {Reason}",
-                inv.Id,
-                ex.Message
-            );
+            await _uow.RollbackAsync(ct);
             return Result<PurchaseInvoiceDto>.ValidationFailure(ex.Message);
         }
-
-        // ── 6. Persistir (transacción atómica vía EF SaveChanges) ───────
-        // La auditoría de "purchase.cancelled" (y la de la retención anulada en cascada,
-        // si existía) se registra automáticamente vía *AuditHandler, disparada por los
-        // domain events levantados en inv.Cancel() / wh.Cancel() dentro de este SaveChangesAsync.
-        await _stockRepo.SaveChangesWithSequenceRetryAsync(ct);
-
-        _logger.LogInformation(
-            "Purchase {InvoiceNumber} ({InvoiceId}) cancelled successfully",
-            inv.InvoiceNumber,
-            inv.Id
-        );
-
-        return Result<PurchaseInvoiceDto>.Success(PurchaseMapper.ToDto(inv));
+        catch
+        {
+            await _uow.RollbackAsync(ct);
+            throw;
+        }
     }
 }

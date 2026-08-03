@@ -37,7 +37,8 @@ public sealed class StockRepository : IStockRepository
         Guid ActorId,
         decimal? UnitCost,
         Guid? LotId,
-        Guid? SerialId
+        Guid? SerialId,
+        Guid? SourceDocLineId
     );
 
     private readonly List<PendingMovement> _pending = new();
@@ -101,7 +102,8 @@ public sealed class StockRepository : IStockRepository
         decimal? unitCost = null,
         Guid? lotId = null,
         Guid? serialId = null,
-        CancellationToken ct = default
+        CancellationToken ct = default,
+        Guid? sourceDocLineId = null
     )
     {
         var request = new PendingMovement(
@@ -119,7 +121,8 @@ public sealed class StockRepository : IStockRepository
             actorId,
             unitCost,
             lotId,
-            serialId
+            serialId,
+            sourceDocLineId
         );
 
         var movement = await CreateAndTrackMovementAsync(request, ct);
@@ -236,7 +239,8 @@ public sealed class StockRepository : IStockRepository
             r.CompanyId,
             r.UnitCost,
             r.LotId,
-            r.SerialId
+            r.SerialId,
+            r.SourceDocLineId
         );
 
         await _db.Set<StockMovement>().AddAsync(movement, ct);

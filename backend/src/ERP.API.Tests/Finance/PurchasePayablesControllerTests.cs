@@ -145,7 +145,7 @@ public sealed class PurchasePayablesControllerTests
         );
 
         response.Should().BeOfType<OkObjectResult>();
-        sentRequest.Should().Be(new GetPayablesListQuery("pending", 2, 10));
+        sentRequest.Should().Be(new GetPayablesListQuery("pending", null, 2, 10));
     }
 
     [Fact]
@@ -162,6 +162,6 @@ public sealed class PurchasePayablesControllerTests
 
         await controller.GetList(ct: CancellationToken.None);
 
-        sentRequest.Should().Be(new GetPayablesListQuery(null, 1, 25));
+        sentRequest.Should().Be(new GetPayablesListQuery(null, null, 1, 25));
     }
 }

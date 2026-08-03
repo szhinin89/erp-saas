@@ -44,6 +44,7 @@ public sealed record GetPayableByIdQuery(Guid Id)
 
 public sealed record GetPayablesListQuery(
     string? Status = null,
+    Guid? SupplierId = null,
     int PageNumber = 1,
     int PageSize = 25
 ) : IRequest<Result<PayablesListResponse>>, IBranchScopedRequest;
@@ -124,6 +125,7 @@ public sealed class GetPayablesListHandler
         var (items, total) = await _repo.GetPagedAsync(
             _t.TenantId,
             q.Status,
+            q.SupplierId,
             q.PageNumber,
             q.PageSize,
             ct

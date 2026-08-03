@@ -33,12 +33,34 @@ public sealed class PurchasePayableConfiguration : IEntityTypeConfiguration<Purc
             .IsRequired();
         builder.Property(x => x.Status).HasColumnName("status").HasMaxLength(20).IsRequired();
 
+        // ── P0-02 (diseño §7.3, §12.2) ──────────────────────────────────────
+        builder
+            .Property(x => x.ReturnAppliedAmount)
+            .HasColumnName("return_applied_amount")
+            .HasColumnType("numeric(18,2)")
+            .IsRequired();
+        builder
+            .Property(x => x.SupplierCreditAppliedAmount)
+            .HasColumnName("supplier_credit_applied_amount")
+            .HasColumnType("numeric(18,2)")
+            .IsRequired();
+
         builder.Ignore(x => x.BalanceDue);
 
         builder.Property(x => x.CreatedAt).HasColumnName("created_at");
         builder.Property(x => x.UpdatedAt).HasColumnName("updated_at");
         builder.Property(x => x.CreatedBy).HasColumnName("created_by");
         builder.Property(x => x.UpdatedBy).HasColumnName("updated_by");
+
+        // Resuelve hallazgo #1 (§7.3) — segunda defensa de concurrencia, mismo patrón que
+        // SalesInvoiceConfiguration/PurchaseReceptionDocumentConfiguration.
+        builder
+            .Property<uint>("xmin")
+            .HasColumnName("xmin")
+            .HasColumnType("xid")
+            .IsRequired()
+            .ValueGeneratedOnAddOrUpdate()
+            .IsConcurrencyToken();
 
         builder
             .HasMany(x => x.Installments)

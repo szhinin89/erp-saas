@@ -53,6 +53,10 @@ internal sealed class JournalFactory
     /// FactType. <see cref="PostingAmountKind.Retention"/> resuelve a 0m: PostingFact todavía no
     /// transporta ese monto (fuera de alcance de esta fase, "No modificar PostingFact") — una
     /// PostingRuleLine que lo referencie queda sin efecto hasta que PostingFact se enriquezca.
+    ///
+    /// P0-02 Fase 6 (Remediación 01) — 5 casos nuevos, cada uno resuelve el campo nullable nuevo
+    /// correspondiente de <see cref="PostingFact"/> (§19.1bis, PurchaseReturnAuthorized); ninguno
+    /// de los 6 casos preexistentes cambió de comportamiento.
     /// </summary>
     private static decimal ResolveAmount(PostingFact fact, PostingAmountKind kind) =>
         kind switch
@@ -63,6 +67,11 @@ internal sealed class JournalFactory
             PostingAmountKind.Discount => fact.TotalDiscount,
             PostingAmountKind.GrandTotal => fact.GrandTotal,
             PostingAmountKind.Retention => 0m,
+            PostingAmountKind.AppliedToPayable => fact.AppliedToPayableAmount ?? 0m,
+            PostingAmountKind.SupplierCredit => fact.SupplierCreditAmount ?? 0m,
+            PostingAmountKind.CostVarianceDebit => fact.CostVarianceDebitAmount ?? 0m,
+            PostingAmountKind.CostVarianceCredit => fact.CostVarianceCreditAmount ?? 0m,
+            PostingAmountKind.HistoricalCost => fact.HistoricalCostTotal ?? 0m,
             _ => 0m,
         };
 }

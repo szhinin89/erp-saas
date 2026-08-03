@@ -633,6 +633,27 @@ public static class DependencyInjection
             ERP.Domain.Modules.Purchases.PurchaseReception.Interfaces.IPurchaseReceptionDocumentRepository,
             ERP.Infrastructure.Persistence.Repositories.Purchases.PurchaseReceptionDocumentRepository
         >();
+        // P0-02: PurchaseReturn + SupplierCredit (Fase 2 — persistencia, sin casos de uso todavía).
+        services.AddScoped<
+            ERP.Domain.Modules.Purchases.Interfaces.IPurchaseReturnRepository,
+            ERP.Infrastructure.Persistence.Repositories.Purchases.PurchaseReturnRepository
+        >();
+        services.AddScoped<
+            ERP.Domain.Modules.Purchases.Interfaces.ISupplierCreditRepository,
+            ERP.Infrastructure.Persistence.Repositories.Purchases.SupplierCreditRepository
+        >();
+        services.AddScoped<
+            ERP.Domain.Modules.Purchases.Interfaces.IPurchaseReturnSequenceRepository,
+            ERP.Infrastructure.Persistence.Repositories.Purchases.PurchaseReturnSequenceRepository
+        >();
+        services.AddScoped<
+            ERP.Domain.Modules.Finance.Interfaces.ICompanyFinancialDestinationRepository,
+            ERP.Infrastructure.Persistence.Repositories.Finance.CompanyFinancialDestinationRepository
+        >();
+        services.AddScoped<
+            ERP.Domain.Modules.Finance.Interfaces.ISupplierCreditRefundTransactionRepository,
+            ERP.Infrastructure.Persistence.Repositories.Finance.SupplierCreditRefundTransactionRepository
+        >();
         // Fase 3: reutiliza ISriAuthorizationClient (ya registrado para ElectronicDocuments) — nunca un segundo cliente SOAP.
         services.AddScoped<
             ERP.Domain.Modules.Purchases.PurchaseReception.Interfaces.ISriReceptionXmlProvider,

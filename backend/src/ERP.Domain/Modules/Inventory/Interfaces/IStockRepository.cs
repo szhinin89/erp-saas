@@ -45,7 +45,13 @@ public interface IStockRepository
         decimal? unitCost = null,
         Guid? lotId = null,
         Guid? serialId = null,
-        CancellationToken cancellationToken = default
+        CancellationToken cancellationToken = default,
+        // P0-02 Fase 6 — trazabilidad línea-a-línea (diseño §10.3/§14.1): referencia genérica a la
+        // línea del documento origen (p. ej. PurchaseReturnDetail.Id). Agregado DESPUÉS de
+        // cancellationToken (no antes) — muchos call sites existentes pasan cancellationToken
+        // posicionalmente como último argumento; insertarlo antes rompería esa posición. Aditivo
+        // puro, ningún call site existente lo requiere.
+        Guid? sourceDocLineId = null
     );
 
     /// <summary>

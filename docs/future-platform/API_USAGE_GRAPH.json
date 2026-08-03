@@ -1,13 +1,14 @@
 {
-  "generatedAt": "2026-07-28T00:42:45.147Z",
+  "generatedAt": "2026-08-03T17:14:21.626Z",
   "summary": {
-    "total": 81,
-    "allowed": 81,
+    "total": 95,
+    "allowed": 95,
     "legacyViolations": 0,
     "allowlistViolations": 0
   },
   "allowedPrefixes": [
     "/api/platform",
+    "/api/accounting",
     "/api/auth",
     "/api/master",
     "/api/sales",
@@ -42,6 +43,8 @@
     "/api/kits",
     "/api/onboarding",
     "/api/pricing",
+    "/api/purchase-payables",
+    "/api/sales-receivables",
     "/api/setup",
     "/api/supplier-catalog",
     "/api/session"
@@ -50,6 +53,14 @@
     "/api/superadmin"
   ],
   "endpoints": [
+    {
+      "endpoint": "/api/v1/accounting/accounts",
+      "files": [
+        "frontend/src/modules/finance/pages/FinancialDestinationsPage.tsx"
+      ],
+      "legacy": false,
+      "allowed": true
+    },
     {
       "endpoint": "/api/v1/admin/iam/memberships",
       "files": [
@@ -161,6 +172,14 @@
       "allowed": true
     },
     {
+      "endpoint": "/api/v1/cash-registers/all?activeOnly=true",
+      "files": [
+        "frontend/src/modules/finance/pages/FinancialDestinationsPage.tsx"
+      ],
+      "legacy": false,
+      "allowed": true
+    },
+    {
       "endpoint": "/api/v1/cash-sessions",
       "files": [
         "frontend/src/modules/caja/api/cajaService.ts"
@@ -179,7 +198,7 @@
     {
       "endpoint": "/api/v1/catalog/barcode-types",
       "files": [
-        "frontend/src/components/items/CreateItemModal/CreateItemForm.tsx",
+        "frontend/src/components/items/ItemEditorModal/ItemEditorForm.tsx",
         "frontend/src/modules/items/components/ItemForm/ItemFormTabs.tsx",
         "frontend/src/modules/items/detail/components/VariantsSection.tsx"
       ],
@@ -189,7 +208,7 @@
     {
       "endpoint": "/api/v1/catalog/brands",
       "files": [
-        "frontend/src/components/items/CreateItemModal/CreateItemForm.tsx",
+        "frontend/src/components/items/ItemEditorModal/ItemEditorForm.tsx",
         "frontend/src/modules/items/components/ItemForm/ItemFormTabs.tsx"
       ],
       "legacy": false,
@@ -198,7 +217,7 @@
     {
       "endpoint": "/api/v1/catalog/category-nodes",
       "files": [
-        "frontend/src/components/items/CreateItemModal/CreateItemForm.tsx",
+        "frontend/src/components/items/ItemEditorModal/ItemEditorForm.tsx",
         "frontend/src/modules/items/catalog/api/categoryNodeService.ts",
         "frontend/src/modules/items/components/ItemForm/ItemFormTabs.tsx"
       ],
@@ -214,9 +233,9 @@
       "allowed": true
     },
     {
-      "endpoint": "/api/v1/catalog/person-types",
+      "endpoint": "/api/v1/catalog/legal-entity-types",
       "files": [
-        "frontend/src/modules/masterData/api/usePersonTypes.ts"
+        "frontend/src/modules/masterData/api/useLegalEntityTypes.ts"
       ],
       "legacy": false,
       "allowed": true
@@ -248,7 +267,7 @@
     {
       "endpoint": "/api/v1/catalog/sri-uom",
       "files": [
-        "frontend/src/components/items/CreateItemModal/CreateItemForm.tsx",
+        "frontend/src/components/items/ItemEditorModal/ItemEditorForm.tsx",
         "frontend/src/modules/items/components/ItemForm/ItemFormTabs.tsx"
       ],
       "legacy": false,
@@ -448,9 +467,33 @@
       "allowed": true
     },
     {
+      "endpoint": "/api/v1/finance",
+      "files": [
+        "frontend/src/modules/finance/api/paymentService.ts"
+      ],
+      "legacy": false,
+      "allowed": true
+    },
+    {
       "endpoint": "/api/v1/finance/credit-terms",
       "files": [
         "frontend/src/modules/finance/api/creditTermService.ts"
+      ],
+      "legacy": false,
+      "allowed": true
+    },
+    {
+      "endpoint": "/api/v1/finance/financial-destinations",
+      "files": [
+        "frontend/src/modules/finance/api/financialDestinationService.ts"
+      ],
+      "legacy": false,
+      "allowed": true
+    },
+    {
+      "endpoint": "/api/v1/finance/supplier-credits",
+      "files": [
+        "frontend/src/modules/finance/api/supplierCreditService.ts"
       ],
       "legacy": false,
       "allowed": true
@@ -563,6 +606,14 @@
       "allowed": true
     },
     {
+      "endpoint": "/api/v1/purchase-payables",
+      "files": [
+        "frontend/src/modules/finance/api/payableService.ts"
+      ],
+      "legacy": false,
+      "allowed": true
+    },
+    {
       "endpoint": "/api/v1/purchases",
       "files": [
         "frontend/src/modules/purchases/api/purchaseService.ts"
@@ -574,6 +625,14 @@
       "endpoint": "/api/v1/purchases/reception",
       "files": [
         "frontend/src/modules/purchases/api/purchaseReceptionService.ts"
+      ],
+      "legacy": false,
+      "allowed": true
+    },
+    {
+      "endpoint": "/api/v1/purchases/returns",
+      "files": [
+        "frontend/src/modules/purchases/api/purchaseReturnService.ts"
       ],
       "legacy": false,
       "allowed": true
@@ -610,6 +669,63 @@
         "frontend/src/modules/sales/api/salesDefaultsService.ts",
         "frontend/src/modules/sales/api/salesItemPricingService.ts",
         "frontend/src/modules/sales/api/salesService.ts"
+      ],
+      "legacy": false,
+      "allowed": true
+    },
+    {
+      "endpoint": "/api/v1/sales-receivables",
+      "files": [
+        "frontend/src/modules/finance/api/receivableService.ts"
+      ],
+      "legacy": false,
+      "allowed": true
+    },
+    {
+      "endpoint": "/api/v1/sales/invoices/inv-1/returnable-lines",
+      "files": [
+        "frontend/src/modules/sales/api/salesReturnService.test.ts"
+      ],
+      "legacy": false,
+      "allowed": true
+    },
+    {
+      "endpoint": "/api/v1/sales/returns",
+      "files": [
+        "frontend/src/modules/sales/api/salesReturnService.test.ts",
+        "frontend/src/modules/sales/api/salesReturnService.ts"
+      ],
+      "legacy": false,
+      "allowed": true
+    },
+    {
+      "endpoint": "/api/v1/sales/returns?pageNumber=1&pageSize=25",
+      "files": [
+        "frontend/src/modules/sales/api/salesReturnService.test.ts"
+      ],
+      "legacy": false,
+      "allowed": true
+    },
+    {
+      "endpoint": "/api/v1/sales/returns?search=DEV-001&status=Draft&pageNumber=2&pageSize=10",
+      "files": [
+        "frontend/src/modules/sales/api/salesReturnService.test.ts"
+      ],
+      "legacy": false,
+      "allowed": true
+    },
+    {
+      "endpoint": "/api/v1/sales/returns/r1",
+      "files": [
+        "frontend/src/modules/sales/api/salesReturnService.test.ts"
+      ],
+      "legacy": false,
+      "allowed": true
+    },
+    {
+      "endpoint": "/api/v1/sales/returns/r1/authorize",
+      "files": [
+        "frontend/src/modules/sales/api/salesReturnService.test.ts"
       ],
       "legacy": false,
       "allowed": true

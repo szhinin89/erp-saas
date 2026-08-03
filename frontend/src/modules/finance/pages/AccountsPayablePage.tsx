@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { ErpPageTemplate } from "../../../templates/ErpPageTemplate";
 import { ZHBtn } from "../../../components/zh/ZHForm";
 import { formatDate } from "../../../lib/formatters/dateFormatters";
@@ -14,6 +15,7 @@ import "../../../styles/shared/items-catalog.css";
  * AccountsReceivablePage (CxC).
  */
 export function AccountsPayablePage() {
+  const navigate = useNavigate();
   const [items, setItems] = useState<PurchasePayableDto[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(false);
@@ -23,7 +25,7 @@ export function AccountsPayablePage() {
   const fetchItems = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await payableService.list(status || undefined, 1, 50);
+      const res = await payableService.list(status || undefined, undefined, 1, 50);
       setItems(res.items);
       setTotal(res.total);
     } catch {
@@ -40,6 +42,15 @@ export function AccountsPayablePage() {
     <ErpPageTemplate
       title="Cuentas por Pagar"
       subtitle="Consulta las facturas de compra a crédito pendientes y registra pagos."
+      action={
+        <ZHBtn
+          type="button"
+          variant="ghost"
+          onClick={() => navigate("/finance/supplier-credits")}
+        >
+          Créditos de proveedor
+        </ZHBtn>
+      }
     >
       <div className="prd-section">
         <div className="prd-crud-toolbar">

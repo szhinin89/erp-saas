@@ -289,6 +289,21 @@ public class ErpDbContext : DbContext
         Set<PurchaseReceptionDocument>();
     public DbSet<PurchaseReceptionLine> PurchaseReceptionLines => Set<PurchaseReceptionLine>();
 
+    // ── P0-02: PurchaseReturn + SupplierCredit ──────────────────────────────
+    public DbSet<PurchaseReturn> PurchaseReturns => Set<PurchaseReturn>();
+    public DbSet<PurchaseReturnDetail> PurchaseReturnDetails => Set<PurchaseReturnDetail>();
+    public DbSet<PurchaseReturnAudit> PurchaseReturnAudits => Set<PurchaseReturnAudit>();
+    public DbSet<PurchaseReturnSequence> PurchaseReturnSequences => Set<PurchaseReturnSequence>();
+    public DbSet<SupplierCredit> SupplierCredits => Set<SupplierCredit>();
+    public DbSet<SupplierCreditMovement> SupplierCreditMovements => Set<SupplierCreditMovement>();
+    public DbSet<SupplierCreditAudit> SupplierCreditAudits => Set<SupplierCreditAudit>();
+    public DbSet<CompanyFinancialDestination> CompanyFinancialDestinations =>
+        Set<CompanyFinancialDestination>();
+    public DbSet<CompanyFinancialDestinationAudit> CompanyFinancialDestinationAudits =>
+        Set<CompanyFinancialDestinationAudit>();
+    public DbSet<SupplierCreditRefundTransaction> SupplierCreditRefundTransactions =>
+        Set<SupplierCreditRefundTransaction>();
+
     // ── Sales BC ──────────────────────────────────────────────────────────
     public DbSet<SalesInvoice> SalesInvoices => Set<SalesInvoice>();
     public DbSet<SalesInvoiceDetail> SalesInvoiceDetails => Set<SalesInvoiceDetail>();

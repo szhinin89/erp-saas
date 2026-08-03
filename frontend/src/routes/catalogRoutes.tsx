@@ -37,6 +37,18 @@ const AccountsPayablePage = lazyNamedPage(
   () => import("../modules/finance/pages/AccountsPayablePage"),
   "AccountsPayablePage",
 );
+const SupplierCreditListPage = lazyNamedPage(
+  () => import("../modules/finance/pages/SupplierCreditListPage"),
+  "SupplierCreditListPage",
+);
+const SupplierCreditDetailPage = lazyNamedPage(
+  () => import("../modules/finance/pages/SupplierCreditDetailPage"),
+  "SupplierCreditDetailPage",
+);
+const FinancialDestinationsPage = lazyNamedPage(
+  () => import("../modules/finance/pages/FinancialDestinationsPage"),
+  "FinancialDestinationsPage",
+);
 const PaymentTermsPage = lazyNamedPage(
   () => import("../modules/masterData/pages/PaymentTermsPage"),
   "PaymentTermsPage",
@@ -64,6 +76,18 @@ const SalesReturnListPage = lazyNamedPage(
 const SalesReturnFormPage = lazyNamedPage(
   () => import("../modules/sales/pages/SalesReturnFormPage"),
   "SalesReturnFormPage",
+);
+const PurchaseReturnListPage = lazyNamedPage(
+  () => import("../modules/purchases/pages/PurchaseReturnListPage"),
+  "PurchaseReturnListPage",
+);
+const PurchaseReturnFormPage = lazyNamedPage(
+  () => import("../modules/purchases/pages/PurchaseReturnFormPage"),
+  "PurchaseReturnFormPage",
+);
+const PurchaseReturnDetailPage = lazyNamedPage(
+  () => import("../modules/purchases/pages/PurchaseReturnDetailPage"),
+  "PurchaseReturnDetailPage",
 );
 const CajaPage = lazyNamedPage(
   () => import("../modules/caja/pages/CajaPage"),
@@ -158,6 +182,21 @@ export const catalogRoutes = [
     path="/purchases/reception"
     element={<PurchaseReceptionPage />}
   />,
+  <Route
+    key="purchase-returns"
+    path="/purchases/returns"
+    element={<PurchaseReturnListPage />}
+  />,
+  <Route
+    key="purchase-returns-new"
+    path="/purchases/returns/new"
+    element={<PurchaseReturnFormPage />}
+  />,
+  <Route
+    key="purchase-returns-detail"
+    path="/purchases/returns/:id"
+    element={<PurchaseReturnDetailPage />}
+  />,
 
   // -- Sales ---------------------------------------------------------------
   <Route key="sales" path="/sales" element={<SalesPage />} />,
@@ -205,6 +244,21 @@ export const catalogRoutes = [
     key="finance-payables"
     path="/finance/payables"
     element={<AccountsPayablePage />}
+  />,
+  <Route
+    key="finance-supplier-credits"
+    path="/finance/supplier-credits"
+    element={<SupplierCreditListPage />}
+  />,
+  <Route
+    key="finance-supplier-credits-detail"
+    path="/finance/supplier-credits/:id"
+    element={<SupplierCreditDetailPage />}
+  />,
+  <Route
+    key="settings-financial-destinations"
+    path="/settings/financial-destinations"
+    element={<FinancialDestinationsPage />}
   />,
 
   // -- MasterData / Payment Terms -----------------------------------------

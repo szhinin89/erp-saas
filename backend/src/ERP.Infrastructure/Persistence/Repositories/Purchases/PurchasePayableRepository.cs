@@ -32,9 +32,18 @@ public sealed class PurchasePayableRepository : IPurchasePayableRepository
             .Include(x => x.Installments.OrderBy(i => i.InstallmentNumber))
             .FirstOrDefaultAsync(x => x.Id == id, ct);
 
+    public Task<(IReadOnlyList<PurchasePayable> Items, int Total)> GetPagedAsync(
+        Guid tenantId,
+        string? status,
+        int page,
+        int pageSize,
+        CancellationToken ct = default
+    ) => GetPagedAsync(tenantId, status, null, page, pageSize, ct);
+
     public async Task<(IReadOnlyList<PurchasePayable> Items, int Total)> GetPagedAsync(
         Guid tenantId,
         string? status,
+        Guid? supplierId,
         int page,
         int pageSize,
         CancellationToken ct = default
@@ -44,6 +53,8 @@ public sealed class PurchasePayableRepository : IPurchasePayableRepository
 
         if (!string.IsNullOrWhiteSpace(status))
             q = q.Where(x => x.Status == status.Trim().ToLowerInvariant());
+        if (supplierId is not null)
+            q = q.Where(x => x.SupplierId == supplierId.Value);
 
         var total = await q.CountAsync(ct);
         var items = await q.OrderByDescending(x => x.CreatedAt)
@@ -57,4 +68,17 @@ public sealed class PurchasePayableRepository : IPurchasePayableRepository
     }
 
     public Task SaveChangesAsync(CancellationToken ct = default) => _db.SaveChangesAsync(ct);
+
+    /// <inheritdoc/>
+    public Task<Guid?> GetPurchaseInvoiceIdAsync(
+        Guid tenantId,
+        Guid id,
+        CancellationToken ct = default
+    ) =>
+        _db
+            .PurchasePayables.ForOperationalScope(tenantId, _company)
+            .AsNoTracking()
+            .Where(x => x.Id == id)
+            .Select(x => (Guid?)x.PurchaseId)
+            .FirstOrDefaultAsync(ct);
 }

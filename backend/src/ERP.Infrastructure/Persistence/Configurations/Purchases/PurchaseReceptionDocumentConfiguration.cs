@@ -101,6 +101,15 @@ public sealed class PurchaseReceptionDocumentConfiguration
 
         builder.Property(x => x.Status).HasColumnName("status").HasConversion<int>().IsRequired();
 
+        // P0-02 (diseño §18.1bis) — necesaria para validar la moneda de una NC recibida contra la
+        // de la PurchaseInvoice/PurchaseReturn de origen.
+        builder
+            .Property(x => x.CurrencyCode)
+            .HasColumnName("currency_code")
+            .HasMaxLength(3)
+            .HasDefaultValue("USD")
+            .IsRequired();
+
         builder.Property(x => x.PurchaseId).HasColumnName("purchase_id");
         builder.Property(x => x.XmlContent).HasColumnName("xml_content").HasColumnType("text");
 

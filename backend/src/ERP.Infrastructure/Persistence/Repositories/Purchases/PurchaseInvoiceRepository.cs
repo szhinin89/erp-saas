@@ -151,6 +151,18 @@ public sealed class PurchaseInvoiceRepository : IPurchaseInvoiceRepository
                 ct
             );
 
+    /// <inheritdoc/>
+    public Task<Guid?> GetWithholdingPurchaseInvoiceIdAsync(
+        Guid tenantId,
+        Guid withholdingId,
+        CancellationToken ct = default
+    ) =>
+        _db
+            .IssuedWithholdings.AsNoTracking()
+            .Where(w => w.TenantId == tenantId && w.Id == withholdingId)
+            .Select(w => (Guid?)w.PurchaseInvoiceId)
+            .FirstOrDefaultAsync(ct);
+
     public void TrackPayable(PurchasePayable payable) => _db.PurchasePayables.Add(payable);
 
     public void TrackCommunication(PurchaseCommunication communication) =>

@@ -3455,6 +3455,221 @@ namespace ERP.Infrastructure.Migrations
                     b.ToTable("electronic_document_sri_message", (string)null);
                 });
 
+            modelBuilder.Entity("ERP.Domain.Modules.Finance.Entities.CompanyFinancialDestination", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid>("AccountingAccountId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("accounting_account_id");
+
+                    b.Property<string>("BankAccountIdentifierNormalized")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("bank_account_identifier_normalized");
+
+                    b.Property<string>("BankInstitutionCode")
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("bank_institution_code");
+
+                    b.Property<Guid?>("CashRegisterId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("cash_register_id");
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)")
+                        .HasColumnName("code");
+
+                    b.Property<Guid>("CompanyId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("company_id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<string>("CurrencyCode")
+                        .IsRequired()
+                        .HasMaxLength(3)
+                        .HasColumnType("character varying(3)")
+                        .HasColumnName("currency_code");
+
+                    b.Property<int>("DestinationTypeCode")
+                        .HasColumnType("integer")
+                        .HasColumnName("destination_type_code");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_active");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("name");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("tenant_id");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid?>("UpdatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by");
+
+                    b.Property<uint>("xmin")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AccountingAccountId");
+
+                    b.HasIndex("CashRegisterId");
+
+                    b.HasIndex("CompanyId");
+
+                    b.HasIndex("TenantId", "CompanyId")
+                        .HasDatabaseName("ix_company_financial_destinations_tenant_company");
+
+                    b.HasIndex("TenantId", "CompanyId", "CashRegisterId")
+                        .IsUnique()
+                        .HasDatabaseName("uq_company_financial_destinations_cash_register")
+                        .HasFilter("\"destination_type_code\" = 2");
+
+                    b.HasIndex("TenantId", "CompanyId", "Code")
+                        .IsUnique()
+                        .HasDatabaseName("uq_company_financial_destinations_tenant_company_code");
+
+                    b.HasIndex("TenantId", "CompanyId", "BankInstitutionCode", "BankAccountIdentifierNormalized")
+                        .IsUnique()
+                        .HasDatabaseName("uq_company_financial_destinations_bank_identity")
+                        .HasFilter("\"destination_type_code\" = 1");
+
+                    b.ToTable("company_financial_destinations", null, t =>
+                        {
+                            t.HasCheckConstraint("chk_company_financial_destination_type_fields", "(\"destination_type_code\" = 1 AND \"bank_institution_code\" IS NOT NULL AND \"bank_account_identifier_normalized\" IS NOT NULL AND \"cash_register_id\" IS NULL) OR (\"destination_type_code\" = 2 AND \"cash_register_id\" IS NOT NULL AND \"bank_institution_code\" IS NULL AND \"bank_account_identifier_normalized\" IS NULL)");
+                        });
+                });
+
+            modelBuilder.Entity("ERP.Domain.Modules.Finance.Entities.CompanyFinancialDestinationAudit", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("Action")
+                        .IsRequired()
+                        .HasMaxLength(80)
+                        .HasColumnType("character varying(80)")
+                        .HasColumnName("action");
+
+                    b.Property<string>("Code")
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)")
+                        .HasColumnName("code");
+
+                    b.Property<Guid>("CompanyId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("company_id");
+
+                    b.Property<string>("CorrelationId")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("correlation_id");
+
+                    b.Property<Guid>("EntityId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("entity_id");
+
+                    b.Property<Guid?>("NewAccountingAccountId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("new_accounting_account_id");
+
+                    b.Property<bool?>("NewIsActive")
+                        .HasColumnType("boolean")
+                        .HasColumnName("new_is_active");
+
+                    b.Property<string>("NewName")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("new_name");
+
+                    b.Property<DateTime>("OccurredAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("occurred_at_utc");
+
+                    b.Property<Guid?>("OldAccountingAccountId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("old_accounting_account_id");
+
+                    b.Property<bool?>("OldIsActive")
+                        .HasColumnType("boolean")
+                        .HasColumnName("old_is_active");
+
+                    b.Property<string>("OldName")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("old_name");
+
+                    b.Property<string>("Reason")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("reason");
+
+                    b.Property<string>("RequestId")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("request_id");
+
+                    b.Property<int>("Source")
+                        .HasColumnType("integer")
+                        .HasColumnName("source");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("tenant_id");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("user_id");
+
+                    b.Property<string>("UserName")
+                        .IsRequired()
+                        .HasMaxLength(254)
+                        .HasColumnType("character varying(254)")
+                        .HasColumnName("user_name");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TenantId", "CompanyId", "OccurredAtUtc")
+                        .HasDatabaseName("ix_company_financial_destination_audit_company_occurred_at");
+
+                    b.HasIndex("TenantId", "EntityId", "OccurredAtUtc")
+                        .HasDatabaseName("ix_company_financial_destination_audit_entity_occurred_at");
+
+                    b.HasIndex("TenantId", "UserId", "OccurredAtUtc")
+                        .HasDatabaseName("ix_company_financial_destination_audit_user_occurred_at");
+
+                    b.ToTable("company_financial_destination_audit", (string)null);
+                });
+
             modelBuilder.Entity("ERP.Domain.Modules.Finance.Entities.CreditInstallment", b =>
                 {
                     b.Property<Guid>("Id")
@@ -3706,6 +3921,175 @@ namespace ERP.Infrastructure.Migrations
 
                             t.HasCheckConstraint("chk_payment_application_line_document_xor", "(receivable_id IS NOT NULL AND payable_id IS NULL) OR (receivable_id IS NULL AND payable_id IS NOT NULL)");
                         });
+                });
+
+            modelBuilder.Entity("ERP.Domain.Modules.Finance.Entities.SupplierCreditRefundTransaction", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("AccountingAccountCodeSnapshot")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("accounting_account_code_snapshot");
+
+                    b.Property<Guid>("AccountingAccountId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("accounting_account_id");
+
+                    b.Property<decimal>("Amount")
+                        .HasColumnType("numeric(18,2)")
+                        .HasColumnName("amount");
+
+                    b.Property<Guid?>("CashMovementId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("cash_movement_id");
+
+                    b.Property<Guid?>("CashSessionId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("cash_session_id");
+
+                    b.Property<Guid>("ClientRequestId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("client_request_id");
+
+                    b.Property<Guid>("CompanyId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("company_id");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at_utc");
+
+                    b.Property<Guid>("CreatedByUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by_user_id");
+
+                    b.Property<string>("CurrencyCode")
+                        .IsRequired()
+                        .HasMaxLength(3)
+                        .HasColumnType("character varying(3)")
+                        .HasColumnName("currency_code");
+
+                    b.Property<string>("DestinationTypeCodeSnapshot")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("destination_type_code_snapshot");
+
+                    b.Property<DateOnly>("EffectiveDate")
+                        .HasColumnType("date")
+                        .HasColumnName("effective_date");
+
+                    b.Property<string>("ExternalReference")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("external_reference");
+
+                    b.Property<string>("FinancialDestinationCodeSnapshot")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("financial_destination_code_snapshot");
+
+                    b.Property<Guid>("FinancialDestinationId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("financial_destination_id");
+
+                    b.Property<string>("FinancialDestinationNameSnapshot")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("financial_destination_name_snapshot");
+
+                    b.Property<Guid?>("OriginalTransactionId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("original_transaction_id");
+
+                    b.Property<string>("PayloadHash")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)")
+                        .HasColumnName("payload_hash");
+
+                    b.Property<string>("PaymentMethodCode")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("payment_method_code");
+
+                    b.Property<string>("Reason")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("reason");
+
+                    b.Property<Guid>("SupplierCreditId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("supplier_credit_id");
+
+                    b.Property<Guid>("SupplierCreditMovementId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("supplier_credit_movement_id");
+
+                    b.Property<Guid>("SupplierId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("supplier_id");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("tenant_id");
+
+                    b.Property<int>("TransactionTypeCode")
+                        .HasColumnType("integer")
+                        .HasColumnName("transaction_type_code");
+
+                    b.Property<uint>("xmin")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AccountingAccountId");
+
+                    b.HasIndex("CashMovementId");
+
+                    b.HasIndex("CashSessionId");
+
+                    b.HasIndex("CompanyId");
+
+                    b.HasIndex("FinancialDestinationId");
+
+                    b.HasIndex("OriginalTransactionId");
+
+                    b.HasIndex("SupplierCreditId");
+
+                    b.HasIndex("SupplierCreditMovementId");
+
+                    b.HasIndex("TenantId", "ClientRequestId")
+                        .IsUnique()
+                        .HasDatabaseName("uq_supplier_credit_refund_transactions_tenant_client_request_id");
+
+                    b.HasIndex("TenantId", "CompanyId", "AccountingAccountId")
+                        .HasDatabaseName("ix_supplier_credit_refund_transactions_tenant_company_account");
+
+                    b.HasIndex("TenantId", "CompanyId", "OriginalTransactionId")
+                        .IsUnique()
+                        .HasDatabaseName("uq_supplier_credit_refund_transactions_original")
+                        .HasFilter("\"transaction_type_code\" = 2");
+
+                    b.HasIndex("TenantId", "CompanyId", "SupplierCreditId")
+                        .HasDatabaseName("ix_supplier_credit_refund_transactions_tenant_company_credit");
+
+                    b.HasIndex("TenantId", "CompanyId", "SupplierCreditMovementId")
+                        .IsUnique()
+                        .HasDatabaseName("uq_supplier_credit_refund_transactions_movement");
+
+                    b.ToTable("supplier_credit_refund_transactions", (string)null);
                 });
 
             modelBuilder.Entity("ERP.Domain.Modules.Inventory.Entities.CurrentStock", b =>
@@ -4213,6 +4597,10 @@ namespace ERP.Infrastructure.Migrations
                     b.Property<Guid?>("SourceDocId")
                         .HasColumnType("uuid")
                         .HasColumnName("source_doc_id");
+
+                    b.Property<Guid?>("SourceDocLineId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("source_doc_line_id");
 
                     b.Property<string>("SourceDocType")
                         .HasMaxLength(50)
@@ -7411,11 +7799,19 @@ namespace ERP.Infrastructure.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("purchase_id");
 
+                    b.Property<decimal>("ReturnAppliedAmount")
+                        .HasColumnType("numeric(18,2)")
+                        .HasColumnName("return_applied_amount");
+
                     b.Property<string>("Status")
                         .IsRequired()
                         .HasMaxLength(20)
                         .HasColumnType("character varying(20)")
                         .HasColumnName("status");
+
+                    b.Property<decimal>("SupplierCreditAppliedAmount")
+                        .HasColumnType("numeric(18,2)")
+                        .HasColumnName("supplier_credit_applied_amount");
 
                     b.Property<Guid>("SupplierId")
                         .HasColumnType("uuid")
@@ -7440,6 +7836,12 @@ namespace ERP.Infrastructure.Migrations
                     b.Property<Guid?>("UpdatedBy")
                         .HasColumnType("uuid")
                         .HasColumnName("updated_by");
+
+                    b.Property<uint>("xmin")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
 
                     b.HasKey("Id");
 
@@ -7558,6 +7960,780 @@ namespace ERP.Infrastructure.Migrations
                     b.ToTable("purchase_payment_schedules", (string)null);
                 });
 
+            modelBuilder.Entity("ERP.Domain.Modules.Purchases.Entities.PurchaseReturn", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<decimal?>("AppliedToPayableAmount")
+                        .HasColumnType("numeric(18,2)")
+                        .HasColumnName("applied_to_payable_amount");
+
+                    b.Property<Guid?>("AuthorizeClientRequestId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("authorize_client_request_id");
+
+                    b.Property<string>("AuthorizeRequestPayloadHash")
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)")
+                        .HasColumnName("authorize_request_payload_hash");
+
+                    b.Property<DateTime?>("AuthorizedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("authorized_at_utc");
+
+                    b.Property<Guid?>("AuthorizedByUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("authorized_by_user_id");
+
+                    b.Property<decimal?>("AuthorizedDiscountTotal")
+                        .HasColumnType("numeric(18,2)")
+                        .HasColumnName("authorized_discount_total");
+
+                    b.Property<decimal?>("AuthorizedGrandTotal")
+                        .HasColumnType("numeric(18,2)")
+                        .HasColumnName("authorized_grand_total");
+
+                    b.Property<decimal?>("AuthorizedIceTotal")
+                        .HasColumnType("numeric(18,2)")
+                        .HasColumnName("authorized_ice_total");
+
+                    b.Property<decimal?>("AuthorizedSubtotal")
+                        .HasColumnType("numeric(18,2)")
+                        .HasColumnName("authorized_subtotal");
+
+                    b.Property<decimal?>("AuthorizedVatTotal")
+                        .HasColumnType("numeric(18,2)")
+                        .HasColumnName("authorized_vat_total");
+
+                    b.Property<Guid>("BranchId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("branch_id");
+
+                    b.Property<Guid?>("CancelClientRequestId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("cancel_client_request_id");
+
+                    b.Property<string>("CancelRequestPayloadHash")
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)")
+                        .HasColumnName("cancel_request_payload_hash");
+
+                    b.Property<string>("CancellationReason")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("cancellation_reason");
+
+                    b.Property<DateTime?>("CancelledAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("cancelled_at_utc");
+
+                    b.Property<Guid?>("CancelledByUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("cancelled_by_user_id");
+
+                    b.Property<Guid>("CompanyId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("company_id");
+
+                    b.Property<decimal?>("CostVarianceTotal")
+                        .HasColumnType("numeric(18,2)")
+                        .HasColumnName("cost_variance_total");
+
+                    b.Property<Guid>("CreateClientRequestId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("create_client_request_id");
+
+                    b.Property<string>("CreateRequestPayloadHash")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)")
+                        .HasColumnName("create_request_payload_hash");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<int>("FiscalStatus")
+                        .HasColumnType("integer")
+                        .HasColumnName("fiscal_status");
+
+                    b.Property<decimal?>("HistoricalCostTotal")
+                        .HasColumnType("numeric(18,2)")
+                        .HasColumnName("historical_cost_total");
+
+                    b.Property<Guid?>("LinkCreditNoteClientRequestId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("link_credit_note_client_request_id");
+
+                    b.Property<string>("LinkCreditNoteRequestPayloadHash")
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)")
+                        .HasColumnName("link_credit_note_request_payload_hash");
+
+                    b.Property<Guid>("PurchaseInvoiceId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("purchase_invoice_id");
+
+                    b.Property<string>("Reason")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("reason");
+
+                    b.Property<string>("ReturnNumber")
+                        .HasMaxLength(8)
+                        .HasColumnType("character varying(8)")
+                        .HasColumnName("return_number");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("integer")
+                        .HasColumnName("status");
+
+                    b.Property<decimal?>("SupplierCreditAmount")
+                        .HasColumnType("numeric(18,2)")
+                        .HasColumnName("supplier_credit_amount");
+
+                    b.Property<Guid?>("SupplierCreditNoteDocumentId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("supplier_credit_note_document_id");
+
+                    b.Property<Guid>("SupplierId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("supplier_id");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("tenant_id");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid?>("UpdatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by");
+
+                    b.Property<uint>("xmin")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("BranchId");
+
+                    b.HasIndex("CompanyId");
+
+                    b.HasIndex("PurchaseInvoiceId");
+
+                    b.HasIndex("SupplierCreditNoteDocumentId");
+
+                    b.HasIndex("SupplierId");
+
+                    b.HasIndex("TenantId", "AuthorizeClientRequestId")
+                        .IsUnique()
+                        .HasDatabaseName("uq_purchase_returns_tenant_authorize_client_request_id")
+                        .HasFilter("\"authorize_client_request_id\" IS NOT NULL");
+
+                    b.HasIndex("TenantId", "CancelClientRequestId")
+                        .IsUnique()
+                        .HasDatabaseName("uq_purchase_returns_tenant_cancel_client_request_id")
+                        .HasFilter("\"cancel_client_request_id\" IS NOT NULL");
+
+                    b.HasIndex("TenantId", "CreateClientRequestId")
+                        .IsUnique()
+                        .HasDatabaseName("uq_purchase_returns_tenant_create_client_request_id");
+
+                    b.HasIndex("TenantId", "LinkCreditNoteClientRequestId")
+                        .IsUnique()
+                        .HasDatabaseName("uq_purchase_returns_tenant_link_credit_note_client_request_id")
+                        .HasFilter("\"link_credit_note_client_request_id\" IS NOT NULL");
+
+                    b.HasIndex("TenantId", "PurchaseInvoiceId")
+                        .HasDatabaseName("ix_purchase_returns_tenant_purchase_invoice");
+
+                    b.HasIndex("TenantId", "Status")
+                        .HasDatabaseName("ix_purchase_returns_tenant_status");
+
+                    b.HasIndex("TenantId", "SupplierCreditNoteDocumentId")
+                        .IsUnique()
+                        .HasDatabaseName("uq_purchase_returns_tenant_supplier_credit_note_document_id")
+                        .HasFilter("\"supplier_credit_note_document_id\" IS NOT NULL");
+
+                    b.HasIndex("TenantId", "CompanyId", "BranchId")
+                        .HasDatabaseName("ix_purchase_returns_tenant_company_branch");
+
+                    b.HasIndex("TenantId", "CompanyId", "ReturnNumber")
+                        .IsUnique()
+                        .HasDatabaseName("uq_purchase_returns_tenant_company_return_number")
+                        .HasFilter("\"return_number\" IS NOT NULL");
+
+                    b.ToTable("purchase_returns", (string)null);
+                });
+
+            modelBuilder.Entity("ERP.Domain.Modules.Purchases.Entities.PurchaseReturnAudit", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("Action")
+                        .IsRequired()
+                        .HasMaxLength(80)
+                        .HasColumnType("character varying(80)")
+                        .HasColumnName("action");
+
+                    b.Property<Guid>("BranchId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("branch_id");
+
+                    b.Property<Guid>("CompanyId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("company_id");
+
+                    b.Property<string>("CorrelationId")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("correlation_id");
+
+                    b.Property<Guid>("EntityId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("entity_id");
+
+                    b.Property<decimal?>("GrandTotal")
+                        .HasColumnType("numeric(18,2)")
+                        .HasColumnName("grand_total");
+
+                    b.Property<DateTime>("OccurredAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("occurred_at_utc");
+
+                    b.Property<Guid>("PurchaseInvoiceId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("purchase_invoice_id");
+
+                    b.Property<string>("Reason")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("reason");
+
+                    b.Property<string>("RequestId")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("request_id");
+
+                    b.Property<string>("ReturnNumber")
+                        .HasMaxLength(8)
+                        .HasColumnType("character varying(8)")
+                        .HasColumnName("return_number");
+
+                    b.Property<int>("Source")
+                        .HasColumnType("integer")
+                        .HasColumnName("source");
+
+                    b.Property<Guid?>("SupplierId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("supplier_id");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("tenant_id");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("user_id");
+
+                    b.Property<string>("UserName")
+                        .IsRequired()
+                        .HasMaxLength(254)
+                        .HasColumnType("character varying(254)")
+                        .HasColumnName("user_name");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TenantId", "EntityId", "OccurredAtUtc")
+                        .HasDatabaseName("ix_purchase_return_audit_entity_occurred_at");
+
+                    b.HasIndex("TenantId", "PurchaseInvoiceId", "OccurredAtUtc")
+                        .HasDatabaseName("ix_purchase_return_audit_purchase_invoice_occurred_at");
+
+                    b.HasIndex("TenantId", "SupplierId", "OccurredAtUtc")
+                        .HasDatabaseName("ix_purchase_return_audit_supplier_occurred_at");
+
+                    b.HasIndex("TenantId", "UserId", "OccurredAtUtc")
+                        .HasDatabaseName("ix_purchase_return_audit_user_occurred_at");
+
+                    b.ToTable("purchase_return_audit", (string)null);
+                });
+
+            modelBuilder.Entity("ERP.Domain.Modules.Purchases.Entities.PurchaseReturnDetail", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<decimal?>("HistoricalCostAmount")
+                        .HasColumnType("numeric(18,2)")
+                        .HasColumnName("historical_cost_amount");
+
+                    b.Property<string>("IceCode")
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("ice_code");
+
+                    b.Property<decimal?>("IceRate")
+                        .HasColumnType("numeric(5,2)")
+                        .HasColumnName("ice_rate");
+
+                    b.Property<bool>("IsFrozen")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_frozen");
+
+                    b.Property<Guid>("ItemId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("item_id");
+
+                    b.Property<Guid>("OriginalInvoiceDetailId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("original_invoice_detail_id");
+
+                    b.Property<Guid>("PurchaseReturnId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("purchase_return_id");
+
+                    b.Property<decimal>("Quantity")
+                        .HasColumnType("numeric(18,4)")
+                        .HasColumnName("quantity");
+
+                    b.Property<decimal?>("ReturnedDiscountAmount")
+                        .HasColumnType("numeric(18,2)")
+                        .HasColumnName("returned_discount_amount");
+
+                    b.Property<decimal?>("ReturnedIceAmount")
+                        .HasColumnType("numeric(18,2)")
+                        .HasColumnName("returned_ice_amount");
+
+                    b.Property<decimal?>("ReturnedSubtotal")
+                        .HasColumnType("numeric(18,2)")
+                        .HasColumnName("returned_subtotal");
+
+                    b.Property<decimal?>("ReturnedVatAmount")
+                        .HasColumnType("numeric(18,2)")
+                        .HasColumnName("returned_vat_amount");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("tenant_id");
+
+                    b.Property<decimal?>("UnitCost")
+                        .HasColumnType("numeric(18,6)")
+                        .HasColumnName("unit_cost");
+
+                    b.Property<string>("VatCode")
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("vat_code");
+
+                    b.Property<decimal?>("VatRate")
+                        .HasColumnType("numeric(5,2)")
+                        .HasColumnName("vat_rate");
+
+                    b.Property<Guid>("WarehouseId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("warehouse_id");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("OriginalInvoiceDetailId");
+
+                    b.HasIndex("WarehouseId");
+
+                    b.HasIndex("PurchaseReturnId", "OriginalInvoiceDetailId")
+                        .IsUnique()
+                        .HasDatabaseName("uq_purchase_return_details_return_original_line");
+
+                    b.HasIndex("TenantId", "OriginalInvoiceDetailId")
+                        .HasDatabaseName("ix_purchase_return_details_tenant_original_line");
+
+                    b.HasIndex("TenantId", "PurchaseReturnId")
+                        .HasDatabaseName("ix_purchase_return_details_tenant_purchase_return");
+
+                    b.ToTable("purchase_return_details", (string)null);
+                });
+
+            modelBuilder.Entity("ERP.Domain.Modules.Purchases.Entities.PurchaseReturnSequence", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid>("CompanyId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("company_id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<int>("CurrentSeq")
+                        .HasColumnType("integer")
+                        .HasColumnName("current_seq");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("tenant_id");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TenantId", "CompanyId")
+                        .IsUnique()
+                        .HasDatabaseName("uq_purchase_return_sequence_tenant_company");
+
+                    b.ToTable("purchase_return_sequence", null, t =>
+                        {
+                            t.HasCheckConstraint("chk_purchase_return_sequence_current_seq_positive", "\"current_seq\" >= 1");
+                        });
+                });
+
+            modelBuilder.Entity("ERP.Domain.Modules.Purchases.Entities.SupplierCredit", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<decimal>("AvailableAmount")
+                        .HasColumnType("numeric(18,2)")
+                        .HasColumnName("available_amount");
+
+                    b.Property<Guid>("BranchId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("branch_id");
+
+                    b.Property<Guid>("CompanyId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("company_id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<string>("CurrencyCode")
+                        .IsRequired()
+                        .HasMaxLength(3)
+                        .HasColumnType("character varying(3)")
+                        .HasColumnName("currency_code");
+
+                    b.Property<decimal>("OriginalAmount")
+                        .HasColumnType("numeric(18,2)")
+                        .HasColumnName("original_amount");
+
+                    b.Property<Guid>("SourcePurchaseReturnId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("source_purchase_return_id");
+
+                    b.Property<Guid>("SupplierId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("supplier_id");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("tenant_id");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid?>("UpdatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by");
+
+                    b.Property<uint>("xmin")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("BranchId");
+
+                    b.HasIndex("CompanyId");
+
+                    b.HasIndex("SourcePurchaseReturnId");
+
+                    b.HasIndex("SupplierId");
+
+                    b.HasIndex("TenantId", "CompanyId")
+                        .HasDatabaseName("ix_supplier_credits_tenant_company");
+
+                    b.HasIndex("TenantId", "SourcePurchaseReturnId")
+                        .IsUnique()
+                        .HasDatabaseName("uq_supplier_credits_tenant_source_purchase_return");
+
+                    b.HasIndex("TenantId", "SupplierId")
+                        .HasDatabaseName("ix_supplier_credits_tenant_supplier");
+
+                    b.ToTable("supplier_credits", (string)null);
+                });
+
+            modelBuilder.Entity("ERP.Domain.Modules.Purchases.Entities.SupplierCreditAudit", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid?>("AccountingAccountId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("accounting_account_id");
+
+                    b.Property<string>("Action")
+                        .IsRequired()
+                        .HasMaxLength(80)
+                        .HasColumnType("character varying(80)")
+                        .HasColumnName("action");
+
+                    b.Property<decimal?>("Amount")
+                        .HasColumnType("numeric(18,2)")
+                        .HasColumnName("amount");
+
+                    b.Property<decimal?>("BalanceAfter")
+                        .HasColumnType("numeric(18,2)")
+                        .HasColumnName("balance_after");
+
+                    b.Property<decimal?>("BalanceBefore")
+                        .HasColumnType("numeric(18,2)")
+                        .HasColumnName("balance_before");
+
+                    b.Property<Guid>("BranchId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("branch_id");
+
+                    b.Property<Guid?>("CashMovementId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("cash_movement_id");
+
+                    b.Property<Guid?>("CashRegisterId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("cash_register_id");
+
+                    b.Property<Guid?>("CashSessionId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("cash_session_id");
+
+                    b.Property<Guid>("CompanyId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("company_id");
+
+                    b.Property<string>("CorrelationId")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("correlation_id");
+
+                    b.Property<string>("DestinationTypeCodeSnapshot")
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("destination_type_code_snapshot");
+
+                    b.Property<DateOnly?>("EffectiveDate")
+                        .HasColumnType("date")
+                        .HasColumnName("effective_date");
+
+                    b.Property<Guid>("EntityId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("entity_id");
+
+                    b.Property<string>("ExternalReference")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("external_reference");
+
+                    b.Property<string>("FinancialDestinationCodeSnapshot")
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)")
+                        .HasColumnName("financial_destination_code_snapshot");
+
+                    b.Property<Guid?>("FinancialDestinationId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("financial_destination_id");
+
+                    b.Property<int?>("MovementType")
+                        .HasColumnType("integer")
+                        .HasColumnName("movement_type");
+
+                    b.Property<DateTime>("OccurredAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("occurred_at_utc");
+
+                    b.Property<string>("PaymentMethodCode")
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("payment_method_code");
+
+                    b.Property<string>("Reason")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("reason");
+
+                    b.Property<string>("RequestId")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("request_id");
+
+                    b.Property<int>("Source")
+                        .HasColumnType("integer")
+                        .HasColumnName("source");
+
+                    b.Property<Guid?>("SourcePurchaseReturnId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("source_purchase_return_id");
+
+                    b.Property<string>("StatusAfter")
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("status_after");
+
+                    b.Property<string>("StatusBefore")
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("status_before");
+
+                    b.Property<Guid>("SupplierId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("supplier_id");
+
+                    b.Property<Guid?>("TargetPurchasePayableId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("target_purchase_payable_id");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("tenant_id");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("user_id");
+
+                    b.Property<string>("UserName")
+                        .IsRequired()
+                        .HasMaxLength(254)
+                        .HasColumnType("character varying(254)")
+                        .HasColumnName("user_name");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TenantId", "EntityId", "OccurredAtUtc")
+                        .HasDatabaseName("ix_supplier_credit_audit_entity_occurred_at");
+
+                    b.HasIndex("TenantId", "SourcePurchaseReturnId", "OccurredAtUtc")
+                        .HasDatabaseName("ix_supplier_credit_audit_source_return_occurred_at");
+
+                    b.HasIndex("TenantId", "SupplierId", "OccurredAtUtc")
+                        .HasDatabaseName("ix_supplier_credit_audit_supplier_occurred_at");
+
+                    b.HasIndex("TenantId", "UserId", "OccurredAtUtc")
+                        .HasDatabaseName("ix_supplier_credit_audit_user_occurred_at");
+
+                    b.ToTable("supplier_credit_audit", (string)null);
+                });
+
+            modelBuilder.Entity("ERP.Domain.Modules.Purchases.Entities.SupplierCreditMovement", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<decimal>("Amount")
+                        .HasColumnType("numeric(18,2)")
+                        .HasColumnName("amount");
+
+                    b.Property<Guid>("ClientRequestId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("client_request_id");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at_utc");
+
+                    b.Property<Guid>("CreatedByUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by_user_id");
+
+                    b.Property<int>("MovementType")
+                        .HasColumnType("integer")
+                        .HasColumnName("movement_type");
+
+                    b.Property<string>("RequestPayloadHash")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)")
+                        .HasColumnName("request_payload_hash");
+
+                    b.Property<Guid?>("ReversalOfMovementId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("reversal_of_movement_id");
+
+                    b.Property<Guid>("SupplierCreditId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("supplier_credit_id");
+
+                    b.Property<Guid?>("TargetPurchasePayableId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("target_purchase_payable_id");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("tenant_id");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ReversalOfMovementId")
+                        .IsUnique()
+                        .HasDatabaseName("uq_supplier_credit_movements_reversal_of_movement")
+                        .HasFilter("\"reversal_of_movement_id\" IS NOT NULL");
+
+                    b.HasIndex("SupplierCreditId");
+
+                    b.HasIndex("TargetPurchasePayableId");
+
+                    b.HasIndex("TenantId", "ClientRequestId")
+                        .IsUnique()
+                        .HasDatabaseName("uq_supplier_credit_movements_tenant_client_request_id");
+
+                    b.HasIndex("TenantId", "SupplierCreditId")
+                        .HasDatabaseName("ix_supplier_credit_movements_tenant_supplier_credit");
+
+                    b.ToTable("supplier_credit_movements", null, t =>
+                        {
+                            t.HasCheckConstraint("chk_supplier_credit_movement_amount_positive", "\"amount\" > 0");
+
+                            t.HasCheckConstraint("chk_supplier_credit_movement_reversal_ref", "(\"movement_type\" IN (3, 4) AND \"reversal_of_movement_id\" IS NOT NULL) OR (\"movement_type\" NOT IN (3, 4) AND \"reversal_of_movement_id\" IS NULL)");
+
+                            t.HasCheckConstraint("chk_supplier_credit_movement_target_payable", "(\"movement_type\" IN (1, 3) AND \"target_purchase_payable_id\" IS NOT NULL) OR (\"movement_type\" NOT IN (1, 3) AND \"target_purchase_payable_id\" IS NULL)");
+                        });
+                });
+
             modelBuilder.Entity("ERP.Domain.Modules.Purchases.PurchaseReception.Entities.PurchaseReceptionDocument", b =>
                 {
                     b.Property<Guid>("Id")
@@ -7595,6 +8771,14 @@ namespace ERP.Infrastructure.Migrations
                     b.Property<Guid>("CreatedBy")
                         .HasColumnType("uuid")
                         .HasColumnName("created_by");
+
+                    b.Property<string>("CurrencyCode")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(3)
+                        .HasColumnType("character varying(3)")
+                        .HasDefaultValue("USD")
+                        .HasColumnName("currency_code");
 
                     b.Property<string>("DocTypeCode")
                         .HasMaxLength(10)
@@ -11882,6 +13066,26 @@ namespace ERP.Infrastructure.Migrations
                     b.Navigation("Company");
                 });
 
+            modelBuilder.Entity("ERP.Domain.Modules.Finance.Entities.CompanyFinancialDestination", b =>
+                {
+                    b.HasOne("ERP.Domain.Modules.Accounting.Entities.Account", null)
+                        .WithMany()
+                        .HasForeignKey("AccountingAccountId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("ERP.Domain.Modules.Caja.Entities.CashRegister", null)
+                        .WithMany()
+                        .HasForeignKey("CashRegisterId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("ERP.Domain.Modules.Company.Entities.Company", null)
+                        .WithMany()
+                        .HasForeignKey("CompanyId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("ERP.Domain.Modules.Finance.Entities.CreditInstallment", b =>
                 {
                     b.HasOne("ERP.Domain.Modules.Finance.Entities.CreditTerm", null)
@@ -11922,6 +13126,54 @@ namespace ERP.Infrastructure.Migrations
                         .WithMany()
                         .HasForeignKey("ReceivableId")
                         .OnDelete(DeleteBehavior.Restrict);
+                });
+
+            modelBuilder.Entity("ERP.Domain.Modules.Finance.Entities.SupplierCreditRefundTransaction", b =>
+                {
+                    b.HasOne("ERP.Domain.Modules.Accounting.Entities.Account", null)
+                        .WithMany()
+                        .HasForeignKey("AccountingAccountId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("ERP.Domain.Modules.Caja.Entities.CashMovement", null)
+                        .WithMany()
+                        .HasForeignKey("CashMovementId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("ERP.Domain.Modules.Caja.Entities.CashSession", null)
+                        .WithMany()
+                        .HasForeignKey("CashSessionId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("ERP.Domain.Modules.Company.Entities.Company", null)
+                        .WithMany()
+                        .HasForeignKey("CompanyId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("ERP.Domain.Modules.Finance.Entities.CompanyFinancialDestination", null)
+                        .WithMany()
+                        .HasForeignKey("FinancialDestinationId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("ERP.Domain.Modules.Finance.Entities.SupplierCreditRefundTransaction", null)
+                        .WithMany()
+                        .HasForeignKey("OriginalTransactionId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("ERP.Domain.Modules.Purchases.Entities.SupplierCredit", null)
+                        .WithMany()
+                        .HasForeignKey("SupplierCreditId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("ERP.Domain.Modules.Purchases.Entities.SupplierCreditMovement", null)
+                        .WithMany()
+                        .HasForeignKey("SupplierCreditMovementId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("ERP.Domain.Modules.Inventory.Entities.StockAdjustmentLine", b =>
@@ -12381,6 +13633,105 @@ namespace ERP.Infrastructure.Migrations
                         .HasForeignKey("PurchaseInvoiceId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+                });
+
+            modelBuilder.Entity("ERP.Domain.Modules.Purchases.Entities.PurchaseReturn", b =>
+                {
+                    b.HasOne("ERP.Domain.Branches.Entities.Branch", null)
+                        .WithMany()
+                        .HasForeignKey("BranchId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("ERP.Domain.Modules.Company.Entities.Company", null)
+                        .WithMany()
+                        .HasForeignKey("CompanyId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("ERP.Domain.Modules.Purchases.Entities.PurchaseInvoice", null)
+                        .WithMany()
+                        .HasForeignKey("PurchaseInvoiceId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("ERP.Domain.Modules.Purchases.PurchaseReception.Entities.PurchaseReceptionDocument", null)
+                        .WithMany()
+                        .HasForeignKey("SupplierCreditNoteDocumentId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("ERP.Domain.MasterData.Entities.BusinessPartner", null)
+                        .WithMany()
+                        .HasForeignKey("SupplierId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("ERP.Domain.Modules.Purchases.Entities.PurchaseReturnDetail", b =>
+                {
+                    b.HasOne("ERP.Domain.Modules.Purchases.Entities.PurchaseInvoiceDetail", null)
+                        .WithMany()
+                        .HasForeignKey("OriginalInvoiceDetailId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("ERP.Domain.Modules.Purchases.Entities.PurchaseReturn", null)
+                        .WithMany("Lines")
+                        .HasForeignKey("PurchaseReturnId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("ERP.Domain.Modules.Inventory.Entities.Warehouse", null)
+                        .WithMany()
+                        .HasForeignKey("WarehouseId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("ERP.Domain.Modules.Purchases.Entities.SupplierCredit", b =>
+                {
+                    b.HasOne("ERP.Domain.Branches.Entities.Branch", null)
+                        .WithMany()
+                        .HasForeignKey("BranchId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("ERP.Domain.Modules.Company.Entities.Company", null)
+                        .WithMany()
+                        .HasForeignKey("CompanyId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("ERP.Domain.Modules.Purchases.Entities.PurchaseReturn", null)
+                        .WithMany()
+                        .HasForeignKey("SourcePurchaseReturnId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("ERP.Domain.MasterData.Entities.BusinessPartner", null)
+                        .WithMany()
+                        .HasForeignKey("SupplierId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("ERP.Domain.Modules.Purchases.Entities.SupplierCreditMovement", b =>
+                {
+                    b.HasOne("ERP.Domain.Modules.Purchases.Entities.SupplierCreditMovement", null)
+                        .WithMany()
+                        .HasForeignKey("ReversalOfMovementId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("ERP.Domain.Modules.Purchases.Entities.SupplierCredit", null)
+                        .WithMany("Movements")
+                        .HasForeignKey("SupplierCreditId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("ERP.Domain.Modules.Purchases.Entities.PurchasePayable", null)
+                        .WithMany()
+                        .HasForeignKey("TargetPurchasePayableId")
+                        .OnDelete(DeleteBehavior.Restrict);
                 });
 
             modelBuilder.Entity("ERP.Domain.Modules.Purchases.PurchaseReception.Entities.PurchaseReceptionDocument", b =>
@@ -12859,6 +14210,16 @@ namespace ERP.Infrastructure.Migrations
             modelBuilder.Entity("ERP.Domain.Modules.Purchases.Entities.PurchasePayable", b =>
                 {
                     b.Navigation("Installments");
+                });
+
+            modelBuilder.Entity("ERP.Domain.Modules.Purchases.Entities.PurchaseReturn", b =>
+                {
+                    b.Navigation("Lines");
+                });
+
+            modelBuilder.Entity("ERP.Domain.Modules.Purchases.Entities.SupplierCredit", b =>
+                {
+                    b.Navigation("Movements");
                 });
 
             modelBuilder.Entity("ERP.Domain.Modules.Purchases.PurchaseReception.Entities.PurchaseReceptionDocument", b =>

@@ -22,16 +22,26 @@ public sealed class DocumentSequenceExclusivityTests
     // SEQ-GATE-01: nadie debería llamar .CaptureAndIncrement() — la definición
     // no tiene punto prefijo, así que el patrón "." captura solo llamadas externas.
     // Lista vacía: cero callers autorizados.
+    // P0-02 §7.1bis: PurchaseReturnSequence is an independent sequence,
+    // not ERP DocumentSequence. Exact-path exclusion prevents a name-collision
+    // false positive without permitting other callers or mutators.
     private static readonly HashSet<string> AllowedCaptureAndIncrementCallers = new(
         StringComparer.OrdinalIgnoreCase
-    );
+    )
+    {
+        "src/ERP.Infrastructure/Persistence/Repositories/Purchases/PurchaseReturnSequenceRepository.cs",
+    };
 
     // SEQ-GATE-02: solo la entidad puede mutar su propio CurrentSeq.
+    // P0-02 §7.1bis: PurchaseReturnSequence is an independent sequence,
+    // not ERP DocumentSequence. Exact-path exclusion prevents a name-collision
+    // false positive without permitting other callers or mutators.
     private static readonly HashSet<string> AllowedCurrentSeqMutators = new(
         StringComparer.OrdinalIgnoreCase
     )
     {
         "src/ERP.Domain/Modules/Company/Entities/DocumentSequence.cs",
+        "src/ERP.Domain/Modules/Purchases/Entities/PurchaseReturnSequence.cs",
     };
 
     // SEQ-GATE-03: solo el repositorio puede emitir SQL de escritura sobre la tabla.

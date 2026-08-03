@@ -29,6 +29,16 @@ public sealed class StockMovement : AuditableEntity, ITenantScopedEntity, ICompa
     public string? Reference { get; private set; }
     public Guid? SourceDocId { get; private set; }
     public string? SourceDocType { get; private set; }
+
+    /// <summary>
+    /// Referencia genérica (no específica de Compras) a la línea del documento origen del
+    /// movimiento — P0-02, diseño §10.3. Permite identificar sin ambigüedad qué línea concreta de
+    /// qué documento originó este movimiento, incluso cuando dos líneas comparten producto y
+    /// bodega pero difieren en costo. No es la fuente de "cantidad ya devuelta" (eso es una
+    /// consulta derivada de dominio de negocio) — es trazabilidad de kardex/auditoría, reutilizable
+    /// por cualquier módulo futuro que necesite trazabilidad línea-a-línea.
+    /// </summary>
+    public Guid? SourceDocLineId { get; private set; }
     public decimal? UnitCost { get; private set; }
     public decimal? TotalCost { get; private set; }
     public decimal RunningAverageCost { get; private set; }
@@ -67,7 +77,8 @@ public sealed class StockMovement : AuditableEntity, ITenantScopedEntity, ICompa
         Guid companyId,
         decimal? unitCost = null,
         Guid? lotId = null,
-        Guid? serialId = null
+        Guid? serialId = null,
+        Guid? sourceDocLineId = null
     )
     {
         if (branchId == Guid.Empty)
@@ -103,6 +114,7 @@ public sealed class StockMovement : AuditableEntity, ITenantScopedEntity, ICompa
             Reference = string.IsNullOrWhiteSpace(reference) ? null : reference.Trim(),
             SourceDocId = sourceDocId,
             SourceDocType = string.IsNullOrWhiteSpace(sourceDocType) ? null : sourceDocType.Trim(),
+            SourceDocLineId = sourceDocLineId,
             UnitCost = unitCost,
             TotalCost = unitCost.HasValue ? Math.Abs(quantity) * unitCost.Value : null,
             LotId = lotId,

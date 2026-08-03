@@ -35,12 +35,16 @@ public sealed class PurchasePayablesController : ControllerBase
     [Authorize(Policy = $"perm:{PurchasePermissions.View}")]
     public async Task<IActionResult> GetList(
         [FromQuery] string? status = null,
+        [FromQuery] Guid? supplierId = null,
         [FromQuery] int pageNumber = 1,
         [FromQuery] int pageSize = 25,
         CancellationToken ct = default
     ) =>
         this.ToOkOrBadRequest(
-            await _mediator.Send(new GetPayablesListQuery(status, pageNumber, pageSize), ct),
+            await _mediator.Send(
+                new GetPayablesListQuery(status, supplierId, pageNumber, pageSize),
+                ct
+            ),
             "OK"
         );
 }
