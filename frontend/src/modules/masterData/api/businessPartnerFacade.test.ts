@@ -7,6 +7,7 @@ describe("businessPartnerCustomerAdapter V2", () => {
     id: "bp-1",
     identificationType: "04",
     identificationNumber: "1790000000001",
+    legalEntityTypeCode: 6,
     legalName: "ACME Corporation S.A.",
     tradeName: "ACME",
     countryCode: "EC",

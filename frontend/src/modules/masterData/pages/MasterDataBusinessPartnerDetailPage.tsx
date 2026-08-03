@@ -19,6 +19,7 @@ import { businessPartnerFacade } from "../api/businessPartnerFacade";
 import { formatDate } from "../../../lib/formatters/dateFormatters";
 import { geographyService, type GeoOption } from "../api/geographyService";
 import { useSriIdTypes, getSriIdTypeName } from "../api/useSriIdTypes";
+import { useLegalEntityTypes } from "../api/useLegalEntityTypes";
 import {
   LocationTypeEnum,
   LocationPurposeEnum,
@@ -240,7 +241,7 @@ export function MasterDataBusinessPartnerDetailPage() {
 
   const openLocEdit = async (loc: BpLocationDto) => {
     const purposeMap: Record<string, number> = {
-      FacturaciÃ³n: 1,
+      "Facturación": 1,
       Entrega: 2,
       Fiscal: 4,
       Correspondencia: 8,

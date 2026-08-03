@@ -23,12 +23,8 @@ import type {
   CustomerPickerRow,
   LocationTypeValue,
   ContactRoleValue,
-  PersonTypeValue,
 } from "../../masterData/types/businessPartner.types";
-import {
-  PersonTypeEnum,
-  RoleTypeEnum,
-} from "../../masterData/types/businessPartner.types";
+import { RoleTypeEnum } from "../../masterData/types/businessPartner.types";
 import { businessPartnerFacade } from "../../masterData/api/businessPartnerFacade";
 import {
   bpLocationService,
@@ -92,7 +88,6 @@ export type CustomerProfile = {
   name: string;
   taxId: string;
   identificationType: string;
-  personType: PersonTypeValue;
   email: string | null;
   phone: string | null;
   address: string | null;
@@ -505,9 +500,6 @@ export function useSalesPage() {
           name: bp.tradeName || bp.legalName,
           taxId: bp.identificationNumber,
           identificationType: bp.identificationType,
-          personType:
-            PersonTypeEnum[bp.personType as keyof typeof PersonTypeEnum] ??
-            PersonTypeEnum.Legal,
           email: contacts[0]?.email ?? locations[0]?.email ?? null,
           phone: contacts[0]?.phone ?? locations[0]?.phone ?? null,
           address: locations[0]?.addressLine ?? null,
@@ -777,19 +769,10 @@ export function useSalesPage() {
       try {
         const inv = await salesService.getById(id);
         setEditing(inv);
-        // personType no viaja en el snapshot de la factura — se resuelve desde el BP actual
-        // (igual que loadCustomerProfile) solo para completar el tipo; el resto de este perfil
-        // sigue siendo el snapshot histórico de la factura, no el estado actual del BP.
-        const bp = await businessPartnerFacade
-          .getBusinessPartner(inv.customerId)
-          .catch(() => null);
         setCustomerProfile({
           name: inv.customerName,
           taxId: inv.customerTaxId,
           identificationType: inv.customerIdentificationType,
-          personType:
-            PersonTypeEnum[bp?.personType as keyof typeof PersonTypeEnum] ??
-            PersonTypeEnum.Legal,
           email: inv.customerEmail,
           address: inv.customerAddress,
           phone: null,
@@ -1242,7 +1225,6 @@ export function useSalesPage() {
       if (newCustIsEdit) {
         await businessPartnerFacade.updateBusinessPartner(bpId, {
           legalName: newCustName.trim(),
-          personType: customerProfile?.personType ?? PersonTypeEnum.Natural,
           tradeName: null,
           countryCode: null,
         });
@@ -1250,7 +1232,6 @@ export function useSalesPage() {
         const bp = await businessPartnerFacade.createBusinessPartner({
           identificationType: newCustIdType,
           identificationNumber: newCustId.trim(),
-          personType: PersonTypeEnum.Natural,
           legalName: newCustName.trim(),
         });
         bpId = bp.id;
@@ -1332,7 +1313,6 @@ export function useSalesPage() {
     newCustAddress,
     newCustEmail,
     newCustPhone,
-    customerProfile,
     getValues,
     setValue,
     loadCustomerProfile,
