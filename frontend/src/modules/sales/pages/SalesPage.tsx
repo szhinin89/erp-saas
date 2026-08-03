@@ -14,12 +14,60 @@ import { CreditSimulatorModal } from "../components/CreditSimulatorModal";
 import { QuickCustomerModal } from "../components/QuickCustomerModal";
 import { SalesElectronicDiagnosticDrawer } from "../components/SalesElectronicDiagnosticDrawer";
 import { SalesIssueModal } from "../components/SalesIssueModal";
-import { useSalesPage, type SalesPageContext } from "../hooks/useSalesPage";
+import {
+  useSalesPage,
+  type SalesPageContext,
+  type CashSessionCheckErrorReason,
+} from "../hooks/useSalesPage";
 import { useRideActions } from "../hooks/useRideActions";
 import { PAYMENT_EXCEEDS_TOLERANCE } from "../constants/tolerances";
 import "../styles/sales-invoice.css";
 import "../../../styles/shared/erp-form-core.css";
 import "../../electronicDocuments/monitor/components/electronic-documents-monitor.css";
+
+// Mensaje por motivo real de falla al consultar GET /cash-sessions/my — nunca el mismo texto que
+// "no hay caja abierta" (esa es la única respuesta 200 OK con `null`, ver useSalesPage.ts).
+const CASH_SESSION_ERROR_MESSAGE: Record<CashSessionCheckErrorReason, string> =
+  {
+    permission:
+      "No se pudo verificar la caja abierta por falta de permiso para consultar caja.",
+    context:
+      "No se pudo verificar la caja abierta por contexto incompleto de empresa/sucursal.",
+    server:
+      "No se pudo verificar la caja abierta. Reintente o revise conexión/servidor.",
+  };
+
+/** Aviso de estado de caja — distingue "no hay caja" (confirmado) de "no se pudo verificar"
+ * (permiso/contexto/servidor), con acción de reintento para el segundo caso. */
+function CashSessionNotice({ ctx }: { ctx: SalesPageContext }) {
+  if (ctx.cashSessionCheckError) {
+    return (
+      <div className="sf-cash-session-notice">
+        <ZHPageNotice
+          variant="error"
+          message={CASH_SESSION_ERROR_MESSAGE[ctx.cashSessionCheckError]}
+        />
+        <ZHBtn
+          variant="ghost"
+          size="xs"
+          type="button"
+          onClick={ctx.refreshCashSession}
+        >
+          Reintentar
+        </ZHBtn>
+      </div>
+    );
+  }
+  if (ctx.hasCashSession === false) {
+    return (
+      <ZHPageNotice
+        variant="warning"
+        message="No tiene una caja abierta. Debe abrir una caja antes de autorizar facturas."
+      />
+    );
+  }
+  return null;
+}
 
 export function SalesPage() {
   const ctx = useSalesPage();
@@ -55,13 +103,8 @@ export function SalesPage() {
           ni mostrar estado de configuración SRI. */}
       {ctx.isElectronic && <ZHElectronicEnvironmentBanner />}
 
-      {/* ── Aviso caja no abierta ────────────────────────────────── */}
-      {ctx.hasCashSession === false && (
-        <ZHPageNotice
-          variant="warning"
-          message="No tiene una caja abierta. Debe abrir una caja antes de autorizar facturas."
-        />
-      )}
+      {/* ── Aviso caja no abierta / no se pudo verificar ────────────── */}
+      <CashSessionNotice ctx={ctx} />
 
       {/* ═══════════════════════════ LISTADO ═══════════════════════════ */}
       {ctx.tab === "listado" && (
@@ -885,7 +928,9 @@ function SalesFormChecklist({ ctx }: { ctx: SalesPageContext }) {
     : !hasLines
       ? "Agregue productos a la factura."
       : !hasEmissionPoint
-        ? "Debe abrir una caja antes de emitir."
+        ? ctx.cashSessionCheckError
+          ? "No se pudo verificar la caja — reintente arriba antes de emitir."
+          : "Debe abrir una caja antes de emitir."
         : paymentExceeds
           ? "El cobro excede el total — ajuste las formas de pago."
           : total > 0 && !paymentOk
@@ -921,10 +966,10 @@ function SalesFormChecklist({ ctx }: { ctx: SalesPageContext }) {
         {item("Cliente seleccionado", hasCustomer ? "ok" : "missing")}
         {item("Productos agregados", hasLines ? "ok" : "missing")}
         {item(
-          "Caja abierta",
+          ctx.cashSessionCheckError ? "Caja abierta (sin verificar)" : "Caja abierta",
           ctx.hasCashSession === true
             ? "ok"
-            : ctx.hasCashSession === false
+            : ctx.hasCashSession === false || ctx.cashSessionCheckError
               ? "error"
               : "missing",
         )}

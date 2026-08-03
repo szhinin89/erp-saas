@@ -8,6 +8,7 @@ import type { ItemEditorMode } from "./types";
  * son los mismos en ambos modos.
  */
 export function buildItemEditorSchema(mode: ItemEditorMode) {
+  const isCreate = mode === "create";
   return z
     .object({
       sku: z
@@ -50,13 +51,21 @@ export function buildItemEditorSchema(mode: ItemEditorMode) {
         .trim()
         .max(500, "Las observaciones no pueden exceder 500 caracteres.")
         .optional(),
-      // IVA del Item — siempre editable, en ambos modos (antes no existía ningún campo de IVA en
-      // este formulario; se enviaba `null` fijo). Opcional: un ítem puede no tener IVA de venta
-      // configurado todavía, igual que hoy en el formulario completo de Items.
-      saleVatCode: z.string().optional(),
-      // Precio de Venta — opcional; solo relevante cuando initialData.purchaseContext habilita la
-      // sección de simulación. `null` = campo vacío (nunca se infiere un valor). No impone reglas
-      // comerciales de margen — solo valida que, si se ingresa, no sea negativo.
+      // IVA de venta — siempre editable, en ambos modos. Obligatorio al crear (este editor solo
+      // se usa desde Compras: el producto debe quedar listo para vender sin volver a pasar por el
+      // módulo de Items); en Update sigue siendo opcional para no bloquear ediciones que no tocan
+      // impuestos en ítems legados sin IVA configurado.
+      saleVatCode: isCreate
+        ? z.string().min(1, "Debe seleccionar el IVA de venta del Item.")
+        : z.string().optional(),
+      // IVA de compra — mismo criterio que saleVatCode. Antes no existía ningún campo editable en
+      // este formulario (siempre viajaba `null` al crear) — causa raíz de que las líneas de
+      // compra quedaran sin IVA y forzaran editar el Item desde el módulo completo.
+      purchaseVatCode: isCreate
+        ? z.string().min(1, "Debe seleccionar el IVA de compra del Item.")
+        : z.string().optional(),
+      // Precio de Venta — obligatorio al crear (el Item debe quedar vendible sin reproceso
+      // manual); en Update sigue siendo opcional salvo que se active "Actualizar precio".
       salePrice: z
         .number()
         .nullable()
@@ -67,11 +76,14 @@ export function buildItemEditorSchema(mode: ItemEditorMode) {
       updatePrice: z.boolean().default(false),
     })
     .refine(
-      (data) =>
-        !data.updatePrice || (data.salePrice != null && data.salePrice > 0),
+      (data) => {
+        if (isCreate) return data.salePrice != null && data.salePrice > 0;
+        return !data.updatePrice || (data.salePrice != null && data.salePrice > 0);
+      },
       {
-        message:
-          "Ingrese un precio de venta válido para actualizar el precio del Item.",
+        message: isCreate
+          ? "Ingrese un precio de venta válido para crear el Item."
+          : "Ingrese un precio de venta válido para actualizar el precio del Item.",
         path: ["salePrice"],
       },
     );

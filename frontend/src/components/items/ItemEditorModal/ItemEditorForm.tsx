@@ -1,3 +1,4 @@
+import { useEffect, useRef } from "react";
 import { useFormContext } from "react-hook-form";
 import {
   ZHField,
@@ -73,6 +74,7 @@ export function ItemEditorForm({
     handleSubmit,
     setError,
     watch,
+    setValue,
     formState: { errors, isSubmitting },
   } = useFormContext<ItemEditorFormValues>();
   const isUpdate = mode === "update";
@@ -133,6 +135,59 @@ export function ItemEditorForm({
   const vatRateOptions = vatRatesState.data ?? [];
   const vatRateByCode = new Map(vatRateOptions.map((v) => [v.code, v]));
 
+  // El <select> de IVA solo puede reflejar seleccionada una opción que ya exista en el DOM — como
+  // el catálogo de IVA carga async (useAsync más arriba) y siempre después de que ItemEditorModal
+  // ya llamó a form.reset() con la sugerencia de purchaseContext.vatCode, esa asignación inicial
+  // se pierde (el <select> uncontrolled no tiene aún la opción "2" cuando reset() intenta fijar el
+  // valor). Este efecto reaplica la sugerencia una sola vez, apenas el catálogo está disponible —
+  // por eso usa un ref en vez de leer el valor actual del form (que ya "dice" tener la sugerencia
+  // por dentro, aunque el DOM no la refleje), y nunca vuelve a correr para no pisar una elección
+  // del usuario.
+  const appliedVatSuggestionRef = useRef(false);
+  useEffect(() => {
+    if (isUpdate || vatRateOptions.length === 0) return;
+    if (appliedVatSuggestionRef.current) return;
+    const suggested = initialData?.purchaseContext?.vatCode;
+    if (!suggested) return;
+    appliedVatSuggestionRef.current = true;
+    setValue("purchaseVatCode", suggested, { shouldValidate: false });
+    setValue("saleVatCode", suggested, { shouldValidate: false });
+  }, [isUpdate, vatRateOptions.length, initialData?.purchaseContext?.vatCode, setValue]);
+
+  // Mismo problema estructural que la sugerencia de IVA de arriba, pero en modo Actualizar: el
+  // reset() con los valores del Item existente corre en ItemEditorModal (buildDefaults) antes de
+  // que categoría/marca/UOM/IVA (catálogos cargados por separado acá, en ItemEditorForm) terminen
+  // de resolver — el <select> uncontrolled no puede reflejar (ni retener al enviar el formulario,
+  // por ser uncontrolled) un valor cuya opción todavía no existe en el DOM. Sin este efecto, "Actualizar
+  // Item" podía mostrarse con categoría/marca/UOM/IVA en blanco y, peor, guardar `null` sobre un
+  // Item que sí tenía esos datos. Se reaplica una sola vez por Item (ref por id) apenas los 4
+  // catálogos de los que depende están listos, sin pisar una edición ya hecha por el usuario.
+  const appliedExistingItemIdRef = useRef<string | null>(null);
+  const updateCatalogsReady =
+    itemTypesState.data != null &&
+    brandsState.data != null &&
+    categoriesState.data != null &&
+    uomState.data != null &&
+    vatRatesState.data != null;
+  useEffect(() => {
+    if (!isUpdate || !existingItem || !updateCatalogsReady) return;
+    if (appliedExistingItemIdRef.current === existingItem.id) return;
+    appliedExistingItemIdRef.current = existingItem.id;
+    setValue("categoryNodeId", existingItem.categoryNodeId ?? "", {
+      shouldValidate: false,
+    });
+    setValue("brandId", existingItem.brandId ?? "", { shouldValidate: false });
+    setValue("defaultUomCode", existingItem.defaultUomCode, {
+      shouldValidate: false,
+    });
+    setValue("saleVatCode", existingItem.taxConfig.saleVatCode ?? "", {
+      shouldValidate: false,
+    });
+    setValue("purchaseVatCode", existingItem.taxConfig.purchaseVatCode ?? "", {
+      shouldValidate: false,
+    });
+  }, [isUpdate, existingItem, updateCatalogsReady, setValue]);
+
   const onSubmit = handleSubmit(async (values) => {
     try {
       if (isUpdate && existingItem) {
@@ -145,7 +200,7 @@ export function ItemEditorForm({
           categoryNodeId: values.categoryNodeId || null,
           brandId: values.brandId || null,
           saleVatCode: normalizeOptionalCode(values.saleVatCode),
-          purchaseVatCode: existingItem.taxConfig.purchaseVatCode,
+          purchaseVatCode: normalizeOptionalCode(values.purchaseVatCode),
           exciseTaxCode: existingItem.taxConfig.exciseTaxCode,
           observations: values.observations || null,
           // BaseSalePrice es obligatorio en Update (SSOT, ADR-021) — si el usuario no activó
@@ -172,10 +227,14 @@ export function ItemEditorForm({
           sku: item.sku,
           shortName: item.shortName,
           baseSalePrice: item.baseSalePrice,
+          purchaseVatCode: normalizeOptionalCode(values.purchaseVatCode),
         });
         return;
       }
 
+      // Create: el precio y ambos IVA (venta/compra) son obligatorios en este flujo (el Item
+      // debe quedar listo para comprar y vender sin volver al módulo de Items) — el schema ya
+      // garantiza que salePrice/saleVatCode/purchaseVatCode no lleguen vacíos acá.
       const item = await itemService.create({
         sku: values.sku,
         shortName: values.shortName,
@@ -192,8 +251,8 @@ export function ItemEditorForm({
           },
         ],
         saleVatCode: normalizeOptionalCode(values.saleVatCode),
-        purchaseVatCode: null,
-        baseSalePrice: values.updatePrice ? (values.salePrice ?? null) : null,
+        purchaseVatCode: normalizeOptionalCode(values.purchaseVatCode),
+        baseSalePrice: values.salePrice ?? null,
         observations: values.observations || null,
         supplierCodes:
           initialData?.supplierId && initialData?.supplierCode
@@ -211,6 +270,7 @@ export function ItemEditorForm({
         sku: item.sku,
         shortName: item.shortName,
         baseSalePrice: item.baseSalePrice,
+        purchaseVatCode: normalizeOptionalCode(values.purchaseVatCode),
       });
     } catch (err) {
       // applyServerErrors solo mapea 422 con mapa de campos. Cualquier otro caso (400/409 con
@@ -415,7 +475,10 @@ export function ItemEditorForm({
             : undefined
         }
         register={register}
-        fieldError={errors.salePrice?.message}
+        setValue={setValue}
+        salePriceFieldError={errors.salePrice?.message}
+        saleVatCodeFieldError={errors.saleVatCode?.message}
+        purchaseVatCodeFieldError={errors.purchaseVatCode?.message}
         isUpdate={isUpdate}
       />
 
@@ -505,7 +568,10 @@ function PriceAndProfitability({
   vatRateOptions,
   xmlVatPercent,
   register,
-  fieldError,
+  setValue,
+  salePriceFieldError,
+  saleVatCodeFieldError,
+  purchaseVatCodeFieldError,
   isUpdate,
 }: {
   purchaseContext?: CreateItemInitialData["purchaseContext"];
@@ -515,7 +581,10 @@ function PriceAndProfitability({
   vatRateOptions: SriVatRateLookup[];
   xmlVatPercent: number | undefined;
   register: ReturnType<typeof useFormContext<ItemEditorFormValues>>["register"];
-  fieldError?: string;
+  setValue: ReturnType<typeof useFormContext<ItemEditorFormValues>>["setValue"];
+  salePriceFieldError?: string;
+  saleVatCodeFieldError?: string;
+  purchaseVatCodeFieldError?: string;
   isUpdate: boolean;
 }) {
   const dc = getDecimalConfig();
@@ -539,9 +608,13 @@ function PriceAndProfitability({
   return (
     <ZHFormSection
       title="Precio y Rentabilidad"
-      description="El precio y el IVA son editables en ambos modos — la simulación es solo una ayuda visual, no requiere guardarse."
+      description={
+        isUpdate
+          ? "El precio y el IVA son editables — la simulación es solo una ayuda visual, no requiere guardarse."
+          : "El precio, el IVA de venta y el IVA de compra son obligatorios: el Item debe quedar listo para comprar y vender sin volver a configurarlo en el módulo de Items."
+      }
     >
-      <ZHGrid cols={2}>
+      <ZHGrid cols={3}>
         <ZHField label="IVA XML" readOnly density="compact">
           <input
             value={
@@ -552,8 +625,38 @@ function PriceAndProfitability({
             disabled
           />
         </ZHField>
-        <ZHField label="IVA del Item">
+        <ZHField
+          label="IVA de venta"
+          required={!isUpdate}
+          fieldError={saleVatCodeFieldError}
+        >
           <select {...register("saleVatCode")}>
+            <option value="">Sin IVA configurado</option>
+            {vatRateOptions.map((v) => (
+              <option key={v.code} value={v.code}>
+                {v.name} ({formatMoney(v.percentage, dc.percentage)}%)
+              </option>
+            ))}
+          </select>
+        </ZHField>
+        <ZHField
+          label="IVA de compra"
+          required={!isUpdate}
+          fieldError={purchaseVatCodeFieldError}
+        >
+          <select
+            {...register("purchaseVatCode", {
+              onChange: (e) => {
+                // Sugerencia: si aún no hay IVA de venta elegido, se propone el mismo código de
+                // IVA de compra — el usuario puede cambiarlo, nunca se le impone.
+                if (!isUpdate && !saleVatCode) {
+                  setValue("saleVatCode", e.target.value, {
+                    shouldValidate: true,
+                  });
+                }
+              },
+            })}
+          >
             <option value="">Sin IVA configurado</option>
             {vatRateOptions.map((v) => (
               <option key={v.code} value={v.code}>
@@ -565,7 +668,11 @@ function PriceAndProfitability({
       </ZHGrid>
 
       <ZHGrid cols={2}>
-        <ZHField label="Precio sugerido" fieldError={fieldError}>
+        <ZHField
+          label="Precio sugerido"
+          required={!isUpdate}
+          fieldError={salePriceFieldError}
+        >
           <ZhDecimalInput
             decimals={dc.salesUnitPrice}
             positiveOnly
@@ -576,16 +683,14 @@ function PriceAndProfitability({
             })}
           />
         </ZHField>
-        <ZHField label="Actualizar precio del Item">
-          <label className="zh-checkbox-label">
-            <input type="checkbox" {...register("updatePrice")} />
-            <span>
-              {isUpdate
-                ? "Usar este precio como nuevo precio del Item"
-                : "Usar este precio como precio inicial del Item"}
-            </span>
-          </label>
-        </ZHField>
+        {isUpdate && (
+          <ZHField label="Actualizar precio del Item">
+            <label className="zh-checkbox-label">
+              <input type="checkbox" {...register("updatePrice")} />
+              <span>Usar este precio como nuevo precio del Item</span>
+            </label>
+          </ZHField>
+        )}
       </ZHGrid>
 
       <div className="citm-margin-sim">
@@ -644,10 +749,10 @@ function PriceAndProfitability({
           </div>
         </ZHGrid>
       </div>
-      {!updatePrice && hasPrice && (
+      {isUpdate && !updatePrice && hasPrice && (
         <ZHFormAlert
           type="info"
-          message={`El precio no se guardará: active "Actualizar precio del Item" para usarlo como ${isUpdate ? "nuevo precio" : "precio inicial"}.`}
+          message='El precio no se guardará: active "Actualizar precio del Item" para usarlo como nuevo precio.'
         />
       )}
     </ZHFormSection>

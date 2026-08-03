@@ -401,4 +401,96 @@ describe("SalesPage — acciones de RIDE", () => {
       expect(handleViewRideMock).toHaveBeenCalledWith("inv-777");
     });
   });
+
+  describe("aviso de estado de caja", () => {
+    it("con caja abierta y sin error: no muestra ningún aviso", () => {
+      useSalesPageMock.mockReturnValue(
+        buildCtx({ hasCashSession: true, cashSessionCheckError: null }),
+      );
+
+      renderSalesPage();
+
+      expect(screen.queryByText(/No tiene una caja abierta/)).toBeNull();
+      expect(screen.queryByText("Reintentar")).toBeNull();
+    });
+
+    it("sin caja abierta (confirmado por el backend): muestra el aviso real, sin botón Reintentar", () => {
+      useSalesPageMock.mockReturnValue(
+        buildCtx({ hasCashSession: false, cashSessionCheckError: null }),
+      );
+
+      renderSalesPage();
+
+      expect(
+        screen.getByText(
+          "No tiene una caja abierta. Debe abrir una caja antes de autorizar facturas.",
+        ),
+      ).not.toBeNull();
+      expect(screen.queryByText("Reintentar")).toBeNull();
+    });
+
+    it("error de permiso (403 sin scope): muestra el mensaje de permiso, nunca el de 'sin caja', y ofrece Reintentar", () => {
+      useSalesPageMock.mockReturnValue(
+        buildCtx({ hasCashSession: null, cashSessionCheckError: "permission" }),
+      );
+
+      renderSalesPage();
+
+      expect(
+        screen.getByText(
+          "No se pudo verificar la caja abierta por falta de permiso para consultar caja.",
+        ),
+      ).not.toBeNull();
+      expect(
+        screen.queryByText(
+          "No tiene una caja abierta. Debe abrir una caja antes de autorizar facturas.",
+        ),
+      ).toBeNull();
+      expect(screen.getByText("Reintentar")).not.toBeNull();
+    });
+
+    it("error de contexto (empresa/sucursal): muestra el mensaje correspondiente", () => {
+      useSalesPageMock.mockReturnValue(
+        buildCtx({ hasCashSession: null, cashSessionCheckError: "context" }),
+      );
+
+      renderSalesPage();
+
+      expect(
+        screen.getByText(
+          "No se pudo verificar la caja abierta por contexto incompleto de empresa/sucursal.",
+        ),
+      ).not.toBeNull();
+    });
+
+    it("error de servidor/red: muestra el mensaje de reintento/conexión", () => {
+      useSalesPageMock.mockReturnValue(
+        buildCtx({ hasCashSession: null, cashSessionCheckError: "server" }),
+      );
+
+      renderSalesPage();
+
+      expect(
+        screen.getByText(
+          "No se pudo verificar la caja abierta. Reintente o revise conexión/servidor.",
+        ),
+      ).not.toBeNull();
+    });
+
+    it('"Reintentar" invoca refreshCashSession sin recargar la página', () => {
+      const refreshCashSession = vi.fn();
+      useSalesPageMock.mockReturnValue(
+        buildCtx({
+          hasCashSession: null,
+          cashSessionCheckError: "server",
+          refreshCashSession,
+        }),
+      );
+
+      renderSalesPage();
+      screen.getByText("Reintentar").click();
+
+      expect(refreshCashSession).toHaveBeenCalledTimes(1);
+    });
+  });
 });

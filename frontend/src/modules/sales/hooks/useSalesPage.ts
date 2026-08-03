@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import axios from "axios";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import type {
@@ -78,6 +79,33 @@ function nullFieldsToUndefined<T extends object>(
       Exclude<T[typeof key], null> | undefined;
   }
   return out;
+}
+
+/**
+ * Motivo por el que GET /cash-sessions/my no pudo confirmarse — nunca se confunde con "no hay
+ * caja abierta" (esa es una respuesta 200 exitosa con `null`). Distingue los tres casos reales
+ * de falla para que la UI no muestre "no tiene caja" cuando en realidad no se pudo verificar:
+ * - "permission": 403 sin código de scope — falta el permiso `caja.view` en el rol del usuario.
+ * - "context": 403 con `BRANCH_SCOPE_FORBIDDEN`/`COMPANY_SCOPE_FORBIDDEN` — falta contexto de
+ *   empresa/sucursal activa (`BranchScopeBehavior`/`CompanyScopeBehavior`, backend).
+ * - "server": cualquier otro caso (500, sin respuesta/red, etc.).
+ */
+export type CashSessionCheckErrorReason = "permission" | "context" | "server";
+
+const CASH_SESSION_SCOPE_ERROR_CODES = new Set([
+  "BRANCH_SCOPE_FORBIDDEN",
+  "COMPANY_SCOPE_FORBIDDEN",
+]);
+
+function classifyCashSessionCheckError(err: unknown): CashSessionCheckErrorReason {
+  if (!axios.isAxiosError(err) || !err.response) return "server";
+  if (err.response.status === 403) {
+    const body = err.response.data as { code?: string } | undefined;
+    if (body?.code && CASH_SESSION_SCOPE_ERROR_CODES.has(body.code))
+      return "context";
+    return "permission";
+  }
+  return "server";
 }
 
 // ── Types ──────────────────────────────────────────────────────────────
@@ -199,12 +227,40 @@ export function useSalesPage() {
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState("");
   const [editing, setEditing] = useState<SalesInvoiceDto | null>(null);
-  // undefined = todavía cargando; null = confirmado que no hay caja abierta.
+  // undefined = todavía cargando (o no se pudo verificar, ver cashSessionCheckError); null =
+  // confirmado por el backend (200 OK) que no hay caja abierta.
   const [myCashSession, setMyCashSession] = useState<
     CashSessionDto | null | undefined
   >(undefined);
   const hasCashSession =
     myCashSession === undefined ? null : myCashSession !== null;
+  // Motivo si GET /cash-sessions/my falló (permiso/contexto/servidor) — `null` mientras no haya
+  // habido un error, o tras una verificación exitosa. Nunca implica "no hay caja": eso solo lo
+  // dice `hasCashSession === false` (200 OK real).
+  const [cashSessionCheckError, setCashSessionCheckError] =
+    useState<CashSessionCheckErrorReason | null>(null);
+
+  const checkCashSession = useCallback(async (): Promise<CashSessionDto | null> => {
+    try {
+      const s = await cajaService.getMy();
+      setMyCashSession(s);
+      setCashSessionCheckError(null);
+      return s;
+    } catch (err) {
+      // No se pudo confirmar — se deja en "sin verificar" (undefined) en vez de `null`, que
+      // significaría "confirmado que no hay caja" y dispararía el aviso equivocado.
+      setMyCashSession(undefined);
+      setCashSessionCheckError(classifyCashSessionCheckError(err));
+      return null;
+    }
+  }, []);
+
+  const refreshCashSession = useCallback(() => {
+    setMyCashSession(undefined);
+    setCashSessionCheckError(null);
+    void checkCashSession();
+  }, [checkCashSession]);
+
   const branchName = useActiveBranchStore((s) => s.branch)?.name ?? null;
 
   // ── Customer state ─────────────────────────────────────────────────
@@ -425,16 +481,7 @@ export function useSalesPage() {
             setVatRatesMap(map);
           })
           .catch(() => {}),
-        cajaService
-          .getMy()
-          .then((s) => {
-            setMyCashSession(s);
-            return s;
-          })
-          .catch(() => {
-            setMyCashSession(null);
-            return null;
-          }),
+        checkCashSession(),
         sriLookupService
           .iceRates()
           .then((rates) => {
@@ -1453,6 +1500,8 @@ export function useSalesPage() {
     // Cash session (contexto operativo POS — ICurrentCashSession vía GET /cash-sessions/my)
     hasCashSession,
     myCashSession,
+    cashSessionCheckError,
+    refreshCashSession,
     branchName,
 
     // Derived

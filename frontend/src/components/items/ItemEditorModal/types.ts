@@ -41,6 +41,8 @@ export interface ItemCreatedResult {
   shortName: string;
   /** Precio base con el que quedó el Item — `null` si no se activó "Actualizar precio". */
   baseSalePrice?: number | null;
+  /** IVA de compra con el que quedó el Item — permite al llamador (p. ej. una línea de compra) reflejarlo sin volver a consultar el Item. */
+  purchaseVatCode?: string | null;
 }
 
 export interface ItemEditorModalProps {

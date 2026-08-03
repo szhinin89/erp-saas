@@ -30,12 +30,16 @@ function buildDefaults(
       barcodeType: "",
       observations: existingItem.observations ?? "",
       saleVatCode: existingItem.taxConfig.saleVatCode ?? "",
+      purchaseVatCode: existingItem.taxConfig.purchaseVatCode ?? "",
       salePrice: existingItem.baseSalePrice,
       updatePrice: false,
     };
   }
 
   const name = initialData?.name ?? "";
+  // Sugerencia inicial de IVA — el código de la línea de compra de origen (IVA XML) es el mejor
+  // candidato disponible para ambos IVA (venta y compra) al crear; el usuario puede cambiarlo.
+  const suggestedVatCode = initialData?.purchaseContext?.vatCode ?? "";
   return {
     sku: (initialData?.supplierCode ?? initialData?.barcode ?? "")
       .trim()
@@ -49,7 +53,8 @@ function buildDefaults(
     barcode: initialData?.barcode ?? "",
     barcodeType: "",
     observations: "",
-    saleVatCode: "",
+    saleVatCode: suggestedVatCode,
+    purchaseVatCode: suggestedVatCode,
     salePrice: null,
     updatePrice: false,
   };

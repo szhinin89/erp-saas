@@ -1394,6 +1394,10 @@ function CreateItemLineAction({
     setOpen(false);
     ctx.updateLine(l._key, "itemId", item.id);
     ctx.updateLine(l._key, "description", `${item.sku} — ${item.shortName}`);
+    // El Item recién creado desde Compras trae su propio IVA de compra (ahora obligatorio en
+    // ItemEditorModal) — se refleja de inmediato en la línea, sin depender de fetchItemContext
+    // (que solo llena `context` para mostrar, no el campo `vatCode` del formulario).
+    ctx.updateLine(l._key, "vatCode", item.purchaseVatCode ?? "");
     const wh = l.warehouseId || ctx.formWatch.globalWarehouseId;
     if (wh) void ctx.fetchItemContext(l._key, item.id, wh);
   };
@@ -1453,6 +1457,9 @@ function UpdateItemAction({
   const handleSaved = (item: ItemCreatedResult) => {
     setOpen(false);
     ctx.updateLine(l._key, "description", `${item.sku} — ${item.shortName}`);
+    // Si el usuario cambió el IVA de compra al editar el Item desde esta línea, la línea debe
+    // reflejar el valor vigente del Item de inmediato.
+    ctx.updateLine(l._key, "vatCode", item.purchaseVatCode ?? "");
     const wh = l.warehouseId || ctx.formWatch.globalWarehouseId;
     if (wh) void ctx.fetchItemContext(l._key, item.id, wh);
   };
@@ -1522,13 +1529,22 @@ function ReceptionCreateItemAction({
     itemId: string,
     matchStatus: ItemMatchStatus,
     label: string,
+    vatCode?: string | null,
   ) => {
     const current = ctx.getValues("lines");
     ctx.setValue(
       "lines",
       current.map((x: PurchaseLineFormValues) =>
         x._key === l._key
-          ? { ...x, itemId, itemMatchStatus: matchStatus, description: label }
+          ? {
+              ...x,
+              itemId,
+              itemMatchStatus: matchStatus,
+              description: label,
+              // Solo se pisa si viene un IVA de compra real — el matching manual (sin `item`
+              // recién creado) no debe borrar un vatCode ya cargado en la línea.
+              ...(vatCode !== undefined ? { vatCode: vatCode ?? "" } : {}),
+            }
           : x,
       ),
     );
@@ -1569,6 +1585,7 @@ function ReceptionCreateItemAction({
               updatedLine.itemId,
               updatedLine.matchStatus,
               `${item.sku} — ${item.shortName}`,
+              item.purchaseVatCode,
             );
         }}
         onCreatedButNotLinked={() => setOpen(false)}

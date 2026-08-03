@@ -143,7 +143,9 @@ async function waitForCatalogs() {
 
 async function fillRequiredFields(
   container: HTMLElement,
-  overrides: Partial<Record<"sku" | "barcode", string>> = {},
+  overrides: Partial<
+    Record<"sku" | "barcode" | "saleVatCode" | "purchaseVatCode", string>
+  > & { salePrice?: string } = {},
 ) {
   fireEvent.change(fieldByName(container, "sku"), {
     target: { value: overrides.sku ?? "SKU-1" },
@@ -167,6 +169,17 @@ async function fillRequiredFields(
   }
   fireEvent.change(fieldByName(container, "barcodeType"), {
     target: { value: "EAN13" },
+  });
+  // Obligatorios en modo Crear (fix "listo para comprar y vender sin reproceso manual"):
+  // IVA de venta, IVA de compra y precio de venta.
+  fireEvent.change(fieldByName(container, "saleVatCode"), {
+    target: { value: overrides.saleVatCode ?? "2" },
+  });
+  fireEvent.change(fieldByName(container, "purchaseVatCode"), {
+    target: { value: overrides.purchaseVatCode ?? "2" },
+  });
+  fireEvent.change(fieldByName(container, "salePrice"), {
+    target: { value: overrides.salePrice ?? "10" },
   });
 }
 
@@ -243,6 +256,8 @@ describe("ItemEditorModal — modo Crear — envío", () => {
         id: "item-1",
         sku: "SKU-1",
         shortName: "Aceite",
+        baseSalePrice: undefined,
+        purchaseVatCode: "2",
       });
     });
   });
@@ -433,14 +448,8 @@ describe("ItemEditorModal — simulación de precio de compra (purchaseContext)"
     );
   });
 
-  it("updatePrice desmarcado (default): guarda baseSalePrice=null aunque haya un precio escrito", async () => {
-    vi.mocked(itemService.create).mockResolvedValue({
-      id: "item-1",
-      sku: "SKU-1",
-      shortName: "Aceite",
-      baseSalePrice: null,
-    } as never);
-    const { container } = renderModal({
+  it('no muestra el checkbox "Actualizar precio" en modo Crear — el precio es obligatorio, no opcional', async () => {
+    renderModal({
       initialData: {
         name: "Aceite",
         purchaseContext: { unitCost: 8.5, quantity: 10 },
@@ -448,20 +457,10 @@ describe("ItemEditorModal — simulación de precio de compra (purchaseContext)"
     });
     await waitForCatalogs();
 
-    fireEvent.change(fieldByName(container, "salePrice"), {
-      target: { value: "12" },
-    });
-    await fillRequiredFields(container, { barcode: "00125" });
-    fireEvent.click(screen.getByRole("button", { name: "Crear Item" }));
-
-    await waitFor(() => {
-      expect(itemService.create).toHaveBeenCalledWith(
-        expect.objectContaining({ baseSalePrice: null }),
-      );
-    });
+    expect(screen.queryByText(/Actualizar precio del Item/)).toBeNull();
   });
 
-  it("updatePrice marcado: guarda baseSalePrice con el precio ingresado", async () => {
+  it("crear con precio, IVA de venta e IVA de compra: guarda baseSalePrice con el precio ingresado (obligatorio en este flujo)", async () => {
     vi.mocked(itemService.create).mockResolvedValue({
       id: "item-1",
       sku: "SKU-1",
@@ -476,24 +475,27 @@ describe("ItemEditorModal — simulación de precio de compra (purchaseContext)"
     });
     await waitForCatalogs();
 
-    fireEvent.change(fieldByName(container, "salePrice"), {
-      target: { value: "12" },
+    await fillRequiredFields(container, {
+      barcode: "00125",
+      salePrice: "12",
     });
-    fireEvent.click(fieldByName(container, "updatePrice"));
-    await fillRequiredFields(container, { barcode: "00125" });
     fireEvent.click(screen.getByRole("button", { name: "Crear Item" }));
 
     await waitFor(() => {
       expect(itemService.create).toHaveBeenCalledWith(
-        expect.objectContaining({ baseSalePrice: 12 }),
+        expect.objectContaining({
+          baseSalePrice: 12,
+          saleVatCode: "2",
+          purchaseVatCode: "2",
+        }),
       );
       expect(onSaved).toHaveBeenCalledWith(
-        expect.objectContaining({ baseSalePrice: 12 }),
+        expect.objectContaining({ baseSalePrice: 12, purchaseVatCode: "2" }),
       );
     });
   });
 
-  it("updatePrice marcado sin precio válido: bloquea el envío con un error de validación", async () => {
+  it("sin precio de venta: bloquea el envío con un error de validación", async () => {
     const { container } = renderModal({
       initialData: {
         name: "Aceite",
@@ -502,18 +504,76 @@ describe("ItemEditorModal — simulación de precio de compra (purchaseContext)"
     });
     await waitForCatalogs();
 
-    fireEvent.click(fieldByName(container, "updatePrice"));
-    await fillRequiredFields(container, { barcode: "00125" });
+    fireEvent.change(fieldByName(container, "sku"), {
+      target: { value: "SKU-1" },
+    });
+    fireEvent.change(fieldByName(container, "itemTypeId"), {
+      target: { value: "type-1" },
+    });
+    fireEvent.change(fieldByName(container, "categoryNodeId"), {
+      target: { value: "cat-1" },
+    });
+    fireEvent.change(fieldByName(container, "brandId"), {
+      target: { value: "brand-1" },
+    });
+    fireEvent.change(fieldByName(container, "defaultUomCode"), {
+      target: { value: "UNIT" },
+    });
+    fireEvent.change(fieldByName(container, "barcode"), {
+      target: { value: "00125" },
+    });
+    fireEvent.change(fieldByName(container, "barcodeType"), {
+      target: { value: "EAN13" },
+    });
+    fireEvent.change(fieldByName(container, "saleVatCode"), {
+      target: { value: "2" },
+    });
+    fireEvent.change(fieldByName(container, "purchaseVatCode"), {
+      target: { value: "2" },
+    });
     fireEvent.click(screen.getByRole("button", { name: "Crear Item" }));
 
     await waitFor(() =>
       expect(
-        screen.getByText(
-          "Ingrese un precio de venta válido para actualizar el precio del Item.",
-        ),
+        screen.getByText("Ingrese un precio de venta válido para crear el Item."),
       ).toBeTruthy(),
     );
     expect(itemService.create).not.toHaveBeenCalled();
+  });
+
+  it("sin IVA de compra: bloquea el envío con un error de validación", async () => {
+    const { container } = renderModal({
+      initialData: { name: "Aceite" },
+    });
+    await waitForCatalogs();
+
+    await fillRequiredFields(container, {
+      barcode: "00125",
+      purchaseVatCode: "",
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Crear Item" }));
+
+    await waitFor(() =>
+      expect(
+        screen.getByText("Debe seleccionar el IVA de compra del Item."),
+      ).toBeTruthy(),
+    );
+    expect(itemService.create).not.toHaveBeenCalled();
+  });
+
+  it("con purchaseContext.vatCode: precarga IVA de venta e IVA de compra sugeridos", async () => {
+    const { container } = renderModal({
+      initialData: {
+        name: "Aceite",
+        purchaseContext: { unitCost: 8.5, quantity: 10, vatCode: "2" },
+      },
+    });
+    await waitForCatalogs();
+
+    await waitFor(() => {
+      expect(fieldByName(container, "saleVatCode").value).toBe("2");
+      expect(fieldByName(container, "purchaseVatCode").value).toBe("2");
+    });
   });
 });
 
@@ -533,6 +593,53 @@ describe("ItemEditorModal — modo Actualizar (itemId presente)", () => {
     );
     expect(fieldByName(container, "sku").value).toBe("SKU-1");
     expect(fieldByName(container, "description").value).toBe("Aceite girasol");
+  });
+
+  it("prellena categoría, marca, UOM, IVA de venta e IVA de compra desde el Item existente — no se pierden aunque los catálogos (fetch async) resuelvan después del reset inicial", async () => {
+    vi.mocked(itemService.getById).mockResolvedValue(existingItem as never);
+    const { container } = renderModal({ itemId: "item-1" });
+
+    await waitFor(() =>
+      expect(itemService.getById).toHaveBeenCalledWith("item-1"),
+    );
+    await waitForCatalogs();
+
+    await waitFor(() => {
+      expect(fieldByName(container, "categoryNodeId").value).toBe("cat-1");
+      expect(fieldByName(container, "brandId").value).toBe("brand-1");
+      expect(fieldByName(container, "defaultUomCode").value).toBe("UNIT");
+      expect(fieldByName(container, "saleVatCode").value).toBe("2");
+      expect(fieldByName(container, "purchaseVatCode").value).toBe("2");
+    });
+  });
+
+  it("al guardar sin tocar nada, no borra categoría/marca (regresión: uncontrolled select vacío por catálogo aún no cargado)", async () => {
+    vi.mocked(itemService.getById).mockResolvedValue(existingItem as never);
+    vi.mocked(itemService.update).mockResolvedValue({
+      id: "item-1",
+      sku: "SKU-1",
+      shortName: "Aceite",
+      baseSalePrice: 10,
+    } as never);
+    renderModal({ itemId: "item-1" });
+
+    await waitFor(() =>
+      expect(
+        screen.getByRole("button", { name: "Actualizar Item" }),
+      ).toBeTruthy(),
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Actualizar Item" }));
+
+    await waitFor(() => {
+      expect(itemService.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          categoryNodeId: "cat-1",
+          brandId: "brand-1",
+          saleVatCode: "2",
+          purchaseVatCode: "2",
+        }),
+      );
+    });
   });
 
   it("no muestra los campos de código de barras (Update no gestiona códigos de barras)", async () => {
