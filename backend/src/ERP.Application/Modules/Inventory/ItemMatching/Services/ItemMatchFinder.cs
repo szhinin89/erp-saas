@@ -146,13 +146,21 @@ public sealed class ItemMatchFinder : IItemMatchFinder
 
             var score = Math.Round((decimal)match.Score * 100, 2);
 
-            if (!isNormalizedEqual && !HasEnoughWordsMatch(description, match.ShortName))
+            // Los guards de calidad (solapamiento de palabras, piso de score) solo aplican a la
+            // rama de similitud pura: una igualdad de descripción normalizada es una señal más
+            // fuerte que el score crudo de pg_trgm y siempre resuelve a un score fijo (95m,
+            // ver abajo), que por construcción ya supera MinSuggestionScore — evaluar el score
+            // crudo antes de esa resolución filtraba candidatos normalizados-iguales legítimos
+            // cuyo score pg_trgm crudo caía por debajo del piso pensado únicamente para
+            // sugerencias por similitud pura.
+            if (!isNormalizedEqual)
             {
-                continue;
-            }
+                if (!HasEnoughWordsMatch(description, match.ShortName))
+                    continue;
 
-            if (score < MinSuggestionScore)
-                continue;
+                if (score < MinSuggestionScore)
+                    continue;
+            }
 
             candidates[match.ItemId] = isNormalizedEqual
                 ? new ItemMatchCandidateDto(

@@ -188,6 +188,19 @@ public sealed class ItemMatchFinderTests
         candidates[0].MatchReason.Should().Be(ItemMatchFinder.ReasonDescriptionNormalized);
     }
 
+    /// <summary>
+    /// P0-02 (Application Test Gate Remediation 01) — la fijación original de este test (score
+    /// pg_trgm de 0.42 sobre "Leche deslactosada 1L" vs. "Leche entera") quedó desactualizada tras
+    /// el endurecimiento deliberado de la política de sugerencias en el commit d8aaf3a2 (que nunca
+    /// tocó este archivo): <c>MinSuggestionScore</c> (75) y <c>HasEnoughWordsMatch</c> (≥2 palabras
+    /// normalizadas en común) se agregaron como piso de calidad para candidatos de similitud pura
+    /// — un score de 42 y una sola palabra en común ("leche") ya no deberían sugerirse, y el
+    /// fixture original violaba ambos guards vigentes. Se actualiza únicamente el dato de entrada
+    /// para representar un candidato de similitud pura realista que sí satisface la política
+    /// actual (≥2 palabras en común, score ≥ MinSuggestionScore, sin igualdad normalizada) —
+    /// la aserción original (el score entregado es exactamente el score crudo de pg_trgm, sin
+    /// sustituirlo por un valor fijo) se conserva intacta.
+    /// </summary>
     [Fact]
     public async Task Plain_similarity_candidates_use_the_pg_trgm_score()
     {
@@ -219,7 +232,7 @@ public sealed class ItemMatchFinderTests
                     item.Code.SKU,
                     item.Code.ShortName,
                     item.Code.Description,
-                    0.42
+                    0.81
                 ),
             ]);
 
@@ -229,12 +242,12 @@ public sealed class ItemMatchFinderTests
             supplierId: null,
             supplierCode: null,
             supplierAuxCode: null,
-            description: "Leche deslactosada 1L",
+            description: "Leche entera light 1L",
             maxResults: 5
         );
 
         candidates.Should().ContainSingle();
-        candidates[0].MatchScore.Should().Be(42m);
+        candidates[0].MatchScore.Should().Be(81m);
         candidates[0].MatchReason.Should().Be(ItemMatchFinder.ReasonDescriptionSimilarity);
     }
 }
