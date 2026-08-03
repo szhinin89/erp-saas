@@ -77,7 +77,7 @@ export function SalesPage() {
             <button
               className="pf-btn pf-btn--primary"
               onClick={() => {
-                ctx.resetForm();
+                void ctx.resetForm();
                 ctx.setTab("nuevo");
               }}
             >
@@ -226,7 +226,7 @@ export function SalesPage() {
               <button
                 className="sf-tab"
                 onClick={() => {
-                  ctx.resetForm();
+                  void ctx.resetForm();
                   ctx.setTab("listado");
                 }}
               >
@@ -877,7 +877,8 @@ function SalesFormChecklist({ ctx }: { ctx: SalesPageContext }) {
   const paymentExceeds = paid > total + PAYMENT_EXCEEDS_TOLERANCE;
 
   const canSaveDraft = hasCustomer && hasLines;
-  const canEmit = canSaveDraft && hasEmissionPoint && paymentOk;
+  const canEmit =
+    canSaveDraft && hasEmissionPoint && paymentOk && !ctx.cashInsufficient;
 
   const nextStep = !hasCustomer
     ? "Seleccione un cliente para comenzar."
@@ -889,11 +890,13 @@ function SalesFormChecklist({ ctx }: { ctx: SalesPageContext }) {
           ? "El cobro excede el total — ajuste las formas de pago."
           : total > 0 && !paymentOk
             ? "Configure las formas de cobro para poder emitir."
-            : canSaveDraft && !ctx.editing
-              ? "Guarde el borrador primero. Luego podrá emitir la factura."
-              : canEmit && ctx.editing
-                ? `Listo para emitir ${ctx.isElectronic ? "(electrónica)" : "(física)"}.`
-                : null;
+            : ctx.cashInsufficient
+              ? "El monto recibido en efectivo es menor al total a cobrar."
+              : canSaveDraft && !ctx.editing
+                ? "Guarde el borrador primero. Luego podrá emitir la factura."
+                : canEmit && ctx.editing
+                  ? `Listo para emitir ${ctx.isElectronic ? "(electrónica)" : "(física)"}.`
+                  : null;
 
   type ItemStatus = "ok" | "missing" | "error";
   const item = (label: string, status: ItemStatus) => (
@@ -935,6 +938,11 @@ function SalesFormChecklist({ ctx }: { ctx: SalesPageContext }) {
                 ? "missing"
                 : "missing",
         )}
+        {ctx.cashDue > 0 &&
+          item(
+            "Monto recibido en efectivo",
+            ctx.cashInsufficient ? "error" : "ok",
+          )}
       </div>
       {nextStep && (
         <div className="sf-next-step">
@@ -960,6 +968,8 @@ function EmitButton({ ctx }: { ctx: SalesPageContext }) {
   if (ctx.lines.length === 0) reasons.push("Agregue al menos un producto");
   if (ctx.hasCashSession === true && ctx.summary.total > 0 && !ctx.paymentOk)
     reasons.push("Registre formas de pago por el total de la factura");
+  if (ctx.cashInsufficient)
+    reasons.push("El monto recibido en efectivo es menor al total a cobrar");
 
   return (
     <div style={{ position: "relative" }}>
@@ -1280,6 +1290,85 @@ function PaymentMethodsSection({
               );
             })}
           </div>
+          {ctx.cashDue > 0 && (
+            <div
+              style={{
+                fontSize: 11,
+                marginTop: 6,
+                padding: "6px 8px",
+                borderRadius: 6,
+                background: ctx.cashInsufficient ? "#fef2f2" : "#f8fafc",
+                border: ctx.cashInsufficient
+                  ? "1.5px solid #dc2626"
+                  : "1px solid var(--color-border)",
+              }}
+            >
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  gap: 8,
+                }}
+              >
+                <span style={{ color: "var(--color-text-secondary)" }}>
+                  Monto recibido (Efectivo):
+                </span>
+                <div
+                  style={{ display: "flex", alignItems: "center", gap: 2 }}
+                >
+                  <span style={{ fontSize: 11 }}>$</span>
+                  <ZhDecimalInput
+                    decimals={getDecimalConfig().totalAmount}
+                    positiveOnly
+                    defaultValue={
+                      ctx.cashReceived > 0
+                        ? formatMoney(
+                            ctx.cashReceived,
+                            getDecimalConfig().totalAmount,
+                          )
+                        : ""
+                    }
+                    disabled={ctx.fieldDisabled}
+                    onBlur={(e) =>
+                      ctx.setCashReceived(Number(e.target.value) || 0)
+                    }
+                    style={{
+                      width: 80,
+                      fontSize: 13,
+                      fontFamily: "monospace",
+                      fontWeight: 700,
+                      textAlign: "center",
+                      padding: "2px 4px",
+                    }}
+                  />
+                </div>
+              </div>
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  fontWeight: 700,
+                  marginTop: 2,
+                  paddingTop: 2,
+                  borderTop: "1px solid var(--color-border)",
+                  color: ctx.cashInsufficient
+                    ? "#dc2626"
+                    : "var(--color-text-primary)",
+                }}
+              >
+                <span>{ctx.cashInsufficient ? "✗ Insuficiente" : "Vuelto:"}</span>
+                <span style={{ fontFamily: "monospace" }}>
+                  {formatMoneyWithSymbol(
+                    ctx.cashInsufficient
+                      ? ctx.cashDue - ctx.cashReceived
+                      : ctx.cashChange,
+                    getDecimalConfig().totalAmount,
+                  )}
+                </span>
+              </div>
+            </div>
+          )}
           {(() => {
             const paid = ctx.payments.reduce((s, p) => s + (p.amount || 0), 0);
             const total = ctx.summary.total;

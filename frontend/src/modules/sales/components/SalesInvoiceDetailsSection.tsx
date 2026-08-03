@@ -160,20 +160,58 @@ export function SalesInvoiceDetailsSection({
   );
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (!open || results.length === 0) return;
     if (e.key === "ArrowDown") {
+      if (!open || results.length === 0) return;
       e.preventDefault();
       setFocusIdx((i) => Math.min(i + 1, results.length - 1));
+      return;
     }
     if (e.key === "ArrowUp") {
+      if (!open || results.length === 0) return;
       e.preventDefault();
       setFocusIdx((i) => Math.max(i - 1, 0));
+      return;
     }
-    if (e.key === "Enter" && focusIdx >= 0) {
-      e.preventDefault();
+    if (e.key === "Escape") {
+      setOpen(false);
+      return;
+    }
+    if (e.key !== "Enter") return;
+    e.preventDefault();
+    if (query.trim().length < 2) return;
+
+    // Navegación por teclado (usuario ya resaltó un resultado): respeta esa elección.
+    if (open && focusIdx >= 0 && results[focusIdx]) {
       void selectItem(results[focusIdx]);
+      return;
     }
-    if (e.key === "Escape") setOpen(false);
+    // Resultados ya cargados (búsqueda con debounce ya resuelta): agrega el primero —
+    // caso típico de lector de código de barras USB (código + Enter).
+    if (open && !loading && results.length > 0) {
+      void selectItem(results[0]);
+      return;
+    }
+    // El debounce de 300ms aún no resolvió (Enter llegó antes) — se fuerza una
+    // búsqueda inmediata para no perder el escaneo.
+    void (async () => {
+      clearTimeout(debounceRef.current);
+      setLoading(true);
+      const version = ++searchVersionRef.current;
+      try {
+        const res = await invoiceItemSearchService.search({
+          q: query.trim(),
+          warehouseId: selectedWarehouseId || undefined,
+          pageSize: 10,
+        });
+        if (version !== searchVersionRef.current) return;
+        setResults(res);
+        if (res.length > 0) void selectItem(res[0]);
+      } catch {
+        if (version === searchVersionRef.current) setResults([]);
+      } finally {
+        if (version === searchVersionRef.current) setLoading(false);
+      }
+    })();
   };
 
   const dc = getDecimalConfig();

@@ -143,6 +143,38 @@ function issueErrorStatus(e: unknown): number | undefined {
   return (e as { response?: { status?: number } })?.response?.status;
 }
 
+/** Identificación SRI estándar (tipo 07) del "Consumidor Final" — mismo literal que
+ * `TaxIdentification.ConsumidorFinalNumber` en el backend (dominio), sembrado en cada
+ * tenant por `SalesBootstrapStep`. No es un dato de negocio tenant-específico: es un
+ * valor regulatorio fijo del SRI, usado aquí solo como clave de búsqueda. */
+const CONSUMIDOR_FINAL_IDENTIFICATION_NUMBER = "9999999999999";
+
+/** Fallback universal de cliente para venta mostrador: resuelve el Consumidor Final ya
+ * sembrado del tenant vía el buscador de clientes existente (no crea nada, no inventa
+ * datos). Devuelve null si el tenant no lo tiene sembrado — el llamador debe manejarlo
+ * dejando el campo cliente vacío para selección manual, nunca fallando la pantalla. */
+async function resolveConsumidorFinal(): Promise<CustomerPickerRow | null> {
+  try {
+    const rows = await businessPartnerFacade.searchCustomersForPicker(
+      CONSUMIDOR_FINAL_IDENTIFICATION_NUMBER,
+    );
+    return (
+      rows.find(
+        (r) => r.identificationNumber === CONSUMIDOR_FINAL_IDENTIFICATION_NUMBER,
+      ) ?? null
+    );
+  } catch {
+    return null;
+  }
+}
+
+/** Identifica la forma de pago "Efectivo" del catálogo tenant-editable — código sembrado
+ * por SalesBootstrapStep (ver CLAUDE.md/backend), no un enum fijo. Solo habilita el campo
+ * de "Monto recibido / Vuelto" en pantalla; no afecta reglas de negocio del backend. */
+function isCashPaymentMethod(pm: PaymentMethodDto | undefined): boolean {
+  return !!pm && pm.code.trim().toUpperCase() === "EFECTIVO";
+}
+
 /** Avanza el índice de paso mostrado mientras se espera la respuesta de /authorize; se detiene en el último paso si la respuesta tarda más que la animación. */
 function simulateRemainingSteps(
   setIndex: (updater: (i: number) => number) => void,
@@ -244,6 +276,9 @@ export function useSalesPage() {
   const [creditAmount, setCreditAmount] = useState(0);
   const [creditRows, setCreditRows] = useState<CreditRow[]>([]);
 
+  // ── Cash payment: monto recibido / vuelto (solo UI — el backend no exige este dato) ──
+  const [cashReceived, setCashReceived] = useState(0);
+
   // ── Line key counter ───────────────────────────────────────────────
   const [lineKey, setLineKey] = useState(1);
   const [payKey, setPayKey] = useState(1);
@@ -291,12 +326,27 @@ export function useSalesPage() {
     summary.total > 0 &&
     paidTotal > 0 &&
     Math.abs(summary.total - paidTotal) < INVOICE_PAYMENT_TOLERANCE;
+  // Efectivo: si hay un cobro asignado a la forma de pago "Efectivo", el monto recibido
+  // no puede ser menor al cobro requerido — de lo contrario no hay vuelto que calcular.
+  const cashPaymentEntry = payments.find((p) =>
+    isCashPaymentMethod(paymentMethods.find((pm) => pm.id === p.paymentMethodId)),
+  );
+  const cashDue = cashPaymentEntry?.amount || 0;
+  const cashChangeFactor = 10 ** getDecimalConfig().totalAmount;
+  const cashChange =
+    cashDue > 0
+      ? Math.max(0, Math.round((cashReceived - cashDue) * cashChangeFactor) / cashChangeFactor)
+      : 0;
+  const cashInsufficient =
+    cashDue > 0 && cashReceived + INVOICE_PAYMENT_TOLERANCE < cashDue;
+
   const canEmit =
     !fieldDisabled &&
     hasCustomer &&
     hasLines &&
     hasCashSession === true &&
-    paymentOk;
+    paymentOk &&
+    !cashInsufficient;
 
   const grandTotal = editing && readOnly ? editing.grandTotal : summary.total;
   const totalDiscount =
@@ -428,7 +478,9 @@ export function useSalesPage() {
       if (effectiveWhId) setSelectedWarehouseId(effectiveWhId);
 
       // Cliente por defecto de la Caja — mismo loadCustomerProfile ya usado al elegir
-      // cliente manualmente (handleCustomerChange), sin lógica paralela.
+      // cliente manualmente (handleCustomerChange), sin lógica paralela. Si la caja no
+      // trae DefaultCustomerId, se cae al fallback universal de Consumidor Final (venta
+      // mostrador) — nunca queda el campo con datos inventados, solo vacío si tampoco existe.
       if (sessionData?.defaultCustomerId) {
         setValue("customerId", sessionData.defaultCustomerId, {
           shouldDirty: true,
@@ -437,6 +489,13 @@ export function useSalesPage() {
           sessionData.defaultCustomerId,
         );
         setCustomerProfile(profile);
+      } else {
+        const consumidorFinal = await resolveConsumidorFinal();
+        if (consumidorFinal) {
+          setValue("customerId", consumidorFinal.id, { shouldDirty: true });
+          const profile = await loadCustomerProfile(consumidorFinal.id);
+          setCustomerProfile(profile);
+        }
       }
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -701,7 +760,7 @@ export function useSalesPage() {
   );
 
   // ── Form reset ─────────────────────────────────────────────────────
-  const resetForm = useCallback(() => {
+  const resetForm = useCallback(async () => {
     const base = emptySalesInvoiceForm();
     reset({
       ...base,
@@ -724,8 +783,25 @@ export function useSalesPage() {
     setSaveError("");
     setLineKey(1);
     setPayKey(1);
+    setCashReceived(0);
     setProductSearchFocusKey((k) => k + 1); // reenfoca "buscar producto" — UX retail
-  }, [reset, tenantDefaults]);
+
+    // Cliente por defecto: Caja (DefaultCustomerId) → fallback universal Consumidor
+    // Final — mismo criterio de prioridad que la carga inicial de la pantalla.
+    const defaultCustomerId = myCashSession?.defaultCustomerId;
+    if (defaultCustomerId) {
+      setValue("customerId", defaultCustomerId, { shouldDirty: true });
+      const profile = await loadCustomerProfile(defaultCustomerId);
+      setCustomerProfile(profile);
+    } else {
+      const consumidorFinal = await resolveConsumidorFinal();
+      if (consumidorFinal) {
+        setValue("customerId", consumidorFinal.id, { shouldDirty: true });
+        const profile = await loadCustomerProfile(consumidorFinal.id);
+        setCustomerProfile(profile);
+      }
+    }
+  }, [reset, tenantDefaults, myCashSession, setValue, loadCustomerProfile]);
 
   // "Limpiar Todo": solo pide confirmación si hay algo que perder (cliente y/o líneas
   // cargadas) — evita fricción cuando el formulario ya está vacío.
@@ -742,7 +818,7 @@ export function useSalesPage() {
       });
       if (!confirmed) return;
     }
-    resetForm();
+    void resetForm();
   }, [getValues, resetForm]);
 
   // ── Customer change handler ────────────────────────────────────────
@@ -1041,7 +1117,7 @@ export function useSalesPage() {
   }, [confirmIssue]);
 
   const startNewSale = useCallback(() => {
-    resetForm();
+    void resetForm();
     setIssuePhase("idle");
     setIssueResult(null);
     setIssueError(null);
@@ -1123,7 +1199,7 @@ export function useSalesPage() {
       try {
         await salesService.cancel(editing.id, reason);
         message.success("Factura anulada correctamente.");
-        resetForm();
+        void resetForm();
         setTab("listado");
         fetchList();
       } catch (e: unknown) {
@@ -1462,6 +1538,13 @@ export function useSalesPage() {
     creditRows,
     setCreditRows,
     simulateCreditInstallments,
+
+    // Cash payment (Monto recibido / Vuelto)
+    cashReceived,
+    setCashReceived,
+    cashDue,
+    cashChange,
+    cashInsufficient,
   };
 }
 
