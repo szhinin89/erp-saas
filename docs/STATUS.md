@@ -33,6 +33,20 @@
 
 ---
 
+## Backlog futuro UX
+
+### MEJORA_FUTURA_UX_01 — Command Palette / Buscador rápido de navegación
+
+- **Estado:** BACKLOG / FUTURE
+- **Prioridad:** P2
+- **Tipo:** UX / Navegación / Productividad
+- **Dependencia:** App Drawer estabilizado y `navigation.config.ts` como SSOT.
+- **Objetivo:** Permitir buscar y abrir formularios con `Ctrl+K` / `Cmd+K` usando la misma fuente de verdad del menú.
+- **Fuera de alcance actual:** No implementar código, no tocar backend, no cambiar rutas, no cambiar permisos ni modificar el App Drawer.
+- **Motivo:** Mejora no bloqueante para usuarios avanzados cuando existan más pantallas.
+
+---
+
 ## Estado actual (2026-06-24)
 
 **Completado**

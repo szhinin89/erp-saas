@@ -3,12 +3,11 @@ import { clearAccessToken, getAccessToken } from "./authTokenMemory";
 import { refreshSessionToken } from "./refreshSessionToken";
 
 /**
- * Tras recargar la pestaña: perfil en sessionStorage; access token solo en memoria.
- * Refresh vía cookie httpOnly con retry benigno si otra pestaña rotó primero.
+ * Tras recargar o abrir una nueva pestaña: el access token solo vive en memoria y
+ * sessionStorage puede estar vacío. El refresh con cookie httpOnly reconstruye el
+ * perfil de Zustand mediante `login` dentro de `refreshSessionToken`.
  */
 export async function restoreSessionFromCookie(): Promise<boolean> {
-  const { user, isAuthenticated } = useAuthStore.getState();
-  if (!isAuthenticated || !user) return false;
   if (getAccessToken()) return true;
 
   try {

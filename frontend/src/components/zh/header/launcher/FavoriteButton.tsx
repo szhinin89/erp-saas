@@ -1,4 +1,5 @@
 import type { NavItem, TranslateFn } from "../../../../nav/navConfig";
+import { LauncherIcon } from "./LauncherIcon";
 
 type FavoriteButtonProps = {
   item: NavItem;
@@ -29,12 +30,7 @@ export function FavoriteButton({
         toggleFavorite(item);
       }}
     >
-      <span
-        className="material-symbols-outlined zh-launcher__favIcon"
-        aria-hidden="true"
-      >
-        star
-      </span>
+      <LauncherIcon name="star" className="zh-launcher__favIcon" />
     </button>
   );
 }

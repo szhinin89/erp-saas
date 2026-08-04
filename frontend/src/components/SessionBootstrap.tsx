@@ -23,7 +23,9 @@ export function SessionBootstrap({ children }: Props) {
 
     let cancelled = false;
     (async () => {
-      if (isAuthenticated && !getAccessToken()) {
+      // Una pestaña abierta con `noopener` no hereda sessionStorage. Intentar
+      // restaurar desde la cookie permite reconstruir su perfil y sucursal activa.
+      if (!getAccessToken()) {
         await restoreSessionFromCookie();
       }
       if (!cancelled) setReady(true);

@@ -2,23 +2,7 @@ import type { MainMenuGroup } from "../../../useAppLayoutNavigation";
 import type { NavItem, TranslateFn } from "../../../../nav/navConfig";
 import { LauncherCategoryGroup } from "./LauncherCategoryGroup";
 import { LauncherMenuItem } from "./LauncherMenuItem";
-import { useLauncherExpansion } from "./useLauncherExpansion";
-
-function ModuleIcon({ icon }: { icon: string }) {
-  const isMaterialSymbol = /^[a-z][a-z0-9_]*$/.test(icon);
-  return isMaterialSymbol ? (
-    <span
-      className="material-symbols-outlined zh-launcher__moduleIcon"
-      aria-hidden="true"
-    >
-      {icon}
-    </span>
-  ) : (
-    <span className="zh-launcher__moduleIcon" aria-hidden="true">
-      {icon}
-    </span>
-  );
-}
+import { LauncherIcon, LauncherModuleIcon } from "./LauncherIcon";
 
 type LauncherModuleGroupProps = {
   group: MainMenuGroup;
@@ -27,7 +11,10 @@ type LauncherModuleGroupProps = {
   isFavorite: (id: string) => boolean;
   toggleFavorite: (item: NavItem) => void;
   t: TranslateFn;
-  forceExpanded: boolean;
+  expandedModuleId: string | null;
+  onToggleModule: (moduleId: string) => void;
+  expandedGroupId: string | null;
+  onToggleGroup: (groupId: string) => void;
 };
 
 /**
@@ -42,13 +29,11 @@ export function LauncherModuleGroup({
   isFavorite,
   toggleFavorite,
   t,
-  forceExpanded,
+  expandedModuleId,
+  onToggleModule,
+  expandedGroupId,
+  onToggleGroup,
 }: LauncherModuleGroupProps) {
-  const storageKey = `module:${group.id}`;
-  const { isExpanded, toggle } = useLauncherExpansion(
-    group.isActive ? [storageKey] : [],
-  );
-
   const isSingleLink =
     group.items.length === 1 && !group.items[0].children?.length;
 
@@ -68,7 +53,7 @@ export function LauncherModuleGroup({
     );
   }
 
-  const open = isExpanded(storageKey) || forceExpanded;
+  const open = expandedModuleId === group.id;
   const contentId = `zh-launcher-module-${group.id}`;
 
   return (
@@ -78,16 +63,14 @@ export function LauncherModuleGroup({
         className={`zh-launcher__moduleToggle${group.isActive ? " is-active" : ""}`}
         aria-expanded={open}
         aria-controls={contentId}
-        onClick={() => toggle(storageKey)}
+        onClick={() => onToggleModule(group.id)}
       >
-        {group.icon ? <ModuleIcon icon={group.icon} /> : null}
+        <LauncherModuleIcon
+          moduleId={group.id}
+          className="zh-launcher__moduleIcon"
+        />
         <span className="zh-launcher__moduleLabel">{group.label}</span>
-        <span
-          className="material-symbols-outlined zh-launcher__moduleCaret"
-          aria-hidden="true"
-        >
-          chevron_right
-        </span>
+        <LauncherIcon name="chevron" className="zh-launcher__moduleCaret" />
       </button>
       {open ? (
         <div id={contentId} className="zh-launcher__moduleBody">
@@ -102,7 +85,9 @@ export function LauncherModuleGroup({
                 isFavorite={isFavorite}
                 toggleFavorite={toggleFavorite}
                 t={t}
-                forceExpanded={forceExpanded}
+                moduleId={group.id}
+                expandedGroupId={expandedGroupId}
+                onToggleGroup={onToggleGroup}
               />
             ) : (
               <LauncherMenuItem

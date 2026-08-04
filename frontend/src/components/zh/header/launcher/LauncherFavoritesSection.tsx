@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import type { NavItem, TranslateFn } from "../../../../nav/navConfig";
 import { LauncherMenuItem } from "./LauncherMenuItem";
+import { LauncherIcon } from "./LauncherIcon";
 
 const MAX_VISIBLE = 6;
 const EXPANDED_STORAGE_KEY = "zh.ui.launcher.favorites.expanded";
@@ -57,24 +58,14 @@ export function LauncherFavoritesSection({
         aria-expanded={isExpanded}
         onClick={() => setIsExpanded((v) => !v)}
       >
-        <span
-          className="material-symbols-outlined zh-launcher__favoritesIcon"
-          aria-hidden="true"
-        >
-          star
-        </span>
+        <LauncherIcon name="star" className="zh-launcher__favoritesIcon" />
         <span className="zh-launcher__favoritesTitle">
           {t("app.header.appLauncher.myShortcuts")}
         </span>
         {count > 0 ? (
           <span className="zh-launcher__favoritesCount">{count}</span>
         ) : null}
-        <span
-          className="material-symbols-outlined zh-launcher__favoritesCaret"
-          aria-hidden="true"
-        >
-          expand_more
-        </span>
+        <LauncherIcon name="chevron" className="zh-launcher__favoritesCaret" />
       </button>
 
       <div

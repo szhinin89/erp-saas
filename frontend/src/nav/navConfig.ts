@@ -3,6 +3,8 @@ import type { NavMenuGroupDto, NavMenuItemDto } from "../types/access";
 export type NavItem = {
   to: string;
   label: string;
+  /** Descripción breve de uso, mostrada en el menú principal. */
+  description?: string;
   icon?: string;
   children?: NavItem[];
   /**
@@ -40,6 +42,38 @@ export type NavGroup = {
 };
 
 export type TranslateFn = (key: string) => string;
+
+/**
+ * Descripciones de navegación centralizadas por ruta. Las rutas siguen viniendo
+ * del menú filtrado por permisos del backend; este catálogo solo aporta contexto
+ * visual al App Launcher.
+ */
+const MENU_DESCRIPTION_BY_ROUTE_PREFIX: ReadonlyArray<readonly [string, string]> = [
+  ["/dashboard", "Indicadores y actividad reciente"],
+  ["/masterdata/customers", "Gestión de clientes y saldos"],
+  ["/masterdata/suppliers", "Gestión de proveedores y compras"],
+  ["/masterdata", "Catálogos base del sistema"],
+  ["/inventory/items", "Catálogo, precios e impuestos"],
+  ["/inventory", "Stock, kardex y movimientos"],
+  ["/purchases", "Facturas, recepción y proveedores"],
+  ["/sales", "Facturación, clientes y cobranzas"],
+  ["/finance", "Caja, pagos y cuentas por cobrar"],
+  ["/accounting", "Asientos, períodos y reglas contables"],
+  ["/logistica", "Sucursales, bodegas y transporte"],
+  ["/settings", "Parámetros de empresa y sistema"],
+  ["/configuracion", "Parámetros de empresa y sistema"],
+  ["/access", "Usuarios, roles y permisos"],
+  ["/security", "Usuarios, roles y permisos"],
+  ["/admin", "Administración y control operativo"],
+  ["/reportes", "Consultas operativas y análisis"],
+];
+
+function menuItemDescription(path: string): string {
+  const match = MENU_DESCRIPTION_BY_ROUTE_PREFIX.find(
+    ([prefix]) => path === prefix || path.startsWith(`${prefix}/`),
+  );
+  return match?.[1] ?? "Gestión y consulta operativa";
+}
 
 /** Returns true when backend sends a plan-custom menu (no static groups injected). */
 export function isPlanBuilderSessionMenu(
@@ -125,6 +159,7 @@ function mapSessionMenuItem(it: NavMenuItemDto, t: TranslateFn): NavItem {
   return {
     to: normalized,
     label: dl && dl.length > 0 ? dl : t(it.labelKey),
+    description: menuItemDescription(normalized),
     id: it.id,
     ...(children?.length ? { children } : {}),
   };
@@ -215,6 +250,7 @@ export function ensureTenantHomeOverview(
     id: "synthetic-home-erp-dashboard",
     to: "/dashboard",
     label: t("app.nav.erpDashboard"),
+    description: menuItemDescription("/dashboard"),
   };
 
   const homeIdx = groups.findIndex((g) => g.id === "home");
@@ -262,16 +298,19 @@ export function ensureReportsGroup(
         id: "synthetic-reports-sales",
         to: "/reportes/ventas",
         label: t("app.nav.reports.sales"),
+        description: menuItemDescription("/reportes/ventas"),
       },
       {
         id: "synthetic-reports-stock",
         to: "/reportes/stock",
         label: t("app.nav.reports.stock"),
+        description: menuItemDescription("/reportes/stock"),
       },
       {
         id: "synthetic-reports-purchases",
         to: "/reportes/compras",
         label: t("app.nav.reports.purchases"),
+        description: menuItemDescription("/reportes/compras"),
       },
     ],
   };

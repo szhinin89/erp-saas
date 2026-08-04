@@ -1,11 +1,9 @@
 import {
-  navItemStorageKey,
-  navSubtreeMatchesPath,
   type NavItem,
   type TranslateFn,
 } from "../../../../nav/navConfig";
 import { LauncherMenuItem } from "./LauncherMenuItem";
-import { useLauncherExpansion } from "./useLauncherExpansion";
+import { LauncherIcon } from "./LauncherIcon";
 
 type LauncherCategoryGroupProps = {
   item: NavItem;
@@ -15,7 +13,9 @@ type LauncherCategoryGroupProps = {
   isFavorite: (id: string) => boolean;
   toggleFavorite: (item: NavItem) => void;
   t: TranslateFn;
-  forceExpanded: boolean;
+  moduleId: string;
+  expandedGroupId: string | null;
+  onToggleGroup: (groupId: string) => void;
 };
 
 /**
@@ -31,15 +31,13 @@ export function LauncherCategoryGroup({
   isFavorite,
   toggleFavorite,
   t,
-  forceExpanded,
+  moduleId,
+  expandedGroupId,
+  onToggleGroup,
 }: LauncherCategoryGroupProps) {
-  const storageKey = `category:${navItemStorageKey(item)}`;
-  const autoExpand = navSubtreeMatchesPath(item, currentPath)
-    ? [storageKey]
-    : [];
-  const { isExpanded, toggle } = useLauncherExpansion(autoExpand);
-  const open = isExpanded(storageKey) || forceExpanded;
-  const contentId = `zh-launcher-category-${storageKey}`;
+  const groupKey = `${moduleId}:${item.id}`;
+  const open = expandedGroupId === groupKey;
+  const contentId = `zh-launcher-category-${groupKey}`;
 
   return (
     <div className="zh-launcher__category">
@@ -48,22 +46,17 @@ export function LauncherCategoryGroup({
         className="zh-launcher__categoryToggle"
         aria-expanded={open}
         aria-controls={contentId}
-        onClick={() => toggle(storageKey)}
+        onClick={() => onToggleGroup(groupKey)}
       >
         <span className="zh-launcher__categoryLabel">{item.label}</span>
-        <span
-          className="material-symbols-outlined zh-launcher__categoryCaret"
-          aria-hidden="true"
-        >
-          chevron_right
-        </span>
+        <LauncherIcon name="chevron" className="zh-launcher__categoryCaret" />
       </button>
       {open ? (
         <div id={contentId} className="zh-launcher__categoryBody">
           {(item.children ?? []).map((child, idx) =>
             child.children?.length ? (
               <LauncherCategoryGroup
-                key={child.id ?? `${storageKey}-c-${idx}`}
+                key={child.id ?? `${groupKey}-c-${idx}`}
                 item={child}
                 depth={depth + 1}
                 currentPath={currentPath}
@@ -71,11 +64,13 @@ export function LauncherCategoryGroup({
                 isFavorite={isFavorite}
                 toggleFavorite={toggleFavorite}
                 t={t}
-                forceExpanded={forceExpanded}
+                moduleId={moduleId}
+                expandedGroupId={expandedGroupId}
+                onToggleGroup={onToggleGroup}
               />
             ) : (
               <LauncherMenuItem
-                key={child.id ?? `${storageKey}-i-${idx}-${child.to}`}
+                key={child.id ?? `${groupKey}-i-${idx}-${child.to}`}
                 item={child}
                 depth={depth + 1}
                 currentPath={currentPath}
