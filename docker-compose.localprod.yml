@@ -1,0 +1,56 @@
+# Despliegue local "production-like" — API + Frontend Dockerizados.
+#
+# NO declara servicios postgres/redis: se conecta a los contenedores YA EXISTENTES
+# (postgreszh, erp-saas-redis) vía la red Docker externa erp-saas_default, creada por
+# docker-compose.yml / infrastructure/docker/compose.base.yml.
+#
+# Uso (desde la raíz del repo):
+#   docker compose -f docker-compose.localprod.yml --env-file .env.docker.local up -d --build
+#
+# Ver docs/DOCKER_LOCAL_PROD.md para el procedimiento completo.
+
+name: erp-saas-localprod
+
+services:
+  erp-api:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: erp-api-localprod
+    restart: unless-stopped
+    environment:
+      ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT:-Production}
+      ASPNETCORE_URLS: http://+:8080
+      ConnectionStrings__DefaultConnection: "Host=${POSTGRES_HOST:-postgreszh};Port=${POSTGRES_PORT:-5432};Database=${POSTGRES_DB:-dberpsaas};Username=${POSTGRES_USER:-postgres};Password=${POSTGRES_PASSWORD}"
+      ConnectionStrings__Redis: "${REDIS_HOST:-erp-saas-redis}:${REDIS_PORT:-6379},abortConnect=false"
+      Redis__ConnectionString: "${REDIS_HOST:-erp-saas-redis}:${REDIS_PORT:-6379},abortConnect=false"
+      Jwt__SecretKey: ${JWT_SECRET_KEY}
+      Cors__AllowedOrigins__0: "http://localhost:${FRONTEND_PORT:-8080}"
+    ports:
+      - "${API_PORT:-5003}:8080"
+    networks:
+      - erp-saas-existing
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://127.0.0.1:8080/health/live"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  erp-frontend:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+    container_name: erp-frontend-localprod
+    restart: unless-stopped
+    depends_on:
+      - erp-api
+    ports:
+      - "${FRONTEND_PORT:-8080}:80"
+    networks:
+      - erp-saas-existing
+
+networks:
+  erp-saas-existing:
+    name: erp-saas_default
+    external: true

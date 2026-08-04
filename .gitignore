@@ -54,6 +54,7 @@ logs/
 frontend/.env.development
 *.env
 .env
+.env.docker.local
 secrets.json
 
 # OS
