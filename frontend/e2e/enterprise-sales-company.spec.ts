@@ -16,7 +16,6 @@ import {
   listInvoices,
   listProducts,
   listWarehouses,
-  validateInvoice,
 } from "./helpers/sales";
 
 test.describe("Enterprise sales company scope", () => {
@@ -66,11 +65,13 @@ test.describe("Enterprise sales company scope", () => {
 
     const tokenB = (await switchCompany(request, session.token, companyB))
       .token;
-    const listB = await listInvoices(request, tokenB, 100);
+    const branchesB = await getBranches(request, tokenB);
+    expect(branchesB.length).toBeGreaterThan(0);
+    const listB = await listInvoices(request, tokenB, 100, branchesB[0]!.id);
     const idsB = listB.items.map((x) => x.id);
     expect(idsB).not.toContain(invoiceId);
 
-    const detailB = await getInvoice(request, tokenB, invoiceId);
+    const detailB = await getInvoice(request, tokenB, invoiceId, branchesB[0]!.id);
     expect(detailB.ok).toBeFalsy();
   });
 
@@ -100,6 +101,7 @@ test.describe("Enterprise sales company scope", () => {
       tokenA,
       productId,
       warehouseId,
+      branches[0]!.id,
     );
     expect(stockBefore).toBeGreaterThan(0);
 
@@ -112,14 +114,14 @@ test.describe("Enterprise sales company scope", () => {
       unitPrice: 10,
     });
 
-    await validateInvoice(request, tokenA, invoiceId);
-    await emitInvoice(request, tokenA, invoiceId);
+    await emitInvoice(request, tokenA, invoiceId, branches[0]!.id);
 
     const stockAfter = await getStockForSale(
       request,
       tokenA,
       productId,
       warehouseId,
+      branches[0]!.id,
     );
     expect(stockAfter).toBe(stockBefore - 1);
   });

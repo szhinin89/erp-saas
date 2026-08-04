@@ -17,7 +17,7 @@ test.describe("Phase 3 — Runtime smoke", () => {
     test.skip(!ok, `API no disponible en ${API_BASE}`);
   });
 
-  test("tenant login + switch company isolation", async ({ request }) => {
+  test("tenant login + switch company preserves tenant-scoped BusinessPartners", async ({ request }) => {
     const session = await login(request);
     const companies = await listMyCompanies(request, session.token);
     test.skip(
@@ -34,7 +34,7 @@ test.describe("Phase 3 — Runtime smoke", () => {
     const bp2 = await searchBusinessPartners(request, s2.token, { q: "" });
 
     expect(s1.companyId).not.toEqual(s2.companyId);
-    expect(JSON.stringify(bp1)).not.toEqual(JSON.stringify(bp2));
+    expect(bp1).toEqual(bp2);
   });
 
   test("refresh token preserves session", async ({ request }) => {
@@ -80,7 +80,7 @@ test.describe("Phase 3 — Tenant login UI", () => {
 
   test("runtime happy path login UI", async ({ page }) => {
     await page.goto("/login");
-    await page.locator("#lp-email").fill(DEMO_EMAIL);
+    await page.locator("#lp-username").fill(DEMO_EMAIL);
     await page.locator("#lp-password").fill(DEMO_PASSWORD);
     await page.getByRole("button", { name: /Iniciar sesión/i }).click();
     await page.waitForURL(/\/(select-company|dashboard)/, { timeout: 45_000 });

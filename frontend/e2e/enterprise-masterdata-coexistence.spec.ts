@@ -6,6 +6,7 @@ import {
   listMyCompanies,
   switchCompany,
   searchBusinessPartners,
+  getBusinessPartner,
   refreshSession,
 } from "./helpers/api";
 
@@ -15,7 +16,7 @@ test.describe("MasterData coexistence (enterprise)", () => {
     test.skip(!ok, `API no disponible en ${API_BASE}`);
   });
 
-  test("DTO exposes legacy link fields for customers", async ({ request }) => {
+  test("Customer is discovered by role filter and confirmed by detail", async ({ request }) => {
     const session = await login(request);
     const companies = await listMyCompanies(request, session.token);
     let token = session.token;
@@ -26,37 +27,33 @@ test.describe("MasterData coexistence (enterprise)", () => {
 
     const rows = await searchBusinessPartners(request, token, {
       isActive: true,
+      roles: ["Customer"],
     });
-    test.skip(rows.length === 0, "Sin MasterData");
+    expect(rows.length).toBeGreaterThan(0);
 
-    const sample = rows.find((r) => r.isCustomer ?? r.IsCustomer);
-    test.skip(!sample, "Sin perfiles cliente");
-
-    expect(sample).toHaveProperty("id");
-    const hasLinkField =
-      "legacyCustomerId" in sample! || "LegacyCustomerId" in sample!;
-    expect(hasLinkField).toBe(true);
+    const customer = await getBusinessPartner(request, token, rows[0]!.id);
+    expect(customer.roles.some((role) => (role.roleType ?? role.RoleType) === "Customer")).toBe(true);
   });
 
-  test("BP without legacy link: API may return null legacyCustomerId", async ({
+  test("Supplier is discovered by role filter and confirmed by detail", async ({
     request,
   }) => {
     const session = await login(request);
-    const rows = await searchBusinessPartners(request, session.token, {
-      isActive: true,
-    });
-    test.skip(rows.length === 0, "Sin MasterData");
-
-    const unlinked = rows.filter(
-      (r) =>
-        (r.isCustomer ?? r.IsCustomer) &&
-        !(r.legacyCustomerId ?? r.LegacyCustomerId),
-    );
-    if (unlinked.length > 0) {
-      expect(
-        unlinked[0]!.legacyCustomerId ?? unlinked[0]!.LegacyCustomerId,
-      ).toBeFalsy();
+    const companies = await listMyCompanies(request, session.token);
+    let token = session.token;
+    if (!session.companyId && companies[0]) {
+      token = (await switchCompany(request, token, companies[0].companyId))
+        .token;
     }
+
+    const rows = await searchBusinessPartners(request, token, {
+      isActive: true,
+      roles: ["Supplier"],
+    });
+    expect(rows.length).toBeGreaterThan(0);
+
+    const supplier = await getBusinessPartner(request, token, rows[0]!.id);
+    expect(supplier.roles.some((role) => (role.roleType ?? role.RoleType) === "Supplier")).toBe(true);
   });
 
   test("switch company: business-partners still authorized", async ({

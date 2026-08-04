@@ -23,7 +23,7 @@ test.describe("Enterprise auth & limits", () => {
   }) => {
     test.setTimeout(60_000);
     await page.goto("/login");
-    await page.locator("#lp-email").fill(DEMO_EMAIL);
+    await page.locator("#lp-username").fill(DEMO_EMAIL);
     await page.locator("#lp-password").fill(DEMO_PASSWORD);
     await page.getByRole("button", { name: /Iniciar sesión/i }).click();
 
@@ -40,7 +40,9 @@ test.describe("Enterprise auth & limits", () => {
     await expect(page).toHaveURL(/\/dashboard/);
   });
 
-  test("create company blocked at MAX_COMPANIES (403)", async ({ request }) => {
+  test("create company rejects an incomplete provisioning request (400)", async ({
+    request,
+  }) => {
     const session = await login(request);
     const companies = await listMyCompanies(request, session.token);
     expect(companies.length).toBeGreaterThan(0);
@@ -64,15 +66,15 @@ test.describe("Enterprise auth & limits", () => {
       },
     });
 
-    expect(res.status()).toBe(403);
-    const raw = await res.text();
-    if (raw.length > 0) {
-      const body = JSON.parse(raw) as { message?: string; Message?: string };
-      const message = (body.message ?? body.Message ?? "") as string;
-      expect(message.toLowerCase()).toMatch(
-        /límite|limit|empresa|companies|commercial/i,
-      );
-    }
+    expect(res.status()).toBe(400);
+    const body = (await res.json()) as {
+      title?: string;
+      errors?: Record<string, string[]>;
+    };
+    expect(body.title).toBe("One or more validation errors occurred.");
+    expect(body.errors?.CountryCode).toContain("The CountryCode field is required.");
+    expect(body.errors?.Timezone).toContain("The Timezone field is required.");
+    expect(body.errors?.CurrencyCode).toContain("The CurrencyCode field is required.");
   });
 
   test("forbidden: switch a empresa inexistente o sin acceso", async ({

@@ -755,6 +755,7 @@ public static class DependencyInjection
             ERP.Infrastructure.Seeding.Global.IGlobalBootstrapOrchestrator,
             ERP.Infrastructure.Seeding.Global.GlobalBootstrapOrchestrator
         >();
+        services.AddScoped<ERP.Infrastructure.Seeding.E2E.E2ESeedService>();
         services.AddScoped<
             ERP.Infrastructure.Seeding.Global.IGlobalBootstrapStep,
             ERP.Infrastructure.Seeding.Global.Steps.NavigationBootstrapStep

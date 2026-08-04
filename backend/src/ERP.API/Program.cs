@@ -313,6 +313,14 @@ using (var firstRunScope = app.Services.CreateScope())
     await firstRun.EnsureSetupTokenAsync();
 }
 
+if (!app.Environment.IsProduction() && app.Configuration.GetValue("E2E:SeedEnabled", false))
+{
+    using var e2eSeedScope = app.Services.CreateScope();
+    await e2eSeedScope
+        .ServiceProvider.GetRequiredService<ERP.Infrastructure.Seeding.E2E.E2ESeedService>()
+        .EnsureAsync();
+}
+
 if (
     app.Environment.IsDevelopment()
     && app.Configuration.GetValue("Development:SyncFuncionalidadesOnStartup", false)

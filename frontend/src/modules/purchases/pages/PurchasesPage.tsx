@@ -88,8 +88,7 @@ export function PurchasesPage() {
             }}
           >
             <span
-              className="material-symbols-outlined"
-              style={{ fontSize: 18 }}
+              className="material-symbols-outlined pf-icon--18"
             >
               {t.icon}
             </span>
@@ -101,15 +100,7 @@ export function PurchasesPage() {
       {/* ══════════════════════════════════════════════════════════ LISTADO */}
       {ctx.tab === "listado" && (
         <div className="prd-section">
-          <div
-            style={{
-              display: "flex",
-              gap: 12,
-              marginBottom: 16,
-              alignItems: "center",
-              flexWrap: "wrap",
-            }}
-          >
+          <div className="pf-list-toolbar">
             <input
               type="text"
               placeholder="Buscar por número de factura..."
@@ -131,8 +122,7 @@ export function PurchasesPage() {
               disabled={ctx.listLoading}
             >
               <span
-                className="material-symbols-outlined"
-                style={{ fontSize: 18 }}
+                className="material-symbols-outlined pf-icon--18"
               >
                 refresh
               </span>
@@ -154,7 +144,7 @@ export function PurchasesPage() {
               <tbody>
                 {ctx.listItems.map((inv) => (
                   <tr key={inv.id}>
-                    <td style={{ fontFamily: "monospace", fontWeight: 600 }}>
+                    <td className="pf-invoice-number">
                       {inv.invoiceNumber}
                     </td>
                     <td>{formatDate(inv.issueDate)}</td>
@@ -173,8 +163,7 @@ export function PurchasesPage() {
                         title="Editar"
                       >
                         <span
-                          className="material-symbols-outlined"
-                          style={{ fontSize: 20 }}
+                          className="material-symbols-outlined pf-icon--20"
                         >
                           edit
                         </span>
@@ -190,8 +179,7 @@ export function PurchasesPage() {
                           }
                         >
                           <span
-                            className="material-symbols-outlined"
-                            style={{ fontSize: 20 }}
+                            className="material-symbols-outlined pf-icon--20"
                           >
                             history
                           </span>
@@ -211,21 +199,13 @@ export function PurchasesPage() {
             </table>
           )}
           {!ctx.listLoading && ctx.listTotal > ctx.listPageSize && (
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                marginTop: 12,
-                fontSize: 13,
-              }}
-            >
-              <span style={{ color: "var(--color-text-secondary)" }}>
+            <div className="pf-pagination">
+              <span className="pf-pagination__summary">
                 Página {ctx.listPage} de{" "}
                 {Math.max(1, Math.ceil(ctx.listTotal / ctx.listPageSize))} —{" "}
                 {ctx.listTotal} compra(s)
               </span>
-              <div style={{ display: "flex", gap: 8 }}>
+              <div className="pf-pagination__actions">
                 <button
                   className="pf-btn"
                   disabled={ctx.listPage <= 1}
@@ -477,17 +457,13 @@ export function PurchasesPage() {
               onClick={() => ctx.setShowElectronic((v) => !v)}
             >
               <span
-                className="material-symbols-outlined"
-                style={{ fontSize: 18 }}
+                className="material-symbols-outlined pf-icon--18"
               >
                 qr_code_2
               </span>
               <span>Información Electrónica</span>
               <span
-                className="material-symbols-outlined pf-collapsible__chevron"
-                style={{
-                  transform: ctx.showElectronic ? "rotate(180deg)" : undefined,
-                }}
+                className={`material-symbols-outlined pf-collapsible__chevron ${ctx.showElectronic ? "pf-collapsible__chevron--open" : ""}`}
               >
                 expand_more
               </span>
@@ -495,8 +471,7 @@ export function PurchasesPage() {
                 (ctx.formWatch.accessKey ||
                   ctx.formWatch.authorizationNumber) && (
                   <span
-                    className="pf-badge pf-badge--info"
-                    style={{ marginLeft: 8, fontSize: 10 }}
+                    className="pf-badge pf-badge--info pf-collapsible__status"
                   >
                     Con datos
                   </span>
@@ -567,24 +542,19 @@ export function PurchasesPage() {
               onClick={() => ctx.setShowNotes((v) => !v)}
             >
               <span
-                className="material-symbols-outlined"
-                style={{ fontSize: 18 }}
+                className="material-symbols-outlined pf-icon--18"
               >
                 notes
               </span>
               <span>Observaciones</span>
               <span
-                className="material-symbols-outlined pf-collapsible__chevron"
-                style={{
-                  transform: ctx.showNotes ? "rotate(180deg)" : undefined,
-                }}
+                className={`material-symbols-outlined pf-collapsible__chevron ${ctx.showNotes ? "pf-collapsible__chevron--open" : ""}`}
               >
                 expand_more
               </span>
               {!ctx.showNotes && ctx.formWatch.notes && (
                 <span
-                  className="pf-badge pf-badge--info"
-                  style={{ marginLeft: 8, fontSize: 10 }}
+                  className="pf-badge pf-badge--info pf-collapsible__status"
                 >
                   Con notas
                 </span>
@@ -612,8 +582,7 @@ export function PurchasesPage() {
                 <div className="pdl-topbar">
                   <h4 className="pdl-topbar__title">
                     <span
-                      className="material-symbols-outlined"
-                      style={{ fontSize: 22 }}
+                      className="material-symbols-outlined pf-icon--22"
                     >
                       inventory_2
                     </span>
@@ -727,11 +696,7 @@ export function PurchasesPage() {
                   {ctx.lines.length === 0 && (
                     <div className="pdl-empty">
                       <span
-                        className="material-symbols-outlined"
-                        style={{
-                          fontSize: 40,
-                          color: "var(--color-surface-container-high)",
-                        }}
+                        className="material-symbols-outlined pdl-empty__icon"
                       >
                         add_shopping_cart
                       </span>
@@ -748,8 +713,7 @@ export function PurchasesPage() {
                     disabled={ctx.fieldDisabled}
                   >
                     <span
-                      className="material-symbols-outlined"
-                      style={{ fontSize: 28 }}
+                      className="material-symbols-outlined pf-icon--28"
                     >
                       add_circle
                     </span>
@@ -1055,8 +1019,7 @@ function PurchaseLineCard({
                     }}
                   >
                     <span
-                      className="material-symbols-outlined"
-                      style={{ fontSize: 14 }}
+                      className="material-symbols-outlined pf-icon--14"
                     >
                       close
                     </span>
@@ -1144,8 +1107,7 @@ function PurchaseLineCard({
             title="Duplicar"
           >
             <span
-              className="material-symbols-outlined"
-              style={{ fontSize: 18 }}
+              className="material-symbols-outlined pf-icon--18"
             >
               content_copy
             </span>
@@ -1156,8 +1118,7 @@ function PurchaseLineCard({
             title="Eliminar"
           >
             <span
-              className="material-symbols-outlined"
-              style={{ fontSize: 18 }}
+              className="material-symbols-outlined pf-icon--18"
             >
               delete
             </span>
@@ -1178,8 +1139,7 @@ function PurchaseLineCard({
         <section className="pdl-block">
           <header className="pdl-block__header">
             <span
-              className="material-symbols-outlined"
-              style={{ fontSize: 16 }}
+              className="material-symbols-outlined pdl-block__icon"
             >
               description
             </span>
@@ -1235,8 +1195,7 @@ function PurchaseLineCard({
         <section className="pdl-block">
           <header className="pdl-block__header">
             <span
-              className="material-symbols-outlined"
-              style={{ fontSize: 16 }}
+              className="material-symbols-outlined pdl-block__icon"
             >
               badge
             </span>
@@ -1246,9 +1205,8 @@ function PurchaseLineCard({
                 className="pdl-ctx-col__loading"
                 title="Cargando contexto..."
               >
-                <span
-                  className="material-symbols-outlined"
-                  style={{ fontSize: 13 }}
+                  <span
+                  className="material-symbols-outlined pdl-ctx-col__loading-icon"
                 >
                   hourglass_empty
                 </span>
@@ -1287,8 +1245,7 @@ function PurchaseLineCard({
         <section className="pdl-block pdl-block--muted">
           <header className="pdl-block__header">
             <span
-              className="material-symbols-outlined"
-              style={{ fontSize: 16 }}
+              className="material-symbols-outlined pdl-block__icon"
             >
               insights
             </span>
@@ -1333,8 +1290,7 @@ function PurchaseLineCard({
           {vm.commercial.costs.showDeviationAlert && (
             <div className="pdl-cost-alert">
               <span
-                className="material-symbols-outlined"
-                style={{ fontSize: 13 }}
+                className="material-symbols-outlined pdl-cost-alert__icon"
               >
                 warning
               </span>
@@ -1602,17 +1558,12 @@ function CostsDropdown({ ctx }: { ctx: ReturnType<typeof usePurchasesPage> }) {
         className="pdl-costs-toggle"
         onClick={() => ctx.setShowCostsMenu((v) => !v)}
       >
-        <span className="material-symbols-outlined" style={{ fontSize: 18 }}>
+        <span className="material-symbols-outlined pdl-costs-toggle__icon">
           tune
         </span>
         Gastos y Acciones
         <span
-          className="material-symbols-outlined"
-          style={{
-            fontSize: 16,
-            transition: "transform .2s",
-            transform: ctx.showCostsMenu ? "rotate(180deg)" : undefined,
-          }}
+          className={`material-symbols-outlined pdl-costs-toggle__chevron${ctx.showCostsMenu ? " pdl-costs-toggle__chevron--open" : ""}`}
         >
           expand_more
         </span>
@@ -1652,8 +1603,7 @@ function CostsDropdown({ ctx }: { ctx: ReturnType<typeof usePurchasesPage> }) {
             disabled={ctx.fieldDisabled || !ctx.editing}
           >
             <span
-              className="material-symbols-outlined"
-              style={{ fontSize: 16 }}
+              className="material-symbols-outlined pdl-costs-dropdown__icon"
             >
               percent
             </span>{" "}
@@ -1665,8 +1615,7 @@ function CostsDropdown({ ctx }: { ctx: ReturnType<typeof usePurchasesPage> }) {
             disabled={ctx.fieldDisabled || !ctx.editing}
           >
             <span
-              className="material-symbols-outlined"
-              style={{ fontSize: 16 }}
+              className="material-symbols-outlined pdl-costs-dropdown__icon"
             >
               local_shipping
             </span>{" "}
@@ -1678,8 +1627,7 @@ function CostsDropdown({ ctx }: { ctx: ReturnType<typeof usePurchasesPage> }) {
             disabled={ctx.fieldDisabled || !ctx.editing}
           >
             <span
-              className="material-symbols-outlined"
-              style={{ fontSize: 16 }}
+              className="material-symbols-outlined pdl-costs-dropdown__icon"
             >
               sync
             </span>{" "}
@@ -1706,8 +1654,7 @@ function PaymentScheduleSection({
           Plazos de Pago
           {ctx.hasPersistedSchedule && (
             <span
-              className="pf-badge pf-badge--success"
-              style={{ marginLeft: 8 }}
+              className="pf-badge pf-badge--success pf-badge--offset"
             >
               <span className="material-symbols-outlined pf-badge__icon">
                 lock
@@ -1717,44 +1664,33 @@ function PaymentScheduleSection({
           )}
           {!ctx.hasPersistedSchedule && ctx.ptLoaded && (
             <span
-              className="pf-badge pf-badge--warning"
-              style={{ marginLeft: 8 }}
+              className="pf-badge pf-badge--warning pf-badge--offset"
             >
               Preview
             </span>
           )}
         </h4>
         {ctx.isDraft && !ctx.hasPersistedSchedule && (
-          <div
-            style={{
-              display: "flex",
-              gap: "var(--space-2)",
-              alignItems: "center",
-            }}
-          >
+          <div className="pf-schedule-actions">
             <button
-              className="pf-btn pf-btn--primary"
-              style={{ padding: "4px 10px", fontSize: 11 }}
+              className="pf-btn pf-btn--primary pf-schedule-action-btn"
               onClick={ctx.regenerateSchedule}
               disabled={ctx.saving || !ctx.formWatch.issueDate}
             >
               <span
-                className="material-symbols-outlined"
-                style={{ fontSize: 14 }}
+                className="material-symbols-outlined pf-schedule-action-icon"
               >
                 autorenew
               </span>{" "}
               Regenerar
             </button>
             <button
-              className="pf-btn"
-              style={{ padding: "4px 10px", fontSize: 11 }}
+              className="pf-btn pf-schedule-action-btn"
               onClick={ctx.addInstallment}
               disabled={ctx.saving || !ctx.formWatch.issueDate}
             >
               <span
-                className="material-symbols-outlined"
-                style={{ fontSize: 14 }}
+                className="material-symbols-outlined pf-schedule-action-icon"
               >
                 add
               </span>{" "}
@@ -1765,19 +1701,11 @@ function PaymentScheduleSection({
       </div>
       <div className="pf-card__body">
         {ctx.isDraft && !ctx.hasPersistedSchedule && (
-          <div
-            style={{
-              display: "flex",
-              gap: "var(--space-5)",
-              marginBottom: "var(--space-4)",
-              alignItems: "flex-end",
-              flexWrap: "wrap",
-            }}
-          >
+          <div className="pf-schedule-setup">
             <ZHField
               density="compact"
               label="Nro. Cuotas"
-              style={{ width: 140 }}
+              className="pf-schedule-field--installments"
             >
               <ZhNumberInput
                 positiveOnly
@@ -1793,7 +1721,7 @@ function PaymentScheduleSection({
             <ZHField
               density="compact"
               label="Días entre cuotas"
-              style={{ width: 180 }}
+              className="pf-schedule-field--days-between"
             >
               <ZhNumberInput
                 positiveOnly
@@ -1804,13 +1732,7 @@ function PaymentScheduleSection({
                 disabled={ctx.fieldDisabled}
               />
             </ZHField>
-            <div
-              style={{
-                fontSize: 13,
-                color: "var(--color-text-secondary)",
-                paddingBottom: 8,
-              }}
-            >
+            <div className="pf-schedule-total">
               Total plazo:{" "}
               <strong>{ctx.ptInstallments * ctx.ptDaysBetween} días</strong>
             </div>
@@ -1828,7 +1750,7 @@ function PaymentScheduleSection({
           <table className="pf-table">
             <thead>
               <tr>
-                <th style={{ width: 50 }}>#</th>
+                <th className="pf-schedule-col--number">#</th>
                 <th>Vencimiento</th>
                 <th className="pf-th--right">Monto</th>
                 <th>Notas</th>
@@ -1837,7 +1759,7 @@ function PaymentScheduleSection({
             <tbody>
               {ctx.editing!.paymentSchedules.map((s) => (
                 <tr key={s.id}>
-                  <td className="pf-td--center" style={{ fontWeight: 600 }}>
+                  <td className="pf-td--center pf-schedule-installment-number">
                     {s.installmentNumber}
                   </td>
                   <td>{formatDate(s.dueDate)}</td>
@@ -1847,12 +1769,7 @@ function PaymentScheduleSection({
                       getDecimalConfig().totalAmount,
                     )}
                   </td>
-                  <td
-                    style={{
-                      fontSize: 12,
-                      color: "var(--color-text-secondary)",
-                    }}
-                  >
+                  <td className="pf-schedule-notes">
                     {s.notes || "—"}
                   </td>
                 </tr>
@@ -1866,33 +1783,26 @@ function PaymentScheduleSection({
             <table className="pf-table">
               <thead>
                 <tr>
-                  <th style={{ width: 50 }}>#</th>
+                  <th className="pf-schedule-col--number">#</th>
                   <th>Vencimiento</th>
-                  <th className="pf-th--right" style={{ width: 130 }}>
+                  <th className="pf-th--right pf-schedule-col--amount">
                     Monto ($)
                   </th>
                   <th>Notas</th>
                   <th>Estado</th>
-                  <th className="pf-th--center" style={{ width: 50 }}></th>
+                  <th className="pf-th--center pf-schedule-col--actions"></th>
                 </tr>
               </thead>
               <tbody>
                 {ctx.ptRows.map((r, idx) => (
                   <tr key={idx}>
-                    <td
-                      className="pf-td--center"
-                      style={{
-                        fontWeight: 600,
-                        color: "var(--color-text-secondary)",
-                      }}
-                    >
+                    <td className="pf-td--center pf-schedule-installment-number pf-schedule-installment-number--muted">
                       {r.number}
                     </td>
                     <td>
                       <input
                         type="date"
-                        className="pf-table-input"
-                        style={{ width: 150 }}
+                        className="pf-table-input pf-schedule-input--date"
                         value={r.dueDate}
                         onChange={(e) =>
                           ctx.updateScheduleRow(idx, "dueDate", e.target.value)
@@ -1904,8 +1814,7 @@ function PaymentScheduleSection({
                       <ZhDecimalInput
                         decimals={getDecimalConfig().totalAmount}
                         positiveOnly
-                        className="pf-table-input pf-table-input--num"
-                        style={{ width: 110 }}
+                        className="pf-table-input pf-table-input--num pf-schedule-input--amount"
                         defaultValue={r.amount}
                         onBlur={(e) =>
                           ctx.updateScheduleRow(
@@ -1920,8 +1829,7 @@ function PaymentScheduleSection({
                     <td>
                       <input
                         type="text"
-                        className="pf-table-input"
-                        style={{ width: 160 }}
+                        className="pf-table-input pf-schedule-input--notes"
                         placeholder="Observación..."
                         value={r.notes}
                         onChange={(e) =>
@@ -1945,8 +1853,7 @@ function PaymentScheduleSection({
                           disabled={ctx.fieldDisabled}
                         >
                           <span
-                            className="material-symbols-outlined"
-                            style={{ fontSize: 16 }}
+                            className="material-symbols-outlined pf-schedule-remove-icon"
                           >
                             close
                           </span>
@@ -1957,24 +1864,15 @@ function PaymentScheduleSection({
                 ))}
               </tbody>
             </table>
-            <div
-              style={{
-                padding: "var(--space-3) var(--space-4)",
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                borderTop: "1px solid var(--color-border)",
-                fontSize: 13,
-              }}
-            >
-              <span style={{ color: "var(--color-text-secondary)" }}>
+            <div className="pf-schedule-footer">
+              <span className="pf-schedule-footer__count">
                 {ctx.ptRows.length} cuota(s)
               </span>
               <span>
                 Total cuotas:{" "}
                 <strong
+                  className="pf-schedule-footer__amount"
                   style={{
-                    fontFamily: "monospace",
                     color: ctx.ptMismatch
                       ? "var(--color-error)"
                       : "var(--color-text-primary)",
@@ -1986,12 +1884,7 @@ function PaymentScheduleSection({
                   )}
                 </strong>
                 {" / "}Total compra:{" "}
-                <strong
-                  style={{
-                    color: "var(--color-primary)",
-                    fontFamily: "monospace",
-                  }}
-                >
+                <strong className="pf-schedule-footer__purchase-total">
                   {formatMoneyWithSymbol(
                     ctx.localTotal,
                     getDecimalConfig().totalAmount,
@@ -2003,22 +1896,9 @@ function PaymentScheduleSection({
         )}
 
         {!ctx.hasPersistedSchedule && ctx.ptRows.length === 0 && (
-          <div
-            style={{
-              textAlign: "center",
-              padding: "var(--space-5)",
-              color: "var(--color-text-secondary)",
-              fontSize: 13,
-            }}
-          >
+          <div className="pf-schedule-empty">
             <span
-              className="material-symbols-outlined"
-              style={{
-                fontSize: 32,
-                display: "block",
-                marginBottom: "var(--space-2)",
-                color: "var(--color-surface-container-high)",
-              }}
+              className="material-symbols-outlined pf-schedule-empty__icon"
             >
               event_busy
             </span>
@@ -2048,18 +1928,16 @@ function RetentionSection({
           </span>{" "}
           Retenciones
         </h4>
-        <div style={{ display: "flex", gap: "var(--space-2)" }}>
+        <div className="pf-retention-actions">
           {!ctx.withholding && (
             <>
               <button
-                className="pf-btn pf-btn--primary"
-                style={{ padding: "6px 14px", fontSize: 12 }}
+                className="pf-btn pf-btn--primary pf-retention-action-btn"
                 onClick={ctx.handleCalcRetention}
                 disabled={ctx.whLoading}
               >
                 <span
-                  className="material-symbols-outlined"
-                  style={{ fontSize: 16 }}
+                  className="material-symbols-outlined pf-retention-action-icon"
                 >
                   calculate
                 </span>{" "}
@@ -2067,14 +1945,12 @@ function RetentionSection({
               </button>
               {ctx.whPreview && ctx.whPreview.lines.length > 0 && (
                 <button
-                  className="pf-btn pf-btn--success"
-                  style={{ padding: "6px 14px", fontSize: 12 }}
+                  className="pf-btn pf-btn--success pf-retention-action-btn"
                   onClick={() => ctx.setModalWhIssue(true)}
                   disabled={ctx.whLoading}
                 >
                   <span
-                    className="material-symbols-outlined"
-                    style={{ fontSize: 16 }}
+                    className="material-symbols-outlined pf-retention-action-icon"
                   >
                     receipt_long
                   </span>{" "}
@@ -2085,14 +1961,12 @@ function RetentionSection({
           )}
           {ctx.withholding && ctx.withholding.status === "Issued" && (
             <button
-              className="pf-btn pf-btn--danger"
-              style={{ padding: "6px 14px", fontSize: 12 }}
+              className="pf-btn pf-btn--danger pf-retention-action-btn"
               onClick={() => ctx.setModalWhCancel(true)}
               disabled={ctx.whLoading}
             >
               <span
-                className="material-symbols-outlined"
-                style={{ fontSize: 16 }}
+                className="material-symbols-outlined pf-retention-action-icon"
               >
                 cancel
               </span>{" "}
@@ -2131,7 +2005,7 @@ function RetentionSection({
                           {l.taxType}
                         </span>
                       </td>
-                      <td style={{ fontFamily: "monospace" }}>
+                      <td className="pf-retention-code">
                         {l.retentionCode}
                       </td>
                       <td>{l.retentionCodeName}</td>
@@ -2142,7 +2016,7 @@ function RetentionSection({
                         )}
                       </td>
                       <td className="pf-td--num">{l.retentionPct}%</td>
-                      <td className="pf-td--num" style={{ fontWeight: 700 }}>
+                      <td className="pf-td--num pf-retention-amount">
                         {formatMoneyWithSymbol(
                           l.amountRetained,
                           getDecimalConfig().totalAmount,
@@ -2203,7 +2077,7 @@ function RetentionSection({
                         {d.taxType}
                       </span>
                     </td>
-                    <td style={{ fontFamily: "monospace" }}>
+                    <td className="pf-retention-code">
                       {d.retentionCode}
                     </td>
                     <td>{d.retentionCodeDescription}</td>
@@ -2214,7 +2088,7 @@ function RetentionSection({
                       )}
                     </td>
                     <td className="pf-td--num">{d.retentionPct}%</td>
-                    <td className="pf-td--num" style={{ fontWeight: 700 }}>
+                    <td className="pf-td--num pf-retention-amount">
                       {formatMoneyWithSymbol(
                         d.amountRetained,
                         getDecimalConfig().totalAmount,
@@ -2255,8 +2129,7 @@ function SummaryPanel({ ctx }: { ctx: ReturnType<typeof usePurchasesPage> }) {
       <div className="pf-totals__header">
         <h4>
           <span
-            className="material-symbols-outlined"
-            style={{ fontSize: 20, color: "var(--color-primary)" }}
+            className="material-symbols-outlined pf-totals__title-icon--primary"
           >
             summarize
           </span>{" "}
@@ -2276,8 +2149,7 @@ function SummaryPanel({ ctx }: { ctx: ReturnType<typeof usePurchasesPage> }) {
         <div className="pf-totals__row">
           <span className="pf-totals__label">Descuento</span>
           <span
-            className="pf-totals__value"
-            style={{ color: "var(--color-warning)" }}
+            className="pf-totals__value pf-totals__value--warning"
           >
             -
             {formatMoneyWithSymbol(
@@ -2330,7 +2202,7 @@ function SummaryPanel({ ctx }: { ctx: ReturnType<typeof usePurchasesPage> }) {
         </div>
         <div className="pf-totals__divider" />
         <div className="pf-totals__row">
-          <span className="pf-totals__label" style={{ fontWeight: 600 }}>
+          <span className="pf-totals__label pf-totals__label--strong">
             Líneas
           </span>
           <span className="pf-totals__value">{ctx.lines.length}</span>
@@ -2372,14 +2244,7 @@ function TotalMiniCard({
         border: `1px solid ${highlight ? "var(--color-primary)" : "var(--color-border)"}`,
       }}
     >
-      <div
-        style={{
-          fontSize: 11,
-          color: "var(--color-text-secondary)",
-          fontWeight: 500,
-          marginBottom: 2,
-        }}
-      >
+      <div className="pf-total-mini-card__label">
         {label}
       </div>
       <div

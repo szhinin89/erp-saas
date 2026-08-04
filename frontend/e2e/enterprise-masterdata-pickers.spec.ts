@@ -6,6 +6,7 @@ import {
   listMyCompanies,
   switchCompany,
   searchBusinessPartners,
+  getBusinessPartner,
   listLegacyCustomers,
 } from "./helpers/api";
 
@@ -26,26 +27,22 @@ test.describe("MasterData pickers (BusinessPartner API)", () => {
         .token;
     }
 
-    const rows = await searchBusinessPartners(request, token, {
+    const customers = await searchBusinessPartners(request, token, {
       isActive: true,
+      roles: ["Customer"],
     });
     test.skip(
-      rows.length === 0,
+      customers.length === 0,
       "MasterData vacío o sin permiso masterdata.businesspartners.view",
     );
 
-    const customers = rows.filter((r) => r.isCustomer ?? r.IsCustomer);
     expect(customers.length).toBeGreaterThan(0);
 
-    const withApiLink = customers.some(
-      (bp) => (bp.legacyCustomerId ?? bp.LegacyCustomerId)?.length,
-    );
-    if (withApiLink) {
-      expect(withApiLink).toBe(true);
-    } else {
-      const legacy = await listLegacyCustomers(request, token);
-      test.skip(legacy.length === 0, "Sin legacy ni legacyCustomerId en DTO");
-    }
+    const customer = await getBusinessPartner(request, token, customers[0]!.id);
+    expect(customer.roles.some((role) => (role.roleType ?? role.RoleType) === "Customer")).toBe(true);
+
+    const legacy = await listLegacyCustomers(request, token);
+    test.skip(legacy.length === 0, "Sin legacy disponible para validar coexistencia");
   });
 
   test("purchases: business-partners search returns suppliers when permitted", async ({
@@ -59,12 +56,14 @@ test.describe("MasterData pickers (BusinessPartner API)", () => {
         .token;
     }
 
-    const rows = await searchBusinessPartners(request, token, {
+    const suppliers = await searchBusinessPartners(request, token, {
       isActive: true,
+      roles: ["Supplier"],
     });
-    test.skip(rows.length === 0, "MasterData vacío o sin permiso");
+    test.skip(suppliers.length === 0, "MasterData vacío o sin permiso");
 
-    const suppliers = rows.filter((r) => r.isSupplier ?? r.IsSupplier);
     expect(suppliers.length).toBeGreaterThan(0);
+    const supplier = await getBusinessPartner(request, token, suppliers[0]!.id);
+    expect(supplier.roles.some((role) => (role.roleType ?? role.RoleType) === "Supplier")).toBe(true);
   });
 });

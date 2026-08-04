@@ -1,5 +1,5 @@
 import type { APIRequestContext } from "@playwright/test";
-import { API_BASE } from "./api";
+import { API_BASE, companyHeaders } from "./api";
 
 function unwrap<T>(body: Record<string, unknown>): T {
   return body.data as T;
@@ -9,11 +9,15 @@ export async function listInvoices(
   request: APIRequestContext,
   token: string,
   pageSize = 50,
+  branchId?: string,
 ): Promise<{ items: Array<{ id: string }> }> {
   const res = await request.get(
-    `${API_BASE}/api/v1/sales/invoices?pageSize=${pageSize}`,
+    `${API_BASE}/api/v1/sales?pageNumber=1&pageSize=${pageSize}`,
     {
-      headers: { Authorization: `Bearer ${token}` },
+        headers: {
+          ...companyHeaders(token),
+          ...(branchId ? { "X-Branch-Id": branchId } : {}),
+        },
     },
   );
   if (!res.ok()) {
@@ -34,11 +38,15 @@ export async function getInvoice(
   request: APIRequestContext,
   token: string,
   invoiceId: string,
+  branchId?: string,
 ): Promise<{ ok: boolean; status: number }> {
   const res = await request.get(
-    `${API_BASE}/api/v1/sales/invoices/${invoiceId}`,
+    `${API_BASE}/api/v1/sales/${invoiceId}`,
     {
-      headers: { Authorization: `Bearer ${token}` },
+      headers: {
+        ...companyHeaders(token),
+        ...(branchId ? { "X-Branch-Id": branchId } : {}),
+      },
     },
   );
   return { ok: res.ok(), status: res.status() };
@@ -49,20 +57,22 @@ export async function getStockForSale(
   token: string,
   productId: string,
   warehouseId: string,
+  branchId: string,
 ): Promise<number> {
   const res = await request.get(
-    `${API_BASE}/api/v1/sales/invoices/stock?productoId=${productId}&bodegaId=${warehouseId}`,
-    { headers: { Authorization: `Bearer ${token}` } },
+    `${API_BASE}/api/v1/inventory/stock?itemId=${productId}&warehouseId=${warehouseId}`,
+    { headers: { ...companyHeaders(token), "X-Branch-Id": branchId } },
   );
   if (!res.ok()) {
     throw new Error(`stock query failed: ${res.status()} ${await res.text()}`);
   }
   const body = await res.json();
-  const data = unwrap<{
+  const data = unwrap<Array<{
     availableQuantity?: number;
     AvailableQuantity?: number;
-  }>(body);
-  return Number(data.availableQuantity ?? data.AvailableQuantity ?? 0);
+  }>>(body);
+  const stock = data.find((x) => x.availableQuantity !== undefined || x.AvailableQuantity !== undefined);
+  return Number(stock?.availableQuantity ?? stock?.AvailableQuantity ?? 0);
 }
 
 export async function listWarehouses(
@@ -70,7 +80,7 @@ export async function listWarehouses(
   token: string,
 ): Promise<Array<{ id: string }>> {
   const res = await request.get(`${API_BASE}/api/v1/inventory/warehouses`, {
-    headers: { Authorization: `Bearer ${token}` },
+    headers: companyHeaders(token),
   });
   if (!res.ok()) {
     throw new Error(`warehouses failed: ${res.status()} ${await res.text()}`);
@@ -90,7 +100,7 @@ export async function listCustomers(
   const res = await request.get(
     `${API_BASE}/api/v1/master/business-partners?type=customer&pageSize=100`,
     {
-      headers: { Authorization: `Bearer ${token}` },
+      headers: companyHeaders(token),
     },
   );
   if (!res.ok()) {
@@ -108,8 +118,8 @@ export async function listProducts(
   request: APIRequestContext,
   token: string,
 ): Promise<Array<{ id: string }>> {
-  const res = await request.get(`${API_BASE}/api/v1/products?pageSize=20`, {
-    headers: { Authorization: `Bearer ${token}` },
+  const res = await request.get(`${API_BASE}/api/v1/items?pageSize=20`, {
+    headers: companyHeaders(token),
   });
   if (!res.ok()) {
     throw new Error(`products failed: ${res.status()} ${await res.text()}`);
@@ -123,8 +133,8 @@ export async function getBranches(
   request: APIRequestContext,
   token: string,
 ): Promise<Array<{ id: string }>> {
-  const res = await request.get(`${API_BASE}/api/v1/branches`, {
-    headers: { Authorization: `Bearer ${token}` },
+  const res = await request.get(`${API_BASE}/api/v1/settings/branches`, {
+    headers: companyHeaders(token),
   });
   if (!res.ok()) {
     throw new Error(`branches failed: ${res.status()} ${await res.text()}`);
@@ -149,20 +159,26 @@ export async function createInvoiceDraft(
     unitPrice: number;
   },
 ): Promise<string> {
-  const res = await request.post(`${API_BASE}/api/v1/sales/invoices`, {
-    headers: { Authorization: `Bearer ${token}` },
-    data: {
+  const headers = { ...companyHeaders(token), "X-Branch-Id": payload.branchId };
+  const pricingResponse = await request.get(
+    `${API_BASE}/api/v1/sales/items/${payload.productId}/pricing`,
+    { headers },
+  );
+  if (!pricingResponse.ok()) {
+    throw new Error(`item pricing failed: ${pricingResponse.status()} ${await pricingResponse.text()}`);
+  }
+  const pricing = unwrap<{ unitPrice?: number; vatCode?: string; iceCode?: string }>(await pricingResponse.json());
+  if (!pricing.vatCode) throw new Error("item pricing did not provide the required VAT code.");
+  const draftPayload = {
       customerId: payload.customerId,
-      warehouseId: payload.warehouseId,
-      branchId: payload.branchId,
-      items: [
-        {
-          productId: payload.productId,
-          quantity: payload.quantity,
-          unitPrice: payload.unitPrice,
-        },
+      issueDate: new Date().toISOString().slice(0, 10),
+      lines: [
+        { itemId: payload.productId, description: "Producto E2E Venta", quantity: payload.quantity, unitPrice: pricing.unitPrice ?? payload.unitPrice, vatCode: pricing.vatCode, iceCode: pricing.iceCode ?? null, warehouseId: payload.warehouseId },
       ],
-    },
+  };
+  const res = await request.post(`${API_BASE}/api/v1/sales`, {
+    headers,
+    data: draftPayload,
   });
   if (!res.ok()) {
     throw new Error(
@@ -170,20 +186,28 @@ export async function createInvoiceDraft(
     );
   }
   const body = await res.json();
-  const data = unwrap<string | { id?: string; Id?: string }>(body);
-  if (typeof data === "string") return data;
-  return (data.id ?? data.Id)!;
+  const data = unwrap<{ id: string; grandTotal: number }>(body);
+  const paymentMethods = await request.get(`${API_BASE}/api/v1/payment-methods?onlyActive=true`, { headers });
+  const sriMethods = await request.get(`${API_BASE}/api/v1/catalog/sri-payment-methods`, { headers });
+  if (!paymentMethods.ok() || !sriMethods.ok()) throw new Error("official payment catalogs failed.");
+  const paymentMethod = (await paymentMethods.json()).data?.[0];
+  const sriMethod = (await sriMethods.json()).data?.[0];
+  if (!paymentMethod || !sriMethod) throw new Error("No active official E2E payment method.");
+  const updated = await request.put(`${API_BASE}/api/v1/sales/${data.id}`, { headers, data: { id: data.id, ...draftPayload, sriPaymentMethodCode: sriMethod.code, payments: [{ paymentMethodId: paymentMethod.id, amount: data.grandTotal, reference: "E2E" }] } });
+  if (!updated.ok()) throw new Error(`payment update failed: ${updated.status()} ${await updated.text()}`);
+  return data.id;
 }
 
 export async function validateInvoice(
   request: APIRequestContext,
   token: string,
   invoiceId: string,
+  branchId: string,
 ): Promise<void> {
-  const res = await request.patch(
-    `${API_BASE}/api/v1/sales/invoices/${invoiceId}/validar`,
+  const res = await request.post(
+    `${API_BASE}/api/v1/sales/${invoiceId}/authorize`,
     {
-      headers: { Authorization: `Bearer ${token}` },
+      headers: { ...companyHeaders(token), "X-Branch-Id": branchId },
     },
   );
   if (!res.ok()) {
@@ -195,11 +219,15 @@ export async function emitInvoice(
   request: APIRequestContext,
   token: string,
   invoiceId: string,
+  branchId: string,
 ): Promise<void> {
-  const res = await request.patch(
-    `${API_BASE}/api/v1/sales/invoices/${invoiceId}/emitir`,
+  // The current sales contract performs commercial authorization and the
+  // electronic-emission strategy in one operation; there is no second
+  // /emitir endpoint after authorization.
+  const res = await request.post(
+    `${API_BASE}/api/v1/sales/${invoiceId}/authorize`,
     {
-      headers: { Authorization: `Bearer ${token}` },
+      headers: { ...companyHeaders(token), "X-Branch-Id": branchId },
     },
   );
   if (!res.ok()) {

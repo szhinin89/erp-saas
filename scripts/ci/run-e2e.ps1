@@ -24,7 +24,11 @@ param(
     [switch] $SkipMigrations,
     [string] $PlaywrightArgs = "",
     [string] $ApiUrl = "http://localhost:5003",
-    [int]    $HealthTimeoutSec = 120
+    [int]    $HealthTimeoutSec = 120,
+    [int]    $MigrationTimeoutSec = 180,
+    [int]    $BuildTimeoutSec = 180,
+    [int]    $FrontendTimeoutSec = 300,
+    [int]    $PlaywrightTimeoutSec = 300
 )
 
 $ErrorActionPreference = "Stop"
@@ -45,17 +49,84 @@ $backendRoot = Join-Path $repoRoot "backend\src"
 $apiProject = Join-Path $backendRoot "ERP.API\ERP.API.csproj"
 $infraProject = Join-Path $backendRoot "ERP.Infrastructure\ERP.Infrastructure.csproj"
 $frontendRoot = Join-Path $repoRoot "frontend"
+$runnerLogDir = Join-Path $repoRoot "backend\artifacts\e2e-runner"
+New-Item -ItemType Directory -Force -Path $runnerLogDir | Out-Null
+
+function Write-E2eLog {
+    param([string] $Message, [ConsoleColor] $Color = [ConsoleColor]::Cyan)
+    $line = "[{0:yyyy-MM-dd HH:mm:ss}] {1}" -f (Get-Date), $Message
+    Write-Host $line -ForegroundColor $Color
+    [Console]::Out.Flush()
+}
+
+function Get-CommandLogTail {
+    param([string] $Path)
+    if (-not (Test-Path $Path)) { return "(sin salida)" }
+    return ((Get-Content -Path $Path -Tail 40 -ErrorAction SilentlyContinue) -join [Environment]::NewLine)
+}
+
+function Invoke-E2eProcess {
+    param(
+        [string] $Stage,
+        [string] $FilePath,
+        [string[]] $ArgumentList,
+        [string] $WorkingDirectory,
+        [int] $TimeoutSec,
+        [switch] $AllowFailure
+    )
+
+    $safeStage = $Stage -replace "[^A-Za-z0-9._-]", "_"
+    $stdout = Join-Path $runnerLogDir "$safeStage.stdout.log"
+    $stderr = Join-Path $runnerLogDir "$safeStage.stderr.log"
+    Remove-Item -LiteralPath $stdout, $stderr -Force -ErrorAction SilentlyContinue
+    Write-E2eLog "[$Stage] comando: $FilePath $($ArgumentList -join ' ') | timeout=${TimeoutSec}s"
+    $started = Get-Date
+    $process = Start-Process -FilePath $FilePath -ArgumentList $ArgumentList `
+        -WorkingDirectory $WorkingDirectory -RedirectStandardOutput $stdout `
+        -RedirectStandardError $stderr -PassThru -WindowStyle Hidden
+
+    $completed = $true
+    try {
+        Wait-Process -Id $process.Id -Timeout $TimeoutSec -ErrorAction Stop
+    } catch {
+        $completed = $false
+    }
+    if (-not $completed) {
+        Stop-Process -Id $process.Id -Force -ErrorAction SilentlyContinue
+        throw "[$Stage] timeout tras $TimeoutSec s (PID $($process.Id)). stdout: $stdout; stderr: $stderr. Último stderr: $(Get-CommandLogTail $stderr)"
+    }
+
+    $exitCode = $process.ExitCode
+    $duration = [math]::Round(((Get-Date) - $started).TotalSeconds, 1)
+    $resultColor = if ($exitCode -eq 0) { [ConsoleColor]::Green } else { [ConsoleColor]::Red }
+    Write-E2eLog "[$Stage] exit=$exitCode duration=${duration}s stdout=$stdout stderr=$stderr" -Color $resultColor
+    if ($exitCode -ne 0 -and -not $AllowFailure) {
+        throw "[$Stage] exit=$exitCode. Último stdout: $(Get-CommandLogTail $stdout) Último stderr: $(Get-CommandLogTail $stderr)"
+    }
+    return $exitCode
+}
 
 function Wait-HttpOk {
-    param([string] $Url, [int] $TimeoutSec)
+    param([string] $Url, [int] $TimeoutSec, [System.Diagnostics.Process] $Process, [string] $Stdout, [string] $Stderr)
     $deadline = (Get-Date).AddSeconds($TimeoutSec)
+    $attempt = 0
+    $lastError = "sin intento"
     while ((Get-Date) -lt $deadline) {
+        $attempt++
         try {
             $r = Invoke-WebRequest -Uri $Url -UseBasicParsing -TimeoutSec 5
             if ($r.StatusCode -ge 200 -and $r.StatusCode -lt 300) { return $true }
-        } catch { }
+            $lastError = "HTTP $($r.StatusCode)"
+        } catch { $lastError = $_.Exception.Message }
+        if ($Process.HasExited) {
+            throw "[api-health] API finalizó con exit=$($Process.ExitCode). stdout: $Stdout; stderr: $Stderr. Último stderr: $(Get-CommandLogTail $Stderr)"
+        }
+        if ($attempt -eq 1 -or $attempt % 5 -eq 0) {
+            Write-E2eLog "[api-health] intento=$attempt url=$Url último-error=$lastError" -Color ([ConsoleColor]::Yellow)
+        }
         Start-Sleep -Seconds 2
     }
+    Write-E2eLog "[api-health] timeout=$TimeoutSec s url=$Url último-error=$lastError stdout=$Stdout stderr=$Stderr" -Color ([ConsoleColor]::Red)
     return $false
 }
 
@@ -71,10 +142,17 @@ Register-EngineEvent -SourceIdentifier PowerShell.Exiting -Action { Stop-ApiIfSt
 
 try {
     Set-Location $repoRoot
+    Write-E2eLog "E2E runner iniciado. repo=$repoRoot api=$ApiUrl logs=$runnerLogDir"
+
+    if ([string]::IsNullOrWhiteSpace($env:E2E_PASSWORD)) {
+        throw "E2E_PASSWORD es obligatorio para ejecutar el seed E2E. Defínelo en el entorno local o CI; no se almacena en el repositorio."
+    }
+    if ([string]::IsNullOrWhiteSpace($env:E2E_USERNAME)) {
+        $env:E2E_USERNAME = "e2e.admin"
+    }
 
     if (-not $SkipDocker) {
-        Write-Host "==> Docker compose up -d" -ForegroundColor Cyan
-        docker compose up -d
+        $null = Invoke-E2eProcess -Stage "docker-compose" -FilePath "docker" -ArgumentList @("compose", "up", "-d") -WorkingDirectory $repoRoot -TimeoutSec 90
         $deadline = (Get-Date).AddSeconds(60)
         while ((Get-Date) -lt $deadline) {
             $status = docker inspect -f "{{.State.Health.Status}}" postgreszh 2>$null
@@ -82,67 +160,76 @@ try {
             Start-Sleep -Seconds 2
         }
         if ($status -ne "healthy") {
-            Write-Warning "Postgres no reportó healthy a tiempo; continuando igualmente..."
+            Write-E2eLog "[docker-health] postgres no reportó healthy en 60s; se continuará y la migración dará el error exacto." -Color ([ConsoleColor]::Yellow)
+        } else {
+            Write-E2eLog "[docker-health] postgreszh=healthy" -Color ([ConsoleColor]::Green)
         }
     }
 
     if (-not $SkipMigrations) {
-        Write-Host "==> dotnet ef database update" -ForegroundColor Cyan
-        Push-Location $backendRoot
-        dotnet ef database update `
-            --project $infraProject `
-            --startup-project $apiProject `
-            --no-build
-        if ($LASTEXITCODE -ne 0) {
-            dotnet build $apiProject -c Release
-            dotnet ef database update `
-                --project $infraProject `
-                --startup-project $apiProject
+        $migrationExit = Invoke-E2eProcess -Stage "migrations-no-build" -FilePath "dotnet" `
+            -ArgumentList @("ef", "database", "update", "--project", $infraProject, "--startup-project", $infraProject, "--no-build") `
+            -WorkingDirectory $backendRoot -TimeoutSec $MigrationTimeoutSec -AllowFailure
+        if ($migrationExit -ne 0) {
+            $null = Invoke-E2eProcess -Stage "infrastructure-build-for-migrations" -FilePath "dotnet" `
+                -ArgumentList @("build", $infraProject, "-c", "Release") -WorkingDirectory $backendRoot -TimeoutSec $BuildTimeoutSec
+            $null = Invoke-E2eProcess -Stage "migrations-after-build" -FilePath "dotnet" `
+                -ArgumentList @("ef", "database", "update", "--project", $infraProject, "--startup-project", $infraProject) `
+                -WorkingDirectory $backendRoot -TimeoutSec $MigrationTimeoutSec
         }
-        Pop-Location
     }
 
-    Write-Host "==> Iniciando API en $ApiUrl" -ForegroundColor Cyan
-    Push-Location $backendRoot
-    dotnet build $apiProject -c Release -v q
-    Pop-Location
+    $null = Invoke-E2eProcess -Stage "api-release-build" -FilePath "dotnet" `
+        -ArgumentList @("build", $apiProject, "-c", "Release", "-v", "q") -WorkingDirectory $backendRoot -TimeoutSec $BuildTimeoutSec
 
     $env:ASPNETCORE_ENVIRONMENT = "Development"
     $env:ASPNETCORE_URLS = $ApiUrl
+    $env:E2E__SeedEnabled = "true"
+    $env:E2E__Username = $env:E2E_USERNAME
+    $env:E2E__Password = $env:E2E_PASSWORD
+    $apiStdout = Join-Path $runnerLogDir "api.stdout.log"
+    $apiStderr = Join-Path $runnerLogDir "api.stderr.log"
+    Remove-Item -LiteralPath $apiStdout, $apiStderr -Force -ErrorAction SilentlyContinue
+    Write-E2eLog "[api-start] comando: dotnet run --project $apiProject --no-build -c Release --urls $ApiUrl"
     $script:ApiProcess = Start-Process -FilePath "dotnet" `
         -ArgumentList @("run", "--project", $apiProject, "--no-build", "-c", "Release", "--urls", $ApiUrl) `
         -WorkingDirectory $backendRoot `
+        -RedirectStandardOutput $apiStdout `
+        -RedirectStandardError $apiStderr `
         -PassThru `
         -WindowStyle Hidden
 
     $healthUrl = "$($ApiUrl.TrimEnd('/'))/health/live"
-    Write-Host "==> Esperando $healthUrl (max ${HealthTimeoutSec}s)" -ForegroundColor Cyan
-    if (-not (Wait-HttpOk -Url $healthUrl -TimeoutSec $HealthTimeoutSec)) {
-        throw "API no respondió en $healthUrl dentro del timeout."
+    Write-E2eLog "[api-health] esperando url=$healthUrl puerto=$(([uri]$ApiUrl).Port) timeout=${HealthTimeoutSec}s"
+    if (-not (Wait-HttpOk -Url $healthUrl -TimeoutSec $HealthTimeoutSec -Process $script:ApiProcess -Stdout $apiStdout -Stderr $apiStderr)) {
+        throw "[api-health] API no respondió. stdout: $apiStdout; stderr: $apiStderr. Último stderr: $(Get-CommandLogTail $apiStderr)"
     }
-    Write-Host "    API lista." -ForegroundColor Green
+    Write-E2eLog "[api-health] API lista. ready-url=$($ApiUrl.TrimEnd('/'))/health/ready" -Color ([ConsoleColor]::Green)
 
-    Write-Host "==> Frontend: npm ci + build + Playwright" -ForegroundColor Cyan
-    Push-Location $frontendRoot
-    if (-not (Test-Path "node_modules")) {
-        npm ci
+    if (-not (Test-Path (Join-Path $frontendRoot "node_modules"))) {
+        $null = Invoke-E2eProcess -Stage "frontend-npm-ci" -FilePath "npm.cmd" -ArgumentList @("ci") -WorkingDirectory $frontendRoot -TimeoutSec $FrontendTimeoutSec
     }
-    npm run build
+    $null = Invoke-E2eProcess -Stage "frontend-build" -FilePath "npm.cmd" -ArgumentList @("run", "build") -WorkingDirectory $frontendRoot -TimeoutSec $FrontendTimeoutSec
 
     $env:E2E_API_URL = $ApiUrl
     $env:E2E_BASE_URL = "http://127.0.0.1:4173"
     $env:CI = "true"
 
+    $setupExit = Invoke-E2eProcess -Stage "operational-e2e-setup" -FilePath "npx.cmd" -ArgumentList @("playwright", "test", "e2e/operational-data.setup.spec.ts") -WorkingDirectory $frontendRoot -TimeoutSec $PlaywrightTimeoutSec -AllowFailure
+    if ($setupExit -ne 0) { exit $setupExit }
+
     if ([string]::IsNullOrWhiteSpace($PlaywrightArgs)) {
-        npx playwright test
+        $playExit = Invoke-E2eProcess -Stage "playwright" -FilePath "npx.cmd" -ArgumentList @("playwright", "test") -WorkingDirectory $frontendRoot -TimeoutSec $PlaywrightTimeoutSec -AllowFailure
     } else {
+        Write-E2eLog "[playwright] argumentos personalizados: $PlaywrightArgs"
+        Push-Location $frontendRoot
         Invoke-Expression "npx playwright test $PlaywrightArgs"
+        $playExit = $LASTEXITCODE
+        Pop-Location
     }
-    $playExit = $LASTEXITCODE
-    Pop-Location
 
     if ($playExit -ne 0) { exit $playExit }
-    Write-Host "`nE2E completado OK." -ForegroundColor Green
+    Write-E2eLog "E2E completado OK." -Color ([ConsoleColor]::Green)
 }
 finally {
     Stop-ApiIfStarted

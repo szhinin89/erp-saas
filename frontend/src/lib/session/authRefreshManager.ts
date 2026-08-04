@@ -11,6 +11,7 @@ const viteApiBase =
 
 export const AUTH_REFRESH_LOCK = "erp-refresh";
 export const AUTH_BROADCAST_CHANNEL = "erp.auth";
+export const AUTH_LOGOUT_STORAGE_KEY = "erp.auth.logout";
 
 export type AuthBroadcastEvent =
   | { type: "refresh_started"; tabId: string }
@@ -36,6 +37,7 @@ let remoteRefreshWaiters: Array<{
   reject: (err: unknown) => void;
 }> = [];
 let remoteRefreshPending = false;
+let storageLogoutListenerInstalled = false;
 
 function getChannel(): BroadcastChannel | null {
   if (typeof BroadcastChannel === "undefined") return null;
@@ -54,6 +56,22 @@ function broadcast(event: AuthBroadcastEvent): void {
   } catch {
     /* channel closed / unavailable */
   }
+}
+
+function handleRemoteLogout(): void {
+  remoteRefreshPending = false;
+  remoteRefreshWaiters
+    .splice(0)
+    .forEach((w) => w.reject(new Error("logout")));
+  import("./fullLogout").then(({ fullLogout }) => {
+    fullLogout({ resetStores: true, broadcast: false });
+    if (
+      typeof window !== "undefined" &&
+      !window.location.pathname.startsWith("/login")
+    ) {
+      window.location.href = "/login";
+    }
+  });
 }
 
 function handleBroadcast(event: AuthBroadcastEvent): void {
@@ -82,19 +100,7 @@ function handleBroadcast(event: AuthBroadcastEvent): void {
   }
 
   if (event.type === "logout") {
-    remoteRefreshPending = false;
-    remoteRefreshWaiters
-      .splice(0)
-      .forEach((w) => w.reject(new Error("logout")));
-    import("./fullLogout").then(({ fullLogout }) => {
-      fullLogout({ resetStores: true, broadcast: false });
-      if (
-        typeof window !== "undefined" &&
-        !window.location.pathname.startsWith("/login")
-      ) {
-        window.location.href = "/login";
-      }
-    });
+    handleRemoteLogout();
   }
 }
 
@@ -269,6 +275,35 @@ export function resetRefreshSessionFlight(): void {
 
 export function broadcastAuthLogout(): void {
   broadcast({ type: "logout" });
+  try {
+    // Fallback para pestañas que no exponen o pierden BroadcastChannel.
+    localStorage.setItem(
+      AUTH_LOGOUT_STORAGE_KEY,
+      `${Date.now()}-${Math.random()}`,
+    );
+  } catch {
+    /* storage disabled */
+  }
+}
+
+/**
+ * Registra el listener compartido al arrancar cada pestaña. El canal antes se
+ * abría sólo durante un refresh o al emitir un evento, por lo que una pestaña
+ * ya autenticada podía no escuchar el logout remoto.
+ */
+export function initializeAuthBroadcastListener(): void {
+  getChannel();
+  if (
+    !storageLogoutListenerInstalled &&
+    typeof window !== "undefined"
+  ) {
+    window.addEventListener("storage", (event) => {
+      if (event.key === AUTH_LOGOUT_STORAGE_KEY && event.newValue) {
+        handleRemoteLogout();
+      }
+    });
+    storageLogoutListenerInstalled = true;
+  }
 }
 
 export function closeAuthBroadcastChannel(): void {

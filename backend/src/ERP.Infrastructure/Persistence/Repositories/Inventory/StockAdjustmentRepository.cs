@@ -25,6 +25,7 @@ public sealed class StockAdjustmentRepository : IStockAdjustmentRepository
     public async Task<int> GetNextSequentialAsync(Guid tenantId, CancellationToken ct = default)
     {
         var max = await _db.Set<StockAdjustment>()
+            .IgnoreQueryFilters()
             .Where(a => a.TenantId == tenantId)
             .MaxAsync(a => (int?)a.Sequential, ct);
         return (max ?? 0) + 1;

@@ -5,6 +5,7 @@ import { useSessionStore } from "../store/sessionStore";
 import { useElectronicInvoicingStatusStore } from "../store/electronicInvoicingStatusStore";
 import { restoreSessionFromCookie } from "../lib/session/restoreSessionFromCookie";
 import { getAccessToken } from "../lib/session/authTokenMemory";
+import { initializeAuthBroadcastListener } from "../lib/session/authRefreshManager";
 import { loadDecimalConfig } from "../lib/config/decimal.config";
 
 type Props = { children: ReactNode };
@@ -17,6 +18,11 @@ export function SessionBootstrap({ children }: Props) {
   const hasHydrated = useAuthStore((s) => s.hasHydrated);
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const [ready, setReady] = useState(false);
+
+  // Cada pestaña debe escuchar el logout remoto aun si no necesitó refresh.
+  useEffect(() => {
+    initializeAuthBroadcastListener();
+  }, []);
 
   useEffect(() => {
     if (!hasHydrated) return;
