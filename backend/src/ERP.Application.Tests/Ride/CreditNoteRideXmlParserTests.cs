@@ -1,7 +1,6 @@
 using ERP.Application.Modules.ElectronicDocuments.DTOs;
 using ERP.Application.Modules.ElectronicDocuments.XmlBuilders;
 using ERP.Application.Modules.Ride.Parsers;
-using ERP.Domain.Modules.ElectronicDocuments.Enums;
 using ERP.Domain.Modules.Ride.Enums;
 using FluentAssertions;
 

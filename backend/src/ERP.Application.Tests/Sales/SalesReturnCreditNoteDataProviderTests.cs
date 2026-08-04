@@ -1,17 +1,16 @@
 using ERP.Application.Common.Services;
+using ERP.Application.Modules.ElectronicDocuments.Services;
 using ERP.Application.Modules.Sales.Services;
-using ERP.Domain.Modules.Company.Entities;
-using ERP.Domain.Modules.Company.Interfaces;
 using ERP.Domain.Configuration.Entities;
 using ERP.Domain.Configuration.Interfaces;
-using ERP.Domain.Modules.ElectronicDocuments.Enums;
+using ERP.Domain.Modules.Company.Entities;
+using ERP.Domain.Modules.Company.Interfaces;
 using ERP.Domain.Modules.Sales.Entities;
 using ERP.Domain.Modules.Sales.Enums;
 using ERP.Domain.Modules.Sales.Interfaces;
 using ERP.Domain.Modules.Sales.ValueObjects;
 using FluentAssertions;
 using Moq;
-using ERP.Application.Modules.ElectronicDocuments.Services;
 
 namespace ERP.Application.Tests.Sales;
 

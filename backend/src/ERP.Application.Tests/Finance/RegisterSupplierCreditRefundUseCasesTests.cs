@@ -13,7 +13,6 @@ using ERP.Domain.Modules.Finance.Interfaces;
 using ERP.Domain.Modules.Purchases.Entities;
 using ERP.Domain.Modules.Purchases.Interfaces;
 using ERP.Domain.Modules.Sales.Entities;
-using ERP.Domain.Modules.Sales.Enums;
 using ERP.Domain.Modules.Sales.Interfaces;
 using FluentAssertions;
 using Moq;

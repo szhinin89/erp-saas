@@ -3,7 +3,6 @@ using ERP.Application.Modules.Accounting.Posting.Translators;
 using ERP.Domain.Modules.Accounting.Entities;
 using ERP.Domain.Modules.Accounting.Enums;
 using ERP.Domain.Modules.Accounting.Interfaces;
-using ERP.Domain.Modules.Accounting.ValueObjects;
 using ERP.Domain.Modules.Sales.Events;
 using FluentAssertions;
 using Microsoft.Extensions.Logging;

@@ -9,7 +9,6 @@ using ERP.Domain.MasterData.Entities;
 using ERP.Domain.Modules.Company.Entities;
 using ERP.Domain.Modules.Purchases.Entities;
 using ERP.Domain.Modules.Purchases.Enums;
-using ERP.Domain.Modules.Purchases.PurchaseReception.Entities;
 using ERP.Domain.Tenants.Entities;
 using ERP.Infrastructure.Persistence;
 using ERP.Infrastructure.Persistence.Repositories.Finance;
