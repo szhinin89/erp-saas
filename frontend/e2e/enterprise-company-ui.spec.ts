@@ -93,7 +93,8 @@ test.describe("Enterprise company UI isolation", () => {
       .evaluateAll((opts) =>
         opts.map((o) => (o as HTMLOptionElement).value).filter(Boolean),
       );
-    const other = optionValues.find((v) => v !== (await switcher.inputValue()));
+    const currentValue = await switcher.inputValue();
+    const other = optionValues.find((v) => v !== currentValue);
     test.skip(!other, "No hay segunda empresa en el selector");
 
     await switcher.selectOption(other!);
