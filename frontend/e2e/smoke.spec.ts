@@ -10,7 +10,7 @@ test.describe("Smoke", () => {
     await expect(
       page.getByText("Acceso al Portal ERP Corporativo"),
     ).toBeVisible();
-    await expect(page.locator("#lp-email")).toBeVisible();
+    await expect(page.locator("#lp-username")).toBeVisible();
     await expect(page.locator("#lp-password")).toBeVisible();
     await expect(page.locator("button.lp-submit")).toBeVisible();
   });
