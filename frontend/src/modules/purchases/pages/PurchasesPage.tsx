@@ -908,8 +908,7 @@ const STATUS_TONE_VARIANT: Record<LineStatusTone, BadgeVariant> = {
   danger: "red",
 };
 
-type PurchasesPageContext = ReturnType<typeof usePurchasesPage>;
-type PurchaseLineDraft = NonNullable<PurchasesPageContext["editing"]>["lines"][number];
+type PurchaseLineDraft = PurchaseLineFormValues;
 
 function PurchaseLineCard({
   line: l,
@@ -992,7 +991,7 @@ function PurchaseLineCard({
                   variant="ghost"
                   size="xs"
                   type="button"
-                  onClick={() => viewMatchedItem(l.itemId)}
+                  onClick={() => viewMatchedItem(l.itemId as string)}
                 >
                   Ver Item
                 </ZHBtn>
@@ -1469,7 +1468,7 @@ function ReceptionCreateItemAction({
   const [open, setOpen] = useState(false);
 
   const receptionLine: PurchaseReceptionLineMatch = {
-    lineId: l.purchaseReceptionLineId,
+    lineId: l.purchaseReceptionLineId as string,
     supplierId: ctx.formWatch.supplierId || null,
     supplierCode: l.xmlSupplierCode ?? null,
     supplierAuxCode: l.xmlSupplierAuxCode ?? null,
