@@ -110,7 +110,11 @@ export function TreeEditorPage() {
   const toggle = (id: string) =>
     setExpanded((prev) => {
       const next = new Set(prev);
-      next.has(id) ? next.delete(id) : next.add(id);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
       return next;
     });
 
@@ -200,8 +204,7 @@ export function TreeEditorPage() {
     return (
       <div key={node.id} className="te-node">
         <div
-          className={`te-row ${!node.isActive ? "te-row--inactive" : ""}`}
-          style={{ paddingLeft: `${16 + depth * 24}px` }}
+          className={`te-row te-row--depth-${Math.min(depth, 6)} ${!node.isActive ? "te-row--inactive" : ""}`}
         >
           {hasChildren ? (
             <button

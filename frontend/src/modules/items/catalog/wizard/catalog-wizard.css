@@ -456,3 +456,53 @@
 .wz-spin {
   animation: wzSpin 0.8s linear infinite;
 }
+
+.te-row--depth-0 {
+  padding-left: 16px;
+}
+
+.te-row--depth-1 {
+  padding-left: 40px;
+}
+
+.te-row--depth-2 {
+  padding-left: 64px;
+}
+
+.te-row--depth-3 {
+  padding-left: 88px;
+}
+
+.te-row--depth-4 {
+  padding-left: 112px;
+}
+
+.te-row--depth-5 {
+  padding-left: 136px;
+}
+
+.te-row--depth-6 {
+  padding-left: 160px;
+}
+.te-expand-icon {
+  transition: transform var(--motion-duration-fast);
+}
+
+.te-expand-icon--expanded {
+  transform: rotate(90deg);
+}
+.te-icon--family {
+  color: var(--color-primary);
+}
+
+.te-icon--category {
+  color: var(--color-info);
+}
+
+.te-icon--subcategory {
+  color: var(--color-success);
+}
+
+.te-icon--custom {
+  color: var(--color-text-secondary);
+}
