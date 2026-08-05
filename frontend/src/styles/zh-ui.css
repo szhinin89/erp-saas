@@ -225,12 +225,20 @@ select {
   appearance: none;
   cursor: pointer;
   background-color: var(--color-surface-container-low);
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236B7280' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml,%3Csvg ...");
   background-repeat: no-repeat;
   background-position: right 10px center;
   padding-right: 32px;
   border-color: var(--color-outline-variant, var(--color-border));
 }
+
+.zh-select--compact {
+  font-size: var(--text-label-sm-size);
+  height: auto;
+  padding: 5px 32px 5px var(--space-2);
+  border-width: 1.5px;
+}
+
 select:hover {
   background-color: var(--color-surface);
 }

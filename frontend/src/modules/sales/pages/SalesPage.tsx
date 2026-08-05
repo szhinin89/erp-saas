@@ -321,7 +321,7 @@ export function SalesPage() {
                 <div>
                   <div className="sf-emission__label">Tipo Documento</div>
                   <select
-                    className="sales-form-select"
+                    className="zh-select--compact zh-mb-4"
                     value={
                       ctx.readOnly
                         ? (ctx.editing?.docTypeCode ?? "")
@@ -342,7 +342,7 @@ export function SalesPage() {
                 <div>
                   <div className="sf-emission__label">Forma Pago SRI</div>
                   <select
-                    className="sales-form-select"
+                    className="zh-select--compact zh-mb-4"
                     value={
                       ctx.readOnly
                         ? (ctx.editing?.sriPaymentMethodCode ?? "")
