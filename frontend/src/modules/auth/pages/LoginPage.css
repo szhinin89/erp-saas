@@ -338,7 +338,7 @@
 .lp-submit-spinner {
   width: 16px;
   height: 16px;
-  border: 2px solid rgba(255, 255, 255, 0.35);
+  border: 2px solid color-mix(in srgb, var(--color-on-primary) 35%, transparent);
   border-top-color: var(--color-on-primary);
   border-radius: 50%;
   animation: lp-spin 0.7s linear infinite;
