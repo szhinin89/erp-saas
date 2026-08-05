@@ -551,3 +551,9 @@
 .md-wiz-results {
   margin-top: var(--space-4);
 }
+
+.md-supplier-payment-term-summary {
+  margin-top: 6px;
+  font-size: var(--text-body-sm-size);
+  color: var(--color-text-secondary);
+}

@@ -168,13 +168,7 @@ function SupplierConfigModal({
                 ))}
             </select>
             {selectedPt && (
-              <div
-                style={{
-                  marginTop: 6,
-                  fontSize: 12,
-                  color: "var(--color-text-secondary)",
-                }}
-              >
+              <div className="md-supplier-payment-term-summary">
                 Cuotas: <strong>{selectedPt.installments}</strong> · Dias entre
                 cuotas: <strong>{selectedPt.daysBetweenInstallments}</strong> ·
                 Total: <strong>{selectedPt.totalDays} dias</strong>
