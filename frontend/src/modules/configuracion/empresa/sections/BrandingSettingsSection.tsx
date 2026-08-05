@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+﻿import { useEffect, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { LoadingState, NoAccessPage } from "../../../../components/PageShell";
@@ -175,7 +175,7 @@ export function BrandingSettingsSection() {
     }
 
     if (file.size > MAX_LOGO_SIZE_BYTES) {
-      setLogoError("El archivo supera el tamaño máximo de 5 MB.");
+      setLogoError("El archivo supera el tamaÃ±o mÃ¡ximo de 5 MB.");
       setLogoFile(null);
       setLogoPreviewUrl(null);
       if (logoFileInputRef.current) logoFileInputRef.current.value = "";
@@ -236,7 +236,7 @@ export function BrandingSettingsSection() {
     }
 
     if (file.size > MAX_LOGO_SIZE_BYTES) {
-      setAltLogoError("El archivo supera el tamaño máximo de 5 MB.");
+      setAltLogoError("El archivo supera el tamaÃ±o mÃ¡ximo de 5 MB.");
       setAltLogoFile(null);
       setAltLogoPreviewUrl(null);
       if (altLogoFileInputRef.current) altLogoFileInputRef.current.value = "";
@@ -392,7 +392,7 @@ export function BrandingSettingsSection() {
 
             <ZHField
               label={t("settings.company.logo.selectFile")}
-              hint={`${t("settings.company.logo.formats")} · ${t("settings.company.logo.maxSize")}`}
+              hint={`${t("settings.company.logo.formats")} Â· ${t("settings.company.logo.maxSize")}`}
             >
               <input
                 ref={logoFileInputRef}
@@ -463,7 +463,7 @@ export function BrandingSettingsSection() {
 
             <ZHField
               label={t("settings.company.logo.selectFile")}
-              hint={`${t("settings.company.logo.formats")} · ${t("settings.company.logo.maxSize")}`}
+              hint={`${t("settings.company.logo.formats")} Â· ${t("settings.company.logo.maxSize")}`}
             >
               <input
                 ref={altLogoFileInputRef}
@@ -596,7 +596,7 @@ export function BrandingSettingsSection() {
               disabled={identitySaving || !canEdit || !isDirty}
             >
               <span className="material-symbols-outlined">save</span>
-              {identitySaving ? t("common.saving") : "Guardar Configuración"}
+              {identitySaving ? t("common.saving") : "Guardar ConfiguraciÃ³n"}
             </ZHBtn>
           </div>
         </div>
@@ -604,3 +604,4 @@ export function BrandingSettingsSection() {
     </>
   );
 }
+
