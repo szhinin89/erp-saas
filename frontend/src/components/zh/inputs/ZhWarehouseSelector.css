@@ -51,7 +51,7 @@
   background: var(--color-surface);
   border: 1px solid var(--color-outline-variant);
   border-radius: 10px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+  box-shadow: var(--shadow-lg);
   overflow: hidden;
 }
 
@@ -90,11 +90,11 @@
 
 .zh-wh-selector__row:hover,
 .zh-wh-selector__row--focused {
-  background: var(--color-surface-variant, rgba(0, 0, 0, 0.04));
+  background: var(--color-surface-variant);
 }
 
 .zh-wh-selector__row--selected {
-  background: var(--color-primary-container, rgba(37, 99, 235, 0.08));
+  background: var(--color-primary-container);
 }
 
 .zh-wh-selector__row-name {

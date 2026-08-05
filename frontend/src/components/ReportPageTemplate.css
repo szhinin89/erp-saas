@@ -1,9 +1,9 @@
-/* ReportPageTemplate — rpt-* (complementa pg-* y .badge* de zh-ui.css)
-   Tabla    → .table              (zh-ui.css)
-   Badges   → .badge.badge--md   (zh-ui.css)
-   Avatar   → .zh-avatar--square (zh-ui.css)               */
+/* ReportPageTemplate â€” rpt-* (complementa pg-* y .badge* de zh-ui.css)
+   Tabla    â†’ .table              (zh-ui.css)
+   Badges   â†’ .badge.badge--md   (zh-ui.css)
+   Avatar   â†’ .zh-avatar--square (zh-ui.css)               */
 
-/* ── KPI sub-text ────────────────────────────────────────── */
+/* â”€â”€ KPI sub-text â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .rpt-kpi-sub {
   font-size: var(--text-label-sm-size);
   font-weight: 500;
@@ -11,7 +11,7 @@
   margin: 0;
 }
 
-/* ── Filters bar ─────────────────────────────────────────── */
+/* â”€â”€ Filters bar â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .rpt-filters {
   background: var(--color-surface);
   border: 1px solid var(--color-border);
@@ -78,7 +78,7 @@
   padding-left: 36px;
 }
 
-/* ── Chart panel ─────────────────────────────────────────── */
+/* â”€â”€ Chart panel â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .rpt-chart-panel .pg-section-header {
   padding: var(--space-4) var(--space-5);
 }
@@ -90,7 +90,7 @@
   text-transform: none;
 }
 
-/* Period toggle (Día | Semana | Mes) */
+/* Period toggle (DÃ­a | Semana | Mes) */
 .rpt-period-toggle {
   display: flex;
   background: var(--color-surface-container-low);
@@ -119,7 +119,7 @@
 .rpt-period-btn.is-active {
   background: var(--color-surface);
   color: var(--color-primary);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow-sm);
 }
 
 /* Chart area */
@@ -165,7 +165,7 @@
 }
 .rpt-chart-tooltip-date {
   font-weight: 700;
-  border-bottom: 1px solid rgba(240, 241, 243, 0.2);
+  border-bottom: 1px solid var(--color-outline-variant);
   padding-bottom: var(--space-1);
   margin: 0 0 var(--space-1);
 }
@@ -182,7 +182,7 @@
   color: var(--color-error);
 }
 
-/* ── Table wrapper (scrollbar custom) ───────────────────── */
+/* â”€â”€ Table wrapper (scrollbar custom) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .rpt-table-wrap {
   overflow-x: auto;
 }
@@ -197,7 +197,7 @@
   border-radius: 10px;
 }
 
-/* Alignment helpers for th/td (minimal — .table styles handle the rest) */
+/* Alignment helpers for th/td (minimal â€” .table styles handle the rest) */
 .rpt-th--right {
   text-align: right;
 }
@@ -211,7 +211,7 @@
   text-align: center;
 }
 
-/* ── Table cell components ───────────────────────────────── */
+/* â”€â”€ Table cell components â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 
 /* Row ID */
 .rpt-row-id {
