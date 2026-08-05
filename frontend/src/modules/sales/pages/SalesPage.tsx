@@ -110,7 +110,7 @@ export function SalesPage() {
       {/* ═══════════════════════════ LISTADO ═══════════════════════════ */}
       {ctx.tab === "listado" && (
         <div className="prd-section">
-          <div className="sales-page-listbar">
+          <div className="pg-table-controls sales-page-listbar">
             <button
               className="pf-btn pf-btn--primary"
               onClick={() => {
@@ -136,7 +136,7 @@ export function SalesPage() {
               onClick={ctx.fetchList}
               disabled={ctx.listLoading}
             >
-              <span className="material-symbols-outlined sales-icon-18">
+              <span className="material-symbols-outlined zh-icon-lg">
                 refresh
               </span>
             </ZHBtn>
@@ -144,7 +144,8 @@ export function SalesPage() {
           {ctx.listLoading ? (
             <p>Cargando...</p>
           ) : (
-            <table className="pf-table">
+            <div className="pg-overflow-x">
+              <table className="pf-table">
               <thead>
                 <tr>
                   <th>Nro. Factura</th>
@@ -188,7 +189,7 @@ export function SalesPage() {
                             : "Ver / Editar"
                         }
                       >
-                        <span className="material-symbols-outlined sales-icon-20">
+                        <span className="material-symbols-outlined sales-page-list-action-icon">
                           {inv.status === "Draft" ? "replay" : "edit"}
                         </span>
                       </button>
@@ -202,7 +203,7 @@ export function SalesPage() {
                             )
                           }
                         >
-                          <span className="material-symbols-outlined sales-icon-20">
+                          <span className="material-symbols-outlined sales-page-list-action-icon">
                             history
                           </span>
                         </button>
@@ -214,7 +215,7 @@ export function SalesPage() {
                           disabled={ride.ridePending}
                           onClick={() => void ride.handleViewRide(inv.id)}
                         >
-                          <span className="material-symbols-outlined sales-icon-20">
+                          <span className="material-symbols-outlined sales-page-list-action-icon">
                             picture_as_pdf
                           </span>
                         </button>
@@ -230,7 +231,8 @@ export function SalesPage() {
                   </tr>
                 )}
               </tbody>
-            </table>
+              </table>
+            </div>
           )}
         </div>
       )}
@@ -361,7 +363,7 @@ export function SalesPage() {
                 {ctx.editing && (
                   <div className="sales-form-mt-4">
                     <span className="sf-emission__label">Nro: </span>
-                    <span className="sf-emission__value sales-mono">
+                    <span className="sf-emission__value sales-form-invoice-number">
                       {ctx.editing.invoiceNumber}
                     </span>
                   </div>
@@ -398,7 +400,7 @@ export function SalesPage() {
                 <div className="sales-form-customer-profile">
                   {ctx.customerProfile.address && (
                     <div className="sales-form-profile-row">
-                      <span className="material-symbols-outlined sales-icon-14">
+                      <span className="material-symbols-outlined zh-icon-sm">
                         location_on
                       </span>
                       {ctx.customerProfile.address}
@@ -406,7 +408,7 @@ export function SalesPage() {
                   )}
                   {ctx.customerProfile.email && (
                     <div className="sales-form-profile-row">
-                      <span className="material-symbols-outlined sales-icon-14">
+                      <span className="material-symbols-outlined zh-icon-sm">
                         mail
                       </span>
                       {ctx.customerProfile.email}
@@ -414,7 +416,7 @@ export function SalesPage() {
                   )}
                   {ctx.customerProfile.phone && (
                     <div className="sales-form-profile-row">
-                      <span className="material-symbols-outlined sales-icon-14">
+                      <span className="material-symbols-outlined zh-icon-sm">
                         phone
                       </span>
                       {ctx.customerProfile.phone}
@@ -426,7 +428,7 @@ export function SalesPage() {
                       onClick={ctx.openEditCustomerModal}
                       className="sales-form-edit-btn"
                     >
-                      <span className="material-symbols-outlined sales-icon-14">
+                      <span className="material-symbols-outlined zh-icon-sm">
                         edit
                       </span>
                       Editar datos
@@ -538,7 +540,7 @@ export function SalesPage() {
             {ctx.isElectronic && (
               <div className="sf-bottombar__sri">
                 <span className="sf-bottombar__sri-label">
-                  <span className="material-symbols-outlined sales-page-sri-icon">
+                  <span className="material-symbols-outlined zh-icon-sm sales-page-sri-icon">
                     qr_code_2
                   </span>
                   Clave de Acceso SRI
@@ -967,7 +969,7 @@ function PaymentMethodsSection({
         Formas de Cobro
         {!ctx.readOnly && ctx.payments.length > 0 && (
           <span
-            className="material-symbols-outlined sf-sidebar__header-right sales-icon-16"
+            className="material-symbols-outlined sf-sidebar__header-right zh-icon-md"
             title="Limpiar cobros"
             onClick={() => ctx.setInvoicePayments([])}
           >
@@ -982,7 +984,7 @@ function PaymentMethodsSection({
             .map((p) => (
               <div key={p.id} className="sales-payment-chip">
                 {p.paymentMethodName}{" "}
-                <span className="sales-mono">
+                <span className="sales-payment-chip__amount">
                   {formatMoneyWithSymbol(
                     p.amount,
                     getDecimalConfig().totalAmount,
@@ -1169,7 +1171,7 @@ function PaymentMethodsSection({
                   Monto recibido (Efectivo):
                 </span>
                 <div className="sales-cash-box__input-wrap">
-                  <span className="sales-fs-11">$</span>
+                  <span className="sales-cash-box__currency">$</span>
                   <ZhDecimalInput
                     decimals={getDecimalConfig().totalAmount}
                     positiveOnly
@@ -1193,7 +1195,7 @@ function PaymentMethodsSection({
                 className={`sales-cash-box__total-row${ctx.cashInsufficient ? " sales-cash-box__total-row--insufficient" : ""}`}
               >
                 <span>{ctx.cashInsufficient ? "✗ Insuficiente" : "Vuelto:"}</span>
-                <span className="sales-mono">
+                <span className="sales-cash-box__amount">
                   {formatMoneyWithSymbol(
                     ctx.cashInsufficient
                       ? ctx.cashDue - ctx.cashReceived
@@ -1216,7 +1218,7 @@ function PaymentMethodsSection({
               >
                 <div className="sales-summary-row">
                   <span>Total factura:</span>
-                  <span className="sales-mono">
+                  <span className="sales-summary-row__amount">
                     {formatMoneyWithSymbol(
                       total,
                       getDecimalConfig().totalAmount,
@@ -1225,7 +1227,7 @@ function PaymentMethodsSection({
                 </div>
                 <div className="sales-summary-row">
                   <span>Total cobrado:</span>
-                  <span className="sales-mono">
+                  <span className="sales-summary-row__amount">
                     {formatMoneyWithSymbol(
                       paid,
                       getDecimalConfig().totalAmount,
@@ -1243,7 +1245,7 @@ function PaymentMethodsSection({
                         : "Pendiente:"}
                   </span>
                   {diff !== 0 && (
-                    <span className="sales-mono">
+                    <span className="sales-summary-total-row__amount">
                       {formatMoneyWithSymbol(
                         Math.abs(diff),
                         getDecimalConfig().totalAmount,
