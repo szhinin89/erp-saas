@@ -1871,12 +1871,7 @@ function PaymentScheduleSection({
               <span>
                 Total cuotas:{" "}
                 <strong
-                  className="pf-schedule-footer__amount"
-                  style={{
-                    color: ctx.ptMismatch
-                      ? "var(--color-error)"
-                      : "var(--color-text-primary)",
-                  }}
+                  className={`pf-schedule-footer__amount ${ctx.ptMismatch ? "pf-schedule-footer__amount--error" : "pf-schedule-footer__amount--default"}`}
                 >
                   {formatMoneyWithSymbol(
                     ctx.ptRowsSum,
@@ -2233,28 +2228,13 @@ function TotalMiniCard({
   highlight?: boolean;
 }) {
   return (
-    <div
-      style={{
-        padding: highlight ? "14px 12px" : "10px 12px",
-        borderRadius: "var(--radius-lg)",
-        textAlign: "center",
-        background: highlight
-          ? "var(--color-surface-primary-tint)"
-          : "var(--color-surface-container-low)",
-        border: `1px solid ${highlight ? "var(--color-primary)" : "var(--color-border)"}`,
-      }}
-    >
+    <div className={`pf-total-mini-card ${highlight ? "pf-total-mini-card--highlight" : "pf-total-mini-card--default"}`}>
       <div className="pf-total-mini-card__label">
         {label}
       </div>
       <div
-        style={{
-          fontSize: highlight ? 20 : 16,
-          fontWeight: 800,
-          color: color ?? "var(--color-text-primary)",
-          letterSpacing: -0.5,
-          fontFamily: "monospace",
-        }}
+        className={`pf-total-mini-card__value ${highlight ? "pf-total-mini-card__value--highlight" : "pf-total-mini-card__value--default"}`}
+        data-tone={color === "var(--color-error)" ? "error" : "default"}
       >
         {formatMoneyWithSymbol(value, getDecimalConfig().totalAmount)}
       </div>

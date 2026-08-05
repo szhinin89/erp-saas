@@ -335,16 +335,7 @@ export function CreditTermsPage() {
               <div className="zh-flex-between zh-mb-12">
                 <h4>
                   Cuotas{" "}
-                  <span
-                    style={{
-                      fontSize: 13,
-                      color:
-                        installmentSum === 100
-                          ? "var(--color-success)"
-                          : "var(--color-error)",
-                      fontWeight: 700,
-                    }}
-                  >
+                  <span className={`ct-installment-sum ${installmentSum === 100 ? "ct-installment-sum--ok" : "ct-installment-sum--error"}`}>
                     (Suma: {installmentSum.toFixed(2)}%)
                   </span>
                 </h4>
@@ -358,10 +349,9 @@ export function CreditTermsPage() {
               {fInstallments.map((inst, idx) => (
                 <div
                   key={idx}
-                  className="zh-flex-end zh-gap-12 zh-mb-8"
-                  style={{ justifyContent: "flex-start" }}
+                  className="zh-flex-end zh-gap-12 zh-mb-8 ct-installment-row"
                 >
-                  <span style={{ fontWeight: 600, minWidth: 30 }}>
+                  <span className="ct-installment-number">
                     #{inst.number}
                   </span>
                   <FormField label="Días offset">
@@ -377,7 +367,7 @@ export function CreditTermsPage() {
                           Number(e.target.value),
                         )
                       }
-                      style={{ width: 100 }}
+                      className="ct-installment-days-input"
                     />
                   </FormField>
                   <FormField label="Porcentaje (%)">
@@ -392,14 +382,13 @@ export function CreditTermsPage() {
                           Number(e.target.value) || 0,
                         )
                       }
-                      style={{ width: 120 }}
+                      className="ct-installment-percent-input"
                     />
                   </FormField>
                   <button
-                    className="prd-icon-btn"
+                    className="prd-icon-btn prd-icon-btn--danger ct-installment-delete-btn"
                     onClick={() => removeInstallment(idx)}
                     title="Eliminar cuota"
-                    style={{ color: "var(--color-error)", marginTop: 20 }}
                   >
                     <span className="material-symbols-outlined">delete</span>
                   </button>
@@ -486,10 +475,15 @@ function IconBtn({
 }) {
   return (
     <button
-      className="prd-icon-btn"
+      className={`prd-icon-btn ${
+        color === "var(--color-error)"
+          ? "prd-icon-btn--danger"
+          : color === "var(--color-success)"
+            ? "prd-icon-btn--success"
+            : "prd-icon-btn--primary"
+      }`}
       onClick={onClick}
       title={title}
-      style={{ color }}
     >
       <span className="material-symbols-outlined">{icon}</span>
     </button>

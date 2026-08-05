@@ -1,4 +1,4 @@
-﻿import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -693,15 +693,9 @@ export function MasterDataBusinessPartnerDetailPage() {
                 <section className="md-detail-section">
                   <div className="md-detail-section__header">
                     <h3>Ubicaciones</h3>
-                    <div
-                      style={{
-                        display: "flex",
-                        gap: "8px",
-                        alignItems: "center",
-                      }}
-                    >
+                    <div className="md-detail-filter-actions">
                       <select
-                        style={{ width: "auto", fontSize: "0.85rem" }}
+                        className="md-detail-filter-select"
                         value={locFilter}
                         onChange={(e) =>
                           setLocFilter(
@@ -1044,7 +1038,7 @@ export function MasterDataBusinessPartnerDetailPage() {
             </ZHField>
           </ZHGrid>
           <ZHField label="PropÃ³sitos">
-            <div style={{ display: "flex", gap: "16px", flexWrap: "wrap" }}>
+            <div className="md-detail-purpose-options">
               {PURPOSE_FLAGS.map((pf) => (
                 <label key={pf.flag} className="zh-checkbox-label">
                   <input
@@ -1065,7 +1059,7 @@ export function MasterDataBusinessPartnerDetailPage() {
             </div>
           </ZHField>
           {locModal?.mode === "create" && (
-            <label className="zh-checkbox-label" style={{ marginTop: 8 }}>
+            <label className="zh-checkbox-label md-detail-primary-option">
               <input
                 type="checkbox"
                 {...locForm.register("isPrimary")}
@@ -1191,7 +1185,7 @@ export function MasterDataBusinessPartnerDetailPage() {
             />
           </ZHField>
           {conModal?.mode === "create" && (
-            <label className="zh-checkbox-label" style={{ marginTop: 8 }}>
+            <label className="zh-checkbox-label md-detail-primary-option">
               <input
                 type="checkbox"
                 {...conForm.register("isPrimary")}

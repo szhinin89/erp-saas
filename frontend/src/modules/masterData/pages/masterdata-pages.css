@@ -581,3 +581,24 @@
   font-weight: 700;
   color: var(--color-text-primary);
 }
+
+.md-detail-filter-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.md-detail-filter-select {
+  width: auto;
+  font-size: 0.85rem;
+}
+
+.md-detail-purpose-options {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.md-detail-primary-option {
+  margin-top: 8px;
+}

@@ -1701,3 +1701,37 @@ tr.cfg-row--selected:hover > td {
   background: var(--color-surface-container-low);
   color: var(--color-text-secondary);
 }
+
+.ct-installment-sum {
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.ct-installment-sum--ok {
+  color: var(--color-success);
+}
+
+.ct-installment-sum--error {
+  color: var(--color-error);
+}
+
+.ct-installment-row {
+  justify-content: flex-start;
+}
+
+.ct-installment-number {
+  min-width: 30px;
+  font-weight: 600;
+}
+
+.ct-installment-days-input {
+  width: 100px;
+}
+
+.ct-installment-percent-input {
+  width: 120px;
+}
+
+.ct-installment-delete-btn {
+  margin-top: 20px;
+}
