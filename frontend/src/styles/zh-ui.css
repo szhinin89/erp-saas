@@ -198,6 +198,19 @@ a:hover {
 .zh-btn--destructive:hover:not(:disabled) {
   background: rgba(192, 57, 43, 0.08);
 }
+.zh-inline-action {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: 0;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--color-primary);
+  font-family: var(--font-family);
+  font-size: var(--text-help-size);
+  font-weight: var(--text-label-md-weight);
+}
 
 /* ── 3. FORMULARIOS — inputs ─────────────────────────────── */
 input,

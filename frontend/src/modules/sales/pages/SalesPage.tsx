@@ -426,7 +426,7 @@ export function SalesPage() {
                     <button
                       type="button"
                       onClick={ctx.openEditCustomerModal}
-                      className="sales-form-edit-btn"
+                      className="zh-inline-action sales-form-edit-btn"
                     >
                       <span className="material-symbols-outlined zh-icon-sm">
                         edit
