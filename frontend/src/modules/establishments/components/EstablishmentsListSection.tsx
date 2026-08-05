@@ -201,7 +201,7 @@ export function EstablishmentsListSection({
                           label="Principal"
                           variant="blue"
                           size="md"
-                          style={{ marginLeft: "var(--space-1)" }}
+                          className="zh-ml-1"
                         />
                       )}
                     </td>

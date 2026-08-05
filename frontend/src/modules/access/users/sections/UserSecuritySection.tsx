@@ -54,7 +54,7 @@ export function UserSecuritySection({ membership }: Props) {
       ) : null}
 
       {canAssignTemporaryPassword ? (
-        <div className="pg-section" style={{ marginTop: "var(--space-5)" }}>
+        <div className="pg-section zh-mt-5">
           <div className="pg-section-header">
             <div className="pg-section-header-left">
               <span

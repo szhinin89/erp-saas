@@ -2618,3 +2618,7 @@ input[type="date"] {
 .zh-picker__create-icon {
   font-size: 16px;
 }
+
+.zh-ml-1 {
+  margin-left: var(--space-1);
+}
