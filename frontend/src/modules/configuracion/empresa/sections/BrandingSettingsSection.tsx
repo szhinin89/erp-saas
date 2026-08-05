@@ -381,14 +381,7 @@ export function BrandingSettingsSection() {
                 <img
                   src={logoPreviewUrl ?? currentLogoUrl ?? undefined}
                   alt={t("settings.company.logo.title")}
-                  style={{
-                    maxHeight: 96,
-                    maxWidth: "100%",
-                    objectFit: "contain",
-                    border: "1px solid var(--color-border)",
-                    borderRadius: "var(--radius-sm)",
-                    padding: "var(--space-2)",
-                  }}
+                  className="branding-logo-preview"
                 />
               ) : (
                 <p className="zh-text-muted zh-text-xs">
@@ -415,24 +408,12 @@ export function BrandingSettingsSection() {
                 </p>
               )}
               {logoUploading && (
-                <div
-                  style={{
-                    marginTop: "var(--space-2)",
-                    height: 6,
-                    borderRadius: "var(--radius-sm)",
-                    background: "var(--color-border)",
-                    overflow: "hidden",
-                  }}
-                >
-                  <div
-                    style={{
-                      width: `${logoUploadProgress}%`,
-                      height: "100%",
-                      background: "var(--color-primary)",
-                      transition: "width 0.2s ease",
-                    }}
-                  />
-                </div>
+                <progress
+                  className="branding-upload-progress"
+                  value={logoUploadProgress}
+                  max={100}
+                  aria-label={t("settings.company.logo.preview")}
+                />
               )}
               <div className="zh-mt-8">
                 <ZHBtn
@@ -471,14 +452,7 @@ export function BrandingSettingsSection() {
                 <img
                   src={altLogoPreviewUrl ?? currentAltLogoUrl ?? undefined}
                   alt={t("settings.company.branding.alternateLogo.title")}
-                  style={{
-                    maxHeight: 96,
-                    maxWidth: "100%",
-                    objectFit: "contain",
-                    border: "1px solid var(--color-border)",
-                    borderRadius: "var(--radius-sm)",
-                    padding: "var(--space-2)",
-                  }}
+                  className="branding-logo-preview"
                 />
               ) : (
                 <p className="zh-text-muted zh-text-xs">
@@ -505,24 +479,12 @@ export function BrandingSettingsSection() {
                 </p>
               )}
               {altLogoUploading && (
-                <div
-                  style={{
-                    marginTop: "var(--space-2)",
-                    height: 6,
-                    borderRadius: "var(--radius-sm)",
-                    background: "var(--color-border)",
-                    overflow: "hidden",
-                  }}
-                >
-                  <div
-                    style={{
-                      width: `${altLogoUploadProgress}%`,
-                      height: "100%",
-                      background: "var(--color-primary)",
-                      transition: "width 0.2s ease",
-                    }}
-                  />
-                </div>
+                <progress
+                  className="branding-upload-progress"
+                  value={altLogoUploadProgress}
+                  max={100}
+                  aria-label={t("settings.company.branding.alternateLogo.title")}
+                />
               )}
               <div className="zh-mt-8">
                 <ZHBtn
@@ -562,8 +524,7 @@ export function BrandingSettingsSection() {
                 error={errors.primaryColor?.message}
               >
                 <div
-                  className="zh-flex-end zh-gap-8"
-                  style={{ justifyContent: "flex-start" }}
+                  className="zh-flex-end zh-gap-8 branding-color-row"
                 >
                   <input
                     type="color"
@@ -573,7 +534,7 @@ export function BrandingSettingsSection() {
                   />
                   <input
                     className="zh-input"
-                    placeholder="#1A73E8"
+                    placeholder="Ej. color principal HEX"
                     disabled={identitySaving || !canEdit}
                     {...register("primaryColor")}
                   />
@@ -585,8 +546,7 @@ export function BrandingSettingsSection() {
                 error={errors.secondaryColor?.message}
               >
                 <div
-                  className="zh-flex-end zh-gap-8"
-                  style={{ justifyContent: "flex-start" }}
+                  className="zh-flex-end zh-gap-8 branding-color-row"
                 >
                   <input
                     type="color"
@@ -596,7 +556,7 @@ export function BrandingSettingsSection() {
                   />
                   <input
                     className="zh-input"
-                    placeholder="#34A853"
+                    placeholder="Ej. color secundario HEX"
                     disabled={identitySaving || !canEdit}
                     {...register("secondaryColor")}
                   />
