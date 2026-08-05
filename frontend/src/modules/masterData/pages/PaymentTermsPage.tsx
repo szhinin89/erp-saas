@@ -80,11 +80,20 @@ export function PaymentTermsPage() {
       resetForm();
       setTab("listado");
       fetchItems();
-    } catch (e: any) {
+    } catch (e: unknown) {
+      const error = e as {
+        response?: {
+          data?: {
+            message?: { user?: string };
+            data?: { errors?: string[] };
+          };
+        };
+        message?: string;
+      };
       const msg =
-        e?.response?.data?.message?.user ??
-        e?.response?.data?.data?.errors?.[0] ??
-        e?.message ??
+        error.response?.data?.message?.user ??
+        error.response?.data?.data?.errors?.[0] ??
+        error.message ??
         "Error al guardar.";
       setError(msg);
     }
@@ -93,9 +102,11 @@ export function PaymentTermsPage() {
 
   const handleToggle = async (pt: PaymentTermDto) => {
     try {
-      pt.isActive
-        ? await paymentTermService.disable(pt.id)
-        : await paymentTermService.enable(pt.id);
+      if (pt.isActive) {
+        await paymentTermService.disable(pt.id);
+      } else {
+        await paymentTermService.enable(pt.id);
+      }
       fetchItems();
     } catch {
       /* */
@@ -292,38 +303,15 @@ export function PaymentTermsPage() {
           </div>
 
           {/* Preview */}
-          <div
-            className="pf-collapsible"
-            style={{ marginTop: "var(--space-5)", maxWidth: 600 }}
-          >
-            <div
-              className="pf-collapsible__body"
-              style={{
-                display: "flex",
-                gap: "var(--space-6)",
-                alignItems: "center",
-                padding: "var(--space-4)",
-              }}
-            >
+          <div className="pf-collapsible md-payment-term-preview">
+            <div className="pf-collapsible__body md-payment-term-preview__body">
               <ZHField density="compact" label="Resumen">
-                <div
-                  style={{
-                    fontSize: 18,
-                    fontWeight: 700,
-                    color: "var(--color-primary)",
-                  }}
-                >
+                <div className="md-payment-term-preview__summary">
                   {previewSummary}
                 </div>
               </ZHField>
               <ZHField density="compact" label="Total días">
-                <div
-                  style={{
-                    fontSize: 18,
-                    fontWeight: 700,
-                    color: "var(--color-text-primary)",
-                  }}
-                >
+                <div className="md-payment-term-preview__total">
                   {previewTotalDays}
                 </div>
               </ZHField>
@@ -371,10 +359,15 @@ function IconBtn({
 }) {
   return (
     <button
-      className="prd-icon-btn"
+      className={`prd-icon-btn ${
+        color === "var(--color-error)"
+          ? "prd-icon-btn--danger"
+          : color === "var(--color-success)"
+            ? "prd-icon-btn--success"
+            : "prd-icon-btn--primary"
+      }`}
       onClick={onClick}
       title={title}
-      style={{ color }}
     >
       <span className="material-symbols-outlined">{icon}</span>
     </button>

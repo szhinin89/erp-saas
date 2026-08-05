@@ -557,3 +557,27 @@
   font-size: var(--text-body-sm-size);
   color: var(--color-text-secondary);
 }
+
+.md-payment-term-preview {
+  margin-top: var(--space-5);
+  max-width: 600px;
+}
+
+.md-payment-term-preview__body {
+  display: flex;
+  gap: var(--space-6);
+  align-items: center;
+  padding: var(--space-4);
+}
+
+.md-payment-term-preview__summary {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--color-primary);
+}
+
+.md-payment-term-preview__total {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--color-text-primary);
+}
