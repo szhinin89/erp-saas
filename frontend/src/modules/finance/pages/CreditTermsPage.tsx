@@ -125,9 +125,11 @@ export function CreditTermsPage() {
 
   const handleToggle = async (ct: CreditTermDto) => {
     try {
-      ct.isActive
-        ? await creditTermService.disable(ct.id)
-        : await creditTermService.enable(ct.id);
+      if (ct.isActive) {
+        await creditTermService.disable(ct.id);
+      } else {
+        await creditTermService.enable(ct.id);
+      }
       fetchItems();
     } catch {
       /* */
