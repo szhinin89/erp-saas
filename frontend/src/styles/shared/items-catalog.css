@@ -1665,3 +1665,19 @@ tr.cfg-row--selected:hover > td {
   color: var(--color-text-secondary);
   margin-top: 2px;
 }
+
+.prd-icon-btn--primary {
+  color: var(--color-primary);
+}
+
+.prd-icon-btn--danger {
+  color: var(--color-error);
+}
+
+.prd-icon-btn--success {
+  color: var(--color-success);
+}
+
+.prd-form-grid {
+  max-width: 600px;
+}

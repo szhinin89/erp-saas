@@ -262,22 +262,16 @@ export function PriceListsPage() {
                     </td>
                     <td className="prd-td-actions">
                       <button
-                        className="prd-icon-btn"
+                        className="prd-icon-btn prd-icon-btn--primary"
                         onClick={() => startEdit(pl)}
                         title="Editar"
-                        style={{ color: "var(--color-primary)" }}
                       >
                         <span className="material-symbols-outlined">edit</span>
                       </button>
                       <button
-                        className="prd-icon-btn"
+                        className={`prd-icon-btn ${pl.isActive ? "prd-icon-btn--danger" : "prd-icon-btn--success"}`}
                         onClick={() => handleToggle(pl)}
                         title={pl.isActive ? "Desactivar" : "Activar"}
-                        style={{
-                          color: pl.isActive
-                            ? "var(--color-error)"
-                            : "var(--color-success)",
-                        }}
                       >
                         <span className="material-symbols-outlined">
                           {pl.isActive ? "toggle_off" : "toggle_on"}
@@ -308,7 +302,7 @@ export function PriceListsPage() {
           </h3>
           {error && <div className="prd-error-banner">{error}</div>}
 
-          <div className="zh-grid zh-grid--2" style={{ maxWidth: 600 }}>
+          <div className="zh-grid zh-grid--2 prd-form-grid">
             {!editing && (
               <div className="zh-field">
                 <label className="zh-field-label">
