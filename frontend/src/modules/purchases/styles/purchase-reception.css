@@ -18,6 +18,9 @@
 }
 
 .pur-matching-table {
+  display: block;
+  max-width: 100%;
+  overflow-x: auto;
   width: 100%;
   border-collapse: collapse;
   font-size: 13px;
@@ -43,6 +46,7 @@
 
 .pur-matching-meta {
   display: flex;
+  flex-wrap: wrap;
   gap: var(--space-3);
   color: var(--color-text-secondary);
   font-size: 12px;
@@ -50,7 +54,7 @@
 }
 
 .pur-matching-pick {
-  min-width: 240px;
+  min-width: min(240px, 100%);
 }
 
 .pur-matching-choice {

@@ -203,7 +203,9 @@
 
 /* ── Products Table ─────────────────────────────────────────── */
 .pf-table-wrap {
-  overflow: visible;
+  max-width: 100%;
+  overflow-x: auto;
+  overflow-y: visible;
 }
 .pf-table {
   width: 100%;
