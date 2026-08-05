@@ -1681,3 +1681,23 @@ tr.cfg-row--selected:hover > td {
 .prd-form-grid {
   max-width: 600px;
 }
+
+.pm-flags-panel {
+  max-width: 600px;
+  display: flex;
+  gap: var(--space-6);
+  padding: var(--space-4);
+}
+
+.pm-checkbox-option {
+  cursor: pointer;
+}
+
+.pm-checkbox-title {
+  font-weight: 600;
+}
+
+.prd-status-badge--muted {
+  background: var(--color-surface-container-low);
+  color: var(--color-text-secondary);
+}

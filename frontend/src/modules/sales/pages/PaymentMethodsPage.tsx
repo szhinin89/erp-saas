@@ -108,11 +108,20 @@ export function PaymentMethodsPage() {
       resetForm();
       setTab("listado");
       fetchItems();
-    } catch (e: any) {
+    } catch (e: unknown) {
+      const error = e as {
+        response?: {
+          data?: {
+            message?: { user?: string };
+            data?: { errors?: string[] };
+          };
+        };
+        message?: string;
+      };
       const msg =
-        e?.response?.data?.message?.user ??
-        e?.response?.data?.data?.errors?.[0] ??
-        e?.message ??
+        error.response?.data?.message?.user ??
+        error.response?.data?.data?.errors?.[0] ??
+        error.message ??
         "Error al guardar.";
       setError(msg);
     }
@@ -198,32 +207,14 @@ export function PaymentMethodsPage() {
                     <td>{pm.name}</td>
                     <td>
                       <span
-                        className={`prd-status-badge ${pm.requiresReference ? "pf-badge pf-badge--info" : "prd-status-badge"}`}
-                        style={
-                          !pm.requiresReference
-                            ? {
-                                background:
-                                  "var(--color-surface-container-low)",
-                                color: "var(--color-text-secondary)",
-                              }
-                            : undefined
-                        }
+                        className={`prd-status-badge ${pm.requiresReference ? "pf-badge pf-badge--info" : "prd-status-badge--muted"}`}
                       >
                         {pm.requiresReference ? "Sí" : "No"}
                       </span>
                     </td>
                     <td>
                       <span
-                        className={`prd-status-badge ${pm.isCreditAllowed ? "pf-badge pf-badge--warning" : "prd-status-badge"}`}
-                        style={
-                          !pm.isCreditAllowed
-                            ? {
-                                background:
-                                  "var(--color-surface-container-low)",
-                                color: "var(--color-text-secondary)",
-                              }
-                            : undefined
-                        }
+                        className={`prd-status-badge ${pm.isCreditAllowed ? "pf-badge pf-badge--warning" : "prd-status-badge--muted"}`}
                       >
                         {pm.isCreditAllowed ? "Sí" : "No"}
                       </span>
@@ -338,37 +329,29 @@ export function PaymentMethodsPage() {
             </div>
           </div>
 
-          <div
-            className="pf-collapsible zh-mt-16"
-            style={{
-              maxWidth: 600,
-              display: "flex",
-              gap: "var(--space-6)",
-              padding: "var(--space-4)",
-            }}
-          >
-            <label className="zh-checkbox-label" style={{ cursor: "pointer" }}>
+          <div className="pf-collapsible zh-mt-16 pm-flags-panel">
+            <label className="zh-checkbox-label pm-checkbox-option">
               <input
                 type="checkbox"
                 checked={fRequiresRef}
                 onChange={(e) => setFRequiresRef(e.target.checked)}
               />
               <div>
-                <div style={{ fontWeight: 600 }}>Requiere referencia</div>
+                <div className="pm-checkbox-title">Requiere referencia</div>
                 <div className="zh-text-muted zh-text-xs">
                   Solicita datos adicionales (nro. comprobante, banco, etc.)
                 </div>
               </div>
             </label>
 
-            <label className="zh-checkbox-label" style={{ cursor: "pointer" }}>
+            <label className="zh-checkbox-label pm-checkbox-option">
               <input
                 type="checkbox"
                 checked={fIsCredit}
                 onChange={(e) => setFIsCredit(e.target.checked)}
               />
               <div>
-                <div style={{ fontWeight: 600 }}>Permite crédito</div>
+                <div className="pm-checkbox-title">Permite crédito</div>
                 <div className="zh-text-muted zh-text-xs">
                   Habilita la simulación de cuotas al usarse
                 </div>
@@ -412,10 +395,15 @@ function IconBtn({
 }) {
   return (
     <button
-      className="prd-icon-btn"
+      className={`prd-icon-btn ${
+        color === "var(--color-error)"
+          ? "prd-icon-btn--danger"
+          : color === "var(--color-success)"
+            ? "prd-icon-btn--success"
+            : "prd-icon-btn--primary"
+      }`}
       onClick={onClick}
       title={title}
-      style={{ color }}
     >
       <span className="material-symbols-outlined">{icon}</span>
     </button>
