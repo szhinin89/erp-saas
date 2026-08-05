@@ -2622,3 +2622,9 @@ input[type="date"] {
 .zh-ml-1 {
   margin-left: var(--space-1);
 }
+
+.zh-datatable-page-number {
+  padding: 0 10px;
+  display: flex;
+  align-items: center;
+}

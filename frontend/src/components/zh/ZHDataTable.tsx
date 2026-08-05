@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+﻿import type { ReactNode } from "react";
 import { EmptyState, LoadingState } from "../PageShell";
 
 export interface ZHDataTableColumn<T> {
@@ -15,19 +15,19 @@ interface ZHDataTableProps<T> {
   onRowClick?: (row: T) => void;
   loading?: boolean;
   emptyMessage?: string;
-  /** Paginación integrada — se omite el footer si no se provee. */
+  /** PaginaciÃ³n integrada â€” se omite el footer si no se provee. */
   page?: number;
   pageSize?: number;
   onPageChange?: (page: number) => void;
-  /** Total de filas conocido por el backend (habilita deshabilitar "siguiente" con precisión) — si se omite, se infiere por `rows.length < pageSize`. */
+  /** Total de filas conocido por el backend (habilita deshabilitar "siguiente" con precisiÃ³n) â€” si se omite, se infiere por `rows.length < pageSize`. */
   total?: number;
 }
 
 /**
  * Grilla de solo lectura reutilizable del Design System: columnas configurables, fila clicable,
- * estados de carga/vacío (reutiliza `LoadingState`/`EmptyState`), paginación opcional integrada.
- * Sin ordenamiento por columna — no lo requiere ningún consumidor todavía; se puede agregar
- * después sin romper la API pública.
+ * estados de carga/vacÃ­o (reutiliza `LoadingState`/`EmptyState`), paginaciÃ³n opcional integrada.
+ * Sin ordenamiento por columna â€” no lo requiere ningÃºn consumidor todavÃ­a; se puede agregar
+ * despuÃ©s sin romper la API pÃºblica.
  */
 export function ZHDataTable<T>({
   columns,
@@ -116,13 +116,7 @@ export function ZHDataTable<T>({
             >
               <span className="material-symbols-outlined">chevron_left</span>
             </button>
-            <span
-              style={{
-                padding: "0 10px",
-                display: "flex",
-                alignItems: "center",
-              }}
-            >
+            <span className="zh-datatable-page-number">
               {page}
             </span>
             <button
@@ -139,3 +133,4 @@ export function ZHDataTable<T>({
     </>
   );
 }
+

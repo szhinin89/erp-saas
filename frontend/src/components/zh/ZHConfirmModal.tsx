@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from "react";
+﻿import { useState, type ReactNode } from "react";
 import { ZHBtn, ZHField } from "./ZHForm";
 import { ZhDecimalInput } from "./inputs/ZhDecimalInput";
 
@@ -19,11 +19,6 @@ const VARIANT_ICON: Record<string, string> = {
   default: "help",
 };
 
-const VARIANT_COLOR: Record<string, string> = {
-  danger: "var(--color-error)",
-  warning: "var(--color-warning)",
-  default: "var(--color-primary)",
-};
 
 export function ZHConfirmModal({
   open,
@@ -50,8 +45,7 @@ export function ZHConfirmModal({
       >
         <div className="zh-confirm-header">
           <span
-            className="material-symbols-outlined zh-confirm-icon"
-            style={{ color: VARIANT_COLOR[variant] }}
+            className={`material-symbols-outlined zh-confirm-icon zh-confirm-icon--${variant}`}
           >
             {VARIANT_ICON[variant]}
           </span>
@@ -89,7 +83,7 @@ interface PromptProps {
   label: string;
   placeholder?: string;
   type?: "text" | "number" | "date" | "datetime-local" | "decimal";
-  /** Solo aplica con type="decimal" — cantidad de decimales permitidos (ej. getDecimalConfig().percentage). */
+  /** Solo aplica con type="decimal" â€” cantidad de decimales permitidos (ej. getDecimalConfig().percentage). */
   decimals?: number;
   positiveOnly?: boolean;
   defaultValue?: string;
@@ -134,8 +128,7 @@ export function ZHPromptModal({
       >
         <div className="zh-confirm-header">
           <span
-            className="material-symbols-outlined zh-confirm-icon"
-            style={{ color: VARIANT_COLOR[variant] }}
+            className={`material-symbols-outlined zh-confirm-icon zh-confirm-icon--${variant}`}
           >
             {variant === "danger" ? "warning" : "edit"}
           </span>
@@ -182,3 +175,5 @@ export function ZHPromptModal({
     </div>
   );
 }
+
+

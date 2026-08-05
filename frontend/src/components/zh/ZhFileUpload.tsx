@@ -90,7 +90,7 @@ export function ZhFileUpload(props: {
           <div className="zh-upload-progress-bar">
             <div
               className="zh-upload-progress-fill"
-              style={{ width: `${progress}%` }}
+              style={{ "--upload-progress": `${progress}%` } as React.CSSProperties}
             />
           </div>
           {uploadingLabel && <p className="zh-upload-hint">{uploadingLabel}</p>}
