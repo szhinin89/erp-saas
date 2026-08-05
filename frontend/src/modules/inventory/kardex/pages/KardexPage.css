@@ -1,0 +1,211 @@
+.kdx-filter-card {
+  margin-bottom: 16px;
+}
+
+.kdx-filter-row {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  align-items: flex-end;
+}
+
+.kdx-field-product {
+  min-width: 280px;
+  position: relative;
+}
+
+.kdx-field-document {
+  min-width: 260px;
+  position: relative;
+}
+
+.kdx-field-warehouse {
+  width: 220px;
+}
+
+.kdx-field-date {
+  width: 160px;
+}
+
+.kdx-field-type {
+  width: 200px;
+}
+
+.kdx-toolbar {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 12px;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.kdx-toolbar-actions {
+  display: flex;
+  gap: 8px;
+}
+.kdx-filter-card {
+  margin-bottom: 16px;
+}
+
+.kdx-filter-row {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  align-items: flex-end;
+}
+
+.kdx-field-product {
+  min-width: 280px;
+  position: relative;
+}
+
+.kdx-field-document {
+  min-width: 260px;
+  position: relative;
+}
+
+.kdx-field-warehouse {
+  width: 220px;
+}
+
+.kdx-field-date {
+  width: 160px;
+}
+
+.kdx-field-type {
+  width: 200px;
+}
+
+.kdx-summary-row {
+  margin-bottom: 16px;
+}
+
+.kdx-toolbar {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 12px;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.kdx-toolbar-actions {
+  display: flex;
+  gap: 8px;
+}
+
+
+.kdx-mono {
+  font-family: var(--font-family-mono);
+}
+
+.kdx-mono--strong {
+  font-weight: 600;
+}
+
+.kdx-secondary-text {
+  font-size: var(--text-body-sm-size);
+  color: var(--color-text-secondary);
+}
+
+.kdx-positive {
+  color: var(--color-success);
+}
+
+.kdx-negative {
+  color: var(--color-error);
+}
+
+.kdx-value-strong {
+  font-weight: 600;
+}
+
+.kdx-small-text {
+  font-size: var(--text-body-sm-size);
+}
+
+.kdx-summary-icon {
+  color: var(--color-primary);
+}
+
+.kdx-summary-label {
+  font-size: 11px;
+  color: var(--color-text-secondary);
+  margin-top: var(--space-1);
+}
+
+.kdx-summary-value {
+  font-size: 18px;
+  font-weight: 700;
+  font-family: var(--font-family-mono);
+}
+
+
+.kdx-tabs-actions {
+  display: flex;
+  gap: 8px;
+}
+
+
+.kdx-tabs-actions {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.kdx-summary-body {
+  text-align: center;
+}
+
+
+.kdx-modal-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.kdx-grid-4 {
+  grid-template-columns: repeat(4, 1fr);
+}
+
+.kdx-grid-3 {
+  grid-template-columns: repeat(3, 1fr);
+}
+
+.kdx-btn-source {
+  margin-top: 10px;
+}
+
+.kdx-muted-text {
+  color: var(--color-text-secondary);
+  font-size: var(--text-body-sm-size);
+}
+
+.kdx-links-row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.kdx-relations-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.kdx-accounting-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--color-text-secondary);
+  font-size: var(--text-body-sm-size);
+}
+
+.kdx-field-value {
+  font-size: var(--text-body-sm-size);
+}
+
+.kdx-mono {
+  font-family: var(--font-family-mono);
+}
+

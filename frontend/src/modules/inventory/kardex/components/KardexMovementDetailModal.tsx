@@ -1,4 +1,4 @@
-import { useNavigate } from "react-router-dom";
+﻿import { useNavigate } from "react-router-dom";
 import { ZHModal } from "../../../../components/zh/ZHModal";
 import {
   formatDate,
@@ -65,7 +65,7 @@ export function KardexMovementDetailModal({
       size="lg"
       title={
         m
-          ? `Movimiento #${m.sequenceNumber} · ${typeLabel}`
+          ? `Movimiento #${m.sequenceNumber} Â· ${typeLabel}`
           : "Expediente del movimiento"
       }
       subtitle={
@@ -76,12 +76,11 @@ export function KardexMovementDetailModal({
     >
       {loading && <p>Cargando expediente...</p>}
       {!loading && detail && m && (
-        <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-          {/* ── A. Hecho de Inventario ─────────────────────────────────── */}
+        <div className="kdx-modal-stack">
+          {/* â”€â”€ A. Hecho de Inventario â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
           <Section icon="inventory_2" title="Hecho de Inventario">
             <div
-              className="pdl-line__context"
-              style={{ gridTemplateColumns: "repeat(4, 1fr)" }}
+              className="pdl-line__context kdx-grid-4"
             >
               <Field label="Bodega" value={m.warehouseId} mono />
               <Field label="Movimiento" value={typeLabel} />
@@ -94,7 +93,7 @@ export function KardexMovementDetailModal({
                 value={
                   m.unitCost != null
                     ? formatMoneyWithSymbol(m.unitCost, cost)
-                    : "—"
+                    : "â€”"
                 }
               />
               <Field
@@ -102,7 +101,7 @@ export function KardexMovementDetailModal({
                 value={
                   m.totalCost != null
                     ? formatMoneyWithSymbol(m.totalCost, total)
-                    : "—"
+                    : "â€”"
                 }
               />
               <Field
@@ -110,7 +109,7 @@ export function KardexMovementDetailModal({
                 value={formatMoney(m.previousQuantity, qty)}
               />
               <Field
-                label="Saldo Después"
+                label="Saldo DespuÃ©s"
                 value={formatMoney(m.resultQuantity, qty)}
               />
               <Field
@@ -124,13 +123,12 @@ export function KardexMovementDetailModal({
             </div>
           </Section>
 
-          {/* ── B. Documento Origen ─────────────────────────────────────── */}
+          {/* â”€â”€ B. Documento Origen â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
           <Section icon="description" title="Documento Origen">
             {detail.sourceDocument ? (
               <>
                 <div
-                  className="pdl-line__context"
-                  style={{ gridTemplateColumns: "repeat(3, 1fr)" }}
+                  className="pdl-line__context kdx-grid-3"
                 >
                   <Field
                     label="Tipo"
@@ -140,8 +138,8 @@ export function KardexMovementDetailModal({
                     }
                   />
                   <Field
-                    label="Número"
-                    value={detail.sourceDocument.docNumber ?? "—"}
+                    label="NÃºmero"
+                    value={detail.sourceDocument.docNumber ?? "â€”"}
                     mono
                   />
                   {detail.sourceDocument.partnerName && (
@@ -187,8 +185,7 @@ export function KardexMovementDetailModal({
                 </div>
                 {DOC_TYPE_ROUTE[detail.sourceDocument.docType] && (
                   <button
-                    className="pf-btn"
-                    style={{ marginTop: 10 }}
+                    className="pf-btn kdx-btn-source"
                     onClick={goToSourceDocument}
                   >
                     <span className="material-symbols-outlined pf-btn__icon">
@@ -199,27 +196,27 @@ export function KardexMovementDetailModal({
                 )}
               </>
             ) : (
-              <p style={{ color: "var(--color-text-secondary)", fontSize: 13 }}>
+              <p className="kdx-muted-text">
                 Este movimiento no tiene documento origen asociado.
               </p>
             )}
           </Section>
 
-          {/* ── Cadena Documental ────────────────────────────────────────── */}
+          {/* â”€â”€ Cadena Documental â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
           <Section icon="link" title="Cadena Documental">
             {detail.documentChain.links.length === 0 ? (
-              <p style={{ color: "var(--color-text-secondary)", fontSize: 13 }}>
+              <p className="kdx-muted-text">
                 Sin eslabones documentales adicionales.
               </p>
             ) : (
-              <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+              <div className="kdx-links-row">
                 {detail.documentChain.links.map((link, i) => (
                   <span
                     key={i}
                     className={`pf-badge ${link.isCurrent ? "pf-badge--info" : ""}`}
                   >
                     {DOC_TYPE_LABELS[link.docType] ?? link.docType}
-                    {link.docNumber ? ` · ${link.docNumber}` : ""}
+                    {link.docNumber ? ` Â· ${link.docNumber}` : ""}
                     {link.isCurrent ? " (actual)" : ""}
                   </span>
                 ))}
@@ -227,15 +224,10 @@ export function KardexMovementDetailModal({
             )}
           </Section>
 
-          {/* ── Relaciones (navegación anterior/siguiente) ──────────────── */}
+          {/* â”€â”€ Relaciones (navegaciÃ³n anterior/siguiente) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
           <Section icon="timeline" title="Relaciones">
             <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "space-between",
-                gap: 12,
-              }}
+              className="kdx-relations-row"
             >
               <button
                 className="pf-btn"
@@ -249,7 +241,7 @@ export function KardexMovementDetailModal({
                   chevron_left
                 </span>
                 {detail.relations.previous
-                  ? `#${detail.relations.previous.sequenceNumber} — ${movementTypeLabels[detail.relations.previous.movementTypeName] ?? detail.relations.previous.movementTypeName}`
+                  ? `#${detail.relations.previous.sequenceNumber} â€” ${movementTypeLabels[detail.relations.previous.movementTypeName] ?? detail.relations.previous.movementTypeName}`
                   : "Sin movimiento anterior"}
               </button>
               <span className="pf-badge pf-badge--info">
@@ -264,7 +256,7 @@ export function KardexMovementDetailModal({
                 }
               >
                 {detail.relations.next
-                  ? `#${detail.relations.next.sequenceNumber} — ${movementTypeLabels[detail.relations.next.movementTypeName] ?? detail.relations.next.movementTypeName}`
+                  ? `#${detail.relations.next.sequenceNumber} â€” ${movementTypeLabels[detail.relations.next.movementTypeName] ?? detail.relations.next.movementTypeName}`
                   : "Sin movimiento siguiente"}
                 <span className="material-symbols-outlined pf-btn__icon">
                   chevron_right
@@ -273,15 +265,14 @@ export function KardexMovementDetailModal({
             </div>
           </Section>
 
-          {/* ── C. Auditoría ─────────────────────────────────────────────── */}
-          <Section icon="verified_user" title="Auditoría">
+          {/* â”€â”€ C. AuditorÃ­a â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+          <Section icon="verified_user" title="AuditorÃ­a">
             <div
-              className="pdl-line__context"
-              style={{ gridTemplateColumns: "repeat(3, 1fr)" }}
+              className="pdl-line__context pdl-line__context--audit"
             >
               <Field label="Usuario" value={detail.actor.userName} />
               <Field
-                label="Fecha de Creación"
+                label="Fecha de CreaciÃ³n"
                 value={formatDateTimeSeconds(m.createdAt)}
               />
               <Field
@@ -290,36 +281,28 @@ export function KardexMovementDetailModal({
               />
               <Field
                 label="Tipo de Documento (SourceDocType)"
-                value={m.sourceDocType ?? "—"}
+                value={m.sourceDocType ?? "â€”"}
                 mono
               />
               <Field
                 label="Id de Documento (SourceDocId)"
-                value={m.sourceDocId ?? "—"}
+                value={m.sourceDocId ?? "â€”"}
                 mono
               />
             </div>
           </Section>
 
-          {/* ── D. Contabilidad ──────────────────────────────────────────── */}
+          {/* â”€â”€ D. Contabilidad â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
           <Section icon="account_balance" title="Contabilidad">
             <div
-              className="pf-mini-card__body"
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 10,
-                color: "var(--color-text-secondary)",
-                fontSize: 13,
-              }}
+              className="pf-mini-card__body kdx-accounting-info"
             >
               <span
-                className="material-symbols-outlined"
-                style={{ fontSize: 18 }}
+                className="material-symbols-outlined zh-icon-md"
               >
                 schedule
               </span>
-              Integración contable preparada — aún no hay asiento generado para
+              IntegraciÃ³n contable preparada â€” aÃºn no hay asiento generado para
               este movimiento.
             </div>
           </Section>
@@ -365,9 +348,13 @@ function Field({
   return (
     <div className="pdl-ctx-col">
       <div className="pdl-ctx-col__title">{label}</div>
-      <div style={{ fontFamily: mono ? "monospace" : undefined, fontSize: 13 }}>
+      <div className={mono ? "kdx-field-value kdx-mono" : "kdx-field-value"}>
         {value}
       </div>
     </div>
   );
 }
+
+
+
+

@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+﻿import { useEffect, useRef } from "react";
 import { useSearchParams } from "react-router-dom";
 import { usePermissionsUi } from "../../../../access/usePermissionsUi";
 import { NoAccessPage } from "../../../../components/PageShell";
@@ -21,10 +21,10 @@ const MOVEMENT_TYPE_LABELS: Record<string, string> = {
   NegativeAdjust: "Ajuste Negativo",
   TransferEntry: "Entrada por Transferencia",
   TransferExit: "Salida por Transferencia",
-  PurchaseReturn: "Devolución a Proveedor",
-  SaleReturn: "Devolución de Cliente",
-  SupplierCreditNote: "Nota de Crédito Proveedor",
-  SupplierDebitNote: "Nota de Débito Proveedor",
+  PurchaseReturn: "DevoluciÃ³n a Proveedor",
+  SaleReturn: "DevoluciÃ³n de Cliente",
+  SupplierCreditNote: "Nota de CrÃ©dito Proveedor",
+  SupplierDebitNote: "Nota de DÃ©bito Proveedor",
 };
 
 function movementBadgeVariant(typeName: string): string {
@@ -104,7 +104,7 @@ export function KardexPage() {
   ]);
 
   if (!canView)
-    return <NoAccessPage title="Centro de Investigación de Inventario" />;
+    return <NoAccessPage title="Centro de InvestigaciÃ³n de Inventario" />;
 
   const qty = getDecimalConfig().quantity;
   const cost = getDecimalConfig().purchaseUnitPrice;
@@ -112,30 +112,29 @@ export function KardexPage() {
 
   return (
     <ErpPageTemplate
-      title="Centro de Investigación de Inventario"
-      subtitle="Trazabilidad completa de movimientos de inventario — Compras, Ventas y ajustes en un solo lugar."
+      title="Centro de InvestigaciÃ³n de Inventario"
+      subtitle="Trazabilidad completa de movimientos de inventario â€” Compras, Ventas y ajustes en un solo lugar."
     >
       <ZHTabBar
         tabs={[{ id: "kardex", label: "Kardex", icon: "history" }]}
         activeTab={ctx.tab}
         onChange={() => {
-          /* única pestaña activa hoy */
+          /* Ãºnica pestaÃ±a activa hoy */
         }}
-        ariaLabel="Secciones del centro de investigación"
+        ariaLabel="Secciones del centro de investigaciÃ³n"
       />
 
       <div className="prd-section">
-        {/* ── Búsqueda rápida: modo explícito ─────────────────────────── */}
-        <div className="pf-mini-card" style={{ marginBottom: 16 }}>
-          <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
+        {/* â”€â”€ BÃºsqueda rÃ¡pida: modo explÃ­cito â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+        <div className="pf-mini-card kdx-filter-card">
+          <div className="kdx-tabs-actions">
             <button
               type="button"
               className={`prd-tab-btn ${ctx.searchMode === "product" ? "prd-tab-btn--active" : ""}`}
               onClick={() => ctx.setSearchMode("product")}
             >
               <span
-                className="material-symbols-outlined"
-                style={{ fontSize: 18 }}
+                className="material-symbols-outlined zh-icon-md"
               >
                 inventory_2
               </span>
@@ -147,8 +146,7 @@ export function KardexPage() {
               onClick={() => ctx.setSearchMode("document")}
             >
               <span
-                className="material-symbols-outlined"
-                style={{ fontSize: 18 }}
+                className="material-symbols-outlined zh-icon-md"
               >
                 description
               </span>
@@ -158,24 +156,19 @@ export function KardexPage() {
 
           {ctx.searchMode === "product" ? (
             <div
-              style={{
-                display: "flex",
-                gap: 12,
-                flexWrap: "wrap",
-                alignItems: "flex-end",
-              }}
+              className="kdx-filter-row"
             >
               <ZHField
                 density="compact"
                 label="Producto"
-                style={{ minWidth: 280, position: "relative" }}
+                className="kdx-field-product"
               >
                 <input
                   type="text"
                   placeholder="Buscar por SKU o nombre..."
                   value={
                     ctx.selectedProduct
-                      ? `${ctx.selectedProduct.sku} — ${ctx.selectedProduct.shortName}`
+                      ? `${ctx.selectedProduct.sku} â€” ${ctx.selectedProduct.shortName}`
                       : ctx.productQuery
                   }
                   onChange={(e) => {
@@ -208,28 +201,28 @@ export function KardexPage() {
               <ZHField
                 density="compact"
                 label="Bodega (opcional)"
-                style={{ width: 220 }}
+                className="kdx-field-warehouse"
               >
                 <select
                   value={ctx.selectedWarehouseId}
                   onChange={(e) => ctx.setSelectedWarehouseId(e.target.value)}
                 >
-                  <option value="">— Todas las bodegas —</option>
+                  <option value="">â€” Todas las bodegas â€”</option>
                   {ctx.warehouses.map((w) => (
                     <option key={w.id} value={w.id}>
-                      {w.code ? `${w.code} — ${w.name}` : w.name}
+                      {w.code ? `${w.code} â€” ${w.name}` : w.name}
                     </option>
                   ))}
                 </select>
               </ZHField>
-              <ZHField density="compact" label="Desde" style={{ width: 160 }}>
+              <ZHField density="compact" label="Desde" className="kdx-field-date">
                 <input
                   type="date"
                   value={ctx.dateFrom}
                   onChange={(e) => ctx.setDateFrom(e.target.value)}
                 />
               </ZHField>
-              <ZHField density="compact" label="Hasta" style={{ width: 160 }}>
+              <ZHField density="compact" label="Hasta" className="kdx-field-date">
                 <input
                   type="date"
                   value={ctx.dateTo}
@@ -249,17 +242,12 @@ export function KardexPage() {
             </div>
           ) : (
             <div
-              style={{
-                display: "flex",
-                gap: 12,
-                flexWrap: "wrap",
-                alignItems: "flex-end",
-              }}
+              className="kdx-filter-row"
             >
               <ZHField
                 density="compact"
                 label="Tipo de documento"
-                style={{ width: 200 }}
+                className="kdx-field-type"
               >
                 <select
                   value={ctx.docSubType}
@@ -273,8 +261,8 @@ export function KardexPage() {
               </ZHField>
               <ZHField
                 density="compact"
-                label="Número de documento"
-                style={{ minWidth: 260, position: "relative" }}
+                label="NÃºmero de documento"
+                className="kdx-field-document"
               >
                 <input
                   type="text"
@@ -331,9 +319,9 @@ export function KardexPage() {
           )}
         </div>
 
-        {/* ── Resumen superior (solo modo Producto con resultados) ────── */}
+        {/* â”€â”€ Resumen superior (solo modo Producto con resultados) â”€â”€â”€â”€â”€â”€ */}
         {ctx.searchMode === "product" && ctx.summary && (
-          <div className="pf-header-cards-row" style={{ marginBottom: 16 }}>
+          <div className="pf-header-cards-row kdx-summary-row">
             <SummaryCard
               icon="inventory_2"
               label="Stock Actual"
@@ -351,11 +339,11 @@ export function KardexPage() {
             />
             <SummaryCard
               icon="update"
-              label="Último Movimiento"
+              label="Ãšltimo Movimiento"
               value={
                 ctx.lastMovement
-                  ? `${MOVEMENT_TYPE_LABELS[ctx.lastMovement.movementTypeName] ?? ctx.lastMovement.movementTypeName} — ${formatDate(ctx.lastMovement.effectiveDate)}`
-                  : "—"
+                  ? `${MOVEMENT_TYPE_LABELS[ctx.lastMovement.movementTypeName] ?? ctx.lastMovement.movementTypeName} â€” ${formatDate(ctx.lastMovement.effectiveDate)}`
+                  : "â€”"
               }
             />
             <SummaryCard
@@ -366,16 +354,10 @@ export function KardexPage() {
           </div>
         )}
 
-        {/* ── Filtro de tipo de movimiento (client-side, sobre lo ya cargado) + exportaciones ── */}
+        {/* â”€â”€ Filtro de tipo de movimiento (client-side, sobre lo ya cargado) + exportaciones â”€â”€ */}
         {ctx.movements.length > 0 && (
           <div
-            style={{
-              display: "flex",
-              gap: 12,
-              marginBottom: 12,
-              alignItems: "center",
-              justifyContent: "space-between",
-            }}
+            className="kdx-toolbar"
           >
             <select
               value={ctx.movementTypeFilter}
@@ -388,20 +370,20 @@ export function KardexPage() {
                 </option>
               ))}
             </select>
-            <div style={{ display: "flex", gap: 8 }}>
-              <button className="pf-btn" disabled title="Próximamente">
+            <div className="kdx-toolbar-actions">
+              <button className="pf-btn" disabled title="PrÃ³ximamente">
                 <span className="material-symbols-outlined pf-btn__icon">
                   grid_on
                 </span>{" "}
                 Excel
               </button>
-              <button className="pf-btn" disabled title="Próximamente">
+              <button className="pf-btn" disabled title="PrÃ³ximamente">
                 <span className="material-symbols-outlined pf-btn__icon">
                   picture_as_pdf
                 </span>{" "}
                 PDF
               </button>
-              <button className="pf-btn" disabled title="Próximamente">
+              <button className="pf-btn" disabled title="PrÃ³ximamente">
                 <span className="material-symbols-outlined pf-btn__icon">
                   print
                 </span>{" "}
@@ -411,7 +393,7 @@ export function KardexPage() {
           </div>
         )}
 
-        {/* ── Tabla principal ──────────────────────────────────────────── */}
+        {/* â”€â”€ Tabla principal â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
         {ctx.movementsLoading ? (
           <p>Cargando movimientos...</p>
         ) : (
@@ -435,7 +417,7 @@ export function KardexPage() {
             <tbody>
               {ctx.movements.map((m) => (
                 <tr key={m.id}>
-                  <td style={{ fontFamily: "monospace", fontWeight: 600 }}>
+                  <td className="kdx-mono kdx-mono--strong">
                     #{m.sequenceNumber}
                   </td>
                   <td>{formatDate(m.effectiveDate)}</td>
@@ -448,32 +430,27 @@ export function KardexPage() {
                     </span>
                   </td>
                   <td
-                    style={{
-                      fontSize: 12,
-                      color: "var(--color-text-secondary)",
-                    }}
+                    className="kdx-secondary-text"
                   >
-                    {m.reference ?? "—"}
+                    {m.reference ?? "â€”"}
                   </td>
                   <td
-                    className="pf-td--num"
-                    style={{ color: "var(--color-success)" }}
+                    className="pf-td--num kdx-positive"
                   >
-                    {m.quantity > 0 ? formatMoney(m.quantity, qty) : "—"}
+                    {m.quantity > 0 ? formatMoney(m.quantity, qty) : "â€”"}
                   </td>
                   <td
-                    className="pf-td--num"
-                    style={{ color: "var(--color-error)" }}
+                    className="pf-td--num kdx-negative"
                   >
-                    {m.quantity < 0 ? formatMoney(-m.quantity, qty) : "—"}
+                    {m.quantity < 0 ? formatMoney(-m.quantity, qty) : "â€”"}
                   </td>
-                  <td className="pf-td--num" style={{ fontWeight: 600 }}>
+                  <td className="pf-td--num kdx-value-strong">
                     {formatMoney(m.resultQuantity, qty)}
                   </td>
                   <td className="pf-td--num">
                     {m.unitCost != null
                       ? formatMoneyWithSymbol(m.unitCost, cost)
-                      : "—"}
+                      : "â€”"}
                   </td>
                   <td className="pf-td--num">
                     {formatMoneyWithSymbol(m.runningAverageCost, cost)}
@@ -481,7 +458,7 @@ export function KardexPage() {
                   <td className="pf-td--num">
                     {formatMoneyWithSymbol(m.runningStockValue, total)}
                   </td>
-                  <td style={{ fontSize: 12 }}>{m.createdByName ?? "—"}</td>
+                  <td className="kdx-small-text">{m.createdByName ?? "â€”"}</td>
                   <td className="pf-td--center">
                     <button
                       className="pf-row-action"
@@ -489,8 +466,7 @@ export function KardexPage() {
                       onClick={() => void ctx.openDetail(m.id)}
                     >
                       <span
-                        className="material-symbols-outlined"
-                        style={{ fontSize: 20 }}
+                        className="material-symbols-outlined zh-icon-lg"
                       >
                         folder_open
                       </span>
@@ -503,7 +479,7 @@ export function KardexPage() {
                   <td colSpan={12} className="pf-table-empty">
                     {ctx.searchMode === "product"
                       ? "Busque un producto para ver su historial de Kardex."
-                      : "Resuelva un documento para ver los movimientos que generó."}
+                      : "Resuelva un documento para ver los movimientos que generÃ³."}
                   </td>
                 </tr>
               )}
@@ -535,26 +511,22 @@ function SummaryCard({
 }) {
   return (
     <div className="pf-mini-card">
-      <div className="pf-mini-card__body" style={{ textAlign: "center" }}>
+      <div className="pf-mini-card__body kdx-summary-body">
         <span
-          className="material-symbols-outlined"
-          style={{ fontSize: 26, color: "var(--color-primary)" }}
+          className="material-symbols-outlined zh-icon-xl kdx-summary-icon"
         >
           {icon}
         </span>
         <div
-          style={{
-            fontSize: 11,
-            color: "var(--color-text-secondary)",
-            marginTop: 4,
-          }}
+          className="kdx-summary-label"
         >
           {label}
         </div>
-        <div style={{ fontSize: 18, fontWeight: 700, fontFamily: "monospace" }}>
+        <div className="kdx-summary-value">
           {value}
         </div>
       </div>
     </div>
   );
 }
+
