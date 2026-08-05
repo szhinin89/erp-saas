@@ -35,11 +35,11 @@ const nodeSchema = z.object({
 });
 type NodeFormValues = z.infer<typeof nodeSchema>;
 
-const LEVEL_ICONS: Record<string, { icon: string; color: string }> = {
-  Family: { icon: "account_tree", color: "#3b82f6" },
-  Category: { icon: "category", color: "#8b5cf6" },
-  Subcategory: { icon: "label", color: "#06b6d4" },
-  Custom: { icon: "extension", color: "#64748b" },
+const LEVEL_ICONS: Record<string, { icon: string; className: string }> = {
+  Family: { icon: "account_tree", className: "te-icon--family" },
+  Category: { icon: "category", className: "te-icon--category" },
+  Subcategory: { icon: "label", className: "te-icon--subcategory" },
+  Custom: { icon: "extension", className: "te-icon--custom" },
 };
 
 type ModalTarget =
@@ -210,11 +210,7 @@ export function TreeEditorPage() {
               onClick={() => toggle(node.id)}
             >
               <span
-                className="material-symbols-outlined"
-                style={{
-                  transform: expanded.has(node.id) ? "rotate(90deg)" : "none",
-                  transition: "transform .15s",
-                }}
+                className={`material-symbols-outlined te-expand-icon ${expanded.has(node.id) ? "te-expand-icon--expanded" : ""}`}
               >
                 chevron_right
               </span>
@@ -223,8 +219,7 @@ export function TreeEditorPage() {
             <span className="te-expand te-expand--leaf" />
           )}
           <span
-            className="material-symbols-outlined te-icon"
-            style={{ color: levelInfo.color }}
+            className={`material-symbols-outlined te-icon ${levelInfo.className}`}
           >
             {levelInfo.icon}
           </span>
