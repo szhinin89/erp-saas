@@ -1,6 +1,18 @@
 @import "./styles/design-tokens.css";
-@import "./styles/zh-ui.css";
+
+/*
+  CSS legacy compartido.
+  Entra antes de zh-ui.css para que el Design System oficial pueda prevalecer.
+  No usar en pantallas nuevas.
+*/
+@import "./styles/shared/legacy-pages.css";
 @import "./styles/page-template.css";
+
+/*
+  SSOT de componentes visuales reutilizables.
+  Botones, campos, cards, badges, tablas, modales, alerts, grids y utilidades oficiales.
+*/
+@import "./styles/zh-ui.css";
 
 /* ── Reset mínimo ──────────────────────────────────────────── */
 *,

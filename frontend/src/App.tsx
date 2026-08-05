@@ -1,6 +1,5 @@
 import { BrowserRouter, Routes, Route, useNavigate } from "react-router-dom";
 import { useEffect } from "react";
-import "./styles/shared/legacy-pages.css";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { HomeRedirect } from "./components/HomeRedirect";
 import { AppLayout } from "./components/AppLayout";
