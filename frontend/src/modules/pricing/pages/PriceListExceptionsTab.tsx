@@ -170,10 +170,9 @@ export function PriceListExceptionsTab({
                   </td>
                   <td className="prd-td-actions">
                     <button
-                      className="prd-icon-btn"
+                      className="prd-icon-btn prd-icon-btn--primary"
                       onClick={() => openForRow(row)}
                       title={row.rule ? "Editar excepción" : "Crear excepción"}
-                      style={{ color: "var(--color-primary)" }}
                     >
                       <span className="material-symbols-outlined">
                         {row.rule ? "edit" : "add_circle"}
@@ -181,10 +180,9 @@ export function PriceListExceptionsTab({
                     </button>
                     {row.rule && (
                       <button
-                        className="prd-icon-btn"
+                        className="prd-icon-btn prd-icon-btn--danger"
                         onClick={() => handleRemove(row.rule!)}
                         title="Eliminar excepción"
-                        style={{ color: "var(--color-error)" }}
                       >
                         <span className="material-symbols-outlined">
                           delete
@@ -562,7 +560,7 @@ function RemoteItemPicker({ onSelect }: { onSelect: (item: ItemDto) => void }) {
   }, [query]);
 
   return (
-    <div ref={wrapRef} style={{ position: "relative" }}>
+    <div ref={wrapRef} className="zh-picker">
       <input
         value={query}
         onChange={(e) => {
@@ -577,12 +575,12 @@ function RemoteItemPicker({ onSelect }: { onSelect: (item: ItemDto) => void }) {
       {open && query.length >= 2 && (
         <div className="pf-picker-dropdown">
           {loading && (
-            <div style={{ padding: 12, textAlign: "center", fontSize: 12 }}>
+            <div className="zh-picker__empty">
               Buscando...
             </div>
           )}
           {!loading && results.length === 0 && (
-            <div style={{ padding: 12, textAlign: "center", fontSize: 12 }}>
+            <div className="zh-picker__empty">
               Sin resultados para &ldquo;{query}&rdquo;
             </div>
           )}
