@@ -94,6 +94,9 @@ a:hover {
   font-size: 12px;
   color: var(--color-text-secondary);
 }
+.zh-font-mono {
+  font-family: var(--font-family-mono);
+}
 .subtle {
   color: var(--color-text-secondary);
   font-size: var(--text-sm);

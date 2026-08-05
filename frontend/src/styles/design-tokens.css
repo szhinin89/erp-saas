@@ -67,6 +67,7 @@
      exclusivamente para pantallas especiales (Login, First Run, Onboarding,
      Wizards principales, Empty States) — nunca para pantallas CRUD. */
   --font-family: "Inter", system-ui, -apple-system, sans-serif;
+  --font-family-mono: "SF Mono", "Cascadia Code", ui-monospace, Consolas, monospace;
 
   --text-headline-lg-size: 28px;
   --text-headline-lg-height: 36px;

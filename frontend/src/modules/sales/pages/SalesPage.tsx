@@ -160,7 +160,7 @@ export function SalesPage() {
               <tbody>
                 {ctx.listItems.map((inv) => (
                   <tr key={inv.id}>
-                    <td className="sales-page-invoice-number">
+                    <td className="sales-page-invoice-number zh-font-mono">
                       {inv.invoiceNumber}
                     </td>
                     <td>{inv.issueDate}</td>
@@ -363,7 +363,7 @@ export function SalesPage() {
                 {ctx.editing && (
                   <div className="zh-mt-4">
                     <span className="sf-emission__label">Nro: </span>
-                    <span className="sf-emission__value sales-form-invoice-number">
+                    <span className="sf-emission__value zh-font-mono">
                       {ctx.editing.invoiceNumber}
                     </span>
                   </div>
