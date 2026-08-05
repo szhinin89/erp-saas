@@ -136,7 +136,7 @@ export function ProductPicker({ onSelect, disabled, vatRates }: Props) {
   };
 
   return (
-    <div ref={wrapRef} style={{ position: "relative" }}>
+    <div ref={wrapRef} className="zh-picker">
       <input
         ref={inputRef}
         value={query}
@@ -156,26 +156,12 @@ export function ProductPicker({ onSelect, disabled, vatRates }: Props) {
       {open && query.length >= 2 && (
         <div className="pf-picker-dropdown">
           {loading && (
-            <div
-              style={{
-                padding: "var(--space-4)",
-                textAlign: "center",
-                color: "var(--color-text-secondary)",
-                fontSize: 12,
-              }}
-            >
+            <div className="zh-picker__empty">
               Buscando...
             </div>
           )}
           {!loading && results.length === 0 && (
-            <div
-              style={{
-                padding: 16,
-                textAlign: "center",
-                color: "var(--color-text-secondary)",
-                fontSize: 13,
-              }}
-            >
+            <div className="zh-picker__empty">
               Sin resultados para &ldquo;{query}&rdquo;
             </div>
           )}
