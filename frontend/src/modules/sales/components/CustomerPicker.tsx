@@ -115,34 +115,12 @@ export function CustomerPicker({
 
   if (selected) {
     return (
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          gap: 12,
-          padding: "8px 12px",
-          background: "var(--color-surface-container-low)",
-          border: "1px solid var(--color-border)",
-          borderRadius: "var(--radius-md)",
-        }}
-      >
-        <div style={{ flex: 1 }}>
-          <div
-            style={{
-              fontSize: 13,
-              fontWeight: 600,
-              color: "var(--color-text-primary)",
-            }}
-          >
+      <div className="zh-picker__selected">
+        <div className="zh-picker__selected-body">
+          <div className="zh-picker__selected-name">
             {selected.fullName}
           </div>
-          <div
-            style={{
-              fontSize: 12,
-              color: "var(--color-text-secondary)",
-              fontFamily: "monospace",
-            }}
-          >
+          <div className="zh-picker__selected-id">
             {selected.identificationNumber}
           </div>
         </div>
@@ -150,18 +128,10 @@ export function CustomerPicker({
           <button
             type="button"
             onClick={handleClear}
-            title="Cambiar cliente"
-            style={{
-              background: "none",
-              border: "none",
-              cursor: "pointer",
-              color: "var(--color-text-secondary)",
-              padding: 0,
-            }}
+            title="Cambiar cliente" className="zh-picker__clear"
           >
             <span
-              className="material-symbols-outlined"
-              style={{ fontSize: 18 }}
+              className="material-symbols-outlined zh-picker__clear-icon"
             >
               close
             </span>
@@ -172,8 +142,8 @@ export function CustomerPicker({
   }
 
   return (
-    <div ref={wrapRef} style={{ position: "relative" }}>
-      <div style={{ position: "relative" }}>
+    <div ref={wrapRef} className="zh-picker">
+      <div className="zh-picker__input-wrap">
         <input
           ref={inputRef}
           value={query}
@@ -189,47 +159,17 @@ export function CustomerPicker({
           disabled={disabled}
         />
         {loading && (
-          <span
-            style={{
-              position: "absolute",
-              right: 10,
-              top: "50%",
-              transform: "translateY(-50%)",
-              fontSize: 12,
-              color: "var(--color-text-secondary)",
-            }}
-          >
+          <span className="zh-picker__loading">
             Buscando...
           </span>
         )}
       </div>
 
       {open && query.length >= 2 && (
-        <div
-          style={{
-            position: "absolute",
-            top: "100%",
-            left: 0,
-            right: 0,
-            zIndex: 50,
-            background: "var(--color-surface)",
-            border: "1px solid var(--color-border)",
-            borderRadius: "var(--radius-md)",
-            boxShadow: "0 4px 12px rgba(0,0,0,0.12)",
-            maxHeight: 240,
-            overflowY: "auto",
-            marginTop: 4,
-          }}
-        >
+        <div className="zh-picker__dropdown">
           {results.length === 0 && !loading && (
-            <div style={{ padding: "10px 14px", textAlign: "center" }}>
-              <div
-                style={{
-                  color: "var(--color-text-secondary)",
-                  fontSize: 12,
-                  marginBottom: 8,
-                }}
-              >
+            <div className="zh-picker__empty">
+              <div className="zh-picker__empty-message">
                 Sin resultados para &ldquo;{query}&rdquo;
               </div>
               {onCreateNew && (
@@ -239,23 +179,10 @@ export function CustomerPicker({
                     setOpen(false);
                     onCreateNew(query);
                   }}
-                  style={{
-                    display: "inline-flex",
-                    alignItems: "center",
-                    gap: 4,
-                    padding: "6px 14px",
-                    fontSize: 12,
-                    fontWeight: 600,
-                    background: "var(--color-primary)",
-                    color: "#fff",
-                    border: "none",
-                    borderRadius: 6,
-                    cursor: "pointer",
-                  }}
+                  className="zh-picker__create-btn"
                 >
                   <span
-                    className="material-symbols-outlined"
-                    style={{ fontSize: 16 }}
+                    className="material-symbols-outlined zh-picker__create-icon"
                   >
                     person_add
                   </span>
@@ -270,33 +197,12 @@ export function CustomerPicker({
               type="button"
               onClick={() => handleSelect(row)}
               onMouseEnter={() => setFocusIdx(i)}
-              style={{
-                display: "block",
-                width: "100%",
-                padding: "10px 14px",
-                border: "none",
-                textAlign: "left",
-                cursor: "pointer",
-                fontSize: 13,
-                background:
-                  i === focusIdx
-                    ? "var(--color-surface-container-low)"
-                    : "transparent",
-              }}
+              className={`zh-picker__result${i === focusIdx ? " zh-picker__result--focused" : ""}`}
             >
-              <div
-                style={{ fontWeight: 600, color: "var(--color-text-primary)" }}
-              >
+              <div className="zh-picker__result-name">
                 {row.fullName}
               </div>
-              <div
-                style={{
-                  fontSize: 12,
-                  color: "var(--color-text-secondary)",
-                  fontFamily: "monospace",
-                  marginTop: 2,
-                }}
-              >
+              <div className="zh-picker__result-meta">
                 {row.identificationNumber}
               </div>
             </button>
