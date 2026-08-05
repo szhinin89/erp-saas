@@ -17,13 +17,21 @@ public sealed class ItemSupplierCode : AuditableEntity
     /// no existe el concepto de "código de proveedor sin proveedor" (Fase 2).
     /// </summary>
     public static ItemSupplierCode Create(
-        Guid itemId, Guid tenantId, Guid supplierId,
-        string code, Guid createdBy, bool isPrimary = false)
+        Guid itemId,
+        Guid tenantId,
+        Guid supplierId,
+        string code,
+        Guid createdBy,
+        bool isPrimary = false
+    )
     {
         if (string.IsNullOrWhiteSpace(code))
             throw new ArgumentException("El código de proveedor es obligatorio.", nameof(code));
         if (code.Length > 100)
-            throw new ArgumentException("El código de proveedor no puede superar 100 caracteres.", nameof(code));
+            throw new ArgumentException(
+                "El código de proveedor no puede superar 100 caracteres.",
+                nameof(code)
+            );
         if (supplierId == Guid.Empty)
             throw new ArgumentException("El proveedor es obligatorio.", nameof(supplierId));
 
@@ -42,7 +50,10 @@ public sealed class ItemSupplierCode : AuditableEntity
     }
 
     public void Disable() => IsActive = false;
+
     public void Enable() => IsActive = true;
+
     public void MarkAsPrimary() => IsPrimary = true;
+
     public void UnmarkAsPrimary() => IsPrimary = false;
 }

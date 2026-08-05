@@ -149,7 +149,9 @@ public sealed class SalesReturnController : ControllerBase
     )]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetReturnableLines(Guid invoiceId, CancellationToken ct) =>
-        this.ToOkOrNotFound(await _mediator.Send(new GetReturnableLinesByInvoiceQuery(invoiceId), ct));
+        this.ToOkOrNotFound(
+            await _mediator.Send(new GetReturnableLinesByInvoiceQuery(invoiceId), ct)
+        );
 
     // ══════════════════════════════════════════════════════════════════════
     // AUTORIZACIÓN
@@ -181,10 +183,7 @@ public sealed class SalesReturnController : ControllerBase
         CancellationToken ct
     ) =>
         this.ToOkOrBadRequest(
-            await _mediator.Send(
-                new AuthorizeSalesReturnCommand(id, request.RefundAllocations),
-                ct
-            )
+            await _mediator.Send(new AuthorizeSalesReturnCommand(id, request.RefundAllocations), ct)
         );
 }
 

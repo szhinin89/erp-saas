@@ -37,10 +37,11 @@ public sealed class CompanyFinancialDestinationController : ControllerBase
     /// <summary>P0-02 Fase 13 Remediación 01 — listado para el selector de destino financiero y la administración limitada de la fase.</summary>
     [HttpGet]
     [Authorize(Policy = $"perm:{SettingsPermissions.FinancialDestinationsView}")]
-    public async Task<IActionResult> GetList(
-        [FromQuery] bool? isActive,
-        CancellationToken ct
-    ) => this.ToOkOrBadRequest(await _mediator.Send(new GetCompanyFinancialDestinationListQuery(isActive), ct), "OK");
+    public async Task<IActionResult> GetList([FromQuery] bool? isActive, CancellationToken ct) =>
+        this.ToOkOrBadRequest(
+            await _mediator.Send(new GetCompanyFinancialDestinationListQuery(isActive), ct),
+            "OK"
+        );
 
     [HttpPost]
     [Authorize(Policy = $"perm:{SettingsPermissions.FinancialDestinationsManage}")]

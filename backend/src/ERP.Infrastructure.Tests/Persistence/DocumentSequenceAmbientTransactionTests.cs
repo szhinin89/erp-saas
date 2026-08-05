@@ -200,7 +200,8 @@ public sealed class DocumentSequenceAmbientTransactionTests : IAsyncLifetime
         var seq = await verifyDb
             .DocumentSequences.IgnoreQueryFilters()
             .FirstOrDefaultAsync(s => s.EmissionPointId == epId && s.DocTypeCode == "04");
-        seq.Should().BeNull("un rollback del caller no debe dejar ninguna fila de secuencia huérfana");
+        seq.Should()
+            .BeNull("un rollback del caller no debe dejar ninguna fila de secuencia huérfana");
     }
 
     // ── Concurrencia: el advisory lock sigue serializando correctamente cuando cada caller
@@ -231,7 +232,11 @@ public sealed class DocumentSequenceAmbientTransactionTests : IAsyncLifetime
         var results = await Task.WhenAll(tasks);
 
         results.Should().HaveCount(n);
-        results.Should().OnlyHaveUniqueItems("el advisory lock debe seguir garantizando unicidad absoluta dentro de transacciones ambiente");
+        results
+            .Should()
+            .OnlyHaveUniqueItems(
+                "el advisory lock debe seguir garantizando unicidad absoluta dentro de transacciones ambiente"
+            );
 
         await using var verifyDb = CreateContext();
         var seq = await verifyDb

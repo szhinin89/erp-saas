@@ -15,23 +15,17 @@ public class LegalEntityTypeCatalogConfiguration : IEntityTypeConfiguration<Lega
 
         builder.HasKey(x => x.Code);
 
-        builder.Property(x => x.Code)
-            .HasColumnName("code");
+        builder.Property(x => x.Code).HasColumnName("code");
 
-        builder.Property(x => x.Name)
-            .HasColumnName("name")
-            .HasMaxLength(60)
-            .IsRequired();
+        builder.Property(x => x.Name).HasColumnName("name").HasMaxLength(60).IsRequired();
 
-        builder.Property(x => x.SriTaxCategory)
+        builder
+            .Property(x => x.SriTaxCategory)
             .HasColumnName("sri_tax_category")
             .HasMaxLength(30)
             .IsRequired();
 
-        builder.Property(x => x.IsActive)
-            .HasColumnName("is_active")
-            .HasDefaultValue(true);
-
+        builder.Property(x => x.IsActive).HasColumnName("is_active").HasDefaultValue(true);
 
         builder.HasData(
             new LegalEntityTypeCatalog
@@ -39,21 +33,21 @@ public class LegalEntityTypeCatalogConfiguration : IEntityTypeConfiguration<Lega
                 Code = 1,
                 Name = "Persona Natural",
                 SriTaxCategory = "NATURAL",
-                IsActive = true
+                IsActive = true,
             },
             new LegalEntityTypeCatalog
             {
                 Code = 2,
                 Name = "Sociedad Privada",
                 SriTaxCategory = "PRIVATE",
-                IsActive = true
+                IsActive = true,
             },
             new LegalEntityTypeCatalog
             {
                 Code = 3,
                 Name = "Institución Pública",
                 SriTaxCategory = "PUBLIC",
-                IsActive = true
+                IsActive = true,
             }
         );
     }

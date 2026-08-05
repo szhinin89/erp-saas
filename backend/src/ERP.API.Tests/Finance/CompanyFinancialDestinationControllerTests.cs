@@ -123,11 +123,10 @@ public sealed class CompanyFinancialDestinationControllerTests
     [Fact]
     public async Task Create_con_configuracion_incompleta_retorna_422()
     {
-        var controller = BuildController(
-            _ =>
-                Result<CompanyFinancialDestinationDto>.ValidationFailure(
-                    "La institución bancaria es obligatoria para un destino tipo banco."
-                )
+        var controller = BuildController(_ =>
+            Result<CompanyFinancialDestinationDto>.ValidationFailure(
+                "La institución bancaria es obligatoria para un destino tipo banco."
+            )
         );
         var command = new CreateCompanyFinancialDestinationCommand(
             "BANCO-002",
@@ -148,11 +147,10 @@ public sealed class CompanyFinancialDestinationControllerTests
     [Fact]
     public async Task Create_con_cuenta_contable_inexistente_retorna_404()
     {
-        var controller = BuildController(
-            _ =>
-                Result<CompanyFinancialDestinationDto>.NotFound(
-                    "La cuenta contable indicada no existe o no pertenece a esta empresa."
-                )
+        var controller = BuildController(_ =>
+            Result<CompanyFinancialDestinationDto>.NotFound(
+                "La cuenta contable indicada no existe o no pertenece a esta empresa."
+            )
         );
         var command = new CreateCompanyFinancialDestinationCommand(
             "BANCO-001",
@@ -193,18 +191,15 @@ public sealed class CompanyFinancialDestinationControllerTests
         sentRequest
             .Should()
             .BeEquivalentTo(
-                new UpdateCompanyFinancialDestinationNameCommand(
-                    id,
-                    "Nueva razón social visible"
-                )
+                new UpdateCompanyFinancialDestinationNameCommand(id, "Nueva razón social visible")
             );
     }
 
     [Fact]
     public async Task Rename_sobre_destino_inexistente_retorna_404()
     {
-        var controller = BuildController(
-            _ => Result<CompanyFinancialDestinationDto>.NotFound("Destino financiero no encontrado.")
+        var controller = BuildController(_ =>
+            Result<CompanyFinancialDestinationDto>.NotFound("Destino financiero no encontrado.")
         );
 
         var response = await controller.Rename(
@@ -258,11 +253,10 @@ public sealed class CompanyFinancialDestinationControllerTests
     [Fact]
     public async Task ChangeAccountingAccount_con_cuenta_no_postable_retorna_422()
     {
-        var controller = BuildController(
-            _ =>
-                Result<CompanyFinancialDestinationDto>.ValidationFailure(
-                    "La cuenta contable indicada no es postable o está inactiva."
-                )
+        var controller = BuildController(_ =>
+            Result<CompanyFinancialDestinationDto>.ValidationFailure(
+                "La cuenta contable indicada no es postable o está inactiva."
+            )
         );
 
         var response = await controller.ChangeAccountingAccount(
@@ -313,8 +307,8 @@ public sealed class CompanyFinancialDestinationControllerTests
     [Fact]
     public async Task SetActive_sobre_destino_inexistente_retorna_404()
     {
-        var controller = BuildController(
-            _ => Result<CompanyFinancialDestinationDto>.NotFound("Destino financiero no encontrado.")
+        var controller = BuildController(_ =>
+            Result<CompanyFinancialDestinationDto>.NotFound("Destino financiero no encontrado.")
         );
 
         var response = await controller.SetActive(
@@ -379,12 +373,15 @@ public sealed class CompanyFinancialDestinationControllerTests
     public void El_controlador_expone_exactamente_cinco_acciones_HTTP()
     {
         var actions = typeof(CompanyFinancialDestinationController)
-            .GetMethods(System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance)
+            .GetMethods(
+                System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance
+            )
             .Where(m => m.DeclaringType == typeof(CompanyFinancialDestinationController))
             .ToList();
 
         actions.Should().HaveCount(5);
-        actions.Select(m => m.Name)
+        actions
+            .Select(m => m.Name)
             .Should()
             .BeEquivalentTo(
                 new[]

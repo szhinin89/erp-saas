@@ -191,11 +191,7 @@ public sealed class AuthorizeSalesReturnCreditNoteWiringTests
             if (emissionPoint is not null)
                 EpRepo
                     .Setup(r =>
-                        r.GetByIdAsync(
-                            EmissionPointId,
-                            TenantId,
-                            It.IsAny<CancellationToken>()
-                        )
+                        r.GetByIdAsync(EmissionPointId, TenantId, It.IsAny<CancellationToken>())
                     )
                     .ReturnsAsync(emissionPoint);
             if (establishment is not null)
@@ -318,7 +314,12 @@ public sealed class AuthorizeSalesReturnCreditNoteWiringTests
             establishment,
             receivableRepo
         );
-        AddReceivableCreditAllocation(salesReturn, receivableRepo, invoice.Id, salesReturn.GrandTotal);
+        AddReceivableCreditAllocation(
+            salesReturn,
+            receivableRepo,
+            invoice.Id,
+            salesReturn.GrandTotal
+        );
 
         var result = await handler.Handle(
             new AuthorizeSalesReturnCommand(
@@ -379,12 +380,13 @@ public sealed class AuthorizeSalesReturnCreditNoteWiringTests
 
         var m = new Mocks();
         var receivableRepo = new Mock<ISalesReceivableRepository>();
-        var handler = m.BuildHandler(
-            invoice,
+        var handler = m.BuildHandler(invoice, salesReturn, receivableRepoOverride: receivableRepo);
+        AddReceivableCreditAllocation(
             salesReturn,
-            receivableRepoOverride: receivableRepo
+            receivableRepo,
+            invoice.Id,
+            salesReturn.GrandTotal
         );
-        AddReceivableCreditAllocation(salesReturn, receivableRepo, invoice.Id, salesReturn.GrandTotal);
 
         var result = await handler.Handle(
             new AuthorizeSalesReturnCommand(
@@ -462,8 +464,7 @@ public sealed class AuthorizeSalesReturnCreditNoteWiringTests
 
         var m = new Mocks();
         // Sobreescribe el resultado por defecto (éxito) para simular fallo del pipeline.
-        m.EdocIssuer
-            .Setup(e =>
+        m.EdocIssuer.Setup(e =>
                 e.RegisterAsync(
                     It.IsAny<RegisterElectronicDocumentRequest>(),
                     It.IsAny<CancellationToken>()
@@ -475,9 +476,7 @@ public sealed class AuthorizeSalesReturnCreditNoteWiringTests
 
         var receivableRepo = new Mock<ISalesReceivableRepository>();
         receivableRepo
-            .Setup(r =>
-                r.GetByInvoiceIdAsync(TenantId, invoice.Id, It.IsAny<CancellationToken>())
-            )
+            .Setup(r => r.GetByInvoiceIdAsync(TenantId, invoice.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(
                 Domain.Modules.Sales.Entities.SalesReceivable.Create(
                     TenantId,

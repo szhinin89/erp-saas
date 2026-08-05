@@ -106,10 +106,10 @@ public sealed class CatalogController : ControllerBase
     [HttpGet("legal-entity-types")]
     [Authorize]
     public async Task<IActionResult> GetLegalEntityTypes(CancellationToken cancellationToken) =>
-    this.ToOkOrBadRequest(
-        await _mediator.Send(new GetCatalogLegalEntityTypesQuery(), cancellationToken),
-        "OK"
-    );
+        this.ToOkOrBadRequest(
+            await _mediator.Send(new GetCatalogLegalEntityTypesQuery(), cancellationToken),
+            "OK"
+        );
 
     [HttpGet("barcode-types")]
     [Authorize]

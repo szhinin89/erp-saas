@@ -105,7 +105,9 @@ public sealed class CancelPurchaseHandlerTests
         var inv = CreateConfirmedInvoice();
         repo.Setup(r => r.GetByIdAsync(TenantId, inv.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(inv);
-        repo.Setup(r => r.GetPayableByPurchaseIdAsync(TenantId, inv.Id, It.IsAny<CancellationToken>()))
+        repo.Setup(r =>
+                r.GetPayableByPurchaseIdAsync(TenantId, inv.Id, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync((PurchasePayable?)null);
         repo.Setup(r =>
                 r.GetWithholdingByPurchaseIdAsync(TenantId, inv.Id, It.IsAny<CancellationToken>())
@@ -133,7 +135,9 @@ public sealed class CancelPurchaseHandlerTests
         var inv = CreateConfirmedInvoice();
         repo.Setup(r => r.GetByIdAsync(TenantId, inv.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(inv);
-        repo.Setup(r => r.GetPayableByPurchaseIdAsync(TenantId, inv.Id, It.IsAny<CancellationToken>()))
+        repo.Setup(r =>
+                r.GetPayableByPurchaseIdAsync(TenantId, inv.Id, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync((PurchasePayable?)null);
         repo.Setup(r =>
                 r.GetWithholdingByPurchaseIdAsync(TenantId, inv.Id, It.IsAny<CancellationToken>())
@@ -194,7 +198,9 @@ public sealed class CancelPurchaseHandlerTests
         payable.RegisterPayment(30m, UserId);
         repo.Setup(r => r.GetByIdAsync(TenantId, inv.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(inv);
-        repo.Setup(r => r.GetPayableByPurchaseIdAsync(TenantId, inv.Id, It.IsAny<CancellationToken>()))
+        repo.Setup(r =>
+                r.GetPayableByPurchaseIdAsync(TenantId, inv.Id, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(payable);
 
         var handler = BuildHandler(repo, stockRepo, purchaseReturnRepo, uow);
@@ -222,7 +228,9 @@ public sealed class CancelPurchaseHandlerTests
         payable.ApplySupplierCredit(40m, UserId);
         repo.Setup(r => r.GetByIdAsync(TenantId, inv.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(inv);
-        repo.Setup(r => r.GetPayableByPurchaseIdAsync(TenantId, inv.Id, It.IsAny<CancellationToken>()))
+        repo.Setup(r =>
+                r.GetPayableByPurchaseIdAsync(TenantId, inv.Id, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(payable);
 
         var handler = BuildHandler(repo, stockRepo, purchaseReturnRepo, uow);
@@ -286,7 +294,9 @@ public sealed class CancelPurchaseHandlerTests
         var payable = PurchasePayable.Create(TenantId, CompanyId, inv.Id, SupplierId, 100m, UserId);
         repo.Setup(r => r.GetByIdAsync(TenantId, inv.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(inv);
-        repo.Setup(r => r.GetPayableByPurchaseIdAsync(TenantId, inv.Id, It.IsAny<CancellationToken>()))
+        repo.Setup(r =>
+                r.GetPayableByPurchaseIdAsync(TenantId, inv.Id, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(payable);
         purchaseReturnRepo
             .Setup(r =>
@@ -308,7 +318,9 @@ public sealed class CancelPurchaseHandlerTests
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Contain("devolución de compra autorizada");
         inv.Status.Should().NotBe(Domain.Modules.Purchases.Enums.PurchaseStatus.Cancelled);
-        payable.SupplierCreditAppliedAmount.Should().Be(0m, "PI-CANC-02 nunca debe evaluarse/mutar nada tras bloquear por PI-CANC-01");
+        payable
+            .SupplierCreditAppliedAmount.Should()
+            .Be(0m, "PI-CANC-02 nunca debe evaluarse/mutar nada tras bloquear por PI-CANC-01");
         uow.Verify(u => u.RollbackAsync(It.IsAny<CancellationToken>()), Times.Once);
         uow.Verify(u => u.CommitAsync(It.IsAny<CancellationToken>()), Times.Never);
         stockRepo.Verify(
@@ -327,7 +339,9 @@ public sealed class CancelPurchaseHandlerTests
         var payable = PurchasePayable.Create(TenantId, CompanyId, inv.Id, SupplierId, 100m, UserId);
         repo.Setup(r => r.GetByIdAsync(TenantId, inv.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(inv);
-        repo.Setup(r => r.GetPayableByPurchaseIdAsync(TenantId, inv.Id, It.IsAny<CancellationToken>()))
+        repo.Setup(r =>
+                r.GetPayableByPurchaseIdAsync(TenantId, inv.Id, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(payable);
         repo.Setup(r =>
                 r.GetWithholdingByPurchaseIdAsync(TenantId, inv.Id, It.IsAny<CancellationToken>())
@@ -374,7 +388,9 @@ public sealed class CancelPurchaseHandlerTests
         var inv = CreateConfirmedInvoice();
         repo.Setup(r => r.GetByIdAsync(TenantId, inv.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(inv);
-        repo.Setup(r => r.GetPayableByPurchaseIdAsync(TenantId, inv.Id, It.IsAny<CancellationToken>()))
+        repo.Setup(r =>
+                r.GetPayableByPurchaseIdAsync(TenantId, inv.Id, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync((PurchasePayable?)null);
         repo.Setup(r =>
                 r.GetWithholdingByPurchaseIdAsync(TenantId, inv.Id, It.IsAny<CancellationToken>())
@@ -407,14 +423,19 @@ public sealed class CancelPurchaseHandlerTests
             .ReturnsAsync((IssuedWithholding?)null);
 
         var sequence = new MockSequence();
-        uow.InSequence(sequence).Setup(u => u.BeginTransactionAsync(It.IsAny<CancellationToken>()))
+        uow.InSequence(sequence)
+            .Setup(u => u.BeginTransactionAsync(It.IsAny<CancellationToken>()))
             .Returns(Task.CompletedTask);
         purchaseReturnRepo
             .InSequence(sequence)
-            .Setup(r => r.AcquireFinancialLockAsync(TenantId, inv.Id, It.IsAny<CancellationToken>()))
+            .Setup(r =>
+                r.AcquireFinancialLockAsync(TenantId, inv.Id, It.IsAny<CancellationToken>())
+            )
             .Returns(Task.CompletedTask);
         repo.InSequence(sequence)
-            .Setup(r => r.GetPayableByPurchaseIdAsync(TenantId, inv.Id, It.IsAny<CancellationToken>()))
+            .Setup(r =>
+                r.GetPayableByPurchaseIdAsync(TenantId, inv.Id, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync((PurchasePayable?)null);
         purchaseReturnRepo
             .InSequence(sequence)

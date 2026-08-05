@@ -96,7 +96,8 @@ public sealed class SupplierCreditAuditHandler
                 e.SupplierCreditId,
                 credit.SupplierId,
                 ((IAuditEvent)e).Action,
-                movementType: movement?.MovementType ?? SupplierCreditMovementType.ReversalOfApplication,
+                movementType: movement?.MovementType
+                    ?? SupplierCreditMovementType.ReversalOfApplication,
                 amount: e.Amount,
                 balanceBefore: balanceBefore,
                 balanceAfter: e.AvailableAmountAfter,

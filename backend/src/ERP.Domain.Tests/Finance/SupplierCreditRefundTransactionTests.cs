@@ -46,7 +46,10 @@ public sealed class SupplierCreditRefundTransactionTests
     public void CreateReceived_con_datos_validos_es_REFUND_RECEIVED_sin_OriginalTransactionId()
     {
         var clientRequestId = Guid.NewGuid();
-        var transaction = CreateReceived(clientRequestId: clientRequestId, payloadHash: "hash-received-001");
+        var transaction = CreateReceived(
+            clientRequestId: clientRequestId,
+            payloadHash: "hash-received-001"
+        );
 
         transaction.TransactionTypeCode.Should().Be(RefundTransactionTypeCode.RefundReceived);
         transaction.OriginalTransactionId.Should().BeNull();

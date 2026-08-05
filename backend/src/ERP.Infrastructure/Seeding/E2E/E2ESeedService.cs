@@ -43,7 +43,9 @@ public sealed class E2ESeedService(
         if (environment.IsProduction())
         {
             if (enabled)
-                throw new InvalidOperationException("El seed E2E no puede ejecutarse en Production.");
+                throw new InvalidOperationException(
+                    "El seed E2E no puede ejecutarse en Production."
+                );
 
             return;
         }
@@ -92,10 +94,14 @@ public sealed class E2ESeedService(
             await tenantRepository.SaveChangesAsync(cancellationToken);
         }
 
-        var company = await companyProvisioning.EnsureDefaultCompanyAsync(tenant, cancellationToken);
+        var company = await companyProvisioning.EnsureDefaultCompanyAsync(
+            tenant,
+            cancellationToken
+        );
         await EnsureCompanyAccessAsync(tenant.Id, company.Id, user.Id, cancellationToken);
 
-        var secondaryCompany = await db.Companies.IgnoreQueryFilters()
+        var secondaryCompany = await db
+            .Companies.IgnoreQueryFilters()
             .FirstOrDefaultAsync(
                 x => x.TenantId == tenant.Id && x.TaxIdentificationNumber == SecondaryCompanyTaxId,
                 cancellationToken
@@ -119,9 +125,30 @@ public sealed class E2ESeedService(
 
         await EnsureCompanyAccessAsync(tenant.Id, secondaryCompany.Id, user.Id, cancellationToken);
 
-        await EnsureBusinessPartnerAsync(tenant.Id, user.Id, "1791352688001", "Cliente E2E ZH", RoleType.Customer, cancellationToken);
-        await EnsureBusinessPartnerAsync(tenant.Id, user.Id, "1791352688001", "Proveedor E2E ZH", RoleType.Supplier, cancellationToken);
-        await EnsureBusinessPartnerAsync(tenant.Id, user.Id, SecondaryCompanyTaxId, "Cliente E2E ZH B", RoleType.Customer, cancellationToken);
+        await EnsureBusinessPartnerAsync(
+            tenant.Id,
+            user.Id,
+            "1791352688001",
+            "Cliente E2E ZH",
+            RoleType.Customer,
+            cancellationToken
+        );
+        await EnsureBusinessPartnerAsync(
+            tenant.Id,
+            user.Id,
+            "1791352688001",
+            "Proveedor E2E ZH",
+            RoleType.Supplier,
+            cancellationToken
+        );
+        await EnsureBusinessPartnerAsync(
+            tenant.Id,
+            user.Id,
+            SecondaryCompanyTaxId,
+            "Cliente E2E ZH B",
+            RoleType.Customer,
+            cancellationToken
+        );
     }
 
     private async Task EnsureCompanyAccessAsync(
@@ -155,18 +182,29 @@ public sealed class E2ESeedService(
             await accessRepository.SaveChangesAsync(cancellationToken);
         }
 
-        var defaultBranch = await db.Branches.IgnoreQueryFilters()
-            .Where(x => x.TenantId == tenantId && x.CompanyId == companyId && x.IsActive)
-            .OrderByDescending(x => x.IsMainBranch)
-            .ThenBy(x => x.Id)
-            .FirstOrDefaultAsync(cancellationToken)
-            ?? throw new InvalidOperationException("La empresa E2E no tiene una sucursal activa provisionada.");
-        var branchMembership = (await companyUserBranchRepository.GetByMembershipAsync(membership.Id, cancellationToken))
-            .FirstOrDefault(x => x.BranchId == defaultBranch.Id);
+        var defaultBranch =
+            await db
+                .Branches.IgnoreQueryFilters()
+                .Where(x => x.TenantId == tenantId && x.CompanyId == companyId && x.IsActive)
+                .OrderByDescending(x => x.IsMainBranch)
+                .ThenBy(x => x.Id)
+                .FirstOrDefaultAsync(cancellationToken)
+            ?? throw new InvalidOperationException(
+                "La empresa E2E no tiene una sucursal activa provisionada."
+            );
+        var branchMembership = (
+            await companyUserBranchRepository.GetByMembershipAsync(membership.Id, cancellationToken)
+        ).FirstOrDefault(x => x.BranchId == defaultBranch.Id);
         if (branchMembership is null)
         {
             await companyUserBranchRepository.AddAsync(
-                CompanyUserBranch.Create(tenantId, companyId, membership.Id, defaultBranch.Id, userId),
+                CompanyUserBranch.Create(
+                    tenantId,
+                    companyId,
+                    membership.Id,
+                    defaultBranch.Id,
+                    userId
+                ),
                 cancellationToken
             );
             await companyUserBranchRepository.SaveChangesAsync(cancellationToken);
@@ -179,22 +217,53 @@ public sealed class E2ESeedService(
         }
     }
 
-    private async Task EnsureBusinessPartnerAsync(Guid tenantId, Guid actorId, string ruc, string name, RoleType roleType, CancellationToken ct)
+    private async Task EnsureBusinessPartnerAsync(
+        Guid tenantId,
+        Guid actorId,
+        string ruc,
+        string name,
+        RoleType roleType,
+        CancellationToken ct
+    )
     {
-        var partner = await db.BusinessPartners.IgnoreQueryFilters().FirstOrDefaultAsync(
-            x => x.TenantId == tenantId && x.Identification.Type == TaxIdentification.SriRuc && x.Identification.Number == ruc, ct);
+        var partner = await db
+            .BusinessPartners.IgnoreQueryFilters()
+            .FirstOrDefaultAsync(
+                x =>
+                    x.TenantId == tenantId
+                    && x.Identification.Type == TaxIdentification.SriRuc
+                    && x.Identification.Number == ruc,
+                ct
+            );
         if (partner is null)
         {
-            partner = BusinessPartner.Create(tenantId, TaxIdentification.SriRuc, ruc, null, name, actorId, countryCode: "EC");
+            partner = BusinessPartner.Create(
+                tenantId,
+                TaxIdentification.SriRuc,
+                ruc,
+                null,
+                name,
+                actorId,
+                countryCode: "EC"
+            );
             db.BusinessPartners.Add(partner);
             await db.SaveChangesAsync(ct);
         }
 
-        var role = await db.BusinessPartnerRoles.IgnoreQueryFilters().FirstOrDefaultAsync(
-            x => x.TenantId == tenantId && x.BusinessPartnerId == partner.Id && x.RoleType == roleType, ct);
+        var role = await db
+            .BusinessPartnerRoles.IgnoreQueryFilters()
+            .FirstOrDefaultAsync(
+                x =>
+                    x.TenantId == tenantId
+                    && x.BusinessPartnerId == partner.Id
+                    && x.RoleType == roleType,
+                ct
+            );
         if (role is null)
         {
-            db.BusinessPartnerRoles.Add(BusinessPartnerRole.Create(tenantId, partner.Id, roleType, actorId));
+            db.BusinessPartnerRoles.Add(
+                BusinessPartnerRole.Create(tenantId, partner.Id, roleType, actorId)
+            );
             await db.SaveChangesAsync(ct);
         }
         else if (!role.IsActive)

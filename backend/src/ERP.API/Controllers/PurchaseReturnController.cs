@@ -90,7 +90,10 @@ public sealed class PurchaseReturnController : ControllerBase
     /// <response code="200">Listado paginado.</response>
     [HttpGet]
     [Authorize(Policy = $"perm:{PurchasePermissions.View}")]
-    [ProducesResponseType(typeof(ApiResponse<PurchaseReturnListResultDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(
+        typeof(ApiResponse<PurchaseReturnListResultDto>),
+        StatusCodes.Status200OK
+    )]
     public async Task<IActionResult> GetList(
         [FromQuery] string? status = null,
         [FromQuery] int page = 1,
@@ -148,7 +151,10 @@ public sealed class PurchaseReturnController : ControllerBase
         CancellationToken ct
     ) =>
         this.ToOkOrBadRequest(
-            await _mediator.Send(new AuthorizePurchaseReturnCommand(id, request.ClientRequestId), ct)
+            await _mediator.Send(
+                new AuthorizePurchaseReturnCommand(id, request.ClientRequestId),
+                ct
+            )
         );
 
     /// <summary>

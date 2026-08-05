@@ -69,8 +69,9 @@ public sealed class SalesReturnAuthorizedPostingTranslatorTests
         var salesReturnId = Guid.NewGuid();
         PostingFact? captured = null;
 
-        m.PostingEngine
-            .Setup(e => e.PostAsync(It.IsAny<PostingFact>(), It.IsAny<CancellationToken>()))
+        m.PostingEngine.Setup(e =>
+                e.PostAsync(It.IsAny<PostingFact>(), It.IsAny<CancellationToken>())
+            )
             .Callback<PostingFact, CancellationToken>((fact, _) => captured = fact)
             .ReturnsAsync(
                 Result<PostingOutcomeDto>.Success(
@@ -100,8 +101,9 @@ public sealed class SalesReturnAuthorizedPostingTranslatorTests
     public async Task Posting_exitoso_no_genera_warning()
     {
         var m = new Mocks();
-        m.PostingEngine
-            .Setup(e => e.PostAsync(It.IsAny<PostingFact>(), It.IsAny<CancellationToken>()))
+        m.PostingEngine.Setup(e =>
+                e.PostAsync(It.IsAny<PostingFact>(), It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(
                 Result<PostingOutcomeDto>.Success(
                     new PostingOutcomeDto(Guid.NewGuid(), PostingOutcomeStatus.Created)
@@ -119,8 +121,9 @@ public sealed class SalesReturnAuthorizedPostingTranslatorTests
     public async Task Posting_failure_genera_warning_y_no_lanza_excepcion()
     {
         var m = new Mocks();
-        m.PostingEngine
-            .Setup(e => e.PostAsync(It.IsAny<PostingFact>(), It.IsAny<CancellationToken>()))
+        m.PostingEngine.Setup(e =>
+                e.PostAsync(It.IsAny<PostingFact>(), It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(
                 Result<PostingOutcomeDto>.ValidationFailure(
                     "No existe una regla de contabilización activa.",
@@ -142,11 +145,15 @@ public sealed class SalesReturnAuthorizedPostingTranslatorTests
         // fail-closed real vive en el Pipeline (JournalFactory/JournalValidator), no aquí.
         var m = new Mocks();
         PostingFact? captured = null;
-        m.PostingEngine
-            .Setup(e => e.PostAsync(It.IsAny<PostingFact>(), It.IsAny<CancellationToken>()))
+        m.PostingEngine.Setup(e =>
+                e.PostAsync(It.IsAny<PostingFact>(), It.IsAny<CancellationToken>())
+            )
             .Callback<PostingFact, CancellationToken>((fact, _) => captured = fact)
             .ReturnsAsync(
-                Result<PostingOutcomeDto>.ValidationFailure("Período no encontrado.", "PERIOD_NOT_OPEN")
+                Result<PostingOutcomeDto>.ValidationFailure(
+                    "Período no encontrado.",
+                    "PERIOD_NOT_OPEN"
+                )
             );
 
         var evt = Event(companyId: Guid.Empty);

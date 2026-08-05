@@ -1,11 +1,11 @@
+using System.Security.Cryptography;
+using System.Text;
 using ERP.Application.Common;
 using ERP.Application.Common.Persistence;
 using ERP.Domain.Modules.Purchases.Enums;
 using ERP.Domain.Modules.Purchases.Interfaces;
 using FluentValidation;
 using MediatR;
-using System.Security.Cryptography;
-using System.Text;
 
 namespace ERP.Application.Modules.Finance.UseCases;
 
@@ -93,9 +93,7 @@ public sealed class ReverseSupplierCreditApplicationHandler
             if (purchaseInvoiceId is null)
             {
                 await _uow.RollbackAsync(ct);
-                return Result<SupplierCreditDto>.NotFound(
-                    "La cuenta por pagar destino no existe."
-                );
+                return Result<SupplierCreditDto>.NotFound("La cuenta por pagar destino no existe.");
             }
 
             await _purchaseReturnRepo.AcquireFinancialLockAsync(tid, purchaseInvoiceId.Value, ct);
@@ -105,9 +103,7 @@ public sealed class ReverseSupplierCreditApplicationHandler
             if (payable is null)
             {
                 await _uow.RollbackAsync(ct);
-                return Result<SupplierCreditDto>.NotFound(
-                    "La cuenta por pagar destino no existe."
-                );
+                return Result<SupplierCreditDto>.NotFound("La cuenta por pagar destino no existe.");
             }
 
             var credit = await _creditRepo.GetByIdAsync(tid, cmd.SupplierCreditId, ct);

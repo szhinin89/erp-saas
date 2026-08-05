@@ -32,7 +32,12 @@ public sealed class CompanyFinancialDestinationAuditConfiguration
         builder.Property(x => x.NewAccountingAccountId).HasColumnName("new_accounting_account_id");
 
         builder
-            .HasIndex(x => new { x.TenantId, x.CompanyId, x.OccurredAtUtc })
+            .HasIndex(x => new
+            {
+                x.TenantId,
+                x.CompanyId,
+                x.OccurredAtUtc,
+            })
             .HasDatabaseName("ix_company_financial_destination_audit_company_occurred_at");
     }
 }

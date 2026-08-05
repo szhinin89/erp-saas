@@ -50,7 +50,12 @@ public sealed class PurchaseReturnDraftIdempotencyConcurrencyTests : IAsyncLifet
         await db.Database.MigrateAsync();
 
         var tenant = Tenant.Create("Test Tenant", $"test-{Guid.NewGuid():N}"[..16], _userId);
-        var company = Company.CreateManaged(tenant.Id, "1790012345001", "Test S.A.", createdBy: _userId);
+        var company = Company.CreateManaged(
+            tenant.Id,
+            "1790012345001",
+            "Test S.A.",
+            createdBy: _userId
+        );
         db.Tenants.Add(tenant);
         db.Companies.Add(company);
         await db.SaveChangesAsync();
@@ -213,8 +218,14 @@ public sealed class PurchaseReturnDraftIdempotencyConcurrencyTests : IAsyncLifet
     )
     {
         await using var db = CreateContext();
-        var returnRepo = new PurchaseReturnRepository(db, new FixedCurrentCompany(() => _companyId));
-        var invoiceRepo = new PurchaseInvoiceRepository(db, new FixedCurrentCompany(() => _companyId));
+        var returnRepo = new PurchaseReturnRepository(
+            db,
+            new FixedCurrentCompany(() => _companyId)
+        );
+        var invoiceRepo = new PurchaseInvoiceRepository(
+            db,
+            new FixedCurrentCompany(() => _companyId)
+        );
         var handler = new CreatePurchaseReturnDraftHandler(
             returnRepo,
             invoiceRepo,
@@ -236,7 +247,13 @@ public sealed class PurchaseReturnDraftIdempotencyConcurrencyTests : IAsyncLifet
         );
 
         var result = await handler.Handle(cmd, CancellationToken.None);
-        return (result.IsSuccess, result.IsSuccess ? await returnRepo.GetByIdAsync(_tenantId, result.Value!.Id, CancellationToken.None) : null, result.IsSuccess);
+        return (
+            result.IsSuccess,
+            result.IsSuccess
+                ? await returnRepo.GetByIdAsync(_tenantId, result.Value!.Id, CancellationToken.None)
+                : null,
+            result.IsSuccess
+        );
     }
 
     [Fact]
@@ -307,12 +324,22 @@ public sealed class PurchaseReturnDraftIdempotencyConcurrencyTests : IAsyncLifet
         var invoiceId = await CreateConfirmedInvoiceAsync();
         var clientRequestId = Guid.NewGuid();
 
-        var first = await ExecuteCreateAsync(clientRequestId, invoiceId, "Producto en mal estado", 2);
+        var first = await ExecuteCreateAsync(
+            clientRequestId,
+            invoiceId,
+            "Producto en mal estado",
+            2
+        );
         first.Success.Should().BeTrue();
 
         // Simula que el cliente nunca recibió la respuesta de la primera llamada y reintenta con
         // exactamente el mismo ClientRequestId/payload.
-        var retry = await ExecuteCreateAsync(clientRequestId, invoiceId, "Producto en mal estado", 2);
+        var retry = await ExecuteCreateAsync(
+            clientRequestId,
+            invoiceId,
+            "Producto en mal estado",
+            2
+        );
 
         retry.Success.Should().BeTrue();
         retry.Value!.Id.Should().Be(first.Value!.Id);

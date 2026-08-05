@@ -1,3 +1,5 @@
+using System.Security.Cryptography;
+using System.Text;
 using ERP.Application.Common;
 using ERP.Application.Common.Persistence;
 using ERP.Application.Modules.Purchases.DTOs;
@@ -8,8 +10,6 @@ using ERP.Domain.Modules.Purchases.Enums;
 using ERP.Domain.Modules.Purchases.Interfaces;
 using FluentValidation;
 using MediatR;
-using System.Security.Cryptography;
-using System.Text;
 
 namespace ERP.Application.Modules.Purchases.UseCases;
 
@@ -26,7 +26,8 @@ public sealed record AuthorizePurchaseReturnCommand(Guid PurchaseReturnId, Guid 
 
 // ── Validator ───────────────────────────────────────────────────────────
 
-public sealed class AuthorizePurchaseReturnValidator : AbstractValidator<AuthorizePurchaseReturnCommand>
+public sealed class AuthorizePurchaseReturnValidator
+    : AbstractValidator<AuthorizePurchaseReturnCommand>
 {
     public AuthorizePurchaseReturnValidator()
     {
@@ -138,7 +139,11 @@ public sealed class AuthorizePurchaseReturnHandler
                 );
             }
 
-            var invoice = await _invoiceRepo.GetByIdAsync(tid, purchaseReturn.PurchaseInvoiceId, ct);
+            var invoice = await _invoiceRepo.GetByIdAsync(
+                tid,
+                purchaseReturn.PurchaseInvoiceId,
+                ct
+            );
             if (invoice is null)
             {
                 await _uow.RollbackAsync(ct);
@@ -154,7 +159,11 @@ public sealed class AuthorizePurchaseReturnHandler
                 );
             }
 
-            var withholding = await _invoiceRepo.GetWithholdingByPurchaseIdAsync(tid, invoice.Id, ct);
+            var withholding = await _invoiceRepo.GetWithholdingByPurchaseIdAsync(
+                tid,
+                invoice.Id,
+                ct
+            );
             var hasIssuedWithholding =
                 withholding is not null && withholding.Status == WithholdingStatus.Issued;
 
@@ -228,7 +237,11 @@ public sealed class AuthorizePurchaseReturnHandler
                 }
             }
 
-            var returnNumber = await _sequenceRepo.CaptureNextAsync(tid, purchaseReturn.CompanyId, ct);
+            var returnNumber = await _sequenceRepo.CaptureNextAsync(
+                tid,
+                purchaseReturn.CompanyId,
+                ct
+            );
             var authorizeHash = ComputeAuthorizePayloadHash(purchaseReturn.Id, cmd.ClientRequestId);
             var balanceDueBeforeApplication = payable.BalanceDue;
 

@@ -1,3 +1,4 @@
+using System.Globalization;
 using ERP.Application.Common;
 using ERP.Application.Common.Interfaces.SRI;
 using ERP.Application.Modules.ElectronicInvoicing.DTOs;
@@ -5,7 +6,6 @@ using ERP.Application.Modules.ElectronicInvoicing.Services;
 using ERP.Domain.Configuration.Interfaces;
 using ERP.Domain.Modules.Company.Interfaces;
 using MediatR;
-using System.Globalization;
 
 namespace ERP.Application.Modules.ElectronicInvoicing.UseCases.ValidateSriConfiguration;
 

@@ -60,7 +60,12 @@ public sealed class AuthorizePurchaseReturnLockAConcurrencyTests : IAsyncLifetim
         await db.Database.MigrateAsync();
 
         var tenant = Tenant.Create("Test Tenant", $"test-{Guid.NewGuid():N}"[..16], _userId);
-        var company = Company.CreateManaged(tenant.Id, "1790012345001", "Test S.A.", createdBy: _userId);
+        var company = Company.CreateManaged(
+            tenant.Id,
+            "1790012345001",
+            "Test S.A.",
+            createdBy: _userId
+        );
         db.Tenants.Add(tenant);
         db.Companies.Add(company);
         await db.SaveChangesAsync();
@@ -312,8 +317,14 @@ public sealed class AuthorizePurchaseReturnLockAConcurrencyTests : IAsyncLifetim
     private async Task<Guid> CreateDraftReturnAsync(Guid invoiceId, Guid lineId, decimal quantity)
     {
         await using var db = CreateContext();
-        var returnRepo = new PurchaseReturnRepository(db, new FixedCurrentCompany(() => _companyId));
-        var invoiceRepo = new PurchaseInvoiceRepository(db, new FixedCurrentCompany(() => _companyId));
+        var returnRepo = new PurchaseReturnRepository(
+            db,
+            new FixedCurrentCompany(() => _companyId)
+        );
+        var invoiceRepo = new PurchaseInvoiceRepository(
+            db,
+            new FixedCurrentCompany(() => _companyId)
+        );
         var createHandler = new CreatePurchaseReturnDraftHandler(
             returnRepo,
             invoiceRepo,
@@ -343,15 +354,24 @@ public sealed class AuthorizePurchaseReturnLockAConcurrencyTests : IAsyncLifetim
     )
     {
         await using var db = CreateContext();
-        var returnRepo = new PurchaseReturnRepository(db, new FixedCurrentCompany(() => _companyId));
-        var invoiceRepo = new PurchaseInvoiceRepository(db, new FixedCurrentCompany(() => _companyId));
+        var returnRepo = new PurchaseReturnRepository(
+            db,
+            new FixedCurrentCompany(() => _companyId)
+        );
+        var invoiceRepo = new PurchaseInvoiceRepository(
+            db,
+            new FixedCurrentCompany(() => _companyId)
+        );
         var sequenceRepo = new PurchaseReturnSequenceRepository(db);
         var stockRepo = new StockRepository(
             db,
             new FixedCurrentCompany(() => _companyId),
             new RealDatabaseExceptionTranslator()
         );
-        var creditRepo = new SupplierCreditRepository(db, new FixedCurrentCompany(() => _companyId));
+        var creditRepo = new SupplierCreditRepository(
+            db,
+            new FixedCurrentCompany(() => _companyId)
+        );
         var uow = new UnitOfWork(db);
 
         var handler = new AuthorizePurchaseReturnHandler(
@@ -375,19 +395,27 @@ public sealed class AuthorizePurchaseReturnLockAConcurrencyTests : IAsyncLifetim
             return (false, null, result.Error);
 
         await using var verify = CreateContext();
-        var reloaded = await returnRepo.GetByIdAsync(_tenantId, purchaseReturnId, CancellationToken.None);
+        var reloaded = await returnRepo.GetByIdAsync(
+            _tenantId,
+            purchaseReturnId,
+            CancellationToken.None
+        );
         return (true, reloaded, null);
     }
 
-    private async Task<(bool Success, PaymentDto? Value, string? Error)> ExecuteRegisterPaymentAsync(
-        Guid payableId,
-        decimal amount
-    )
+    private async Task<(
+        bool Success,
+        PaymentDto? Value,
+        string? Error
+    )> ExecuteRegisterPaymentAsync(Guid payableId, decimal amount)
     {
         await using var db = CreateContext();
         var payments = new PaymentRepository(db);
         var payables = new PurchasePayableRepository(db, new FixedCurrentCompany(() => _companyId));
-        var purchaseReturnRepo = new PurchaseReturnRepository(db, new FixedCurrentCompany(() => _companyId));
+        var purchaseReturnRepo = new PurchaseReturnRepository(
+            db,
+            new FixedCurrentCompany(() => _companyId)
+        );
         var uow = new UnitOfWork(db);
 
         var handler = new RegisterPaymentCommandHandler(
@@ -412,7 +440,11 @@ public sealed class AuthorizePurchaseReturnLockAConcurrencyTests : IAsyncLifetim
             CancellationToken.None
         );
 
-        return (result.IsSuccess, result.IsSuccess ? result.Value : null, result.IsSuccess ? null : result.Error);
+        return (
+            result.IsSuccess,
+            result.IsSuccess ? result.Value : null,
+            result.IsSuccess ? null : result.Error
+        );
     }
 
     private async Task<(
@@ -422,13 +454,19 @@ public sealed class AuthorizePurchaseReturnLockAConcurrencyTests : IAsyncLifetim
     )> ExecuteIssueWithholdingAsync(Guid invoiceId)
     {
         await using var db = CreateContext();
-        var purchaseRepo = new PurchaseInvoiceRepository(db, new FixedCurrentCompany(() => _companyId));
+        var purchaseRepo = new PurchaseInvoiceRepository(
+            db,
+            new FixedCurrentCompany(() => _companyId)
+        );
         var roleRepo = new BusinessPartnerRoleRepository(db);
         var retResolver = new RetentionCodeResolver(db);
         var epRepo = new EmissionPointRepository(db);
         var estRepo = new EstablishmentRepository(db);
         var seqRepo = new DocumentSequenceRepository(db);
-        var purchaseReturnRepo = new PurchaseReturnRepository(db, new FixedCurrentCompany(() => _companyId));
+        var purchaseReturnRepo = new PurchaseReturnRepository(
+            db,
+            new FixedCurrentCompany(() => _companyId)
+        );
         var uow = new UnitOfWork(db);
 
         var handler = new IssueWithholdingHandler(
@@ -447,11 +485,19 @@ public sealed class AuthorizePurchaseReturnLockAConcurrencyTests : IAsyncLifetim
         );
 
         var result = await handler.Handle(
-            new IssueWithholdingCommand(invoiceId, _emissionPointId, DateOnly.FromDateTime(DateTime.UtcNow)),
+            new IssueWithholdingCommand(
+                invoiceId,
+                _emissionPointId,
+                DateOnly.FromDateTime(DateTime.UtcNow)
+            ),
             CancellationToken.None
         );
 
-        return (result.IsSuccess, result.IsSuccess ? result.Value : null, result.IsSuccess ? null : result.Error);
+        return (
+            result.IsSuccess,
+            result.IsSuccess ? result.Value : null,
+            result.IsSuccess ? null : result.Error
+        );
     }
 
     // ── Punto 4: dos autorizaciones concurrentes exceden el remanente ────
@@ -483,7 +529,8 @@ public sealed class AuthorizePurchaseReturnLockAConcurrencyTests : IAsyncLifetim
         var authorizedReturns = await verify
             .PurchaseReturns.Where(r => r.TenantId == _tenantId && r.PurchaseInvoiceId == invoiceId)
             .ToListAsync();
-        authorizedReturns.Count(r => r.Status == Domain.Modules.Purchases.Enums.PurchaseReturnStatus.Authorized)
+        authorizedReturns
+            .Count(r => r.Status == Domain.Modules.Purchases.Enums.PurchaseReturnStatus.Authorized)
             .Should()
             .Be(1);
 
@@ -500,7 +547,10 @@ public sealed class AuthorizePurchaseReturnLockAConcurrencyTests : IAsyncLifetim
     public async Task Punto5_Devolucion_y_pago_simultaneos_sobre_la_misma_factura_quedan_serializados_por_LockA()
     {
         // Factura de 385 (350 subtotal + 35 IVA con quantity=10/unitPrice=35 y vatCode 10%).
-        var (invoiceId, lineId, payableId) = await SeedConfirmedInvoiceAsync(quantity: 10, unitPrice: 35m);
+        var (invoiceId, lineId, payableId) = await SeedConfirmedInvoiceAsync(
+            quantity: 10,
+            unitPrice: 35m
+        );
         var returnId = await CreateDraftReturnAsync(invoiceId, lineId, quantity: 2);
 
         // Pago parcial de 100 — ambas operaciones compiten por Lock A sobre la MISMA factura.
@@ -518,7 +568,10 @@ public sealed class AuthorizePurchaseReturnLockAConcurrencyTests : IAsyncLifetim
         paymentResult.Success.Should().BeTrue(paymentResult.Error);
 
         await using var verify = CreateContext();
-        var payable = await verify.Set<PurchasePayable>().AsNoTracking().FirstAsync(p => p.Id == payableId);
+        var payable = await verify
+            .Set<PurchasePayable>()
+            .AsNoTracking()
+            .FirstAsync(p => p.Id == payableId);
 
         // Consistencia final: sin lost update — el efecto de AMBAS operaciones está reflejado.
         // GrandTotal=385; devolución de 2/10 unidades = 77 (70 subtotal + 7 IVA) aplicado a CxP
@@ -528,12 +581,14 @@ public sealed class AuthorizePurchaseReturnLockAConcurrencyTests : IAsyncLifetim
         payable.PaidAmount.Should().Be(100m);
         payable.BalanceDue.Should().Be(208m);
 
-        var paymentCount = await verify.Set<Domain.Modules.Finance.Entities.Payment>().CountAsync(p =>
-            p.TenantId == _tenantId
-        );
+        var paymentCount = await verify
+            .Set<Domain.Modules.Finance.Entities.Payment>()
+            .CountAsync(p => p.TenantId == _tenantId);
         paymentCount.Should().Be(1, "no debe haber doble aplicación de pago");
 
-        var creditCount = await verify.Set<SupplierCredit>().CountAsync(c => c.TenantId == _tenantId);
+        var creditCount = await verify
+            .Set<SupplierCredit>()
+            .CountAsync(c => c.TenantId == _tenantId);
         creditCount.Should().Be(0, "sin excedente, no debe crearse SupplierCredit indebido");
     }
 
@@ -571,10 +626,14 @@ public sealed class AuthorizePurchaseReturnLockAConcurrencyTests : IAsyncLifetim
             // Orden B: la retención ganó el lock primero y quedó Issued antes de que Authorize
             // revalidara bajo el lock → PR-006 determinista, la devolución permanece en Draft.
             returnResult.Error.Should().Contain("retenci");
-            persistedReturn.Status.Should().Be(Domain.Modules.Purchases.Enums.PurchaseReturnStatus.Draft);
+            persistedReturn
+                .Status.Should()
+                .Be(Domain.Modules.Purchases.Enums.PurchaseReturnStatus.Draft);
             withholdingResult.Success.Should().BeTrue(withholdingResult.Error);
             persistedWithholding.Should().NotBeNull();
-            persistedWithholding!.Status.Should().Be(Domain.Modules.Purchases.Enums.WithholdingStatus.Issued);
+            persistedWithholding!
+                .Status.Should()
+                .Be(Domain.Modules.Purchases.Enums.WithholdingStatus.Issued);
         }
         else
         {
@@ -582,7 +641,9 @@ public sealed class AuthorizePurchaseReturnLockAConcurrencyTests : IAsyncLifetim
             // retención Issued todavía. La emisión de retención corre después, sin ninguna regla
             // de diseño que la bloquee por la existencia de una devolución ya autorizada — debe
             // completar con éxito de forma independiente.
-            persistedReturn.Status.Should().Be(Domain.Modules.Purchases.Enums.PurchaseReturnStatus.Authorized);
+            persistedReturn
+                .Status.Should()
+                .Be(Domain.Modules.Purchases.Enums.PurchaseReturnStatus.Authorized);
             withholdingResult.Success.Should().BeTrue(withholdingResult.Error);
         }
 
@@ -624,17 +685,17 @@ public sealed class AuthorizePurchaseReturnLockAConcurrencyTests : IAsyncLifetim
 
     private sealed class FixedCompanyClock : ERP.Application.Common.Services.ICompanyClock
     {
-        public Task<DateOnly> TodayAsync(Guid companyId, Guid tenantId, CancellationToken ct = default) =>
-            Task.FromResult(DateOnly.FromDateTime(DateTime.UtcNow));
+        public Task<DateOnly> TodayAsync(
+            Guid companyId,
+            Guid tenantId,
+            CancellationToken ct = default
+        ) => Task.FromResult(DateOnly.FromDateTime(DateTime.UtcNow));
 
         public Task<(DateTime StartUtc, DateTime EndUtc)> TodayUtcRangeAsync(
             Guid companyId,
             Guid tenantId,
             CancellationToken ct = default
-        ) =>
-            Task.FromResult(
-                (DateTime.UtcNow.Date, DateTime.UtcNow.Date.AddDays(1).AddTicks(-1))
-            );
+        ) => Task.FromResult((DateTime.UtcNow.Date, DateTime.UtcNow.Date.AddDays(1).AddTicks(-1)));
     }
 
     private sealed class NoOpPublisher : MediatR.IPublisher

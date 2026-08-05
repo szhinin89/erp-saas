@@ -1,3 +1,4 @@
+using System.Text;
 using ERP.Application.Common;
 using ERP.Application.Common.Interfaces;
 using ERP.Application.Common.Interfaces.SRI;
@@ -12,7 +13,6 @@ using ERP.Domain.Modules.ElectronicDocuments.ValueObjects;
 using FluentAssertions;
 using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
-using System.Text;
 
 namespace ERP.Application.Tests.ElectronicDocuments;
 

@@ -51,7 +51,12 @@ public sealed class AuthorizePurchaseReturnSequenceConcurrencyTests : IAsyncLife
         await db.Database.MigrateAsync();
 
         var tenant = Tenant.Create("Test Tenant", $"test-{Guid.NewGuid():N}"[..16], _userId);
-        var company = Company.CreateManaged(tenant.Id, "1790012345001", "Test S.A.", createdBy: _userId);
+        var company = Company.CreateManaged(
+            tenant.Id,
+            "1790012345001",
+            "Test S.A.",
+            createdBy: _userId
+        );
         db.Tenants.Add(tenant);
         db.Companies.Add(company);
         await db.SaveChangesAsync();
@@ -171,7 +176,10 @@ public sealed class AuthorizePurchaseReturnSequenceConcurrencyTests : IAsyncLife
     }
 
     /// <summary>Factura confirmada + CxP + stock suficiente + devolución en Draft lista para autorizar — cada llamada crea una factura/devolución completamente independiente.</summary>
-    private async Task<Guid> SeedAuthorizableDraftAsync(decimal lineQuantity = 10, decimal returnQuantity = 2)
+    private async Task<Guid> SeedAuthorizableDraftAsync(
+        decimal lineQuantity = 10,
+        decimal returnQuantity = 2
+    )
     {
         await using var db = CreateContext();
         var inv = Domain.Modules.Purchases.Entities.PurchaseInvoice.CreateDraft(
@@ -240,8 +248,14 @@ public sealed class AuthorizePurchaseReturnSequenceConcurrencyTests : IAsyncLife
         );
         await stockRepo.SaveChangesWithSequenceRetryAsync();
 
-        var returnRepo = new PurchaseReturnRepository(db, new FixedCurrentCompany(() => _companyId));
-        var invoiceRepo = new PurchaseInvoiceRepository(db, new FixedCurrentCompany(() => _companyId));
+        var returnRepo = new PurchaseReturnRepository(
+            db,
+            new FixedCurrentCompany(() => _companyId)
+        );
+        var invoiceRepo = new PurchaseInvoiceRepository(
+            db,
+            new FixedCurrentCompany(() => _companyId)
+        );
         var createHandler = new CreatePurchaseReturnDraftHandler(
             returnRepo,
             invoiceRepo,
@@ -274,15 +288,24 @@ public sealed class AuthorizePurchaseReturnSequenceConcurrencyTests : IAsyncLife
     )
     {
         await using var db = CreateContext();
-        var returnRepo = new PurchaseReturnRepository(db, new FixedCurrentCompany(() => _companyId));
-        var invoiceRepo = new PurchaseInvoiceRepository(db, new FixedCurrentCompany(() => _companyId));
+        var returnRepo = new PurchaseReturnRepository(
+            db,
+            new FixedCurrentCompany(() => _companyId)
+        );
+        var invoiceRepo = new PurchaseInvoiceRepository(
+            db,
+            new FixedCurrentCompany(() => _companyId)
+        );
         var sequenceRepo = new PurchaseReturnSequenceRepository(db);
         var stockRepo = new StockRepository(
             db,
             new FixedCurrentCompany(() => _companyId),
             new RealDatabaseExceptionTranslator()
         );
-        var creditRepo = new SupplierCreditRepository(db, new FixedCurrentCompany(() => _companyId));
+        var creditRepo = new SupplierCreditRepository(
+            db,
+            new FixedCurrentCompany(() => _companyId)
+        );
         var uow = new UnitOfWork(db);
 
         var handler = new AuthorizePurchaseReturnHandler(
@@ -306,7 +329,11 @@ public sealed class AuthorizePurchaseReturnSequenceConcurrencyTests : IAsyncLife
             return (false, null);
 
         await using var verify = CreateContext();
-        var reloaded = await returnRepo.GetByIdAsync(_tenantId, purchaseReturnId, CancellationToken.None);
+        var reloaded = await returnRepo.GetByIdAsync(
+            _tenantId,
+            purchaseReturnId,
+            CancellationToken.None
+        );
         return (true, reloaded);
     }
 
@@ -403,12 +430,19 @@ public sealed class AuthorizePurchaseReturnSequenceConcurrencyTests : IAsyncLife
         var t2 = ExecuteAuthorizeAsync(returnId2, Guid.NewGuid());
         var results = await Task.WhenAll(t1, t2);
 
-        results.Should().OnlyContain(r => r.Success, "SaveChangesWithSequenceRetryAsync debe absorber el conflicto de secuencia sin que ninguna autorización falle");
+        results
+            .Should()
+            .OnlyContain(
+                r => r.Success,
+                "SaveChangesWithSequenceRetryAsync debe absorber el conflicto de secuencia sin que ninguna autorización falle"
+            );
 
         await using var verify = CreateContext();
         var movements = await verify
             .Set<ERP.Domain.Modules.Inventory.Entities.StockMovement>()
-            .Where(m => m.TenantId == _tenantId && m.ProductId == _itemId && m.WarehouseId == _warehouseId)
+            .Where(m =>
+                m.TenantId == _tenantId && m.ProductId == _itemId && m.WarehouseId == _warehouseId
+            )
             .OrderBy(m => m.SequenceNumber)
             .ToListAsync();
 
@@ -425,16 +459,18 @@ public sealed class AuthorizePurchaseReturnSequenceConcurrencyTests : IAsyncLife
         result.Success.Should().BeTrue();
 
         await using var verify = CreateContext();
-        var persisted = await verify.PurchaseReturns.AsNoTracking().FirstAsync(r => r.Id == purchaseReturnId);
+        var persisted = await verify
+            .PurchaseReturns.AsNoTracking()
+            .FirstAsync(r => r.Id == purchaseReturnId);
         persisted.ReturnNumber.Should().Be(result.Value!.ReturnNumber);
 
         // PurchaseReturnSequence.CurrentSeq representa el PRÓXIMO número a emitir (no el último
         // emitido) — tras capturar "00000001", CurrentSeq avanza a 2 en memoria y así queda
         // persistido (PurchaseReturnSequence.CaptureAndIncrement: retorna el valor actual
         // formateado y LUEGO incrementa). Verificación correcta: CurrentSeq - 1 == número emitido.
-        var sequence = await verify.PurchaseReturnSequences.AsNoTracking().FirstAsync(s =>
-            s.TenantId == _tenantId && s.CompanyId == _companyId
-        );
+        var sequence = await verify
+            .PurchaseReturnSequences.AsNoTracking()
+            .FirstAsync(s => s.TenantId == _tenantId && s.CompanyId == _companyId);
         (sequence.CurrentSeq - 1).ToString("D8").Should().Be(result.Value.ReturnNumber);
     }
 

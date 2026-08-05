@@ -114,8 +114,8 @@ public sealed class PurchasePayablesControllerTests
     [Fact]
     public async Task GetById_de_CxP_inexistente_retorna_404()
     {
-        var controller = BuildController(
-            _ => Result<PurchasePayableDto>.NotFound("Cuenta por pagar no encontrada.")
+        var controller = BuildController(_ =>
+            Result<PurchasePayableDto>.NotFound("Cuenta por pagar no encontrada.")
         );
 
         var response = await controller.GetById(Guid.NewGuid(), CancellationToken.None);

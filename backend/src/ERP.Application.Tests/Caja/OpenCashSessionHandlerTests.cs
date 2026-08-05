@@ -73,7 +73,8 @@ public sealed class OpenCashSessionHandlerTests
                 .ReturnsAsync((CashSession?)null);
 
             DatabaseUniqueViolationInfo? none = null;
-            DbEx.Setup(d => d.TryGetUniqueViolation(It.IsAny<Exception>(), out none)).Returns(false);
+            DbEx.Setup(d => d.TryGetUniqueViolation(It.IsAny<Exception>(), out none))
+                .Returns(false);
         }
 
         public OpenCashSessionHandler BuildHandler(Guid branchId)
@@ -344,7 +345,11 @@ public sealed class OpenCashSessionHandlerTests
             )
             .ReturnsAsync(register);
         f.EmissionPointRepo.Setup(r =>
-                r.GetByIdAsync(register.EmissionPointId!.Value, TenantId, It.IsAny<CancellationToken>())
+                r.GetByIdAsync(
+                    register.EmissionPointId!.Value,
+                    TenantId,
+                    It.IsAny<CancellationToken>()
+                )
             )
             .ReturnsAsync(emissionPoint);
 
@@ -382,7 +387,11 @@ public sealed class OpenCashSessionHandlerTests
             )
             .ReturnsAsync(register);
         f.EmissionPointRepo.Setup(r =>
-                r.GetByIdAsync(register.EmissionPointId!.Value, TenantId, It.IsAny<CancellationToken>())
+                r.GetByIdAsync(
+                    register.EmissionPointId!.Value,
+                    TenantId,
+                    It.IsAny<CancellationToken>()
+                )
             )
             .ReturnsAsync(emissionPoint);
 

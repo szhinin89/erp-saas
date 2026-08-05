@@ -519,7 +519,9 @@ public sealed class ReversePaymentCommandHandler
                 if (purchaseInvoiceId is null)
                 {
                     await _uow.RollbackAsync(ct);
-                    return Result<PaymentDto>.NotFound($"Cuenta por pagar {payableId} no encontrada.");
+                    return Result<PaymentDto>.NotFound(
+                        $"Cuenta por pagar {payableId} no encontrada."
+                    );
                 }
                 purchaseInvoiceIdByPayableId[payableId] = purchaseInvoiceId.Value;
             }
@@ -551,7 +553,9 @@ public sealed class ReversePaymentCommandHandler
                 if (payable is null)
                 {
                     await _uow.RollbackAsync(ct);
-                    return Result<PaymentDto>.NotFound($"Cuenta por pagar {payableId} no encontrada.");
+                    return Result<PaymentDto>.NotFound(
+                        $"Cuenta por pagar {payableId} no encontrada."
+                    );
                 }
                 payablesByDocId[payableId] = payable;
             }
@@ -560,10 +564,8 @@ public sealed class ReversePaymentCommandHandler
 
             foreach (var line in payment.Lines)
             {
-                payablesByDocId[line.PayableId!.Value].ReversePayment(
-                    line.AppliedAmount,
-                    _u.UserId
-                );
+                payablesByDocId[line.PayableId!.Value]
+                    .ReversePayment(line.AppliedAmount, _u.UserId);
             }
 
             await _payments.SaveChangesAsync(ct);

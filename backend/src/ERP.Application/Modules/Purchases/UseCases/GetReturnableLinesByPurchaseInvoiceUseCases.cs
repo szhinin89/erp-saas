@@ -15,7 +15,10 @@ public sealed record GetReturnableLinesByPurchaseInvoiceQuery(Guid PurchaseInvoi
         IBranchScopedRequest;
 
 public sealed class GetReturnableLinesByPurchaseInvoiceHandler
-    : IRequestHandler<GetReturnableLinesByPurchaseInvoiceQuery, Result<IReadOnlyList<ReturnableLineDto>>>
+    : IRequestHandler<
+        GetReturnableLinesByPurchaseInvoiceQuery,
+        Result<IReadOnlyList<ReturnableLineDto>>
+    >
 {
     private readonly IPurchaseInvoiceRepository _invoiceRepo;
     private readonly IPurchaseReturnRepository _returnRepo;
@@ -41,7 +44,9 @@ public sealed class GetReturnableLinesByPurchaseInvoiceHandler
 
         var invoice = await _invoiceRepo.GetByIdAsync(tid, q.PurchaseInvoiceId, ct);
         if (invoice is null)
-            return Result<IReadOnlyList<ReturnableLineDto>>.NotFound("Factura de compra no encontrada.");
+            return Result<IReadOnlyList<ReturnableLineDto>>.NotFound(
+                "Factura de compra no encontrada."
+            );
 
         var eligibleLines = invoice.Lines.Where(l => l.ItemId is not null).ToList();
         var detailIds = eligibleLines.Select(l => l.Id).ToList();

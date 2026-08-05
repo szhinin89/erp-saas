@@ -43,7 +43,10 @@ public sealed class PurchaseReturnRepository : IPurchaseReturnRepository
         // COMMIT/ROLLBACK de la transacción ambiente; nunca abre ni comitea una transacción propia
         // (mismo mecanismo que SalesReturnRepository.AcquireReturnLockAsync/DocumentSequenceRepository).
         var hash1 = StableHash(
-            System.Text.Encoding.UTF8.GetBytes(LockNamespace).Concat(tenantId.ToByteArray()).ToArray()
+            System
+                .Text.Encoding.UTF8.GetBytes(LockNamespace)
+                .Concat(tenantId.ToByteArray())
+                .ToArray()
         );
         var hash2 = StableHash(purchaseInvoiceId.ToByteArray());
         await _db.Database.ExecuteSqlInterpolatedAsync(
@@ -97,7 +100,9 @@ public sealed class PurchaseReturnRepository : IPurchaseReturnRepository
             );
 
     /// <inheritdoc/>
-    public async Task<IReadOnlyDictionary<Guid, decimal>> GetReturnedQuantitiesByInvoiceDetailIdsAsync(
+    public async Task<
+        IReadOnlyDictionary<Guid, decimal>
+    > GetReturnedQuantitiesByInvoiceDetailIdsAsync(
         Guid tenantId,
         IReadOnlyCollection<Guid> invoiceDetailIds,
         CancellationToken ct = default

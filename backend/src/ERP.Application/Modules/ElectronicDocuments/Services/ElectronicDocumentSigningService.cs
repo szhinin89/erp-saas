@@ -1,11 +1,11 @@
+using System.Security.Cryptography;
+using System.Text;
 using ERP.Application.Common;
 using ERP.Application.Common.Interfaces;
 using ERP.Application.Common.Interfaces.SRI;
 using ERP.Application.Modules.ElectronicDocuments.DTOs;
 using ERP.Domain.Configuration.Interfaces;
 using Microsoft.Extensions.Logging;
-using System.Security.Cryptography;
-using System.Text;
 
 namespace ERP.Application.Modules.ElectronicDocuments.Services;
 

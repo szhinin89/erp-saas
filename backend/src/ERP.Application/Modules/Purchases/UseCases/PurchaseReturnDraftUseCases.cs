@@ -1,3 +1,6 @@
+using System.Globalization;
+using System.Security.Cryptography;
+using System.Text;
 using ERP.Application.Common;
 using ERP.Application.Common.Persistence;
 using ERP.Application.Modules.Purchases.DTOs;
@@ -6,9 +9,6 @@ using ERP.Domain.Modules.Purchases.Enums;
 using ERP.Domain.Modules.Purchases.Interfaces;
 using FluentValidation;
 using MediatR;
-using System.Globalization;
-using System.Security.Cryptography;
-using System.Text;
 
 namespace ERP.Application.Modules.Purchases.UseCases;
 
@@ -57,7 +57,9 @@ public sealed class CreatePurchaseReturnDraftValidator
         RuleFor(x => x.ClientRequestId)
             .NotEmpty()
             .WithMessage("El identificador de idempotencia es obligatorio.");
-        RuleFor(x => x.PurchaseInvoiceId).NotEmpty().WithMessage("La factura origen es obligatoria.");
+        RuleFor(x => x.PurchaseInvoiceId)
+            .NotEmpty()
+            .WithMessage("La factura origen es obligatoria.");
         RuleFor(x => x.Reason)
             .NotEmpty()
             .WithMessage("El motivo de la devolución es obligatorio.")
@@ -158,7 +160,11 @@ public sealed class CreatePurchaseReturnDraftHandler
         // ── §16.2 paso 3: buscar por (TenantId, ClientRequestId) antes de tocar cualquier
         // agregado — cubre tanto "mismo contenido" como "conflicto" antes de intentar insertar. ──
         var hash = ComputePayloadHash(cmd.PurchaseInvoiceId, cmd.Reason, cmd.Lines);
-        var existing = await _returnRepo.GetByCreateClientRequestIdAsync(tid, cmd.ClientRequestId, ct);
+        var existing = await _returnRepo.GetByCreateClientRequestIdAsync(
+            tid,
+            cmd.ClientRequestId,
+            ct
+        );
         if (existing is not null)
             return existing.CreateRequestPayloadHash == hash
                 ? Result<PurchaseReturnDto>.Success(Map.ToDto(existing))
@@ -273,7 +279,9 @@ public sealed class CreatePurchaseReturnDraftHandler
         var lines = new List<PurchaseReturn.DraftLineInput>();
         foreach (var input in inputs)
         {
-            var originalLine = invoice.Lines.FirstOrDefault(l => l.Id == input.OriginalInvoiceDetailId);
+            var originalLine = invoice.Lines.FirstOrDefault(l =>
+                l.Id == input.OriginalInvoiceDetailId
+            );
             if (originalLine is null || originalLine.ItemId is null)
                 return new(
                     null!,
@@ -373,7 +381,9 @@ public sealed class UpdatePurchaseReturnDraftHandler
         var lines = new List<PurchaseReturn.DraftLineInput>();
         foreach (var input in cmd.Lines)
         {
-            var originalLine = invoice.Lines.FirstOrDefault(l => l.Id == input.OriginalInvoiceDetailId);
+            var originalLine = invoice.Lines.FirstOrDefault(l =>
+                l.Id == input.OriginalInvoiceDetailId
+            );
             if (originalLine is null || originalLine.ItemId is null)
                 // PR-003
                 return Result<PurchaseReturnDto>.ValidationFailure(

@@ -1,9 +1,9 @@
+using System.Text;
 using ERP.Application.Common;
 using ERP.Application.Common.Interfaces;
 using ERP.Application.Modules.ElectronicDocuments.DTOs;
 using ERP.Domain.Modules.ElectronicDocuments.Enums;
 using Microsoft.Extensions.Logging;
-using System.Text;
 
 namespace ERP.Application.Modules.ElectronicDocuments.Services;
 

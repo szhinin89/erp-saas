@@ -159,7 +159,11 @@ public sealed class CancelPurchaseReturnUseCasesTests
         {
             ReturnRepo
                 .Setup(r =>
-                    r.GetPurchaseInvoiceIdAsync(TenantId, f.Return.Id, It.IsAny<CancellationToken>())
+                    r.GetPurchaseInvoiceIdAsync(
+                        TenantId,
+                        f.Return.Id,
+                        It.IsAny<CancellationToken>()
+                    )
                 )
                 .ReturnsAsync(f.Invoice.Id);
             ReturnRepo
@@ -171,7 +175,11 @@ public sealed class CancelPurchaseReturnUseCasesTests
                 .ReturnsAsync(f.Invoice);
             InvoiceRepo
                 .Setup(r =>
-                    r.GetPayableByPurchaseIdAsync(TenantId, f.Invoice.Id, It.IsAny<CancellationToken>())
+                    r.GetPayableByPurchaseIdAsync(
+                        TenantId,
+                        f.Invoice.Id,
+                        It.IsAny<CancellationToken>()
+                    )
                 )
                 .ReturnsAsync(f.Payable);
 
@@ -333,13 +341,18 @@ public sealed class CancelPurchaseReturnUseCasesTests
         var handler = m.BuildHandler();
 
         var result = await handler.Handle(
-            new CancelPurchaseReturnCommand(f.Return.Id, "Producto devuelto por error", Guid.NewGuid()),
+            new CancelPurchaseReturnCommand(
+                f.Return.Id,
+                "Producto devuelto por error",
+                Guid.NewGuid()
+            ),
             CancellationToken.None
         );
 
         result.IsSuccess.Should().BeTrue(result.Error);
         f.Return.Status.Should().Be(PurchaseReturnStatus.Cancelled);
-        f.Payable.ReturnAppliedAmount.Should().Be(0m, "la reversa debe deshacer exactamente lo aplicado");
+        f.Payable.ReturnAppliedAmount.Should()
+            .Be(0m, "la reversa debe deshacer exactamente lo aplicado");
         appliedBefore.Should().BeGreaterThan(0m);
         m.AppendedQuantities.Should().ContainSingle().Which.Should().Be(10m);
     }
@@ -362,9 +375,11 @@ public sealed class CancelPurchaseReturnUseCasesTests
         result.IsSuccess.Should().BeTrue(result.Error);
         credit.AvailableAmount.Should().Be(0m);
         var lastMovement = credit.Movements.Last();
-        lastMovement.MovementType.Should().Be(
-            ERP.Domain.Modules.Purchases.Enums.SupplierCreditMovementType.SourceReturnCancelled
-        );
+        lastMovement
+            .MovementType.Should()
+            .Be(
+                ERP.Domain.Modules.Purchases.Enums.SupplierCreditMovementType.SourceReturnCancelled
+            );
         lastMovement.Amount.Should().Be(originalAmount);
     }
 
@@ -373,13 +388,7 @@ public sealed class CancelPurchaseReturnUseCasesTests
     {
         var (f, credit) = BuildAuthorizedFixture(paidAmount: 1120m);
         credit.Should().NotBeNull();
-        credit!.ApplyToPayable(
-            Guid.NewGuid(),
-            10m,
-            UserId,
-            Guid.NewGuid(),
-            "apply-hash"
-        );
+        credit!.ApplyToPayable(Guid.NewGuid(), 10m, UserId, Guid.NewGuid(), "apply-hash");
         credit.AvailableAmount.Should().BeLessThan(credit.OriginalAmount);
         var m = new Mocks(f, credit);
         var handler = m.BuildHandler();
@@ -433,7 +442,8 @@ public sealed class CancelPurchaseReturnUseCasesTests
         );
 
         retry.IsSuccess.Should().BeTrue(retry.Error);
-        m.AppendedQuantities.Should().HaveCount(1, "el reintento idempotente nunca debe duplicar la reversa de inventario");
+        m.AppendedQuantities.Should()
+            .HaveCount(1, "el reintento idempotente nunca debe duplicar la reversa de inventario");
     }
 
     [Fact]

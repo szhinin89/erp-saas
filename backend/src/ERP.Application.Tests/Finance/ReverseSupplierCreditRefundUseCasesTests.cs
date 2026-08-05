@@ -78,7 +78,11 @@ public sealed class ReverseSupplierCreditRefundUseCasesTests
         return new Fixture(credit, tx, movement.Id);
     }
 
-    private static Fixture BuildCashFixture(Guid cashSessionId, decimal creditAmount = 100m, decimal refundAmount = 40m)
+    private static Fixture BuildCashFixture(
+        Guid cashSessionId,
+        decimal creditAmount = 100m,
+        decimal refundAmount = 40m
+    )
     {
         var credit = SupplierCredit.CreateFromReturn(
             TenantId,
@@ -221,7 +225,8 @@ public sealed class ReverseSupplierCreditRefundUseCasesTests
         dto.PaymentMethodCode.Should().Be(f.OriginalTx.PaymentMethodCode);
         dto.Amount.Should().Be(f.OriginalTx.Amount);
         dto.CurrencyCode.Should().Be(f.OriginalTx.CurrencyCode);
-        dto.ExternalReference.Should().BeNull("la fila de reversa nunca lleva ExternalReference (§6.4quinquies)");
+        dto.ExternalReference.Should()
+            .BeNull("la fila de reversa nunca lleva ExternalReference (§6.4quinquies)");
         dto.Reason.Should().Be("Motivo de reversa");
     }
 
@@ -231,11 +236,11 @@ public sealed class ReverseSupplierCreditRefundUseCasesTests
         var session = BuildOpenCashSession();
         var f = BuildCashFixture(session.Id, refundAmount: 40m);
         var m = new Mocks(f);
-        m.CashSessionRepo
-            .Setup(r => r.GetByIdAsync(TenantId, session.Id, It.IsAny<CancellationToken>()))
+        m.CashSessionRepo.Setup(r =>
+                r.GetByIdAsync(TenantId, session.Id, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(session);
-        m.CashSessionRepo
-            .Setup(r =>
+        m.CashSessionRepo.Setup(r =>
                 r.GetOpenByCashRegisterForShareAsync(
                     TenantId,
                     CashRegisterId,
@@ -258,7 +263,9 @@ public sealed class ReverseSupplierCreditRefundUseCasesTests
 
         result.IsSuccess.Should().BeTrue(result.Error);
         result.Value!.CashMovementId.Should().NotBeNull();
-        session.Movements.Should().HaveCount(2, "apertura + el movimiento compensatorio de la reversa");
+        session
+            .Movements.Should()
+            .HaveCount(2, "apertura + el movimiento compensatorio de la reversa");
     }
 
     [Fact]
@@ -267,11 +274,15 @@ public sealed class ReverseSupplierCreditRefundUseCasesTests
         var f = BuildCashFixture(Guid.NewGuid(), refundAmount: 40m);
         var m = new Mocks(f);
         var closedSession = BuildOpenCashSession();
-        m.CashSessionRepo
-            .Setup(r => r.GetByIdAsync(TenantId, f.OriginalTx.CashSessionId!.Value, It.IsAny<CancellationToken>()))
+        m.CashSessionRepo.Setup(r =>
+                r.GetByIdAsync(
+                    TenantId,
+                    f.OriginalTx.CashSessionId!.Value,
+                    It.IsAny<CancellationToken>()
+                )
+            )
             .ReturnsAsync(closedSession);
-        m.CashSessionRepo
-            .Setup(r =>
+        m.CashSessionRepo.Setup(r =>
                 r.GetOpenByCashRegisterForShareAsync(
                     TenantId,
                     CashRegisterId,
@@ -294,7 +305,8 @@ public sealed class ReverseSupplierCreditRefundUseCasesTests
 
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Contain("sesión de caja");
-        f.Credit.AvailableAmount.Should().Be(60m, "el crédito no debe mutar cuando la reversa queda bloqueada");
+        f.Credit.AvailableAmount.Should()
+            .Be(60m, "el crédito no debe mutar cuando la reversa queda bloqueada");
     }
 
     [Fact]
@@ -303,8 +315,7 @@ public sealed class ReverseSupplierCreditRefundUseCasesTests
         var f = BuildBankFixture();
         var m = new Mocks(f);
         var missingId = Guid.NewGuid();
-        m.CreditRepo
-            .Setup(r => r.GetByIdAsync(TenantId, missingId, It.IsAny<CancellationToken>()))
+        m.CreditRepo.Setup(r => r.GetByIdAsync(TenantId, missingId, It.IsAny<CancellationToken>()))
             .ReturnsAsync((SupplierCredit?)null);
         var handler = m.BuildHandler();
 
@@ -354,7 +365,8 @@ public sealed class ReverseSupplierCreditRefundUseCasesTests
         );
 
         second.IsSuccess.Should().BeFalse();
-        f.Credit.Movements.Should().HaveCount(2, "1 refund (fixture) + 1 reversa — la segunda no debe agregar nada");
+        f.Credit.Movements.Should()
+            .HaveCount(2, "1 refund (fixture) + 1 reversa — la segunda no debe agregar nada");
     }
 
     [Fact]
@@ -378,8 +390,7 @@ public sealed class ReverseSupplierCreditRefundUseCasesTests
         first.IsSuccess.Should().BeTrue(first.Error);
 
         var reversalMovement = f.Credit.Movements.Single(x => x.Id != f.RefundMovementId);
-        m.TxRepo
-            .Setup(r =>
+        m.TxRepo.Setup(r =>
                 r.GetBySupplierCreditMovementIdAsync(
                     TenantId,
                     reversalMovement.Id,

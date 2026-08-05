@@ -101,7 +101,14 @@ public sealed class CompanyFinancialDestinationUseCasesTests
         var accounts = new Mock<IAccountRepository>();
         var cashRegisters = new Mock<ICashRegisterRepository>();
         accounts
-            .Setup(a => a.GetByIdAsync(TenantId, CompanyId, AccountingAccountId, It.IsAny<CancellationToken>()))
+            .Setup(a =>
+                a.GetByIdAsync(
+                    TenantId,
+                    CompanyId,
+                    AccountingAccountId,
+                    It.IsAny<CancellationToken>()
+                )
+            )
             .ReturnsAsync(ActiveAccount());
         var handler = new CreateCompanyFinancialDestinationHandler(
             repo.Object,
@@ -126,7 +133,9 @@ public sealed class CompanyFinancialDestinationUseCasesTests
 
         result.IsSuccess.Should().BeTrue();
         result.Value!.Code.Should().Be("BANCO-001");
-        result.Value.DestinationTypeCode.Should().Be(nameof(FinancialDestinationTypeCode.BankAccount));
+        result
+            .Value.DestinationTypeCode.Should()
+            .Be(nameof(FinancialDestinationTypeCode.BankAccount));
         repo.Verify(
             r => r.AddAsync(It.IsAny<CompanyFinancialDestination>(), It.IsAny<CancellationToken>()),
             Times.Once
@@ -141,7 +150,14 @@ public sealed class CompanyFinancialDestinationUseCasesTests
         var accounts = new Mock<IAccountRepository>();
         var cashRegisters = new Mock<ICashRegisterRepository>();
         accounts
-            .Setup(a => a.GetByIdAsync(TenantId, CompanyId, AccountingAccountId, It.IsAny<CancellationToken>()))
+            .Setup(a =>
+                a.GetByIdAsync(
+                    TenantId,
+                    CompanyId,
+                    AccountingAccountId,
+                    It.IsAny<CancellationToken>()
+                )
+            )
             .ReturnsAsync(ActiveAccount());
         cashRegisters
             .Setup(c => c.GetByIdAsync(TenantId, CashRegisterId, It.IsAny<CancellationToken>()))
@@ -178,7 +194,14 @@ public sealed class CompanyFinancialDestinationUseCasesTests
         var repo = new Mock<ICompanyFinancialDestinationRepository>();
         var accounts = new Mock<IAccountRepository>();
         accounts
-            .Setup(a => a.GetByIdAsync(TenantId, CompanyId, AccountingAccountId, It.IsAny<CancellationToken>()))
+            .Setup(a =>
+                a.GetByIdAsync(
+                    TenantId,
+                    CompanyId,
+                    AccountingAccountId,
+                    It.IsAny<CancellationToken>()
+                )
+            )
             .ReturnsAsync(ActiveAccount());
         var handler = new CreateCompanyFinancialDestinationHandler(
             repo.Object,
@@ -215,7 +238,14 @@ public sealed class CompanyFinancialDestinationUseCasesTests
         var repo = new Mock<ICompanyFinancialDestinationRepository>();
         var accounts = new Mock<IAccountRepository>();
         accounts
-            .Setup(a => a.GetByIdAsync(TenantId, CompanyId, AccountingAccountId, It.IsAny<CancellationToken>()))
+            .Setup(a =>
+                a.GetByIdAsync(
+                    TenantId,
+                    CompanyId,
+                    AccountingAccountId,
+                    It.IsAny<CancellationToken>()
+                )
+            )
             .ReturnsAsync(ActiveAccount());
         var handler = new CreateCompanyFinancialDestinationHandler(
             repo.Object,
@@ -248,7 +278,14 @@ public sealed class CompanyFinancialDestinationUseCasesTests
         var repo = new Mock<ICompanyFinancialDestinationRepository>();
         var accounts = new Mock<IAccountRepository>();
         accounts
-            .Setup(a => a.GetByIdAsync(TenantId, CompanyId, AccountingAccountId, It.IsAny<CancellationToken>()))
+            .Setup(a =>
+                a.GetByIdAsync(
+                    TenantId,
+                    CompanyId,
+                    AccountingAccountId,
+                    It.IsAny<CancellationToken>()
+                )
+            )
             .ReturnsAsync(ActiveAccount());
         var handler = new CreateCompanyFinancialDestinationHandler(
             repo.Object,
@@ -272,7 +309,13 @@ public sealed class CompanyFinancialDestinationUseCasesTests
         await handler.Handle(cmd, CancellationToken.None);
 
         accounts.Verify(
-            a => a.GetByIdAsync(TenantId, CompanyId, AccountingAccountId, It.IsAny<CancellationToken>()),
+            a =>
+                a.GetByIdAsync(
+                    TenantId,
+                    CompanyId,
+                    AccountingAccountId,
+                    It.IsAny<CancellationToken>()
+                ),
             Times.Once
         );
     }
@@ -283,7 +326,14 @@ public sealed class CompanyFinancialDestinationUseCasesTests
         var repo = new Mock<ICompanyFinancialDestinationRepository>();
         var accounts = new Mock<IAccountRepository>();
         accounts
-            .Setup(a => a.GetByIdAsync(TenantId, CompanyId, AccountingAccountId, It.IsAny<CancellationToken>()))
+            .Setup(a =>
+                a.GetByIdAsync(
+                    TenantId,
+                    CompanyId,
+                    AccountingAccountId,
+                    It.IsAny<CancellationToken>()
+                )
+            )
             .ReturnsAsync((Account?)null);
         var handler = new CreateCompanyFinancialDestinationHandler(
             repo.Object,
@@ -317,7 +367,14 @@ public sealed class CompanyFinancialDestinationUseCasesTests
         var repo = new Mock<ICompanyFinancialDestinationRepository>();
         var accounts = new Mock<IAccountRepository>();
         accounts
-            .Setup(a => a.GetByIdAsync(TenantId, CompanyId, AccountingAccountId, It.IsAny<CancellationToken>()))
+            .Setup(a =>
+                a.GetByIdAsync(
+                    TenantId,
+                    CompanyId,
+                    AccountingAccountId,
+                    It.IsAny<CancellationToken>()
+                )
+            )
             .ReturnsAsync(ActiveAccount(allowsPosting: false));
         var handler = new CreateCompanyFinancialDestinationHandler(
             repo.Object,
@@ -351,7 +408,14 @@ public sealed class CompanyFinancialDestinationUseCasesTests
         var repo = new Mock<ICompanyFinancialDestinationRepository>();
         var accounts = new Mock<IAccountRepository>();
         accounts
-            .Setup(a => a.GetByIdAsync(TenantId, CompanyId, AccountingAccountId, It.IsAny<CancellationToken>()))
+            .Setup(a =>
+                a.GetByIdAsync(
+                    TenantId,
+                    CompanyId,
+                    AccountingAccountId,
+                    It.IsAny<CancellationToken>()
+                )
+            )
             .ReturnsAsync(ActiveAccount());
         var cashRegisters = new Mock<ICashRegisterRepository>();
         cashRegisters
@@ -474,7 +538,9 @@ public sealed class CompanyFinancialDestinationUseCasesTests
             .ReturnsAsync(destination);
         var accounts = new Mock<IAccountRepository>();
         accounts
-            .Setup(a => a.GetByIdAsync(TenantId, CompanyId, newAccountId, It.IsAny<CancellationToken>()))
+            .Setup(a =>
+                a.GetByIdAsync(TenantId, CompanyId, newAccountId, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(ActiveAccount());
         var handler = new ChangeCompanyFinancialDestinationAccountingAccountHandler(
             repo.Object,
@@ -510,7 +576,9 @@ public sealed class CompanyFinancialDestinationUseCasesTests
             .ReturnsAsync(destination);
         var accounts = new Mock<IAccountRepository>();
         accounts
-            .Setup(a => a.GetByIdAsync(TenantId, CompanyId, newAccountId, It.IsAny<CancellationToken>()))
+            .Setup(a =>
+                a.GetByIdAsync(TenantId, CompanyId, newAccountId, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(ActiveAccount(isActive: false));
         var handler = new ChangeCompanyFinancialDestinationAccountingAccountHandler(
             repo.Object,
@@ -667,9 +735,6 @@ public sealed class CompanyFinancialDestinationUseCasesTests
         );
 
         result.IsSuccess.Should().BeTrue();
-        repo.Verify(
-            r => r.GetListAsync(TenantId, true, It.IsAny<CancellationToken>()),
-            Times.Once
-        );
+        repo.Verify(r => r.GetListAsync(TenantId, true, It.IsAny<CancellationToken>()), Times.Once);
     }
 }

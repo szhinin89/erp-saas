@@ -113,9 +113,7 @@ public sealed class PurchaseReturnDraftUseCasesTests
             clientRequestId ?? Guid.NewGuid(),
             invoice.Id,
             "Producto en mal estado",
-            invoice
-                .Lines.Select(l => new PurchaseReturnDraftLineInput(l.Id, l.Quantity))
-                .ToList()
+            invoice.Lines.Select(l => new PurchaseReturnDraftLineInput(l.Id, l.Quantity)).ToList()
         );
 
     // ── Creación válida ────────────────────────────────────────────────
@@ -428,7 +426,10 @@ public sealed class PurchaseReturnDraftUseCasesTests
             invoice.Id,
             SupplierId,
             "Motivo",
-            new[] { new PurchaseReturn.DraftLineInput(line.Id, line.ItemId!.Value, 1, WarehouseId) },
+            new[]
+            {
+                new PurchaseReturn.DraftLineInput(line.Id, line.ItemId!.Value, 1, WarehouseId),
+            },
             UserId,
             clientRequestId,
             hash
@@ -538,7 +539,10 @@ public sealed class PurchaseReturnDraftUseCasesTests
             invoice.Id,
             SupplierId,
             "Motivo",
-            new[] { new PurchaseReturn.DraftLineInput(line.Id, line.ItemId!.Value, 1, WarehouseId) },
+            new[]
+            {
+                new PurchaseReturn.DraftLineInput(line.Id, line.ItemId!.Value, 1, WarehouseId),
+            },
             UserId,
             clientRequestId,
             hash
@@ -548,13 +552,22 @@ public sealed class PurchaseReturnDraftUseCasesTests
             .Setup(r => r.GetByIdAsync(TenantId, invoice.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(invoice);
         var dbEx = new Mock<IDatabaseExceptionTranslator>();
-        var info = new DatabaseUniqueViolationInfo("23505", "uq_purchase_returns_tenant_create_client_request_id", "purchase_returns", null);
+        var info = new DatabaseUniqueViolationInfo(
+            "23505",
+            "uq_purchase_returns_tenant_create_client_request_id",
+            "purchase_returns",
+            null
+        );
         dbEx.Setup(d => d.TryGetUniqueViolation(It.IsAny<Exception>(), out info)).Returns(true);
 
         var callCount = 0;
         returnRepo
             .SetupSequence(r =>
-                r.GetByCreateClientRequestIdAsync(TenantId, clientRequestId, It.IsAny<CancellationToken>())
+                r.GetByCreateClientRequestIdAsync(
+                    TenantId,
+                    clientRequestId,
+                    It.IsAny<CancellationToken>()
+                )
             )
             .ReturnsAsync((PurchaseReturn?)null) // primera búsqueda: no existe todavía
             .ReturnsAsync(winner); // reconsulta tras la violación única: la otra transacción ya ganó
@@ -602,7 +615,10 @@ public sealed class PurchaseReturnDraftUseCasesTests
             invoice.Id,
             SupplierId,
             "Motivo",
-            new[] { new PurchaseReturn.DraftLineInput(line.Id, line.ItemId!.Value, 1, WarehouseId) },
+            new[]
+            {
+                new PurchaseReturn.DraftLineInput(line.Id, line.ItemId!.Value, 1, WarehouseId),
+            },
             UserId,
             Guid.NewGuid(),
             "hash"
@@ -660,7 +676,10 @@ public sealed class PurchaseReturnDraftUseCasesTests
             invoice.Id,
             SupplierId,
             "Motivo",
-            new[] { new PurchaseReturn.DraftLineInput(line.Id, line.ItemId!.Value, 1, WarehouseId) },
+            new[]
+            {
+                new PurchaseReturn.DraftLineInput(line.Id, line.ItemId!.Value, 1, WarehouseId),
+            },
             UserId,
             Guid.NewGuid(),
             "hash"
@@ -680,7 +699,9 @@ public sealed class PurchaseReturnDraftUseCasesTests
         );
 
         result.IsSuccess.Should().BeTrue();
-        purchaseReturn.Status.Should().Be(Domain.Modules.Purchases.Enums.PurchaseReturnStatus.Cancelled);
+        purchaseReturn
+            .Status.Should()
+            .Be(Domain.Modules.Purchases.Enums.PurchaseReturnStatus.Cancelled);
         repo.Verify(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
     }
 }

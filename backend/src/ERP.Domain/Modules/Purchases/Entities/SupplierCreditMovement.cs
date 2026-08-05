@@ -64,9 +64,12 @@ public sealed class SupplierCreditMovement : IMustHaveTenant
 
         var requiresTarget =
             movementType
-                is SupplierCreditMovementType.Application
-                    or SupplierCreditMovementType.ReversalOfApplication;
-        if (requiresTarget && (targetPurchasePayableId is null || targetPurchasePayableId == Guid.Empty))
+            is SupplierCreditMovementType.Application
+                or SupplierCreditMovementType.ReversalOfApplication;
+        if (
+            requiresTarget
+            && (targetPurchasePayableId is null || targetPurchasePayableId == Guid.Empty)
+        )
             throw new ArgumentException(
                 "La cuenta por pagar destino es obligatoria para este tipo de movimiento.",
                 nameof(targetPurchasePayableId)
@@ -79,9 +82,12 @@ public sealed class SupplierCreditMovement : IMustHaveTenant
 
         var requiresReversalRef =
             movementType
-                is SupplierCreditMovementType.ReversalOfApplication
-                    or SupplierCreditMovementType.ReversalOfRefund;
-        if (requiresReversalRef && (reversalOfMovementId is null || reversalOfMovementId == Guid.Empty))
+            is SupplierCreditMovementType.ReversalOfApplication
+                or SupplierCreditMovementType.ReversalOfRefund;
+        if (
+            requiresReversalRef
+            && (reversalOfMovementId is null || reversalOfMovementId == Guid.Empty)
+        )
             throw new ArgumentException(
                 "El movimiento original a revertir es obligatorio para una reversa.",
                 nameof(reversalOfMovementId)

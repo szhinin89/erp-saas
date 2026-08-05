@@ -55,7 +55,12 @@ public sealed class AuthorizePurchaseReturnStockMovementSequenceTests : IAsyncLi
         await db.Database.MigrateAsync();
 
         var tenant = Tenant.Create("Test Tenant", $"test-{Guid.NewGuid():N}"[..16], _userId);
-        var company = Company.CreateManaged(tenant.Id, "1790012345001", "Test S.A.", createdBy: _userId);
+        var company = Company.CreateManaged(
+            tenant.Id,
+            "1790012345001",
+            "Test S.A.",
+            createdBy: _userId
+        );
         db.Tenants.Add(tenant);
         db.Companies.Add(company);
         await db.SaveChangesAsync();
@@ -247,8 +252,14 @@ public sealed class AuthorizePurchaseReturnStockMovementSequenceTests : IAsyncLi
         );
         await stockRepo.SaveChangesWithSequenceRetryAsync();
 
-        var returnRepo = new PurchaseReturnRepository(db, new FixedCurrentCompany(() => _companyId));
-        var invoiceRepo = new PurchaseInvoiceRepository(db, new FixedCurrentCompany(() => _companyId));
+        var returnRepo = new PurchaseReturnRepository(
+            db,
+            new FixedCurrentCompany(() => _companyId)
+        );
+        var invoiceRepo = new PurchaseInvoiceRepository(
+            db,
+            new FixedCurrentCompany(() => _companyId)
+        );
         var createHandler = new CreatePurchaseReturnDraftHandler(
             returnRepo,
             invoiceRepo,
@@ -281,15 +292,24 @@ public sealed class AuthorizePurchaseReturnStockMovementSequenceTests : IAsyncLi
     )
     {
         await using var db = CreateContext();
-        var returnRepo = new PurchaseReturnRepository(db, new FixedCurrentCompany(() => _companyId));
-        var invoiceRepo = new PurchaseInvoiceRepository(db, new FixedCurrentCompany(() => _companyId));
+        var returnRepo = new PurchaseReturnRepository(
+            db,
+            new FixedCurrentCompany(() => _companyId)
+        );
+        var invoiceRepo = new PurchaseInvoiceRepository(
+            db,
+            new FixedCurrentCompany(() => _companyId)
+        );
         var sequenceRepo = new PurchaseReturnSequenceRepository(db);
         var stockRepo = new StockRepository(
             db,
             new FixedCurrentCompany(() => _companyId),
             new RealDatabaseExceptionTranslator()
         );
-        var creditRepo = new SupplierCreditRepository(db, new FixedCurrentCompany(() => _companyId));
+        var creditRepo = new SupplierCreditRepository(
+            db,
+            new FixedCurrentCompany(() => _companyId)
+        );
         var uow = new UnitOfWork(db);
 
         var handler = new AuthorizePurchaseReturnHandler(
@@ -313,7 +333,11 @@ public sealed class AuthorizePurchaseReturnStockMovementSequenceTests : IAsyncLi
             return (false, null);
 
         await using var verify = CreateContext();
-        var reloaded = await returnRepo.GetByIdAsync(_tenantId, purchaseReturnId, CancellationToken.None);
+        var reloaded = await returnRepo.GetByIdAsync(
+            _tenantId,
+            purchaseReturnId,
+            CancellationToken.None
+        );
         return (true, reloaded);
     }
 
@@ -336,7 +360,12 @@ public sealed class AuthorizePurchaseReturnStockMovementSequenceTests : IAsyncLi
 
         // Ninguna autorización debe fallar por el conflicto de secuencia — el retry lo absorbe
         // por completo dentro de la misma transacción de Authorize (MaxSequenceRetryAttempts=3).
-        results.Should().OnlyContain(r => r.Success, "el conflicto de SequenceNumber debe resolverse transparentemente, nunca propagarse como fallo de negocio");
+        results
+            .Should()
+            .OnlyContain(
+                r => r.Success,
+                "el conflicto de SequenceNumber debe resolverse transparentemente, nunca propagarse como fallo de negocio"
+            );
 
         await using var verify = CreateContext();
 
@@ -344,7 +373,9 @@ public sealed class AuthorizePurchaseReturnStockMovementSequenceTests : IAsyncLi
         // autorizada) más los 4 de ingreso inicial = 8 filas totales para este Item/bodega.
         var allMovements = await verify
             .Set<ERP.Domain.Modules.Inventory.Entities.StockMovement>()
-            .Where(m => m.TenantId == _tenantId && m.ProductId == _itemId && m.WarehouseId == _warehouseId)
+            .Where(m =>
+                m.TenantId == _tenantId && m.ProductId == _itemId && m.WarehouseId == _warehouseId
+            )
             .ToListAsync();
         allMovements.Should().HaveCount(8);
 
@@ -353,7 +384,12 @@ public sealed class AuthorizePurchaseReturnStockMovementSequenceTests : IAsyncLi
 
         // La secuencia queda contigua 1..8, sin huecos dejados por intentos revertidos.
         var ordered = allMovements.Select(m => m.SequenceNumber).OrderBy(s => s).ToList();
-        ordered.Should().BeEquivalentTo(Enumerable.Range(1, 8).Select(i => (long)i), o => o.WithStrictOrdering());
+        ordered
+            .Should()
+            .BeEquivalentTo(
+                Enumerable.Range(1, 8).Select(i => (long)i),
+                o => o.WithStrictOrdering()
+            );
 
         // Consulta directa de devolución: sin doble numeración de ReturnNumber tampoco.
         var returnNumbers = await verify

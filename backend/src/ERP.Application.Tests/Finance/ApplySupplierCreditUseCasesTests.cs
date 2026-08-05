@@ -24,7 +24,11 @@ public sealed class ApplySupplierCreditUseCasesTests
     private static readonly Guid PurchaseInvoiceId = Guid.NewGuid();
     private static readonly Guid PayableId = Guid.NewGuid();
 
-    private sealed record Fixture(SupplierCredit Credit, PurchasePayable Payable, PurchaseInvoice Invoice);
+    private sealed record Fixture(
+        SupplierCredit Credit,
+        PurchasePayable Payable,
+        PurchaseInvoice Invoice
+    );
 
     private static Fixture BuildFixture(
         decimal creditAmount = 100m,
@@ -90,7 +94,9 @@ public sealed class ApplySupplierCreditUseCasesTests
         public Mocks(Fixture f)
         {
             PayableRepo
-                .Setup(r => r.GetPurchaseInvoiceIdAsync(TenantId, PayableId, It.IsAny<CancellationToken>()))
+                .Setup(r =>
+                    r.GetPurchaseInvoiceIdAsync(TenantId, PayableId, It.IsAny<CancellationToken>())
+                )
                 .ReturnsAsync(PurchaseInvoiceId);
             PayableRepo
                 .Setup(r => r.GetByIdAsync(TenantId, PayableId, It.IsAny<CancellationToken>()))
@@ -99,7 +105,9 @@ public sealed class ApplySupplierCreditUseCasesTests
                 .Setup(r => r.GetByIdAsync(TenantId, f.Credit.Id, It.IsAny<CancellationToken>()))
                 .ReturnsAsync(f.Credit);
             InvoiceRepo
-                .Setup(r => r.GetByIdAsync(TenantId, PurchaseInvoiceId, It.IsAny<CancellationToken>()))
+                .Setup(r =>
+                    r.GetByIdAsync(TenantId, PurchaseInvoiceId, It.IsAny<CancellationToken>())
+                )
                 .ReturnsAsync(f.Invoice);
 
             Uow.SetupGet(u => u.HasActiveTransaction).Returns(true);
@@ -207,8 +215,9 @@ public sealed class ApplySupplierCreditUseCasesTests
         var f = BuildFixture();
         var m = new Mocks(f);
         var missingCreditId = Guid.NewGuid();
-        m.CreditRepo
-            .Setup(r => r.GetByIdAsync(TenantId, missingCreditId, It.IsAny<CancellationToken>()))
+        m.CreditRepo.Setup(r =>
+                r.GetByIdAsync(TenantId, missingCreditId, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync((SupplierCredit?)null);
         var handler = m.BuildHandler();
 
@@ -219,7 +228,8 @@ public sealed class ApplySupplierCreditUseCasesTests
 
         result.IsSuccess.Should().BeFalse();
         result.Code.Should().Be(ApiResponseCodes.Common.NotFound);
-        f.Payable.SupplierCreditAppliedAmount.Should().Be(0m, "no debe mutar el destino cuando el crédito no existe");
+        f.Payable.SupplierCreditAppliedAmount.Should()
+            .Be(0m, "no debe mutar el destino cuando el crédito no existe");
         m.Uow.Verify(u => u.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
         m.Uow.Verify(u => u.CommitAsync(It.IsAny<CancellationToken>()), Times.Never);
     }
@@ -245,8 +255,10 @@ public sealed class ApplySupplierCreditUseCasesTests
 
         retry.IsSuccess.Should().BeTrue();
         retry.Value!.AvailableAmount.Should().Be(40m);
-        f.Credit.Movements.Should().HaveCount(1, "no debe duplicar el movimiento en un reintento idempotente");
-        f.Payable.SupplierCreditAppliedAmount.Should().Be(60m, "no debe duplicar el efecto sobre el destino");
+        f.Credit.Movements.Should()
+            .HaveCount(1, "no debe duplicar el movimiento en un reintento idempotente");
+        f.Payable.SupplierCreditAppliedAmount.Should()
+            .Be(60m, "no debe duplicar el efecto sobre el destino");
     }
 
     [Fact]
@@ -279,12 +291,18 @@ public sealed class ApplySupplierCreditUseCasesTests
         var f = BuildFixture();
         var m = new Mocks(f);
         var sequence = new List<string>();
-        m.ReturnRepo
-            .Setup(r => r.AcquireFinancialLockAsync(TenantId, PurchaseInvoiceId, It.IsAny<CancellationToken>()))
+        m.ReturnRepo.Setup(r =>
+                r.AcquireFinancialLockAsync(
+                    TenantId,
+                    PurchaseInvoiceId,
+                    It.IsAny<CancellationToken>()
+                )
+            )
             .Callback(() => sequence.Add("LockA"))
             .Returns(Task.CompletedTask);
-        m.CreditRepo
-            .Setup(r => r.AcquireLockAsync(TenantId, f.Credit.Id, It.IsAny<CancellationToken>()))
+        m.CreditRepo.Setup(r =>
+                r.AcquireLockAsync(TenantId, f.Credit.Id, It.IsAny<CancellationToken>())
+            )
             .Callback(() => sequence.Add("LockB"))
             .Returns(Task.CompletedTask);
         var handler = m.BuildHandler();

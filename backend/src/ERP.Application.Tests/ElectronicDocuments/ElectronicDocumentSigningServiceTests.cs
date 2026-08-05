@@ -1,3 +1,4 @@
+using System.Security.Cryptography;
 using ERP.Application.Common.Interfaces;
 using ERP.Application.Common.Interfaces.SRI;
 using ERP.Application.Modules.ElectronicDocuments.DTOs;
@@ -7,7 +8,6 @@ using ERP.Domain.Configuration.Interfaces;
 using ERP.Domain.Modules.ElectronicDocuments.Enums;
 using FluentAssertions;
 using Microsoft.Extensions.Logging.Abstractions;
-using System.Security.Cryptography;
 
 namespace ERP.Application.Tests.ElectronicDocuments;
 

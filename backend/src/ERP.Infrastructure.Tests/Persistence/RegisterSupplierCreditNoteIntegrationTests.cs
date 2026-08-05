@@ -54,7 +54,12 @@ public sealed class RegisterSupplierCreditNoteIntegrationTests : IAsyncLifetime
         await db.Database.MigrateAsync();
 
         var tenant = Tenant.Create("Test Tenant", $"test-{Guid.NewGuid():N}"[..16], _userId);
-        var company = Company.CreateManaged(tenant.Id, "1790012345001", "Test S.A.", createdBy: _userId);
+        var company = Company.CreateManaged(
+            tenant.Id,
+            "1790012345001",
+            "Test S.A.",
+            createdBy: _userId
+        );
         db.Tenants.Add(tenant);
         db.Companies.Add(company);
         await db.SaveChangesAsync();
@@ -93,7 +98,14 @@ public sealed class RegisterSupplierCreditNoteIntegrationTests : IAsyncLifetime
         await db.SaveChangesAsync();
         _branchId = branch.Id;
 
-        var supplier = BusinessPartner.Create(_tenantId, "05", "1710034065", 1, "Proveedor Test", _userId);
+        var supplier = BusinessPartner.Create(
+            _tenantId,
+            "05",
+            "1710034065",
+            1,
+            "Proveedor Test",
+            _userId
+        );
         db.BusinessPartners.Add(supplier);
         var paymentTerm = PaymentTerm.Create(
             _tenantId,
@@ -151,8 +163,12 @@ public sealed class RegisterSupplierCreditNoteIntegrationTests : IAsyncLifetime
                 saleVatCode: "10",
                 purchaseVatCode: "10"
             ),
-            saleConfig: ERP.Domain.Modules.Items.ValueObjects.ItemSaleConfig.Create(isForSale: true),
-            stockConfig: ERP.Domain.Modules.Items.ValueObjects.ItemStockConfig.Create(tracksStock: true),
+            saleConfig: ERP.Domain.Modules.Items.ValueObjects.ItemSaleConfig.Create(
+                isForSale: true
+            ),
+            stockConfig: ERP.Domain.Modules.Items.ValueObjects.ItemStockConfig.Create(
+                tracksStock: true
+            ),
             createdBy: _userId
         );
         db.Set<ERP.Domain.Modules.Items.Entities.Item>().Add(item);
@@ -302,7 +318,10 @@ public sealed class RegisterSupplierCreditNoteIntegrationTests : IAsyncLifetime
             new PurchaseReturnRepository(db, new FixedCurrentCompany(() => _companyId)),
             new PurchaseInvoiceRepository(db, new FixedCurrentCompany(() => _companyId)),
             new RendezvousReceptionRepository(
-                new PurchaseReceptionDocumentRepository(db, new FixedCurrentCompany(() => _companyId)),
+                new PurchaseReceptionDocumentRepository(
+                    db,
+                    new FixedCurrentCompany(() => _companyId)
+                ),
                 rendezvous
             ),
             new UnitOfWork(db),
@@ -343,11 +362,26 @@ public sealed class RegisterSupplierCreditNoteIntegrationTests : IAsyncLifetime
         var return2Id = await SeedAuthorizedReturnAsync(100m);
         var rendezvous = new DocumentReuseRendezvous(participants: 2);
 
-        var task1 = ExecuteWithRendezvousAsync(return1Id, sharedAccessKey, 100m, Guid.NewGuid(), rendezvous);
-        var task2 = ExecuteWithRendezvousAsync(return2Id, sharedAccessKey, 100m, Guid.NewGuid(), rendezvous);
+        var task1 = ExecuteWithRendezvousAsync(
+            return1Id,
+            sharedAccessKey,
+            100m,
+            Guid.NewGuid(),
+            rendezvous
+        );
+        var task2 = ExecuteWithRendezvousAsync(
+            return2Id,
+            sharedAccessKey,
+            100m,
+            Guid.NewGuid(),
+            rendezvous
+        );
         var results = await Task.WhenAll(task1, task2);
 
-        results.Count(r => r.Success).Should().Be(1, "solo un intento puede registrar el AccessKey");
+        results
+            .Count(r => r.Success)
+            .Should()
+            .Be(1, "solo un intento puede registrar el AccessKey");
         var loser = results.Single(r => !r.Success);
         loser.Error.Should().Contain("clave de acceso");
     }

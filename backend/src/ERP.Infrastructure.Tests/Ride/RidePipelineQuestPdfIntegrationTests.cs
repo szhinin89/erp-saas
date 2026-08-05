@@ -1,3 +1,4 @@
+using System.Text;
 using ERP.Application.Common;
 using ERP.Application.Modules.ElectronicDocuments.DTOs;
 using ERP.Application.Modules.ElectronicDocuments.XmlBuilders;
@@ -14,7 +15,6 @@ using ERP.Domain.Modules.Ride.ValueObjects;
 using ERP.Infrastructure.Ride.Rendering;
 using FluentAssertions;
 using Moq;
-using System.Text;
 
 namespace ERP.Infrastructure.Tests.Ride;
 

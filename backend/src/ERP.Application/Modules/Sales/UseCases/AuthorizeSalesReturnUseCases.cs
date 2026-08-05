@@ -39,7 +39,8 @@ public sealed record AuthorizeSalesReturnCommand(
 
 // ── Validator ───────────────────────────────────────────────────────────
 
-public sealed class AuthorizeSalesReturnCommandValidator : AbstractValidator<AuthorizeSalesReturnCommand>
+public sealed class AuthorizeSalesReturnCommandValidator
+    : AbstractValidator<AuthorizeSalesReturnCommand>
 {
     public AuthorizeSalesReturnCommandValidator()
     {
@@ -241,8 +242,9 @@ public sealed class AuthorizeSalesReturnHandler
             if (invoice.EmissionPointId is { } emissionPointId)
             {
                 var ep = await _epRepo.GetByIdAsync(emissionPointId, tid, ct);
-                var est =
-                    ep is null ? null : await _estRepo.GetByIdAsync(tid, ep.EstablishmentId, ct);
+                var est = ep is null
+                    ? null
+                    : await _estRepo.GetByIdAsync(tid, ep.EstablishmentId, ct);
                 if (ep is not null && est is not null)
                 {
                     var sequential = await _seqRepo.CaptureNextAsync(

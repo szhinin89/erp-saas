@@ -46,12 +46,19 @@ public sealed class SupplierCreditController : ControllerBase
     /// <response code="200">Listado paginado.</response>
     [HttpGet]
     [Authorize(Policy = $"perm:{FinancePermissions.View}")]
-    [ProducesResponseType(typeof(ApiResponse<SupplierCreditListResultDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(
+        typeof(ApiResponse<SupplierCreditListResultDto>),
+        StatusCodes.Status200OK
+    )]
     public async Task<IActionResult> GetList(
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = 20,
         CancellationToken ct = default
-    ) => this.ToOkOrBadRequest(await _mediator.Send(new GetSupplierCreditListQuery(page, pageSize), ct), "OK");
+    ) =>
+        this.ToOkOrBadRequest(
+            await _mediator.Send(new GetSupplierCreditListQuery(page, pageSize), ct),
+            "OK"
+        );
 
     // ══════════════════════════════════════════════════════════════════════
     // APLICACIÓN
@@ -136,7 +143,10 @@ public sealed class SupplierCreditController : ControllerBase
     /// </response>
     [HttpPost("{id:guid}/refund")]
     [Authorize(Policy = $"perm:{FinancePermissions.Update}")]
-    [ProducesResponseType(typeof(ApiResponse<SupplierCreditRefundTransactionDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(
+        typeof(ApiResponse<SupplierCreditRefundTransactionDto>),
+        StatusCodes.Status200OK
+    )]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status422UnprocessableEntity)]
     public async Task<IActionResult> Refund(
@@ -165,7 +175,10 @@ public sealed class SupplierCreditController : ControllerBase
     /// <response code="422">Ya revertido, sesión de caja no disponible, o conflicto de idempotencia.</response>
     [HttpPost("{id:guid}/refund/{movementId:guid}/reverse")]
     [Authorize(Policy = $"perm:{FinancePermissions.Update}")]
-    [ProducesResponseType(typeof(ApiResponse<SupplierCreditRefundTransactionDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(
+        typeof(ApiResponse<SupplierCreditRefundTransactionDto>),
+        StatusCodes.Status200OK
+    )]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status422UnprocessableEntity)]
     public async Task<IActionResult> ReverseRefund(

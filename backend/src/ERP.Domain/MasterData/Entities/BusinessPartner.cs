@@ -51,10 +51,7 @@ public sealed class BusinessPartner : AuditableEntity, ITenantScopedEntity, ISys
         if (createdBy == Guid.Empty)
             throw new ArgumentException("CreatedBy es obligatorio.", nameof(createdBy));
 
-        var identification = TaxIdentification.Create(
-             identificationType,
-             identificationNumber
-         );
+        var identification = TaxIdentification.Create(identificationType, identificationNumber);
 
         var resolvedLegalEntityTypeCode = identification.ResolveLegalEntityTypeCode(
             legalEntityTypeCode

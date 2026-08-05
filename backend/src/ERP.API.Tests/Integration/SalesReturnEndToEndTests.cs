@@ -1,3 +1,8 @@
+using System.Net;
+using System.Net.Http.Headers;
+using System.Net.Http.Json;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using ERP.API.Tests.Support;
 using ERP.Domain.Access.Entities;
 using ERP.Domain.Branches.Entities;
@@ -20,11 +25,6 @@ using ERP.Infrastructure.Persistence;
 using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
-using System.Net;
-using System.Net.Http.Headers;
-using System.Net.Http.Json;
-using System.Text.Json;
-using System.Text.Json.Serialization;
 
 namespace ERP.API.Tests.Integration;
 
@@ -431,7 +431,11 @@ public sealed class SalesReturnEndToEndTests : IClassFixture<SalesReturnFlowFixt
     /// <c>ItemId</c>/<c>WarehouseId</c> reales (necesario para que la devolución posterior genere
     /// StockMovement — escenario 13). Devuelve (invoiceId, invoiceDetailId, grandTotal).
     /// </summary>
-    private async Task<(Guid InvoiceId, Guid LineId, decimal GrandTotal)> CreateAndAuthorizeInvoiceAsync(
+    private async Task<(
+        Guid InvoiceId,
+        Guid LineId,
+        decimal GrandTotal
+    )> CreateAndAuthorizeInvoiceAsync(
         decimal quantity,
         decimal unitPrice,
         Guid? paymentTermId = null
@@ -540,19 +544,28 @@ public sealed class SalesReturnEndToEndTests : IClassFixture<SalesReturnFlowFixt
         _f.SetActiveContext(userId);
         await OpenCashSessionAsync();
 
-        var (invoiceId, lineId, _) = await CreateAndAuthorizeInvoiceAsync(quantity: 4m, unitPrice: 20m);
+        var (invoiceId, lineId, _) = await CreateAndAuthorizeInvoiceAsync(
+            quantity: 4m,
+            unitPrice: 20m
+        );
 
         var response = await CreateDraftAsync(invoiceId, "Producto defectuoso", (lineId, 2m));
-        response.StatusCode.Should().Be(HttpStatusCode.Created, await response.Content.ReadAsStringAsync());
+        response
+            .StatusCode.Should()
+            .Be(HttpStatusCode.Created, await response.Content.ReadAsStringAsync());
         var draft = (
-            await response.Content.ReadFromJsonAsync<SrEnvelope<SalesReturnResponseDto>>(JsonOptions)
+            await response.Content.ReadFromJsonAsync<SrEnvelope<SalesReturnResponseDto>>(
+                JsonOptions
+            )
         )!.Data!;
 
         draft.Status.Should().Be("Draft");
         draft.SalesInvoiceId.Should().Be(invoiceId);
         draft.CustomerId.Should().Be(_f.CustomerId);
         draft.Reason.Should().Be("Producto defectuoso");
-        draft.Lines.Should().ContainSingle(l => l.OriginalInvoiceDetailId == lineId && l.Quantity == 2m);
+        draft
+            .Lines.Should()
+            .ContainSingle(l => l.OriginalInvoiceDetailId == lineId && l.Quantity == 2m);
 
         using var scope = _f.CreateDbScope();
         var db = scope.ServiceProvider.GetRequiredService<ErpDbContext>();
@@ -571,7 +584,10 @@ public sealed class SalesReturnEndToEndTests : IClassFixture<SalesReturnFlowFixt
         _f.SetActiveContext(userId);
         await OpenCashSessionAsync();
 
-        var (invoiceId, lineId, _) = await CreateAndAuthorizeInvoiceAsync(quantity: 4m, unitPrice: 20m);
+        var (invoiceId, lineId, _) = await CreateAndAuthorizeInvoiceAsync(
+            quantity: 4m,
+            unitPrice: 20m
+        );
 
         var response = await CreateDraftAsync(invoiceId, string.Empty, (lineId, 1m));
         response
@@ -586,7 +602,10 @@ public sealed class SalesReturnEndToEndTests : IClassFixture<SalesReturnFlowFixt
         _f.SetActiveContext(userId);
         await OpenCashSessionAsync();
 
-        var (invoiceId, lineId, _) = await CreateAndAuthorizeInvoiceAsync(quantity: 4m, unitPrice: 20m);
+        var (invoiceId, lineId, _) = await CreateAndAuthorizeInvoiceAsync(
+            quantity: 4m,
+            unitPrice: 20m
+        );
 
         var response = await CreateDraftAsync(invoiceId, "Cantidad excesiva", (lineId, 10m));
         response
@@ -606,7 +625,9 @@ public sealed class SalesReturnEndToEndTests : IClassFixture<SalesReturnFlowFixt
             new
             {
                 customerId = _f.CustomerId,
-                issueDate = DateOnly.FromDateTime(DateTime.UtcNow.AddDays(-1)).ToString("yyyy-MM-dd"),
+                issueDate = DateOnly
+                    .FromDateTime(DateTime.UtcNow.AddDays(-1))
+                    .ToString("yyyy-MM-dd"),
                 paymentTermId = _f.CashPaymentTermId,
                 lines = new[]
                 {
@@ -647,7 +668,10 @@ public sealed class SalesReturnEndToEndTests : IClassFixture<SalesReturnFlowFixt
         _f.SetActiveContext(userId);
         await OpenCashSessionAsync();
 
-        var (invoiceId, lineId, _) = await CreateAndAuthorizeInvoiceAsync(quantity: 5m, unitPrice: 10m);
+        var (invoiceId, lineId, _) = await CreateAndAuthorizeInvoiceAsync(
+            quantity: 5m,
+            unitPrice: 10m
+        );
 
         var createResponse = await CreateDraftAsync(invoiceId, "Cambio de cantidad", (lineId, 1m));
         var draft = (
@@ -658,11 +682,7 @@ public sealed class SalesReturnEndToEndTests : IClassFixture<SalesReturnFlowFixt
 
         var updateResponse = await _f.Client.PutAsJsonAsync(
             $"/api/v1/sales/returns/{draft.Id}",
-            new
-            {
-                id = draft.Id,
-                lines = new[] { new { invoiceDetailId = lineId, quantity = 3m } },
-            }
+            new { id = draft.Id, lines = new[] { new { invoiceDetailId = lineId, quantity = 3m } } }
         );
         updateResponse
             .StatusCode.Should()
@@ -683,7 +703,10 @@ public sealed class SalesReturnEndToEndTests : IClassFixture<SalesReturnFlowFixt
         _f.SetActiveContext(userId);
         await OpenCashSessionAsync();
 
-        var (invoiceId, lineId, _) = await CreateAndAuthorizeInvoiceAsync(quantity: 2m, unitPrice: 10m);
+        var (invoiceId, lineId, _) = await CreateAndAuthorizeInvoiceAsync(
+            quantity: 2m,
+            unitPrice: 10m
+        );
         var createResponse = await CreateDraftAsync(invoiceId, "Ya no se necesita", (lineId, 1m));
         var draft = (
             await createResponse.Content.ReadFromJsonAsync<SrEnvelope<SalesReturnResponseDto>>(
@@ -721,7 +744,10 @@ public sealed class SalesReturnEndToEndTests : IClassFixture<SalesReturnFlowFixt
         _f.SetActiveContext(userId);
         await OpenCashSessionAsync();
 
-        var (invoiceId, lineId, _) = await CreateAndAuthorizeInvoiceAsync(quantity: 2m, unitPrice: 10m);
+        var (invoiceId, lineId, _) = await CreateAndAuthorizeInvoiceAsync(
+            quantity: 2m,
+            unitPrice: 10m
+        );
         var createResponse = await CreateDraftAsync(invoiceId, "Consulta por Id", (lineId, 1m));
         var draft = (
             await createResponse.Content.ReadFromJsonAsync<SrEnvelope<SalesReturnResponseDto>>(
@@ -747,7 +773,10 @@ public sealed class SalesReturnEndToEndTests : IClassFixture<SalesReturnFlowFixt
         _f.SetActiveContext(userId);
         await OpenCashSessionAsync();
 
-        var (invoiceId, lineId, _) = await CreateAndAuthorizeInvoiceAsync(quantity: 2m, unitPrice: 10m);
+        var (invoiceId, lineId, _) = await CreateAndAuthorizeInvoiceAsync(
+            quantity: 2m,
+            unitPrice: 10m
+        );
         var createResponse = await CreateDraftAsync(invoiceId, "Listado paginado", (lineId, 1m));
         var draft = (
             await createResponse.Content.ReadFromJsonAsync<SrEnvelope<SalesReturnResponseDto>>(
@@ -789,7 +818,9 @@ public sealed class SalesReturnEndToEndTests : IClassFixture<SalesReturnFlowFixt
                 SrEnvelope<List<ReturnableLineResponseDto>>
             >(JsonOptions)
         )!.Data!;
-        before.Should().ContainSingle(l => l.InvoiceDetailId == lineId && l.RemainingQuantity == 5m);
+        before
+            .Should()
+            .ContainSingle(l => l.InvoiceDetailId == lineId && l.RemainingQuantity == 5m);
 
         // Autoriza una devolución parcial (2 de 5) y verifica que el remanente se recalcula.
         var createResponse = await CreateDraftAsync(invoiceId, "Remanente parcial", (lineId, 2m));
@@ -811,7 +842,8 @@ public sealed class SalesReturnEndToEndTests : IClassFixture<SalesReturnFlowFixt
                 SrEnvelope<List<ReturnableLineResponseDto>>
             >(JsonOptions)
         )!.Data!;
-        after.Should()
+        after
+            .Should()
             .ContainSingle(l =>
                 l.InvoiceDetailId == lineId && l.ReturnedQuantity == 2m && l.RemainingQuantity == 3m
             );
@@ -846,13 +878,15 @@ public sealed class SalesReturnEndToEndTests : IClassFixture<SalesReturnFlowFixt
             .StatusCode.Should()
             .Be(HttpStatusCode.OK, await authorizeResponse.Content.ReadAsStringAsync());
         var authorized = (
-            await authorizeResponse.Content.ReadFromJsonAsync<
-                SrEnvelope<SalesReturnResponseDto>
-            >(JsonOptions)
+            await authorizeResponse.Content.ReadFromJsonAsync<SrEnvelope<SalesReturnResponseDto>>(
+                JsonOptions
+            )
         )!.Data!;
         authorized.Status.Should().Be("Authorized");
         authorized.GrandTotal.Should().Be(grandTotal);
-        authorized.RefundAllocations.Should().ContainSingle(a => a.Method == "Cash" && a.Amount == grandTotal);
+        authorized
+            .RefundAllocations.Should()
+            .ContainSingle(a => a.Method == "Cash" && a.Amount == grandTotal);
     }
 
     [Fact]
@@ -862,7 +896,10 @@ public sealed class SalesReturnEndToEndTests : IClassFixture<SalesReturnFlowFixt
         _f.SetActiveContext(userId);
         await OpenCashSessionAsync();
 
-        var (invoiceId, lineId, _) = await CreateAndAuthorizeInvoiceAsync(quantity: 4m, unitPrice: 20m);
+        var (invoiceId, lineId, _) = await CreateAndAuthorizeInvoiceAsync(
+            quantity: 4m,
+            unitPrice: 20m
+        );
 
         var createResponse = await CreateDraftAsync(invoiceId, "Devolución parcial", (lineId, 1m));
         var draft = (
@@ -876,9 +913,9 @@ public sealed class SalesReturnEndToEndTests : IClassFixture<SalesReturnFlowFixt
         var authorizeResponse = await AuthorizeReturnAsync(draft.Id, ("Cash", 23m));
         authorizeResponse.StatusCode.Should().Be(HttpStatusCode.OK);
         var authorized = (
-            await authorizeResponse.Content.ReadFromJsonAsync<
-                SrEnvelope<SalesReturnResponseDto>
-            >(JsonOptions)
+            await authorizeResponse.Content.ReadFromJsonAsync<SrEnvelope<SalesReturnResponseDto>>(
+                JsonOptions
+            )
         )!.Data!;
         authorized.Status.Should().Be("Authorized");
         authorized.GrandTotal.Should().Be(23m);
@@ -918,7 +955,10 @@ public sealed class SalesReturnEndToEndTests : IClassFixture<SalesReturnFlowFixt
         _f.SetActiveContext(userId);
         await OpenCashSessionAsync();
 
-        var (invoiceId, lineId, _) = await CreateAndAuthorizeInvoiceAsync(quantity: 1m, unitPrice: 10m);
+        var (invoiceId, lineId, _) = await CreateAndAuthorizeInvoiceAsync(
+            quantity: 1m,
+            unitPrice: 10m
+        );
         var createResponse = await CreateDraftAsync(invoiceId, "Sin asignación", (lineId, 1m));
         var draft = (
             await createResponse.Content.ReadFromJsonAsync<SrEnvelope<SalesReturnResponseDto>>(
@@ -967,8 +1007,15 @@ public sealed class SalesReturnEndToEndTests : IClassFixture<SalesReturnFlowFixt
         _f.SetActiveContext(userId);
         await OpenCashSessionAsync();
 
-        var (invoiceId, lineId, _) = await CreateAndAuthorizeInvoiceAsync(quantity: 3m, unitPrice: 15m);
-        var createResponse = await CreateDraftAsync(invoiceId, "Verificación de Kardex", (lineId, 2m));
+        var (invoiceId, lineId, _) = await CreateAndAuthorizeInvoiceAsync(
+            quantity: 3m,
+            unitPrice: 15m
+        );
+        var createResponse = await CreateDraftAsync(
+            invoiceId,
+            "Verificación de Kardex",
+            (lineId, 2m)
+        );
         var draft = (
             await createResponse.Content.ReadFromJsonAsync<SrEnvelope<SalesReturnResponseDto>>(
                 JsonOptions
@@ -1009,7 +1056,11 @@ public sealed class SalesReturnEndToEndTests : IClassFixture<SalesReturnFlowFixt
             unitPrice: 25m
         );
         // Balance tras la venta: 200 (apertura) + grandTotal (SaleIncome).
-        var createResponse = await CreateDraftAsync(invoiceId, "Reembolso en efectivo", (lineId, 1m));
+        var createResponse = await CreateDraftAsync(
+            invoiceId,
+            "Reembolso en efectivo",
+            (lineId, 1m)
+        );
         var draft = (
             await createResponse.Content.ReadFromJsonAsync<SrEnvelope<SalesReturnResponseDto>>(
                 JsonOptions
@@ -1047,7 +1098,10 @@ public sealed class SalesReturnEndToEndTests : IClassFixture<SalesReturnFlowFixt
         var sellerId = await _f.CreateUserWithBranchAccessAsync();
         _f.SetActiveContext(sellerId);
         await OpenCashSessionAsync();
-        var (invoiceId, lineId, _) = await CreateAndAuthorizeInvoiceAsync(quantity: 1m, unitPrice: 10m);
+        var (invoiceId, lineId, _) = await CreateAndAuthorizeInvoiceAsync(
+            quantity: 1m,
+            unitPrice: 10m
+        );
 
         var operatorId = await _f.CreateUserWithBranchAccessAsync();
         _f.SetActiveContext(operatorId); // Nunca abre caja.
@@ -1063,7 +1117,10 @@ public sealed class SalesReturnEndToEndTests : IClassFixture<SalesReturnFlowFixt
         var authorizeResponse = await AuthorizeReturnAsync(draft.Id, ("Cash", draft.GrandTotal));
         authorizeResponse
             .StatusCode.Should()
-            .Be(HttpStatusCode.UnprocessableEntity, await authorizeResponse.Content.ReadAsStringAsync());
+            .Be(
+                HttpStatusCode.UnprocessableEntity,
+                await authorizeResponse.Content.ReadAsStringAsync()
+            );
 
         using var scope = _f.CreateDbScope();
         var db = scope.ServiceProvider.GetRequiredService<ErpDbContext>();
@@ -1076,7 +1133,9 @@ public sealed class SalesReturnEndToEndTests : IClassFixture<SalesReturnFlowFixt
             );
 
         var movementCount = await db.StockMovements.CountAsync(m => m.SourceDocId == draft.Id);
-        movementCount.Should().Be(0, "el rollback también debe revertir el movimiento de inventario ya aplicado");
+        movementCount
+            .Should()
+            .Be(0, "el rollback también debe revertir el movimiento de inventario ya aplicado");
     }
 
     // ══════════════════════════════════════════════════════════════════════
@@ -1099,7 +1158,9 @@ public sealed class SalesReturnEndToEndTests : IClassFixture<SalesReturnFlowFixt
         using (var preScope = _f.CreateDbScope())
         {
             var preDb = preScope.ServiceProvider.GetRequiredService<ErpDbContext>();
-            var receivable = await preDb.SalesReceivables.AsNoTracking().FirstAsync(r => r.InvoiceId == invoiceId);
+            var receivable = await preDb
+                .SalesReceivables.AsNoTracking()
+                .FirstAsync(r => r.InvoiceId == invoiceId);
             receivable.OriginalAmount.Should().Be(grandTotal);
         }
 
@@ -1110,7 +1171,10 @@ public sealed class SalesReturnEndToEndTests : IClassFixture<SalesReturnFlowFixt
             )
         )!.Data!;
 
-        var authorizeResponse = await AuthorizeReturnAsync(draft.Id, ("ReceivableCredit", draft.GrandTotal));
+        var authorizeResponse = await AuthorizeReturnAsync(
+            draft.Id,
+            ("ReceivableCredit", draft.GrandTotal)
+        );
         authorizeResponse
             .StatusCode.Should()
             .Be(HttpStatusCode.OK, await authorizeResponse.Content.ReadAsStringAsync());
@@ -1147,10 +1211,16 @@ public sealed class SalesReturnEndToEndTests : IClassFixture<SalesReturnFlowFixt
             )
         )!.Data!;
 
-        var authorizeResponse = await AuthorizeReturnAsync(draft.Id, ("ReceivableCredit", draft.GrandTotal));
+        var authorizeResponse = await AuthorizeReturnAsync(
+            draft.Id,
+            ("ReceivableCredit", draft.GrandTotal)
+        );
         authorizeResponse
             .StatusCode.Should()
-            .Be(HttpStatusCode.UnprocessableEntity, await authorizeResponse.Content.ReadAsStringAsync());
+            .Be(
+                HttpStatusCode.UnprocessableEntity,
+                await authorizeResponse.Content.ReadAsStringAsync()
+            );
     }
 
     // ══════════════════════════════════════════════════════════════════════
@@ -1169,8 +1239,15 @@ public sealed class SalesReturnEndToEndTests : IClassFixture<SalesReturnFlowFixt
         _f.SetActiveContext(userId);
         await OpenCashSessionAsync();
 
-        var (invoiceId, lineId, _) = await CreateAndAuthorizeInvoiceAsync(quantity: 1m, unitPrice: 10m);
-        var createResponse = await CreateDraftAsync(invoiceId, "Sin regla de contabilización", (lineId, 1m));
+        var (invoiceId, lineId, _) = await CreateAndAuthorizeInvoiceAsync(
+            quantity: 1m,
+            unitPrice: 10m
+        );
+        var createResponse = await CreateDraftAsync(
+            invoiceId,
+            "Sin regla de contabilización",
+            (lineId, 1m)
+        );
         var draft = (
             await createResponse.Content.ReadFromJsonAsync<SrEnvelope<SalesReturnResponseDto>>(
                 JsonOptions
@@ -1185,9 +1262,9 @@ public sealed class SalesReturnEndToEndTests : IClassFixture<SalesReturnFlowFixt
                 "la falta de PostingRule no debe revertir la autorización de la devolución"
             );
         var authorized = (
-            await authorizeResponse.Content.ReadFromJsonAsync<
-                SrEnvelope<SalesReturnResponseDto>
-            >(JsonOptions)
+            await authorizeResponse.Content.ReadFromJsonAsync<SrEnvelope<SalesReturnResponseDto>>(
+                JsonOptions
+            )
         )!.Data!;
         authorized.Status.Should().Be("Authorized");
 
@@ -1196,7 +1273,10 @@ public sealed class SalesReturnEndToEndTests : IClassFixture<SalesReturnFlowFixt
         var journalCount = await db.JournalEntries.CountAsync(j => j.SourceEventId == draft.Id);
         journalCount
             .Should()
-            .Be(0, "sin PostingRule seedeada, el posting engine responde RULE_NOT_FOUND y el translator solo loguea warning");
+            .Be(
+                0,
+                "sin PostingRule seedeada, el posting engine responde RULE_NOT_FOUND y el translator solo loguea warning"
+            );
     }
 
     // ══════════════════════════════════════════════════════════════════════
@@ -1210,7 +1290,10 @@ public sealed class SalesReturnEndToEndTests : IClassFixture<SalesReturnFlowFixt
         _f.SetActiveContext(userId);
         await OpenCashSessionAsync();
 
-        var (invoiceId, lineId, _) = await CreateAndAuthorizeInvoiceAsync(quantity: 1m, unitPrice: 10m);
+        var (invoiceId, lineId, _) = await CreateAndAuthorizeInvoiceAsync(
+            quantity: 1m,
+            unitPrice: 10m
+        );
         var createResponse = await CreateDraftAsync(invoiceId, "Nota de crédito", (lineId, 1m));
         var draft = (
             await createResponse.Content.ReadFromJsonAsync<SrEnvelope<SalesReturnResponseDto>>(
@@ -1229,7 +1312,9 @@ public sealed class SalesReturnEndToEndTests : IClassFixture<SalesReturnFlowFixt
         // El secuencial de la Nota de Crédito ("04") se congela en el propio agregado y nunca
         // colisiona con el de la Factura ("01") — mismo punto de emisión, contador independiente
         // por (EmissionPointId, DocTypeCode).
-        var persistedReturn = await db.SalesReturns.AsNoTracking().FirstAsync(r => r.Id == draft.Id);
+        var persistedReturn = await db
+            .SalesReturns.AsNoTracking()
+            .FirstAsync(r => r.Id == draft.Id);
         persistedReturn.CreditNoteDocumentNumber.Should().NotBeNullOrWhiteSpace();
         persistedReturn.CreditNoteDocumentNumber.Should().Contain(_f.EmissionPointCode);
 
@@ -1274,8 +1359,15 @@ public sealed class SalesReturnEndToEndTests : IClassFixture<SalesReturnFlowFixt
         await OpenCashSessionAsync();
 
         // ── Created + Authorized ──
-        var (invoiceId1, lineId1, _) = await CreateAndAuthorizeInvoiceAsync(quantity: 2m, unitPrice: 10m);
-        var createResponse1 = await CreateDraftAsync(invoiceId1, "Auditoría Created/Authorized", (lineId1, 1m));
+        var (invoiceId1, lineId1, _) = await CreateAndAuthorizeInvoiceAsync(
+            quantity: 2m,
+            unitPrice: 10m
+        );
+        var createResponse1 = await CreateDraftAsync(
+            invoiceId1,
+            "Auditoría Created/Authorized",
+            (lineId1, 1m)
+        );
         var draft1 = (
             await createResponse1.Content.ReadFromJsonAsync<SrEnvelope<SalesReturnResponseDto>>(
                 JsonOptions
@@ -1285,8 +1377,15 @@ public sealed class SalesReturnEndToEndTests : IClassFixture<SalesReturnFlowFixt
         authorizeResponse1.StatusCode.Should().Be(HttpStatusCode.OK);
 
         // ── Cancelled ──
-        var (invoiceId2, lineId2, _) = await CreateAndAuthorizeInvoiceAsync(quantity: 2m, unitPrice: 10m);
-        var createResponse2 = await CreateDraftAsync(invoiceId2, "Auditoría Cancelled", (lineId2, 1m));
+        var (invoiceId2, lineId2, _) = await CreateAndAuthorizeInvoiceAsync(
+            quantity: 2m,
+            unitPrice: 10m
+        );
+        var createResponse2 = await CreateDraftAsync(
+            invoiceId2,
+            "Auditoría Cancelled",
+            (lineId2, 1m)
+        );
         var draft2 = (
             await createResponse2.Content.ReadFromJsonAsync<SrEnvelope<SalesReturnResponseDto>>(
                 JsonOptions
@@ -1303,7 +1402,9 @@ public sealed class SalesReturnEndToEndTests : IClassFixture<SalesReturnFlowFixt
             .Where(a => a.SalesInvoiceId == invoiceId1)
             .ToListAsync();
         audits1.Should().Contain(a => a.Action == "Created");
-        audits1.Should().Contain(a => a.Action == "Authorized" && a.GrandTotal == draft1.GrandTotal);
+        audits1
+            .Should()
+            .Contain(a => a.Action == "Authorized" && a.GrandTotal == draft1.GrandTotal);
 
         var audits2 = await db
             .SalesReturnAudits.AsNoTracking()
@@ -1326,7 +1427,10 @@ public sealed class SalesReturnEndToEndTests : IClassFixture<SalesReturnFlowFixt
 
         // Factura con 4 unidades: dos Drafts piden 3 c/u (6 en total) — combinados exceden lo
         // vendido, así que solo uno de los dos debe poder autorizarse.
-        var (invoiceId, lineId, _) = await CreateAndAuthorizeInvoiceAsync(quantity: 4m, unitPrice: 20m);
+        var (invoiceId, lineId, _) = await CreateAndAuthorizeInvoiceAsync(
+            quantity: 4m,
+            unitPrice: 20m
+        );
 
         var draftAResponse = await CreateDraftAsync(invoiceId, "Concurrencia A", (lineId, 3m));
         var draftA = (
@@ -1349,7 +1453,9 @@ public sealed class SalesReturnEndToEndTests : IClassFixture<SalesReturnFlowFixt
         var resultB = await taskB;
 
         var statuses = new[] { resultA.StatusCode, resultB.StatusCode };
-        statuses.Should().Contain(HttpStatusCode.OK, "al menos la que cabe en el remanente debe prosperar");
+        statuses
+            .Should()
+            .Contain(HttpStatusCode.OK, "al menos la que cabe en el remanente debe prosperar");
         statuses
             .Should()
             .Contain(
@@ -1369,8 +1475,15 @@ public sealed class SalesReturnEndToEndTests : IClassFixture<SalesReturnFlowFixt
             .ToListAsync();
 
         var totalReturnedQty = authorizedReturns.SelectMany(r => r.Lines).Sum(l => l.Quantity);
-        totalReturnedQty.Should().BeLessThanOrEqualTo(4m, "nunca puede devolverse más de lo vendido");
-        authorizedReturns.Should().HaveCount(1, "de las dos autorizaciones en carrera, exactamente una debe haber prosperado");
+        totalReturnedQty
+            .Should()
+            .BeLessThanOrEqualTo(4m, "nunca puede devolverse más de lo vendido");
+        authorizedReturns
+            .Should()
+            .HaveCount(
+                1,
+                "de las dos autorizaciones en carrera, exactamente una debe haber prosperado"
+            );
     }
 }
 
@@ -1398,7 +1511,11 @@ internal sealed record SalesReturnDetailResponseDto(
     decimal Quantity
 );
 
-internal sealed record SalesReturnRefundAllocationResponseDto(Guid Id, string Method, decimal Amount);
+internal sealed record SalesReturnRefundAllocationResponseDto(
+    Guid Id,
+    string Method,
+    decimal Amount
+);
 
 internal sealed record SalesReturnResponseDto(
     Guid Id,

@@ -1,3 +1,5 @@
+using System.Net;
+using System.Text.Json;
 using ERP.API.Contracts;
 using ERP.API.Extensions;
 using ERP.Application.Common;
@@ -5,8 +7,6 @@ using ERP.Application.Common.Exceptions;
 using ERP.Domain.Exceptions;
 using FluentValidation;
 using Microsoft.EntityFrameworkCore;
-using System.Net;
-using System.Text.Json;
 
 namespace ERP.API.Middleware;
 

@@ -122,7 +122,10 @@ public sealed class SetCompanyFinancialDestinationActiveValidator
 // ── Handlers ────────────────────────────────────────────────────────────
 
 public sealed class CreateCompanyFinancialDestinationHandler
-    : IRequestHandler<CreateCompanyFinancialDestinationCommand, Result<CompanyFinancialDestinationDto>>
+    : IRequestHandler<
+        CreateCompanyFinancialDestinationCommand,
+        Result<CompanyFinancialDestinationDto>
+    >
 {
     private readonly ICompanyFinancialDestinationRepository _repo;
     private readonly IAccountRepository _accounts;
@@ -216,7 +219,10 @@ public sealed class CreateCompanyFinancialDestinationHandler
 }
 
 public sealed class UpdateCompanyFinancialDestinationNameHandler
-    : IRequestHandler<UpdateCompanyFinancialDestinationNameCommand, Result<CompanyFinancialDestinationDto>>
+    : IRequestHandler<
+        UpdateCompanyFinancialDestinationNameCommand,
+        Result<CompanyFinancialDestinationDto>
+    >
 {
     private readonly ICompanyFinancialDestinationRepository _repo;
     private readonly ICurrentTenant _t;
@@ -327,7 +333,10 @@ public sealed class ChangeCompanyFinancialDestinationAccountingAccountHandler
 }
 
 public sealed class SetCompanyFinancialDestinationActiveHandler
-    : IRequestHandler<SetCompanyFinancialDestinationActiveCommand, Result<CompanyFinancialDestinationDto>>
+    : IRequestHandler<
+        SetCompanyFinancialDestinationActiveCommand,
+        Result<CompanyFinancialDestinationDto>
+    >
 {
     private readonly ICompanyFinancialDestinationRepository _repo;
     private readonly ICurrentTenant _t;

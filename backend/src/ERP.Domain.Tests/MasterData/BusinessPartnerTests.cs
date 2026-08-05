@@ -238,10 +238,8 @@ public sealed class BusinessPartnerTests
 
         bp.UpdateIdentification("06", "P12345678", UserId);
 
-        bp.LegalEntityTypeCode.Should().Be(
-            2,
-            "sin inferencia posible se conserva el valor existente, nunca se resetea"
-        );
+        bp.LegalEntityTypeCode.Should()
+            .Be(2, "sin inferencia posible se conserva el valor existente, nunca se resetea");
     }
 
     [Fact]

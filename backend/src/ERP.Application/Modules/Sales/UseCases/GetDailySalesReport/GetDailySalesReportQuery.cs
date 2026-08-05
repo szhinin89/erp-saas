@@ -43,8 +43,7 @@ public sealed record SalesReportResponse(
     DateOnly DateTo
 );
 
-public sealed class GetDailySalesReportQueryValidator
-    : AbstractValidator<GetDailySalesReportQuery>
+public sealed class GetDailySalesReportQueryValidator : AbstractValidator<GetDailySalesReportQuery>
 {
     public GetDailySalesReportQueryValidator()
     {

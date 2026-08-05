@@ -62,7 +62,15 @@ public sealed class RegisterSupplierCreditNoteUseCasesTests
             inv.Id,
             SupplierId,
             "Producto defectuoso",
-            new[] { new PurchaseReturn.DraftLineInput(inv.Lines[0].Id, Guid.NewGuid(), 1m, Guid.NewGuid()) },
+            new[]
+            {
+                new PurchaseReturn.DraftLineInput(
+                    inv.Lines[0].Id,
+                    Guid.NewGuid(),
+                    1m,
+                    Guid.NewGuid()
+                ),
+            },
             UserId,
             Guid.NewGuid(),
             "hash-draft"
@@ -114,7 +122,13 @@ public sealed class RegisterSupplierCreditNoteUseCasesTests
                 .Setup(r => r.GetByIdAsync(TenantId, f.Invoice.Id, It.IsAny<CancellationToken>()))
                 .ReturnsAsync(f.Invoice);
             ReceptionRepo
-                .Setup(r => r.GetByAccessKeyAsync(TenantId, It.IsAny<string>(), It.IsAny<CancellationToken>()))
+                .Setup(r =>
+                    r.GetByAccessKeyAsync(
+                        TenantId,
+                        It.IsAny<string>(),
+                        It.IsAny<CancellationToken>()
+                    )
+                )
                 .ReturnsAsync((PurchaseReceptionDocument?)null);
             Uow.SetupGet(u => u.HasActiveTransaction).Returns(true);
         }
@@ -161,9 +175,15 @@ public sealed class RegisterSupplierCreditNoteUseCasesTests
         var result = await handler.Handle(BuildCommand(f.Return.Id, 100m), CancellationToken.None);
 
         result.IsSuccess.Should().BeTrue(result.Error);
-        f.Return.FiscalStatus.Should().Be(
-            Domain.Modules.Purchases.Enums.PurchaseReturnFiscalStatus.SupplierCreditNoteRegistered
-        );
+        f.Return.FiscalStatus.Should()
+            .Be(
+                Domain
+                    .Modules
+                    .Purchases
+                    .Enums
+                    .PurchaseReturnFiscalStatus
+                    .SupplierCreditNoteRegistered
+            );
         f.Return.SupplierCreditNoteDocumentId.Should().NotBeNull();
     }
 
@@ -174,7 +194,10 @@ public sealed class RegisterSupplierCreditNoteUseCasesTests
         var m = new Mocks(f);
         var handler = m.BuildHandler();
 
-        var result = await handler.Handle(BuildCommand(f.Return.Id, 100.01m), CancellationToken.None);
+        var result = await handler.Handle(
+            BuildCommand(f.Return.Id, 100.01m),
+            CancellationToken.None
+        );
 
         result.IsSuccess.Should().BeTrue(result.Error);
     }
@@ -186,13 +209,17 @@ public sealed class RegisterSupplierCreditNoteUseCasesTests
         var m = new Mocks(f);
         var handler = m.BuildHandler();
 
-        var result = await handler.Handle(BuildCommand(f.Return.Id, 99.98m), CancellationToken.None);
+        var result = await handler.Handle(
+            BuildCommand(f.Return.Id, 99.98m),
+            CancellationToken.None
+        );
 
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Contain("inferior");
-        f.Return.FiscalStatus.Should().Be(
-            Domain.Modules.Purchases.Enums.PurchaseReturnFiscalStatus.PendingSupplierCreditNote
-        );
+        f.Return.FiscalStatus.Should()
+            .Be(
+                Domain.Modules.Purchases.Enums.PurchaseReturnFiscalStatus.PendingSupplierCreditNote
+            );
     }
 
     [Fact]
@@ -202,7 +229,10 @@ public sealed class RegisterSupplierCreditNoteUseCasesTests
         var m = new Mocks(f);
         var handler = m.BuildHandler();
 
-        var result = await handler.Handle(BuildCommand(f.Return.Id, 100.02m), CancellationToken.None);
+        var result = await handler.Handle(
+            BuildCommand(f.Return.Id, 100.02m),
+            CancellationToken.None
+        );
 
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Contain("superior");
@@ -252,7 +282,8 @@ public sealed class RegisterSupplierCreditNoteUseCasesTests
         var second = await handler.Handle(BuildCommand(f.Return.Id, 100m), CancellationToken.None);
 
         second.IsSuccess.Should().BeFalse();
-        f.Return.SupplierCreditNoteDocumentId.Should().Be(firstDocId, "el segundo intento no debe reemplazar el vínculo ya establecido");
+        f.Return.SupplierCreditNoteDocumentId.Should()
+            .Be(firstDocId, "el segundo intento no debe reemplazar el vínculo ya establecido");
     }
 
     [Fact]
@@ -266,12 +297,21 @@ public sealed class RegisterSupplierCreditNoteUseCasesTests
 
         // Único evento levantado por LinkSupplierCreditNote: PurchaseReturnSupplierCreditNoteLinkedEvent
         // (documental, IAuditEvent) — nunca un evento con efecto financiero/contable (§18.5/§19.5).
-        var events = f.Return.GetType()
-            .GetProperty("DomainEvents", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance)
-            ?.GetValue(f.Return) as System.Collections.IEnumerable;
+        var events =
+            f.Return.GetType()
+                .GetProperty(
+                    "DomainEvents",
+                    System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance
+                )
+                ?.GetValue(f.Return) as System.Collections.IEnumerable;
         events.Should().NotBeNull();
         foreach (var evt in events!)
-            evt.GetType().Name.Should().NotContain("Posting", "ningún evento con efecto contable debe originarse en el vínculo de NC");
+            evt.GetType()
+                .Name.Should()
+                .NotContain(
+                    "Posting",
+                    "ningún evento con efecto contable debe originarse en el vínculo de NC"
+                );
     }
 
     private sealed class FixedCurrentTenant : ICurrentTenant

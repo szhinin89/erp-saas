@@ -1,6 +1,6 @@
+using System.Linq.Expressions;
 using ERP.Domain.Common;
 using Microsoft.EntityFrameworkCore;
-using System.Linq.Expressions;
 
 namespace ERP.Infrastructure.Persistence;
 

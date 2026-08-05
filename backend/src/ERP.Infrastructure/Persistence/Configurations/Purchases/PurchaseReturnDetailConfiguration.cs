@@ -6,7 +6,8 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 namespace ERP.Infrastructure.Persistence.Configurations.Purchases;
 
 /// <summary>Mapeo EF de <see cref="PurchaseReturnDetail"/> — diseño P0-02 §7.2, Fase 2.</summary>
-public sealed class PurchaseReturnDetailConfiguration : IEntityTypeConfiguration<PurchaseReturnDetail>
+public sealed class PurchaseReturnDetailConfiguration
+    : IEntityTypeConfiguration<PurchaseReturnDetail>
 {
     public void Configure(EntityTypeBuilder<PurchaseReturnDetail> builder)
     {
@@ -29,15 +30,9 @@ public sealed class PurchaseReturnDetailConfiguration : IEntityTypeConfiguration
         builder.Property(x => x.WarehouseId).HasColumnName("warehouse_id").IsRequired();
 
         builder.Property(x => x.UnitCost).HasColumnName("unit_cost").HasColumnType("numeric(18,6)");
-        builder
-            .Property(x => x.VatCode)
-            .HasColumnName("vat_code")
-            .HasMaxLength(20);
+        builder.Property(x => x.VatCode).HasColumnName("vat_code").HasMaxLength(20);
         builder.Property(x => x.VatRate).HasColumnName("vat_rate").HasColumnType("numeric(5,2)");
-        builder
-            .Property(x => x.IceCode)
-            .HasColumnName("ice_code")
-            .HasMaxLength(20);
+        builder.Property(x => x.IceCode).HasColumnName("ice_code").HasMaxLength(20);
         builder.Property(x => x.IceRate).HasColumnName("ice_rate").HasColumnType("numeric(5,2)");
         builder
             .Property(x => x.ReturnedSubtotal)

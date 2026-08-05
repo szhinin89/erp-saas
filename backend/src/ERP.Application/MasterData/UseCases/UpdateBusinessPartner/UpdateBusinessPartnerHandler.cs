@@ -49,7 +49,9 @@ public sealed class UpdateBusinessPartnerHandler
             return Result<BusinessPartnerSummaryDto>.ValidationFailure(ex.Message);
         }
 
-        if (!await _legalEntityTypeRepo.ExistsActiveAsync(bp.LegalEntityTypeCode, cancellationToken))
+        if (
+            !await _legalEntityTypeRepo.ExistsActiveAsync(bp.LegalEntityTypeCode, cancellationToken)
+        )
         {
             return Result<BusinessPartnerSummaryDto>.ValidationFailure(
                 $"El tipo de entidad legal {bp.LegalEntityTypeCode} no existe o está inactivo."
@@ -162,6 +164,7 @@ public sealed class UpdateBusinessPartnerIdentificationHandler
             );
         }
     }
+
     private static IdentificationUsageType? MapRoleToUsage(RoleType role) =>
         role switch
         {

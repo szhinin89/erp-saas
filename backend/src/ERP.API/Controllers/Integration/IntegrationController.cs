@@ -1,10 +1,10 @@
+using System.Security.Claims;
 using ERP.API.Extensions;
 using ERP.Application.Modules.Integration;
 using ERP.Application.Modules.Integration.UseCases;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using System.Security.Claims;
 
 namespace ERP.API.Controllers.Integration;
 

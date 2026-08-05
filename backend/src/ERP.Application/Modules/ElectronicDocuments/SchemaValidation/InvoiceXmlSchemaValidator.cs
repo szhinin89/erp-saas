@@ -1,7 +1,7 @@
-using ERP.Application.Modules.ElectronicDocuments.DTOs;
-using ERP.Domain.Modules.ElectronicDocuments.Enums;
 using System.Xml;
 using System.Xml.Schema;
+using ERP.Application.Modules.ElectronicDocuments.DTOs;
+using ERP.Domain.Modules.ElectronicDocuments.Enums;
 
 namespace ERP.Application.Modules.ElectronicDocuments.SchemaValidation;
 

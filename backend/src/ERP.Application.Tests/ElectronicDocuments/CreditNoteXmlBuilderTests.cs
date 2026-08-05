@@ -1,3 +1,4 @@
+using System.Xml;
 using ERP.Application.Modules.ElectronicDocuments.DTOs;
 using ERP.Application.Modules.ElectronicDocuments.XmlBuilders;
 using ERP.Domain.Modules.ElectronicDocuments.Enums;
@@ -5,7 +6,6 @@ using ERP.Infrastructure.Services.ElectronicDocuments;
 using FluentAssertions;
 using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
-using System.Xml;
 
 namespace ERP.Application.Tests.ElectronicDocuments;
 
@@ -170,7 +170,9 @@ public sealed class CreditNoteXmlBuilderTests
             .GetAwaiter()
             .GetResult();
 
-        schemaSet.Should().NotBeNull("el XSD oficial de Nota de Crédito debe estar embebido y ser resoluble");
+        schemaSet
+            .Should()
+            .NotBeNull("el XSD oficial de Nota de Crédito debe estar embebido y ser resoluble");
 
         var errors = new List<string>();
         var settings = new XmlReaderSettings
@@ -184,6 +186,10 @@ public sealed class CreditNoteXmlBuilderTests
         using var xmlReader = XmlReader.Create(stringReader, settings);
         while (xmlReader.Read()) { }
 
-        errors.Should().BeEmpty(because: "el XML generado debe validar contra el XSD oficial del SRI sin errores");
+        errors
+            .Should()
+            .BeEmpty(
+                because: "el XML generado debe validar contra el XSD oficial del SRI sin errores"
+            );
     }
 }

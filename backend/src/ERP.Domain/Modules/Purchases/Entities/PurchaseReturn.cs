@@ -300,7 +300,9 @@ public sealed class PurchaseReturn : AuditableEntity, ITenantScopedEntity, IComp
 
         foreach (var line in _lines)
         {
-            if (!originalLinesByDetailId.TryGetValue(line.OriginalInvoiceDetailId, out var original))
+            if (
+                !originalLinesByDetailId.TryGetValue(line.OriginalInvoiceDetailId, out var original)
+            )
                 throw new InvalidOperationException(
                     "Falta el snapshot de la línea de factura original para poder autorizar la devolución."
                 );

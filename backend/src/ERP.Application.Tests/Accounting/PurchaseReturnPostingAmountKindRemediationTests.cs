@@ -83,7 +83,16 @@ public sealed class PurchaseReturnPostingAmountKindRemediationTests
         );
 
     private static PostingRule EmptyRule(string sourceModule, string factType) =>
-        PostingRule.Create(TenantId, CompanyId, sourceModule, factType, null, null, null, CreatedBy);
+        PostingRule.Create(
+            TenantId,
+            CompanyId,
+            sourceModule,
+            factType,
+            null,
+            null,
+            null,
+            CreatedBy
+        );
 
     private sealed class Mocks
     {
@@ -197,7 +206,8 @@ public sealed class PurchaseReturnPostingAmountKindRemediationTests
         if (expectedAmount == 0)
             m.Captured!.Lines.Should().NotContain(l => l.AccountId == accountId);
         else
-            m.Captured!.Lines.Should().Contain(l => l.AccountId == accountId && l.Debit == expectedAmount);
+            m.Captured!.Lines.Should()
+                .Contain(l => l.AccountId == accountId && l.Debit == expectedAmount);
     }
 
     // ── 2/3. Los 5 AmountKind nuevos resuelven los campos nuevos, nunca 0 cuando el campo tiene valor ──
@@ -321,7 +331,11 @@ public sealed class PurchaseReturnPostingAmountKindRemediationTests
         rule.AddLine(vatAccount, AccountNature.Credit, PostingAmountKind.TaxVat);
         rule.AddLine(iceAccount, AccountNature.Credit, PostingAmountKind.TaxIce);
         // Misma cuenta de variación, lado crédito — condicional, mutuamente excluyente con la línea débito
-        rule.AddLine(costVarianceAccount, AccountNature.Credit, PostingAmountKind.CostVarianceCredit);
+        rule.AddLine(
+            costVarianceAccount,
+            AccountNature.Credit,
+            PostingAmountKind.CostVarianceCredit
+        );
         return rule;
     }
 
@@ -367,7 +381,8 @@ public sealed class PurchaseReturnPostingAmountKindRemediationTests
         totalDebit.Should().Be(totalCredit);
         // Solo la línea de variación DÉBITO aparece — la de CRÉDITO se omite (monto resuelto 0)
         m.Captured.Lines.Count(l => l.AccountId == costVarianceAccount).Should().Be(1);
-        m.Captured.Lines.Should().Contain(l => l.AccountId == costVarianceAccount && l.Debit == 45.00m);
+        m.Captured.Lines.Should()
+            .Contain(l => l.AccountId == costVarianceAccount && l.Debit == 45.00m);
     }
 
     [Fact]
@@ -412,7 +427,8 @@ public sealed class PurchaseReturnPostingAmountKindRemediationTests
         totalCredit.Should().Be(200m);
         totalDebit.Should().Be(totalCredit);
         m.Captured.Lines.Count(l => l.AccountId == costVarianceAccount).Should().Be(1);
-        m.Captured.Lines.Should().Contain(l => l.AccountId == costVarianceAccount && l.Credit == 20m);
+        m.Captured.Lines.Should()
+            .Contain(l => l.AccountId == costVarianceAccount && l.Credit == 20m);
     }
 
     [Fact]

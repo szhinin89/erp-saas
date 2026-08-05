@@ -52,7 +52,10 @@ public sealed class SupplierCreditRepository : ISupplierCreditRepository
         // pg_advisory_xact_lock(int4, int4) — ámbito de transacción, se libera automáticamente al
         // COMMIT/ROLLBACK de la transacción ambiente; nunca abre ni comitea una transacción propia.
         var hash1 = StableHash(
-            System.Text.Encoding.UTF8.GetBytes(LockNamespace).Concat(tenantId.ToByteArray()).ToArray()
+            System
+                .Text.Encoding.UTF8.GetBytes(LockNamespace)
+                .Concat(tenantId.ToByteArray())
+                .ToArray()
         );
         var hash2 = StableHash(supplierCreditId.ToByteArray());
         await _db.Database.ExecuteSqlInterpolatedAsync(
@@ -93,7 +96,9 @@ public sealed class SupplierCreditRepository : ISupplierCreditRepository
         CancellationToken ct = default
     )
     {
-        var query = _db.SupplierCredits.ForOperationalScope(tenantId, _company).Include(x => x.Movements);
+        var query = _db
+            .SupplierCredits.ForOperationalScope(tenantId, _company)
+            .Include(x => x.Movements);
         var total = await query.CountAsync(ct);
         var items = await query
             .OrderByDescending(x => x.CreatedAt)

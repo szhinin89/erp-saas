@@ -16,7 +16,11 @@ public sealed class PurchaseReturnSequenceConfiguration
     {
         builder.ToTable(
             "purchase_return_sequence",
-            t => t.HasCheckConstraint("chk_purchase_return_sequence_current_seq_positive", "\"current_seq\" >= 1")
+            t =>
+                t.HasCheckConstraint(
+                    "chk_purchase_return_sequence_current_seq_positive",
+                    "\"current_seq\" >= 1"
+                )
         );
 
         builder.HasKey(x => x.Id);

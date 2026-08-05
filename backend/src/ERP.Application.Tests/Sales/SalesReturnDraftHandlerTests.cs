@@ -82,7 +82,10 @@ public sealed class SalesReturnDraftHandlerTests
         return (inv, inv.Lines.ToList());
     }
 
-    private static SalesReturn BuildDraftReturn(Guid invoiceId, string returnNumber = "DEV-000001") =>
+    private static SalesReturn BuildDraftReturn(
+        Guid invoiceId,
+        string returnNumber = "DEV-000001"
+    ) =>
         SalesReturn.CreateDraft(
             TenantId,
             CompanyId,
@@ -160,7 +163,10 @@ public sealed class SalesReturnDraftHandlerTests
         result.Value!.Lines.Should().ContainSingle();
         result.Value.Lines[0].Quantity.Should().Be(3m);
         result.Value.Status.Should().Be(SalesReturnStatus.Draft.ToString());
-        returnRepo.Verify(r => r.AddAsync(It.IsAny<SalesReturn>(), It.IsAny<CancellationToken>()), Times.Once);
+        returnRepo.Verify(
+            r => r.AddAsync(It.IsAny<SalesReturn>(), It.IsAny<CancellationToken>()),
+            Times.Once
+        );
         returnRepo.Verify(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
     }
 

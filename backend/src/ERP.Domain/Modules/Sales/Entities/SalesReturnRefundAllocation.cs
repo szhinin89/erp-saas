@@ -29,10 +29,7 @@ public sealed class SalesReturnRefundAllocation : IMustHaveTenant
         if (returnId == Guid.Empty)
             throw new ArgumentException("La devolución es obligatoria.", nameof(returnId));
         if (!Enum.IsDefined(method))
-            throw new ArgumentException(
-                "La forma de reembolso es obligatoria.",
-                nameof(method)
-            );
+            throw new ArgumentException("La forma de reembolso es obligatoria.", nameof(method));
         if (amount <= 0)
             throw new ArgumentException(
                 "El monto de la asignación de reembolso debe ser mayor a cero.",

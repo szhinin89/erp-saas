@@ -72,7 +72,11 @@ public sealed class PurchaseReturnSequenceTransactionInteractionTests : IAsyncLi
         await using var db = CreateContext();
         await db.Database.MigrateAsync();
 
-        var tenant = Tenant.Create("P0-02 Phase0 Tenant", $"p002-ph0-{Guid.NewGuid():N}"[..20], _userId);
+        var tenant = Tenant.Create(
+            "P0-02 Phase0 Tenant",
+            $"p002-ph0-{Guid.NewGuid():N}"[..20],
+            _userId
+        );
         var company = Company.CreateManaged(
             tenant.Id,
             $"179{Guid.NewGuid():N}"[..13],
@@ -311,9 +315,11 @@ public sealed class PurchaseReturnSequenceTransactionInteractionTests : IAsyncLi
                     + "completa tras el primer conflicto de secuencia — el reintento in-process de "
                     + "SaveChangesWithSequenceRetryAsync NO puede recuperarse dentro de la misma "
                     + "transacción ambiente. Excepción real observada: "
-                    + (pg is null
-                        ? observedException!.ToString()
-                        : $"SqlState={pg.SqlState} MessageText={pg.MessageText}")
+                    + (
+                        pg is null
+                            ? observedException!.ToString()
+                            : $"SqlState={pg.SqlState} MessageText={pg.MessageText}"
+                    )
                     + ". Patrón obligatorio para Fase 6 (AuthorizePurchaseReturnUseCases): opción (b) "
                     + "— usar SAVEPOINT de PostgreSQL alrededor del SaveChanges interno de la captura "
                     + "de secuencia/stock, para poder revertir solo esa porción sin abortar la "

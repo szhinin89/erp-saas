@@ -36,20 +36,34 @@ public sealed class SupplierCreditRefundTransactionConfiguration
             .HasConversion<int>()
             .IsRequired();
         builder.Property(x => x.OriginalTransactionId).HasColumnName("original_transaction_id");
-        builder.Property(x => x.FinancialDestinationId).HasColumnName("financial_destination_id").IsRequired();
-        builder.Property(x => x.AccountingAccountId).HasColumnName("accounting_account_id").IsRequired();
+        builder
+            .Property(x => x.FinancialDestinationId)
+            .HasColumnName("financial_destination_id")
+            .IsRequired();
+        builder
+            .Property(x => x.AccountingAccountId)
+            .HasColumnName("accounting_account_id")
+            .IsRequired();
         builder
             .Property(x => x.PaymentMethodCode)
             .HasColumnName("payment_method_code")
             .HasMaxLength(SupplierCreditRefundTransaction.PaymentMethodCodeMaxLen)
             .IsRequired();
-        builder.Property(x => x.Amount).HasColumnName("amount").HasColumnType("numeric(18,2)").IsRequired();
+        builder
+            .Property(x => x.Amount)
+            .HasColumnName("amount")
+            .HasColumnType("numeric(18,2)")
+            .IsRequired();
         builder
             .Property(x => x.CurrencyCode)
             .HasColumnName("currency_code")
             .HasMaxLength(SupplierCreditRefundTransaction.CurrencyCodeMaxLen)
             .IsRequired();
-        builder.Property(x => x.EffectiveDate).HasColumnName("effective_date").HasColumnType("date").IsRequired();
+        builder
+            .Property(x => x.EffectiveDate)
+            .HasColumnName("effective_date")
+            .HasColumnType("date")
+            .IsRequired();
         builder
             .Property(x => x.ExternalReference)
             .HasColumnName("external_reference")
@@ -155,11 +169,21 @@ public sealed class SupplierCreditRefundTransactionConfiguration
 
         // ── Indexes ──────────────────────────────────────────────────────
         builder
-            .HasIndex(x => new { x.TenantId, x.CompanyId, x.SupplierCreditId })
+            .HasIndex(x => new
+            {
+                x.TenantId,
+                x.CompanyId,
+                x.SupplierCreditId,
+            })
             .HasDatabaseName("ix_supplier_credit_refund_transactions_tenant_company_credit");
 
         builder
-            .HasIndex(x => new { x.TenantId, x.CompanyId, x.AccountingAccountId })
+            .HasIndex(x => new
+            {
+                x.TenantId,
+                x.CompanyId,
+                x.AccountingAccountId,
+            })
             .HasDatabaseName("ix_supplier_credit_refund_transactions_tenant_company_account");
 
         // Relación 1:1 estricta con el movimiento que la origina.

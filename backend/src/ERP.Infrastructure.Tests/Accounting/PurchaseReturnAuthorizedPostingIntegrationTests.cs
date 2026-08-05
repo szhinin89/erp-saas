@@ -318,7 +318,11 @@ public sealed class PurchaseReturnAuthorizedPostingIntegrationTests : IAsyncLife
             null,
             _createdBy
         );
-        rule.AddLine(appliedToPayableAcc.Id, AccountNature.Debit, PostingAmountKind.AppliedToPayable);
+        rule.AddLine(
+            appliedToPayableAcc.Id,
+            AccountNature.Debit,
+            PostingAmountKind.AppliedToPayable
+        );
         rule.AddLine(supplierCreditAcc.Id, AccountNature.Debit, PostingAmountKind.SupplierCredit);
         rule.AddLine(
             costVarianceDebitAcc.Id,
@@ -447,7 +451,12 @@ public sealed class PurchaseReturnAuthorizedPostingIntegrationTests : IAsyncLife
             "Producto defectuoso",
             new[]
             {
-                new PurchaseReturn.DraftLineInput(inv.Lines[0].Id, _itemId, returnQuantity, _warehouseId),
+                new PurchaseReturn.DraftLineInput(
+                    inv.Lines[0].Id,
+                    _itemId,
+                    returnQuantity,
+                    _warehouseId
+                ),
             },
             _createdBy,
             Guid.NewGuid(),
@@ -455,22 +464,21 @@ public sealed class PurchaseReturnAuthorizedPostingIntegrationTests : IAsyncLife
         );
 
         var original = inv.Lines[0];
-        var originalLinesByDetailId =
-            new Dictionary<Guid, PurchaseReturn.OriginalLineSnapshot>
-            {
-                [original.Id] = new PurchaseReturn.OriginalLineSnapshot(
-                    original.Quantity,
-                    original.LineSubtotal,
-                    original.DiscountAmount,
-                    original.VatAmount,
-                    original.IceAmount,
-                    original.VatCode,
-                    original.VatRate,
-                    original.IceCode,
-                    original.IceRate,
-                    original.LandedUnitCost
-                ),
-            };
+        var originalLinesByDetailId = new Dictionary<Guid, PurchaseReturn.OriginalLineSnapshot>
+        {
+            [original.Id] = new PurchaseReturn.OriginalLineSnapshot(
+                original.Quantity,
+                original.LineSubtotal,
+                original.DiscountAmount,
+                original.VatAmount,
+                original.IceAmount,
+                original.VatCode,
+                original.VatRate,
+                original.IceCode,
+                original.IceRate,
+                original.LandedUnitCost
+            ),
+        };
 
         ret.Authorize(
             "00000001",
@@ -504,9 +512,9 @@ public sealed class PurchaseReturnAuthorizedPostingIntegrationTests : IAsyncLife
         await db.SaveChangesAsync();
 
         await using var verifyDb = CreateContext();
-        var entry = await verifyDb.JournalEntries.Include(e => e.Lines).FirstOrDefaultAsync(x =>
-            x.SourceEventId == ret.Id
-        );
+        var entry = await verifyDb
+            .JournalEntries.Include(e => e.Lines)
+            .FirstOrDefaultAsync(x => x.SourceEventId == ret.Id);
 
         entry.Should().NotBeNull();
         entry!.Status.Should().Be(JournalEntryStatus.Posted);
@@ -520,7 +528,11 @@ public sealed class PurchaseReturnAuthorizedPostingIntegrationTests : IAsyncLife
         totalDebit.Should().Be(totalCredit);
         totalDebit
             .Should()
-            .Be(ret.AppliedToPayableAmount!.Value + ret.SupplierCreditAmount!.Value + Math.Max(ret.CostVarianceTotal!.Value, 0m));
+            .Be(
+                ret.AppliedToPayableAmount!.Value
+                    + ret.SupplierCreditAmount!.Value
+                    + Math.Max(ret.CostVarianceTotal!.Value, 0m)
+            );
     }
 
     [Fact]
@@ -544,9 +556,13 @@ public sealed class PurchaseReturnAuthorizedPostingIntegrationTests : IAsyncLife
 
         await using var verifyDb = CreateContext();
         var persisted = await verifyDb.PurchaseReturns.FirstAsync(x => x.Id == ret.Id);
-        persisted.Status.Should().Be(ERP.Domain.Modules.Purchases.Enums.PurchaseReturnStatus.Authorized);
+        persisted
+            .Status.Should()
+            .Be(ERP.Domain.Modules.Purchases.Enums.PurchaseReturnStatus.Authorized);
 
-        var entry = await verifyDb.JournalEntries.FirstOrDefaultAsync(x => x.SourceEventId == ret.Id);
+        var entry = await verifyDb.JournalEntries.FirstOrDefaultAsync(x =>
+            x.SourceEventId == ret.Id
+        );
         entry.Should().BeNull();
     }
 
@@ -636,7 +652,8 @@ public sealed class PurchaseReturnAuthorizedPostingIntegrationTests : IAsyncLife
             where TNotification : INotification => Task.CompletedTask;
     }
 
-    private sealed class RealDatabaseExceptionTranslator : ERP.Application.Common.Persistence.IDatabaseExceptionTranslator
+    private sealed class RealDatabaseExceptionTranslator
+        : ERP.Application.Common.Persistence.IDatabaseExceptionTranslator
     {
         public bool TryGetUniqueViolation(
             Exception exception,

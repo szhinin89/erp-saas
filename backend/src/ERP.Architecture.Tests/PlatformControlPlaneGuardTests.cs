@@ -1,5 +1,5 @@
-using FluentAssertions;
 using System.Text.RegularExpressions;
+using FluentAssertions;
 
 namespace ERP.Architecture.Tests;
 

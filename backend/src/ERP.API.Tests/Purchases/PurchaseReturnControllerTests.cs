@@ -28,7 +28,10 @@ public sealed class PurchaseReturnControllerTests
         services.AddSingleton<IWebHostEnvironment>(new StubWebHostEnvironment());
         controller.ControllerContext = new ControllerContext
         {
-            HttpContext = new DefaultHttpContext { RequestServices = services.BuildServiceProvider() },
+            HttpContext = new DefaultHttpContext
+            {
+                RequestServices = services.BuildServiceProvider(),
+            },
         };
         return controller;
     }
@@ -122,8 +125,8 @@ public sealed class PurchaseReturnControllerTests
     [Fact]
     public async Task CreateDraft_sobre_factura_inexistente_retorna_404()
     {
-        var controller = BuildController(
-            _ => Result<PurchaseReturnDto>.NotFound("Factura de compra no encontrada.")
+        var controller = BuildController(_ =>
+            Result<PurchaseReturnDto>.NotFound("Factura de compra no encontrada.")
         );
         var command = new CreatePurchaseReturnDraftCommand(
             Guid.NewGuid(),
@@ -164,15 +167,19 @@ public sealed class PurchaseReturnControllerTests
     [Fact]
     public async Task UpdateDraft_sobre_devolucion_ya_autorizada_retorna_422()
     {
-        var controller = BuildController(
-            _ => Result<PurchaseReturnDto>.ValidationFailure("Esta devolución ya no está en borrador.")
+        var controller = BuildController(_ =>
+            Result<PurchaseReturnDto>.ValidationFailure("Esta devolución ya no está en borrador.")
         );
         var request = new UpdatePurchaseReturnDraftRequest(
             "Motivo",
             new[] { new PurchaseReturnDraftLineInput(Guid.NewGuid(), 1m) }
         );
 
-        var response = await controller.UpdateDraft(Guid.NewGuid(), request, CancellationToken.None);
+        var response = await controller.UpdateDraft(
+            Guid.NewGuid(),
+            request,
+            CancellationToken.None
+        );
 
         response.Should().BeOfType<UnprocessableEntityObjectResult>();
     }
@@ -193,8 +200,8 @@ public sealed class PurchaseReturnControllerTests
     [Fact]
     public async Task GetById_inexistente_retorna_404()
     {
-        var controller = BuildController(
-            _ => Result<PurchaseReturnDto>.NotFound("Devolución no encontrada.")
+        var controller = BuildController(_ =>
+            Result<PurchaseReturnDto>.NotFound("Devolución no encontrada.")
         );
 
         var response = await controller.GetById(Guid.NewGuid(), CancellationToken.None);
@@ -207,11 +214,10 @@ public sealed class PurchaseReturnControllerTests
     [Fact]
     public async Task GetList_retorna_200_con_el_listado_paginado()
     {
-        var controller = BuildController(
-            _ =>
-                Result<PurchaseReturnListResultDto>.Success(
-                    new PurchaseReturnListResultDto(new List<PurchaseReturnDto>(), 0, 1, 20)
-                )
+        var controller = BuildController(_ =>
+            Result<PurchaseReturnListResultDto>.Success(
+                new PurchaseReturnListResultDto(new List<PurchaseReturnDto>(), 0, 1, 20)
+            )
         );
 
         var response = await controller.GetList(null, 1, 20, CancellationToken.None);
@@ -224,14 +230,13 @@ public sealed class PurchaseReturnControllerTests
     [Fact]
     public async Task GetReturnableLines_retorna_200_con_las_lineas_devolvibles()
     {
-        var controller = BuildController(
-            _ =>
-                Result<IReadOnlyList<ReturnableLineDto>>.Success(
-                    new List<ReturnableLineDto>
-                    {
-                        new(Guid.NewGuid(), Guid.NewGuid(), "Producto 1", 10m, 3m, 7m, Guid.NewGuid()),
-                    }
-                )
+        var controller = BuildController(_ =>
+            Result<IReadOnlyList<ReturnableLineDto>>.Success(
+                new List<ReturnableLineDto>
+                {
+                    new(Guid.NewGuid(), Guid.NewGuid(), "Producto 1", 10m, 3m, 7m, Guid.NewGuid()),
+                }
+            )
         );
 
         var response = await controller.GetReturnableLines(Guid.NewGuid(), CancellationToken.None);
@@ -242,8 +247,8 @@ public sealed class PurchaseReturnControllerTests
     [Fact]
     public async Task GetReturnableLines_sobre_factura_inexistente_retorna_404()
     {
-        var controller = BuildController(
-            _ => Result<IReadOnlyList<ReturnableLineDto>>.NotFound("Factura de compra no encontrada.")
+        var controller = BuildController(_ =>
+            Result<IReadOnlyList<ReturnableLineDto>>.NotFound("Factura de compra no encontrada.")
         );
 
         var response = await controller.GetReturnableLines(Guid.NewGuid(), CancellationToken.None);
@@ -278,8 +283,8 @@ public sealed class PurchaseReturnControllerTests
     [Fact]
     public async Task Authorize_con_stock_insuficiente_retorna_422()
     {
-        var controller = BuildController(
-            _ => Result<PurchaseReturnDto>.ValidationFailure("Stock insuficiente en la bodega original.")
+        var controller = BuildController(_ =>
+            Result<PurchaseReturnDto>.ValidationFailure("Stock insuficiente en la bodega original.")
         );
 
         var response = await controller.Authorize(
@@ -318,11 +323,10 @@ public sealed class PurchaseReturnControllerTests
     [Fact]
     public async Task Cancel_con_credito_aplicado_retorna_422_PR_011()
     {
-        var controller = BuildController(
-            _ =>
-                Result<PurchaseReturnDto>.ValidationFailure(
-                    "No se puede cancelar esta devolución porque su crédito de proveedor ya tiene aplicaciones o reembolsos activos."
-                )
+        var controller = BuildController(_ =>
+            Result<PurchaseReturnDto>.ValidationFailure(
+                "No se puede cancelar esta devolución porque su crédito de proveedor ya tiene aplicaciones o reembolsos activos."
+            )
         );
 
         var response = await controller.Cancel(
@@ -379,11 +383,10 @@ public sealed class PurchaseReturnControllerTests
     [Fact]
     public async Task LinkCreditNote_ya_vinculada_retorna_422_SC_009()
     {
-        var controller = BuildController(
-            _ =>
-                Result<SupplierCreditNoteLinkDto>.ValidationFailure(
-                    "Esta devolución ya tiene una Nota de Crédito vinculada."
-                )
+        var controller = BuildController(_ =>
+            Result<SupplierCreditNoteLinkDto>.ValidationFailure(
+                "Esta devolución ya tiene una Nota de Crédito vinculada."
+            )
         );
         var request = new LinkSupplierCreditNoteRequest(
             "AK-1",
@@ -398,7 +401,11 @@ public sealed class PurchaseReturnControllerTests
             Guid.NewGuid()
         );
 
-        var response = await controller.LinkCreditNote(Guid.NewGuid(), request, CancellationToken.None);
+        var response = await controller.LinkCreditNote(
+            Guid.NewGuid(),
+            request,
+            CancellationToken.None
+        );
 
         response.Should().BeOfType<UnprocessableEntityObjectResult>();
     }

@@ -1,12 +1,12 @@
-using ERP.Application.Common;
-using ERP.Application.Modules.ElectronicDocuments.DTOs;
-using ERP.Domain.Modules.ElectronicDocuments.Enums;
-using ERP.Domain.Modules.ElectronicDocuments.ValueObjects;
 using System.Globalization;
 using System.Security.Cryptography;
 using System.Text;
 using System.Xml;
 using System.Xml.Linq;
+using ERP.Application.Common;
+using ERP.Application.Modules.ElectronicDocuments.DTOs;
+using ERP.Domain.Modules.ElectronicDocuments.Enums;
+using ERP.Domain.Modules.ElectronicDocuments.ValueObjects;
 
 namespace ERP.Application.Modules.ElectronicDocuments.XmlBuilders;
 
@@ -278,9 +278,7 @@ public sealed class CreditNoteXmlBuilder : IElectronicDocumentXmlBuilder
     private XElement BuildDetalle(ElectronicDocumentDetailLine line) =>
         new(
             "detalle",
-            string.IsNullOrWhiteSpace(line.Code)
-                ? null
-                : new XElement("codigoInterno", line.Code),
+            string.IsNullOrWhiteSpace(line.Code) ? null : new XElement("codigoInterno", line.Code),
             new XElement("descripcion", line.Description),
             new XElement("cantidad", FormatQuantity(line.Quantity)),
             new XElement("precioUnitario", FormatQuantity(line.UnitPrice)),

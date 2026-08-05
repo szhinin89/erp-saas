@@ -14,7 +14,10 @@ public sealed class PurchaseReturnAuditConfiguration : IEntityTypeConfiguration<
 
         builder.Property(x => x.CompanyId).HasColumnName("company_id").IsRequired();
         builder.Property(x => x.BranchId).HasColumnName("branch_id").IsRequired();
-        builder.Property(x => x.PurchaseInvoiceId).HasColumnName("purchase_invoice_id").IsRequired();
+        builder
+            .Property(x => x.PurchaseInvoiceId)
+            .HasColumnName("purchase_invoice_id")
+            .IsRequired();
         builder.Property(x => x.SupplierId).HasColumnName("supplier_id");
         builder
             .Property(x => x.ReturnNumber)

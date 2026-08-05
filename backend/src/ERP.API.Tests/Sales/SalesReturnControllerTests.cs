@@ -29,7 +29,10 @@ public sealed class SalesReturnControllerTests
         services.AddSingleton<IWebHostEnvironment>(new StubWebHostEnvironment());
         controller.ControllerContext = new ControllerContext
         {
-            HttpContext = new DefaultHttpContext { RequestServices = services.BuildServiceProvider() },
+            HttpContext = new DefaultHttpContext
+            {
+                RequestServices = services.BuildServiceProvider(),
+            },
         };
         return controller;
     }
@@ -116,8 +119,8 @@ public sealed class SalesReturnControllerTests
     [Fact]
     public async Task CreateDraft_sobre_factura_inexistente_retorna_404()
     {
-        var controller = BuildController(
-            _ => Result<SalesReturnDto>.NotFound("Factura no encontrada.")
+        var controller = BuildController(_ =>
+            Result<SalesReturnDto>.NotFound("Factura no encontrada.")
         );
         var command = new CreateSalesReturnDraftCommand(
             Guid.NewGuid(),
@@ -133,8 +136,10 @@ public sealed class SalesReturnControllerTests
     [Fact]
     public async Task CreateDraft_con_cantidad_que_excede_el_remanente_retorna_422()
     {
-        var controller = BuildController(
-            _ => Result<SalesReturnDto>.ValidationFailure("La cantidad solicitada excede el remanente devolvible.")
+        var controller = BuildController(_ =>
+            Result<SalesReturnDto>.ValidationFailure(
+                "La cantidad solicitada excede el remanente devolvible."
+            )
         );
         var command = new CreateSalesReturnDraftCommand(
             Guid.NewGuid(),
@@ -184,7 +189,11 @@ public sealed class SalesReturnControllerTests
             new List<SalesReturnLineInput> { new(Guid.NewGuid(), 1m) }
         );
 
-        var response = await controller.UpdateDraft(Guid.NewGuid(), command, CancellationToken.None);
+        var response = await controller.UpdateDraft(
+            Guid.NewGuid(),
+            command,
+            CancellationToken.None
+        );
 
         response.Should().BeOfType<BadRequestObjectResult>();
         called.Should().BeFalse();
@@ -194,8 +203,8 @@ public sealed class SalesReturnControllerTests
     public async Task UpdateDraft_sobre_devolucion_ya_autorizada_retorna_422()
     {
         var id = Guid.NewGuid();
-        var controller = BuildController(
-            _ => Result<SalesReturnDto>.ValidationFailure("Esta devolución ya no está en borrador.")
+        var controller = BuildController(_ =>
+            Result<SalesReturnDto>.ValidationFailure("Esta devolución ya no está en borrador.")
         );
         var command = new UpdateSalesReturnDraftCommand(
             id,
@@ -229,8 +238,8 @@ public sealed class SalesReturnControllerTests
     [Fact]
     public async Task CancelDraft_sobre_devolucion_inexistente_retorna_404()
     {
-        var controller = BuildController(
-            _ => Result<SalesReturnDto>.NotFound("Devolución no encontrada.")
+        var controller = BuildController(_ =>
+            Result<SalesReturnDto>.NotFound("Devolución no encontrada.")
         );
 
         var response = await controller.CancelDraft(Guid.NewGuid(), CancellationToken.None);
@@ -260,8 +269,8 @@ public sealed class SalesReturnControllerTests
     [Fact]
     public async Task GetById_de_devolucion_inexistente_retorna_404()
     {
-        var controller = BuildController(
-            _ => Result<SalesReturnDto>.NotFound("Devolución no encontrada.")
+        var controller = BuildController(_ =>
+            Result<SalesReturnDto>.NotFound("Devolución no encontrada.")
         );
 
         var response = await controller.GetById(Guid.NewGuid(), CancellationToken.None);
@@ -336,8 +345,8 @@ public sealed class SalesReturnControllerTests
     [Fact]
     public async Task GetReturnableLines_de_factura_inexistente_retorna_404()
     {
-        var controller = BuildController(
-            _ => Result<IReadOnlyList<ReturnableLineDto>>.NotFound("Factura no encontrada.")
+        var controller = BuildController(_ =>
+            Result<IReadOnlyList<ReturnableLineDto>>.NotFound("Factura no encontrada.")
         );
 
         var response = await controller.GetReturnableLines(Guid.NewGuid(), CancellationToken.None);
@@ -364,16 +373,14 @@ public sealed class SalesReturnControllerTests
         var response = await controller.Authorize(id, request, CancellationToken.None);
 
         response.Should().BeOfType<OkObjectResult>();
-        sentRequest
-            .Should()
-            .Be(new AuthorizeSalesReturnCommand(id, request.RefundAllocations));
+        sentRequest.Should().Be(new AuthorizeSalesReturnCommand(id, request.RefundAllocations));
     }
 
     [Fact]
     public async Task Authorize_sobre_devolucion_inexistente_retorna_404()
     {
-        var controller = BuildController(
-            _ => Result<SalesReturnDto>.NotFound("Devolución no encontrada.")
+        var controller = BuildController(_ =>
+            Result<SalesReturnDto>.NotFound("Devolución no encontrada.")
         );
         var request = new AuthorizeSalesReturnRequest(
             new List<AuthorizeSalesReturnRefundAllocationInput> { new("Cash", 23m) }
@@ -387,11 +394,10 @@ public sealed class SalesReturnControllerTests
     [Fact]
     public async Task Authorize_con_asignaciones_que_no_suman_el_total_retorna_422()
     {
-        var controller = BuildController(
-            _ =>
-                Result<SalesReturnDto>.ValidationFailure(
-                    "El total de las asignaciones de reembolso no coincide con el total devuelto."
-                )
+        var controller = BuildController(_ =>
+            Result<SalesReturnDto>.ValidationFailure(
+                "El total de las asignaciones de reembolso no coincide con el total devuelto."
+            )
         );
         var request = new AuthorizeSalesReturnRequest(
             new List<AuthorizeSalesReturnRefundAllocationInput> { new("Cash", 5m) }

@@ -1,0 +1,307 @@
+/* SalesPage — estilos extraídos de style={{...}} inline (remediación no-restricted-syntax). */
+
+/* Utilidades genéricas */
+.sales-mono {
+  font-family: monospace;
+}
+.sales-fs-11 {
+  font-size: 11px;
+}
+.sales-icon-14 {
+  font-size: 14px;
+}
+.sales-icon-16 {
+  font-size: 16px;
+}
+.sales-icon-18 {
+  font-size: 18px;
+}
+.sales-icon-20 {
+  font-size: 20px;
+}
+
+/* Layout raíz */
+.sales-page-root {
+  padding: 8px 16px 0;
+}
+
+/* Listado */
+.sales-page-listbar {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 16px;
+  align-items: center;
+}
+.sales-page-spacer {
+  flex: 1;
+}
+.sales-page-search {
+  max-width: 300px;
+}
+.sales-page-invoice-number {
+  font-family: monospace;
+  font-weight: 600;
+}
+
+/* Selects de emisión */
+.sales-form-select {
+  width: 100%;
+  font-size: 12px;
+  padding: 5px 8px;
+  border: 1.5px solid var(--color-border);
+  border-radius: 6px;
+  margin-bottom: 4px;
+}
+
+.sales-form-mt-4 {
+  margin-top: 4px;
+}
+.sales-form-mt-8 {
+  margin-top: 8px;
+}
+.sales-form-mt-10 {
+  margin-top: 10px;
+}
+
+/* Perfil de cliente */
+.sales-form-customer-profile {
+  margin-top: 6px;
+  font-size: 11px;
+  color: var(--color-text-secondary);
+  line-height: 1.6;
+}
+.sales-form-profile-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.sales-form-edit-btn {
+  margin-top: 4px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--color-primary);
+  font-size: 11px;
+  font-weight: 600;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+
+/* Resumen impuestos + total */
+.sales-form-tax-section {
+  padding: 12px 16px;
+}
+
+/* Barra inferior */
+.sales-page-sri-icon {
+  font-size: 14px;
+  vertical-align: middle;
+  margin-right: 4px;
+}
+.sales-bottombar-btn--danger {
+  background: var(--color-error);
+  color: #fff;
+  border-color: var(--color-error);
+}
+
+/* Botón Emitir */
+.sales-emit-wrap {
+  position: relative;
+}
+
+/* Formas de cobro — modo solo lectura */
+.sales-payment-readonly-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.sales-payment-chip {
+  padding: 6px 10px;
+  border-radius: 6px;
+  border: 1.5px solid var(--color-primary);
+  background: var(--color-primary);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+/* Formas de cobro — grilla editable */
+.sales-payment-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+  gap: 6px;
+}
+
+.sales-payment-method {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 8px 6px;
+  border-radius: 8px;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  transition: all 0.15s;
+  border: 1.5px solid var(--color-border);
+  background: #fff;
+  color: var(--color-text-primary);
+}
+.sales-payment-method--active {
+  border: 2px solid var(--color-primary);
+  background: var(--color-primary);
+  color: #fff;
+}
+
+.sales-payment-method__btn {
+  font-size: 11px;
+  cursor: pointer;
+  width: 100%;
+  text-align: center;
+  background: none;
+  border: none;
+  padding: 0;
+  margin: 0;
+  font: inherit;
+  font-weight: inherit;
+  text-transform: inherit;
+  color: inherit;
+}
+
+.sales-payment-amount-row {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+.sales-payment-dollar {
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 11px;
+}
+
+.sales-payment-input {
+  width: 70px;
+  font-size: 13px;
+  font-family: monospace;
+  font-weight: 800;
+  text-align: center;
+  padding: 2px 4px;
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.15);
+  color: #fff;
+}
+
+.sales-payment-remove-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 14px;
+  padding: 0;
+  line-height: 1;
+}
+
+.sales-payment-ref-amount {
+  font-size: 12px;
+  font-family: monospace;
+  font-weight: 800;
+}
+.sales-payment-ref-count {
+  font-size: 9px;
+  font-weight: 400;
+  opacity: 0.8;
+}
+
+.sales-payment-credit-amount {
+  font-size: 13px;
+  font-family: monospace;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+/* Caja de efectivo recibido */
+.sales-cash-box {
+  font-size: 11px;
+  margin-top: 6px;
+  padding: 6px 8px;
+  border-radius: 6px;
+  background: #f8fafc;
+  border: 1px solid var(--color-border);
+}
+.sales-cash-box--insufficient {
+  background: #fef2f2;
+  border: 1.5px solid #dc2626;
+}
+.sales-cash-box__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.sales-cash-box__label {
+  color: var(--color-text-secondary);
+}
+.sales-cash-box__input-wrap {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+.sales-cash-input {
+  width: 80px;
+  font-size: 13px;
+  font-family: monospace;
+  font-weight: 700;
+  text-align: center;
+  padding: 2px 4px;
+}
+.sales-cash-box__total-row {
+  display: flex;
+  justify-content: space-between;
+  font-weight: 700;
+  margin-top: 2px;
+  padding-top: 2px;
+  border-top: 1px solid var(--color-border);
+  color: var(--color-text-primary);
+}
+.sales-cash-box__total-row--insufficient {
+  color: #dc2626;
+}
+
+/* Resumen de cobro (total / cobrado / pendiente) */
+.sales-summary-box {
+  font-size: 11px;
+  margin-top: 6px;
+  padding: 6px 8px;
+  border-radius: 6px;
+  background: #f8fafc;
+  border: 1px solid var(--color-border);
+}
+.sales-summary-box--complete {
+  background: #f0fdf4;
+}
+.sales-summary-box--exceeds {
+  background: #fef2f2;
+  border: 1.5px solid #dc2626;
+}
+.sales-summary-row {
+  display: flex;
+  justify-content: space-between;
+  color: var(--color-text-secondary);
+}
+.sales-summary-total-row {
+  display: flex;
+  justify-content: space-between;
+  font-weight: 700;
+  margin-top: 2px;
+  padding-top: 2px;
+  border-top: 1px solid var(--color-border);
+  color: var(--color-text-primary);
+}
+.sales-summary-total-row--complete {
+  color: #16a34a;
+}
+.sales-summary-total-row--exceeds {
+  color: #dc2626;
+}

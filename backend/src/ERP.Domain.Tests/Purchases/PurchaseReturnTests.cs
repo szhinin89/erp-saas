@@ -17,13 +17,7 @@ public sealed class PurchaseReturnTests
     private static PurchaseReturn.DraftLineInput Line(
         Guid? originalInvoiceDetailId = null,
         decimal quantity = 3m
-    ) =>
-        new(
-            originalInvoiceDetailId ?? Guid.NewGuid(),
-            Guid.NewGuid(),
-            quantity,
-            Guid.NewGuid()
-        );
+    ) => new(originalInvoiceDetailId ?? Guid.NewGuid(), Guid.NewGuid(), quantity, Guid.NewGuid());
 
     private static PurchaseReturn CreateDraft(
         string reason = "Producto defectuoso",
@@ -173,8 +167,7 @@ public sealed class PurchaseReturnTests
     public void CreateDraft_rechaza_linea_de_factura_duplicada()
     {
         var detailId = Guid.NewGuid();
-        var act = () =>
-            CreateDraft(lines: new[] { Line(detailId), Line(detailId) });
+        var act = () => CreateDraft(lines: new[] { Line(detailId), Line(detailId) });
 
         act.Should().Throw<ArgumentException>();
     }
@@ -202,9 +195,9 @@ public sealed class PurchaseReturnTests
         purchaseReturn.UpdateDraft("Nuevo motivo", new[] { newLine }, UserId);
 
         purchaseReturn.Reason.Should().Be("Nuevo motivo");
-        purchaseReturn.Lines.Should().ContainSingle(
-            l => l.OriginalInvoiceDetailId == newLine.OriginalInvoiceDetailId
-        );
+        purchaseReturn
+            .Lines.Should()
+            .ContainSingle(l => l.OriginalInvoiceDetailId == newLine.OriginalInvoiceDetailId);
     }
 
     [Fact]
@@ -254,7 +247,9 @@ public sealed class PurchaseReturnTests
         );
 
         purchaseReturn.Status.Should().Be(PurchaseReturnStatus.Authorized);
-        purchaseReturn.FiscalStatus.Should().Be(PurchaseReturnFiscalStatus.PendingSupplierCreditNote);
+        purchaseReturn
+            .FiscalStatus.Should()
+            .Be(PurchaseReturnFiscalStatus.PendingSupplierCreditNote);
         purchaseReturn.ReturnNumber.Should().Be("00000001");
         purchaseReturn.AuthorizedSubtotal.Should().Be(300.00m);
         purchaseReturn.AuthorizedVatTotal.Should().Be(36.00m);
@@ -479,7 +474,8 @@ public sealed class PurchaseReturnTests
         var purchaseReturn = CreateDraft();
         purchaseReturn.Cancel("Motivo", UserId, Guid.NewGuid(), "hash-cancel-003");
 
-        var act = () => purchaseReturn.Cancel("Otro motivo", UserId, Guid.NewGuid(), "hash-cancel-004");
+        var act = () =>
+            purchaseReturn.Cancel("Otro motivo", UserId, Guid.NewGuid(), "hash-cancel-004");
 
         act.Should().Throw<InvalidOperationException>();
     }
@@ -536,15 +532,12 @@ public sealed class PurchaseReturnTests
         var docId = Guid.NewGuid();
         var linkClientRequestId = Guid.NewGuid();
 
-        purchaseReturn.LinkSupplierCreditNote(
-            docId,
-            UserId,
-            linkClientRequestId,
-            "hash-link-001"
-        );
+        purchaseReturn.LinkSupplierCreditNote(docId, UserId, linkClientRequestId, "hash-link-001");
 
         purchaseReturn.SupplierCreditNoteDocumentId.Should().Be(docId);
-        purchaseReturn.FiscalStatus.Should().Be(PurchaseReturnFiscalStatus.SupplierCreditNoteRegistered);
+        purchaseReturn
+            .FiscalStatus.Should()
+            .Be(PurchaseReturnFiscalStatus.SupplierCreditNoteRegistered);
         purchaseReturn.LinkCreditNoteClientRequestId.Should().Be(linkClientRequestId);
         purchaseReturn.LinkCreditNoteRequestPayloadHash.Should().Be("hash-link-001");
     }
@@ -586,7 +579,9 @@ public sealed class PurchaseReturnTests
     [InlineData(null)]
     [InlineData("")]
     [InlineData("   ")]
-    public void LinkSupplierCreditNote_rechaza_LinkCreditNoteRequestPayloadHash_invalido(string? hash)
+    public void LinkSupplierCreditNote_rechaza_LinkCreditNoteRequestPayloadHash_invalido(
+        string? hash
+    )
     {
         var purchaseReturn = CreateDraft();
         AuthorizeHappyPath(purchaseReturn);

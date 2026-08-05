@@ -27,6 +27,7 @@ public interface IPurchaseInvoiceRepository
         int pageSize,
         CancellationToken ct = default
     );
+
     /// <summary>
     /// Compras emitidas en el rango de fechas indicado (inclusive), opcionalmente acotadas a un
     /// proveedor, con líneas cargadas para que los totales calculados (Subtotal/TotalVat/

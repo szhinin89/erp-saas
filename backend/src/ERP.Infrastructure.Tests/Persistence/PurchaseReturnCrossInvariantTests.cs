@@ -56,7 +56,12 @@ public sealed class PurchaseReturnCrossInvariantTests : IAsyncLifetime
         await db.Database.MigrateAsync();
 
         var tenant = Tenant.Create("Test Tenant", $"test-{Guid.NewGuid():N}"[..16], _userId);
-        var company = Company.CreateManaged(tenant.Id, "1790012345001", "Test S.A.", createdBy: _userId);
+        var company = Company.CreateManaged(
+            tenant.Id,
+            "1790012345001",
+            "Test S.A.",
+            createdBy: _userId
+        );
         db.Tenants.Add(tenant);
         db.Companies.Add(company);
         await db.SaveChangesAsync();
@@ -95,7 +100,14 @@ public sealed class PurchaseReturnCrossInvariantTests : IAsyncLifetime
         await db.SaveChangesAsync();
         _branchId = branch.Id;
 
-        var supplier = BusinessPartner.Create(_tenantId, "05", "1710034065", 1, "Proveedor Test", _userId);
+        var supplier = BusinessPartner.Create(
+            _tenantId,
+            "05",
+            "1710034065",
+            1,
+            "Proveedor Test",
+            _userId
+        );
         db.BusinessPartners.Add(supplier);
         var paymentTerm = PaymentTerm.Create(
             _tenantId,
@@ -153,8 +165,12 @@ public sealed class PurchaseReturnCrossInvariantTests : IAsyncLifetime
                 saleVatCode: "10",
                 purchaseVatCode: "10"
             ),
-            saleConfig: ERP.Domain.Modules.Items.ValueObjects.ItemSaleConfig.Create(isForSale: true),
-            stockConfig: ERP.Domain.Modules.Items.ValueObjects.ItemStockConfig.Create(tracksStock: true),
+            saleConfig: ERP.Domain.Modules.Items.ValueObjects.ItemSaleConfig.Create(
+                isForSale: true
+            ),
+            stockConfig: ERP.Domain.Modules.Items.ValueObjects.ItemStockConfig.Create(
+                tracksStock: true
+            ),
             createdBy: _userId
         );
         db.Set<ERP.Domain.Modules.Items.Entities.Item>().Add(item);
@@ -239,7 +255,10 @@ public sealed class PurchaseReturnCrossInvariantTests : IAsyncLifetime
     );
 
     /// <summary>Factura confirmada + CxP + PurchaseReturn Authorized (crea SupplierCredit si <paramref name="paidAmount"/> cubre el total).</summary>
-    private async Task<SeededReturn> SeedAuthorizedReturnAsync(decimal grandTotal, decimal paidAmount)
+    private async Task<SeededReturn> SeedAuthorizedReturnAsync(
+        decimal grandTotal,
+        decimal paidAmount
+    )
     {
         await using var db = CreateContext();
         var inv = PurchaseInvoice.CreateDraft(
@@ -271,7 +290,14 @@ public sealed class PurchaseReturnCrossInvariantTests : IAsyncLifetime
         inv.Confirm(_userId);
         var confirmedLine = inv.Lines.Single();
 
-        var payable = PurchasePayable.Create(_tenantId, _companyId, inv.Id, _supplierId, grandTotal, _userId);
+        var payable = PurchasePayable.Create(
+            _tenantId,
+            _companyId,
+            inv.Id,
+            _supplierId,
+            grandTotal,
+            _userId
+        );
         if (paidAmount > 0)
             payable.RegisterPayment(paidAmount, _userId);
 
@@ -282,7 +308,10 @@ public sealed class PurchaseReturnCrossInvariantTests : IAsyncLifetime
             inv.Id,
             _supplierId,
             "Producto defectuoso",
-            new[] { new PurchaseReturn.DraftLineInput(confirmedLine.Id, _itemId, 1m, _warehouseId) },
+            new[]
+            {
+                new PurchaseReturn.DraftLineInput(confirmedLine.Id, _itemId, 1m, _warehouseId),
+            },
             _userId,
             Guid.NewGuid(),
             "hash-draft"
@@ -330,7 +359,11 @@ public sealed class PurchaseReturnCrossInvariantTests : IAsyncLifetime
     private CancelPurchaseHandler BuildCancelPurchaseHandler(ErpDbContext db) =>
         new(
             new PurchaseInvoiceRepository(db, new FixedCurrentCompany(() => _companyId)),
-            new StockRepository(db, new FixedCurrentCompany(() => _companyId), new RealDatabaseExceptionTranslator()),
+            new StockRepository(
+                db,
+                new FixedCurrentCompany(() => _companyId),
+                new RealDatabaseExceptionTranslator()
+            ),
             new PurchaseReturnRepository(db, new FixedCurrentCompany(() => _companyId)),
             new UnitOfWork(db),
             NullLogger<CancelPurchaseHandler>.Instance,
@@ -344,7 +377,11 @@ public sealed class PurchaseReturnCrossInvariantTests : IAsyncLifetime
             new PurchaseReturnRepository(db, new FixedCurrentCompany(() => _companyId)),
             new PurchaseInvoiceRepository(db, new FixedCurrentCompany(() => _companyId)),
             new SupplierCreditRepository(db, new FixedCurrentCompany(() => _companyId)),
-            new StockRepository(db, new FixedCurrentCompany(() => _companyId), new RealDatabaseExceptionTranslator()),
+            new StockRepository(
+                db,
+                new FixedCurrentCompany(() => _companyId),
+                new RealDatabaseExceptionTranslator()
+            ),
             new UnitOfWork(db),
             new RealDatabaseExceptionTranslator(),
             new FixedCurrentTenant(() => _tenantId),
@@ -414,7 +451,9 @@ public sealed class PurchaseReturnCrossInvariantTests : IAsyncLifetime
         result.Error.Should().Contain("devolución");
 
         await using var verify = CreateContext();
-        var invoice = await verify.PurchaseInvoices.AsNoTracking().FirstAsync(x => x.Id == seeded.InvoiceId);
+        var invoice = await verify
+            .PurchaseInvoices.AsNoTracking()
+            .FirstAsync(x => x.Id == seeded.InvoiceId);
         invoice.Status.Should().Be(Domain.Modules.Purchases.Enums.PurchaseStatus.Confirmed);
     }
 
@@ -431,7 +470,12 @@ public sealed class PurchaseReturnCrossInvariantTests : IAsyncLifetime
         {
             var applyHandler = BuildApplyHandler(db);
             var applyResult = await applyHandler.Handle(
-                new ApplySupplierCreditCommand(source.CreditId!.Value, target.PayableId, 50m, Guid.NewGuid()),
+                new ApplySupplierCreditCommand(
+                    source.CreditId!.Value,
+                    target.PayableId,
+                    50m,
+                    Guid.NewGuid()
+                ),
                 CancellationToken.None
             );
             applyResult.IsSuccess.Should().BeTrue(applyResult.Error);
@@ -504,7 +548,12 @@ public sealed class PurchaseReturnCrossInvariantTests : IAsyncLifetime
         await using var db2 = CreateContext();
         var applyHandler = BuildApplyHandler(db2);
         var result = await applyHandler.Handle(
-            new ApplySupplierCreditCommand(source.CreditId!.Value, target.PayableId, 50m, Guid.NewGuid()),
+            new ApplySupplierCreditCommand(
+                source.CreditId!.Value,
+                target.PayableId,
+                50m,
+                Guid.NewGuid()
+            ),
             CancellationToken.None
         );
 
@@ -525,7 +574,12 @@ public sealed class PurchaseReturnCrossInvariantTests : IAsyncLifetime
         {
             var applyHandler = BuildApplyHandler(db);
             var applyResult = await applyHandler.Handle(
-                new ApplySupplierCreditCommand(source.CreditId!.Value, target.PayableId, 50m, Guid.NewGuid()),
+                new ApplySupplierCreditCommand(
+                    source.CreditId!.Value,
+                    target.PayableId,
+                    50m,
+                    Guid.NewGuid()
+                ),
                 CancellationToken.None
             );
             applyResult.IsSuccess.Should().BeTrue(applyResult.Error);
@@ -557,8 +611,13 @@ public sealed class PurchaseReturnCrossInvariantTests : IAsyncLifetime
         result.IsSuccess.Should().BeFalse();
 
         await using var verify = CreateContext();
-        var credit = await verify.Set<SupplierCredit>().AsNoTracking().FirstAsync(x => x.Id == source.CreditId!.Value);
-        credit.AvailableAmount.Should().Be(50m, "el crédito no debe cambiar mientras el destino permanezca cancelled");
+        var credit = await verify
+            .Set<SupplierCredit>()
+            .AsNoTracking()
+            .FirstAsync(x => x.Id == source.CreditId!.Value);
+        credit
+            .AvailableAmount.Should()
+            .Be(50m, "el crédito no debe cambiar mientras el destino permanezca cancelled");
     }
 
     // ── Caso 6 — PR-011 (crédito aplicado) ────────────────────────────────
@@ -574,7 +633,12 @@ public sealed class PurchaseReturnCrossInvariantTests : IAsyncLifetime
         {
             var applyHandler = BuildApplyHandler(db);
             var applyResult = await applyHandler.Handle(
-                new ApplySupplierCreditCommand(source.CreditId!.Value, target.PayableId, 30m, Guid.NewGuid()),
+                new ApplySupplierCreditCommand(
+                    source.CreditId!.Value,
+                    target.PayableId,
+                    30m,
+                    Guid.NewGuid()
+                ),
                 CancellationToken.None
             );
             applyResult.IsSuccess.Should().BeTrue(applyResult.Error);
@@ -583,7 +647,11 @@ public sealed class PurchaseReturnCrossInvariantTests : IAsyncLifetime
         await using var db2 = CreateContext();
         var cancelReturnHandler = BuildCancelPurchaseReturnHandler(db2);
         var result = await cancelReturnHandler.Handle(
-            new CancelPurchaseReturnCommand(source.ReturnId, "Intento de anulación", Guid.NewGuid()),
+            new CancelPurchaseReturnCommand(
+                source.ReturnId,
+                "Intento de anulación",
+                Guid.NewGuid()
+            ),
             CancellationToken.None
         );
 
@@ -591,7 +659,9 @@ public sealed class PurchaseReturnCrossInvariantTests : IAsyncLifetime
         result.Error.Should().Contain("crédito");
 
         await using var verify = CreateContext();
-        var ret = await verify.PurchaseReturns.AsNoTracking().FirstAsync(x => x.Id == source.ReturnId);
+        var ret = await verify
+            .PurchaseReturns.AsNoTracking()
+            .FirstAsync(x => x.Id == source.ReturnId);
         ret.Status.Should().Be(PurchaseReturnStatus.Authorized);
     }
 
@@ -609,7 +679,8 @@ public sealed class PurchaseReturnCrossInvariantTests : IAsyncLifetime
         // también detecta reembolsos, no solo aplicaciones (§5.1 caso 7, misma fórmula que caso 6).
         await using (var db = CreateContext())
         {
-            var credit = await db.Set<SupplierCredit>().FirstAsync(x => x.Id == source.CreditId!.Value);
+            var credit = await db.Set<SupplierCredit>()
+                .FirstAsync(x => x.Id == source.CreditId!.Value);
             credit.RegisterRefund(20m, _userId, Guid.NewGuid(), "refund-hash-test");
             await db.SaveChangesAsync();
         }
@@ -617,7 +688,11 @@ public sealed class PurchaseReturnCrossInvariantTests : IAsyncLifetime
         await using var db2 = CreateContext();
         var cancelReturnHandler = BuildCancelPurchaseReturnHandler(db2);
         var result = await cancelReturnHandler.Handle(
-            new CancelPurchaseReturnCommand(source.ReturnId, "Intento de anulación", Guid.NewGuid()),
+            new CancelPurchaseReturnCommand(
+                source.ReturnId,
+                "Intento de anulación",
+                Guid.NewGuid()
+            ),
             CancellationToken.None
         );
 
@@ -664,12 +739,20 @@ public sealed class PurchaseReturnCrossInvariantTests : IAsyncLifetime
         result.IsSuccess.Should().BeTrue(result.Error);
 
         await using var verify = CreateContext();
-        var ret = await verify.PurchaseReturns.AsNoTracking().FirstAsync(x => x.Id == source.ReturnId);
+        var ret = await verify
+            .PurchaseReturns.AsNoTracking()
+            .FirstAsync(x => x.Id == source.ReturnId);
         ret.Status.Should().Be(PurchaseReturnStatus.Cancelled);
-        ret.FiscalStatus.Should().Be(
-            Domain.Modules.Purchases.Enums.PurchaseReturnFiscalStatus.SupplierCreditNoteRegistered,
-            "el vínculo de NC es puramente documental (§3.14/§5.1 caso 8) — el estado fiscal queda congelado, nunca se sobrescribe"
-        );
+        ret.FiscalStatus.Should()
+            .Be(
+                Domain
+                    .Modules
+                    .Purchases
+                    .Enums
+                    .PurchaseReturnFiscalStatus
+                    .SupplierCreditNoteRegistered,
+                "el vínculo de NC es puramente documental (§3.14/§5.1 caso 8) — el estado fiscal queda congelado, nunca se sobrescribe"
+            );
     }
 
     // ── Caso 9 — cancelación concurrente factura/devolución, serializada por Lock A ──
@@ -693,15 +776,23 @@ public sealed class PurchaseReturnCrossInvariantTests : IAsyncLifetime
             await using var db = CreateContext();
             var handler = BuildCancelPurchaseReturnHandler(db);
             return await handler.Handle(
-                new CancelPurchaseReturnCommand(seeded.ReturnId, "Cancelación de devolución", Guid.NewGuid()),
+                new CancelPurchaseReturnCommand(
+                    seeded.ReturnId,
+                    "Cancelación de devolución",
+                    Guid.NewGuid()
+                ),
                 CancellationToken.None
             );
         });
         await Task.WhenAll(task1, task2);
 
         await using var verify = CreateContext();
-        var invoice = await verify.PurchaseInvoices.AsNoTracking().FirstAsync(x => x.Id == seeded.InvoiceId);
-        var ret = await verify.PurchaseReturns.AsNoTracking().FirstAsync(x => x.Id == seeded.ReturnId);
+        var invoice = await verify
+            .PurchaseInvoices.AsNoTracking()
+            .FirstAsync(x => x.Id == seeded.InvoiceId);
+        var ret = await verify
+            .PurchaseReturns.AsNoTracking()
+            .FirstAsync(x => x.Id == seeded.ReturnId);
 
         // Invariante central de PI-CANC-01 (§5.1 caso 1): jamás la factura queda Cancelled
         // mientras su devolución permanece Authorized — el escenario huérfano que el lock A existe

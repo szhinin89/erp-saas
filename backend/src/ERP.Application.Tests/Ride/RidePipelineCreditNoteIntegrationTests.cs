@@ -1,3 +1,4 @@
+using System.Runtime.CompilerServices;
 using ERP.Application.Common;
 using ERP.Application.Modules.ElectronicDocuments.DTOs;
 using ERP.Application.Modules.ElectronicDocuments.XmlBuilders;
@@ -16,7 +17,6 @@ using ERP.Infrastructure.Ride.Rendering;
 using FluentAssertions;
 using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
-using System.Runtime.CompilerServices;
 
 namespace ERP.Application.Tests.Ride;
 
@@ -40,6 +40,7 @@ public sealed class RidePipelineCreditNoteIntegrationTests
     // IRideRenderer), así que fija la licencia localmente en vez de depender de un módulo
     // compartido de otro proyecto de test.
     [ModuleInitializer]
+    [Fact]
     public static void SetQuestPdfLicense() =>
         QuestPDF.Settings.License = QuestPDF.Infrastructure.LicenseType.Community;
 
@@ -147,12 +148,14 @@ public sealed class RidePipelineCreditNoteIntegrationTests
         // Strategy real: mismos resolvers de producción, con AMBAS plantillas/parsers reales
         // registrados (Factura + Nota de Crédito) — prueba explícita de que agregar CreditNote no
         // rompe la resolución de Invoice (item 8 de la Fase 12).
-        var parserResolver = new RideXmlParserResolver(
-            [new InvoiceRideXmlParser(), new CreditNoteRideXmlParser()]
-        );
-        var templateResolver = new RideTemplateResolver(
-            [new DefaultInvoiceRideTemplate(), new CreditNoteRideTemplate()]
-        );
+        var parserResolver = new RideXmlParserResolver([
+            new InvoiceRideXmlParser(),
+            new CreditNoteRideXmlParser(),
+        ]);
+        var templateResolver = new RideTemplateResolver([
+            new DefaultInvoiceRideTemplate(),
+            new CreditNoteRideTemplate(),
+        ]);
 
         var sourceXmlProvider = new Mock<IRideSourceXmlProvider>();
         sourceXmlProvider
@@ -273,11 +276,17 @@ public sealed class RidePipelineCreditNoteIntegrationTests
         );
 
         result.IsSuccess.Should().BeTrue(result.Error);
-        result.Value!.Outcome.Should().Be(RideOutcome.Generated, result.Value.ReasonCode ?? string.Empty);
+        result
+            .Value!.Outcome.Should()
+            .Be(RideOutcome.Generated, result.Value.ReasonCode ?? string.Empty);
         result.Value.StoragePath.Should().Be("ride/path/credit-note.pdf");
 
         generatedPdfBytes.Should().NotBeNull();
-        generatedPdfBytes.Should().NotBeEmpty("el PDF de la Nota de Crédito debe generarse realmente, no solo componerse el layout");
+        generatedPdfBytes
+            .Should()
+            .NotBeEmpty(
+                "el PDF de la Nota de Crédito debe generarse realmente, no solo componerse el layout"
+            );
         // Firma de archivo PDF ("%PDF-") — confirma que son bytes de un PDF real, no un placeholder.
         System.Text.Encoding.ASCII.GetString(generatedPdfBytes!, 0, 5).Should().Be("%PDF-");
 

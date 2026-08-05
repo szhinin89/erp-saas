@@ -87,10 +87,15 @@ public sealed class RegisterPaymentCommandHandlerTests
         );
 
     /// <summary>Configura el par completo de mocks (descubrimiento sin tracking + recarga bajo lock) para un único payable.</summary>
-    private static void SetupPayable(Mock<IPurchasePayableRepository> payables, PurchasePayable payable)
+    private static void SetupPayable(
+        Mock<IPurchasePayableRepository> payables,
+        PurchasePayable payable
+    )
     {
         payables
-            .Setup(r => r.GetPurchaseInvoiceIdAsync(TenantId, payable.Id, It.IsAny<CancellationToken>()))
+            .Setup(r =>
+                r.GetPurchaseInvoiceIdAsync(TenantId, payable.Id, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(payable.PurchaseId);
         payables
             .Setup(r => r.GetByIdAsync(TenantId, payable.Id, It.IsAny<CancellationToken>()))
@@ -104,7 +109,15 @@ public sealed class RegisterPaymentCommandHandlerTests
         var payable = CreatePayable(100m);
         SetupPayable(payables, payable);
 
-        var handler = BuildHandler(payments, payables, purchaseReturnRepo, uow, tenant, company, user);
+        var handler = BuildHandler(
+            payments,
+            payables,
+            purchaseReturnRepo,
+            uow,
+            tenant,
+            company,
+            user
+        );
         var cmd = new RegisterPaymentCommand(
             SupplierId,
             60m,
@@ -119,7 +132,14 @@ public sealed class RegisterPaymentCommandHandlerTests
         result.IsSuccess.Should().BeTrue();
         payable.PaidAmount.Should().Be(60m);
         payable.BalanceDue.Should().Be(40m);
-        payments.Verify(p => p.AddAsync(It.IsAny<Domain.Modules.Finance.Entities.Payment>(), It.IsAny<CancellationToken>()), Times.Once);
+        payments.Verify(
+            p =>
+                p.AddAsync(
+                    It.IsAny<Domain.Modules.Finance.Entities.Payment>(),
+                    It.IsAny<CancellationToken>()
+                ),
+            Times.Once
+        );
         payments.Verify(p => p.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
         uow.Verify(u => u.CommitAsync(It.IsAny<CancellationToken>()), Times.Once);
     }
@@ -133,11 +153,26 @@ public sealed class RegisterPaymentCommandHandlerTests
 
         Domain.Modules.Finance.Entities.Payment? captured = null;
         payments
-            .Setup(p => p.AddAsync(It.IsAny<Domain.Modules.Finance.Entities.Payment>(), It.IsAny<CancellationToken>()))
-            .Callback<Domain.Modules.Finance.Entities.Payment, CancellationToken>((p, _) => captured = p)
+            .Setup(p =>
+                p.AddAsync(
+                    It.IsAny<Domain.Modules.Finance.Entities.Payment>(),
+                    It.IsAny<CancellationToken>()
+                )
+            )
+            .Callback<Domain.Modules.Finance.Entities.Payment, CancellationToken>(
+                (p, _) => captured = p
+            )
             .Returns(Task.CompletedTask);
 
-        var handler = BuildHandler(payments, payables, purchaseReturnRepo, uow, tenant, company, user);
+        var handler = BuildHandler(
+            payments,
+            payables,
+            purchaseReturnRepo,
+            uow,
+            tenant,
+            company,
+            user
+        );
         var cmd = new RegisterPaymentCommand(
             SupplierId,
             100m,
@@ -181,11 +216,26 @@ public sealed class RegisterPaymentCommandHandlerTests
 
         Domain.Modules.Finance.Entities.Payment? captured = null;
         payments
-            .Setup(p => p.AddAsync(It.IsAny<Domain.Modules.Finance.Entities.Payment>(), It.IsAny<CancellationToken>()))
-            .Callback<Domain.Modules.Finance.Entities.Payment, CancellationToken>((p, _) => captured = p)
+            .Setup(p =>
+                p.AddAsync(
+                    It.IsAny<Domain.Modules.Finance.Entities.Payment>(),
+                    It.IsAny<CancellationToken>()
+                )
+            )
+            .Callback<Domain.Modules.Finance.Entities.Payment, CancellationToken>(
+                (p, _) => captured = p
+            )
             .Returns(Task.CompletedTask);
 
-        var handler = BuildHandler(payments, payables, purchaseReturnRepo, uow, tenant, company, user);
+        var handler = BuildHandler(
+            payments,
+            payables,
+            purchaseReturnRepo,
+            uow,
+            tenant,
+            company,
+            user
+        );
         var cmd = new RegisterPaymentCommand(
             SupplierId,
             150m,
@@ -209,7 +259,15 @@ public sealed class RegisterPaymentCommandHandlerTests
         payable.RegisterPayment(70m, UserId); // saldo restante: 30
         SetupPayable(payables, payable);
 
-        var handler = BuildHandler(payments, payables, purchaseReturnRepo, uow, tenant, company, user);
+        var handler = BuildHandler(
+            payments,
+            payables,
+            purchaseReturnRepo,
+            uow,
+            tenant,
+            company,
+            user
+        );
         var cmd = new RegisterPaymentCommand(
             SupplierId,
             50m,
@@ -223,7 +281,9 @@ public sealed class RegisterPaymentCommandHandlerTests
 
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Contain("excede el saldo pendiente");
-        payable.PaidAmount.Should().Be(70m, "el pago rechazado no debe mutar el saldo ya registrado");
+        payable
+            .PaidAmount.Should()
+            .Be(70m, "el pago rechazado no debe mutar el saldo ya registrado");
         payments.Verify(p => p.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
         uow.Verify(u => u.RollbackAsync(It.IsAny<CancellationToken>()), Times.Once);
     }
@@ -234,10 +294,20 @@ public sealed class RegisterPaymentCommandHandlerTests
         var (payments, payables, purchaseReturnRepo, uow, tenant, company, user) = BuildMocks();
         var missingId = Guid.NewGuid();
         payables
-            .Setup(r => r.GetPurchaseInvoiceIdAsync(TenantId, missingId, It.IsAny<CancellationToken>()))
+            .Setup(r =>
+                r.GetPurchaseInvoiceIdAsync(TenantId, missingId, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync((Guid?)null);
 
-        var handler = BuildHandler(payments, payables, purchaseReturnRepo, uow, tenant, company, user);
+        var handler = BuildHandler(
+            payments,
+            payables,
+            purchaseReturnRepo,
+            uow,
+            tenant,
+            company,
+            user
+        );
         var cmd = new RegisterPaymentCommand(
             SupplierId,
             50m,
@@ -252,7 +322,12 @@ public sealed class RegisterPaymentCommandHandlerTests
         result.IsSuccess.Should().BeFalse();
         result.Code.Should().Be(ApiResponseCodes.Common.NotFound);
         purchaseReturnRepo.Verify(
-            r => r.AcquireFinancialLockAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()),
+            r =>
+                r.AcquireFinancialLockAsync(
+                    It.IsAny<Guid>(),
+                    It.IsAny<Guid>(),
+                    It.IsAny<CancellationToken>()
+                ),
             Times.Never,
             "el descubrimiento no encontró la CxP — no debe adquirirse ningún lock"
         );
@@ -267,7 +342,15 @@ public sealed class RegisterPaymentCommandHandlerTests
         payable.CancelPayable();
         SetupPayable(payables, payable);
 
-        var handler = BuildHandler(payments, payables, purchaseReturnRepo, uow, tenant, company, user);
+        var handler = BuildHandler(
+            payments,
+            payables,
+            purchaseReturnRepo,
+            uow,
+            tenant,
+            company,
+            user
+        );
         var cmd = new RegisterPaymentCommand(
             SupplierId,
             10m,
@@ -304,11 +387,19 @@ public sealed class RegisterPaymentCommandHandlerTests
             .Returns(Task.CompletedTask);
         payables
             .InSequence(sequence)
-            .Setup(r => r.GetPurchaseInvoiceIdAsync(TenantId, payable.Id, It.IsAny<CancellationToken>()))
+            .Setup(r =>
+                r.GetPurchaseInvoiceIdAsync(TenantId, payable.Id, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(payable.PurchaseId);
         purchaseReturnRepo
             .InSequence(sequence)
-            .Setup(r => r.AcquireFinancialLockAsync(TenantId, payable.PurchaseId, It.IsAny<CancellationToken>()))
+            .Setup(r =>
+                r.AcquireFinancialLockAsync(
+                    TenantId,
+                    payable.PurchaseId,
+                    It.IsAny<CancellationToken>()
+                )
+            )
             .Returns(Task.CompletedTask);
         payables
             .InSequence(sequence)
@@ -322,7 +413,15 @@ public sealed class RegisterPaymentCommandHandlerTests
             .Setup(u => u.CommitAsync(It.IsAny<CancellationToken>()))
             .Returns(Task.CompletedTask);
 
-        var handler = BuildHandler(payments, payables, purchaseReturnRepo, uow, tenant, company, user);
+        var handler = BuildHandler(
+            payments,
+            payables,
+            purchaseReturnRepo,
+            uow,
+            tenant,
+            company,
+            user
+        );
         var cmd = new RegisterPaymentCommand(
             SupplierId,
             25m,
@@ -367,8 +466,16 @@ public sealed class RegisterPaymentCommandHandlerTests
 
         var lockedOrder = new List<Guid>();
         purchaseReturnRepo
-            .Setup(r => r.AcquireFinancialLockAsync(TenantId, It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
-            .Callback<Guid, Guid, CancellationToken>((_, invoiceId, _) => lockedOrder.Add(invoiceId))
+            .Setup(r =>
+                r.AcquireFinancialLockAsync(
+                    TenantId,
+                    It.IsAny<Guid>(),
+                    It.IsAny<CancellationToken>()
+                )
+            )
+            .Callback<Guid, Guid, CancellationToken>(
+                (_, invoiceId, _) => lockedOrder.Add(invoiceId)
+            )
             .Returns(Task.CompletedTask);
 
         var mutatedBeforeAllLocksAcquired = false;
@@ -379,12 +486,22 @@ public sealed class RegisterPaymentCommandHandlerTests
                 {
                     if (lockedOrder.Count < 3)
                         mutatedBeforeAllLocksAcquired = true;
-                    var match = new[] { payableA, payableB, payableC1, payableC2 }.First(p => p.Id == id);
+                    var match = new[] { payableA, payableB, payableC1, payableC2 }.First(p =>
+                        p.Id == id
+                    );
                     return Task.FromResult<PurchasePayable?>(match);
                 }
             );
 
-        var handler = BuildHandler(payments, payables, purchaseReturnRepo, uow, tenant, company, user);
+        var handler = BuildHandler(
+            payments,
+            payables,
+            purchaseReturnRepo,
+            uow,
+            tenant,
+            company,
+            user
+        );
         var cmd = new RegisterPaymentCommand(
             SupplierId,
             120m,
@@ -404,9 +521,9 @@ public sealed class RegisterPaymentCommandHandlerTests
 
         result.IsSuccess.Should().BeTrue();
         lockedOrder.Should().Equal(invoiceLow, invoiceMid, invoiceHigh);
-        mutatedBeforeAllLocksAcquired.Should().BeFalse(
-            "ninguna recarga/mutación debe ocurrir antes de adquirir todos los locks"
-        );
+        mutatedBeforeAllLocksAcquired
+            .Should()
+            .BeFalse("ninguna recarga/mutación debe ocurrir antes de adquirir todos los locks");
     }
 
     /// <summary>
@@ -423,7 +540,9 @@ public sealed class RegisterPaymentCommandHandlerTests
         var payable = CreatePayable(100m);
 
         payables
-            .Setup(r => r.GetPurchaseInvoiceIdAsync(TenantId, payable.Id, It.IsAny<CancellationToken>()))
+            .Setup(r =>
+                r.GetPurchaseInvoiceIdAsync(TenantId, payable.Id, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(payable.PurchaseId);
         // La recarga posterior al lock refleja que, mientras tanto, otra transacción canceló la CxP.
         payable.CancelPayable();
@@ -431,7 +550,15 @@ public sealed class RegisterPaymentCommandHandlerTests
             .Setup(r => r.GetByIdAsync(TenantId, payable.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(payable);
 
-        var handler = BuildHandler(payments, payables, purchaseReturnRepo, uow, tenant, company, user);
+        var handler = BuildHandler(
+            payments,
+            payables,
+            purchaseReturnRepo,
+            uow,
+            tenant,
+            company,
+            user
+        );
         var cmd = new RegisterPaymentCommand(
             SupplierId,
             10m,

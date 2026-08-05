@@ -43,10 +43,8 @@ public sealed class CompanyFinancialDestinationRepository : ICompanyFinancialDes
         return await GetByIdAsync(tenantId, id, ct);
     }
 
-    public Task AddAsync(
-        CompanyFinancialDestination destination,
-        CancellationToken ct = default
-    ) => _db.CompanyFinancialDestinations.AddAsync(destination, ct).AsTask();
+    public Task AddAsync(CompanyFinancialDestination destination, CancellationToken ct = default) =>
+        _db.CompanyFinancialDestinations.AddAsync(destination, ct).AsTask();
 
     public Task SaveChangesAsync(CancellationToken ct = default) => _db.SaveChangesAsync(ct);
 

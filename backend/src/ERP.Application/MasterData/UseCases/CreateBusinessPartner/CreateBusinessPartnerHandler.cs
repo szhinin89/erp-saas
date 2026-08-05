@@ -28,13 +28,13 @@ public sealed class CreateBusinessPartnerHandler
     private readonly IDatabaseExceptionTranslator _dbEx;
 
     public CreateBusinessPartnerHandler(
-     IBusinessPartnerRepository bpRepo,
-     ILegalEntityTypeRepository legalEntityTypeRepo,
-     IUserActivityRepository activity,
-     IOperationalContext ctx,
-     ICurrentUser currentUser,
-     IDatabaseExceptionTranslator dbEx
- )
+        IBusinessPartnerRepository bpRepo,
+        ILegalEntityTypeRepository legalEntityTypeRepo,
+        IUserActivityRepository activity,
+        IOperationalContext ctx,
+        ICurrentUser currentUser,
+        IDatabaseExceptionTranslator dbEx
+    )
     {
         _bpRepo = bpRepo;
         _legalEntityTypeRepo = legalEntityTypeRepo;
@@ -81,9 +81,9 @@ public sealed class CreateBusinessPartnerHandler
             return Result<BusinessPartnerSummaryDto>.ValidationFailure(ex.Message);
         }
 
-        if (!await _legalEntityTypeRepo.ExistsActiveAsync(
-        bp.LegalEntityTypeCode,
-        cancellationToken))
+        if (
+            !await _legalEntityTypeRepo.ExistsActiveAsync(bp.LegalEntityTypeCode, cancellationToken)
+        )
         {
             return Result<BusinessPartnerSummaryDto>.ValidationFailure(
                 $"El tipo de entidad legal {bp.LegalEntityTypeCode} no existe o está inactivo."

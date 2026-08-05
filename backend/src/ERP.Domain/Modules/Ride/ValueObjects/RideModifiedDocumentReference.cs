@@ -18,7 +18,11 @@ public sealed record RideModifiedDocumentReference
     public string Number { get; }
     public DateOnly IssueDate { get; }
 
-    private RideModifiedDocumentReference(string documentTypeCode, string number, DateOnly issueDate)
+    private RideModifiedDocumentReference(
+        string documentTypeCode,
+        string number,
+        DateOnly issueDate
+    )
     {
         DocumentTypeCode = documentTypeCode;
         Number = number;

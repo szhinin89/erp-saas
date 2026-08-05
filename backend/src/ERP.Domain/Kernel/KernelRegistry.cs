@@ -1,9 +1,9 @@
-using ERP.Domain.Kernel.Attributes;
-using ERP.Domain.Kernel.Navigation;
 using System.Reflection;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
+using ERP.Domain.Kernel.Attributes;
+using ERP.Domain.Kernel.Navigation;
 
 namespace ERP.Domain.Kernel;
 

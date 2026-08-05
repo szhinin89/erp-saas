@@ -24,6 +24,7 @@ import { PAYMENT_EXCEEDS_TOLERANCE } from "../constants/tolerances";
 import "../styles/sales-invoice.css";
 import "../../../styles/shared/erp-form-core.css";
 import "../../electronicDocuments/monitor/components/electronic-documents-monitor.css";
+import "./SalesPage.css";
 
 // Mensaje por motivo real de falla al consultar GET /cash-sessions/my — nunca el mismo texto que
 // "no hay caja abierta" (esa es la única respuesta 200 OK con `null`, ver useSalesPage.ts).
@@ -97,7 +98,7 @@ export function SalesPage() {
         : "pf-badge--danger";
 
   return (
-    <div style={{ padding: "8px 16px 0" }}>
+    <div className="sales-page-root">
       {/* Solo aplica a Puntos de Emisión Electrónicos — fuente única ctx.isElectronic
           (CashRegister → EmissionPoint → EmissionType). Un Punto Físico nunca debe consultar
           ni mostrar estado de configuración SRI. */}
@@ -109,14 +110,7 @@ export function SalesPage() {
       {/* ═══════════════════════════ LISTADO ═══════════════════════════ */}
       {ctx.tab === "listado" && (
         <div className="prd-section">
-          <div
-            style={{
-              display: "flex",
-              gap: 12,
-              marginBottom: 16,
-              alignItems: "center",
-            }}
-          >
+          <div className="sales-page-listbar">
             <button
               className="pf-btn pf-btn--primary"
               onClick={() => {
@@ -129,23 +123,20 @@ export function SalesPage() {
               </span>
               Nueva Factura
             </button>
-            <div style={{ flex: 1 }} />
+            <div className="sales-page-spacer" />
             <input
               type="text"
               placeholder="Buscar por número o cliente..."
               value={ctx.listSearch}
               onChange={(e) => ctx.setListSearch(e.target.value)}
-              style={{ maxWidth: 300 }}
+              className="sales-page-search"
             />
             <ZHBtn
               variant="secondary"
               onClick={ctx.fetchList}
               disabled={ctx.listLoading}
             >
-              <span
-                className="material-symbols-outlined"
-                style={{ fontSize: 18 }}
-              >
+              <span className="material-symbols-outlined sales-icon-18">
                 refresh
               </span>
             </ZHBtn>
@@ -168,7 +159,7 @@ export function SalesPage() {
               <tbody>
                 {ctx.listItems.map((inv) => (
                   <tr key={inv.id}>
-                    <td style={{ fontFamily: "monospace", fontWeight: 600 }}>
+                    <td className="sales-page-invoice-number">
                       {inv.invoiceNumber}
                     </td>
                     <td>{inv.issueDate}</td>
@@ -197,10 +188,7 @@ export function SalesPage() {
                             : "Ver / Editar"
                         }
                       >
-                        <span
-                          className="material-symbols-outlined"
-                          style={{ fontSize: 20 }}
-                        >
+                        <span className="material-symbols-outlined sales-icon-20">
                           {inv.status === "Draft" ? "replay" : "edit"}
                         </span>
                       </button>
@@ -214,10 +202,7 @@ export function SalesPage() {
                             )
                           }
                         >
-                          <span
-                            className="material-symbols-outlined"
-                            style={{ fontSize: 20 }}
-                          >
+                          <span className="material-symbols-outlined sales-icon-20">
                             history
                           </span>
                         </button>
@@ -229,10 +214,7 @@ export function SalesPage() {
                           disabled={ride.ridePending}
                           onClick={() => void ride.handleViewRide(inv.id)}
                         >
-                          <span
-                            className="material-symbols-outlined"
-                            style={{ fontSize: 20 }}
-                          >
+                          <span className="material-symbols-outlined sales-icon-20">
                             picture_as_pdf
                           </span>
                         </button>
@@ -337,14 +319,7 @@ export function SalesPage() {
                 <div>
                   <div className="sf-emission__label">Tipo Documento</div>
                   <select
-                    style={{
-                      width: "100%",
-                      fontSize: 12,
-                      padding: "5px 8px",
-                      border: "1.5px solid var(--color-border)",
-                      borderRadius: 6,
-                      marginBottom: 4,
-                    }}
+                    className="sales-form-select"
                     value={
                       ctx.readOnly
                         ? (ctx.editing?.docTypeCode ?? "")
@@ -365,14 +340,7 @@ export function SalesPage() {
                 <div>
                   <div className="sf-emission__label">Forma Pago SRI</div>
                   <select
-                    style={{
-                      width: "100%",
-                      fontSize: 12,
-                      padding: "5px 8px",
-                      border: "1.5px solid var(--color-border)",
-                      borderRadius: 6,
-                      marginBottom: 4,
-                    }}
+                    className="sales-form-select"
                     value={
                       ctx.readOnly
                         ? (ctx.editing?.sriPaymentMethodCode ?? "")
@@ -391,12 +359,9 @@ export function SalesPage() {
                   </select>
                 </div>
                 {ctx.editing && (
-                  <div style={{ marginTop: 4 }}>
+                  <div className="sales-form-mt-4">
                     <span className="sf-emission__label">Nro: </span>
-                    <span
-                      className="sf-emission__value"
-                      style={{ fontFamily: "monospace" }}
-                    >
+                    <span className="sf-emission__value sales-mono">
                       {ctx.editing.invoiceNumber}
                     </span>
                   </div>
@@ -430,48 +395,26 @@ export function SalesPage() {
                 />
               </ZHField>
               {ctx.customerProfile && (
-                <div
-                  style={{
-                    marginTop: 6,
-                    fontSize: 11,
-                    color: "var(--color-text-secondary)",
-                    lineHeight: 1.6,
-                  }}
-                >
+                <div className="sales-form-customer-profile">
                   {ctx.customerProfile.address && (
-                    <div
-                      style={{ display: "flex", alignItems: "center", gap: 4 }}
-                    >
-                      <span
-                        className="material-symbols-outlined"
-                        style={{ fontSize: 14 }}
-                      >
+                    <div className="sales-form-profile-row">
+                      <span className="material-symbols-outlined sales-icon-14">
                         location_on
                       </span>
                       {ctx.customerProfile.address}
                     </div>
                   )}
                   {ctx.customerProfile.email && (
-                    <div
-                      style={{ display: "flex", alignItems: "center", gap: 4 }}
-                    >
-                      <span
-                        className="material-symbols-outlined"
-                        style={{ fontSize: 14 }}
-                      >
+                    <div className="sales-form-profile-row">
+                      <span className="material-symbols-outlined sales-icon-14">
                         mail
                       </span>
                       {ctx.customerProfile.email}
                     </div>
                   )}
                   {ctx.customerProfile.phone && (
-                    <div
-                      style={{ display: "flex", alignItems: "center", gap: 4 }}
-                    >
-                      <span
-                        className="material-symbols-outlined"
-                        style={{ fontSize: 14 }}
-                      >
+                    <div className="sales-form-profile-row">
+                      <span className="material-symbols-outlined sales-icon-14">
                         phone
                       </span>
                       {ctx.customerProfile.phone}
@@ -481,24 +424,9 @@ export function SalesPage() {
                     <button
                       type="button"
                       onClick={ctx.openEditCustomerModal}
-                      style={{
-                        marginTop: 4,
-                        background: "none",
-                        border: "none",
-                        cursor: "pointer",
-                        color: "var(--color-primary)",
-                        fontSize: 11,
-                        fontWeight: 600,
-                        padding: 0,
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 3,
-                      }}
+                      className="sales-form-edit-btn"
                     >
-                      <span
-                        className="material-symbols-outlined"
-                        style={{ fontSize: 14 }}
-                      >
+                      <span className="material-symbols-outlined sales-icon-14">
                         edit
                       </span>
                       Editar datos
@@ -509,10 +437,7 @@ export function SalesPage() {
             </div>
 
             {/* Resumen Impuestos + Total */}
-            <div
-              className="sf-sidebar__section"
-              style={{ padding: "12px 16px" }}
-            >
+            <div className="sf-sidebar__section sales-form-tax-section">
               <div className="sf-total-box">
                 <table className="sf-tax-table">
                   <thead>
@@ -543,10 +468,7 @@ export function SalesPage() {
                   </tbody>
                 </table>
                 {ctx.totalDiscount > 0 && (
-                  <div
-                    className="sf-summary__discount-total"
-                    style={{ marginTop: 8 }}
-                  >
+                  <div className="sf-summary__discount-total sales-form-mt-8">
                     <span>Descuento:</span>
                     <span>
                       -
@@ -557,7 +479,7 @@ export function SalesPage() {
                     </span>
                   </div>
                 )}
-                <div className="sf-total-box__header" style={{ marginTop: 10 }}>
+                <div className="sf-total-box__header sales-form-mt-10">
                   <span className="sf-total-box__label">Total a Cobrar</span>
                 </div>
                 <div className="sf-total-box__amount">
@@ -616,14 +538,7 @@ export function SalesPage() {
             {ctx.isElectronic && (
               <div className="sf-bottombar__sri">
                 <span className="sf-bottombar__sri-label">
-                  <span
-                    className="material-symbols-outlined"
-                    style={{
-                      fontSize: 14,
-                      verticalAlign: "middle",
-                      marginRight: 4,
-                    }}
-                  >
+                  <span className="material-symbols-outlined sales-page-sri-icon">
                     qr_code_2
                   </span>
                   Clave de Acceso SRI
@@ -727,13 +642,8 @@ export function SalesPage() {
 
             {ctx.editing && ctx.editing.status === "Authorized" && (
               <button
-                className="sf-bottombar__btn"
+                className="sf-bottombar__btn sales-bottombar-btn--danger"
                 onClick={() => ctx.setModalCancelReason(true)}
-                style={{
-                  background: "var(--color-error)",
-                  color: "#fff",
-                  borderColor: "var(--color-error)",
-                }}
               >
                 <span className="material-symbols-outlined sf-bottombar__btn-icon">
                   block
@@ -1017,7 +927,7 @@ function EmitButton({ ctx }: { ctx: SalesPageContext }) {
     reasons.push("El monto recibido en efectivo es menor al total a cobrar");
 
   return (
-    <div style={{ position: "relative" }}>
+    <div className="sales-emit-wrap">
       <button
         className="sf-bottombar__emit"
         onClick={ctx.openIssueFlow}
@@ -1057,9 +967,8 @@ function PaymentMethodsSection({
         Formas de Cobro
         {!ctx.readOnly && ctx.payments.length > 0 && (
           <span
-            className="material-symbols-outlined sf-sidebar__header-right"
+            className="material-symbols-outlined sf-sidebar__header-right sales-icon-16"
             title="Limpiar cobros"
-            style={{ cursor: "pointer", fontSize: 16 }}
             onClick={() => ctx.setInvoicePayments([])}
           >
             delete_sweep
@@ -1067,24 +976,13 @@ function PaymentMethodsSection({
         )}
       </div>
       {ctx.readOnly ? (
-        <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+        <div className="sales-payment-readonly-list">
           {(ctx.editing?.payments ?? [])
             .filter((p) => p.amount > 0)
             .map((p) => (
-              <div
-                key={p.id}
-                style={{
-                  padding: "6px 10px",
-                  borderRadius: 6,
-                  border: "1.5px solid var(--color-primary)",
-                  background: "var(--color-primary)",
-                  color: "#fff",
-                  fontSize: 11,
-                  fontWeight: 700,
-                }}
-              >
+              <div key={p.id} className="sales-payment-chip">
                 {p.paymentMethodName}{" "}
-                <span style={{ fontFamily: "monospace" }}>
+                <span className="sales-mono">
                   {formatMoneyWithSymbol(
                     p.amount,
                     getDecimalConfig().totalAmount,
@@ -1095,13 +993,7 @@ function PaymentMethodsSection({
         </div>
       ) : (
         <>
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(auto-fill, minmax(130px, 1fr))",
-              gap: 6,
-            }}
-          >
+          <div className="sales-payment-grid">
             {ctx.paymentMethods.map((pm) => {
               const entries = ctx.payments.filter(
                 (ip) => ip.paymentMethodId === pm.id,
@@ -1130,41 +1022,12 @@ function PaymentMethodsSection({
               return (
                 <div
                   key={pm.id}
-                  style={{
-                    display: "flex",
-                    flexDirection: "column",
-                    alignItems: "center",
-                    gap: 2,
-                    padding: "8px 6px",
-                    borderRadius: 8,
-                    fontSize: 10,
-                    fontWeight: 700,
-                    textTransform: "uppercase",
-                    transition: "all 0.15s",
-                    border: hasValue
-                      ? "2px solid var(--color-primary)"
-                      : "1.5px solid var(--color-border)",
-                    background: hasValue ? "var(--color-primary)" : "#fff",
-                    color: hasValue ? "#fff" : "var(--color-text-primary)",
-                  }}
+                  className={`sales-payment-method${hasValue ? " sales-payment-method--active" : ""}`}
                 >
                   <button
                     type="button"
                     disabled={ctx.fieldDisabled}
-                    style={{
-                      fontSize: 11,
-                      cursor: "pointer",
-                      width: "100%",
-                      textAlign: "center",
-                      background: "none",
-                      border: "none",
-                      padding: 0,
-                      margin: 0,
-                      font: "inherit",
-                      fontWeight: "inherit",
-                      textTransform: "inherit",
-                      color: "inherit",
-                    }}
+                    className="sales-payment-method__btn"
                     onClick={() => {
                       if (ctx.fieldDisabled) return;
                       if (isCredit) {
@@ -1224,14 +1087,8 @@ function PaymentMethodsSection({
                     {pm.name}
                   </button>
                   {hasValue && !isCredit && !pm.requiresReference && (
-                    <div
-                      style={{ display: "flex", alignItems: "center", gap: 2 }}
-                    >
-                      <span
-                        style={{ color: "rgba(255,255,255,0.7)", fontSize: 11 }}
-                      >
-                        $
-                      </span>
+                    <div className="sales-payment-amount-row">
+                      <span className="sales-payment-dollar">$</span>
                       <ZhDecimalInput
                         decimals={getDecimalConfig().totalAmount}
                         positiveOnly
@@ -1256,18 +1113,7 @@ function PaymentMethodsSection({
                             );
                           }
                         }}
-                        style={{
-                          width: 70,
-                          fontSize: 13,
-                          fontFamily: "monospace",
-                          fontWeight: 800,
-                          textAlign: "center",
-                          padding: "2px 4px",
-                          border: "1px solid rgba(255,255,255,0.4)",
-                          borderRadius: 4,
-                          background: "rgba(255,255,255,0.15)",
-                          color: "#fff",
-                        }}
+                        className="sales-payment-input"
                       />
                       <button
                         type="button"
@@ -1276,47 +1122,26 @@ function PaymentMethodsSection({
                             prev.filter((p) => p._key !== entry!._key),
                           )
                         }
-                        style={{
-                          background: "none",
-                          border: "none",
-                          cursor: "pointer",
-                          color: "rgba(255,255,255,0.7)",
-                          fontSize: 14,
-                          padding: 0,
-                          lineHeight: 1,
-                        }}
+                        className="sales-payment-remove-btn"
                       >
                         ×
                       </button>
                     </div>
                   )}
                   {hasValue && pm.requiresReference && !isCredit && (
-                    <span
-                      style={{
-                        fontSize: 12,
-                        fontFamily: "monospace",
-                        fontWeight: 800,
-                      }}
-                    >
+                    <span className="sales-payment-ref-amount">
                       {formatMoneyWithSymbol(
                         totalForMethod,
                         getDecimalConfig().totalAmount,
                       )}{" "}
-                      <span
-                        style={{ fontSize: 9, fontWeight: 400, opacity: 0.8 }}
-                      >
+                      <span className="sales-payment-ref-count">
                         ({entries.length})
                       </span>
                     </span>
                   )}
                   {hasValue && isCredit && (
                     <span
-                      style={{
-                        fontSize: 13,
-                        fontFamily: "monospace",
-                        fontWeight: 800,
-                        cursor: "pointer",
-                      }}
+                      className="sales-payment-credit-amount"
                       onClick={() => {
                         ctx.setCreditAmount(entry!.amount);
                         ctx.setCreditRows(
@@ -1337,32 +1162,14 @@ function PaymentMethodsSection({
           </div>
           {ctx.cashDue > 0 && (
             <div
-              style={{
-                fontSize: 11,
-                marginTop: 6,
-                padding: "6px 8px",
-                borderRadius: 6,
-                background: ctx.cashInsufficient ? "#fef2f2" : "#f8fafc",
-                border: ctx.cashInsufficient
-                  ? "1.5px solid #dc2626"
-                  : "1px solid var(--color-border)",
-              }}
+              className={`sales-cash-box${ctx.cashInsufficient ? " sales-cash-box--insufficient" : ""}`}
             >
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                  gap: 8,
-                }}
-              >
-                <span style={{ color: "var(--color-text-secondary)" }}>
+              <div className="sales-cash-box__row">
+                <span className="sales-cash-box__label">
                   Monto recibido (Efectivo):
                 </span>
-                <div
-                  style={{ display: "flex", alignItems: "center", gap: 2 }}
-                >
-                  <span style={{ fontSize: 11 }}>$</span>
+                <div className="sales-cash-box__input-wrap">
+                  <span className="sales-fs-11">$</span>
                   <ZhDecimalInput
                     decimals={getDecimalConfig().totalAmount}
                     positiveOnly
@@ -1378,32 +1185,15 @@ function PaymentMethodsSection({
                     onBlur={(e) =>
                       ctx.setCashReceived(Number(e.target.value) || 0)
                     }
-                    style={{
-                      width: 80,
-                      fontSize: 13,
-                      fontFamily: "monospace",
-                      fontWeight: 700,
-                      textAlign: "center",
-                      padding: "2px 4px",
-                    }}
+                    className="sales-cash-input"
                   />
                 </div>
               </div>
               <div
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  fontWeight: 700,
-                  marginTop: 2,
-                  paddingTop: 2,
-                  borderTop: "1px solid var(--color-border)",
-                  color: ctx.cashInsufficient
-                    ? "#dc2626"
-                    : "var(--color-text-primary)",
-                }}
+                className={`sales-cash-box__total-row${ctx.cashInsufficient ? " sales-cash-box__total-row--insufficient" : ""}`}
               >
                 <span>{ctx.cashInsufficient ? "✗ Insuficiente" : "Vuelto:"}</span>
-                <span style={{ fontFamily: "monospace" }}>
+                <span className="sales-mono">
                   {formatMoneyWithSymbol(
                     ctx.cashInsufficient
                       ? ctx.cashDue - ctx.cashReceived
@@ -1422,42 +1212,20 @@ function PaymentMethodsSection({
             const exceeds = diff < 0;
             return (
               <div
-                style={{
-                  fontSize: 11,
-                  marginTop: 6,
-                  padding: "6px 8px",
-                  borderRadius: 6,
-                  background:
-                    diff === 0 ? "#f0fdf4" : exceeds ? "#fef2f2" : "#f8fafc",
-                  border: exceeds
-                    ? "1.5px solid #dc2626"
-                    : "1px solid var(--color-border)",
-                }}
+                className={`sales-summary-box${diff === 0 ? " sales-summary-box--complete" : ""}${exceeds ? " sales-summary-box--exceeds" : ""}`}
               >
-                <div
-                  style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    color: "var(--color-text-secondary)",
-                  }}
-                >
+                <div className="sales-summary-row">
                   <span>Total factura:</span>
-                  <span style={{ fontFamily: "monospace" }}>
+                  <span className="sales-mono">
                     {formatMoneyWithSymbol(
                       total,
                       getDecimalConfig().totalAmount,
                     )}
                   </span>
                 </div>
-                <div
-                  style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    color: "var(--color-text-secondary)",
-                  }}
-                >
+                <div className="sales-summary-row">
                   <span>Total cobrado:</span>
-                  <span style={{ fontFamily: "monospace" }}>
+                  <span className="sales-mono">
                     {formatMoneyWithSymbol(
                       paid,
                       getDecimalConfig().totalAmount,
@@ -1465,20 +1233,7 @@ function PaymentMethodsSection({
                   </span>
                 </div>
                 <div
-                  style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    fontWeight: 700,
-                    marginTop: 2,
-                    paddingTop: 2,
-                    borderTop: "1px solid var(--color-border)",
-                    color:
-                      diff === 0
-                        ? "#16a34a"
-                        : exceeds
-                          ? "#dc2626"
-                          : "var(--color-text-primary)",
-                  }}
+                  className={`sales-summary-total-row${diff === 0 ? " sales-summary-total-row--complete" : ""}${exceeds ? " sales-summary-total-row--exceeds" : ""}`}
                 >
                   <span>
                     {diff === 0
@@ -1488,7 +1243,7 @@ function PaymentMethodsSection({
                         : "Pendiente:"}
                   </span>
                   {diff !== 0 && (
-                    <span style={{ fontFamily: "monospace" }}>
+                    <span className="sales-mono">
                       {formatMoneyWithSymbol(
                         Math.abs(diff),
                         getDecimalConfig().totalAmount,

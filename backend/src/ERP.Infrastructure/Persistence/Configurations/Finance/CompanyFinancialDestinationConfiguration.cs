@@ -49,7 +49,10 @@ public sealed class CompanyFinancialDestinationConfiguration
             .HasColumnName("destination_type_code")
             .HasConversion<int>()
             .IsRequired();
-        builder.Property(x => x.AccountingAccountId).HasColumnName("accounting_account_id").IsRequired();
+        builder
+            .Property(x => x.AccountingAccountId)
+            .HasColumnName("accounting_account_id")
+            .IsRequired();
         builder
             .Property(x => x.CurrencyCode)
             .HasColumnName("currency_code")
@@ -105,7 +108,12 @@ public sealed class CompanyFinancialDestinationConfiguration
             .HasDatabaseName("ix_company_financial_destinations_tenant_company");
 
         builder
-            .HasIndex(x => new { x.TenantId, x.CompanyId, x.Code })
+            .HasIndex(x => new
+            {
+                x.TenantId,
+                x.CompanyId,
+                x.Code,
+            })
             .IsUnique()
             .HasDatabaseName("uq_company_financial_destinations_tenant_company_code");
 
@@ -122,7 +130,12 @@ public sealed class CompanyFinancialDestinationConfiguration
             .HasDatabaseName("uq_company_financial_destinations_bank_identity");
 
         builder
-            .HasIndex(x => new { x.TenantId, x.CompanyId, x.CashRegisterId })
+            .HasIndex(x => new
+            {
+                x.TenantId,
+                x.CompanyId,
+                x.CashRegisterId,
+            })
             .IsUnique()
             .HasFilter("\"destination_type_code\" = 2")
             .HasDatabaseName("uq_company_financial_destinations_cash_register");

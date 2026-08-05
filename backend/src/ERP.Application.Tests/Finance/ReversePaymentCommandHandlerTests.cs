@@ -100,10 +100,15 @@ public sealed class ReversePaymentCommandHandlerTests
         );
     }
 
-    private static void SetupPayable(Mock<IPurchasePayableRepository> payables, PurchasePayable payable)
+    private static void SetupPayable(
+        Mock<IPurchasePayableRepository> payables,
+        PurchasePayable payable
+    )
     {
         payables
-            .Setup(r => r.GetPurchaseInvoiceIdAsync(TenantId, payable.Id, It.IsAny<CancellationToken>()))
+            .Setup(r =>
+                r.GetPurchaseInvoiceIdAsync(TenantId, payable.Id, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(payable.PurchaseId);
         payables
             .Setup(r => r.GetByIdAsync(TenantId, payable.Id, It.IsAny<CancellationToken>()))
@@ -118,7 +123,9 @@ public sealed class ReversePaymentCommandHandlerTests
         var payment = CreateAppliedPayment(payable, 60m);
 
         payments
-            .Setup(p => p.GetByIdAsync(TenantId, CompanyId, payment.Id, It.IsAny<CancellationToken>()))
+            .Setup(p =>
+                p.GetByIdAsync(TenantId, CompanyId, payment.Id, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(payment);
         SetupPayable(payables, payable);
 
@@ -141,7 +148,9 @@ public sealed class ReversePaymentCommandHandlerTests
         var payment = CreateAppliedPayment(payable, 60m);
 
         payments
-            .Setup(p => p.GetByIdAsync(TenantId, CompanyId, payment.Id, It.IsAny<CancellationToken>()))
+            .Setup(p =>
+                p.GetByIdAsync(TenantId, CompanyId, payment.Id, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(payment);
         SetupPayable(payables, payable);
 
@@ -166,7 +175,9 @@ public sealed class ReversePaymentCommandHandlerTests
         var (payments, payables, purchaseReturnRepo, uow) = BuildMocks();
         var missingId = Guid.NewGuid();
         payments
-            .Setup(p => p.GetByIdAsync(TenantId, CompanyId, missingId, It.IsAny<CancellationToken>()))
+            .Setup(p =>
+                p.GetByIdAsync(TenantId, CompanyId, missingId, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync((Payment?)null);
 
         var handler = BuildHandler(payments, payables, purchaseReturnRepo, uow);
@@ -221,7 +232,9 @@ public sealed class ReversePaymentCommandHandlerTests
         payable.ReversePayment(60m, UserId);
 
         payments
-            .Setup(p => p.GetByIdAsync(TenantId, CompanyId, payment.Id, It.IsAny<CancellationToken>()))
+            .Setup(p =>
+                p.GetByIdAsync(TenantId, CompanyId, payment.Id, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(payment);
         SetupPayable(payables, payable);
 
@@ -249,7 +262,9 @@ public sealed class ReversePaymentCommandHandlerTests
         var payable = CreatePayable(100m);
         var payment = CreateAppliedPayment(payable, 60m);
         payments
-            .Setup(p => p.GetByIdAsync(TenantId, CompanyId, payment.Id, It.IsAny<CancellationToken>()))
+            .Setup(p =>
+                p.GetByIdAsync(TenantId, CompanyId, payment.Id, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(payment);
 
         var sequence = new MockSequence();
@@ -258,11 +273,19 @@ public sealed class ReversePaymentCommandHandlerTests
             .Returns(Task.CompletedTask);
         payables
             .InSequence(sequence)
-            .Setup(r => r.GetPurchaseInvoiceIdAsync(TenantId, payable.Id, It.IsAny<CancellationToken>()))
+            .Setup(r =>
+                r.GetPurchaseInvoiceIdAsync(TenantId, payable.Id, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(payable.PurchaseId);
         purchaseReturnRepo
             .InSequence(sequence)
-            .Setup(r => r.AcquireFinancialLockAsync(TenantId, payable.PurchaseId, It.IsAny<CancellationToken>()))
+            .Setup(r =>
+                r.AcquireFinancialLockAsync(
+                    TenantId,
+                    payable.PurchaseId,
+                    It.IsAny<CancellationToken>()
+                )
+            )
             .Returns(Task.CompletedTask);
         payables
             .InSequence(sequence)
@@ -318,15 +341,25 @@ public sealed class ReversePaymentCommandHandlerTests
         payableB.RegisterPayment(50m, UserId);
 
         payments
-            .Setup(p => p.GetByIdAsync(TenantId, CompanyId, payment.Id, It.IsAny<CancellationToken>()))
+            .Setup(p =>
+                p.GetByIdAsync(TenantId, CompanyId, payment.Id, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(payment);
         SetupPayable(payables, payableA);
         SetupPayable(payables, payableB);
 
         var lockedOrder = new List<Guid>();
         purchaseReturnRepo
-            .Setup(r => r.AcquireFinancialLockAsync(TenantId, It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
-            .Callback<Guid, Guid, CancellationToken>((_, invoiceId, _) => lockedOrder.Add(invoiceId))
+            .Setup(r =>
+                r.AcquireFinancialLockAsync(
+                    TenantId,
+                    It.IsAny<Guid>(),
+                    It.IsAny<CancellationToken>()
+                )
+            )
+            .Callback<Guid, Guid, CancellationToken>(
+                (_, invoiceId, _) => lockedOrder.Add(invoiceId)
+            )
             .Returns(Task.CompletedTask);
 
         var mutatedBeforeAllLocksAcquired = false;
@@ -350,9 +383,9 @@ public sealed class ReversePaymentCommandHandlerTests
 
         result.IsSuccess.Should().BeTrue();
         lockedOrder.Should().Equal(invoiceLow, invoiceHigh);
-        mutatedBeforeAllLocksAcquired.Should().BeFalse(
-            "ninguna recarga/mutación debe ocurrir antes de adquirir todos los locks"
-        );
+        mutatedBeforeAllLocksAcquired
+            .Should()
+            .BeFalse("ninguna recarga/mutación debe ocurrir antes de adquirir todos los locks");
     }
 
     /// <summary>
@@ -369,10 +402,14 @@ public sealed class ReversePaymentCommandHandlerTests
         var payment = CreateAppliedPayment(payable, 60m);
 
         payments
-            .Setup(p => p.GetByIdAsync(TenantId, CompanyId, payment.Id, It.IsAny<CancellationToken>()))
+            .Setup(p =>
+                p.GetByIdAsync(TenantId, CompanyId, payment.Id, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(payment);
         payables
-            .Setup(r => r.GetPurchaseInvoiceIdAsync(TenantId, payable.Id, It.IsAny<CancellationToken>()))
+            .Setup(r =>
+                r.GetPurchaseInvoiceIdAsync(TenantId, payable.Id, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(payable.PurchaseId);
         // La recarga posterior al lock refleja que, mientras tanto, otra transacción ya reversó
         // el monto aplicado — PaidAmount ya está en 0 antes de que este handler mute nada.

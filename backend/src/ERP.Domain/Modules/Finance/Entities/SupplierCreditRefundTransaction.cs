@@ -13,8 +13,7 @@ namespace ERP.Domain.Modules.Finance.Entities;
 /// crédito, que sigue siendo exclusivo de <c>SupplierCreditMovement</c>/<c>SupplierCredit.AvailableAmount</c>
 /// (§13.5).
 /// </summary>
-public sealed class SupplierCreditRefundTransaction
-    : ICompanyOperationalEntity
+public sealed class SupplierCreditRefundTransaction : ICompanyOperationalEntity
 {
     public const int PaymentMethodCodeMaxLen = 20;
     public const int ExternalReferenceMaxLen = 100;
@@ -195,10 +194,7 @@ public sealed class SupplierCreditRefundTransaction
                 nameof(supplierCreditMovementId)
             );
         if (string.IsNullOrWhiteSpace(reason))
-            throw new ArgumentException(
-                "El motivo de la reversa es obligatorio.",
-                nameof(reason)
-            );
+            throw new ArgumentException("El motivo de la reversa es obligatorio.", nameof(reason));
         if (clientRequestId == Guid.Empty)
             throw new ArgumentException(
                 "El identificador de idempotencia de la reversa es obligatorio.",

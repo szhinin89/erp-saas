@@ -8,7 +8,8 @@ internal sealed class AllowAllPermissionAuthorizer : IRuntimePermissionAuthorize
         string permissionKey,
         Guid userId,
         string role,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default
+    )
     {
         return Task.FromResult(true);
     }

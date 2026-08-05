@@ -55,7 +55,12 @@ public sealed class ApplySupplierCreditConcurrencyTests : IAsyncLifetime
         await db.Database.MigrateAsync();
 
         var tenant = Tenant.Create("Test Tenant", $"test-{Guid.NewGuid():N}"[..16], _userId);
-        var company = Company.CreateManaged(tenant.Id, "1790012345001", "Test S.A.", createdBy: _userId);
+        var company = Company.CreateManaged(
+            tenant.Id,
+            "1790012345001",
+            "Test S.A.",
+            createdBy: _userId
+        );
         db.Tenants.Add(tenant);
         db.Companies.Add(company);
         await db.SaveChangesAsync();
@@ -94,7 +99,14 @@ public sealed class ApplySupplierCreditConcurrencyTests : IAsyncLifetime
         await db.SaveChangesAsync();
         _branchId = branch.Id;
 
-        var supplier = BusinessPartner.Create(_tenantId, "05", "1710034065", 1, "Proveedor Test", _userId);
+        var supplier = BusinessPartner.Create(
+            _tenantId,
+            "05",
+            "1710034065",
+            1,
+            "Proveedor Test",
+            _userId
+        );
         var paymentTerm = PaymentTerm.Create(
             _tenantId,
             "CONT",
@@ -152,8 +164,12 @@ public sealed class ApplySupplierCreditConcurrencyTests : IAsyncLifetime
                 saleVatCode: "10",
                 purchaseVatCode: "10"
             ),
-            saleConfig: ERP.Domain.Modules.Items.ValueObjects.ItemSaleConfig.Create(isForSale: true),
-            stockConfig: ERP.Domain.Modules.Items.ValueObjects.ItemStockConfig.Create(tracksStock: true),
+            saleConfig: ERP.Domain.Modules.Items.ValueObjects.ItemSaleConfig.Create(
+                isForSale: true
+            ),
+            stockConfig: ERP.Domain.Modules.Items.ValueObjects.ItemStockConfig.Create(
+                tracksStock: true
+            ),
             createdBy: _userId
         );
         db.Set<ERP.Domain.Modules.Items.Entities.Item>().Add(item);
@@ -185,7 +201,11 @@ public sealed class ApplySupplierCreditConcurrencyTests : IAsyncLifetime
         );
     }
 
-    private PurchaseInvoice BuildConfirmedInvoice(decimal quantity, decimal unitPrice, string invoiceNumber)
+    private PurchaseInvoice BuildConfirmedInvoice(
+        decimal quantity,
+        decimal unitPrice,
+        string invoiceNumber
+    )
     {
         var inv = PurchaseInvoice.CreateDraft(
             _tenantId,
@@ -227,7 +247,11 @@ public sealed class ApplySupplierCreditConcurrencyTests : IAsyncLifetime
     private async Task<Guid> SeedSupplierCreditAsync(decimal creditAmount)
     {
         await using var db = CreateContext();
-        var sourceInv = BuildConfirmedInvoice(1m, creditAmount, $"001-001-{Random.Shared.Next(100000, 999999)}");
+        var sourceInv = BuildConfirmedInvoice(
+            1m,
+            creditAmount,
+            $"001-001-{Random.Shared.Next(100000, 999999)}"
+        );
         var sourcePayable = PurchasePayable.Create(
             _tenantId,
             _companyId,
@@ -294,8 +318,19 @@ public sealed class ApplySupplierCreditConcurrencyTests : IAsyncLifetime
     private async Task<Guid> SeedTargetPayableAsync(decimal totalAmount, bool cancelled = false)
     {
         await using var db = CreateContext();
-        var inv = BuildConfirmedInvoice(1m, totalAmount, $"001-001-{Random.Shared.Next(100000, 999999)}");
-        var payable = PurchasePayable.Create(_tenantId, _companyId, inv.Id, _supplierId, totalAmount, _userId);
+        var inv = BuildConfirmedInvoice(
+            1m,
+            totalAmount,
+            $"001-001-{Random.Shared.Next(100000, 999999)}"
+        );
+        var payable = PurchasePayable.Create(
+            _tenantId,
+            _companyId,
+            inv.Id,
+            _supplierId,
+            totalAmount,
+            _userId
+        );
         if (cancelled)
             payable.CancelPayable();
         db.PurchaseInvoices.Add(inv);
@@ -323,7 +358,10 @@ public sealed class ApplySupplierCreditConcurrencyTests : IAsyncLifetime
         results.First(r => !r.Success).Error.Should().Contain("excede");
 
         await using var verify = CreateContext();
-        var credit = await verify.Set<SupplierCredit>().AsNoTracking().FirstAsync(c => c.Id == creditId);
+        var credit = await verify
+            .Set<SupplierCredit>()
+            .AsNoTracking()
+            .FirstAsync(c => c.Id == creditId);
         credit.AvailableAmount.Should().Be(30m);
         credit.AvailableAmount.Should().BeInRange(0m, credit.OriginalAmount);
     }
@@ -345,7 +383,8 @@ public sealed class ApplySupplierCreditConcurrencyTests : IAsyncLifetime
         var t2 = ExecuteApplyRealAsync(credit2, payable2, 50m, Guid.NewGuid());
 
         var act = async () => await Task.WhenAll(t1, t2);
-        await act.Should().NotThrowAsync(because: "el orden fijo A→B debe evitar cualquier deadlock");
+        await act.Should()
+            .NotThrowAsync(because: "el orden fijo A→B debe evitar cualquier deadlock");
 
         var results = await Task.WhenAll(t1, t2);
         results.Should().OnlyContain(r => r.Success);
@@ -408,7 +447,10 @@ public sealed class ApplySupplierCreditConcurrencyTests : IAsyncLifetime
         results.Should().OnlyContain(r => r.Success);
 
         await using var verify = CreateContext();
-        var credit = await verify.Set<SupplierCredit>().AsNoTracking().FirstAsync(c => c.Id == creditId);
+        var credit = await verify
+            .Set<SupplierCredit>()
+            .AsNoTracking()
+            .FirstAsync(c => c.Id == creditId);
         credit.AvailableAmount.Should().Be(60m);
     }
 
@@ -447,7 +489,10 @@ public sealed class ApplySupplierCreditConcurrencyTests : IAsyncLifetime
         result.Error.Should().Contain("anulada");
 
         await using var verify = CreateContext();
-        var credit = await verify.Set<SupplierCredit>().AsNoTracking().FirstAsync(c => c.Id == creditId);
+        var credit = await verify
+            .Set<SupplierCredit>()
+            .AsNoTracking()
+            .FirstAsync(c => c.Id == creditId);
         credit.AvailableAmount.Should().Be(100m);
     }
 
@@ -471,7 +516,11 @@ public sealed class ApplySupplierCreditConcurrencyTests : IAsyncLifetime
         Guid movementId;
         await using (var readDb = CreateContext())
         {
-            var credit = await readDb.Set<SupplierCredit>().Include(c => c.Movements).AsNoTracking().FirstAsync(c => c.Id == creditId);
+            var credit = await readDb
+                .Set<SupplierCredit>()
+                .Include(c => c.Movements)
+                .AsNoTracking()
+                .FirstAsync(c => c.Id == creditId);
             movementId = credit.Movements.Single(m => m.TargetPurchasePayableId == payableId).Id;
         }
 
@@ -487,7 +536,12 @@ public sealed class ApplySupplierCreditConcurrencyTests : IAsyncLifetime
         );
 
         var result = await reverseHandler.Handle(
-            new ReverseSupplierCreditApplicationCommand(creditId, movementId, payableId, Guid.NewGuid()),
+            new ReverseSupplierCreditApplicationCommand(
+                creditId,
+                movementId,
+                payableId,
+                Guid.NewGuid()
+            ),
             CancellationToken.None
         );
 
@@ -495,8 +549,13 @@ public sealed class ApplySupplierCreditConcurrencyTests : IAsyncLifetime
         result.Error.Should().Contain("anulada");
 
         await using var verify = CreateContext();
-        var creditFinal = await verify.Set<SupplierCredit>().AsNoTracking().FirstAsync(c => c.Id == creditId);
-        creditFinal.AvailableAmount.Should().Be(60m, "el crédito no debe mutar cuando la reversa queda bloqueada por SC-014");
+        var creditFinal = await verify
+            .Set<SupplierCredit>()
+            .AsNoTracking()
+            .FirstAsync(c => c.Id == creditId);
+        creditFinal
+            .AvailableAmount.Should()
+            .Be(60m, "el crédito no debe mutar cuando la reversa queda bloqueada por SC-014");
     }
 
     // ── Reversa concurrente contra el mismo movimiento original ──────────
@@ -538,8 +597,7 @@ public sealed class ApplySupplierCreditConcurrencyTests : IAsyncLifetime
         var reversalCount = await verify
             .Set<SupplierCreditMovement>()
             .CountAsync(m =>
-                m.SupplierCreditId == creditId
-                && m.ReversalOfMovementId == movementId
+                m.SupplierCreditId == creditId && m.ReversalOfMovementId == movementId
             );
         reversalCount.Should().Be(1, "no debe haber doble reversa del mismo movimiento");
 
@@ -563,10 +621,16 @@ public sealed class ApplySupplierCreditConcurrencyTests : IAsyncLifetime
 
         // Saldo final consistente: crédito vuelve a 100 (el excedente de la reversa exitosa se
         // restituyó una sola vez), payable vuelve a SupplierCreditAppliedAmount=0.
-        var creditFinal = await verify.Set<SupplierCredit>().AsNoTracking().FirstAsync(c => c.Id == creditId);
+        var creditFinal = await verify
+            .Set<SupplierCredit>()
+            .AsNoTracking()
+            .FirstAsync(c => c.Id == creditId);
         creditFinal.AvailableAmount.Should().Be(100m);
 
-        var payableFinal = await verify.Set<PurchasePayable>().AsNoTracking().FirstAsync(p => p.Id == payableId);
+        var payableFinal = await verify
+            .Set<PurchasePayable>()
+            .AsNoTracking()
+            .FirstAsync(p => p.Id == payableId);
         payableFinal.SupplierCreditAppliedAmount.Should().Be(0m);
     }
 
@@ -588,7 +652,12 @@ public sealed class ApplySupplierCreditConcurrencyTests : IAsyncLifetime
             new FixedCurrentUser(_userId)
         );
         var result = await handler.Handle(
-            new ReverseSupplierCreditApplicationCommand(creditId, originalMovementId, targetPayableId, cri),
+            new ReverseSupplierCreditApplicationCommand(
+                creditId,
+                originalMovementId,
+                targetPayableId,
+                cri
+            ),
             CancellationToken.None
         );
         return (result.IsSuccess, result.IsSuccess ? null : result.Error);
@@ -613,10 +682,12 @@ public sealed class ApplySupplierCreditConcurrencyTests : IAsyncLifetime
         result.IsSuccess.Should().BeTrue(result.Error);
 
         await using var verify = CreateContext();
-        var movementId = result.Value!.Movements.Single(m => m.TargetPurchasePayableId == payableId).Id;
-        var entry = await verify.JournalEntries.Include(e => e.Lines).FirstOrDefaultAsync(x =>
-            x.SourceEventId == movementId
-        );
+        var movementId = result
+            .Value!.Movements.Single(m => m.TargetPurchasePayableId == payableId)
+            .Id;
+        var entry = await verify
+            .JournalEntries.Include(e => e.Lines)
+            .FirstOrDefaultAsync(x => x.SourceEventId == movementId);
 
         entry.Should().NotBeNull();
         entry!.Status.Should().Be(JournalEntryStatus.Posted);
@@ -642,7 +713,9 @@ public sealed class ApplySupplierCreditConcurrencyTests : IAsyncLifetime
             CancellationToken.None
         );
         applyResult.IsSuccess.Should().BeTrue(applyResult.Error);
-        var movementId = applyResult.Value!.Movements.Single(m => m.TargetPurchasePayableId == payableId).Id;
+        var movementId = applyResult
+            .Value!.Movements.Single(m => m.TargetPurchasePayableId == payableId)
+            .Id;
 
         var reverseHandler = new ReverseSupplierCreditApplicationHandler(
             new SupplierCreditRepository(db, new FixedCurrentCompany(() => _companyId)),
@@ -654,7 +727,12 @@ public sealed class ApplySupplierCreditConcurrencyTests : IAsyncLifetime
             new FixedCurrentUser(_userId)
         );
         var reverseResult = await reverseHandler.Handle(
-            new ReverseSupplierCreditApplicationCommand(creditId, movementId, payableId, Guid.NewGuid()),
+            new ReverseSupplierCreditApplicationCommand(
+                creditId,
+                movementId,
+                payableId,
+                Guid.NewGuid()
+            ),
             CancellationToken.None
         );
         reverseResult.IsSuccess.Should().BeTrue();
@@ -663,9 +741,9 @@ public sealed class ApplySupplierCreditConcurrencyTests : IAsyncLifetime
         var reversalMovementId = reverseResult
             .Value!.Movements.Single(m => m.ReversalOfMovementId == movementId)
             .Id;
-        var entry = await verify.JournalEntries.Include(e => e.Lines).FirstOrDefaultAsync(x =>
-            x.SourceEventId == reversalMovementId
-        );
+        var entry = await verify
+            .JournalEntries.Include(e => e.Lines)
+            .FirstOrDefaultAsync(x => x.SourceEventId == reversalMovementId);
 
         entry.Should().NotBeNull();
         entry!.SourceEventType.Should().Be("SupplierCreditApplicationReversed");
@@ -711,27 +789,34 @@ public sealed class ApplySupplierCreditConcurrencyTests : IAsyncLifetime
             typeof(ERP.Application.Audit.IAuditWriter<>),
             typeof(ERP.Infrastructure.Audit.EfAuditWriter<>)
         );
-        services.AddScoped<ERP.Application.Audit.IAuditService, ERP.Infrastructure.Audit.AuditService>();
-        services.AddScoped<ERP.Application.Audit.IAuditContext>(_ => new ERP.Infrastructure.Tests.Audit.FixedAuditContext(
-            () => _tenantId,
-            () => _companyId,
-            Guid.NewGuid()
-        ));
-        services.AddScoped<Domain.Modules.Purchases.Interfaces.ISupplierCreditRepository>(sp =>
-            new SupplierCreditRepository(db, new FixedCurrentCompany(() => _companyId))
+        services.AddScoped<
+            ERP.Application.Audit.IAuditService,
+            ERP.Infrastructure.Audit.AuditService
+        >();
+        services.AddScoped<ERP.Application.Audit.IAuditContext>(
+            _ => new ERP.Infrastructure.Tests.Audit.FixedAuditContext(
+                () => _tenantId,
+                () => _companyId,
+                Guid.NewGuid()
+            )
+        );
+        services.AddScoped<Domain.Modules.Purchases.Interfaces.ISupplierCreditRepository>(
+            sp => new SupplierCreditRepository(db, new FixedCurrentCompany(() => _companyId))
         );
         // P0-02 Fase 8 — SupplierCreditAuditHandler ahora también depende de
         // ISupplierCreditRefundTransactionRepository (extensión autorizada del handler de Fase 7
         // para cubrir Refunded/RefundReversed) — debe registrarse aquí igual que las demás
         // dependencias del fan-out de MediatR para que la resolución de DI no falle.
-        services.AddScoped<Domain.Modules.Finance.Interfaces.ISupplierCreditRefundTransactionRepository>(sp =>
-            new ERP.Infrastructure.Persistence.Repositories.Finance.SupplierCreditRefundTransactionRepository(
+        services.AddScoped<Domain.Modules.Finance.Interfaces.ISupplierCreditRefundTransactionRepository>(
+            sp => new ERP.Infrastructure.Persistence.Repositories.Finance.SupplierCreditRefundTransactionRepository(
                 db,
                 new FixedCurrentCompany(() => _companyId)
             )
         );
         services.AddMediatR(cfg =>
-            cfg.RegisterServicesFromAssembly(typeof(SupplierCreditAppliedPostingTranslator).Assembly)
+            cfg.RegisterServicesFromAssembly(
+                typeof(SupplierCreditAppliedPostingTranslator).Assembly
+            )
         );
 
         var provider = services.BuildServiceProvider();
@@ -778,7 +863,16 @@ public sealed class ApplySupplierCreditConcurrencyTests : IAsyncLifetime
         );
         db.Accounts.AddRange(debitAccount, creditAccount);
 
-        var rule = PostingRule.Create(_tenantId, _companyId, "Purchases", factType, null, null, null, _userId);
+        var rule = PostingRule.Create(
+            _tenantId,
+            _companyId,
+            "Purchases",
+            factType,
+            null,
+            null,
+            null,
+            _userId
+        );
         rule.AddLine(debitAccount.Id, AccountNature.Debit, PostingAmountKind.GrandTotal);
         rule.AddLine(creditAccount.Id, AccountNature.Credit, PostingAmountKind.GrandTotal);
         db.PostingRules.Add(rule);
@@ -798,7 +892,11 @@ public sealed class ApplySupplierCreditConcurrencyTests : IAsyncLifetime
                 today.Year,
                 today.Month,
                 new DateOnly(today.Year, today.Month, 1),
-                new DateOnly(today.Year, today.Month, DateTime.DaysInMonth(today.Year, today.Month)),
+                new DateOnly(
+                    today.Year,
+                    today.Month,
+                    DateTime.DaysInMonth(today.Year, today.Month)
+                ),
                 _userId
             );
             db.AccountingPeriods.Add(period);
@@ -808,12 +906,11 @@ public sealed class ApplySupplierCreditConcurrencyTests : IAsyncLifetime
     }
 
     /// <summary>Ejecuta ApplySupplierCreditHandler contra un ErpDbContext propio (sin wiring de Posting Engine) — usado por las pruebas de locks/idempotencia que no necesitan contabilidad.</summary>
-    private async Task<(bool Success, string? Error, decimal? AvailableAmount)> ExecuteApplyRealAsync(
-        Guid creditId,
-        Guid targetPayableId,
-        decimal amount,
-        Guid cri
-    )
+    private async Task<(
+        bool Success,
+        string? Error,
+        decimal? AvailableAmount
+    )> ExecuteApplyRealAsync(Guid creditId, Guid targetPayableId, decimal amount, Guid cri)
     {
         await using var db = CreateContext();
         var handler = new ApplySupplierCreditHandler(
@@ -885,7 +982,8 @@ public sealed class ApplySupplierCreditConcurrencyTests : IAsyncLifetime
             TNotification notification,
             CancellationToken cancellationToken = default
         )
-            where TNotification : MediatR.INotification => Inner!.Publish(notification, cancellationToken);
+            where TNotification : MediatR.INotification =>
+            Inner!.Publish(notification, cancellationToken);
     }
 
     private sealed class RealDatabaseExceptionTranslator : IDatabaseExceptionTranslator

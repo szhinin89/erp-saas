@@ -1,3 +1,4 @@
+using System.Runtime.CompilerServices;
 using ERP.Application.Modules.ElectronicDocuments.DTOs;
 using ERP.Application.Modules.ElectronicDocuments.XmlBuilders;
 using ERP.Application.Modules.Ride.Parsers;
@@ -5,7 +6,6 @@ using ERP.Application.Modules.Ride.Templates;
 using ERP.Domain.Modules.Ride.ValueObjects;
 using FluentAssertions;
 using QuestPDF.Infrastructure;
-using System.Runtime.CompilerServices;
 
 namespace ERP.Infrastructure.Tests.Ride;
 

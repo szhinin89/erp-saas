@@ -1,3 +1,5 @@
+using System.Security.Cryptography;
+using System.Text;
 using ERP.Application.Common;
 using ERP.Application.Common.Persistence;
 using ERP.Domain.Modules.Caja.Enums;
@@ -9,8 +11,6 @@ using ERP.Domain.Modules.Purchases.Enums;
 using ERP.Domain.Modules.Purchases.Interfaces;
 using FluentValidation;
 using MediatR;
-using System.Security.Cryptography;
-using System.Text;
 
 namespace ERP.Application.Modules.Finance.UseCases;
 
@@ -47,7 +47,10 @@ public sealed class ReverseSupplierCreditRefundValidator
 // ── Handler ─────────────────────────────────────────────────────────────
 
 public sealed class ReverseSupplierCreditRefundHandler
-    : IRequestHandler<ReverseSupplierCreditRefundCommand, Result<SupplierCreditRefundTransactionDto>>
+    : IRequestHandler<
+        ReverseSupplierCreditRefundCommand,
+        Result<SupplierCreditRefundTransactionDto>
+    >
 {
     private readonly ISupplierCreditRepository _creditRepo;
     private readonly ISupplierCreditRefundTransactionRepository _txRepo;
@@ -123,11 +126,17 @@ public sealed class ReverseSupplierCreditRefundHandler
                     existingReversal.Id,
                     ct
                 );
-                return Result<SupplierCreditRefundTransactionDto>.Success(RefundMap.ToDto(existingTx!));
+                return Result<SupplierCreditRefundTransactionDto>.Success(
+                    RefundMap.ToDto(existingTx!)
+                );
             }
 
             // 2. Cargar y bloquear (FOR SHARE) el REFUND_RECEIVED original.
-            var original = await _txRepo.GetByIdForShareAsync(tid, cmd.OriginalRefundTransactionId, ct);
+            var original = await _txRepo.GetByIdForShareAsync(
+                tid,
+                cmd.OriginalRefundTransactionId,
+                ct
+            );
             if (original is null || original.SupplierCreditId != cmd.SupplierCreditId)
             {
                 await _uow.RollbackAsync(ct);
@@ -149,7 +158,7 @@ public sealed class ReverseSupplierCreditRefundHandler
             Domain.Modules.Caja.Entities.CashSession? cashSession = null;
             if (
                 original.DestinationTypeCodeSnapshot
-                == FinancialDestinationTypeCode.CashRegister.ToString()
+                    == FinancialDestinationTypeCode.CashRegister.ToString()
                 && original.CashSessionId.HasValue
             )
             {
@@ -256,7 +265,9 @@ public sealed class ReverseSupplierCreditRefundHandler
             }
 
             await _uow.CommitAsync(ct);
-            return Result<SupplierCreditRefundTransactionDto>.Success(RefundMap.ToDto(reversalTransaction));
+            return Result<SupplierCreditRefundTransactionDto>.Success(
+                RefundMap.ToDto(reversalTransaction)
+            );
         }
         catch (InvalidOperationException ex)
         {

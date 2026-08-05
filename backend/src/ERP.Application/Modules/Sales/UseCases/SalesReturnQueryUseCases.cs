@@ -39,7 +39,10 @@ public sealed class GetSalesReturnByIdHandler
         _t = t;
     }
 
-    public async Task<Result<SalesReturnDto>> Handle(GetSalesReturnByIdQuery q, CancellationToken ct)
+    public async Task<Result<SalesReturnDto>> Handle(
+        GetSalesReturnByIdQuery q,
+        CancellationToken ct
+    )
     {
         var salesReturn = await _repo.GetByIdAsync(_t.TenantId, q.Id, ct);
         return salesReturn is null

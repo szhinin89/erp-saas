@@ -37,9 +37,7 @@ public sealed class GetCurrentStockReportQueryHandler
         {
             var warehouse = await _warehouseRepo.GetByIdAsync(_t.TenantId, q.WarehouseId.Value, ct);
             if (warehouse is null)
-                return Result<IReadOnlyList<StockReportRowDto>>.NotFound(
-                    "Bodega no encontrada."
-                );
+                return Result<IReadOnlyList<StockReportRowDto>>.NotFound("Bodega no encontrada.");
         }
 
         var stocks = await _stockRepo.GetForReportAsync(_t.TenantId, q.WarehouseId, ct);
@@ -70,16 +68,14 @@ public sealed class GetCurrentStockReportQueryHandler
         if (!string.IsNullOrWhiteSpace(q.Search))
         {
             var s = q.Search.Trim();
-            rows = rows
-                .Where(r =>
+            rows = rows.Where(r =>
                     r.Sku.Contains(s, StringComparison.OrdinalIgnoreCase)
                     || r.ProductName.Contains(s, StringComparison.OrdinalIgnoreCase)
                 )
                 .ToList();
         }
 
-        rows = rows
-            .OrderBy(r => r.WarehouseName, StringComparer.OrdinalIgnoreCase)
+        rows = rows.OrderBy(r => r.WarehouseName, StringComparer.OrdinalIgnoreCase)
             .ThenBy(r => r.ProductName, StringComparer.OrdinalIgnoreCase)
             .ToList();
 
@@ -98,11 +94,9 @@ public sealed class GetCurrentStockReportQueryHandler
         var warehouseName = warehouseNames.GetValueOrDefault(s.WarehouseId, "—");
         var minStock = item.StockConfig.MinStockQty;
         var status =
-            s.Quantity <= 0
-                ? StockReportStatus.SinStock
-                : minStock.HasValue && s.Quantity <= minStock.Value
-                    ? StockReportStatus.Bajo
-                    : StockReportStatus.Disponible;
+            s.Quantity <= 0 ? StockReportStatus.SinStock
+            : minStock.HasValue && s.Quantity <= minStock.Value ? StockReportStatus.Bajo
+            : StockReportStatus.Disponible;
 
         return new StockReportRowDto(
             s.ProductId,

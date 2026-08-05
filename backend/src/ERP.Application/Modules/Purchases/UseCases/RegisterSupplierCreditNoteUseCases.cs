@@ -1,3 +1,5 @@
+using System.Security.Cryptography;
+using System.Text;
 using ERP.Application.Common;
 using ERP.Application.Common.Persistence;
 using ERP.Domain.Modules.Purchases.Interfaces;
@@ -6,8 +8,6 @@ using ERP.Domain.Modules.Purchases.PurchaseReception.Enums;
 using ERP.Domain.Modules.Purchases.PurchaseReception.Interfaces;
 using FluentValidation;
 using MediatR;
-using System.Security.Cryptography;
-using System.Text;
 
 namespace ERP.Application.Modules.Purchases.UseCases;
 
@@ -124,7 +124,11 @@ public sealed class RegisterAndLinkSupplierCreditNoteHandler
             if (purchaseReturn.LinkCreditNoteClientRequestId == cmd.ClientRequestId)
             {
                 await _uow.RollbackAsync(ct);
-                var expectedHash = ComputeLinkPayloadHash(cmd, purchaseReturn.Id, purchaseReturn.SupplierCreditNoteDocumentId);
+                var expectedHash = ComputeLinkPayloadHash(
+                    cmd,
+                    purchaseReturn.Id,
+                    purchaseReturn.SupplierCreditNoteDocumentId
+                );
                 if (purchaseReturn.LinkCreditNoteRequestPayloadHash != expectedHash)
                     // PR-012
                     return Result<SupplierCreditNoteLinkDto>.ValidationFailure(
@@ -139,7 +143,15 @@ public sealed class RegisterAndLinkSupplierCreditNoteHandler
                 return Result<SupplierCreditNoteLinkDto>.Success(Map(purchaseReturn, existingDoc!));
             }
 
-            if (purchaseReturn.FiscalStatus != Domain.Modules.Purchases.Enums.PurchaseReturnFiscalStatus.PendingSupplierCreditNote)
+            if (
+                purchaseReturn.FiscalStatus
+                != Domain
+                    .Modules
+                    .Purchases
+                    .Enums
+                    .PurchaseReturnFiscalStatus
+                    .PendingSupplierCreditNote
+            )
             {
                 await _uow.RollbackAsync(ct);
                 // SC-009
@@ -148,7 +160,11 @@ public sealed class RegisterAndLinkSupplierCreditNoteHandler
                 );
             }
 
-            var invoice = await _invoiceRepo.GetByIdAsync(tid, purchaseReturn.PurchaseInvoiceId, ct);
+            var invoice = await _invoiceRepo.GetByIdAsync(
+                tid,
+                purchaseReturn.PurchaseInvoiceId,
+                ct
+            );
             if (invoice is null)
             {
                 await _uow.RollbackAsync(ct);
@@ -214,7 +230,13 @@ public sealed class RegisterAndLinkSupplierCreditNoteHandler
             }
 
             // ── SC-013: moneda coincide con la factura/devolución de origen ──
-            if (!string.Equals(document.CurrencyCode, invoice.CurrencyCode, StringComparison.OrdinalIgnoreCase))
+            if (
+                !string.Equals(
+                    document.CurrencyCode,
+                    invoice.CurrencyCode,
+                    StringComparison.OrdinalIgnoreCase
+                )
+            )
             {
                 await _uow.RollbackAsync(ct);
                 // SC-013
@@ -293,7 +315,10 @@ public sealed class RegisterAndLinkSupplierCreditNoteHandler
                     return Result<SupplierCreditNoteLinkDto>.ValidationFailure(
                         "Ya existe una Nota de Crédito registrada con esta clave de acceso."
                     );
-                if (info.ConstraintName == "uq_purchase_returns_tenant_supplier_credit_note_document_id")
+                if (
+                    info.ConstraintName
+                    == "uq_purchase_returns_tenant_supplier_credit_note_document_id"
+                )
                     // SC-012
                     return Result<SupplierCreditNoteLinkDto>.ValidationFailure(
                         "Esta Nota de Crédito ya está vinculada a otra devolución."

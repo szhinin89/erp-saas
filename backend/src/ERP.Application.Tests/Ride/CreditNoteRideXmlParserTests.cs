@@ -81,7 +81,13 @@ public sealed class CreditNoteRideXmlParserTests
                     new ElectronicDocumentTaxSummary("VAT", "2", 22m, 3.3m),
                 ]
                 : [new ElectronicDocumentTaxSummary("VAT", "2", 20m, 3m)],
-            Totals: new ElectronicDocumentTotals(20m, 0m, withIce ? 2m : 0m, withIce ? 25.3m : 23m, "USD"),
+            Totals: new ElectronicDocumentTotals(
+                20m,
+                0m,
+                withIce ? 2m : 0m,
+                withIce ? 25.3m : 23m,
+                "USD"
+            ),
             Payments: [],
             AdditionalInfo: [],
             Reason: reason,
@@ -114,8 +120,12 @@ public sealed class CreditNoteRideXmlParserTests
         model.Header.DocumentTypeCode.Should().Be("04");
         model.Header.GrandTotal.Should().Be(23m);
         model.Header.SubtotalWithoutTax.Should().Be(20m);
-        model.Header.TotalDiscount.Should().Be(0m, "NotaCredito V1.1.0 no define descuento total como concepto propio");
-        model.Header.Tip.Should().Be(0m, "NotaCredito V1.1.0 no define propina como concepto propio");
+        model
+            .Header.TotalDiscount.Should()
+            .Be(0m, "NotaCredito V1.1.0 no define descuento total como concepto propio");
+        model
+            .Header.Tip.Should()
+            .Be(0m, "NotaCredito V1.1.0 no define propina como concepto propio");
 
         model.Header.Reason.Should().Be("Producto en mal estado");
         model.Header.ModifiedDocument.Should().NotBeNull();
@@ -125,7 +135,9 @@ public sealed class CreditNoteRideXmlParserTests
 
         model.Issuer.LegalName.Should().Be("Empresa Test S.A.");
         model.Receiver.LegalName.Should().Be("Cliente Test");
-        model.Receiver.Address.Should().BeNull("el esquema de NotaCredito no incluye dirección del comprador");
+        model
+            .Receiver.Address.Should()
+            .BeNull("el esquema de NotaCredito no incluye dirección del comprador");
         model.Payments.Should().BeEmpty("el esquema de NotaCredito no tiene sección de pagos");
     }
 
@@ -149,8 +161,14 @@ public sealed class CreditNoteRideXmlParserTests
         result.IsSuccess.Should().BeTrue(result.Error);
         result.Value!.Lines.Should().ContainSingle();
         result.Value.Lines[0].Taxes.Should().HaveCount(2);
-        result.Value.Lines[0].Taxes.Should().Contain(t => t.TaxCode == "2" && t.TaxPercentageCode == "2");
-        result.Value.Lines[0].Taxes.Should().Contain(t => t.TaxCode == "3" && t.TaxPercentageCode == "3010");
+        result
+            .Value.Lines[0]
+            .Taxes.Should()
+            .Contain(t => t.TaxCode == "2" && t.TaxPercentageCode == "2");
+        result
+            .Value.Lines[0]
+            .Taxes.Should()
+            .Contain(t => t.TaxCode == "3" && t.TaxPercentageCode == "3010");
     }
 
     [Fact]

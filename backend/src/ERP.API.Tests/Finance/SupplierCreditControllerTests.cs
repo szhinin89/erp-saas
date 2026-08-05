@@ -28,7 +28,10 @@ public sealed class SupplierCreditControllerTests
         services.AddSingleton<IWebHostEnvironment>(new StubWebHostEnvironment());
         controller.ControllerContext = new ControllerContext
         {
-            HttpContext = new DefaultHttpContext { RequestServices = services.BuildServiceProvider() },
+            HttpContext = new DefaultHttpContext
+            {
+                RequestServices = services.BuildServiceProvider(),
+            },
         };
         return controller;
     }
@@ -114,8 +117,8 @@ public sealed class SupplierCreditControllerTests
     [Fact]
     public async Task GetById_inexistente_retorna_404()
     {
-        var controller = BuildController(
-            _ => Result<SupplierCreditDto>.NotFound("Crédito de proveedor no encontrado.")
+        var controller = BuildController(_ =>
+            Result<SupplierCreditDto>.NotFound("Crédito de proveedor no encontrado.")
         );
 
         var response = await controller.GetById(Guid.NewGuid(), CancellationToken.None);
@@ -128,11 +131,10 @@ public sealed class SupplierCreditControllerTests
     [Fact]
     public async Task GetList_retorna_200_con_el_listado_paginado()
     {
-        var controller = BuildController(
-            _ =>
-                Result<SupplierCreditListResultDto>.Success(
-                    new SupplierCreditListResultDto(new List<SupplierCreditDto>(), 0, 1, 20)
-                )
+        var controller = BuildController(_ =>
+            Result<SupplierCreditListResultDto>.Success(
+                new SupplierCreditListResultDto(new List<SupplierCreditDto>(), 0, 1, 20)
+            )
         );
 
         var response = await controller.GetList(1, 20, CancellationToken.None);
@@ -167,11 +169,10 @@ public sealed class SupplierCreditControllerTests
     [Fact]
     public async Task Apply_sobre_CxP_cancelled_retorna_422_SC_002()
     {
-        var controller = BuildController(
-            _ =>
-                Result<SupplierCreditDto>.ValidationFailure(
-                    "No se puede aplicar un crédito de proveedor sobre una cuenta por pagar anulada."
-                )
+        var controller = BuildController(_ =>
+            Result<SupplierCreditDto>.ValidationFailure(
+                "No se puede aplicar un crédito de proveedor sobre una cuenta por pagar anulada."
+            )
         );
 
         var response = await controller.Apply(
@@ -186,8 +187,8 @@ public sealed class SupplierCreditControllerTests
     [Fact]
     public async Task Apply_sobre_credito_inexistente_retorna_404()
     {
-        var controller = BuildController(
-            _ => Result<SupplierCreditDto>.NotFound("Crédito de proveedor no encontrado.")
+        var controller = BuildController(_ =>
+            Result<SupplierCreditDto>.NotFound("Crédito de proveedor no encontrado.")
         );
 
         var response = await controller.Apply(
@@ -230,11 +231,10 @@ public sealed class SupplierCreditControllerTests
     [Fact]
     public async Task ReverseApplication_sobre_CxP_destino_cancelled_retorna_422_SC_014()
     {
-        var controller = BuildController(
-            _ =>
-                Result<SupplierCreditDto>.ValidationFailure(
-                    "No se puede revertir la aplicación porque la cuenta por pagar destino ya fue anulada."
-                )
+        var controller = BuildController(_ =>
+            Result<SupplierCreditDto>.ValidationFailure(
+                "No se puede revertir la aplicación porque la cuenta por pagar destino ya fue anulada."
+            )
         );
 
         var response = await controller.ReverseApplication(
@@ -257,7 +257,9 @@ public sealed class SupplierCreditControllerTests
         var controller = BuildController(req =>
         {
             sent = req;
-            return Result<SupplierCreditRefundTransactionDto>.Success(SampleRefundDto(Guid.NewGuid()));
+            return Result<SupplierCreditRefundTransactionDto>.Success(
+                SampleRefundDto(Guid.NewGuid())
+            );
         });
 
         var response = await controller.Refund(
@@ -281,11 +283,10 @@ public sealed class SupplierCreditControllerTests
     [Fact]
     public async Task Refund_sobre_destino_financiero_inexistente_retorna_404_SC_020()
     {
-        var controller = BuildController(
-            _ =>
-                Result<SupplierCreditRefundTransactionDto>.NotFound(
-                    "El destino financiero indicado no existe."
-                )
+        var controller = BuildController(_ =>
+            Result<SupplierCreditRefundTransactionDto>.NotFound(
+                "El destino financiero indicado no existe."
+            )
         );
 
         var response = await controller.Refund(
@@ -315,13 +316,19 @@ public sealed class SupplierCreditControllerTests
         var controller = BuildController(req =>
         {
             sent = req;
-            return Result<SupplierCreditRefundTransactionDto>.Success(SampleRefundDto(Guid.NewGuid()));
+            return Result<SupplierCreditRefundTransactionDto>.Success(
+                SampleRefundDto(Guid.NewGuid())
+            );
         });
 
         var response = await controller.ReverseRefund(
             id,
             movementId,
-            new ReverseSupplierCreditRefundRequest("Motivo", new DateOnly(2026, 7, 2), Guid.NewGuid()),
+            new ReverseSupplierCreditRefundRequest(
+                "Motivo",
+                new DateOnly(2026, 7, 2),
+                Guid.NewGuid()
+            ),
             CancellationToken.None
         );
 
@@ -335,17 +342,20 @@ public sealed class SupplierCreditControllerTests
     [Fact]
     public async Task ReverseRefund_ya_revertido_retorna_422_SC_011()
     {
-        var controller = BuildController(
-            _ =>
-                Result<SupplierCreditRefundTransactionDto>.ValidationFailure(
-                    "Se intenta revertir un movimiento ya revertido."
-                )
+        var controller = BuildController(_ =>
+            Result<SupplierCreditRefundTransactionDto>.ValidationFailure(
+                "Se intenta revertir un movimiento ya revertido."
+            )
         );
 
         var response = await controller.ReverseRefund(
             Guid.NewGuid(),
             Guid.NewGuid(),
-            new ReverseSupplierCreditRefundRequest("Motivo", new DateOnly(2026, 7, 2), Guid.NewGuid()),
+            new ReverseSupplierCreditRefundRequest(
+                "Motivo",
+                new DateOnly(2026, 7, 2),
+                Guid.NewGuid()
+            ),
             CancellationToken.None
         );
 

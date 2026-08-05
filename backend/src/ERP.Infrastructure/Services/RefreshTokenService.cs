@@ -1,3 +1,6 @@
+using System.Collections.Concurrent;
+using System.Security.Cryptography;
+using System.Text;
 using ERP.Application.Common.Config;
 using ERP.Application.Common.Interfaces;
 using ERP.Application.Common.Security;
@@ -5,9 +8,6 @@ using ERP.Domain.Auth.Entities;
 using ERP.Domain.Auth.Interfaces;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using System.Collections.Concurrent;
-using System.Security.Cryptography;
-using System.Text;
 
 namespace ERP.Infrastructure.Services;
 

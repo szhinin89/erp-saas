@@ -27,7 +27,10 @@ public sealed class PurchaseReturnConfiguration : IEntityTypeConfiguration<Purch
         // Branch Ownership Rule (§5.2) — obligatorio, nunca sustituible tras CreateDraft().
         builder.Property(x => x.BranchId).HasColumnName("branch_id").IsRequired();
 
-        builder.Property(x => x.PurchaseInvoiceId).HasColumnName("purchase_invoice_id").IsRequired();
+        builder
+            .Property(x => x.PurchaseInvoiceId)
+            .HasColumnName("purchase_invoice_id")
+            .IsRequired();
         builder.Property(x => x.SupplierId).HasColumnName("supplier_id").IsRequired();
 
         builder
@@ -47,7 +50,9 @@ public sealed class PurchaseReturnConfiguration : IEntityTypeConfiguration<Purch
             .HasConversion<int>()
             .IsRequired();
 
-        builder.Property(x => x.SupplierCreditNoteDocumentId).HasColumnName("supplier_credit_note_document_id");
+        builder
+            .Property(x => x.SupplierCreditNoteDocumentId)
+            .HasColumnName("supplier_credit_note_document_id");
 
         // ── Totales snapshot (congelados al autorizar, §11.1/§19.1bis) ──────
         builder
@@ -106,7 +111,9 @@ public sealed class PurchaseReturnConfiguration : IEntityTypeConfiguration<Purch
             .HasColumnName("create_request_payload_hash")
             .HasMaxLength(128)
             .IsRequired();
-        builder.Property(x => x.AuthorizeClientRequestId).HasColumnName("authorize_client_request_id");
+        builder
+            .Property(x => x.AuthorizeClientRequestId)
+            .HasColumnName("authorize_client_request_id");
         builder
             .Property(x => x.AuthorizeRequestPayloadHash)
             .HasColumnName("authorize_request_payload_hash")
@@ -182,7 +189,12 @@ public sealed class PurchaseReturnConfiguration : IEntityTypeConfiguration<Purch
 
         // ── Indexes ──────────────────────────────────────────────────────────
         builder
-            .HasIndex(x => new { x.TenantId, x.CompanyId, x.BranchId })
+            .HasIndex(x => new
+            {
+                x.TenantId,
+                x.CompanyId,
+                x.BranchId,
+            })
             .HasDatabaseName("ix_purchase_returns_tenant_company_branch");
 
         builder

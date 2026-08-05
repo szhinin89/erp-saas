@@ -92,8 +92,17 @@ public sealed class PurchaseReturnEndToEndTests : IAsyncLifetime
         await using var db = CreateContext();
         await db.Database.MigrateAsync();
 
-        var tenant = Tenant.Create("ZH-P0-02-E2E", $"zh-p002-e2e-{Guid.NewGuid():N}"[..20], _userId);
-        var company = Company.CreateManaged(tenant.Id, "1790012345001", "Empresa P0-02 E2E S.A.", createdBy: _userId);
+        var tenant = Tenant.Create(
+            "ZH-P0-02-E2E",
+            $"zh-p002-e2e-{Guid.NewGuid():N}"[..20],
+            _userId
+        );
+        var company = Company.CreateManaged(
+            tenant.Id,
+            "1790012345001",
+            "Empresa P0-02 E2E S.A.",
+            createdBy: _userId
+        );
         db.Tenants.Add(tenant);
         db.Companies.Add(company);
         await db.SaveChangesAsync();
@@ -132,7 +141,14 @@ public sealed class PurchaseReturnEndToEndTests : IAsyncLifetime
         await db.SaveChangesAsync();
         _branchId = branch.Id;
 
-        var supplier = BusinessPartner.Create(_tenantId, "05", "1710034065", 1, "Proveedor E2E", _userId);
+        var supplier = BusinessPartner.Create(
+            _tenantId,
+            "05",
+            "1710034065",
+            1,
+            "Proveedor E2E",
+            _userId
+        );
         db.BusinessPartners.Add(supplier);
         var paymentTerm = PaymentTerm.Create(_tenantId, "CONT", "Contado", 1, 0, _userId);
         db.Add(paymentTerm);
@@ -141,15 +157,34 @@ public sealed class PurchaseReturnEndToEndTests : IAsyncLifetime
         _paymentTermId = paymentTerm.Id;
 
         var warehouse = ERP.Domain.Modules.Inventory.Entities.Warehouse.Create(
-            _tenantId, _branchId, "Bodega Principal", "BOD-01",
-            null, null, null, null, null, null, null, null, null,
-            _userId, _companyId, isMain: true
+            _tenantId,
+            _branchId,
+            "Bodega Principal",
+            "BOD-01",
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            _userId,
+            _companyId,
+            isMain: true
         );
         db.Add(warehouse);
         await db.SaveChangesAsync();
         _warehouseId = warehouse.Id;
 
-        var itemType = ERP.Domain.Modules.Items.Entities.ItemTypeDefinition.Create(_tenantId, "MERCH", "Mercadería", 1, _userId);
+        var itemType = ERP.Domain.Modules.Items.Entities.ItemTypeDefinition.Create(
+            _tenantId,
+            "MERCH",
+            "Mercadería",
+            1,
+            _userId
+        );
         db.Set<ERP.Domain.Modules.Items.Entities.ItemTypeDefinition>().Add(itemType);
         await db.SaveChangesAsync();
 
@@ -160,9 +195,16 @@ public sealed class PurchaseReturnEndToEndTests : IAsyncLifetime
             description: "Producto E2E",
             itemTypeId: itemType.Id,
             defaultUomCode: "UNIT",
-            taxConfig: ERP.Domain.Modules.Items.ValueObjects.ItemTaxConfig.Create(saleVatCode: "10", purchaseVatCode: "10"),
-            saleConfig: ERP.Domain.Modules.Items.ValueObjects.ItemSaleConfig.Create(isForSale: true),
-            stockConfig: ERP.Domain.Modules.Items.ValueObjects.ItemStockConfig.Create(tracksStock: true),
+            taxConfig: ERP.Domain.Modules.Items.ValueObjects.ItemTaxConfig.Create(
+                saleVatCode: "10",
+                purchaseVatCode: "10"
+            ),
+            saleConfig: ERP.Domain.Modules.Items.ValueObjects.ItemSaleConfig.Create(
+                isForSale: true
+            ),
+            stockConfig: ERP.Domain.Modules.Items.ValueObjects.ItemStockConfig.Create(
+                tracksStock: true
+            ),
             createdBy: _userId
         );
         db.Set<ERP.Domain.Modules.Items.Entities.Item>().Add(item);
@@ -170,49 +212,100 @@ public sealed class PurchaseReturnEndToEndTests : IAsyncLifetime
         _itemId = item.Id;
 
         var account = Account.Create(
-            _tenantId, _companyId, AccountCode.Create($"1.{Guid.NewGuid():N}"[..8]), "Banco Pichincha",
-            null, AccountType.Asset, AccountNature.Debit, allowsPosting: true, createdBy: _userId
+            _tenantId,
+            _companyId,
+            AccountCode.Create($"1.{Guid.NewGuid():N}"[..8]),
+            "Banco Pichincha",
+            null,
+            AccountType.Asset,
+            AccountNature.Debit,
+            allowsPosting: true,
+            createdBy: _userId
         );
         db.Accounts.Add(account);
         await db.SaveChangesAsync();
         _accountId = account.Id;
 
         var bankDestination = CompanyFinancialDestination.Create(
-            _tenantId, _companyId, "BANK-01", "Banco Pichincha CTE", FinancialDestinationTypeCode.BankAccount,
-            _accountId, "USD", _userId, bankInstitutionCode: "PICHINCHA", bankAccountIdentifierNormalized: "1234567890"
+            _tenantId,
+            _companyId,
+            "BANK-01",
+            "Banco Pichincha CTE",
+            FinancialDestinationTypeCode.BankAccount,
+            _accountId,
+            "USD",
+            _userId,
+            bankInstitutionCode: "PICHINCHA",
+            bankAccountIdentifierNormalized: "1234567890"
         );
         db.Set<CompanyFinancialDestination>().Add(bankDestination);
         await db.SaveChangesAsync();
         _bankDestinationId = bankDestination.Id;
 
         var establishment = ERP.Domain.Modules.Company.Entities.Establishment.Create(
-            _tenantId, _branchId, _companyId, "001", "Matriz", "Av. Principal 123", null, isMain: true, _userId
+            _tenantId,
+            _branchId,
+            _companyId,
+            "001",
+            "Matriz",
+            "Av. Principal 123",
+            null,
+            isMain: true,
+            _userId
         );
         db.Set<ERP.Domain.Modules.Company.Entities.Establishment>().Add(establishment);
         await db.SaveChangesAsync();
 
         var emissionPoint = ERP.Domain.Modules.Company.Entities.EmissionPoint.Create(
-            _tenantId, _companyId, establishment.Id, "001", "Punto de emisión 1",
-            ERP.Domain.Modules.Company.Enums.EmissionType.Electronic, isDefault: true, _userId
+            _tenantId,
+            _companyId,
+            establishment.Id,
+            "001",
+            "Punto de emisión 1",
+            ERP.Domain.Modules.Company.Enums.EmissionType.Electronic,
+            isDefault: true,
+            _userId
         );
         db.Set<ERP.Domain.Modules.Company.Entities.EmissionPoint>().Add(emissionPoint);
         await db.SaveChangesAsync();
         _emissionPointId = emissionPoint.Id;
 
-        var cashRegister = CashRegister.Create(_tenantId, _companyId, _branchId, "CAJA-01", "Caja Matriz", _userId);
+        var cashRegister = CashRegister.Create(
+            _tenantId,
+            _companyId,
+            _branchId,
+            "CAJA-01",
+            "Caja Matriz",
+            _userId
+        );
         db.Set<CashRegister>().Add(cashRegister);
         await db.SaveChangesAsync();
         _cashRegisterId = cashRegister.Id;
 
         var cashDestination = CompanyFinancialDestination.Create(
-            _tenantId, _companyId, "CASH-01", "Caja Matriz", FinancialDestinationTypeCode.CashRegister,
-            _accountId, "USD", _userId, cashRegisterId: _cashRegisterId
+            _tenantId,
+            _companyId,
+            "CASH-01",
+            "Caja Matriz",
+            FinancialDestinationTypeCode.CashRegister,
+            _accountId,
+            "USD",
+            _userId,
+            cashRegisterId: _cashRegisterId
         );
         db.Set<CompanyFinancialDestination>().Add(cashDestination);
         await db.SaveChangesAsync();
         _cashDestinationId = cashDestination.Id;
 
-        var paymentMethod = PaymentMethod.Create(_tenantId, "TRANSFER", "Transferencia", false, false, 1, _userId);
+        var paymentMethod = PaymentMethod.Create(
+            _tenantId,
+            "TRANSFER",
+            "Transferencia",
+            false,
+            false,
+            1,
+            _userId
+        );
         db.Set<PaymentMethod>().Add(paymentMethod);
         await db.SaveChangesAsync();
     }
@@ -223,7 +316,9 @@ public sealed class PurchaseReturnEndToEndTests : IAsyncLifetime
     {
         var options = new DbContextOptionsBuilder<ErpDbContext>()
             .UseNpgsql(_postgres.GetConnectionString())
-            .AddInterceptors(new ERP.Infrastructure.Persistence.Interceptors.NewChildEntityTrackingInterceptor())
+            .AddInterceptors(
+                new ERP.Infrastructure.Persistence.Interceptors.NewChildEntityTrackingInterceptor()
+            )
             .Options;
         return new ErpDbContext(
             options,
@@ -246,13 +341,31 @@ public sealed class PurchaseReturnEndToEndTests : IAsyncLifetime
     {
         await using var db = CreateContext();
         var inv = PurchaseInvoice.CreateDraft(
-            _tenantId, _companyId, _branchId, _supplierId, "Proveedor E2E", "1791352688001", "01",
+            _tenantId,
+            _companyId,
+            _branchId,
+            _supplierId,
+            "Proveedor E2E",
+            "1791352688001",
+            "01",
             $"001-001-{Random.Shared.Next(100000, 999999):D6}",
-            DateOnly.FromDateTime(DateTime.UtcNow).AddDays(-5), _userId, _paymentTermId, "Contado", 1, 30
+            DateOnly.FromDateTime(DateTime.UtcNow).AddDays(-5),
+            _userId,
+            _paymentTermId,
+            "Contado",
+            1,
+            30
         );
         var line = PurchaseInvoiceDetail.Create(
-            inv.Id, _tenantId, "Producto E2E", quantity: quantity, unitPrice: unitPrice,
-            vatCode: "10", uomCode: "UNIT", itemId: _itemId, warehouseId: _warehouseId
+            inv.Id,
+            _tenantId,
+            "Producto E2E",
+            quantity: quantity,
+            unitPrice: unitPrice,
+            vatCode: "10",
+            uomCode: "UNIT",
+            itemId: _itemId,
+            warehouseId: _warehouseId
         );
         line.ApplyTaxes("10", 12m, "IVA", null, 0m, null);
         inv.ReplaceLines(new[] { line }, _userId);
@@ -262,8 +375,12 @@ public sealed class PurchaseReturnEndToEndTests : IAsyncLifetime
         var confirmedLine = inv.Lines.Single();
 
         var payable = PurchasePayable.Create(
-            _tenantId, _companyId, inv.Id, _supplierId,
-            inv.ConfirmedGrandTotal ?? confirmedLine.TaxInclusiveTotal, _userId
+            _tenantId,
+            _companyId,
+            inv.Id,
+            _supplierId,
+            inv.ConfirmedGrandTotal ?? confirmedLine.TaxInclusiveTotal,
+            _userId
         );
         if (paidAmount > 0)
             payable.RegisterPayment(paidAmount, _userId);
@@ -280,7 +397,11 @@ public sealed class PurchaseReturnEndToEndTests : IAsyncLifetime
         if (stock is null)
         {
             stock = ERP.Domain.Modules.Inventory.Entities.CurrentStock.Create(
-                _tenantId, _itemId, _warehouseId, _userId, _companyId
+                _tenantId,
+                _itemId,
+                _warehouseId,
+                _userId,
+                _companyId
             );
             db.Set<ERP.Domain.Modules.Inventory.Entities.CurrentStock>().Add(stock);
         }
@@ -297,7 +418,11 @@ public sealed class PurchaseReturnEndToEndTests : IAsyncLifetime
             new PurchaseReturnRepository(db, new FixedCurrentCompany(() => _companyId)),
             new PurchaseInvoiceRepository(db, new FixedCurrentCompany(() => _companyId)),
             new PurchaseReturnSequenceRepository(db),
-            new StockRepository(db, new FixedCurrentCompany(() => _companyId), new RealDatabaseExceptionTranslator()),
+            new StockRepository(
+                db,
+                new FixedCurrentCompany(() => _companyId),
+                new RealDatabaseExceptionTranslator()
+            ),
             new SupplierCreditRepository(db, new FixedCurrentCompany(() => _companyId)),
             new UnitOfWork(db),
             new RealDatabaseExceptionTranslator(),
@@ -310,7 +435,11 @@ public sealed class PurchaseReturnEndToEndTests : IAsyncLifetime
             new PurchaseReturnRepository(db, new FixedCurrentCompany(() => _companyId)),
             new PurchaseInvoiceRepository(db, new FixedCurrentCompany(() => _companyId)),
             new SupplierCreditRepository(db, new FixedCurrentCompany(() => _companyId)),
-            new StockRepository(db, new FixedCurrentCompany(() => _companyId), new RealDatabaseExceptionTranslator()),
+            new StockRepository(
+                db,
+                new FixedCurrentCompany(() => _companyId),
+                new RealDatabaseExceptionTranslator()
+            ),
             new UnitOfWork(db),
             new RealDatabaseExceptionTranslator(),
             new FixedCurrentTenant(() => _tenantId),
@@ -354,8 +483,14 @@ public sealed class PurchaseReturnEndToEndTests : IAsyncLifetime
     private RegisterSupplierCreditRefundHandler BuildRegisterRefundHandler(ErpDbContext db) =>
         new(
             new SupplierCreditRepository(db, new FixedCurrentCompany(() => _companyId)),
-            new SupplierCreditRefundTransactionRepository(db, new FixedCurrentCompany(() => _companyId)),
-            new CompanyFinancialDestinationRepository(db, new FixedCurrentCompany(() => _companyId)),
+            new SupplierCreditRefundTransactionRepository(
+                db,
+                new FixedCurrentCompany(() => _companyId)
+            ),
+            new CompanyFinancialDestinationRepository(
+                db,
+                new FixedCurrentCompany(() => _companyId)
+            ),
             new AccountRepository(db),
             new PaymentMethodRepository(db),
             new CashSessionRepository(db, new FixedCurrentCompany(() => _companyId)),
@@ -368,7 +503,10 @@ public sealed class PurchaseReturnEndToEndTests : IAsyncLifetime
     private ReverseSupplierCreditRefundHandler BuildReverseRefundHandler(ErpDbContext db) =>
         new(
             new SupplierCreditRepository(db, new FixedCurrentCompany(() => _companyId)),
-            new SupplierCreditRefundTransactionRepository(db, new FixedCurrentCompany(() => _companyId)),
+            new SupplierCreditRefundTransactionRepository(
+                db,
+                new FixedCurrentCompany(() => _companyId)
+            ),
             new CashSessionRepository(db, new FixedCurrentCompany(() => _companyId)),
             new UnitOfWork(db),
             new RealDatabaseExceptionTranslator(),
@@ -376,7 +514,11 @@ public sealed class PurchaseReturnEndToEndTests : IAsyncLifetime
             new FixedCurrentUser(_userId)
         );
 
-    private async Task<PurchaseReturnDto> AuthorizeDraftAsync(Guid invoiceId, Guid lineId, decimal quantity)
+    private async Task<PurchaseReturnDto> AuthorizeDraftAsync(
+        Guid invoiceId,
+        Guid lineId,
+        decimal quantity
+    )
     {
         await using var db = CreateContext();
         var draftHandler = new CreatePurchaseReturnDraftHandler(
@@ -422,10 +564,15 @@ public sealed class PurchaseReturnEndToEndTests : IAsyncLifetime
         dto.SupplierCreditNoteDocumentId.Should().BeNull();
 
         await using var verify = CreateContext();
-        var payable = await verify.Set<PurchasePayable>().AsNoTracking().FirstAsync(p => p.Id == inv.PayableId);
+        var payable = await verify
+            .Set<PurchasePayable>()
+            .AsNoTracking()
+            .FirstAsync(p => p.Id == inv.PayableId);
         payable.ReturnAppliedAmount.Should().BeGreaterThan(0m);
         payable.SupplierCreditAppliedAmount.Should().Be(0m);
-        var creditExists = await verify.Set<SupplierCredit>().AnyAsync(c => c.SourcePurchaseReturnId == dto.Id);
+        var creditExists = await verify
+            .Set<SupplierCredit>()
+            .AnyAsync(c => c.SourcePurchaseReturnId == dto.Id);
         creditExists.Should().BeFalse();
     }
 
@@ -440,9 +587,14 @@ public sealed class PurchaseReturnEndToEndTests : IAsyncLifetime
         dto.AuthorizedGrandTotal.Should().NotBeNull();
 
         await using var verify = CreateContext();
-        var payable = await verify.Set<PurchasePayable>().AsNoTracking().FirstAsync(p => p.Id == inv.PayableId);
+        var payable = await verify
+            .Set<PurchasePayable>()
+            .AsNoTracking()
+            .FirstAsync(p => p.Id == inv.PayableId);
         payable.ReturnAppliedAmount.Should().Be(dto.AuthorizedGrandTotal!.Value);
-        var creditExists = await verify.Set<SupplierCredit>().AnyAsync(c => c.SourcePurchaseReturnId == dto.Id);
+        var creditExists = await verify
+            .Set<SupplierCredit>()
+            .AnyAsync(c => c.SourcePurchaseReturnId == dto.Id);
         creditExists.Should().BeFalse("el total devuelto cabe íntegro en el saldo pendiente");
     }
 
@@ -455,7 +607,10 @@ public sealed class PurchaseReturnEndToEndTests : IAsyncLifetime
         var inv = await SeedConfirmedInvoiceAsync(unitPrice: 100m, quantity: 10m, paidAmount: 720m);
         await using (var check = CreateContext())
         {
-            var p = await check.Set<PurchasePayable>().AsNoTracking().FirstAsync(x => x.Id == inv.PayableId);
+            var p = await check
+                .Set<PurchasePayable>()
+                .AsNoTracking()
+                .FirstAsync(x => x.Id == inv.PayableId);
             p.BalanceDue.Should().Be(400m);
         }
 
@@ -463,10 +618,15 @@ public sealed class PurchaseReturnEndToEndTests : IAsyncLifetime
         var dto = await AuthorizeDraftAsync(inv.InvoiceId, inv.LineId, 2m);
 
         await using var verify = CreateContext();
-        var payable = await verify.Set<PurchasePayable>().AsNoTracking().FirstAsync(p => p.Id == inv.PayableId);
+        var payable = await verify
+            .Set<PurchasePayable>()
+            .AsNoTracking()
+            .FirstAsync(p => p.Id == inv.PayableId);
         payable.ReturnAppliedAmount.Should().Be(dto.AuthorizedGrandTotal!.Value);
         payable.BalanceDue.Should().Be(400m - dto.AuthorizedGrandTotal!.Value);
-        var creditExists = await verify.Set<SupplierCredit>().AnyAsync(c => c.SourcePurchaseReturnId == dto.Id);
+        var creditExists = await verify
+            .Set<SupplierCredit>()
+            .AnyAsync(c => c.SourcePurchaseReturnId == dto.Id);
         creditExists.Should().BeFalse();
     }
 
@@ -480,11 +640,17 @@ public sealed class PurchaseReturnEndToEndTests : IAsyncLifetime
         var dto = await AuthorizeDraftAsync(inv.InvoiceId, inv.LineId, 10m);
 
         await using var verify = CreateContext();
-        var payable = await verify.Set<PurchasePayable>().AsNoTracking().FirstAsync(p => p.Id == inv.PayableId);
+        var payable = await verify
+            .Set<PurchasePayable>()
+            .AsNoTracking()
+            .FirstAsync(p => p.Id == inv.PayableId);
         payable.ReturnAppliedAmount.Should().Be(400m);
         payable.BalanceDue.Should().Be(0m);
 
-        var credit = await verify.Set<SupplierCredit>().AsNoTracking().FirstOrDefaultAsync(c => c.SourcePurchaseReturnId == dto.Id);
+        var credit = await verify
+            .Set<SupplierCredit>()
+            .AsNoTracking()
+            .FirstOrDefaultAsync(c => c.SourcePurchaseReturnId == dto.Id);
         credit.Should().NotBeNull();
         credit!.OriginalAmount.Should().Be(dto.AuthorizedGrandTotal!.Value - 400m);
         credit.AvailableAmount.Should().Be(credit.OriginalAmount);
@@ -495,20 +661,33 @@ public sealed class PurchaseReturnEndToEndTests : IAsyncLifetime
     [Fact]
     public async Task Escenario5_Factura_totalmente_pagada_todo_el_monto_se_convierte_en_credito()
     {
-        var inv = await SeedConfirmedInvoiceAsync(unitPrice: 100m, quantity: 10m, paidAmount: 1120m);
+        var inv = await SeedConfirmedInvoiceAsync(
+            unitPrice: 100m,
+            quantity: 10m,
+            paidAmount: 1120m
+        );
         await using (var check = CreateContext())
         {
-            var p = await check.Set<PurchasePayable>().AsNoTracking().FirstAsync(x => x.Id == inv.PayableId);
+            var p = await check
+                .Set<PurchasePayable>()
+                .AsNoTracking()
+                .FirstAsync(x => x.Id == inv.PayableId);
             p.BalanceDue.Should().Be(0m);
         }
 
         var dto = await AuthorizeDraftAsync(inv.InvoiceId, inv.LineId, 10m);
 
         await using var verify = CreateContext();
-        var payable = await verify.Set<PurchasePayable>().AsNoTracking().FirstAsync(p => p.Id == inv.PayableId);
+        var payable = await verify
+            .Set<PurchasePayable>()
+            .AsNoTracking()
+            .FirstAsync(p => p.Id == inv.PayableId);
         payable.ReturnAppliedAmount.Should().Be(0m);
 
-        var credit = await verify.Set<SupplierCredit>().AsNoTracking().FirstAsync(c => c.SourcePurchaseReturnId == dto.Id);
+        var credit = await verify
+            .Set<SupplierCredit>()
+            .AsNoTracking()
+            .FirstAsync(c => c.SourcePurchaseReturnId == dto.Id);
         credit.OriginalAmount.Should().Be(dto.AuthorizedGrandTotal!.Value);
     }
 
@@ -517,15 +696,29 @@ public sealed class PurchaseReturnEndToEndTests : IAsyncLifetime
     [Fact]
     public async Task Escenario6_Credito_aplicado_a_otra_CxP_del_mismo_proveedor()
     {
-        var source = await SeedConfirmedInvoiceAsync(unitPrice: 100m, quantity: 10m, paidAmount: 1120m);
+        var source = await SeedConfirmedInvoiceAsync(
+            unitPrice: 100m,
+            quantity: 10m,
+            paidAmount: 1120m
+        );
         var dto = await AuthorizeDraftAsync(source.InvoiceId, source.LineId, 10m);
-        var target = await SeedConfirmedInvoiceAsync(unitPrice: 1200m, quantity: 1m, paidAmount: 0m);
+        var target = await SeedConfirmedInvoiceAsync(
+            unitPrice: 1200m,
+            quantity: 1m,
+            paidAmount: 0m
+        );
 
         await using var db = CreateContext();
-        var credit = await db.Set<SupplierCredit>().FirstAsync(c => c.SourcePurchaseReturnId == dto.Id);
+        var credit = await db.Set<SupplierCredit>()
+            .FirstAsync(c => c.SourcePurchaseReturnId == dto.Id);
         var applyHandler = BuildApplyHandler(db);
         var applied = await applyHandler.Handle(
-            new ApplySupplierCreditCommand(credit.Id, target.PayableId, credit.AvailableAmount, Guid.NewGuid()),
+            new ApplySupplierCreditCommand(
+                credit.Id,
+                target.PayableId,
+                credit.AvailableAmount,
+                Guid.NewGuid()
+            ),
             CancellationToken.None
         );
 
@@ -534,7 +727,10 @@ public sealed class PurchaseReturnEndToEndTests : IAsyncLifetime
         applied.Value.IsOpen.Should().BeFalse();
 
         await using var verify = CreateContext();
-        var targetPayable = await verify.Set<PurchasePayable>().AsNoTracking().FirstAsync(p => p.Id == target.PayableId);
+        var targetPayable = await verify
+            .Set<PurchasePayable>()
+            .AsNoTracking()
+            .FirstAsync(p => p.Id == target.PayableId);
         targetPayable.SupplierCreditAppliedAmount.Should().Be(applied.Value.OriginalAmount);
     }
 
@@ -547,12 +743,18 @@ public sealed class PurchaseReturnEndToEndTests : IAsyncLifetime
         var dto = await AuthorizeDraftAsync(inv.InvoiceId, inv.LineId, 1m);
 
         await using var db = CreateContext();
-        var credit = await db.Set<SupplierCredit>().FirstAsync(c => c.SourcePurchaseReturnId == dto.Id);
+        var credit = await db.Set<SupplierCredit>()
+            .FirstAsync(c => c.SourcePurchaseReturnId == dto.Id);
         var refundHandler = BuildRegisterRefundHandler(db);
         var refunded = await refundHandler.Handle(
             new RegisterSupplierCreditRefundCommand(
-                credit.Id, _bankDestinationId, "TRANSFER", credit.AvailableAmount,
-                DateOnly.FromDateTime(DateTime.UtcNow), "TRX-001", Guid.NewGuid()
+                credit.Id,
+                _bankDestinationId,
+                "TRANSFER",
+                credit.AvailableAmount,
+                DateOnly.FromDateTime(DateTime.UtcNow),
+                "TRX-001",
+                Guid.NewGuid()
             ),
             CancellationToken.None
         );
@@ -563,7 +765,10 @@ public sealed class PurchaseReturnEndToEndTests : IAsyncLifetime
         refunded.Value.CashSessionId.Should().BeNull();
 
         await using var verify = CreateContext();
-        var creditAfter = await verify.Set<SupplierCredit>().AsNoTracking().FirstAsync(c => c.Id == credit.Id);
+        var creditAfter = await verify
+            .Set<SupplierCredit>()
+            .AsNoTracking()
+            .FirstAsync(c => c.Id == credit.Id);
         creditAfter.AvailableAmount.Should().Be(0m);
     }
 
@@ -579,8 +784,17 @@ public sealed class PurchaseReturnEndToEndTests : IAsyncLifetime
         await using (var db = CreateContext())
         {
             var session = CashSession.Open(
-                _tenantId, _companyId, _branchId, _userId, _cashRegisterId, "CAJA-01", "Caja Matriz",
-                _emissionPointId, "001", 0m, _userId
+                _tenantId,
+                _companyId,
+                _branchId,
+                _userId,
+                _cashRegisterId,
+                "CAJA-01",
+                "Caja Matriz",
+                _emissionPointId,
+                "001",
+                0m,
+                _userId
             );
             db.Set<CashSession>().Add(session);
             await db.SaveChangesAsync();
@@ -590,12 +804,18 @@ public sealed class PurchaseReturnEndToEndTests : IAsyncLifetime
         Guid movementTxId;
         await using (var db = CreateContext())
         {
-            var credit = await db.Set<SupplierCredit>().FirstAsync(c => c.SourcePurchaseReturnId == dto.Id);
+            var credit = await db.Set<SupplierCredit>()
+                .FirstAsync(c => c.SourcePurchaseReturnId == dto.Id);
             var refundHandler = BuildRegisterRefundHandler(db);
             var refunded = await refundHandler.Handle(
                 new RegisterSupplierCreditRefundCommand(
-                    credit.Id, _cashDestinationId, "TRANSFER", credit.AvailableAmount,
-                    DateOnly.FromDateTime(DateTime.UtcNow), null, Guid.NewGuid()
+                    credit.Id,
+                    _cashDestinationId,
+                    "TRANSFER",
+                    credit.AvailableAmount,
+                    DateOnly.FromDateTime(DateTime.UtcNow),
+                    null,
+                    Guid.NewGuid()
                 ),
                 CancellationToken.None
             );
@@ -609,7 +829,10 @@ public sealed class PurchaseReturnEndToEndTests : IAsyncLifetime
         var reverseHandler = BuildReverseRefundHandler(db2);
         var reversed = await reverseHandler.Handle(
             new ReverseSupplierCreditRefundCommand(
-                (await db2.Set<SupplierCredit>().FirstAsync(c => c.SourcePurchaseReturnId == dto.Id)).Id,
+                (
+                    await db2.Set<SupplierCredit>()
+                        .FirstAsync(c => c.SourcePurchaseReturnId == dto.Id)
+                ).Id,
                 movementTxId,
                 "Reembolso rechazado por el proveedor",
                 DateOnly.FromDateTime(DateTime.UtcNow),
@@ -622,8 +845,13 @@ public sealed class PurchaseReturnEndToEndTests : IAsyncLifetime
         reversed.Value!.CashSessionId.Should().Be(sessionId);
 
         await using var verify = CreateContext();
-        var creditAfter = await verify.Set<SupplierCredit>().AsNoTracking().FirstAsync(c => c.SourcePurchaseReturnId == dto.Id);
-        creditAfter.AvailableAmount.Should().Be(creditAfter.OriginalAmount, "la reversa restaura el saldo íntegro");
+        var creditAfter = await verify
+            .Set<SupplierCredit>()
+            .AsNoTracking()
+            .FirstAsync(c => c.SourcePurchaseReturnId == dto.Id);
+        creditAfter
+            .AvailableAmount.Should()
+            .Be(creditAfter.OriginalAmount, "la reversa restaura el saldo íntegro");
     }
 
     // ── Escenario 8 — NC recibida después ─────────────────────────────────
@@ -638,9 +866,17 @@ public sealed class PurchaseReturnEndToEndTests : IAsyncLifetime
         var linkHandler = BuildLinkCreditNoteHandler(db);
         var linked = await linkHandler.Handle(
             new RegisterAndLinkSupplierCreditNoteCommand(
-                dto.Id, $"AK-{Guid.NewGuid():N}", "1791352688001", "Proveedor E2E",
-                $"001-001-{Random.Shared.Next(100000, 999999):D6}", DateOnly.FromDateTime(DateTime.UtcNow),
-                dto.AuthorizedGrandTotal!.Value, 0m, dto.AuthorizedGrandTotal!.Value, "USD", Guid.NewGuid()
+                dto.Id,
+                $"AK-{Guid.NewGuid():N}",
+                "1791352688001",
+                "Proveedor E2E",
+                $"001-001-{Random.Shared.Next(100000, 999999):D6}",
+                DateOnly.FromDateTime(DateTime.UtcNow),
+                dto.AuthorizedGrandTotal!.Value,
+                0m,
+                dto.AuthorizedGrandTotal!.Value,
+                "USD",
+                Guid.NewGuid()
             ),
             CancellationToken.None
         );
@@ -649,8 +885,16 @@ public sealed class PurchaseReturnEndToEndTests : IAsyncLifetime
         linked.Value!.FiscalStatus.Should().Be("SupplierCreditNoteRegistered");
 
         await using var verify = CreateContext();
-        var payable = await verify.Set<PurchasePayable>().AsNoTracking().FirstAsync(p => p.Id == inv.PayableId);
-        payable.ReturnAppliedAmount.Should().Be(dto.AuthorizedGrandTotal!.Value, "vincular la NC no debe cambiar ningún efecto financiero ya aplicado");
+        var payable = await verify
+            .Set<PurchasePayable>()
+            .AsNoTracking()
+            .FirstAsync(p => p.Id == inv.PayableId);
+        payable
+            .ReturnAppliedAmount.Should()
+            .Be(
+                dto.AuthorizedGrandTotal!.Value,
+                "vincular la NC no debe cambiar ningún efecto financiero ya aplicado"
+            );
     }
 
     // ── Escenario 9 — Factura con retención emitida bloquea Authorize ────
@@ -663,12 +907,23 @@ public sealed class PurchaseReturnEndToEndTests : IAsyncLifetime
         await using (var db = CreateContext())
         {
             var withholding = ERP.Domain.Modules.Purchases.Entities.IssuedWithholding.CreateDraft(
-                _tenantId, _companyId, inv.InvoiceId, _supplierId, _emissionPointId,
-                DateOnly.FromDateTime(DateTime.UtcNow), _userId
+                _tenantId,
+                _companyId,
+                inv.InvoiceId,
+                _supplierId,
+                _emissionPointId,
+                DateOnly.FromDateTime(DateTime.UtcNow),
+                _userId
             );
             withholding.AddDetail(
                 ERP.Domain.Modules.Purchases.Entities.IssuedWithholdingDetail.Create(
-                    withholding.Id, _tenantId, "IVA", "1", "Retención IVA", 100m, 30m
+                    withholding.Id,
+                    _tenantId,
+                    "IVA",
+                    "1",
+                    "Retención IVA",
+                    100m,
+                    30m
                 )
             );
             withholding.Issue("001-001-000000001", _userId);
@@ -688,7 +943,9 @@ public sealed class PurchaseReturnEndToEndTests : IAsyncLifetime
         );
         var draft = await draftHandler.Handle(
             new CreatePurchaseReturnDraftCommand(
-                Guid.NewGuid(), inv.InvoiceId, "Motivo",
+                Guid.NewGuid(),
+                inv.InvoiceId,
+                "Motivo",
                 new[] { new PurchaseReturnDraftLineInput(inv.LineId, 3m) }
             ),
             CancellationToken.None
@@ -706,7 +963,9 @@ public sealed class PurchaseReturnEndToEndTests : IAsyncLifetime
         result.Error.Should().Contain("retención");
 
         await using var verify = CreateContext();
-        var ret = await verify.PurchaseReturns.AsNoTracking().FirstAsync(r => r.Id == draft.Value.Id);
+        var ret = await verify
+            .PurchaseReturns.AsNoTracking()
+            .FirstAsync(r => r.Id == draft.Value.Id);
         ret.Status.Should().Be(PurchaseReturnStatus.Draft);
     }
 
@@ -731,7 +990,9 @@ public sealed class PurchaseReturnEndToEndTests : IAsyncLifetime
             );
             var draft = await draftHandler.Handle(
                 new CreatePurchaseReturnDraftCommand(
-                    Guid.NewGuid(), inv.InvoiceId, "Motivo",
+                    Guid.NewGuid(),
+                    inv.InvoiceId,
+                    "Motivo",
                     new[] { new PurchaseReturnDraftLineInput(inv.LineId, qty) }
                 ),
                 CancellationToken.None
@@ -753,7 +1014,10 @@ public sealed class PurchaseReturnEndToEndTests : IAsyncLifetime
         var task2 = CreateAndAuthorize(6m);
         var results = await Task.WhenAll(task1, task2);
 
-        results.Count(r => r.Success).Should().Be(1, "el remanente combinado (12) excede las 10 unidades disponibles");
+        results
+            .Count(r => r.Success)
+            .Should()
+            .Be(1, "el remanente combinado (12) excede las 10 unidades disponibles");
         var loser = results.Single(r => !r.Success);
         loser.Error.Should().Contain("remanente");
     }
@@ -772,7 +1036,11 @@ public sealed class PurchaseReturnEndToEndTests : IAsyncLifetime
             var handler = BuildRegisterPaymentHandler(db);
             return await handler.Handle(
                 new RegisterPaymentCommand(
-                    _supplierId, 500m, DateOnly.FromDateTime(DateTime.UtcNow), null, null,
+                    _supplierId,
+                    500m,
+                    DateOnly.FromDateTime(DateTime.UtcNow),
+                    null,
+                    null,
                     new[] { new PaymentApplicationLineInput(inv.PayableId, null, 500m) }
                 ),
                 CancellationToken.None
@@ -793,7 +1061,9 @@ public sealed class PurchaseReturnEndToEndTests : IAsyncLifetime
             );
             var draft = await draftHandler.Handle(
                 new CreatePurchaseReturnDraftCommand(
-                    Guid.NewGuid(), inv.InvoiceId, "Motivo",
+                    Guid.NewGuid(),
+                    inv.InvoiceId,
+                    "Motivo",
                     new[] { new PurchaseReturnDraftLineInput(inv.LineId, 3m) }
                 ),
                 CancellationToken.None
@@ -813,7 +1083,10 @@ public sealed class PurchaseReturnEndToEndTests : IAsyncLifetime
         (await returnTask).IsSuccess.Should().BeTrue((await returnTask).Error);
 
         await using var verify = CreateContext();
-        var payable = await verify.Set<PurchasePayable>().AsNoTracking().FirstAsync(p => p.Id == inv.PayableId);
+        var payable = await verify
+            .Set<PurchasePayable>()
+            .AsNoTracking()
+            .FirstAsync(p => p.Id == inv.PayableId);
         // Sin lost update: ambos efectos (pago 500 + devolución ~336) deben reflejarse juntos.
         var returnDto = await returnTask;
         payable.PaidAmount.Should().Be(500m);
@@ -831,14 +1104,28 @@ public sealed class PurchaseReturnEndToEndTests : IAsyncLifetime
     [Fact]
     public async Task Escenario13_Dos_aplicaciones_simultaneas_del_mismo_credito_serializadas_por_Lock_B()
     {
-        var source = await SeedConfirmedInvoiceAsync(unitPrice: 100m, quantity: 10m, paidAmount: 1120m);
+        var source = await SeedConfirmedInvoiceAsync(
+            unitPrice: 100m,
+            quantity: 10m,
+            paidAmount: 1120m
+        );
         var dto = await AuthorizeDraftAsync(source.InvoiceId, source.LineId, 10m); // credit = 1120
-        var target1 = await SeedConfirmedInvoiceAsync(unitPrice: 700m, quantity: 1m, paidAmount: 0m);
-        var target2 = await SeedConfirmedInvoiceAsync(unitPrice: 700m, quantity: 1m, paidAmount: 0m);
+        var target1 = await SeedConfirmedInvoiceAsync(
+            unitPrice: 700m,
+            quantity: 1m,
+            paidAmount: 0m
+        );
+        var target2 = await SeedConfirmedInvoiceAsync(
+            unitPrice: 700m,
+            quantity: 1m,
+            paidAmount: 0m
+        );
 
         Guid creditId;
         await using (var db = CreateContext())
-            creditId = (await db.Set<SupplierCredit>().FirstAsync(c => c.SourcePurchaseReturnId == dto.Id)).Id;
+            creditId = (
+                await db.Set<SupplierCredit>().FirstAsync(c => c.SourcePurchaseReturnId == dto.Id)
+            ).Id;
 
         // Dos aplicaciones de 700 cada una sobre un crédito de 1120 — juntas exceden el disponible.
         var task1 = Task.Run(async () =>
@@ -888,8 +1175,13 @@ public sealed class PurchaseReturnEndToEndTests : IAsyncLifetime
         cancelled.IsSuccess.Should().BeTrue(cancelled.Error);
 
         await using var verify = CreateContext();
-        var payable = await verify.Set<PurchasePayable>().AsNoTracking().FirstAsync(p => p.Id == inv.PayableId);
-        payable.ReturnAppliedAmount.Should().Be(0m, "la cancelación debe revertir exactamente lo aplicado");
+        var payable = await verify
+            .Set<PurchasePayable>()
+            .AsNoTracking()
+            .FirstAsync(p => p.Id == inv.PayableId);
+        payable
+            .ReturnAppliedAmount.Should()
+            .Be(0m, "la cancelación debe revertir exactamente lo aplicado");
     }
 
     // ── Escenario 15 — Timeout y reintento (idempotencia encadenada) ─────
@@ -911,7 +1203,9 @@ public sealed class PurchaseReturnEndToEndTests : IAsyncLifetime
         );
         var draft = await draftHandler.Handle(
             new CreatePurchaseReturnDraftCommand(
-                Guid.NewGuid(), inv.InvoiceId, "Motivo",
+                Guid.NewGuid(),
+                inv.InvoiceId,
+                "Motivo",
                 new[] { new PurchaseReturnDraftLineInput(inv.LineId, 3m) }
             ),
             CancellationToken.None
@@ -921,18 +1215,32 @@ public sealed class PurchaseReturnEndToEndTests : IAsyncLifetime
         var cri = Guid.NewGuid();
         await using var db1 = CreateContext();
         var first = await BuildAuthorizeHandler(db1)
-            .Handle(new AuthorizePurchaseReturnCommand(draft.Value!.Id, cri), CancellationToken.None);
+            .Handle(
+                new AuthorizePurchaseReturnCommand(draft.Value!.Id, cri),
+                CancellationToken.None
+            );
         first.IsSuccess.Should().BeTrue(first.Error);
 
         await using var db2 = CreateContext();
         var retry = await BuildAuthorizeHandler(db2)
-            .Handle(new AuthorizePurchaseReturnCommand(draft.Value.Id, cri), CancellationToken.None);
+            .Handle(
+                new AuthorizePurchaseReturnCommand(draft.Value.Id, cri),
+                CancellationToken.None
+            );
         retry.IsSuccess.Should().BeTrue(retry.Error);
         retry.Value!.Id.Should().Be(first.Value!.Id);
-        retry.Value.ReturnNumber.Should().Be(first.Value.ReturnNumber, "el reintento nunca debe consumir un segundo número de secuencia");
+        retry
+            .Value.ReturnNumber.Should()
+            .Be(
+                first.Value.ReturnNumber,
+                "el reintento nunca debe consumir un segundo número de secuencia"
+            );
 
         await using var verify = CreateContext();
-        var movements = await verify.PurchaseReturns.AsNoTracking().Where(r => r.Id == draft.Value.Id).ToListAsync();
+        var movements = await verify
+            .PurchaseReturns.AsNoTracking()
+            .Where(r => r.Id == draft.Value.Id)
+            .ToListAsync();
         movements.Should().ContainSingle();
     }
 
@@ -944,7 +1252,12 @@ public sealed class PurchaseReturnEndToEndTests : IAsyncLifetime
         // Flete distribuido eleva LandedUnitCost por encima de UnitPrice — reproduce el patrón
         // del ejemplo (g) de §11.3/§19.1bis (ya probado en unidad en
         // AuthorizePurchaseReturnHandlerTests.CostVarianceTotal_reproduce_exactamente_el_ejemplo_g_de_11_3).
-        var inv = await SeedConfirmedInvoiceAsync(unitPrice: 100m, quantity: 10m, paidAmount: 1120m, freightCost: 150m);
+        var inv = await SeedConfirmedInvoiceAsync(
+            unitPrice: 100m,
+            quantity: 10m,
+            paidAmount: 1120m,
+            freightCost: 150m
+        );
         var dto = await AuthorizeDraftAsync(inv.InvoiceId, inv.LineId, 3m);
 
         await using var verify = CreateContext();
@@ -1022,7 +1335,12 @@ public sealed class PurchaseReturnEndToEndTests : IAsyncLifetime
             {
                 if (ex is Npgsql.PostgresException pg && pg.SqlState == "23505")
                 {
-                    info = new DatabaseUniqueViolationInfo(pg.SqlState, pg.ConstraintName, pg.TableName, pg.MessageText);
+                    info = new DatabaseUniqueViolationInfo(
+                        pg.SqlState,
+                        pg.ConstraintName,
+                        pg.TableName,
+                        pg.MessageText
+                    );
                     return true;
                 }
             }

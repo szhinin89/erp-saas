@@ -1,3 +1,4 @@
+using System.Reflection;
 using ERP.API.Controllers;
 using ERP.API.Tests.Support;
 using ERP.Application.Access.DTOs;
@@ -11,7 +12,6 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.DependencyInjection;
-using System.Reflection;
 
 namespace ERP.API.Tests.Access;
 

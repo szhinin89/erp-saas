@@ -68,7 +68,10 @@ public sealed class SalesReturn : AuditableEntity, ITenantScopedEntity, ICompany
     )
     {
         if (salesInvoiceId == Guid.Empty)
-            throw new ArgumentException("La factura origen es obligatoria.", nameof(salesInvoiceId));
+            throw new ArgumentException(
+                "La factura origen es obligatoria.",
+                nameof(salesInvoiceId)
+            );
         if (customerId == Guid.Empty)
             throw new ArgumentException("El cliente es obligatorio.", nameof(customerId));
         if (string.IsNullOrWhiteSpace(returnNumber))

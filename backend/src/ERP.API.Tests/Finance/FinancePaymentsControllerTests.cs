@@ -126,8 +126,10 @@ public sealed class FinancePaymentsControllerTests
     [Fact]
     public async Task RegisterCollection_con_monto_que_excede_el_saldo_retorna_422()
     {
-        var controller = BuildController(
-            _ => Result<PaymentDto>.ValidationFailure("El monto del cobro excede el saldo pendiente de la cuenta por cobrar.")
+        var controller = BuildController(_ =>
+            Result<PaymentDto>.ValidationFailure(
+                "El monto del cobro excede el saldo pendiente de la cuenta por cobrar."
+            )
         );
         var command = new RegisterCollectionCommand(
             Guid.NewGuid(),
@@ -146,8 +148,8 @@ public sealed class FinancePaymentsControllerTests
     [Fact]
     public async Task RegisterCollection_sobre_CxC_inexistente_retorna_404()
     {
-        var controller = BuildController(
-            _ => Result<PaymentDto>.NotFound("Cuenta por cobrar no encontrada.")
+        var controller = BuildController(_ =>
+            Result<PaymentDto>.NotFound("Cuenta por cobrar no encontrada.")
         );
         var command = new RegisterCollectionCommand(
             Guid.NewGuid(),
@@ -193,8 +195,10 @@ public sealed class FinancePaymentsControllerTests
     [Fact]
     public async Task RegisterPayment_con_monto_que_excede_el_saldo_retorna_422()
     {
-        var controller = BuildController(
-            _ => Result<PaymentDto>.ValidationFailure("El monto del pago excede el saldo pendiente de la cuenta por pagar.")
+        var controller = BuildController(_ =>
+            Result<PaymentDto>.ValidationFailure(
+                "El monto del pago excede el saldo pendiente de la cuenta por pagar."
+            )
         );
         var command = new RegisterPaymentCommand(
             Guid.NewGuid(),
@@ -213,8 +217,8 @@ public sealed class FinancePaymentsControllerTests
     [Fact]
     public async Task RegisterPayment_sobre_CxP_inexistente_retorna_404()
     {
-        var controller = BuildController(
-            _ => Result<PaymentDto>.NotFound("Cuenta por pagar no encontrada.")
+        var controller = BuildController(_ =>
+            Result<PaymentDto>.NotFound("Cuenta por pagar no encontrada.")
         );
         var command = new RegisterPaymentCommand(
             Guid.NewGuid(),

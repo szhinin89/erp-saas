@@ -1,3 +1,4 @@
+using System.Globalization;
 using ERP.Application.Common;
 using ERP.Application.Common.Services;
 using ERP.Application.Modules.ElectronicDocuments.DTOs;
@@ -10,7 +11,6 @@ using ERP.Domain.Modules.Sales.Entities;
 using ERP.Domain.Modules.Sales.Enums;
 using ERP.Domain.Modules.Sales.Interfaces;
 using ERP.Domain.Modules.SriCatalogs.Entities;
-using System.Globalization;
 
 namespace ERP.Application.Modules.Sales.Services;
 
@@ -101,7 +101,9 @@ public sealed class SalesReturnCreditNoteDataProvider : IElectronicDocumentDataP
                 ct
             );
             if (emissionPoint is null)
-                errors.Add("El punto de emisión de la factura original ya no existe o está inactivo.");
+                errors.Add(
+                    "El punto de emisión de la factura original ya no existe o está inactivo."
+                );
         }
         else if (invoice is not null)
         {
@@ -132,7 +134,9 @@ public sealed class SalesReturnCreditNoteDataProvider : IElectronicDocumentDataP
 
         // Única fuente de verdad del código de tipo de comprobante: el catálogo sri_doc_types —
         // "04" nunca se asume activo sin validarlo (Infraestructura CLOSED — Configuración Tributaria).
-        if (!await _docTypeCatalogResolver.IsActiveElectronicDocTypeAsync(CreditNoteDocTypeCode, ct))
+        if (
+            !await _docTypeCatalogResolver.IsActiveElectronicDocTypeAsync(CreditNoteDocTypeCode, ct)
+        )
             errors.Add(
                 $"El tipo de comprobante SRI '{CreditNoteDocTypeCode}' (Nota de Crédito) no está activo o habilitado para emisión electrónica en el catálogo."
             );

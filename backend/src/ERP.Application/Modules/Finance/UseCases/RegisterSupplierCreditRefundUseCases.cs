@@ -1,3 +1,5 @@
+using System.Security.Cryptography;
+using System.Text;
 using ERP.Application.Common;
 using ERP.Application.Common.Persistence;
 using ERP.Domain.Modules.Accounting.Interfaces;
@@ -11,8 +13,6 @@ using ERP.Domain.Modules.Purchases.Interfaces;
 using ERP.Domain.Modules.Sales.Interfaces;
 using FluentValidation;
 using MediatR;
-using System.Security.Cryptography;
-using System.Text;
 
 namespace ERP.Application.Modules.Finance.UseCases;
 
@@ -70,7 +70,10 @@ public sealed class RegisterSupplierCreditRefundValidator
 // ── Handler ─────────────────────────────────────────────────────────────
 
 public sealed class RegisterSupplierCreditRefundHandler
-    : IRequestHandler<RegisterSupplierCreditRefundCommand, Result<SupplierCreditRefundTransactionDto>>
+    : IRequestHandler<
+        RegisterSupplierCreditRefundCommand,
+        Result<SupplierCreditRefundTransactionDto>
+    >
 {
     private readonly ISupplierCreditRepository _creditRepo;
     private readonly ISupplierCreditRefundTransactionRepository _txRepo;
@@ -161,7 +164,9 @@ public sealed class RegisterSupplierCreditRefundHandler
                     existingRefund.Id,
                     ct
                 );
-                return Result<SupplierCreditRefundTransactionDto>.Success(RefundMap.ToDto(existingTx!));
+                return Result<SupplierCreditRefundTransactionDto>.Success(
+                    RefundMap.ToDto(existingTx!)
+                );
             }
 
             // 3-4. Cargar y bloquear (FOR SHARE) CompanyFinancialDestination + validar.
@@ -186,7 +191,13 @@ public sealed class RegisterSupplierCreditRefundHandler
                     "El destino financiero indicado no está activo."
                 );
             }
-            if (!string.Equals(destination.CurrencyCode, credit.CurrencyCode, StringComparison.OrdinalIgnoreCase))
+            if (
+                !string.Equals(
+                    destination.CurrencyCode,
+                    credit.CurrencyCode,
+                    StringComparison.OrdinalIgnoreCase
+                )
+            )
             {
                 await _uow.RollbackAsync(ct);
                 // SC-025
@@ -212,7 +223,11 @@ public sealed class RegisterSupplierCreditRefundHandler
             }
 
             // 7. PaymentMethod activo + RequiresReference.
-            var paymentMethod = await _paymentMethodRepo.GetByCodeAsync(tid, cmd.PaymentMethodCode, ct);
+            var paymentMethod = await _paymentMethodRepo.GetByCodeAsync(
+                tid,
+                cmd.PaymentMethodCode,
+                ct
+            );
             if (paymentMethod is null || !paymentMethod.IsActive)
             {
                 await _uow.RollbackAsync(ct);

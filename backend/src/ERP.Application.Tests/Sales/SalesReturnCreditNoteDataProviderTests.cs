@@ -179,13 +179,19 @@ public sealed class SalesReturnCreditNoteDataProviderTests
                 .SetValue(emissionPoint, establishment);
 
             EmissionPointRepo
-                .Setup(r => r.GetByIdAsync(EmissionPointId, TenantId, It.IsAny<CancellationToken>()))
+                .Setup(r =>
+                    r.GetByIdAsync(EmissionPointId, TenantId, It.IsAny<CancellationToken>())
+                )
                 .ReturnsAsync(emissionPoint);
             EstablishmentRepo
-                .Setup(r => r.GetMainByCompanyAsync(TenantId, CompanyId, It.IsAny<CancellationToken>()))
+                .Setup(r =>
+                    r.GetMainByCompanyAsync(TenantId, CompanyId, It.IsAny<CancellationToken>())
+                )
                 .ReturnsAsync(establishment);
             CompanyRepo
-                .Setup(r => r.GetByIdForTenantAsync(CompanyId, TenantId, It.IsAny<CancellationToken>()))
+                .Setup(r =>
+                    r.GetByIdForTenantAsync(CompanyId, TenantId, It.IsAny<CancellationToken>())
+                )
                 .ReturnsAsync(
                     Company.CreateManaged(
                         TenantId,
@@ -219,8 +225,9 @@ public sealed class SalesReturnCreditNoteDataProviderTests
         var salesReturn = BuildAuthorizedReturn(invoice, lines[0]);
         var m = new Mocks();
         m.SeedHappyPath(invoice);
-        m.ReturnRepo
-            .Setup(r => r.GetByIdAsync(TenantId, salesReturn.Id, It.IsAny<CancellationToken>()))
+        m.ReturnRepo.Setup(r =>
+                r.GetByIdAsync(TenantId, salesReturn.Id, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(salesReturn);
 
         var provider = m.BuildProvider();
@@ -244,8 +251,9 @@ public sealed class SalesReturnCreditNoteDataProviderTests
     public async Task GetDataAsync_devolucion_inexistente_retorna_NotFound()
     {
         var m = new Mocks();
-        m.ReturnRepo
-            .Setup(r => r.GetByIdAsync(TenantId, It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+        m.ReturnRepo.Setup(r =>
+                r.GetByIdAsync(TenantId, It.IsAny<Guid>(), It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync((SalesReturn?)null);
 
         var provider = m.BuildProvider();
@@ -271,8 +279,9 @@ public sealed class SalesReturnCreditNoteDataProviderTests
         ); // Draft — nunca autorizada
         var m = new Mocks();
         m.SeedHappyPath(invoice);
-        m.ReturnRepo
-            .Setup(r => r.GetByIdAsync(TenantId, salesReturn.Id, It.IsAny<CancellationToken>()))
+        m.ReturnRepo.Setup(r =>
+                r.GetByIdAsync(TenantId, salesReturn.Id, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(salesReturn);
 
         var provider = m.BuildProvider();
@@ -291,8 +300,9 @@ public sealed class SalesReturnCreditNoteDataProviderTests
         var salesReturn = BuildAuthorizedReturn(invoice, lines[0], creditNoteDocumentNumber: null);
         var m = new Mocks();
         m.SeedHappyPath(invoice);
-        m.ReturnRepo
-            .Setup(r => r.GetByIdAsync(TenantId, salesReturn.Id, It.IsAny<CancellationToken>()))
+        m.ReturnRepo.Setup(r =>
+                r.GetByIdAsync(TenantId, salesReturn.Id, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(salesReturn);
 
         var provider = m.BuildProvider();
@@ -311,11 +321,13 @@ public sealed class SalesReturnCreditNoteDataProviderTests
         var salesReturn = BuildAuthorizedReturn(invoice, lines[0]);
         var m = new Mocks();
         m.SeedHappyPath(invoice);
-        m.ReturnRepo
-            .Setup(r => r.GetByIdAsync(TenantId, salesReturn.Id, It.IsAny<CancellationToken>()))
+        m.ReturnRepo.Setup(r =>
+                r.GetByIdAsync(TenantId, salesReturn.Id, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(salesReturn);
-        m.DocTypeResolver
-            .Setup(r => r.IsActiveElectronicDocTypeAsync("04", It.IsAny<CancellationToken>()))
+        m.DocTypeResolver.Setup(r =>
+                r.IsActiveElectronicDocTypeAsync("04", It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync(false);
 
         var provider = m.BuildProvider();

@@ -42,7 +42,8 @@ public sealed record CancelSalesReturnDraftCommand(Guid Id)
 
 // ── Validators ──────────────────────────────────────────────────────────
 
-public sealed class CreateSalesReturnDraftValidator : AbstractValidator<CreateSalesReturnDraftCommand>
+public sealed class CreateSalesReturnDraftValidator
+    : AbstractValidator<CreateSalesReturnDraftCommand>
 {
     public CreateSalesReturnDraftValidator()
     {
@@ -65,7 +66,8 @@ public sealed class CreateSalesReturnDraftValidator : AbstractValidator<CreateSa
     }
 }
 
-public sealed class UpdateSalesReturnDraftValidator : AbstractValidator<UpdateSalesReturnDraftCommand>
+public sealed class UpdateSalesReturnDraftValidator
+    : AbstractValidator<UpdateSalesReturnDraftCommand>
 {
     public UpdateSalesReturnDraftValidator()
     {
@@ -84,7 +86,8 @@ public sealed class UpdateSalesReturnDraftValidator : AbstractValidator<UpdateSa
     }
 }
 
-public sealed class CancelSalesReturnDraftValidator : AbstractValidator<CancelSalesReturnDraftCommand>
+public sealed class CancelSalesReturnDraftValidator
+    : AbstractValidator<CancelSalesReturnDraftCommand>
 {
     public CancelSalesReturnDraftValidator()
     {
@@ -231,7 +234,11 @@ public sealed class CancelSalesReturnDraftHandler
     private readonly ICurrentTenant _t;
     private readonly ICurrentUser _u;
 
-    public CancelSalesReturnDraftHandler(ISalesReturnRepository repo, ICurrentTenant t, ICurrentUser u)
+    public CancelSalesReturnDraftHandler(
+        ISalesReturnRepository repo,
+        ICurrentTenant t,
+        ICurrentUser u
+    )
     {
         _repo = repo;
         _t = t;

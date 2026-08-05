@@ -52,14 +52,13 @@ public sealed class SupplierCreditMovementConfiguration
             .HasColumnName("amount")
             .HasColumnType("numeric(18,2)")
             .IsRequired();
-        builder.Property(x => x.TargetPurchasePayableId).HasColumnName("target_purchase_payable_id");
+        builder
+            .Property(x => x.TargetPurchasePayableId)
+            .HasColumnName("target_purchase_payable_id");
         builder.Property(x => x.ReversalOfMovementId).HasColumnName("reversal_of_movement_id");
 
         // ── Idempotencia (§7.5, §16.2) ──────────────────────────────────────
-        builder
-            .Property(x => x.ClientRequestId)
-            .HasColumnName("client_request_id")
-            .IsRequired();
+        builder.Property(x => x.ClientRequestId).HasColumnName("client_request_id").IsRequired();
         builder
             .Property(x => x.RequestPayloadHash)
             .HasColumnName("request_payload_hash")

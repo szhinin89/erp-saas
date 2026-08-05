@@ -31,7 +31,11 @@ public sealed class PurchasePayable
     public decimal SupplierCreditAppliedAmount { get; private set; }
 
     public decimal BalanceDue =>
-        TotalAmount - PaidAmount - TotalRetained - ReturnAppliedAmount - SupplierCreditAppliedAmount;
+        TotalAmount
+        - PaidAmount
+        - TotalRetained
+        - ReturnAppliedAmount
+        - SupplierCreditAppliedAmount;
     public string Status { get; private set; } = "pending";
 
     private readonly List<PurchasePayableInstallment> _installments = new();
@@ -182,7 +186,10 @@ public sealed class PurchasePayable
     public void ApplySupplierCredit(decimal amount, Guid updatedBy)
     {
         if (amount <= 0)
-            throw new ArgumentException("El monto a aplicar debe ser mayor a cero.", nameof(amount));
+            throw new ArgumentException(
+                "El monto a aplicar debe ser mayor a cero.",
+                nameof(amount)
+            );
         if (Status == "cancelled")
             throw new InvalidOperationException(
                 "No se puede aplicar un crédito de proveedor sobre una cuenta por pagar anulada."

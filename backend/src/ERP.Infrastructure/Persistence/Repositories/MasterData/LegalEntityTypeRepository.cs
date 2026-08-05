@@ -14,12 +14,12 @@ public sealed class LegalEntityTypeRepository : ILegalEntityTypeRepository
 
     public async Task<bool> ExistsActiveAsync(
         int code,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default
+    )
     {
-        return await _db.LegalEntityTypeCatalog
-            .AnyAsync(
-                x => x.Code == code && x.IsActive,
-                cancellationToken
-            );
+        return await _db.LegalEntityTypeCatalog.AnyAsync(
+            x => x.Code == code && x.IsActive,
+            cancellationToken
+        );
     }
 }

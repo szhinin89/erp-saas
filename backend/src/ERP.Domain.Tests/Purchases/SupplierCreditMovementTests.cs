@@ -68,7 +68,13 @@ public sealed class SupplierCreditMovementTests
     public void ReversalOfApplication_exige_ReversalOfMovementId_y_lo_setea()
     {
         var credit = CreateCredit();
-        var applied = credit.ApplyToPayable(TargetPayableId, 50m, UserId, Guid.NewGuid(), "hash-004");
+        var applied = credit.ApplyToPayable(
+            TargetPayableId,
+            50m,
+            UserId,
+            Guid.NewGuid(),
+            "hash-004"
+        );
 
         var reversal = credit.ReverseApplication(applied.Id, UserId, Guid.NewGuid(), "hash-005");
 
@@ -82,7 +88,8 @@ public sealed class SupplierCreditMovementTests
     {
         var credit = CreateCredit();
 
-        var act = () => credit.ApplyToPayable(TargetPayableId, amount, UserId, Guid.NewGuid(), "hash-006");
+        var act = () =>
+            credit.ApplyToPayable(TargetPayableId, amount, UserId, Guid.NewGuid(), "hash-006");
 
         act.Should().Throw<ArgumentException>();
     }
@@ -91,7 +98,13 @@ public sealed class SupplierCreditMovementTests
     public void Un_mismo_movimiento_no_puede_revertirse_dos_veces_UNIQUE_ReversalOfMovementId()
     {
         var credit = CreateCredit();
-        var applied = credit.ApplyToPayable(TargetPayableId, 50m, UserId, Guid.NewGuid(), "hash-007");
+        var applied = credit.ApplyToPayable(
+            TargetPayableId,
+            50m,
+            UserId,
+            Guid.NewGuid(),
+            "hash-007"
+        );
         credit.ReverseApplication(applied.Id, UserId, Guid.NewGuid(), "hash-008");
 
         var act = () => credit.ReverseApplication(applied.Id, UserId, Guid.NewGuid(), "hash-009");
@@ -124,8 +137,7 @@ public sealed class SupplierCreditMovementTests
     {
         var credit = CreateCredit();
 
-        var act = () =>
-            credit.ApplyToPayable(TargetPayableId, 50m, UserId, Guid.Empty, "hash-011");
+        var act = () => credit.ApplyToPayable(TargetPayableId, 50m, UserId, Guid.Empty, "hash-011");
 
         act.Should().Throw<ArgumentException>();
     }
@@ -138,8 +150,7 @@ public sealed class SupplierCreditMovementTests
     {
         var credit = CreateCredit();
 
-        var act = () =>
-            credit.ApplyToPayable(TargetPayableId, 50m, UserId, Guid.NewGuid(), hash!);
+        var act = () => credit.ApplyToPayable(TargetPayableId, 50m, UserId, Guid.NewGuid(), hash!);
 
         act.Should().Throw<ArgumentException>();
     }
@@ -147,10 +158,7 @@ public sealed class SupplierCreditMovementTests
     [Fact]
     public void ClientRequestId_y_RequestPayloadHash_no_exponen_mutador_publico()
     {
-        var methodNames = typeof(SupplierCreditMovement)
-            .GetMethods()
-            .Select(m => m.Name)
-            .ToList();
+        var methodNames = typeof(SupplierCreditMovement).GetMethods().Select(m => m.Name).ToList();
         methodNames.Should().NotContain("SetClientRequestId");
         methodNames.Should().NotContain("SetRequestPayloadHash");
         typeof(SupplierCreditMovement)

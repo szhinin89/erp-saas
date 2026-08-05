@@ -1,5 +1,5 @@
-using ERP.Domain.Common;
 using System.Globalization;
+using ERP.Domain.Common;
 
 namespace ERP.Domain.Modules.Purchases.Entities;
 
@@ -14,7 +14,10 @@ namespace ERP.Domain.Modules.Purchases.Entities;
 /// <c>IPurchaseReturnSequenceRepository.CaptureNextAsync</c> — Fase 2, fuera del alcance de esta
 /// entidad de dominio puro.
 /// </summary>
-public sealed class PurchaseReturnSequence : BaseEntity, ITenantScopedEntity, ICompanyOperationalEntity
+public sealed class PurchaseReturnSequence
+    : BaseEntity,
+        ITenantScopedEntity,
+        ICompanyOperationalEntity
 {
     public Guid CompanyId { get; private set; }
 

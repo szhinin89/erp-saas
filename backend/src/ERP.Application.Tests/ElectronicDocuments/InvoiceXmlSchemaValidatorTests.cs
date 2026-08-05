@@ -1,8 +1,8 @@
+using System.Xml.Schema;
 using ERP.Application.Modules.ElectronicDocuments.DTOs;
 using ERP.Application.Modules.ElectronicDocuments.SchemaValidation;
 using ERP.Domain.Modules.ElectronicDocuments.Enums;
 using FluentAssertions;
-using System.Xml.Schema;
 
 namespace ERP.Application.Tests.ElectronicDocuments;
 

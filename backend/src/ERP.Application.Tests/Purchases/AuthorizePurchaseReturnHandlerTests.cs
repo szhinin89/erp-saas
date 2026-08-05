@@ -132,7 +132,11 @@ public sealed class AuthorizePurchaseReturnHandlerTests
         {
             ReturnRepo
                 .Setup(r =>
-                    r.GetPurchaseInvoiceIdAsync(TenantId, f.Return.Id, It.IsAny<CancellationToken>())
+                    r.GetPurchaseInvoiceIdAsync(
+                        TenantId,
+                        f.Return.Id,
+                        It.IsAny<CancellationToken>()
+                    )
                 )
                 .ReturnsAsync(f.Invoice.Id);
             ReturnRepo
@@ -153,7 +157,11 @@ public sealed class AuthorizePurchaseReturnHandlerTests
                 .ReturnsAsync(f.Invoice);
             InvoiceRepo
                 .Setup(r =>
-                    r.GetPayableByPurchaseIdAsync(TenantId, f.Invoice.Id, It.IsAny<CancellationToken>())
+                    r.GetPayableByPurchaseIdAsync(
+                        TenantId,
+                        f.Invoice.Id,
+                        It.IsAny<CancellationToken>()
+                    )
                 )
                 .ReturnsAsync(f.Payable);
             InvoiceRepo
@@ -178,7 +186,8 @@ public sealed class AuthorizePurchaseReturnHandlerTests
                     s.GetStockAsync(TenantId, WarehouseId, ItemId, It.IsAny<CancellationToken>())
                 )
                 .ReturnsAsync(
-                    CurrentStock.Create(TenantId, ItemId, WarehouseId, UserId, CompanyId)
+                    CurrentStock
+                        .Create(TenantId, ItemId, WarehouseId, UserId, CompanyId)
                         .Also(cs => cs.ApplyMovement(availableStock, UserId, 1m))
                 );
             StockRepo
@@ -306,7 +315,13 @@ public sealed class AuthorizePurchaseReturnHandlerTests
     public async Task Autorizacion_feliz_factura_parcialmente_pagada_aplica_contra_saldo_sin_excedente()
     {
         // BalanceDue = 1000 - 600 = 400; devolución (3 uds de 10 a 100 c/u + 12% IVA) = 336 < 400
-        var f = BuildFixture(quantity: 10, unitPrice: 100m, vatRate: 12m, paidAmount: 600m, returnQuantity: 3m);
+        var f = BuildFixture(
+            quantity: 10,
+            unitPrice: 100m,
+            vatRate: 12m,
+            paidAmount: 600m,
+            returnQuantity: 3m
+        );
         var m = new Mocks(f);
         var handler = m.BuildHandler();
 
@@ -357,8 +372,9 @@ public sealed class AuthorizePurchaseReturnHandlerTests
         var f = BuildFixture(paidAmount: 1120m, returnQuantity: 10m);
         var m = new Mocks(f);
         SupplierCredit? captured = null;
-        m.CreditRepo
-            .Setup(r => r.AddAsync(It.IsAny<SupplierCredit>(), It.IsAny<CancellationToken>()))
+        m.CreditRepo.Setup(r =>
+                r.AddAsync(It.IsAny<SupplierCredit>(), It.IsAny<CancellationToken>())
+            )
             .Callback<SupplierCredit, CancellationToken>((c, _) => captured = c)
             .Returns(Task.CompletedTask);
         var handler = m.BuildHandler();
@@ -401,9 +417,12 @@ public sealed class AuthorizePurchaseReturnHandlerTests
             )
         );
         withholding.Issue("001-001-000000001", UserId);
-        m.InvoiceRepo
-            .Setup(r =>
-                r.GetWithholdingByPurchaseIdAsync(TenantId, f.Invoice.Id, It.IsAny<CancellationToken>())
+        m.InvoiceRepo.Setup(r =>
+                r.GetWithholdingByPurchaseIdAsync(
+                    TenantId,
+                    f.Invoice.Id,
+                    It.IsAny<CancellationToken>()
+                )
             )
             .ReturnsAsync(withholding);
         var handler = m.BuildHandler();
@@ -466,8 +485,7 @@ public sealed class AuthorizePurchaseReturnHandlerTests
         var m = new Mocks(f);
         // Si el handler consultara otra bodega, este stub no aplicaría y GetStockAsync devolvería
         // null (0 disponible) → falso rechazo — la prueba falla si eso ocurre.
-        m.StockRepo
-            .Setup(s =>
+        m.StockRepo.Setup(s =>
                 s.GetStockAsync(TenantId, otherWarehouseId, ItemId, It.IsAny<CancellationToken>())
             )
             .ReturnsAsync((CurrentStock?)null);
@@ -637,4 +655,3 @@ file static class TestExtensions
         return value;
     }
 }
-

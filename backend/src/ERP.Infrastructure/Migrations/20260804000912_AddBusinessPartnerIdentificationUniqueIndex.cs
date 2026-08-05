@@ -14,7 +14,8 @@ namespace ERP.Infrastructure.Migrations
                 """
                 CREATE UNIQUE INDEX IF NOT EXISTS uq_mbp_identification
                 ON master_business_partners (tenant_id, identification_type, identification_number);
-                """);
+                """
+            );
         }
 
         /// <inheritdoc />
@@ -23,7 +24,8 @@ namespace ERP.Infrastructure.Migrations
             migrationBuilder.Sql(
                 """
                 DROP INDEX IF EXISTS uq_mbp_identification;
-                """);
+                """
+            );
         }
     }
 }

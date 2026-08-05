@@ -40,7 +40,15 @@ public sealed class CancelWithholdingHandlerTests
             UserId
         );
         wh.AddDetail(
-            IssuedWithholdingDetail.Create(wh.Id, TenantId, "IVA", "9", "Retención 30% IVA", 100m, 30m)
+            IssuedWithholdingDetail.Create(
+                wh.Id,
+                TenantId,
+                "IVA",
+                "9",
+                "Retención 30% IVA",
+                100m,
+                30m
+            )
         );
         wh.Issue("001-001-000000001", UserId);
         return wh;
@@ -79,10 +87,17 @@ public sealed class CancelWithholdingHandlerTests
     }
 
     /// <summary>Configura descubrimiento sin tracking + recarga autoritativa para una retención dada.</summary>
-    private static void SetupWithholding(Mock<IPurchaseInvoiceRepository> repo, IssuedWithholding wh)
+    private static void SetupWithholding(
+        Mock<IPurchaseInvoiceRepository> repo,
+        IssuedWithholding wh
+    )
     {
         repo.Setup(r =>
-                r.GetWithholdingPurchaseInvoiceIdAsync(TenantId, wh.Id, It.IsAny<CancellationToken>())
+                r.GetWithholdingPurchaseInvoiceIdAsync(
+                    TenantId,
+                    wh.Id,
+                    It.IsAny<CancellationToken>()
+                )
             )
             .ReturnsAsync(wh.PurchaseInvoiceId);
         repo.Setup(r => r.GetWithholdingByIdAsync(TenantId, wh.Id, It.IsAny<CancellationToken>()))
@@ -149,7 +164,11 @@ public sealed class CancelWithholdingHandlerTests
         var (repo, purchaseReturnRepo, uow) = BuildMocks();
         var missingId = Guid.NewGuid();
         repo.Setup(r =>
-                r.GetWithholdingPurchaseInvoiceIdAsync(TenantId, missingId, It.IsAny<CancellationToken>())
+                r.GetWithholdingPurchaseInvoiceIdAsync(
+                    TenantId,
+                    missingId,
+                    It.IsAny<CancellationToken>()
+                )
             )
             .ReturnsAsync((Guid?)null);
 
@@ -165,7 +184,12 @@ public sealed class CancelWithholdingHandlerTests
         uow.Verify(u => u.RollbackAsync(It.IsAny<CancellationToken>()), Times.Once);
         uow.Verify(u => u.CommitAsync(It.IsAny<CancellationToken>()), Times.Never);
         purchaseReturnRepo.Verify(
-            r => r.AcquireFinancialLockAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()),
+            r =>
+                r.AcquireFinancialLockAsync(
+                    It.IsAny<Guid>(),
+                    It.IsAny<Guid>(),
+                    It.IsAny<CancellationToken>()
+                ),
             Times.Never
         );
     }
@@ -207,13 +231,21 @@ public sealed class CancelWithholdingHandlerTests
             .Returns(Task.CompletedTask);
         repo.InSequence(sequence)
             .Setup(r =>
-                r.GetWithholdingPurchaseInvoiceIdAsync(TenantId, wh.Id, It.IsAny<CancellationToken>())
+                r.GetWithholdingPurchaseInvoiceIdAsync(
+                    TenantId,
+                    wh.Id,
+                    It.IsAny<CancellationToken>()
+                )
             )
             .ReturnsAsync(wh.PurchaseInvoiceId);
         purchaseReturnRepo
             .InSequence(sequence)
             .Setup(r =>
-                r.AcquireFinancialLockAsync(TenantId, wh.PurchaseInvoiceId, It.IsAny<CancellationToken>())
+                r.AcquireFinancialLockAsync(
+                    TenantId,
+                    wh.PurchaseInvoiceId,
+                    It.IsAny<CancellationToken>()
+                )
             )
             .Returns(Task.CompletedTask);
         repo.InSequence(sequence)
@@ -251,7 +283,11 @@ public sealed class CancelWithholdingHandlerTests
         var wh = CreateIssuedWithholding();
 
         repo.Setup(r =>
-                r.GetWithholdingPurchaseInvoiceIdAsync(TenantId, wh.Id, It.IsAny<CancellationToken>())
+                r.GetWithholdingPurchaseInvoiceIdAsync(
+                    TenantId,
+                    wh.Id,
+                    It.IsAny<CancellationToken>()
+                )
             )
             .ReturnsAsync(wh.PurchaseInvoiceId);
         // La recarga posterior al lock refleja que, mientras tanto, otra transacción ya anuló

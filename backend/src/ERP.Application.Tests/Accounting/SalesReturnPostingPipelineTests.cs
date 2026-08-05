@@ -47,7 +47,11 @@ public sealed class SalesReturnPostingPipelineTests
             entryDate.Year,
             entryDate.Month,
             new DateOnly(entryDate.Year, entryDate.Month, 1),
-            new DateOnly(entryDate.Year, entryDate.Month, DateTime.DaysInMonth(entryDate.Year, entryDate.Month)),
+            new DateOnly(
+                entryDate.Year,
+                entryDate.Month,
+                DateTime.DaysInMonth(entryDate.Year, entryDate.Month)
+            ),
             CreatedBy
         );
 
@@ -127,8 +131,7 @@ public sealed class SalesReturnPostingPipelineTests
         var entryDate = DateOnly.FromDateTime(evt.OccurredOn);
         var m = new Mocks();
 
-        m.JournalEntries
-            .Setup(r =>
+        m.JournalEntries.Setup(r =>
                 r.FindByKeyAsync(
                     TenantId,
                     CompanyId,
@@ -139,20 +142,30 @@ public sealed class SalesReturnPostingPipelineTests
                 )
             )
             .ReturnsAsync((JournalEntry?)null);
-        m.PostingRules
-            .Setup(r =>
-                r.FindByKeyAsync(TenantId, CompanyId, "Sales", "SalesReturn", It.IsAny<CancellationToken>())
+        m.PostingRules.Setup(r =>
+                r.FindByKeyAsync(
+                    TenantId,
+                    CompanyId,
+                    "Sales",
+                    "SalesReturn",
+                    It.IsAny<CancellationToken>()
+                )
             )
             .ReturnsAsync(Rule());
-        m.AccountingPeriods
-            .Setup(r =>
-                r.FindContainingDateAsync(TenantId, CompanyId, It.IsAny<DateOnly>(), It.IsAny<CancellationToken>())
+        m.AccountingPeriods.Setup(r =>
+                r.FindContainingDateAsync(
+                    TenantId,
+                    CompanyId,
+                    It.IsAny<DateOnly>(),
+                    It.IsAny<CancellationToken>()
+                )
             )
             .ReturnsAsync(OpenPeriod(entryDate));
 
         JournalEntry? captured = null;
-        m.JournalEntries
-            .Setup(r => r.AddAsync(It.IsAny<JournalEntry>(), It.IsAny<CancellationToken>()))
+        m.JournalEntries.Setup(r =>
+                r.AddAsync(It.IsAny<JournalEntry>(), It.IsAny<CancellationToken>())
+            )
             .Callback<JournalEntry, CancellationToken>((e, _) => captured = e)
             .Returns(Task.CompletedTask);
 
@@ -185,8 +198,7 @@ public sealed class SalesReturnPostingPipelineTests
         var evt = Event();
         var m = new Mocks();
 
-        m.JournalEntries
-            .Setup(r =>
+        m.JournalEntries.Setup(r =>
                 r.FindByKeyAsync(
                     TenantId,
                     CompanyId,
@@ -197,9 +209,14 @@ public sealed class SalesReturnPostingPipelineTests
                 )
             )
             .ReturnsAsync((JournalEntry?)null);
-        m.PostingRules
-            .Setup(r =>
-                r.FindByKeyAsync(TenantId, CompanyId, "Sales", "SalesReturn", It.IsAny<CancellationToken>())
+        m.PostingRules.Setup(r =>
+                r.FindByKeyAsync(
+                    TenantId,
+                    CompanyId,
+                    "Sales",
+                    "SalesReturn",
+                    It.IsAny<CancellationToken>()
+                )
             )
             .ReturnsAsync((PostingRule?)null);
 
@@ -244,8 +261,7 @@ public sealed class SalesReturnPostingPipelineTests
             Guid.Empty
         );
 
-        m.JournalEntries
-            .Setup(r =>
+        m.JournalEntries.Setup(r =>
                 r.FindByKeyAsync(
                     TenantId,
                     CompanyId,

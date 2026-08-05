@@ -44,7 +44,12 @@ public sealed class SalesReturnRefundAllocationTests
     public void Create_rechaza_metodo_de_reembolso_no_definido()
     {
         var act = () =>
-            SalesReturnRefundAllocation.Create(ReturnId, TenantId, (SalesReturnRefundMethod)99, 10m);
+            SalesReturnRefundAllocation.Create(
+                ReturnId,
+                TenantId,
+                (SalesReturnRefundMethod)99,
+                10m
+            );
 
         act.Should().Throw<ArgumentException>();
     }

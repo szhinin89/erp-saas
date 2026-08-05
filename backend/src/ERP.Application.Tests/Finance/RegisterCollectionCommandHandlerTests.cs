@@ -81,7 +81,14 @@ public sealed class RegisterCollectionCommandHandlerTests
         result.IsSuccess.Should().BeTrue();
         receivable.PaidAmount.Should().Be(60m);
         receivable.BalanceDue.Should().Be(40m);
-        payments.Verify(p => p.AddAsync(It.IsAny<Domain.Modules.Finance.Entities.Payment>(), It.IsAny<CancellationToken>()), Times.Once);
+        payments.Verify(
+            p =>
+                p.AddAsync(
+                    It.IsAny<Domain.Modules.Finance.Entities.Payment>(),
+                    It.IsAny<CancellationToken>()
+                ),
+            Times.Once
+        );
         payments.Verify(p => p.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
     }
 
@@ -96,8 +103,15 @@ public sealed class RegisterCollectionCommandHandlerTests
 
         Domain.Modules.Finance.Entities.Payment? captured = null;
         payments
-            .Setup(p => p.AddAsync(It.IsAny<Domain.Modules.Finance.Entities.Payment>(), It.IsAny<CancellationToken>()))
-            .Callback<Domain.Modules.Finance.Entities.Payment, CancellationToken>((p, _) => captured = p)
+            .Setup(p =>
+                p.AddAsync(
+                    It.IsAny<Domain.Modules.Finance.Entities.Payment>(),
+                    It.IsAny<CancellationToken>()
+                )
+            )
+            .Callback<Domain.Modules.Finance.Entities.Payment, CancellationToken>(
+                (p, _) => captured = p
+            )
             .Returns(Task.CompletedTask);
 
         var handler = BuildHandler(payments, receivables, tenant, company, user);
@@ -129,8 +143,15 @@ public sealed class RegisterCollectionCommandHandlerTests
 
         Domain.Modules.Finance.Entities.Payment? captured = null;
         payments
-            .Setup(p => p.AddAsync(It.IsAny<Domain.Modules.Finance.Entities.Payment>(), It.IsAny<CancellationToken>()))
-            .Callback<Domain.Modules.Finance.Entities.Payment, CancellationToken>((p, _) => captured = p)
+            .Setup(p =>
+                p.AddAsync(
+                    It.IsAny<Domain.Modules.Finance.Entities.Payment>(),
+                    It.IsAny<CancellationToken>()
+                )
+            )
+            .Callback<Domain.Modules.Finance.Entities.Payment, CancellationToken>(
+                (p, _) => captured = p
+            )
             .Returns(Task.CompletedTask);
 
         var handler = BuildHandler(payments, receivables, tenant, company, user);
@@ -173,7 +194,9 @@ public sealed class RegisterCollectionCommandHandlerTests
 
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Contain("excede el saldo pendiente");
-        receivable.PaidAmount.Should().Be(70m, "el cobro rechazado no debe mutar el saldo ya registrado");
+        receivable
+            .PaidAmount.Should()
+            .Be(70m, "el cobro rechazado no debe mutar el saldo ya registrado");
         payments.Verify(p => p.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
     }
 

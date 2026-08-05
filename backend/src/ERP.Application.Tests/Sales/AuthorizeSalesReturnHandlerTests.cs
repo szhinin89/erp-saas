@@ -45,7 +45,13 @@ public sealed class AuthorizeSalesReturnHandlerTests
     // ── Fixtures de dominio (in-memory, sin persistencia) ────────────────
 
     private static (SalesInvoice Invoice, List<SalesInvoiceDetail> Lines) BuildAuthorizedInvoice(
-        params (string Description, decimal Quantity, decimal UnitPrice, Guid? ItemId, Guid? WarehouseId)[] lineSpecs
+        params (
+            string Description,
+            decimal Quantity,
+            decimal UnitPrice,
+            Guid? ItemId,
+            Guid? WarehouseId
+        )[] lineSpecs
     )
     {
         var customer = CustomerSnapshot.Create("Cliente Test", "1710034065", "05");
@@ -278,7 +284,8 @@ public sealed class AuthorizeSalesReturnHandlerTests
         return (handler, stockRepo, returnRepo);
     }
 
-    private static ICurrentTenant TenantCtx() => Mock.Of<ICurrentTenant>(t => t.TenantId == TenantId);
+    private static ICurrentTenant TenantCtx() =>
+        Mock.Of<ICurrentTenant>(t => t.TenantId == TenantId);
 
     private static ICurrentCompany CompanyCtx() =>
         Mock.Of<ICurrentCompany>(c => c.CompanyId == CompanyId);
@@ -320,10 +327,7 @@ public sealed class AuthorizeSalesReturnHandlerTests
             ("Producto A", 10m, 5m, null, null),
             ("Producto B", 4m, 20m, null, null)
         );
-        var salesReturn = BuildDraftReturn(
-            invoice.Id,
-            new[] { (lines[0], 2m), (lines[1], 1m) }
-        );
+        var salesReturn = BuildDraftReturn(invoice.Id, new[] { (lines[0], 2m), (lines[1], 1m) });
         var (handler, stockRepo, _) = BuildHandler(invoice, salesReturn);
 
         var result = await handler.Handle(
@@ -346,10 +350,7 @@ public sealed class AuthorizeSalesReturnHandlerTests
             ("Producto A", 10m, 5m, itemA, warehouseA),
             ("Producto B", 4m, 20m, itemB, warehouseB)
         );
-        var salesReturn = BuildDraftReturn(
-            invoice.Id,
-            new[] { (lines[0], 3m), (lines[1], 2m) }
-        );
+        var salesReturn = BuildDraftReturn(invoice.Id, new[] { (lines[0], 3m), (lines[1], 2m) });
         var (handler, stockRepo, _) = BuildHandler(invoice, salesReturn);
 
         var result = await handler.Handle(
@@ -411,9 +412,7 @@ public sealed class AuthorizeSalesReturnHandlerTests
     {
         var warehouseId = Guid.NewGuid();
         var itemId = Guid.NewGuid();
-        var (invoice, lines) = BuildAuthorizedInvoice(
-            ("Producto A", 10m, 5m, itemId, warehouseId)
-        );
+        var (invoice, lines) = BuildAuthorizedInvoice(("Producto A", 10m, 5m, itemId, warehouseId));
         var salesReturn = BuildDraftReturn(invoice.Id, new[] { (lines[0], 4m) });
         var (handler, stockRepo, _) = BuildHandler(invoice, salesReturn);
 
@@ -596,7 +595,9 @@ public sealed class AuthorizeSalesReturnHandlerTests
 
         result.IsSuccess.Should().BeFalse();
         result.Code.Should().Be(ApiResponseCodes.Common.ValidationError);
-        salesReturn.Status.Should().Be(SalesReturnStatus.Draft, "no debe autorizarse sin reembolso");
+        salesReturn
+            .Status.Should()
+            .Be(SalesReturnStatus.Draft, "no debe autorizarse sin reembolso");
     }
 
     [Fact]
@@ -941,7 +942,10 @@ public sealed class AuthorizeSalesReturnHandlerTests
             go.SetResult(true);
             var results = await Task.WhenAll(taskA, taskB);
 
-            results.Count(r => r.IsSuccess).Should().Be(1, because: "solo una autorización debe tener éxito");
+            results
+                .Count(r => r.IsSuccess)
+                .Should()
+                .Be(1, because: "solo una autorización debe tener éxito");
             results
                 .Count(r => !r.IsSuccess)
                 .Should()
@@ -953,7 +957,10 @@ public sealed class AuthorizeSalesReturnHandlerTests
             // Verificación final: no existe sobre-devolución — el total autorizado nunca excede
             // las 10 unidades originales de la factura.
             await using var verifyDb = CreateContext();
-            var verifyRepo = new SalesReturnRepository(verifyDb, new FixedCurrentCompany(_companyId));
+            var verifyRepo = new SalesReturnRepository(
+                verifyDb,
+                new FixedCurrentCompany(_companyId)
+            );
             var totalReturned = await verifyRepo.GetReturnedQuantityByInvoiceDetailAsync(
                 _tenantId,
                 lineId
@@ -999,8 +1006,10 @@ public sealed class AuthorizeSalesReturnHandlerTests
 
         private sealed class NoOpPublisher : IPublisher
         {
-            public Task Publish(object notification, CancellationToken cancellationToken = default) =>
-                Task.CompletedTask;
+            public Task Publish(
+                object notification,
+                CancellationToken cancellationToken = default
+            ) => Task.CompletedTask;
 
             public Task Publish<TNotification>(
                 TNotification notification,

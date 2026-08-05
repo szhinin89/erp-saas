@@ -11,12 +11,19 @@ public sealed class CreditNoteRideTemplateTests
     [Fact]
     public void RideTemplateResolver_resolves_CreditNoteRideTemplate_for_CreditNote()
     {
-        var resolver = new RideTemplateResolver(
-            [new DefaultInvoiceRideTemplate(), new CreditNoteRideTemplate()]
-        );
+        var resolver = new RideTemplateResolver([
+            new DefaultInvoiceRideTemplate(),
+            new CreditNoteRideTemplate(),
+        ]);
 
         var template = resolver.Resolve(
-            new RideTemplateSelector(Guid.NewGuid(), Guid.NewGuid(), null, null, RideDocumentType.CreditNote)
+            new RideTemplateSelector(
+                Guid.NewGuid(),
+                Guid.NewGuid(),
+                null,
+                null,
+                RideDocumentType.CreditNote
+            )
         );
 
         template.Should().NotBeNull();
@@ -29,12 +36,19 @@ public sealed class CreditNoteRideTemplateTests
     {
         // Regresión explícita: registrar CreditNoteRideTemplate no debe alterar en nada la
         // resolución de Factura, que ya existía antes de esta fase.
-        var resolver = new RideTemplateResolver(
-            [new DefaultInvoiceRideTemplate(), new CreditNoteRideTemplate()]
-        );
+        var resolver = new RideTemplateResolver([
+            new DefaultInvoiceRideTemplate(),
+            new CreditNoteRideTemplate(),
+        ]);
 
         var template = resolver.Resolve(
-            new RideTemplateSelector(Guid.NewGuid(), Guid.NewGuid(), null, null, RideDocumentType.Invoice)
+            new RideTemplateSelector(
+                Guid.NewGuid(),
+                Guid.NewGuid(),
+                null,
+                null,
+                RideDocumentType.Invoice
+            )
         );
 
         template.Should().NotBeNull();
@@ -91,9 +105,11 @@ public sealed class CreditNoteRideTemplateTests
 
         var layout = new CreditNoteRideTemplate().Compose(model, RideBranding.Empty());
 
-        layout.Should().BeOfType<InvoiceRideDocumentLayout>(
-            "reutiliza el mismo layout/renderer de Factura, sin crear un pipeline PDF paralelo"
-        );
+        layout
+            .Should()
+            .BeOfType<InvoiceRideDocumentLayout>(
+                "reutiliza el mismo layout/renderer de Factura, sin crear un pipeline PDF paralelo"
+            );
         var invoiceLayout = (InvoiceRideDocumentLayout)layout;
         invoiceLayout.Header.Reason.Should().Be("Producto en mal estado");
         invoiceLayout.Header.ModifiedDocument.Should().NotBeNull();

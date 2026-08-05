@@ -15,7 +15,8 @@ public sealed class PurchaseReturnSequenceTests
     private static readonly Guid TenantId = Guid.NewGuid();
     private static readonly Guid CompanyId = Guid.NewGuid();
 
-    private static PurchaseReturnSequence Create() => PurchaseReturnSequence.Create(TenantId, CompanyId);
+    private static PurchaseReturnSequence Create() =>
+        PurchaseReturnSequence.Create(TenantId, CompanyId);
 
     [Fact]
     public void Create_arranca_en_1_TenantId_y_CompanyId_persistidos()

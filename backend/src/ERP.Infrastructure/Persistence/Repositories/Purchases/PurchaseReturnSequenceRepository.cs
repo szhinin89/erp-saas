@@ -35,7 +35,10 @@ public sealed class PurchaseReturnSequenceRepository : IPurchaseReturnSequenceRe
         // Paso 3 (§7.1bis): pg_advisory_xact_lock con ámbito de transacción — se libera
         // automáticamente al COMMIT/ROLLBACK de la transacción ambiente ya abierta por el caller.
         var hash1 = StableHash(
-            System.Text.Encoding.UTF8.GetBytes(LockNamespace).Concat(tenantId.ToByteArray()).ToArray()
+            System
+                .Text.Encoding.UTF8.GetBytes(LockNamespace)
+                .Concat(tenantId.ToByteArray())
+                .ToArray()
         );
         var hash2 = StableHash(companyId.ToByteArray());
         await _db.Database.ExecuteSqlInterpolatedAsync(

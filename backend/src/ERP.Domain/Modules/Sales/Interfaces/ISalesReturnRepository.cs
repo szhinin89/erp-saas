@@ -35,11 +35,7 @@ public interface ISalesReturnRepository
     /// <c>IJournalEntryRepository.AcquireIdempotencyLockAsync</c> (Accounting), con un namespace
     /// de hash independiente para no colisionar con esas claves.
     /// </summary>
-    Task AcquireReturnLockAsync(
-        Guid tenantId,
-        Guid salesInvoiceId,
-        CancellationToken ct = default
-    );
+    Task AcquireReturnLockAsync(Guid tenantId, Guid salesInvoiceId, CancellationToken ct = default);
 
     Task AddAsync(SalesReturn salesReturn, CancellationToken ct = default);
     Task SaveChangesAsync(CancellationToken ct = default);

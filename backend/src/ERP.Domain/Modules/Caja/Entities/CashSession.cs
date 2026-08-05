@@ -236,5 +236,8 @@ public sealed class CashSession : AuditableEntity, ITenantScopedEntity, ICompany
         type is CashMovementType.SaleIncome or CashMovementType.ManualIncome;
 
     private static bool IsExpense(CashMovementType type) =>
-        type is CashMovementType.ManualExpense or CashMovementType.Withdrawal or CashMovementType.SaleRefund;
+        type
+            is CashMovementType.ManualExpense
+                or CashMovementType.Withdrawal
+                or CashMovementType.SaleRefund;
 }

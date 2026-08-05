@@ -15,39 +15,45 @@ namespace ERP.Infrastructure.Migrations
                 name: "new_accounting_account_id",
                 table: "company_financial_destination_audit",
                 type: "uuid",
-                nullable: true);
+                nullable: true
+            );
 
             migrationBuilder.AddColumn<bool>(
                 name: "new_is_active",
                 table: "company_financial_destination_audit",
                 type: "boolean",
-                nullable: true);
+                nullable: true
+            );
 
             migrationBuilder.AddColumn<string>(
                 name: "new_name",
                 table: "company_financial_destination_audit",
                 type: "character varying(200)",
                 maxLength: 200,
-                nullable: true);
+                nullable: true
+            );
 
             migrationBuilder.AddColumn<Guid>(
                 name: "old_accounting_account_id",
                 table: "company_financial_destination_audit",
                 type: "uuid",
-                nullable: true);
+                nullable: true
+            );
 
             migrationBuilder.AddColumn<bool>(
                 name: "old_is_active",
                 table: "company_financial_destination_audit",
                 type: "boolean",
-                nullable: true);
+                nullable: true
+            );
 
             migrationBuilder.AddColumn<string>(
                 name: "old_name",
                 table: "company_financial_destination_audit",
                 type: "character varying(200)",
                 maxLength: 200,
-                nullable: true);
+                nullable: true
+            );
         }
 
         /// <inheritdoc />
@@ -55,27 +61,33 @@ namespace ERP.Infrastructure.Migrations
         {
             migrationBuilder.DropColumn(
                 name: "new_accounting_account_id",
-                table: "company_financial_destination_audit");
+                table: "company_financial_destination_audit"
+            );
 
             migrationBuilder.DropColumn(
                 name: "new_is_active",
-                table: "company_financial_destination_audit");
+                table: "company_financial_destination_audit"
+            );
 
             migrationBuilder.DropColumn(
                 name: "new_name",
-                table: "company_financial_destination_audit");
+                table: "company_financial_destination_audit"
+            );
 
             migrationBuilder.DropColumn(
                 name: "old_accounting_account_id",
-                table: "company_financial_destination_audit");
+                table: "company_financial_destination_audit"
+            );
 
             migrationBuilder.DropColumn(
                 name: "old_is_active",
-                table: "company_financial_destination_audit");
+                table: "company_financial_destination_audit"
+            );
 
             migrationBuilder.DropColumn(
                 name: "old_name",
-                table: "company_financial_destination_audit");
+                table: "company_financial_destination_audit"
+            );
         }
     }
 }

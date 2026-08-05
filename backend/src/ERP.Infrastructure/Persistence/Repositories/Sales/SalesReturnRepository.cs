@@ -98,7 +98,10 @@ public sealed class SalesReturnRepository : ISalesReturnRepository
         // COMMIT/ROLLBACK de la transacción ambiente — nunca abre ni comitea una transacción
         // propia (la persistencia pertenece exclusivamente a ErpDbContext.SaveChangesAsync).
         var hash1 = StableHash(
-            System.Text.Encoding.UTF8.GetBytes(LockNamespace).Concat(tenantId.ToByteArray()).ToArray()
+            System
+                .Text.Encoding.UTF8.GetBytes(LockNamespace)
+                .Concat(tenantId.ToByteArray())
+                .ToArray()
         );
         var hash2 = StableHash(salesInvoiceId.ToByteArray());
         await _db.Database.ExecuteSqlInterpolatedAsync(

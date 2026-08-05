@@ -115,8 +115,7 @@ public sealed class SriCatalogLookupRepository : ISriCatalogLookupRepository
         CancellationToken cancellationToken = default
     ) =>
         await _db
-            .LegalEntityTypeCatalog
-            .AsNoTracking()
+            .LegalEntityTypeCatalog.AsNoTracking()
             .Where(p => p.IsActive)
             .OrderBy(p => p.Code)
             .ToListAsync(cancellationToken);

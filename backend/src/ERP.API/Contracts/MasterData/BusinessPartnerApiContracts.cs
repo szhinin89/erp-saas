@@ -29,6 +29,7 @@ public sealed class CreateBusinessPartnerRequest
 public sealed class UpdateBusinessPartnerRequest
 {
     public string LegalName { get; set; } = "";
+
     /// <summary>
     /// Código de naturaleza jurídica (1=Persona Natural, 2=Sociedad Privada, 3=Institución Pública).
     /// Mismas reglas de inferencia/obligatoriedad condicional que en creación — ver

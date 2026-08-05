@@ -192,7 +192,11 @@ public sealed class SalesReceivableTests
     public void RebuildInstallments_reprorratea_las_cuotas_existentes_al_nuevo_saldo()
     {
         var receivable = Create(90m);
-        receivable.GenerateInstallments(new DateOnly(2026, 1, 1), creditTermDays: 90, installmentCount: 3);
+        receivable.GenerateInstallments(
+            new DateOnly(2026, 1, 1),
+            creditTermDays: 90,
+            installmentCount: 3
+        );
         // 3 cuotas de 30m cada una
 
         receivable.ApplyReturnCredit(30m, UserId); // OriginalAmount = 60, BalanceDue = 60
@@ -207,13 +211,21 @@ public sealed class SalesReceivableTests
     public void RebuildInstallments_preserva_numero_de_cuota_y_fecha_de_vencimiento()
     {
         var receivable = Create(90m);
-        receivable.GenerateInstallments(new DateOnly(2026, 1, 1), creditTermDays: 90, installmentCount: 3);
-        var originalDueDates = receivable.Installments.Select(i => (i.InstallmentNumber, i.DueDate)).ToList();
+        receivable.GenerateInstallments(
+            new DateOnly(2026, 1, 1),
+            creditTermDays: 90,
+            installmentCount: 3
+        );
+        var originalDueDates = receivable
+            .Installments.Select(i => (i.InstallmentNumber, i.DueDate))
+            .ToList();
 
         receivable.ApplyReturnCredit(30m, UserId);
         receivable.RebuildInstallments();
 
-        var rebuiltDueDates = receivable.Installments.Select(i => (i.InstallmentNumber, i.DueDate)).ToList();
+        var rebuiltDueDates = receivable
+            .Installments.Select(i => (i.InstallmentNumber, i.DueDate))
+            .ToList();
         rebuiltDueDates.Should().BeEquivalentTo(originalDueDates);
     }
 
@@ -223,7 +235,11 @@ public sealed class SalesReceivableTests
         var receivable = Create(100m);
         // Simula un cronograma con pesos desiguales generando cuotas manualmente vía GenerateInstallments
         // y luego cobrando de forma parcial antes de reconstruir.
-        receivable.GenerateInstallments(new DateOnly(2026, 1, 1), creditTermDays: 90, installmentCount: 3);
+        receivable.GenerateInstallments(
+            new DateOnly(2026, 1, 1),
+            creditTermDays: 90,
+            installmentCount: 3
+        );
         // Cuotas: 33.33, 33.33, 33.34 (la última absorbe el residuo del redondeo)
 
         receivable.ApplyReturnCredit(10m, UserId); // OriginalAmount = 90, BalanceDue = 90
@@ -236,7 +252,11 @@ public sealed class SalesReceivableTests
     public void RebuildInstallments_sin_saldo_pendiente_deja_las_cuotas_vacias()
     {
         var receivable = Create(50m);
-        receivable.GenerateInstallments(new DateOnly(2026, 1, 1), creditTermDays: 30, installmentCount: 1);
+        receivable.GenerateInstallments(
+            new DateOnly(2026, 1, 1),
+            creditTermDays: 30,
+            installmentCount: 1
+        );
 
         receivable.ApplyReturnCredit(50m, UserId); // BalanceDue = 0
         receivable.RebuildInstallments();

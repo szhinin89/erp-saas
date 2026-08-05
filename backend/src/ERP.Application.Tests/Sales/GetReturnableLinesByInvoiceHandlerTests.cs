@@ -80,7 +80,11 @@ public sealed class GetReturnableLinesByInvoiceHandlerTests
 
         var tenant = Mock.Of<ERP.Application.Common.ICurrentTenant>(t => t.TenantId == TenantId);
 
-        return new GetReturnableLinesByInvoiceHandler(invoiceRepo.Object, returnRepo.Object, tenant);
+        return new GetReturnableLinesByInvoiceHandler(
+            invoiceRepo.Object,
+            returnRepo.Object,
+            tenant
+        );
     }
 
     [Fact]

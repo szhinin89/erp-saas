@@ -58,7 +58,8 @@ public sealed record PayablesListResponse(
 
 // ── Handlers ────────────────────────────────────────────────────────────
 
-public sealed class GetPayableByIdHandler : IRequestHandler<GetPayableByIdQuery, Result<PurchasePayableDto>>
+public sealed class GetPayableByIdHandler
+    : IRequestHandler<GetPayableByIdQuery, Result<PurchasePayableDto>>
 {
     private readonly IPurchasePayableRepository _repo;
     private readonly ICurrentTenant _t;
@@ -80,7 +81,9 @@ public sealed class GetPayableByIdHandler : IRequestHandler<GetPayableByIdQuery,
             : Result<PurchasePayableDto>.Success(MapDto(p));
     }
 
-    internal static PurchasePayableDto MapDto(Domain.Modules.Purchases.Entities.PurchasePayable p) =>
+    internal static PurchasePayableDto MapDto(
+        Domain.Modules.Purchases.Entities.PurchasePayable p
+    ) =>
         new(
             p.Id,
             p.PurchaseId,

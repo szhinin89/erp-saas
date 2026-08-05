@@ -1,3 +1,7 @@
+using System.Net;
+using System.Net.Http.Headers;
+using System.Net.Http.Json;
+using System.Text.Json;
 using ERP.API.Tests.Support;
 using ERP.Domain.Access.Entities;
 using ERP.Domain.Modules.Company.Entities;
@@ -5,10 +9,6 @@ using ERP.Domain.Tenants.Entities;
 using ERP.Infrastructure.Persistence;
 using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
-using System.Net;
-using System.Net.Http.Headers;
-using System.Net.Http.Json;
-using System.Text.Json;
 
 namespace ERP.API.Tests.Integration;
 
@@ -24,17 +24,11 @@ public class BusinessPartnerValidationTests : IAsyncLifetime
 
     public async Task InitializeAsync()
     {
-        Environment.SetEnvironmentVariable(
-            "JWT__SECRETKEY",
-            IntegrationTestConstants.JwtSecretKey);
+        Environment.SetEnvironmentVariable("JWT__SECRETKEY", IntegrationTestConstants.JwtSecretKey);
 
-        Environment.SetEnvironmentVariable(
-            "JWT__ISSUER",
-            "ZHTechnologies");
+        Environment.SetEnvironmentVariable("JWT__ISSUER", "ZHTechnologies");
 
-        Environment.SetEnvironmentVariable(
-            "JWT__AUDIENCE",
-            "ERPUsers");
+        Environment.SetEnvironmentVariable("JWT__AUDIENCE", "ERPUsers");
 
         await _factory.InitializeAsync();
         await _factory.MigrateAsync();
@@ -43,10 +37,7 @@ public class BusinessPartnerValidationTests : IAsyncLifetime
         {
             var db = scope.ServiceProvider.GetRequiredService<ErpDbContext>();
 
-            var tenant = Tenant.Create(
-                "ZH-Test",
-                $"zh-{Guid.NewGuid():N}",
-                _adminId);
+            var tenant = Tenant.Create("ZH-Test", $"zh-{Guid.NewGuid():N}", _adminId);
 
             db.Tenants.Add(tenant);
             await db.SaveChangesAsync();
@@ -65,13 +56,13 @@ public class BusinessPartnerValidationTests : IAsyncLifetime
 
             _companyId = company.Id;
             var user = IdentityUser.Create(
-                 "sadmi",
-                 "Admin",
-                 "Test",
-                 $"admin-{Guid.NewGuid():N}@test.com",
-                 "TEST_PASSWORD_HASH",
-                 _adminId
-             );
+                "sadmi",
+                "Admin",
+                "Test",
+                $"admin-{Guid.NewGuid():N}@test.com",
+                "TEST_PASSWORD_HASH",
+                _adminId
+            );
 
             db.IdentityUsers.Add(user);
             await db.SaveChangesAsync();
@@ -90,14 +81,10 @@ public class BusinessPartnerValidationTests : IAsyncLifetime
 
         _client = _factory.CreateClient();
 
-        _client.DefaultRequestHeaders.Authorization =
-     new AuthenticationHeaderValue(
-         "Bearer",
-         TestJwtFactory.CreateSessionJwt(
-             _tenantId,
-             _adminId,
-             _companyId,
-             "Admin"));
+        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue(
+            "Bearer",
+            TestJwtFactory.CreateSessionJwt(_tenantId, _adminId, _companyId, "Admin")
+        );
 
         _factory.MutableTenant.TenantId = _tenantId;
         _factory.MutableCompany.CompanyId = _companyId;
@@ -119,15 +106,12 @@ public class BusinessPartnerValidationTests : IAsyncLifetime
             legalEntityTypeCode = 2,
             legalName = "Empresa Prueba",
             tradeName = "Empresa Prueba",
-            countryCode = "EC"
+            countryCode = "EC",
         };
 
-        var response = await _client.PostAsJsonAsync(
-            "/api/v1/master/business-partners",
-            request);
+        var response = await _client.PostAsJsonAsync("/api/v1/master/business-partners", request);
 
-        response.StatusCode.Should()
-            .Be(HttpStatusCode.UnprocessableEntity);
+        response.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
     }
 
     [Fact]
@@ -140,15 +124,12 @@ public class BusinessPartnerValidationTests : IAsyncLifetime
             legalEntityTypeCode = 2,
             legalName = "QUALA ECUADOR S A",
             tradeName = "QUALA ECUADOR",
-            countryCode = "EC"
+            countryCode = "EC",
         };
 
-        var response = await _client.PostAsJsonAsync(
-            "/api/v1/master/business-partners",
-            request);
+        var response = await _client.PostAsJsonAsync("/api/v1/master/business-partners", request);
 
-        response.StatusCode.Should()
-            .Be(HttpStatusCode.Created);
+        response.StatusCode.Should().Be(HttpStatusCode.Created);
     }
 
     [Fact]
@@ -161,15 +142,12 @@ public class BusinessPartnerValidationTests : IAsyncLifetime
             legalEntityTypeCode = 1,
             legalName = "Sebastian Zhinin",
             tradeName = "Sebastian",
-            countryCode = "EC"
+            countryCode = "EC",
         };
 
-        var response = await _client.PostAsJsonAsync(
-            "/api/v1/master/business-partners",
-            request);
+        var response = await _client.PostAsJsonAsync("/api/v1/master/business-partners", request);
 
-        response.StatusCode.Should()
-            .Be(HttpStatusCode.Created);
+        response.StatusCode.Should().Be(HttpStatusCode.Created);
     }
 
     // ── Inferencia automática de LegalEntityType ─────────────────────────────
@@ -183,12 +161,10 @@ public class BusinessPartnerValidationTests : IAsyncLifetime
             identificationNumber = "1791352688001", // Sociedad Privada (3.er dígito 9)
             legalName = "QUALA ECUADOR S A",
             tradeName = "QUALA ECUADOR",
-            countryCode = "EC"
+            countryCode = "EC",
         };
 
-        var response = await _client.PostAsJsonAsync(
-            "/api/v1/master/business-partners",
-            request);
+        var response = await _client.PostAsJsonAsync("/api/v1/master/business-partners", request);
 
         response.StatusCode.Should().Be(HttpStatusCode.Created);
 
@@ -204,12 +180,10 @@ public class BusinessPartnerValidationTests : IAsyncLifetime
             identificationType = "05",
             identificationNumber = "0302126842",
             legalName = "Sebastian Zhinin",
-            countryCode = "EC"
+            countryCode = "EC",
         };
 
-        var response = await _client.PostAsJsonAsync(
-            "/api/v1/master/business-partners",
-            request);
+        var response = await _client.PostAsJsonAsync("/api/v1/master/business-partners", request);
 
         response.StatusCode.Should().Be(HttpStatusCode.Created);
 
@@ -226,12 +200,10 @@ public class BusinessPartnerValidationTests : IAsyncLifetime
             identificationNumber = "1791352688001", // infiere Sociedad Privada (2)
             legalEntityTypeCode = 1, // contradice
             legalName = "QUALA ECUADOR S A",
-            countryCode = "EC"
+            countryCode = "EC",
         };
 
-        var response = await _client.PostAsJsonAsync(
-            "/api/v1/master/business-partners",
-            request);
+        var response = await _client.PostAsJsonAsync("/api/v1/master/business-partners", request);
 
         response.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
     }
@@ -245,12 +217,10 @@ public class BusinessPartnerValidationTests : IAsyncLifetime
             identificationType = "06",
             identificationNumber = "P12345678",
             legalName = "Extranjero SA",
-            countryCode = "US"
+            countryCode = "US",
         };
 
-        var response = await _client.PostAsJsonAsync(
-            "/api/v1/master/business-partners",
-            request);
+        var response = await _client.PostAsJsonAsync("/api/v1/master/business-partners", request);
 
         response.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
     }
@@ -264,12 +234,10 @@ public class BusinessPartnerValidationTests : IAsyncLifetime
             identificationNumber = "P12345678",
             legalEntityTypeCode = 2,
             legalName = "Extranjero SA",
-            countryCode = "US"
+            countryCode = "US",
         };
 
-        var response = await _client.PostAsJsonAsync(
-            "/api/v1/master/business-partners",
-            request);
+        var response = await _client.PostAsJsonAsync("/api/v1/master/business-partners", request);
 
         response.StatusCode.Should().Be(HttpStatusCode.Created);
     }
@@ -285,12 +253,10 @@ public class BusinessPartnerValidationTests : IAsyncLifetime
             identificationNumber = "P12345678",
             legalEntityTypeCode = 99,
             legalName = "Extranjero SA",
-            countryCode = "US"
+            countryCode = "US",
         };
 
-        var response = await _client.PostAsJsonAsync(
-            "/api/v1/master/business-partners",
-            request);
+        var response = await _client.PostAsJsonAsync("/api/v1/master/business-partners", request);
 
         response.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
     }
@@ -305,11 +271,12 @@ public class BusinessPartnerValidationTests : IAsyncLifetime
             identificationType = "04",
             identificationNumber = "1791352688001", // Sociedad Privada
             legalName = "QUALA ECUADOR S A",
-            countryCode = "EC"
+            countryCode = "EC",
         };
         var createResponse = await _client.PostAsJsonAsync(
             "/api/v1/master/business-partners",
-            createRequest);
+            createRequest
+        );
         createResponse.StatusCode.Should().Be(HttpStatusCode.Created);
         var created = await createResponse.Content.ReadFromJsonAsync<JsonElement>();
         var id = created.GetProperty("data").GetProperty("id").GetString();
@@ -318,11 +285,12 @@ public class BusinessPartnerValidationTests : IAsyncLifetime
         {
             legalName = "QUALA ECUADOR S A",
             legalEntityTypeCode = 1, // contradice el RUC (2)
-            countryCode = "EC"
+            countryCode = "EC",
         };
         var updateResponse = await _client.PutAsJsonAsync(
             $"/api/v1/master/business-partners/{id}",
-            updateRequest);
+            updateRequest
+        );
 
         updateResponse.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
     }
@@ -338,11 +306,12 @@ public class BusinessPartnerValidationTests : IAsyncLifetime
             identificationNumber = "P12345678",
             legalEntityTypeCode = 1, // valor manual inicial, sin relación con el RUC nuevo
             legalName = "Persona X",
-            countryCode = "US"
+            countryCode = "US",
         };
         var createResponse = await _client.PostAsJsonAsync(
             "/api/v1/master/business-partners",
-            createRequest);
+            createRequest
+        );
         createResponse.StatusCode.Should().Be(HttpStatusCode.Created);
         var created = await createResponse.Content.ReadFromJsonAsync<JsonElement>();
         var id = created.GetProperty("data").GetProperty("id").GetString();
@@ -354,7 +323,8 @@ public class BusinessPartnerValidationTests : IAsyncLifetime
         };
         var response = await _client.PatchAsJsonAsync(
             $"/api/v1/master/business-partners/{id}/identification",
-            identificationRequest);
+            identificationRequest
+        );
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var body = await response.Content.ReadFromJsonAsync<JsonElement>();
@@ -369,7 +339,7 @@ public class BusinessPartnerValidationTests : IAsyncLifetime
             identificationType = "04",
             identificationNumber = "1791352688001",
             legalName = "QUALA ECUADOR S A",
-            countryCode = "EC"
+            countryCode = "EC",
         };
         var first = await _client.PostAsJsonAsync("/api/v1/master/business-partners", request);
         first.StatusCode.Should().Be(HttpStatusCode.Created);

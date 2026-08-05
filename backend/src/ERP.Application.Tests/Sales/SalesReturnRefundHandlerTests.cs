@@ -143,18 +143,22 @@ public sealed class SalesReturnRefundHandlerTests
     public async Task Ejecuta_100_por_ciento_efectivo()
     {
         var session = OpenSession();
-        var salesReturn = BuildAuthorizedReturn(
-            4m,
-            10m,
-            (SalesReturnRefundMethod.Cash, 40m)
-        );
+        var salesReturn = BuildAuthorizedReturn(4m, 10m, (SalesReturnRefundMethod.Cash, 40m));
         var (handler, _, _, _) = BuildHandler(session, receivable: null);
 
-        var error = await handler.ExecuteAsync(salesReturn, TenantId, UserId, CancellationToken.None);
+        var error = await handler.ExecuteAsync(
+            salesReturn,
+            TenantId,
+            UserId,
+            CancellationToken.None
+        );
 
         error.Should().BeNull();
         session.CurrentBalance.Should().Be(-40m, because: "OpeningAmount(0) - 40 de reembolso");
-        var movement = session.Movements.Should().ContainSingle(m => m.MovementType == CashMovementType.SaleRefund).Which;
+        var movement = session
+            .Movements.Should()
+            .ContainSingle(m => m.MovementType == CashMovementType.SaleRefund)
+            .Which;
         movement.Amount.Should().Be(40m);
         movement.ReferenceType.Should().Be(CashReferenceType.SalesReturn);
         movement.ReferenceId.Should().Be(salesReturn.Id);
@@ -165,7 +169,11 @@ public sealed class SalesReturnRefundHandlerTests
     [Fact]
     public async Task Ejecuta_100_por_ciento_credito()
     {
-        var receivable = BuildReceivable(originalAmount: 100m, paidAmount: 20m, installmentCount: 2);
+        var receivable = BuildReceivable(
+            originalAmount: 100m,
+            paidAmount: 20m,
+            installmentCount: 2
+        );
         var salesReturn = BuildAuthorizedReturn(
             4m,
             10m,
@@ -173,7 +181,12 @@ public sealed class SalesReturnRefundHandlerTests
         );
         var (handler, _, _, _) = BuildHandler(openSession: null, receivable);
 
-        var error = await handler.ExecuteAsync(salesReturn, TenantId, UserId, CancellationToken.None);
+        var error = await handler.ExecuteAsync(
+            salesReturn,
+            TenantId,
+            UserId,
+            CancellationToken.None
+        );
 
         error.Should().BeNull();
         receivable.OriginalAmount.Should().Be(60m); // 100 - 40
@@ -198,11 +211,18 @@ public sealed class SalesReturnRefundHandlerTests
         );
         var (handler, _, _, _) = BuildHandler(session, receivable);
 
-        var error = await handler.ExecuteAsync(salesReturn, TenantId, UserId, CancellationToken.None);
+        var error = await handler.ExecuteAsync(
+            salesReturn,
+            TenantId,
+            UserId,
+            CancellationToken.None
+        );
 
         error.Should().BeNull();
         session.CurrentBalance.Should().Be(-30m);
-        session.Movements.Should().ContainSingle(m => m.MovementType == CashMovementType.SaleRefund);
+        session
+            .Movements.Should()
+            .ContainSingle(m => m.MovementType == CashMovementType.SaleRefund);
         receivable.OriginalAmount.Should().Be(80m); // 100 - 20
         receivable.BalanceDue.Should().Be(80m);
     }
@@ -212,14 +232,15 @@ public sealed class SalesReturnRefundHandlerTests
     [Fact]
     public async Task Sin_CashSession_abierta_falla()
     {
-        var salesReturn = BuildAuthorizedReturn(
-            4m,
-            10m,
-            (SalesReturnRefundMethod.Cash, 40m)
-        );
+        var salesReturn = BuildAuthorizedReturn(4m, 10m, (SalesReturnRefundMethod.Cash, 40m));
         var (handler, _, _, _) = BuildHandler(openSession: null, receivable: null);
 
-        var error = await handler.ExecuteAsync(salesReturn, TenantId, UserId, CancellationToken.None);
+        var error = await handler.ExecuteAsync(
+            salesReturn,
+            TenantId,
+            UserId,
+            CancellationToken.None
+        );
 
         error.Should().NotBeNull();
         error.Should().Contain("caja abierta");
@@ -228,7 +249,11 @@ public sealed class SalesReturnRefundHandlerTests
     [Fact]
     public async Task BalanceDue_insuficiente_falla()
     {
-        var receivable = BuildReceivable(originalAmount: 100m, paidAmount: 70m, installmentCount: 1); // BalanceDue = 30
+        var receivable = BuildReceivable(
+            originalAmount: 100m,
+            paidAmount: 70m,
+            installmentCount: 1
+        ); // BalanceDue = 30
         var salesReturn = BuildAuthorizedReturn(
             4m,
             10m,
@@ -236,17 +261,28 @@ public sealed class SalesReturnRefundHandlerTests
         );
         var (handler, _, _, _) = BuildHandler(openSession: null, receivable);
 
-        var error = await handler.ExecuteAsync(salesReturn, TenantId, UserId, CancellationToken.None);
+        var error = await handler.ExecuteAsync(
+            salesReturn,
+            TenantId,
+            UserId,
+            CancellationToken.None
+        );
 
         error.Should().NotBeNull();
         error.Should().Contain("excede el saldo pendiente");
-        receivable.OriginalAmount.Should().Be(100m, because: "no debe mutar si la validación falla");
+        receivable
+            .OriginalAmount.Should()
+            .Be(100m, because: "no debe mutar si la validación falla");
     }
 
     [Fact]
     public async Task BalanceDue_cero_rechaza_credito()
     {
-        var receivable = BuildReceivable(originalAmount: 100m, paidAmount: 100m, installmentCount: 1); // BalanceDue = 0
+        var receivable = BuildReceivable(
+            originalAmount: 100m,
+            paidAmount: 100m,
+            installmentCount: 1
+        ); // BalanceDue = 0
         var salesReturn = BuildAuthorizedReturn(
             4m,
             10m,
@@ -254,7 +290,12 @@ public sealed class SalesReturnRefundHandlerTests
         );
         var (handler, _, _, _) = BuildHandler(openSession: null, receivable);
 
-        var error = await handler.ExecuteAsync(salesReturn, TenantId, UserId, CancellationToken.None);
+        var error = await handler.ExecuteAsync(
+            salesReturn,
+            TenantId,
+            UserId,
+            CancellationToken.None
+        );
 
         error.Should().NotBeNull();
         receivable.OriginalAmount.Should().Be(100m);
@@ -462,10 +503,7 @@ public sealed class SalesReturnRefundHandlerTests
         var result = await handler.Handle(
             new AuthorizeSalesReturnCommand(
                 draftReturn.Id,
-                new List<AuthorizeSalesReturnRefundAllocationInput>
-                {
-                    new("ReceivableCredit", 40m),
-                }
+                new List<AuthorizeSalesReturnRefundAllocationInput> { new("ReceivableCredit", 40m) }
             ),
             CancellationToken.None
         );

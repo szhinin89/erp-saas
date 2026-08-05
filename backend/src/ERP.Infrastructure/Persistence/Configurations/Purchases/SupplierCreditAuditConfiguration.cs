@@ -27,7 +27,9 @@ public sealed class SupplierCreditAuditConfiguration : IEntityTypeConfiguration<
             .HasColumnType("numeric(18,2)");
         builder.Property(x => x.StatusBefore).HasColumnName("status_before").HasMaxLength(20);
         builder.Property(x => x.StatusAfter).HasColumnName("status_after").HasMaxLength(20);
-        builder.Property(x => x.TargetPurchasePayableId).HasColumnName("target_purchase_payable_id");
+        builder
+            .Property(x => x.TargetPurchasePayableId)
+            .HasColumnName("target_purchase_payable_id");
         builder.Property(x => x.SourcePurchaseReturnId).HasColumnName("source_purchase_return_id");
 
         builder.Property(x => x.FinancialDestinationId).HasColumnName("financial_destination_id");
@@ -43,12 +45,18 @@ public sealed class SupplierCreditAuditConfiguration : IEntityTypeConfiguration<
         builder.Property(x => x.CashRegisterId).HasColumnName("cash_register_id");
         builder.Property(x => x.CashSessionId).HasColumnName("cash_session_id");
         builder.Property(x => x.CashMovementId).HasColumnName("cash_movement_id");
-        builder.Property(x => x.PaymentMethodCode).HasColumnName("payment_method_code").HasMaxLength(20);
+        builder
+            .Property(x => x.PaymentMethodCode)
+            .HasColumnName("payment_method_code")
+            .HasMaxLength(20);
         builder
             .Property(x => x.ExternalReference)
             .HasColumnName("external_reference")
             .HasMaxLength(100);
-        builder.Property(x => x.EffectiveDate).HasColumnName("effective_date").HasColumnType("date");
+        builder
+            .Property(x => x.EffectiveDate)
+            .HasColumnName("effective_date")
+            .HasColumnType("date");
 
         builder
             .HasIndex(x => new

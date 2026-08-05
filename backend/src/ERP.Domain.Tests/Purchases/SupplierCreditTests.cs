@@ -77,7 +77,13 @@ public sealed class SupplierCreditTests
     {
         var credit = Create(150m);
 
-        var movement = credit.ApplyToPayable(TargetPayableId, 100m, UserId, Guid.NewGuid(), "hash-a1");
+        var movement = credit.ApplyToPayable(
+            TargetPayableId,
+            100m,
+            UserId,
+            Guid.NewGuid(),
+            "hash-a1"
+        );
 
         credit.AvailableAmount.Should().Be(50m);
         movement.MovementType.Should().Be(SupplierCreditMovementType.Application);
@@ -91,7 +97,8 @@ public sealed class SupplierCreditTests
     {
         var credit = Create(150m);
 
-        var act = () => credit.ApplyToPayable(TargetPayableId, 200m, UserId, Guid.NewGuid(), "hash-a2");
+        var act = () =>
+            credit.ApplyToPayable(TargetPayableId, 200m, UserId, Guid.NewGuid(), "hash-a2");
 
         act.Should().Throw<InvalidOperationException>();
         credit.AvailableAmount.Should().Be(150m);
@@ -101,21 +108,35 @@ public sealed class SupplierCreditTests
     public void ReverseApplication_restablece_AvailableAmount()
     {
         var credit = Create(150m);
-        var applied = credit.ApplyToPayable(TargetPayableId, 100m, UserId, Guid.NewGuid(), "hash-a3");
+        var applied = credit.ApplyToPayable(
+            TargetPayableId,
+            100m,
+            UserId,
+            Guid.NewGuid(),
+            "hash-a3"
+        );
 
         var reversal = credit.ReverseApplication(applied.Id, UserId, Guid.NewGuid(), "hash-a4");
 
         credit.AvailableAmount.Should().Be(150m);
         reversal.MovementType.Should().Be(SupplierCreditMovementType.ReversalOfApplication);
         reversal.ReversalOfMovementId.Should().Be(applied.Id);
-        credit.DomainEvents.Should().ContainSingle(e => e is SupplierCreditApplicationReversedEvent);
+        credit
+            .DomainEvents.Should()
+            .ContainSingle(e => e is SupplierCreditApplicationReversedEvent);
     }
 
     [Fact]
     public void ReverseApplication_dos_veces_lanza()
     {
         var credit = Create(150m);
-        var applied = credit.ApplyToPayable(TargetPayableId, 100m, UserId, Guid.NewGuid(), "hash-a5");
+        var applied = credit.ApplyToPayable(
+            TargetPayableId,
+            100m,
+            UserId,
+            Guid.NewGuid(),
+            "hash-a5"
+        );
         credit.ReverseApplication(applied.Id, UserId, Guid.NewGuid(), "hash-a6");
 
         var act = () => credit.ReverseApplication(applied.Id, UserId, Guid.NewGuid(), "hash-a7");
@@ -128,7 +149,8 @@ public sealed class SupplierCreditTests
     {
         var credit = Create(150m);
 
-        var act = () => credit.ReverseApplication(Guid.NewGuid(), UserId, Guid.NewGuid(), "hash-a8");
+        var act = () =>
+            credit.ReverseApplication(Guid.NewGuid(), UserId, Guid.NewGuid(), "hash-a8");
 
         act.Should().Throw<InvalidOperationException>();
     }
@@ -204,7 +226,13 @@ public sealed class SupplierCreditTests
     {
         var credit = Create(1000m);
 
-        var applied = credit.ApplyToPayable(TargetPayableId, 300m, UserId, Guid.NewGuid(), "hash-c1"); // 700
+        var applied = credit.ApplyToPayable(
+            TargetPayableId,
+            300m,
+            UserId,
+            Guid.NewGuid(),
+            "hash-c1"
+        ); // 700
         var refunded = credit.RegisterRefund(200m, UserId, Guid.NewGuid(), "hash-c2"); // 500
         credit.ReverseApplication(applied.Id, UserId, Guid.NewGuid(), "hash-c3"); // 800
         credit.ReverseRefund(refunded.Id, UserId, Guid.NewGuid(), "hash-c4"); // 1000

@@ -290,15 +290,18 @@ public sealed class GetSriTaxRegimesQueryHandler
 }
 
 public sealed class GetCatalogLegalEntityTypesQueryHandler
-    : IRequestHandler<GetCatalogLegalEntityTypesQuery, Result<IReadOnlyList<LegalEntityTypeCatalogDto>>>
+    : IRequestHandler<
+        GetCatalogLegalEntityTypesQuery,
+        Result<IReadOnlyList<LegalEntityTypeCatalogDto>>
+    >
 {
     private readonly ISriCatalogLookupRepository _repo;
 
     public GetCatalogLegalEntityTypesQueryHandler(ISriCatalogLookupRepository repo) => _repo = repo;
 
     public async Task<Result<IReadOnlyList<LegalEntityTypeCatalogDto>>> Handle(
-     GetCatalogLegalEntityTypesQuery request,
-     CancellationToken cancellationToken
+        GetCatalogLegalEntityTypesQuery request,
+        CancellationToken cancellationToken
     )
     {
         var items = await _repo.GetLegalEntityTypesAsync(cancellationToken);

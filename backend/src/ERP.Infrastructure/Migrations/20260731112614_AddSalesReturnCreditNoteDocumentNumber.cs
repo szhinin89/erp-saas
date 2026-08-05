@@ -15,7 +15,8 @@ namespace ERP.Infrastructure.Migrations
                 table: "sales_returns",
                 type: "character varying(30)",
                 maxLength: 30,
-                nullable: true);
+                nullable: true
+            );
         }
 
         /// <inheritdoc />
@@ -23,7 +24,8 @@ namespace ERP.Infrastructure.Migrations
         {
             migrationBuilder.DropColumn(
                 name: "credit_note_document_number",
-                table: "sales_returns");
+                table: "sales_returns"
+            );
         }
     }
 }

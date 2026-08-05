@@ -52,7 +52,12 @@ public sealed class AuthorizePurchaseReturnConcurrencyTests : IAsyncLifetime
         await db.Database.MigrateAsync();
 
         var tenant = Tenant.Create("Test Tenant", $"test-{Guid.NewGuid():N}"[..16], _userId);
-        var company = Company.CreateManaged(tenant.Id, "1790012345001", "Test S.A.", createdBy: _userId);
+        var company = Company.CreateManaged(
+            tenant.Id,
+            "1790012345001",
+            "Test S.A.",
+            createdBy: _userId
+        );
         db.Tenants.Add(tenant);
         db.Companies.Add(company);
         await db.SaveChangesAsync();
@@ -170,7 +175,10 @@ public sealed class AuthorizePurchaseReturnConcurrencyTests : IAsyncLifetime
     }
 
     /// <summary>Crea factura confirmada + stock disponible (mediante un movimiento de entrada) + devolución en Draft lista para autorizar.</summary>
-    private async Task<Guid> SeedAuthorizableDraftAsync(decimal lineQuantity = 10, decimal returnQuantity = 2)
+    private async Task<Guid> SeedAuthorizableDraftAsync(
+        decimal lineQuantity = 10,
+        decimal returnQuantity = 2
+    )
     {
         await using var db = CreateContext();
         var inv = Domain.Modules.Purchases.Entities.PurchaseInvoice.CreateDraft(
@@ -239,8 +247,14 @@ public sealed class AuthorizePurchaseReturnConcurrencyTests : IAsyncLifetime
         );
         await stockRepo.SaveChangesWithSequenceRetryAsync();
 
-        var returnRepo = new PurchaseReturnRepository(db, new FixedCurrentCompany(() => _companyId));
-        var invoiceRepo = new PurchaseInvoiceRepository(db, new FixedCurrentCompany(() => _companyId));
+        var returnRepo = new PurchaseReturnRepository(
+            db,
+            new FixedCurrentCompany(() => _companyId)
+        );
+        var invoiceRepo = new PurchaseInvoiceRepository(
+            db,
+            new FixedCurrentCompany(() => _companyId)
+        );
         var createHandler = new CreatePurchaseReturnDraftHandler(
             returnRepo,
             invoiceRepo,
@@ -273,15 +287,24 @@ public sealed class AuthorizePurchaseReturnConcurrencyTests : IAsyncLifetime
     )
     {
         await using var db = CreateContext();
-        var returnRepo = new PurchaseReturnRepository(db, new FixedCurrentCompany(() => _companyId));
-        var invoiceRepo = new PurchaseInvoiceRepository(db, new FixedCurrentCompany(() => _companyId));
+        var returnRepo = new PurchaseReturnRepository(
+            db,
+            new FixedCurrentCompany(() => _companyId)
+        );
+        var invoiceRepo = new PurchaseInvoiceRepository(
+            db,
+            new FixedCurrentCompany(() => _companyId)
+        );
         var sequenceRepo = new PurchaseReturnSequenceRepository(db);
         var stockRepo = new StockRepository(
             db,
             new FixedCurrentCompany(() => _companyId),
             new RealDatabaseExceptionTranslator()
         );
-        var creditRepo = new SupplierCreditRepository(db, new FixedCurrentCompany(() => _companyId));
+        var creditRepo = new SupplierCreditRepository(
+            db,
+            new FixedCurrentCompany(() => _companyId)
+        );
         var uow = new UnitOfWork(db);
 
         var handler = new AuthorizePurchaseReturnHandler(
@@ -305,7 +328,11 @@ public sealed class AuthorizePurchaseReturnConcurrencyTests : IAsyncLifetime
             return (false, null);
 
         await using var verify = CreateContext();
-        var reloaded = await returnRepo.GetByIdAsync(_tenantId, purchaseReturnId, CancellationToken.None);
+        var reloaded = await returnRepo.GetByIdAsync(
+            _tenantId,
+            purchaseReturnId,
+            CancellationToken.None
+        );
         return (true, reloaded);
     }
 
@@ -329,7 +356,9 @@ public sealed class AuthorizePurchaseReturnConcurrencyTests : IAsyncLifetime
         );
         count.Should().Be(1);
 
-        var creditCount = await verify.Set<SupplierCredit>().CountAsync(c => c.TenantId == _tenantId);
+        var creditCount = await verify
+            .Set<SupplierCredit>()
+            .CountAsync(c => c.TenantId == _tenantId);
         creditCount.Should().BeLessThanOrEqualTo(1);
     }
 
@@ -366,7 +395,9 @@ public sealed class AuthorizePurchaseReturnConcurrencyTests : IAsyncLifetime
         retry.Value!.AuthorizedGrandTotal.Should().Be(first.Value!.AuthorizedGrandTotal);
 
         await using var verify = CreateContext();
-        var count = await verify.JournalEntries.CountAsync(x => x.SourceEventId == purchaseReturnId);
+        var count = await verify.JournalEntries.CountAsync(x =>
+            x.SourceEventId == purchaseReturnId
+        );
         count.Should().BeLessThanOrEqualTo(1);
     }
 
@@ -422,7 +453,12 @@ public sealed class AuthorizePurchaseReturnConcurrencyTests : IAsyncLifetime
             && (r.Id == returnId1 || r.Id == returnId2)
             && r.Status == Domain.Modules.Purchases.Enums.PurchaseReturnStatus.Authorized
         );
-        authorizedCount.Should().Be(2, "cada ClientRequestId distinto debe producir su propio efecto, sin colisionar entre sí");
+        authorizedCount
+            .Should()
+            .Be(
+                2,
+                "cada ClientRequestId distinto debe producir su propio efecto, sin colisionar entre sí"
+            );
     }
 
     // ── Test doubles mínimos ─────────────────────────────────────────────

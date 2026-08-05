@@ -25,7 +25,11 @@ public sealed class ReverseSupplierCreditApplicationUseCasesTests
     private static readonly Guid OtherPurchaseInvoiceId = Guid.NewGuid();
     private static readonly Guid OtherPayableId = Guid.NewGuid();
 
-    private sealed record Fixture(SupplierCredit Credit, PurchasePayable Payable, Guid ApplicationMovementId);
+    private sealed record Fixture(
+        SupplierCredit Credit,
+        PurchasePayable Payable,
+        Guid ApplicationMovementId
+    );
 
     private static Fixture BuildFixture(decimal creditAmount = 100m, decimal appliedAmount = 60m)
     {
@@ -55,7 +59,13 @@ public sealed class ReverseSupplierCreditApplicationUseCasesTests
             PayableId,
             appliedAmount
         );
-        var movement = credit.ApplyToPayable(PayableId, appliedAmount, UserId, Guid.NewGuid(), applyHash);
+        var movement = credit.ApplyToPayable(
+            PayableId,
+            appliedAmount,
+            UserId,
+            Guid.NewGuid(),
+            applyHash
+        );
         payable.ApplySupplierCredit(appliedAmount, UserId);
 
         return new Fixture(credit, payable, movement.Id);
@@ -72,7 +82,9 @@ public sealed class ReverseSupplierCreditApplicationUseCasesTests
         public Mocks(Fixture f)
         {
             PayableRepo
-                .Setup(r => r.GetPurchaseInvoiceIdAsync(TenantId, PayableId, It.IsAny<CancellationToken>()))
+                .Setup(r =>
+                    r.GetPurchaseInvoiceIdAsync(TenantId, PayableId, It.IsAny<CancellationToken>())
+                )
                 .ReturnsAsync(PurchaseInvoiceId);
             PayableRepo
                 .Setup(r => r.GetByIdAsync(TenantId, PayableId, It.IsAny<CancellationToken>()))
@@ -89,7 +101,11 @@ public sealed class ReverseSupplierCreditApplicationUseCasesTests
         {
             PayableRepo
                 .Setup(r =>
-                    r.GetPurchaseInvoiceIdAsync(TenantId, OtherPayableId, It.IsAny<CancellationToken>())
+                    r.GetPurchaseInvoiceIdAsync(
+                        TenantId,
+                        OtherPayableId,
+                        It.IsAny<CancellationToken>()
+                    )
                 )
                 .ReturnsAsync(OtherPurchaseInvoiceId);
             PayableRepo
@@ -137,8 +153,9 @@ public sealed class ReverseSupplierCreditApplicationUseCasesTests
         var f = BuildFixture();
         var m = new Mocks(f);
         var missingCreditId = Guid.NewGuid();
-        m.CreditRepo
-            .Setup(r => r.GetByIdAsync(TenantId, missingCreditId, It.IsAny<CancellationToken>()))
+        m.CreditRepo.Setup(r =>
+                r.GetByIdAsync(TenantId, missingCreditId, It.IsAny<CancellationToken>())
+            )
             .ReturnsAsync((SupplierCredit?)null);
         var handler = m.BuildHandler();
 
@@ -154,7 +171,8 @@ public sealed class ReverseSupplierCreditApplicationUseCasesTests
 
         result.IsSuccess.Should().BeFalse();
         result.Code.Should().Be(ApiResponseCodes.Common.NotFound);
-        f.Payable.SupplierCreditAppliedAmount.Should().Be(60m, "no debe mutar el destino cuando el crédito no existe");
+        f.Payable.SupplierCreditAppliedAmount.Should()
+            .Be(60m, "no debe mutar el destino cuando el crédito no existe");
         m.Uow.Verify(u => u.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
         m.Uow.Verify(u => u.CommitAsync(It.IsAny<CancellationToken>()), Times.Never);
     }
@@ -192,8 +210,11 @@ public sealed class ReverseSupplierCreditApplicationUseCasesTests
         // Ni el crédito ni ninguno de los dos PurchasePayable deben mutar.
         f.Credit.AvailableAmount.Should().Be(40m);
         f.Credit.Movements.Should().HaveCount(1, "no debe crearse un movimiento de reversa");
-        f.Payable.SupplierCreditAppliedAmount.Should().Be(60m, "el destino real del movimiento original no debe mutar");
-        otherPayable.SupplierCreditAppliedAmount.Should().Be(0m, "el destino incorrecto enviado por el comando tampoco debe mutar");
+        f.Payable.SupplierCreditAppliedAmount.Should()
+            .Be(60m, "el destino real del movimiento original no debe mutar");
+        otherPayable
+            .SupplierCreditAppliedAmount.Should()
+            .Be(0m, "el destino incorrecto enviado por el comando tampoco debe mutar");
         m.Uow.Verify(u => u.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
         m.Uow.Verify(u => u.CommitAsync(It.IsAny<CancellationToken>()), Times.Never);
     }
@@ -250,7 +271,8 @@ public sealed class ReverseSupplierCreditApplicationUseCasesTests
 
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Contain("anulada");
-        f.Credit.AvailableAmount.Should().Be(40m, "el crédito no debe mutar cuando la reversa queda bloqueada");
+        f.Credit.AvailableAmount.Should()
+            .Be(40m, "el crédito no debe mutar cuando la reversa queda bloqueada");
     }
 
     [Fact]
@@ -262,18 +284,32 @@ public sealed class ReverseSupplierCreditApplicationUseCasesTests
         var cri = Guid.NewGuid();
 
         var first = await handler.Handle(
-            new ReverseSupplierCreditApplicationCommand(f.Credit.Id, f.ApplicationMovementId, PayableId, cri),
+            new ReverseSupplierCreditApplicationCommand(
+                f.Credit.Id,
+                f.ApplicationMovementId,
+                PayableId,
+                cri
+            ),
             CancellationToken.None
         );
         first.IsSuccess.Should().BeTrue();
 
         var retry = await handler.Handle(
-            new ReverseSupplierCreditApplicationCommand(f.Credit.Id, f.ApplicationMovementId, PayableId, cri),
+            new ReverseSupplierCreditApplicationCommand(
+                f.Credit.Id,
+                f.ApplicationMovementId,
+                PayableId,
+                cri
+            ),
             CancellationToken.None
         );
 
         retry.IsSuccess.Should().BeTrue();
-        f.Credit.Movements.Should().HaveCount(2, "1 aplicación (fixture) + 1 reversa — el reintento no debe agregar una tercera");
+        f.Credit.Movements.Should()
+            .HaveCount(
+                2,
+                "1 aplicación (fixture) + 1 reversa — el reintento no debe agregar una tercera"
+            );
     }
 
     [Fact]
@@ -282,12 +318,18 @@ public sealed class ReverseSupplierCreditApplicationUseCasesTests
         var f = BuildFixture();
         var m = new Mocks(f);
         var sequence = new List<string>();
-        m.ReturnRepo
-            .Setup(r => r.AcquireFinancialLockAsync(TenantId, PurchaseInvoiceId, It.IsAny<CancellationToken>()))
+        m.ReturnRepo.Setup(r =>
+                r.AcquireFinancialLockAsync(
+                    TenantId,
+                    PurchaseInvoiceId,
+                    It.IsAny<CancellationToken>()
+                )
+            )
             .Callback(() => sequence.Add("LockA"))
             .Returns(Task.CompletedTask);
-        m.CreditRepo
-            .Setup(r => r.AcquireLockAsync(TenantId, f.Credit.Id, It.IsAny<CancellationToken>()))
+        m.CreditRepo.Setup(r =>
+                r.AcquireLockAsync(TenantId, f.Credit.Id, It.IsAny<CancellationToken>())
+            )
             .Callback(() => sequence.Add("LockB"))
             .Returns(Task.CompletedTask);
         var handler = m.BuildHandler();
