@@ -47,11 +47,11 @@
   border-left: 5px solid var(--color-primary-dim);
   border-radius: 14px;
   padding: 18px 20px;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
+  box-shadow: 0 1px 4px color-mix(in srgb, var(--color-text-primary) 4%, transparent);
   transition: box-shadow 0.15s;
 }
 .sf-product:hover {
-  box-shadow: 0 3px 12px rgba(0, 0, 0, 0.07);
+  box-shadow: 0 3px 12px color-mix(in srgb, var(--color-text-primary) 7%, transparent);
 }
 
 /* ── Col 1: Product Info ──────────────────────────────────────── */
@@ -99,7 +99,7 @@
   font-size: 13px;
   font-weight: 800;
   color: var(--color-primary);
-  font-family: "SF Mono", "Cascadia Code", monospace;
+  font-family: var(--font-family-mono);
   letter-spacing: 0.02em;
 }
 .sf-product__name {
@@ -147,7 +147,7 @@
   font-size: 13px;
   font-weight: 700;
   color: var(--color-text-primary);
-  font-family: "SF Mono", "Cascadia Code", monospace;
+  font-family: var(--font-family-mono);
 }
 .sf-product__pricelist-value--bold {
   font-weight: 800;
@@ -185,7 +185,7 @@
   text-align: center;
   border: 1.5px solid var(--color-outline-variant);
   border-radius: 8px;
-  font-family: "SF Mono", "Cascadia Code", monospace;
+  font-family: var(--font-family-mono);
   background: var(--color-surface);
   color: var(--color-text-primary);
   transition: border-color 0.15s;
@@ -193,7 +193,7 @@
 .sf-product__disc-input:focus {
   border-color: var(--color-primary);
   outline: none;
-  box-shadow: 0 0 0 3px rgba(58, 95, 132, 0.1);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-primary) 10%, transparent);
 }
 
 /* Price block */
@@ -222,7 +222,7 @@
 .sf-product__price-wrap:focus-within {
   border-color: var(--color-primary);
   background: var(--color-surface);
-  box-shadow: 0 0 0 3px rgba(58, 95, 132, 0.1);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-primary) 10%, transparent);
 }
 .sf-product__price-currency {
   padding: 8px 0 8px 10px;
@@ -239,7 +239,7 @@
   text-align: right;
   border: none;
   background: transparent;
-  font-family: "SF Mono", "Cascadia Code", monospace;
+  font-family: var(--font-family-mono);
   color: var(--color-text-primary);
   outline: none;
 }
@@ -301,7 +301,7 @@
   text-align: center;
   border: 1.5px solid var(--color-outline-variant);
   border-radius: 10px;
-  font-family: "SF Mono", "Cascadia Code", monospace;
+  font-family: var(--font-family-mono);
   color: var(--color-text-primary);
   background: var(--color-surface);
   transition: border-color 0.15s;
@@ -309,7 +309,7 @@
 .sf-product__qty-input:focus {
   border-color: var(--color-primary);
   outline: none;
-  box-shadow: 0 0 0 3px rgba(58, 95, 132, 0.1);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-primary) 10%, transparent);
 }
 
 /* ── Col 6: Subtotal ──────────────────────────────────────────── */
@@ -320,14 +320,14 @@
 .sf-product__base {
   font-size: 11px;
   color: var(--color-text-secondary);
-  font-family: "SF Mono", "Cascadia Code", monospace;
+  font-family: var(--font-family-mono);
   margin-bottom: 2px;
 }
 .sf-product__total-amount {
   font-size: 20px;
   font-weight: 800;
   color: var(--color-text-primary);
-  font-family: "SF Mono", "Cascadia Code", monospace;
+  font-family: var(--font-family-mono);
   letter-spacing: -0.5px;
   line-height: 1.1;
 }

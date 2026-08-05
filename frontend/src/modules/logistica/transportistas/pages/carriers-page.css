@@ -16,13 +16,13 @@
   color: var(--color-error);
 }
 .crt-btn-danger:hover:not(:disabled) {
-  background: rgba(192, 57, 43, 0.08);
+  background: color-mix(in srgb, var(--color-error) 8%, transparent);
 }
 .crt-btn-success:not(:disabled) {
   color: var(--color-success);
 }
 .crt-btn-success:hover:not(:disabled) {
-  background: rgba(26, 122, 74, 0.08);
+  background: color-mix(in srgb, var(--color-success) 8%, transparent);
 }
 
 .crt-col-name {

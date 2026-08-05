@@ -271,7 +271,7 @@
 
 /* ── Tree view (review) ──────────────────────────────────────────────── */
 .wz-tree {
-  font-family: "Cascadia Code", "Fira Code", monospace;
+  font-family: var(--font-family-mono);
   font-size: var(--text-body-md-size);
   line-height: 2;
 }
@@ -299,7 +299,7 @@
 }
 .wz-tree__branch {
   color: var(--color-outline-variant);
-  font-family: monospace;
+  font-family: var(--font-family-mono);
   white-space: pre;
   flex-shrink: 0;
 }
