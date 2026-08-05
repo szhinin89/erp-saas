@@ -31,12 +31,12 @@
 }
 
 .md-badge--ok {
-  background: rgba(26, 122, 74, 0.12);
+  background: color-mix(in srgb, var(--color-success) 12%, transparent);
   color: var(--color-success);
 }
 
 .md-badge--warn {
-  background: rgba(186, 117, 23, 0.12);
+  background: color-mix(in srgb, var(--color-warning) 12%, transparent);
   color: var(--color-warning);
 }
 
@@ -285,7 +285,7 @@
   font-size: var(--text-help-size);
   color: var(--color-text-secondary);
   margin: 2px 0;
-  font-family: monospace;
+  font-family: var(--font-family-mono);
 }
 .md-location-card__purposes {
   display: flex;
@@ -361,7 +361,7 @@
   gap: var(--space-2);
   padding: var(--space-2) var(--space-3);
   margin-bottom: var(--space-4);
-  background: rgba(186, 117, 23, 0.12);
+  background: color-mix(in srgb, var(--color-warning) 12%, transparent);
   border: 1px solid var(--color-warning);
   border-radius: 6px;
   font-size: var(--text-body-md-size);
