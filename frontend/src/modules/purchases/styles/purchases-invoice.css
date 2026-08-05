@@ -605,3 +605,24 @@
 .pf-total-mini-card__value[data-tone="error"] {
   color: var(--color-error);
 }
+
+.pdl-margin-bar--progress {
+  width: 100%;
+  appearance: none;
+  border: 0;
+}
+
+.pdl-margin-bar--progress::-webkit-progress-bar {
+  background: var(--color-surface-container-low);
+  border-radius: inherit;
+}
+
+.pdl-margin-bar--progress::-webkit-progress-value {
+  background: var(--color-success);
+  border-radius: inherit;
+}
+
+.pdl-margin-bar--progress::-moz-progress-bar {
+  background: var(--color-success);
+  border-radius: inherit;
+}

@@ -103,11 +103,20 @@ export function CreditTermsPage() {
       resetForm();
       setTab("listado");
       fetchItems();
-    } catch (e: any) {
+    } catch (e: unknown) {
+      const error = e as {
+        response?: {
+          data?: {
+            message?: { user?: string };
+            data?: { errors?: string[] };
+          };
+        };
+        message?: string;
+      };
       const msg =
-        e?.response?.data?.message?.user ??
-        e?.response?.data?.data?.errors?.[0] ??
-        e?.message ??
+        error.response?.data?.message?.user ??
+        error.response?.data?.data?.errors?.[0] ??
+        error.message ??
         "Error al guardar.";
       setError(msg);
     }

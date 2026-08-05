@@ -908,12 +908,15 @@ const STATUS_TONE_VARIANT: Record<LineStatusTone, BadgeVariant> = {
   danger: "red",
 };
 
+type PurchasesPageContext = ReturnType<typeof usePurchasesPage>;
+type PurchaseLineDraft = NonNullable<PurchasesPageContext["editing"]>["lines"][number];
+
 function PurchaseLineCard({
   line: l,
   idx,
   ctx,
 }: {
-  line: any;
+  line: PurchaseLineDraft;
   idx: number;
   ctx: ReturnType<typeof usePurchasesPage>;
 }) {
@@ -1308,14 +1311,12 @@ function PurchaseLineCard({
                 {vm.commercial.profitability.marginPct}%
               </span>
             </div>
-            <div className="pdl-margin-bar">
-              <div
-                className="pdl-margin-bar__fill"
-                style={{
-                  width: `${Math.min(100, Math.max(0, vm.commercial.profitability.marginPctValue))}%`,
-                }}
-              />
-            </div>
+            <progress
+              className="pdl-margin-bar pdl-margin-bar--progress"
+              value={Math.min(100, Math.max(0, vm.commercial.profitability.marginPctValue))}
+              max={100}
+              aria-label="Rentabilidad margen neto"
+            />
             <div className="pdl-margin-meta">
               <span>Precio de venta: {vm.commercial.profitability.pvp}</span>
               <span>
@@ -1340,7 +1341,7 @@ function CreateItemLineAction({
   ctx,
   disabled,
 }: {
-  line: any;
+  line: PurchaseLineDraft;
   ctx: ReturnType<typeof usePurchasesPage>;
   disabled?: boolean;
 }) {
@@ -1461,7 +1462,7 @@ function ReceptionCreateItemAction({
   ctx,
   disabled,
 }: {
-  line: any;
+  line: PurchaseLineDraft;
   ctx: ReturnType<typeof usePurchasesPage>;
   disabled?: boolean;
 }) {
