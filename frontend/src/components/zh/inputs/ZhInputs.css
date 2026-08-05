@@ -1,4 +1,4 @@
-/* ── ZH Inputs — prefixed inputs (phone, currency) ─────────── */
+﻿/* â”€â”€ ZH Inputs â€” prefixed inputs (phone, currency) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 
 .zh-prefixed-input {
   display: flex;
@@ -15,7 +15,7 @@
 
 .zh-prefixed-input:focus-within {
   border-color: var(--color-primary);
-  box-shadow: 0 0 0 3px rgba(58, 95, 132, 0.15);
+  box-shadow: 0 0 0 3px var(--color-focus-ring);
 }
 
 .zh-prefixed-input:hover:not(:focus-within) {

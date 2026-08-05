@@ -1,22 +1,22 @@
-/* ============================================================
+﻿/* ============================================================
    ZH Global Component Library
    Requires: design-tokens.css (loaded via index.css)
    ============================================================
 
    ARQUITECTURA
-   ┌─────────────────────────────────────────────┐
-   │ index.css                                    │
-   │  └── @import design-tokens.css  (variables) │
-   │  └── @import zh-ui.css          (este archivo)│
-   │                                             │
-   │ Componentes: solo estilos únicos del        │
-   │ componente; todo lo reutilizable vive aquí. │
-   └─────────────────────────────────────────────┘
+   â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”
+   â”‚ index.css                                    â”‚
+   â”‚  â””â”€â”€ @import design-tokens.css  (variables) â”‚
+   â”‚  â””â”€â”€ @import zh-ui.css          (este archivo)â”‚
+   â”‚                                             â”‚
+   â”‚ Componentes: solo estilos Ãºnicos del        â”‚
+   â”‚ componente; todo lo reutilizable vive aquÃ­. â”‚
+   â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜
 
-   ÍNDICE
-   1. Tipografía
+   ÃNDICE
+   1. TipografÃ­a
    2. Botones (.zh-btn)
-   3. Formularios — inputs/select/textarea
+   3. Formularios â€” inputs/select/textarea
    4. Campos (.zh-field)
    5. Alertas / Notices (.zh-form-alert)
    6. Form Header / Body / Section
@@ -43,7 +43,7 @@
    29. Toast (.zh-toast)
    ============================================================ */
 
-/* ── 1. TIPOGRAFÍA ────────────────────────────────────────── */
+/* â”€â”€ 1. TIPOGRAFÃA â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 h1,
 h2,
 h3,
@@ -107,7 +107,7 @@ a:hover {
   white-space: nowrap;
 }
 
-/* ── 2. BOTONES ───────────────────────────────────────────── */
+/* â”€â”€ 2. BOTONES â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .zh-btn {
   display: inline-flex;
   align-items: center;
@@ -212,7 +212,7 @@ a:hover {
   font-weight: var(--text-label-md-weight);
 }
 
-/* ── 3. FORMULARIOS — inputs ─────────────────────────────── */
+/* â”€â”€ 3. FORMULARIOS â€” inputs â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 input,
 select,
 textarea {
@@ -266,8 +266,8 @@ textarea::placeholder {
   color: var(--color-outline);
 }
 
-/* NUM-001 (AI-RULES/PR-RULES-CATALOG.md#f-05) — base de ZhDecimalInput/ZhNumberInput:
-   todo dato numérico se alinea a la derecha por defecto. Componente base, no excepción local. */
+/* NUM-001 (AI-RULES/PR-RULES-CATALOG.md#f-05) â€” base de ZhDecimalInput/ZhNumberInput:
+   todo dato numÃ©rico se alinea a la derecha por defecto. Componente base, no excepciÃ³n local. */
 .zh-numeric-input {
   text-align: right;
 }
@@ -281,7 +281,7 @@ input:focus,
 select:focus,
 textarea:focus {
   border-color: var(--color-primary);
-  box-shadow: 0 0 0 3px rgba(58, 95, 132, 0.15);
+  box-shadow: 0 0 0 3px var(--color-focus-ring);
 }
 input:disabled,
 select:disabled,
@@ -371,14 +371,14 @@ input[type="date"] {
   text-transform: uppercase;
 }
 
-/* ── 4. CAMPOS (.zh-field) ────────────────────────────────── */
+/* â”€â”€ 4. CAMPOS (.zh-field) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .zh-field {
   display: flex;
   flex-direction: column;
   gap: 5px;
 }
 
-/* Label — estilo único oficial, compartido con .zh-auth-label y .pg-field-label */
+/* Label â€” estilo Ãºnico oficial, compartido con .zh-auth-label y .pg-field-label */
 .zh-field-label,
 .zh-auth-label,
 .pg-field-label,
@@ -426,7 +426,7 @@ input[type="date"] {
   border-style: dashed;
 }
 
-/* Compact (densidad de grilla de líneas — reemplaza al antiguo .pf-field) */
+/* Compact (densidad de grilla de lÃ­neas â€” reemplaza al antiguo .pf-field) */
 .zh-field--compact {
   gap: 4px;
 }
@@ -439,8 +439,8 @@ input[type="date"] {
 .zh-field--compact .zh-field-control input,
 .zh-field--compact .zh-field-control select,
 .zh-field--compact .zh-field-control textarea {
-  /* Replica exacta del tamaño de .pf-field (erp-form.css) — deliberadamente por debajo
-     de --text-body-md-size para preservar la densidad de las grillas de líneas. */
+  /* Replica exacta del tamaÃ±o de .pf-field (erp-form.css) â€” deliberadamente por debajo
+     de --text-body-md-size para preservar la densidad de las grillas de lÃ­neas. */
   font-size: 13px;
   height: auto;
   padding: var(--space-2) var(--space-3);
@@ -558,7 +558,7 @@ input[type="date"] {
   }
 }
 
-/* ── 5. ALERTAS / NOTICES ────────────────────────────────── */
+/* â”€â”€ 5. ALERTAS / NOTICES â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .zh-form-alert {
   display: flex;
   align-items: flex-start;
@@ -626,7 +626,7 @@ input[type="date"] {
   margin-bottom: 0;
 }
 
-/* ── 6. FORM HEADER / BODY / SECTION ─────────────────────── */
+/* â”€â”€ 6. FORM HEADER / BODY / SECTION â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .zh-form-header {
   display: flex;
   align-items: center;
@@ -765,10 +765,10 @@ input[type="date"] {
   color: var(--color-text-secondary);
 }
 
-/* ── Simulador de precio/margen (CreateItemModal — Compras) ──────────────
-   Misma grilla oficial (.zh-grid--4) que el resto del modal — esta clase
+/* â”€â”€ Simulador de precio/margen (CreateItemModal â€” Compras) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+   Misma grilla oficial (.zh-grid--4) que el resto del modal â€” esta clase
    solo agrega el fondo de "tarjeta de resultado" alrededor de esa grilla,
-   nunca un sistema de alineación paralelo. */
+   nunca un sistema de alineaciÃ³n paralelo. */
 .citm-margin-sim {
   margin-top: var(--space-3);
   padding: var(--space-4);
@@ -818,7 +818,7 @@ input[type="date"] {
   }
 }
 
-/* ── 7. TENANT HEADER ────────────────────────────────────── */
+/* â”€â”€ 7. TENANT HEADER â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .zh-tenant-header {
   border-radius: var(--radius-xl);
   overflow: hidden;
@@ -837,7 +837,7 @@ input[type="date"] {
   border: 0.5px solid rgba(255, 255, 255, 0.2);
 }
 
-/* ── 8. TOGGLE ────────────────────────────────────────────── */
+/* â”€â”€ 8. TOGGLE â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .zh-toggle {
   display: flex;
   justify-content: space-between;
@@ -904,7 +904,7 @@ input[type="date"] {
   left: 21px;
 }
 
-/* ── 9. CARDS ────────────────────────────────────────────── */
+/* â”€â”€ 9. CARDS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .card {
   background: var(--color-surface);
   border-radius: var(--radius-lg);
@@ -926,7 +926,7 @@ input[type="date"] {
   padding: var(--space-5);
 }
 
-/* Size variant — larger radius (dashboard, overview panels) */
+/* Size variant â€” larger radius (dashboard, overview panels) */
 .card--xl {
   border-radius: var(--radius-xl);
 }
@@ -948,7 +948,7 @@ input[type="date"] {
   padding: var(--space-5);
 }
 
-/* ── 10. TABLAS ──────────────────────────────────────────── */
+/* â”€â”€ 10. TABLAS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .table {
   width: 100%;
   border-collapse: collapse;
@@ -995,7 +995,7 @@ input[type="date"] {
   background: var(--color-surface-primary-tint) !important;
 }
 
-/* ── 11. BADGES ──────────────────────────────────────────── */
+/* â”€â”€ 11. BADGES â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .badge {
   display: inline-flex;
   align-items: center;
@@ -1056,7 +1056,7 @@ input[type="date"] {
   letter-spacing: var(--text-label-sm-spacing);
 }
 
-/* ── Labeled checkbox (label wrapping input) ─────────────── */
+/* â”€â”€ Labeled checkbox (label wrapping input) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .zh-inline-check {
   display: flex;
   align-items: center;
@@ -1065,7 +1065,7 @@ input[type="date"] {
   cursor: pointer;
 }
 
-/* ── 12. PAGE SHELL / LAYOUT ────────────────────────────── */
+/* â”€â”€ 12. PAGE SHELL / LAYOUT â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .page-shell {
   width: 100%;
   max-width: none;
@@ -1096,7 +1096,7 @@ input[type="date"] {
   border-radius: var(--radius-sm);
 }
 
-/* ── 13. CARD SECTIONS ───────────────────────────────────── */
+/* â”€â”€ 13. CARD SECTIONS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .zh-card-section {
   padding: var(--space-5);
 }
@@ -1121,7 +1121,7 @@ input[type="date"] {
   min-width: 0;
 }
 
-/* ── 14. SCREEN HEADING ──────────────────────────────────── */
+/* â”€â”€ 14. SCREEN HEADING â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .zh-screen-heading {
   margin: 0 0 var(--space-4);
   padding-bottom: 14px;
@@ -1183,7 +1183,7 @@ input[type="date"] {
   justify-content: flex-end;
 }
 
-/* ── 16. ESTADOS ─────────────────────────────────────────── */
+/* â”€â”€ 16. ESTADOS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .empty-state,
 .loading-state {
   text-align: center;
@@ -1202,7 +1202,7 @@ input[type="date"] {
   font-size: 13px;
 }
 
-/* ── 17. MODALES ─────────────────────────────────────────── */
+/* â”€â”€ 17. MODALES â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 @keyframes zh-modal-in {
   from {
     opacity: 0;
@@ -1245,7 +1245,7 @@ input[type="date"] {
   max-width: 520px;
   animation: zh-modal-in 0.18s cubic-bezier(0.4, 0, 0.2, 1) both;
 }
-/* ── Size variants ── */
+/* â”€â”€ Size variants â”€â”€ */
 .zh-modal--sm {
   max-width: 420px;
 }
@@ -1282,7 +1282,7 @@ input[type="date"] {
   flex-shrink: 0;
 }
 
-/* ── Legacy header (CarriersPage etc — prefer ZHModal component) ── */
+/* â”€â”€ Legacy header (CarriersPage etc â€” prefer ZHModal component) â”€â”€ */
 .zh-modal-header {
   display: flex;
   align-items: center;
@@ -1314,7 +1314,7 @@ input[type="date"] {
   color: var(--color-text-primary);
 }
 
-/* ── 17b. DRAWER LATERAL (no modal — mantiene la tabla de fondo visible) ── */
+/* â”€â”€ 17b. DRAWER LATERAL (no modal â€” mantiene la tabla de fondo visible) â”€â”€ */
 @keyframes zh-drawer-in {
   from {
     transform: translateX(100%);
@@ -1327,7 +1327,7 @@ input[type="date"] {
   position: fixed;
   inset: 0;
   z-index: 1000;
-  /* Sin backdrop oscuro a propósito: el usuario debe seguir viendo la tabla de fondo. */
+  /* Sin backdrop oscuro a propÃ³sito: el usuario debe seguir viendo la tabla de fondo. */
   background: transparent;
   display: flex;
   justify-content: flex-end;
@@ -1390,7 +1390,7 @@ input[type="date"] {
   }
 }
 
-/* ── 17b. ZHDataTable / ZHFilterBar ──────────────────────── */
+/* â”€â”€ 17b. ZHDataTable / ZHFilterBar â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .zh-datatable-row--clickable {
   cursor: pointer;
 }
@@ -1430,7 +1430,7 @@ input[type="date"] {
   width: 100%;
 }
 
-/* ── 18. CONFIRM DIALOG (.zh-confirm-*) ─────────────────── */
+/* â”€â”€ 18. CONFIRM DIALOG (.zh-confirm-*) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .zh-confirm-dialog {
   max-width: 440px;
 }
@@ -1462,7 +1462,7 @@ input[type="date"] {
   line-height: 1.6;
 }
 
-/* ── 19. UTILIDADES DE LAYOUT Y ESPACIADO ──────────────── */
+/* â”€â”€ 19. UTILIDADES DE LAYOUT Y ESPACIADO â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 /* Flexbox */
 .zh-flex-between {
   display: flex;
@@ -1628,7 +1628,7 @@ input[type="date"] {
   border: 0;
 }
 
-/* ── 20. AUTH LAYOUT ─────────────────────────────────────── */
+/* â”€â”€ 20. AUTH LAYOUT â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .zh-auth-bg {
   min-height: 100vh;
   background: linear-gradient(
@@ -1727,7 +1727,7 @@ input[type="date"] {
   margin: 0;
 }
 
-/* ── 21. AVATAR ──────────────────────────────────────────── */
+/* â”€â”€ 21. AVATAR â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .zh-avatar {
   width: 40px;
   height: 40px;
@@ -1777,7 +1777,7 @@ input[type="date"] {
   color: var(--color-error);
 }
 
-/* ── 22. STATUS BADGE ────────────────────────────────────── */
+/* â”€â”€ 22. STATUS BADGE â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .zh-status {
   display: inline-flex;
   align-items: center;
@@ -1825,7 +1825,7 @@ input[type="date"] {
   background: var(--color-primary);
 }
 
-/* ── 23. ENTITY ITEM (lista de selección clickeable) ─────── */
+/* â”€â”€ 23. ENTITY ITEM (lista de selecciÃ³n clickeable) â”€â”€â”€â”€â”€â”€â”€ */
 .zh-entity-item {
   display: flex;
   align-items: center;
@@ -1871,7 +1871,7 @@ input[type="date"] {
   flex-shrink: 0;
 }
 
-/* ── 24. METRIC CARD ─────────────────────────────────────── */
+/* â”€â”€ 24. METRIC CARD â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 /* Mini KPI card with trend indicator and optional sparkline */
 .zh-metric-card {
   background: var(--color-surface-bright);
@@ -1947,10 +1947,10 @@ input[type="date"] {
   min-width: 4px;
 }
 
-/* ── 25. GLOBAL TOPBAR ───────────────────────────────────── */
+/* â”€â”€ 25. GLOBAL TOPBAR â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 /* Moved to components/zh/ZHAppTenantHeader.css (app-shell header only). */
 
-/* ── 26. GLOBAL FOOTER ───────────────────────────────────── */
+/* â”€â”€ 26. GLOBAL FOOTER â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .zh-app-footer {
   background: var(--color-surface-container-low);
   border-top: 1px solid var(--color-outline-variant);
@@ -2000,8 +2000,8 @@ input[type="date"] {
   text-decoration: none;
 }
 
-/* ── 27. AUTH FORM CARD ──────────────────────────────────── */
-/* Shared by ForgotPasswordPage, ResetPasswordPage, PasswordResetPage (formerly §24) */
+/* â”€â”€ 27. AUTH FORM CARD â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* Shared by ForgotPasswordPage, ResetPasswordPage, PasswordResetPage (formerly Â§24) */
 
 .zh-auth-card {
   width: 100%;
@@ -2047,10 +2047,10 @@ input[type="date"] {
 
 .zh-auth-label {
   display: block;
-  /* tipografía heredada de la regla unificada .zh-field-label/.zh-auth-label/.pg-field-label */
+  /* tipografÃ­a heredada de la regla unificada .zh-field-label/.zh-auth-label/.pg-field-label */
 }
 
-/* Input con ícono */
+/* Input con Ã­cono */
 .zh-auth-input-wrap {
   position: relative;
 }
@@ -2088,7 +2088,7 @@ input[type="date"] {
 }
 .zh-auth-input:focus {
   border-color: var(--color-primary);
-  box-shadow: 0 0 0 3px rgba(58, 95, 132, 0.15);
+  box-shadow: 0 0 0 3px var(--color-focus-ring);
 }
 .zh-auth-input:disabled {
   opacity: 0.6;
@@ -2308,7 +2308,7 @@ input[type="date"] {
   }
 }
 
-/* ── 29. TOAST (.zh-toast) ──────────────────────────────── */
+/* â”€â”€ 29. TOAST (.zh-toast) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .zh-toast-container {
   position: fixed;
   top: var(--space-5);
@@ -2386,9 +2386,9 @@ input[type="date"] {
   opacity: 1;
 }
 
-/* ── 28. PATRONES RESPONSIVE COMPARTIDOS ────────────────── */
+/* â”€â”€ 28. PATRONES RESPONSIVE COMPARTIDOS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 /*
-   Aplicados automáticamente por convención de nombres.
+   Aplicados automÃ¡ticamente por convenciÃ³n de nombres.
    No requiere cambios en HTML/JSX.
 */
 
@@ -2436,7 +2436,7 @@ input[type="date"] {
   margin-bottom: var(--space-4);
 }
 
-/* Paginación */
+/* PaginaciÃ³n */
 [class$="-pagination"] {
   display: flex;
   gap: var(--space-2);
@@ -2457,7 +2457,7 @@ input[type="date"] {
   flex-wrap: wrap;
 }
 
-/* Fila de búsqueda */
+/* Fila de bÃºsqueda */
 [class$="-search-row"] {
   margin-bottom: var(--space-3);
 }
