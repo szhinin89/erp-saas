@@ -500,8 +500,7 @@ function SalesProductCard({
               disabled={disabled}
             >
               <span
-                className="material-symbols-outlined"
-                style={{ fontSize: 20 }}
+                className="material-symbols-outlined sales-invoice-details-delete-icon"
               >
                 delete
               </span>
@@ -530,8 +529,7 @@ function SalesProductCard({
         {pvp != null && (
           <div className="sf-product__pricelist-row">
             <span
-              className="sf-product__pricelist-label"
-              style={{ fontWeight: 700 }}
+              className="sf-product__pricelist-label sales-invoice-details-pvp-label"
             >
               PVP:
             </span>
@@ -541,7 +539,7 @@ function SalesProductCard({
           </div>
         )}
         {cost == null && pvp == null && (
-          <span style={{ color: "#94a3b8", fontSize: 11 }}>—</span>
+          <span className="sales-invoice-details-empty-value">—</span>
         )}
       </div>
 

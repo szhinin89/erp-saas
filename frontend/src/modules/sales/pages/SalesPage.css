@@ -302,3 +302,16 @@
     grid-template-columns: 1fr;
   }
 }
+
+.sales-invoice-details-empty-value {
+  color: var(--color-text-secondary);
+  font-size: var(--text-help-size);
+}
+
+.sales-invoice-details-delete-icon {
+  font-size: 20px;
+}
+
+.sales-invoice-details-pvp-label {
+  font-weight: 700;
+}
