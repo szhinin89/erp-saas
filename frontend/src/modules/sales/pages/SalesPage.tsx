@@ -361,7 +361,7 @@ export function SalesPage() {
                   </select>
                 </div>
                 {ctx.editing && (
-                  <div className="sales-form-mt-4">
+                  <div className="zh-mt-4">
                     <span className="sf-emission__label">Nro: </span>
                     <span className="sf-emission__value sales-form-invoice-number">
                       {ctx.editing.invoiceNumber}
@@ -470,7 +470,7 @@ export function SalesPage() {
                   </tbody>
                 </table>
                 {ctx.totalDiscount > 0 && (
-                  <div className="sf-summary__discount-total sales-form-mt-8">
+                  <div className="sf-summary__discount-total zh-mt-8">
                     <span>Descuento:</span>
                     <span>
                       -
@@ -481,7 +481,7 @@ export function SalesPage() {
                     </span>
                   </div>
                 )}
-                <div className="sf-total-box__header sales-form-mt-10">
+                <div className="sf-total-box__header zh-mt-10">
                   <span className="sf-total-box__label">Total a Cobrar</span>
                 </div>
                 <div className="sf-total-box__amount">
