@@ -1,4 +1,4 @@
-﻿import type { ReactNode } from "react";
+import type { ReactNode } from "react";
 import { EmptyState, LoadingState } from "../PageShell";
 
 export interface ZHDataTableColumn<T> {
@@ -70,7 +70,7 @@ export function ZHDataTable<T>({
               {columns.map((col) => (
                 <th
                   key={col.key}
-                  style={col.align ? { textAlign: col.align } : undefined}
+                  className={col.align ? `zh-text-align-${col.align}` : undefined}
                 >
                   {col.header}
                 </th>
@@ -89,7 +89,7 @@ export function ZHDataTable<T>({
                 {columns.map((col) => (
                   <td
                     key={col.key}
-                    style={col.align ? { textAlign: col.align } : undefined}
+                    className={col.align ? `zh-text-align-${col.align}` : undefined}
                   >
                     {col.render(row)}
                   </td>

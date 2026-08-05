@@ -1,4 +1,4 @@
-﻿/* ============================================================
+/* ============================================================
    ZH Global Component Library
    Requires: design-tokens.css (loaded via index.css)
    ============================================================
@@ -9,12 +9,12 @@
    â”‚  â””â”€â”€ @import design-tokens.css  (variables) â”‚
    â”‚  â””â”€â”€ @import zh-ui.css          (este archivo)â”‚
    â”‚                                             â”‚
-   â”‚ Componentes: solo estilos Ãºnicos del        â”‚
-   â”‚ componente; todo lo reutilizable vive aquÃ­. â”‚
+   â”‚ Componentes: solo estilos únicos del        â”‚
+   â”‚ componente; todo lo reutilizable vive aquí. â”‚
    â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜
 
    ÃNDICE
-   1. TipografÃ­a
+   1. Tipografía
    2. Botones (.zh-btn)
    3. Formularios â€” inputs/select/textarea
    4. Campos (.zh-field)
@@ -267,7 +267,7 @@ textarea::placeholder {
 }
 
 /* NUM-001 (AI-RULES/PR-RULES-CATALOG.md#f-05) â€” base de ZhDecimalInput/ZhNumberInput:
-   todo dato numÃ©rico se alinea a la derecha por defecto. Componente base, no excepciÃ³n local. */
+   todo dato numérico se alinea a la derecha por defecto. Componente base, no excepción local. */
 .zh-numeric-input {
   text-align: right;
 }
@@ -378,7 +378,7 @@ input[type="date"] {
   gap: 5px;
 }
 
-/* Label â€” estilo Ãºnico oficial, compartido con .zh-auth-label y .pg-field-label */
+/* Label â€” estilo único oficial, compartido con .zh-auth-label y .pg-field-label */
 .zh-field-label,
 .zh-auth-label,
 .pg-field-label,
@@ -426,7 +426,7 @@ input[type="date"] {
   border-style: dashed;
 }
 
-/* Compact (densidad de grilla de lÃ­neas â€” reemplaza al antiguo .pf-field) */
+/* Compact (densidad de grilla de líneas â€” reemplaza al antiguo .pf-field) */
 .zh-field--compact {
   gap: 4px;
 }
@@ -439,8 +439,8 @@ input[type="date"] {
 .zh-field--compact .zh-field-control input,
 .zh-field--compact .zh-field-control select,
 .zh-field--compact .zh-field-control textarea {
-  /* Replica exacta del tamaÃ±o de .pf-field (erp-form.css) â€” deliberadamente por debajo
-     de --text-body-md-size para preservar la densidad de las grillas de lÃ­neas. */
+  /* Replica exacta del tamaño de .pf-field (erp-form.css) â€” deliberadamente por debajo
+     de --text-body-md-size para preservar la densidad de las grillas de líneas. */
   font-size: 13px;
   height: auto;
   padding: var(--space-2) var(--space-3);
@@ -768,7 +768,7 @@ input[type="date"] {
 /* â”€â”€ Simulador de precio/margen (CreateItemModal â€” Compras) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
    Misma grilla oficial (.zh-grid--4) que el resto del modal â€” esta clase
    solo agrega el fondo de "tarjeta de resultado" alrededor de esa grilla,
-   nunca un sistema de alineaciÃ³n paralelo. */
+   nunca un sistema de alineación paralelo. */
 .citm-margin-sim {
   margin-top: var(--space-3);
   padding: var(--space-4);
@@ -1327,7 +1327,7 @@ input[type="date"] {
   position: fixed;
   inset: 0;
   z-index: 1000;
-  /* Sin backdrop oscuro a propÃ³sito: el usuario debe seguir viendo la tabla de fondo. */
+  /* Sin backdrop oscuro a propósito: el usuario debe seguir viendo la tabla de fondo. */
   background: transparent;
   display: flex;
   justify-content: flex-end;
@@ -1825,7 +1825,7 @@ input[type="date"] {
   background: var(--color-primary);
 }
 
-/* â”€â”€ 23. ENTITY ITEM (lista de selecciÃ³n clickeable) â”€â”€â”€â”€â”€â”€â”€ */
+/* â”€â”€ 23. ENTITY ITEM (lista de selección clickeable) â”€â”€â”€â”€â”€â”€â”€ */
 .zh-entity-item {
   display: flex;
   align-items: center;
@@ -2001,7 +2001,7 @@ input[type="date"] {
 }
 
 /* â”€â”€ 27. AUTH FORM CARD â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
-/* Shared by ForgotPasswordPage, ResetPasswordPage, PasswordResetPage (formerly Â§24) */
+/* Shared by ForgotPasswordPage, ResetPasswordPage, PasswordResetPage (formerly §24) */
 
 .zh-auth-card {
   width: 100%;
@@ -2047,10 +2047,10 @@ input[type="date"] {
 
 .zh-auth-label {
   display: block;
-  /* tipografÃ­a heredada de la regla unificada .zh-field-label/.zh-auth-label/.pg-field-label */
+  /* tipografía heredada de la regla unificada .zh-field-label/.zh-auth-label/.pg-field-label */
 }
 
-/* Input con Ã­cono */
+/* Input con ícono */
 .zh-auth-input-wrap {
   position: relative;
 }
@@ -2388,7 +2388,7 @@ input[type="date"] {
 
 /* â”€â”€ 28. PATRONES RESPONSIVE COMPARTIDOS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 /*
-   Aplicados automÃ¡ticamente por convenciÃ³n de nombres.
+   Aplicados automáticamente por convención de nombres.
    No requiere cambios en HTML/JSX.
 */
 
@@ -2436,7 +2436,7 @@ input[type="date"] {
   margin-bottom: var(--space-4);
 }
 
-/* PaginaciÃ³n */
+/* Paginación */
 [class$="-pagination"] {
   display: flex;
   gap: var(--space-2);
@@ -2457,7 +2457,7 @@ input[type="date"] {
   flex-wrap: wrap;
 }
 
-/* Fila de bÃºsqueda */
+/* Fila de búsqueda */
 [class$="-search-row"] {
   margin-bottom: var(--space-3);
 }
@@ -2628,3 +2628,17 @@ input[type="date"] {
   display: flex;
   align-items: center;
 }
+
+/* Table text alignment utilities */
+.zh-text-align-left {
+  text-align: left;
+}
+
+.zh-text-align-center {
+  text-align: center;
+}
+
+.zh-text-align-right {
+  text-align: right;
+}
+
