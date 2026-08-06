@@ -1,7 +1,8 @@
-import { useCallback, useEffect, useState } from "react";
+﻿import { useCallback, useEffect, useState } from "react";
 import { ErpPageTemplate } from "../../../templates/ErpPageTemplate";
 import { ZhDecimalInput } from "../../../components/zh/inputs/ZhDecimalInput";
 import { ZHBtn } from "../../../components/zh/ZHForm";
+import { ZHIconButton } from "../../../components/zh/ZHIconButton";
 import type {
   CreditTermDto,
   CreateCreditTermPayload,
@@ -261,20 +262,16 @@ export function CreditTermsPage() {
                       </span>
                     </td>
                     <td className="prd-td-actions">
-                      <IconBtn
+                      <ZHIconButton
                         icon="edit"
-                        color="var(--color-primary)"
                         title="Editar"
+                        variant="primary"
                         onClick={() => startEdit(ct)}
                       />
-                      <IconBtn
+                      <ZHIconButton
                         icon={ct.isActive ? "toggle_off" : "toggle_on"}
-                        color={
-                          ct.isActive
-                            ? "var(--color-error)"
-                            : "var(--color-success)"
-                        }
                         title={ct.isActive ? "Desactivar" : "Activar"}
+                        variant={ct.isActive ? "danger" : "success"}
                         onClick={() => handleToggle(ct)}
                       />
                     </td>
@@ -396,13 +393,12 @@ export function CreditTermsPage() {
                       className="ct-installment-percent-input"
                     />
                   </FormField>
-                  <button
-                    className="prd-icon-btn prd-icon-btn--danger ct-installment-delete-btn"
-                    onClick={() => removeInstallment(idx)}
-                    title="Eliminar cuota"
-                  >
-                    <span className="material-symbols-outlined">delete</span>
-                  </button>
+                  <ZHIconButton
+                      icon="delete"
+                      title="Eliminar cuota"
+                      variant="danger"
+                      onClick={() => removeInstallment(idx)}
+                    />
                 </div>
               ))}
               {fInstallments.length === 0 && (
@@ -473,30 +469,3 @@ function StatCard({ label, value }: { label: string; value: string | number }) {
   );
 }
 
-function IconBtn({
-  icon,
-  color,
-  title,
-  onClick,
-}: {
-  icon: string;
-  color: string;
-  title: string;
-  onClick: () => void;
-}) {
-  return (
-    <button
-      className={`prd-icon-btn ${
-        color === "var(--color-error)"
-          ? "prd-icon-btn--danger"
-          : color === "var(--color-success)"
-            ? "prd-icon-btn--success"
-            : "prd-icon-btn--primary"
-      }`}
-      onClick={onClick}
-      title={title}
-    >
-      <span className="material-symbols-outlined">{icon}</span>
-    </button>
-  );
-}
