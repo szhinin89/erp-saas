@@ -1,14 +1,15 @@
-﻿import { useCallback, useEffect, useState } from "react";
-import { useI18n } from "../../../i18n/i18n";
-import { usePermissionsUi } from "../../../access/usePermissionsUi";
-import { NoAccessPage } from "../../../components/PageShell";
-import { ErpPageTemplate } from "../../../templates/ErpPageTemplate";
-import { ZHBtn, ZHField, ZHGrid } from "../../../components/zh/ZHForm";
-import { ZhNumberInput } from "../../../components/zh/inputs/ZhNumberInput";
-import { ZHPageNotice } from "../../../components/zh/ZHPageNotice";
-import { ConfigTabsLayout } from "../../../components/shared/ConfigTabsLayout";
-import { message } from "../../../lib/messages";
-import { itemTypeService, type ItemTypeDto } from "../api/itemTypeService";
+﻿import { Badge } from "../../../components/PageShell";
+import {  useCallback, useEffect, useState } from "react";
+import {  useI18n } from "../../../i18n/i18n";
+import {  usePermissionsUi } from "../../../access/usePermissionsUi";
+import {  NoAccessPage } from "../../../components/PageShell";
+import {  ErpPageTemplate } from "../../../templates/ErpPageTemplate";
+import {  ZHBtn, ZHField, ZHGrid } from "../../../components/zh/ZHForm";
+import {  ZhNumberInput } from "../../../components/zh/inputs/ZhNumberInput";
+import {  ZHPageNotice } from "../../../components/zh/ZHPageNotice";
+import {  ConfigTabsLayout } from "../../../components/shared/ConfigTabsLayout";
+import {  message } from "../../../lib/messages";
+import {  itemTypeService, type ItemTypeDto } from "../api/itemTypeService";
 
 import "../../../styles/shared/items-catalog.css";
 
@@ -192,17 +193,14 @@ export function ItemTypesPage() {
                   <td>{it.name}</td>
                   <td>{it.sortOrder}</td>
                   <td>
-                    <span
-                      className={
-                        it.isActive
-                          ? "prd-status-badge prd-status-badge--active"
-                          : "prd-status-badge prd-status-badge--inactive"
-                      }
-                    >
-                      {it.isActive
-                        ? t("common.active", "Activo")
-                        : t("common.inactive", "Inactivo")}
-                    </span>
+                    <Badge
+  label={
+    it.isActive
+      ? t("common.active", "Activo")
+      : t("common.inactive", "Inactivo")
+  }
+  variant={it.isActive ? "success" : "neutral"}
+/>
                   </td>
                   <td>
                     <div className="prd-row-actions">
@@ -333,4 +331,9 @@ export function ItemTypesPage() {
     </ErpPageTemplate>
   );
 }
+
+
+
+
+
 

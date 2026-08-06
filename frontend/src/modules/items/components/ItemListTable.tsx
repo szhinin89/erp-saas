@@ -103,17 +103,14 @@ export function ItemListTable({
                 </div>
               </td>
               <td>
-                <span
-                  className={
-                    item.isActive
-                      ? "prd-status-badge prd-status-badge--active"
-                      : "prd-status-badge prd-status-badge--inactive"
-                  }
-                >
-                  {item.isActive
-                    ? t("common.active", "Activo")
-                    : t("common.inactive", "Inactivo")}
-                </span>
+                <Badge
+  label={
+    item.isActive
+      ? t("common.active", "Activo")
+      : t("common.inactive", "Inactivo")
+  }
+  variant={item.isActive ? "success" : "neutral"}
+/>
               </td>
               <td>
                 <div className="prd-row-actions">
@@ -164,4 +161,5 @@ export function ItemListTable({
     </div>
   );
 }
+
 

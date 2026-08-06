@@ -1,16 +1,17 @@
-﻿import { useCallback, useEffect, useRef, useState } from "react";
-import { ZHBtn } from "../../../components/zh/ZHForm";
-import { ZHIconButton } from "../../../components/zh/ZHIconButton";
-import { ZHDrawer } from "../../../components/zh/ZHDrawer";
-import { ZHConfirmModal } from "../../../components/zh/ZHConfirmModal";
-import { ZhDecimalInput } from "../../../components/zh/inputs/ZhDecimalInput";
-import { ZhCurrencyInput } from "../../../components/zh/inputs/ZhCurrencyInput";
-import { formatMoney, parseDecimal } from "../../../lib/sanitizers";
-import { formatDateTime } from "../../../lib/formatters/dateFormatters";
-import { formatApiError } from "../../lib/formatApiError";
-import { itemService } from "../../items/api/itemService";
+﻿import { Badge } from "../../../components/PageShell";
+import {  useCallback, useEffect, useRef, useState } from "react";
+import {  ZHBtn } from "../../../components/zh/ZHForm";
+import {  ZHIconButton } from "../../../components/zh/ZHIconButton";
+import {  ZHDrawer } from "../../../components/zh/ZHDrawer";
+import {  ZHConfirmModal } from "../../../components/zh/ZHConfirmModal";
+import {  ZhDecimalInput } from "../../../components/zh/inputs/ZhDecimalInput";
+import {  ZhCurrencyInput } from "../../../components/zh/inputs/ZhCurrencyInput";
+import {  formatMoney, parseDecimal } from "../../../lib/sanitizers";
+import {  formatDateTime } from "../../../lib/formatters/dateFormatters";
+import {  formatApiError } from "../../lib/formatApiError";
+import {  itemService } from "../../items/api/itemService";
 import type { ItemDto } from "../../../types/items";
-import {
+import { 
   priceListService,
   pricingRuleService,
   RULE_TYPE_OPTIONS,
@@ -158,11 +159,10 @@ export function PriceListExceptionsTab({
                       : "Sin excepciÃ³n"}
                   </td>
                   <td>
-                    <span
-                      className={`prd-status-badge ${row.rule ? "prd-status-badge--active" : ""}`}
-                    >
-                      {row.rule ? "ExcepciÃ³n" : "General"}
-                    </span>
+                    <Badge
+  label={row.rule ? "Excepción" : "General"}
+  variant={row.rule ? "success" : "neutral"}
+/>
                   </td>
                   <td>
                     {row.rule?.lastModifiedAt
@@ -605,4 +605,9 @@ function RemoteItemPicker({ onSelect }: { onSelect: (item: ItemDto) => void }) {
     </div>
   );
 }
+
+
+
+
+
 
