@@ -1,3 +1,4 @@
+import { ZHIconButton } from "../../../../components/zh/ZHIconButton";
 import { Badge } from "../../../../components/PageShell";
 import {
   ZHDataTable,
@@ -122,16 +123,11 @@ export function ElectronicDocumentsTable({
         row.accessKey ? (
           <span className="edm-access-key">
             {row.accessKey.slice(0, 10)}…
-            <button
-              type="button"
-              className="edm-icon-btn"
+            <ZHIconButton
+              icon="content_copy"
+              title={t("electronicDocuments.monitor.table.copyAccessKey")}
               onClick={(e) => void handleCopyAccessKey(e, row.accessKey!)}
-              aria-label={t("electronicDocuments.monitor.table.copyAccessKey")}
-            >
-              <span className="material-symbols-outlined zh-icon-sm">
-                content_copy
-              </span>
-            </button>
+            />
           </span>
         ) : (
           "—"

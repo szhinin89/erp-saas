@@ -1,6 +1,7 @@
 import { Controller, useFormContext } from "react-hook-form";
 import { useNavigate } from "react-router-dom";
 import {
+  ZHBtn,
   ZHField,
   ZHFormSection,
   ZHGrid,
@@ -183,16 +184,16 @@ export function InventoryTab({
           title="Trazabilidad"
           description="Historial completo de movimientos de inventario de este producto."
         >
-          <button
+          <ZHBtn
             type="button"
-            className="pf-btn pf-btn--primary"
+            variant="primary"
             onClick={() => navigate(`/inventory/kardex?productId=${itemId}`)}
           >
-            <span className="material-symbols-outlined pf-btn__icon">
+            <span className="material-symbols-outlined zh-icon-md">
               history
             </span>
             Ver Kardex de este producto
-          </button>
+          </ZHBtn>
         </ZHFormSection>
       )}
     </>

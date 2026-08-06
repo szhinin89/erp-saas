@@ -1,4 +1,4 @@
-﻿
+
 
 export type ZHIconButtonVariant =
   | "primary"
@@ -9,7 +9,7 @@ interface ZHIconButtonProps {
   icon: string;
   title: string;
   variant?: ZHIconButtonVariant;
-  onClick?: () => void;
+  onClick?: React.MouseEventHandler<HTMLButtonElement>;
   disabled?: boolean;
   className?: string;
 }
@@ -42,5 +42,3 @@ export function ZHIconButton({
     </button>
   );
 }
-
-

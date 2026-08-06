@@ -163,28 +163,28 @@ export function MasterDataPartnerResumenTab({
 
         <div className="prd-quick-card">
           <h3>{t("masterdata.resumen.quickActions", "Acciones rápidas")}</h3>
-          <button
+          <ZHBtn
             type="button"
-            className="prd-quick-btn"
+            variant="secondary"
             onClick={() => setActiveTab("listado")}
           >
-            <span className="material-symbols-outlined">view_list</span>
+            <span className="material-symbols-outlined zh-icon-md">view_list</span>
             {t(
               `${prefix}.tabList`,
               role === "customer" ? "Ver clientes" : "Ver proveedores",
             )}
-          </button>
-          <button
+          </ZHBtn>
+          <ZHBtn
             type="button"
-            className="prd-quick-btn"
+            variant="primary"
             onClick={() => setActiveTab("nuevo")}
           >
-            <span className="material-symbols-outlined">add_circle</span>
+            <span className="material-symbols-outlined zh-icon-md">add_circle</span>
             {t(
               `${prefix}.tabNew`,
               role === "customer" ? "Nuevo cliente" : "Nuevo proveedor",
             )}
-          </button>
+          </ZHBtn>
         </div>
       </div>
     </div>

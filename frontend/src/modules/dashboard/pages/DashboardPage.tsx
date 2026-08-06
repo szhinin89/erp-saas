@@ -4,6 +4,7 @@ import { useAuthStore } from "../../../store/authStore";
 import { RuntimeModeBadge } from "../../../components/RuntimeModeBadge";
 import { Badge } from "../../../components/PageShell";
 import { ZHPageNotice } from "../../../components/zh/ZHPageNotice";
+import { ZHBtn } from "../../../components/zh/ZHForm";
 import { ErpPageTemplate } from "../../../templates/ErpPageTemplate";
 import { useDashboardKpis } from "../hooks/useDashboardData";
 import "./DashboardPage.css";
@@ -160,8 +161,9 @@ export function DashboardPage() {
               </h2>
             </div>
             <div className="dsh-card-body">
-              <button
+              <ZHBtn
                 type="button"
+                variant="secondary"
                 className="dsh-quick-btn"
                 onClick={() => navigate("/inventory/items")}
               >
@@ -176,7 +178,7 @@ export function DashboardPage() {
                     {t("dashboard.quickAccess.addItem.sub")}
                   </p>
                 </div>
-              </button>
+              </ZHBtn>
             </div>
           </div>
 

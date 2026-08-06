@@ -45,15 +45,16 @@ export function CajaPage() {
           <div className="prd-section">
             <div className="cj-toolbar">
               {!ctx.mySession && (
-                <button
-                  className="pf-btn pf-btn--primary"
+                <ZHBtn
+                  type="button"
+                  variant="primary"
                   onClick={() => ctx.setTab("abrir")}
                 >
-                  <span className="material-symbols-outlined pf-btn__icon">
+                  <span className="material-symbols-outlined zh-icon-md">
                     add
                   </span>
                   Abrir Caja
-                </button>
+                </ZHBtn>
               )}
               <div className="cj-toolbar-spacer" />
               <select
