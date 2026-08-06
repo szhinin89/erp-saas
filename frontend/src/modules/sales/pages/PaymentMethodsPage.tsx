@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { ErpPageTemplate } from "../../../templates/ErpPageTemplate";
 import { ZHBtn } from "../../../components/zh/ZHForm";
+import { ZHIconButton } from "../../../components/zh/ZHIconButton";
 import type {
   PaymentMethodDto,
   PaymentMethodDetailType,
@@ -233,22 +234,18 @@ export function PaymentMethodsPage() {
                       </span>
                     </td>
                     <td className="prd-td-actions">
-                      <IconBtn
-                        icon="edit"
-                        color="var(--color-primary)"
-                        title="Editar"
-                        onClick={() => startEdit(pm)}
-                      />
-                      <IconBtn
-                        icon={pm.isActive ? "toggle_off" : "toggle_on"}
-                        color={
-                          pm.isActive
-                            ? "var(--color-error)"
-                            : "var(--color-success)"
-                        }
-                        title={pm.isActive ? "Desactivar" : "Activar"}
-                        onClick={() => handleToggle(pm)}
-                      />
+                      <ZHIconButton
+                          icon="edit"
+                          title="Editar"
+                          variant="primary"
+                          onClick={() => startEdit(pm)}
+                        />
+                      <ZHIconButton
+                          icon={pm.isActive ? "toggle_off" : "toggle_on"}
+                          title={pm.isActive ? "Desactivar" : "Activar"}
+                          variant={pm.isActive ? "danger" : "success"}
+                          onClick={() => handleToggle(pm)}
+                        />
                     </td>
                   </tr>
                 ))}
@@ -379,33 +376,5 @@ export function PaymentMethodsPage() {
         </div>
       )}
     </ErpPageTemplate>
-  );
-}
-
-function IconBtn({
-  icon,
-  color,
-  title,
-  onClick,
-}: {
-  icon: string;
-  color: string;
-  title: string;
-  onClick: () => void;
-}) {
-  return (
-    <button
-      className={`prd-icon-btn ${
-        color === "var(--color-error)"
-          ? "prd-icon-btn--danger"
-          : color === "var(--color-success)"
-            ? "prd-icon-btn--success"
-            : "prd-icon-btn--primary"
-      }`}
-      onClick={onClick}
-      title={title}
-    >
-      <span className="material-symbols-outlined">{icon}</span>
-    </button>
   );
 }
