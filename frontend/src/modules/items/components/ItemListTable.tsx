@@ -1,4 +1,4 @@
-import type { ItemDto } from "../../../types/items";
+﻿import type { ItemDto } from "../../../types/items";
 import { ZHBtn } from "../../../components/zh/ZHForm";
 import { Badge } from "../../../components/PageShell";
 
@@ -32,7 +32,7 @@ export function ItemListTable({
       <p className="empty-state">
         {t(
           "items.list.empty",
-          "No se encontraron ítems con los filtros actuales.",
+          "No se encontraron Ã­tems con los filtros actuales.",
         )}
       </p>
     );
@@ -164,3 +164,4 @@ export function ItemListTable({
     </div>
   );
 }
+

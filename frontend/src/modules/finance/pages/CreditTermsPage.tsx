@@ -1,4 +1,6 @@
 ﻿import { useCallback, useEffect, useState } from "react";
+
+import { Badge } from "../../../components/PageShell";
 import { ErpPageTemplate } from "../../../templates/ErpPageTemplate";
 import { ZhDecimalInput } from "../../../components/zh/inputs/ZhDecimalInput";
 import { ZHBtn } from "../../../components/zh/ZHForm";
@@ -255,11 +257,7 @@ export function CreditTermsPage() {
                     <td>{ct.totalDays}</td>
                     <td>{ct.installments.length}</td>
                     <td>
-                      <span
-                        className={`prd-status-badge ${ct.isActive ? "prd-status-badge--active" : "prd-status-badge--inactive"}`}
-                      >
-                        {ct.isActive ? "Activa" : "Inactiva"}
-                      </span>
+                      <Badge label={"Estado"} variant="neutral" />
                     </td>
                     <td className="prd-td-actions">
                       <ZHIconButton
@@ -468,4 +466,9 @@ function StatCard({ label, value }: { label: string; value: string | number }) {
     </div>
   );
 }
+
+
+
+
+
 

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+﻿import { useCallback, useEffect, useRef, useState } from "react";
 import { ZHBtn } from "../../../components/zh/ZHForm";
 import { ZHIconButton } from "../../../components/zh/ZHIconButton";
 import { ZHDrawer } from "../../../components/zh/ZHDrawer";
@@ -88,7 +88,7 @@ export function PriceListExceptionsTab({
   const handleRemove = async (rule: PricingRuleDto) => {
     if (
       !window.confirm(
-        "¿Quitar esta excepción? El producto volverá a usar la regla general de la lista.",
+        "Â¿Quitar esta excepciÃ³n? El producto volverÃ¡ a usar la regla general de la lista.",
       )
     )
       return;
@@ -107,7 +107,7 @@ export function PriceListExceptionsTab({
       <div className="prd-crud-toolbar">
         <ZHBtn onClick={openNew}>
           <span className="material-symbols-outlined zh-icon-lg">add</span>
-          Nueva excepción
+          Nueva excepciÃ³n
         </ZHBtn>
         <ZHBtn onClick={fetchAll} disabled={loading}>
           <span className="material-symbols-outlined zh-icon-lg">refresh</span>
@@ -125,9 +125,9 @@ export function PriceListExceptionsTab({
                 <th>SKU</th>
                 <th>Precio Base</th>
                 <th>Regla General</th>
-                <th>Excepción</th>
+                <th>ExcepciÃ³n</th>
                 <th>Estado</th>
-                <th>Última modificación</th>
+                <th>Ãšltima modificaciÃ³n</th>
                 <th>Acciones</th>
               </tr>
             </thead>
@@ -139,7 +139,7 @@ export function PriceListExceptionsTab({
                   <td>
                     {row.baseSalePrice != null
                       ? formatMoney(row.baseSalePrice, 2)
-                      : "—"}
+                      : "â€”"}
                   </td>
                   <td>
                     {formatRuleGeneral(
@@ -155,31 +155,31 @@ export function PriceListExceptionsTab({
                           row.rule.ruleValue,
                           priceList.currencyCode,
                         )
-                      : "Sin excepción"}
+                      : "Sin excepciÃ³n"}
                   </td>
                   <td>
                     <span
                       className={`prd-status-badge ${row.rule ? "prd-status-badge--active" : ""}`}
                     >
-                      {row.rule ? "Excepción" : "General"}
+                      {row.rule ? "ExcepciÃ³n" : "General"}
                     </span>
                   </td>
                   <td>
                     {row.rule?.lastModifiedAt
-                      ? `${formatDateTime(row.rule.lastModifiedAt)}${row.rule.lastModifiedByName ? ` — ${row.rule.lastModifiedByName}` : ""}`
-                      : "—"}
+                      ? `${formatDateTime(row.rule.lastModifiedAt)}${row.rule.lastModifiedByName ? ` â€” ${row.rule.lastModifiedByName}` : ""}`
+                      : "â€”"}
                   </td>
                   <td className="prd-td-actions">
                     <ZHIconButton
                       icon={row.rule ? "edit" : "add_circle"}
-                      title={row.rule ? "Editar excepción" : "Crear excepción"}
+                      title={row.rule ? "Editar excepciÃ³n" : "Crear excepciÃ³n"}
                       variant="primary"
                       onClick={() => openForRow(row)}
                     />
                     {row.rule && (
                       <ZHIconButton
                         icon="delete"
-                        title="Eliminar excepción"
+                        title="Eliminar excepciÃ³n"
                         variant="danger"
                         onClick={() => handleRemove(row.rule!)}
                       />
@@ -190,8 +190,8 @@ export function PriceListExceptionsTab({
               {rows.length === 0 && (
                 <tr className="prd-empty-row">
                   <td colSpan={8}>
-                    Esta lista todavía no tiene productos asignados. Asígnalos
-                    desde el formulario del Ítem.
+                    Esta lista todavÃ­a no tiene productos asignados. AsÃ­gnalos
+                    desde el formulario del Ãtem.
                   </td>
                 </tr>
               )}
@@ -215,7 +215,7 @@ export function PriceListExceptionsTab({
   );
 }
 
-// ── Drawer de alta/edición ──────────────────────────────────────────────────
+// â”€â”€ Drawer de alta/ediciÃ³n â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 function ExceptionDrawer({
   open,
@@ -238,12 +238,12 @@ function ExceptionDrawer({
   const [active, setActive] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
-  // "ExistsInactive": ya existe una excepción deshabilitada con esta clave — el backend no la
-  // reactiva sola, se pide confirmación explícita antes de llamar a pricingRuleService.enable.
+  // "ExistsInactive": ya existe una excepciÃ³n deshabilitada con esta clave â€” el backend no la
+  // reactiva sola, se pide confirmaciÃ³n explÃ­cita antes de llamar a pricingRuleService.enable.
   const [confirmReactivate, setConfirmReactivate] = useState(false);
-  // Valor de la excepción deshabilitada, expuesto por el backend solo cuando status ===
-  // 'ExistsInactive' — se compara contra el precio base actual para no reactivar en
-  // silencio un precio (típicamente FixedPrice) que quedó obsoleto mientras estaba inactiva.
+  // Valor de la excepciÃ³n deshabilitada, expuesto por el backend solo cuando status ===
+  // 'ExistsInactive' â€” se compara contra el precio base actual para no reactivar en
+  // silencio un precio (tÃ­picamente FixedPrice) que quedÃ³ obsoleto mientras estaba inactiva.
   const [existingInactive, setExistingInactive] = useState<{
     ruleType: string;
     ruleValue: number;
@@ -272,14 +272,14 @@ function ExceptionDrawer({
     }
     const parsed = parseDecimal(ruleValue);
     if (!ruleValue.trim() || Number.isNaN(parsed)) {
-      setError("Ingresa un valor válido.");
+      setError("Ingresa un valor vÃ¡lido.");
       return;
     }
 
     setSaving(true);
     try {
       if (existingRule && !active) {
-        // Desactivar = quitar la excepción (única operación soportada por el backend).
+        // Desactivar = quitar la excepciÃ³n (Ãºnica operaciÃ³n soportada por el backend).
         await pricingRuleService.remove(existingRule.id);
         onSaved();
       } else {
@@ -290,7 +290,7 @@ function ExceptionDrawer({
           ruleValue: parsed,
         });
         if (result.status === "ExistsInactive") {
-          // No es un error — es una decisión que le corresponde al usuario, no a un toast rojo.
+          // No es un error â€” es una decisiÃ³n que le corresponde al usuario, no a un toast rojo.
           setExistingInactive(
             result.existingRuleType != null && result.existingRuleValue != null
               ? {
@@ -332,7 +332,7 @@ function ExceptionDrawer({
     <ZHDrawer
       open={open}
       onClose={onClose}
-      title={existingRule ? "Editar excepción" : "Nueva excepción"}
+      title={existingRule ? "Editar excepciÃ³n" : "Nueva excepciÃ³n"}
       subtitle={priceList.name}
       footer={
         <>
@@ -346,7 +346,7 @@ function ExceptionDrawer({
     >
       {error && <div className="prd-error-banner">{error}</div>}
 
-      {/* Producto: solo lectura si ya viene preseleccionado desde la tabla; búsqueda remota si es nuevo. */}
+      {/* Producto: solo lectura si ya viene preseleccionado desde la tabla; bÃºsqueda remota si es nuevo. */}
       {selected ? (
         <div className="zh-field">
           <label className="zh-field-label">Producto</label>
@@ -492,16 +492,16 @@ function ExceptionDrawer({
       <ZHConfirmModal
         open={confirmReactivate}
         variant="default"
-        title="Excepción deshabilitada"
+        title="ExcepciÃ³n deshabilitada"
         message={
           existingInactive
-            ? `Esta excepción ya existe pero está desactivada, con el valor ` +
+            ? `Esta excepciÃ³n ya existe pero estÃ¡ desactivada, con el valor ` +
               `"${formatRuleGeneral(existingInactive.ruleType, existingInactive.ruleValue, priceList.currencyCode)}"` +
               (selected?.baseSalePrice != null
-                ? ` (precio base actual del ítem: ${priceList.currencyCode} ${formatMoney(selected.baseSalePrice, 2)}). `
+                ? ` (precio base actual del Ã­tem: ${priceList.currencyCode} ${formatMoney(selected.baseSalePrice, 2)}). `
                 : ". ") +
-              "Al reactivarla se aplicará ese valor tal cual — verifica que siga siendo correcto. ¿Desea reactivarla?"
-            : "Esta excepción ya existe pero está desactivada. ¿Desea reactivarla?"
+              "Al reactivarla se aplicarÃ¡ ese valor tal cual â€” verifica que siga siendo correcto. Â¿Desea reactivarla?"
+            : "Esta excepciÃ³n ya existe pero estÃ¡ desactivada. Â¿Desea reactivarla?"
         }
         confirmLabel="Reactivar"
         cancelLabel="Cancelar"
@@ -512,7 +512,7 @@ function ExceptionDrawer({
   );
 }
 
-// ── Buscador remoto de productos (SKU / Nombre) — sin cargar el catálogo completo ──
+// â”€â”€ Buscador remoto de productos (SKU / Nombre) â€” sin cargar el catÃ¡logo completo â”€â”€
 
 function RemoteItemPicker({ onSelect }: { onSelect: (item: ItemDto) => void }) {
   const [query, setQuery] = useState("");
@@ -605,3 +605,4 @@ function RemoteItemPicker({ onSelect }: { onSelect: (item: ItemDto) => void }) {
     </div>
   );
 }
+

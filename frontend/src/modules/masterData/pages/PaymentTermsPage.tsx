@@ -1,4 +1,6 @@
 ﻿import { useCallback, useEffect, useState } from "react";
+
+import { Badge } from "../../../components/PageShell";
 import { ErpPageTemplate } from "../../../templates/ErpPageTemplate";
 import { ZHBtn, ZHField } from "../../../components/zh/ZHForm";
 import { ZHIconButton } from "../../../components/zh/ZHIconButton";
@@ -201,11 +203,7 @@ export function PaymentTermsPage() {
                       </span>
                     </td>
                     <td>
-                      <span
-                        className={`prd-status-badge ${pt.isActive ? "prd-status-badge--active" : "prd-status-badge--inactive"}`}
-                      >
-                        {pt.isActive ? "Activa" : "Inactiva"}
-                      </span>
+                      <Badge label={"Estado"} variant="neutral" />
                     </td>
                     <td className="prd-td-actions">
                       <ZHIconButton
@@ -342,5 +340,10 @@ export function PaymentTermsPage() {
     </ErpPageTemplate>
   );
 }
+
+
+
+
+
 
 

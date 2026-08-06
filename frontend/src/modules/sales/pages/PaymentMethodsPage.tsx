@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+﻿import { useCallback, useEffect, useState } from "react";
 import { ErpPageTemplate } from "../../../templates/ErpPageTemplate";
 import { ZHBtn } from "../../../components/zh/ZHForm";
 import { ZHIconButton } from "../../../components/zh/ZHIconButton";
@@ -142,14 +142,14 @@ export function PaymentMethodsPage() {
     { id: "listado" as Tab, label: "Listado", icon: "view_list" },
     {
       id: "nuevo" as Tab,
-      label: editing ? "Editar" : "Nuevo MÃ©todo",
+      label: editing ? "Editar" : "Nuevo MÃƒÂ©todo",
       icon: editing ? "edit" : "add_box",
     },
   ];
 
   return (
     <ErpPageTemplate
-      title="MÃ©todos de Pago"
+      title="MÃƒÂ©todos de Pago"
       subtitle="Formas de cobro y pago disponibles en la empresa."
     >
       <div className="prd-tabs">
@@ -175,7 +175,7 @@ export function PaymentMethodsPage() {
           <div className="prd-crud-toolbar">
             <input
               type="text"
-              placeholder="Buscar por cÃ³digo o nombre..."
+              placeholder="Buscar por cÃƒÂ³digo o nombre..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
@@ -191,10 +191,10 @@ export function PaymentMethodsPage() {
             <table className="prd-crud-table">
               <thead>
                 <tr>
-                  <th>CÃ³digo</th>
+                  <th>CÃƒÂ³digo</th>
                   <th>Nombre</th>
                   <th>Requiere Ref.</th>
-                  <th>CrÃ©dito</th>
+                  <th>CrÃƒÂ©dito</th>
                   <th>Detalle</th>
                   <th>Orden</th>
                   <th>Estado</th>
@@ -210,14 +210,14 @@ export function PaymentMethodsPage() {
                       <span
                         className={`prd-status-badge ${pm.requiresReference ? "pf-badge pf-badge--info" : "prd-status-badge--muted"}`}
                       >
-                        {pm.requiresReference ? "SÃ­" : "No"}
+                        {pm.requiresReference ? "SÃƒÂ­" : "No"}
                       </span>
                     </td>
                     <td>
                       <span
                         className={`prd-status-badge ${pm.isCreditAllowed ? "pf-badge pf-badge--warning" : "prd-status-badge--muted"}`}
                       >
-                        {pm.isCreditAllowed ? "SÃ­" : "No"}
+                        {pm.isCreditAllowed ? "SÃƒÂ­" : "No"}
                       </span>
                     </td>
                     <td>
@@ -251,7 +251,7 @@ export function PaymentMethodsPage() {
                 ))}
                 {items.length === 0 && (
                   <tr className="prd-empty-row">
-                    <td colSpan={8}>Sin mÃ©todos de pago registrados.</td>
+                    <td colSpan={8}>Sin mÃƒÂ©todos de pago registrados.</td>
                   </tr>
                 )}
               </tbody>
@@ -263,7 +263,7 @@ export function PaymentMethodsPage() {
       {tab === "nuevo" && (
         <div className="prd-section">
           <h3 className="prd-crud-title">
-            {editing ? `Editar: ${editing.code}` : "Nuevo MÃ©todo de Pago"}
+            {editing ? `Editar: ${editing.code}` : "Nuevo MÃƒÂ©todo de Pago"}
           </h3>
           {error && <div className="prd-error-banner">{error}</div>}
 
@@ -271,7 +271,7 @@ export function PaymentMethodsPage() {
             {!editing && (
               <div className="zh-field">
                 <label className="zh-field-label">
-                  CÃ³digo <span className="zh-field-required">*</span>
+                  CÃƒÂ³digo <span className="zh-field-required">*</span>
                 </label>
                 <div className="zh-field-control">
                   <input
@@ -292,12 +292,12 @@ export function PaymentMethodsPage() {
                   value={fName}
                   onChange={(e) => setFName(e.target.value)}
                   maxLength={100}
-                  placeholder="Efectivo / Tarjeta de crÃ©dito"
+                  placeholder="Efectivo / Tarjeta de crÃƒÂ©dito"
                 />
               </div>
             </div>
             <div className="zh-field">
-              <label className="zh-field-label">Orden de visualizaciÃ³n</label>
+              <label className="zh-field-label">Orden de visualizaciÃƒÂ³n</label>
               <div className="zh-field-control">
                 <input
                   type="number"
@@ -348,9 +348,9 @@ export function PaymentMethodsPage() {
                 onChange={(e) => setFIsCredit(e.target.checked)}
               />
               <div>
-                <div className="pm-checkbox-title">Permite crÃ©dito</div>
+                <div className="pm-checkbox-title">Permite crÃƒÂ©dito</div>
                 <div className="zh-text-muted zh-text-xs">
-                  Habilita la simulaciÃ³n de cuotas al usarse
+                  Habilita la simulaciÃƒÂ³n de cuotas al usarse
                 </div>
               </div>
             </label>
@@ -378,3 +378,4 @@ export function PaymentMethodsPage() {
     </ErpPageTemplate>
   );
 }
+

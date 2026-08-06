@@ -1,17 +1,17 @@
-import { useI18n } from "../i18n/i18n";
+﻿import { useI18n } from "../i18n/i18n";
 import { ZHScreenHeading } from "./zh/ZHLayout";
 import { ZHCard as Card } from "./zh/ZHCard";
 
 interface Props {
   title: string;
-  /** Línea superior (módulo / contexto), opcional. */
+  /** LÃ­nea superior (mÃ³dulo / contexto), opcional. */
   kicker?: string;
   subtitle?: string;
   action?: React.ReactNode;
   children: React.ReactNode;
 }
 
-/** Contenedor de página con encabezado compacto unificado (ZHScreenHeading). */
+/** Contenedor de pÃ¡gina con encabezado compacto unificado (ZHScreenHeading). */
 export function PageShell({
   title,
   kicker,
@@ -84,7 +84,17 @@ export function PageToolbar(props: { children: React.ReactNode }) {
   return <div className="zh-page-toolbar">{props.children}</div>;
 }
 
-export type BadgeVariant = "green" | "gray" | "red" | "blue" | "orange";
+export type BadgeVariant =
+  | "success"
+  | "warning"
+  | "error"
+  | "neutral"
+  | "info"
+  | "green"
+  | "orange"
+  | "red"
+  | "gray"
+  | "blue";
 
 export function Badge(
   props: React.HTMLAttributes<HTMLSpanElement> & {
@@ -92,14 +102,28 @@ export function Badge(
     variant: BadgeVariant;
     /** `md` aplica `.badge--md` (radius menos redondeado); por defecto usa el radius pill. */
     size?: "md";
-    /** Aplica `.badge--upper` (mayúsculas + letter-spacing). */
+    /** Aplica `.badge--upper` (mayÃºsculas + letter-spacing). */
     upper?: boolean;
   },
 ) {
   const { label, variant, size, upper, className, ...rest } = props;
-  const cls = [
+  const variantClassMap: Record<BadgeVariant, string> = {
+  success: "badge--success",
+  warning: "badge--warning",
+  error: "badge--error",
+  neutral: "badge--neutral",
+  info: "badge--info",
+
+  green: "badge--success",
+  orange: "badge--warning",
+  red: "badge--error",
+  gray: "badge--neutral",
+  blue: "badge--info",
+};
+
+const cls = [
     "badge",
-    `badge--${variant}`,
+    variantClassMap[variant],
     size ? `badge--${size}` : "",
     upper ? "badge--upper" : "",
     className,
@@ -112,3 +136,4 @@ export function Badge(
     </span>
   );
 }
+

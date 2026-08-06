@@ -1,4 +1,6 @@
-import { useCallback, useEffect, useState } from "react";
+﻿import { useCallback, useEffect, useState } from "react";
+
+import { Badge } from "../../../components/PageShell";
 import { ErpPageTemplate } from "../../../templates/ErpPageTemplate";
 import { ZHBtn } from "../../../components/zh/ZHForm";
 import { formatDate } from "../../../lib/formatters/dateFormatters";
@@ -9,9 +11,9 @@ import { RegisterCollectionModal } from "../components/RegisterCollectionModal";
 import "../../../styles/shared/items-catalog.css";
 
 /**
- * P0-03 (ERP_CORE_SUMAK_READINESS_AUDIT.md) — pantalla mínima de Cuentas por Cobrar: consulta,
- * selección de la deuda y registro de cobro contra ella (RegisterCollectionModal).
- * No implementa devoluciones, notas de crédito ni reportes — fuera de este alcance.
+ * P0-03 (ERP_CORE_SUMAK_READINESS_AUDIT.md) â€” pantalla mÃ­nima de Cuentas por Cobrar: consulta,
+ * selecciÃ³n de la deuda y registro de cobro contra ella (RegisterCollectionModal).
+ * No implementa devoluciones, notas de crÃ©dito ni reportes â€” fuera de este alcance.
  */
 export function AccountsReceivablePage() {
   const [items, setItems] = useState<SalesReceivableDto[]>([]);
@@ -27,7 +29,7 @@ export function AccountsReceivablePage() {
       setItems(res.items);
       setTotal(res.total);
     } catch {
-      /* la tabla queda vacía; el usuario puede reintentar con el botón Actualizar */
+      /* la tabla queda vacÃ­a; el usuario puede reintentar con el botÃ³n Actualizar */
     }
     setLoading(false);
   }, [status]);
@@ -39,7 +41,7 @@ export function AccountsReceivablePage() {
   return (
     <ErpPageTemplate
       title="Cuentas por Cobrar"
-      subtitle="Consulta las facturas de venta a crédito pendientes y registra cobros."
+      subtitle="Consulta las facturas de venta a crÃ©dito pendientes y registra cobros."
     >
       <div className="prd-section">
         <div className="prd-crud-toolbar">
@@ -83,11 +85,7 @@ export function AccountsReceivablePage() {
                     <strong>{formatMoney(r.balanceDue)}</strong>
                   </td>
                   <td>
-                    <span
-                      className={`prd-status-badge ${r.status === "pending" ? "prd-status-badge--active" : "prd-status-badge--inactive"}`}
-                    >
-                      {r.status}
-                    </span>
+                    <Badge label={"Estado"} variant="neutral" />
                   </td>
                   <td>{formatDate(r.createdAt)}</td>
                   <td className="prd-td-actions">
@@ -112,7 +110,7 @@ export function AccountsReceivablePage() {
         )}
         {!loading && total > items.length && (
           <p className="zh-text-muted">
-            Mostrando {items.length} de {total} — refina el filtro de estado para ver más.
+            Mostrando {items.length} de {total} â€” refina el filtro de estado para ver mÃ¡s.
           </p>
         )}
       </div>
@@ -126,3 +124,8 @@ export function AccountsReceivablePage() {
     </ErpPageTemplate>
   );
 }
+
+
+
+
+

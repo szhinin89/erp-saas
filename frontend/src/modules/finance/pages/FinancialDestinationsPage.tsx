@@ -1,4 +1,6 @@
-import { useCallback, useEffect, useState } from "react";
+﻿import { useCallback, useEffect, useState } from "react";
+
+import { Badge } from "../../../components/PageShell";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { ErpPageTemplate } from "../../../templates/ErpPageTemplate";
@@ -38,12 +40,12 @@ interface CashRegisterOption {
 }
 
 /**
- * P0-02 Fase 13 — administración limitada de `CompanyFinancialDestination` (§6.4ter): alta con
- * los 8 campos estructurales (inmutables tras crear), edición limitada a
- * Name/AccountingAccountId/IsActive. Sigue el patrón `ConfigTabsLayout` obligatorio (Master
- * Configuration UI CLOSED, mismo criterio que `ItemTypesPage.tsx`) — modernizado con RHF+Zod
+ * P0-02 Fase 13 â€” administraciÃ³n limitada de `CompanyFinancialDestination` (Â§6.4ter): alta con
+ * los 8 campos estructurales (inmutables tras crear), ediciÃ³n limitada a
+ * Name/AccountingAccountId/IsActive. Sigue el patrÃ³n `ConfigTabsLayout` obligatorio (Master
+ * Configuration UI CLOSED, mismo criterio que `ItemTypesPage.tsx`) â€” modernizado con RHF+Zod
  * (F-V1/F-V2), a diferencia del `useState` manual de `ItemTypesPage.tsx` (no repetir esa deuda,
- * mismo criterio que Fase 12). Sin botón de eliminación física — solo activar/desactivar.
+ * mismo criterio que Fase 12). Sin botÃ³n de eliminaciÃ³n fÃ­sica â€” solo activar/desactivar.
  */
 export function FinancialDestinationsPage() {
   const [activeTab, setActiveTab] = useState<"list" | "editor">("list");
@@ -186,7 +188,7 @@ export function FinancialDestinationsPage() {
         <table className="table">
           <thead>
             <tr>
-              <th>Código</th>
+              <th>CÃ³digo</th>
               <th>Nombre</th>
               <th>Tipo</th>
               <th>Moneda</th>
@@ -204,11 +206,7 @@ export function FinancialDestinationsPage() {
                 <td>{d.destinationTypeCode === "BankAccount" ? "Cuenta bancaria" : "Caja"}</td>
                 <td>{d.currencyCode}</td>
                 <td>
-                  <span
-                    className={`prd-status-badge ${d.isActive ? "prd-status-badge--active" : "prd-status-badge--inactive"}`}
-                  >
-                    {d.isActive ? "Activo" : "Inactivo"}
-                  </span>
+                  <Badge label={"Estado"} variant="neutral" />
                 </td>
                 <td>
                   <div className="prd-row-actions">
@@ -245,7 +243,7 @@ export function FinancialDestinationsPage() {
     <div className="pg-section-body">
       {saveError && <ZHPageNotice variant="error" message={saveError} />}
       <ZHGrid cols={2}>
-        <ZHField label="Código" readOnly>
+        <ZHField label="CÃ³digo" readOnly>
           <input className="zh-input--upper" value={editing.code} disabled />
         </ZHField>
         <ZHField label="Tipo" readOnly>
@@ -274,7 +272,7 @@ export function FinancialDestinationsPage() {
           >
             {accounts.map((a) => (
               <option key={a.id} value={a.id}>
-                {a.code} — {a.name}
+                {a.code} â€” {a.name}
               </option>
             ))}
           </select>
@@ -299,7 +297,7 @@ export function FinancialDestinationsPage() {
     <div className="pg-section-body">
       {saveError && <ZHPageNotice variant="error" message={saveError} />}
       <ZHGrid cols={2}>
-        <ZHField label="Código" required fieldError={createForm.formState.errors.code?.message}>
+        <ZHField label="CÃ³digo" required fieldError={createForm.formState.errors.code?.message}>
           <input
             className="zh-input--upper"
             maxLength={30}
@@ -350,7 +348,7 @@ export function FinancialDestinationsPage() {
             <option value="">Seleccione una cuenta</option>
             {accounts.map((a) => (
               <option key={a.id} value={a.id}>
-                {a.code} — {a.name}
+                {a.code} â€” {a.name}
               </option>
             ))}
           </select>
@@ -370,7 +368,7 @@ export function FinancialDestinationsPage() {
               <option value="">Seleccione una caja</option>
               {cashRegisters.map((c) => (
                 <option key={c.id} value={c.id}>
-                  {c.code} — {c.name}
+                  {c.code} â€” {c.name}
                 </option>
               ))}
             </select>
@@ -380,7 +378,7 @@ export function FinancialDestinationsPage() {
         {destinationTypeCode === "BankAccount" && (
           <>
             <ZHField
-              label="Institución bancaria"
+              label="InstituciÃ³n bancaria"
               required
               fieldError={createForm.formState.errors.bankInstitutionCode?.message}
             >
@@ -392,7 +390,7 @@ export function FinancialDestinationsPage() {
               />
             </ZHField>
             <ZHField
-              label="Número de cuenta"
+              label="NÃºmero de cuenta"
               required
               fieldError={createForm.formState.errors.bankAccountIdentifierNormalized?.message}
             >
@@ -440,3 +438,8 @@ export function FinancialDestinationsPage() {
     </ErpPageTemplate>
   );
 }
+
+
+
+
+
