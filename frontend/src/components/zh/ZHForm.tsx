@@ -1,3 +1,4 @@
+import { ZHBrandMark } from "./ZHBrandMark";
 import { useMemo, useState } from "react";
 import { useI18n } from "../../i18n/i18n";
 
@@ -22,24 +23,9 @@ export function ZHFormHeader(props: {
   return (
     <div className="zh-form-header">
       <div className="zh-form-header-left">
-        <div className="zh-form-logo" aria-hidden="true">
-          {/* Hexagon + circuit (inline SVG to avoid external assets) */}
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
-            <path
-              d="M8 3.2 4 5.6v4.8l4 2.4 4-2.4V5.6L8 3.2Z"
-              stroke="rgba(255,255,255,0.92)"
-              strokeWidth="1.3"
-              strokeLinejoin="round"
-            />
-            <path
-              d="M12 8h3.2M15.2 8v3.2M15.2 11.2H18"
-              stroke="rgba(255,255,255,0.85)"
-              strokeWidth="1.2"
-              strokeLinecap="round"
-            />
-            <circle cx="18.2" cy="11.2" r="1.1" fill="rgba(255,255,255,0.85)" />
-          </svg>
-        </div>
+        <div className="zh-form-logo">
+  <ZHBrandMark />
+</div>
         <div className="zh-form-header-text">
           <h2 className="zh-form-title">{title}</h2>
           <p className="zh-form-subtitle">{subtitle}</p>
