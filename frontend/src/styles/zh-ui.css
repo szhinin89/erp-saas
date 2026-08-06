@@ -90,7 +90,7 @@ a:hover {
   color: var(--color-success);
 }
 .mono {
-  font-family: ui-monospace, Consolas, monospace;
+  font-family: var(--font-family-mono);
   font-size: 12px;
   color: var(--color-text-secondary);
 }
@@ -196,7 +196,7 @@ a:hover {
   border-color: rgba(192, 57, 43, 0.35);
 }
 .zh-btn--destructive:hover:not(:disabled) {
-  background: rgba(192, 57, 43, 0.08);
+  background: color-mix(in srgb, var(--color-error) 8%, transparent);
 }
 .zh-inline-action {
   display: inline-flex;
@@ -411,7 +411,7 @@ input[type="date"] {
 .zh-field--error .zh-field-control select,
 .zh-field--error .zh-field-control textarea {
   border-color: var(--color-error);
-  box-shadow: 0 0 0 3px rgba(192, 57, 43, 0.12);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-error) 12%, transparent);
 }
 
 /* Success state */
@@ -569,23 +569,23 @@ input[type="date"] {
   margin-bottom: var(--space-4);
 }
 .zh-form-alert--success {
-  background: rgba(26, 122, 74, 0.08);
+  background: color-mix(in srgb, var(--color-success) 8%, transparent);
   border-color: rgba(26, 122, 74, 0.3);
   color: var(--color-success);
 }
 .zh-form-alert--error {
-  background: rgba(192, 57, 43, 0.08);
+  background: color-mix(in srgb, var(--color-error) 8%, transparent);
   border-color: rgba(192, 57, 43, 0.28);
   color: var(--color-error);
 }
 .zh-form-alert--warning {
-  background: rgba(186, 117, 23, 0.08);
+  background: color-mix(in srgb, var(--color-warning) 8%, transparent);
   border-color: rgba(186, 117, 23, 0.28);
   color: var(--color-warning);
 }
 .zh-form-alert--info {
-  background: rgba(58, 95, 132, 0.08);
-  border-color: rgba(58, 95, 132, 0.25);
+  background: color-mix(in srgb, var(--color-primary) 8%, transparent);
+  border-color: color-mix(in srgb, var(--color-primary) 25%, transparent);
   color: var(--color-primary);
 }
 .zh-form-alert--attention {
@@ -881,7 +881,7 @@ input[type="date"] {
   border-color: var(--color-primary);
 }
 .zh-toggle-switch.is-pressed {
-  box-shadow: 0 0 0 3px rgba(58, 95, 132, 0.18);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-primary) 18%, transparent);
 }
 .zh-toggle-switch[aria-disabled="true"] {
   opacity: 0.45;
@@ -1009,11 +1009,11 @@ input[type="date"] {
 
 /* Semantic soft badges (usados en PageShell Badge component) */
 .badge--green {
-  background: rgba(26, 122, 74, 0.12);
+  background: color-mix(in srgb, var(--color-success) 12%, transparent);
   color: var(--color-success);
 }
 .badge--red {
-  background: rgba(192, 57, 43, 0.12);
+  background: color-mix(in srgb, var(--color-error) 12%, transparent);
   color: var(--color-error);
 }
 .badge--gray {
@@ -1021,7 +1021,7 @@ input[type="date"] {
   color: var(--color-text-secondary);
 }
 .badge--blue {
-  background: rgba(58, 95, 132, 0.12);
+  background: color-mix(in srgb, var(--color-primary) 12%, transparent);
   color: var(--color-primary);
 }
 .badge--orange {
@@ -1738,7 +1738,7 @@ input[type="date"] {
   font-size: 15px;
   font-weight: 700;
   flex-shrink: 0;
-  background: rgba(58, 95, 132, 0.12);
+  background: color-mix(in srgb, var(--color-primary) 12%, transparent);
   color: var(--color-primary);
   user-select: none;
 }
@@ -1797,14 +1797,14 @@ input[type="date"] {
   flex-shrink: 0;
 }
 .zh-status--active {
-  background: rgba(26, 122, 74, 0.1);
+  background: color-mix(in srgb, var(--color-success) 10%, transparent);
   color: var(--color-success);
 }
 .zh-status--active::before {
   background: var(--color-success);
 }
 .zh-status--suspended {
-  background: rgba(186, 117, 23, 0.1);
+  background: color-mix(in srgb, var(--color-warning) 10%, transparent);
   color: var(--color-warning);
 }
 .zh-status--suspended::before {
@@ -1818,7 +1818,7 @@ input[type="date"] {
   background: var(--color-outline);
 }
 .zh-status--pending {
-  background: rgba(58, 95, 132, 0.1);
+  background: color-mix(in srgb, var(--color-primary) 10%, transparent);
   color: var(--color-primary);
 }
 .zh-status--pending::before {
@@ -2097,7 +2097,7 @@ input[type="date"] {
 
 .zh-auth-field--error .zh-auth-input {
   border-color: var(--color-error);
-  box-shadow: 0 0 0 3px rgba(192, 57, 43, 0.12);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-error) 12%, transparent);
 }
 
 .zh-auth-field-error {
@@ -2344,23 +2344,23 @@ input[type="date"] {
   animation: zh-toast-in 0.22s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 .zh-toast--success {
-  background: rgba(26, 122, 74, 0.08);
+  background: color-mix(in srgb, var(--color-success) 8%, transparent);
   border: 1px solid rgba(26, 122, 74, 0.3);
   color: var(--color-success);
 }
 .zh-toast--error {
-  background: rgba(192, 57, 43, 0.08);
+  background: color-mix(in srgb, var(--color-error) 8%, transparent);
   border: 1px solid rgba(192, 57, 43, 0.28);
   color: var(--color-error);
 }
 .zh-toast--warning {
-  background: rgba(186, 117, 23, 0.08);
+  background: color-mix(in srgb, var(--color-warning) 8%, transparent);
   border: 1px solid rgba(186, 117, 23, 0.28);
   color: var(--color-warning);
 }
 .zh-toast--info {
-  background: rgba(58, 95, 132, 0.08);
-  border: 1px solid rgba(58, 95, 132, 0.25);
+  background: color-mix(in srgb, var(--color-primary) 8%, transparent);
+  border: 1px solid color-mix(in srgb, var(--color-primary) 25%, transparent);
   color: var(--color-primary);
 }
 .zh-toast__icon {
@@ -2646,4 +2646,3 @@ input[type="date"] {
 .zh-form-logo {
   color: var(--color-on-primary);
 }
-

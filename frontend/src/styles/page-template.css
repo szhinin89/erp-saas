@@ -190,11 +190,11 @@
   color: var(--color-tertiary);
 }
 .pg-kpi-icon--success {
-  background: rgba(26, 122, 74, 0.1);
+  background: color-mix(in srgb, var(--color-success) 10%, transparent);
   color: var(--color-success);
 }
 .pg-kpi-icon--warning {
-  background: rgba(186, 117, 23, 0.1);
+  background: color-mix(in srgb, var(--color-warning) 10%, transparent);
   color: var(--color-warning);
 }
 .pg-kpi-icon--error {
@@ -211,11 +211,11 @@
   white-space: nowrap;
 }
 .pg-kpi-badge--success {
-  background: rgba(26, 122, 74, 0.1);
+  background: color-mix(in srgb, var(--color-success) 10%, transparent);
   color: var(--color-success);
 }
 .pg-kpi-badge--warning {
-  background: rgba(186, 117, 23, 0.1);
+  background: color-mix(in srgb, var(--color-warning) 10%, transparent);
   color: var(--color-warning);
 }
 .pg-kpi-badge--error {
@@ -517,11 +517,11 @@
   flex-shrink: 0;
 }
 .pg-activity-icon--in {
-  background: rgba(26, 122, 74, 0.1);
+  background: color-mix(in srgb, var(--color-success) 10%, transparent);
   color: var(--color-success);
 }
 .pg-activity-icon--out {
-  background: rgba(192, 57, 43, 0.1);
+  background: color-mix(in srgb, var(--color-error) 10%, transparent);
   color: var(--color-error);
 }
 .pg-activity-icon--neutral {
@@ -594,7 +594,7 @@
 .pg-accent-card-body {
   font-size: var(--text-body-md-size);
   line-height: var(--text-body-md-height);
-  color: rgba(255, 255, 255, 0.9);
+  color: color-mix(in srgb, var(--color-on-primary) 90%, transparent);
   margin: 0 0 var(--space-4);
 }
 

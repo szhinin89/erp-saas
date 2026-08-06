@@ -218,7 +218,7 @@
   font-size: var(--text-label-md-size);
   font-weight: var(--text-label-md-weight);
   color: var(--color-primary);
-  font-family: monospace;
+  font-family: var(--font-family-mono);
 }
 
 /* Client avatar + name row */

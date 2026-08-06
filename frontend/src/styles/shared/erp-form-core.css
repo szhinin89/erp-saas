@@ -178,15 +178,15 @@
   white-space: nowrap;
 }
 .pf-badge--success {
-  background: rgba(26, 122, 74, 0.1);
+  background: color-mix(in srgb, var(--color-success) 10%, transparent);
   color: var(--color-success);
 }
 .pf-badge--warning {
-  background: rgba(186, 117, 23, 0.1);
+  background: color-mix(in srgb, var(--color-warning) 10%, transparent);
   color: var(--color-warning);
 }
 .pf-badge--danger {
-  background: rgba(192, 57, 43, 0.08);
+  background: color-mix(in srgb, var(--color-error) 8%, transparent);
   color: var(--color-error);
 }
 .pf-badge--info {
@@ -247,7 +247,7 @@
 .pf-table tbody td.pf-td--num {
   /* NUM-001 (AI-RULES/PR-RULES-CATALOG.md#f-05) — dato numérico, alineado a la derecha. */
   text-align: right;
-  font-family: "SF Mono", "Cascadia Code", monospace;
+  font-family: var(--font-family-mono);
   font-size: 12px;
   font-weight: 500;
 }
@@ -266,12 +266,12 @@
 .pf-table-input:focus {
   border-color: var(--color-primary);
   outline: none;
-  box-shadow: 0 0 0 2px rgba(58, 95, 132, 0.08);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-primary) 8%, transparent);
 }
 .pf-table-input--num {
   /* NUM-001 (AI-RULES/PR-RULES-CATALOG.md#f-05) — dato numérico, alineado a la derecha. */
   text-align: right;
-  font-family: "SF Mono", "Cascadia Code", monospace;
+  font-family: var(--font-family-mono);
   font-size: 12px;
 }
 .pf-table-input--sm {
@@ -308,7 +308,7 @@
 }
 .pf-row-action--danger:hover {
   color: var(--color-error);
-  background: rgba(192, 57, 43, 0.06);
+  background: color-mix(in srgb, var(--color-error) 6%, transparent);
 }
 
 /* Empty rows */
@@ -394,8 +394,8 @@
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
   box-shadow:
-    0 8px 24px rgba(0, 0, 0, 0.18),
-    0 2px 8px rgba(0, 0, 0, 0.1);
+    0 8px 24px color-mix(in srgb, var(--color-text-primary) 18%, transparent),
+    0 2px 8px color-mix(in srgb, var(--color-text-primary) 10%, transparent);
   max-height: 320px;
   overflow-y: auto;
   margin-top: 4px;
@@ -436,7 +436,7 @@
   font-size: 11px;
   font-weight: 600;
   color: var(--color-primary);
-  font-family: "SF Mono", "Cascadia Code", monospace;
+  font-family: var(--font-family-mono);
   background: var(--color-primary-fixed);
   padding: 1px 6px;
   border-radius: var(--radius-sm);
@@ -463,7 +463,7 @@
 .pf-picker-item__meta-value {
   font-weight: 600;
   color: var(--color-text-primary);
-  font-family: "SF Mono", "Cascadia Code", monospace;
+  font-family: var(--font-family-mono);
 }
 
 /* .pdl-container/.pdl-topbar* movidos a modules/purchases/styles/purchases-invoice.css */
@@ -500,7 +500,7 @@
 .pdl-search__input:focus {
   border-color: var(--color-primary);
   outline: none;
-  box-shadow: 0 0 0 3px rgba(58, 95, 132, 0.1);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-primary) 10%, transparent);
 }
 .pdl-type-filter-select {
   flex-shrink: 0;
@@ -518,7 +518,7 @@
   background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 8px 24px color-mix(in srgb, var(--color-text-primary) 15%, transparent);
   max-height: 320px;
   overflow-y: auto;
   margin-top: 4px;
@@ -554,7 +554,7 @@
   font-size: 11px;
   font-weight: 700;
   color: var(--color-primary);
-  font-family: "SF Mono", "Cascadia Code", monospace;
+  font-family: var(--font-family-mono);
   background: var(--color-primary-fixed);
   padding: 1px 6px;
   border-radius: var(--radius-sm);
@@ -625,7 +625,7 @@
 }
 .pdl-line__clear:hover {
   color: var(--color-error);
-  background: rgba(192, 57, 43, 0.06);
+  background: color-mix(in srgb, var(--color-error) 6%, transparent);
 }
 .pdl-line__wh-select {
   width: 100%;
@@ -653,7 +653,7 @@
 .pdl-input:focus {
   border-color: var(--color-primary);
   outline: none;
-  box-shadow: 0 0 0 3px rgba(58, 95, 132, 0.1);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-primary) 10%, transparent);
 }
 .pdl-input--qty {
   width: 80px;
@@ -661,12 +661,12 @@
 .pdl-input--cost {
   width: 100px;
   text-align: right;
-  font-family: "SF Mono", "Cascadia Code", monospace;
+  font-family: var(--font-family-mono);
 }
 .pdl-input--disc {
   width: 64px;
   text-align: right;
-  font-family: "SF Mono", "Cascadia Code", monospace;
+  font-family: var(--font-family-mono);
 }
 .pdl-line__cost-row {
   display: flex;
@@ -698,7 +698,7 @@
   font-size: 16px;
   font-weight: 700;
   color: var(--color-text-primary);
-  font-family: "SF Mono", "Cascadia Code", monospace;
+  font-family: var(--font-family-mono);
   margin-bottom: 2px;
 }
 .pdl-line__tax-ice {
@@ -711,7 +711,7 @@
   font-size: 18px;
   font-weight: 800;
   color: var(--color-text-primary);
-  font-family: "SF Mono", "Cascadia Code", monospace;
+  font-family: var(--font-family-mono);
   letter-spacing: -0.5px;
 }
 .pdl-line__actions {

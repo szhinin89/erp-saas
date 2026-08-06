@@ -122,7 +122,7 @@
 .prd-sparkline span {
   width: 6px;
   border-radius: 3px;
-  background: rgba(58, 95, 132, 0.25);
+  background: color-mix(in srgb, var(--color-primary) 25%, transparent);
 }
 .prd-sparkline span:nth-child(1) {
   height: 50%;
@@ -250,7 +250,7 @@
   flex-shrink: 0;
 }
 .prd-activity__dot--green {
-  background: rgba(26, 122, 74, 0.12);
+  background: color-mix(in srgb, var(--color-success) 12%, transparent);
   color: var(--color-success);
 }
 .prd-activity__dot--blue {
@@ -308,7 +308,7 @@
 .prd-search-box:focus-within {
   border-color: var(--color-primary);
   background: var(--color-surface);
-  box-shadow: 0 0 0 3px rgba(58, 95, 132, 0.12);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-primary) 12%, transparent);
 }
 .prd-search-icon {
   font-size: 20px;
@@ -379,7 +379,7 @@
 
 /* Search highlight */
 .prd-highlight {
-  background: rgba(186, 117, 23, 0.18);
+  background: color-mix(in srgb, var(--color-warning) 18%, transparent);
   color: inherit;
   border-radius: 2px;
   padding: 0 1px;
@@ -622,15 +622,15 @@
   color: var(--color-primary);
 }
 .prd-wiz-panel__icon--green {
-  background: rgba(26, 122, 74, 0.1);
+  background: color-mix(in srgb, var(--color-success) 10%, transparent);
   color: var(--color-success);
 }
 .prd-wiz-panel__icon--amber {
-  background: rgba(186, 117, 23, 0.1);
+  background: color-mix(in srgb, var(--color-warning) 10%, transparent);
   color: var(--color-warning);
 }
 .prd-wiz-panel__icon--teal {
-  background: rgba(26, 122, 74, 0.1);
+  background: color-mix(in srgb, var(--color-success) 10%, transparent);
   color: var(--color-success);
 }
 .prd-wiz-panel__title {
@@ -705,7 +705,7 @@
 }
 .prd-wiz-input:focus {
   border-color: var(--color-primary) !important;
-  box-shadow: 0 0 0 3px rgba(58, 95, 132, 0.12) !important;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-primary) 12%, transparent) !important;
   outline: none;
 }
 .prd-wiz-input--error {
@@ -715,7 +715,7 @@
 .prd-wiz-field:not(.prd-wiz-field--error)
   .prd-wiz-input:not(:placeholder-shown):not(:focus) {
   border-color: var(--color-success) !important;
-  background: rgba(26, 122, 74, 0.08) !important;
+  background: color-mix(in srgb, var(--color-success) 8%, transparent) !important;
 }
 .prd-wiz-textarea {
   resize: vertical;
@@ -814,7 +814,7 @@
 .prd-opt-card--on {
   border-color: var(--color-primary);
   background: var(--color-primary-fixed);
-  box-shadow: 0 0 0 3px rgba(58, 95, 132, 0.12);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-primary) 12%, transparent);
 }
 .prd-opt-card--disabled {
   opacity: 0.5;
@@ -897,8 +897,8 @@
 
 /* Review step */
 .prd-review-card {
-  background: rgba(26, 122, 74, 0.06);
-  border: 1px solid rgba(26, 122, 74, 0.24);
+  background: color-mix(in srgb, var(--color-success) 6%, transparent);
+  border: 1px solid color-mix(in srgb, var(--color-success) 24%, transparent);
   border-radius: var(--radius-xl);
   padding: var(--space-5);
   margin-bottom: var(--space-4);
@@ -944,8 +944,8 @@
   display: flex;
   align-items: center;
   gap: var(--space-3);
-  background: rgba(186, 117, 23, 0.08);
-  border: 1px solid rgba(186, 117, 23, 0.25);
+  background: color-mix(in srgb, var(--color-warning) 8%, transparent);
+  border: 1px solid color-mix(in srgb, var(--color-warning) 25%, transparent);
   border-radius: var(--radius-md);
   padding: var(--space-3) var(--space-4);
   font-size: 12px;
@@ -991,7 +991,7 @@
 .prd-spinner {
   width: 14px;
   height: 14px;
-  border: 2px solid rgba(255, 255, 255, 0.35);
+  border: 2px solid color-mix(in srgb, var(--color-on-primary) 35%, transparent);
   border-top-color: var(--color-on-primary);
   border-radius: 50%;
   animation: prd-spin 0.7s linear infinite;
@@ -1088,8 +1088,8 @@
   display: flex;
   align-items: center;
   gap: var(--space-3);
-  background: rgba(186, 117, 23, 0.08);
-  border: 1px solid rgba(186, 117, 23, 0.3);
+  background: color-mix(in srgb, var(--color-warning) 8%, transparent);
+  border: 1px solid color-mix(in srgb, var(--color-warning) 30%, transparent);
   border-radius: var(--radius-md);
   padding: var(--space-3) var(--space-4);
   font-size: 12px;
@@ -1140,7 +1140,7 @@
   vertical-align: middle;
 }
 .prd-crud-table tbody td.prd-td-code {
-  font-family: monospace;
+  font-family: var(--font-family-mono);
   font-weight: 600;
 }
 .prd-crud-table tbody td.prd-td-actions {
@@ -1250,18 +1250,18 @@
   font-weight: 600;
 }
 .prd-status-badge--active {
-  background: rgba(26, 122, 74, 0.1);
+  background: color-mix(in srgb, var(--color-success) 10%, transparent);
   color: var(--color-success);
 }
 .prd-status-badge--inactive {
-  background: rgba(192, 57, 43, 0.08);
+  background: color-mix(in srgb, var(--color-error) 8%, transparent);
   color: var(--color-error);
 }
 
 /* ── CRUD error banner ───────────────────────────────────── */
 .prd-error-banner {
   padding: var(--space-3);
-  background: rgba(192, 57, 43, 0.06);
+  background: color-mix(in srgb, var(--color-error) 6%, transparent);
   color: var(--color-error);
   border-radius: var(--radius-lg);
   margin-bottom: var(--space-3);
@@ -1377,10 +1377,10 @@
 
 /* Selected row highlight in list tables */
 tr.cfg-row--selected > td {
-  background: var(--color-primary-fixed, rgba(58, 95, 132, 0.08)) !important;
+  background: var(--color-primary-fixed, color-mix(in srgb, var(--color-primary) 8%, transparent)) !important;
 }
 tr.cfg-row--selected:hover > td {
-  background: var(--color-primary-fixed, rgba(58, 95, 132, 0.08)) !important;
+  background: var(--color-primary-fixed, color-mix(in srgb, var(--color-primary) 8%, transparent)) !important;
 }
 
 @media (max-width: 960px) {
@@ -1652,7 +1652,7 @@ tr.cfg-row--selected:hover > td {
 .items-metric-card__value {
   font-size: 20px;
   font-weight: 800;
-  font-family: monospace;
+  font-family: var(--font-family-mono);
   letter-spacing: -0.5px;
 }
 
