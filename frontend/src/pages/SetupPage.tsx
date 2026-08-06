@@ -10,21 +10,21 @@ import "../modules/auth/pages/LoginPage.css";
 const setupSchema = z.object({
   username: z
     .string()
-    .min(3, "Mínimo 3 caracteres")
+    .min(3, "MÃ­nimo 3 caracteres")
     .regex(
       /^[a-zA-Z0-9][a-zA-Z0-9._-]{1,48}[a-zA-Z0-9]$/,
-      "Solo letras, números, punto, guion o guion bajo",
+      "Solo letras, nÃºmeros, punto, guion o guion bajo",
     ),
   firstName: z.string().min(1, "Requerido"),
   lastName: z.string().min(1, "Requerido"),
   email: z
-    .union([z.string().email("Email inválido"), z.literal("")])
+    .union([z.string().email("Email invÃ¡lido"), z.literal("")])
     .optional(),
   password: z
     .string()
-    .min(8, "Mínimo 8 caracteres")
-    .regex(/[A-Z]/, "Debe contener al menos una mayúscula")
-    .regex(/[0-9]/, "Debe contener al menos un número"),
+    .min(8, "MÃ­nimo 8 caracteres")
+    .regex(/[A-Z]/, "Debe contener al menos una mayÃºscula")
+    .regex(/[0-9]/, "Debe contener al menos un nÃºmero"),
   setupToken: z.string().min(1, "Token requerido"),
 });
 
@@ -63,7 +63,7 @@ export function SetupPage() {
         }
       })
       .catch(() => {
-        /* ignore — show form anyway */
+        /* ignore â€” show form anyway */
       })
       .finally(() => setChecking(false));
   });
@@ -95,10 +95,9 @@ export function SetupPage() {
     return (
       <div className="zh-auth-bg">
         <div
-          className="zh-auth-wrapper"
-          style={{ textAlign: "center", paddingTop: 80 }}
+          className="zh-auth-wrapper setup-page-loading"
         >
-          Verificando estado del sistema…
+          Verificando estado del sistemaâ€¦
         </div>
       </div>
     );
@@ -114,7 +113,7 @@ export function SetupPage() {
           </div>
           <div className="lp-card">
             <div className="lp-card-body">
-              <p style={{ textAlign: "center" }}>
+              <p className="setup-page-message">
                 El administrador inicial ya existe.{" "}
                 <button
                   type="button"
@@ -137,11 +136,11 @@ export function SetupPage() {
         <div className="zh-auth-wrapper">
           <div className="lp-brand">
             <h1 className="lp-brand-name">ZH Technologies</h1>
-            <p className="lp-brand-sub">Configuración completada</p>
+            <p className="lp-brand-sub">ConfiguraciÃ³n completada</p>
           </div>
           <div className="lp-card">
-            <div className="lp-card-body" style={{ textAlign: "center" }}>
-              Administrador creado correctamente. Redirigiendo al login…
+            <div className="lp-card-body lp-card-body--center">
+              Administrador creado correctamente. Redirigiendo al loginâ€¦
             </div>
           </div>
         </div>
@@ -165,7 +164,7 @@ export function SetupPage() {
               ZH Technologies
             </h1>
           </div>
-          <p className="lp-brand-sub">Configuración inicial del sistema</p>
+          <p className="lp-brand-sub">ConfiguraciÃ³n inicial del sistema</p>
         </div>
 
         <div className="lp-card">
@@ -302,7 +301,7 @@ export function SetupPage() {
                 className={`zh-auth-field${errors.password ? " zh-auth-field--error" : ""}`}
               >
                 <label className="zh-auth-label" htmlFor="setup-password">
-                  Contraseña
+                  ContraseÃ±a
                 </label>
                 <div className="zh-auth-input-wrap">
                   <span
@@ -315,7 +314,7 @@ export function SetupPage() {
                     className="zh-auth-input"
                     id="setup-password"
                     type="password"
-                    placeholder="Mínimo 8 caracteres, 1 mayúscula, 1 número"
+                    placeholder="MÃ­nimo 8 caracteres, 1 mayÃºscula, 1 nÃºmero"
                     autoComplete="new-password"
                     {...register("password")}
                   />
@@ -331,7 +330,7 @@ export function SetupPage() {
                 className={`zh-auth-field${errors.setupToken ? " zh-auth-field--error" : ""}`}
               >
                 <label className="zh-auth-label" htmlFor="setup-token">
-                  Token de configuración
+                  Token de configuraciÃ³n
                 </label>
                 <div className="zh-auth-input-wrap">
                   <span
@@ -363,7 +362,7 @@ export function SetupPage() {
                 {isSubmitting ? (
                   <>
                     <span className="lp-submit-spinner" aria-hidden="true" />
-                    <span>Creando administrador…</span>
+                    <span>Creando administradorâ€¦</span>
                   </>
                 ) : (
                   <>

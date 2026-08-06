@@ -1,8 +1,8 @@
-/* LoginPage — ZH Technologies ERP */
-/* Background/wrapper: zh-auth-bg, zh-auth-wrapper (zh-ui.css §20) */
-/* Field inputs: zh-auth-field, zh-auth-input, etc. (zh-ui.css §24) */
+/* LoginPage â€” ZH Technologies ERP */
+/* Background/wrapper: zh-auth-bg, zh-auth-wrapper (zh-ui.css Â§20) */
+/* Field inputs: zh-auth-field, zh-auth-input, etc. (zh-ui.css Â§24) */
 
-/* ── Brand (horizontal row layout) ─────────────────────────── */
+/* â”€â”€ Brand (horizontal row layout) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .lp-brand {
   display: flex;
   flex-direction: column;
@@ -48,7 +48,7 @@
   margin: 0;
 }
 
-/* ── Card ────────────────────────────────────────────────────── */
+/* â”€â”€ Card â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .lp-card {
   width: 100%;
   background: var(--color-surface);
@@ -65,7 +65,7 @@
   gap: var(--space-6);
 }
 
-/* ── Role selector ───────────────────────────────────────────── */
+/* â”€â”€ Role selector â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .lp-roles-label {
   display: block;
   font-size: var(--text-label-sm-size);
@@ -128,7 +128,7 @@
   color: var(--color-primary);
 }
 
-/* ── Auth error inline ───────────────────────────────────────── */
+/* â”€â”€ Auth error inline â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .lp-error {
   display: flex;
   align-items: center;
@@ -145,7 +145,7 @@
   flex-shrink: 0;
 }
 
-/* ── Form ────────────────────────────────────────────────────── */
+/* â”€â”€ Form â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .lp-form {
   display: flex;
   flex-direction: column;
@@ -255,7 +255,7 @@
   font-size: 18px;
 }
 
-/* ── Card footer ─────────────────────────────────────────────── */
+/* â”€â”€ Card footer â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .lp-card-footer {
   padding: var(--space-4) var(--space-8);
   background: var(--color-surface-container-low);
@@ -287,7 +287,7 @@
   text-decoration: none;
 }
 
-/* ── Security badges ─────────────────────────────────────────── */
+/* â”€â”€ Security badges â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .lp-security {
   display: flex;
   align-items: center;
@@ -328,13 +328,13 @@
   flex-shrink: 0;
 }
 
-/* ── Loading state ───────────────────────────────────────────── */
+/* â”€â”€ Loading state â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .lp-submit--loading {
   cursor: wait;
   opacity: 0.82;
 }
 
-/* Spinner dentro del botón */
+/* Spinner dentro del botÃ³n */
 .lp-submit-spinner {
   width: 16px;
   height: 16px;
@@ -351,7 +351,7 @@
   }
 }
 
-/* ── Responsive ─────────────────────────────────────────────── */
+/* â”€â”€ Responsive â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 @media (max-width: 480px) {
   .lp-card-body {
     padding: var(--space-6);
@@ -362,4 +362,18 @@
   .lp-brand-name {
     font-size: 22px;
   }
+}
+
+/* SetupPage alignment */
+.setup-page-loading {
+  text-align: center;
+  padding-top: 80px;
+}
+
+.setup-page-message {
+  text-align: center;
+}
+
+.lp-card-body--center {
+  text-align: center;
 }
