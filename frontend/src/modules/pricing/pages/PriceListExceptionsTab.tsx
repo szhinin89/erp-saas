@@ -557,6 +557,7 @@ function RemoteItemPicker({ onSelect }: { onSelect: (item: ItemDto) => void }) {
   return (
     <div ref={wrapRef} className="zh-picker">
       <input
+        className="zh-input"
         value={query}
         onChange={(e) => {
           setQuery(e.target.value);
@@ -568,7 +569,7 @@ function RemoteItemPicker({ onSelect }: { onSelect: (item: ItemDto) => void }) {
         placeholder="Buscar por SKU o nombre..."
       />
       {open && query.length >= 2 && (
-        <div className="pf-picker-dropdown">
+        <div className="zh-picker__dropdown">
           {loading && (
             <div className="zh-picker__empty">
               Buscando...
@@ -583,7 +584,7 @@ function RemoteItemPicker({ onSelect }: { onSelect: (item: ItemDto) => void }) {
             <button
               key={item.id}
               type="button"
-              className="pf-picker-item"
+              className="zh-picker__result"
               onClick={() => {
                 onSelect(item);
                 setQuery("");
@@ -591,9 +592,9 @@ function RemoteItemPicker({ onSelect }: { onSelect: (item: ItemDto) => void }) {
                 setOpen(false);
               }}
             >
-              <div className="pf-picker-item__main">
-                <div className="pf-picker-item__name">
-                  <span className="pf-picker-item__sku">{item.sku}</span>
+              <div className="zh-picker__result-main">
+                <div className="zh-picker__result-name">
+                  <span className="zh-picker__result-code">{item.sku}</span>
                   {item.shortName}
                 </div>
               </div>
