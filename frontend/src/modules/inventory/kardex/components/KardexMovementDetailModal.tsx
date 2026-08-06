@@ -1,5 +1,6 @@
-﻿import { useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { ZHModal } from "../../../../components/zh/ZHModal";
+import { ZHBtn } from "../../../../components/zh/ZHForm";
 import {
   formatDate,
   formatDateTimeSeconds,
@@ -184,15 +185,17 @@ export function KardexMovementDetailModal({
                   )}
                 </div>
                 {DOC_TYPE_ROUTE[detail.sourceDocument.docType] && (
-                  <button
-                    className="pf-btn kdx-btn-source"
+                  <ZHBtn
+                    type="button"
+                    variant="secondary"
+                    className="kdx-btn-source"
                     onClick={goToSourceDocument}
                   >
-                    <span className="material-symbols-outlined pf-btn__icon">
+                    <span className="material-symbols-outlined zh-icon-md">
                       open_in_new
                     </span>
                     Ver documento origen
-                  </button>
+                  </ZHBtn>
                 )}
               </>
             ) : (
@@ -229,26 +232,28 @@ export function KardexMovementDetailModal({
             <div
               className="kdx-relations-row"
             >
-              <button
-                className="pf-btn"
+              <ZHBtn
+                type="button"
+                variant="secondary"
                 disabled={!detail.relations.previous}
                 onClick={() =>
                   detail.relations.previous &&
                   onNavigate(detail.relations.previous.movementId)
                 }
               >
-                <span className="material-symbols-outlined pf-btn__icon">
+                <span className="material-symbols-outlined zh-icon-md">
                   chevron_left
                 </span>
                 {detail.relations.previous
                   ? `#${detail.relations.previous.sequenceNumber} â€” ${movementTypeLabels[detail.relations.previous.movementTypeName] ?? detail.relations.previous.movementTypeName}`
                   : "Sin movimiento anterior"}
-              </button>
+              </ZHBtn>
               <span className="pf-badge pf-badge--info">
                 Actual: #{detail.relations.current.sequenceNumber}
               </span>
-              <button
-                className="pf-btn"
+              <ZHBtn
+                type="button"
+                variant="secondary"
                 disabled={!detail.relations.next}
                 onClick={() =>
                   detail.relations.next &&
@@ -258,10 +263,10 @@ export function KardexMovementDetailModal({
                 {detail.relations.next
                   ? `#${detail.relations.next.sequenceNumber} â€” ${movementTypeLabels[detail.relations.next.movementTypeName] ?? detail.relations.next.movementTypeName}`
                   : "Sin movimiento siguiente"}
-                <span className="material-symbols-outlined pf-btn__icon">
+                <span className="material-symbols-outlined zh-icon-md">
                   chevron_right
                 </span>
-              </button>
+              </ZHBtn>
             </div>
           </Section>
 
@@ -354,7 +359,3 @@ function Field({
     </div>
   );
 }
-
-
-
-

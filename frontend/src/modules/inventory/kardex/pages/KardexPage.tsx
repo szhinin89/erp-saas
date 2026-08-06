@@ -1,10 +1,10 @@
-﻿import { useEffect, useRef } from "react";
+import { useEffect, useRef } from "react";
 import { useSearchParams } from "react-router-dom";
 import { usePermissionsUi } from "../../../../access/usePermissionsUi";
 import { NoAccessPage } from "../../../../components/PageShell";
 import { ErpPageTemplate } from "../../../../templates/ErpPageTemplate";
 import { ZHTabBar } from "../../../../components/zh/ZHTabBar";
-import { ZHField } from "../../../../components/zh/ZHForm";
+import { ZHBtn, ZHField } from "../../../../components/zh/ZHForm";
 import { formatDate } from "../../../../lib/formatters/dateFormatters";
 import { formatMoneyWithSymbol, formatMoney } from "../../../../lib/sanitizers";
 import { getDecimalConfig } from "../../../../lib/config/decimal.config";
@@ -229,16 +229,17 @@ export function KardexPage() {
                   onChange={(e) => ctx.setDateTo(e.target.value)}
                 />
               </ZHField>
-              <button
-                className="pf-btn pf-btn--primary"
+              <ZHBtn
+                type="button"
+                variant="primary"
                 onClick={() => void ctx.runSearch()}
                 disabled={!ctx.selectedProductId}
               >
-                <span className="material-symbols-outlined pf-btn__icon">
+                <span className="material-symbols-outlined zh-icon-md">
                   search
-                </span>{" "}
+                </span>
                 Buscar
-              </button>
+              </ZHBtn>
             </div>
           ) : (
             <div
@@ -295,26 +296,28 @@ export function KardexPage() {
                   </div>
                 )}
               </ZHField>
-              <button
-                className="pf-btn"
+              <ZHBtn
+                type="button"
+                variant="secondary"
                 onClick={() => void ctx.searchDocuments()}
                 disabled={ctx.docSearching || !ctx.docNumberQuery.trim()}
               >
-                <span className="material-symbols-outlined pf-btn__icon">
+                <span className="material-symbols-outlined zh-icon-md">
                   manage_search
                 </span>
                 {ctx.docSearching ? "Buscando..." : "Resolver documento"}
-              </button>
-              <button
-                className="pf-btn pf-btn--primary"
+              </ZHBtn>
+              <ZHBtn
+                type="button"
+                variant="primary"
                 onClick={() => void ctx.runSearch()}
                 disabled={!ctx.selectedDoc}
               >
-                <span className="material-symbols-outlined pf-btn__icon">
+                <span className="material-symbols-outlined zh-icon-md">
                   search
-                </span>{" "}
+                </span>
                 Ver movimientos
-              </button>
+              </ZHBtn>
             </div>
           )}
         </div>
@@ -371,24 +374,24 @@ export function KardexPage() {
               ))}
             </select>
             <div className="kdx-toolbar-actions">
-              <button className="pf-btn" disabled title="PrÃ³ximamente">
-                <span className="material-symbols-outlined pf-btn__icon">
+              <ZHBtn type="button" variant="secondary" disabled title="PrÃ³ximamente">
+                <span className="material-symbols-outlined zh-icon-md">
                   grid_on
-                </span>{" "}
+                </span>
                 Excel
-              </button>
-              <button className="pf-btn" disabled title="PrÃ³ximamente">
-                <span className="material-symbols-outlined pf-btn__icon">
+              </ZHBtn>
+              <ZHBtn type="button" variant="secondary" disabled title="PrÃ³ximamente">
+                <span className="material-symbols-outlined zh-icon-md">
                   picture_as_pdf
-                </span>{" "}
+                </span>
                 PDF
-              </button>
-              <button className="pf-btn" disabled title="PrÃ³ximamente">
-                <span className="material-symbols-outlined pf-btn__icon">
+              </ZHBtn>
+              <ZHBtn type="button" variant="secondary" disabled title="PrÃ³ximamente">
+                <span className="material-symbols-outlined zh-icon-md">
                   print
-                </span>{" "}
+                </span>
                 Imprimir
-              </button>
+              </ZHBtn>
             </div>
           </div>
         )}
@@ -529,4 +532,3 @@ function SummaryCard({
     </div>
   );
 }
-
