@@ -1601,8 +1601,10 @@ function CostsDropdown({ ctx }: { ctx: ReturnType<typeof usePurchasesPage> }) {
               />
             </ZHField>
           </div>
-          <button
-            className="pf-btn pdl-costs-dropdown__btn"
+          <ZHBtn
+            type="button"
+            variant="secondary"
+            className="pdl-costs-dropdown__btn"
             onClick={() => {
               ctx.setModalDiscount(true);
               ctx.setShowCostsMenu(false);
@@ -1613,11 +1615,13 @@ function CostsDropdown({ ctx }: { ctx: ReturnType<typeof usePurchasesPage> }) {
               className="material-symbols-outlined pdl-costs-dropdown__icon"
             >
               percent
-            </span>{" "}
+            </span>
             Desc. Global
-          </button>
-          <button
-            className="pf-btn pdl-costs-dropdown__btn"
+          </ZHBtn>
+          <ZHBtn
+            type="button"
+            variant="secondary"
+            className="pdl-costs-dropdown__btn"
             onClick={ctx.handleAllocateFreight}
             disabled={ctx.fieldDisabled || !ctx.editing}
           >
@@ -1625,11 +1629,13 @@ function CostsDropdown({ ctx }: { ctx: ReturnType<typeof usePurchasesPage> }) {
               className="material-symbols-outlined pdl-costs-dropdown__icon"
             >
               local_shipping
-            </span>{" "}
+            </span>
             Calc. Flete
-          </button>
-          <button
-            className="pf-btn pf-btn--primary pdl-costs-dropdown__btn"
+          </ZHBtn>
+          <ZHBtn
+            type="button"
+            variant="primary"
+            className="pdl-costs-dropdown__btn"
             onClick={ctx.handleRecalculate}
             disabled={ctx.fieldDisabled || !ctx.editing}
           >
@@ -1637,9 +1643,9 @@ function CostsDropdown({ ctx }: { ctx: ReturnType<typeof usePurchasesPage> }) {
               className="material-symbols-outlined pdl-costs-dropdown__icon"
             >
               sync
-            </span>{" "}
+            </span>
             Recalcular
-          </button>
+          </ZHBtn>
         </div>
       )}
     </div>
@@ -1679,8 +1685,10 @@ function PaymentScheduleSection({
         </h4>
         {ctx.isDraft && !ctx.hasPersistedSchedule && (
           <div className="pf-schedule-actions">
-            <button
-              className="pf-btn pf-btn--primary pf-schedule-action-btn"
+            <ZHBtn
+              type="button"
+              variant="primary"
+              className="pf-schedule-action-btn"
               onClick={ctx.regenerateSchedule}
               disabled={ctx.saving || !ctx.formWatch.issueDate}
             >
@@ -1688,11 +1696,13 @@ function PaymentScheduleSection({
                 className="material-symbols-outlined pf-schedule-action-icon"
               >
                 autorenew
-              </span>{" "}
+              </span>
               Regenerar
-            </button>
-            <button
-              className="pf-btn pf-schedule-action-btn"
+            </ZHBtn>
+            <ZHBtn
+              type="button"
+              variant="secondary"
+              className="pf-schedule-action-btn"
               onClick={ctx.addInstallment}
               disabled={ctx.saving || !ctx.formWatch.issueDate}
             >
@@ -1700,9 +1710,9 @@ function PaymentScheduleSection({
                 className="material-symbols-outlined pf-schedule-action-icon"
               >
                 add
-              </span>{" "}
+              </span>
               Cuota
-            </button>
+            </ZHBtn>
           </div>
         )}
       </div>
@@ -1933,8 +1943,10 @@ function RetentionSection({
         <div className="pf-retention-actions">
           {!ctx.withholding && (
             <>
-              <button
-                className="pf-btn pf-btn--primary pf-retention-action-btn"
+              <ZHBtn
+                type="button"
+                variant="primary"
+                className="pf-retention-action-btn"
                 onClick={ctx.handleCalcRetention}
                 disabled={ctx.whLoading}
               >
@@ -1942,12 +1954,14 @@ function RetentionSection({
                   className="material-symbols-outlined pf-retention-action-icon"
                 >
                   calculate
-                </span>{" "}
+                </span>
                 Calcular
-              </button>
+              </ZHBtn>
               {ctx.whPreview && ctx.whPreview.lines.length > 0 && (
-                <button
-                  className="pf-btn pf-btn--success pf-retention-action-btn"
+                <ZHBtn
+                  type="button"
+                  variant="primary"
+                  className="pf-retention-action-btn"
                   onClick={() => ctx.setModalWhIssue(true)}
                   disabled={ctx.whLoading}
                 >
@@ -1955,15 +1969,17 @@ function RetentionSection({
                     className="material-symbols-outlined pf-retention-action-icon"
                   >
                     receipt_long
-                  </span>{" "}
+                  </span>
                   Emitir
-                </button>
+                </ZHBtn>
               )}
             </>
           )}
           {ctx.withholding && ctx.withholding.status === "Issued" && (
-            <button
-              className="pf-btn pf-btn--danger pf-retention-action-btn"
+            <ZHBtn
+              type="button"
+              variant="destructive"
+              className="pf-retention-action-btn"
               onClick={() => ctx.setModalWhCancel(true)}
               disabled={ctx.whLoading}
             >
@@ -1971,9 +1987,9 @@ function RetentionSection({
                 className="material-symbols-outlined pf-retention-action-icon"
               >
                 cancel
-              </span>{" "}
+              </span>
               Anular
-            </button>
+            </ZHBtn>
           )}
         </div>
       </div>
