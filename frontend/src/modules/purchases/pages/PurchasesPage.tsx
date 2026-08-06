@@ -206,22 +206,24 @@ export function PurchasesPage() {
                 {ctx.listTotal} compra(s)
               </span>
               <div className="pf-pagination__actions">
-                <button
-                  className="pf-btn"
+                <ZHBtn
+                  type="button"
+                  variant="secondary"
                   disabled={ctx.listPage <= 1}
                   onClick={() => ctx.setListPage((p) => p - 1)}
                 >
                   Anterior
-                </button>
-                <button
-                  className="pf-btn"
+                </ZHBtn>
+                <ZHBtn
+                  type="button"
+                  variant="secondary"
                   disabled={
                     ctx.listPage >= Math.ceil(ctx.listTotal / ctx.listPageSize)
                   }
                   onClick={() => ctx.setListPage((p) => p + 1)}
                 >
                   Siguiente
-                </button>
+                </ZHBtn>
               </div>
             </div>
           )}
@@ -754,20 +756,22 @@ export function PurchasesPage() {
 
           {/* Footer Actions */}
           <div className="pf-footer">
-            <button
-              className="pf-btn"
+            <ZHBtn
+              type="button"
+              variant="secondary"
               onClick={() => {
                 ctx.resetForm();
                 ctx.setTab("listado");
               }}
             >
-              <span className="material-symbols-outlined pf-btn__icon">
+              <span className="material-symbols-outlined zh-icon-md">
                 arrow_back
               </span>
               Cancelar
-            </button>
-            <button
-              className="pf-btn pf-btn--primary"
+            </ZHBtn>
+            <ZHBtn
+              type="button"
+              variant="primary"
               onClick={ctx.handleSave}
               disabled={
                 ctx.saving ||
@@ -777,7 +781,7 @@ export function PurchasesPage() {
                 ctx.lines.length === 0
               }
             >
-              <span className="material-symbols-outlined pf-btn__icon">
+              <span className="material-symbols-outlined zh-icon-md">
                 save
               </span>
               {ctx.saving
@@ -785,10 +789,11 @@ export function PurchasesPage() {
                 : ctx.editing
                   ? "Actualizar Borrador"
                   : "Guardar Borrador"}
-            </button>
+            </ZHBtn>
             {ctx.editing && ctx.editing.status === "Draft" && (
-              <button
-                className="pf-btn pf-btn--success"
+              <ZHBtn
+                type="button"
+                variant="primary"
                 onClick={() => ctx.setModalConfirm(true)}
                 disabled={
                   ctx.fieldDisabled || ctx.pendingReceptionItems.length > 0
@@ -799,36 +804,38 @@ export function PurchasesPage() {
                     : undefined
                 }
               >
-                <span className="material-symbols-outlined pf-btn__icon">
+                <span className="material-symbols-outlined zh-icon-md">
                   check_circle
                 </span>
                 Confirmar Compra
-              </button>
+              </ZHBtn>
             )}
             {ctx.editing && ctx.editing.status === "Confirmed" && (
-              <button
-                className="pf-btn"
+              <ZHBtn
+                type="button"
+                variant="secondary"
                 onClick={() =>
                   navigate(`/purchases/returns/new?invoiceId=${ctx.editing!.id}`)
                 }
               >
-                <span className="material-symbols-outlined pf-btn__icon">
+                <span className="material-symbols-outlined zh-icon-md">
                   assignment_return
                 </span>
                 Devolución
-              </button>
+              </ZHBtn>
             )}
             {ctx.editing && ctx.editing.status === "Confirmed" && (
-              <button
-                className="pf-btn pf-btn--danger"
+              <ZHBtn
+                type="button"
+                variant="destructive"
                 onClick={() => ctx.setModalCancelReason(true)}
                 disabled={ctx.fieldDisabled}
               >
-                <span className="material-symbols-outlined pf-btn__icon">
+                <span className="material-symbols-outlined zh-icon-md">
                   block
                 </span>
                 Anular Compra
-              </button>
+              </ZHBtn>
             )}
           </div>
         </div>
