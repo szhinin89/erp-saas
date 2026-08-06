@@ -154,7 +154,7 @@ export function ProductPicker({ onSelect, disabled, vatRates }: Props) {
       />
 
       {open && query.length >= 2 && (
-        <div className="pf-picker-dropdown">
+        <div className="zh-picker__dropdown">
           {loading && (
             <div className="zh-picker__empty">
               Buscando...
@@ -171,29 +171,29 @@ export function ProductPicker({ onSelect, disabled, vatRates }: Props) {
               <button
                 key={item.id}
                 type="button"
-                className={`pf-picker-item ${i === focusIdx ? "pf-picker-item--focused" : ""}`}
+                className={`zh-picker__result${i === focusIdx ? " zh-picker__result--focused" : ""}`}
                 onClick={() => void handleSelect(item)}
                 onMouseEnter={() => setFocusIdx(i)}
               >
-                <div className="pf-picker-item__main">
-                  <div className="pf-picker-item__name">
-                    <span className="pf-picker-item__sku">{item.sku}</span>
+                <div className="zh-picker__result-main">
+                  <div className="zh-picker__result-name">
+                    <span className="zh-picker__result-code">{item.sku}</span>
                     {item.shortName}
                   </div>
-                  <div className="pf-picker-item__desc">{item.description}</div>
+                  <div className="zh-picker__result-desc">{item.description}</div>
                 </div>
                 {cached && (
-                  <div className="pf-picker-item__meta">
-                    <span className="pf-picker-item__meta-label">PVP:</span>
-                    <span className="pf-picker-item__meta-value">
+                  <div className="zh-picker__result-extra">
+                    <span className="zh-picker__result-extra-label">PVP:</span>
+                    <span className="zh-picker__result-extra-value">
                       $
                       {formatMoney(
                         cached.currentPvp,
                         getDecimalConfig().salesUnitPrice,
                       )}
                     </span>
-                    <span className="pf-picker-item__meta-label">IVA:</span>
-                    <span className="pf-picker-item__meta-value">
+                    <span className="zh-picker__result-extra-label">IVA:</span>
+                    <span className="zh-picker__result-extra-value">
                       {cached.vatRate ?? cached.purchaseVatCode ?? "..."}
                     </span>
                   </div>

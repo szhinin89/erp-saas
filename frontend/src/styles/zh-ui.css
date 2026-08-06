@@ -2601,6 +2601,45 @@ input[type="date"] {
   background: var(--color-surface-container-low);
 }
 
+.zh-picker__result-main {
+  min-width: 0;
+}
+
+.zh-picker__result-code {
+  display: inline-flex;
+  align-items: center;
+  margin-right: var(--space-2);
+  font-family: var(--font-family-mono);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-primary);
+}
+
+.zh-picker__result-desc {
+  margin-top: var(--space-1);
+  color: var(--color-text-muted);
+  font-size: var(--font-size-xs);
+  line-height: var(--line-height-snug);
+}
+
+.zh-picker__result-extra {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  margin-left: var(--space-3);
+  color: var(--color-text-muted);
+  font-size: var(--font-size-xs);
+  white-space: nowrap;
+}
+
+.zh-picker__result-extra-label {
+  font-weight: var(--font-weight-semibold);
+}
+
+.zh-picker__result-extra-value {
+  font-family: var(--font-family-mono);
+  color: var(--color-text);
+}
 .zh-picker__create-btn {
   display: inline-flex;
   align-items: center;
