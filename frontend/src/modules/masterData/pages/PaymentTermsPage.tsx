@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+﻿import { useCallback, useEffect, useState } from "react";
 import { ErpPageTemplate } from "../../../templates/ErpPageTemplate";
 import { ZHBtn, ZHField } from "../../../components/zh/ZHForm";
 import type {
@@ -207,22 +207,18 @@ export function PaymentTermsPage() {
                       </span>
                     </td>
                     <td className="prd-td-actions">
-                      <IconBtn
+                      <ZHIconButton
                         icon="edit"
-                        color="var(--color-primary)"
                         title="Editar"
+                        variant="primary"
                         onClick={() => startEdit(pt)}
                       />
-                      <IconBtn
-                        icon={pt.isActive ? "toggle_off" : "toggle_on"}
-                        color={
-                          pt.isActive
-                            ? "var(--color-error)"
-                            : "var(--color-success)"
-                        }
-                        title={pt.isActive ? "Desactivar" : "Activar"}
-                        onClick={() => handleToggle(pt)}
-                      />
+                      <ZHIconButton
+                          icon={pt.isActive ? "toggle_off" : "toggle_on"}
+                          title={pt.isActive ? "Desactivar" : "Activar"}
+                          variant={pt.isActive ? "danger" : "success"}
+                          onClick={() => handleToggle(pt)}
+                        />
                     </td>
                   </tr>
                 ))}
@@ -346,30 +342,3 @@ export function PaymentTermsPage() {
   );
 }
 
-function IconBtn({
-  icon,
-  color,
-  title,
-  onClick,
-}: {
-  icon: string;
-  color: string;
-  title: string;
-  onClick: () => void;
-}) {
-  return (
-    <button
-      className={`prd-icon-btn ${
-        color === "var(--color-error)"
-          ? "prd-icon-btn--danger"
-          : color === "var(--color-success)"
-            ? "prd-icon-btn--success"
-            : "prd-icon-btn--primary"
-      }`}
-      onClick={onClick}
-      title={title}
-    >
-      <span className="material-symbols-outlined">{icon}</span>
-    </button>
-  );
-}
