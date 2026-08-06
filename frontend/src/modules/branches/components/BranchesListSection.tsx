@@ -1,4 +1,4 @@
-import { Link } from "react-router-dom";
+﻿import { Link } from "react-router-dom";
 import { EmptyState, LoadingState, Badge } from "../../../components/PageShell";
 import { ZHBtn } from "../../../components/zh/ZHForm";
 import type { BranchesPageContext } from "../hooks/useBranchesPage";
@@ -121,7 +121,7 @@ export function BranchesListSection({
               <span className="material-symbols-outlined">search</span>
               <input
                 type="text"
-                placeholder="Buscar por nombre, código o encargado..."
+                placeholder="Buscar por nombre, cÃ³digo o encargado..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 disabled={loading}
@@ -152,9 +152,9 @@ export function BranchesListSection({
             <table className="table">
               <thead>
                 <tr>
-                  <th>Código</th>
+                  <th>CÃ³digo</th>
                   <th>Nombre</th>
-                  <th>Dirección</th>
+                  <th>DirecciÃ³n</th>
                   <th>Responsable</th>
                   <th>Estado</th>
                   {canUpdate || canDelete ? (
@@ -177,8 +177,8 @@ export function BranchesListSection({
                   >
                     <td>
                       <Badge
-                        label={row.code ?? "—"}
-                        variant="gray"
+                        label={row.code ?? "â€”"}
+                        variant="neutral"
                         size="md"
                         className="mono"
                       />
@@ -187,17 +187,17 @@ export function BranchesListSection({
                       <div className="br-list-name">{row.name}</div>
                       {row.isMainBranch && (
                         <div className="br-list-sub">
-                          <Badge label="Principal" variant="blue" size="md" />
+                          <Badge label="Principal" variant="info" size="md" />
                         </div>
                       )}
                     </td>
                     <td>
                       <div className="br-list-contact">
-                        {row.address || <span className="subtle">—</span>}
+                        {row.address || <span className="subtle">â€”</span>}
                       </div>
                     </td>
                     <td>
-                      {row.managerName ?? <span className="subtle">—</span>}
+                      {row.managerName ?? <span className="subtle">â€”</span>}
                     </td>
                     <td>
                       <span
@@ -266,7 +266,7 @@ export function BranchesListSection({
           </p>
           {items.length > 0 && (
             <p className="pg-table-timestamp">
-              Última carga: {new Date().toTimeString().slice(0, 8)}
+              Ãšltima carga: {new Date().toTimeString().slice(0, 8)}
             </p>
           )}
         </div>
@@ -274,3 +274,4 @@ export function BranchesListSection({
     </>
   );
 }
+

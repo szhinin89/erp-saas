@@ -1,4 +1,4 @@
-import { EmptyState, LoadingState } from "../../../components/PageShell";
+﻿import { EmptyState, LoadingState } from "../../../components/PageShell";
 import { ZHBtn } from "../../../components/zh/ZHForm";
 import { Badge } from "../../../components/PageShell";
 import { useI18n } from "../../../i18n/i18n";
@@ -110,7 +110,7 @@ export function CashRegistersListSection({
               <span className="material-symbols-outlined">search</span>
               <input
                 type="text"
-                placeholder="Buscar por código, nombre o sucursal..."
+                placeholder="Buscar por cÃ³digo, nombre o sucursal..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 disabled={loading}
@@ -141,10 +141,10 @@ export function CashRegistersListSection({
             <table className="table">
               <thead>
                 <tr>
-                  <th>Código</th>
+                  <th>CÃ³digo</th>
                   <th>Nombre</th>
                   <th>Sucursal</th>
-                  <th>Establecimiento / Pto. Emisión</th>
+                  <th>Establecimiento / Pto. EmisiÃ³n</th>
                   <th>Estado</th>
                   <th>Fecha</th>
                   {canManage ? <th className="pg-th-right">Acciones</th> : null}
@@ -166,7 +166,7 @@ export function CashRegistersListSection({
                     <td>
                       <Badge
                         label={row.code}
-                        variant="gray"
+                        variant="neutral"
                         size="md"
                         className="mono"
                       />
@@ -177,7 +177,7 @@ export function CashRegistersListSection({
                         <div className="br-list-sub">
                           <Badge
                             label="Con historial"
-                            variant="blue"
+                            variant="info"
                             size="md"
                           />
                         </div>
@@ -196,7 +196,7 @@ export function CashRegistersListSection({
                             {row.establishmentCode}-{row.emissionPointCode}
                           </div>
                           <div className="br-list-sub">
-                            {row.emissionPointName ?? "—"}
+                            {row.emissionPointName ?? "â€”"}
                           </div>
                         </>
                       ) : (
@@ -262,7 +262,7 @@ export function CashRegistersListSection({
           <p className="subtle br-list-footer-note">{filtered.length} cajas</p>
           {items.length > 0 && (
             <p className="pg-table-timestamp">
-              Última carga: {new Date().toTimeString().slice(0, 8)}
+              Ãšltima carga: {new Date().toTimeString().slice(0, 8)}
             </p>
           )}
         </div>
@@ -270,3 +270,4 @@ export function CashRegistersListSection({
     </>
   );
 }
+

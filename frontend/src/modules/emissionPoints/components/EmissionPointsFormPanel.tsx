@@ -1,4 +1,4 @@
-import { useState } from "react";
+﻿import { useState } from "react";
 import { Controller } from "react-hook-form";
 import { ZHPageNotice } from "../../../components/zh/ZHPageNotice";
 import {
@@ -57,11 +57,11 @@ export function EmissionPointsFormPanel({
         <div>
           <p className="cfg-panel-hd__title">
             {isEdit
-              ? (editingName ?? "Editar Punto de Emisión")
-              : "Nuevo Punto de Emisión"}
+              ? (editingName ?? "Editar Punto de EmisiÃ³n")
+              : "Nuevo Punto de EmisiÃ³n"}
           </p>
           {isEdit && editingCode && (
-            <p className="cfg-panel-hd__sub">Código: {editingCode}</p>
+            <p className="cfg-panel-hd__sub">CÃ³digo: {editingCode}</p>
           )}
         </div>
       </div>
@@ -92,7 +92,7 @@ export function EmissionPointsFormPanel({
         noValidate
       >
         <div className="cfg-panel-body">
-          {/* Información del punto de emisión */}
+          {/* InformaciÃ³n del punto de emisiÃ³n */}
           <div className="pg-section">
             <div className="pg-section-header">
               <div className="pg-section-header-left">
@@ -100,7 +100,7 @@ export function EmissionPointsFormPanel({
                   info
                 </span>
                 <span className="pg-section-label">
-                  Información del punto de emisión
+                  InformaciÃ³n del punto de emisiÃ³n
                 </span>
               </div>
             </div>
@@ -117,22 +117,22 @@ export function EmissionPointsFormPanel({
                     {...register("establishmentId")}
                   >
                     <option value="">
-                      {loadingEstablishments ? "Cargando…" : "— seleccionar —"}
+                      {loadingEstablishments ? "Cargandoâ€¦" : "â€” seleccionar â€”"}
                     </option>
                     {establishments.map((e) => (
                       <option key={e.id} value={e.id}>
-                        {e.code} — {e.name}
+                        {e.code} â€” {e.name}
                       </option>
                     ))}
                   </select>
                 </ZHField>
 
-                <ZHField label="Código" required error={errors.code?.message}>
+                <ZHField label="CÃ³digo" required error={errors.code?.message}>
                   {isEdit ? (
                     <input
                       className="zh-input mono ep-code-readonly"
                       readOnly
-                      value={editingCode ?? "—"}
+                      value={editingCode ?? "â€”"}
                     />
                   ) : (
                     <input
@@ -157,7 +157,7 @@ export function EmissionPointsFormPanel({
             </div>
           </div>
 
-          {/* Configuración de emisión */}
+          {/* ConfiguraciÃ³n de emisiÃ³n */}
           <div className="pg-section">
             <div className="pg-section-header">
               <div className="pg-section-header-left">
@@ -165,13 +165,13 @@ export function EmissionPointsFormPanel({
                   settings_input_component
                 </span>
                 <span className="pg-section-label">
-                  Configuración de emisión
+                  ConfiguraciÃ³n de emisiÃ³n
                 </span>
               </div>
             </div>
             <div className="pg-section-body">
               <ZHField
-                label="Tipo de emisión"
+                label="Tipo de emisiÃ³n"
                 required
                 error={errors.emissionType?.message}
               >
@@ -190,9 +190,9 @@ export function EmissionPointsFormPanel({
                           }
                           disabled={saving}
                         />
-                        <Badge label="Electrónico" variant="blue" size="md" />
+                        <Badge label="ElectrÃ³nico" variant="info" size="md" />
                         <span className="zh-radio-desc">
-                          Documentos emitidos electrónicamente (SRI)
+                          Documentos emitidos electrÃ³nicamente (SRI)
                         </span>
                       </label>
                       <label className="zh-radio-option">
@@ -205,7 +205,7 @@ export function EmissionPointsFormPanel({
                           }
                           disabled={saving}
                         />
-                        <Badge label="Físico" variant="gray" size="md" />
+                        <Badge label="FÃ­sico" variant="neutral" size="md" />
                         <span className="zh-radio-desc">
                           Documentos impresos en papel
                         </span>
@@ -220,8 +220,8 @@ export function EmissionPointsFormPanel({
                 control={control}
                 render={({ field }) => (
                   <ZHToggle
-                    label="Punto de emisión por defecto"
-                    description="Se usará este punto al crear documentos fiscales sin selección explícita."
+                    label="Punto de emisiÃ³n por defecto"
+                    description="Se usarÃ¡ este punto al crear documentos fiscales sin selecciÃ³n explÃ­cita."
                     value={field.value}
                     onChange={field.onChange}
                     disabled={saving}
@@ -245,10 +245,10 @@ export function EmissionPointsFormPanel({
             </ZHBtn>
             <ZHBtn variant="primary" type="submit" disabled={saving}>
               {saving
-                ? "Guardando…"
+                ? "Guardandoâ€¦"
                 : isEdit
                   ? "Guardar cambios"
-                  : "Crear punto de emisión"}
+                  : "Crear punto de emisiÃ³n"}
             </ZHBtn>
           </div>
         </div>
@@ -256,3 +256,4 @@ export function EmissionPointsFormPanel({
     </div>
   );
 }
+

@@ -1,4 +1,4 @@
-import { EmptyState, LoadingState } from "../../../components/PageShell";
+﻿import { EmptyState, LoadingState } from "../../../components/PageShell";
 import { ZHBtn } from "../../../components/zh/ZHForm";
 import { Badge } from "../../../components/PageShell";
 import { useI18n } from "../../../i18n/i18n";
@@ -60,7 +60,7 @@ export function EmissionPointsListSection({
               <span className="material-symbols-outlined">bolt</span>
             </div>
             <div className="pg-kpi-bottom">
-              <p className="pg-kpi-label">Electrónicos</p>
+              <p className="pg-kpi-label">ElectrÃ³nicos</p>
               <p className="pg-kpi-value">{totals.electronic}</p>
             </div>
           </div>
@@ -69,7 +69,7 @@ export function EmissionPointsListSection({
               <span className="material-symbols-outlined">print</span>
             </div>
             <div className="pg-kpi-bottom">
-              <p className="pg-kpi-label">Físicos</p>
+              <p className="pg-kpi-label">FÃ­sicos</p>
               <p className="pg-kpi-value">{totals.physical}</p>
             </div>
           </div>
@@ -92,7 +92,7 @@ export function EmissionPointsListSection({
               point_of_sale
             </span>
             <span className="pg-section-label">
-              Puntos de Emisión Registrados
+              Puntos de EmisiÃ³n Registrados
             </span>
           </div>
           <div className="br-actions-tight">
@@ -126,7 +126,7 @@ export function EmissionPointsListSection({
               <span className="material-symbols-outlined">search</span>
               <input
                 type="text"
-                placeholder="Buscar por código, nombre o establecimiento..."
+                placeholder="Buscar por cÃ³digo, nombre o establecimiento..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 disabled={loading}
@@ -157,10 +157,10 @@ export function EmissionPointsListSection({
             <table className="table">
               <thead>
                 <tr>
-                  <th>Código</th>
+                  <th>CÃ³digo</th>
                   <th>Nombre</th>
                   <th>Sucursal</th>
-                  <th>Tipo de emisión</th>
+                  <th>Tipo de emisiÃ³n</th>
                   <th>Estado</th>
                   <th>Fecha</th>
                   {canUpdate || canDelete ? (
@@ -184,18 +184,18 @@ export function EmissionPointsListSection({
                     <td>
                       <Badge
                         label={row.code}
-                        variant="gray"
+                        variant="neutral"
                         size="md"
                         className="mono"
                       />
                     </td>
                     <td>
                       <div className="br-list-name">
-                        {row.name ?? <span className="subtle">—</span>}
+                        {row.name ?? <span className="subtle">â€”</span>}
                       </div>
                       {row.isDefault && (
                         <div className="br-list-sub">
-                          <Badge label="Por defecto" variant="blue" size="md" />
+                          <Badge label="Por defecto" variant="info" size="md" />
                         </div>
                       )}
                     </td>
@@ -217,8 +217,8 @@ export function EmissionPointsListSection({
                         size="md"
                         label={
                           row.emissionType === EMISSION_TYPE_ELECTRONIC
-                            ? "Electrónico"
-                            : "Físico"
+                            ? "ElectrÃ³nico"
+                            : "FÃ­sico"
                         }
                       />
                     </td>
@@ -281,11 +281,11 @@ export function EmissionPointsListSection({
 
         <div className="pg-table-footer">
           <p className="subtle br-list-footer-note">
-            {filtered.length} puntos de emisión
+            {filtered.length} puntos de emisiÃ³n
           </p>
           {items.length > 0 && (
             <p className="pg-table-timestamp">
-              Última carga: {new Date().toTimeString().slice(0, 8)}
+              Ãšltima carga: {new Date().toTimeString().slice(0, 8)}
             </p>
           )}
         </div>
@@ -293,3 +293,4 @@ export function EmissionPointsListSection({
     </>
   );
 }
+

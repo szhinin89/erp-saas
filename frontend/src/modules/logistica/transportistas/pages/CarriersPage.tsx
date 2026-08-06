@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+﻿import { useMemo, useState } from "react";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
@@ -32,7 +32,7 @@ export function CarriersPage() {
   const canCreate = canShow("logistics.carriers.create");
   const canEdit = canShow("logistics.carriers.update") || canCreate;
 
-  /* ── State ── */
+  /* â”€â”€ State â”€â”€ */
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<
     "all" | "active" | "inactive"
@@ -40,7 +40,7 @@ export function CarriersPage() {
   const [modalOpen, setModalOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
 
-  /* ── Data ── */
+  /* â”€â”€ Data â”€â”€ */
   const {
     carriers,
     loading,
@@ -64,7 +64,7 @@ export function CarriersPage() {
     defaultValues: defaultCarrierValues,
   });
 
-  /* ── Derived ── */
+  /* â”€â”€ Derived â”€â”€ */
   const filtered = useMemo(() => {
     let list = carriers;
     if (statusFilter === "active") list = list.filter((c) => c.isActive);
@@ -89,7 +89,7 @@ export function CarriersPage() {
     [carriers],
   );
 
-  /* ── Modal helpers ── */
+  /* â”€â”€ Modal helpers â”€â”€ */
   const openCreate = () => {
     setEditingId(null);
     reset(defaultCarrierValues);
@@ -155,7 +155,7 @@ export function CarriersPage() {
         ) : undefined
       }
     >
-      {/* ── Errors ── */}
+      {/* â”€â”€ Errors â”€â”€ */}
       {error && (
         <ZHPageNotice
           variant="error"
@@ -171,7 +171,7 @@ export function CarriersPage() {
         />
       )}
 
-      {/* ── KPI cards ── */}
+      {/* â”€â”€ KPI cards â”€â”€ */}
       <div className="pg-kpis">
         <div className="pg-kpi pg-kpi--h">
           <div className="pg-kpi-icon pg-kpi-icon--primary">
@@ -202,7 +202,7 @@ export function CarriersPage() {
         </div>
       </div>
 
-      {/* ── Table section ── */}
+      {/* â”€â”€ Table section â”€â”€ */}
       <div className="pg-section">
         {/* Filter bar */}
         <div className="pg-table-controls">
@@ -265,7 +265,7 @@ export function CarriersPage() {
                         label={t(
                           `carriers.idType.${carrier.identificationType}`,
                         )}
-                        variant="gray"
+                        variant="neutral"
                         upper
                       />
                     </td>
@@ -274,12 +274,12 @@ export function CarriersPage() {
                     <td>
                       <Badge
                         label={carrier.licensePlate}
-                        variant="blue"
+                        variant="info"
                         className="mono"
                       />
                     </td>
-                    <td className="subtle">{carrier.phone ?? "—"}</td>
-                    <td className="subtle">{carrier.email ?? "—"}</td>
+                    <td className="subtle">{carrier.phone ?? "â€”"}</td>
+                    <td className="subtle">{carrier.email ?? "â€”"}</td>
                     <td>
                       <span
                         className={
@@ -343,7 +343,7 @@ export function CarriersPage() {
             ? t("carriers.modal.editTitle")
             : t("carriers.modal.createTitle")
         }
-        subtitle={t("carriers.subtitle", "Gestión de transportistas.")}
+        subtitle={t("carriers.subtitle", "GestiÃ³n de transportistas.")}
         footer={
           <div className="pg-actions-buttons">
             <ZHBtn variant="ghost" size="md" type="button" onClick={closeModal}>
@@ -463,3 +463,4 @@ export function CarriersPage() {
     </ErpPageTemplate>
   );
 }
+

@@ -1,4 +1,4 @@
-import { EmptyState, LoadingState, Badge } from "../../../components/PageShell";
+﻿import { EmptyState, LoadingState, Badge } from "../../../components/PageShell";
 import { ZHBtn } from "../../../components/zh/ZHForm";
 import type { EstablishmentsPageContext } from "../hooks/useEstablishmentsPage";
 
@@ -122,7 +122,7 @@ export function EstablishmentsListSection({
               <span className="material-symbols-outlined">search</span>
               <input
                 type="text"
-                placeholder="Buscar por código, nombre, dirección o sucursal..."
+                placeholder="Buscar por cÃ³digo, nombre, direcciÃ³n o sucursal..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 disabled={loading}
@@ -165,11 +165,11 @@ export function EstablishmentsListSection({
             <table className="table">
               <thead>
                 <tr>
-                  <th>Código SRI</th>
+                  <th>CÃ³digo SRI</th>
                   <th>Nombre</th>
-                  <th>Dirección fiscal</th>
+                  <th>DirecciÃ³n fiscal</th>
                   <th>Sucursal</th>
-                  <th>P. Emisión</th>
+                  <th>P. EmisiÃ³n</th>
                   <th>Estado</th>
                   {(canUpdate || canDisable) && (
                     <th className="pg-th-right">Acciones</th>
@@ -192,14 +192,14 @@ export function EstablishmentsListSection({
                     <td>
                       <Badge
                         label={row.code}
-                        variant="gray"
+                        variant="neutral"
                         size="md"
                         className="mono"
                       />
                       {row.isMain && (
                         <Badge
                           label="Principal"
-                          variant="blue"
+                          variant="info"
                           size="md"
                           className="zh-ml-1"
                         />
@@ -218,13 +218,13 @@ export function EstablishmentsListSection({
                       {row.branchName ? (
                         <div className="br-list-name">{row.branchName}</div>
                       ) : (
-                        <span className="subtle">—</span>
+                        <span className="subtle">â€”</span>
                       )}
                     </td>
                     <td>
                       <Badge
                         label={row.emissionPointCount}
-                        variant="gray"
+                        variant="neutral"
                         size="md"
                       />
                     </td>
@@ -287,3 +287,4 @@ export function EstablishmentsListSection({
     </>
   );
 }
+
