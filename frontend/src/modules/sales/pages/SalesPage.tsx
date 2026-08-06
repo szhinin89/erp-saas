@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { ZHBtn, ZHField } from "../../../components/zh/ZHForm";
+import { ZHIconButton } from "../../../components/zh/ZHIconButton";
 import { ZhDecimalInput } from "../../../components/zh/inputs/ZhDecimalInput";
 import { ZHPromptModal } from "../../../components/zh/ZHConfirmModal";
 import { ZHPageNotice } from "../../../components/zh/ZHPageNotice";
@@ -111,18 +112,19 @@ export function SalesPage() {
       {ctx.tab === "listado" && (
         <div className="prd-section">
           <div className="pg-table-controls sales-page-listbar">
-            <button
-              className="pf-btn pf-btn--primary"
+            <ZHBtn
+              type="button"
+              variant="primary"
               onClick={() => {
                 void ctx.resetForm();
                 ctx.setTab("nuevo");
               }}
             >
-              <span className="material-symbols-outlined pf-btn__icon">
+              <span className="material-symbols-outlined zh-icon-md">
                 add
               </span>
               Nueva Factura
-            </button>
+            </ZHBtn>
             <div className="sales-page-spacer" />
             <input
               type="text"
@@ -180,45 +182,33 @@ export function SalesPage() {
                       </span>
                     </td>
                     <td className="pf-td--center">
-                      <button
-                        className="pf-row-action"
-                        onClick={() => void ctx.loadForEdit(inv.id)}
+                      <ZHIconButton
+                        icon={inv.status === "Draft" ? "replay" : "edit"}
                         title={
                           inv.status === "Draft"
                             ? "Reintentar emisión"
                             : "Ver / Editar"
                         }
-                      >
-                        <span className="material-symbols-outlined sales-page-list-action-icon">
-                          {inv.status === "Draft" ? "replay" : "edit"}
-                        </span>
-                      </button>
+                        onClick={() => void ctx.loadForEdit(inv.id)}
+                      />
                       {inv.status === "Authorized" && (
-                        <button
-                          className="pf-row-action"
+                        <ZHIconButton
+                          icon="history"
                           title="Ver Movimiento de Inventario"
                           onClick={() =>
                             navigate(
                               `/inventory/kardex?docId=${inv.id}&docType=SalesInvoice`,
                             )
                           }
-                        >
-                          <span className="material-symbols-outlined sales-page-list-action-icon">
-                            history
-                          </span>
-                        </button>
+                        />
                       )}
                       {inv.status === "Authorized" && (
-                        <button
-                          className="pf-row-action"
+                        <ZHIconButton
+                          icon="picture_as_pdf"
                           title="Ver RIDE"
                           disabled={ride.ridePending}
                           onClick={() => void ride.handleViewRide(inv.id)}
-                        >
-                          <span className="material-symbols-outlined sales-page-list-action-icon">
-                            picture_as_pdf
-                          </span>
-                        </button>
+                        />
                       )}
                     </td>
                   </tr>
@@ -549,17 +539,11 @@ export function SalesPage() {
                   {ctx.editing?.accessKey ?? "— se genera al emitir —"}
                 </span>
                 {ctx.editing && (
-                  <button
-                    type="button"
-                    className="edm-icon-btn"
-                    onClick={() => setSriDiagnosticOpen(true)}
-                    aria-label="Ver diagnóstico SRI"
+                  <ZHIconButton
+                    icon="troubleshoot"
                     title="Ver diagnóstico SRI"
-                  >
-                    <span className="material-symbols-outlined zh-icon-sm">
-                      troubleshoot
-                    </span>
-                  </button>
+                    onClick={() => setSriDiagnosticOpen(true)}
+                  />
                 )}
               </div>
             )}
@@ -1117,17 +1101,16 @@ function PaymentMethodsSection({
                         }}
                         className="sales-payment-input"
                       />
-                      <button
-                        type="button"
+                      <ZHIconButton
+                        icon="close"
+                        title="Eliminar pago"
+                        variant="danger"
                         onClick={() =>
                           ctx.setInvoicePayments((prev) =>
                             prev.filter((p) => p._key !== entry!._key),
                           )
                         }
-                        className="sales-payment-remove-btn"
-                      >
-                        ×
-                      </button>
+                      />
                     </div>
                   )}
                   {hasValue && pm.requiresReference && !isCredit && (
