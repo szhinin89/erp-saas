@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { ErpPageTemplate } from "../../../templates/ErpPageTemplate";
 import { ZHBtn } from "../../../components/zh/ZHForm";
+import { ZHIconButton } from "../../../components/zh/ZHIconButton";
 import { ZhDecimalInput } from "../../../components/zh/inputs/ZhDecimalInput";
 import { ZhCurrencyInput } from "../../../components/zh/inputs/ZhCurrencyInput";
 import { parseDecimal } from "../../../lib/sanitizers";
@@ -275,22 +276,18 @@ export function PriceListsPage() {
                       </span>
                     </td>
                     <td className="prd-td-actions">
-                      <button
-                        className="prd-icon-btn prd-icon-btn--primary"
-                        onClick={() => startEdit(pl)}
+                      <ZHIconButton
+                        icon="edit"
                         title="Editar"
-                      >
-                        <span className="material-symbols-outlined">edit</span>
-                      </button>
-                      <button
-                        className={`prd-icon-btn ${pl.isActive ? "prd-icon-btn--danger" : "prd-icon-btn--success"}`}
-                        onClick={() => handleToggle(pl)}
+                        variant="primary"
+                        onClick={() => startEdit(pl)}
+                      />
+                      <ZHIconButton
+                        icon={pl.isActive ? "toggle_off" : "toggle_on"}
                         title={pl.isActive ? "Desactivar" : "Activar"}
-                      >
-                        <span className="material-symbols-outlined">
-                          {pl.isActive ? "toggle_off" : "toggle_on"}
-                        </span>
-                      </button>
+                        variant={pl.isActive ? "danger" : "success"}
+                        onClick={() => handleToggle(pl)}
+                      />
                     </td>
                   </tr>
                 ))}

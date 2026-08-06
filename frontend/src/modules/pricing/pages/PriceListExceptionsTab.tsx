@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ZHBtn } from "../../../components/zh/ZHForm";
+import { ZHIconButton } from "../../../components/zh/ZHIconButton";
 import { ZHDrawer } from "../../../components/zh/ZHDrawer";
 import { ZHConfirmModal } from "../../../components/zh/ZHConfirmModal";
 import { ZhDecimalInput } from "../../../components/zh/inputs/ZhDecimalInput";
@@ -169,25 +170,19 @@ export function PriceListExceptionsTab({
                       : "—"}
                   </td>
                   <td className="prd-td-actions">
-                    <button
-                      className="prd-icon-btn prd-icon-btn--primary"
-                      onClick={() => openForRow(row)}
+                    <ZHIconButton
+                      icon={row.rule ? "edit" : "add_circle"}
                       title={row.rule ? "Editar excepción" : "Crear excepción"}
-                    >
-                      <span className="material-symbols-outlined">
-                        {row.rule ? "edit" : "add_circle"}
-                      </span>
-                    </button>
+                      variant="primary"
+                      onClick={() => openForRow(row)}
+                    />
                     {row.rule && (
-                      <button
-                        className="prd-icon-btn prd-icon-btn--danger"
-                        onClick={() => handleRemove(row.rule!)}
+                      <ZHIconButton
+                        icon="delete"
                         title="Eliminar excepción"
-                      >
-                        <span className="material-symbols-outlined">
-                          delete
-                        </span>
-                      </button>
+                        variant="danger"
+                        onClick={() => handleRemove(row.rule!)}
+                      />
                     )}
                   </td>
                 </tr>
