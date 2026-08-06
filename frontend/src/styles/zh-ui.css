@@ -2642,3 +2642,8 @@ input[type="date"] {
   text-align: right;
 }
 
+
+.zh-form-logo {
+  color: var(--color-on-primary);
+}
+
