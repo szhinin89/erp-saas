@@ -276,9 +276,8 @@
 }
 
 /* ── Table tweaks ────────────────────────────────────────── */
-.prd-table-wrap {
-  overflow-x: auto;
-}
+/* .prd-table-wrap ELIMINADA (Bloque 15A) — sin consumidores, duplicaba .table-scroll (ver zh-ui.css). */
+
 .prd-row--inactive {
   opacity: 0.5;
 }

@@ -11,9 +11,9 @@
 
 /* ── Totals Panel ───────────────────────────────────────────── */
 /* .pf-icon--14/--18 ELIMINADOS (Bloque 4D) — equivalentes exactos
-   .zh-icon-sm (14px) / .zh-icon-lg (18px) en zh-ui.css. --20/--22/--28
-   se mantienen: sin equivalente en la escala oficial de iconos. */
-.pf-icon--20 { font-size: 20px; }
+   .zh-icon-sm (14px) / .zh-icon-lg (18px) en zh-ui.css. .pf-icon--20
+   ELIMINADA (Bloque 15A) — sin consumidores. --22/--28 se mantienen:
+   sin equivalente en la escala oficial de iconos. */
 .pf-icon--22 { font-size: 22px; }
 .pf-icon--28 { font-size: 28px; }
 

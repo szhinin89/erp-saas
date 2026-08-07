@@ -971,7 +971,14 @@ input[type="date"] {
    SecuritySettingsPage.css) — mismo comportamiento exacto, mismas 19+7+1+1
    consumidores reales repartidos en 4 archivos distintos. Esta fase solo
    agrega la clase SSOT; las 4 clases legacy y sus consumidores TSX no se
-   tocan todavía (Bloque 12F-2). Distinta de .table-card: esta es un wrapper
+   tocan todavía (Bloque 12F-2). Auditoría 15A (alcance: prefijos
+   pf-/prd-/pg-/md-/sales-/pur-/br-/zh-input): .pg-overflow-x y
+   .prd-table-wrap quedaron sin consumidores TSX y fueron eliminadas.
+   .security-scroll ya no existe (eliminada en Bloque 12F-3C, ver
+   SecuritySettingsPage.css). .rpt-table-wrap quedó sin consumidores TSX
+   detectados en esta auditoría pero está fuera del alcance de prefijos de
+   15A (prefijo rpt-) — no se elimina aquí, queda para un barrido dedicado.
+   Distinta de .table-card: esta es un wrapper
    neutro sin chrome (sin borde/sombra/radio/padding), para usar cuando la
    tabla no necesita la "card" completa — ej. <div className="table-scroll">
    <table className="table">...</table></div>. */

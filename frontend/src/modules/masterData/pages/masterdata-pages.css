@@ -26,13 +26,6 @@
   color: var(--color-text-secondary);
 }
 
-.md-notes-textarea {
-  width: 100%;
-  resize: vertical;
-  font-family: inherit;
-  font-size: var(--text-body-md-size);
-}
-
 .md-notes-counter {
   margin: var(--space-1) 0 0;
   font-size: var(--text-help-size);
@@ -43,18 +36,6 @@
 .vf-create-client-option--disabled {
   opacity: 0.55;
   cursor: not-allowed;
-}
-
-.md-field-error {
-  display: block;
-  margin-top: var(--space-1);
-  font-size: var(--text-help-size);
-  color: var(--color-error);
-}
-
-.zh-input--error {
-  border-color: var(--color-error) !important;
-  outline-color: var(--color-error);
 }
 
 /* ── Pagination ───────────────────────────────────────────── */
@@ -421,29 +402,6 @@
    ELIMINADOS (Bloque 13B) — sin consumidores. */
 
 /* ── BP "Buscar o Crear" search flow ─────────────────────── */
-.md-search-hint {
-  margin: 0 0 var(--space-3);
-  font-size: var(--text-body-md-size);
-  color: var(--color-text-secondary);
-}
-
-.md-search-row {
-  display: flex;
-  gap: var(--space-2);
-  align-items: center;
-  margin-bottom: var(--space-2);
-}
-
-.md-search-input {
-  flex: 1;
-}
-
-.md-search-empty {
-  font-size: var(--text-body-md-size);
-  color: var(--color-text-secondary);
-  margin: var(--space-2) 0;
-}
-
 .md-search-results {
   list-style: none;
   margin: 0 0 var(--space-2);
@@ -485,18 +443,6 @@
 .md-search-result-id {
   font-size: var(--text-help-size);
   color: var(--color-text-secondary);
-}
-
-.md-search-result-roles {
-  display: flex;
-  gap: var(--space-1);
-  flex-wrap: wrap;
-}
-
-.md-search-already {
-  font-size: var(--text-help-size);
-  color: var(--color-text-secondary);
-  white-space: nowrap;
 }
 
 .prd-list-toolbar {

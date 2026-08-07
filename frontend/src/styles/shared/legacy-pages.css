@@ -8,7 +8,7 @@
    (multi-módulo) o pendientes de mover a su módulo específico:
 
    - Reutilizadas por 5+ módulos (quedan aquí, no son "específicas" de nada):
-     .pg-overflow-x, .pg-pad-40, .pg-row-inactive, .pg-td-right, .pg-th-right
+     .pg-pad-40, .pg-row-inactive, .pg-td-right, .pg-th-right
    - Usadas por 2 módulos (candidatas a promoverse a zh-ui.css si se vuelven
      a necesitar en un tercero):
      .pg-icon-18
@@ -33,9 +33,7 @@
   padding: 40px;
 }
 
-.pg-overflow-x {
-  overflow-x: auto;
-}
+/* .pg-overflow-x ELIMINADA (Bloque 15A) — sin consumidores, duplicaba .table-scroll (ver zh-ui.css). */
 
 .pg-icon-18 {
   font-size: 18px;
