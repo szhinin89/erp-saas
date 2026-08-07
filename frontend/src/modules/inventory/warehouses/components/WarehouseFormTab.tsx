@@ -8,6 +8,8 @@ import {
   ZhPhoneInput,
   ZhDecimalInput,
   ZhNumberInput,
+  ZhTextInput,
+  ZhSelect,
 } from "../../../../components/zh/inputs";
 import type { BranchListItemDto } from "../../../branches/api/branchService";
 import {
@@ -94,7 +96,7 @@ export function WarehouseFormTab({
                     required
                     error={errors.name?.message}
                   >
-                    <input
+                    <ZhTextInput
                       className="zh-input"
                       placeholder={t(
                         "warehouses.form.field.name.placeholder",
@@ -108,7 +110,7 @@ export function WarehouseFormTab({
                 </div>
 
                 <ZHField label={t("warehouses.form.field.code", "Código")}>
-                  <input
+                  <ZhTextInput
                     className="zh-input mono bod-code-readonly"
                     readOnly
                     value={
@@ -126,7 +128,7 @@ export function WarehouseFormTab({
                     "Tipo de Almacenamiento",
                   )}
                 >
-                  <select disabled={saving} {...register("storageType")}>
+                  <ZhSelect disabled={saving} {...register("storageType")}>
                     <option value="">
                       {t(
                         "warehouses.form.field.storageType.placeholder",
@@ -138,7 +140,7 @@ export function WarehouseFormTab({
                         {type}
                       </option>
                     ))}
-                  </select>
+                  </ZhSelect>
                 </ZHField>
 
                 <div className="zh-col-span-2">
@@ -147,7 +149,7 @@ export function WarehouseFormTab({
                     required
                     error={errors.branchId?.message}
                   >
-                    <select
+                    <ZhSelect
                       className="zh-input"
                       disabled={saving}
                       aria-required="true"
@@ -164,7 +166,7 @@ export function WarehouseFormTab({
                           {b.name}
                         </option>
                       ))}
-                    </select>
+                    </ZhSelect>
                   </ZHField>
                 </div>
               </ZHGrid>
@@ -191,7 +193,7 @@ export function WarehouseFormTab({
                     )}
                     error={errors.address?.message}
                   >
-                    <input
+                    <ZhTextInput
                       className="zh-input"
                       placeholder={t(
                         "warehouses.form.field.address.placeholder",
@@ -202,6 +204,10 @@ export function WarehouseFormTab({
                     />
                   </ZHField>
                 </div>
+                {/* latitude/longitude: NO migrado — ver reporte 14A-2 (schema
+                    z.string().optional() sin coerción numérica; ZhDecimalInput
+                    bloquearía teclas no-decimales, cambiando el comportamiento
+                    actual del campo). */}
                 <ZHField
                   label={t("warehouses.form.field.lat", "Latitud")}
                   error={errors.latitude?.message}
@@ -289,7 +295,7 @@ export function WarehouseFormTab({
                     "Jefe de Logística",
                   )}
                 >
-                  <input
+                  <ZhTextInput
                     className="zh-input"
                     placeholder={t(
                       "warehouses.form.field.manager.placeholder",

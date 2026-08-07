@@ -4,6 +4,7 @@ import {
   ZHFormSection,
   ZHGrid,
 } from "../../../../components/zh/ZHForm";
+import { ZhSelect } from "../../../../components/zh/inputs";
 import type { CreateItemFormValues } from "../../schemas/createItemSchema";
 
 type Props = {
@@ -68,7 +69,7 @@ export function GeneralTab({
           required
           fieldError={fe(errors.itemTypeId?.message)}
         >
-          <select {...register("itemTypeId")} disabled={disabled || isEditMode}>
+          <ZhSelect {...register("itemTypeId")} disabled={disabled || isEditMode}>
             <option value="">
               {t("common.selectOption", "— Seleccionar —")}
             </option>
@@ -77,7 +78,7 @@ export function GeneralTab({
                 {it.name}
               </option>
             ))}
-          </select>
+          </ZhSelect>
         </ZHField>
       </ZHGrid>
       <ZHField
@@ -100,7 +101,7 @@ export function GeneralTab({
           required={!isEditMode}
           fieldError={fe((errors as any).brandId?.message)}
         >
-          <select {...register("brandId")} disabled={disabled}>
+          <ZhSelect {...register("brandId")} disabled={disabled}>
             <option value="">
               {t("common.selectOption", "— Seleccionar —")}
             </option>
@@ -109,14 +110,14 @@ export function GeneralTab({
                 {b.name}
               </option>
             ))}
-          </select>
+          </ZhSelect>
         </ZHField>
         <ZHField
           label={t("items.form.category", "Categoría")}
           required={!isEditMode}
           fieldError={fe((errors as any).categoryNodeId?.message)}
         >
-          <select {...register("categoryNodeId")} disabled={disabled}>
+          <ZhSelect {...register("categoryNodeId")} disabled={disabled}>
             <option value="">
               {t("common.selectOption", "— Seleccionar —")}
             </option>
@@ -126,14 +127,14 @@ export function GeneralTab({
                 {c.name}
               </option>
             ))}
-          </select>
+          </ZhSelect>
         </ZHField>
         <ZHField
           label={t("items.form.uom", "UOM base")}
           required
           fieldError={fe(errors.defaultUomCode?.message)}
         >
-          <select {...register("defaultUomCode")} disabled={disabled}>
+          <ZhSelect {...register("defaultUomCode")} disabled={disabled}>
             <option value="">
               {t("common.selectOption", "— Seleccionar —")}
             </option>
@@ -142,7 +143,7 @@ export function GeneralTab({
                 {u.code} — {u.name}
               </option>
             ))}
-          </select>
+          </ZhSelect>
         </ZHField>
       </ZHGrid>
     </ZHFormSection>

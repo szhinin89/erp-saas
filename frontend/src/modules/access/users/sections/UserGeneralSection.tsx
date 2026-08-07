@@ -10,6 +10,7 @@ import {
   ZHPageNotice,
   type ZHPageNoticeVariant,
 } from "../../../../components/zh/ZHPageNotice";
+import { ZhSelect } from "../../../../components/zh/inputs";
 import { useI18n } from "../../../../i18n/i18n";
 import { formatApiRequestError } from "../../../lib/apiError";
 import {
@@ -186,20 +187,20 @@ export function UserGeneralSection({
           label={t("users.membership.role", "Role")}
           error={errors.role?.message}
         >
-          <select disabled={!canManage || disabled} {...register("role")}>
+          <ZhSelect disabled={!canManage || disabled} {...register("role")}>
             {MEMBERSHIP_ROLES.map((role) => (
               <option key={role} value={role}>
                 {role}
               </option>
             ))}
-          </select>
+          </ZhSelect>
         </ZHField>
 
         <ZHField
           label={t("users.membership.profile", "Perfil")}
           error={errors.profileId?.message}
         >
-          <select disabled={!canManage || disabled} {...register("profileId")}>
+          <ZhSelect disabled={!canManage || disabled} {...register("profileId")}>
             <option value="">
               {t("users.membership.profile.none", "Sin perfil")}
             </option>
@@ -208,7 +209,7 @@ export function UserGeneralSection({
                 {p.name}
               </option>
             ))}
-          </select>
+          </ZhSelect>
         </ZHField>
       </div>
     );
@@ -309,19 +310,19 @@ export function UserGeneralSection({
             label={t("users.membership.role", "Role")}
             error={errors.role?.message}
           >
-            <select disabled={disabled} {...register("role")}>
+            <ZhSelect disabled={disabled} {...register("role")}>
               {MEMBERSHIP_ROLES.map((role) => (
                 <option key={role} value={role}>
                   {role}
                 </option>
               ))}
-            </select>
+            </ZhSelect>
           </ZHField>
           <ZHField
             label={t("users.membership.profile", "Perfil")}
             error={errors.profileId?.message}
           >
-            <select disabled={disabled} {...register("profileId")}>
+            <ZhSelect disabled={disabled} {...register("profileId")}>
               <option value="">
                 {t("users.membership.profile.none", "Sin perfil")}
               </option>
@@ -330,7 +331,7 @@ export function UserGeneralSection({
                   {p.name}
                 </option>
               ))}
-            </select>
+            </ZhSelect>
           </ZHField>
         </>
       ) : null}
@@ -341,19 +342,19 @@ export function UserGeneralSection({
             label={t("users.membership.role", "Role")}
             error={errors.role?.message}
           >
-            <select disabled={disabled} {...register("role")}>
+            <ZhSelect disabled={disabled} {...register("role")}>
               {MEMBERSHIP_ROLES.map((role) => (
                 <option key={role} value={role}>
                   {role}
                 </option>
               ))}
-            </select>
+            </ZhSelect>
           </ZHField>
           <ZHField
             label={t("users.membership.profile", "Perfil")}
             error={errors.profileId?.message}
           >
-            <select disabled={disabled} {...register("profileId")}>
+            <ZhSelect disabled={disabled} {...register("profileId")}>
               <option value="">
                 {t("users.membership.profile.none", "Sin perfil")}
               </option>
@@ -362,7 +363,7 @@ export function UserGeneralSection({
                   {p.name}
                 </option>
               ))}
-            </select>
+            </ZhSelect>
           </ZHField>
         </>
       ) : null}

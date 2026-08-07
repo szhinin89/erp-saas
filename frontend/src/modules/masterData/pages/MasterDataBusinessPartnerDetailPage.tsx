@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { useForm } from "react-hook-form";
+import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { ErpPageTemplate } from "../../../templates/ErpPageTemplate";
@@ -13,6 +13,12 @@ import {
 } from "../../../components/zh/ZHForm";
 import { ZHPageNotice } from "../../../components/zh/ZHPageNotice";
 import { ZHModal } from "../../../components/zh/ZHModal";
+import {
+  ZhTextInput,
+  ZhPhoneInput,
+  ZhTextarea,
+  ZhSelect,
+} from "../../../components/zh/inputs";
 import { message } from "../../../lib/messages";
 import { usePermissionsUi } from "../../../access/usePermissionsUi";
 import { applyServerErrors } from "../../lib/validationErrors";
@@ -911,7 +917,7 @@ export function MasterDataBusinessPartnerDetailPage() {
               required
               error={locForm.formState.errors.name?.message}
             >
-              <input
+              <ZhTextInput
                 className="zh-input"
                 disabled={saving}
                 {...locForm.register("name")}
@@ -939,7 +945,7 @@ export function MasterDataBusinessPartnerDetailPage() {
             required
             error={locForm.formState.errors.addressLine?.message}
           >
-            <textarea
+            <ZhTextarea
               className="zh-input"
               rows={2}
               disabled={saving}
@@ -951,7 +957,7 @@ export function MasterDataBusinessPartnerDetailPage() {
               label="Provincia"
               error={locForm.formState.errors.provinceCode?.message}
             >
-              <select
+              <ZhSelect
                 disabled={saving}
                 {...locForm.register("provinceCode")}
                 onChange={(e) => {
@@ -967,13 +973,13 @@ export function MasterDataBusinessPartnerDetailPage() {
                     {p.name}
                   </option>
                 ))}
-              </select>
+              </ZhSelect>
             </ZHField>
             <ZHField
               label="CantÃ³n"
               error={locForm.formState.errors.cantonCode?.message}
             >
-              <select
+              <ZhSelect
                 disabled={saving || geoCantons.length === 0}
                 {...locForm.register("cantonCode")}
                 onChange={(e) => {
@@ -988,13 +994,13 @@ export function MasterDataBusinessPartnerDetailPage() {
                     {c.name}
                   </option>
                 ))}
-              </select>
+              </ZhSelect>
             </ZHField>
             <ZHField
               label="Parroquia"
               error={locForm.formState.errors.parishCode?.message}
             >
-              <select
+              <ZhSelect
                 disabled={saving || geoParishes.length === 0}
                 {...locForm.register("parishCode")}
               >
@@ -1004,19 +1010,21 @@ export function MasterDataBusinessPartnerDetailPage() {
                     {p.name}
                   </option>
                 ))}
-              </select>
+              </ZhSelect>
             </ZHField>
           </ZHGrid>
           <ZHGrid cols={2}>
             <ZHField label="TelÃ©fono">
-              <input
-                className="zh-input"
-                disabled={saving}
-                {...locForm.register("phone")}
+              <Controller
+                name="phone"
+                control={locForm.control}
+                render={({ field }) => (
+                  <ZhPhoneInput {...field} disabled={saving} />
+                )}
               />
             </ZHField>
             <ZHField label="Email">
-              <input
+              <ZhTextInput
                 className="zh-input"
                 disabled={saving}
                 {...locForm.register("email")}
@@ -1090,14 +1098,14 @@ export function MasterDataBusinessPartnerDetailPage() {
               required
               error={conForm.formState.errors.firstName?.message}
             >
-              <input
+              <ZhTextInput
                 className="zh-input"
                 disabled={saving}
                 {...conForm.register("firstName")}
               />
             </ZHField>
             <ZHField label="Apellido">
-              <input
+              <ZhTextInput
                 className="zh-input"
                 disabled={saving}
                 {...conForm.register("lastName")}
@@ -1122,7 +1130,7 @@ export function MasterDataBusinessPartnerDetailPage() {
               </select>
             </ZHField>
             <ZHField label="Cargo">
-              <input
+              <ZhTextInput
                 className="zh-input"
                 disabled={saving}
                 {...conForm.register("position")}
@@ -1131,21 +1139,25 @@ export function MasterDataBusinessPartnerDetailPage() {
           </ZHGrid>
           <ZHGrid cols={3}>
             <ZHField label="TelÃ©fono">
-              <input
-                className="zh-input"
-                disabled={saving}
-                {...conForm.register("phone")}
+              <Controller
+                name="phone"
+                control={conForm.control}
+                render={({ field }) => (
+                  <ZhPhoneInput {...field} disabled={saving} />
+                )}
               />
             </ZHField>
             <ZHField label="Celular">
-              <input
-                className="zh-input"
-                disabled={saving}
-                {...conForm.register("mobile")}
+              <Controller
+                name="mobile"
+                control={conForm.control}
+                render={({ field }) => (
+                  <ZhPhoneInput {...field} disabled={saving} />
+                )}
               />
             </ZHField>
             <ZHField label="Email">
-              <input
+              <ZhTextInput
                 className="zh-input"
                 disabled={saving}
                 {...conForm.register("email")}
@@ -1163,7 +1175,7 @@ export function MasterDataBusinessPartnerDetailPage() {
             </select>
           </ZHField>
           <ZHField label="Notas">
-            <textarea
+            <ZhTextarea
               className="zh-input"
               rows={2}
               disabled={saving}

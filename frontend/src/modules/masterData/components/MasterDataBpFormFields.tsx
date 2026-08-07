@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useFormContext, Controller } from "react-hook-form";
 import { ZHField, ZHGrid } from "../../../components/zh/ZHForm";
+import { ZhSelect } from "../../../components/zh/inputs";
 import { useSriIdTypes, useSriIdTypesByUsage } from "../api/useSriIdTypes";
 import { useSriSupplierTypes } from "../api/useSriSupplierTypes";
 import { paymentTermService } from "../api/paymentTermService";
@@ -108,7 +109,7 @@ export function MasterDataBpFormFields({
         required
         fieldError={errors.identificationType?.message}
       >
-        <select
+        <ZhSelect
           {...register("identificationType")}
           disabled={saving || loadingTypes}
         >
@@ -121,7 +122,7 @@ export function MasterDataBpFormFields({
               </option>
             ))
           )}
-        </select>
+        </ZhSelect>
       </ZHField>
 
       <ZHField
@@ -146,7 +147,7 @@ export function MasterDataBpFormFields({
         }
         fieldError={errors.legalEntityTypeCode?.message}
       >
-        <select
+        <ZhSelect
           {...register("legalEntityTypeCode", {
             valueAsNumber: true,
           })}
@@ -166,7 +167,7 @@ export function MasterDataBpFormFields({
               </option>
             ))
           )}
-        </select>
+        </ZhSelect>
       </ZHField>
 
       {usage === "supplier" && (
@@ -176,7 +177,7 @@ export function MasterDataBpFormFields({
             required
             fieldError={errors.refundProviderTypeCode?.message}
           >
-            <select
+            <ZhSelect
               {...register("refundProviderTypeCode")}
               disabled={saving || loadingSupplierTypes}
             >
@@ -186,7 +187,7 @@ export function MasterDataBpFormFields({
                   {o.name}
                 </option>
               ))}
-            </select>
+            </ZhSelect>
           </ZHField>
 
           <ZHField
@@ -194,7 +195,7 @@ export function MasterDataBpFormFields({
             required
             fieldError={errors.paymentTermId?.message}
           >
-            <select {...register("paymentTermId")} disabled={saving}>
+            <ZhSelect {...register("paymentTermId")} disabled={saving}>
               <option value="">— Seleccionar —</option>
               {paymentTerms
                 .filter((pt) => pt.isActive)
@@ -203,7 +204,7 @@ export function MasterDataBpFormFields({
                     {pt.code} — {pt.name}
                   </option>
                 ))}
-            </select>
+            </ZhSelect>
           </ZHField>
         </>
       )}
