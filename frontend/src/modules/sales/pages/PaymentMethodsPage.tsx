@@ -2,6 +2,11 @@
 import { ErpPageTemplate } from "../../../templates/ErpPageTemplate";
 import { ZHBtn } from "../../../components/zh/ZHForm";
 import { ZHIconButton } from "../../../components/zh/ZHIconButton";
+import {
+  ZhTextInput,
+  ZhNumberInput,
+  ZhSelect,
+} from "../../../components/zh/inputs";
 import { Badge } from "../../../components/PageShell";
 import type {
   PaymentMethodDto,
@@ -174,8 +179,7 @@ export function PaymentMethodsPage() {
       {tab === "listado" && (
         <div className="prd-section">
           <div className="prd-crud-toolbar">
-            <input
-              type="text"
+            <ZhTextInput
               placeholder="Buscar por cÃƒÂ³digo o nombre..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
@@ -272,7 +276,7 @@ export function PaymentMethodsPage() {
                   CÃƒÂ³digo <span className="zh-field-required">*</span>
                 </label>
                 <div className="zh-field-control">
-                  <input
+                  <ZhTextInput
                     value={fCode}
                     onChange={(e) => setFCode(e.target.value.toUpperCase())}
                     maxLength={20}
@@ -286,7 +290,7 @@ export function PaymentMethodsPage() {
                 Nombre <span className="zh-field-required">*</span>
               </label>
               <div className="zh-field-control">
-                <input
+                <ZhTextInput
                   value={fName}
                   onChange={(e) => setFName(e.target.value)}
                   maxLength={100}
@@ -297,9 +301,8 @@ export function PaymentMethodsPage() {
             <div className="zh-field">
               <label className="zh-field-label">Orden de visualizaciÃƒÂ³n</label>
               <div className="zh-field-control">
-                <input
-                  type="number"
-                  min={0}
+                <ZhNumberInput
+                  positiveOnly
                   value={fSortOrder}
                   onChange={(e) => setFSortOrder(Number(e.target.value))}
                 />
@@ -308,7 +311,7 @@ export function PaymentMethodsPage() {
             <div className="zh-field">
               <label className="zh-field-label">Esquema de detalle</label>
               <div className="zh-field-control">
-                <select
+                <ZhSelect
                   value={fDetailType}
                   onChange={(e) =>
                     setFDetailType(e.target.value as PaymentMethodDetailType)
@@ -319,7 +322,7 @@ export function PaymentMethodsPage() {
                       {opt.label}
                     </option>
                   ))}
-                </select>
+                </ZhSelect>
               </div>
             </div>
           </div>

@@ -6,7 +6,11 @@ import { ZHBtn } from "../../../components/zh/ZHForm";
 import { ZHIconButton } from "../../../components/zh/ZHIconButton";
 import { ZhDecimalInput } from "../../../components/zh/inputs/ZhDecimalInput";
 import { ZhCurrencyInput } from "../../../components/zh/inputs/ZhCurrencyInput";
-import { ZhSelect } from "../../../components/zh/inputs";
+import {
+  ZhSelect,
+  ZhTextInput,
+  ZhDateInput,
+} from "../../../components/zh/inputs";
 import { parseDecimal } from "../../../lib/sanitizers";
 import type {
   PriceListDto,
@@ -229,8 +233,7 @@ export function PriceListsPage() {
       {tab === "listado" && (
         <div className="prd-section">
           <div className="prd-crud-toolbar">
-            <input
-              type="text"
+            <ZhTextInput
               placeholder="Buscar por cÃ³digo o nombre..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
@@ -319,7 +322,7 @@ export function PriceListsPage() {
                   CÃ³digo <span className="zh-field-required">*</span>
                 </label>
                 <div className="zh-field-control">
-                  <input
+                  <ZhTextInput
                     value={fCode}
                     onChange={(e) => setFCode(e.target.value.toUpperCase())}
                     maxLength={20}
@@ -334,7 +337,7 @@ export function PriceListsPage() {
                 Nombre <span className="zh-field-required">*</span>
               </label>
               <div className="zh-field-control">
-                <input
+                <ZhTextInput
                   value={fName}
                   onChange={(e) => setFName(e.target.value)}
                   maxLength={120}
@@ -345,7 +348,7 @@ export function PriceListsPage() {
             <div className="zh-field">
               <label className="zh-field-label">Moneda</label>
               <div className="zh-field-control">
-                <input
+                <ZhTextInput
                   value={fCurrency}
                   onChange={(e) => setFCurrency(e.target.value.toUpperCase())}
                   maxLength={3}
@@ -357,8 +360,7 @@ export function PriceListsPage() {
             <div className="zh-field">
               <label className="zh-field-label">Vigencia desde</label>
               <div className="zh-field-control">
-                <input
-                  type="date"
+                <ZhDateInput
                   value={fFrom}
                   onChange={(e) => setFFrom(e.target.value)}
                 />
@@ -367,8 +369,7 @@ export function PriceListsPage() {
             <div className="zh-field">
               <label className="zh-field-label">Vigencia hasta</label>
               <div className="zh-field-control">
-                <input
-                  type="date"
+                <ZhDateInput
                   value={fUntil}
                   onChange={(e) => setFUntil(e.target.value)}
                 />

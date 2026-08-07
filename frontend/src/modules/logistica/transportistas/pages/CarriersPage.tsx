@@ -13,7 +13,11 @@ import { ZHPageNotice } from "../../../../components/zh/ZHPageNotice";
 import { ZHBtn, ZHField, ZHGrid } from "../../../../components/zh/ZHForm";
 import { ZHIconButton } from "../../../../components/zh/ZHIconButton";
 import { ZHModal } from "../../../../components/zh/ZHModal";
-import { ZhPhoneInput, ZhTextInput } from "../../../../components/zh/inputs";
+import {
+  ZhPhoneInput,
+  ZhTextInput,
+  ZhSelect,
+} from "../../../../components/zh/inputs";
 import { useI18n } from "../../../../i18n/i18n";
 import type { Carrier } from "../api/carrierService";
 import { useCarriers } from "../hooks/useCarriers";
@@ -205,15 +209,14 @@ export function CarriersPage() {
           <div className="pg-table-controls-left">
             <div className="pg-search">
               <span className="material-symbols-outlined">search</span>
-              <input
+              <ZhTextInput
                 className="zh-input"
-                type="search"
                 placeholder={t("carriers.search.placeholder")}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
             </div>
-            <select
+            <ZhSelect
               className="zh-input"
               value={statusFilter}
               onChange={(e) =>
@@ -223,7 +226,7 @@ export function CarriersPage() {
               <option value="all">{t("carriers.filter.all")}</option>
               <option value="active">{t("carriers.filter.active")}</option>
               <option value="inactive">{t("carriers.filter.inactive")}</option>
-            </select>
+            </ZhSelect>
           </div>
           <div className="pg-table-controls-right">
             <span className="pg-result-count">
@@ -358,13 +361,13 @@ export function CarriersPage() {
                   : undefined
               }
             >
-              <select disabled={saving} {...register("identificationType")}>
+              <ZhSelect disabled={saving} {...register("identificationType")}>
                 {ID_TYPES.map((type) => (
                   <option key={type} value={type}>
                     {t(`carriers.idType.${type}`)}
                   </option>
                 ))}
-              </select>
+              </ZhSelect>
             </ZHField>
             <ZHField
               label={t("carriers.modal.idNumber")}
@@ -375,7 +378,7 @@ export function CarriersPage() {
                   : undefined
               }
             >
-              <input
+              <ZhTextInput
                 className="zh-input"
                 placeholder={t("carriers.modal.idNumberPlaceholder")}
                 disabled={saving}
@@ -393,7 +396,7 @@ export function CarriersPage() {
                 : undefined
             }
           >
-            <input
+            <ZhTextInput
               className="zh-input"
               placeholder={t("carriers.modal.legalNamePlaceholder")}
               disabled={saving}
