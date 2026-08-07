@@ -1,6 +1,21 @@
 # Project Status
 
-**Single source of truth** for delivery state. Updated: **2026-07-25** · Kernel refactor: **2026-06-05**.
+**Single source of truth** for delivery state. Updated: **2026-08-07** · Kernel refactor: **2026-06-05**.
+
+---
+
+## Design System Form Controls SSOT — fase cerrada (2026-08-07)
+
+**Estado: CERRADO CON DEUDA DOCUMENTADA.** Migración de controles HTML crudos (`<input>`/`<select>`/`<textarea>`) hacia los componentes ZH oficiales (`ZhTextInput`, `ZhNumberInput`, `ZhDecimalInput`, `ZhDateInput`, `ZhPhoneInput`, `ZhSelect`, `ZhTextarea`), ejecutada en bloques 14B-4 a 14B-12.
+
+**Resultado:**
+- Controles HTML crudos reducidos de 314 a 149 (`frontend/src/modules/**/*.tsx`).
+- 165 controles migrados a componentes ZH oficiales, sin cambios en schemas, handlers, payloads ni servicios.
+- No quedan clusters grandes de Categoría A (pendiente real simple); el mayor residuo es de 3 controles en un mismo archivo.
+- 12 controles A dispersos en 7 archivos quedan documentados como deuda menor (candidatos a cierre puntual futuro, cada uno ≤3 controles/mismo archivo).
+- Residuos restantes (137 controles) están justificados por tipo HTML (email/password/checkbox/radio/file/color) o por dominio especializado: SRI crítico, IAM/permisos, pickers con teclado, tablas editables, stock/logística crítica, ItemTypes FROZEN, min/max nativo crítico.
+
+**Validado:** `npx tsc -b`, `npm run build`, `git diff --check` en verde en cada bloque de migración.
 
 ---
 
