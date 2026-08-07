@@ -1,5 +1,6 @@
 ﻿import { EmptyState, LoadingState } from "../../../components/PageShell";
 import { ZHBtn } from "../../../components/zh/ZHForm";
+import { ZhTextInput } from "../../../components/zh/inputs";
 import { Badge } from "../../../components/PageShell";
 import { ReportKpiCard } from "../../../components/ReportPageTemplate";
 import { useI18n } from "../../../i18n/i18n";
@@ -103,8 +104,7 @@ export function CashRegistersListSection({
           <div className="pg-table-controls-left">
             <div className="pg-search">
               <span className="material-symbols-outlined">search</span>
-              <input
-                type="text"
+              <ZhTextInput
                 placeholder="Buscar por cÃ³digo, nombre o sucursal..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}

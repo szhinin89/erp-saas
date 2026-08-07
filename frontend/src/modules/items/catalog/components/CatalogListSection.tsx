@@ -1,6 +1,7 @@
 import type { FieldValues } from "react-hook-form";
 import { EmptyState, LoadingState } from "../../../../components/PageShell";
 import { ZHBtn } from "../../../../components/zh/ZHForm";
+import { ZhTextInput } from "../../../../components/zh/inputs";
 import { useI18n } from "../../../../i18n/i18n";
 import { ReportKpiCard } from "../../../../components/ReportPageTemplate";
 import type { CatalogCrudContext } from "../hooks/useCatalogCrud";
@@ -114,8 +115,7 @@ export function CatalogListSection<
           <div className="pg-table-controls-left">
             <div className="pg-search">
               <span className="material-symbols-outlined">search</span>
-              <input
-                type="text"
+              <ZhTextInput
                 placeholder={searchPlaceholder}
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}

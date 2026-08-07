@@ -1,6 +1,7 @@
 ﻿import { Link } from "react-router-dom";
 import { EmptyState, LoadingState, Badge } from "../../../components/PageShell";
 import { ZHBtn } from "../../../components/zh/ZHForm";
+import { ZhTextInput } from "../../../components/zh/inputs";
 import { ReportKpiCard } from "../../../components/ReportPageTemplate";
 import type { BranchesPageContext } from "../hooks/useBranchesPage";
 
@@ -112,8 +113,7 @@ export function BranchesListSection({
           <div className="pg-table-controls-left">
             <div className="pg-search">
               <span className="material-symbols-outlined">search</span>
-              <input
-                type="text"
+              <ZhTextInput
                 placeholder="Buscar por nombre, cÃ³digo o encargado..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}

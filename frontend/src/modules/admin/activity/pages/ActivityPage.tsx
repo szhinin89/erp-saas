@@ -7,6 +7,7 @@ import {
 import { ErpPageTemplate } from "../../../../templates/ErpPageTemplate";
 import { ZHPageNotice } from "../../../../components/zh/ZHPageNotice";
 import { ZHBtn } from "../../../../components/zh/ZHForm";
+import { ZhTextInput } from "../../../../components/zh/inputs";
 import { useI18n } from "../../../../i18n/i18n";
 import { formatDateTimeSeconds } from "../../../../lib/formatters/dateFormatters";
 import {
@@ -98,9 +99,8 @@ export function ActivityPage() {
       <div className="pg-section">
         <div className="pg-table-controls">
           <div className="pg-table-controls-left">
-            <input
+            <ZhTextInput
               className="zh-input"
-              type="text"
               placeholder="Filtrar por módulo (opcional)…"
               value={module}
               onChange={(e) => {
