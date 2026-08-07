@@ -9,6 +9,7 @@ import {
 } from "react-hook-form";
 import { ZHField } from "../../../../components/zh/ZHForm";
 import { ZHPageNotice } from "../../../../components/zh/ZHPageNotice";
+import { ZhSelect } from "../../../../components/zh/inputs";
 import { useI18n } from "../../../../i18n/i18n";
 import { COMPANY_USER_LOGIN_MODES } from "../../api/companyUserPreferencesService";
 import { type BranchListItemDto } from "../../../branches/api/branchService";
@@ -140,7 +141,7 @@ export function UserPreferencesSection({
         label={t("security.preferences.loginMode", "Modo de ingreso")}
         error={errors.loginMode?.message}
       >
-        <select
+        <ZhSelect
           disabled={disabled || !canManage || hasNoAuthorizedBranches}
           {...register("loginMode")}
         >
@@ -161,7 +162,7 @@ export function UserPreferencesSection({
                   )}
             </option>
           ))}
-        </select>
+        </ZhSelect>
       </ZHField>
 
       <ZHField
@@ -176,7 +177,7 @@ export function UserPreferencesSection({
             : null
         }
       >
-        <select
+        <ZhSelect
           disabled={disabled || !canManage || hasNoAuthorizedBranches}
           {...register("defaultBranchId")}
         >
@@ -191,7 +192,7 @@ export function UserPreferencesSection({
               {b.name}
             </option>
           ))}
-        </select>
+        </ZhSelect>
       </ZHField>
     </div>
   );

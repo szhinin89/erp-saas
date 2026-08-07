@@ -8,6 +8,7 @@ import {
 } from "../../../../components/PageShell";
 import { ZHPageNotice } from "../../../../components/zh/ZHPageNotice";
 import { ZHBtn, ZHField, ZHGrid } from "../../../../components/zh/ZHForm";
+import { ZhSelect } from "../../../../components/zh/inputs";
 import { useI18n } from "../../../../i18n/i18n";
 import { useAsync } from "../../../../hooks/useAsync";
 import { companyProfileService } from "../api/companyProfileService";
@@ -171,14 +172,14 @@ export function OperationSettingsSection() {
           <div className="pg-section-body">
             <ZHGrid cols={2}>
               <ZHField label={t("settings.company.operation.languageCode")}>
-                <select
+                <ZhSelect
                   disabled={saving || !canEdit}
                   {...register("languageCode")}
                 >
                   <option value="es">{t("app.langMenu.spanish")}</option>
                   <option value="en">{t("app.langMenu.english")}</option>
                   <option value="qu">{t("app.langMenu.kichwa")}</option>
-                </select>
+                </ZhSelect>
               </ZHField>
             </ZHGrid>
           </div>

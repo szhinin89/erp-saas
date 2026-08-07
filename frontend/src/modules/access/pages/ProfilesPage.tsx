@@ -14,6 +14,11 @@ import {
 import { ZHModal } from "../../../components/zh/ZHModal";
 import { ZHPageNotice } from "../../../components/zh/ZHPageNotice";
 import { NoAccessPage } from "../../../components/PageShell";
+import {
+  ZhTextInput,
+  ZhSelect,
+  ZhTextarea,
+} from "../../../components/zh/inputs";
 import { ErpPageTemplate } from "../../../templates/ErpPageTemplate";
 import {
   profileCreateSchema,
@@ -341,9 +346,8 @@ export function ProfilesPage() {
         <div className="pg-table-controls">
           <div className="pg-search">
             <span className="material-symbols-outlined">search</span>
-            <input
+            <ZhTextInput
               className="zh-input"
-              type="search"
               placeholder={t("common.zhList.searchPlaceholder")}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
@@ -437,21 +441,21 @@ export function ProfilesPage() {
                     required
                     error={errors.name?.message}
                   >
-                    <input
+                    <ZhTextInput
                       className="zh-input"
                       {...register("name")}
                       placeholder="Ej. Analista de Finanzas Jr."
                     />
                   </ZHField>
                   <ZHField label={t("profiles.form.status")}>
-                    <select
+                    <ZhSelect
                       {...register("isActive", {
                         setValueAs: (v) => v === "true" || v === true,
                       })}
                     >
                       <option value="true">{t("common.active")}</option>
                       <option value="false">{t("common.inactive")}</option>
-                    </select>
+                    </ZhSelect>
                   </ZHField>
                 </ZHGrid>
                 <div className="prf-modal-field-offset">
@@ -459,7 +463,7 @@ export function ProfilesPage() {
                     label={t("profiles.form.description")}
                     error={errors.description?.message}
                   >
-                    <textarea
+                    <ZhTextarea
                       className="zh-input"
                       rows={3}
                       placeholder={t("profiles.form.descriptionPlaceholder")}

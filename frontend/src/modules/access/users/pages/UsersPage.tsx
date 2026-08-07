@@ -4,6 +4,7 @@ import { ErpPageTemplate } from "../../../../templates/ErpPageTemplate";
 import { NoAccessPage } from "../../../../components/PageShell";
 import { ZHBtn } from "../../../../components/zh/ZHForm";
 import { ZHPageNotice } from "../../../../components/zh/ZHPageNotice";
+import { ZhTextInput } from "../../../../components/zh/inputs";
 import { useI18n } from "../../../../i18n/i18n";
 import { useAuthStore } from "../../../../store/authStore";
 import { usePermissionsUi } from "../../../../access/usePermissionsUi";
@@ -306,9 +307,8 @@ export function UsersPage() {
         <div className="pg-table-controls">
           <div className="pg-search">
             <span className="material-symbols-outlined">search</span>
-            <input
+            <ZhTextInput
               className="zh-input"
-              type="search"
               placeholder={t("common.zhList.searchPlaceholder")}
               value={search}
               onChange={(e) => setSearch(e.target.value)}

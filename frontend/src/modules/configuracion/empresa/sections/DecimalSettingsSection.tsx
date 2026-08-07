@@ -4,6 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { LoadingState, NoAccessPage } from "../../../../components/PageShell";
 import { ZHPageNotice } from "../../../../components/zh/ZHPageNotice";
 import { ZHBtn, ZHField, ZHGrid } from "../../../../components/zh/ZHForm";
+import { ZhSelect } from "../../../../components/zh/inputs";
 import { useI18n } from "../../../../i18n/i18n";
 import { useAsync } from "../../../../hooks/useAsync";
 import {
@@ -124,7 +125,7 @@ export function DecimalSettingsSection() {
                 label={t("settings.company.decimals.salesUnitPrice")}
                 error={errors.salesUnitPrice?.message}
               >
-                <select
+                <ZhSelect
                   disabled={saving || !canEdit}
                   {...register("salesUnitPrice")}
                 >
@@ -133,14 +134,14 @@ export function DecimalSettingsSection() {
                       {n}
                     </option>
                   ))}
-                </select>
+                </ZhSelect>
               </ZHField>
 
               <ZHField
                 label={t("settings.company.decimals.purchaseUnitPrice")}
                 error={errors.purchaseUnitPrice?.message}
               >
-                <select
+                <ZhSelect
                   disabled={saving || !canEdit}
                   {...register("purchaseUnitPrice")}
                 >
@@ -149,27 +150,27 @@ export function DecimalSettingsSection() {
                       {n}
                     </option>
                   ))}
-                </select>
+                </ZhSelect>
               </ZHField>
 
               <ZHField
                 label={t("settings.company.decimals.quantity")}
                 error={errors.quantity?.message}
               >
-                <select disabled={saving || !canEdit} {...register("quantity")}>
+                <ZhSelect disabled={saving || !canEdit} {...register("quantity")}>
                   {DECIMAL_OPTIONS.map((n) => (
                     <option key={n} value={n}>
                       {n}
                     </option>
                   ))}
-                </select>
+                </ZhSelect>
               </ZHField>
 
               <ZHField
                 label={t("settings.company.decimals.percentage")}
                 error={errors.percentage?.message}
               >
-                <select
+                <ZhSelect
                   disabled={saving || !canEdit}
                   {...register("percentage")}
                 >
@@ -178,14 +179,14 @@ export function DecimalSettingsSection() {
                       {n}
                     </option>
                   ))}
-                </select>
+                </ZhSelect>
               </ZHField>
 
               <ZHField
                 label={t("settings.company.decimals.totalAmount")}
                 error={errors.totalAmount?.message}
               >
-                <select
+                <ZhSelect
                   disabled={saving || !canEdit}
                   {...register("totalAmount")}
                 >
@@ -194,7 +195,7 @@ export function DecimalSettingsSection() {
                       {n}
                     </option>
                   ))}
-                </select>
+                </ZhSelect>
               </ZHField>
             </ZHGrid>
           </div>

@@ -4,6 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { LoadingState, NoAccessPage } from "../../../../components/PageShell";
 import { ZHPageNotice } from "../../../../components/zh/ZHPageNotice";
 import { ZHBtn, ZHField, ZHGrid } from "../../../../components/zh/ZHForm";
+import { ZhTextarea } from "../../../../components/zh/inputs";
 import { useI18n } from "../../../../i18n/i18n";
 import { useAsync } from "../../../../hooks/useAsync";
 import { companyProfileService } from "../api/companyProfileService";
@@ -123,7 +124,7 @@ export function DocumentsSettingsSection() {
                 hint={t("settings.company.documents.extraLegendHint")}
                 error={errors.extraLegend?.message}
               >
-                <textarea
+                <ZhTextarea
                   className="zh-input"
                   rows={4}
                   maxLength={500}

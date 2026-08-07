@@ -41,6 +41,10 @@ type SriConfigPageDataTabProps = {
   onCertFileSelected: (file: File) => void;
 };
 
+// NOTA (Bloque 14B-3): ninguno de los controles de este archivo (radio de
+// ambiente SRI, display readonly de tipo de emisión, contraseña de
+// certificado con toggle, WSDL) fue migrado a componentes ZH — configuración
+// SRI crítica, excluida explícitamente del alcance de ese bloque.
 export function SriConfigPageDataTab({
   register,
   control,

@@ -7,6 +7,7 @@ import {
 import { ErpPageTemplate } from "../../../../templates/ErpPageTemplate";
 import { ReportKpiCard } from "../../../../components/ReportPageTemplate";
 import { ZHPageNotice } from "../../../../components/zh/ZHPageNotice";
+import { ZhSelect } from "../../../../components/zh/inputs";
 import { useI18n } from "../../../../i18n/i18n";
 import { branchService } from "../../../branches/api/branchService";
 import { usePermissionsUi } from "../../../../access/usePermissionsUi";
@@ -105,7 +106,7 @@ export function GeographyPage() {
       <div className="pg-section">
         <div className="pg-table-controls">
           <div className="pg-table-controls-left">
-            <select
+            <ZhSelect
               value={countryId}
               disabled={loading}
               onChange={(e) => setCountryId(e.target.value)}
@@ -116,8 +117,8 @@ export function GeographyPage() {
                   {c.name}
                 </option>
               ))}
-            </select>
-            <select
+            </ZhSelect>
+            <ZhSelect
               value={provinceId}
               disabled={!countryId}
               onChange={(e) => setProvinceId(e.target.value)}
@@ -128,8 +129,8 @@ export function GeographyPage() {
                   {p.name}
                 </option>
               ))}
-            </select>
-            <select
+            </ZhSelect>
+            <ZhSelect
               value={cantonId}
               disabled={!provinceId}
               onChange={(e) => setCantonId(e.target.value)}
@@ -140,7 +141,7 @@ export function GeographyPage() {
                   {c.name}
                 </option>
               ))}
-            </select>
+            </ZhSelect>
           </div>
         </div>
 

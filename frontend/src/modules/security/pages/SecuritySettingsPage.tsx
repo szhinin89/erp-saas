@@ -16,6 +16,7 @@ import {
 } from "../../../components/zh/ZHForm";
 import { ZHModal } from "../../../components/zh/ZHModal";
 import { ZHPageNotice } from "../../../components/zh/ZHPageNotice";
+import { ZhSelect } from "../../../components/zh/inputs";
 import { useAuthStore } from "../../../store/authStore";
 import {
   securityService,
@@ -381,7 +382,7 @@ export function SecuritySettingsPage() {
               label={t("security.preferences.loginMode", "Modo de ingreso")}
               error={prefsErrors.loginMode?.message}
             >
-              <select disabled={prefsSaving} {...registerPrefs("loginMode")}>
+              <ZhSelect disabled={prefsSaving} {...registerPrefs("loginMode")}>
                 {COMPANY_USER_LOGIN_MODES.map((mode) => (
                   <option key={mode} value={mode}>
                     {mode === "AskBranch"
@@ -395,7 +396,7 @@ export function SecuritySettingsPage() {
                         )}
                   </option>
                 ))}
-              </select>
+              </ZhSelect>
             </ZHField>
 
             <ZHField
@@ -413,7 +414,7 @@ export function SecuritySettingsPage() {
                   : null
               }
             >
-              <select
+              <ZhSelect
                 disabled={prefsSaving || branchesLoading}
                 {...registerPrefs("defaultBranchId")}
               >
@@ -428,7 +429,7 @@ export function SecuritySettingsPage() {
                     {b.name}
                   </option>
                 ))}
-              </select>
+              </ZhSelect>
             </ZHField>
 
             {prefsSaveError ? (

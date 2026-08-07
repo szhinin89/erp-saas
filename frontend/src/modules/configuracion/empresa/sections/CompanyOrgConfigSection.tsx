@@ -6,6 +6,7 @@ import { LoadingState, NoAccessPage } from "../../../../components/PageShell";
 import { ZHModal } from "../../../../components/zh/ZHModal";
 import { ZHBtn, ZHField, ZHGrid } from "../../../../components/zh/ZHForm";
 import { ZHPageNotice } from "../../../../components/zh/ZHPageNotice";
+import { ZhSelect } from "../../../../components/zh/inputs";
 import { useI18n } from "../../../../i18n/i18n";
 import { useAsync } from "../../../../hooks/useAsync";
 import { usePermissionsUi } from "../../../../access/usePermissionsUi";
@@ -261,7 +262,7 @@ export function CompanyOrgConfigSection() {
                 label="Tipo de Documento"
                 error={errors.defaultDocTypeCode?.message}
               >
-                <select
+                <ZhSelect
                   disabled={saving || !canEdit}
                   {...register("defaultDocTypeCode")}
                 >
@@ -271,14 +272,14 @@ export function CompanyOrgConfigSection() {
                       {dt.code} — {dt.name}
                     </option>
                   ))}
-                </select>
+                </ZhSelect>
               </ZHField>
 
               <ZHField
                 label="Forma de Pago SRI"
                 error={errors.defaultSriPaymentMethodCode?.message}
               >
-                <select
+                <ZhSelect
                   disabled={saving || !canEdit}
                   {...register("defaultSriPaymentMethodCode")}
                 >
@@ -288,14 +289,14 @@ export function CompanyOrgConfigSection() {
                       {pm.code} — {pm.name}
                     </option>
                   ))}
-                </select>
+                </ZhSelect>
               </ZHField>
 
               <ZHField
                 label="Condición de Pago"
                 error={errors.defaultPaymentTermId?.message}
               >
-                <select
+                <ZhSelect
                   disabled={saving || !canEdit}
                   {...register("defaultPaymentTermId")}
                 >
@@ -305,7 +306,7 @@ export function CompanyOrgConfigSection() {
                       {pt.name}
                     </option>
                   ))}
-                </select>
+                </ZhSelect>
               </ZHField>
             </ZHGrid>
           </form>

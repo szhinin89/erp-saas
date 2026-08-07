@@ -4,6 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { LoadingState, NoAccessPage } from "../../../../components/PageShell";
 import { ZHPageNotice } from "../../../../components/zh/ZHPageNotice";
 import { ZHBtn, ZHField, ZHGrid } from "../../../../components/zh/ZHForm";
+import { ZhTextInput } from "../../../../components/zh/inputs";
 import { useI18n } from "../../../../i18n/i18n";
 import { useAsync } from "../../../../hooks/useAsync";
 import { companyProfileService } from "../api/companyProfileService";
@@ -532,7 +533,7 @@ export function BrandingSettingsSection() {
                     disabled={identitySaving || !canEdit}
                     {...register("primaryColor")}
                   />
-                  <input
+                  <ZhTextInput
                     className="zh-input"
                     placeholder="Ej. color principal HEX"
                     disabled={identitySaving || !canEdit}
@@ -554,7 +555,7 @@ export function BrandingSettingsSection() {
                     disabled={identitySaving || !canEdit}
                     {...register("secondaryColor")}
                   />
-                  <input
+                  <ZhTextInput
                     className="zh-input"
                     placeholder="Ej. color secundario HEX"
                     disabled={identitySaving || !canEdit}
@@ -567,7 +568,7 @@ export function BrandingSettingsSection() {
                 label={t("settings.company.branding.identity.slogan")}
                 error={errors.slogan?.message}
               >
-                <input
+                <ZhTextInput
                   className="zh-input"
                   placeholder={t("settings.company.branding.identity.slogan")}
                   disabled={identitySaving || !canEdit}
