@@ -19,6 +19,7 @@ import { formatMoney } from "../../../lib/sanitizers";
 import { formatDate, todayIso } from "../../../lib/formatters/dateFormatters";
 import { message } from "../../../lib/messages";
 import { formatApiRequestError } from "../../lib/apiError";
+import { ZhDateInput } from "../../../components/zh/inputs";
 import {
   salesService,
   type SalesReportRowDto,
@@ -130,16 +131,14 @@ export function SalesReportPage() {
         applyLabel="Buscar"
       >
         <ReportFilterField label="Desde" icon="calendar_today">
-          <input
-            type="date"
+          <ZhDateInput
             className="zh-input"
             value={dateFrom}
             onChange={(e) => setDateFrom(e.target.value)}
           />
         </ReportFilterField>
         <ReportFilterField label="Hasta" icon="calendar_today">
-          <input
-            type="date"
+          <ZhDateInput
             className="zh-input"
             value={dateTo}
             onChange={(e) => setDateTo(e.target.value)}

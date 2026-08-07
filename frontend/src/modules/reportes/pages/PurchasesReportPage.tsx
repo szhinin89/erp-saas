@@ -24,6 +24,7 @@ import {
   type PurchasesReportTotalsDto,
 } from "../../purchases/api/purchaseService";
 import { SupplierPicker } from "../../purchases/components/SupplierPicker";
+import { ZhDateInput } from "../../../components/zh/inputs";
 import type { SupplierPickerRow } from "../../masterData/types/businessPartner.types";
 
 const STATUS_LABEL: Record<string, string> = {
@@ -132,16 +133,14 @@ export function PurchasesReportPage() {
         applyLabel="Buscar"
       >
         <ReportFilterField label="Desde" icon="calendar_today">
-          <input
-            type="date"
+          <ZhDateInput
             className="zh-input"
             value={dateFrom}
             onChange={(e) => setDateFrom(e.target.value)}
           />
         </ReportFilterField>
         <ReportFilterField label="Hasta" icon="calendar_today">
-          <input
-            type="date"
+          <ZhDateInput
             className="zh-input"
             value={dateTo}
             onChange={(e) => setDateTo(e.target.value)}

@@ -8,6 +8,7 @@ import {
   ZHBtn,
 } from "../../../components/zh/ZHForm";
 import { Badge } from "../../../components/PageShell";
+import { ZhSelect, ZhTextInput } from "../../../components/zh/inputs";
 import {
   EMISSION_TYPE_ELECTRONIC,
   EMISSION_TYPE_PHYSICAL,
@@ -111,7 +112,7 @@ export function EmissionPointsFormPanel({
                   required
                   error={errors.establishmentId?.message}
                 >
-                  <select
+                  <ZhSelect
                     className="zh-input"
                     disabled={isEdit || saving || loadingEstablishments}
                     {...register("establishmentId")}
@@ -124,18 +125,18 @@ export function EmissionPointsFormPanel({
                         {e.code} â€” {e.name}
                       </option>
                     ))}
-                  </select>
+                  </ZhSelect>
                 </ZHField>
 
                 <ZHField label="CÃ³digo" required error={errors.code?.message}>
                   {isEdit ? (
-                    <input
+                    <ZhTextInput
                       className="zh-input mono ep-code-readonly"
                       readOnly
                       value={editingCode ?? "â€”"}
                     />
                   ) : (
-                    <input
+                    <ZhTextInput
                       className="zh-input mono"
                       placeholder="001"
                       maxLength={3}
@@ -147,7 +148,7 @@ export function EmissionPointsFormPanel({
               </ZHGrid>
 
               <ZHField label="Nombre" error={errors.name?.message}>
-                <input
+                <ZhTextInput
                   className="zh-input"
                   placeholder="Ej: Caja Principal"
                   disabled={saving}

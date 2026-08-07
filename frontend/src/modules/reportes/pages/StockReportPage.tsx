@@ -25,6 +25,7 @@ import {
   warehouseService,
   type WarehouseDto,
 } from "../../inventory/warehouses/api/warehouseService";
+import { ZhSelect, ZhTextInput } from "../../../components/zh/inputs";
 
 const STATUS_LABEL: Record<StockReportStatus, string> = {
   SinStock: "Sin stock",
@@ -122,7 +123,7 @@ export function StockReportPage() {
         applyLabel="Buscar"
       >
         <ReportFilterField label="Bodega" icon="warehouse">
-          <select
+          <ZhSelect
             className="zh-input"
             value={warehouseId}
             onChange={(e) => setWarehouseId(e.target.value)}
@@ -133,12 +134,11 @@ export function StockReportPage() {
                 {w.name}
               </option>
             ))}
-          </select>
+          </ZhSelect>
         </ReportFilterField>
         <ReportFilterField label="Producto / SKU" icon="search">
-          <input
+          <ZhTextInput
             className="zh-input"
-            type="search"
             placeholder="Buscar por producto o SKU…"
             value={search}
             onChange={(e) => setSearch(e.target.value)}

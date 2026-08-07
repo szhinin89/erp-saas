@@ -8,6 +8,7 @@ import {
   ZHBtn,
 } from "../../../components/zh/ZHForm";
 import type { EstablishmentsPageContext } from "../hooks/useEstablishmentsPage";
+import { ZhSelect, ZhTextInput } from "../../../components/zh/inputs";
 
 type Props = Pick<
   EstablishmentsPageContext,
@@ -105,13 +106,13 @@ export function EstablishmentsFormPanel({
                   fieldError={errors.code?.message}
                 >
                   {isEdit ? (
-                    <input
+                    <ZhTextInput
                       className="zh-input mono ep-code-readonly"
                       readOnly
                       value={editingCode ?? "—"}
                     />
                   ) : (
-                    <input
+                    <ZhTextInput
                       className="zh-input mono"
                       placeholder="001"
                       maxLength={3}
@@ -129,7 +130,7 @@ export function EstablishmentsFormPanel({
                     name="branchId"
                     control={control}
                     render={({ field }) => (
-                      <select
+                      <ZhSelect
                         className="zh-input"
                         disabled={saving || loadingBranches}
                         value={field.value ?? ""}
@@ -143,7 +144,7 @@ export function EstablishmentsFormPanel({
                             {b.name}
                           </option>
                         ))}
-                      </select>
+                      </ZhSelect>
                     )}
                   />
                 </ZHField>
@@ -154,7 +155,7 @@ export function EstablishmentsFormPanel({
                 required
                 fieldError={errors.name?.message}
               >
-                <input
+                <ZhTextInput
                   className="zh-input"
                   placeholder="Ej: Casa Matriz"
                   maxLength={200}
@@ -168,7 +169,7 @@ export function EstablishmentsFormPanel({
                 required
                 fieldError={errors.address?.message}
               >
-                <input
+                <ZhTextInput
                   className="zh-input"
                   placeholder="Ej: Av. Amazonas N12-34 y Colón"
                   maxLength={500}
@@ -178,7 +179,7 @@ export function EstablishmentsFormPanel({
               </ZHField>
 
               <ZHField label="Teléfono" fieldError={errors.phone?.message}>
-                <input
+                <ZhTextInput
                   className="zh-input"
                   placeholder="Ej: 02-2234567"
                   maxLength={40}

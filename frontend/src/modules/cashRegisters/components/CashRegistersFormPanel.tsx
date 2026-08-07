@@ -2,6 +2,11 @@ import { Controller } from "react-hook-form";
 import { ZHPageNotice } from "../../../components/zh/ZHPageNotice";
 import { ZHField, ZHGrid, ZHBtn } from "../../../components/zh/ZHForm";
 import { CustomerPicker } from "../../sales/components/CustomerPicker";
+import {
+  ZhSelect,
+  ZhTextInput,
+  ZhTextarea,
+} from "../../../components/zh/inputs";
 import type { CashRegistersPageContext } from "../hooks/useCashRegistersPage";
 
 type Props = Pick<
@@ -110,7 +115,7 @@ export function CashRegistersFormPanel({
                   required
                   error={errors.branchId?.message}
                 >
-                  <select
+                  <ZhSelect
                     className="zh-input"
                     disabled={isEdit || saving || loadingBranches}
                     {...register("branchId")}
@@ -123,18 +128,18 @@ export function CashRegistersFormPanel({
                         {b.code ? `${b.code} — ${b.name}` : b.name}
                       </option>
                     ))}
-                  </select>
+                  </ZhSelect>
                 </ZHField>
 
                 <ZHField label="Código" required error={errors.code?.message}>
                   {isEdit ? (
-                    <input
+                    <ZhTextInput
                       className="zh-input mono cr-code-readonly"
                       readOnly
                       value={editingCode ?? "—"}
                     />
                   ) : (
-                    <input
+                    <ZhTextInput
                       className="zh-input mono"
                       placeholder="001"
                       maxLength={30}
@@ -146,7 +151,7 @@ export function CashRegistersFormPanel({
               </ZHGrid>
 
               <ZHField label="Nombre" required error={errors.name?.message}>
-                <input
+                <ZhTextInput
                   className="zh-input"
                   placeholder="Ej: Caja Principal"
                   disabled={saving}
@@ -170,7 +175,7 @@ export function CashRegistersFormPanel({
             <div className="pg-section-body">
               <ZHGrid cols={2}>
                 <ZHField label="Establecimiento">
-                  <input
+                  <ZhTextInput
                     className="zh-input mono cr-code-readonly"
                     readOnly
                     value={derivedEstablishmentCode ?? "—"}
@@ -182,7 +187,7 @@ export function CashRegistersFormPanel({
                   required
                   error={errors.emissionPointId?.message}
                 >
-                  <select
+                  <ZhSelect
                     className="zh-input"
                     disabled={
                       editingHasHistory ||
@@ -205,12 +210,12 @@ export function CashRegistersFormPanel({
                         {ep.code} — {ep.name ?? ep.code}
                       </option>
                     ))}
-                  </select>
+                  </ZhSelect>
                 </ZHField>
               </ZHGrid>
 
               <ZHField label="Notas" error={errors.notes?.message}>
-                <textarea
+                <ZhTextarea
                   className="zh-input"
                   rows={2}
                   disabled={saving}
