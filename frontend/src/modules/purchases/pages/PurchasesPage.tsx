@@ -13,6 +13,8 @@ import { ZhDecimalInput } from "../../../components/zh/inputs/ZhDecimalInput";
 import { ZhNumberInput } from "../../../components/zh/inputs/ZhNumberInput";
 import { ZhDateInput } from "../../../components/zh/inputs/ZhDateInput";
 import { ZhTextInput } from "../../../components/zh/inputs/ZhTextInput";
+import { ZhSelect } from "../../../components/zh/inputs/ZhSelect";
+import { ZhTextarea } from "../../../components/zh/inputs/ZhTextarea";
 import { getDecimalConfig } from "../../../lib/config/decimal.config";
 import { formatMoney, formatMoneyWithSymbol } from "../../../lib/sanitizers";
 import { formatDate } from "../../../lib/formatters/dateFormatters";
@@ -104,13 +106,12 @@ export function PurchasesPage() {
       {ctx.tab === "listado" && (
         <div className="prd-section">
           <div className="pg-table-controls zh-mb-16">
-            <input
-              type="text"
+            <ZhTextInput
               placeholder="Buscar por número de factura..."
               value={ctx.listSearchInput}
               onChange={(e) => ctx.setListSearchInput(e.target.value)}
             />
-            <select
+            <ZhSelect
               value={ctx.listStatus}
               onChange={(e) => ctx.setListStatus(e.target.value)}
             >
@@ -118,7 +119,7 @@ export function PurchasesPage() {
               <option value="Draft">Borrador</option>
               <option value="Confirmed">Confirmada</option>
               <option value="Cancelled">Anulada</option>
-            </select>
+            </ZhSelect>
             <ZHBtn
               variant="secondary"
               onClick={ctx.fetchList}
@@ -354,7 +355,7 @@ export function PurchasesPage() {
                   required
                   fieldError={ctx.errors.docTypeCode?.message}
                 >
-                  <select
+                  <ZhSelect
                     value={ctx.formWatch.docTypeCode}
                     onChange={(e) =>
                       ctx.setValue("docTypeCode", e.target.value)
@@ -369,7 +370,7 @@ export function PurchasesPage() {
                     {ctx.sriDocTypes.length === 0 && (
                       <option value="01">01 — FACTURA</option>
                     )}
-                  </select>
+                  </ZhSelect>
                 </ZHField>
                 <div className="pf-mini-card__row">
                   <ZHField
@@ -378,7 +379,7 @@ export function PurchasesPage() {
                     required
                     fieldError={ctx.errors.invoiceNumber?.message}
                   >
-                    <input
+                    <ZhTextInput
                       {...ctx.register("invoiceNumber")}
                       placeholder="001-001..."
                       maxLength={30}
@@ -391,8 +392,7 @@ export function PurchasesPage() {
                     required
                     fieldError={ctx.errors.issueDate?.message}
                   >
-                    <input
-                      type="date"
+                    <ZhDateInput
                       {...ctx.register("issueDate")}
                       disabled={ctx.fieldDisabled}
                     />
@@ -411,7 +411,7 @@ export function PurchasesPage() {
               </h4>
               <div className="pf-mini-card__body">
                 <ZHField density="compact" label="Forma de Pago SRI">
-                  <select
+                  <ZhSelect
                     value={ctx.formWatch.sriPaymentMethodCode}
                     onChange={(e) =>
                       ctx.setValue("sriPaymentMethodCode", e.target.value)
@@ -424,10 +424,14 @@ export function PurchasesPage() {
                         {m.code} — {m.name}
                       </option>
                     ))}
-                  </select>
+                  </ZhSelect>
                 </ZHField>
+                {/* taxSupportCode: código de metadato documental SRI (Sustento
+                    Tributario) — no participa en cálculo de impuestos/retenciones,
+                    solo se persiste como dato del comprobante. Migración visual
+                    únicamente, ver reporte 14B-2. */}
                 <ZHField density="compact" label="Sustento Tributario">
-                  <select
+                  <ZhSelect
                     value={ctx.formWatch.taxSupportCode}
                     onChange={(e) =>
                       ctx.setValue("taxSupportCode", e.target.value)
@@ -440,9 +444,13 @@ export function PurchasesPage() {
                         {s.code} — {s.name}
                       </option>
                     ))}
-                  </select>
+                  </ZhSelect>
                 </ZHField>
                 <ZHField density="compact" label="Condición de Pago">
+                  {/* paymentTermId: NO migrado — ver reporte 14B-2. onChange
+                      dispara ctx.handlePaymentTermChange(), que regenera el
+                      cronograma de cuotas — dominio excluido explícitamente
+                      de este bloque. */}
                   <select
                     value={ctx.formWatch.paymentTermId}
                     onChange={(e) =>
@@ -496,7 +504,7 @@ export function PurchasesPage() {
               <div className="pf-collapsible__body">
                 <div className="pf-mini-card__row pf-mini-card__row--3col">
                   <ZHField density="compact" label="Clave de Acceso">
-                    <input
+                    <ZhTextInput
                       {...ctx.register("accessKey")}
                       placeholder="49 dígitos"
                       maxLength={49}
@@ -504,12 +512,15 @@ export function PurchasesPage() {
                     />
                   </ZHField>
                   <ZHField density="compact" label="Nro. Autorización">
-                    <input
+                    <ZhTextInput
                       {...ctx.register("authorizationNumber")}
                       maxLength={49}
                       disabled={ctx.fieldDisabled}
                     />
                   </ZHField>
+                  {/* authorizationDate: type="datetime-local" (fecha + hora) —
+                      ZhDateInput fuerza type="date" (sin hora); no es
+                      equivalente, se excluye de este bloque. Ver reporte 14B-2. */}
                   <ZHField density="compact" label="Fecha y Hora Autorización">
                     <input
                       type="datetime-local"
@@ -531,6 +542,10 @@ export function PurchasesPage() {
                 Logística &amp; Totales
               </h4>
               <div className="pf-mini-card__body">
+                {/* globalWarehouseId: NO migrado — ver reporte 14B-2. onChange
+                    dispara ctx.applyGlobalWarehouse(), que propaga la bodega a
+                    todas las líneas — operación de stock/logística, dominio
+                    excluido explícitamente de este bloque. */}
                 <ZHField density="compact" label="Bodega Destino">
                   <select
                     value={ctx.formWatch.globalWarehouseId}
@@ -578,7 +593,7 @@ export function PurchasesPage() {
             {ctx.showNotes && (
               <div className="pf-collapsible__body">
                 <ZHField density="compact">
-                  <textarea
+                  <ZhTextarea
                     {...ctx.register("notes")}
                     rows={3}
                     placeholder="Ingrese notas adicionales o descripciones del servicio/producto..."
@@ -603,6 +618,10 @@ export function PurchasesPage() {
                     </span>
                     Detalle de Productos
                   </h4>
+                  {/* pdl-search__input: NO migrado — ver reporte 14B-2. Buscador
+                      especializado con navegación por teclado (onKeyDown) y
+                      dropdown de resultados — Categoría C, no equivalente a
+                      ZhTextInput. */}
                   <div className="pdl-search__wrap" ref={ctx.globalSearchRef}>
                     <div className="pdl-search__input-wrap">
                       <span className="material-symbols-outlined pdl-search__icon">
@@ -655,7 +674,7 @@ export function PurchasesPage() {
                       </div>
                     )}
                   </div>
-                  <select
+                  <ZhSelect
                     className="pdl-type-filter-select"
                     value={ctx.globalFilter}
                     onChange={(e) => {
@@ -669,7 +688,7 @@ export function PurchasesPage() {
                         {it.name}
                       </option>
                     ))}
-                  </select>
+                  </ZhSelect>
                   <CostsDropdown ctx={ctx} />
                 </div>
 
@@ -1048,6 +1067,9 @@ function PurchaseLineCard({
                   </button>
                 )}
               </div>
+              {/* pdl-line__wh-select: NO migrado — ver reporte 14B-2. Control
+                  de bodega por línea del detalle de productos (tabla) —
+                  "no migrar tablas", dominio excluido explícitamente. */}
               <select
                 className="pdl-line__wh-select"
                 value={l.warehouseId ?? ctx.formWatch.globalWarehouseId ?? ""}

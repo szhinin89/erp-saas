@@ -6,6 +6,7 @@ import { PageShell, Badge } from "../../../components/PageShell";
 import { ZHCard } from "../../../components/zh/ZHCard";
 import { ZHBtn, ZHField, ZHFormActions } from "../../../components/zh/ZHForm";
 import { ZHPageNotice } from "../../../components/zh/ZHPageNotice";
+import { ZhTextarea } from "../../../components/zh/inputs";
 import { formatMoney } from "../../../lib/sanitizers";
 import { formatDateTime } from "../../../lib/formatters/dateFormatters";
 import { message } from "../../../lib/messages";
@@ -266,7 +267,7 @@ export function PurchaseReturnDetailPage() {
             required
             fieldError={draftForm.formState.errors.reason?.message}
           >
-            <textarea
+            <ZhTextarea
               className="zh-input"
               rows={3}
               maxLength={500}
@@ -361,7 +362,7 @@ export function PurchaseReturnDetailPage() {
                 required
                 fieldError={cancelForm.formState.errors.reason?.message}
               >
-                <textarea
+                <ZhTextarea
                   className="zh-input"
                   rows={3}
                   maxLength={500}

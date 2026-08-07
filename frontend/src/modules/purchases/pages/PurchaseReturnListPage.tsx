@@ -4,6 +4,7 @@ import { PageShell, Badge } from "../../../components/PageShell";
 import { ZHCard } from "../../../components/zh/ZHCard";
 import { ZHBtn, ZHField } from "../../../components/zh/ZHForm";
 import { ZHDataTable, type ZHDataTableColumn } from "../../../components/zh/ZHDataTable";
+import { ZhSelect } from "../../../components/zh/inputs";
 import { formatMoney } from "../../../lib/sanitizers";
 import { formatDate } from "../../../lib/formatters/dateFormatters";
 import { message } from "../../../lib/messages";
@@ -125,7 +126,7 @@ export function PurchaseReturnListPage() {
       >
         <div className="sr-list-filters">
           <ZHField label="Estado" density="compact">
-            <select
+            <ZhSelect
               className="zh-input"
               value={status}
               onChange={(e) => {
@@ -137,7 +138,7 @@ export function PurchaseReturnListPage() {
               <option value="Draft">Borrador</option>
               <option value="Authorized">Autorizada</option>
               <option value="Cancelled">Cancelada</option>
-            </select>
+            </ZhSelect>
           </ZHField>
         </div>
 

@@ -6,6 +6,7 @@ import { PageShell } from "../../../components/PageShell";
 import { ZHCard } from "../../../components/zh/ZHCard";
 import { ZHField, ZHFormActions } from "../../../components/zh/ZHForm";
 import { ZHPageNotice } from "../../../components/zh/ZHPageNotice";
+import { ZhTextarea } from "../../../components/zh/inputs";
 import { message } from "../../../lib/messages";
 import { formatApiRequestError } from "../../lib/apiError";
 import { applyServerErrors } from "../../lib/validationErrors";
@@ -148,7 +149,7 @@ export function PurchaseReturnFormPage() {
       <form onSubmit={(e) => void handleSubmit(onSubmit)(e)}>
         <ZHCard title="Motivo">
           <ZHField label="Motivo de la devolución" required fieldError={errors.reason?.message}>
-            <textarea
+            <ZhTextarea
               className="zh-input"
               rows={3}
               maxLength={500}
