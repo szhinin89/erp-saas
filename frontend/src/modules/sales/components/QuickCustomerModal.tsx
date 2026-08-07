@@ -1,6 +1,7 @@
 import { ZHModal } from "../../../components/zh/ZHModal";
 import { ZHBtn, ZHField, ZHGrid } from "../../../components/zh/ZHForm";
 import { ZHPageNotice } from "../../../components/zh/ZHPageNotice";
+import { ZhTextInput, ZhPhoneInput } from "../../../components/zh/inputs";
 
 interface Props {
   open: boolean;
@@ -99,7 +100,7 @@ export function QuickCustomerModal({
       </ZHGrid>
 
       <ZHField label="Nombre / Razón social" required>
-        <input
+        <ZhTextInput
           value={custName}
           onChange={(e) => onCustNameChange(e.target.value)}
           placeholder="Nombre del cliente"
@@ -107,7 +108,7 @@ export function QuickCustomerModal({
       </ZHField>
 
       <ZHField label="Dirección">
-        <input
+        <ZhTextInput
           value={custAddress}
           onChange={(e) => onCustAddressChange(e.target.value)}
           placeholder="Av. Principal 123, Cuenca"
@@ -124,9 +125,9 @@ export function QuickCustomerModal({
           />
         </ZHField>
         <ZHField label="Teléfono">
-          <input
+          <ZhPhoneInput
             value={custPhone}
-            onChange={(e) => onCustPhoneChange(e.target.value)}
+            onChange={onCustPhoneChange}
             placeholder="0991234567"
           />
         </ZHField>

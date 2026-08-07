@@ -3,7 +3,11 @@ import { ErpPageTemplate } from "../../../../templates/ErpPageTemplate";
 import { NoAccessPage, Badge } from "../../../../components/PageShell";
 import { ZHPageNotice } from "../../../../components/zh/ZHPageNotice";
 import { ZHField, ZHGrid } from "../../../../components/zh/ZHForm";
-import { ZhSelect } from "../../../../components/zh/inputs";
+import {
+  ZhSelect,
+  ZhTextInput,
+  ZhNumberInput,
+} from "../../../../components/zh/inputs";
 import { useCatalogCrud } from "../hooks/useCatalogCrud";
 import { CatalogListSection } from "../components/CatalogListSection";
 import { CatalogFormModal } from "../components/CatalogFormModal";
@@ -121,7 +125,7 @@ export function AttributeDefinitionsPage() {
         </ZHField>
         <ZHGrid cols={2}>
           <ZHField label="Código *" required error={ctx.errors.code?.message}>
-            <input
+            <ZhTextInput
               className="zh-input mono"
               placeholder="COLOR"
               disabled={ctx.saving || !!ctx.editingId}
@@ -129,7 +133,7 @@ export function AttributeDefinitionsPage() {
             />
           </ZHField>
           <ZHField label="Nombre *" required error={ctx.errors.name?.message}>
-            <input
+            <ZhTextInput
               className="zh-input"
               placeholder="Color"
               disabled={ctx.saving}
@@ -152,10 +156,9 @@ export function AttributeDefinitionsPage() {
             </ZhSelect>
           </ZHField>
           <ZHField label="Orden" error={ctx.errors.sortOrder?.message}>
-            <input
-              type="number"
+            <ZhNumberInput
               className="zh-input"
-              min={0}
+              positiveOnly
               disabled={ctx.saving}
               {...ctx.register("sortOrder", { valueAsNumber: true })}
             />

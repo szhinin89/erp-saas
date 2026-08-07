@@ -4,6 +4,7 @@ import { ErpPageTemplate } from "../../../templates/ErpPageTemplate";
 import { ZHPageNotice } from "../../../components/zh/ZHPageNotice";
 import { ZHField, ZHGrid, ZHFormActions } from "../../../components/zh/ZHForm";
 import { ZHModal } from "../../../components/zh/ZHModal";
+import { ZhSelect, ZhTextInput } from "../../../components/zh/inputs";
 import { useI18n } from "../../../i18n/i18n";
 import { useMasterDataCustomersPage } from "./useMasterDataCustomersPage";
 import { MasterDataCompanySettingsModal } from "./MasterDataCompanySettingsModal";
@@ -74,7 +75,7 @@ function CustomerConfigModal({
         {error && <ZHPageNotice variant="error" message={error} />}
         <ZHGrid cols={2}>
           <ZHField label="Categoría">
-            <select
+            <ZhSelect
               value={category}
               onChange={(e) => setCategory(e.target.value)}
               disabled={saving}
@@ -85,10 +86,10 @@ function CustomerConfigModal({
                   {v}
                 </option>
               ))}
-            </select>
+            </ZhSelect>
           </ZHField>
           <ZHField label="Segmento">
-            <select
+            <ZhSelect
               value={segment}
               onChange={(e) => setSegment(e.target.value)}
               disabled={saving}
@@ -99,10 +100,10 @@ function CustomerConfigModal({
                   {v}
                 </option>
               ))}
-            </select>
+            </ZhSelect>
           </ZHField>
           <ZHField label="Zona de ventas">
-            <input
+            <ZhTextInput
               className="zh-input"
               value={zone}
               onChange={(e) => setZone(e.target.value)}
@@ -112,7 +113,7 @@ function CustomerConfigModal({
             />
           </ZHField>
           <ZHField label="Rating crediticio">
-            <select
+            <ZhSelect
               value={rating}
               onChange={(e) => setRating(e.target.value)}
               disabled={saving}
@@ -123,10 +124,10 @@ function CustomerConfigModal({
                   {v}
                 </option>
               ))}
-            </select>
+            </ZhSelect>
           </ZHField>
           <ZHField label="Nivel de fidelización">
-            <select
+            <ZhSelect
               value={loyalty}
               onChange={(e) => setLoyalty(e.target.value)}
               disabled={saving}
@@ -137,10 +138,10 @@ function CustomerConfigModal({
                   {v}
                 </option>
               ))}
-            </select>
+            </ZhSelect>
           </ZHField>
           <ZHField label="Formato de factura">
-            <select
+            <ZhSelect
               value={invoiceFormat}
               onChange={(e) => setInvoiceFormat(e.target.value)}
               disabled={saving}
@@ -151,10 +152,10 @@ function CustomerConfigModal({
                   {v}
                 </option>
               ))}
-            </select>
+            </ZhSelect>
           </ZHField>
           <ZHField label="Clasificación comercial">
-            <select
+            <ZhSelect
               value={classification}
               onChange={(e) => setClassification(e.target.value)}
               disabled={saving}
@@ -165,7 +166,7 @@ function CustomerConfigModal({
                   {v}
                 </option>
               ))}
-            </select>
+            </ZhSelect>
           </ZHField>
         </ZHGrid>
         <ZHFormActions

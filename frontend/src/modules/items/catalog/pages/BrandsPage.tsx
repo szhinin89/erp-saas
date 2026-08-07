@@ -2,6 +2,7 @@ import { ErpPageTemplate } from "../../../../templates/ErpPageTemplate";
 import { NoAccessPage, Badge } from "../../../../components/PageShell";
 import { ZHPageNotice } from "../../../../components/zh/ZHPageNotice";
 import { ZHField, ZHGrid } from "../../../../components/zh/ZHForm";
+import { ZhTextInput } from "../../../../components/zh/inputs";
 import { useCatalogCrud } from "../hooks/useCatalogCrud";
 import { CatalogListSection } from "../components/CatalogListSection";
 import { CatalogFormModal } from "../components/CatalogFormModal";
@@ -82,7 +83,7 @@ export function BrandsPage() {
       <CatalogFormModal ctx={ctx} entityLabel="Marca">
         <ZHGrid cols={2}>
           <ZHField label="Código *" required error={ctx.errors.code?.message}>
-            <input
+            <ZhTextInput
               className="zh-input mono"
               placeholder="SAMSUNG"
               disabled={ctx.saving || !!ctx.editingId}
@@ -90,7 +91,7 @@ export function BrandsPage() {
             />
           </ZHField>
           <ZHField label="Nombre *" required error={ctx.errors.name?.message}>
-            <input
+            <ZhTextInput
               className="zh-input"
               placeholder="Samsung Electronics"
               disabled={ctx.saving}
@@ -100,7 +101,7 @@ export function BrandsPage() {
         </ZHGrid>
         <ZHGrid cols={2}>
           <ZHField label="Fabricante" error={ctx.errors.manufacturer?.message}>
-            <input
+            <ZhTextInput
               className="zh-input"
               placeholder="Samsung Corp."
               disabled={ctx.saving}
@@ -111,7 +112,7 @@ export function BrandsPage() {
             label="País de origen"
             error={ctx.errors.countryOfOrigin?.message}
           >
-            <input
+            <ZhTextInput
               className="zh-input"
               placeholder="Corea del Sur"
               disabled={ctx.saving}

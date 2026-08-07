@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useFormContext, Controller } from "react-hook-form";
 import { ZHField, ZHGrid } from "../../../components/zh/ZHForm";
-import { ZhSelect } from "../../../components/zh/inputs";
+import { ZhSelect, ZhTextInput } from "../../../components/zh/inputs";
 import { useSriIdTypes, useSriIdTypesByUsage } from "../api/useSriIdTypes";
 import { useSriSupplierTypes } from "../api/useSriSupplierTypes";
 import { paymentTermService } from "../api/paymentTermService";
@@ -214,7 +214,7 @@ export function MasterDataBpFormFields({
         required
         fieldError={errors.legalName?.message}
       >
-        <input
+        <ZhTextInput
           className="zh-input"
           {...register("legalName")}
           disabled={saving}
@@ -222,7 +222,7 @@ export function MasterDataBpFormFields({
       </ZHField>
 
       <ZHField label="Nombre comercial">
-        <input
+        <ZhTextInput
           className="zh-input"
           {...register("tradeName")}
           disabled={saving}
@@ -237,7 +237,7 @@ export function MasterDataBpFormFields({
           name="countryCode"
           control={control}
           render={({ field }) => (
-            <input
+            <ZhTextInput
               className="zh-input mono"
               maxLength={2}
               placeholder="EC"

@@ -9,6 +9,7 @@ import {
   ZHFormActions,
 } from "../../../components/zh/ZHForm";
 import { ZHModal } from "../../../components/zh/ZHModal";
+import { ZhSelect, ZhTextInput } from "../../../components/zh/inputs";
 import { useI18n } from "../../../i18n/i18n";
 import { useMasterDataSuppliersPage } from "./useMasterDataSuppliersPage";
 import { MasterDataCompanySettingsModal } from "./MasterDataCompanySettingsModal";
@@ -275,7 +276,7 @@ function SupplierClassificationModal({
         {error && <ZHPageNotice variant="error" message={error} />}
         <ZHGrid cols={2}>
           <ZHField label="Categoría">
-            <select
+            <ZhSelect
               value={category}
               onChange={(e) => setCategory(e.target.value)}
               disabled={saving}
@@ -286,10 +287,10 @@ function SupplierClassificationModal({
                   {v}
                 </option>
               ))}
-            </select>
+            </ZhSelect>
           </ZHField>
           <ZHField label="Tipo">
-            <select
+            <ZhSelect
               value={type}
               onChange={(e) => setType(e.target.value)}
               disabled={saving}
@@ -300,10 +301,10 @@ function SupplierClassificationModal({
                   {v}
                 </option>
               ))}
-            </select>
+            </ZhSelect>
           </ZHField>
           <ZHField label="Riesgo">
-            <select
+            <ZhSelect
               value={risk}
               onChange={(e) => setRisk(e.target.value)}
               disabled={saving}
@@ -314,10 +315,10 @@ function SupplierClassificationModal({
                   {v}
                 </option>
               ))}
-            </select>
+            </ZhSelect>
           </ZHField>
           <ZHField label="Rating">
-            <select
+            <ZhSelect
               value={rating}
               onChange={(e) => setRating(e.target.value)}
               disabled={saving}
@@ -328,10 +329,10 @@ function SupplierClassificationModal({
                   {v}
                 </option>
               ))}
-            </select>
+            </ZhSelect>
           </ZHField>
           <ZHField label="Tipo de bien">
-            <select
+            <ZhSelect
               value={goodType}
               onChange={(e) => setGoodType(e.target.value)}
               disabled={saving}
@@ -342,10 +343,10 @@ function SupplierClassificationModal({
                   {v}
                 </option>
               ))}
-            </select>
+            </ZhSelect>
           </ZHField>
           <ZHField label="Segmento estratégico">
-            <select
+            <ZhSelect
               value={segment}
               onChange={(e) => setSegment(e.target.value)}
               disabled={saving}
@@ -356,10 +357,10 @@ function SupplierClassificationModal({
                   {v}
                 </option>
               ))}
-            </select>
+            </ZhSelect>
           </ZHField>
           <ZHField label="Método de pago interno">
-            <input
+            <ZhTextInput
               className="zh-input"
               value={paymentPref}
               onChange={(e) => setPaymentPref(e.target.value)}

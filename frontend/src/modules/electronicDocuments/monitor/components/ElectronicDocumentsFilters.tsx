@@ -1,5 +1,10 @@
 import { ZHField } from "../../../../components/zh/ZHForm";
 import { ZHFilterBar } from "../../../../components/zh/ZHFilterBar";
+import {
+  ZhTextInput,
+  ZhDateInput,
+  ZhSelect,
+} from "../../../../components/zh/inputs";
 import { useI18n } from "../../../../i18n/i18n";
 import {
   ELECTRONIC_DOCUMENT_STATES,
@@ -54,9 +59,8 @@ export function ElectronicDocumentsFilters({
           label={t("electronicDocuments.monitor.filters.dateFrom")}
           density="compact"
         >
-          <input
+          <ZhDateInput
             className="zh-input"
-            type="date"
             value={dateFrom}
             disabled={disabled}
             onChange={(e) => onDateFromChange(e.target.value)}
@@ -68,9 +72,8 @@ export function ElectronicDocumentsFilters({
           label={t("electronicDocuments.monitor.filters.dateTo")}
           density="compact"
         >
-          <input
+          <ZhDateInput
             className="zh-input"
-            type="date"
             value={dateTo}
             disabled={disabled}
             onChange={(e) => onDateToChange(e.target.value)}
@@ -82,7 +85,7 @@ export function ElectronicDocumentsFilters({
           label={t("electronicDocuments.monitor.filters.state")}
           density="compact"
         >
-          <select
+          <ZhSelect
             className="zh-input"
             value={state}
             disabled={disabled}
@@ -96,7 +99,7 @@ export function ElectronicDocumentsFilters({
                 {t(`electronicDocuments.monitor.state.${s}`)}
               </option>
             ))}
-          </select>
+          </ZhSelect>
         </ZHField>
       </div>
       <div className="zh-filterbar__field">
@@ -104,7 +107,7 @@ export function ElectronicDocumentsFilters({
           label={t("electronicDocuments.monitor.filters.documentType")}
           density="compact"
         >
-          <select
+          <ZhSelect
             className="zh-input"
             value={documentType}
             disabled={disabled}
@@ -118,7 +121,7 @@ export function ElectronicDocumentsFilters({
                 {t(`electronicDocuments.monitor.documentType.${dt}`)}
               </option>
             ))}
-          </select>
+          </ZhSelect>
         </ZHField>
       </div>
       <div className="zh-filterbar__field">
@@ -126,7 +129,7 @@ export function ElectronicDocumentsFilters({
           label={t("electronicDocuments.monitor.filters.environment")}
           density="compact"
         >
-          <select
+          <ZhSelect
             className="zh-input"
             value={environment}
             disabled={disabled}
@@ -144,7 +147,7 @@ export function ElectronicDocumentsFilters({
                 )}
               </option>
             ))}
-          </select>
+          </ZhSelect>
         </ZHField>
       </div>
       <div className="zh-filterbar__field zh-filterbar__field--grow">
@@ -152,9 +155,8 @@ export function ElectronicDocumentsFilters({
           label={t("electronicDocuments.monitor.filters.search")}
           density="compact"
         >
-          <input
+          <ZhTextInput
             className="zh-input"
-            type="text"
             placeholder={t(
               "electronicDocuments.monitor.filters.searchPlaceholder",
             )}

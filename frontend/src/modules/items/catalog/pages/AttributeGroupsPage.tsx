@@ -2,6 +2,7 @@ import { ErpPageTemplate } from "../../../../templates/ErpPageTemplate";
 import { NoAccessPage, Badge } from "../../../../components/PageShell";
 import { ZHPageNotice } from "../../../../components/zh/ZHPageNotice";
 import { ZHField, ZHGrid } from "../../../../components/zh/ZHForm";
+import { ZhTextInput, ZhNumberInput } from "../../../../components/zh/inputs";
 import { useCatalogCrud } from "../hooks/useCatalogCrud";
 import { CatalogListSection } from "../components/CatalogListSection";
 import { CatalogFormModal } from "../components/CatalogFormModal";
@@ -77,7 +78,7 @@ export function AttributeGroupsPage() {
       <CatalogFormModal ctx={ctx} entityLabel="Grupo de Atributos">
         <ZHGrid cols={2}>
           <ZHField label="Código *" required error={ctx.errors.code?.message}>
-            <input
+            <ZhTextInput
               className="zh-input mono"
               placeholder="DIM"
               disabled={ctx.saving || !!ctx.editingId}
@@ -85,7 +86,7 @@ export function AttributeGroupsPage() {
             />
           </ZHField>
           <ZHField label="Nombre *" required error={ctx.errors.name?.message}>
-            <input
+            <ZhTextInput
               className="zh-input"
               placeholder="Dimensiones"
               disabled={ctx.saving}
@@ -94,10 +95,9 @@ export function AttributeGroupsPage() {
           </ZHField>
         </ZHGrid>
         <ZHField label="Orden" error={ctx.errors.sortOrder?.message}>
-          <input
-            type="number"
+          <ZhNumberInput
             className="zh-input"
-            min={0}
+            positiveOnly
             disabled={ctx.saving}
             {...ctx.register("sortOrder", { valueAsNumber: true })}
           />

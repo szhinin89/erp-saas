@@ -6,7 +6,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { ErpPageTemplate } from "../../../templates/ErpPageTemplate";
 import { ZHBtn, ZHField, ZHGrid } from "../../../components/zh/ZHForm";
 import { ZHPageNotice } from "../../../components/zh/ZHPageNotice";
-import { ZhSelect } from "../../../components/zh/inputs";
+import { ZhSelect, ZhTextInput } from "../../../components/zh/inputs";
 import { ConfigTabsLayout } from "../../../components/shared/ConfigTabsLayout";
 import { message } from "../../../lib/messages";
 import { applyServerErrors } from "../../lib/validationErrors";
@@ -245,16 +245,16 @@ export function FinancialDestinationsPage() {
       {saveError && <ZHPageNotice variant="error" message={saveError} />}
       <ZHGrid cols={2}>
         <ZHField label="CÃ³digo" readOnly>
-          <input className="zh-input--upper" value={editing.code} disabled />
+          <ZhTextInput className="zh-input--upper" value={editing.code} disabled />
         </ZHField>
         <ZHField label="Tipo" readOnly>
-          <input
+          <ZhTextInput
             value={editing.destinationTypeCode === "BankAccount" ? "Cuenta bancaria" : "Caja"}
             disabled
           />
         </ZHField>
         <ZHField label="Nombre" required fieldError={editForm.formState.errors.name?.message}>
-          <input
+          <ZhTextInput
             className="zh-input"
             maxLength={200}
             disabled={saving}
@@ -299,7 +299,7 @@ export function FinancialDestinationsPage() {
       {saveError && <ZHPageNotice variant="error" message={saveError} />}
       <ZHGrid cols={2}>
         <ZHField label="CÃ³digo" required fieldError={createForm.formState.errors.code?.message}>
-          <input
+          <ZhTextInput
             className="zh-input--upper"
             maxLength={30}
             disabled={saving}
@@ -307,7 +307,7 @@ export function FinancialDestinationsPage() {
           />
         </ZHField>
         <ZHField label="Nombre" required fieldError={createForm.formState.errors.name?.message}>
-          <input
+          <ZhTextInput
             className="zh-input"
             maxLength={200}
             disabled={saving}
@@ -329,7 +329,7 @@ export function FinancialDestinationsPage() {
           </ZhSelect>
         </ZHField>
         <ZHField label="Moneda" required fieldError={createForm.formState.errors.currencyCode?.message}>
-          <input
+          <ZhTextInput
             className="zh-input--upper"
             maxLength={3}
             disabled={saving}
@@ -383,7 +383,7 @@ export function FinancialDestinationsPage() {
               required
               fieldError={createForm.formState.errors.bankInstitutionCode?.message}
             >
-              <input
+              <ZhTextInput
                 className="zh-input"
                 maxLength={20}
                 disabled={saving}
@@ -395,7 +395,7 @@ export function FinancialDestinationsPage() {
               required
               fieldError={createForm.formState.errors.bankAccountIdentifierNormalized?.message}
             >
-              <input
+              <ZhTextInput
                 className="zh-input"
                 maxLength={50}
                 disabled={saving}
