@@ -7,7 +7,13 @@ import {
   ZHGrid,
   ZHBtn,
 } from "../../../components/zh/ZHForm";
-import { ZhPhoneInput, ZhDateInput } from "../../../components/zh/inputs";
+import {
+  ZhPhoneInput,
+  ZhDateInput,
+  ZhTextInput,
+  ZhSelect,
+  ZhTextarea,
+} from "../../../components/zh/inputs";
 import { type BranchesPageContext } from "../hooks/useBranchesPage";
 
 type Props = Pick<
@@ -126,16 +132,15 @@ export function BranchFormPanel({
                   required
                   error={errors.name?.message}
                 >
-                  <input
-                    className="zh-input"
+                  <ZhTextInput
                     placeholder="Ej: Sucursal Norte Central"
                     disabled={saving}
                     {...register("name")}
                   />
                 </ZHField>
                 <ZHField label="Código">
-                  <input
-                    className="zh-input mono br-code-readonly"
+                  <ZhTextInput
+                    className="mono br-code-readonly"
                     readOnly
                     value={editingId ? (editCode ?? "—") : "Auto-generado"}
                   />
@@ -144,8 +149,7 @@ export function BranchFormPanel({
                   label="Descripción"
                   error={errors.description?.message}
                 >
-                  <input
-                    className="zh-input"
+                  <ZhTextInput
                     placeholder="Descripción breve"
                     disabled={saving}
                     {...register("description")}
@@ -181,8 +185,7 @@ export function BranchFormPanel({
             <div className="pg-section-body">
               <ZHGrid cols={2}>
                 <ZHField label="País">
-                  <select
-                    className="zh-input"
+                  <ZhSelect
                     disabled={saving || countries.length === 0}
                     {...register("countryId", {
                       onChange: async (e) => {
@@ -196,7 +199,7 @@ export function BranchFormPanel({
                         {c.name}
                       </option>
                     ))}
-                  </select>
+                  </ZhSelect>
                 </ZHField>
 
                 <ZHField
@@ -204,8 +207,7 @@ export function BranchFormPanel({
                     loadingProvinces ? "Provincia (cargando…)" : "Provincia"
                   }
                 >
-                  <select
-                    className="zh-input"
+                  <ZhSelect
                     disabled={
                       saving || !formWatch.countryId || loadingProvinces
                     }
@@ -221,14 +223,13 @@ export function BranchFormPanel({
                         {c.name}
                       </option>
                     ))}
-                  </select>
+                  </ZhSelect>
                 </ZHField>
 
                 <ZHField
                   label={loadingCantons ? "Cantón (cargando…)" : "Cantón"}
                 >
-                  <select
-                    className="zh-input"
+                  <ZhSelect
                     disabled={saving || !formWatch.provinceId || loadingCantons}
                     {...register("cantonId", {
                       onChange: async (e) => {
@@ -242,7 +243,7 @@ export function BranchFormPanel({
                         {c.name}
                       </option>
                     ))}
-                  </select>
+                  </ZhSelect>
                 </ZHField>
 
                 <ZHField
@@ -250,8 +251,7 @@ export function BranchFormPanel({
                     loadingParishes ? "Parroquia (cargando…)" : "Parroquia"
                   }
                 >
-                  <select
-                    className="zh-input"
+                  <ZhSelect
                     disabled={saving || !formWatch.cantonId || loadingParishes}
                     {...register("parishId")}
                   >
@@ -261,7 +261,7 @@ export function BranchFormPanel({
                         {c.name}
                       </option>
                     ))}
-                  </select>
+                  </ZhSelect>
                 </ZHField>
               </ZHGrid>
 
@@ -270,8 +270,7 @@ export function BranchFormPanel({
                 required
                 error={errors.address?.message}
               >
-                <input
-                  className="zh-input"
+                <ZhTextInput
                   placeholder="Calle, número, colonia..."
                   disabled={saving}
                   {...register("address")}
@@ -280,8 +279,7 @@ export function BranchFormPanel({
 
               <ZHGrid cols={2}>
                 <ZHField label="Referencia">
-                  <input
-                    className="zh-input"
+                  <ZhTextInput
                     placeholder="Punto de referencia"
                     disabled={saving}
                     {...register("reference")}
@@ -291,24 +289,23 @@ export function BranchFormPanel({
                   label="Código postal"
                   error={errors.postalCode?.message}
                 >
-                  <input
-                    className="zh-input"
+                  <ZhTextInput
                     placeholder="170150"
                     disabled={saving}
                     {...register("postalCode")}
                   />
                 </ZHField>
                 <ZHField label="Latitud" error={errors.latitude?.message}>
-                  <input
-                    className="zh-input mono"
+                  <ZhTextInput
+                    className="mono"
                     placeholder="-0.2295"
                     disabled={saving}
                     {...register("latitude")}
                   />
                 </ZHField>
                 <ZHField label="Longitud" error={errors.longitude?.message}>
-                  <input
-                    className="zh-input mono"
+                  <ZhTextInput
+                    className="mono"
                     placeholder="-78.5243"
                     disabled={saving}
                     {...register("longitude")}
@@ -367,8 +364,7 @@ export function BranchFormPanel({
                   />
                 </ZHField>
                 <ZHField label="Sitio web" error={errors.website?.message}>
-                  <input
-                    className="zh-input"
+                  <ZhTextInput
                     placeholder="https://www.empresa.com"
                     disabled={saving}
                     {...register("website")}
@@ -394,16 +390,14 @@ export function BranchFormPanel({
                   label="Nombre completo"
                   error={errors.managerName?.message}
                 >
-                  <input
-                    className="zh-input"
+                  <ZhTextInput
                     placeholder="Nombre del responsable"
                     disabled={saving}
                     {...register("managerName")}
                   />
                 </ZHField>
                 <ZHField label="Cargo" error={errors.managerPosition?.message}>
-                  <input
-                    className="zh-input"
+                  <ZhTextInput
                     placeholder="Ej: Administrador"
                     disabled={saving}
                     {...register("managerPosition")}
@@ -467,8 +461,7 @@ export function BranchFormPanel({
                 label="Notas internas"
                 error={errors.internalNotes?.message}
               >
-                <textarea
-                  className="zh-input"
+                <ZhTextarea
                   rows={3}
                   maxLength={1000}
                   placeholder="Notas visibles solo para el equipo administrativo"

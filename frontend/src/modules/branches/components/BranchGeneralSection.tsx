@@ -8,7 +8,13 @@ import {
   ZHBtn,
 } from "../../../components/zh/ZHForm";
 import { ZHPageNotice } from "../../../components/zh/ZHPageNotice";
-import { ZhPhoneInput, ZhDateInput } from "../../../components/zh/inputs";
+import {
+  ZhPhoneInput,
+  ZhDateInput,
+  ZhTextInput,
+  ZhSelect,
+  ZhTextarea,
+} from "../../../components/zh/inputs";
 import { LoadingState } from "../../../components/PageShell";
 import {
   branchService,
@@ -231,23 +237,21 @@ export function BranchGeneralSection({
               required
               error={errors.name?.message}
             >
-              <input
-                className="zh-input"
+              <ZhTextInput
                 placeholder="Ej: Sucursal Norte Central"
                 disabled={saving || !canUpdate}
                 {...register("name")}
               />
             </ZHField>
             <ZHField label="Código">
-              <input
-                className="zh-input mono br-code-readonly"
+              <ZhTextInput
+                className="mono br-code-readonly"
                 readOnly
                 value={initialData.code ?? "—"}
               />
             </ZHField>
             <ZHField label="Descripción" error={errors.description?.message}>
-              <input
-                className="zh-input"
+              <ZhTextInput
                 placeholder="Descripción breve"
                 disabled={saving || !canUpdate}
                 {...register("description")}
@@ -283,8 +287,7 @@ export function BranchGeneralSection({
         <div className="pg-section-body">
           <ZHGrid cols={2}>
             <ZHField label="País">
-              <select
-                className="zh-input"
+              <ZhSelect
                 disabled={saving || !canUpdate || countries.length === 0}
                 {...register("countryId", {
                   onChange: async (e) => {
@@ -298,13 +301,12 @@ export function BranchGeneralSection({
                     {c.name}
                   </option>
                 ))}
-              </select>
+              </ZhSelect>
             </ZHField>
             <ZHField
               label={loadingProvinces ? "Provincia (cargando…)" : "Provincia"}
             >
-              <select
-                className="zh-input"
+              <ZhSelect
                 disabled={
                   saving ||
                   !canUpdate ||
@@ -323,11 +325,10 @@ export function BranchGeneralSection({
                     {c.name}
                   </option>
                 ))}
-              </select>
+              </ZhSelect>
             </ZHField>
             <ZHField label={loadingCantons ? "Cantón (cargando…)" : "Cantón"}>
-              <select
-                className="zh-input"
+              <ZhSelect
                 disabled={
                   saving ||
                   !canUpdate ||
@@ -346,13 +347,12 @@ export function BranchGeneralSection({
                     {c.name}
                   </option>
                 ))}
-              </select>
+              </ZhSelect>
             </ZHField>
             <ZHField
               label={loadingParishes ? "Parroquia (cargando…)" : "Parroquia"}
             >
-              <select
-                className="zh-input"
+              <ZhSelect
                 disabled={
                   saving || !canUpdate || !formWatch.cantonId || loadingParishes
                 }
@@ -364,12 +364,11 @@ export function BranchGeneralSection({
                     {c.name}
                   </option>
                 ))}
-              </select>
+              </ZhSelect>
             </ZHField>
           </ZHGrid>
           <ZHField label="Dirección" required error={errors.address?.message}>
-            <input
-              className="zh-input"
+            <ZhTextInput
               placeholder="Calle, número, colonia..."
               disabled={saving || !canUpdate}
               {...register("address")}
@@ -377,29 +376,27 @@ export function BranchGeneralSection({
           </ZHField>
           <ZHGrid cols={2}>
             <ZHField label="Referencia">
-              <input
-                className="zh-input"
+              <ZhTextInput
                 disabled={saving || !canUpdate}
                 {...register("reference")}
               />
             </ZHField>
             <ZHField label="Código postal" error={errors.postalCode?.message}>
-              <input
-                className="zh-input"
+              <ZhTextInput
                 disabled={saving || !canUpdate}
                 {...register("postalCode")}
               />
             </ZHField>
             <ZHField label="Latitud" error={errors.latitude?.message}>
-              <input
-                className="zh-input mono"
+              <ZhTextInput
+                className="mono"
                 disabled={saving || !canUpdate}
                 {...register("latitude")}
               />
             </ZHField>
             <ZHField label="Longitud" error={errors.longitude?.message}>
-              <input
-                className="zh-input mono"
+              <ZhTextInput
+                className="mono"
                 disabled={saving || !canUpdate}
                 {...register("longitude")}
               />
@@ -450,8 +447,7 @@ export function BranchGeneralSection({
               />
             </ZHField>
             <ZHField label="Sitio web" error={errors.website?.message}>
-              <input
-                className="zh-input"
+              <ZhTextInput
                 disabled={saving || !canUpdate}
                 {...register("website")}
               />
@@ -476,15 +472,13 @@ export function BranchGeneralSection({
               label="Nombre completo"
               error={errors.managerName?.message}
             >
-              <input
-                className="zh-input"
+              <ZhTextInput
                 disabled={saving || !canUpdate}
                 {...register("managerName")}
               />
             </ZHField>
             <ZHField label="Cargo" error={errors.managerPosition?.message}>
-              <input
-                className="zh-input"
+              <ZhTextInput
                 disabled={saving || !canUpdate}
                 {...register("managerPosition")}
               />
@@ -546,8 +540,7 @@ export function BranchGeneralSection({
             </ZHField>
           </ZHGrid>
           <ZHField label="Notas internas" error={errors.internalNotes?.message}>
-            <textarea
-              className="zh-input"
+            <ZhTextarea
               rows={3}
               maxLength={1000}
               disabled={saving || !canUpdate}
