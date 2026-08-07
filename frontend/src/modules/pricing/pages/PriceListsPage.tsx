@@ -6,6 +6,7 @@ import { ZHBtn } from "../../../components/zh/ZHForm";
 import { ZHIconButton } from "../../../components/zh/ZHIconButton";
 import { ZhDecimalInput } from "../../../components/zh/inputs/ZhDecimalInput";
 import { ZhCurrencyInput } from "../../../components/zh/inputs/ZhCurrencyInput";
+import { ZhSelect } from "../../../components/zh/inputs";
 import { parseDecimal } from "../../../lib/sanitizers";
 import type {
   PriceListDto,
@@ -376,7 +377,7 @@ export function PriceListsPage() {
             <div className="zh-field">
               <label className="zh-field-label">Regla General</label>
               <div className="zh-field-control">
-                <select
+                <ZhSelect
                   value={fRuleType}
                   onChange={(e) => {
                     setFRuleType(e.target.value);
@@ -388,7 +389,7 @@ export function PriceListsPage() {
                       {o.label}
                     </option>
                   ))}
-                </select>
+                </ZhSelect>
               </div>
             </div>
             {fRuleType === "PercentDiscount" && (

@@ -2,7 +2,11 @@
 
 import { Badge } from "../../../components/PageShell";
 import { ErpPageTemplate } from "../../../templates/ErpPageTemplate";
-import { ZhDecimalInput } from "../../../components/zh/inputs/ZhDecimalInput";
+import {
+  ZhDecimalInput,
+  ZhTextInput,
+  ZhSelect,
+} from "../../../components/zh/inputs";
 import { ZHBtn } from "../../../components/zh/ZHForm";
 import { ZHIconButton } from "../../../components/zh/ZHIconButton";
 import type {
@@ -221,8 +225,7 @@ export function CreditTermsPage() {
       {tab === "listado" && (
         <div className="prd-section">
           <div className="prd-crud-toolbar">
-            <input
-              type="text"
+            <ZhTextInput
               placeholder="Buscar..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
@@ -297,16 +300,17 @@ export function CreditTermsPage() {
           <div className="prd-crud-form-grid">
             {!editing && (
               <FormField label="Código" required>
-                <input
+                <ZhTextInput
+                  mode="uppercase"
                   value={fCode}
-                  onChange={(e) => setFCode(e.target.value.toUpperCase())}
+                  onChange={(e) => setFCode(e.target.value)}
                   maxLength={20}
                   placeholder="Ej: CONTADO, NET30"
                 />
               </FormField>
             )}
             <FormField label="Nombre" required>
-              <input
+              <ZhTextInput
                 value={fName}
                 onChange={(e) => setFName(e.target.value)}
                 maxLength={120}
@@ -314,7 +318,7 @@ export function CreditTermsPage() {
               />
             </FormField>
             <FormField label="Modo">
-              <select
+              <ZhSelect
                 value={fMode}
                 onChange={(e) => setFMode(Number(e.target.value))}
               >
@@ -323,8 +327,11 @@ export function CreditTermsPage() {
                     {m.label}
                   </option>
                 ))}
-              </select>
+              </ZhSelect>
             </FormField>
+            {/* fDays: NO migrado — ver reporte 14A-2 (input type="number" con
+                min nativo y sin Zod/RHF equivalente; ZhNumberInput no soporta
+                min/max). */}
             <FormField label="Plazo total (días)">
               <input
                 type="number"
@@ -360,6 +367,9 @@ export function CreditTermsPage() {
                   <span className="ct-installment-number">
                     #{inst.number}
                   </span>
+                  {/* daysOffset: NO migrado — ver reporte 14A-2 (min/max
+                      nativo con max dinámico por fila = fDays; sin Zod/RHF
+                      equivalente que reemplace ese límite). */}
                   <FormField label="Días offset">
                     <input
                       type="number"

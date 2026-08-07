@@ -3,6 +3,7 @@
 import { Badge } from "../../../components/PageShell";
 import { ErpPageTemplate } from "../../../templates/ErpPageTemplate";
 import { ZHBtn } from "../../../components/zh/ZHForm";
+import { ZhSelect } from "../../../components/zh/inputs";
 import { formatDate } from "../../../lib/formatters/dateFormatters";
 import { formatMoney } from "../../../lib/sanitizers";
 import { receivableService, type SalesReceivableDto } from "../api/receivableService";
@@ -45,7 +46,7 @@ export function AccountsReceivablePage() {
     >
       <div className="prd-section">
         <div className="prd-crud-toolbar">
-          <select
+          <ZhSelect
             className="zh-input prd-status-filter"
             value={status}
             onChange={(e) => setStatus(e.target.value)}
@@ -54,7 +55,7 @@ export function AccountsReceivablePage() {
             <option value="paid">Pagadas</option>
             <option value="cancelled">Anuladas</option>
             <option value="">Todas</option>
-          </select>
+          </ZhSelect>
           <ZHBtn onClick={fetchItems} disabled={loading}>
             <span className="material-symbols-outlined zh-icon-lg">refresh</span>
           </ZHBtn>
