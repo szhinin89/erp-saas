@@ -4,6 +4,7 @@ import {
   ZHFormSection,
   ZHGrid,
 } from "../../../../components/zh/ZHForm";
+import { ZhSelect } from "../../../../components/zh/inputs";
 import type { CreateItemFormValues } from "../../schemas/createItemSchema";
 
 type Props = {
@@ -39,7 +40,7 @@ export function TaxConfigTab({
             label={t("items.tax.saleVatCode", "Tarifa IVA venta")}
             fieldError={fe(errors.taxConfig?.saleVatCode?.message)}
           >
-            <select {...register("taxConfig.saleVatCode")} disabled={disabled}>
+            <ZhSelect {...register("taxConfig.saleVatCode")} disabled={disabled}>
               <option value="">
                 {t("items.tax.notApplicable", "— No aplica —")}
               </option>
@@ -48,7 +49,7 @@ export function TaxConfigTab({
                   {v.code} — {v.name} ({v.percentage}%)
                 </option>
               ))}
-            </select>
+            </ZhSelect>
           </ZHField>
         </ZHGrid>
       </ZHFormSection>
@@ -65,7 +66,7 @@ export function TaxConfigTab({
             label={t("items.tax.purchaseVatCode", "Tarifa IVA compra")}
             fieldError={fe(errors.taxConfig?.purchaseVatCode?.message)}
           >
-            <select
+            <ZhSelect
               {...register("taxConfig.purchaseVatCode")}
               disabled={disabled}
             >
@@ -77,7 +78,7 @@ export function TaxConfigTab({
                   {v.code} — {v.name} ({v.percentage}%)
                 </option>
               ))}
-            </select>
+            </ZhSelect>
           </ZHField>
         </ZHGrid>
       </ZHFormSection>
@@ -94,7 +95,7 @@ export function TaxConfigTab({
             label={t("items.tax.exciseTaxCode", "Código ICE")}
             fieldError={fe(errors.taxConfig?.exciseTaxCode?.message)}
           >
-            <select
+            <ZhSelect
               {...register("taxConfig.exciseTaxCode")}
               disabled={disabled}
             >
@@ -106,7 +107,7 @@ export function TaxConfigTab({
                   {v.code} — {v.name} ({v.percentage}%)
                 </option>
               ))}
-            </select>
+            </ZhSelect>
           </ZHField>
         </ZHGrid>
       </ZHFormSection>
