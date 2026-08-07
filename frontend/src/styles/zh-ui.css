@@ -378,7 +378,9 @@ input[type="date"] {
    .zh-field--compact .zh-field-control input, pero aplicable directamente
    sobre un input suelto (p.ej. dentro de una celda de tabla), sin requerir
    el wrapper <ZHField density="compact">. Usar vía prop `density="compact"`
-   de ZhTextInput/ZhDecimalInput/ZhDateInput. */
+   de ZhTextInput/ZhDecimalInput/ZhDateInput/ZhSelect/ZhTextarea — mismo
+   selector de clase para las 5, sin variante `.zh-select--compact`/
+   `.zh-textarea--compact` propia (SSOT, ver Bloque 14A-1). */
 .zh-input--compact {
   font-size: 13px;
   height: auto;
