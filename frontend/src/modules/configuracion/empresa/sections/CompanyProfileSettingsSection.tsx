@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
   Badge,
@@ -7,6 +7,7 @@ import {
   NoAccessPage,
 } from "../../../../components/PageShell";
 import { ZHPageNotice } from "../../../../components/zh/ZHPageNotice";
+import { ZhTextInput, ZhPhoneInput } from "../../../../components/zh/inputs";
 import { formatDateTime } from "../../../../lib/formatters/dateFormatters";
 import { ZHBtn, ZHField, ZHGrid } from "../../../../components/zh/ZHForm";
 import { useI18n } from "../../../../i18n/i18n";
@@ -55,6 +56,7 @@ export function CompanyProfileSettingsSection() {
     register,
     handleSubmit,
     reset,
+    control,
     setError: setFieldError,
     formState: { errors, isDirty },
   } = useForm<CompanyConfigValues>({
@@ -195,7 +197,7 @@ export function CompanyProfileSettingsSection() {
                 required
                 error={errors.legalName?.message}
               >
-                <input
+                <ZhTextInput
                   className="zh-input"
                   placeholder="Razón social registrada en el SRI"
                   disabled={saving || !canEdit}
@@ -207,7 +209,7 @@ export function CompanyProfileSettingsSection() {
                 label="Nombre Comercial"
                 error={errors.tradeName?.message}
               >
-                <input
+                <ZhTextInput
                   className="zh-input"
                   placeholder="Nombre visible en documentos"
                   disabled={saving || !canEdit}
@@ -219,7 +221,7 @@ export function CompanyProfileSettingsSection() {
                 label="RUC"
                 error={errors.taxIdentificationNumber?.message}
               >
-                <input
+                <ZhTextInput
                   className="zh-input"
                   placeholder="13 dígitos"
                   disabled={saving || !canEdit}
@@ -255,7 +257,7 @@ export function CompanyProfileSettingsSection() {
               </ZHField>
 
               <ZHField label="Sitio Web" error={errors.website?.message}>
-                <input
+                <ZhTextInput
                   className="zh-input"
                   placeholder="https://www.empresa.com"
                   disabled={saving || !canEdit}
@@ -264,11 +266,12 @@ export function CompanyProfileSettingsSection() {
               </ZHField>
 
               <ZHField label="Teléfono Principal" error={errors.phone?.message}>
-                <input
-                  className="zh-input"
-                  placeholder="+593 99 999 9999"
-                  disabled={saving || !canEdit}
-                  {...register("phone")}
+                <Controller
+                  name="phone"
+                  control={control}
+                  render={({ field }) => (
+                    <ZhPhoneInput {...field} disabled={saving || !canEdit} />
+                  )}
                 />
               </ZHField>
             </ZHGrid>
@@ -287,7 +290,7 @@ export function CompanyProfileSettingsSection() {
           <div className="pg-section-body">
             <ZHGrid cols={2}>
               <ZHField label="Nombre" error={errors.legalRepName?.message}>
-                <input
+                <ZhTextInput
                   className="zh-input"
                   placeholder="Nombre completo"
                   disabled={saving || !canEdit}
@@ -296,7 +299,7 @@ export function CompanyProfileSettingsSection() {
               </ZHField>
 
               <ZHField label="Cargo" error={errors.legalRepPosition?.message}>
-                <input
+                <ZhTextInput
                   className="zh-input"
                   placeholder="Cargo dentro de la empresa"
                   disabled={saving || !canEdit}
@@ -308,7 +311,7 @@ export function CompanyProfileSettingsSection() {
                 label="Identificación"
                 error={errors.legalRepIdNumber?.message}
               >
-                <input
+                <ZhTextInput
                   className="zh-input"
                   placeholder="Cédula o pasaporte"
                   disabled={saving || !canEdit}
@@ -327,11 +330,12 @@ export function CompanyProfileSettingsSection() {
               </ZHField>
 
               <ZHField label="Teléfono" error={errors.legalRepPhone?.message}>
-                <input
-                  className="zh-input"
-                  placeholder="+593 99 999 9999"
-                  disabled={saving || !canEdit}
-                  {...register("legalRepPhone")}
+                <Controller
+                  name="legalRepPhone"
+                  control={control}
+                  render={({ field }) => (
+                    <ZhPhoneInput {...field} disabled={saving || !canEdit} />
+                  )}
                 />
               </ZHField>
             </ZHGrid>
