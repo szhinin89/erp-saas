@@ -6,6 +6,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { ErpPageTemplate } from "../../../templates/ErpPageTemplate";
 import { ZHBtn, ZHField, ZHGrid } from "../../../components/zh/ZHForm";
 import { ZHPageNotice } from "../../../components/zh/ZHPageNotice";
+import { ZhSelect } from "../../../components/zh/inputs";
 import { ConfigTabsLayout } from "../../../components/shared/ConfigTabsLayout";
 import { message } from "../../../lib/messages";
 import { applyServerErrors } from "../../lib/validationErrors";
@@ -265,7 +266,7 @@ export function FinancialDestinationsPage() {
           required
           fieldError={editForm.formState.errors.accountingAccountId?.message}
         >
-          <select
+          <ZhSelect
             className="zh-input"
             disabled={saving}
             {...editForm.register("accountingAccountId")}
@@ -275,7 +276,7 @@ export function FinancialDestinationsPage() {
                 {a.code} â€” {a.name}
               </option>
             ))}
-          </select>
+          </ZhSelect>
         </ZHField>
       </ZHGrid>
 
@@ -318,14 +319,14 @@ export function FinancialDestinationsPage() {
           required
           fieldError={createForm.formState.errors.destinationTypeCode?.message}
         >
-          <select
+          <ZhSelect
             className="zh-input"
             disabled={saving}
             {...createForm.register("destinationTypeCode")}
           >
             <option value="BankAccount">Cuenta bancaria</option>
             <option value="CashRegister">Caja</option>
-          </select>
+          </ZhSelect>
         </ZHField>
         <ZHField label="Moneda" required fieldError={createForm.formState.errors.currencyCode?.message}>
           <input
@@ -340,7 +341,7 @@ export function FinancialDestinationsPage() {
           required
           fieldError={createForm.formState.errors.accountingAccountId?.message}
         >
-          <select
+          <ZhSelect
             className="zh-input"
             disabled={saving}
             {...createForm.register("accountingAccountId")}
@@ -351,7 +352,7 @@ export function FinancialDestinationsPage() {
                 {a.code} â€” {a.name}
               </option>
             ))}
-          </select>
+          </ZhSelect>
         </ZHField>
 
         {destinationTypeCode === "CashRegister" && (
@@ -360,7 +361,7 @@ export function FinancialDestinationsPage() {
             required
             fieldError={createForm.formState.errors.cashRegisterId?.message}
           >
-            <select
+            <ZhSelect
               className="zh-input"
               disabled={saving}
               {...createForm.register("cashRegisterId")}
@@ -371,7 +372,7 @@ export function FinancialDestinationsPage() {
                   {c.code} â€” {c.name}
                 </option>
               ))}
-            </select>
+            </ZhSelect>
           </ZHField>
         )}
 

@@ -4,7 +4,11 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { ZHModal } from "../../../components/zh/ZHModal";
 import { ZHField, ZHFormActions } from "../../../components/zh/ZHForm";
 import { ZHPageNotice } from "../../../components/zh/ZHPageNotice";
-import { ZhDecimalInput } from "../../../components/zh/inputs/ZhDecimalInput";
+import {
+  ZhDecimalInput,
+  ZhTextInput,
+  ZhSelect,
+} from "../../../components/zh/inputs";
 import { message } from "../../../lib/messages";
 import { applyServerErrors } from "../../lib/validationErrors";
 import { formatApiRequestError, readApiErrorMessage } from "../../lib/apiError";
@@ -139,30 +143,30 @@ export function RegisterPaymentModal({ open, payable, onClose, onRegistered }: P
 
         {pendingInstallments.length > 0 && (
           <ZHField label="Cuota (opcional)" error={errors.installmentId?.message}>
-            <select className="zh-input" disabled={saving} {...register("installmentId")}>
+            <ZhSelect className="zh-input" disabled={saving} {...register("installmentId")}>
               <option value="">Sin cuota específica</option>
               {pendingInstallments.map((i) => (
                 <option key={i.id} value={i.id}>
                   Cuota #{i.installmentNumber} — {formatMoney(i.amount - i.paidAmount)} pendiente
                 </option>
               ))}
-            </select>
+            </ZhSelect>
           </ZHField>
         )}
 
         <ZHField label="Forma de pago (opcional)" error={errors.paymentMethodId?.message}>
-          <select className="zh-input" disabled={saving} {...register("paymentMethodId")}>
+          <ZhSelect className="zh-input" disabled={saving} {...register("paymentMethodId")}>
             <option value="">Sin especificar</option>
             {methods.map((m) => (
               <option key={m.id} value={m.id}>
                 {m.name}
               </option>
             ))}
-          </select>
+          </ZhSelect>
         </ZHField>
 
         <ZHField label="Referencia (opcional)" error={errors.reference?.message}>
-          <input
+          <ZhTextInput
             className="zh-input"
             maxLength={200}
             disabled={saving}

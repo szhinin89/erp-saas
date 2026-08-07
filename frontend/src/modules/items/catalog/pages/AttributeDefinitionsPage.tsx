@@ -3,6 +3,7 @@ import { ErpPageTemplate } from "../../../../templates/ErpPageTemplate";
 import { NoAccessPage, Badge } from "../../../../components/PageShell";
 import { ZHPageNotice } from "../../../../components/zh/ZHPageNotice";
 import { ZHField, ZHGrid } from "../../../../components/zh/ZHForm";
+import { ZhSelect } from "../../../../components/zh/inputs";
 import { useCatalogCrud } from "../hooks/useCatalogCrud";
 import { CatalogListSection } from "../components/CatalogListSection";
 import { CatalogFormModal } from "../components/CatalogFormModal";
@@ -109,14 +110,14 @@ export function AttributeDefinitionsPage() {
       />
       <CatalogFormModal ctx={ctx} entityLabel="Definición de Atributo">
         <ZHField label="Grupo *" required error={ctx.errors.groupId?.message}>
-          <select disabled={ctx.saving} {...ctx.register("groupId")}>
+          <ZhSelect disabled={ctx.saving} {...ctx.register("groupId")}>
             <option value="">— Seleccionar grupo —</option>
             {groups.map((g) => (
               <option key={g.id} value={g.id}>
                 {g.code} — {g.name}
               </option>
             ))}
-          </select>
+          </ZhSelect>
         </ZHField>
         <ZHGrid cols={2}>
           <ZHField label="Código *" required error={ctx.errors.code?.message}>
@@ -142,13 +143,13 @@ export function AttributeDefinitionsPage() {
             required
             error={ctx.errors.dataType?.message}
           >
-            <select disabled={ctx.saving} {...ctx.register("dataType")}>
+            <ZhSelect disabled={ctx.saving} {...ctx.register("dataType")}>
               {DATA_TYPES.map((dt) => (
                 <option key={dt} value={dt}>
                   {dt}
                 </option>
               ))}
-            </select>
+            </ZhSelect>
           </ZHField>
           <ZHField label="Orden" error={ctx.errors.sortOrder?.message}>
             <input

@@ -4,7 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { ZHModal } from "../../../components/zh/ZHModal";
 import { ZHField, ZHFormActions } from "../../../components/zh/ZHForm";
 import { ZHPageNotice } from "../../../components/zh/ZHPageNotice";
-import { ZhDecimalInput } from "../../../components/zh/inputs/ZhDecimalInput";
+import { ZhDecimalInput, ZhSelect } from "../../../components/zh/inputs";
 import { message } from "../../../lib/messages";
 import { applyServerErrors } from "../../lib/validationErrors";
 import { formatApiRequestError } from "../../lib/apiError";
@@ -151,25 +151,25 @@ export function RegisterSupplierCreditRefundModal({
           required
           fieldError={errors.financialDestinationId?.message}
         >
-          <select className="zh-input" disabled={saving} {...register("financialDestinationId")}>
+          <ZhSelect className="zh-input" disabled={saving} {...register("financialDestinationId")}>
             <option value="">Seleccione un destino</option>
             {destinations.map((d) => (
               <option key={d.id} value={d.id}>
                 {d.code} — {d.name}
               </option>
             ))}
-          </select>
+          </ZhSelect>
         </ZHField>
 
         <ZHField label="Forma de pago" required fieldError={errors.paymentMethodCode?.message}>
-          <select className="zh-input" disabled={saving} {...register("paymentMethodCode")}>
+          <ZhSelect className="zh-input" disabled={saving} {...register("paymentMethodCode")}>
             <option value="">Seleccione una forma de pago</option>
             {methods.map((m) => (
               <option key={m.id} value={m.code}>
                 {m.name}
               </option>
             ))}
-          </select>
+          </ZhSelect>
         </ZHField>
 
         <ZHField label="Monto a reembolsar" required fieldError={errors.amount?.message}>
