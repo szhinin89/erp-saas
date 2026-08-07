@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { PageShell, Badge } from "../../../components/PageShell";
 import { ZHCard } from "../../../components/zh/ZHCard";
 import { ZHBtn, ZHField } from "../../../components/zh/ZHForm";
+import { ZhTextInput, ZhSelect } from "../../../components/zh/inputs";
 import { ZHDataTable, type ZHDataTableColumn } from "../../../components/zh/ZHDataTable";
 import { formatMoney } from "../../../lib/sanitizers";
 import { formatDate } from "../../../lib/formatters/dateFormatters";
@@ -146,8 +147,7 @@ export function SalesReturnListPage() {
       >
         <div className="sr-list-filters">
           <ZHField label="Buscar" density="compact">
-            <input
-              className="zh-input"
+            <ZhTextInput
               value={search}
               onChange={(e) => {
                 setPage(1);
@@ -157,7 +157,7 @@ export function SalesReturnListPage() {
             />
           </ZHField>
           <ZHField label="Estado" density="compact">
-            <select
+            <ZhSelect
               className="zh-input"
               value={status}
               onChange={(e) => {
@@ -169,7 +169,7 @@ export function SalesReturnListPage() {
               <option value="Draft">Borrador</option>
               <option value="Authorized">Autorizada</option>
               <option value="Cancelled">Cancelada</option>
-            </select>
+            </ZhSelect>
           </ZHField>
         </div>
 

@@ -3,6 +3,7 @@ import { usePermissionsUi } from "../../../access/usePermissionsUi";
 import { NoAccessPage } from "../../../components/PageShell";
 import { ErpPageTemplate } from "../../../templates/ErpPageTemplate";
 import { ZHBtn } from "../../../components/zh/ZHForm";
+import { ZhTextInput, ZhSelect } from "../../../components/zh/inputs";
 import { ZHPageNotice } from "../../../components/zh/ZHPageNotice";
 import { ZHTabBar } from "../../../components/zh/ZHTabBar";
 import { message } from "../../../lib/messages";
@@ -218,7 +219,7 @@ export function ItemsPage() {
           <div className="prd-fadein">
             {/* Filters */}
             <div className="prd-filters-bar">
-              <input
+              <ZhTextInput
                 className="zh-input prd-filters-bar__search"
                 placeholder={t(
                   "items.list.search",
@@ -227,7 +228,7 @@ export function ItemsPage() {
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
-              <select
+              <ZhSelect
                 className="zh-select"
                 value={
                   filterIsActive === undefined ? "" : String(filterIsActive)
@@ -247,7 +248,7 @@ export function ItemsPage() {
                 <option value="false">
                   {t("common.inactive", "Inactivos")}
                 </option>
-              </select>
+              </ZhSelect>
               <select
                 className="zh-select"
                 value={filterItemTypeId ?? ""}

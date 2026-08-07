@@ -1,5 +1,6 @@
 ﻿import { EmptyState, LoadingState, Badge } from "../../../components/PageShell";
 import { ZHBtn } from "../../../components/zh/ZHForm";
+import { ZhTextInput, ZhSelect } from "../../../components/zh/inputs";
 import { ReportKpiCard } from "../../../components/ReportPageTemplate";
 import type { EstablishmentsPageContext } from "../hooks/useEstablishmentsPage";
 
@@ -113,15 +114,14 @@ export function EstablishmentsListSection({
           <div className="pg-table-controls-left">
             <div className="pg-search">
               <span className="material-symbols-outlined">search</span>
-              <input
-                type="text"
+              <ZhTextInput
                 placeholder="Buscar por cÃ³digo, nombre, direcciÃ³n o sucursal..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 disabled={loading}
               />
             </div>
-            <select
+            <ZhSelect
               className="zh-input"
               value={activeStatus}
               onChange={(e) =>
@@ -132,7 +132,7 @@ export function EstablishmentsListSection({
               <option value="active">Solo activos</option>
               <option value="inactive">Solo inactivos</option>
               <option value="all">Todos</option>
-            </select>
+            </ZhSelect>
           </div>
           <div className="pg-table-controls-right">
             <span>
