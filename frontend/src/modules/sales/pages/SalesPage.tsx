@@ -3,7 +3,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { ZHBtn, ZHField } from "../../../components/zh/ZHForm";
 import { Badge, type BadgeVariant } from "../../../components/PageShell";
 import { ZHIconButton } from "../../../components/zh/ZHIconButton";
-import { ZhDecimalInput } from "../../../components/zh/inputs/ZhDecimalInput";
+import { ZhDecimalInput, ZhTextInput } from "../../../components/zh/inputs";
 import { ZHPromptModal } from "../../../components/zh/ZHConfirmModal";
 import { ZHPageNotice } from "../../../components/zh/ZHPageNotice";
 import { ZHElectronicEnvironmentBanner } from "../../../components/zh/ZHElectronicEnvironmentBanner";
@@ -127,8 +127,7 @@ export function SalesPage() {
               Nueva Factura
             </ZHBtn>
             <div className="sales-page-spacer" />
-            <input
-              type="text"
+            <ZhTextInput
               placeholder="Buscar por número o cliente..."
               value={ctx.listSearch}
               onChange={(e) => ctx.setListSearch(e.target.value)}
